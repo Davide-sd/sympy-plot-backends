@@ -3,6 +3,8 @@ from mayavi import mlab
 from IPython.core.display import display
 
 class MayaviBackend(MyBaseBackend):
+    """ A backend for plotting SymPy's symbolic expressions using Mayavi.
+    """
     # More colormaps at:
     # https://docs.enthought.com/mayavi/mayavi/mlab_changing_object_looks.html
     colormaps = ['jet', 'autumn', 'Spectral', 'CMRmap', 'YlGnBu',

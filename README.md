@@ -48,7 +48,7 @@ Other options are only available to a specific backend, for example:
 |:-------------:|:---------:|:-----:|:------:|:------:|:---:|
 |  line_color   |     Y     |   N   |    N   |    N   |  N  |
 | surface_color |     Y     |   N   |    N   |    N   |  N  |
-|  plotly_theme |     N     |   N   |    Y   |    N   |  N  |
+|     theme     |     N     |   Y   |    Y   |    N   |  N  |
 |   wireframe   |     N     |   N   |    Y   |    N   |  N  |
 
 Finally, these backends come with a memory cost. Since many of them requires external libraries and/or open a server-process in order to visualize the data, memory usage can quickly rise if we are showing many plots. Keep an eye on you system monitor and act accordingly. 

@@ -4,9 +4,23 @@ import plotly.graph_objects as go
 class PlotlyBackend(MyBaseBackend):
     """ A backend for plotting SymPy's symbolic expressions using Plotly.
 
-    Note: in order to export plots you will need to install the packages listed
-    in the following page:
+    Keyword Arguments
+    =================
 
+        theme : str
+            Set the theme. Default to "plotly_dark". Find more Plotly themes at
+            the following page:
+            https://plotly.com/python/templates/
+        
+        wireframe : boolean
+            Visualize the wireframe lines on surfaces. Default to False.
+            Note that it may have a negative impact on the performances.
+
+    Export
+    ======
+
+    In order to export the plots you will need to install the packages listed
+    in the following page:
     https://plotly.com/python/static-image-export/
     """
     colormaps = [
@@ -91,29 +105,29 @@ class PlotlyBackend(MyBaseBackend):
                     )
                 )
                 
-                # wireframe lines
-                line_marker = dict(
-                    color = next(wfcm),
-                    width = 2
-                )
-                for i, j, k in zip(xx, yy, zz):
-                    self._fig.add_trace(
-                        go.Scatter3d(
-                            x = i, y = j, z = k,
-                            mode = 'lines',
-                            line = line_marker,
-                            showlegend = False
-                        )
+                if self._kwargs.get("wireframe", False):
+                    line_marker = dict(
+                        color = next(wfcm),
+                        width = 2
                     )
-                for i, j, k in zip(xx.T, yy.T, zz.T):
-                    self._fig.add_trace(
-                        go.Scatter3d(
-                            x = i, y = j, z = k,
-                            mode = 'lines',
-                            line = line_marker,
-                            showlegend = False
+                    for i, j, k in zip(xx, yy, zz):
+                        self._fig.add_trace(
+                            go.Scatter3d(
+                                x = i, y = j, z = k,
+                                mode = 'lines',
+                                line = line_marker,
+                                showlegend = False
+                            )
                         )
-                    )
+                    for i, j, k in zip(xx.T, yy.T, zz.T):
+                        self._fig.add_trace(
+                            go.Scatter3d(
+                                x = i, y = j, z = k,
+                                mode = 'lines',
+                                line = line_marker,
+                                showlegend = False
+                            )
+                        )
             elif s.is_contour:
                 xx, yy, zz = s.get_data()
                 xx = xx[0, :]
@@ -124,7 +138,7 @@ class PlotlyBackend(MyBaseBackend):
         
     def _update_layout(self):
         self._fig.update_layout(
-            template="plotly_dark",
+            template = self._kwargs.get("theme", "plotly_dark"),
             width = None if not self.size else self.size[0],
             height = None if not self.size else self.size[1],
             title = r"<b>%s</b>" % ("" if not self.title else self.title),

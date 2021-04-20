@@ -17,9 +17,19 @@ class BokehBackend(MyBaseBackend):
     """ A backend for plotting SymPy's symbolic expressions using Bokeh.
     Note: this implementation only implements 2D plots.
 
-    Note: in order to export plots you will need to install the packages listed
-    in the following page:
+    Keyword Arguments
+    =================
 
+        theme : str
+            Set the theme. Default to "dark_minimal". Find more Bokeh themes at
+            the following page:
+            https://docs.bokeh.org/en/latest/docs/reference/themes.html
+
+    Export
+    ======
+
+    In order to export the plots you will need to install the packages listed
+    in the following page:
     https://docs.bokeh.org/en/latest/docs/user_guide/export.html
 
     At the time of writing this backend, geckodriver is not available to pip.
@@ -31,7 +41,7 @@ class BokehBackend(MyBaseBackend):
         if self._get_mode() == 0:
             output_notebook()
             
-        curdoc().theme = "dark_minimal"
+        curdoc().theme = kwargs.get("theme", "dark_minimal")
         TOOLTIPS = [
             ("x", "$x"),
             ("y", "$y")

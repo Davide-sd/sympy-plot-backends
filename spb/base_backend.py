@@ -35,7 +35,12 @@ class MyBaseBackend(BaseBackend):
     """ This class implements a few methods that could be used by
     the child classes.
     """
-    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # make custom keywords available inside self
+        self._kwargs = kwargs
+
     def _line_length(self, x, y, z=None, start=None, end=None):
         """ Compute the cumulative length of the line.
         
