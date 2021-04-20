@@ -1,4 +1,4 @@
-from base_backend import MyBaseBackend
+from spb.base_backend import MyBaseBackend
 import plotly.graph_objects as go
 
 class PlotlyBackend(MyBaseBackend):
@@ -18,9 +18,9 @@ class PlotlyBackend(MyBaseBackend):
         "#6f969e", "#aa692c", "#60ccc0", "#f2a45d", "#f2a45d"
     ]
 
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.fig = go.Figure()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._fig = go.Figure()
     
     def _process_series(self, series):
         cm = iter(self.colormaps)
@@ -35,11 +35,11 @@ class PlotlyBackend(MyBaseBackend):
         
         for i, s in enumerate(series):
             if s.is_2Dline:
-                x, y = s.get_data(False)
+                x, y = s.get_data()
                 if s.is_parametric:
                     length = self._line_length(x, y, 
                         start = s.start, end = s.end)
-                    self.fig.add_trace(
+                    self._fig.add_trace(
                         go.Scatter(
                             x = x, y = y, name = s.label,
                             mode = "lines+markers",
@@ -51,13 +51,13 @@ class PlotlyBackend(MyBaseBackend):
                         )
                     )
                 else:
-                    self.fig.add_trace(go.Scatter(x = x, y = y, name = s.label))
+                    self._fig.add_trace(go.Scatter(x = x, y = y, name = s.label))
             elif s.is_3Dline:
                 x, y, z = s.get_data()
                 if s.is_parametric:
                     length = self._line_length(x, y, z, start = s.start,
                         end = s.end)
-                    self.fig.add_trace(
+                    self._fig.add_trace(
                         go.Scatter3d(
                             x = x, y = y, z = z,
                             name = s.label, mode = "lines+markers",
@@ -70,7 +70,7 @@ class PlotlyBackend(MyBaseBackend):
                         )
                     )
                 else:
-                    self.fig.add_trace(
+                    self._fig.add_trace(
                     go.Scatter3d(
                         x = x, y = y, z = z,
                         name = s.label, mode = "lines",
@@ -79,11 +79,11 @@ class PlotlyBackend(MyBaseBackend):
                 )
             elif s.is_3Dsurface:
                 xx, yy, zz = s.get_data()
-                self.fig.add_trace(
+                self._fig.add_trace(
                     go.Surface(
                         x = xx, y = yy, z = zz,
                         name = s.label,
-                        showscale = self.parent.legend and show_3D_colorscales,
+                        showscale = self.legend and show_3D_colorscales,
                         colorbar = dict(
                             x = 1 + 0.1 * i
                         ),
@@ -97,7 +97,7 @@ class PlotlyBackend(MyBaseBackend):
                     width = 2
                 )
                 for i, j, k in zip(xx, yy, zz):
-                    self.fig.add_trace(
+                    self._fig.add_trace(
                         go.Scatter3d(
                             x = i, y = j, z = k,
                             mode = 'lines',
@@ -106,7 +106,7 @@ class PlotlyBackend(MyBaseBackend):
                         )
                     )
                 for i, j, k in zip(xx.T, yy.T, zz.T):
-                    self.fig.add_trace(
+                    self._fig.add_trace(
                         go.Scatter3d(
                             x = i, y = j, z = k,
                             mode = 'lines',
@@ -118,75 +118,74 @@ class PlotlyBackend(MyBaseBackend):
                 xx, yy, zz = s.get_data()
                 xx = xx[0, :]
                 yy = yy[:, 0]
-                self.fig.add_trace(go.Contour(x = xx, y = yy, z = zz))
+                self._fig.add_trace(go.Contour(x = xx, y = yy, z = zz))
             else:
                 raise NotImplementedError
         
     def _update_layout(self):
-        parent = self.parent
-        self.fig.update_layout(
+        self._fig.update_layout(
             template="plotly_dark",
-            width = None if not parent.size else parent.size[0],
-            height = None if not parent.size else parent.size[1],
-            title = r"<b>%s</b>" % ("" if not parent.title else parent.title),
+            width = None if not self.size else self.size[0],
+            height = None if not self.size else self.size[1],
+            title = r"<b>%s</b>" % ("" if not self.title else self.title),
             title_x = 0.5,
             xaxis = dict(
-                title = "" if not parent.xlabel else parent.xlabel,
-                range = None if not parent.xlim else parent.xlim,
-                type = parent.xscale,
-                showgrid = parent.axis, # thin lines in the background
-                zeroline = parent.axis, # thick line at x=0
-                visible = parent.axis,  # numbers below
+                title = "" if not self.xlabel else self.xlabel,
+                range = None if not self.xlim else self.xlim,
+                type = self.xscale,
+                showgrid = self.axis, # thin lines in the background
+                zeroline = self.axis, # thick line at x=0
+                visible = self.axis,  # numbers below
             ),
             yaxis = dict(
-                title = "" if not parent.ylabel else parent.ylabel,
-                range = None if not parent.ylim else parent.ylim,
-                type = parent.yscale,
-                showgrid = parent.axis, # thin lines in the background
-                zeroline = parent.axis, # thick line at x=0
-                visible = parent.axis,  # numbers below
+                title = "" if not self.ylabel else self.ylabel,
+                range = None if not self.ylim else self.ylim,
+                type = self.yscale,
+                showgrid = self.axis, # thin lines in the background
+                zeroline = self.axis, # thick line at x=0
+                visible = self.axis,  # numbers below
             ),
             margin = dict(
                 t = 50,
                 l = 0,
                 b = 0,
             ),
-            showlegend = self.parent.legend,
+            showlegend = self.legend,
             scene = dict(
                 xaxis = dict(
-                    title = "" if not parent.xlabel else parent.xlabel,
-                    range = None if not parent.xlim else parent.xlim,
-                    type = parent.xscale,
-                    showgrid = parent.axis, # thin lines in the background
-                    zeroline = parent.axis, # thick line at x=0
-                    visible = parent.axis,  # numbers below
+                    title = "" if not self.xlabel else self.xlabel,
+                    range = None if not self.xlim else self.xlim,
+                    type = self.xscale,
+                    showgrid = self.axis, # thin lines in the background
+                    zeroline = self.axis, # thick line at x=0
+                    visible = self.axis,  # numbers below
                 ),
                 yaxis = dict(
-                    title = "" if not parent.ylabel else parent.ylabel,
-                    range = None if not parent.ylim else parent.ylim,
-                    type = parent.yscale,
-                    showgrid = parent.axis, # thin lines in the background
-                    zeroline = parent.axis, # thick line at x=0
-                    visible = parent.axis,  # numbers below
+                    title = "" if not self.ylabel else self.ylabel,
+                    range = None if not self.ylim else self.ylim,
+                    type = self.yscale,
+                    showgrid = self.axis, # thin lines in the background
+                    zeroline = self.axis, # thick line at x=0
+                    visible = self.axis,  # numbers below
                 ),
                 zaxis = dict(
-                    title = "" if not parent.zlabel else parent.zlabel,
-                    range = None if not parent.zlim else parent.zlim,
-                    type = parent.zscale,
-                    showgrid = parent.axis, # thin lines in the background
-                    zeroline = parent.axis, # thick line at x=0
-                    visible = parent.axis,  # numbers below
+                    title = "" if not self.zlabel else self.zlabel,
+                    range = None if not self.zlim else self.zlim,
+                    type = self.zscale,
+                    showgrid = self.axis, # thin lines in the background
+                    zeroline = self.axis, # thick line at x=0
+                    visible = self.axis,  # numbers below
                 ),
                 aspectmode = "cube"
             )
         )
     
     def show(self):
-        self._process_series(self.parent._series)
+        self._process_series(self._series)
         self._update_layout()
-        self.fig.show()
+        self._fig.show()
 
     def save(self, path):
-        self._process_series(self.parent._series)
+        self._process_series(self._series)
         self._update_layout()
-        self.fig.write_image(path)
+        self._fig.write_image(path)

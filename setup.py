@@ -16,7 +16,7 @@ setup(
         'Topic :: Mathematics, Engineering',
     ],
     keywords='sympy plot plotting backend plotly bokeh mayavi k3d',
-    url = 'https://github.com/Davide-sd/sympy_plot_backends,
+    url = 'https://github.com/Davide-sd/sympy_plot_backends',
     author = 'Davide Sandona',
     author_email = 'sandona.davide@gmail.com',
     license='GNU GPL v3',

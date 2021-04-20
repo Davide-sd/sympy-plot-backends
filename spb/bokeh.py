@@ -1,4 +1,4 @@
-from base_backend import MyBaseBackend
+from spb.base_backend import MyBaseBackend
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
 from bokeh.palettes import Category10
@@ -25,8 +25,8 @@ class BokehBackend(MyBaseBackend):
     At the time of writing this backend, geckodriver is not available to pip.
     Do a quick search on the web to find the appropriate installer.
     """
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         if self._get_mode() == 0:
             output_notebook()
@@ -36,22 +36,22 @@ class BokehBackend(MyBaseBackend):
             ("x", "$x"),
             ("y", "$y")
         ]
-        self.fig = figure(
-            title = parent.title,
-            x_axis_label = parent.xlabel if parent.xlabel else "x",
-            y_axis_label = parent.ylabel if parent.ylabel else "y",
-            sizing_mode = "fixed" if parent.size else "stretch_width",
-            width = int(parent.size[0]) if parent.size else 500,
-            height = int(parent.size[1]) if parent.size else 400,
-            x_axis_type = parent.xscale,
-            y_axis_type = parent.yscale,
-            x_range = parent.xlim,
-            y_range = parent.ylim,
+        self._fig = figure(
+            title = self.title,
+            x_axis_label = self.xlabel if self.xlabel else "x",
+            y_axis_label = self.ylabel if self.ylabel else "y",
+            sizing_mode = "fixed" if self.size else "stretch_width",
+            width = int(self.size[0]) if self.size else 500,
+            height = int(self.size[1]) if self.size else 400,
+            x_axis_type = self.xscale,
+            y_axis_type = self.yscale,
+            x_range = self.xlim,
+            y_range = self.ylim,
             tools = "pan,wheel_zoom,box_zoom,reset,hover",
             tooltips = TOOLTIPS
         )
-        self.fig.axis.visible = parent.axis
-        self.fig.grid.visible = parent.axis
+        self._fig.axis.visible = self.axis
+        self._fig.grid.visible = self.axis
 
     def _process_series(self, series):
         colors = itertools.cycle(Category10[10])
@@ -59,39 +59,39 @@ class BokehBackend(MyBaseBackend):
         for i, s in enumerate(series):
             if s.is_2Dline:
                 if s.is_parametric:
-                    x, y = s.get_data(False)
+                    x, y = s.get_data()
                     l = self._line_length(x, y, start=s.start, end=s.end)
-                    self.fig.line(*s.get_data(False), legend_label=s.label,
+                    self._fig.line(*s.get_data(), legend_label=s.label,
                                   line_width=2, color=next(colors))
                     color_mapper = LinearColorMapper(palette=colorcet.rainbow, 
                         low=min(l), high=max(l))
                     
                     data_source = ColumnDataSource({'x': x , 'y': y, 'l' : l})
-                    self.fig.scatter(x='x', y='y', source=data_source,
+                    self._fig.scatter(x='x', y='y', source=data_source,
                                 color={'field': 'l', 'transform': color_mapper})
                 else:
-                    self.fig.line(*s.get_data(False), legend_label=s.label,
+                    self._fig.line(*s.get_data(), legend_label=s.label,
                                 line_width=2, color=next(colors))
             else:
                 raise ValueError(
                     "Bokeh only support 2D plots."
                 )
 
-        self.fig.legend.visible = self.parent.legend
-        self.fig.add_layout(self.fig.legend[0], 'right')
+        self._fig.legend.visible = self.legend
+        self._fig.add_layout(self._fig.legend[0], 'right')
 
     def save(self, path):
-        self._process_series(self.parent._series)
+        self._process_series(self._series)
         ext = os.path.splitext(path)[1]
         if ext == ".svg":
-            self.fig.output_backend = "svg"
+            self._fig.output_backend = "svg"
             export_svg(self.fig, filename=path)
         else:
             if ext == "":
                 path += ".png"
-            self.fig.output_backend = "canvas"
-            export_png(self.fig, filename=path)
+            self._fig.output_backend = "canvas"
+            export_png(self._fig, filename=path)
     
     def show(self):
-        self._process_series(self.parent._series)
-        show(self.fig)
+        self._process_series(self._series)
+        show(self._fig)
