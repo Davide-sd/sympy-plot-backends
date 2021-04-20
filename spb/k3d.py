@@ -9,6 +9,9 @@ from matplotlib.tri import Triangulation
 #    of code?
 #           xmin=s.start_x, xmax=s.end_x,
 #           ymin=s.start_y, ymax=s.end_y,
+#
+# 2. K3D requires float32 data, not float64 outputted by numpy. Need to use:
+#       x.astype(np.float32)
 
 class K3DBackend(MyBaseBackend):
     """ A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.

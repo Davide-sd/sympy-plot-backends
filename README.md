@@ -33,6 +33,7 @@ The following table shows the common keyword arguments implemented in SymPy's `P
 |    yscale     |     Y     |   Y   |    Y   |    N   |  N  |
 |    zscale     |     Y     |   N   |    Y   |    N   |  N  |
 |     axis      |     Y     |   Y   |    Y   |    Y   |  Y  |
+|  axis_center  |     Y     |   N   |    N   |    N   |  N  |
 | aspect_ratio  |     Y     |   N   |    N   |    N   |  N  |
 |   autoscale   |     Y     |   N   |    N   |    N   |  N  |
 |    margin     |     Y     |   N   |    N   |    N   |  N  |
@@ -42,6 +43,8 @@ The following table shows the common keyword arguments implemented in SymPy's `P
 |    ylabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
 |    zlabel     |     Y     |   N   |    Y   |    Y   |  Y  |
 
+Note: while SymPy's default backend (Matplotlib) is implemented to mimic hand-plotted 2D charts, that is the horizontal and vertical axis are not necessarely fixed to the bottom and left side of the plot (we can specify their location with `axis_center`), I didn't implement this feature on Bokeh and Plotly because it doesn't add any value to my personal use. If you find that some options could be implemented but are not, please consider contributing with a PR.
+
 Other options are only available to a specific backend, for example:
 
 |  keyword arg  | Matplolib | Bokeh | Plotly | Mayavi | K3D |
@@ -50,6 +53,8 @@ Other options are only available to a specific backend, for example:
 | surface_color |     Y     |   N   |    N   |    N   |  N  |
 |     theme     |     N     |   Y   |    Y   |    N   |  N  |
 |   wireframe   |     N     |   N   |    Y   |    N   |  N  |
+
+Please, read the docstring associated to each backend to find out the additional available keyword arguments.
 
 Finally, these backends come with a memory cost. Since many of them requires external libraries and/or open a server-process in order to visualize the data, memory usage can quickly rise if we are showing many plots. Keep an eye on you system monitor and act accordingly. 
 
