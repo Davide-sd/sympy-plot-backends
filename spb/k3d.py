@@ -3,15 +3,13 @@ import k3d
 import numpy as np
 import warnings
 from matplotlib.tri import Triangulation
+from mayavi import mlab
+from tvtk.api import tvtk
 
 # TODO:
-# 1. What does happen when a parametric surface is used in the following lines
-#    of code?
-#           xmin=s.start_x, xmax=s.end_x,
-#           ymin=s.start_y, ymax=s.end_y,
-#
-# 2. K3D requires float32 data, not float64 outputted by numpy. Need to use:
-#       x.astype(np.float32)
+# 1. find a way to avoid using mlab since it is very slow to load
+# 2. add colormap to parametric surface
+# 3. loop over colormaps
 
 class K3DBackend(MyBaseBackend):
     """ A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
@@ -29,6 +27,7 @@ class K3DBackend(MyBaseBackend):
         if self._get_mode() != 0:
             raise ValueError(
                     "Sorry, K3D backend only works within Jupyter Notebook")
+        mlab.init_notebook()
         self._fig = k3d.plot(grid_visible=self.axis)
         if (self.xscale == "log") or (self.yscale == "log"):
             warnings.warn("K3D-Jupyter doesn't support log scales. We will " +
@@ -37,16 +36,6 @@ class K3DBackend(MyBaseBackend):
 
     def _process_series(self, series):
         cm = iter(self.colormaps)
-
-        # def asd(sx, ex, sy, ey):
-        #     xlim = self.xlim
-        #     ylim = self.ylim
-        #     return {
-        #         "xmin": sx if (xlim is None) else xlim[0],
-        #         "xmax": ex if (xlim is None) else xlim[1],
-        #         "ymin": sy if (ylim is None) else ylim[0],
-        #         "ymax": ey if (ylim is None) else ylim[1]
-        #     }
         
         for i, s in enumerate(series):
             if s.is_3Dline:
@@ -57,23 +46,33 @@ class K3DBackend(MyBaseBackend):
                                 width=0.1, color_map=next(cm),
                                 color_range=[s.start, s.end], name=s.label)
                 self._fig += line
+
             elif s.is_3Dsurface:
                 x, y, z = s.get_data()
-                if not s.is_parametric:
-                    z = z.astype(np.float32)
-                    surf = k3d.surface(z, attribute=z,
-                                xmin=np.min(x[:]), xmax=np.max(x[:]),
-                                ymin=np.min(y[:]), ymax=np.min(y[:]),
-                                color_map=next(cm), name=s.label)
+                x = x.astype(np.float32)
+                y = y.astype(np.float32)
+                z = z.astype(np.float32)
+                if s.is_parametric:
+                    m = mlab.mesh(x, y, z)
+                    actor = m.actor.actors[0]
+                    polydata = tvtk.to_vtk(actor.mapper.input)
+                    surf = k3d.vtk_poly_data(
+                        polydata,
+                        side="double", 
+                        color_map = k3d.colormaps.basic_color_maps.Jet
+                    )
                 else:
-                    pass
-                    # vertices = np.dstack([x, y, z]).astype(np.float32)
-                    # indices = Triangulation(x,y).triangles.astype(np.uint32)
-                    # surf = k3d.mesh(np.vstack([x,y,z]).T, indices,
-                    #             color_map = k3d.colormaps.basic_color_maps.Jet,
-                    #             attribute=z,
-                    #             color_range = [-1.1,2.01]
-                    #         )
+                    x = x.reshape(-1)
+                    y = y.reshape(-1)
+                    z = z.reshape(-1)
+                    vertices = np.dstack([x, y, z])
+                    indices = Triangulation(x, y).triangles.astype(np.uint32)
+                    surf = k3d.mesh(
+                        vertices.T, indices,
+                        color_map = k3d.colormaps.basic_color_maps.Jet,
+                        attribute = z,
+                        side = "double"
+                    )
                     
                 self._fig += surf
             else:

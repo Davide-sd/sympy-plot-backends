@@ -19,8 +19,9 @@ Each backend has its own advantages and disadvantages, as we can see from the fo
 In particular:
 * Matplotlib (default with SymPy) is good but it lacks interactivity (of course, we can use [ipympl](https://github.com/matplotlib/ipympl) but the overall interactive experience is still behind in comparison to the other backends).
 * Matplotlib and Plotly are the two most general backend, both supporting 2D and 3D plots.
-* Mayavi and K3D only supports 3D plots but, compared to Matplotlib,they are blazingly fast in the user-interaction. Hence, we can increase significantly the number of discretization points obtaining smoother plots.
-* K3D-Jupyter can only be used with Jupyter Notebook, whereas the other backends can also be used with IPython or a simple Python interpreter.
+* Mayavi and K3D only supports 3D plots but, compared to Matplotlib,they are blazingly fast in the user-interaction. Hence, we can increase significantly the number of discretization points obtaining smoother plots. Note that these backends use an aspect ratio of 1 on all axis, meaning that they don't scale the visualization. What you see is the object as you would see it in reality.
+* K3D can only be used with Jupyter Notebook, whereas the other backends can also be used with IPython or a simple Python interpreter.
+* Plotly and Bokeh require external libraries in order to export plots to png or svg. Read the respective classes' docstring to understand what you need to install.
 
 The following table shows the common keyword arguments implemented in SymPy's `Plot` class. Because each plotting library is unique, some of these options may not be supported by a specific backend:
 
@@ -43,7 +44,7 @@ The following table shows the common keyword arguments implemented in SymPy's `P
 |    ylabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
 |    zlabel     |     Y     |   N   |    Y   |    Y   |  Y  |
 
-Note: while SymPy's default backend (Matplotlib) is implemented to mimic hand-plotted 2D charts, that is the horizontal and vertical axis are not necessarely fixed to the bottom and left side of the plot (we can specify their location with `axis_center`), I didn't implement this feature on Bokeh and Plotly because it doesn't add any value to my personal use. If you find that some options could be implemented but are not, please consider contributing with a PR.
+Note: while SymPy's default backend (Matplotlib) is implemented to mimic hand-plotted 2D charts, that is the horizontal and vertical axis are not necessarely fixed to the bottom-side and left-side of the plot, respectively (we can specify their location with `axis_center`), I didn't implement this feature on Bokeh and Plotly because it doesn't add any value to my personal use. If you find that some options could be implemented, please consider contributing with a PR.
 
 Other options are only available to a specific backend, for example:
 
@@ -56,7 +57,7 @@ Other options are only available to a specific backend, for example:
 
 Please, read the docstring associated to each backend to find out the additional available keyword arguments.
 
-Finally, these backends come with a memory cost. Since many of them requires external libraries and/or open a server-process in order to visualize the data, memory usage can quickly rise if we are showing many plots. Keep an eye on you system monitor and act accordingly. 
+Finally, **these backends come with a memory cost**. Since many of them requires external libraries and/or open a server-process in order to visualize the data, memory usage can quickly rise if we are showing many plots. Keep an eye on you system monitor and act accordingly. 
 
 ## Requirements
 
