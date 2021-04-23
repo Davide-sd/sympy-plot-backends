@@ -12,6 +12,10 @@ class PlotlyBackend(MyBaseBackend):
             the following page:
             https://plotly.com/python/templates/
         
+        use_cm : boolean
+            If True, apply a color map to the meshes/surface. If False, solid
+            colors will be used instead. Default to True.
+        
         wireframe : boolean
             Visualize the wireframe lines on surfaces. Default to False.
             Note that it may have a negative impact on the performances.
@@ -47,7 +51,7 @@ class PlotlyBackend(MyBaseBackend):
             if s.is_3Dline:
                 show_3D_colorscales = False
         
-        for i, s in enumerate(series):
+        for ii, s in enumerate(series):
             if s.is_2Dline:
                 x, y = s.get_data()
                 if s.is_parametric:
@@ -93,15 +97,22 @@ class PlotlyBackend(MyBaseBackend):
                 )
             elif s.is_3Dsurface:
                 xx, yy, zz = s.get_data()
+                # create a solid color to be used when self._use_cm=False
+                col = next(self._iter_colorloop)
+                colorscale = [
+                    [0, 'rgb' + str(col)],
+                    [1, 'rgb' + str(col)]
+                ]
                 self._fig.add_trace(
                     go.Surface(
                         x = xx, y = yy, z = zz,
                         name = s.label,
                         showscale = self.legend and show_3D_colorscales,
                         colorbar = dict(
-                            x = 1 + 0.1 * i
+                            x = 1 + 0.1 * ii
                         ),
-                        colorscale = next(cm)
+                        colorscale = next(cm) if self._use_cm else colorscale
+
                     )
                 )
                 
@@ -190,7 +201,7 @@ class PlotlyBackend(MyBaseBackend):
                     zeroline = self.axis, # thick line at x=0
                     visible = self.axis,  # numbers below
                 ),
-                aspectmode = "cube"
+                aspectmode = self.aspect_ratio
             )
         )
     
@@ -199,7 +210,9 @@ class PlotlyBackend(MyBaseBackend):
         self._update_layout()
         self._fig.show()
 
-    def save(self, path):
+    def save(self, path, **kwargs):
         self._process_series(self._series)
         self._update_layout()
         self._fig.write_image(path)
+
+PB = PlotlyBackend

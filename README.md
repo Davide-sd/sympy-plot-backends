@@ -1,6 +1,6 @@
 # Sympy Plotting Backends
 
-This module contains a few backends that can be used with [SymPy](github.com/sympy/sympy) as an alternative to the default Matplotlib backend. A backend represents the plotting library being used: it provides the necessary functionalities for quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots).
+This module contains a few backends that can be used with [SymPy](github.com/sympy/sympy) (version >= 1.9) as an alternative to the default Matplotlib backend. A backend represents the plotting library being used: it provides the necessary functionalities for quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots).
 
 The following plotting libraries are supported: [Plotly](https://plotly.com/), [Bokeh](https://github.com/bokeh/bokeh), [Mayavi](https://github.com/enthought/mayavi), [K3D-Jupyter](https://github.com/K3D-tools/K3D-jupyter)
 
@@ -23,7 +23,7 @@ In particular:
 * K3D can only be used with Jupyter Notebook, whereas the other backends can also be used with IPython or a simple Python interpreter.
 * Plotly and Bokeh require external libraries in order to export plots to png or svg. Read the respective classes' docstring to understand what you need to install.
 
-The following table shows the common keyword arguments implemented in SymPy's `Plot` class. Because each plotting library is unique, some of these options may not be supported by a specific backend:
+The following table shows the common keyword arguments implemented in SymPy's `Plot` class, which is the parent class for all backends. Because each plotting library is unique, some of these options may not be supported by a specific backend:
 
 |  keyword arg  | Matplolib | Bokeh | Plotly | Mayavi | K3D |
 |:-------------:|:---------:|:-----:|:------:|:------:|:---:|
@@ -35,7 +35,7 @@ The following table shows the common keyword arguments implemented in SymPy's `P
 |    zscale     |     Y     |   N   |    Y   |    N   |  N  |
 |     axis      |     Y     |   Y   |    Y   |    Y   |  Y  |
 |  axis_center  |     Y     |   N   |    N   |    N   |  N  |
-| aspect_ratio  |     Y     |   N   |    N   |    N   |  N  |
+| aspect_ratio  |     Y     |   N   |    Y   |    N   |  N  |
 |   autoscale   |     Y     |   N   |    N   |    N   |  N  |
 |    margin     |     Y     |   N   |    N   |    N   |  N  |
 |     size      |     Y     |   Y   |    Y   |    Y   |  Y  |
@@ -53,28 +53,43 @@ Other options are only available to a specific backend, for example:
 |  line_color   |     Y     |   N   |    N   |    N   |  N  |
 | surface_color |     Y     |   N   |    N   |    N   |  N  |
 |     theme     |     N     |   Y   |    Y   |    N   |  N  |
-|   wireframe   |     N     |   N   |    Y   |    N   |  N  |
+|   wireframe   |     N     |   N   |    Y   |    Y   |  Y  |
+|   bg_color    |     N     |   N   |    N   |    Y   |  Y  |
+|  grid_color   |     N     |   N   |    N   |    N   |  Y  |
+|    use_cm     |     N     |   N   |    Y   |    Y   |  Y  |
+|   show_label  |     N     |   N   |    N   |    N   |  Y  |
 
-Please, read the docstring associated to each backend to find out the additional available keyword arguments.
+Please, read the docstring associated to each backend to find out what they do.
 
-Finally, **these backends come with a memory cost**. Since many of them requires external libraries and/or open a server-process in order to visualize the data, memory usage can quickly rise if we are showing many plots. Keep an eye on you system monitor and act accordingly. 
+Finally, **some backend comes with a memory cost**. Since they require external libraries and/or open a server-process in order to visualize the data, memory usage can quickly rise if we are showing many plots. Keep an eye on you system monitor and act accordingly (close the kernels, restart the browser, etc.). 
 
 ## Requirements
 
-* `numpy`,
-* `sympy>=1.6.1`,
-* `matplotlib`,
-* `plotly>=4.14.3`,
-* `bokeh`,
-* `mayavi`,
-* `PyQt5`,
-* `k3d`
+The following list of requirements will automatically be downloaded once you install the module:
+
+`numpy, sympy>=1.9, matplotlib, plotly>=4.14.3, bokeh, PyQt5, mayavi, k3d`
 
 ## Installation
 
-1. Open a terminal and move into the module folder, `sympy_plot_backends`.
-2. `pip3 install .`
+1. Download this repository: `git clone `
+2. Move into the module folder, `sympy_plot_backends`.
+3. **Optional step**: you may want to change default values of backend-specific options to better integrate the plots with your Jupyter theme. For example, currently Bokeh and Plotly's `theme` are set to dark themes. Mayavi and k3D `bg_color` are set to dark.
+4. Run the installer: `pip install .`
 
 ## Usage
 
-Look at the notebooks in the [examples](\examples) folder.
+```
+from sympy import *
+from sympy.plotting.plot import (
+    plot3d_parametric_surface as p3ds,
+)
+from spb.k3d import KB
+from spb.plotly import PB
+from spb.bokeh import BB
+from spb.mayavi import MB
+
+p3ds(v * cos(u), v * sin(u), v + sin(3 * v) / 3 - 4, (u, 0, 2 * pi), (v, 0, 2 * pi),
+     backend=KB)
+```
+
+Look at the notebooks in the [examples](\examples) folder to better understand the pros and cons of each backend.

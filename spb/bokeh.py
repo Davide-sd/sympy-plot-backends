@@ -90,7 +90,7 @@ class BokehBackend(MyBaseBackend):
         self._fig.legend.visible = self.legend
         self._fig.add_layout(self._fig.legend[0], 'right')
 
-    def save(self, path):
+    def save(self, path, **kwargs):
         self._process_series(self._series)
         ext = os.path.splitext(path)[1]
         if ext == ".svg":
@@ -105,3 +105,5 @@ class BokehBackend(MyBaseBackend):
     def show(self):
         self._process_series(self._series)
         show(self._fig)
+
+BB = BokehBackend
