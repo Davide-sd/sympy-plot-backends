@@ -3,14 +3,14 @@ import k3d
 import numpy as np
 import warnings
 from matplotlib.tri import Triangulation
-from mayavi import mlab
-from tvtk.api import tvtk
 
 # TODO:
-# 1. find a way to avoid using mlab since it is very slow to load
-# 2. load the plot with menu minimized
-# 3. how to clear the picture? The save command is going to add again the
-#    objects, obtaining duplicates with different color maps.
+# 1. load the plot with menu minimized
+
+# create the connectivity for the mesh
+# https://github.com/K3D-tools/K3D-jupyter/issues/273
+def ij2k(cols, i, j):
+    return  cols * i + j 
 
 class K3DBackend(MyBaseBackend):
     """ A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
@@ -47,11 +47,6 @@ class K3DBackend(MyBaseBackend):
         if self._get_mode() != 0:
             raise ValueError(
                     "Sorry, K3D backend only works within Jupyter Notebook")
-        mlab.init_notebook()
-        # this is necessary: suppose you do a plot with MayaviBackend. Then you
-        # do a second plot with K3D. Without this line of code, the K3D data
-        # will also be added to the previous Mayavi plot.
-        mlab_fig = mlab.figure()
 
         self._fig = k3d.plot(
             grid_visible = self.axis,
@@ -92,9 +87,6 @@ class K3DBackend(MyBaseBackend):
         return self._rgb_to_int(color)
 
     def _process_series(self, series):
-        # TODO: not working, it doesn't clear the previously drawn objects
-        self._fig.object = []
-        
         for s in series:
             if s.is_3Dline:
                 x, y, z = s.get_data()
@@ -118,7 +110,22 @@ class K3DBackend(MyBaseBackend):
                 x = x.astype(np.float32)
                 y = y.astype(np.float32)
                 z = z.astype(np.float32)
-                # keyword arguments for the surface/mesh object
+                
+                if s.is_parametric:
+                    # https://github.com/K3D-tools/K3D-jupyter/issues/273
+                    rows, cols  = x.shape
+                    indices = []
+                    for i in range(1,rows):
+                        for j in range(1,cols):
+                            indices.append( [ij2k(cols, i, j), ij2k(cols, i - 1, j), ij2k(cols, i, j- 1 )] )
+                            indices.append( [ij2k(cols, i - 1, j - 1), ij2k(cols, i , j - 1), ij2k(cols, i - 1, j)] )
+                    vertices = np.stack([x.flatten(), y.flatten(), z.flatten()])
+                else:
+                    x = x.flatten()
+                    y = y.flatten()
+                    z = z.flatten()
+                    vertices = np.vstack([x, y, z])
+                    indices = Triangulation(x, y).triangles.astype(np.uint32)
                 a = dict(
                     name = s.label if self._kwargs.get("show_label", False) else None,
                     side = "double",
@@ -126,25 +133,10 @@ class K3DBackend(MyBaseBackend):
                     wireframe = self._kwargs.get("wireframe", False),
                     color = self._convert_to_int(next(self._iter_colorloop)),
                 )
-
-                if s.is_parametric:
-                    m = mlab.mesh(x, y, z)
-                    actor = m.actor.actors[0]
-                    polydata = tvtk.to_vtk(actor.mapper.input)
-                    if self._use_cm:
-                        a["color_map"] = next(self._iter_colormaps)
-                        a["color_attribute"] = ["scalars", np.min(z), np.max(z)]
-                    surf = k3d.vtk_poly_data(polydata, **a)
-                else:
-                    x = x.reshape(-1)
-                    y = y.reshape(-1)
-                    z = z.reshape(-1)
-                    vertices = np.vstack([x, y, z])
-                    indices = Triangulation(x, y).triangles.astype(np.uint32)
-                    if self._use_cm:
-                        a["color_map"] = next(self._iter_colormaps)
-                        a["attribute"] = z
-                    surf = k3d.mesh(vertices.T, indices, **a)
+                if self._use_cm:
+                    a["color_map"] = next(self._iter_colormaps)
+                    a["attribute"] = z
+                surf = k3d.mesh(vertices.T, indices, **a)
                     
                 self._fig += surf
             else:
@@ -172,8 +164,6 @@ class K3DBackend(MyBaseBackend):
                 "K3D-Jupyter requires the plot to be shown on the screen " + 
                 "before saving it."
             )
-
-        self._process_series(self._series)
 
         @self._fig.yield_screenshots
         def _func():

@@ -10,6 +10,7 @@ Each backend has its own advantages and disadvantages, as we can see from the fo
 |:-------------:|:---------:|:-----:|:------:|:------:|:---:|
 |       2D      |     Y     |   Y   |    Y   |    N   |  N  |
 |       3D      |     Y     |   N   |    Y   |    Y   |  Y  |
+|   Implicit    |     Y     |   N   |    Y   |    N   |  N  |
 |   PlotGrid    |     Y     |   N   |    N   |    N   |  N  |
 | Latex Support |     Y     |   N   |    Y   |    N   |  Y  |
 | Save Picture  |     Y     |   Y   |    Y   |    Y   |  Y  |
