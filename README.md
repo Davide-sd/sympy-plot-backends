@@ -2,6 +2,19 @@
 
 This module contains a few backends that can be used with [SymPy](github.com/sympy/sympy) (version >= 1.9) as an alternative to the default Matplotlib backend. A backend represents the plotting library being used: it provides the necessary functionalities for quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots).
 
+<div>
+<img src="imgs/bokeh.png" width=250/>
+<img src="imgs/plotly-2d.png" width=250/>
+<img src="imgs/k3d-1.png" width=250/>
+<img src="imgs/k3d-2.png" width=250/>
+<img src="imgs/plotly-3d.png" width=250/>
+<img src="imgs/mayavi.png" width=250/>
+</div>
+
+The two most important reasons for using a different backend are:
+1. **Better interactive** experience (explored in the tutorial notebooks).
+2. To use the **plotting library we are most comfortable with**. The backend can be used as a starting point to plot symbolic expressions; then, we could use the figure object to add numerical (or experimental) results using the commands associated to the specific plotting library.
+
 The following plotting libraries are supported: [Plotly](https://plotly.com/), [Bokeh](https://github.com/bokeh/bokeh), [Mayavi](https://github.com/enthought/mayavi), [K3D-Jupyter](https://github.com/K3D-tools/K3D-jupyter)
 
 Each backend has its own advantages and disadvantages, as we can see from the following table:
@@ -22,9 +35,9 @@ In particular:
 * Matplotlib and Plotly are the two most general backend, both supporting 2D and 3D plots.
 * Mayavi and K3D only supports 3D plots but, compared to Matplotlib,they are blazingly fast in the user-interaction. Hence, we can increase significantly the number of discretization points obtaining smoother plots. Note that these backends use an aspect ratio of 1 on all axis, meaning that they don't scale the visualization. What you see is the object as you would see it in reality.
 * K3D can only be used with Jupyter Notebook, whereas the other backends can also be used with IPython or a simple Python interpreter.
-* Plotly and Bokeh require external libraries in order to export plots to png or svg. Read the respective classes' docstring to understand what you need to install.
+* Plotly and Bokeh require external libraries in order to export plots to png or svg. Read the docstrings of the respective classes to understand what you need to install.
 
-The following table shows the common keyword arguments implemented in SymPy's `Plot` class, which is the parent class for all backends. Because each plotting library is unique, some of these options may not be supported by a specific backend:
+The following table shows the common keyword arguments implemented in SymPy's `Plot` class, which is the parent class for all backends. Because each plotting library is unique, some of these options may not be supported by a specific backend (or have not been implemented yet):
 
 |  keyword arg  | Matplolib | Bokeh | Plotly | Mayavi | K3D |
 |:-------------:|:---------:|:-----:|:------:|:------:|:---:|
@@ -45,7 +58,7 @@ The following table shows the common keyword arguments implemented in SymPy's `P
 |    ylabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
 |    zlabel     |     Y     |   N   |    Y   |    Y   |  Y  |
 
-Note: while SymPy's default backend (Matplotlib) is implemented to mimic hand-plotted 2D charts, that is the horizontal and vertical axis are not necessarely fixed to the bottom-side and left-side of the plot, respectively (we can specify their location with `axis_center`), I didn't implement this feature on Bokeh and Plotly because it doesn't add any value to my personal use. If you find that some options could be implemented, please consider contributing with a PR.
+For example, while SymPy's default backend (Matplotlib) is implemented to mimic hand-plotted 2D charts, that is the horizontal and vertical axis are not necessarely fixed to the bottom-side and left-side of the plot, respectively (we can specify their location with `axis_center`), I didn't implement this feature on Bokeh and Plotly because it doesn't add any value to my personal use. If you find that some options could be implemented, please consider contributing with a PR.
 
 Other options are only available to a specific backend, for example:
 
@@ -73,24 +86,23 @@ The following list of requirements will automatically be downloaded once you ins
 ## Installation
 
 1. Download this repository: `git clone `
-2. Move into the module folder, `sympy_plot_backends`.
-3. **Optional step**: you may want to change default values of backend-specific options to better integrate the plots with your Jupyter theme. For example, currently Bokeh and Plotly's `theme` are set to dark themes. Mayavi and k3D `bg_color` are set to dark.
-4. Run the installer: `pip install .`
+2. Explore the notebooks contained in the `tutorials` folder to see what the backends do.
+3. Move into the module folder, `sympy_plot_backends`.
+4. **Optional step**: you may want to change default values of backend-specific options to better integrate the plots with your Jupyter theme. For example, currently Bokeh and Plotly's `theme` are set to dark themes. Mayavi and k3D `bg_color` are set to dark.
+5. **Optional step**: open the file `spb/functions.py` and change the default backends.
+6. Run the installer: `pip install .`
 
 ## Usage
 
 ```
 from sympy import *
-from sympy.plotting.plot import (
-    plot3d_parametric_surface as p3ds,
-)
-from spb.k3d import KB
-from spb.plotly import PB
-from spb.bokeh import BB
-from spb.mayavi import MB
+from spb import plot3d_parametric_surface as p3ds
+var("u, v")
 
-p3ds(v * cos(u), v * sin(u), v + sin(3 * v) / 3 - 4, (u, 0, 2 * pi), (v, 0, 2 * pi),
-     backend=KB)
+p3ds(v * cos(u), v * sin(u), v + sin(3 * v) / 3 - 4, (u, 0, 2 * pi), (v, 0, 2 * pi))
 ```
+<div align="center">
+<img src="imgs/k3d-3.png" width=250/>
+</div>
 
-Look at the notebooks in the [examples](\examples) folder to better understand the pros and cons of each backend.
+Look at the notebooks in the [tutorials](\tutorials) folder to better understand the pros and cons of each backend.

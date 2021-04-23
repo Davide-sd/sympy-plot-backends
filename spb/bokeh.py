@@ -8,6 +8,7 @@ from bokeh.io import export_png, export_svg
 import itertools
 import colorcet
 import os
+import numpy as np
 
 # TODO:
 # 1. list of colormaps to loop over for parametric plots
@@ -57,7 +58,7 @@ class BokehBackend(MyBaseBackend):
             y_axis_type = self.yscale,
             x_range = self.xlim,
             y_range = self.ylim,
-            tools = "pan,wheel_zoom,box_zoom,reset,hover",
+            tools = "pan,wheel_zoom,box_zoom,reset,hover,save",
             tooltips = TOOLTIPS
         )
         self._fig.axis.visible = self.axis
@@ -68,10 +69,13 @@ class BokehBackend(MyBaseBackend):
 
         for i, s in enumerate(series):
             if s.is_2Dline:
+                x, y = s.get_data()
+                # Bokeh is not able to deal with None values. Need to replace
+                # them with np.nan
+                y = [t if (t is not None) else np.nan for t in y]
                 if s.is_parametric:
-                    x, y = s.get_data()
                     l = self._line_length(x, y, start=s.start, end=s.end)
-                    self._fig.line(*s.get_data(), legend_label=s.label,
+                    self._fig.line(x, y, legend_label=s.label,
                                   line_width=2, color=next(colors))
                     color_mapper = LinearColorMapper(palette=colorcet.rainbow, 
                         low=min(l), high=max(l))
@@ -80,7 +84,7 @@ class BokehBackend(MyBaseBackend):
                     self._fig.scatter(x='x', y='y', source=data_source,
                                 color={'field': 'l', 'transform': color_mapper})
                 else:
-                    self._fig.line(*s.get_data(), legend_label=s.label,
+                    self._fig.line(x, y, legend_label=s.label,
                                 line_width=2, color=next(colors))
             else:
                 raise ValueError(
@@ -88,6 +92,8 @@ class BokehBackend(MyBaseBackend):
                 )
 
         self._fig.legend.visible = self.legend
+        # interactive legend
+        self._fig.legend.click_policy = "hide"
         self._fig.add_layout(self._fig.legend[0], 'right')
 
     def save(self, path, **kwargs):
