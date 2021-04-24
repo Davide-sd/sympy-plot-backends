@@ -58,7 +58,7 @@ The following table shows the common keyword arguments implemented in SymPy's `P
 |    ylabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
 |    zlabel     |     Y     |   N   |    Y   |    Y   |  Y  |
 
-For example, while SymPy's default backend (Matplotlib) is implemented to mimic hand-plotted 2D charts, that is the horizontal and vertical axis are not necessarely fixed to the bottom-side and left-side of the plot, respectively (we can specify their location with `axis_center`), I didn't implement this feature on Bokeh and Plotly because it doesn't add any value to my personal use. If you find that some options could be implemented, please consider contributing with a PR.
+For example, while SymPy's default backend (Matplotlib) is implemented to mimic hand-plotted 2D charts, that is the horizontal and vertical axis are not necessarely fixed to the bottom-side and left-side of the plot respectively (we can specify their location with `axis_center`), I didn't implement this feature on Bokeh and Plotly because it doesn't add any value to my personal use. If you find that some options could be implemented, please consider contributing with a PR.
 
 Other options are only available to a specific backend, for example:
 
@@ -69,6 +69,7 @@ Other options are only available to a specific backend, for example:
 |     theme     |     N     |   Y   |    Y   |    N   |  N  |
 |   wireframe   |     N     |   N   |    Y   |    Y   |  Y  |
 |   bg_color    |     N     |   N   |    N   |    Y   |  Y  |
+|   fg_color    |     N     |   N   |    N   |    Y   |  N  |
 |  grid_color   |     N     |   N   |    N   |    N   |  Y  |
 |    use_cm     |     N     |   N   |    Y   |    Y   |  Y  |
 |   show_label  |     N     |   N   |    N   |    N   |  Y  |
@@ -86,10 +87,10 @@ The following list of requirements will automatically be downloaded once you ins
 ## Installation
 
 1. Download this repository: `git clone `
-2. Explore the notebooks contained in the `tutorials` folder to see what the backends do.
-3. Move into the module folder, `sympy_plot_backends`.
-4. **Optional step**: you may want to change default values of backend-specific options to better integrate the plots with your Jupyter theme. For example, currently Bokeh and Plotly's `theme` are set to dark themes. Mayavi and k3D `bg_color` are set to dark.
-5. **Optional step**: open the file `spb/functions.py` and change the default backends.
+2. Move into the module folder, `sympy_plot_backends`.
+3. Explore the notebooks contained in the `tutorials` folder to see what the backends do.
+4. **Optional step**: open the file `spb/functions.py` and change the default backends. [Tutorial 3](tutorials/tutorial-3.set-default-backend.ipynb) helps you with that.
+5. **Optional step**: you may want to change default values of backend-specific options to better integrate the plots with your Jupyter theme. For example, currently Bokeh and Plotly's `theme` are set to dark themes. Mayavi and k3D `bg_color` are set to dark. [Tutorial 4](tutorials/tutorial-4.customizing-backends-before-installation.ipynb) helps you with that.
 6. Run the installer: `pip install .`
 
 ## Usage

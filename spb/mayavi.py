@@ -15,6 +15,13 @@ class MayaviBackend(MyBaseBackend):
             A tuple of RGB values from 0 to 1 specifying the background color.
             Default to (0.22, 0.24, 0.29).
         
+        fg_color : tuple
+            A tuple of RGB values from 0 to 1 specifying the foreground color,
+            that is the color of all text annotation labels (axes, orientation
+            axes, scalar bar labels). It should be sufficiently far from 
+            `bgcolor` to see the annotation texts.
+            Default to (1, 1, 1), which represent white color.
+        
         use_cm : boolean
             If True, apply a color map to the meshes/surface. If False, solid
             colors will be used instead. Default to True.
@@ -35,7 +42,8 @@ class MayaviBackend(MyBaseBackend):
             size = self.size
         self._fig = mlab.figure(
             size = size,
-            bgcolor = self._kwargs.get("bg_color", (0.22, 0.24, 0.29))
+            bgcolor = self._kwargs.get("bg_color", (0.22, 0.24, 0.29)),
+            fgcolor = self._kwargs.get("fg_color", (1, 1, 1))
         )
     
     def _process_series(self, series):
