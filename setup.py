@@ -22,6 +22,7 @@ setup(
     license='GNU GPL v3',
     packages = [
         'spb',
+        'spb.backends'
     ],
     include_package_data=True,
     zip_safe = False,

@@ -1,4 +1,4 @@
-from spb.base_backend import MyBaseBackend
+from spb.backends.base_backend import MyBaseBackend
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
 from bokeh.palettes import Category10

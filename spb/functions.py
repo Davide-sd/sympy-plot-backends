@@ -1,8 +1,8 @@
 # modify the following imports accordingly to your backend preference
-from spb.plotly import PB as TWO_D_B
-from spb.k3d import KB as THREE_D_B
+from spb.backends.plotly import PB as TWO_D_B
+from spb.backends.k3d import KB as THREE_D_B
 
-from sympy.plotting.plot import (
+from spb.plot import (
     plot as p,
     plot_parametric as pp,
     plot_contour as pc,
@@ -10,7 +10,7 @@ from sympy.plotting.plot import (
     plot3d_parametric_line as p3dpl,
     plot3d_parametric_surface as p3dps
 )
-from sympy.plotting.plot_implicit import plot_implicit as pi
+from spb.plot_implicit import plot_implicit as pi
 
 def plot(*args, **kwargs):
     if "backend" not in kwargs.keys():

@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 from itertools import cycle
-from sympy.plotting.plot import BaseBackend
+from spb.plot import BaseBackend
 from matplotlib import cm
 
 """

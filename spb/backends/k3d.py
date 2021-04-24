@@ -1,4 +1,4 @@
-from spb.base_backend import MyBaseBackend
+from spb.backends.base_backend import MyBaseBackend
 import k3d
 import numpy as np
 import warnings
