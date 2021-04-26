@@ -1,10 +1,10 @@
 # Sympy Plotting Backends
 
-This module contains a few backends that can be used with [SymPy](github.com/sympy/sympy) (version >= 1.9) as an alternative to the default Matplotlib backend. A backend represents the plotting library being used: it provides the necessary functionalities for quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots).
+This module contains a few backends that can be used with [SymPy](github.com/sympy/sympy) as an alternative to the default Matplotlib backend. A backend represents the plotting library being used: it provides the necessary functionalities for quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots).
 
 <div>
 <img src="imgs/bokeh.png" width=250/>
-<img src="imgs/plotly-2d.png" width=250/>
+<img src="imgs/plotly-vectors.png" width=250/>
 <img src="imgs/k3d-1.png" width=250/>
 <img src="imgs/k3d-2.png" width=250/>
 <img src="imgs/plotly-3d.png" width=250/>

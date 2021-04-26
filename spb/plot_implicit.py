@@ -29,8 +29,9 @@ Arithmetic. Master's thesis. University of Toronto, 1996
 """
 
 
-from .plot import Plot, _set_discretization_points
-from sympy.plotting.series import ImplicitSeries
+from spb.backends.plot import Plot
+from spb.series import ImplicitSeries, _set_discretization_points
+from spb.defaults import TWO_D_B
 from sympy.plotting.intervalmath import interval
 from sympy.core.relational import (Equality, GreaterThan, LessThan,
                 Relational)
@@ -258,6 +259,7 @@ def plot_implicit(expr, x_var=None, y_var=None, adaptive=True, depth=0,
                                     has_equality, adaptive, depth,
                                     points, line_color)
 
+    kwargs.setdefault('backend', TWO_D_B)
     #set the x and y limits
     kwargs['xlim'] = tuple(float(x) for x in var_start_end_x[1:])
     kwargs['ylim'] = tuple(float(y) for y in var_start_end_y[1:])

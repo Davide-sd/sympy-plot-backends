@@ -1,4 +1,4 @@
-from spb.backends.base_backend import MyBaseBackend
+from spb.backends.plot import BaseBackend
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
 from bokeh.palettes import Category10
@@ -14,7 +14,7 @@ import numpy as np
 # 1. list of colormaps to loop over for parametric plots
 # 
 
-class BokehBackend(MyBaseBackend):
+class BokehBackend(BaseBackend):
     """ A backend for plotting SymPy's symbolic expressions using Bokeh.
     Note: this implementation only implements 2D plots.
 

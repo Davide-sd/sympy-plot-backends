@@ -1,4 +1,4 @@
-from spb.backends.base_backend import MyBaseBackend
+from spb.backends.plot import BaseBackend
 import k3d
 import numpy as np
 import warnings
@@ -12,7 +12,7 @@ from matplotlib.tri import Triangulation
 def ij2k(cols, i, j):
     return  cols * i + j 
 
-class K3DBackend(MyBaseBackend):
+class K3DBackend(BaseBackend):
     """ A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
 
     Keyword Arguments

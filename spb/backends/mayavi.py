@@ -1,11 +1,11 @@
-from spb.backends.base_backend import MyBaseBackend
+from spb.backends.plot import BaseBackend
 from mayavi import mlab
 from IPython.core.display import display
 
 # TODO
 # 1. Implement save feature
 
-class MayaviBackend(MyBaseBackend):
+class MayaviBackend(BaseBackend):
     """ A backend for plotting SymPy's symbolic expressions using Mayavi.
 
     Keyword Arguments

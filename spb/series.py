@@ -3,11 +3,11 @@ from sympy import sympify
 from sympy.core.relational import (Equality, GreaterThan, LessThan,
                 Relational, StrictLessThan, StrictGreaterThan)
 from sympy.external import import_module
-from .experimental_lambdify import (
+from sympy.plotting.experimental_lambdify import (
     vectorized_lambdify, lambdify, experimental_lambdify)
 from sympy.utilities.exceptions import SymPyDeprecationWarning
 from sympy.core.function import arity
-from .intervalmath import interval
+from sympy.plotting.intervalmath import interval
 import warnings
 
 ##############################################################################
@@ -589,7 +589,6 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         self.nb_of_points_x = kwargs.get('nb_of_points_x', 50)
         self.nb_of_points_y = kwargs.get('nb_of_points_y', 50)
         self.surface_color = kwargs.get('surface_color', None)
-        self.label = kwargs.get('label', "")
         self._xlim = (self.start_x, self.end_x)
         self._ylim = (self.start_y, self.end_y)
 
@@ -639,7 +638,6 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.nb_of_points_u = kwargs.get('nb_of_points_u', 50)
         self.nb_of_points_v = kwargs.get('nb_of_points_v', 50)
         self.surface_color = kwargs.get('surface_color', None)
-        self.label = kwargs.get('label', "")
 
     def __str__(self):
         return ('parametric cartesian surface: (%s, %s, %s) for'

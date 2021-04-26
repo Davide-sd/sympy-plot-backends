@@ -1,13 +1,13 @@
 from sympy import Tuple
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import Boolean
-from sympy.plotting.series import (
+from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries,
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
-    ParametricSurfaceSeries, _set_discretization_points
+    ParametricSurfaceSeries, ImplicitSeries,
+    _set_discretization_points
 )
-from sympy.plotting.plot_implicit import ImplicitSeries
-from sympy.plotting.plot import (
+from spb.plot import (
     Plot, _plot_sympify, _is_range, _check_arguments    
 )
 
@@ -28,53 +28,60 @@ def _build_series(*args, **kwargs):
         "12": SurfaceOver2DRangeSeries,
     }
 
-    # TODO: this is an hack because _set_discretization_points is defined into
-    # plot.py. I would really like to send in the series classes to that method,
-    # however I can't because of circular inport with plot_implicit.py
-    # Need to separate plot.py code into several modules.
-    cls_to_pt = {
-        ImplicitSeries: "pt",
-        LineOver1DRangeSeries: "p",
-        Parametric2DLineSeries: "pp",
-        Parametric3DLineSeries: "p3dpl",
-        SurfaceOver2DRangeSeries: "p3d",
-        ParametricSurfaceSeries: "p3dps",
-    }
-
+    pt = kwargs.get("pt", None)
     args = _plot_sympify(args)
-    # select the expressions
-    res = [not (_is_range(a) or isinstance(a, str)) for a in args]
-    exprs = [a for a, b in zip(args, res) if b]
+    if pt is None:
+        # Automatic detection based on the number of free symbols and the number
+        # of expressions
 
-    skip_check = False
-    if isinstance(exprs[0], (Boolean, Relational)):
-        skip_check = True
-        npar = 9
-        nexpr = 9
-    if isinstance(exprs[0], (list, tuple, Tuple)):
-        fs = set().union(*[e.free_symbols for e in exprs[0]])
-        npar = len(fs)
-        nexpr = len(exprs[0])
+        # select the expressions
+        res = [not (_is_range(a) or isinstance(a, str)) for a in args]
+        exprs = [a for a, b in zip(args, res) if b]
+
+        skip_check = False
+        if isinstance(exprs[0], (Boolean, Relational)):
+            skip_check = True
+            npar = 9
+            nexpr = 9
+        if isinstance(exprs[0], (list, tuple, Tuple)):
+            fs = set().union(*[e.free_symbols for e in exprs[0]])
+            npar = len(fs)
+            nexpr = len(exprs[0])
+        else:
+            fs = set().union(*[e.free_symbols for e in exprs])
+            npar = len(fs)
+            nexpr = len(exprs)
+        
+        if not skip_check:
+            args = _check_arguments(args, nexpr, npar)[0]
+
+        k = str(nexpr) + str(npar)
+        if k not in mapping.keys():
+            raise ValueError(
+                "Don't know how to plot your expression:\n" +
+                "Received: {}\n".format(args) +
+                "Number of subexpressions: {}\n".format(nexpr) +
+                "Number of parameters: {}".format(npar)
+            )
     else:
-        fs = set().union(*[e.free_symbols for e in exprs])
-        npar = len(fs)
-        nexpr = len(exprs)
-    
-    if not skip_check:
-        args = _check_arguments(args, nexpr, npar)[0]
-
-    k = str(nexpr) + str(npar)
-    if k not in mapping.keys():
-        raise ValueError(
-            "Don't know how to plot your expression:\n" +
-            "Received: {}\n".format(args) +
-            "Number of subexpressions: {}\n".format(nexpr) +
-            "Number of parameters: {}".format(npar)
-        )
+        if pt == "p":
+            k = "11"
+        elif pt == "pp":
+            k = "21"
+        elif pt == "p3dl":
+            k = "31"
+        elif pt == "p3d":
+            k = "12"
+        elif pt == "p3ds":
+            k = "32"
+        else:
+            raise ValueError("Wrong `pt` value. Please, check the docstring " +
+                "of `get_plot_data` to list the possible values.")
     _cls = mapping[k]
-    kwargs = _set_discretization_points(kwargs, cls_to_pt[_cls])
+    kwargs = _set_discretization_points(kwargs, _cls)
     s = _cls(*args, **kwargs)
     return s
+
 
 def get_plot_data(*args, **kwargs):
     """ Return the numerical data associated to the a symbolic expression that
@@ -82,9 +89,22 @@ def get_plot_data(*args, **kwargs):
     the plotting functions exposed by sympy.plotting.plot or 
     sympy.plotting.plot_implicit, then numerical data will be returned.
 
-    Only one expression can be processed by this function. The shape of the
-    numerical data depends on the symbolic expression. Arguments and keywords
-    have the same format used in other plotting functions.
+    Only one expression at a time can be processed by this function.
+    The shape of the numerical data depends have the same format used in other
+    plotting functions.
+
+    Keyword Arguments
+    =================
+
+        pt : str
+            Specify which kind of data you would like to obtain. Default value
+            is None, indicating the function will use automatic detection.
+            Possible values are:
+                "p": to specify a line plot.
+                "pp": to specify a 2d parametric line plot.
+                "p3dl": to specify a 3d parametric line plot.
+                "p3d": to specify a 3d plot.
+                "p3s": to specify a 3d parametric surface plot.
 
     Examples
     ========

@@ -1,11 +1,24 @@
-from spb.backends.base_backend import MyBaseBackend
+from spb.backends.plot import BaseBackend
 import plotly.graph_objects as go
 
-class PlotlyBackend(MyBaseBackend):
+class PlotlyBackend(BaseBackend):
     """ A backend for plotting SymPy's symbolic expressions using Plotly.
 
     Keyword Arguments
     =================
+
+        aspect_ratio : str
+            Default to "auto". Possible values:
+            "equal": sets equal spacing on the axis of a 2D plot.
+            "cube", "auto" for 3D plots.
+        
+        contours_coloring : str
+            Default to None, meaning discrete fill colors. Can be:
+            "lines": only plot contour lines.
+            "heatmap": use a smooth coloring.
+        
+        contours_labels : boolean
+            Shows/Hide contours labels. Default to False.
 
         theme : str
             Set the theme. Default to "plotly_dark". Find more Plotly themes at
@@ -39,6 +52,8 @@ class PlotlyBackend(MyBaseBackend):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._fig = go.Figure()
+        self._process_series(self._series)
+        self._update_layout()
     
     def _process_series(self, series):
         cm = iter(self.colormaps)
@@ -109,7 +124,8 @@ class PlotlyBackend(MyBaseBackend):
                         name = s.label,
                         showscale = self.legend and show_3D_colorscales,
                         colorbar = dict(
-                            x = 1 + 0.1 * ii
+                            x = 1 + 0.1 * ii,
+                            title = s.label,
                         ),
                         colorscale = next(cm) if self._use_cm else colorscale
 
@@ -143,7 +159,17 @@ class PlotlyBackend(MyBaseBackend):
                 xx, yy, zz = s.get_data()
                 xx = xx[0, :]
                 yy = yy[:, 0]
-                self._fig.add_trace(go.Contour(x = xx, y = yy, z = zz))
+                self._fig.add_trace(go.Contour(x = xx, y = yy, z = zz,
+                        contours = dict(
+                            coloring = self._kwargs.get("contours_coloring", 
+                                            None),
+                            showlabels = self._kwargs.get("contours_labels", 
+                                            False),
+                        ),
+                        colorbar = dict(
+                            title = s.label,
+                            titleside = 'right')
+                        ))
             else:
                 raise NotImplementedError
         
@@ -161,6 +187,7 @@ class PlotlyBackend(MyBaseBackend):
                 showgrid = self.axis, # thin lines in the background
                 zeroline = self.axis, # thick line at x=0
                 visible = self.axis,  # numbers below
+                constrain = 'domain'
             ),
             yaxis = dict(
                 title = "" if not self.ylabel else self.ylabel,
@@ -168,7 +195,8 @@ class PlotlyBackend(MyBaseBackend):
                 type = self.yscale,
                 showgrid = self.axis, # thin lines in the background
                 zeroline = self.axis, # thick line at x=0
-                visible = self.axis,  # numbers below
+                visible = self.axis,  # numbers below,
+                scaleanchor = "x" if self.aspect_ratio == "equal" else None
             ),
             margin = dict(
                 t = 50,
@@ -201,13 +229,12 @@ class PlotlyBackend(MyBaseBackend):
                     zeroline = self.axis, # thick line at x=0
                     visible = self.axis,  # numbers below
                 ),
-                aspectmode = self.aspect_ratio
+                aspectmode = (self.aspect_ratio if self.aspect_ratio != "equal"
+                                else "auto")
             )
         )
     
     def show(self):
-        self._process_series(self._series)
-        self._update_layout()
         self._fig.show()
 
     def save(self, path, **kwargs):
