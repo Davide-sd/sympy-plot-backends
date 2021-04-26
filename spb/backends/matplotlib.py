@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from sympy.external import import_module
-from spb.backends.plot import BaseBackend
+from spb.backends.base_backend import BaseBackend
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
@@ -360,3 +360,5 @@ class MatplotlibBackend(BaseBackend):
         """ Close the current plot.
         """
         self.plt.close(self._fig)
+
+MB = MatplotlibBackend

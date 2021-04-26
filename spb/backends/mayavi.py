@@ -1,4 +1,4 @@
-from spb.backends.plot import BaseBackend
+from spb.backends.base_backend import BaseBackend
 from mayavi import mlab
 from IPython.core.display import display
 

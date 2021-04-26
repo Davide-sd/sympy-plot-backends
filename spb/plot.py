@@ -25,7 +25,7 @@ every time you call ``show()`` and the old one is left to the garbage collector.
 
 from sympy import sympify, Expr, Tuple, Dummy, Symbol
 
-from spb.backends.plot import Plot
+from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
 
 # N.B.
@@ -38,6 +38,14 @@ from spb.series import (
     ParametricSurfaceSeries, ContourSeries, BaseSeries,
     _set_discretization_points
 )
+
+def set_matplotlib_backend():
+    """ Set MatplotlibBackend as the plotting backend for tests.
+    """
+    from spb.backends.matplotlib import MB
+    global TWO_D_B, THREE_D_B
+    TWO_D_B = MB
+    THREE_D_B = MB
 
 ####New API for plotting module ####
 

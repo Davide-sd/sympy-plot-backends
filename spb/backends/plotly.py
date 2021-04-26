@@ -1,4 +1,4 @@
-from spb.backends.plot import BaseBackend
+from spb.backends.base_backend import BaseBackend
 import plotly.graph_objects as go
 
 class PlotlyBackend(BaseBackend):

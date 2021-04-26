@@ -29,7 +29,7 @@ Arithmetic. Master's thesis. University of Toronto, 1996
 """
 
 
-from spb.backends.plot import Plot
+from spb.backends.base_backend import Plot
 from spb.series import ImplicitSeries, _set_discretization_points
 from spb.defaults import TWO_D_B
 from sympy.plotting.intervalmath import interval
@@ -42,6 +42,13 @@ from sympy.polys.polyutils import _sort_gens
 from sympy.utilities.decorator import doctest_depends_on
 from sympy.utilities.iterables import flatten
 import warnings
+
+def set_matplotlib_backend():
+    """ Set MatplotlibBackend as the plotting backend for tests.
+    """
+    from spb.backends.matplotlib import MB
+    global TWO_D_B
+    TWO_D_B = MB
 
 @doctest_depends_on(modules=('matplotlib',))
 def plot_implicit(expr, x_var=None, y_var=None, adaptive=True, depth=0,

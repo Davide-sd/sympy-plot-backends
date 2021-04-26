@@ -1,4 +1,4 @@
-from spb.backends.plot import BaseBackend
+from spb.backends.base_backend import BaseBackend
 import k3d
 import numpy as np
 import warnings
