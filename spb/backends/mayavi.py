@@ -1,11 +1,11 @@
-from spb.backends.base_backend import BaseBackend
+from spb.backends.base_backend import Plot
 from mayavi import mlab
 from IPython.core.display import display
 
 # TODO
 # 1. Implement save feature
 
-class MayaviBackend(BaseBackend):
+class MayaviBackend(Plot):
     """ A backend for plotting SymPy's symbolic expressions using Mayavi.
 
     Keyword Arguments
@@ -32,6 +32,11 @@ class MayaviBackend(BaseBackend):
     colormaps = ['jet', 'autumn', 'Spectral', 'CMRmap', 'YlGnBu',
           'spring', 'summer', 'coolwarm', 'viridis', 'winter']
     
+    def __new__(cls, *args, **kwargs):
+        # Since Plot has its __new__ method, this will prevent infinite
+        # recursion
+        return object.__new__(cls)
+        
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self._get_mode() == 0:

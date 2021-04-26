@@ -14,7 +14,7 @@ from spb.plot import (
     _plot_sympify, _check_arguments, _create_ranges,
     set_matplotlib_backend
 )
-from spb.backends.base_backend import Plot, PlotGrid, BaseBackend
+from spb.backends.base_backend import Plot, PlotGrid
 from spb.backends.matplotlib import unset_show, MatplotlibBackend
 from sympy.testing.pytest import skip, raises, warns
 from sympy.utilities import lambdify as lambdify_
@@ -27,18 +27,26 @@ matplotlib = import_module(
     'matplotlib', min_module_version='1.1.0', catch=(RuntimeError,))
 
 
-class DummyBackendNotOk(BaseBackend):
+class DummyBackendNotOk(Plot):
     """ Used to verify if users can create their own backends.
     This backend is meant to raise NotImplementedError for methods `show`,
     `save`, `close`.
     """
-    pass
+    def __new__(cls, *args, **kwargs):
+        # Since Plot has its __new__ method, this will prevent infinite
+        # recursion
+        return object.__new__(cls)
 
 
-class DummyBackendOk(BaseBackend):
+class DummyBackendOk(Plot):
     """ Used to verify if users can create their own backends.
     This backend is meant to pass all tests.
     """
+    def __new__(cls, *args, **kwargs):
+        # Since Plot has its __new__ method, this will prevent infinite
+        # recursion
+        return object.__new__(cls)
+        
     def show(self):
         pass
 
@@ -499,16 +507,6 @@ def test_issue_15265():
 
     raises(ValueError,
         lambda: plot(eqn, xlim=(-1, 1), ylim=(-1, S.Infinity)))
-
-
-# def test_empty_Plot():
-#     if not matplotlib:
-#         skip("Matplotlib not the default backend")
-
-#     # No exception showing an empty plot
-#     plot()
-#     p = Plot()
-#     p.show()
 
 
 def test_issue_17405():

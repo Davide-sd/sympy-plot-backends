@@ -1,3 +1,32 @@
+"""
+-------------------------------------------------------------
+|  keyword arg  | Matplolib | Bokeh | Plotly | Mayavi | K3D |
+-------------------------------------------------------------
+|     xlim      |     Y     |   Y   |    Y   |    N   |  N  |
+|     ylim      |     Y     |   Y   |    Y   |    N   |  N  |
+|     zlim      |     Y     |   N   |    Y   |    N   |  N  |
+|    xscale     |     Y     |   Y   |    Y   |    N   |  N  |
+|    yscale     |     Y     |   Y   |    Y   |    N   |  N  |
+|    zscale     |     Y     |   N   |    Y   |    N   |  N  |
+|     axis      |     Y     |   Y   |    Y   |    Y   |  Y  |
+| aspect_ratio  |     Y     |   N   |    N   |    N   |  N  |
+|   autoscale   |     Y     |   N   |    N   |    N   |  N  |
+|    margin     |     Y     |   N   |    N   |    N   |  N  |
+|     size      |     Y     |   Y   |    Y   |    Y   |  Y  |
+|     title     |     Y     |   Y   |    Y   |    Y   |  Y  |
+|    xlabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
+|    ylabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
+|    zlabel     |     Y     |   N   |    Y   |    Y   |  Y  |
+|  line_color   |     Y     |   N   |    N   |    N   |  N  |
+| surface_color |     Y     |   N   |    N   |    N   |  N  |
+-------------------------------------------------------------
+|       2D      |     Y     |   Y   |    Y   |    N   |  N  |
+|       3D      |     Y     |   N   |    Y   |    Y   |  Y  |
+| Latex Support |     Y     |   N   |    Y   |    N   |  Y  |
+| Save Picture  |     Y     |   Y   |    Y   |    Y   |  Y  |
+-------------------------------------------------------------
+"""
+
 import warnings
 import numpy as np
 from itertools import cycle
@@ -5,57 +34,59 @@ from matplotlib import cm
 from sympy.utilities.iterables import is_sequence
 from spb.series import BaseSeries
 
-##############################################################################
-# The public interface
-##############################################################################
-
-
 class Plot:
-    """The base class of the plotting module.
+    """Base class for all backends. A backend represents the plotting library,
+    which implements the necessary functionalities in order to use SymPy
+    plotting functions.
 
-    Explanation
-    ===========
+    How the plotting module works:
 
-    This class permits the plotting of sympy expressions using numerous
-    backends (matplotlib, textplot, etc).
+    1. Whenever a plotting function is called, the provided expressions are
+        processed and a list of instances of the `BaseSeries` class is created,
+        containing the necessary information to plot the expressions (eg the
+        expression, ranges, series name, ...). Eventually, these objects will
+        generate the numerical data to be plotted.
+    2. A Plot object is instantiated, which stores the list of series and the
+        main attributes of the plot (eg axis labels, title, ...).
+    3. The backend will then loops through each series object to generate and
+        plot the numerical data and set the axis labels, title, ..., according
+        to the provided values.
 
-    The figure can contain an arbitrary number of plots of sympy expressions,
-    lists of coordinates of points, etc. Plot exposes the attribute `series`
-    that contains all data series to be plotted (expressions for lines or
-    surfaces, lists of points, etc (all subclasses of BaseSeries)). Those data
-    series are instances of classes not imported by ``from sympy import *``.
+    The backend should check if it supports the data series that it's given.
+    Please, explore the `MatplotlibBackend` source code to understand how a 
+    backend should be coded.
 
-    The customization of the figure is on two levels. Global options that
-    concern the figure as a whole (eg title, xlabel, scale, etc) and
-    per-data series options (eg name) and aesthetics (eg. color, point shape,
-    line type, etc.).
+    Methods
+    =======
 
-    The difference between options and aesthetics is that an aesthetic can be
-    a function of the coordinates (or parameters in a parametric plot). The
-    supported values for an aesthetic are:
-    - None (the backend uses default values)
-    - a constant
-    - a function of one variable (the first coordinate or parameter)
-    - a function of two variables (the first and second coordinate or
-    parameters)
-    - a function of three variables (only in nonparametric 3D plots)
-    Their implementation depends on the backend so they may not work in some
-    backends.
+    In order to be used by SymPy plotting functions, a backend must implement
+    the following methods:
 
-    If the plot is parametric and the arity of the aesthetic function permits
-    it the aesthetic is calculated over parameters and not over coordinates.
-    If the arity does not permit calculation over parameters the calculation is
-    done over coordinates.
+    * `show(self)`: used to loop over the data series, generate the numerical
+        data, plot it and set the axis labels, title, ...
+    * save(self, path): used to save the current plot to the specified file
+        path.
+    * close(self): used to close the current plot backend (note: some plotting
+        library doesn't support this functionality. In that case, just raise a
+        warning).
+    
+    Also, the following attributes are required:
 
-    Only cartesian coordinates are supported for the moment, but you can use
-    the parametric plots to plot in polar, spherical and cylindrical
-    coordinates.
+    * self._fig: (instance attribute) it stores the backend-specific plot
+        object/s, which can be retrieved with the Plot.fig attribute. These
+        objects can then be used to further customize the resulting plot, using
+        backend-specific commands. For example, MatplotlibBackend stores a tuple
+        (figure, axes).
+    
+    * support_plotgrid: (class attribute, boolean) if True it means the backend
+        is able to generate `PlotGrid` objects. Please, look at 
+        `MatplotlibBackend` as an example of a backend supporting `PlotGrid`.
 
+    
     The arguments for the constructor Plot must be subclasses of BaseSeries.
 
-    Any global option can be specified as a keyword argument.
-
-    The global options for a figure are:
+    Any global option can be specified as a keyword argument. The global options
+    for a figure are:
 
     - title : str
     - xlabel : str
@@ -72,18 +103,16 @@ class Plot:
     - aspect_ratio : tuple of two floats or {'auto'}
     - autoscale : bool
     - margin : float in [0, 1]
-    - backend : {'default', 'matplotlib', 'text'} or a subclass of BaseBackend
+    - backend : a subclass of Plot
     - size : optional tuple of two floats, (width, height); default: None
 
-    The per data series options and aesthetics are:
-    There are none in the base series. See below for options for subclasses.
+    Note that a backend migh not use some option!
 
-    Some data series support additional aesthetics or options:
+    Some data series support additional aesthetics or options. However, a 
+    backend might not be able to use them. In particular:
 
     ListSeries, LineOver1DRangeSeries, Parametric2DLineSeries,
     Parametric3DLineSeries support the following:
-
-    Aesthetics:
 
     - line_color : string, or float, or function, optional
         Specifies the color for the plot, which depends on the backend being
@@ -99,13 +128,25 @@ class Plot:
 
         Note that by setting line_color, it would be applied simultaneously
         to all the series.
+    
+    SurfaceOver2DRangeSeries, ParametricSurfaceSeries support the following:
 
-    options:
+    - syrface_color : string, or float, or function, optional
+        Identical to line_color, but it applied to the surface.
+    
+    See also
+    ========
 
-    - label : str
-    - steps : bool
-    - integers_only : bool
+    MatplotlibBackend, PlotlyBackend, BokehBackend, K3DBackend, MayaviBackend
     """
+
+    # Set it to True in the subclasses if they are able to generate plot grids.
+    # Also, clearly states in the docstring of the backend if it supports
+    # plotgrids or not
+    support_plotgrid = False
+
+    # child backends can provide a list of color maps to render surfaces.
+    colormaps = []
 
     def __new__(cls, *args, **kwargs):
         backend = cls._get_backend(kwargs)
@@ -113,15 +154,6 @@ class Plot:
 
     @classmethod
     def _get_backend(cls, kwargs):
-        # backend = kwargs.get("backend", "matplotlib")
-        # if isinstance(backend_kw, str):
-        #     backend = plot_backends[backend_kw]
-        # elif (type(backend_kw) == type) and issubclass(backend_kw, cls):
-        #     backend = backend_kw
-        # else:
-        #     raise TypeError(
-        #         "backend must be either a string or a subclass of Plot")
-        # return backend
         backend = kwargs.get("backend", "matplotlib")
         if not ((type(backend) == type) and issubclass(backend, cls)):
             raise TypeError(
@@ -188,6 +220,81 @@ class Plot:
                 self._series.append(p.series)
         self.nrows = kwargs.get("nrows", 1)
         self.ncols = kwargs.get("ncols", 1)
+    
+        # make custom keywords available inside self
+        self._kwargs = kwargs
+
+        # The user can choose to use the standard color map loop, or set/provide
+        # a solid color loop (for the surface color).
+        self._use_cm = kwargs.get("use_cm", True)
+        # infinite loop iterator over the provided color maps
+        self._iter_colormaps = cycle(self.colormaps)
+        # generate a list of RGB tuples (with values from 0 to 1) starting
+        # from matplotlib's tab10 color map. This can be used instead of looping
+        # through the colormaps
+        self._iter_colorloop = cycle([cm.tab10(i)[:3] for i in range(0, 10)])
+    
+    def set_color_loop(self, cloop):
+        """ Set the default color loop to use when use_cm=False. It must
+        be a list of tuple (R, G, B) where 0 <= R,G,B <= 1.
+        """
+        if not isinstance(cloop, (tuple, list)):
+            raise TypeError(
+                    "cloop must be a list of RGB tuples with values " +
+                    "from 0 to 1."
+                )
+        self._iter_colorloop = cloop
+
+    def _line_length(self, x, y, z=None, start=None, end=None):
+        """ Compute the cumulative length of the line.
+        
+        Parameters
+        ==========
+            
+            x : numpy array of x-coordinates
+            y : numpy array of y-coordinates
+            z : numpy array of z-coordinates (optional)
+        """
+        def diff(x1):
+            x2 = np.roll(x1, 1)
+            x2[0] = x1[0]
+            return x1 - x2
+        
+        if z is not None:
+            z = np.zeros_like(x)
+            
+        length = np.sqrt(diff(x - x[0])**2 + diff(y - y[0])**2 + 
+                    diff(z - z[0])**2)
+        length = np.cumsum(length)
+        length /= np.max(length)
+        length = length * (end - start) + start
+        return length
+    
+    def _get_mode(self):
+        """ Verify which environment is used to run the code.
+
+        Returns
+        =======
+            mode : int
+                0 - the code is running on Jupyter Notebook or qtconsole
+                1 - terminal running IPython
+                2 - other type (?)
+                3 - probably standard Python interpreter
+
+        # TODO: detect if we are running in Jupyter Lab.
+        """
+        
+        # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
+        try:
+            shell = get_ipython().__class__.__name__
+            if shell == 'ZMQInteractiveShell':
+                return 0   # Jupyter notebook or qtconsole
+            elif shell == 'TerminalInteractiveShell':
+                return 1  # Terminal running IPython
+            else:
+                return 2  # Other type (?)
+        except NameError:
+            return 3      # Probably standard Python interpreter
 
     @property
     def fig(self):
@@ -487,182 +594,3 @@ class PlotGrid:
                       for i, plot in enumerate(self.args)]
 
         return 'PlotGrid object containing:\n' + '\n'.join(plot_strs)
-
-
-"""
--------------------------------------------------------------
-|  keyword arg  | Matplolib | Bokeh | Plotly | Mayavi | K3D |
--------------------------------------------------------------
-|     xlim      |     Y     |   Y   |    Y   |    N   |  N  |
-|     ylim      |     Y     |   Y   |    Y   |    N   |  N  |
-|     zlim      |     Y     |   N   |    Y   |    N   |  N  |
-|    xscale     |     Y     |   Y   |    Y   |    N   |  N  |
-|    yscale     |     Y     |   Y   |    Y   |    N   |  N  |
-|    zscale     |     Y     |   N   |    Y   |    N   |  N  |
-|     axis      |     Y     |   Y   |    Y   |    Y   |  Y  |
-| aspect_ratio  |     Y     |   N   |    N   |    N   |  N  |
-|   autoscale   |     Y     |   N   |    N   |    N   |  N  |
-|    margin     |     Y     |   N   |    N   |    N   |  N  |
-|     size      |     Y     |   Y   |    Y   |    Y   |  Y  |
-|     title     |     Y     |   Y   |    Y   |    Y   |  Y  |
-|    xlabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
-|    ylabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
-|    zlabel     |     Y     |   N   |    Y   |    Y   |  Y  |
-|  line_color   |     Y     |   N   |    N   |    N   |  N  |
-| surface_color |     Y     |   N   |    N   |    N   |  N  |
--------------------------------------------------------------
-|       2D      |     Y     |   Y   |    Y   |    N   |  N  |
-|       3D      |     Y     |   N   |    Y   |    Y   |  Y  |
-| Latex Support |     Y     |   N   |    Y   |    N   |  Y  |
-| Save Picture  |     Y     |   Y   |    Y   |    Y   |  Y  |
--------------------------------------------------------------
-"""
-
-class BaseBackend(Plot):
-    """Base class for all backends. A backend represents the plotting library,
-    which implements the necessary functionalities in order to use SymPy
-    plotting functions.
-
-    How the plotting module works:
-
-    1. Whenever a plotting function is called, the provided expressions are
-        processed and a list of instances of the `BaseSeries` class is created,
-        containing the necessary information to plot the expressions (eg the
-        expression, ranges, series name, ...). Eventually, these objects will
-        generate the numerical data to be plotted.
-    2. A Plot object is instantiated, which stores the list of series and the
-        main attributes of the plot (eg axis labels, title, ...). Note that a
-        instance of BaseBackend is also an instance of Plot.
-    3. When the "show" command is executed, the backend will loops through each
-        series object to generate and plot the numerical data and set the axis
-        labels, title, ..., according to the provided values.
-
-    The backend should check if it supports the data series that it's given
-    (eg TextBackend supports only LineOver1DRange).
-
-    It's the backend responsibility to know how to use the class of data series
-    that it's given. Please, explore the `MatplotlibBackend` source code to
-    understand how a backend should be coded.
-
-    Methods
-    =======
-
-    In order to be used by SymPy plotting functions, a backend must implement
-    the following methods:
-
-    * `show(self)`: used to loop over the data series, generate the numerical
-        data, plot it and set the axis labels, title, ...
-    * save(self, path): used to save the current plot to the specified file
-        path.
-    * close(self): used to close the current plot backend (note: some plotting
-        library doesn't support this functionality. In that case, just raise a
-        warning).
-    
-    Also, the following attribute is required:
-
-    * self._fig: (instance attribute) it stores the backend-specific plot
-        object/s, which can be retrieved with the Plot.fig attribute. These
-        objects can then be used to further customize the resulting plot, using
-        backend-specific commands. For example, MatplotlibBackend stores a tuple
-        (figure, axes).
-    
-    * support_plotgrid: (class attribute, boolean) if True it means the backend
-        is able to generate `PlotGrid` objects. Please, look at 
-        `MatplotlibBackend` as an example of a backend supporting `PlotGrid`.
-
-    See also
-    ========
-
-    MatplotlibBackend
-    """
-
-    # Set it to True in the subclasses if they are able to generate plot grids.
-    # Also, clearly states in the docstring of the backend if it supports
-    # plotgrids or not
-    support_plotgrid = False
-
-    # child backends can provide a list of color maps to render surfaces.
-    colormaps = []
-
-    def __new__(cls, *args, **kwargs):
-        # This method is needed since the parent class Plot also implements its
-        # __new__ method to provide the backend choice.
-        # Without BaseBackend.__new__ there would be infinite recursion.
-        return object.__new__(cls)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # make custom keywords available inside self
-        self._kwargs = kwargs
-
-        # The user can choose to use the standard color map loop, or set/provide
-        # a solid color loop.
-        self._use_cm = kwargs.get("use_cm", True)
-        # infinite loop iterator over the provided color maps
-        self._iter_colormaps = cycle(self.colormaps)
-        # generate a list of RGB tuples (with values from 0 to 1) starting
-        # from matplotlib's tab10 color map. This can be used instead of looping
-        # through the colormaps
-        self._iter_colorloop = cycle([cm.tab10(i)[:3] for i in range(0, 10)])
-    
-    def set_color_loop(self, cloop):
-        """ Set the default color loop to use when use_cm=False. It must
-        be a list of tuple (R, G, B) where 0 <= R,G,B <= 1.
-        """
-        if not isinstance(cloop, (tuple, list)):
-            raise TypeError(
-                    "cloop must be a list of RGB tuples with values " +
-                    "from 0 to 1."
-                )
-        self._iter_colorloop = cloop
-
-    def _line_length(self, x, y, z=None, start=None, end=None):
-        """ Compute the cumulative length of the line.
-        
-        Parameters
-        ==========
-            
-            x : numpy array of x-coordinates
-            y : numpy array of y-coordinates
-            z : numpy array of z-coordinates (optional)
-        """
-        def diff(x1):
-            x2 = np.roll(x1, 1)
-            x2[0] = x1[0]
-            return x1 - x2
-        
-        if z is not None:
-            z = np.zeros_like(x)
-            
-        length = np.sqrt(diff(x - x[0])**2 + diff(y - y[0])**2 + 
-                    diff(z - z[0])**2)
-        length = np.cumsum(length)
-        length /= np.max(length)
-        length = length * (end - start) + start
-        return length
-    
-    def _get_mode(self):
-        """ Verify which environment is used to run the code.
-
-        Returns
-        =======
-            mode : int
-                0 - the code is running on Jupyter Notebook or qtconsole
-                1 - terminal running IPython
-                2 - other type (?)
-                3 - probably standard Python interpreter
-
-        # TODO: detect if we are running in Jupyter Lab.
-        """
-        
-        # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
-        try:
-            shell = get_ipython().__class__.__name__
-            if shell == 'ZMQInteractiveShell':
-                return 0   # Jupyter notebook or qtconsole
-            elif shell == 'TerminalInteractiveShell':
-                return 1  # Terminal running IPython
-            else:
-                return 2  # Other type (?)
-        except NameError:
-            return 3      # Probably standard Python interpreter

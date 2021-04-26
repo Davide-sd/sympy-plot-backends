@@ -1,7 +1,7 @@
-from spb.backends.base_backend import BaseBackend
+from spb.backends.base_backend import Plot
 import plotly.graph_objects as go
 
-class PlotlyBackend(BaseBackend):
+class PlotlyBackend(Plot):
     """ A backend for plotting SymPy's symbolic expressions using Plotly.
 
     Keyword Arguments
@@ -49,6 +49,11 @@ class PlotlyBackend(BaseBackend):
         "#6f969e", "#aa692c", "#60ccc0", "#f2a45d", "#f2a45d"
     ]
 
+    def __new__(cls, *args, **kwargs):
+        # Since Plot has its __new__ method, this will prevent infinite
+        # recursion
+        return object.__new__(cls)
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._fig = go.Figure()

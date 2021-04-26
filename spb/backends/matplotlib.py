@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from sympy.external import import_module
-from spb.backends.base_backend import BaseBackend
+from spb.backends.base_backend import Plot
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
@@ -37,12 +37,17 @@ def _matplotlib_list(interval_list):
 
 # Don't have to check for the success of importing matplotlib in each case;
 # we will only be using this backend if we can successfully import matploblib
-class MatplotlibBackend(BaseBackend):
+class MatplotlibBackend(Plot):
     """ This class implements the functionalities to use Matplotlib with SymPy
     plotting functions.
     """
     # this backend supports PlotGrid
     support_plotgrid = True
+
+    def __new__(cls, *args, **kwargs):
+        # Since Plot has its __new__ method, this will prevent infinite
+        # recursion
+        return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
         # set global options like title, axis labels, ...

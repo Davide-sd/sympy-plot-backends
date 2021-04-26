@@ -1,4 +1,4 @@
-from spb.backends.base_backend import BaseBackend
+from spb.backends.base_backend import Plot
 import k3d
 import numpy as np
 import warnings
@@ -12,7 +12,7 @@ from matplotlib.tri import Triangulation
 def ij2k(cols, i, j):
     return  cols * i + j 
 
-class K3DBackend(BaseBackend):
+class K3DBackend(Plot):
     """ A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
 
     Keyword Arguments
@@ -42,6 +42,11 @@ class K3DBackend(BaseBackend):
         k3d.paraview_color_maps.Nic_Edge, k3d.paraview_color_maps.Haze
     ]
     
+    def __new__(cls, *args, **kwargs):
+        # Since Plot has its __new__ method, this will prevent infinite
+        # recursion
+        return object.__new__(cls)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self._get_mode() != 0:
