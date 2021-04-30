@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from sympy import sympify
+from sympy import sympify, Tuple
 from sympy.core.relational import (Equality, GreaterThan, LessThan,
                 Relational, StrictLessThan, StrictGreaterThan)
 from sympy.external import import_module
@@ -7,8 +7,11 @@ from sympy.plotting.experimental_lambdify import (
     vectorized_lambdify, lambdify, experimental_lambdify)
 from sympy.utilities.exceptions import SymPyDeprecationWarning
 from sympy.core.function import arity
+from sympy.core.compatibility import is_sequence
 from sympy.plotting.intervalmath import interval
+from spb.utils import _unpack_args, get_lambda
 import warnings
+import numpy as np
 
 ##############################################################################
 # Data Series
@@ -72,6 +75,9 @@ class BaseSeries:
     # The calculation of aesthetics expects:
     #   - get_parameter_points returning one or two np.arrays (1D or 2D)
     # used for calculation aesthetics
+
+    is_interactive = False
+    # An interactive series can update its data.
 
     def __init__(self):
         super().__init__()
@@ -941,3 +947,128 @@ def _set_discretization_points(kwargs, pt):
         if "n" in kwargs.keys():
             kwargs["points"] = kwargs["n"]
     return kwargs
+
+class InteractiveSeries(BaseSeries):
+    is_interactive = True
+
+    def __init__(self, *args, **kwargs):
+        # free symbols of the parameters
+        fs_params = kwargs.get("fs_params", set())
+        # number of discretization points
+        n = kwargs.get("n", 300)
+
+        exprs, ranges, label = _unpack_args(*args)
+        self.label = label
+        nexpr, npar = len(exprs), len(ranges)
+
+        if nexpr == 0:
+            raise ValueError("At least one expression must be provided." +
+                "\nReceived: {}".format(args))
+        if npar > 2:
+            raise ValueError(
+                    "Depending on the backend, only 2D and 3D plots are " +
+                    "supported (1 or 2 ranges at most). The provided " +
+                    "expressions uses {} ranges.".format(npar))
+
+        # set series attributes
+        if (nexpr == 1) and (npar == 1):
+            self.is_2Dline = True
+        elif (nexpr == 2) and (npar == 1):
+            self.is_2Dline = True
+            self.is_parametric = True
+            # necessary to draw a gradient line with some backends
+            self.var = ranges[0][0]
+            self.start = float(ranges[0][1])
+            self.end = float(ranges[0][2])
+        elif (nexpr == 3) and (npar == 1):
+            self.is_3Dline = True
+            self.is_parametric = True
+            # necessary to draw a gradient line with some backends
+            self.var = ranges[0][0]
+            self.start = float(ranges[0][1])
+            self.end = float(ranges[0][2])
+        elif (nexpr == 1) and (npar == 2):
+            self.is_3Dsurface = True
+        elif (nexpr == 3) and (npar == 2):
+            self.is_3Dsurface = True
+            self.is_parametric = True
+
+        # from the expression's free symbols, remove the ones used in
+        # the parameters and the ranges
+        fs = set().union(*[e.free_symbols for e in exprs])
+        fs = fs.difference(fs_params).difference([r[0] for r in ranges])
+        if len(fs) > 0:
+            raise ValueError(
+                "Incompatible expression and parameters.\n" +
+                "Expression: {}\n".format(args) +
+                "Specify what these symbols represent: {}\n".format(fs) +
+                "Are they ranges or parameters?")
+        
+        # if we are dealing with parametric expressions, we pack them into a
+        # Tuple so that it can be lambdified
+        expr = exprs[0] if len(exprs) == 1 else Tuple(*exprs, sympify=False)
+        # generate the lambda function
+        signature, f = get_lambda(expr)
+        self.signature = signature
+        self.function = f
+
+        # Discretize the ranges. In the following dictionary self.ranges:
+        #    key: symbol associate to this particular range
+        #    val: the numpy array representing the discretization
+        discr_symbols = []
+        discretizations = []
+        for r in ranges:
+            discr_symbols.append(r[0])
+            discretizations.append(np.linspace(float(r[1]), float(r[2]), n))
+        
+        if len(ranges) == 1:
+            # 2D or 3D lines
+            self.ranges = {k: v for k, v in zip(discr_symbols, discretizations)}
+        else:
+            # surfaces, needs mesh grids
+            meshes = np.meshgrid(*discretizations)
+            self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
+        
+        # this will be used in update_data
+        self._discret_shape = discretizations[0].shape
+        
+        self.data = []
+
+    def update_data(self, params):
+        """ Update the data based on the values of the parameters.
+
+        Parameters
+        ==========
+
+            params : dict
+                key: symbol associated to the parameter
+                val: the value
+
+        """
+        args = []
+        for s in self.signature:
+            if s in params.keys():
+                args.append(params[s])
+            else:
+                args.append(self.ranges[s])
+        
+        results = self.function(*args)
+
+        if ((self.is_3Dsurface and (not self.is_parametric)) or
+            (self.is_2Dline and (not self.is_parametric))):
+            # in the case of single-expression 2D lines of 3D surfaces
+            results = [*self.ranges.values(), results]
+    
+        if (self.is_parametric and (self.is_3Dsurface or self.is_3Dline or 
+                self.is_2Dline)):
+            # in this case, some components of the result might be a scalar.
+            # need to convert them to the appropriate shape
+            results = list(results)
+            for i, r in enumerate(results):
+                if not is_sequence(r):
+                    results[i] = r * np.ones(self._discret_shape)
+        
+        self.data = results
+        
+    def get_data(self):
+        return self.data

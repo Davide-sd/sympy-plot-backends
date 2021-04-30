@@ -11,9 +11,10 @@ from sympy.external import import_module
 from spb.plot import (
     plot, plot_parametric, plot3d_parametric_line, plot3d,
     plot3d_parametric_surface, plot_contour,
-    _plot_sympify, _check_arguments, _create_ranges,
+    _check_arguments, _create_ranges,
     set_matplotlib_backend
 )
+from spb.utils import _plot_sympify
 from spb.backends.base_backend import Plot, PlotGrid
 from spb.backends.matplotlib import unset_show, MatplotlibBackend
 from sympy.testing.pytest import skip, raises, warns

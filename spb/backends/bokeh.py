@@ -47,6 +47,9 @@ class BokehBackend(Plot):
 
         if self._get_mode() == 0:
             output_notebook()
+        
+        # infinity cycler over 10 colors
+        self._colors = itertools.cycle(Category10[10])
             
         curdoc().theme = kwargs.get("theme", "dark_minimal")
         TOOLTIPS = [
@@ -71,7 +74,8 @@ class BokehBackend(Plot):
         self._fig.grid.visible = self.axis
 
     def _process_series(self, series):
-        colors = itertools.cycle(Category10[10])
+        # clear figure
+        self._fig.renderers = []
 
         for i, s in enumerate(series):
             if s.is_2Dline:
@@ -82,7 +86,7 @@ class BokehBackend(Plot):
                 if s.is_parametric:
                     l = self._line_length(x, y, start=s.start, end=s.end)
                     self._fig.line(x, y, legend_label=s.label,
-                                  line_width=2, color=next(colors))
+                                  line_width=2, color=next(self._colors))
                     color_mapper = LinearColorMapper(palette=colorcet.rainbow, 
                         low=min(l), high=max(l))
                     
@@ -91,7 +95,7 @@ class BokehBackend(Plot):
                                 color={'field': 'l', 'transform': color_mapper})
                 else:
                     self._fig.line(x, y, legend_label=s.label,
-                                line_width=2, color=next(colors))
+                                line_width=2, color=next(self._colors))
             else:
                 raise ValueError(
                     "Bokeh only support 2D plots."
@@ -101,6 +105,19 @@ class BokehBackend(Plot):
         # interactive legend
         self._fig.legend.click_policy = "hide"
         self._fig.add_layout(self._fig.legend[0], 'right')
+    
+    def _update_interactive(self, params):
+        for i, s in enumerate(self.series):
+            if s.is_interactive:
+                self.series[i].update_data(params)
+                
+                if s.is_2Dline and s.is_parametric:
+                    x, y = self.series[i].get_data()
+                    self.fig.renderers[i].data_source.data.update({'x': x, 'y': y})
+                    self.fig.renderers[i + 1].data_source.data.update({'x': x, 'y': y})
+                if s.is_2Dline and (not s.is_parametric):
+                    x, y = self.series[i].get_data()
+                    self.fig.renderers[i].data_source.data.update({'y': y})
 
     def save(self, path, **kwargs):
         self._process_series(self._series)

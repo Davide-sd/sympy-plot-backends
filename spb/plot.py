@@ -23,10 +23,11 @@ every time you call ``show()`` and the old one is left to the garbage collector.
 """
 
 
-from sympy import sympify, Expr, Tuple, Dummy, Symbol
+from sympy import Expr, Tuple, Dummy, Symbol
 
 from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
+from spb.utils import _is_range, _plot_sympify
 
 # N.B.
 # When changing the minimum module version for matplotlib, please change
@@ -951,13 +952,6 @@ def plot_contour(*args, show=True, **kwargs):
     return plot_contours
 
 
-def _is_range(r):
-    """ A range is defined as (symbol, start, end). start and end should
-    be numbers.
-    """
-    return (isinstance(r, Tuple) and (len(r) == 3) and
-                r.args[1].is_number and r.args[2].is_number)
-
 def _create_ranges(free_symbols, ranges, npar):
     """ This function does two things:
     1. Check if the number of free symbols is in agreement with the type of plot
@@ -1115,27 +1109,6 @@ def _check_arguments(args, nexpr, npar):
             output.append((*arg, *r, label))
     
     return output
-
-def _plot_sympify(args):
-    """ By allowing the users to set custom labels to the expressions being
-    plotted, a critical issue is raised: whenever a special character like $,
-    {, }, ... is used in the label (type string), sympify will raise an error.
-    This function recursively loop over the arguments passed to the plot
-    functions: the sympify function will be applied to all arguments except
-    those of type string.
-    """
-    if isinstance(args, Expr):
-        return args
-
-    args = list(args)
-    for i, a in enumerate(args):
-        if isinstance(a, (list, tuple)):
-            args[i] = Tuple(*_plot_sympify(a), sympify=False)
-        elif not isinstance(a, str):
-            args[i] = sympify(a)
-    if isinstance(args, tuple):
-        return Tuple(*args, sympify=False)
-    return args
 
 def _remove_label_key(d):
     """The "label" keyword is no longer needed in the plot, as it will clash

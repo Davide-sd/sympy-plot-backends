@@ -8,8 +8,9 @@ from spb.series import (
     _set_discretization_points
 )
 from spb.plot import (
-    Plot, _plot_sympify, _is_range, _check_arguments    
+    Plot, _check_arguments    
 )
+from spb.utils import _plot_sympify, _is_range
 
 def _build_series(*args, **kwargs):
     # In the following dictionary the key is composed of two characters:

@@ -56,13 +56,13 @@ class PlotlyBackend(Plot):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._cm = iter(self.colormaps)
+        self._wfcm = iter(self.wireframe_colors)
         self._fig = go.Figure()
-        self._process_series(self._series)
+        # self._process_series(self._series)
         self._update_layout()
     
     def _process_series(self, series):
-        cm = iter(self.colormaps)
-        wfcm = iter(self.wireframe_colors)
 
         # if legend=True and both 3d lines and surfaces are shown, then hide the
         # surfaces color bars and only shows line labels in the legend.
@@ -83,7 +83,7 @@ class PlotlyBackend(Plot):
                             mode = "lines+markers",
                             marker = dict(
                                 color = length,
-                                colorscale = next(cm),
+                                colorscale = next(self._cm),
                                 size = 6
                             )
                         )
@@ -102,19 +102,19 @@ class PlotlyBackend(Plot):
                             line = dict(width = 4),
                             marker = dict(
                                 color = length,
-                                colorscale = next(cm),
+                                colorscale = next(self._cm),
                                 size = 4
                             )
                         )
                     )
                 else:
                     self._fig.add_trace(
-                    go.Scatter3d(
-                        x = x, y = y, z = z,
-                        name = s.label, mode = "lines",
-                        line = dict(width = 4)
+                        go.Scatter3d(
+                            x = x, y = y, z = z,
+                            name = s.label, mode = "lines",
+                            line = dict(width = 4)
+                        )
                     )
-                )
             elif s.is_3Dsurface:
                 xx, yy, zz = s.get_data()
                 # create a solid color to be used when self._use_cm=False
@@ -132,14 +132,14 @@ class PlotlyBackend(Plot):
                             x = 1 + 0.1 * ii,
                             title = s.label,
                         ),
-                        colorscale = next(cm) if self._use_cm else colorscale
+                        colorscale = next(self._cm) if self._use_cm else colorscale
 
                     )
                 )
                 
                 if self._kwargs.get("wireframe", False):
                     line_marker = dict(
-                        color = next(wfcm),
+                        color = next(self._wfcm),
                         width = 2
                     )
                     for i, j, k in zip(xx, yy, zz):
@@ -177,7 +177,28 @@ class PlotlyBackend(Plot):
                         ))
             else:
                 raise NotImplementedError
-        
+    
+    def _update_interactive(self, params):
+        for i, s in enumerate(self.series):
+            if s.is_interactive:
+                self.series[i].update_data(params)
+                
+                if s.is_2Dline and s.is_parametric:
+                    x, y = self.series[i].get_data()
+                    self.fig.data[i]["x"] = x
+                    self.fig.data[i]["y"] = y
+                if s.is_2Dline and (not s.is_parametric):
+                    x, y = self.series[i].get_data()
+                    self.fig.data[i]["y"] = y
+                elif s.is_3Dline or (s.is_3Dsurface and s.is_parametric):
+                    x, y, z = self.series[i].get_data()
+                    self.fig.data[i]["x"] = x
+                    self.fig.data[i]["y"] = y
+                    self.fig.data[i]["z"] = z
+                elif s.is_3Dsurface and (not s.is_parametric):
+                    x, y, z = self.series[i].get_data()
+                    self.fig.data[i]["z"] = z
+
     def _update_layout(self):
         self._fig.update_layout(
             template = self._kwargs.get("theme", "plotly_dark"),

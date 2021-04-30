@@ -131,6 +131,7 @@ class K3DBackend(Plot):
                     z = z.flatten()
                     vertices = np.vstack([x, y, z])
                     indices = Triangulation(x, y).triangles.astype(np.uint32)
+                
                 a = dict(
                     name = s.label if self._kwargs.get("show_label", False) else None,
                     side = "double",
@@ -158,6 +159,22 @@ class K3DBackend(Plot):
             self._fig += k3d.text2d(self.title, 
                  position=[0.025, 0.015], color=0, size=1, label_box=False)
     
+    def _update_interactive(self, params):
+        for i, s in enumerate(self.series):
+            if s.is_interactive:
+                self.series[i].update_data(params)
+                x, y, z = self.series[i].get_data()
+                
+                if s.is_3Dline:
+                    vertices = np.vstack([x, y, z]).T.astype(np.float32)
+                    self._fig.objects[i].vertices = vertices
+                elif s.is_3Dsurface:
+                    x = x.flatten()
+                    y = y.flatten()
+                    z = z.flatten()
+                    vertices = np.vstack([x, y, z]).astype(np.float32)
+                    self._fig.objects[i].vertices= vertices.T
+
     def show(self):
         self._process_series(self._series)
         self.plot_shown = True
