@@ -183,7 +183,7 @@ class Line2DBaseSeries(BaseSeries):
                 else:  # only if the line is 3D (otherwise raises an error)
                     return f(*variables)
         else:
-            return c*np.ones(self.nb_of_points)
+            return c*np.ones(self.n)
 
 
 class List2DSeries(Line2DBaseSeries):
@@ -213,7 +213,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
-        self.nb_of_points = kwargs.get('nb_of_points', 300)
+        self.n = kwargs.get('n', 300)
         self.adaptive = kwargs.get('adaptive', True)
         self.depth = kwargs.get('depth', 12)
         self.line_color = kwargs.get('line_color', None)
@@ -330,9 +330,9 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                     num=int(self.end) - int(self.start) + 1)
         else:
             if self.xscale == 'log':
-                list_x = np.logspace(self.start, self.end, num=self.nb_of_points)
+                list_x = np.logspace(self.start, self.end, num=self.n)
             else:
-                list_x = np.linspace(self.start, self.end, num=self.nb_of_points)
+                list_x = np.linspace(self.start, self.end, num=self.n)
         f = vectorized_lambdify([self.var], self.expr)
         list_y = f(list_x)
         return (list_x, list_y)
@@ -351,7 +351,7 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
-        self.nb_of_points = kwargs.get('nb_of_points', 300)
+        self.n = kwargs.get('n', 300)
         self.adaptive = kwargs.get('adaptive', True)
         self.depth = kwargs.get('depth', 12)
         self.line_color = kwargs.get('line_color', None)
@@ -363,7 +363,7 @@ class Parametric2DLineSeries(Line2DBaseSeries):
 
     def get_parameter_points(self):
         np = import_module('numpy')
-        return np.linspace(self.start, self.end, num=self.nb_of_points)
+        return np.linspace(self.start, self.end, num=self.n)
 
     def _uniform_sampling(self):
         param = self.get_parameter_points()
@@ -503,7 +503,7 @@ class Parametric3DLineSeries(Line3DBaseSeries):
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
-        self.nb_of_points = kwargs.get('nb_of_points', 300)
+        self.n = kwargs.get('n', 300)
         self.line_color = kwargs.get('line_color', None)
 
     def __str__(self):
@@ -513,7 +513,7 @@ class Parametric3DLineSeries(Line3DBaseSeries):
 
     def get_parameter_points(self):
         np = import_module('numpy')
-        return np.linspace(self.start, self.end, num=self.nb_of_points)
+        return np.linspace(self.start, self.end, num=self.n)
 
     def get_points(self):
         np = import_module('numpy')
@@ -574,9 +574,9 @@ class SurfaceBaseSeries(BaseSeries):
                 return f(*variables)
         else:
             if isinstance(self, SurfaceOver2DRangeSeries):
-                return c*np.ones(min(self.nb_of_points_x, self.nb_of_points_y))
+                return c*np.ones(min(self.n1, self.n2))
             else:
-                return c*np.ones(min(self.nb_of_points_u, self.nb_of_points_v))
+                return c*np.ones(min(self.n1, self.n2))
 
 
 class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
@@ -592,8 +592,8 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         self.start_y = float(var_start_end_y[1])
         self.end_y = float(var_start_end_y[2])
         self.label = label
-        self.nb_of_points_x = kwargs.get('nb_of_points_x', 50)
-        self.nb_of_points_y = kwargs.get('nb_of_points_y', 50)
+        self.n1 = kwargs.get('n1', 50)
+        self.n2 = kwargs.get('n2', 50)
         self.surface_color = kwargs.get('surface_color', None)
         self._xlim = (self.start_x, self.end_x)
         self._ylim = (self.start_y, self.end_y)
@@ -610,9 +610,9 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     def get_meshes(self):
         np = import_module('numpy')
         mesh_x, mesh_y = np.meshgrid(np.linspace(self.start_x, self.end_x,
-                                                 num=self.nb_of_points_x),
+                                                 num=self.n1),
                                      np.linspace(self.start_y, self.end_y,
-                                                 num=self.nb_of_points_y))
+                                                 num=self.n2))
         f = vectorized_lambdify((self.var_x, self.var_y), self.expr)
         mesh_z = f(mesh_x, mesh_y)
         mesh_z = np.array(mesh_z, dtype=np.float64)
@@ -641,8 +641,8 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.start_v = float(var_start_end_v[1])
         self.end_v = float(var_start_end_v[2])
         self.label = label
-        self.nb_of_points_u = kwargs.get('nb_of_points_u', 50)
-        self.nb_of_points_v = kwargs.get('nb_of_points_v', 50)
+        self.n1 = kwargs.get('n1', 50)
+        self.n2 = kwargs.get('n2', 50)
         self.surface_color = kwargs.get('surface_color', None)
 
     def __str__(self):
@@ -659,9 +659,9 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
     def get_parameter_meshes(self):
         np = import_module('numpy')
         return np.meshgrid(np.linspace(self.start_u, self.end_u,
-                                       num=self.nb_of_points_u),
+                                       num=self.n1),
                            np.linspace(self.start_v, self.end_v,
-                                       num=self.nb_of_points_v))
+                                       num=self.n2))
 
     def get_meshes(self):
         np = import_module('numpy')
@@ -711,7 +711,7 @@ class ImplicitSeries(BaseSeries):
     is_implicit = True
 
     def __init__(self, expr, var_start_end_x, var_start_end_y,
-            has_equality, use_interval_math, depth, nb_of_points,
+            has_equality, use_interval_math, depth, n,
             line_color):
         super().__init__()
         self.expr = sympify(expr)
@@ -724,7 +724,7 @@ class ImplicitSeries(BaseSeries):
         self.get_points = self.get_raster
         self.has_equality = has_equality  # If the expression has equality, i.e.
                                          #Eq, Greaterthan, LessThan.
-        self.nb_of_points = nb_of_points
+        self.n = n
         self.use_interval_math = use_interval_math
         self.depth = 4 + depth
         self.line_color = line_color
@@ -858,8 +858,8 @@ class ImplicitSeries(BaseSeries):
             raise NotImplementedError("The expression is not supported for "
                                     "plotting in uniform meshed plot.")
         np = import_module('numpy')
-        xarray = np.linspace(self.start_x, self.end_x, self.nb_of_points)
-        yarray = np.linspace(self.start_y, self.end_y, self.nb_of_points)
+        xarray = np.linspace(self.start_x, self.end_x, self.n)
+        yarray = np.linspace(self.start_y, self.end_y, self.n)
         x_grid, y_grid = np.meshgrid(xarray, yarray)
 
         func = vectorized_lambdify((self.var_x, self.var_y), expr)
@@ -905,48 +905,6 @@ def flat(x, y, z, eps=1e-3):
     cos_theta = dot_product / (vector_a_norm * vector_b_norm)
     return abs(cos_theta + 1) < eps
 
-
-def _set_discretization_points(kwargs, pt):
-    """ This function allows the user two use the keyword arguments n, n1 and n2
-    to specify the number of discretization points in two directions.
-
-    Parameters
-    ==========
-
-        kwargs : dict
-
-        pt : type
-            The type of the series, which indicates the kind of plot we are
-            trying to create: plot, plot_parametric, ...
-    """
-    if pt in [LineOver1DRangeSeries, Parametric2DLineSeries, 
-                Parametric3DLineSeries]:
-        if "n1" in kwargs.keys():
-            kwargs["nb_of_points"] = kwargs["n1"]
-        if "n" in kwargs.keys():
-            kwargs["nb_of_points"] = kwargs["n"]
-    elif pt in [SurfaceOver2DRangeSeries, ContourSeries]:
-        if "n1" in kwargs.keys():
-            kwargs["nb_of_points_x"] = kwargs["n1"]
-        if "n2" in kwargs.keys():
-            kwargs["nb_of_points_y"] = kwargs["n2"]
-        if "n" in kwargs.keys():
-            kwargs["nb_of_points_x"] = kwargs["n"]
-            kwargs["nb_of_points_y"] = kwargs["n"]
-    elif pt in [ParametricSurfaceSeries]:
-        if "n1" in kwargs.keys():
-            kwargs["nb_of_points_u"] = kwargs["n1"]
-        if "n2" in kwargs.keys():
-            kwargs["nb_of_points_v"] = kwargs["n2"]
-        if "n" in kwargs.keys():
-            kwargs["nb_of_points_u"] = kwargs["n"]
-            kwargs["nb_of_points_v"] = kwargs["n"]
-    elif pt in [ImplicitSeries]:
-        if "n1" in kwargs.keys():
-            kwargs["points"] = kwargs["n1"]
-        if "n" in kwargs.keys():
-            kwargs["points"] = kwargs["n"]
-    return kwargs
 
 class InteractiveSeries(BaseSeries):
     is_interactive = True
@@ -1072,3 +1030,32 @@ class InteractiveSeries(BaseSeries):
         
     def get_data(self):
         return self.data
+
+
+def _set_discretization_points(kwargs, pt):
+    """ This function allows the user two use the keyword arguments n, n1 and n2
+    to specify the number of discretization points in two directions.
+
+    Parameters
+    ==========
+
+        kwargs : dict
+
+        pt : type
+            The type of the series, which indicates the kind of plot we are
+            trying to create: plot, plot_parametric, ...
+    """
+    if pt in [LineOver1DRangeSeries, Parametric2DLineSeries, 
+                Parametric3DLineSeries, ImplicitSeries]:
+        if "n1" in kwargs.keys() and ("n" not in kwargs.keys()):
+            kwargs["n"] = kwargs["n1"]
+    elif pt in [SurfaceOver2DRangeSeries, ContourSeries]:
+        if "n" in kwargs.keys():
+            kwargs["n1"] = kwargs["n"]
+            kwargs["n2"] = kwargs["n"]
+    elif pt in [ParametricSurfaceSeries]:
+        if "n" in kwargs.keys():
+            kwargs["n1"] = kwargs["n"]
+            kwargs["n2"] = kwargs["n"]
+    return kwargs
+    

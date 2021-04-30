@@ -182,7 +182,7 @@ def test_plot_and_save_2():
         p.close()
 
         #No adaptive sampling.
-        p = plot_parametric(cos(x), sin(x), adaptive=False, nb_of_points=500)
+        p = plot_parametric(cos(x), sin(x), adaptive=False, n=500)
         filename = 'test_adaptive.png'
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -200,7 +200,7 @@ def test_plot_and_save_2():
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot3d_parametric_line(sin(x), cos(x), x, nb_of_points=30)
+        p = plot3d_parametric_line(sin(x), cos(x), x, n=30)
         filename = 'test_3d_line_points.png'
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -431,7 +431,7 @@ def test_plotgrid_and_save():
         p1 = plot(x)
         p2 = plot_parametric((sin(x), cos(x)), (x, sin(x)), show=False)
         p3 = plot_parametric(
-            cos(x), sin(x), adaptive=False, nb_of_points=500, show=False)
+            cos(x), sin(x), adaptive=False, n=500, show=False)
         p4 = plot3d_parametric_line(sin(x), cos(x), x, show=False)
         # symmetric grid
         p = PlotGrid(2, 2, p1, p2, p3, p4)
@@ -1049,40 +1049,40 @@ def test_nb_discretization_points():
     u = Symbol('u')
     v = Symbol('v')
     p = plot(cos(x), n1=50)
-    assert p._series[0].nb_of_points == 50
+    assert p._series[0].n == 50
     p = plot_parametric(cos(u), sin(u), n1=50)
-    assert p._series[0].nb_of_points == 50
+    assert p._series[0].n == 50
     p = plot_parametric(cos(u), sin(u), n=50)
-    assert p._series[0].nb_of_points == 50
+    assert p._series[0].n == 50
     # n has the precedente over n1
     p = plot_parametric(cos(u), sin(u), n=50, n1=60)
-    assert p._series[0].nb_of_points == 50
+    assert p._series[0].n == 50
     p = plot3d_parametric_line(cos(u), sin(u), u, n1=50)
-    assert p._series[0].nb_of_points == 50
+    assert p._series[0].n == 50
     p = plot3d_parametric_line(cos(u), sin(u), u, n=50)
-    assert p._series[0].nb_of_points == 50
+    assert p._series[0].n == 50
     # n has the precedente over n1
     p = plot3d_parametric_line(cos(u), sin(u), u, n=50, n1=60)
-    assert p._series[0].nb_of_points == 50
+    assert p._series[0].n == 50
     p = plot3d(x + y, n1=40, n2=30)
-    assert p._series[0].nb_of_points_x == 40
-    assert p._series[0].nb_of_points_y == 30
+    assert p._series[0].n1 == 40
+    assert p._series[0].n2 == 30
     # n has the precedente over n1 and n2
     p = plot3d(x + y, n1=40, n2=30, n=20)
-    assert p._series[0].nb_of_points_x == 20
-    assert p._series[0].nb_of_points_y == 20
+    assert p._series[0].n1 == 20
+    assert p._series[0].n2 == 20
     p = plot_contour(x + y, n1=40, n2=30)
-    assert p._series[0].nb_of_points_x == 40
-    assert p._series[0].nb_of_points_y == 30
+    assert p._series[0].n1 == 40
+    assert p._series[0].n2 == 30
     # n has the precedente over n1 and n2
     p = plot_contour(x + y, n1=40, n2=30, n=20)
-    assert p._series[0].nb_of_points_x == 20
-    assert p._series[0].nb_of_points_y == 20
+    assert p._series[0].n1 == 20
+    assert p._series[0].n2 == 20
     p = plot3d_parametric_surface(cos(u + v), sin(u - v), u - v, n1=40, n2=30)
-    assert p._series[0].nb_of_points_u == 40
-    assert p._series[0].nb_of_points_v == 30
+    assert p._series[0].n1 == 40
+    assert p._series[0].n2 == 30
     # n has the precedente over n1 and n2
     p = plot3d_parametric_surface(cos(u + v), sin(u - v), u - v,
             n1=40, n2=30, n=10)
-    assert p._series[0].nb_of_points_u == 10
-    assert p._series[0].nb_of_points_v == 10
+    assert p._series[0].n1 == 10
+    assert p._series[0].n2 == 10

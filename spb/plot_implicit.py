@@ -52,7 +52,7 @@ def set_matplotlib_backend():
 
 @doctest_depends_on(modules=('matplotlib',))
 def plot_implicit(expr, x_var=None, y_var=None, adaptive=True, depth=0,
-                  points=300, line_color="blue", show=True, **kwargs):
+                  n=300, line_color="blue", show=True, **kwargs):
     """A plot function to plot implicit equations / inequalities.
 
     Arguments
@@ -75,7 +75,7 @@ def plot_implicit(expr, x_var=None, y_var=None, adaptive=True, depth=0,
     - ``depth`` integer. The depth of recursion for adaptive mesh grid.
         Default value is 0. Takes value in the range (0, 4).
 
-    - ``points`` integer. The number of points if adaptive mesh grid is not
+    - ``n`` integer. The number of points if adaptive mesh grid is not
         used. Default value is 300.
 
     - ``show`` Boolean. Default value is True. If set to False, the plot will
@@ -163,7 +163,7 @@ def plot_implicit(expr, x_var=None, y_var=None, adaptive=True, depth=0,
 
         >>> p5 = plot_implicit(
         ...     Eq(x**2 + y**2, 5), (x, -5, 5), (y, -2, 2),
-        ...     adaptive=False, points=400)
+        ...     adaptive=False, n=400)
 
     Plotting regions:
 
@@ -256,15 +256,9 @@ def plot_implicit(expr, x_var=None, y_var=None, adaptive=True, depth=0,
     elif depth < 0:
         depth = 0
 
-    # uniform experience between the different plot function when it comes to
-    # set the number of discretization points
-    kwargs["points"] = points
-    kwargs = _set_discretization_points(kwargs, ImplicitSeries)
-    points = kwargs["points"]
-
     series_argument = ImplicitSeries(expr, var_start_end_x, var_start_end_y,
                                     has_equality, adaptive, depth,
-                                    points, line_color)
+                                    n, line_color)
 
     kwargs.setdefault('backend', TWO_D_B)
     #set the x and y limits
