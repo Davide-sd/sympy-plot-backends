@@ -6,7 +6,7 @@ def readme():
 
 setup(
     name = 'sympy_plot_backends',
-    version = '0.1.0',
+    version = '0.8.0',
     description = 'Backends for plotting with SymPy',
     long_description = readme(),
     classifiers=[
@@ -28,7 +28,7 @@ setup(
     zip_safe = False,
     install_requires = [
         "numpy",
-        "sympy>=1.6.1",
+        "sympy",
         "matplotlib",
         "plotly>=4.14.3",
         "colorcet",

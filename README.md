@@ -113,7 +113,7 @@ The following list of requirements will automatically be downloaded once you ins
 ## Installation
 
 1. Download this repository: `git clone https://github.com/Davide-sd/sympy-plot-backends`
-2. Move into the module folder, `sympy_plot_backends` and install the module with the command `pip install . -e`.
+2. Move into the module folder, `sympy_plot_backends` and install the module with the command `pip install . -e`. Note that we installed it in _editable_ mode. This will allows us to customize it and try different default options.
 3. Launch Jupyter Notebook and explore the `tutorials` folder to see what this module offers.
 4. **Optional step**: open the file `spb/defaults.py` and change the default backends and related options. [Tutorial 3](tutorials/tutorial-3.customize-the-module.ipynb) helps you with that.
 
