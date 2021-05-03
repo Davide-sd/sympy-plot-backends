@@ -43,12 +43,12 @@ Each backend has its own advantages and disadvantages, as we can see from the fo
 | Parametric-Interactive |     N     |   Y   |    Y   |    N   |  Y  |
 
 In particular:
-* Matplotlib (default with SymPy) is good but it lacks interactivity (of course, we can use [ipympl](https://github.com/matplotlib/ipympl) but the overall interactive experience is still behind in comparison to the other backends).
+* Matplotlib (default with SymPy) is good but it lacks interactivity (of course, we can use [ipympl](https://github.com/matplotlib/ipympl), but it doesn't do miracles especially with 3D plots).
 * Matplotlib and Plotly are the two most general backends, both supporting 2D and 3D plots.
 * Mayavi and K3D only supports 3D plots but, compared to Matplotlib,they are blazingly fast in the user-interaction. Hence, we can increase significantly the number of discretization points obtaining smoother plots. Note that these backends use an aspect ratio of 1 on all axis: they don't scale the visualization. What you see is the object as you would see it in reality.
 * K3D can only be used with Jupyter Notebook, whereas the other backends can also be used with IPython or a simple Python interpreter.
 * Plotly and Bokeh require external libraries in order to export plots to png or svg. Read the docstrings of the respective classes to understand what you need to install.
-* **Parametric-Interactive**: we can use widgets (sliders, buttons, ...) to visually explore the symbolic expression. This functionality only works within Jupyter Notebook. Currently, `MatplotlibBackend` doesn't support this feature.
+* **Parametric-Interactive**: thanks to [holovis'z panel](https://github.com/holoviz/panel), we can use widgets (sliders, buttons, ...) to visually explore the symbolic expression. This functionality only works within Jupyter Notebook. Currently, `MatplotlibBackend` doesn't support this feature.
 
 The following table shows the common keyword arguments implemented in SymPy's `Plot` class, which is the parent class for all backends. Because each plotting library is unique, some of these options may not be supported by a specific backend (or have not been implemented yet):
 

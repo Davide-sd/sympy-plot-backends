@@ -15,10 +15,7 @@ pn.extension("plotly")
 TODO:
     1. Automatic axis labeling based on provided expressions
     2. Sidebar left/right layout
-    3. Decouple the layout into a new class, in that way maybe it could be
-        possible to use iplot with a different GUI, for example Qt, by creating
-        an InteractivePlotPanel, InteractivePlotQt, ...
-    4. Log slider
+    3. Log slider
 """
 
 class DynamicParam(param.Parameterized):
@@ -63,23 +60,23 @@ class DynamicParam(param.Parameterized):
             values[2] = 1
         return {k: v for k, v in zip (defaults_keys, values)}
     
-    def __init__(self, *args, name="", parameters=None, **kwargs):
+    def __init__(self, *args, name="", params=None, **kwargs):
         # use latex on control labels and legends
         self.use_latex = kwargs.pop("use_latex", True)
         
         # this must be present in order to assure correct behaviour
         super().__init__(name=name, **kwargs)
-        if not parameters:
-            raise ValueError("`parameters` must be provided.")
+        if not params:
+            raise ValueError("`params` must be provided.")
         
         # The following dictionary will be used to create the appropriate
         # lambda function arguments:
         #    key: the provided symbol
         #    val: name of the associated parameter
         self.mapping = {}
-        
+
         # create and attach the params to the class
-        for i, (k, v) in enumerate(parameters.items()):
+        for i, (k, v) in enumerate(params.items()):
             if not isinstance(v, param.parameterized.Parameter):
                 v = self._tuple_to_dict(k, v)
                 # TODO: modify this to implement log slider
@@ -95,16 +92,86 @@ class DynamicParam(param.Parameterized):
         for k, v in self.mapping.items():
             readout[k] = getattr(self, v)
         return readout
+
+
+def _new_class(cls, **kwargs):
+    "Creates a new class which overrides parameter defaults."
+    return type(type(cls).__name__, (cls,), kwargs)
+
+
+class PanelLayout:
+    """ Mixin class to group together the layout functionalities related to
+    the library panel.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # NOTE: More often than not, the numerical evaluation is going to be
+        # resource-intensive. By default, panel's sliders will force a recompute
+        # at every step change. As a consequence, the user experience will be
+        # laggy. To solve this problem, the update must be triggered on mouse-up
+        # event, which is set by throttled=True on the slider's __init__ method.
+        #
+        # There is no easy way to do it:
+        # https://panel.holoviz.org/reference/panes/Param.html#disabling-continuous-updates-for-slider-widgets
+        # In our case, we need to loop over the parameters, check their type
+        # and hope for the best, because there is not a one-on-one mapping 
+        # between a parameter and a control. For example, a bounded param.Integer
+        # will create an IntegerSlider, whereas an unbounded param.Integer will
+        # create a spinner.
+        # Clearly, this approach is far from optimal...
+
+        widgets = {}
+        for k, v in self.mapping.items():
+            t = getattr(self.param, v)
+            widget = ""
+            if isinstance(t, param.Integer):
+                widget = pn.widgets.IntSlider
+                if any([(b is None) for b in t.bounds]):
+                    widget = pn.widgets.Spinner
+            elif isinstance(t, param.Number):
+                widget = pn.widgets.FloatSlider
+            elif isinstance(t, param.Boolean):
+                widget = pn.widgets.Checkbox
+            elif isinstance(t, param.ObjectSelector):
+                widget = pn.widgets.Select
+            else:
+                raise ValueError("{} is not yet supported".format(type(t)))
+            
+            if not isinstance(t, param.Number):
+                widgets[v] = widget
+            else:
+                widgets[v] = {
+                    "type": widget,
+                    "throttled": True,
+                }
         
+        self.controls = pn.Param(
+                self, 
+                widgets = widgets,
+                default_layout = _new_class(pn.GridBox, ncols=2),
+                show_name = False,
+                sizing_mode='stretch_width'
+        )
+
+
     def layout_controls(self):
-        # split the controls in two columns
-        params = sorted(list(self.mapping.values()))
-        n = int(len(params) / 2)
-        left = pn.panel(self, parameters=params[:n])
-        right = pn.panel(self, parameters=params[n:])
-        return pn.Row(left, right)
-        
-class InteractivePlot(DynamicParam):
+        return self.controls
+    
+    @pn.depends("controls")
+    def view(self):
+        params = self.read_parameters()
+        self._backend._update_interactive(params)
+        if isinstance(self._backend, KB):
+            return pn.pane.Pane(self._backend.fig, width=800)
+        else:
+            return self.fig
+    
+    def show(self):
+        return pn.Column(self.layout_controls, self.view)
+
+class InteractivePlot(DynamicParam, PanelLayout):
+    """ Contains all the logic to create parametric-interactive plots.
+    """
 
     # NOTE: why isn't Plot a parent class for InteractivePlot?
     # If that was the case, it would not be trivial to instantiate the selected
@@ -114,9 +181,10 @@ class InteractivePlot(DynamicParam):
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
-    def __init__(self, *args, name="", parameters=None, fig_kw=dict(), **kwargs):
+    def __init__(self, *args, name="", params=None, fig_kw=dict(), **kwargs):
         args = list(map(_plot_sympify, args))
-        super().__init__(*args, name=name, parameters=parameters, **kwargs)
+        super().__init__(*args, name=name, params=params, **kwargs)
+        PanelLayout.__init__(self)
         
         # create the series
         series = self._create_series(*args, **fig_kw)
@@ -141,17 +209,6 @@ class InteractivePlot(DynamicParam):
         """ Return the plot object
         """
         return self._backend.fig
-            
-    def view(self):
-        params = self.read_parameters()
-        self._backend._update_interactive(params)
-        if isinstance(self._backend, KB):
-            return pn.pane.Pane(self._backend.fig, width=800)
-        else:
-            return self.fig
-    
-    def show(self):
-        return pn.Column(self.layout_controls, self.view)
 
 
 def iplot(*args, show=True, **kwargs):
@@ -176,7 +233,7 @@ def iplot(*args, show=True, **kwargs):
     Keyword Arguments
     =================
 
-        parameters : dict
+        params : dict
             A dictionary mapping the parameter-symbols to a parameter.
             The parameter can be:
             1. an instance of param.parameterized.Parameter (at the moment,
@@ -219,7 +276,7 @@ def iplot(*args, show=True, **kwargs):
 
         iplot(
             (expr, (x, -10, 10), (y, -10, 10)),
-            parameters = { d: (0.15, (0, 1)) },
+            params = { d: (0.15, (0, 1)) },
             fig_kw = dict(
                 title = "My Title",
                 xlabel = "x axis",
@@ -241,7 +298,7 @@ def iplot(*args, show=True, **kwargs):
             (log(x) + A1 * sin(k * x), (x, 0, 20), "f1"),
             (exp(-(x - 2)) + A2 * cos(x), (x, 0, 20), "f2"),
             (A1 + A1 * cos(x), A2 * sin(x), (x, 0, pi)),
-            parameters = {
+            params = {
                 k: (1, (0, 5)),
                 A1: (2, (0, 10), 20, "Ampl 1"),
                 A2: (2, (0, 10), 40, "Ampl 2"),
