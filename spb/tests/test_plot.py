@@ -69,8 +69,8 @@ def test_plot_and_save_1():
         ###
         # Examples from the 'introduction' notebook
         ###
-        p = plot(x, legend=True, label='f1')
-        p = plot(x*sin(x), x*cos(x), label='f2')
+        p = plot(x, legend=True)
+        p = plot(x*sin(x), x*cos(x))
         p.extend(p)
         p[0].line_color = lambda a: a
         p[1].line_color = 'b'
@@ -157,7 +157,7 @@ def test_plot_and_save_2():
 
         #Single plot with range.
         p = plot_parametric(
-            sin(x), cos(x), (x, -5, 5), legend=True, label='parametric_plot')
+            sin(x), cos(x), (x, -5, 5), legend=True)
         filename = 'test_parametric_range.png'
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -189,7 +189,7 @@ def test_plot_and_save_2():
 
         #3d parametric plots
         p = plot3d_parametric_line(
-            sin(x), cos(x), x, legend=True, label='3d_parametric_plot')
+            sin(x), cos(x), x, legend=True)
         filename = 'test_3d_line.png'
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -769,8 +769,6 @@ def test_create_ranges():
     raises(ValueError, lambda: _create_ranges({x, y}, [], 1))
     raises(ValueError,
         lambda: _create_ranges({x, y}, [(x, 0, 5), (y, 0, 1)], 1))
-    # too many ranges
-    raises(ValueError, lambda: _create_ranges({x}, [(x, 0, 5), (y, 0, 1)], 1))
 
 def test_check_arguments():
     x, y = symbols("x, y")

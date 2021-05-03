@@ -9,7 +9,8 @@ from sympy.utilities.exceptions import SymPyDeprecationWarning
 from sympy.core.function import arity
 from sympy.core.compatibility import is_sequence
 from sympy.plotting.intervalmath import interval
-from spb.utils import _unpack_args, get_lambda
+# from spb.utils import _unpack_args, get_lambda
+from spb.utils import get_lambda
 import warnings
 import numpy as np
 
@@ -97,6 +98,12 @@ class BaseSeries:
             self.is_3Dline
         ]
         return any(flagslines)
+    
+    @staticmethod
+    def _discretize(start, end, N, base=10, scale="linear"):
+        if scale == "linear":
+            return np.linspace(start, end, N)
+        return np.logspace(start, end, N, base=base)
     
     def get_data(self):
         """ All child series should implement this method to return the
@@ -317,7 +324,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             sample(np.array([self.start, f_start]),
                    np.array([self.end, f_end]), 0)
 
-        return (x_coords, y_coords)
+        return (np.array(x_coords), np.array(y_coords))
 
     def _uniform_sampling(self):
         np = import_module('numpy')
@@ -473,7 +480,7 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         y_coords.append(f_start_y)
         sample(self.start, self.end, start, end, 0)
 
-        return x_coords, y_coords
+        return np.array(x_coords), np.array(y_coords)
 
 
 ### 3D lines
@@ -907,21 +914,33 @@ def flat(x, y, z, eps=1e-3):
 
 
 class InteractiveSeries(BaseSeries):
+    """ Represent an interactive series, in which the expressions can be either
+    a line or a surface (parametric or not). On top of the usual ranges (x, y or
+    u, v, which must be provided), the expressions can use any number of 
+    parameters.
+
+    This class internally convert the expressions to a lambda function, which is
+    evaluated by calling update_data(params), passing in all the necessary
+    parameters. Once update_data(params) has been executed, then get_data()
+    can be used.
+    """
+
     is_interactive = True
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, exprs, ranges, label="", **kwargs):
         # free symbols of the parameters
-        fs_params = kwargs.get("fs_params", set())
+        params = kwargs.get("params", dict())
         # number of discretization points
-        n = kwargs.get("n", 300)
+        n = kwargs.get("n", 250)
 
-        exprs, ranges, label = _unpack_args(*args)
+        self.xscale = kwargs.get('xscale', 'linear')
+        self.yscale = kwargs.get('yscale', 'linear')
         self.label = label
         nexpr, npar = len(exprs), len(ranges)
 
         if nexpr == 0:
             raise ValueError("At least one expression must be provided." +
-                "\nReceived: {}".format(args))
+                "\nReceived: {}".format((exprs, ranges, label)))
         if npar > 2:
             raise ValueError(
                     "Depending on the backend, only 2D and 3D plots are " +
@@ -954,19 +973,19 @@ class InteractiveSeries(BaseSeries):
         # from the expression's free symbols, remove the ones used in
         # the parameters and the ranges
         fs = set().union(*[e.free_symbols for e in exprs])
-        fs = fs.difference(fs_params).difference([r[0] for r in ranges])
+        fs = fs.difference(params.keys()).difference([r[0] for r in ranges])
         if len(fs) > 0:
             raise ValueError(
                 "Incompatible expression and parameters.\n" +
-                "Expression: {}\n".format(args) +
+                "Expression: {}\n".format((exprs, ranges, label)) +
                 "Specify what these symbols represent: {}\n".format(fs) +
                 "Are they ranges or parameters?")
         
         # if we are dealing with parametric expressions, we pack them into a
         # Tuple so that it can be lambdified
-        expr = exprs[0] if len(exprs) == 1 else Tuple(*exprs, sympify=False)
+        self.expr = exprs[0] if len(exprs) == 1 else Tuple(*exprs, sympify=False)
         # generate the lambda function
-        signature, f = get_lambda(expr)
+        signature, f = get_lambda(self.expr)
         self.signature = signature
         self.function = f
 
@@ -975,9 +994,13 @@ class InteractiveSeries(BaseSeries):
         #    val: the numpy array representing the discretization
         discr_symbols = []
         discretizations = []
-        for r in ranges:
+        for i, r in enumerate(ranges):
             discr_symbols.append(r[0])
-            discretizations.append(np.linspace(float(r[1]), float(r[2]), n))
+            scale = self.xscale
+            if i == 1: # y direction
+                scale = self.yscale
+            discretizations.append(
+                self._discretize(float(r[1]), float(r[2]), n, scale=scale))
         
         if len(ranges) == 1:
             # 2D or 3D lines
@@ -990,7 +1013,9 @@ class InteractiveSeries(BaseSeries):
         # this will be used in update_data
         self._discret_shape = discretizations[0].shape
         
-        self.data = []
+        self.data = None
+        if len(params) > 0:
+            self.update_data(params)
 
     def update_data(self, params):
         """ Update the data based on the values of the parameters.
@@ -1029,7 +1054,23 @@ class InteractiveSeries(BaseSeries):
         self.data = results
         
     def get_data(self):
+        # if the expression depends only on the ranges, the user can call get_data
+        # directly without calling update_dat
+        if (not self.data) and (len(self.signature) == len(self.ranges)):
+            self.update_data(dict())
+        if not self.data:
+            raise ValueError(
+                "To generate the numerical data, call update_data(params), " +
+                "providing the necessary parameters.")
         return self.data
+    
+    def __str__(self):
+        ranges = [(k, v[0], v[-1]) for k, v in self.ranges.items()]
+        return ('interactive expression: %s with ranges'
+                ' %s and parameters %s') % (
+                    str(self.expr),
+                    ", ".join([str(r) for r in ranges]),
+                    str(self.signature))
 
 
 def _set_discretization_points(kwargs, pt):
@@ -1058,4 +1099,3 @@ def _set_discretization_points(kwargs, pt):
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]
     return kwargs
-    

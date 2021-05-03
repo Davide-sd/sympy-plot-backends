@@ -4,59 +4,87 @@ from sympy.logic.boolalg import Boolean
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries,
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
-    ParametricSurfaceSeries, ImplicitSeries,
+    ParametricSurfaceSeries, ImplicitSeries, InteractiveSeries,
     _set_discretization_points
 )
 from spb.plot import (
     Plot, _check_arguments    
 )
-from spb.utils import _plot_sympify, _is_range
+from spb.utils import _unpack_args, _plot_sympify
+
+"""
+TODO:
+    1. Implement smart_plot
+    2. See if it's possible to move the logic of plot_implicit into
+        ImplicitSeries. Doing that would allow get_plot_data and smart_plot
+        to also work with implicit series.
+"""
 
 def _build_series(*args, **kwargs):
+    """ Read the docstring of get_plot_data to unsertand what args and kwargs
+    are.
+    """
     # In the following dictionary the key is composed of two characters:
     # 1. The first represents the number of sub-expressions. For example,
     #    a line plot or a surface plot have 1 expression. A 2D parametric line
     #    does have 2 parameters, ...
     # 2. The second represent the number of parameters.
-    # These categorization doesn't work for ImplicitSeries, in which case a
-    # random number was assigned.
+    # This categorization doesn't work for ImplicitSeries and InteractiveSeries,
+    # in which case a random number was assigned.
     mapping = {
-        "99": ImplicitSeries,
         "11": LineOver1DRangeSeries,
         "21": Parametric2DLineSeries,
         "31": Parametric3DLineSeries,
         "32": ParametricSurfaceSeries,
         "12": SurfaceOver2DRangeSeries,
+        "99": ImplicitSeries,
+        "00": InteractiveSeries
     }
 
-    pt = kwargs.get("pt", None)
     args = _plot_sympify(args)
+    exprs, ranges, label = _unpack_args(*args)
+    args = [*exprs, *ranges, label]
+    
+    pt = kwargs.get("pt", None)
     if pt is None:
         # Automatic detection based on the number of free symbols and the number
         # of expressions
 
-        # select the expressions
-        res = [not (_is_range(a) or isinstance(a, str)) for a in args]
-        exprs = [a for a, b in zip(args, res) if b]
-
         skip_check = False
         if isinstance(exprs[0], (Boolean, Relational)):
+            # implicit series
             skip_check = True
             npar = 9
             nexpr = 9
-        if isinstance(exprs[0], (list, tuple, Tuple)):
+        elif isinstance(exprs[0], (list, tuple, Tuple)):
+            # The actual parametric expression has been provided in the form
+            # (expr1, expr2, expr3 [optional]), range1, range2 [optional]
             fs = set().union(*[e.free_symbols for e in exprs[0]])
             npar = len(fs)
             nexpr = len(exprs[0])
         else:
+            # the actual expression (parametric or not) is not contained in a
+            # tuple. For example:
+            # expr1, expr2, expr3 [optional]), range1, range2 [optional]
             fs = set().union(*[e.free_symbols for e in exprs])
             npar = len(fs)
             nexpr = len(exprs)
         
+        k = str(nexpr) + str(npar)
+        params = kwargs.get("params", dict())
+        if len(params) > 0:
+            # we are most likely dealing with an interactive series
+            skip_check = True
+            k = "00"
+            args = [exprs, ranges, label] 
+
         if not skip_check:
+            # In case of LineOver1DRangeSeries, Parametric2DLineSeries,
+            # Parametric3DLineSeries, ParametricSurfaceSeries,
+            # SurfaceOver2DRangeSeries, validate the provided expressions/ranges
             args = _check_arguments(args, nexpr, npar)[0]
 
-        k = str(nexpr) + str(npar)
+        
         if k not in mapping.keys():
             raise ValueError(
                 "Don't know how to plot your expression:\n" +
@@ -67,21 +95,33 @@ def _build_series(*args, **kwargs):
     else:
         if pt == "p":
             k = "11"
+            args = _check_arguments(args, 1, 1)[0]
         elif pt == "pp":
             k = "21"
+            args = _check_arguments(args, 2, 1)[0]
         elif pt == "p3dl":
             k = "31"
+            args = _check_arguments(args, 3, 1)[0]
         elif pt == "p3d":
             k = "12"
+            args = _check_arguments(args, 1, 2)[0]
         elif pt == "p3ds":
             k = "32"
+            args = _check_arguments(args, 3, 2)[0]
+        elif pt == "ip":
+            k = "00"
+            args = [exprs, ranges, label] 
         else:
             raise ValueError("Wrong `pt` value. Please, check the docstring " +
                 "of `get_plot_data` to list the possible values.")
+
     _cls = mapping[k]
+    if _cls == ImplicitSeries:
+        raise ValueError(
+            "_build_series is currently not able to deal with ImplicitSeries")
+
     kwargs = _set_discretization_points(kwargs, _cls)
-    s = _cls(*args, **kwargs)
-    return s
+    return _cls(*args, **kwargs)
 
 
 def get_plot_data(*args, **kwargs):
@@ -106,6 +146,9 @@ def get_plot_data(*args, **kwargs):
                 "p3dl": to specify a 3d parametric line plot.
                 "p3d": to specify a 3d plot.
                 "p3s": to specify a 3d parametric surface plot.
+                "ip": to specify an interactive plot. In such a case, you will
+                        also have to provide a `param` dictionary mapping the
+                        parameters to their values.
 
     Examples
     ========

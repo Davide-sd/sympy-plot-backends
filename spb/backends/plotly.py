@@ -1,3 +1,4 @@
+from spb.defaults import plotly_theme
 from spb.backends.base_backend import Plot
 import plotly.graph_objects as go
 
@@ -201,7 +202,7 @@ class PlotlyBackend(Plot):
 
     def _update_layout(self):
         self._fig.update_layout(
-            template = self._kwargs.get("theme", "plotly_dark"),
+            template = self._kwargs.get("theme", plotly_theme),
             width = None if not self.size else self.size[0],
             height = None if not self.size else self.size[1],
             title = r"<b>%s</b>" % ("" if not self.title else self.title),
@@ -261,6 +262,7 @@ class PlotlyBackend(Plot):
         )
     
     def show(self):
+        self._process_series(self._series)
         self._fig.show()
 
     def save(self, path, **kwargs):

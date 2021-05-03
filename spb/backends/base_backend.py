@@ -154,7 +154,6 @@ class Plot:
 
     @classmethod
     def _get_backend(cls, kwargs):
-        print("kwargs", kwargs)
         backend = kwargs.get("backend", "matplotlib")
         if not ((type(backend) == type) and issubclass(backend, cls)):
             raise TypeError(

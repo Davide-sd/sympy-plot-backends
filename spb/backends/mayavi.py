@@ -1,3 +1,4 @@
+from spb.defaults import mayavi_bg_color, mayavi_fg_color
 from spb.backends.base_backend import Plot
 from mayavi import mlab
 from IPython.core.display import display
@@ -47,8 +48,8 @@ class MayaviBackend(Plot):
             size = self.size
         self._fig = mlab.figure(
             size = size,
-            bgcolor = self._kwargs.get("bg_color", (0.22, 0.24, 0.29)),
-            fgcolor = self._kwargs.get("fg_color", (1, 1, 1))
+            bgcolor = self._kwargs.get("bg_color", mayavi_bg_color),
+            fgcolor = self._kwargs.get("fg_color", mayavi_fg_color)
         )
     
     def _process_series(self, series):

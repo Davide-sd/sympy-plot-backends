@@ -82,4 +82,10 @@ def _unpack_args(*args):
     label = "" if not labels else labels[0]
     results = [not (_is_range(a) or isinstance(a, str)) for a in args]
     exprs = [a for a, b in zip(args, results) if b]
+
+    if label == "":
+        if len(exprs) == 1:
+            label = str(exprs[0])
+        else:
+            label = str(tuple(exprs))
     return exprs, ranges, label

@@ -1,32 +1,36 @@
-import param
 import numpy as np
+import param
 import panel as pn
 from sympy import latex, Tuple
-from spb.backends.bokeh import BB
-from spb.backends.plotly import PB
 from spb.backends.k3d import KB
 from spb.backends.base_backend import Plot
 from spb.series import InteractiveSeries
-import plotly.graph_objects as go
-import k3d
-from matplotlib.tri import Triangulation
-from spb.utils import get_lambda, _plot_sympify, _is_range
-from spb.defaults import I_B
+from spb.utils import _plot_sympify, _unpack_args
+from spb.defaults import TWO_D_B, THREE_D_B
+
 pn.extension("plotly")
 
 
 """
 TODO:
-    1. Make each interactive class to use the backend to initially create the
-        plot... Probably need to create List3DSeries, ....
-    2. Move bg_color, fg_color, ... of backends into defaults.py and update the
-        tutorials accordingly.
+    1. Automatic axis labeling based on provided expressions
+    2. Sidebar left/right layout
+    3. Decouple the layout into a new class, in that way maybe it could be
+        possible to use iplot with a different GUI, for example Qt, by creating
+        an InteractivePlotPanel, InteractivePlotQt, ...
+    4. Log slider
 """
 
 class DynamicParam(param.Parameterized):
     """ Dynamically add parameters based on the user-provided dictionary.
     Also, generate the lambda functions to be evaluated at a later stage.
     """
+    # NOTE: why DynamicParam is a child class of param.Parameterized?
+    # param is a full-python library, doesn't depend on anything else.
+    # In theory, by using a parameterized class it should be possible to create
+    # an InteractivePlotGUI class targeting a specific GUI.
+    # At this moment, InteractivePlot is built on top of 'panel', so it only
+    # works inside a Jupyter Notebook.
     
     def _tuple_to_dict(self, k, v):
         """ The user can provide a variable length tuple/list containing:
@@ -38,15 +42,18 @@ class DynamicParam(param.Parameterized):
                 Tuple of two float (or integer) numbers: (start, end).
             N : int
                 Number of increments in the slider. (start - end) / N represents
-                the step increment. Default to 40. Set N=-1 to have unit step increments.
+                the step increment. Default to 40. Set N=-1 to have unit step
+                increments.
             label : str
                 Label of the slider. Default to None. If None, the string or
-                latex representation will be used. See use_latex for more information.
+                latex representation will be used. See use_latex for more
+                information.
             type : str
                 Can be "linear" or "log". Default to "linear".
         """
         defaults_keys = ["default", "softbounds", "step", "label", "type"]
-        defaults_values = [1, (0, 2), 40, "$%s$" % latex(k) if self.use_latex else str(k), "linear"]
+        defaults_values = [1, (0, 2), 40, "$%s$" % latex(k) if self.use_latex
+                else str(k), "linear"]
         values = defaults_values.copy()
         values[:len(v)] = v
         # set the step increment for the slider
@@ -98,35 +105,36 @@ class DynamicParam(param.Parameterized):
         return pn.Row(left, right)
         
 class InteractivePlot(DynamicParam):
+
+    # NOTE: why isn't Plot a parent class for InteractivePlot?
+    # If that was the case, it would not be trivial to instantiate the selected
+    # backend. Therefore, in the following implementation the backend (the
+    # actual plot) is an instance attribute of InteractivePlot.
+
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
-    def __init__(self, *args, name="", parameters=None, fig_kw=None, **kwargs):
+    def __init__(self, *args, name="", parameters=None, fig_kw=dict(), **kwargs):
         args = list(map(_plot_sympify, args))
-        super().__init__(*args, name="", parameters=parameters, **kwargs)
+        super().__init__(*args, name=name, parameters=parameters, **kwargs)
         
         # create the series
         series = self._create_series(*args, **fig_kw)
+        is_3D = all([s.is_3D for s in series])
         # create the plot
-        Backend = fig_kw.pop("backend", I_B)
+        Backend = fig_kw.pop("backend", THREE_D_B if is_3D else TWO_D_B)
         self._backend = Backend(*series, **fig_kw)
-        
-        # read the parameters and generate the initial numerical data for
-        # the interactive series
-        args = self.read_parameters()
-        for s in self._backend.series:
-            if s.is_interactive:
-                s.update_data(args)
         # add the series to the plot
         self._backend._process_series(self._backend._series)
-        
     
     def _create_series(self, *args, **kwargs):
-        # TODO: would be nice to analyze the arguments/parameters and decide
-        # which kind of series we should build.
+        # read the parameters to generate the initial numerical data for
+        # the interactive series
+        kwargs["params"] = self.read_parameters()
         series = []
         for a in args:
-            series.append(InteractiveSeries(*a, fs_params=self.mapping, **kwargs))
+            exprs, ranges, label = _unpack_args(*a)
+            series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
         return series
     
     def fig(self):
@@ -145,153 +153,104 @@ class InteractivePlot(DynamicParam):
     def show(self):
         return pn.Column(self.layout_controls, self.view)
 
-# class BokehInteractive(DynamicParam, BB):
-#     def __init__(self, *args, name="", parameters=None, fig_kw=None, **kwargs):
-#         super().__init__(*args, name="", parameters=parameters, **kwargs)
-#         BB.__init__(self, **fig_kw)
-#         self.data_added = False
-    
-    
-#     def update(self):
-#         for i in range(len(self._functions)):
-#             f, args, ranges, label = self._functions[i]
-#             args = self.read_parameters(args)
+
+def iplot(*args, show=True, **kwargs):
+    """ Create interactive plots of symbolic expressions.
+    NOTE: this function currently only works within Jupyter Notebook!
+
+    Parameters
+    ==========
+
+        args : tuples
+            Each tuple represents an expression. Depending on the type of
+            expression we are plotting, the tuple should have the following
+            forms: 
+            1. line: (expr, range, label)
+            2. parametric line: (expr1, expr2, expr3 [optional], range, label)
+            3. surface (expr, range1, range2, label)
+            4. parametric surface (expr1, expr2, expr3, range1, range2, label)
             
-#             if len(ranges) > 1:
-#                 raise ValueError(
-#                         "BokehInteractive only support 2D plots, but the " +
-#                         "provided expressions uses multiple ranges.")
-#             x = list(ranges.values())[0]
-#             y = f(*args)
-#             if not self.data_added:
-#                 self.fig.line(y, x, legend_label=label,
-#                               color=next(self._colors), line_width=2)
-#             else:
-#                 self.fig.renderers[i].data_source.data.update({'x': y, 'y': x})
+            The label is always optional, whereas the ranges must always be
+            specified. The ranges will create the discretized domain.
+    
+    Keyword Arguments
+    =================
+
+        parameters : dict
+            A dictionary mapping the parameter-symbols to a parameter.
+            The parameter can be:
+            1. an instance of param.parameterized.Parameter (at the moment,
+                param.Number is supported, which will result in a slider).
+            2. a tuple of the form:
+                (default, (min, max), N [optional], label [optional])
+                where N is the number of steps of the slider.
+            
+            Note that (at the moment) the parameters cannot be linked together
+            (ie, one parameter can't depend on another one).
         
-#         if not self.data_added:
-#             self._fig.legend.visible = self.legend
-#             # interactive legend
-#             self._fig.legend.click_policy = "hide"
-#             self._fig.add_layout(self._fig.legend[0], 'right')
-#             self.data_added = True
-            
-
-#     def view(self):
-#         self.update()
-#         return pn.pane.Bokeh(self.fig)
-    
-#     def show(self):
-#         return pn.Column(self.layout_controls, self.view)
-
-
-# class PlotlyInteractive(DynamicParam, PB):
-#     def __init__(self, *args, name="", parameters=None, fig_kw=None, **kwargs):
-#         super().__init__(*args, name="", parameters=parameters, **kwargs)
-#         PB.__init__(self, **fig_kw)
-#         self.data_added = False
-    
-    
-#     def update(self):
-#         for i in range(len(self._functions)):
-#             f, args, ranges, label = self._functions[i]
-#             args = self.read_parameters(args)
-            
-#             if len(ranges) > 2:
-#                 raise ValueError(
-#                     "PlotlyInteractive only support 2D and 3D plots, but the " +
-#                     "provided expressions uses {} ranges.".format(len(ranges)))
-#             if len(ranges) == 1:
-#                 x = list(ranges.values())[0]
-#                 y = f(*args)
-#                 if not self.data_added:
-#                     self.fig.add_trace(go.Scatter(x = y, y = x, name = label))
-#                 else:
-#                     self.fig.data[i]["x"] = y
-#             else:
-#                 x, y = ranges.values()
-#                 z = f(*args)
-#                 if not self.data_added:
-#                     self._fig.add_trace(
-#                         go.Surface(
-#                             x = x, y = y, z = z,
-#                             name = label,
-#                             colorscale = next(self._cm)
-#                         )
-#                     )
-#                 else:
-#                     self.fig.data[i]["z"] = z
-#         self.data_added = True
-            
-
-#     def view(self):
-#         self.update()
-#         return pn.pane.Plotly(self.fig)
-    
-#     def show(self):
-#         return pn.Column(self.layout_controls, self.view)
-
-
-# class K3DInteractive(DynamicParam, KB):
-#     def __init__(self, *args, name="", parameters=None, fig_kw=None, **kwargs):
-#         super().__init__(*args, name="", parameters=parameters, **kwargs)
-#         KB.__init__(self, **fig_kw)
-#         self.data_added = False
-#         self.renderers = []
-#         self._populate_plot()
+        fig_kw : dict
+            A dictionary with the usual keyword arguments to customize the plot,
+            such as title, xlabel, n (number of discretization points), ...
+            This dictionary will be passed to the backend: check its
+            documentations to find more keyword arguments.
         
+        show : bool
+            Default to True.
+            If True, it will return an object that will be rendered on the
+            output cell of a Jupyter Notebook. If False, it returns an instance
+            of `InteractivePlot`.
+        
+        use_latex : bool
+            Default to True.
+            If True, the latex representation of the symbols will be used in the
+            labels of the parameter-controls. If False, the string
+            representation will be used instead.
     
-#     def _populate_plot(self):
-#         for i in range(len(self._functions)):
-#             f, args, ranges, label = self._functions[i]
-#             args = self.read_parameters(args)
-            
-#             if (len(ranges) == 1) or (len(ranges) > 2):
-#                 raise ValueError(
-#                     "K3DInteractive only support 3D plots, but the " +
-#                     "provided expressions uses {} ranges.".format(len(ranges)))
-            
-#             x, y = ranges.values()
-#             z = f(*args)
-#             x = x.flatten()
-#             y = y.flatten()
-#             z = z.flatten()
-#             vertices = np.vstack([x, y, z])
-#             indices = Triangulation(x, y).triangles.astype(np.uint32)
-#             a = dict(
-#                 name = label if self._kwargs.get("show_label", False) else None,
-#                 side = "double",
-#                 flat_shading = False,
-#                 wireframe = self._kwargs.get("wireframe", False),
-#                 color = self._convert_to_int(next(self._iter_colorloop)),
-#             )
-#             if self._use_cm:
-#                 a["color_map"] = next(self._iter_colormaps)
-#                 a["attribute"] = z
-#             surf = k3d.mesh(vertices.T, indices, **a)
-#             self.renderers.append(surf)
-#             self._fig += surf
-            
-    
-#     def update(self):
-#         for i in range(len(self._functions)):
-#             f, args, ranges, label = self._functions[i]
-#             args = self.read_parameters(args)
-#             x, y = ranges.values()
-#             z = f(*args)   
-#             x = x.flatten()
-#             y = y.flatten()
-#             z = z.flatten()
-#             vertices = np.vstack([x, y, z])
-#             self.renderers[i].vertices= vertices.T
+    Examples
+    ========
 
-#             ## TODO: This doesn't work, why?
-#             # self.renderers[i].vertices[:, 2] = z
-            
+    Surface plot between -10 <= x, y <= 10 with a damping parameter varying from
+    0 to 1 with a default value of 0.15:
 
-#     def view(self):
-#         self.update()
-#         return pn.pane.Pane(self.fig, width=800)
+    .. code-block:: python
+        x, y, d = symbols("x, y, d")
+        r = sqrt(x**2 + y**2)
+        expr = 10 * cos(r) * exp(-r * d)
+
+        iplot(
+            (expr, (x, -10, 10), (y, -10, 10)),
+            parameters = { d: (0.15, (0, 1)) },
+            fig_kw = dict(
+                title = "My Title",
+                xlabel = "x axis",
+                ylabel = "y axis",
+                zlabel = "z axis",
+                n = 100
+            )
+        )
     
-#     def show(self):
-#         return pn.Column(self.layout_controls, self.view)
+    A line plot illustrating the use of multiple expressions and:
+    1. some expression may not use all the parameters
+    2. custom labeling of the expressions
+    3. custom number of steps in the slider
+    4. custom labeling of the parameter-sliders
+    
+    .. code-block:: python
+        x, A1, A2, k = symbols("x, A1, A2, k")
+        iplot(
+            (log(x) + A1 * sin(k * x), (x, 0, 20), "f1"),
+            (exp(-(x - 2)) + A2 * cos(x), (x, 0, 20), "f2"),
+            (A1 + A1 * cos(x), A2 * sin(x), (x, 0, pi)),
+            parameters = {
+                k: (1, (0, 5)),
+                A1: (2, (0, 10), 20, "Ampl 1"),
+                A2: (2, (0, 10), 40, "Ampl 2"),
+            },
+            fig_kw = { "legend": True }
+        )
+
+    """
+    i = InteractivePlot(*args, **kwargs)
+    if show:
+        return i.show()
+    return i

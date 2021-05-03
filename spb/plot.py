@@ -104,11 +104,6 @@ def plot(*args, show=True, **kwargs):
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
 
-    label : str, optional
-        This option is no longer used. Refer to ``args`` to understand
-        how to set labels which will be visualized when called with
-        ``legend``.
-
     xlabel : str, optional
         Label for the x-axis.
 
@@ -260,7 +255,6 @@ def plot(*args, show=True, **kwargs):
     kwargs.setdefault('backend', TWO_D_B)
     kwargs.setdefault('xlabel', x.name)
     kwargs.setdefault('ylabel', 'f(%s)' % x.name)
-    kwargs = _remove_label_key(kwargs)
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 1)
@@ -283,7 +277,7 @@ def plot_parametric(*args, show=True, **kwargs):
         Common specifications are:
 
         - Plotting a single parametric curve with a range
-            ``plot_parametric((expr_x, expr_y), range)``
+            ``plot_parametric(expr_x, expr_y, range)``
         - Plotting multiple parametric curves with the same range
             ``plot_parametric((expr_x, expr_y), ..., range)``
         - Plotting multiple parametric curves with different ranges
@@ -299,14 +293,8 @@ def plot_parametric(*args, show=True, **kwargs):
         parametric function.
 
         ``range`` is a 3-tuple denoting the parameter symbol, start and
-        stop. For example, ``(u, 0, 5)``.
-
-        ``label`` is an optional string denoting the label of the expression
-        to be visualized on the legend. If not provided, the label will be the
-        string representation of the expression.
-
-        If the range is not specified, then a default range of (-10, 10)
-        is used.
+        stop. For example, ``(u, 0, 5)``. If the range is not specified, then
+        a default range of (-10, 10) is used.
 
         However, if the arguments are specified as
         ``(expr_x, expr_y, range), ...``, you must specify the ranges
@@ -314,6 +302,10 @@ def plot_parametric(*args, show=True, **kwargs):
 
         Default range may change in the future if a more advanced
         algorithm is implemented.
+
+        ``label`` : An optional string denoting the label of the expression
+        to be visualized on the legend. If not provided, the label will be the
+        string representation of the expression.
 
     adaptive : bool, optional
         Specifies whether to use the adaptive sampling or not.
@@ -336,11 +328,6 @@ def plot_parametric(*args, show=True, **kwargs):
         See ``Plot`` to see how to set color for the plots.
         Note that by setting ``line_color``, it would be applied simultaneously
         to all the series.
-
-    label : str, optional
-        This option is no longer used. Refer to ``args`` to understand
-        how to set labels which will be visualized when called with
-        ``legend``.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -464,7 +451,6 @@ def plot_parametric(*args, show=True, **kwargs):
     args = _plot_sympify(args)
     series = []
     kwargs.setdefault('backend', TWO_D_B)
-    kwargs = _remove_label_key(kwargs)
     kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
     plot_expr = _check_arguments(args, 2, 1)
     series = [Parametric2DLineSeries(*arg, **kwargs) for arg in plot_expr]
@@ -527,10 +513,6 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
         Note that by setting ``line_color``, it would be applied simultaneously
         to all the series.
 
-    ``label``: str
-        The label to the plot. It will be used when called with ``legend=True``
-        to denote the function with the given label in the plot.
-
     If there are multiple plots, then the same series arguments are applied to
     all the plots. If you want to set these options separately, you can index
     the returned ``Plot`` object and set it.
@@ -590,7 +572,6 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     kwargs.setdefault('backend', THREE_D_B)
-    kwargs = _remove_label_key(kwargs)
     kwargs = _set_discretization_points(kwargs, Parametric3DLineSeries)
     series = []
     plot_expr = _check_arguments(args, 3, 1)
@@ -732,7 +713,6 @@ def plot3d(*args, show=True, **kwargs):
 
     args = _plot_sympify(args)
     kwargs.setdefault('backend', THREE_D_B)
-    kwargs = _remove_label_key(kwargs)
     kwargs = _set_discretization_points(kwargs, SurfaceOver2DRangeSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 2)
@@ -849,7 +829,6 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
 
     args = _plot_sympify(args)
     kwargs.setdefault('backend', THREE_D_B)
-    kwargs = _remove_label_key(kwargs)
     kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
     plot_expr = _check_arguments(args, 3, 2)
     kwargs.setdefault("xlabel", "x")
@@ -938,7 +917,6 @@ def plot_contour(*args, show=True, **kwargs):
 
     args = _plot_sympify(args)
     kwargs.setdefault('backend', TWO_D_B)
-    kwargs = _remove_label_key(kwargs)
     kwargs = _set_discretization_points(kwargs, ContourSeries)
     plot_expr = _check_arguments(args, 1, 2)
     series = [ContourSeries(*arg, **kwargs) for arg in plot_expr]
@@ -981,9 +959,10 @@ def _create_ranges(free_symbols, ranges, npar):
             "Received {}: {}".format(len(free_symbols), free_symbols)
         )
 
-    if len(ranges) > npar:
-        raise ValueError(
-            "Too many ranges. Received %s, expected %s" % (len(ranges), npar))
+    # TODO: should I keep it?
+    # if len(ranges) > npar:
+    #     raise ValueError(
+    #         "Too many ranges. Received %s, expected %s" % (len(ranges), npar))
 
     # free symbols in the ranges provided by the user
     rfs = set().union([r[0] for r in ranges])
@@ -1110,14 +1089,3 @@ def _check_arguments(args, nexpr, npar):
     
     return output
 
-def _remove_label_key(d):
-    """The "label" keyword is no longer needed in the plot, as it will clash
-    with the label provided by the user (or the one automatically generated by
-    _check_arguments()). By removing this keyword, the __init__ method of
-    the *Series classes will only receive one "label", avoiding the following
-    error:
-    TypeError: __init__() got multiple values for argument 'label'
-    """
-    if "label" in d.keys():
-        d.pop("label")
-    return d

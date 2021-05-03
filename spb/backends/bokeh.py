@@ -1,3 +1,4 @@
+from spb.defaults import bokeh_theme
 from spb.backends.base_backend import Plot
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
@@ -12,6 +13,7 @@ import numpy as np
 
 # TODO:
 # 1. list of colormaps to loop over for parametric plots
+# 2. gradients lines instead of gradient dots for parametric plots???
 # 
 
 class BokehBackend(Plot):
@@ -46,12 +48,14 @@ class BokehBackend(Plot):
         super().__init__(*args, **kwargs)
 
         if self._get_mode() == 0:
-            output_notebook()
+            output_notebook(
+                hide_banner=True
+            )
         
         # infinity cycler over 10 colors
         self._colors = itertools.cycle(Category10[10])
             
-        curdoc().theme = kwargs.get("theme", "dark_minimal")
+        curdoc().theme = kwargs.get("theme", bokeh_theme)
         TOOLTIPS = [
             ("x", "$x"),
             ("y", "$y")
@@ -107,17 +111,24 @@ class BokehBackend(Plot):
         self._fig.add_layout(self._fig.legend[0], 'right')
     
     def _update_interactive(self, params):
+        # Parametric lines are rendered with two lines:
+        # 1. the solid one
+        # 2. the gradient dots
+        # Hence, need to keep track of how many parametric lines we encounter.
+        pc = 0
+        rend = self.fig.renderers
         for i, s in enumerate(self.series):
             if s.is_interactive:
                 self.series[i].update_data(params)
                 
                 if s.is_2Dline and s.is_parametric:
                     x, y = self.series[i].get_data()
-                    self.fig.renderers[i].data_source.data.update({'x': x, 'y': y})
-                    self.fig.renderers[i + 1].data_source.data.update({'x': x, 'y': y})
+                    rend[i + pc].data_source.data.update({'x': x, 'y': y})
+                    rend[i + pc + 1].data_source.data.update({'x': x, 'y': y})
+                    pc += 1
                 if s.is_2Dline and (not s.is_parametric):
                     x, y = self.series[i].get_data()
-                    self.fig.renderers[i].data_source.data.update({'y': y})
+                    rend[i + pc].data_source.data.update({'y': y})
 
     def save(self, path, **kwargs):
         self._process_series(self._series)

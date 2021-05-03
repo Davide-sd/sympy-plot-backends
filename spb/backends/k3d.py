@@ -1,3 +1,4 @@
+from spb.defaults import k3d_bg_color
 from spb.backends.base_backend import Plot
 import k3d
 import numpy as np
@@ -56,7 +57,7 @@ class K3DBackend(Plot):
         self._fig = k3d.plot(
             grid_visible = self.axis,
             menu_visibility = True,
-            background_color = self._kwargs.get("bg_color", 0xFFFFFF)
+            background_color = self._kwargs.get("bg_color", k3d_bg_color)
         )
         if (self.xscale == "log") or (self.yscale == "log"):
             warnings.warn("K3D-Jupyter doesn't support log scales. We will " +
