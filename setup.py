@@ -39,7 +39,7 @@ setup(
         "bokeh",
         "ipyevents",
         "PyQt5",
-        "mayavi",
+        # "mayavi",
         "k3d"
     ]
 )
