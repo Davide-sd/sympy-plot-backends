@@ -64,7 +64,5 @@ libxcb1-dev
 libx11-xcb-perl
 libxcb-cursor-dev
 libxcb-cursor0
-libxcb-imdkit-dev
-libxcb-imdkit0
 libxcb-xrm-dev
 libxcb-xrm0
