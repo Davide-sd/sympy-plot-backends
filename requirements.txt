@@ -1,0 +1,12 @@
+numpy
+sympy
+matplotlib
+plotly>=4.14.3
+colorcet
+param
+panel
+holoviews
+bokeh
+mayavi
+PyQt5
+k3d
