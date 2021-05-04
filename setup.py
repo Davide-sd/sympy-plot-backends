@@ -30,6 +30,7 @@ setup(
         "numpy",
         "sympy",
         "matplotlib",
+        "ipympl",
         "plotly>=4.14.3",
         "colorcet",
         "param",

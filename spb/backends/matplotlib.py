@@ -1,6 +1,10 @@
 from collections.abc import Callable
 from sympy.external import import_module
 from spb.backends.base_backend import Plot
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+from matplotlib.collections import LineCollection
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
@@ -61,13 +65,6 @@ class MatplotlibBackend(Plot):
         self.fill = kwargs.get("fill", None)
     
     def _create_figure(self):
-        self.matplotlib = import_module('matplotlib',
-            import_kwargs={'fromlist': ['pyplot', 'cm', 'collections']},
-            min_module_version='1.1.0', catch=(RuntimeError,))
-        self.plt = self.matplotlib.pyplot
-        self.cm = self.matplotlib.cm
-        self.LineCollection = self.matplotlib.collections.LineCollection
-
         aspect = self.aspect_ratio
         if aspect != 'auto':
             aspect = float(aspect[1]) / aspect[0]
@@ -80,7 +77,7 @@ class MatplotlibBackend(Plot):
             series_list = self.series
 
         self.ax = []
-        self._fig = self.plt.figure(figsize=self.size)
+        self._fig = plt.figure(figsize=self.size)
 
         for i, series in enumerate(series_list):
             are_3D = [s.is_3D for s in series]
@@ -152,7 +149,7 @@ class MatplotlibBackend(Plot):
                 if (isinstance(s.line_color, (int, float)) or
                         callable(s.line_color)):
                     segments = self.get_segments(x, y)
-                    collection = self.LineCollection(segments)
+                    collection = LineCollection(segments)
                     collection.set_array(s.get_color_array())
                     ax.add_collection(collection)
                 else:
@@ -178,7 +175,7 @@ class MatplotlibBackend(Plot):
             elif s.is_3Dsurface:
                 x, y, z = s.get_meshes()
                 collection = ax.plot_surface(x, y, z,
-                    cmap=getattr(self.cm, 'viridis', self.cm.jet),
+                    cmap=getattr(cm, 'viridis', cm.jet),
                     rstride=1, cstride=1, linewidth=0.1)
                 if isinstance(s.surface_color, (float, int)) or isinstance(s.surface_color, Callable):
                     color_array = s.get_color_array()
@@ -364,6 +361,6 @@ class MatplotlibBackend(Plot):
     def close(self):
         """ Close the current plot.
         """
-        self.plt.close(self._fig)
+        plt.close(self._fig)
 
 MB = MatplotlibBackend
