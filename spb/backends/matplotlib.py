@@ -5,6 +5,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.collections import LineCollection
+from matplotlib.colors import ListedColormap
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
@@ -197,7 +198,6 @@ class MatplotlibBackend(Plot):
                     # use contourf or contour depending on whether it is
                     # an inequality or equality.
                     # XXX: ``contour`` plots multiple lines. Should be fixed.
-                    ListedColormap = self.matplotlib.colors.ListedColormap
                     colormap = ListedColormap(["white", s.line_color])
                     xarray, yarray, zarray, plot_type = points
                     if plot_type == 'contour':
@@ -246,7 +246,7 @@ class MatplotlibBackend(Plot):
             ax.set_xscale(parent.xscale)
         if parent.yscale and not isinstance(ax, Axes3D):
             ax.set_yscale(parent.yscale)
-        if not isinstance(ax, Axes3D) or self.matplotlib.__version__ >= '1.2.0':  # XXX in the distant future remove this check
+        if not isinstance(ax, Axes3D):  # XXX in the distant future remove this check
             ax.set_autoscale_on(parent.autoscale)
         if parent.axis_center:
             val = parent.axis_center
@@ -293,7 +293,7 @@ class MatplotlibBackend(Plot):
                 ax.plot(*args, **m)
         if parent.rectangles:
             for r in parent.rectangles:
-                rect = self.matplotlib.patches.Rectangle(**r)
+                rect = matplotlib.patches.Rectangle(**r)
                 ax.add_patch(rect)
         if parent.fill:
             ax.fill_between(**parent.fill)
