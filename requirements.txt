@@ -8,5 +8,4 @@ panel
 holoviews
 bokeh
 PyQt5
-mayavi
 k3d
