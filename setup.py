@@ -37,8 +37,9 @@ setup(
         "panel",
         "holoviews",
         "bokeh",
-        # "mayavi",
-        # "PyQt5",
+        "ipyevents",
+        "PyQt5",
+        "mayavi",
         "k3d"
     ]
 )

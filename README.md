@@ -1,5 +1,7 @@
 # Sympy Plotting Backends
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Davide-sd/sympy-plot-backends/HEAD)
+
 This module contains a few plotting backends that can be used with [SymPy](github.com/sympy/sympy) as an alternative to the default Matplotlib backend. A backend represents the plotting library: it provides the necessary functionalities to quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots).
 
 <div>
@@ -112,9 +114,13 @@ The following list of requirements will automatically be downloaded once you ins
 
 ## Installation
 
+Click the _launch binder_ icon below to interactively explore the notebooks in the tutorial folder.
+
+
+
 1. Download this repository: `git clone https://github.com/Davide-sd/sympy-plot-backends`
 2. Move into the module folder, `sympy_plot_backends` and install the module with the command `pip install . -e`. Note that we installed it in _editable_ mode. This will allows us to customize it and try different default options.
-3. Launch Jupyter Notebook and explore the `tutorials` folder to see what this module offers.
+3. Launch Jupyter Notebook and explore the `tutorials` folder to see what this module offers. Alternatively, click the following button to explore it online (in this case Mayavi won't work, therefore comment out the lines of code referring to Mayavi!). [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Davide-sd/sympy-plot-backends/HEAD)
 4. **Optional step**: open the file `spb/defaults.py` and change the default backends and related options. [Tutorial 3](tutorials/tutorial-3.customize-the-module.ipynb) helps you with that.
 
 
