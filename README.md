@@ -119,7 +119,7 @@ Click the _launch binder_ icon below to interactively explore the notebooks in t
 
 
 1. Download this repository: `git clone https://github.com/Davide-sd/sympy-plot-backends`
-2. Move into the module folder, `sympy_plot_backends` and install the module with the command `pip install . -e`.
+2. Move into the module folder, `sympy_plot_backends` and install the module with the command `pip install -e .`.
     * Note that we installed it in _editable_ mode. This will allows us to customize it and try different default options.
     * At the moment Mayavi won't be automatically installed. [You need to do that youself by following these steps](https://github.com/enthought/mayavi#installation).
 3. Launch Jupyter Notebook and explore the `tutorials` folder to see what this module offers. Alternatively, click the following button to explore it online (in this case Mayavi won't work, therefore comment out the lines of code referring to Mayavi!). [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Davide-sd/sympy-plot-backends/HEAD)
