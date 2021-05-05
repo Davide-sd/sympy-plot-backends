@@ -7,6 +7,7 @@ from spb.backends.base_backend import Plot
 from spb.series import InteractiveSeries
 from spb.utils import _plot_sympify, _unpack_args
 from spb.defaults import TWO_D_B, THREE_D_B
+import warnings
 
 pn.extension("plotly")
 
@@ -14,7 +15,6 @@ pn.extension("plotly")
 """
 TODO:
     1. Automatic axis labeling based on provided expressions
-    2. Sidebar left/right layout
 """
 
 class MyList(param.ObjectSelector):
@@ -132,7 +132,21 @@ class PanelLayout:
     the library panel.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, layout, ncols):
+        """
+        Parameters
+        ==========
+            layout : str
+                The layout for the controls/plot. Possible values:
+                    'tb': controls in the top bar.
+                    'bb': controls in the bottom bar.
+                    'sbl': controls in the left side bar.
+                    'sbr': controls in the right side bar.
+                Default layout to 'tb'.
+            
+            ncols : int
+                Number of columns to lay out the widgets. Default to 2.
+        """
         # NOTE: More often than not, the numerical evaluation is going to be
         # resource-intensive. By default, panel's sliders will force a recompute
         # at every step change. As a consequence, the user experience will be
@@ -146,6 +160,16 @@ class PanelLayout:
         # no one-on-one mapping. For example, a bounded param.Integer
         # will create an IntegerSlider, whereas an unbounded param.Integer will
         # create a IntInput.
+
+        layouts = ["tb, bb, sbl, sbr"]
+        layout = layout.lower()
+        if layout not in layouts:
+            warnings.warn(
+                "`layout` must be one of the following: {}\n".format(layouts) +
+                "Falling back to layout='tb'."
+            )
+            layout = "tb"
+        self._layout = layout
 
         widgets = {}
         for k, v in self.mapping.items():
@@ -172,9 +196,9 @@ class PanelLayout:
         self.controls = pn.Param(
                 self, 
                 widgets = widgets,
-                default_layout = _new_class(pn.GridBox, ncols=2),
+                default_layout = _new_class(pn.GridBox, ncols=ncols),
                 show_name = False,
-                sizing_mode='stretch_width'
+                sizing_mode = 'stretch_width'
         )
 
 
@@ -191,7 +215,14 @@ class PanelLayout:
             return self.fig
     
     def show(self):
-        return pn.Column(self.layout_controls, self.view)
+        if self._layout == "tb":
+            return pn.Column(self.layout_controls, self.view)
+        elif self._layout == "bb":
+            return pn.Column(self.view, self.layout_controls)
+        elif self._layout == "sbl":
+            return pn.Row(self.layout_controls, self.view)
+        elif self._layout == "sbr":
+            return pn.Row(self.view, self.layout_controls)
 
 class InteractivePlot(DynamicParam, PanelLayout):
     """ Contains all the logic to create parametric-interactive plots.
@@ -206,9 +237,12 @@ class InteractivePlot(DynamicParam, PanelLayout):
         return object.__new__(cls)
 
     def __init__(self, *args, name="", params=None, fig_kw=dict(), **kwargs):
+        layout = kwargs.pop("layout", "tp")
+        ncols = kwargs.pop("ncols", 2)
+
         args = list(map(_plot_sympify, args))
         super().__init__(*args, name=name, params=params, **kwargs)
-        PanelLayout.__init__(self)
+        PanelLayout.__init__(self, layout, ncols)
         
         # create the series
         series = self._create_series(*args, **fig_kw)
@@ -292,6 +326,17 @@ def iplot(*args, show=True, **kwargs):
             If True, the latex representation of the symbols will be used in the
             labels of the parameter-controls. If False, the string
             representation will be used instead.
+        
+        layout : str
+            The layout for the controls/plot. Possible values:
+                'tb': controls in the top bar.
+                'bb': controls in the bottom bar.
+                'sbl': controls in the left side bar.
+                'sbr': controls in the right side bar.
+            Default layout to 'tb'.
+        
+        ncols : int
+            Number of columns to lay out the widgets. Default to 2.
     
     Examples
     ========

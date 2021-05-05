@@ -88,7 +88,7 @@ def test_iplot():
             y: param.Integer(1, softbounds=(0, None)),
             u: param.Boolean(default=True),
             v: param.ObjectSelector(default=2, objects=[1, 2, 3, 4]),
-        }, show=False
+        }, show=False, layout="tb", ncols=2
     )
 
     # there are 4 parameters in this plot
