@@ -161,7 +161,7 @@ class PanelLayout:
         # will create an IntegerSlider, whereas an unbounded param.Integer will
         # create a IntInput.
 
-        layouts = ["tb, bb, sbl, sbr"]
+        layouts = ["tb", "bb", "sbl", "sbr"]
         layout = layout.lower()
         if layout not in layouts:
             warnings.warn(
@@ -237,7 +237,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         return object.__new__(cls)
 
     def __init__(self, *args, name="", params=None, fig_kw=dict(), **kwargs):
-        layout = kwargs.pop("layout", "tp")
+        layout = kwargs.pop("layout", "tb")
         ncols = kwargs.pop("ncols", 2)
 
         args = list(map(_plot_sympify, args))
@@ -333,7 +333,8 @@ def iplot(*args, show=True, **kwargs):
                 'bb': controls in the bottom bar.
                 'sbl': controls in the left side bar.
                 'sbr': controls in the right side bar.
-            Default layout to 'tb'.
+            Default layout to 'tb'. Keep in mind that side bar layouts may not
+            work well with some backends.
         
         ncols : int
             Number of columns to lay out the widgets. Default to 2.
