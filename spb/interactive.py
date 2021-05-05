@@ -15,8 +15,16 @@ pn.extension("plotly")
 TODO:
     1. Automatic axis labeling based on provided expressions
     2. Sidebar left/right layout
-    3. Log slider
 """
+
+class MyList(param.ObjectSelector):
+    """ Represent a list of numbers discretizing a log-spaced slider.
+    This parameter will be rendered by pn.widgets.DiscreteSlider
+    """
+    pass
+
+# explicitely ask panel to use DiscreteSlider when it encounters a MyList object
+pn.Param._mapping[MyList] = pn.widgets.DiscreteSlider
 
 class DynamicParam(param.Parameterized):
     """ Dynamically add parameters based on the user-provided dictionary.
@@ -27,11 +35,11 @@ class DynamicParam(param.Parameterized):
     # In theory, by using a parameterized class it should be possible to create
     # an InteractivePlotGUI class targeting a specific GUI.
     # At this moment, InteractivePlot is built on top of 'panel', so it only
-    # works inside a Jupyter Notebook.
+    # works inside a Jupyter Notebook. Maybe it's possible to use PyQt or Tk...
     
     def _tuple_to_dict(self, k, v):
         """ The user can provide a variable length tuple/list containing:
-            (default, softbounds, N, label, type (lin, log))
+            (default, softbounds, N, label, spacing)
         where:
             default : float
                 Default value of the slider
@@ -45,19 +53,37 @@ class DynamicParam(param.Parameterized):
                 Label of the slider. Default to None. If None, the string or
                 latex representation will be used. See use_latex for more
                 information.
-            type : str
-                Can be "linear" or "log". Default to "linear".
+            spacing : str
+                Discretization spacing. Can be "linear" or "log".
+                Default to "linear".
         """
+        N = 40
         defaults_keys = ["default", "softbounds", "step", "label", "type"]
-        defaults_values = [1, (0, 2), 40, "$%s$" % latex(k) if self.use_latex
+        defaults_values = [1, (0, 2), N, "$%s$" % latex(k) if self.use_latex
                 else str(k), "linear"]
         values = defaults_values.copy()
         values[:len(v)] = v
         # set the step increment for the slider
+        _min, _max = values[1][0], values[1][1]
         if values[2] > 0:
-            values[2] = (values[1][1] - values[1][0]) / values[2]
+            N = values[2]
+            values[2] = (_max - _min) / N
         else:
             values[2] = 1
+
+        if values[-1] == "log":
+            # In case of a logarithm slider, we need to instantiate the custom
+            # parameter MyList.
+
+            # # divide the range in N steps evenly spaced in a log scale
+            options = np.geomspace(_min, _max, N)
+            # the provided default value may not be in the computed options.
+            # If that's the case, I chose the closest value
+            default = values[0]
+            if default not in options:
+                default = min(options, key=lambda x: abs(x - default))
+            return MyList(default=default, objects=options, label=values[3])
+
         return {k: v for k, v in zip (defaults_keys, values)}
     
     def __init__(self, *args, name="", params=None, **kwargs):
@@ -79,9 +105,11 @@ class DynamicParam(param.Parameterized):
         for i, (k, v) in enumerate(params.items()):
             if not isinstance(v, param.parameterized.Parameter):
                 v = self._tuple_to_dict(k, v)
-                # TODO: modify this to implement log slider
-                v.pop("type", None)
-                v = param.Number(**v)
+                # at this stage, v could be a dictionary representing a number,
+                # or a MyList parameter, representing a log slider
+                if not isinstance(v, param.parameterized.Parameter):
+                    v.pop("type", None)
+                    v = param.Number(**v)
             
             # TODO: using a private method: not the smartest thing to do
             self.param._add_parameter("dyn_param_{}".format(i), v)
@@ -109,16 +137,15 @@ class PanelLayout:
         # resource-intensive. By default, panel's sliders will force a recompute
         # at every step change. As a consequence, the user experience will be
         # laggy. To solve this problem, the update must be triggered on mouse-up
-        # event, which is set by throttled=True on the slider's __init__ method.
+        # event, which is set using throttled=True.
         #
-        # There is no easy way to do it:
         # https://panel.holoviz.org/reference/panes/Param.html#disabling-continuous-updates-for-slider-widgets
-        # In our case, we need to loop over the parameters, check their type
-        # and hope for the best, because there is not a one-on-one mapping 
-        # between a parameter and a control. For example, a bounded param.Integer
+        #
+        # The procedure is not optimal, as we need to re-map again the 
+        # parameters with the widgets: for param.Number, param.Integer there is
+        # no one-on-one mapping. For example, a bounded param.Integer
         # will create an IntegerSlider, whereas an unbounded param.Integer will
-        # create a spinner.
-        # Clearly, this approach is far from optimal...
+        # create a IntInput.
 
         widgets = {}
         for k, v in self.mapping.items():
@@ -126,20 +153,17 @@ class PanelLayout:
             widget = ""
             if isinstance(t, param.Integer):
                 widget = pn.widgets.IntSlider
-                if any([(b is None) for b in t.bounds]):
-                    widget = pn.widgets.Spinner
+                if t.bounds and any([(b is None) for b in t.bounds]):
+                    widget = pn.widgets.IntInput
             elif isinstance(t, param.Number):
                 widget = pn.widgets.FloatSlider
-            elif isinstance(t, param.Boolean):
-                widget = pn.widgets.Checkbox
-            elif isinstance(t, param.ObjectSelector):
-                widget = pn.widgets.Select
-            else:
-                raise ValueError("{} is not yet supported".format(type(t)))
+                if t.bounds and any([(b is None) for b in t.bounds]):
+                    widget = pn.widgets.FloatInput
+            elif isinstance(t, MyList):
+                # TODO: it seems like DiscreteSlider doesn't support throttling
+                widget = pn.widgets.DiscreteSlider
             
-            if not isinstance(t, param.Number):
-                widgets[v] = widget
-            else:
+            if isinstance(t, param.Number):
                 widgets[v] = {
                     "type": widget,
                     "throttled": True,
@@ -239,8 +263,14 @@ def iplot(*args, show=True, **kwargs):
             1. an instance of param.parameterized.Parameter (at the moment,
                 param.Number is supported, which will result in a slider).
             2. a tuple of the form:
-                (default, (min, max), N [optional], label [optional])
-                where N is the number of steps of the slider.
+                (default, (min, max), N [optional], label [optional], spacing [optional])
+                where:
+                    N is the number of steps of the slider.
+                    (min, max) must be finite numbers.
+                    label: the custom text associated to the slider.
+                    spacing : str
+                        Specify the discretization spacing. Default to "linear",
+                        can be changed to "log".
             
             Note that (at the moment) the parameters cannot be linked together
             (ie, one parameter can't depend on another one).
