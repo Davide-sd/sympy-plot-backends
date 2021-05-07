@@ -520,7 +520,8 @@ class Parametric3DLineSeries(Line3DBaseSeries):
 
     def get_parameter_points(self):
         np = import_module('numpy')
-        return np.linspace(self.start, self.end, num=self.n)
+        self.discretized_var = np.linspace(self.start, self.end, num=self.n)
+        return self.discretized_var
 
     def get_points(self):
         np = import_module('numpy')
