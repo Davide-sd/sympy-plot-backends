@@ -96,6 +96,7 @@ class K3DBackend(Plot):
         for s in series:
             if s.is_3Dline:
                 x, y, z = s.get_data()
+                print(x.shape, y.shape, z.shape)
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 length = self._line_length(x, y, z, start=s.start, end=s.end)
                 # keyword arguments for the line object
