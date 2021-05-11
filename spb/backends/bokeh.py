@@ -14,11 +14,6 @@ import os
 import numpy as np
 from mergedeep import merge
 
-# TODO:
-# 1. list of colormaps to loop over for parametric plots
-# 2. gradients lines instead of gradient dots for parametric plots???
-# 
-
 class BokehBackend(Plot):
     """ A backend for plotting SymPy's symbolic expressions using Bokeh.
     Note: this implementation only implements 2D plots.
@@ -66,7 +61,6 @@ class BokehBackend(Plot):
                 hide_banner=True
             )
         
-        # infinity cycler over 10 colors
         self._colors = itertools.cycle(bp.Category10[10])
         self._cm = itertools.cycle(self.colormaps)
         self._ccm = itertools.cycle(self.contour_colormaps)
@@ -145,7 +139,7 @@ class BokehBackend(Plot):
             self._fig.legend.click_policy = "hide"
             self._fig.add_layout(self._fig.legend[0], 'right')
     
-    def _create_gradient_line(self, x, y, u, colormap, name):
+    def _get_segments(self, x, y, u):
         # MultiLine works with line segments, not with line points! :|
         xs = [x[i-1:i+1] for i in range(1, len(x))]
         ys = [y[i-1:i+1] for i in range(1, len(y))]
@@ -153,6 +147,10 @@ class BokehBackend(Plot):
         # be (n - 1). Therefore, we remove one parameter. If n is sufficiently
         # high, there shouldn't be any noticeable problem in the visualization.
         us = u[:-1]
+        return xs, ys, us
+
+    def _create_gradient_line(self, x, y, u, colormap, name):
+        xs, ys, us = self._get_segments(x, y, u)
 
         color_mapper = LinearColorMapper(palette = colormap, 
             low = min(u), high = max(u))
@@ -170,24 +168,19 @@ class BokehBackend(Plot):
         return data_source, glyph, colorbar
 
     def _update_interactive(self, params):
-        # Parametric lines are rendered with two lines:
-        # 1. the solid one
-        # 2. the gradient dots
-        # Hence, need to keep track of how many parametric lines we encounter.
-        pc = 0
         rend = self.fig.renderers
         for i, s in enumerate(self.series):
             if s.is_interactive:
                 self.series[i].update_data(params)
                 
-                if s.is_2Dline and s.is_parametric:
-                    x, y = self.series[i].get_data()
-                    rend[i + pc].data_source.data.update({'x': x, 'y': y})
-                    rend[i + pc + 1].data_source.data.update({'x': x, 'y': y})
-                    pc += 1
                 if s.is_2Dline and (not s.is_parametric):
                     x, y = self.series[i].get_data()
-                    rend[i + pc].data_source.data.update({'y': y})
+                    rend[i].data_source.data.update({'x': x, 'y': y})
+                elif s.is_2Dline and s.is_parametric:
+                    x, y = self.series[i].get_data()
+                    u = s.discretized_var
+                    xs, ys, us = self._get_segments(x, y, u)
+                    rend[i].data_source.data.update({'xs': xs, 'ys': ys, 'us': us})
 
     def save(self, path, **kwargs):
         self._process_series(self._series)

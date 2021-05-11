@@ -1007,6 +1007,11 @@ class InteractiveSeries(BaseSeries):
             discretizations.append(
                 self._discretize(float(r[1]), float(r[2]), n, scale=scale))
         
+        # in this case the parametric class has one parameter, u. 
+        # Its discretization will be used by the backends for the gradient color
+        if self.is_parametric and (self.is_2Dline or self.is_3Dline):
+            self.discretized_var = discretizations[0]
+
         if len(ranges) == 1:
             # 2D or 3D lines
             self.ranges = {k: v for k, v in zip(discr_symbols, discretizations)}
