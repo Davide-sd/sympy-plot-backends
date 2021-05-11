@@ -2,14 +2,17 @@ from spb.defaults import bokeh_theme
 from spb.backends.base_backend import Plot
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
-from bokeh.palettes import Category10
+import bokeh.palettes as bp
 from bokeh.io import curdoc
-from bokeh.models import LinearColorMapper, ColumnDataSource
+from bokeh.models import (
+    LinearColorMapper, ColumnDataSource, MultiLine, ColorBar
+)
 from bokeh.io import export_png, export_svg
 import itertools
-import colorcet
+import colorcet as cc
 import os
 import numpy as np
+from mergedeep import merge
 
 # TODO:
 # 1. list of colormaps to loop over for parametric plots
@@ -22,6 +25,9 @@ class BokehBackend(Plot):
 
     Keyword Arguments
     =================
+
+        colorbar_kw : dict
+            A dictionary with keyword arguments to customize the colorbar.
 
         theme : str
             Set the theme. Default to "dark_minimal". Find more Bokeh themes at
@@ -38,6 +44,14 @@ class BokehBackend(Plot):
     At the time of writing this backend, geckodriver is not available to pip.
     Do a quick search on the web to find the appropriate installer.
     """
+    
+    colormaps = [
+        cc.fire, cc.isolum, cc.rainbow, cc.blues, cc.bmy, cc.colorwheel, cc.bgy
+    ]
+    # TODO: better selection of discrete color maps for contour plots
+    contour_colormaps = [
+        bp.Plasma10, bp.Blues9, bp.Greys10
+    ]
 
     def __new__(cls, *args, **kwargs):
         # Since Plot has its __new__ method, this will prevent infinite
@@ -53,8 +67,10 @@ class BokehBackend(Plot):
             )
         
         # infinity cycler over 10 colors
-        self._colors = itertools.cycle(Category10[10])
-            
+        self._colors = itertools.cycle(bp.Category10[10])
+        self._cm = itertools.cycle(self.colormaps)
+        self._ccm = itertools.cycle(self.contour_colormaps)
+
         curdoc().theme = kwargs.get("theme", bokeh_theme)
         TOOLTIPS = [
             ("x", "$x"),
@@ -72,7 +88,8 @@ class BokehBackend(Plot):
             x_range = self.xlim,
             y_range = self.ylim,
             tools = "pan,wheel_zoom,box_zoom,reset,hover,save",
-            tooltips = TOOLTIPS
+            tooltips = TOOLTIPS,
+            match_aspect = True if self.aspect_ratio == "equal" else False
         )
         self._fig.axis.visible = self.axis
         self._fig.grid.visible = self.axis
@@ -88,28 +105,70 @@ class BokehBackend(Plot):
                 # them with np.nan
                 y = [t if (t is not None) else np.nan for t in y]
                 if s.is_parametric:
-                    l = self._line_length(x, y, start=s.start, end=s.end)
-                    self._fig.line(x, y, legend_label=s.label,
-                                  line_width=2, color=next(self._colors))
-                    color_mapper = LinearColorMapper(palette=colorcet.rainbow, 
-                        low=min(l), high=max(l))
-                    
-                    data_source = ColumnDataSource({'x': x , 'y': y, 'l' : l})
-                    self._fig.scatter(x='x', y='y', source=data_source,
-                                color={'field': 'l', 'transform': color_mapper})
+                    u = s.discretized_var
+                    ds, line, cb = self._create_gradient_line(x, y, u,
+                            next(self._cm), s.label)
+                    self._fig.add_glyph(ds, line)
+                    self._fig.add_layout(cb, "right")
                 else:
                     self._fig.line(x, y, legend_label=s.label,
                                 line_width=2, color=next(self._colors))
+            elif s.is_contour:
+                x, y, z = s.get_data()
+                x = x.flatten()
+                y = y.flatten()
+                zz = z.flatten()
+                minx, miny, minz = min(x), min(y), min(zz)
+                maxx, maxy, maxz = max(x), max(y), max(zz)
+
+                cm = next(self._ccm)
+                self._fig.image(image=[z], x=minx, y=miny,
+                        dw=abs(maxx- minx), dh=abs(maxy- miny),
+                        palette=cm)
+                
+                colormapper = LinearColorMapper(palette=cm, low=minz, high=maxz)
+                # default options
+                cbkw = dict(width = 8)
+                # user defined options
+                colorbar_kw = self._kwargs.get("colorbar_kw", dict())
+                colorbar = ColorBar(color_mapper=colormapper, title=s.label,
+                    **merge({}, cbkw, colorbar_kw))
+                self._fig.add_layout(colorbar, 'right')
             else:
                 raise ValueError(
                     "Bokeh only support 2D plots."
                 )
 
-        self._fig.legend.visible = self.legend
-        # interactive legend
-        self._fig.legend.click_policy = "hide"
-        self._fig.add_layout(self._fig.legend[0], 'right')
+        if len(self._fig.legend) > 0:
+            self._fig.legend.visible = self.legend
+            # interactive legend
+            self._fig.legend.click_policy = "hide"
+            self._fig.add_layout(self._fig.legend[0], 'right')
     
+    def _create_gradient_line(self, x, y, u, colormap, name):
+        # MultiLine works with line segments, not with line points! :|
+        xs = [x[i-1:i+1] for i in range(1, len(x))]
+        ys = [y[i-1:i+1] for i in range(1, len(y))]
+        # TODO: let n be the number of points. Then, the number of segments will
+        # be (n - 1). Therefore, we remove one parameter. If n is sufficiently
+        # high, there shouldn't be any noticeable problem in the visualization.
+        us = u[:-1]
+
+        color_mapper = LinearColorMapper(palette = colormap, 
+            low = min(u), high = max(u))
+        data_source = ColumnDataSource(dict(xs = xs, ys = ys, us = us))
+
+        glyph = MultiLine(xs="xs", ys="ys", 
+                    line_color={'field': 'us', 'transform': color_mapper}, 
+                    line_width=2, name=name)
+        # default options
+        cbkw = dict(width = 8)
+        # user defined options
+        colorbar_kw = self._kwargs.get("colorbar_kw", dict())
+        colorbar = ColorBar(color_mapper=color_mapper, title=name,
+            **merge({}, cbkw, colorbar_kw))
+        return data_source, glyph, colorbar
+
     def _update_interactive(self, params):
         # Parametric lines are rendered with two lines:
         # 1. the solid one

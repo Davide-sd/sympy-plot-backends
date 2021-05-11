@@ -369,8 +369,8 @@ class Parametric2DLineSeries(Line2DBaseSeries):
             str((self.start, self.end)))
 
     def get_parameter_points(self):
-        np = import_module('numpy')
-        return np.linspace(self.start, self.end, num=self.n)
+        self.discretized_var = np.linspace(self.start, self.end, num=self.n)
+        return self.discretized_var
 
     def _uniform_sampling(self):
         param = self.get_parameter_points()
@@ -415,6 +415,7 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         f_y = lambdify([self.var], self.expr_y)
         x_coords = []
         y_coords = []
+        param = []
 
         def sample(param_p, param_q, p, q, depth):
             """ Samples recursively if three points are almost collinear.
@@ -434,6 +435,7 @@ class Parametric2DLineSeries(Line2DBaseSeries):
             if depth > self.depth:
                 x_coords.append(q[0])
                 y_coords.append(q[1])
+                param.append(param_p)
 
             # Sample irrespective of whether the line is flat till the
             # depth of 6. We are not using linspace to avoid aliasing.
@@ -469,6 +471,7 @@ class Parametric2DLineSeries(Line2DBaseSeries):
             else:
                 x_coords.append(q[0])
                 y_coords.append(q[1])
+                param.append(param_p)
 
         f_start_x = f_x(self.start)
         f_start_y = f_y(self.start)
@@ -478,8 +481,10 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         end = [f_end_x, f_end_y]
         x_coords.append(f_start_x)
         y_coords.append(f_start_y)
+        param.append(self.start)
         sample(self.start, self.end, start, end, 0)
 
+        self.discretized_var = np.array(param)
         return np.array(x_coords), np.array(y_coords)
 
 
@@ -519,8 +524,8 @@ class Parametric3DLineSeries(Line3DBaseSeries):
             str(self.var), str((self.start, self.end)))
 
     def get_parameter_points(self):
-        np = import_module('numpy')
-        return np.linspace(self.start, self.end, num=self.n)
+        self.discretized_var = np.linspace(self.start, self.end, num=self.n)
+        return self.discretized_var
 
     def get_points(self):
         np = import_module('numpy')
