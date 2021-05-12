@@ -228,11 +228,11 @@ class Plot:
         # a solid color loop (for the surface color).
         self._use_cm = kwargs.get("use_cm", True)
         # infinite loop iterator over the provided color maps
-        self._iter_colormaps = cycle(self.colormaps)
+        self._cm = cycle(self.colormaps)
         # generate a list of RGB tuples (with values from 0 to 1) starting
         # from matplotlib's tab10 color map. This can be used instead of looping
         # through the colormaps
-        self._iter_colorloop = cycle([cm.tab10(i)[:3] for i in range(0, 10)])
+        self._cl = cycle([cm.tab10(i)[:3] for i in range(0, 10)])
     
     def set_color_loop(self, cloop):
         """ Set the default color loop to use when use_cm=False. It must
@@ -243,7 +243,7 @@ class Plot:
                     "cloop must be a list of RGB tuples with values " +
                     "from 0 to 1."
                 )
-        self._iter_colorloop = cloop
+        self._cl = cloop
 
     def _line_length(self, x, y, z=None, start=None, end=None):
         """ Compute the cumulative length of the line.

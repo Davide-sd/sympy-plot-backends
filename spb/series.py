@@ -1138,6 +1138,14 @@ class VectorBase(BaseSeries):
     is_2D = False
     is_3D = False
 
+    def _correct(self, a, b):
+        """ If one of the provided vector components is a scalar, we need to
+        convert its dimension to the appropriate grid size.
+        """
+        if a.shape != b.shape:
+            return b * np.ones_like(a)
+        return b
+
 class Vector2DSeries(VectorBase):
     is_2D = True
 
@@ -1151,7 +1159,7 @@ class Vector2DSeries(VectorBase):
     def get_data(self):
         x, y, u = self.u.get_data()
         _, _, v = self.v.get_data()
-        return x, y, u, v
+        return x, y, self._correct(x, u), self._correct(x, v)
 
 class Vector3DSeries(VectorBase):
     is_3D = True
@@ -1189,6 +1197,12 @@ class Vector3DSeries(VectorBase):
         uu = fu(x, y, z)
         vv = fv(x, y, z)
         ww = fw(x, y, z)
+
+        
+        uu = self._correct(x, uu)
+        vv = self._correct(y, vv)
+        ww = self._correct(z, ww)
+
         def _convert(a):
             a = np.array(a, dtype=np.float64)
             return np.ma.masked_invalid(a)

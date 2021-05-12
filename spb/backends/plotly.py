@@ -86,7 +86,6 @@ class PlotlyBackend(Plot):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._cm = itertools.cycle(self.colormaps)
         self._wfcm = itertools.cycle(self.wireframe_colors)
         self._qc = itertools.cycle(self.quivers_colors)
         self._fig = go.Figure()
@@ -152,7 +151,7 @@ class PlotlyBackend(Plot):
             elif s.is_3Dsurface:
                 xx, yy, zz = s.get_data()
                 # create a solid color to be used when self._use_cm=False
-                col = next(self._iter_colorloop)
+                col = next(self._cl)
                 colorscale = [
                     [0, 'rgb' + str(col)],
                     [1, 'rgb' + str(col)]

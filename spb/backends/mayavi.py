@@ -61,13 +61,13 @@ class MayaviBackend(Plot):
                 x, y, z = s.get_data()
                 length = self._line_length(x, y, z, start=s.start, end=s.end)
                 mlab.plot3d(x, y, z, length,
-                    color = None if self._use_cm else next(self._iter_colorloop),
+                    color = None if self._use_cm else next(self._cl),
                     figure=self._fig,
                     tube_radius=0.05,
                     colormap=next(cm))
             elif s.is_3Dsurface:
                 mlab.mesh(*s.get_data(),
-                    color = None if self._use_cm else next(self._iter_colorloop),
+                    color = None if self._use_cm else next(self._cl),
                     figure = self._fig,
                     colormap = next(cm),
                     representation = "wireframe" if self._kwargs.get("wireframe", False) else "surface"
