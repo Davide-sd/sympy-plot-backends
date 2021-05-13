@@ -4,7 +4,7 @@ from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
 import bokeh.palettes as bp
 from bokeh.io import curdoc
-from bokeh.models import LinearColorMapper, ColumnDataSource, ColorBar
+from bokeh.models import LinearColorMapper, ColumnDataSource, ColorBar, Segment
 from bokeh.io import export_png, export_svg
 import itertools
 import colorcet as cc
@@ -14,6 +14,8 @@ from mergedeep import merge
 from typing import Any, List, Tuple
 import holoviews as hv
 
+# TODO: is it possible to further optimize this function?
+#
 # The following function comes from
 # https://docs.bokeh.org/en/latest/docs/gallery/quiver.html
 def streamlines(x: np.ndarray, y, u, v, density: float = 1) -> Tuple[List[Any], List[Any]]:
@@ -300,31 +302,31 @@ class BokehBackend(Plot):
                 colorbar = ColorBar(color_mapper=colormapper, title=s.label,
                     **merge({}, cbkw, colorbar_kw))
                 self._fig.add_layout(colorbar, 'right')
+            elif s.is_vector and s.is_2D and s.is_streamlines:
+                x, y, u, v = s.get_data()
+                sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
+                streams_kw = self._kwargs.get("streams_kw", dict())
+                density = streams_kw.pop("density", 2)
+                xs, ys = streamlines(x[0, :], y[:, 0], u, v, density=density)
+                self._fig.multi_line(xs, ys, **merge({}, sqk, streams_kw))
             elif s.is_vector and s.is_2D:
                 x, y, u, v = s.get_data()
-                # The following comes from:
-                # https://docs.bokeh.org/en/latest/docs/gallery/quiver.html
-                speed = np.sqrt(u**2 + v**2)
-                angle = np.arctan(v / u)
-                # print("dc", x.shape)
-                # x0 = x[::2, ::2].flatten()
-                # y0 = y[::2, ::2].flatten()
-                # length = speed[::2, ::2].flatten()/5
-                # angle = theta[::2, ::2].flatten()
-                # x1 = x0 + length * np.cos(angle)
-                # y1 = y0 + length * np.sin(angle)
-                # cm = np.array(["#C7E9B4", "#7FCDBB", "#41B6C4", "#1D91C0", "#225EA8", "#0C2C84"])
-                # ix = ((length-length.min())/(length.max()-length.min())*5).astype('int')
-                # colors = cm[ix]
-                # self._fig.segment(x0, y0, x1, y1, color=colors, line_width=2)
-
-                vectorfield = hv.VectorField([x, y, angle, speed])
-                p = hv.render(vectorfield, backend='bokeh')
-                # ds = p.renderers[0].data_source.data
-                # print("dioporco", ds["x0"].shape)
-                # self._fig.segment(x, y, angle, speed, color="red", line_width=2)
-                # self._fig.segment(ds["x0"], ds["y0"], ds["x1"], ds["y1"], color="#FF0000", line_width=2)
-                self._fig.renderers.append(p.renderers[0])
+                quivers_kw = self._kwargs.get("quivers_kw", dict())
+                data, quivers_kw = self._get_quivers_data(x, y, u, v, **quivers_kw)
+                mag = data["magnitude"]
+                
+                color_mapper = LinearColorMapper(palette=next(self._cm), 
+                    low=min(mag), high=max(mag))
+                is_contour = (True if ("scalar" not in self._kwargs.keys()) else
+                    (False if not self._kwargs["scalar"] else True))
+                line_color = ({'field': 'magnitude', 'transform': color_mapper}
+                    if not is_contour else next(self._cl))
+                source = ColumnDataSource(data=data)
+                # default quivers options
+                qkw = dict(line_color=line_color, line_width=1, name=s.label)
+                glyph = Segment(x0="x0", y0="y0", x1="x1", y1="y1",
+                    **merge({}, qkw, quivers_kw))
+                self._fig.add_glyph(source, glyph)
             else:
                 raise ValueError(
                     "Bokeh only support 2D plots."
@@ -371,6 +373,80 @@ class BokehBackend(Plot):
     def show(self):
         self._process_series(self._series)
         show(self._fig)
+    
+    def _get_quivers_data(self, xs, ys, u, v, **quivers_kw):
+        """ Compute the segments coordinates to plot quivers.
+        
+        Parameters
+        ==========
+            xs : np.ndarray
+                A 2D numpy array representing the discretization in the
+                x-coordinate
+            
+            ys : np.ndarray
+                A 2D numpy array representing the discretization in the
+                y-coordinate
+            
+            u : np.ndarray
+                A 2D numpy array representing the x-component of the vector
+            
+            v : np.ndarray
+                A 2D numpy array representing the x-component of the vector
+            
+            kwargs : dict, optional
+                An optional
+        
+        Returns
+        =======
+            data: dict
+                A dictionary suitable to create a data source to be used with
+                Bokeh's Segment.
+            
+            quivers_kw : dict
+                A dictionary containing keywords to customize the appearance
+                of Bokeh's Segment glyph
+        """
+        scale = quivers_kw.pop("scale", 1.0)
+        pivot = quivers_kw.pop("pivot", "mid")
+        arrow_heads = quivers_kw.pop("arrow_heads", True)
+        
+        xs, ys, u, v = [t.flatten() for t in [xs, ys, u, v]]
+        
+        magnitude = np.sqrt(u**2 + v**2)
+        rads = np.arctan2(v, u)
+        lens = magnitude / max(magnitude) * scale
+
+        # Compute segments and arrowheads
+        # Compute offset depending on pivot option
+        xoffsets = np.cos(rads) * lens / 2.
+        yoffsets = np.sin(rads) * lens / 2.
+        if pivot == 'mid':
+            nxoff, pxoff = xoffsets, xoffsets
+            nyoff, pyoff = yoffsets, yoffsets
+        elif pivot == 'tip':
+            nxoff, pxoff = 0, xoffsets*2
+            nyoff, pyoff = 0, yoffsets*2
+        elif pivot == 'tail':
+            nxoff, pxoff = xoffsets*2, 0
+            nyoff, pyoff = yoffsets*2, 0
+        x0s, x1s = (xs + nxoff, xs - pxoff)
+        y0s, y1s = (ys + nyoff, ys - pyoff)
+
+        if arrow_heads:
+            arrow_len = (lens/4.)
+            xa1s = x0s - np.cos(rads+np.pi/4)*arrow_len
+            ya1s = y0s - np.sin(rads+np.pi/4)*arrow_len
+            xa2s = x0s - np.cos(rads-np.pi/4)*arrow_len
+            ya2s = y0s - np.sin(rads-np.pi/4)*arrow_len
+            x0s = np.tile(x0s, 3)
+            x1s = np.concatenate([x1s, xa1s, xa2s])
+            y0s = np.tile(y0s, 3)
+            y1s = np.concatenate([y1s, ya1s, ya2s])
+
+        data = {'x0': x0s, 'x1': x1s, 'y0': y0s, 'y1': y1s,
+            'magnitude': np.tile(magnitude, 3)}
+
+        return data, quivers_kw
 
 BB = BokehBackend
 

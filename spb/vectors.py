@@ -18,6 +18,8 @@ TODO:
 *   check length of ranges and if the scalar free symbols are compatible with
     the ones provided in the vector.
 *   slice planes for 3D vector fields
+*   Does `streamlines` makes sense? Seems like we need to know where to place
+    the starting points, even before knowing the vector field....
 """
 
 def _build_series(expr, *ranges, label="", show=True, **kwargs):
@@ -261,7 +263,10 @@ def vector_plot(*args, show=True, **kwargs):
     if all([s.is_2D for s in series]):
         backend = kwargs.pop("backend", TWO_D_B)
 
-        scalar = kwargs.pop("scalar", True)
+        # don't pop this keyword: some backend needs it to decide the color
+        # for quivers (solid color if a scalar field is present, gradient color
+        # otherwise)
+        scalar = kwargs.get("scalar", True)
         if (len(series) == 1) and (scalar == True):
             scalar_field = sqrt(split_expr[0]**2 + split_expr[1]**2)
             scalar_label = "Magnitude"
