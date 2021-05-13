@@ -165,6 +165,8 @@ class K3DBackend(Plot):
                     
                 self._fig += surf
             
+            elif s.is_vector and s.is_3D and s.is_streamlines:
+                raise NotImplementedError
             elif s.is_vector and s.is_3D:
                 xx, yy, zz, uu, vv, ww = s.get_data()
                 xx, yy, zz, uu, vv, ww = [t.flatten().astype(np.float32) for t
