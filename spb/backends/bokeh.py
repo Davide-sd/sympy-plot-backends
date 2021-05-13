@@ -11,14 +11,12 @@ import colorcet as cc
 import os
 import numpy as np
 from mergedeep import merge
-from typing import Any, List, Tuple
-import holoviews as hv
 
 # TODO: is it possible to further optimize this function?
 #
 # The following function comes from
 # https://docs.bokeh.org/en/latest/docs/gallery/quiver.html
-def streamlines(x: np.ndarray, y, u, v, density: float = 1) -> Tuple[List[Any], List[Any]]:
+def streamlines(x, y, u, v, density=1.0):
     ''' Return streamlines of a vector flow.
 
     * x and y are 1d arrays defining an *evenly spaced* grid.
@@ -215,6 +213,9 @@ class BokehBackend(Plot):
     contour_colormaps = [
         bp.Plasma10, bp.Blues9, bp.Greys10
     ]
+    quivers_colormaps = [
+        cc.bmy, cc.bgy, cc.isolum, cc.fire
+    ]
 
     def __new__(cls, *args, **kwargs):
         # Since Plot has its __new__ method, this will prevent infinite
@@ -228,12 +229,11 @@ class BokehBackend(Plot):
             output_notebook(
                 hide_banner=True
             )
-        # hv.extension('bokeh')
         
         # infinity cycler over 10 colors
         self._cl = itertools.cycle(bp.Category10[10])
-        # self._cm = itertools.cycle(self.colormaps)
         self._ccm = itertools.cycle(self.contour_colormaps)
+        self._qcm = itertools.cycle(self.quivers_colormaps)
         
         curdoc().theme = kwargs.get("theme", bokeh_theme)
         TOOLTIPS = [
@@ -315,7 +315,7 @@ class BokehBackend(Plot):
                 data, quivers_kw = self._get_quivers_data(x, y, u, v, **quivers_kw)
                 mag = data["magnitude"]
                 
-                color_mapper = LinearColorMapper(palette=next(self._cm), 
+                color_mapper = LinearColorMapper(palette=next(self._qcm), 
                     low=min(mag), high=max(mag))
                 is_contour = (True if ("scalar" not in self._kwargs.keys()) else
                     (False if not self._kwargs["scalar"] else True))
@@ -449,150 +449,3 @@ class BokehBackend(Plot):
         return data, quivers_kw
 
 BB = BokehBackend
-
-
-# class VectorFieldPlot(ColorbarPlot):
-
-#     arrow_heads = param.Boolean(default=True, doc="""
-#         Whether or not to draw arrow heads.""")
-
-#     magnitude = param.ClassSelector(class_=(basestring, dim), doc="""
-#         Dimension or dimension value transform that declares the magnitude
-#         of each vector. Magnitude is expected to be scaled between 0-1,
-#         by default the magnitudes are rescaled relative to the minimum
-#         distance between vectors, this can be disabled with the
-#         rescale_lengths option.""")
-
-#     padding = param.ClassSelector(default=0.05, class_=(int, float, tuple))
-
-#     pivot = param.ObjectSelector(default='mid', objects=['mid', 'tip', 'tail'],
-#                                  doc="""
-#         The point around which the arrows should pivot valid options
-#         include 'mid', 'tip' and 'tail'.""")
-
-#     rescale_lengths = param.Boolean(default=True, doc="""
-#         Whether the lengths will be rescaled to take into account the
-#         smallest non-zero distance between two vectors.""")
-
-#     # Deprecated parameters
-
-#     color_index = param.ClassSelector(default=None, class_=(basestring, int),
-#                                       allow_None=True, doc="""
-#         Deprecated in favor of dimension value transform on color option,
-#         e.g. `color=dim('Magnitude')`.
-#         """)
-
-#     size_index = param.ClassSelector(default=None, class_=(basestring, int),
-#                                      allow_None=True, doc="""
-#         Deprecated in favor of the magnitude option, e.g.
-#         `magnitude=dim('Magnitude')`.
-#         """)
-
-#     normalize_lengths = param.Boolean(default=True, doc="""
-#         Deprecated in favor of rescaling length using dimension value
-#         transforms using the magnitude option, e.g.
-#         `dim('Magnitude').norm()`.""")
-
-#     selection_display = BokehOverlaySelectionDisplay()
-
-#     style_opts = base_properties + line_properties + ['scale', 'cmap']
-
-#     _nonvectorized_styles = base_properties + ['scale', 'cmap']
-
-#     _plot_methods = dict(single='segment')
-
-#     def _get_lengths(self, element, ranges):
-#         size_dim = element.get_dimension(self.size_index)
-#         mag_dim = self.magnitude
-#         if size_dim and mag_dim:
-#             self.param.warning(
-#                 "Cannot declare style mapping for 'magnitude' option "
-#                 "and declare a size_index; ignoring the size_index.")
-#         elif size_dim:
-#             mag_dim = size_dim
-#         elif isinstance(mag_dim, basestring):
-#             mag_dim = element.get_dimension(mag_dim)
-
-#         (x0, x1), (y0, y1) = (element.range(i) for i in range(2))
-#         if mag_dim:
-#             if isinstance(mag_dim, dim):
-#                 magnitudes = mag_dim.apply(element, flat=True)
-#             else:
-#                 magnitudes = element.dimension_values(mag_dim)
-#                 _, max_magnitude = ranges[dimension_name(mag_dim)]['combined']
-#                 if self.normalize_lengths and max_magnitude != 0:
-#                     magnitudes = magnitudes / max_magnitude
-#             if self.rescale_lengths:
-#                 base_dist = get_min_distance(element)
-#                 magnitudes *= base_dist
-#         else:
-#             magnitudes = np.ones(len(element))
-#             if self.rescale_lengths:
-#                 base_dist = get_min_distance(element)
-#                 magnitudes *= base_dist
-
-#         return magnitudes
-
-#     def _glyph_properties(self, *args):
-#         properties = super(VectorFieldPlot, self)._glyph_properties(*args)
-#         properties.pop('scale', None)
-#         return properties
-
-
-#     def get_data(self, element, ranges, style):
-#         input_scale = style.pop('scale', 1.0)
-
-#         # Get x, y, angle, magnitude and color data
-#         rads = element.dimension_values(2)
-#         if self.invert_axes:
-#             xidx, yidx = (1, 0)
-#             rads = np.pi/2 - rads
-#         else:
-#             xidx, yidx = (0, 1)
-#         lens = self._get_lengths(element, ranges)/input_scale
-#         cdim = element.get_dimension(self.color_index)
-#         cdata, cmapping = self._get_color_data(element, ranges, style,
-#                                                name='line_color')
-
-#         # Compute segments and arrowheads
-#         xs = element.dimension_values(xidx)
-#         ys = element.dimension_values(yidx)
-
-#         # Compute offset depending on pivot option
-#         xoffsets = np.cos(rads)*lens/2.
-#         yoffsets = np.sin(rads)*lens/2.
-#         if self.pivot == 'mid':
-#             nxoff, pxoff = xoffsets, xoffsets
-#             nyoff, pyoff = yoffsets, yoffsets
-#         elif self.pivot == 'tip':
-#             nxoff, pxoff = 0, xoffsets*2
-#             nyoff, pyoff = 0, yoffsets*2
-#         elif self.pivot == 'tail':
-#             nxoff, pxoff = xoffsets*2, 0
-#             nyoff, pyoff = yoffsets*2, 0
-#         x0s, x1s = (xs + nxoff, xs - pxoff)
-#         y0s, y1s = (ys + nyoff, ys - pyoff)
-
-#         color = None
-#         if self.arrow_heads:
-#             arrow_len = (lens/4.)
-#             xa1s = x0s - np.cos(rads+np.pi/4)*arrow_len
-#             ya1s = y0s - np.sin(rads+np.pi/4)*arrow_len
-#             xa2s = x0s - np.cos(rads-np.pi/4)*arrow_len
-#             ya2s = y0s - np.sin(rads-np.pi/4)*arrow_len
-#             x0s = np.tile(x0s, 3)
-#             x1s = np.concatenate([x1s, xa1s, xa2s])
-#             y0s = np.tile(y0s, 3)
-#             y1s = np.concatenate([y1s, ya1s, ya2s])
-#             if cdim and cdim.name in cdata:
-#                 color = np.tile(cdata[cdim.name], 3)
-#         elif cdim:
-#             color = cdata.get(cdim.name)
-
-#         data = {'x0': x0s, 'x1': x1s, 'y0': y0s, 'y1': y1s}
-#         mapping = dict(x0='x0', x1='x1', y0='y0', y1='y1')
-#         if cdim and color is not None:
-#             data[cdim.name] = color
-#             mapping.update(cmapping)
-
-#         return (data, mapping, style)
