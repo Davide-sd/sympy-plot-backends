@@ -59,8 +59,10 @@ class PyvistaBackend(Plot):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._cm = iter(self.colormaps)
         
+        # TODO: set here the backend used by Pyvista
+        # https://docs.pyvista.org/user-guide/jupyter/index.html
+
         self._fig = pv.Plotter(
             window_size = [1024, 768] if not self.size else self.size,
             polygon_smoothing = True,
