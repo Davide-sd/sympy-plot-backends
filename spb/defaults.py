@@ -13,6 +13,11 @@ k3d_bg_color = 0xFFFFFF
 mayavi_bg_color = (0.22, 0.24, 0.29)
 mayavi_fg_color = (1, 1, 1)
 
+# Pyvista default theme
+# https://docs.pyvista.org/examples/02-plot/themes.html
+pyvista_theme = "default"
+pyvista_bg_color = mayavi_bg_color
+
 # backend for 2D plots
 from spb.backends.plotly import PlotlyBackend as TWO_D_B
 # backend for 3D plots

@@ -1,5 +1,6 @@
 from spb.defaults import k3d_bg_color
 from spb.backends.base_backend import Plot
+from spb.utils import get_vertices_indices
 import k3d
 import numpy as np
 import warnings
@@ -7,11 +8,6 @@ from matplotlib.tri import Triangulation
 
 # TODO:
 # 1. load the plot with menu minimized
-
-# create the connectivity for the mesh
-# https://github.com/K3D-tools/K3D-jupyter/issues/273
-def ij2k(cols, i, j):
-    return  cols * i + j 
 
 class K3DBackend(Plot):
     """ A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
@@ -26,6 +22,9 @@ class K3DBackend(Plot):
         show_label : boolean
             Show/hide labels of the expressions. Default to False (labels not
             visible).
+        
+        tube_radius : float
+            Tube radius for 3D lines. Default to 0.1.
         
         use_cm : boolean
             If True, apply a color map to the meshes/surface. If False, solid
@@ -100,7 +99,7 @@ class K3DBackend(Plot):
                 length = self._line_length(x, y, z, start=s.start, end=s.end)
                 # keyword arguments for the line object
                 a = dict(
-                    width = 0.1,
+                    width = self._kwargs.get("tube_radius", 0.1),
                     name = s.label if self._kwargs.get("show_label", False) else None,
                     color = self._convert_to_int(next(self._iter_colorloop)),
                 )
@@ -113,24 +112,15 @@ class K3DBackend(Plot):
 
             elif s.is_3Dsurface:
                 x, y, z = s.get_data()
-                x = x.astype(np.float32)
-                y = y.astype(np.float32)
-                z = z.astype(np.float32)
                 
                 if s.is_parametric:
-                    # https://github.com/K3D-tools/K3D-jupyter/issues/273
-                    rows, cols  = x.shape
-                    indices = []
-                    for i in range(1,rows):
-                        for j in range(1,cols):
-                            indices.append( [ij2k(cols, i, j), ij2k(cols, i - 1, j), ij2k(cols, i, j- 1 )] )
-                            indices.append( [ij2k(cols, i - 1, j - 1), ij2k(cols, i , j - 1), ij2k(cols, i - 1, j)] )
-                    vertices = np.stack([x.flatten(), y.flatten(), z.flatten()])
+                    vertices, indices = get_vertices_indices(x, y, z)
+                    vertices = vertices.astype(np.float32)
                 else:
                     x = x.flatten()
                     y = y.flatten()
                     z = z.flatten()
-                    vertices = np.vstack([x, y, z])
+                    vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     indices = Triangulation(x, y).triangles.astype(np.uint32)
                 
                 a = dict(
@@ -143,7 +133,7 @@ class K3DBackend(Plot):
                 if self._use_cm:
                     a["color_map"] = next(self._iter_colormaps)
                     a["attribute"] = z
-                surf = k3d.mesh(vertices.T, indices, **a)
+                surf = k3d.mesh(vertices, indices, **a)
                     
                 self._fig += surf
             else:

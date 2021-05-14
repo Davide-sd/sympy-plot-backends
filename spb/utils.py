@@ -1,5 +1,6 @@
 from sympy import lambdify, Tuple, sympify, Expr
 from sympy.utilities.iterables import ordered
+import numpy as np
 
 def get_lambda(expr, modules="numpy", **kwargs):
     """ Create a lambda function to numerically evaluate expr by sorting 
@@ -89,3 +90,31 @@ def _unpack_args(*args):
         else:
             label = str(tuple(exprs))
     return exprs, ranges, label
+
+
+def ij2k(cols, i, j):
+    """ Create the connectivity for the mesh.
+    https://github.com/K3D-tools/K3D-jupyter/issues/273
+    """
+    return  cols * i + j
+
+def get_vertices_indices(x, y, z):
+    """ Compute the vertices matrix (Nx3) and the connectivity list for
+    triangular faces.
+
+    Parameters
+    ==========
+        x, y, z : np.array
+            2D arrays
+    """
+    rows, cols  = x.shape
+    x = x.flatten()
+    y = y.flatten()
+    z = z.flatten()
+    vertices = np.vstack([x, y, z]).T
+    indices = []
+    for i in range(1,rows):
+        for j in range(1,cols):
+            indices.append( [ij2k(cols, i, j), ij2k(cols, i - 1, j), ij2k(cols, i, j- 1 )] )
+            indices.append( [ij2k(cols, i - 1, j - 1), ij2k(cols, i , j - 1), ij2k(cols, i - 1, j)] )
+    return vertices, indices

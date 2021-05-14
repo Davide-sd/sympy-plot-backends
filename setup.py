@@ -41,6 +41,10 @@ setup(
         "ipyevents",
         "PyQt5",
         # "mayavi",
-        "k3d"
+        "k3d",
+        # "ipyvtk_simple"
+        # "itkwidgets", # heavy, 220+MB
+        "pyvista",
+        "ipyvtklink"
     ]
 )
