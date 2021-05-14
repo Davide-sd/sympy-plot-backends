@@ -42,9 +42,7 @@ setup(
         "PyQt5",
         # "mayavi",
         "k3d",
-        # "ipyvtk_simple"
-        # "itkwidgets", # heavy, 220+MB
-        "pyvista",
-        "ipyvtklink"
+        # "pyvista",    # still immature jupyter notebook experience
+        # "ipyvtklink"
     ]
 )
