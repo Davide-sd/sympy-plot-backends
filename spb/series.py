@@ -80,6 +80,12 @@ class BaseSeries:
     is_interactive = False
     # An interactive series can update its data.
 
+    is_vector = False
+    # Represents a 2D or 3D vector
+
+    is_streamlines = False
+    # Wheter to represent the vector field as streamlines or quivers
+
     def __init__(self):
         super().__init__()
 
@@ -131,6 +137,11 @@ class Line2DBaseSeries(BaseSeries):
         self.steps = False
         self.only_integers = False
         self.line_color = None
+
+    def _correct_size(self, l, p):
+        if l.size != p.size:
+            return l * np.ones(p.size)
+        return l
 
     def get_data(self):
         """ Return lists of coordinates for plotting the line.
@@ -378,6 +389,10 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         fy = vectorized_lambdify([self.var], self.expr_y)
         list_x = fx(param)
         list_y = fy(param)
+        # expr_x or expr_y may be scalars. This allows scalar components
+        # to be plotted as well
+        list_x = self._correct_size(list_x, param)
+        list_y = self._correct_size(list_y, param)
         return (list_x, list_y)
 
     def get_points(self):
@@ -538,6 +553,12 @@ class Parametric3DLineSeries(Line3DBaseSeries):
         list_y = fy(param)
         list_z = fz(param)
 
+        # expr_x, expr_y or expr_z may be scalars. This allows scalar components
+        # to be plotted as well
+        list_x = self._correct_size(list_x, param)
+        list_y = self._correct_size(list_y, param)
+        list_z = self._correct_size(list_z, param)
+
         list_x = np.array(list_x, dtype=np.float64)
         list_y = np.array(list_y, dtype=np.float64)
         list_z = np.array(list_z, dtype=np.float64)
@@ -549,6 +570,7 @@ class Parametric3DLineSeries(Line3DBaseSeries):
         self._xlim = (np.amin(list_x), np.amax(list_x))
         self._ylim = (np.amin(list_y), np.amax(list_y))
         self._zlim = (np.amin(list_z), np.amax(list_z))
+
         return list_x, list_y, list_z
 
 
@@ -1108,4 +1130,88 @@ def _set_discretization_points(kwargs, pt):
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]
+    elif pt in [Vector2DSeries]:
+        if "n" in kwargs.keys():
+            kwargs["n1"] = kwargs["n"]
+            kwargs["n2"] = kwargs["n"]
+    elif pt in [Vector3DSeries]:
+        if "n" in kwargs.keys():
+            kwargs["n1"] = kwargs["n"]
+            kwargs["n2"] = kwargs["n"]
+            kwargs["n3"] = kwargs["n"]
     return kwargs
+
+class VectorBase(BaseSeries):
+    is_vector = True
+    is_2D = False
+    is_3D = False
+
+    def _correct(self, a, b):
+        """ If one of the provided vector components is a scalar, we need to
+        convert its dimension to the appropriate grid size.
+        """
+        if a.shape != b.shape:
+            return b * np.ones_like(a)
+        return b
+
+class Vector2DSeries(VectorBase):
+    is_2D = True
+
+    def __init__(self, u, v, range1, range2, label, streamlines, **kwargs):
+        self.u = SurfaceOver2DRangeSeries(u, range1, range2, **kwargs)
+        self.v = SurfaceOver2DRangeSeries(v, range1, range2, **kwargs)
+        self.label = label
+        # whether to draw streamlines or quivers
+        self.is_streamlines = streamlines
+
+    def get_data(self):
+        x, y, u = self.u.get_data()
+        _, _, v = self.v.get_data()
+        return x, y, self._correct(x, u), self._correct(x, v)
+
+class Vector3DSeries(VectorBase):
+    is_3D = True
+
+    def __init__(self, u, v, w, range_x, range_y, range_z, label, streamlines,
+            **kwargs):
+        self.u = sympify(u)
+        self.v = sympify(v)
+        self.w = sympify(w)
+        self.var_x = sympify(range_x[0])
+        self.start_x = float(range_x[1])
+        self.end_x = float(range_x[2])
+        self.var_y = sympify(range_y[0])
+        self.start_y = float(range_y[1])
+        self.end_y = float(range_y[2])
+        self.var_z = sympify(range_z[0])
+        self.start_z = float(range_z[1])
+        self.end_z = float(range_z[2])
+        self.label = label
+        self.n1 = kwargs.get('n1', 10)
+        self.n2 = kwargs.get('n2', 10)
+        self.n3 = kwargs.get('n3', 10)
+        # whether to draw streamlines or quivers
+        self.is_streamlines = streamlines
+
+    def get_data(self):
+        x, y, z = np.meshgrid(
+                        np.linspace(self.start_x, self.end_x, num=self.n1),
+                        np.linspace(self.start_y, self.end_y, num=self.n2),
+                        np.linspace(self.start_z, self.end_z, num=self.n3)
+                    )
+        fu = vectorized_lambdify((self.var_x, self.var_y, self.var_z), self.u)
+        fv = vectorized_lambdify((self.var_x, self.var_y, self.var_z), self.v)
+        fw = vectorized_lambdify((self.var_x, self.var_y, self.var_z), self.w)
+        uu = fu(x, y, z)
+        vv = fv(x, y, z)
+        ww = fw(x, y, z)
+
+        
+        uu = self._correct(x, uu)
+        vv = self._correct(y, vv)
+        ww = self._correct(z, ww)
+
+        def _convert(a):
+            a = np.array(a, dtype=np.float64)
+            return np.ma.masked_invalid(a)
+        return x, y, z, _convert(uu), _convert(vv), _convert(ww)

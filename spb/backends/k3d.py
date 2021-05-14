@@ -5,6 +5,8 @@ import k3d
 import numpy as np
 import warnings
 from matplotlib.tri import Triangulation
+import itertools
+from mergedeep import merge
 
 # TODO:
 # 1. load the plot with menu minimized
@@ -18,6 +20,10 @@ class K3DBackend(Plot):
         bg_color : int
             Packed RGB color of the plot background.
             Default to 0xFFFFFF (white).
+        
+        quivers_kw : dict
+            A dictionary to customize the apppearance of quivers. Default to:
+            ``quivers_kw = dict(scale = 0.5)``
         
         show_label : boolean
             Show/hide labels of the expressions. Default to False (labels not
@@ -35,11 +41,19 @@ class K3DBackend(Plot):
             Default to False.
     """
 
+    # TODO: better selection of colormaps
     colormaps = [
         k3d.basic_color_maps.CoolWarm, k3d.basic_color_maps.Jet,
         k3d.basic_color_maps.BlackBodyRadiation, k3d.matplotlib_color_maps.Plasma,
         k3d.matplotlib_color_maps.Autumn, k3d.matplotlib_color_maps.Winter,
         k3d.paraview_color_maps.Nic_Edge, k3d.paraview_color_maps.Haze
+    ]
+
+    quivers_colormaps = [
+        k3d.basic_color_maps.CoolWarm, k3d.matplotlib_color_maps.Plasma,
+        k3d.matplotlib_color_maps.Winter, k3d.matplotlib_color_maps.Viridis,
+        k3d.paraview_color_maps.Haze, k3d.matplotlib_color_maps.Summer,
+        k3d.paraview_color_maps.Blue_to_Yellow
     ]
     
     def __new__(cls, *args, **kwargs):
@@ -52,6 +66,9 @@ class K3DBackend(Plot):
         if self._get_mode() != 0:
             raise ValueError(
                     "Sorry, K3D backend only works within Jupyter Notebook")
+
+        self._cm = itertools.cycle(self.colormaps)
+        self._qcm = itertools.cycle(self.quivers_colormaps)
 
         self._fig = k3d.plot(
             grid_visible = self.axis,
@@ -95,17 +112,18 @@ class K3DBackend(Plot):
         for s in series:
             if s.is_3Dline:
                 x, y, z = s.get_data()
+                print(x.shape, y.shape, z.shape)
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 length = self._line_length(x, y, z, start=s.start, end=s.end)
                 # keyword arguments for the line object
                 a = dict(
                     width = self._kwargs.get("tube_radius", 0.1),
                     name = s.label if self._kwargs.get("show_label", False) else None,
-                    color = self._convert_to_int(next(self._iter_colorloop)),
+                    color = self._convert_to_int(next(self._cl)),
                 )
                 if self._use_cm:
                     a["attribute"] = length,
-                    a["color_map"] = next(self._iter_colormaps)
+                    a["color_map"] = next(self._cm)
                     a["color_range"] = [s.start, s.end]
                 line = k3d.line(vertices, **a)
                 self._fig += line
@@ -128,14 +146,46 @@ class K3DBackend(Plot):
                     side = "double",
                     flat_shading = False,
                     wireframe = self._kwargs.get("wireframe", False),
-                    color = self._convert_to_int(next(self._iter_colorloop)),
+                    color = self._convert_to_int(next(self._cl)),
                 )
                 if self._use_cm:
-                    a["color_map"] = next(self._iter_colormaps)
+                    a["color_map"] = next(self._cm)
                     a["attribute"] = z
                 surf = k3d.mesh(vertices, indices, **a)
                     
                 self._fig += surf
+            
+            elif s.is_vector and s.is_3D and s.is_streamlines:
+                raise NotImplementedError
+            elif s.is_vector and s.is_3D:
+                xx, yy, zz, uu, vv, ww = s.get_data()
+                xx, yy, zz, uu, vv, ww = [t.flatten().astype(np.float32) for t
+                    in [xx, yy, zz, uu, vv, ww]]
+                # default values
+                qkw = dict(scale = 0.5)
+                # user provided values
+                quivers_kw = self._kwargs.get("quivers_kw", dict())
+                qkw = merge(qkw, quivers_kw)
+                scale = qkw["scale"]
+                magnitude = np.sqrt(uu**2 + vv**2 + ww**2)
+                vectors = np.array((uu, vv, ww)).T * scale
+                origins = np.array((xx, yy, zz)).T
+                if self._use_cm:
+                    colors = k3d.helpers.map_colors(magnitude, next(self._qcm), [])
+                else:
+                    c = self._convert_to_int(next(self._cl))
+                    colors = c * np.ones(len(magnitude))
+                vec_colors = np.zeros(2 * len(colors))
+                for i, c in enumerate(colors):
+                    vec_colors[2 * i] = c
+                    vec_colors[2 * i + 1] = c
+                vec_colors = vec_colors.astype(np.uint32)
+                vec = k3d.vectors(
+                    origins = origins - vectors / 2,
+                    vectors = vectors,
+                    colors = vec_colors,
+                )
+                self._fig += vec
             else:
                 raise ValueError(
                     "K3D-Jupyter only support 3D plots."

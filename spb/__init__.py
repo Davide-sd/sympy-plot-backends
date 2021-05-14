@@ -5,3 +5,4 @@ from spb.plot import (
 from spb.plot_implicit import plot_implicit
 from spb.plot_data import get_plot_data
 from spb.interactive import iplot
+from spb.vectors import vector_plot

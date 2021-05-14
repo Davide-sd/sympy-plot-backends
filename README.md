@@ -20,6 +20,7 @@ On top of the usual plotting functions exposed by SymPy (`plot`, `plot_parametri
 * capability to use a different backend.
 * `iplot` function to create parametric-interactive plots using widgets (sliders, buttons, etc.).
 * `get_plot_data` function to easily extract the numerical data from symbolic expressions, which can later be used to create custom plots with our plotting library of choice.
+* `vector_plot` function to quickly visualize 2D/3D vector fields.
 
 
 ## Backends
@@ -43,6 +44,7 @@ Each backend has its own advantages and disadvantages, as we can see from the fo
 |       Jupyter NB       |     Y     |   Y   |    Y   |    Y   |  Y  |
 |   Python Interpreter   |     Y     |   Y   |    Y   |    Y   |  N  |
 | Parametric-Interactive |     N     |   Y   |    Y   |    N   |  Y  |
+|      Vector Plots      |     N     |   Y   |    Y   |    N   |  Y  |
 
 In particular:
 * Matplotlib (default with SymPy) is good but it lacks interactivity (of course, we can use [ipympl](https://github.com/matplotlib/ipympl), but it doesn't do miracles especially with 3D plots).
