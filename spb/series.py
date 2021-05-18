@@ -1003,11 +1003,11 @@ class InteractiveSeries(BaseSeries):
         elif (nexpr == 2) and (npar == 2):
             self.is_vector = True
             self.is_2Dvector = True
-            self.is_streamlines = kwargs.get("streamlines", False)
+            # self.is_streamlines = kwargs.get("streamlines", False)
         elif (nexpr == 3) and (npar == 3):
             self.is_vector = True
             self.is_3Dvector = True
-            self.is_streamlines = kwargs.get("streamlines", False)
+            # self.is_streamlines = kwargs.get("streamlines", False)
             self.n1, self.n2, self.n3 = n, n, n
 
         # from the expression's free symbols, remove the ones used in
@@ -1073,7 +1073,6 @@ class InteractiveSeries(BaseSeries):
                 val: the value
 
         """
-        print("InteractiveSeries -> update_data", params)
         args = []
         for s in self.signature:
             if s in params.keys():
@@ -1106,7 +1105,6 @@ class InteractiveSeries(BaseSeries):
     def get_data(self):
         # if the expression depends only on the ranges, the user can call get_data
         # directly without calling update_dat
-        # print(self.data)
         if (self.data is None) and (len(self.signature) == len(self.ranges)):
             self.update_data(dict())
         if self.data is None:
@@ -1176,12 +1174,12 @@ class VectorBase(BaseSeries):
 class Vector2DSeries(VectorBase):
     is_2Dvector = True
 
-    def __init__(self, u, v, range1, range2, label, streamlines, **kwargs):
+    def __init__(self, u, v, range1, range2, label, **kwargs):
         self.u = SurfaceOver2DRangeSeries(u, range1, range2, **kwargs)
         self.v = SurfaceOver2DRangeSeries(v, range1, range2, **kwargs)
         self.label = label
         # whether to draw streamlines or quivers
-        self.is_streamlines = streamlines
+        # self.is_streamlines = streamlines
 
     def get_data(self):
         x, y, u = self.u.get_data()
@@ -1192,8 +1190,7 @@ class Vector3DSeries(VectorBase):
     is_3D = True
     is_3Dvector = True
 
-    def __init__(self, u, v, w, range_x, range_y, range_z, label, streamlines,
-            **kwargs):
+    def __init__(self, u, v, w, range_x, range_y, range_z, label, **kwargs):
         self.u = sympify(u)
         self.v = sympify(v)
         self.w = sympify(w)
@@ -1210,8 +1207,8 @@ class Vector3DSeries(VectorBase):
         self.n1 = kwargs.get('n1', 10)
         self.n2 = kwargs.get('n2', 10)
         self.n3 = kwargs.get('n3', 10)
-        # whether to draw streamlines or quivers
-        self.is_streamlines = streamlines
+        # # whether to draw streamlines or quivers
+        # self.is_streamlines = streamlines
 
     def get_data(self):
         x, y, z = np.meshgrid(

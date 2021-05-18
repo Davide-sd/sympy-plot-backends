@@ -180,7 +180,7 @@ def test_vector_plot():
 def test_vector_data():
     x, y, z = symbols("x:z")
 
-    s = Vector2DSeries(x, y, (x, -5, 5), (y, -3, 3), "test", False, n1=10, n2=15)
+    s = Vector2DSeries(x, y, (x, -5, 5), (y, -3, 3), "test", n1=10, n2=15)
     xx, yy, uu, vv = s.get_data()
     assert xx.shape == (15, 10)
     assert yy.shape == (15, 10)
@@ -188,7 +188,7 @@ def test_vector_data():
     assert vv.shape == yy.shape
 
     # at least one vector component is a scalar
-    s = Vector2DSeries(1, y, (x, -5, 5), (y, -3, 3), "test", False, n1=10, n2=15)
+    s = Vector2DSeries(1, y, (x, -5, 5), (y, -3, 3), "test", n1=10, n2=15)
     xx, yy, uu, vv = s.get_data()
     assert xx.shape == (15, 10)
     assert yy.shape == (15, 10)
@@ -196,7 +196,7 @@ def test_vector_data():
     assert vv.shape == yy.shape
 
     s = Vector3DSeries(x, y, z, (x, -5, 5), (y, -3, 3), (z, -2, 2), "test",
-        False, n1=10, n2=15, n3=20)
+        n1=10, n2=15, n3=20)
     xx, yy, zz, uu, vv, ww = s.get_data()
     assert xx.shape == (15, 10, 20)
     assert yy.shape == (15, 10, 20)
@@ -207,7 +207,7 @@ def test_vector_data():
 
     # at least one vector component is a scalar
     s = Vector3DSeries(x, 1, z, (x, -5, 5), (y, -3, 3), (z, -2, 2), "test",
-        False, n1=10, n2=15, n3=20)
+        n1=10, n2=15, n3=20)
     xx, yy, zz, uu, vv, ww = s.get_data()
     assert xx.shape == (15, 10, 20)
     assert yy.shape == (15, 10, 20)

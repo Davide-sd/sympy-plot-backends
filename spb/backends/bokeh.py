@@ -18,7 +18,7 @@ from mergedeep import merge
 #
 # The following function comes from
 # https://docs.bokeh.org/en/latest/docs/gallery/quiver.html
-def streamlines(x, y, u, v, density=1.0):
+def compute_streamlines(x, y, u, v, density=1.0):
     ''' Return streamlines of a vector flow.
 
     * x and y are 1d arrays defining an *evenly spaced* grid.
@@ -326,31 +326,33 @@ class BokehBackend(Plot):
                 colorbar = ColorBar(color_mapper=colormapper, title=s.label,
                     **merge({}, cbkw, colorbar_kw))
                 self._fig.add_layout(colorbar, 'right')
-            elif s.is_2Dvector and s.is_streamlines:
-                x, y, u, v = s.get_data()
-                sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
-                streams_kw = self._kwargs.get("streams_kw", dict())
-                density = streams_kw.pop("density", 2)
-                xs, ys = streamlines(x[0, :], y[:, 0], u, v, density=density)
-                self._fig.multi_line(xs, ys, **merge({}, sqk, streams_kw))
             elif s.is_2Dvector:
-                x, y, u, v = s.get_data()
-                quivers_kw = self._kwargs.get("quivers_kw", dict())
-                data, quivers_kw = self._get_quivers_data(x, y, u, v, **quivers_kw)
-                mag = data["magnitude"]
-                
-                color_mapper = LinearColorMapper(palette=next(self._qcm), 
-                    low=min(mag), high=max(mag))
-                is_contour = (True if ("scalar" not in self._kwargs.keys()) else
-                    (False if not self._kwargs["scalar"] else True))
-                line_color = ({'field': 'magnitude', 'transform': color_mapper}
-                    if not is_contour else next(self._cl))
-                source = ColumnDataSource(data=data)
-                # default quivers options
-                qkw = dict(line_color=line_color, line_width=1, name=s.label)
-                glyph = Segment(x0="x0", y0="y0", x1="x1", y1="y1",
-                    **merge({}, qkw, quivers_kw))
-                self._fig.add_glyph(source, glyph)
+                streamlines = self._kwargs.get("streamlines", False)
+                if streamlines:
+                    x, y, u, v = s.get_data()
+                    sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
+                    streams_kw = self._kwargs.get("streams_kw", dict())
+                    density = streams_kw.pop("density", 2)
+                    xs, ys = compute_streamlines(x[0, :], y[:, 0], u, v, density=density)
+                    self._fig.multi_line(xs, ys, **merge({}, sqk, streams_kw))
+                else:
+                    x, y, u, v = s.get_data()
+                    quivers_kw = self._kwargs.get("quivers_kw", dict())
+                    data, quivers_kw = self._get_quivers_data(x, y, u, v, **quivers_kw)
+                    mag = data["magnitude"]
+                    
+                    color_mapper = LinearColorMapper(palette=next(self._qcm), 
+                        low=min(mag), high=max(mag))
+                    is_contour = (True if ("scalar" not in self._kwargs.keys()) else
+                        (False if not self._kwargs["scalar"] else True))
+                    line_color = ({'field': 'magnitude', 'transform': color_mapper}
+                        if not is_contour else next(self._cl))
+                    source = ColumnDataSource(data=data)
+                    # default quivers options
+                    qkw = dict(line_color=line_color, line_width=1, name=s.label)
+                    glyph = Segment(x0="x0", y0="y0", x1="x1", y1="y1",
+                        **merge({}, qkw, quivers_kw))
+                    self._fig.add_glyph(source, glyph)
             else:
                 raise ValueError(
                     "Bokeh only support 2D plots."
@@ -406,11 +408,12 @@ class BokehBackend(Plot):
                     rend[i].data_source.data.update({'xs': xs, 'ys': ys, 'us': us})
                 elif s.is_2Dvector:
                     x, y, u, v = s.get_data()
-                    if s.is_streamlines:
+                    streamlines = self._kwargs.get("streamlines", False)
+                    if streamlines:
                         sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
                         streams_kw = self._kwargs.get("streams_kw", dict())
                         density = streams_kw.pop("density", 2)
-                        xs, ys = streamlines(x[0, :], y[:, 0], u, v, density=density)
+                        xs, ys = compute_streamlines(x[0, :], y[:, 0], u, v, density=density)
                         rend[i].data_source.data.update({'xs': xs, 'ys': ys})
                     else:
                         quivers_kw = self._kwargs.get("quivers_kw", dict())

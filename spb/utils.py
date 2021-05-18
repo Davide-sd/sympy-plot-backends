@@ -100,11 +100,9 @@ def _unpack_args(*args, matrices=False):
             label = str(tuple(exprs))
     
     if matrices:
-        print("exprs", exprs, type(exprs[0]))
         # TODO: need to deals with instances of Vector
         if (len(exprs) == 1) and (isinstance(exprs[0], (list, tuple, Tuple, DenseMatrix))):
             exprs = list(exprs[0])
-            print("\t", exprs)
     return exprs, ranges, label
 
 

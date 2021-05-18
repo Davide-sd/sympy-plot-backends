@@ -1,16 +1,19 @@
-from sympy import Tuple
+from sympy import Tuple, S
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import Boolean
+from sympy.matrices.dense import DenseMatrix
+from sympy.vector import Vector
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries,
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
     ParametricSurfaceSeries, ImplicitSeries, InteractiveSeries,
-    _set_discretization_points
+    _set_discretization_points, Vector2DSeries, Vector3DSeries
 )
 from spb.plot import (
     Plot, _check_arguments    
 )
 from spb.utils import _unpack_args, _plot_sympify
+from spb.vectors import _preprocess, _split_vector
 
 """
 TODO:
@@ -38,13 +41,15 @@ def _build_series(*args, **kwargs):
         "32": ParametricSurfaceSeries,
         "12": SurfaceOver2DRangeSeries,
         "99": ImplicitSeries,
-        "00": InteractiveSeries
+        "00": InteractiveSeries,
+        "22": Vector2DSeries,
+        "33": Vector3DSeries,
     }
 
     args = _plot_sympify(args)
     exprs, ranges, label = _unpack_args(*args)
     args = [*exprs, *ranges, label]
-    
+
     pt = kwargs.get("pt", None)
     if pt is None:
         # Automatic detection based on the number of free symbols and the number
@@ -56,9 +61,21 @@ def _build_series(*args, **kwargs):
             skip_check = True
             npar = 9
             nexpr = 9
+        elif isinstance(exprs[0], (DenseMatrix, Vector)):
+            split_expr, ranges = _split_vector(exprs[0], ranges)
+            nexpr = 2
+            if split_expr[-1] is S.Zero:
+                nexpr = 2
+                args = [split_expr[:2], *ranges, label]
+            else:
+                nexpr = 3
+                args = [split_expr, *ranges, label]
+            npar = len(ranges)
         elif isinstance(exprs[0], (list, tuple, Tuple)):
-            # The actual parametric expression has been provided in the form
-            # (expr1, expr2, expr3 [optional]), range1, range2 [optional]
+            # Two possible cases:
+            # 1. The actual parametric expression has been provided in the form
+            #    (expr1, expr2, expr3 [optional]), range1, range2 [optional]
+            # 2. A vector has been written as a tuple/list
             fs = set().union(*[e.free_symbols for e in exprs[0]])
             npar = len(fs)
             nexpr = len(exprs[0])
@@ -69,14 +86,14 @@ def _build_series(*args, **kwargs):
             fs = set().union(*[e.free_symbols for e in exprs])
             npar = len(fs)
             nexpr = len(exprs)
-        
+
         k = str(nexpr) + str(npar)
         params = kwargs.get("params", dict())
         if len(params) > 0:
             # we are most likely dealing with an interactive series
             skip_check = True
             k = "00"
-            args = [exprs, ranges, label] 
+            args = [exprs, ranges, label]
 
         if not skip_check:
             # In case of LineOver1DRangeSeries, Parametric2DLineSeries,
@@ -110,7 +127,19 @@ def _build_series(*args, **kwargs):
             args = _check_arguments(args, 3, 2)[0]
         elif pt == "ip":
             k = "00"
-            args = [exprs, ranges, label] 
+            args = [exprs, ranges, label]
+        elif pt == "v2d":
+            k = "22"
+            if isinstance(args[0], Vector):
+                split_expr, ranges = _split_vector(exprs[0], ranges)
+                args = [split_expr[:2], *ranges, label]
+            args = _check_arguments(args, 2, 2)[0]
+        elif pt == "v3d":
+            k = "33"
+            if isinstance(args[0], Vector):
+                split_expr, ranges = _split_vector(exprs[0], ranges)
+                args = [split_expr, *ranges, label]
+            args = _check_arguments(args, 3, 3)[0]
         else:
             raise ValueError("Wrong `pt` value. Please, check the docstring " +
                 "of `get_plot_data` to list the possible values.")
@@ -131,8 +160,7 @@ def get_plot_data(*args, **kwargs):
     sympy.plotting.plot_implicit, then numerical data will be returned.
 
     Only one expression at a time can be processed by this function.
-    The shape of the numerical data depends have the same format used in other
-    plotting functions.
+    The shape of the numerical data depends on the provided expression.
 
     Keyword Arguments
     =================
@@ -149,6 +177,8 @@ def get_plot_data(*args, **kwargs):
                 "ip": to specify an interactive plot. In such a case, you will
                         also have to provide a `param` dictionary mapping the
                         parameters to their values.
+                "v2d": to specify a 2D vector plot.
+                "v3d": to specify a 3D vector plot.
 
     Examples
     ========

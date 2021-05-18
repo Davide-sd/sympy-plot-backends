@@ -9,6 +9,7 @@ import itertools
 """
 TODO:
 1. iplot support for 2D/3D streamlines.
+2. colorbar title on the side, vertically aligned
 """
 
 class PlotlyBackend(Plot):
@@ -251,7 +252,8 @@ class PlotlyBackend(Plot):
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
-                    if s.is_streamlines:
+                    streamlines = self._kwargs.get("streamlines", False)
+                    if streamlines:
                         # NOTE: currently, it is not possible to create streamlines with
                         # a color scale: https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
                         # default values
@@ -275,7 +277,8 @@ class PlotlyBackend(Plot):
                         self._fig.add_trace(quiver.data[0])
                 else:
                     xx, yy, zz, uu, vv, ww = s.get_data()
-                    if s.is_streamlines:
+                    streamlines = self._kwargs.get("streamlines", False)
+                    if streamlines:
                         seeds_points = get_seeds_points(xx, yy, zz, uu, vv, ww)
 
                         # default values
@@ -335,7 +338,8 @@ class PlotlyBackend(Plot):
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["z"] = z
                 elif s.is_vector and s.is_3D:
-                    if s.is_streamlines:
+                    streamlines = self._kwargs.get("streamlines", False)
+                    if streamlines:
                         raise NotImplementedError
                     _, _, _, u, v, w = self.series[i].get_data()
                     self.fig.data[i]["u"] = u.flatten()
@@ -343,7 +347,8 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["w"] = w.flatten()
                 elif s.is_vector:
                     x, y, u, v = self.series[i].get_data()
-                    if s.is_streamlines:
+                    streamlines = self._kwargs.get("streamlines", False)
+                    if streamlines:
                         streams = create_streamline(x[0, :], y[:, 0], u, v)
                         data = streams.data[0]
                         # TODO: iplot doesn't work with 2D streamlines. Why?

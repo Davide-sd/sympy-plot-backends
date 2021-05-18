@@ -162,7 +162,7 @@ class K3DBackend(Plot):
                     
                 self._fig += surf
             
-            elif s.is_3Dvector and s.is_streamlines:
+            elif s.is_3Dvector and self._kwargs.get("streamlines", False):
                 xx, yy, zz, uu, vv, ww = s.get_data()
                 magnitude = np.sqrt(uu**2 + vv**2 + ww**2)
                 min_mag = min(magnitude.flatten())
@@ -282,13 +282,6 @@ class K3DBackend(Plot):
                     vertices.astype(np.float32),
                     attribute=attributes, **merge({}, skw, streams_kw)
                 )
-                # self._fig.auto_rendering = False
-                # for l, a in zip(lines, lines_attributes):
-                #     if len(l) > 1:
-                #         self._fig += k3d.line(
-                #             l, attribute=a, **merge({}, skw, streams_kw)
-                #         )
-                # self._fig.auto_rendering = True
             elif s.is_3Dvector:
                 xx, yy, zz, uu, vv, ww = s.get_data()
                 xx, yy, zz, uu, vv, ww = [t.flatten().astype(np.float32) for t
@@ -348,7 +341,7 @@ class K3DBackend(Plot):
                     vertices = np.vstack([x, y, z]).astype(np.float32)
                     self._fig.objects[i].vertices= vertices.T
                 elif s.is_vector and s.is_3D:
-                    if s.is_streamlines:
+                    if self._kwargs.get("streamlines", False):
                         raise NotImplementedError
                     # TODO: do I need to modify the colors too?
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()

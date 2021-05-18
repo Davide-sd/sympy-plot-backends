@@ -1,6 +1,5 @@
 from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
-from spb.plot_data import get_plot_data
 from spb.series import (
     Vector2DSeries, Vector3DSeries, ContourSeries, _set_discretization_points
 )
@@ -18,8 +17,8 @@ TODO:
 *   check length of ranges and if the scalar free symbols are compatible with
     the ones provided in the vector.
 *   slice planes for 3D vector fields
-*   Does `streamlines` makes sense? Seems like we need to know where to place
-    the starting points, even before knowing the vector field....
+*   Does `streamlines` makes sense as an argument of VectorSeries? We could
+    remove it, thus simplifing a bit the instantiation (plot_data.py).
 """
 
 def _build_series(expr, *ranges, label="", show=True, **kwargs):
@@ -29,11 +28,9 @@ def _build_series(expr, *ranges, label="", show=True, **kwargs):
 
     # free symbols contained in the provided vector
     fs = set().union(*[e.free_symbols for e in split_expr])
-
-    streamlines = kwargs.pop("streamlines", False)
-    kwargs = _set_discretization_points(kwargs, Vector2DSeries)
     
     if split_expr[2] is S.Zero: # 2D case
+        kwargs = _set_discretization_points(kwargs.copy(), Vector2DSeries)
         if len(fs) > 2:
             raise ValueError("Too many free symbols. 2D vector plots require " +
             "at most 2 free symbols. Received {}".format(fs))
@@ -58,8 +55,9 @@ def _build_series(expr, *ranges, label="", show=True, **kwargs):
         if len(ranges) > 2:
             raise ValueError("Too many ranges for 2D vector plot.")
         return split_expr, ranges, Vector2DSeries(*split_expr[:2], *ranges, 
-                label, streamlines, **kwargs)
+                label, **kwargs)
     else: # 3D case
+        kwargs = _set_discretization_points(kwargs.copy(), Vector3DSeries)
         if len(fs) > 3:
             raise ValueError("Too many free symbols. 3D vector plots require " +
             "at most 3 free symbols. Received {}".format(fs))
@@ -85,14 +83,16 @@ def _build_series(expr, *ranges, label="", show=True, **kwargs):
             raise ValueError("Too many ranges for 3D vector plot.")
 
         return split_expr, ranges, Vector3DSeries(*split_expr, *ranges, label, 
-                streamlines, **kwargs)
+                **kwargs)
 
 def _split_vector(expr, ranges):
     if isinstance(expr, Vector):
         N = list(_get_coord_systems(expr))[0]
         expr = expr.to_matrix(N)
         # TODO: experimental_lambdify is not able to deal with base scalars.
-        # Need to replace them both in the vector as well in the ranges
+        # Need to replace them both in the vector as well in the ranges.
+        # Sympy's lambdify is able to deal with them. Once experimental_lambdify
+        # is removed, the following code shouldn't be necessary anymore.
         bs = list(expr.atoms(BaseScalar))
         bs_dict = {b: Symbol(t) for b, t in zip(bs, ["x", "y", "z"])}
         expr = expr.subs(bs_dict)

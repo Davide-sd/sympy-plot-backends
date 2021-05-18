@@ -1,10 +1,11 @@
 from sympy import symbols, cos, sin, log, Eq
-from sympy.testing.pytest import skip, raises, warns
+from sympy.vector import CoordSys3D
+from pytest import raises
 from spb.plot_data import _build_series
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     ParametricSurfaceSeries, SurfaceOver2DRangeSeries, InteractiveSeries,
-    ImplicitSeries
+    ImplicitSeries, Vector2DSeries, Vector3DSeries
 )
 
 def test_build_series():
@@ -65,3 +66,42 @@ def test_build_series():
 
     s = _build_series(u * cos(x), (x, -5, 5), params={u: 1}, pt="ip")
     assert isinstance(s, InteractiveSeries)
+
+def test_vectors():
+    x, y, z = symbols("x:z")
+    N = CoordSys3D("N")
+    v1 = x * N.i + y * N.j
+    v2 = z * N.i + x * N.j + y * N.k
+    m1 = v1.to_matrix(N)
+    m2 = v2.to_matrix(N)
+    l1 = list(m1)
+    # I need a 2D vector: delete the last component, which is zero
+    l1 = l1[:-1]
+    l2 = list(m2)
+
+    # 2D vectors
+    s = _build_series(v1, (x, -10, 10), (y, -5, 5))
+    assert isinstance(s, Vector2DSeries)
+    s = _build_series(m1, (x, -10, 10), (y, -5, 5))
+    assert isinstance(s, Vector2DSeries)
+    s = _build_series(l1, (x, -10, 10), (y, -5, 5))
+    assert isinstance(s, Vector2DSeries)
+    s = _build_series(v1, (x, -10, 10), (y, -5, 5), pt="v2d")
+    assert isinstance(s, Vector2DSeries)
+    s = _build_series(m1, (x, -10, 10), (y, -5, 5), pt="v2d")
+    assert isinstance(s, Vector2DSeries)
+    s = _build_series(l1, (x, -10, 10), (y, -5, 5), pt="v2d")
+    assert isinstance(s, Vector2DSeries)
+
+    s = _build_series(v2, (x, -10, 10), (y, -5, 5), (z, -8, 8))
+    assert isinstance(s, Vector3DSeries)
+    s = _build_series(m2, (x, -10, 10), (y, -5, 5), (z, -8, 8))
+    assert isinstance(s, Vector3DSeries)
+    s = _build_series(l2, (x, -10, 10), (y, -5, 5), (z, -8, 8))
+    assert isinstance(s, Vector3DSeries)
+    s = _build_series(v2, (x, -10, 10), (y, -5, 5), (z, -8, 8), pt="v3d")
+    assert isinstance(s, Vector3DSeries)
+    s = _build_series(m2, (x, -10, 10), (y, -5, 5), (z, -8, 8), pt="v3d")
+    assert isinstance(s, Vector3DSeries)
+    s = _build_series(l2, (x, -10, 10), (y, -5, 5), (z, -8, 8), pt="v3d")
+    assert isinstance(s, Vector3DSeries)
