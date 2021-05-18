@@ -1,9 +1,15 @@
 from spb.defaults import plotly_theme
 from spb.backends.base_backend import Plot
+from spb.utils import get_seeds_points
 import plotly.graph_objects as go
 from plotly.figure_factory import create_quiver, create_streamline
 from mergedeep import merge
 import itertools
+
+"""
+TODO:
+1. iplot support for 2D/3D streamlines.
+"""
 
 class PlotlyBackend(Plot):
     """ A backend for plotting SymPy's symbolic expressions using Plotly.
@@ -25,13 +31,35 @@ class PlotlyBackend(Plot):
         
         quivers_kw : dict
             A dictionary of keywords/values which is passed to Plotly's quivers
-            function to customize the appearance. Default to:
-            ``dict( line_color = "cyan", scale = 0.025 )``
+            function to customize the appearance.
+            For 2D vector fields, default to:
+                ``dict( scale = 0.075 )``
+                Refer to this documentation page:
+                https://plotly.com/python/quiver-plots/
+            For 3D vector fields, default to:
+                ``dict( sizemode = "absolute", sizeref = 40 )``
+                Refer to this documentation page:
+                https://plotly.com/python/cone-plot/
 
         streams_kw : dict
             A dictionary of keywords/values which is passed to Plotly's
-            streamlines function to customize the appearance. Defaul to: 
-            ``dict( line_color = "cyan", arrow_scale = 0.15 )``
+            streamlines function to customize the appearance.
+            For 2D vector fields, defaul to: 
+                ``dict( arrow_scale = 0.15 )``
+                Refer to this documentation page:
+                https://plotly.com/python/streamline-plots/
+            For 3D vector fields, default to:
+                ```dict(
+                        sizeref = 0.3,
+                        starts = dict(
+                            x = seeds_points[:, 0],
+                            y = seeds_points[:, 1],
+                            z = seeds_points[:, 2]
+                    ))
+                ```
+            where `seeds_points` are the starting points of the streamlines.
+            Refer to this documentation page:
+            https://plotly.com/python/streamtube-plot/
 
         theme : str
             Set the theme. Default to "plotly_dark". Find more Plotly themes at
@@ -89,19 +117,20 @@ class PlotlyBackend(Plot):
         self._wfcm = itertools.cycle(self.wireframe_colors)
         self._qc = itertools.cycle(self.quivers_colors)
         self._fig = go.Figure()
-        # self._process_series(self._series)
         self._update_layout()
     
     def _process_series(self, series):
 
         # if legend=True and both 3d lines and surfaces are shown, then hide the
         # surfaces color bars and only shows line labels in the legend.
+        # TODO: can I show both colorbars and legends by scaling down the color
+        # bars?
         show_3D_colorscales = True
         show_2D_vectors = False
         for s in series:
             if s.is_3Dline:
                 show_3D_colorscales = False
-            if s.is_vector and s.is_2D:
+            if s.is_2Dvector:
                 show_2D_vectors = True
         
         self._fig.data = []
@@ -219,64 +248,70 @@ class PlotlyBackend(Plot):
                 contours_kw = self._kwargs.get("contours_kw", dict())
                 self._fig.add_trace(go.Contour(x = xx, y = yy, z = zz,
                         **merge({}, ckw, contours_kw)))
-            elif s.is_vector and s.is_2D and s.is_streamlines:
-                # NOTE: currently, it is not possible to create streamlines with
-                # a color scale: https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
-                
-                xx, yy, uu, vv = s.get_data()
-                # default values
-                skw = dict( line_color = next(self._qc), arrow_scale = 0.15,
-                    name = s.label)
-                # user-provided values
-                streams_kw = self._kwargs.get("streams_kw", dict())
-                stream = create_streamline(xx[0, :], yy[:, 0], uu, vv,
-                    **merge({}, skw, streams_kw))
-                self._fig.add_trace(stream.data[0])
-            elif s.is_vector and s.is_2D:
-                # NOTE: currently, it is not possible to create quivers with
-                # a color scale: https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
+            elif s.is_vector:
+                if s.is_2Dvector:
+                    xx, yy, uu, vv = s.get_data()
+                    if s.is_streamlines:
+                        # NOTE: currently, it is not possible to create streamlines with
+                        # a color scale: https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
+                        # default values
+                        skw = dict( line_color = next(self._qc), arrow_scale = 0.15,
+                            name = s.label)
+                        # user-provided values
+                        streams_kw = self._kwargs.get("streams_kw", dict())
+                        stream = create_streamline(xx[0, :], yy[:, 0], uu, vv,
+                            **merge({}, skw, streams_kw))
+                        self._fig.add_trace(stream.data[0])
+                    else:
+                        # NOTE: currently, it is not possible to create quivers with
+                        # a color scale: https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
+                        # default values
+                        qkw = dict( line_color = next(self._qc), scale = 0.075,
+                            name = s.label )
+                        # user-provided values
+                        quivers_kw = self._kwargs.get("quivers_kw", dict())
+                        quiver = create_quiver(xx, yy, uu, vv, 
+                            **merge({}, qkw, quivers_kw)) # merge two dictionaries
+                        self._fig.add_trace(quiver.data[0])
+                else:
+                    xx, yy, zz, uu, vv, ww = s.get_data()
+                    if s.is_streamlines:
+                        seeds_points = get_seeds_points(xx, yy, zz, uu, vv, ww)
 
-                xx, yy, uu, vv = s.get_data()
-                # default values
-                qkw = dict( line_color = next(self._qc), scale = 0.075,
-                    name = s.label )
-                # user-provided values
-                quivers_kw = self._kwargs.get("quivers_kw", dict())
-                quiver = create_quiver(xx, yy, uu, vv, 
-                    **merge({}, qkw, quivers_kw)) # merge two dictionaries
-                self._fig.add_trace(quiver.data[0])
-            elif s.is_vector and s.is_3D and s.is_streamlines:
-                xx, yy, zz, uu, vv, ww = s.get_data()
-                # default values
-                skw = dict( colorscale = next(self._cm), sizeref = 0.3,
-                        colorbar = dict(
-                            x = 1 + 0.1 * ii,
-                            title = s.label,
-                        ))
-                # user-provided values
-                streams_kw = self._kwargs.get("streams_kw", dict())
-                self._fig.add_trace(
-                    go.Streamtube( x = xx.flatten(), y = yy.flatten(),
-                        z = zz.flatten(), u = uu.flatten(),
-                        v = vv.flatten(), w = ww.flatten(),
-                        **merge({}, skw, streams_kw))
-                )
-            elif s.is_vector and s.is_3D:
-                xx, yy, zz, uu, vv, ww = s.get_data()
-                # default values
-                qkw = dict( colorscale = next(self._cm), sizemode = "absolute", 
-                    sizeref = 40, colorbar = dict(
-                            x = 1 + 0.1 * ii,
-                            title = s.label,
-                        ))
-                # user-provided values
-                quivers_kw = self._kwargs.get("quivers_kw", dict())
-                self._fig.add_trace(
-                    go.Cone( x = xx.flatten(), y = yy.flatten(),
-                        z = zz.flatten(), u = uu.flatten(),
-                        v = vv.flatten(), w = ww.flatten(),
-                        **merge({}, qkw, quivers_kw))
-                )
+                        # default values
+                        skw = dict( colorscale = next(self._cm), sizeref = 0.3,
+                                colorbar = dict(
+                                    x = 1 + 0.1 * ii,
+                                    title = s.label,
+                                ),
+                                starts = dict(
+                                    x = seeds_points[:, 0],
+                                    y = seeds_points[:, 1],
+                                    z = seeds_points[:, 2],
+                                ))
+                        # user-provided values
+                        streams_kw = self._kwargs.get("streams_kw", dict())
+                        self._fig.add_trace(
+                            go.Streamtube( x = xx.flatten(), y = yy.flatten(),
+                                z = zz.flatten(), u = uu.flatten(),
+                                v = vv.flatten(), w = ww.flatten(),
+                                **merge({}, skw, streams_kw))
+                        )
+                    else:
+                        # default values
+                        qkw = dict( colorscale = next(self._cm), sizemode = "absolute", 
+                            sizeref = 40, colorbar = dict(
+                                    x = 1 + 0.1 * ii,
+                                    title = s.label,
+                                ))
+                        # user-provided values
+                        quivers_kw = self._kwargs.get("quivers_kw", dict())
+                        self._fig.add_trace(
+                            go.Cone( x = xx.flatten(), y = yy.flatten(),
+                                z = zz.flatten(), u = uu.flatten(),
+                                v = vv.flatten(), w = ww.flatten(),
+                                **merge({}, qkw, quivers_kw))
+                        )
             else:
                 raise NotImplementedError
     
@@ -284,12 +319,11 @@ class PlotlyBackend(Plot):
         for i, s in enumerate(self.series):
             if s.is_interactive:
                 self.series[i].update_data(params)
-                
                 if s.is_2Dline and s.is_parametric:
                     x, y = self.series[i].get_data()
                     self.fig.data[i]["x"] = x
                     self.fig.data[i]["y"] = y
-                if s.is_2Dline and (not s.is_parametric):
+                elif s.is_2Dline and (not s.is_parametric):
                     x, y = self.series[i].get_data()
                     self.fig.data[i]["y"] = y
                 elif s.is_3Dline or (s.is_3Dsurface and s.is_parametric):
@@ -300,6 +334,35 @@ class PlotlyBackend(Plot):
                 elif s.is_3Dsurface and (not s.is_parametric):
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["z"] = z
+                elif s.is_vector and s.is_3D:
+                    if s.is_streamlines:
+                        raise NotImplementedError
+                    _, _, _, u, v, w = self.series[i].get_data()
+                    self.fig.data[i]["u"] = u.flatten()
+                    self.fig.data[i]["v"] = v.flatten()
+                    self.fig.data[i]["w"] = w.flatten()
+                elif s.is_vector:
+                    x, y, u, v = self.series[i].get_data()
+                    if s.is_streamlines:
+                        streams = create_streamline(x[0, :], y[:, 0], u, v)
+                        data = streams.data[0]
+                        # TODO: iplot doesn't work with 2D streamlines. Why?
+                        # Is it possible that the sequential update of x and y
+                        # is the cause of the error? Since at every update,
+                        # len(x) = len(y) but those are different from before.
+                        raise NotImplementedError
+                    else:
+                        # default values
+                        qkw = dict( line_color = self.quivers_colors[i],
+                            scale = 0.075, name = s.label )
+                        # user-provided values
+                        quivers_kw = self._kwargs.get("quivers_kw", dict())
+                        quivers = create_quiver(x, y, u, v,
+                            **merge({}, qkw, quivers_kw))
+                        data = quivers.data[0]
+                    self.fig.data[i]["x"] = data["x"]
+                    self.fig.data[i]["y"] = data["y"]
+
 
     def _update_layout(self):
         self._fig.update_layout(

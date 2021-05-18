@@ -1,6 +1,6 @@
 from spb.defaults import k3d_bg_color
 from spb.backends.base_backend import Plot
-from spb.utils import get_vertices_indices
+from spb.utils import get_vertices_indices, get_seeds_points
 import k3d
 import numpy as np
 import warnings
@@ -10,6 +10,7 @@ from mergedeep import merge
 
 # TODO:
 # 1. load the plot with menu minimized
+# 2. iplot support for streamlines?
 
 class K3DBackend(Plot):
     """ A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
@@ -28,6 +29,12 @@ class K3DBackend(Plot):
         show_label : boolean
             Show/hide labels of the expressions. Default to False (labels not
             visible).
+        
+        streams_kw : dict
+            A dictionary to customize the apppearance of streamlines.
+            Default to:
+            ``streams_kw = dict( width=0.1, shader='mesh' )``
+            Refer to k3d.line for more options.
         
         tube_radius : float
             Tube radius for 3D lines. Default to 0.1.
@@ -112,7 +119,6 @@ class K3DBackend(Plot):
         for s in series:
             if s.is_3Dline:
                 x, y, z = s.get_data()
-                print(x.shape, y.shape, z.shape)
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 length = self._line_length(x, y, z, start=s.start, end=s.end)
                 # keyword arguments for the line object
@@ -120,6 +126,7 @@ class K3DBackend(Plot):
                     width = self._kwargs.get("tube_radius", 0.1),
                     name = s.label if self._kwargs.get("show_label", False) else None,
                     color = self._convert_to_int(next(self._cl)),
+                    shader = "mesh",
                 )
                 if self._use_cm:
                     a["attribute"] = length,
@@ -155,9 +162,134 @@ class K3DBackend(Plot):
                     
                 self._fig += surf
             
-            elif s.is_vector and s.is_3D and s.is_streamlines:
-                raise NotImplementedError
-            elif s.is_vector and s.is_3D:
+            elif s.is_3Dvector and s.is_streamlines:
+                xx, yy, zz, uu, vv, ww = s.get_data()
+                magnitude = np.sqrt(uu**2 + vv**2 + ww**2)
+                min_mag = min(magnitude.flatten())
+                max_mag = max(magnitude.flatten())
+                
+                import vtk
+                from vtk.util import numpy_support
+
+                vector_field = np.array([uu.flatten(), vv.flatten(), ww.flatten()]).T
+                vtk_vector_field = numpy_support.numpy_to_vtk(num_array=vector_field, deep=True, array_type=vtk.VTK_FLOAT)
+                vtk_vector_field.SetName("vector_field")
+
+                points = vtk.vtkPoints()
+                points.SetNumberOfPoints(s.n2 * s.n1 * s.n3)
+                for i, (x, y, z) in enumerate(zip(xx.flatten(), yy.flatten(), zz.flatten())):
+                    points.SetPoint(i, [x, y, z])
+                    
+                grid = vtk.vtkStructuredGrid()
+                grid.SetDimensions([s.n2, s.n1, s.n3])
+                grid.SetPoints(points)
+                grid.GetPointData().SetVectors( vtk_vector_field )
+
+                streams_kw = self._kwargs.get("streams_kw", dict())
+                starts = streams_kw.pop("starts", None)
+                max_prop = streams_kw.pop("max_prop", 500)
+
+                streamer = vtk.vtkStreamTracer()
+                streamer.SetInputData(grid)
+                streamer.SetMaximumPropagation(max_prop)
+                
+                if starts is None:
+                    seeds_points = get_seeds_points(xx, yy, zz, uu, vv, ww)
+                    seeds = vtk.vtkPolyData()
+                    points = vtk.vtkPoints()
+                    for p in seeds_points:
+                        points.InsertNextPoint(p)
+                    seeds.SetPoints(points)
+                    streamer.SetSourceData(seeds)
+                    streamer.SetIntegrationDirectionToForward()
+                elif isinstance(starts, dict):
+                    if not all([t in starts.keys() for t in ["x", "y", "z"]]):
+                        raise KeyError(
+                            "``starts`` must contains the following keys: " +
+                            "'x', 'y', 'z', whose values are going to be " +
+                            "lists of coordinates.")
+                    seeds_points = np.array([starts["x"], starts["y"], starts["z"]]).T
+                    seeds = vtk.vtkPolyData()
+                    points = vtk.vtkPoints()
+                    for p in seeds_points:
+                        points.InsertNextPoint(p)
+                    seeds.SetPoints(points)
+                    streamer.SetSourceData(seeds)
+                    streamer.SetIntegrationDirectionToBoth()
+                else:
+                    npoints = streams_kw.get("npoints", 200)
+                    radius = streams_kw.get("radius", None)
+                    center = 0, 0, 0
+                    if not radius:
+                        xmin, xmax = min(xx[0, :, 0]), max(xx[0, :, 0])
+                        ymin, ymax = min(yy[:, 0, 0]), max(yy[:, 0, 0])
+                        zmin, zmax = min(zz[0, 0, :]), max(zz[0, 0, :])
+                        radius = max([abs(xmax - xmin), abs(ymax - ymin), abs(zmax - zmin)])
+                        center = (xmax - xmin) / 2, (ymax - ymin) / 2, (zmax - zmin) / 2
+                    seeds = vtk.vtkPointSource()
+                    seeds.SetRadius(radius)
+                    seeds.SetCenter(*center)
+                    seeds.SetNumberOfPoints(npoints)
+
+                    streamer.SetSourceConnection(seeds.GetOutputPort())
+                    streamer.SetIntegrationDirectionToBoth()
+                
+                streamer.SetComputeVorticity(0)
+                streamer.SetIntegrator(vtk.vtkRungeKutta4())
+                streamer.Update()
+
+                streamline = streamer.GetOutput()
+                streamlines_points = numpy_support.vtk_to_numpy(streamline.GetPoints().GetData())
+                streamlines_velocity = numpy_support.vtk_to_numpy(streamline.GetPointData().GetArray('vector_field'))
+                streamlines_speed = np.linalg.norm(streamlines_velocity, axis=1)
+                
+                vtkLines = streamline.GetLines()
+                vtkLines.InitTraversal()
+                point_list = vtk.vtkIdList()
+
+                lines = []
+                lines_attributes = []
+
+                while vtkLines.GetNextCell(point_list):
+                    start_id = point_list.GetId(0)
+                    end_id = point_list.GetId(point_list.GetNumberOfIds() - 1)
+                    l = []
+                    v = []
+
+                    for i in range(start_id, end_id):
+                        l.append(streamlines_points[i])
+                        v.append(streamlines_speed[i])
+
+                    lines.append(np.array(l))
+                    lines_attributes.append(np.array(v))
+                
+                cm = k3d.matplotlib_color_maps.Inferno
+                skw = dict(
+                    width=0.1, color_map=cm, color_range=[min_mag, max_mag],
+                    shader='mesh', compression_level=9
+                )
+                
+                count = sum([len(l) for l in lines])
+                vertices = np.nan * np.zeros((count + (len(lines) - 1), 3))
+                attributes = np.zeros(count + (len(lines) - 1))
+                c = 0
+                for k, (l, a) in enumerate(zip(lines, lines_attributes)):
+                    vertices[c : c + len(l), :] = l
+                    attributes[c : c + len(l)] = a
+                    if k < len(lines) - 1:
+                        c = c + len(l) + 1
+                self._fig +=k3d.line(
+                    vertices.astype(np.float32),
+                    attribute=attributes, **merge({}, skw, streams_kw)
+                )
+                # self._fig.auto_rendering = False
+                # for l, a in zip(lines, lines_attributes):
+                #     if len(l) > 1:
+                #         self._fig += k3d.line(
+                #             l, attribute=a, **merge({}, skw, streams_kw)
+                #         )
+                # self._fig.auto_rendering = True
+            elif s.is_3Dvector:
                 xx, yy, zz, uu, vv, ww = s.get_data()
                 xx, yy, zz, uu, vv, ww = [t.flatten().astype(np.float32) for t
                     in [xx, yy, zz, uu, vv, ww]]
@@ -204,17 +336,30 @@ class K3DBackend(Plot):
         for i, s in enumerate(self.series):
             if s.is_interactive:
                 self.series[i].update_data(params)
-                x, y, z = self.series[i].get_data()
-                
                 if s.is_3Dline:
+                    x, y, z = self.series[i].get_data()
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     self._fig.objects[i].vertices = vertices
                 elif s.is_3Dsurface:
+                    x, y, z = self.series[i].get_data()
                     x = x.flatten()
                     y = y.flatten()
                     z = z.flatten()
                     vertices = np.vstack([x, y, z]).astype(np.float32)
                     self._fig.objects[i].vertices= vertices.T
+                elif s.is_vector and s.is_3D:
+                    if s.is_streamlines:
+                        raise NotImplementedError
+                    # TODO: do I need to modify the colors too?
+                    xx, yy, zz, uu, vv, ww = self.series[i].get_data()
+                    xx, yy, zz, uu, vv, ww = [t.astype(np.float32) for t in 
+                        [xx, yy, zz, uu, vv, ww]]
+                    qkw = dict(scale = 0.5)
+                    quivers_kw = self._kwargs.get("quivers_kw", dict())
+                    qkw = merge(qkw, quivers_kw)
+                    scale = qkw["scale"]
+                    vectors = np.array((uu, vv, ww)).T * scale
+                    self.fig.objects[i].vectors = vectors
 
     def show(self):
         self._process_series(self._series)

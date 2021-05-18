@@ -259,7 +259,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         kwargs["params"] = self.read_parameters()
         series = []
         for a in args:
-            exprs, ranges, label = _unpack_args(*a)
+            exprs, ranges, label = _unpack_args(*a, matrices=True)
             series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
         return series
     

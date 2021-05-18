@@ -133,7 +133,6 @@ def _preprocess(*args):
     new_args = []
     for a in args:
         exprs, ranges, label = _unpack_args(*a)
-
         if len(exprs) == 1:
             new_args.append([*exprs, *ranges, label])
         else:
@@ -254,7 +253,7 @@ def vector_plot(*args, show=True, **kwargs):
     args = _plot_sympify(args)
     args = _preprocess(*args)
 
-    kwargs = _set_discretization_points(kwargs, Vector2DSeries)
+    kwargs = _set_discretization_points(kwargs, Vector3DSeries)
     if not "n1" in kwargs: kwargs["n1"] = 25
     if not "n2" in kwargs: kwargs["n2"] = 25
     if not "aspect_ratio" in kwargs.keys():
@@ -266,7 +265,7 @@ def vector_plot(*args, show=True, **kwargs):
         series.append(s)
     
     # add a scalar series only on 2D plots
-    if all([s.is_2D for s in series]):
+    if all([isinstance(s, Vector2DSeries) for s in series]):
         backend = kwargs.pop("backend", TWO_D_B)
 
         # don't pop this keyword: some backend needs it to decide the color
@@ -311,7 +310,7 @@ def vector_plot(*args, show=True, **kwargs):
             cs_kwargs["n2"] = nc
             cs = ContourSeries(scalar_field, *ranges, scalar_label, **cs_kwargs)
             series = [cs] + series
-    elif all([s.is_3D for s in series]):
+    elif all([isinstance(s, Vector3DSeries)  for s in series]):
         backend = kwargs.pop("backend", THREE_D_B)
     else:
         raise ValueError("Mixing 2D vectors with 3D vectors is not allowed.")

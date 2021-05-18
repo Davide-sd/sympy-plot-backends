@@ -81,6 +81,8 @@ class BaseSeries:
     # An interactive series can update its data.
 
     is_vector = False
+    is_2Dvector = False
+    is_3Dvector = False
     # Represents a 2D or 3D vector
 
     is_streamlines = False
@@ -93,7 +95,8 @@ class BaseSeries:
     def is_3D(self):
         flags3D = [
             self.is_3Dline,
-            self.is_3Dsurface
+            self.is_3Dsurface,
+            self.is_3Dvector
         ]
         return any(flags3D)
 
@@ -968,11 +971,12 @@ class InteractiveSeries(BaseSeries):
         if nexpr == 0:
             raise ValueError("At least one expression must be provided." +
                 "\nReceived: {}".format((exprs, ranges, label)))
-        if npar > 2:
-            raise ValueError(
-                    "Depending on the backend, only 2D and 3D plots are " +
-                    "supported (1 or 2 ranges at most). The provided " +
-                    "expressions uses {} ranges.".format(npar))
+        # # TODO: do I really need this?
+        # if npar > 2:
+        #     raise ValueError(
+        #             "Depending on the backend, only 2D and 3D plots are " +
+        #             "supported (1 or 2 ranges at most). The provided " +
+        #             "expressions uses {} ranges.".format(npar))
 
         # set series attributes
         if (nexpr == 1) and (npar == 1):
@@ -996,6 +1000,15 @@ class InteractiveSeries(BaseSeries):
         elif (nexpr == 3) and (npar == 2):
             self.is_3Dsurface = True
             self.is_parametric = True
+        elif (nexpr == 2) and (npar == 2):
+            self.is_vector = True
+            self.is_2Dvector = True
+            self.is_streamlines = kwargs.get("streamlines", False)
+        elif (nexpr == 3) and (npar == 3):
+            self.is_vector = True
+            self.is_3Dvector = True
+            self.is_streamlines = kwargs.get("streamlines", False)
+            self.n1, self.n2, self.n3 = n, n, n
 
         # from the expression's free symbols, remove the ones used in
         # the parameters and the ranges
@@ -1060,6 +1073,7 @@ class InteractiveSeries(BaseSeries):
                 val: the value
 
         """
+        print("InteractiveSeries -> update_data", params)
         args = []
         for s in self.signature:
             if s in params.keys():
@@ -1083,14 +1097,19 @@ class InteractiveSeries(BaseSeries):
                 if not is_sequence(r):
                     results[i] = r * np.ones(self._discret_shape)
         
-        self.data = results
+        if self.is_vector:
+            # in order to plot a vector, we also need the discretized region
+            self.data = *self.ranges.values(), *results
+        else:
+            self.data = results
         
     def get_data(self):
         # if the expression depends only on the ranges, the user can call get_data
         # directly without calling update_dat
-        if (not self.data) and (len(self.signature) == len(self.ranges)):
+        # print(self.data)
+        if (self.data is None) and (len(self.signature) == len(self.ranges)):
             self.update_data(dict())
-        if not self.data:
+        if self.data is None:
             raise ValueError(
                 "To generate the numerical data, call update_data(params), " +
                 "providing the necessary parameters.")
@@ -1155,7 +1174,7 @@ class VectorBase(BaseSeries):
         return b
 
 class Vector2DSeries(VectorBase):
-    is_2D = True
+    is_2Dvector = True
 
     def __init__(self, u, v, range1, range2, label, streamlines, **kwargs):
         self.u = SurfaceOver2DRangeSeries(u, range1, range2, **kwargs)
@@ -1171,6 +1190,7 @@ class Vector2DSeries(VectorBase):
 
 class Vector3DSeries(VectorBase):
     is_3D = True
+    is_3Dvector = True
 
     def __init__(self, u, v, w, range_x, range_y, range_z, label, streamlines,
             **kwargs):

@@ -75,16 +75,17 @@ def test_split_vector():
     l1 = list(m1)
     l2 = list(m2)
 
-    assert _split_vector(v1) == (x, y, z)
-    assert _split_vector(m1) == (x, y, z)
-    assert _split_vector(l1) == (x, y, z)
-    assert _split_vector(v2) == (z, x, y)
-    assert _split_vector(m2) == (z, x, y)
-    assert _split_vector(l2) == (z, x, y)
+    ranges = [Tuple(x, -5, 5)]
+    assert _split_vector(v1, ranges) == ((x, y, z), ranges)
+    assert _split_vector(m1, ranges) == ((x, y, z), ranges)
+    assert _split_vector(l1, ranges) == ((x, y, z), ranges)
+    assert _split_vector(v2, ranges) == ((z, x, y), ranges)
+    assert _split_vector(m2, ranges) == ((z, x, y), ranges)
+    assert _split_vector(l2, ranges) == ((z, x, y), ranges)
 
     # too few or too many elements
-    raises(ValueError, lambda: _split_vector([x]))
-    raises(ValueError, lambda: _split_vector([x, x, x, x]))
+    raises(ValueError, lambda: _split_vector([x], ranges))
+    raises(ValueError, lambda: _split_vector([x, x, x, x], ranges))
 
 def test_build_series():
     x, y, z = symbols("x:z")

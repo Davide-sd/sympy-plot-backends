@@ -195,6 +195,21 @@ class BokehBackend(Plot):
         colorbar_kw : dict
             A dictionary with keyword arguments to customize the colorbar.
 
+        quivers_kw : dict
+            A dictionary with keyword arguments to customize the quivers.
+            Default to:
+                ```dict(
+                        scale = 1,
+                        pivot = "mid",      # can be "mid", "tip" or "tail"
+                        arrow_heads = True,  # show/hide arrow
+                        line_width = 1
+                    )
+                ```
+
+        streams_kw : dict
+            A dictionary with keyword arguments to customize the streamlines.
+            Default to: ``dict(line_width=2, line_alpha=0.8)``
+
         theme : str
             Set the theme. Default to "dark_minimal". Find more Bokeh themes at
             the following page:
@@ -311,14 +326,14 @@ class BokehBackend(Plot):
                 colorbar = ColorBar(color_mapper=colormapper, title=s.label,
                     **merge({}, cbkw, colorbar_kw))
                 self._fig.add_layout(colorbar, 'right')
-            elif s.is_vector and s.is_2D and s.is_streamlines:
+            elif s.is_2Dvector and s.is_streamlines:
                 x, y, u, v = s.get_data()
                 sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
                 streams_kw = self._kwargs.get("streams_kw", dict())
                 density = streams_kw.pop("density", 2)
                 xs, ys = streamlines(x[0, :], y[:, 0], u, v, density=density)
                 self._fig.multi_line(xs, ys, **merge({}, sqk, streams_kw))
-            elif s.is_vector and s.is_2D:
+            elif s.is_2Dvector:
                 x, y, u, v = s.get_data()
                 quivers_kw = self._kwargs.get("quivers_kw", dict())
                 data, quivers_kw = self._get_quivers_data(x, y, u, v, **quivers_kw)
@@ -389,6 +404,25 @@ class BokehBackend(Plot):
                     u = s.discretized_var
                     xs, ys, us = self._get_segments(x, y, u)
                     rend[i].data_source.data.update({'xs': xs, 'ys': ys, 'us': us})
+                elif s.is_2Dvector:
+                    x, y, u, v = s.get_data()
+                    if s.is_streamlines:
+                        sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
+                        streams_kw = self._kwargs.get("streams_kw", dict())
+                        density = streams_kw.pop("density", 2)
+                        xs, ys = streamlines(x[0, :], y[:, 0], u, v, density=density)
+                        rend[i].data_source.data.update({'xs': xs, 'ys': ys})
+                    else:
+                        quivers_kw = self._kwargs.get("quivers_kw", dict())
+                        data, quivers_kw = self._get_quivers_data(x, y, u, v, **quivers_kw)
+                        mag = data["magnitude"]
+                        color_mapper = LinearColorMapper(
+                            palette=self.quivers_colormaps[i], 
+                            low=min(mag), high=max(mag))
+                        line_color = quivers_kw.get("line_color",
+                            {'field': 'magnitude', 'transform': color_mapper})
+                        rend[i].data_source.data.update(data)
+                        rend[i].glyph.line_color = line_color
 
     def save(self, path, **kwargs):
         self._process_series(self._series)
