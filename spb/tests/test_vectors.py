@@ -1,8 +1,8 @@
 from sympy import symbols, Matrix, Tuple
 from sympy.vector import CoordSys3D
 
-from spb.vectors import _preprocess, _split_vector, _build_series, vector_plot
-from spb.utils import _plot_sympify
+from spb.vectors import _preprocess,_build_series, vector_plot
+from spb.utils import _plot_sympify, _split_vector
 from spb.series import Vector2DSeries, Vector3DSeries
 
 from pytest import raises

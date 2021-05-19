@@ -4,10 +4,9 @@ from spb.series import (
     Vector2DSeries, Vector3DSeries, ContourSeries, _set_discretization_points
 )
 from spb.plot import _is_range
-from spb.utils import _plot_sympify, _unpack_args
+from spb.utils import _plot_sympify, _unpack_args, _split_vector
 from sympy import S, sqrt, Expr, Tuple, Dummy, Symbol
 from sympy.vector import Vector, BaseScalar
-from sympy.vector.operators import _get_coord_systems
 from sympy.matrices.dense import DenseMatrix
 from sympy.core.compatibility import is_sequence
 
@@ -17,8 +16,6 @@ TODO:
 *   check length of ranges and if the scalar free symbols are compatible with
     the ones provided in the vector.
 *   slice planes for 3D vector fields
-*   Does `streamlines` makes sense as an argument of VectorSeries? We could
-    remove it, thus simplifing a bit the instantiation (plot_data.py).
 """
 
 def _build_series(expr, *ranges, label="", show=True, **kwargs):
@@ -84,35 +81,6 @@ def _build_series(expr, *ranges, label="", show=True, **kwargs):
 
         return split_expr, ranges, Vector3DSeries(*split_expr, *ranges, label, 
                 **kwargs)
-
-def _split_vector(expr, ranges):
-    if isinstance(expr, Vector):
-        N = list(_get_coord_systems(expr))[0]
-        expr = expr.to_matrix(N)
-        # TODO: experimental_lambdify is not able to deal with base scalars.
-        # Need to replace them both in the vector as well in the ranges.
-        # Sympy's lambdify is able to deal with them. Once experimental_lambdify
-        # is removed, the following code shouldn't be necessary anymore.
-        bs = list(expr.atoms(BaseScalar))
-        bs_dict = {b: Symbol(t) for b, t in zip(bs, ["x", "y", "z"])}
-        expr = expr.subs(bs_dict)
-        ranges = [r.subs(bs_dict) for r in ranges]
-    elif not isinstance(expr, (DenseMatrix, list, tuple, Tuple)):
-        raise TypeError(
-            "The provided expression must be a symbolic vector, or a "
-            "symbolic matrix, or a tuple/list with 2 or 3 symbolic " +
-            "elements.\nReceived type = {}".format(type(expr)))
-    elif (len(expr) < 2) or (len(expr) > 3):
-        raise ValueError("This function only plots 2D or 3D vectors.\n" +
-            "Received: {}. Number of elements: {}".format(expr, len(expr)))
-    
-    if len(expr) == 2:
-        xexpr, yexpr = expr
-        zexpr = S.Zero
-    else:
-        xexpr, yexpr, zexpr = expr
-    split_expr = xexpr, yexpr, zexpr
-    return split_expr, ranges
 
 def _preprocess(*args):
     """ Loops over the arguments and build a list of arguments having the

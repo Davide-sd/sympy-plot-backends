@@ -1,5 +1,7 @@
-from sympy import lambdify, Tuple, sympify, Expr
+from sympy import lambdify, Tuple, sympify, Expr, S, Symbol
 from sympy.matrices.dense import DenseMatrix
+from sympy.vector import Vector, BaseScalar
+from sympy.vector.operators import _get_coord_systems
 from sympy.utilities.iterables import ordered
 import numpy as np
 
@@ -99,10 +101,13 @@ def _unpack_args(*args, matrices=False):
         else:
             label = str(tuple(exprs))
     
-    if matrices:
-        # TODO: need to deals with instances of Vector
-        if (len(exprs) == 1) and (isinstance(exprs[0], (list, tuple, Tuple, DenseMatrix))):
+    if matrices and (len(exprs) == 1):
+        if isinstance(exprs[0], (list, tuple, Tuple, DenseMatrix)):
             exprs = list(exprs[0])
+        elif isinstance(exprs[0], Vector):
+            exprs, ranges = _split_vector(exprs[0], ranges)
+            if exprs[-1] is S.Zero:
+                exprs = exprs[:-1]
     return exprs, ranges, label
 
 
@@ -132,6 +137,54 @@ def get_vertices_indices(x, y, z):
             indices.append( [ij2k(cols, i, j), ij2k(cols, i - 1, j), ij2k(cols, i, j- 1 )] )
             indices.append( [ij2k(cols, i - 1, j - 1), ij2k(cols, i , j - 1), ij2k(cols, i - 1, j)] )
     return vertices, indices
+
+
+def _split_vector(expr, ranges):
+    """ Extract the components of the given vector or matrix.
+
+    Parameters
+    ==========
+        expr : Vector, DenseMatrix or list/tuple
+        ranges : list/tuple
+    
+    Returns
+    =======
+        split_expr : tuple
+            Tuple of the form (x_expr, y_expr, z_expr). If a 2D vector is
+            provided, z_expr = S.Zero.
+        ranges : list/tuple
+
+    NOTE: this function is located in utils.py module (and not in vectors.py)
+    in order to avoid circular import.
+    """
+    if isinstance(expr, Vector):
+        N = list(_get_coord_systems(expr))[0]
+        expr = expr.to_matrix(N)
+        # TODO: experimental_lambdify is not able to deal with base scalars.
+        # Need to replace them both in the vector as well in the ranges.
+        # Sympy's lambdify is able to deal with them. Once experimental_lambdify
+        # is removed, the following code shouldn't be necessary anymore.
+        bs = list(expr.atoms(BaseScalar))
+        bs = sorted(bs, key=str)
+        bs_dict = {b: Symbol(t) for b, t in zip(bs, ["x", "y", "z"])}
+        expr = expr.subs(bs_dict)
+        ranges = [r.subs(bs_dict) for r in ranges]
+    elif not isinstance(expr, (DenseMatrix, list, tuple, Tuple)):
+        raise TypeError(
+            "The provided expression must be a symbolic vector, or a "
+            "symbolic matrix, or a tuple/list with 2 or 3 symbolic " +
+            "elements.\nReceived type = {}".format(type(expr)))
+    elif (len(expr) < 2) or (len(expr) > 3):
+        raise ValueError("This function only plots 2D or 3D vectors.\n" +
+            "Received: {}. Number of elements: {}".format(expr, len(expr)))
+    
+    if len(expr) == 2:
+        xexpr, yexpr = expr
+        zexpr = S.Zero
+    else:
+        xexpr, yexpr, zexpr = expr
+    split_expr = xexpr, yexpr, zexpr
+    return split_expr, ranges
 
 def get_seeds_points(xx, yy, zz, uu, vv, ww):
     """ Returns an optimal list of seeds points to be used to generate 3D

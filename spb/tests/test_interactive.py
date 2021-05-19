@@ -1,8 +1,10 @@
-from sympy import symbols, cos, sin
+from sympy import symbols, cos, sin, Tuple
 import param
 import panel as pn
 import bokeh.models as bm
 from spb.interactive import iplot, DynamicParam, MyList
+from spb.series import InteractiveSeries
+from spb.backends.plotly import PB
 
 def test_DynamicParam():
     a, b, c, d, e, f = symbols("a, b, c, d, e, f")
@@ -106,4 +108,69 @@ def test_iplot():
     assert isinstance(gridbox.children[5][0], bm.CheckboxGroup)
     assert isinstance(gridbox.children[6][0], bm.Select)
 
+
+def test_interactiveseries():
+    # test for the instantiation of InteractiveSeries
+    from sympy.vector import CoordSys3D
+    N = CoordSys3D("N")
+    i, j, k = N.base_vectors()
+    x, y, z = N.base_scalars()
+    a, b, c, xs, ys, zs = symbols("a:c, x:z")
+    v1 = -a * sin(y) * i + b * cos(x) * j
+    m1 = v1.to_matrix(N)
+    m1 = m1[:-1]
+    l1 = list(m1)
+    v2 = -a * sin(y) * i + b * cos(x) * j + c * cos(z) * k
+    m2 = v2.to_matrix(N)
+    l2 = list(m2)
+
+    def test_vector(v, ranges, params, expr, label, symbol, shape, n=10):
+        t = iplot(
+            (v, *ranges),
+            params = params,
+            fig_kw = dict(
+                n = n,
+                backend = PB
+            ),
+            show=False
+        )
+
+        s = t._backend.series[0]
+        assert isinstance(s, InteractiveSeries)
+        assert s.expr == expr
+        assert s.label == label
+        assert len(s.ranges) == len(ranges)
+        assert s.ranges[symbol].shape == shape
+        if len(ranges) == 2:
+            assert s.is_2Dvector
+            assert not s.is_3Dvector
+        else:
+            assert not s.is_2Dvector
+            assert s.is_3Dvector
     
+    # 2D vectors
+    params = {
+        a: (2, (0, 3)),
+        b: (3, (1, 4)),
+    }
+    ranges = (x, -5, 5), (y, -4, 4)
+    test_vector(v1, ranges, params, Tuple(-a * sin(ys), b * cos(xs)), str(v1),
+            xs, (10, 10))
+    test_vector(m1, ranges, params, Tuple(-a * sin(y), b * cos(x)),
+            str(tuple(m1)), x, (10, 10))
+    test_vector(l1, ranges, params, Tuple(-a * sin(y), b * cos(x)),
+            str(tuple(l1)), x, (8, 8), 8)
+    
+    # 3D vectors
+    params = {
+        a: (2, (0, 3)),
+        b: (3, (1, 4)),
+        c: (4, (2, 5)),
+    }
+    ranges = (x, -5, 5), (y, -4, 4), (z, -6, 6)
+    test_vector(v2, ranges, params, Tuple(-a * sin(ys), b * cos(xs), c * cos(zs)),
+            str(v2), xs, (10, 10, 10))
+    test_vector(m2, ranges, params, Tuple(-a * sin(y), b * cos(x), c * cos(z)),
+            str(m2), x, (10, 10, 10))
+    test_vector(l2, ranges, params, Tuple(-a * sin(y), b * cos(x), c * cos(z)),
+            str(tuple(l2)), x, (10, 10, 10))

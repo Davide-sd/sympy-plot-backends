@@ -263,6 +263,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
             series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
         return series
     
+    @property
     def fig(self):
         """ Return the plot object
         """

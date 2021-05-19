@@ -14,10 +14,11 @@ from spb.utils import get_lambda
 import warnings
 import numpy as np
 
-##############################################################################
-# Data Series
-##############################################################################
-#TODO more general way to calculate aesthetics (see get_color_array)
+"""
+TODO:
+1. InteractiveSeries: allow for setting the number of discretization points
+    individually on each direction.
+"""
 
 ### The base class for all series
 class BaseSeries:
@@ -1003,12 +1004,9 @@ class InteractiveSeries(BaseSeries):
         elif (nexpr == 2) and (npar == 2):
             self.is_vector = True
             self.is_2Dvector = True
-            # self.is_streamlines = kwargs.get("streamlines", False)
         elif (nexpr == 3) and (npar == 3):
             self.is_vector = True
             self.is_3Dvector = True
-            # self.is_streamlines = kwargs.get("streamlines", False)
-            self.n1, self.n2, self.n3 = n, n, n
 
         # from the expression's free symbols, remove the ones used in
         # the parameters and the ranges
