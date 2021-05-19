@@ -66,7 +66,7 @@ class MatplotlibBackend(Plot):
         self.fill = kwargs.get("fill", None)
     
     def _create_figure(self):
-        aspect = self.aspect_ratio
+        aspect = self.aspect
         if aspect != 'auto':
             aspect = float(aspect[1]) / aspect[0]
 

@@ -112,7 +112,8 @@ def _preprocess(*args):
     return new_args
 
 def vector_plot(*args, show=True, **kwargs):
-    """ Plot a 2D or 3D vector field. By default, ``aspect_ratio="equal"``.
+    """ Plot a 2D or 3D vector field. By default, the aspect ratio of the plot
+    is set to ``aspect="equal"``.
 
     Arguments
     =========
@@ -224,8 +225,8 @@ def vector_plot(*args, show=True, **kwargs):
     kwargs = _set_discretization_points(kwargs, Vector3DSeries)
     if not "n1" in kwargs: kwargs["n1"] = 25
     if not "n2" in kwargs: kwargs["n2"] = 25
-    if not "aspect_ratio" in kwargs.keys():
-        kwargs["aspect_ratio"] = "equal"
+    if not "aspect" in kwargs.keys():
+        kwargs["aspect"] = "equal"
 
     series = []
     for a in args:

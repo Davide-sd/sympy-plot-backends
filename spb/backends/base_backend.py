@@ -9,7 +9,7 @@
 |    yscale     |     Y     |   Y   |    Y   |    N   |  N  |
 |    zscale     |     Y     |   N   |    Y   |    N   |  N  |
 |     axis      |     Y     |   Y   |    Y   |    Y   |  Y  |
-| aspect_ratio  |     Y     |   N   |    N   |    N   |  N  |
+|    aspect     |     Y     |   N   |    N   |    N   |  N  |
 |   autoscale   |     Y     |   N   |    N   |    N   |  N  |
 |    margin     |     Y     |   N   |    N   |    N   |  N  |
 |     size      |     Y     |   Y   |    Y   |    Y   |  Y  |
@@ -100,7 +100,7 @@ class Plot:
     - xlim : tuple of two floats
     - ylim : tuple of two floats
     - zlim : tuple of two floats
-    - aspect_ratio : tuple of two floats or {'auto'}
+    - aspect : tuple of two floats or {'auto'}
     - autoscale : bool
     - margin : float in [0, 1]
     - backend : a subclass of Plot
@@ -168,7 +168,7 @@ class Plot:
         self.xlabel = kwargs.get("xlabel", None)
         self.ylabel = kwargs.get("ylabel", None)
         self.zlabel = kwargs.get("zlabel", None)
-        self.aspect_ratio = kwargs.get("aspect_ratio", "auto")
+        self.aspect = kwargs.get("aspect", "auto")
         self.axis_center = kwargs.get("axis_center", "auto")
         self.axis = kwargs.get("axis", True)
         self.xscale = kwargs.get("xscale", "linear")

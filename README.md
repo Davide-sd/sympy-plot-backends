@@ -66,7 +66,7 @@ The following table shows the common keyword arguments implemented in SymPy's `P
 |    zscale     |     Y     |   N   |    Y   |    N   |  N  |
 |     axis      |     Y     |   Y   |    Y   |    Y   |  Y  |
 |  axis_center  |     Y     |   N   |    N   |    N   |  N  |
-| aspect_ratio  |     Y     |   Y   |    Y   |    N   |  N  |
+|    aspect     |     Y     |   Y   |    Y   |    N   |  N  |
 |   autoscale   |     Y     |   N   |    N   |    N   |  N  |
 |    margin     |     Y     |   N   |    N   |    N   |  N  |
 |     size      |     Y     |   Y   |    Y   |    Y   |  Y  |

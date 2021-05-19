@@ -281,7 +281,7 @@ class BokehBackend(Plot):
             y_range = self.ylim,
             tools = "pan,wheel_zoom,box_zoom,reset,hover,save",
             tooltips = TOOLTIPS,
-            match_aspect = True if self.aspect_ratio == "equal" else False
+            match_aspect = True if self.aspect == "equal" else False
         )
         self._fig.axis.visible = self.axis
         self._fig.grid.visible = self.axis

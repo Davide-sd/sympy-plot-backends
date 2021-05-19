@@ -18,7 +18,7 @@ class PlotlyBackend(Plot):
     Keyword Arguments
     =================
 
-        aspect_ratio : str
+        aspect : str
             Default to "auto". Possible values:
             "equal": sets equal spacing on the axis of a 2D plot.
             "cube", "auto" for 3D plots.
@@ -392,7 +392,7 @@ class PlotlyBackend(Plot):
                 showgrid = self.axis, # thin lines in the background
                 zeroline = self.axis, # thick line at x=0
                 visible = self.axis,  # numbers below,
-                scaleanchor = "x" if self.aspect_ratio == "equal" else None
+                scaleanchor = "x" if self.aspect == "equal" else None
             ),
             margin = dict(
                 t = 50,
@@ -425,7 +425,7 @@ class PlotlyBackend(Plot):
                     zeroline = self.axis, # thick line at x=0
                     visible = self.axis,  # numbers below
                 ),
-                aspectmode = (self.aspect_ratio if self.aspect_ratio != "equal"
+                aspectmode = (self.aspect if self.aspect != "equal"
                                 else "auto")
             )
         )
