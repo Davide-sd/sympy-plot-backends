@@ -284,8 +284,9 @@ class PlotlyBackend(Plot):
                         # default values
                         skw = dict( colorscale = next(self._cm), sizeref = 0.3,
                                 colorbar = dict(
-                                    x = 1 + 0.1 * ii,
                                     title = s.label,
+                                    titleside = 'right',
+                                    x = 1 + 0.1 * ii,
                                 ),
                                 starts = dict(
                                     x = seeds_points[:, 0],
@@ -302,11 +303,15 @@ class PlotlyBackend(Plot):
                         )
                     else:
                         # default values
-                        qkw = dict( colorscale = next(self._cm), sizemode = "absolute", 
-                            sizeref = 40, colorbar = dict(
-                                    x = 1 + 0.1 * ii,
-                                    title = s.label,
-                                ))
+                        qkw = dict(
+                            colorscale = next(self._cm),
+                            sizemode = "absolute", 
+                            sizeref = 40,
+                            colorbar = dict(
+                                x = 1 + 0.1 * ii,
+                                title = s.label,
+                                titleside = 'right',
+                            ))
                         # user-provided values
                         quivers_kw = self._kwargs.get("quivers_kw", dict())
                         self._fig.add_trace(
