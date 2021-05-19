@@ -259,7 +259,12 @@ class InteractivePlot(DynamicParam, PanelLayout):
         kwargs["params"] = self.read_parameters()
         series = []
         for a in args:
-            exprs, ranges, label = _unpack_args(*a, matrices=True)
+            # with interactive-parametric plots, vectors could have more free
+            # symbols than the number of dimensions. We set fill_ranges=False
+            # in order to not fill ranges, otherwise ranges will be created also
+            # for parameters. This means the user must provided all the necessary
+            # ranges.
+            exprs, ranges, label = _unpack_args(*a, matrices=True, fill_ranges=False)
             series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
         return series
     

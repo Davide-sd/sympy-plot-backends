@@ -57,7 +57,7 @@ def _is_range(r):
     return (isinstance(r, Tuple) and (len(r) == 3) and
                 r.args[1].is_number and r.args[2].is_number)
 
-def _unpack_args(*args, matrices=False):
+def _unpack_args(*args, matrices=False, fill_ranges=True):
     """ Given a list/tuple of arguments previously processed by _plot_sympify(),
     separates and returns its components: expressions, ranges, label.
 
@@ -68,6 +68,10 @@ def _unpack_args(*args, matrices=False):
             the expression, it will be converted to a list. This is useful in
             order to deal with vectors (written in form of matrices) for
             iplot.
+        
+        fill_ranges : boolean
+            Default to True. If not enough ranges are provided, the algorithm
+            will try to create the missing ones.
 
     Examples
     ========
@@ -105,7 +109,7 @@ def _unpack_args(*args, matrices=False):
         if isinstance(exprs[0], (list, tuple, Tuple, DenseMatrix)):
             exprs = list(exprs[0])
         elif isinstance(exprs[0], Vector):
-            exprs, ranges = _split_vector(exprs[0], ranges)
+            exprs, ranges = _split_vector(exprs[0], ranges, fill_ranges)
             if exprs[-1] is S.Zero:
                 exprs = exprs[:-1]
     return exprs, ranges, label
@@ -139,7 +143,7 @@ def get_vertices_indices(x, y, z):
     return vertices, indices
 
 
-def _split_vector(expr, ranges):
+def _split_vector(expr, ranges, fill_ranges=True):
     """ Extract the components of the given vector or matrix.
 
     Parameters
@@ -177,6 +181,15 @@ def _split_vector(expr, ranges):
     elif (len(expr) < 2) or (len(expr) > 3):
         raise ValueError("This function only plots 2D or 3D vectors.\n" +
             "Received: {}. Number of elements: {}".format(expr, len(expr)))
+    
+    if fill_ranges:
+        ranges = list(ranges)
+        fs = set().union(*[e.free_symbols for e in expr])
+        if len(ranges) < len(fs):
+            fs_ranges = set().union([r[0] for r in ranges])
+            for s in fs:
+                if s not in fs_ranges:
+                    ranges.append(Tuple(s, -10, 10))
     
     if len(expr) == 2:
         xexpr, yexpr = expr

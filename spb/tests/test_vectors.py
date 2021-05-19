@@ -75,17 +75,23 @@ def test_split_vector():
     l1 = list(m1)
     l2 = list(m2)
 
-    ranges = [Tuple(x, -5, 5)]
-    assert _split_vector(v1, ranges) == ((x, y, z), ranges)
-    assert _split_vector(m1, ranges) == ((x, y, z), ranges)
-    assert _split_vector(l1, ranges) == ((x, y, z), ranges)
-    assert _split_vector(v2, ranges) == ((z, x, y), ranges)
-    assert _split_vector(m2, ranges) == ((z, x, y), ranges)
-    assert _split_vector(l2, ranges) == ((z, x, y), ranges)
+    ranges_in = [Tuple(x, -5, 5)]
+    ranges_out = [Tuple(x, -5, 5), Tuple(y, -10, 10), Tuple(z, -10, 10)]
+    def do_test(expr_in, expr_out):
+        exprs, ranges = _split_vector(expr_in, ranges_in)
+        assert exprs == expr_out
+        assert all([r in ranges_out for r in ranges])
+    
+    do_test(v1, (x, y, z))
+    do_test(m1, (x, y, z))
+    do_test(l1, (x, y, z))
+    do_test(v2, (z, x, y))
+    do_test(m2, (z, x, y))
+    do_test(l2, (z, x, y))
 
     # too few or too many elements
-    raises(ValueError, lambda: _split_vector([x], ranges))
-    raises(ValueError, lambda: _split_vector([x, x, x, x], ranges))
+    raises(ValueError, lambda: _split_vector([x], ranges_in))
+    raises(ValueError, lambda: _split_vector([x, x, x, x], ranges_in))
 
 def test_build_series():
     x, y, z = symbols("x:z")
