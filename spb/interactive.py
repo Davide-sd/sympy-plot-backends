@@ -87,6 +87,14 @@ class DynamicParam(param.Parameterized):
         return {k: v for k, v in zip (defaults_keys, values)}
     
     def __init__(self, *args, name="", params=None, **kwargs):
+        # remove the previous class attributes added by the previous instances
+        cls_name = type(self).__name__
+        setattr(type(self), "_" + cls_name + "__params", dict())
+        prev_params = [k for k in InteractivePlot.__dict__.keys() 
+            if "dyn_param_" in k]
+        for p in prev_params:
+            delattr(InteractivePlot, p)
+        
         # use latex on control labels and legends
         self.use_latex = kwargs.pop("use_latex", True)
         
@@ -243,7 +251,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         args = list(map(_plot_sympify, args))
         super().__init__(*args, name=name, params=params, **kwargs)
         PanelLayout.__init__(self, layout, ncols)
-        
+
         # create the series
         series = self._create_series(*args, **fig_kw)
         is_3D = all([s.is_3D for s in series])
