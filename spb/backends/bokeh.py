@@ -195,7 +195,14 @@ class BokehBackend(Plot):
         colorbar_kw : dict
             A dictionary with keyword arguments to customize the colorbar.
 
-        quivers_kw : dict
+        line_kw : dict
+            A dictionary of keywords/values which is passed to Plotly's scatter
+            functions to customize the appearance. Default to:
+            ``line_kw = dict(line_width = 2)``
+            Refer to this documentation page:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html?highlight=line#bokeh.plotting.Figure.line
+
+        quiver_kw : dict
             A dictionary with keyword arguments to customize the quivers.
             Default to:
                 ```dict(
@@ -206,7 +213,7 @@ class BokehBackend(Plot):
                     )
                 ```
 
-        streams_kw : dict
+        stream_kw : dict
             A dictionary with keyword arguments to customize the streamlines.
             Default to: ``dict(line_width=2, line_alpha=0.8)``
 
@@ -234,13 +241,6 @@ class BokehBackend(Plot):
         bp.Plasma10, bp.Blues9, bp.Greys10
     ]
 
-    colormaps = [
-        cc.fire, cc.isolum, cc.rainbow, cc.blues, cc.bmy, cc.colorwheel, cc.bgy
-    ]
-    # TODO: better selection of discrete color maps for contour plots
-    contour_colormaps = [
-        bp.Plasma10, bp.Blues9, bp.Greys10
-    ]
     quivers_colormaps = [
         cc.bmy, cc.bgy, cc.isolum, cc.fire
     ]
@@ -258,11 +258,8 @@ class BokehBackend(Plot):
                 hide_banner=True
             )
         
-        # infinity cycler over 10 colors
-        self._cl = itertools.cycle(bp.Category10[10])
-        self._ccm = itertools.cycle(self.contour_colormaps)
-        self._qcm = itertools.cycle(self.quivers_colormaps)
-        
+        self._init_cyclers()
+
         curdoc().theme = kwargs.get("theme", bokeh_theme)
         TOOLTIPS = [
             ("x", "$x"),
@@ -285,8 +282,15 @@ class BokehBackend(Plot):
         )
         self._fig.axis.visible = self.axis
         self._fig.grid.visible = self.axis
+    
+    def _init_cyclers(self):
+        # infinity cycler over 10 colors
+        self._cl = itertools.cycle(bp.Category10[10])
+        self._ccm = itertools.cycle(self.contour_colormaps)
+        self._qcm = itertools.cycle(self.quivers_colormaps)
 
     def _process_series(self, series):
+        self._init_cyclers()
         # clear figure
         self._fig.renderers = []
 
@@ -296,6 +300,7 @@ class BokehBackend(Plot):
                 # Bokeh is not able to deal with None values. Need to replace
                 # them with np.nan
                 y = [t if (t is not None) else np.nan for t in y]
+                
                 if s.is_parametric:
                     u = s.discretized_var
                     ds, line, cb = self._create_gradient_line(x, y, u,
@@ -303,8 +308,12 @@ class BokehBackend(Plot):
                     self._fig.add_glyph(ds, line)
                     self._fig.add_layout(cb, "right")
                 else:
-                    self._fig.line(x, y, legend_label=s.label,
-                                line_width=2, color=next(self._colors))
+                    lkw = dict(
+                        line_width = 2, legend_label = s.label,
+                        color=next(self._cl)
+                    )
+                    line_kw = self._kwargs.get("line_kw", dict())
+                    self._fig.line(x, y, **merge({}, lkw, line_kw))
             elif s.is_contour:
                 x, y, z = s.get_data()
                 x = x.flatten()
@@ -331,14 +340,14 @@ class BokehBackend(Plot):
                 if streamlines:
                     x, y, u, v = s.get_data()
                     sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
-                    streams_kw = self._kwargs.get("streams_kw", dict())
-                    density = streams_kw.pop("density", 2)
+                    stream_kw = self._kwargs.get("stream_kw", dict())
+                    density = stream_kw.pop("density", 2)
                     xs, ys = compute_streamlines(x[0, :], y[:, 0], u, v, density=density)
-                    self._fig.multi_line(xs, ys, **merge({}, sqk, streams_kw))
+                    self._fig.multi_line(xs, ys, **merge({}, sqk, stream_kw))
                 else:
                     x, y, u, v = s.get_data()
-                    quivers_kw = self._kwargs.get("quivers_kw", dict())
-                    data, quivers_kw = self._get_quivers_data(x, y, u, v, **quivers_kw)
+                    quiver_kw = self._kwargs.get("quiver_kw", dict())
+                    data, quiver_kw = self._get_quivers_data(x, y, u, v, **quiver_kw)
                     mag = data["magnitude"]
                     
                     color_mapper = LinearColorMapper(palette=next(self._qcm), 
@@ -351,7 +360,7 @@ class BokehBackend(Plot):
                     # default quivers options
                     qkw = dict(line_color=line_color, line_width=1, name=s.label)
                     glyph = Segment(x0="x0", y0="y0", x1="x1", y1="y1",
-                        **merge({}, qkw, quivers_kw))
+                        **merge({}, qkw, quiver_kw))
                     self._fig.add_glyph(source, glyph)
             else:
                 raise ValueError(
@@ -381,9 +390,12 @@ class BokehBackend(Plot):
             low = min(u), high = max(u))
         data_source = ColumnDataSource(dict(xs = xs, ys = ys, us = us))
 
-        glyph = MultiLine(xs="xs", ys="ys", 
-                    line_color={'field': 'us', 'transform': color_mapper}, 
-                    line_width=2, name=name)
+        lkw = dict(
+            line_width = 2, name = name,
+            line_color = {'field': 'us', 'transform': color_mapper}
+        )
+        line_kw = self._kwargs.get("line_kw", dict())
+        glyph = MultiLine(xs="xs", ys="ys", **merge({}, lkw, line_kw))
         # default options
         cbkw = dict(width = 8)
         # user defined options
@@ -411,18 +423,18 @@ class BokehBackend(Plot):
                     streamlines = self._kwargs.get("streamlines", False)
                     if streamlines:
                         sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
-                        streams_kw = self._kwargs.get("streams_kw", dict())
-                        density = streams_kw.pop("density", 2)
+                        stream_kw = self._kwargs.get("stream_kw", dict())
+                        density = stream_kw.pop("density", 2)
                         xs, ys = compute_streamlines(x[0, :], y[:, 0], u, v, density=density)
                         rend[i].data_source.data.update({'xs': xs, 'ys': ys})
                     else:
-                        quivers_kw = self._kwargs.get("quivers_kw", dict())
-                        data, quivers_kw = self._get_quivers_data(x, y, u, v, **quivers_kw)
+                        quiver_kw = self._kwargs.get("quiver_kw", dict())
+                        data, quiver_kw = self._get_quivers_data(x, y, u, v, **quiver_kw)
                         mag = data["magnitude"]
                         color_mapper = LinearColorMapper(
                             palette=self.quivers_colormaps[i], 
                             low=min(mag), high=max(mag))
-                        line_color = quivers_kw.get("line_color",
+                        line_color = quiver_kw.get("line_color",
                             {'field': 'magnitude', 'transform': color_mapper})
                         rend[i].data_source.data.update(data)
                         rend[i].glyph.line_color = line_color
@@ -443,7 +455,7 @@ class BokehBackend(Plot):
         self._process_series(self._series)
         show(self._fig)
     
-    def _get_quivers_data(self, xs, ys, u, v, **quivers_kw):
+    def _get_quivers_data(self, xs, ys, u, v, **quiver_kw):
         """ Compute the segments coordinates to plot quivers.
         
         Parameters
@@ -471,13 +483,13 @@ class BokehBackend(Plot):
                 A dictionary suitable to create a data source to be used with
                 Bokeh's Segment.
             
-            quivers_kw : dict
+            quiver_kw : dict
                 A dictionary containing keywords to customize the appearance
                 of Bokeh's Segment glyph
         """
-        scale = quivers_kw.pop("scale", 1.0)
-        pivot = quivers_kw.pop("pivot", "mid")
-        arrow_heads = quivers_kw.pop("arrow_heads", True)
+        scale = quiver_kw.pop("scale", 1.0)
+        pivot = quiver_kw.pop("pivot", "mid")
+        arrow_heads = quiver_kw.pop("arrow_heads", True)
         
         xs, ys, u, v = [t.flatten() for t in [xs, ys, u, v]]
         
@@ -515,6 +527,6 @@ class BokehBackend(Plot):
         data = {'x0': x0s, 'x1': x1s, 'y0': y0s, 'y1': y1s,
             'magnitude': np.tile(magnitude, 3)}
 
-        return data, quivers_kw
+        return data, quiver_kw
 
 BB = BokehBackend

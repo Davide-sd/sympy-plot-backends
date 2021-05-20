@@ -23,14 +23,21 @@ class PlotlyBackend(Plot):
             "equal": sets equal spacing on the axis of a 2D plot.
             "cube", "auto" for 3D plots.
         
-        contours_kw : dict
+        contour_kw : dict
             A dictionary of keywords/values which is passed to Plotly's contour
             function to customize the appearance.
             Refer to the following web pages to learn more about customization:
             https://plotly.com/python/contour-plots/
             https://plotly.com/python/builtin-colorscales/
         
-        quivers_kw : dict
+        line_kw : dict
+            A dictionary of keywords/values which is passed to Plotly's scatter
+            functions to customize the appearance.
+            Refer to the following web pages to learn more about customization:
+            https://plotly.com/python/line-and-scatter/
+            https://plotly.com/python/3d-scatter-plots/
+        
+        quiver_kw : dict
             A dictionary of keywords/values which is passed to Plotly's quivers
             function to customize the appearance.
             For 2D vector fields, default to:
@@ -42,7 +49,13 @@ class PlotlyBackend(Plot):
                 Refer to this documentation page:
                 https://plotly.com/python/cone-plot/
 
-        streams_kw : dict
+        surface_kw : dict
+            A dictionary of keywords/values which is passed to Plotly's
+            Surface function to customize the appearance.
+            Refer to this documentation page:
+            https://plotly.com/python/3d-surface-plots/
+
+        stream_kw : dict
             A dictionary of keywords/values which is passed to Plotly's
             streamlines function to customize the appearance.
             For 2D vector fields, defaul to: 
@@ -115,12 +128,19 @@ class PlotlyBackend(Plot):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._wfcm = itertools.cycle(self.wireframe_colors)
-        self._qc = itertools.cycle(self.quivers_colors)
         self._fig = go.Figure()
+        # this is necessary in order for the series to be added even if
+        # show=False
+        self._process_series(self._series)
         self._update_layout()
     
+    def _init_cyclers(self):
+        self._cm = itertools.cycle(self.colormaps)
+        self._wfcm = itertools.cycle(self.wireframe_colors)
+        self._qc = itertools.cycle(self.quivers_colors)
+    
     def _process_series(self, series):
+        self._init_cyclers()
 
         # if legend=True and both 3d lines and surfaces are shown, then hide the
         # surfaces color bars and only shows line labels in the legend.
@@ -139,47 +159,51 @@ class PlotlyBackend(Plot):
         for ii, s in enumerate(series):
             if s.is_2Dline:
                 x, y = s.get_data()
+                line_kw = self._kwargs.get("line_kw", dict())
                 if s.is_parametric:
-                    length = self._line_length(x, y, 
-                        start = s.start, end = s.end)
+                    u = s.discretized_var
+                    lkw = dict(
+                        mode = "lines+markers",
+                        marker = dict(
+                            color = u,
+                            colorscale = next(self._cm),
+                            size = 6
+                        ))
                     self._fig.add_trace(
                         go.Scatter(
                             x = x, y = y, name = s.label,
-                            mode = "lines+markers",
-                            marker = dict(
-                                color = length,
-                                colorscale = next(self._cm),
-                                size = 6
-                            )
+                            **merge({}, lkw, line_kw)
                         )
                     )
                 else:
-                    self._fig.add_trace(go.Scatter(x = x, y = y, name = s.label))
+                    self._fig.add_trace(
+                        go.Scatter(x = x, y = y, name = s.label, **line_kw)
+                    )
             elif s.is_3Dline:
                 x, y, z = s.get_data()
-                if s.is_parametric:
-                    length = self._line_length(x, y, z, start = s.start,
-                        end = s.end)
-                    self._fig.add_trace(
-                        go.Scatter3d(
-                            x = x, y = y, z = z,
-                            name = s.label, mode = "lines+markers",
-                            line = dict(width = 4),
-                            marker = dict(
-                                color = length,
-                                colorscale = next(self._cm),
-                                size = 4
-                            )
-                        )
+                u = s.discretized_var
+                lkw = dict(
+                    mode = "lines",
+                    line = dict(
+                        width = 4,
+                        colorscale = next(self._cm),
+                        color = u,
+                        showscale = True,
+                        colorbar = dict(
+                            x = 1 + 0.1 * ii,
+                            title = s.label,
+                            titleside = 'right',
+                        ),
                     )
-                else:
-                    self._fig.add_trace(
-                        go.Scatter3d(
-                            x = x, y = y, z = z,
-                            name = s.label, mode = "lines",
-                            line = dict(width = 4)
-                        )
+                )
+                line_kw = self._kwargs.get("line_kw", dict())
+                self._fig.add_trace(
+                    go.Scatter3d(
+                        x = x, y = y, z = z,
+                        name = s.label,
+                        **merge({}, lkw, line_kw)
                     )
+                )
             elif s.is_3Dsurface:
                 xx, yy, zz = s.get_data()
                 # create a solid color to be used when self._use_cm=False
@@ -188,17 +212,20 @@ class PlotlyBackend(Plot):
                     [0, 'rgb' + str(col)],
                     [1, 'rgb' + str(col)]
                 ]
+                skw = dict(
+                    showscale = self.legend and show_3D_colorscales,
+                    colorbar = dict(
+                        x = 1 + 0.1 * ii,
+                        title = s.label,
+                        titleside = 'right',
+                    ),
+                    colorscale = next(self._cm) if self._use_cm else colorscale
+                )
+                surface_kw = self._kwargs.get("surface_kw", dict())
                 self._fig.add_trace(
                     go.Surface(
-                        x = xx, y = yy, z = zz,
-                        name = s.label,
-                        showscale = self.legend and show_3D_colorscales,
-                        colorbar = dict(
-                            x = 1 + 0.1 * ii,
-                            title = s.label,
-                        ),
-                        colorscale = next(self._cm) if self._use_cm else colorscale
-
+                        x = xx, y = yy, z = zz, name = s.label,
+                        **merge({}, skw, surface_kw)
                     )
                 )
                 
@@ -246,9 +273,9 @@ class PlotlyBackend(Plot):
                     )
                 )
                 # user-provided values
-                contours_kw = self._kwargs.get("contours_kw", dict())
+                contour_kw = self._kwargs.get("contour_kw", dict())
                 self._fig.add_trace(go.Contour(x = xx, y = yy, z = zz,
-                        **merge({}, ckw, contours_kw)))
+                        **merge({}, ckw, contour_kw)))
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
@@ -260,9 +287,9 @@ class PlotlyBackend(Plot):
                         skw = dict( line_color = next(self._qc), arrow_scale = 0.15,
                             name = s.label)
                         # user-provided values
-                        streams_kw = self._kwargs.get("streams_kw", dict())
+                        stream_kw = self._kwargs.get("stream_kw", dict())
                         stream = create_streamline(xx[0, :], yy[:, 0], uu, vv,
-                            **merge({}, skw, streams_kw))
+                            **merge({}, skw, stream_kw))
                         self._fig.add_trace(stream.data[0])
                     else:
                         # NOTE: currently, it is not possible to create quivers with
@@ -271,9 +298,9 @@ class PlotlyBackend(Plot):
                         qkw = dict( line_color = next(self._qc), scale = 0.075,
                             name = s.label )
                         # user-provided values
-                        quivers_kw = self._kwargs.get("quivers_kw", dict())
+                        quiver_kw = self._kwargs.get("quiver_kw", dict())
                         quiver = create_quiver(xx, yy, uu, vv, 
-                            **merge({}, qkw, quivers_kw)) # merge two dictionaries
+                            **merge({}, qkw, quiver_kw)) # merge two dictionaries
                         self._fig.add_trace(quiver.data[0])
                 else:
                     xx, yy, zz, uu, vv, ww = s.get_data()
@@ -294,12 +321,12 @@ class PlotlyBackend(Plot):
                                     z = seeds_points[:, 2],
                                 ))
                         # user-provided values
-                        streams_kw = self._kwargs.get("streams_kw", dict())
+                        stream_kw = self._kwargs.get("stream_kw", dict())
                         self._fig.add_trace(
                             go.Streamtube( x = xx.flatten(), y = yy.flatten(),
                                 z = zz.flatten(), u = uu.flatten(),
                                 v = vv.flatten(), w = ww.flatten(),
-                                **merge({}, skw, streams_kw))
+                                **merge({}, skw, stream_kw))
                         )
                     else:
                         # default values
@@ -313,12 +340,12 @@ class PlotlyBackend(Plot):
                                 titleside = 'right',
                             ))
                         # user-provided values
-                        quivers_kw = self._kwargs.get("quivers_kw", dict())
+                        quiver_kw = self._kwargs.get("quiver_kw", dict())
                         self._fig.add_trace(
                             go.Cone( x = xx.flatten(), y = yy.flatten(),
                                 z = zz.flatten(), u = uu.flatten(),
                                 v = vv.flatten(), w = ww.flatten(),
-                                **merge({}, qkw, quivers_kw))
+                                **merge({}, qkw, quiver_kw))
                         )
             else:
                 raise NotImplementedError
@@ -366,9 +393,9 @@ class PlotlyBackend(Plot):
                         qkw = dict( line_color = self.quivers_colors[i],
                             scale = 0.075, name = s.label )
                         # user-provided values
-                        quivers_kw = self._kwargs.get("quivers_kw", dict())
+                        quiver_kw = self._kwargs.get("quiver_kw", dict())
                         quivers = create_quiver(x, y, u, v,
-                            **merge({}, qkw, quivers_kw))
+                            **merge({}, qkw, quiver_kw))
                         data = quivers.data[0]
                     self.fig.data[i]["x"] = data["x"]
                     self.fig.data[i]["y"] = data["y"]

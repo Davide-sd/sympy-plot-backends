@@ -59,8 +59,8 @@ class MayaviBackend(Plot):
         for i, s in enumerate(series):
             if s.is_3Dline:
                 x, y, z = s.get_data()
-                length = self._line_length(x, y, z, start=s.start, end=s.end)
-                mlab.plot3d(x, y, z, length,
+                u = s.discretized_var
+                mlab.plot3d(x, y, z, u,
                     color = None if self._use_cm else next(self._cl),
                     figure=self._fig,
                     tube_radius=0.05,

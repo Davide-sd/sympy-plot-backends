@@ -158,7 +158,7 @@ def vector_plot(*args, show=True, **kwargs):
             Number of discretization points for the scalar contour plot.
             Default to 100.
 
-        quivers_kw : dict
+        quiver_kw : dict
             A dictionary of keywords/values which is passed to the plotting
             library quivers function to customize the appearance. Refer to the
             plotting library (backend) manual for more informations.
@@ -179,7 +179,7 @@ def vector_plot(*args, show=True, **kwargs):
             Whether to plot the vector field using streamlines (True) or quivers
             (False). Default to False.
         
-        streams_kw : dict
+        stream_kw : dict
             A dictionary of keywords/values which is passed to the backend
             streamlines-plotting function to customize the appearance. Refer to
             the backend's manual for more informations.

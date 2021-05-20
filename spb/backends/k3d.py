@@ -22,22 +22,24 @@ class K3DBackend(Plot):
             Packed RGB color of the plot background.
             Default to 0xFFFFFF (white).
         
-        quivers_kw : dict
+        line_kw : dict
+            A dictionary of keywords/values which is passed to K3D's line
+            functions to customize the appearance. Default to:
+            ``line_kw = dict(width=0.1, shader="mesh")``
+        
+        quiver_kw : dict
             A dictionary to customize the apppearance of quivers. Default to:
-            ``quivers_kw = dict(scale = 0.5)``
+            ``quiver_kw = dict(scale = 0.5)``
         
         show_label : boolean
             Show/hide labels of the expressions. Default to False (labels not
             visible).
         
-        streams_kw : dict
+        stream_kw : dict
             A dictionary to customize the apppearance of streamlines.
             Default to:
-            ``streams_kw = dict( width=0.1, shader='mesh' )``
+            ``stream_kw = dict( width=0.1, shader='mesh' )``
             Refer to k3d.line for more options.
-        
-        tube_radius : float
-            Tube radius for 3D lines. Default to 0.1.
         
         use_cm : boolean
             If True, apply a color map to the meshes/surface. If False, solid
@@ -120,19 +122,20 @@ class K3DBackend(Plot):
             if s.is_3Dline:
                 x, y, z = s.get_data()
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
-                length = self._line_length(x, y, z, start=s.start, end=s.end)
+                u = s.discretized_var
                 # keyword arguments for the line object
                 a = dict(
-                    width = self._kwargs.get("tube_radius", 0.1),
+                    width = 0.1,
                     name = s.label if self._kwargs.get("show_label", False) else None,
                     color = self._convert_to_int(next(self._cl)),
                     shader = "mesh",
                 )
                 if self._use_cm:
-                    a["attribute"] = length,
+                    a["attribute"] = u,
                     a["color_map"] = next(self._cm)
                     a["color_range"] = [s.start, s.end]
-                line = k3d.line(vertices, **a)
+                line_kw = self._kwargs.get("line_kw", dict())
+                line = k3d.line(vertices, **merge({}, a, line_kw))
                 self._fig += line
 
             elif s.is_3Dsurface:
@@ -185,9 +188,9 @@ class K3DBackend(Plot):
                 grid.SetPoints(points)
                 grid.GetPointData().SetVectors( vtk_vector_field )
 
-                streams_kw = self._kwargs.get("streams_kw", dict())
-                starts = streams_kw.pop("starts", None)
-                max_prop = streams_kw.pop("max_prop", 500)
+                stream_kw = self._kwargs.get("stream_kw", dict())
+                starts = stream_kw.pop("starts", None)
+                max_prop = stream_kw.pop("max_prop", 500)
 
                 streamer = vtk.vtkStreamTracer()
                 streamer.SetInputData(grid)
@@ -217,8 +220,8 @@ class K3DBackend(Plot):
                     streamer.SetSourceData(seeds)
                     streamer.SetIntegrationDirectionToBoth()
                 else:
-                    npoints = streams_kw.get("npoints", 200)
-                    radius = streams_kw.get("radius", None)
+                    npoints = stream_kw.get("npoints", 200)
+                    radius = stream_kw.get("radius", None)
                     center = 0, 0, 0
                     if not radius:
                         xmin, xmax = min(xx[0, :, 0]), max(xx[0, :, 0])
@@ -280,7 +283,7 @@ class K3DBackend(Plot):
                         c = c + len(l) + 1
                 self._fig +=k3d.line(
                     vertices.astype(np.float32),
-                    attribute=attributes, **merge({}, skw, streams_kw)
+                    attribute=attributes, **merge({}, skw, stream_kw)
                 )
             elif s.is_3Dvector:
                 xx, yy, zz, uu, vv, ww = s.get_data()
@@ -289,8 +292,8 @@ class K3DBackend(Plot):
                 # default values
                 qkw = dict(scale = 0.5)
                 # user provided values
-                quivers_kw = self._kwargs.get("quivers_kw", dict())
-                qkw = merge(qkw, quivers_kw)
+                quiver_kw = self._kwargs.get("quiver_kw", dict())
+                qkw = merge(qkw, quiver_kw)
                 scale = qkw["scale"]
                 magnitude = np.sqrt(uu**2 + vv**2 + ww**2)
                 vectors = np.array((uu, vv, ww)).T * scale
@@ -348,8 +351,8 @@ class K3DBackend(Plot):
                     xx, yy, zz, uu, vv, ww = [t.astype(np.float32) for t in 
                         [xx, yy, zz, uu, vv, ww]]
                     qkw = dict(scale = 0.5)
-                    quivers_kw = self._kwargs.get("quivers_kw", dict())
-                    qkw = merge(qkw, quivers_kw)
+                    quiver_kw = self._kwargs.get("quiver_kw", dict())
+                    qkw = merge(qkw, quiver_kw)
                     scale = qkw["scale"]
                     vectors = np.array((uu, vv, ww)).T * scale
                     self.fig.objects[i].vectors = vectors

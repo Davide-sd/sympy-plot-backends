@@ -244,31 +244,6 @@ class Plot:
                     "from 0 to 1."
                 )
         self._cl = cloop
-
-    def _line_length(self, x, y, z=None, start=None, end=None):
-        """ Compute the cumulative length of the line.
-        
-        Parameters
-        ==========
-            
-            x : numpy array of x-coordinates
-            y : numpy array of y-coordinates
-            z : numpy array of z-coordinates (optional)
-        """
-        def diff(x1):
-            x2 = np.roll(x1, 1)
-            x2[0] = x1[0]
-            return x1 - x2
-        
-        if z is None:
-            z = np.zeros_like(x)
-            
-        length = np.sqrt(diff(x - x[0])**2 + diff(y - y[0])**2 + 
-                    diff(z - z[0])**2)
-        length = np.cumsum(length)
-        length /= np.max(length)
-        length = length * (end - start) + start
-        return length
     
     def _get_mode(self):
         """ Verify which environment is used to run the code.

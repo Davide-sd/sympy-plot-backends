@@ -524,6 +524,8 @@ class Line3DBaseSeries(Line2DBaseSeries):
 class Parametric3DLineSeries(Line3DBaseSeries):
     """Representation for a 3D line consisting of three parametric sympy
     expressions and a range."""
+    
+    is_parametric = True
 
     def __init__(self, expr_x, expr_y, expr_z, var_start_end, label="", **kwargs):
         super().__init__()
