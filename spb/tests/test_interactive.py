@@ -2,7 +2,7 @@ from sympy import symbols, cos, sin, Tuple
 import param
 import panel as pn
 import bokeh.models as bm
-from spb.interactive import iplot, DynamicParam, MyList
+from spb.interactive import iplot, DynamicParam, MyList, InteractivePlot
 from spb.series import InteractiveSeries
 from spb.backends.plotly import PB
 
@@ -76,6 +76,7 @@ def test_DynamicParam():
     assert t.read_parameters() == r
 
 
+
 def test_iplot():
     a, b, c, d = symbols("a, b, c, d")
     x, y, u, v = symbols("x, y, u, v")
@@ -107,6 +108,23 @@ def test_iplot():
     assert isinstance(gridbox.children[4][0], bm.Slider)
     assert isinstance(gridbox.children[5][0], bm.CheckboxGroup)
     assert isinstance(gridbox.children[6][0], bm.Select)
+
+    # test that the previous class-attribute associated to the previous 
+    # parameters are cleared in a new instance
+    current_params = [k for k in InteractivePlot.__dict__.keys() 
+            if "dyn_param_" in k]
+    assert len(current_params) == 7
+
+    t = iplot(
+        ((a + b) * cos(x), (x, -5, 5)),
+        params = {
+            a: (1, (0, 5)),
+            b: (1, (1, 10), 10, "test3", "log"),
+        }, use_latex=False, show=False)
+
+    new_params = [k for k in InteractivePlot.__dict__.keys() 
+            if "dyn_param_" in k]
+    assert len(new_params) == 2
 
 
 def test_interactiveseries():

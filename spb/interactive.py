@@ -90,10 +90,10 @@ class DynamicParam(param.Parameterized):
         # remove the previous class attributes added by the previous instances
         cls_name = type(self).__name__
         setattr(type(self), "_" + cls_name + "__params", dict())
-        prev_params = [k for k in InteractivePlot.__dict__.keys() 
+        prev_params = [k for k in type(self).__dict__.keys() 
             if "dyn_param_" in k]
         for p in prev_params:
-            delattr(InteractivePlot, p)
+            delattr(type(self), p)
         
         # use latex on control labels and legends
         self.use_latex = kwargs.pop("use_latex", True)
