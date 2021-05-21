@@ -270,6 +270,48 @@ class Plot:
                 return 2  # Other type (?)
         except NameError:
             return 3      # Probably standard Python interpreter
+    
+    def _get_pixels(self, s, interval_list):
+        """ Create the necessary data to visualize a Bokeh/Plotly Heatmap.
+        Heatmap can be thought as an image composed of pixels, each one having
+        a different color value.
+
+        Parameters
+        ==========
+            s : ImplicitSeries
+                It will be used to access to attributes of the series.
+            interval_list : list
+                The already computed interval_list
+        
+        Returns
+        =======
+            xarr, yarr : 1D np.ndarrays
+                Discretization along the x and y axis
+            pixels : 2D np.ndarray (n x n)
+                The computed matrix to be used as the heatmap
+        """
+
+        # TODO: this approach is incorrect: with adaptive=True, s.n is not the
+        # correct discretization parameter. Is it even possible to use Bokeh/
+        # Plotly heatmaps with non-uniform discretization steps? 
+        # Anyway, when depth>0, the pixels are much more refined than n=300.
+        n = s.n
+        dx = (s.end_x - s.start_x) / n
+        dy = (s.end_y - s.start_y) / n
+        xarr = np.linspace(s.start_x, s.end_x, n)
+        yarr = np.linspace(s.start_y, s.end_y, n)
+
+        pixels = np.zeros((n, n), dtype=np.dtype('b'))
+        if len(interval_list):
+            for intervals in interval_list:
+                intervalx = intervals[0]
+                intervaly = intervals[1]
+                sx, ex = intervalx.start, intervalx.end
+                sy, ey = intervaly.start, intervaly.end
+                istart, iend = int((sx - s.start_x) / dx), int((ex - s.start_x) / dx)
+                jstart, jend = int((sy - s.start_y) / dy), int((ey - s.start_y) / dy)
+                pixels[jstart:jend, istart:iend] = 1
+        return xarr, yarr, pixels
 
     @property
     def fig(self):

@@ -23,7 +23,7 @@ every time you call ``show()`` and the old one is left to the garbage collector.
 """
 
 
-from sympy import Expr, Tuple, Dummy, Symbol
+from sympy import Expr, Tuple, Dummy, Symbol, oo
 
 from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
@@ -36,7 +36,7 @@ from spb.utils import _is_range, _plot_sympify
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries,
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
-    ParametricSurfaceSeries, ContourSeries, BaseSeries,
+    ParametricSurfaceSeries, ContourSeries, ImplicitSeries,
     _set_discretization_points
 )
 
@@ -960,9 +960,9 @@ def _create_ranges(free_symbols, ranges, npar):
         )
 
     # TODO: should I keep it?
-    # if len(ranges) > npar:
-    #     raise ValueError(
-    #         "Too many ranges. Received %s, expected %s" % (len(ranges), npar))
+    if len(ranges) > npar:
+        raise ValueError(
+            "Too many ranges. Received %s, expected %s" % (len(ranges), npar))
 
     # free symbols in the ranges provided by the user
     rfs = set().union([r[0] for r in ranges])
@@ -978,7 +978,18 @@ def _create_ranges(free_symbols, ranges, npar):
         # if there is still room, fill them with dummys
         for i in range(npar - len(ranges)):
             ranges.append(get_default_range(Dummy()))
-
+    
+    if len(free_symbols) == npar:
+        # there could be times when this condition is not met, for example
+        # plotting the function f(x, y) = x (which is a plane); in this case,
+        # free_symbols = {x} whereas rfs = {x, y} (or x and Dummy)
+        rfs = set().union([r[0] for r in ranges])
+        if free_symbols.difference(rfs) != set():
+            raise ValueError(
+                "Incompatible free symbols of the expressions with the ranges.\n" +
+                "Free symbols in the expressions: {}\n".format(free_symbols) +
+                "Free symbols in the ranges: {}".format(rfs)
+            )
     return ranges
 
 def _check_arguments(args, nexpr, npar):
@@ -1026,7 +1037,10 @@ def _check_arguments(args, nexpr, npar):
         return []
     output = []
 
-    if all([isinstance(a, Expr) for a in args[:nexpr]]):
+    from sympy.core.relational import Relational
+    from sympy.logic.boolalg import BooleanFunction
+
+    if all([isinstance(a, (Expr, Relational, BooleanFunction)) for a in args[:nexpr]]):
         # In this case, with a single plot command, we are plotting either:
         #   1. one expression
         #   2. multiple expressions over the same range
@@ -1052,9 +1066,11 @@ def _check_arguments(args, nexpr, npar):
         for expr in exprs:
             # need this if-else to deal with both plot/plot3d and
             # plot_parametric/plot3d_parametric_line
-            e = (expr,) if isinstance(expr, Expr) else expr
-            current_label = (label if label else
-                    (str(expr) if isinstance(expr, Expr) else str(e)))
+            e = ((expr,) if isinstance(expr, (Expr, Relational, BooleanFunction)) 
+                    else expr)
+            current_label = (label if label else (str(expr)
+                if isinstance(expr, (Expr, Relational, BooleanFunction))
+                    else str(e)))
             output.append((*e, *ranges, current_label))
 
 
@@ -1089,3 +1105,187 @@ def _check_arguments(args, nexpr, npar):
     
     return output
 
+
+def plot_implicit(*args, show=True, **kwargs):
+    """Plot implicit equations / inequalities.
+
+    plot_implicit, by default, uses interval arithmetic to plot functions. If
+    the expression cannot be plotted using interval arithmetic, it defaults to
+    a generating a contour using a mesh grid of fixed number of points. By
+    setting `adaptive=False`, you can force plot_implicit to use the mesh
+    grid. The mesh grid method can be effective when adaptive plotting using
+    interval arithmetic fails to plot with small line width.
+
+    Arguments
+    =========
+        expr : Expr, Relational, BooleanFunction
+            The equation / inequality that is to be plotted.
+        
+        ranges : tuples
+            Two tuple denoting the discretization domain, for example:
+            `(x, -10, 10), (y, -10, 10)`
+            If no range is given, then the free symbols in the expression will
+            be assigned in the order they are sorted.
+        
+        label : str
+            The name of the expression to be eventually shown on the legend.
+            If none is provided, the string representation will be used.
+
+    Keyword Arguments
+    =================
+
+        adaptive : Boolean
+            The default value is set to False, meaning that the internal
+            algorithm uses a mesh grid approach. In such case,
+            Boolean combinations of expressions cannot be plotted.
+            If set to True, the internal algorithm uses interval arithmetic.
+            It switches to a fall back algorithm (meshgrid approach) if the
+            expression cannot be plotted using interval arithmetic.
+            Set to adaptive=False if you want to use a mesh grid. 
+
+        depth : integer
+            The depth of recursion for adaptive mesh grid. Default value is 0.
+            Takes value in the range (0, 4).
+            Think of the resulting plot as a picture composed by pixels. By
+            increasing `depth` we are increasing the number of pixels, thus
+            obtaining a more accurate plot.
+
+        n : integer
+            The number of discretization points when `adaptive=False`. 
+            Default value is 300. The greater the value the more accurate the
+            plot, but the more memory will be used.
+
+        show : Boolean
+            Default value is True. If set to False, the plot will not be shown.
+            See ``Plot`` for further information.
+
+        title : string
+            The title for the plot.
+
+        xlabel : string
+            The label for the x-axis
+
+        ylabel : string
+            The label for the y-axis
+
+    Examples
+    ========
+
+    Plot expressions:
+
+    .. plot::
+        :context: reset
+        :format: doctest
+        :include-source: True
+
+        >>> from sympy import plot_implicit, symbols, Eq, And
+        >>> x, y = symbols('x y')
+
+    Without any ranges for the symbols in the expression:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> p1 = plot_implicit(Eq(x**2 + y**2, 5))
+
+    With the range for the symbols:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> p2 = plot_implicit(
+        ...     Eq(x**2 + y**2, 3), (x, -3, 3), (y, -3, 3))
+
+    With depth of recursion as argument:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> p3 = plot_implicit(
+        ...     Eq(x**2 + y**2, 5), (x, -4, 4), (y, -4, 4), depth = 2)
+
+    Using mesh grid and not using adaptive meshing:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> p4 = plot_implicit(
+        ...     Eq(x**2 + y**2, 5), (x, -5, 5), (y, -2, 2),
+        ...     adaptive=False)
+
+    Using mesh grid without using adaptive meshing with number of points
+    specified:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> p5 = plot_implicit(
+        ...     Eq(x**2 + y**2, 5), (x, -5, 5), (y, -2, 2),
+        ...     adaptive=False, n=400)
+
+    Plotting regions:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> p6 = plot_implicit(y > x**2)
+
+    Plotting Using boolean conjunctions:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> p7 = plot_implicit(And(y > x, y > -x))
+
+    When plotting an expression with a single variable (y - 1, for example),
+    specify the x or the y variable explicitly:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> p8 = plot_implicit(y - 1)
+        >>> p9 = plot_implicit(x - 1)
+    """
+    
+    args = _plot_sympify(args)
+    args = _check_arguments(args, 1, 2)
+    
+    n = kwargs.pop("n", 300)
+    adaptive = kwargs.pop("adaptive", True)
+    depth = kwargs.pop("depth", 0)
+
+    series = []
+    xmin, xmax, ymin, ymax = oo, -oo, oo, -oo
+    for a in args:
+        s = ImplicitSeries(*a, adaptive, depth, n)
+        if s.start_x < xmin: xmin = s.start_x
+        if s.end_x > xmax: xmax = s.end_x
+        if s.start_y < ymin: ymin = s.start_y
+        if s.end_y > ymax: ymax = s.end_y
+        series.append(s)
+
+    kwargs.setdefault('backend', TWO_D_B)
+    kwargs.setdefault('xlim', (xmin, xmax))
+    kwargs.setdefault('ylim', (ymin, ymax))
+    kwargs.setdefault('xlabel', series[-1].var_x.name)
+    kwargs.setdefault('ylabel', series[-1].var_y.name)
+    p = Plot(*series, **kwargs)
+    if show:
+        p.show()
+    return p

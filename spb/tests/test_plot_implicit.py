@@ -1,6 +1,6 @@
 from sympy import (cos, Symbol, symbols, Eq, sin, re, And, Or, exp, I,
                    tan, pi)
-from spb.plot_implicit import plot_implicit, set_matplotlib_backend
+from spb.plot import plot_implicit, set_matplotlib_backend
 from spb.backends.matplotlib import unset_show
 from tempfile import NamedTemporaryFile, mkdtemp
 from sympy.testing.pytest import skip, warns
@@ -63,19 +63,11 @@ def plot_implicit_tests(name):
 
     plot_and_save(x**2 - 1, title='An implicit plot', dir=temp_dir)
 
-def test_line_color():
-    x, y = symbols('x, y')
-    p = plot_implicit(x**2 + y**2 - 1, line_color="green", show=False)
-    assert p._series[0].line_color == "green"
-    p = plot_implicit(x**2 + y**2 - 1, line_color='r', show=False)
-    assert p._series[0].line_color == "r"
-
 def test_matplotlib():
     matplotlib = import_module('matplotlib', min_module_version='1.1.0', catch=(RuntimeError,))
     if matplotlib:
         try:
             plot_implicit_tests('test')
-            test_line_color()
         finally:
             TmpFileManager.cleanup()
     else:

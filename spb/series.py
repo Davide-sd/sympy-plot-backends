@@ -2,7 +2,7 @@ from collections.abc import Callable
 from sympy import sympify, Tuple
 from sympy.core.relational import (Equality, GreaterThan, LessThan,
                 Relational, StrictLessThan, StrictGreaterThan)
-from sympy.external import import_module
+from sympy.logic.boolalg import BooleanFunction
 from sympy.plotting.experimental_lambdify import (
     vectorized_lambdify, lambdify, experimental_lambdify)
 from sympy.utilities.exceptions import SymPyDeprecationWarning
@@ -161,7 +161,6 @@ class Line2DBaseSeries(BaseSeries):
             y: list
                 List of z-coordinates in case of Parametric3DLineSeries
         """
-        np = import_module('numpy')
         points = self.get_points()
         if self.steps is True:
             if len(points) == 2:
@@ -182,13 +181,11 @@ class Line2DBaseSeries(BaseSeries):
                 deprecated_since_version="1.9",
                 useinstead="MatplotlibBackend.get_segments").warn()
 
-        np = import_module('numpy')
         points = type(self).get_data(self)
         points = np.ma.array(points).T.reshape(-1, 1, self._dim)
         return np.ma.concatenate([points[:-1], points[1:]], axis=1)
 
     def get_color_array(self):
-        np = import_module('numpy')
         c = self.line_color
         if hasattr(c, '__call__'):
             f = np.vectorize(c)
@@ -212,7 +209,6 @@ class List2DSeries(Line2DBaseSeries):
     """Representation for a line consisting of list of points."""
 
     def __init__(self, list_x, list_y, label=""):
-        np = import_module('numpy')
         super().__init__()
         self.list_x = np.array(list_x)
         self.list_y = np.array(list_y)
@@ -279,7 +275,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             f = lambdify([self.var], self.expr)
             x_coords = []
             y_coords = []
-            np = import_module('numpy')
             def sample(p, q, depth):
                 """ Samples recursively if three points are almost collinear.
                 For depth < 6, points are added irrespective of whether they
@@ -342,7 +337,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         return (np.array(x_coords), np.array(y_coords))
 
     def _uniform_sampling(self):
-        np = import_module('numpy')
         if self.only_integers is True:
             if self.xscale == 'log':
                 list_x = np.logspace(int(self.start), int(self.end),
@@ -443,7 +437,6 @@ class Parametric2DLineSeries(Line2DBaseSeries):
             allowed is 12.
             """
             # Randomly sample to avoid aliasing.
-            np = import_module('numpy')
             random = 0.45 + np.random.rand() * 0.1
             param_new = param_p + random * (param_q - param_p)
             xnew = f_x(param_new)
@@ -549,7 +542,6 @@ class Parametric3DLineSeries(Line3DBaseSeries):
         return self.discretized_var
 
     def get_points(self):
-        np = import_module('numpy')
         param = self.get_parameter_points()
         fx = vectorized_lambdify([self.var], self.expr_x)
         fy = vectorized_lambdify([self.var], self.expr_y)
@@ -594,7 +586,6 @@ class SurfaceBaseSeries(BaseSeries):
         return self.get_meshes()
 
     def get_color_array(self):
-        np = import_module('numpy')
         c = self.surface_color
         if isinstance(c, Callable):
             f = np.vectorize(c)
@@ -648,7 +639,6 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
                     str((self.start_y, self.end_y)))
 
     def get_meshes(self):
-        np = import_module('numpy')
         mesh_x, mesh_y = np.meshgrid(np.linspace(self.start_x, self.end_x,
                                                  num=self.n1),
                                      np.linspace(self.start_y, self.end_y,
@@ -697,14 +687,12 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
                     str((self.start_v, self.end_v)))
 
     def get_parameter_meshes(self):
-        np = import_module('numpy')
         return np.meshgrid(np.linspace(self.start_u, self.end_u,
                                        num=self.n1),
                            np.linspace(self.start_v, self.end_v,
                                        num=self.n2))
 
     def get_meshes(self):
-        np = import_module('numpy')
 
         mesh_u, mesh_v = self.get_parameter_meshes()
         fx = vectorized_lambdify((self.var_u, self.var_v), self.expr_x)
@@ -747,14 +735,25 @@ class ContourSeries(SurfaceOver2DRangeSeries):
                     str((self.start_y, self.end_y)))
 
 class ImplicitSeries(BaseSeries):
-    """ Representation for Implicit plot """
+    """ Representation for Implicit plot
+
+    References
+    ==========
+
+    .. [1] Jeffrey Allen Tupper. Reliable Two-Dimensional Graphing Methods for
+    Mathematical Formulae with Two Free Variables.
+
+    .. [2] Jeffrey Allen Tupper. Graphing Equations with Generalized Interval
+    Arithmetic. Master's thesis. University of Toronto, 1996
+    
+    """
     is_implicit = True
 
-    def __init__(self, expr, var_start_end_x, var_start_end_y,
-            has_equality, use_interval_math, depth, n,
-            line_color):
+    def __init__(self, expr, var_start_end_x, var_start_end_y, label="",
+            use_interval_math=True, depth=0, n=300):
         super().__init__()
-        self.expr = sympify(expr)
+        expr, has_equality = self._has_equality(sympify(expr))
+        self.expr = expr
         self.var_x = sympify(var_start_end_x[0])
         self.start_x = float(var_start_end_x[1])
         self.end_x = float(var_start_end_x[2])
@@ -762,12 +761,47 @@ class ImplicitSeries(BaseSeries):
         self.start_y = float(var_start_end_y[1])
         self.end_y = float(var_start_end_y[2])
         self.get_points = self.get_raster
-        self.has_equality = has_equality  # If the expression has equality, i.e.
-                                         #Eq, Greaterthan, LessThan.
+        self.has_equality = has_equality
         self.n = n
+        self.label = label
         self.use_interval_math = use_interval_math
+
+        # Check whether the depth is greater than 4 or less than 0.
+        if depth > 4:
+            depth = 4
+        elif depth < 0:
+            depth = 0
         self.depth = 4 + depth
-        self.line_color = line_color
+    
+    def _has_equality(self, expr):
+        # Represents whether the expression contains an Equality, GreaterThan 
+        # or LessThan
+        has_equality = False
+
+        def arg_expand(bool_expr):
+            """
+            Recursively expands the arguments of an Boolean Function
+            """
+            for arg in bool_expr.args:
+                if isinstance(arg, BooleanFunction):
+                    arg_expand(arg)
+                elif isinstance(arg, Relational):
+                    arg_list.append(arg)
+
+        arg_list = []
+        if isinstance(expr, BooleanFunction):
+            arg_expand(expr)
+            # Check whether there is an equality in the expression provided.
+            if any(isinstance(e, (Equality, GreaterThan, LessThan))
+                    for e in arg_list):
+                has_equality = True
+        elif not isinstance(expr, Relational):
+            expr = Equality(expr, 0)
+            has_equality = True
+        elif isinstance(expr, (Equality, GreaterThan, LessThan)):
+            has_equality = True
+
+        return expr, has_equality
 
     def __str__(self):
         return ('Implicit equation: %s for '
@@ -807,7 +841,6 @@ class ImplicitSeries(BaseSeries):
         k = self.depth
         interval_list = []
         #Create initial 32 divisions
-        np = import_module('numpy')
         xsample = np.linspace(self.start_x, self.end_x, 33)
         ysample = np.linspace(self.start_y, self.end_y, 33)
 
@@ -897,7 +930,6 @@ class ImplicitSeries(BaseSeries):
         else:
             raise NotImplementedError("The expression is not supported for "
                                     "plotting in uniform meshed plot.")
-        np = import_module('numpy')
         xarray = np.linspace(self.start_x, self.end_x, self.n)
         yarray = np.linspace(self.start_y, self.end_y, self.n)
         x_grid, y_grid = np.meshgrid(xarray, yarray)
@@ -917,12 +949,10 @@ class ImplicitSeries(BaseSeries):
 ##############################################################################
 
 def centers_of_segments(array):
-    np = import_module('numpy')
     return np.mean(np.vstack((array[:-1], array[1:])), 0)
 
 
 def centers_of_faces(array):
-    np = import_module('numpy')
     return np.mean(np.dstack((array[:-1, :-1],
                              array[1:, :-1],
                              array[:-1, 1:],
@@ -932,7 +962,6 @@ def centers_of_faces(array):
 
 def flat(x, y, z, eps=1e-3):
     """Checks whether three points are almost collinear"""
-    np = import_module('numpy')
     # Workaround plotting piecewise (#8577):
     #   workaround for `lambdify` in `.experimental_lambdify` fails
     #   to return numerical values in some cases. Lower-level fix

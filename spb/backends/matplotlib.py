@@ -193,12 +193,12 @@ class MatplotlibBackend(Plot):
                 if len(points) == 2:
                     # interval math plotting
                     x, y = _matplotlib_list(points[0])
-                    ax.fill(x, y, facecolor=s.line_color, edgecolor='None')
+                    ax.fill(x, y, edgecolor='None')
                 else:
                     # use contourf or contour depending on whether it is
                     # an inequality or equality.
                     # XXX: ``contour`` plots multiple lines. Should be fixed.
-                    colormap = ListedColormap(["white", s.line_color])
+                    colormap = ListedColormap(["white", "blue"])
                     xarray, yarray, zarray, plot_type = points
                     if plot_type == 'contour':
                         ax.contour(xarray, yarray, zarray, cmap=colormap)

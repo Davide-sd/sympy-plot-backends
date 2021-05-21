@@ -1014,6 +1014,43 @@ def test_check_arguments():
     assert r[0][5] == "test"
     assert r[1] == (x - y, cos(x - y), sin(x - y), (x, -3, 3), (y, -4, 4),
                 "test2")
+    
+
+    ### Test arguments for plot_implicit
+
+    # single expression with both ranges
+    args = _plot_sympify((x > 0, (x, -2, 2), (y, -3, 3)))
+    r = _check_arguments(args, 1, 2)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert len(r[0]) == 4
+    assert r[0] == (x > 0, (x, -2, 2), (y, -3, 3), "x > 0")
+
+    # single expression with one missing range
+    args = _plot_sympify((x > 0, (x, -2, 2), "test"))
+    r = _check_arguments(args, 1, 2)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert len(r[0]) == 4
+    assert r[0][:2] == (x > 0, (x, -2, 2))
+    assert r[0][-1] == "test"
+    assert (r[0][2][1] == Integer(-10)) and (r[0][2][2] == Integer(10))
+
+    # multiple expressions
+    args = _plot_sympify([(x > 0, (x, -2, 2), (y, -3, 3)), 
+        ((x > 0) & (y < 0), "test")])
+    r = _check_arguments(args, 1, 2)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
+    assert len(r[0]) == 4
+    assert r[0] == (x > 0, (x, -2, 2), (y, -3, 3), "x > 0")
+    assert len(r[1]) == 4
+    assert r[1][0] == ((x > 0) & (y < 0))
+    assert (r[1][1] == Tuple(x, -10, 10)) or (r[1][1] == Tuple(y, -10, 10))
+    assert (r[1][2] == Tuple(x, -10, 10)) or (r[1][2] == Tuple(y, -10, 10))
+    assert r[1][-1] == "test"
+
+    # incompatible free symbols between expression and ranges
+    z = symbols("z")
+    args = _plot_sympify((x * y > 0, (x, -2, 2), (z, -3, 3)))
+    raises(ValueError, lambda: _check_arguments(args, 1, 2))
 
 def test_custom_coloring():
     x = Symbol('x')

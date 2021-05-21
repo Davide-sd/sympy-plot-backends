@@ -324,7 +324,7 @@ class BokehBackend(Plot):
 
                 cm = next(self._ccm)
                 self._fig.image(image=[z], x=minx, y=miny,
-                        dw=abs(maxx- minx), dh=abs(maxy- miny),
+                        dw=abs(maxx - minx), dh=abs(maxy - miny),
                         palette=cm)
                 
                 colormapper = LinearColorMapper(palette=cm, low=minz, high=maxz)
@@ -335,6 +335,24 @@ class BokehBackend(Plot):
                 colorbar = ColorBar(color_mapper=colormapper, title=s.label,
                     **merge({}, cbkw, colorbar_kw))
                 self._fig.add_layout(colorbar, 'right')
+            elif s.is_implicit:
+                points = s.get_data()
+                # TODO: add color to the legend
+                if len(points) == 2:
+                    # interval math plotting
+                    x, y, pixels = self._get_pixels(s, points[0])
+                    x, y = x.flatten(), y.flatten()
+                    cm = ["#00000000", next(self._cl)]
+                    self._fig.image(image=[pixels], x=min(x), y=min(y),
+                        dw=abs(max(x) - min(x)), dh=abs(max(y) - min(y)),
+                        palette=cm, legend_label=s.label)
+                else:
+                    x, y, z, plot_type = points
+                    # TODO: need to separate the cases: contour vs contourf
+                    cm = ["#00000000", next(self._cl)]
+                    self._fig.image(image=[z], x=min(x), y=min(y),
+                        dw=abs(max(x) - min(x)), dh=abs(max(y) - min(y)),
+                        palette=cm, legend_label=s.label)
             elif s.is_2Dvector:
                 streamlines = self._kwargs.get("streamlines", False)
                 if streamlines:

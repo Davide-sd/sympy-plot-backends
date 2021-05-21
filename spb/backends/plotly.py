@@ -2,6 +2,7 @@ from spb.defaults import plotly_theme
 from spb.backends.base_backend import Plot
 from spb.utils import get_seeds_points
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.figure_factory import create_quiver, create_streamline
 from mergedeep import merge
 import itertools
@@ -135,6 +136,7 @@ class PlotlyBackend(Plot):
         self._update_layout()
     
     def _init_cyclers(self):
+        self._cl = itertools.cycle(px.colors.qualitative.Plotly)
         self._cm = itertools.cycle(self.colormaps)
         self._wfcm = itertools.cycle(self.wireframe_colors)
         self._qc = itertools.cycle(self.quivers_colors)
@@ -276,6 +278,41 @@ class PlotlyBackend(Plot):
                 contour_kw = self._kwargs.get("contour_kw", dict())
                 self._fig.add_trace(go.Contour(x = xx, y = yy, z = zz,
                         **merge({}, ckw, contour_kw)))
+            elif s.is_implicit:
+                points = s.get_data()
+                if len(points) == 2:
+                    # interval math plotting
+                    x, y, pixels = self._get_pixels(s, points[0])
+                    self._fig.add_trace(go.Heatmap(x = x, y = y, z = pixels,
+                        colorscale = [
+                            [0, "rgba(0,0,0,0)"],
+                            [1, next(self._cl)],
+                        ], showscale = False, name = s.label))
+                else:
+                    x, y, z, plot_type = points
+                    zf = z.flatten()
+                    m, M = min(zf), max(zf)
+                    col = next(self._cl)
+                    # default values
+                    ckw = dict(
+                        contours = dict(
+                            coloring = "none" if plot_type == "contour" else None,
+                            showlabels = False,
+                            type = "levels" if plot_type == "contour" else "constraint",
+                            operation = '<', value = [(m + M) / 2]
+                        ),
+                        colorscale = [
+                            [0, "rgba(0,0,0,0)"],
+                            [1, next(self._cl)],
+                        ],
+                        fillcolor = col,
+                        showscale = True,
+                        name = s.label,
+                        line = dict( color = col )
+                    )
+                    contour_kw = self._kwargs.get("contour_kw", dict())
+                    self._fig.add_trace(go.Contour(x = x, y = y, z = z,
+                            **merge({}, ckw, contour_kw)))
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
