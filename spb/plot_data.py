@@ -7,68 +7,76 @@ from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries,
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
     ParametricSurfaceSeries, ImplicitSeries, InteractiveSeries,
-    _set_discretization_points, Vector2DSeries, Vector3DSeries
+    _set_discretization_points, Vector2DSeries, Vector3DSeries,
+    ContourSeries
 )
 from spb.backends.base_backend import Plot 
 from spb.utils import _unpack_args, _plot_sympify, _check_arguments
 from spb.vectors import _preprocess, _split_vector
+from spb.defaults import TWO_D_B, THREE_D_B
 
 """
 TODO:
     1. Implement smart_plot
-    2. See if it's possible to move the logic of plot_implicit into
-        ImplicitSeries. Doing that would allow get_plot_data and smart_plot
-        to also work with implicit series.
 """
 
 def _build_series(*args, **kwargs):
     """ Read the docstring of get_plot_data to unsertand what args and kwargs
     are.
     """
+
+    mapping = {
+        "p": [LineOver1DRangeSeries, 1, 1], # [cls, nexpr, npar]
+        "pp": [Parametric2DLineSeries, 2, 1],
+        "p3dl": [Parametric3DLineSeries, 3, 1],
+        "p3ds": [ParametricSurfaceSeries, 3, 2],
+        "p3d": [SurfaceOver2DRangeSeries, 1, 2],
+        "pi": [ImplicitSeries, 1, 2],
+        "pinter": [InteractiveSeries, 0, 0],
+        "v2d": [Vector2DSeries, 2, 2],
+        "v3d": [Vector3DSeries, 3, 3],
+        "pc": [ContourSeries, 1, 2]
+    }
+
     # In the following dictionary the key is composed of two characters:
     # 1. The first represents the number of sub-expressions. For example,
     #    a line plot or a surface plot have 1 expression. A 2D parametric line
     #    does have 2 parameters, ...
     # 2. The second represent the number of parameters.
-    # This categorization doesn't work for ImplicitSeries and InteractiveSeries,
-    # in which case a random number was assigned.
-    mapping = {
-        "11": LineOver1DRangeSeries,
-        "21": Parametric2DLineSeries,
-        "31": Parametric3DLineSeries,
-        "32": ParametricSurfaceSeries,
-        "12": SurfaceOver2DRangeSeries,
-        "99": ImplicitSeries,
-        "00": InteractiveSeries,
-        "22": Vector2DSeries,
-        "33": Vector3DSeries,
+    # There will be ambiguities due to the fact that some series use the same
+    # number of expressions and parameters. This dictionary set a default series
+    reverse_mapping = {
+        "11": "p",
+        "21": "pp",
+        "31": "p3dl",
+        "32": "p3ds",
+        "12": "p3d",
+        "22": "v2d",
+        "33": "v3d",
     }
-
+    
     args = _plot_sympify(args)
     exprs, ranges, label = _unpack_args(*args)
     args = [*exprs, *ranges, label]
 
-    pt = kwargs.get("pt", None)
+    pt = kwargs.pop("pt", None)
     if pt is None:
         # Automatic detection based on the number of free symbols and the number
         # of expressions
 
+        pt = ""
         skip_check = False
         if isinstance(exprs[0], (Boolean, Relational)):
             # implicit series
-            skip_check = True
-            npar = 9
-            nexpr = 9
+            pt = "pi"
         elif isinstance(exprs[0], (DenseMatrix, Vector)):
             split_expr, ranges = _split_vector(exprs[0], ranges)
-            nexpr = 2
             if split_expr[-1] is S.Zero:
-                nexpr = 2
                 args = [split_expr[:2], *ranges, label]
+                pt = "v2d"
             else:
-                nexpr = 3
                 args = [split_expr, *ranges, label]
-            npar = len(ranges)
+                pt = "v3d"
         elif isinstance(exprs[0], (list, tuple, Tuple)):
             # Two possible cases:
             # 1. The actual parametric expression has been provided in the form
@@ -77,6 +85,9 @@ def _build_series(*args, **kwargs):
             fs = set().union(*[e.free_symbols for e in exprs[0]])
             npar = len(fs)
             nexpr = len(exprs[0])
+            tmp = str(nexpr) + str(npar)
+            if tmp in reverse_mapping.keys():
+                pt = reverse_mapping[tmp]
         else:
             # the actual expression (parametric or not) is not contained in a
             # tuple. For example:
@@ -84,68 +95,53 @@ def _build_series(*args, **kwargs):
             fs = set().union(*[e.free_symbols for e in exprs])
             npar = len(fs)
             nexpr = len(exprs)
+            tmp = str(nexpr) + str(npar)
+            if tmp in reverse_mapping.keys():
+                pt = reverse_mapping[tmp]
 
-        k = str(nexpr) + str(npar)
         params = kwargs.get("params", dict())
         if len(params) > 0:
             # we are most likely dealing with an interactive series
             skip_check = True
-            k = "00"
+            pt = "pinter"
             args = [exprs, ranges, label]
 
+        if pt not in mapping.keys():
+            raise ValueError(
+                "Don't know how to plot the expression:\n" +
+                "Received: {}\n".format(args) +
+                "Number of subexpressions: {}\n".format(nexpr) +
+                "Number of parameters: {}".format(npar)
+            )
+        
+        _cls, nexpr, npar = mapping[pt]
         if not skip_check:
             # In case of LineOver1DRangeSeries, Parametric2DLineSeries,
             # Parametric3DLineSeries, ParametricSurfaceSeries,
             # SurfaceOver2DRangeSeries, validate the provided expressions/ranges
             args = _check_arguments(args, nexpr, npar)[0]
 
-        
-        if k not in mapping.keys():
-            raise ValueError(
-                "Don't know how to plot your expression:\n" +
-                "Received: {}\n".format(args) +
-                "Number of subexpressions: {}\n".format(nexpr) +
-                "Number of parameters: {}".format(npar)
-            )
     else:
-        if pt == "p":
-            k = "11"
-            args = _check_arguments(args, 1, 1)[0]
-        elif pt == "pp":
-            k = "21"
-            args = _check_arguments(args, 2, 1)[0]
-        elif pt == "p3dl":
-            k = "31"
-            args = _check_arguments(args, 3, 1)[0]
-        elif pt == "p3d":
-            k = "12"
-            args = _check_arguments(args, 1, 2)[0]
-        elif pt == "p3ds":
-            k = "32"
-            args = _check_arguments(args, 3, 2)[0]
-        elif pt == "ip":
-            k = "00"
-            args = [exprs, ranges, label]
-        elif pt == "v2d":
-            k = "22"
-            if isinstance(args[0], Vector):
-                split_expr, ranges = _split_vector(exprs[0], ranges)
-                args = [split_expr[:2], *ranges, label]
-            args = _check_arguments(args, 2, 2)[0]
-        elif pt == "v3d":
-            k = "33"
-            if isinstance(args[0], Vector):
-                split_expr, ranges = _split_vector(exprs[0], ranges)
-                args = [split_expr, *ranges, label]
-            args = _check_arguments(args, 3, 3)[0]
+        if pt in mapping.keys():
+            _cls, nexpr, npar = mapping[pt]
+            k = str(nexpr) + str(npar)
+            if k == "00":
+                args = [exprs, ranges, label]
+            elif k == "22":
+                if isinstance(args[0], (Vector, DenseMatrix)):
+                    split_expr, ranges = _split_vector(exprs[0], ranges)
+                    args = [split_expr[:2], *ranges, label]
+                args = _check_arguments(args, 2, 2)[0]
+            elif k == "33":
+                if isinstance(args[0], (Vector, DenseMatrix)):
+                    split_expr, ranges = _split_vector(exprs[0], ranges)
+                    args = [split_expr, *ranges, label]
+                args = _check_arguments(args, 3, 3)[0]
+            else:
+                args = _check_arguments(args, nexpr, npar)[0]
         else:
             raise ValueError("Wrong `pt` value. Please, check the docstring " +
                 "of `get_plot_data` to list the possible values.")
-
-    _cls = mapping[k]
-    if _cls == ImplicitSeries:
-        raise ValueError(
-            "_build_series is currently not able to deal with ImplicitSeries")
 
     kwargs = _set_discretization_points(kwargs, _cls)
     return _cls(*args, **kwargs)
@@ -293,7 +289,10 @@ def smart_plot(*args, **kwargs):
 
     for arg in args:
         series.append(_build_series(*arg, **kwargs))
-
+    
+    if "backend" not in kwargs.keys():
+        is_3D = any([s.is_3D for s in series])
+        kwargs["backend"] = THREE_D_B if is_3D else TWO_D_B
     plots = Plot(*series, **kwargs)
     plots.show()
     return plots

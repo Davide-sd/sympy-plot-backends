@@ -181,6 +181,10 @@ def _check_arguments(args, nexpr, npar):
         ranges = [a for a in args if _is_range(a)]
         n = len(ranges) + len(labels)
         new_args = args[:-n] if n > 0 else args
+        # at this point, new_args might just be [expr]. But I need it to be
+        # [[expr]] in order to be able to loop over [expr, range [opt], label [opt]]
+        if not isinstance(new_args[0], (list, tuple, Tuple)):
+            new_args = [new_args]
 
         # Each arg has the form (expr1, expr2, ..., range1 [optional], ...,
         #   label [optional])
@@ -199,7 +203,6 @@ def _check_arguments(args, nexpr, npar):
                 r = _create_ranges(free_symbols, r, npar)
             label = (str(arg[0]) if nexpr == 1 else str(arg)) if not l else l[0]
             output.append((*arg, *r, label))
-    
     return output
 
 

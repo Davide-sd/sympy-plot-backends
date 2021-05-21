@@ -750,7 +750,8 @@ class ImplicitSeries(BaseSeries):
     is_implicit = True
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="",
-            use_interval_math=True, depth=0, n=300):
+            **kwargs):
+            # use_interval_math=True, depth=0, n=300):
         super().__init__()
         expr, has_equality = self._has_equality(sympify(expr))
         self.expr = expr
@@ -762,11 +763,12 @@ class ImplicitSeries(BaseSeries):
         self.end_y = float(var_start_end_y[2])
         self.get_points = self.get_raster
         self.has_equality = has_equality
-        self.n = n
+        self.n = kwargs.get("n", 300)
         self.label = label
-        self.use_interval_math = use_interval_math
+        self.use_interval_math = kwargs.get("use_interval_math", True)
 
         # Check whether the depth is greater than 4 or less than 0.
+        depth = kwargs.get("depth", 0)
         if depth > 4:
             depth = 4
         elif depth < 0:

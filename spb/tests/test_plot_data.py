@@ -37,7 +37,11 @@ def test_build_series():
     s = _build_series(u * cos(x), (x, -5, 5), params={u: 1})
     assert isinstance(s, InteractiveSeries)
 
-    raises(ValueError, lambda: _build_series(Eq(x**2 + y**2, 5), (x, -5, 5), (y, -2, 2)))
+    s = _build_series(Eq(x**2 + y**2, 5), (x, -5, 5), (y, -2, 2))
+    assert isinstance(s, ImplicitSeries)
+
+    s = _build_series(Eq(x**2 + y**2, 5) & (x > y), (x, -5, 5), (y, -2, 2))
+    assert isinstance(s, ImplicitSeries)
 
     # test mapping
     s = _build_series(cos(x), (x, -5, 5), pt="p")
@@ -64,7 +68,7 @@ def test_build_series():
     s = _build_series(cos(x + y), sin(x + y), x, pt="p3ds")
     assert isinstance(s, ParametricSurfaceSeries)
 
-    s = _build_series(u * cos(x), (x, -5, 5), params={u: 1}, pt="ip")
+    s = _build_series(u * cos(x), (x, -5, 5), params={u: 1}, pt="pinter")
     assert isinstance(s, InteractiveSeries)
 
 def test_vectors():
