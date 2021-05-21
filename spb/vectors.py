@@ -3,8 +3,7 @@ from spb.defaults import TWO_D_B, THREE_D_B
 from spb.series import (
     Vector2DSeries, Vector3DSeries, ContourSeries, _set_discretization_points
 )
-from spb.plot import _is_range
-from spb.utils import _plot_sympify, _unpack_args, _split_vector
+from spb.utils import _plot_sympify, _unpack_args, _split_vector, _is_range
 from sympy import S, sqrt, Expr, Tuple, Dummy, Symbol
 from sympy.vector import Vector, BaseScalar
 from sympy.matrices.dense import DenseMatrix

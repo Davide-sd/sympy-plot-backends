@@ -1,8 +1,10 @@
-from sympy import lambdify, Tuple, sympify, Expr, S, Symbol
+from sympy import lambdify, Tuple, sympify, Expr, S, Symbol, Dummy
 from sympy.matrices.dense import DenseMatrix
 from sympy.vector import Vector, BaseScalar
 from sympy.vector.operators import _get_coord_systems
 from sympy.utilities.iterables import ordered
+from sympy.core.relational import Relational
+from sympy.logic.boolalg import BooleanFunction
 import numpy as np
 
 def get_lambda(expr, modules="numpy", **kwargs):
@@ -26,6 +28,179 @@ def get_lambda(expr, modules="numpy", **kwargs):
     """
     signature = list(ordered(expr.free_symbols))
     return signature, lambdify(signature, expr, modules=modules, **kwargs)
+
+
+def _create_ranges(free_symbols, ranges, npar):
+    """ This function does two things:
+    1. Check if the number of free symbols is in agreement with the type of plot
+        chosen. For example, plot() requires 1 free symbol; plot3d() requires 2
+        free symbols.
+    2. Sometime users create plots without providing ranges for the variables.
+        Here we create the necessary ranges.
+
+    free_symbols
+        The free symbols contained in the expressions to be plotted
+
+    ranges
+        The limiting ranges provided by the user
+
+    npar
+        The number of free symbols required by the plot functions. For example,
+        npar=1 for plot, npar=2 for plot3d, ...
+
+    """
+
+    get_default_range = lambda symbol: Tuple(symbol, -10, 10)
+
+    if len(free_symbols) > npar:
+        raise ValueError(
+            "Too many free symbols.\n" +
+            "Expected {} free symbols.\n".format(npar) +
+            "Received {}: {}".format(len(free_symbols), free_symbols)
+        )
+
+    # TODO: should I keep it?
+    if len(ranges) > npar:
+        raise ValueError(
+            "Too many ranges. Received %s, expected %s" % (len(ranges), npar))
+
+    # free symbols in the ranges provided by the user
+    rfs = set().union([r[0] for r in ranges])
+    if len(rfs) != len(ranges):
+        raise ValueError("Multiple ranges with the same symbol")
+
+    if len(ranges) < npar:
+        symbols = free_symbols.difference(rfs)
+        if symbols != set():
+            # add a range for each missing free symbols
+            for s in symbols:
+                ranges.append(get_default_range(s))
+        # if there is still room, fill them with dummys
+        for i in range(npar - len(ranges)):
+            ranges.append(get_default_range(Dummy()))
+    
+    if len(free_symbols) == npar:
+        # there could be times when this condition is not met, for example
+        # plotting the function f(x, y) = x (which is a plane); in this case,
+        # free_symbols = {x} whereas rfs = {x, y} (or x and Dummy)
+        rfs = set().union([r[0] for r in ranges])
+        if free_symbols.difference(rfs) != set():
+            raise ValueError(
+                "Incompatible free symbols of the expressions with the ranges.\n" +
+                "Free symbols in the expressions: {}\n".format(free_symbols) +
+                "Free symbols in the ranges: {}".format(rfs)
+            )
+    return ranges
+
+def _check_arguments(args, nexpr, npar):
+    """ Checks the arguments and converts into tuples of the
+    form (exprs, ranges, name_expr).
+    
+    Parameters
+    ==========
+
+    args
+        The arguments provided to the plot functions
+
+    nexpr
+        The number of sub-expression forming an expression to be plotted. For
+        example:
+        nexpr=1 for plot.
+        nexpr=2 for plot_parametric: a curve is represented by a tuple of two
+            elements.
+        nexpr=1 for plot3d.
+        nexpr=3 for plot3d_parametric_line: a curve is represented by a tuple
+            of three elements.
+
+    npar
+        The number of free symbols required by the plot functions. For example,
+        npar=1 for plot, npar=2 for plot3d, ...
+
+    Examples
+    ========
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import cos, sin, symbols
+       >>> from sympy.plotting.plot import _check_arguments
+       >>> x = symbols('x')
+       >>> _check_arguments([cos(x), sin(x)], 2, 1)
+           [(cos(x), sin(x), (x, -10, 10), '(cos(x), sin(x))')]
+
+       >>> _check_arguments([x, x**2], 1, 1)
+           [(x, (x, -10, 10), 'x'), (x**2, (x, -10, 10), 'x**2')]
+    """
+    if not args:
+        return []
+    output = []
+
+    if all([isinstance(a, (Expr, Relational, BooleanFunction)) for a in args[:nexpr]]):
+        # In this case, with a single plot command, we are plotting either:
+        #   1. one expression
+        #   2. multiple expressions over the same range
+
+        res = [not (_is_range(a) or isinstance(a, str)) for a in args]
+        exprs = [a for a, b in zip(args, res) if b]
+        ranges = [r for r in args[nexpr:] if _is_range(r)]
+        label = args[-1] if isinstance(args[-1], str) else ""
+
+        if not all([_is_range(r) for r in ranges]):
+            raise ValueError(
+                        "Expressions must be followed by ranges. Received:\n"
+                        "Expressions: %s\n"
+                        "Others: %s" % (exprs, ranges))
+        free_symbols = set().union(*[e.free_symbols for e in exprs])
+        ranges = _create_ranges(free_symbols, ranges, npar)
+
+        if nexpr > 1:
+            # in case of plot_parametric or plot3d_parametric_line, there will
+            # be 2 or 3 expressions defining a curve. Group them together.
+            if len(exprs) == nexpr:
+                exprs = (tuple(exprs),)
+        for expr in exprs:
+            # need this if-else to deal with both plot/plot3d and
+            # plot_parametric/plot3d_parametric_line
+            e = ((expr,) if isinstance(expr, (Expr, Relational, BooleanFunction)) 
+                    else expr)
+            current_label = (label if label else (str(expr)
+                if isinstance(expr, (Expr, Relational, BooleanFunction))
+                    else str(e)))
+            output.append((*e, *ranges, current_label))
+
+
+    else:
+        # In this case, we are plotting multiple expressions, each one with its
+        # range. Each "expression" to be plotted has the following form:
+        # (expr, range, label) where label is optional
+
+        # look for "global" range and label
+        labels = [a for a in args if isinstance(a, str)]
+        ranges = [a for a in args if _is_range(a)]
+        n = len(ranges) + len(labels)
+        new_args = args[:-n] if n > 0 else args
+
+        # Each arg has the form (expr1, expr2, ..., range1 [optional], ...,
+        #   label [optional])
+        for arg in new_args:
+            # look for "local" range and label. If there is not, use "global".
+            l = [a for a in arg if isinstance(a, str)]
+            if not l:
+                l = labels
+            r = [a for a in arg if _is_range(a)]
+            if not r:
+                r = ranges.copy()
+
+            arg = arg[:nexpr]
+            free_symbols = set().union(*[a.free_symbols for a in arg])
+            if len(r) != npar:
+                r = _create_ranges(free_symbols, r, npar)
+            label = (str(arg[0]) if nexpr == 1 else str(arg)) if not l else l[0]
+            output.append((*arg, *r, label))
+    
+    return output
 
 
 def _plot_sympify(args):

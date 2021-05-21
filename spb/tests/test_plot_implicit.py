@@ -1,6 +1,6 @@
 from sympy import (cos, Symbol, symbols, Eq, sin, re, And, Or, exp, I,
                    tan, pi)
-from spb.plot import plot_implicit, set_matplotlib_backend
+from spb.functions import plot_implicit, set_matplotlib_backend
 from spb.backends.matplotlib import unset_show
 from tempfile import NamedTemporaryFile, mkdtemp
 from sympy.testing.pytest import skip, warns

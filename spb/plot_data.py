@@ -9,10 +9,8 @@ from spb.series import (
     ParametricSurfaceSeries, ImplicitSeries, InteractiveSeries,
     _set_discretization_points, Vector2DSeries, Vector3DSeries
 )
-from spb.plot import (
-    Plot, _check_arguments    
-)
-from spb.utils import _unpack_args, _plot_sympify
+from spb.backends.base_backend import Plot 
+from spb.utils import _unpack_args, _plot_sympify, _check_arguments
 from spb.vectors import _preprocess, _split_vector
 
 """

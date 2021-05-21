@@ -1,4 +1,4 @@
-from spb.plot import (
+from spb.functions import (
     plot, plot_parametric, plot_contour,
     plot3d, plot3d_parametric_line, plot3d_parametric_surface,
     plot_implicit
