@@ -119,12 +119,15 @@ class K3DBackend(Plot):
 
     def _init_cyclers(self):
         self._cl = itertools.cycle(self.colorloop)
-        self._cm = itertools.cycle(self.contour_colormaps)
+        self._cm = itertools.cycle(self.colormaps)
         self._qcm = itertools.cycle(self.quivers_colormaps)
 
     def _process_series(self, series):
         self._init_cyclers()
-        # TODO: clear data
+        self._fig.auto_rendering = False
+        # clear data
+        for o in self._fig.objects:
+            self._fig.remove_class(o)
 
         for s in series:
             if s.is_3Dline:
@@ -335,6 +338,7 @@ class K3DBackend(Plot):
         if self.title:
             self._fig += k3d.text2d(self.title, 
                  position=[0.025, 0.015], color=0, size=1, label_box=False)
+        self._fig.auto_rendering = True
     
     def _update_interactive(self, params):
         for i, s in enumerate(self.series):
