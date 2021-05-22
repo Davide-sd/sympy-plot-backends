@@ -80,7 +80,12 @@ class PyvistaBackend(Plot):
                 xlabel=self.xlabel, ylabel=self.ylabel, zlabel=self.zlabel
             )
     
+    def self._init_cyclers(self):
+        pass
+
     def _process_series(self, series):
+        self._init_cyclers()
+
         for s in series:
             if s.is_3Dline:
                 x, y, z = s.get_data()

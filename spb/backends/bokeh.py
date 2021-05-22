@@ -232,6 +232,8 @@ class BokehBackend(Plot):
     At the time of writing this backend, geckodriver is not available to pip.
     Do a quick search on the web to find the appropriate installer.
     """
+
+    colorloop = bp.Category10[10]
     
     colormaps = [
         cc.fire, cc.isolum, cc.rainbow, cc.blues, cc.bmy, cc.colorwheel, cc.bgy
@@ -285,7 +287,7 @@ class BokehBackend(Plot):
     
     def _init_cyclers(self):
         # infinity cycler over 10 colors
-        self._cl = itertools.cycle(bp.Category10[10])
+        self._cl = itertools.cycle(self.colorloop)
         self._ccm = itertools.cycle(self.contour_colormaps)
         self._qcm = itertools.cycle(self.quivers_colormaps)
 

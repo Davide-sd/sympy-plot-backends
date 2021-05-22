@@ -117,7 +117,15 @@ class K3DBackend(Plot):
         color = [int(c * 255) for c in color]
         return self._rgb_to_int(color)
 
+    def _init_cyclers(self):
+        self._cl = itertools.cycle(self.colorloop)
+        self._cm = itertools.cycle(self.contour_colormaps)
+        self._qcm = itertools.cycle(self.quivers_colormaps)
+
     def _process_series(self, series):
+        self._init_cyclers()
+        # TODO: clear data
+
         for s in series:
             if s.is_3Dline:
                 x, y, z = s.get_data()
@@ -266,9 +274,8 @@ class K3DBackend(Plot):
                     lines.append(np.array(l))
                     lines_attributes.append(np.array(v))
                 
-                cm = k3d.matplotlib_color_maps.Inferno
                 skw = dict(
-                    width=0.1, color_map=cm, color_range=[min_mag, max_mag],
+                    width=0.1, color_map=self._qcm, color_range=[min_mag, max_mag],
                     shader='mesh', compression_level=9
                 )
                 

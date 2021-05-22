@@ -52,8 +52,12 @@ class MayaviBackend(Plot):
             fgcolor = self._kwargs.get("fg_color", mayavi_fg_color)
         )
     
+    def _init_cyclers(self):
+        pass
+
     def _process_series(self, series):
         mlab.clf(self._fig)
+        self._init_cyclers()
 
         cm = iter(self.colormaps)
         for i, s in enumerate(series):

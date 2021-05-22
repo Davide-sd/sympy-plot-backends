@@ -145,6 +145,8 @@ class Plot:
     # plotgrids or not
     support_plotgrid = False
 
+    colorloop = cm.tab10
+
     # child backends can provide a list of color maps to render surfaces.
     colormaps = []
 
@@ -232,7 +234,10 @@ class Plot:
         # generate a list of RGB tuples (with values from 0 to 1) starting
         # from matplotlib's tab10 color map. This can be used instead of looping
         # through the colormaps
-        self._cl = cycle([cm.tab10(i)[:3] for i in range(0, 10)])
+        if not isinstance(self.colorloop, (list, tuple)):
+            # assume it is a matplotlib colormap
+            self.colorloop = self.colorloop.colors
+        self._cl = cycle(self.colorloop)
     
     def set_color_loop(self, cloop):
         """ Set the default color loop to use when use_cm=False. It must
