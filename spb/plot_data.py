@@ -150,8 +150,8 @@ def _build_series(*args, **kwargs):
 def get_plot_data(*args, **kwargs):
     """ Return the numerical data associated to the a symbolic expression that
     we would like to plot. If a symbolic expression can be plotted with any of
-    the plotting functions exposed by sympy.plotting.plot or 
-    sympy.plotting.plot_implicit, then numerical data will be returned.
+    the plotting functions exposed by spb.functions or spb.vectors, then 
+    numerical data will be returned.
 
     Only one expression at a time can be processed by this function.
     The shape of the numerical data depends on the provided expression.
@@ -167,10 +167,11 @@ def get_plot_data(*args, **kwargs):
                 "pp": to specify a 2d parametric line plot.
                 "p3dl": to specify a 3d parametric line plot.
                 "p3d": to specify a 3d plot.
-                "p3s": to specify a 3d parametric surface plot.
-                "ip": to specify an interactive plot. In such a case, you will
-                        also have to provide a `param` dictionary mapping the
-                        parameters to their values.
+                "p3ds": to specify a 3d parametric surface plot.
+                "pi": to specify an implificit plot.
+                "pinter": to specify an interactive plot. In such a case, you
+                        will also have to provide a `param` dictionary mapping
+                        theparameters to their values.
                 "v2d": to specify a 2D vector plot.
                 "v3d": to specify a 3D vector plot.
 
@@ -257,35 +258,71 @@ def get_plot_data(*args, **kwargs):
     """
     return _build_series(*args, **kwargs).get_data()
 
-def smart_plot(*args, **kwargs):
+def smart_plot(*args, show=True, **kwargs):
     """ Smart plot interface. Using the same interface of the other plot
     functions, namely (expr, range, label), it unifies the plotting experience.
-    With this function, we can create the most common plots: line plots,
-    parametric plots, 3d surface plots. Contour plots are not supported.
+    If a symbolic expression can be plotted with any of the plotting functions
+    exposed by spb.functions or spb.vectors, then this function will be able
+    to plot it as well.
+
+    Keyword Arguments
+    =================
+        The usual keyword arguments available on every other plotting functions
+        are available (`xlabel`, ..., `adaptive`, `n`, ...). On top of that
+        we can set:
+
+        pt : str
+            Specify which kind of plot we are intereseted. Default value
+            is None, indicating the function will use automatic detection.
+            Possible values are:
+                "p": to specify a line plot.
+                "pp": to specify a 2d parametric line plot.
+                "p3dl": to specify a 3d parametric line plot.
+                "p3d": to specify a 3d plot.
+                "p3ds": to specify a 3d parametric surface plot.
+                "pi": to specify an implificit plot.
+                "pinter": to specify an interactive plot. In such a case, you
+                        will also have to provide a `param` dictionary mapping
+                        theparameters to their values.
+                "v2d": to specify a 2D vector plot.
+                "v3d": to specify a 3D vector plot.
 
     Examples
     ========
 
-    Plotting multiple expressions:
+    Plotting different types of expressions with automatic detection:
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. code-block:: python
+        from sympy import symbols, sin, cos, Matrix
+        from spb.backends.plotly import PB
+        x, y = symbols("x, y")
+        smart_plot(
+            (Matrix([-sin(y), cos(x)]), (x, -5, 5), (y, -3, 3), "vector"),
+            (sin(x), (x, -5, 5)),
+            aspect="equal", n=20, legend=True,
+            quiver_kw=dict(scale=0.25), line_kw=dict(line_color="cyan"),
+            backend=PB
+        )
 
-       >>> smart_plot((cos(u), sin(u), (u, -5, 5), "a"),
-       ...     (cos(u), u, "b"))
-       Plot object containing:
-       [0]: parametric cartesian line: (cos(u), sin(u)) for u over (-5.0, 5.0)
-       [1]: parametric cartesian line: (cos(u), u) for u over (-10.0, 10.0)
+    Specify the kind of plot we are interested in:
 
+    .. code-block:: python
+        from sympy import symbols, cos
+        x, y = symbols("x, y")
+        plot(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
+            xlabel="x", ylabel="y", pt="pc")
+
+    See also
+    ========
+
+    plot, plot_parametric, plot3d, plot3d_parametric_line,
+    plot3d_parametric_surface, plot_contour, plot_implicit, vector_plot
     """
 
     args = _plot_sympify(args)
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
         args = [args]
     series = []
-    is_2D, is_3D, is_contour = False, False, False
 
     for arg in args:
         series.append(_build_series(*arg, **kwargs))
@@ -294,5 +331,6 @@ def smart_plot(*args, **kwargs):
         is_3D = any([s.is_3D for s in series])
         kwargs["backend"] = THREE_D_B if is_3D else TWO_D_B
     plots = Plot(*series, **kwargs)
-    plots.show()
+    if show:
+        plots.show()
     return plots

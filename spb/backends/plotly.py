@@ -2,7 +2,6 @@ from spb.defaults import plotly_theme
 from spb.backends.base_backend import Plot
 from spb.utils import get_seeds_points
 import plotly.graph_objects as go
-import plotly.express as px
 from plotly.figure_factory import create_quiver, create_streamline
 from mergedeep import merge
 import itertools
@@ -96,6 +95,14 @@ class PlotlyBackend(Plot):
     in the following page:
     https://plotly.com/python/static-image-export/
     """
+    # The following colors corresponds to the discret color map 
+    # px.colors.qualitative.Plotly. Thei are here in order to avoid the 
+    # following statement: import plotly.express as px
+    # which happens to slow down the loading phase.
+    colorloop = [
+        '#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A',
+        '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'
+    ]
     # a selection of color maps to be used in 3D surfaces, contour plots.
     # NOTE: if you change any of these, make sure to also change 
     # wireframe_colors.
@@ -136,7 +143,7 @@ class PlotlyBackend(Plot):
         self._update_layout()
     
     def _init_cyclers(self):
-        self._cl = itertools.cycle(px.colors.qualitative.Plotly)
+        self._cl = itertools.cycle(self.colorloop)
         self._cm = itertools.cycle(self.colormaps)
         self._wfcm = itertools.cycle(self.wireframe_colors)
         self._qc = itertools.cycle(self.quivers_colors)

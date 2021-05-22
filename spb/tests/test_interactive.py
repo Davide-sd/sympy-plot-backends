@@ -100,7 +100,6 @@ def test_iplot():
     # c1 wraps the controls, c2 wraps the plot
     c1, c2 = t.show().get_root().children
     gridbox = c1.children[0].children[0]
-    print(type(gridbox.children[0][0]))
     assert isinstance(gridbox.children[0][0], bm.Slider)
     assert isinstance(gridbox.children[1][0].children[1], bm.Slider)
     assert isinstance(gridbox.children[2][0], bm.Slider)
