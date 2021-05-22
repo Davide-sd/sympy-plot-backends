@@ -392,7 +392,9 @@ class PlotlyBackend(Plot):
                                 **merge({}, qkw, quiver_kw))
                         )
             else:
-                raise NotImplementedError
+                raise NotImplementedError(
+                    "{} is not supported by {}".format(type(s), type(self).__name__)
+                )
     
     def _update_interactive(self, params):
         for i, s in enumerate(self.series):

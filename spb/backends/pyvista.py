@@ -122,8 +122,9 @@ class PyvistaBackend(Plot):
                     args["cmap"] = next(self._iter_colormaps)
                 self._fig.add_mesh(surf, **args)
             else:
-                raise ValueError(
-                    "Pyvista only support 3D plots."
+                raise NotImplementedError(
+                    "{} is not supported by {}\n".format(type(s), type(self).__name__) +
+                    "Pyvista only supports 3D plots."
                 )
     
     def _polyline_from_points(self, points):

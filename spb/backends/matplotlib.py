@@ -206,9 +206,8 @@ class MatplotlibBackend(Plot):
                         ax.contourf(xarray, yarray, zarray, cmap=colormap)
             else:
                 raise NotImplementedError(
-                    '{} is not supported in the sympy plotting module '
-                    'with matplotlib backend. Please report this issue.'
-                    .format(ax))
+                    "{} is not supported by {}\n".format(type(s), type(self).__name__)
+                )
 
         Axes3D = mpl_toolkits.mplot3d.Axes3D
         if not isinstance(ax, Axes3D):

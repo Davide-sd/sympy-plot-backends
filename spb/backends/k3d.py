@@ -315,8 +315,9 @@ class K3DBackend(Plot):
                 )
                 self._fig += vec
             else:
-                raise ValueError(
-                    "K3D-Jupyter only support 3D plots."
+                raise NotImplementedError(
+                    "{} is not supported by {}\n".format(type(s), type(self).__name__) +
+                    "K3D-Jupyter only supports 3D plots."
                 )
         
         xl = self.xlabel if self.xlabel else "x"

@@ -381,8 +381,9 @@ class BokehBackend(Plot):
                         **merge({}, qkw, quiver_kw))
                     self._fig.add_glyph(source, glyph)
             else:
-                raise ValueError(
-                    "Bokeh only support 2D plots."
+                raise NotImplementedError(
+                    "{} is not supported by {}\n".format(type(s), type(self).__name__) +
+                    "Bokeh only supports 2D plots."
                 )
 
         if len(self._fig.legend) > 0:

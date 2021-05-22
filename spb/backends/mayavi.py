@@ -73,8 +73,9 @@ class MayaviBackend(Plot):
                     representation = "wireframe" if self._kwargs.get("wireframe", False) else "surface"
                 )
             else:
-                raise ValueError(
-                    "Mayavi only support 3D plots."
+                raise NotImplementedError(
+                    "{} is not supported by {}\n".format(type(s), type(self).__name__) +
+                    "Mayavi only supports 3D plots."
                 )
             
             if self.axis:
