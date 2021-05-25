@@ -522,7 +522,6 @@ class PlotlyBackend(Plot):
         )
     
     def show(self):
-        self._process_series(self._series)
         self._fig.show()
 
     def save(self, path, **kwargs):

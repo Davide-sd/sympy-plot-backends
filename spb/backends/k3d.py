@@ -125,6 +125,7 @@ class K3DBackend(Plot):
     def _process_series(self, series):
         self._init_cyclers()
         self._fig.auto_rendering = False
+        print("_process_series", len(self._fig.objects))
         # clear data
         for o in self._fig.objects:
             self._fig.remove_class(o)
@@ -350,6 +351,7 @@ class K3DBackend(Plot):
             self._fig += k3d.text2d(self.title, 
                  position=[0.025, 0.015], color=0, size=1, label_box=False)
         self._fig.auto_rendering = True
+        print("\t", len(self._fig.objects))
     
     def _update_interactive(self, params):
         for i, s in enumerate(self.series):
@@ -381,7 +383,7 @@ class K3DBackend(Plot):
                     self.fig.objects[i].vectors = vectors
 
     def show(self):
-        self._process_series(self._series)
+        # self._process_series(self._series)
         self.plot_shown = True
         self._fig.display()
     

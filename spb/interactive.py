@@ -258,8 +258,6 @@ class InteractivePlot(DynamicParam, PanelLayout):
         # create the plot
         Backend = fig_kw.pop("backend", THREE_D_B if is_3D else TWO_D_B)
         self._backend = Backend(*series, **fig_kw)
-        # add the series to the plot
-        self._backend._process_series(self._backend._series)
     
     def _create_series(self, *args, **kwargs):
         # read the parameters to generate the initial numerical data for
