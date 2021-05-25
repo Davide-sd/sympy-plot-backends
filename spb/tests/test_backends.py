@@ -413,8 +413,6 @@ def test_K3DBackend():
     f = p.fig
     assert len(f.objects) == 1
     assert isinstance(f.objects[0], Vectors)
-    print(f.objects[0].colors)
-    print(p._kwargs)
     assert all([c == 16711680 for c in f.objects[0].colors])
 
     p = p10(KBchild1, stream_kw=dict(color=16711680))
