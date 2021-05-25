@@ -171,7 +171,9 @@ class PlotlyBackend(Plot):
                 line_kw = self._kwargs.get("line_kw", dict())
                 if s.is_parametric:
                     u = s.discretized_var
+                    # TODO: show the colorbar with the u parameter
                     lkw = dict(
+                        line_color = next(self._cl),
                         mode = "lines+markers",
                         marker = dict(
                             color = u,
@@ -185,8 +187,13 @@ class PlotlyBackend(Plot):
                         )
                     )
                 else:
+                    lkw = dict(
+                        mode = "lines",
+                        line_color = next(self._cl)
+                    )
                     self._fig.add_trace(
-                        go.Scatter(x = x, y = y, name = s.label, **line_kw)
+                        go.Scatter(x = x, y = y, name = s.label, 
+                            **merge({}, lkw, line_kw))
                     )
             elif s.is_3Dline:
                 x, y, z = s.get_data()
@@ -218,8 +225,8 @@ class PlotlyBackend(Plot):
                 # create a solid color to be used when self._use_cm=False
                 col = next(self._cl)
                 colorscale = [
-                    [0, 'rgb' + str(col)],
-                    [1, 'rgb' + str(col)]
+                    [0, col],
+                    [1, col]
                 ]
                 skw = dict(
                     showscale = self.legend and show_3D_colorscales,
@@ -290,11 +297,17 @@ class PlotlyBackend(Plot):
                 if len(points) == 2:
                     # interval math plotting
                     x, y, pixels = self._get_pixels(s, points[0])
-                    self._fig.add_trace(go.Heatmap(x = x, y = y, z = pixels,
+                    ckw = dict(
                         colorscale = [
                             [0, "rgba(0,0,0,0)"],
                             [1, next(self._cl)],
-                        ], showscale = False, name = s.label))
+                        ],
+                        showscale = False,
+                        name = s.label
+                    )
+                    contour_kw = self._kwargs.get("contour_kw", dict())
+                    self._fig.add_trace(go.Heatmap(x = x, y = y, z = pixels,
+                        **merge({}, ckw, contour_kw)))
                 else:
                     x, y, z, plot_type = points
                     zf = z.flatten()

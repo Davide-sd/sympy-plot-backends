@@ -26,10 +26,12 @@ class K3DBackend(Plot):
             A dictionary of keywords/values which is passed to K3D's line
             functions to customize the appearance. Default to:
             ``line_kw = dict(width=0.1, shader="mesh")``
+            Set `use_cm=False` to switch to a solid color.
         
         quiver_kw : dict
             A dictionary to customize the apppearance of quivers. Default to:
-            ``quiver_kw = dict(scale = 0.5)``
+            ``quiver_kw = dict(scale = 1)``.
+            Set `use_cm=False` to switch to a solid color.
         
         show_label : boolean
             Show/hide labels of the expressions. Default to False (labels not
@@ -40,14 +42,11 @@ class K3DBackend(Plot):
             Default to:
             ``stream_kw = dict( width=0.1, shader='mesh' )``
             Refer to k3d.line for more options.
+            Set `use_cm=False` to switch to a solid color.
         
         use_cm : boolean
             If True, apply a color map to the meshes/surface. If False, solid
             colors will be used instead. Default to True.
-        
-        wireframe : boolean
-            Visualize the wireframe lines instead of surface' colors.
-            Default to False.
     """
 
     # TODO: better selection of colormaps
@@ -76,8 +75,7 @@ class K3DBackend(Plot):
             raise ValueError(
                     "Sorry, K3D backend only works within Jupyter Notebook")
 
-        self._cm = itertools.cycle(self.colormaps)
-        self._qcm = itertools.cycle(self.quivers_colormaps)
+        self._init_cyclers()
 
         self._fig = k3d.plot(
             grid_visible = self.axis,
@@ -88,6 +86,7 @@ class K3DBackend(Plot):
             warnings.warn("K3D-Jupyter doesn't support log scales. We will " +
                          "continue with linear scales.")
         self.plot_shown = False
+        self._process_series(self._series)
 
     @staticmethod
     def _int_to_rgb(RGBint):
@@ -110,12 +109,13 @@ class K3DBackend(Plot):
         R, G, B = RGB
         return R * 256**2 + G * 256 + B
     
-    def _convert_to_int(self, color):
+    @classmethod
+    def _convert_to_int(cls, color):
         """ Convert the provided RGB tuple with values from 0 to 1 to an integer
         number.
         """
         color = [int(c * 255) for c in color]
-        return self._rgb_to_int(color)
+        return cls._rgb_to_int(color)
 
     def _init_cyclers(self):
         self._cl = itertools.cycle(self.colorloop)
@@ -166,13 +166,15 @@ class K3DBackend(Plot):
                     name = s.label if self._kwargs.get("show_label", False) else None,
                     side = "double",
                     flat_shading = False,
-                    wireframe = self._kwargs.get("wireframe", False),
+                    wireframe = False,
                     color = self._convert_to_int(next(self._cl)),
                 )
                 if self._use_cm:
                     a["color_map"] = next(self._cm)
                     a["attribute"] = z
-                surf = k3d.mesh(vertices, indices, **a)
+                surface_kw = self._kwargs.get("surface_kw", dict())
+                surf = k3d.mesh(vertices, indices, 
+                        **merge({}, a, surface_kw))
                     
                 self._fig += surf
             
@@ -276,12 +278,7 @@ class K3DBackend(Plot):
 
                     lines.append(np.array(l))
                     lines_attributes.append(np.array(v))
-                
-                skw = dict(
-                    width=0.1, color_map=self._qcm, color_range=[min_mag, max_mag],
-                    shader='mesh', compression_level=9
-                )
-                
+
                 count = sum([len(l) for l in lines])
                 vertices = np.nan * np.zeros((count + (len(lines) - 1), 3))
                 attributes = np.zeros(count + (len(lines) - 1))
@@ -291,16 +288,28 @@ class K3DBackend(Plot):
                     attributes[c : c + len(l)] = a
                     if k < len(lines) - 1:
                         c = c + len(l) + 1
-                self._fig +=k3d.line(
+
+                skw = dict( width=0.1, shader='mesh', compression_level=9 )
+                if self._use_cm and ("color" not in stream_kw.keys()):
+                    skw["color_map"] = next(self._qcm)
+                    skw["color_range"] = [min_mag, max_mag]
+                    skw["attribute"] = attributes
+                else:
+                    col = stream_kw.pop("color", next(self._cl))
+                    if not isinstance(col, int):
+                        col = self._convert_to_int(col)
+                    stream_kw["color"] = col
+
+                self._fig += k3d.line(
                     vertices.astype(np.float32),
-                    attribute=attributes, **merge({}, skw, stream_kw)
+                    **merge({}, skw, stream_kw)
                 )
             elif s.is_3Dvector:
                 xx, yy, zz, uu, vv, ww = s.get_data()
                 xx, yy, zz, uu, vv, ww = [t.flatten().astype(np.float32) for t
                     in [xx, yy, zz, uu, vv, ww]]
                 # default values
-                qkw = dict(scale = 0.5)
+                qkw = dict(scale = 1)
                 # user provided values
                 quiver_kw = self._kwargs.get("quiver_kw", dict())
                 qkw = merge(qkw, quiver_kw)
@@ -308,11 +317,13 @@ class K3DBackend(Plot):
                 magnitude = np.sqrt(uu**2 + vv**2 + ww**2)
                 vectors = np.array((uu, vv, ww)).T * scale
                 origins = np.array((xx, yy, zz)).T
-                if self._use_cm:
+                if self._use_cm and ("color" not in quiver_kw.keys()):
                     colors = k3d.helpers.map_colors(magnitude, next(self._qcm), [])
                 else:
-                    c = self._convert_to_int(next(self._cl))
-                    colors = c * np.ones(len(magnitude))
+                    col = quiver_kw.get("color", next(self._cl))
+                    if not isinstance(col, int):
+                        col = self._convert_to_int(col)
+                    colors = col * np.ones(len(magnitude))
                 vec_colors = np.zeros(2 * len(colors))
                 for i, c in enumerate(colors):
                     vec_colors[2 * i] = c

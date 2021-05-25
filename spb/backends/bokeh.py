@@ -284,6 +284,8 @@ class BokehBackend(Plot):
         )
         self._fig.axis.visible = self.axis
         self._fig.grid.visible = self.axis
+        
+        self._process_series(self._series)
     
     def _init_cyclers(self):
         # infinity cycler over 10 colors
@@ -293,8 +295,10 @@ class BokehBackend(Plot):
 
     def _process_series(self, series):
         self._init_cyclers()
-        # clear figure
+        # clear figure. need to clear both the renderers as well as the colorbars
+        # which are added to the right side.
         self._fig.renderers = []
+        self._fig.right = []
 
         for i, s in enumerate(series):
             if s.is_2Dline:
