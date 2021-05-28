@@ -8,7 +8,7 @@
 |    xscale     |     Y     |   Y   |    Y   |    N   |  N  |
 |    yscale     |     Y     |   Y   |    Y   |    N   |  N  |
 |    zscale     |     Y     |   N   |    Y   |    N   |  N  |
-|     axis      |     Y     |   Y   |    Y   |    Y   |  Y  |
+|     grid      |     Y     |   Y   |    Y   |    Y   |  Y  |
 |    aspect     |     Y     |   N   |    N   |    N   |  N  |
 |   autoscale   |     Y     |   N   |    N   |    N   |  N  |
 |    margin     |     Y     |   N   |    N   |    N   |  N  |
@@ -95,7 +95,7 @@ class Plot:
     - legend : bool
     - xscale : {'linear', 'log'}
     - yscale : {'linear', 'log'}
-    - axis : bool
+    - grid : bool
     - axis_center : tuple of two floats or {'center', 'auto'}
     - xlim : tuple of two floats
     - ylim : tuple of two floats
@@ -172,7 +172,7 @@ class Plot:
         self.zlabel = kwargs.get("zlabel", None)
         self.aspect = kwargs.get("aspect", "auto")
         self.axis_center = kwargs.get("axis_center", "auto")
-        self.axis = kwargs.get("axis", True)
+        self.grid = kwargs.get("grid", True)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")

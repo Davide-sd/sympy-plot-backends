@@ -72,7 +72,7 @@ class UnsupportedSeries(BaseSeries):
 def test_common_keywords():
     # TODO: here I didn't test axis_center, autoscale, margin
     kw = dict(title="a", xlabel="x", ylabel="y", zlabel="z", aspect="equal",
-        axis=False, xscale="log", yscale="log", zscale="log", legend=True,
+        grid=False, xscale="log", yscale="log", zscale="log", legend=True,
         xlim=(-1, 1), ylim=(-2, 2), zlim=(-3, 3), size=(5, 10), backend=BB)
     p = Plot(**kw)
     assert p.title == "a"
@@ -80,7 +80,7 @@ def test_common_keywords():
     assert p.ylabel == "y"
     assert p.zlabel == "z"
     assert p.aspect == "equal"
-    assert p.axis == False
+    assert p.grid == False
     assert p.xscale == "log"
     assert p.yscale == "log"
     assert p.zscale == "log"

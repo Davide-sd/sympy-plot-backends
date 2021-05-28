@@ -82,7 +82,7 @@ class MayaviBackend(Plot):
                     "Mayavi only supports 3D plots."
                 )
             
-            if self.axis:
+            if self.grid:
                 mlab.axes(xlabel="", ylabel="", zlabel="",
                      x_axis_visibility=True, y_axis_visibility=True, z_axis_visibility=True)
                 mlab.outline()

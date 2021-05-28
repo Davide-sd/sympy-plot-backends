@@ -282,8 +282,8 @@ class BokehBackend(Plot):
             tooltips = TOOLTIPS,
             match_aspect = True if self.aspect == "equal" else False
         )
-        self._fig.axis.visible = self.axis
-        self._fig.grid.visible = self.axis
+        self._fig.axis.visible = self.grid
+        self._fig.grid.visible = self.grid
         
         self._process_series(self._series)
     

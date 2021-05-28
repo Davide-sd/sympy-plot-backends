@@ -78,7 +78,7 @@ class K3DBackend(Plot):
         self._init_cyclers()
 
         self._fig = k3d.plot(
-            grid_visible = self.axis,
+            grid_visible = self.grid,
             menu_visibility = True,
             background_color = self._kwargs.get("bg_color", k3d_bg_color)
         )

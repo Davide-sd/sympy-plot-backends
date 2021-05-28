@@ -471,18 +471,18 @@ class PlotlyBackend(Plot):
                 title = "" if not self.xlabel else self.xlabel,
                 range = None if not self.xlim else self.xlim,
                 type = self.xscale,
-                showgrid = self.axis, # thin lines in the background
-                zeroline = self.axis, # thick line at x=0
-                visible = self.axis,  # numbers below
+                showgrid = self.grid, # thin lines in the background
+                zeroline = self.grid, # thick line at x=0
+                visible = self.grid,  # numbers below
                 constrain = 'domain'
             ),
             yaxis = dict(
                 title = "" if not self.ylabel else self.ylabel,
                 range = None if not self.ylim else self.ylim,
                 type = self.yscale,
-                showgrid = self.axis, # thin lines in the background
-                zeroline = self.axis, # thick line at x=0
-                visible = self.axis,  # numbers below,
+                showgrid = self.grid, # thin lines in the background
+                zeroline = self.grid, # thick line at x=0
+                visible = self.grid,  # numbers below,
                 scaleanchor = "x" if self.aspect == "equal" else None
             ),
             margin = dict(
@@ -496,25 +496,25 @@ class PlotlyBackend(Plot):
                     title = "" if not self.xlabel else self.xlabel,
                     range = None if not self.xlim else self.xlim,
                     type = self.xscale,
-                    showgrid = self.axis, # thin lines in the background
-                    zeroline = self.axis, # thick line at x=0
-                    visible = self.axis,  # numbers below
+                    showgrid = self.grid, # thin lines in the background
+                    zeroline = self.grid, # thick line at x=0
+                    visible = self.grid,  # numbers below
                 ),
                 yaxis = dict(
                     title = "" if not self.ylabel else self.ylabel,
                     range = None if not self.ylim else self.ylim,
                     type = self.yscale,
-                    showgrid = self.axis, # thin lines in the background
-                    zeroline = self.axis, # thick line at x=0
-                    visible = self.axis,  # numbers below
+                    showgrid = self.grid, # thin lines in the background
+                    zeroline = self.grid, # thick line at x=0
+                    visible = self.grid,  # numbers below
                 ),
                 zaxis = dict(
                     title = "" if not self.zlabel else self.zlabel,
                     range = None if not self.zlim else self.zlim,
                     type = self.zscale,
-                    showgrid = self.axis, # thin lines in the background
-                    zeroline = self.axis, # thick line at x=0
-                    visible = self.axis,  # numbers below
+                    showgrid = self.grid, # thin lines in the background
+                    zeroline = self.grid, # thick line at x=0
+                    visible = self.grid,  # numbers below
                 ),
                 aspectmode = (self.aspect if self.aspect != "equal"
                                 else "auto")
