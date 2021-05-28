@@ -61,11 +61,11 @@ def compute_streamlines(x, y, u, v, density=1.0):
 
     def value_at(a, xi, yi):
         if type(xi) == np.ndarray:
-            x = xi.astype(np.int)
-            y = yi.astype(np.int)
+            x = xi.astype(int)
+            y = yi.astype(int)
         else:
-            x = np.int(xi)
-            y = np.int(yi)
+            x = int(xi)
+            y = int(yi)
         a00 = a[y,x]
         a01 = a[y,x+1]
         a10 = a[y+1,x]
