@@ -2,7 +2,6 @@ import numpy as np
 import param
 import panel as pn
 from sympy import latex, Tuple
-from spb.backends.k3d import KB
 from spb.backends.base_backend import Plot
 from spb.series import InteractiveSeries
 from spb.utils import _plot_sympify, _unpack_args
@@ -217,6 +216,15 @@ class PanelLayout:
     def view(self):
         params = self.read_parameters()
         self._backend._update_interactive(params)
+        # TODO:
+        # 1. for some reason, panel is going to set width=0 if K3D-Jupyter.
+        # Temporary workaround: create a Pane with a default width.
+        # Long term solution: create a PR on panel to create a K3DPane so that
+        # panel will automatically deal with K3D, in the same way it does with
+        # Bokeh, Plotly, Matplotlib, ...
+        # 2. If the following import statement was located at the beginning of
+        # the file, there would be a circular import.
+        from spb.backends.k3d import KB
         if isinstance(self._backend, KB):
             return pn.pane.Pane(self._backend.fig, width=800)
         else:

@@ -1,6 +1,6 @@
 from sympy import (cos, Symbol, symbols, Eq, sin, re, And, Or, exp, I,
                    tan, pi)
-from spb.functions import plot_implicit, set_matplotlib_backend
+from spb.functions import plot_implicit
 from spb.backends.matplotlib import unset_show
 from tempfile import NamedTemporaryFile, mkdtemp
 from sympy.testing.pytest import skip, warns
@@ -9,7 +9,12 @@ from sympy.testing.tmpfiles import TmpFileManager
 
 import os
 
-set_matplotlib_backend()
+# use MatplotlibBackend for the tests
+from spb.defaults import set_defaults, cfg
+cfg["backend_2D"] = "matplotlib"
+cfg["backend_3D"] = "matplotlib"
+set_defaults(cfg)
+
 #Set plots not to show
 unset_show()
 
