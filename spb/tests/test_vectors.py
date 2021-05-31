@@ -1,10 +1,12 @@
-from sympy import symbols, Matrix, Tuple
+from sympy import symbols, Matrix, Tuple, cos
+from sympy.geometry import Plane
 from sympy.vector import CoordSys3D
 
 from spb.vectors import _preprocess,_build_series, vector_plot
 from spb.utils import _plot_sympify, _split_vector
-from spb.series import Vector2DSeries, Vector3DSeries
+from spb.series import Vector2DSeries, Vector3DSeries, SliceVector3DSeries
 
+import numpy as np
 from pytest import raises
 
 def pw(*args):
@@ -166,6 +168,78 @@ def test_build_series():
     args = pw(Matrix([x + y, z, a + x]), (x, -5, 5), "test")[0]
     raises(ValueError, 
         lambda: _build_series(args[0], *args[1:-1], label=args[-1]))
+    
+
+    # Test for 3D vector slices
+    # Single slicing plane
+    _, _, s = _build_series(v2, Tuple(x, -5, 5), Tuple(y, -4, 4),
+        Tuple(z, -3, 3), label="test", slice=Plane((1, 2, 3), (1, 0, 0)),
+        n1=5, n2=6, n3=7)
+    assert isinstance(s, (tuple, list))
+    assert len(s) == 1
+    assert isinstance(s[0], SliceVector3DSeries)
+    assert s[0].is_slice
+    xx, yy, zz, uu, vv, ww = s[0].get_data()
+    assert all([t.shape == (6, 7) for t in [xx, yy, zz, uu, vv, ww]])
+    # normal vector of the plane is directed along x-axis. Same value for each
+    # x-coordinate.
+    assert np.all(xx == 1)
+    assert (np.min(yy.flatten()) == -4) and (np.max(yy.flatten()) == 4)
+    assert (np.min(zz.flatten()) == -3) and (np.max(zz.flatten()) == 3)
+
+    # multiple slicing planes
+    _, _, s = _build_series(v2, Tuple(x, -5, 5), Tuple(y, -4, 4),
+        Tuple(z, -3, 3), label="test",
+        slice=[
+            Plane((1, 2, 3), (1, 0, 0)),
+            Plane((1, 2, 3), (0, 1, 0)),
+            Plane((1, 2, 3), (0, 0, 1))
+        ],
+        n1=5, n2=6, n3=7)
+    assert isinstance(s, (tuple, list))
+    assert len(s) == 3
+    assert all([isinstance(t, SliceVector3DSeries) for t in s])
+    xx1, yy1, zz1, uu1, vv1, ww1 = s[0].get_data()
+    xx2, yy2, zz2, uu2, vv2, ww2 = s[1].get_data()
+    xx3, yy3, zz3, uu3, vv3, ww3 = s[2].get_data()
+    assert all([t.shape == (6, 7) for t in [xx1, yy1, zz1, uu1, vv1, ww1]])
+    assert all([t.shape == (7, 5) for t in [xx2, yy2, zz2, uu2, vv2, ww2]])
+    assert all([t.shape == (6, 5) for t in [xx3, yy3, zz3, uu3, vv3, ww3]])
+    assert np.all(xx1 == 1)
+    assert (np.min(yy1.flatten()) == -4) and (np.max(yy1.flatten()) == 4)
+    assert (np.min(zz1.flatten()) == -3) and (np.max(zz1.flatten()) == 3)
+    assert np.all(yy2 == 2)
+    assert (np.min(xx2.flatten()) == -5) and (np.max(xx2.flatten()) == 5)
+    assert (np.min(zz2.flatten()) == -3) and (np.max(zz2.flatten()) == 3)
+    assert np.all(zz3 == 3)
+    assert (np.min(xx3.flatten()) == -5) and (np.max(xx3.flatten()) == 5)
+    assert (np.min(yy3.flatten()) == -4) and (np.max(yy3.flatten()) == 4)
+
+    # slicing expression (surface)
+    _, _, s = _build_series(v2, Tuple(x, -5, 5), Tuple(y, -4, 4),
+        Tuple(z, -3, 3), label="test", slice=cos(x**2 + y**2),
+        n1=5, n2=6, n3=7)
+    assert isinstance(s, (tuple, list))
+    assert len(s) == 1
+    assert isinstance(s[0], SliceVector3DSeries)
+    assert s[0].is_slice
+    xx, yy, zz, uu, vv, ww = s[0].get_data()
+    assert all([t.shape == (6, 5) for t in [xx, yy, zz, uu, vv, ww]])
+    # normal vector of the plane is directed along x-axis. Same value for each
+    # x-coordinate.
+    assert (np.min(xx.flatten()) == -5) and (np.max(xx.flatten()) == 5)
+    assert (np.min(yy.flatten()) == -4) and (np.max(yy.flatten()) == 4)
+
+    # must fail because slice is not an Expr or a Plane or a list of Planes
+    raises(ValueError, lambda: _build_series(v2, Tuple(x, -5, 5), 
+        Tuple(y, -4, 4), Tuple(z, -3, 3), label="test", n1=5, n2=6, n3=7,
+        slice=[-1]))
+    raises(ValueError, lambda: _build_series(v2, Tuple(x, -5, 5), 
+        Tuple(y, -4, 4), Tuple(z, -3, 3), label="test", n1=5, n2=6, n3=7,
+        slice=0))
+    raises(ValueError, lambda: _build_series(v2, Tuple(x, -5, 5), 
+        Tuple(y, -4, 4), Tuple(z, -3, 3), label="test", n1=5, n2=6, n3=7,
+        slice="test"))
 
 def test_vector_plot():
     x, y, z = symbols("x:z")

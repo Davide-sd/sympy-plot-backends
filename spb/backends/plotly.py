@@ -388,6 +388,7 @@ class PlotlyBackend(Plot):
                     else:
                         # default values
                         qkw = dict(
+                            showscale = (not s.is_slice) or self.legend,
                             colorscale = next(self._cm),
                             sizemode = "absolute", 
                             sizeref = 40,
