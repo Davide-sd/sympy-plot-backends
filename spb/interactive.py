@@ -263,6 +263,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         # read the parameters to generate the initial numerical data for
         # the interactive series
         kwargs["params"] = self.read_parameters()
+        _slice = kwargs.get("slice", None)
         series = []
         for a in args:
             # with interactive-parametric plots, vectors could have more free
@@ -271,7 +272,15 @@ class InteractivePlot(DynamicParam, PanelLayout):
             # for parameters. This means the user must provided all the necessary
             # ranges.
             exprs, ranges, label = _unpack_args(*a, matrices=True, fill_ranges=False)
-            series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
+            if isinstance(_slice, (tuple, list)):
+                # Sliced 3D vector field: each slice creates a unique series
+                kwargs2 = kwargs.copy()
+                kwargs2.pop("slice")
+                for s in _slice:
+                    kwargs2["slice"] = s
+                    series.append(InteractiveSeries(exprs, ranges, label, **kwargs2))
+            else:
+                series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
         return series
     
     @property

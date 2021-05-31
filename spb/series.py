@@ -1045,10 +1045,12 @@ class InteractiveSeries(BaseSeries):
             self.is_parametric = True
         elif (nexpr == 2) and (npar == 2):
             self.is_vector = True
+            self.is_slice = False
             self.is_2Dvector = True
         elif (nexpr == 3) and (npar == 3):
             self.is_vector = True
             self.is_3Dvector = True
+            self.is_slice = False
 
         # from the expression's free symbols, remove the ones used in
         # the parameters and the ranges
@@ -1091,9 +1093,21 @@ class InteractiveSeries(BaseSeries):
             # 2D or 3D lines
             self.ranges = {k: v for k, v in zip(discr_symbols, discretizations)}
         else:
-            # surfaces, needs mesh grids
-            meshes = np.meshgrid(*discretizations)
-            self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
+            _slice = kwargs.get("slice", None)
+            if _slice is not None:
+                # sliced 3D vector fields: the discretizations are provided by
+                # the plane or the surface
+                self.is_slice = True
+                kwargs2 = kwargs.copy()
+                kwargs2 = _set_discretization_points(kwargs2, SliceVector3DSeries)
+                slice_surf = GeometricPlaneSeries(
+                    _slice, *ranges, "", **kwargs2)
+                self.ranges = {k: v for k, v in
+                    zip(discr_symbols, slice_surf.get_data())}
+            else:
+                # surfaces: needs mesh grids
+                meshes = np.meshgrid(*discretizations)
+                self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
         
         # this will be used in update_data
         self._discret_shape = discretizations[0].shape
@@ -1144,7 +1158,7 @@ class InteractiveSeries(BaseSeries):
         
     def get_data(self):
         # if the expression depends only on the ranges, the user can call get_data
-        # directly without calling update_dat
+        # directly without calling update_data
         if (self.data is None) and (len(self.signature) == len(self.ranges)):
             self.update_data(dict())
         if self.data is None:
