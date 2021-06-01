@@ -228,9 +228,11 @@ def vector_plot(*args, show=True, **kwargs):
         kwargs["aspect"] = "equal"
 
     series = []
+    all_ranges = []
     for a in args:
         split_expr, ranges, s = _build_series(a[0], *a[1:-1], label=a[-1], **kwargs)
         series.append(s)
+        all_ranges.append(ranges)
     
     # add a scalar series only on 2D plots
     if all([isinstance(s, Vector2DSeries) for s in series]):
@@ -272,11 +274,26 @@ def vector_plot(*args, show=True, **kwargs):
             #         "Vector free symbols: {}\n".format(fs) + 
             #         "Scalar field free symbols: {}".format(scalar_field.free_symbols) 
             #     )
+
+            # plot the scalar field over the entire region covered by all
+            # vector fields
+            _minx, _maxx = float("inf"), -float("inf")
+            _miny, _maxy = float("inf"), -float("inf")
+            for r in all_ranges:
+                _xr, _yr = r
+                if _xr[1] < _minx:  _minx = _xr[1]
+                if _xr[2] > _maxx:  _maxx = _xr[2]
+                if _yr[1] < _miny:  _miny = _yr[1]
+                if _yr[2] > _maxy:  _maxy = _yr[2]
+            cranges = [
+                Tuple(all_ranges[-1][0][0], _minx, _maxx),
+                Tuple(all_ranges[-1][1][0], _miny, _maxy)
+            ]
             nc = kwargs.pop("nc", 100)
             cs_kwargs = kwargs.copy()
             cs_kwargs["n1"] = nc
             cs_kwargs["n2"] = nc
-            cs = ContourSeries(scalar_field, *ranges, scalar_label, **cs_kwargs)
+            cs = ContourSeries(scalar_field, *cranges, scalar_label, **cs_kwargs)
             series = [cs] + series
     elif all([isinstance(s, Vector3DSeries)  for s in series]):
         backend = kwargs.pop("backend", THREE_D_B)
