@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from sympy import latex
 from sympy.external import import_module
 from spb.backends.base_backend import Plot
 import matplotlib
@@ -6,11 +7,20 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap
+import mpl_toolkits
+import numpy as np
+from mergedeep import merge
+import itertools
+
+"""
+TODO:
+    1. Besides the axis on the center of the image, there are also a couple of
+        axis with ticks on the bottom/right sides. Delete them?
+"""
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
 _show = True
-
 
 def unset_show():
     """
@@ -40,14 +50,70 @@ def _matplotlib_list(interval_list):
         ylist.extend([None, None, None, None])
     return xlist, ylist
 
-# Don't have to check for the success of importing matplotlib in each case;
-# we will only be using this backend if we can successfully import matploblib
+
 class MatplotlibBackend(Plot):
-    """ This class implements the functionalities to use Matplotlib with SymPy
-    plotting functions.
+    """ A backend for plotting SymPy's symbolic expressions using Matplotlib.
+
+    Keyword Arguments
+    =================
+
+        aspect : str or tuple
+            Default to "auto". Possible values:
+                * "equal": sets equal spacing on the axis of a 2D plot.
+                * tuple containing 2 float numbers
+        
+        axis_center : str or None
+            Set the location of the intersection between the horizontal and
+            vertical axis (only works for 2D plots). Possible values:
+                "center": center of the current plot area.
+                "auto": an algorithm will choose an appropriate value.
+                tuple of two float numbers to specify the interested center.
+                None: standard Matplotlib layout with vertical axis on the left,
+                    horizontal axis on the bottom and a grid.
+            Default to "auto".
+        
+        contour_kw : dict
+            A dictionary of keywords/values which is passed to Matplotlib's
+            contourf function to customize the appearance.
+            Refer to the following web page to learn more about customization:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
+        
+        line_kw : dict
+            A dictionary of keywords/values which is passed to Matplotlib's
+            plot functions to customize the appearance of the lines.
+            Refer to the following web pages to learn more about customization:
+                If the plot is using solid colors:
+                https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+                If the plot is using color maps:
+                https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+        
+        quiver_kw : dict
+            A dictionary of keywords/values which is passed to Matplotlib's
+            quivers function to customize the appearance.
+            Refer to this documentation page:
+            https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
+
+        surface_kw : dict
+            A dictionary of keywords/values which is passed to Matplotlib's
+            surface function to customize the appearance.
+            Refer to this documentation page:
+            https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
+
+        stream_kw : dict
+            A dictionary of keywords/values which is passed to Matplotlib's
+            streamplot function to customize the appearance.
+            For 2D vector fields, refer to this documentation page:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+        
+        use_cm : boolean
+            If True, apply a color map to the meshes/surface. If False, solid
+            colors will be used instead. Default to True.
     """
-    # this backend supports PlotGrid
-    support_plotgrid = True
+
+    colormaps = [
+        cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
+        cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer
+    ]
 
     def __new__(cls, *args, **kwargs):
         # Since Plot has its __new__ method, this will prevent infinite
@@ -57,48 +123,37 @@ class MatplotlibBackend(Plot):
     def __init__(self, *args, **kwargs):
         # set global options like title, axis labels, ...
         super().__init__(*args, **kwargs)
-
-        # Backend specific functionalities
-        # TODO: we should remove these!!!!!!!
-        self.annotations = kwargs.get("annotations", None)
-        self.markers = kwargs.get("markers", None)
-        self.rectangles = kwargs.get("rectangles", None)
-        self.fill = kwargs.get("fill", None)
+    
+    def _init_cyclers(self):
+        self._cl = itertools.cycle(self.colorloop)
+        self._cm = itertools.cycle(self.colormaps)
     
     def _create_figure(self):
+        is_3Dvector = any([s.is_3Dvector for s in self.series])
         aspect = self.aspect
         if aspect != 'auto':
-            aspect = float(aspect[1]) / aspect[0]
+            if aspect == "equal" and is_3Dvector:
+                # vector_plot uses an aspect="equal" by default. In that case
+                # we would get:
+                # NotImplementedError: Axes3D currently only supports the aspect
+                # argument 'auto'. You passed in 1.0.
+                # This fixes it
+                aspect = "auto"
+            elif aspect == "equal":
+                aspect = 1.0
+            else:
+                aspect = float(aspect[1]) / aspect[0]
 
-        if (self.nrows == 1) and (self.ncols == 1):
-            # ordinary plot
-            series_list = [self.series]
-        else:
-            # PlotGrid
-            series_list = self.series
-
-        self.ax = []
         self._fig = plt.figure(figsize=self.size)
+        is_3D = [s.is_3D for s in self.series]
+        if any(is_3D) and (not all(is_3D)):
+            raise ValueError('The matplotlib backend can not mix 2D and 3D.')
 
-        for i, series in enumerate(series_list):
-            are_3D = [s.is_3D for s in series]
-
-            if any(are_3D) and not all(are_3D):
-                raise ValueError('The matplotlib backend can not mix 2D and 3D.')
-            elif all(are_3D):
-                self.ax.append(self._fig.add_subplot(self.nrows, self.ncols,
-                        i + 1, projection='3d', aspect=aspect))
-
-            elif not any(are_3D):
-                self.ax.append(self._fig.add_subplot(self.nrows, self.ncols,
-                        i + 1, aspect=aspect))
-                self.ax[i].spines['left'].set_position('zero')
-                self.ax[i].spines['right'].set_color('none')
-                self.ax[i].spines['bottom'].set_position('zero')
-                self.ax[i].spines['top'].set_color('none')
-                self.ax[i].xaxis.set_ticks_position('bottom')
-                self.ax[i].yaxis.set_ticks_position('left')
-
+        kwargs = dict(aspect=aspect)
+        if all(is_3D):
+            kwargs["projection"] = "3d"
+        self.ax = self._fig.add_subplot(1, 1, 1, **kwargs)
+            
     @property
     def fig(self):
         """ Returns the objects used to render/display the plots
@@ -131,178 +186,258 @@ class MatplotlibBackend(Plot):
         points = np.ma.array(points).T.reshape(-1, 1, dim)
         return np.ma.concatenate([points[:-1], points[1:]], axis=1)
 
-    def _process_series(self, series, ax, parent):
-        np = import_module('numpy')
-        mpl_toolkits = import_module(
-            'mpl_toolkits', import_kwargs={'fromlist': ['mplot3d']})
+    def _add_colorbar(self, c, label, override=False):
+        """ Add a colorbar for the specificied collection
 
+        Keyword Aurguments
+        ==================
+            override : boolean
+                For parametric plots the colorbar acts like a legend. Hence,
+                when legend=False we don't display the colorbar. However,
+                for contour plots the colorbar is essential to understand it.
+                Hence, to show it we set override=True.
+                Default to False.
+        """
+        # design choice: instead of showing a legend entry (which
+        # would require to work with proxy artists and custom
+        # classes in order to create a gradient line), just show a
+        # colorbar with the name of the expression on the side.
+        if (self.legend and self._use_cm) or override:
+            # TODO: colorbar position? used space?
+            cb = self._fig.colorbar(c, ax=self.ax)
+            cb.set_label(label, rotation=90)
+
+    def _process_series(self, series):
         # XXX Workaround for matplotlib issue
         # https://github.com/matplotlib/matplotlib/issues/17130
         xlims, ylims, zlims = [], [], []
 
         # TODO: do I need this?
-        ax.cla()
+        self.ax.cla()
+
+        self._init_cyclers()
 
         for s in series:
-            # Create the collections
             if s.is_2Dline:
                 x, y = s.get_data()
-                if (isinstance(s.line_color, (int, float)) or
-                        callable(s.line_color)):
+                line_kw = self._kwargs.get("line_kw", dict())
+                if s.is_parametric and self._use_cm:
+                    lkw = dict(array=s.discretized_var, cmap=next(self._cm))
                     segments = self.get_segments(x, y)
-                    collection = LineCollection(segments)
-                    collection.set_array(s.get_color_array())
-                    ax.add_collection(collection)
+                    c = LineCollection(segments,
+                            **merge({}, lkw, line_kw))
+                    self.ax.add_collection(c)
+                    self._add_colorbar(c, s.label)
                 else:
-                    line, = ax.plot(x, y, label=s.label, color=s.line_color)
+                    lkw = dict(label=s.label)
+                    self.ax.plot(x, y, **merge({}, lkw, line_kw))
             elif s.is_contour:
-                ax.contourf(*s.get_meshes())
+                ckw = dict(cmap = next(self._cm))
+                contour_kw = self._kwargs.get("contour_kw", dict())
+                c = self.ax.contourf(*s.get_meshes(), 
+                        **merge({}, ckw, contour_kw))
+                self._add_colorbar(c, s.label, True)
             elif s.is_3Dline:
                 x, y, z = s.get_data()
-                if (isinstance(s.line_color, (int, float)) or
-                        callable(s.line_color)):
-                    art3d = mpl_toolkits.mplot3d.art3d
+                lkw = dict()
+                line_kw = self._kwargs.get("line_kw", dict())
+                if self._use_cm:
                     segments = self.get_segments(x, y, z)
-                    collection = art3d.Line3DCollection(segments)
-                    collection.set_array(s.get_color_array())
-                    ax.add_collection(collection)
+                    lkw["cmap"] = next(self._cm)
+                    lkw["array"] = s.discretized_var
+                    art3d = mpl_toolkits.mplot3d.art3d
+                    c = art3d.Line3DCollection(segments, **merge({}, lkw, line_kw))
+                    self.ax.add_collection(c)
+                    self._add_colorbar(c, s.label)
                 else:
-                    ax.plot(x, y, z, label=s.label,
-                        color=s.line_color)
+                    lkw["label"] = s.label
+                    self.ax.plot(x, y, z, **merge({}, lkw, line_kw))
 
-                xlims.append(s._xlim)
-                ylims.append(s._ylim)
-                zlims.append(s._zlim)
+                xlims.append((np.amin(x), np.amax(x)))
+                ylims.append((np.amin(y), np.amax(y)))
+                zlims.append((np.amin(z), np.amax(z)))
             elif s.is_3Dsurface:
                 x, y, z = s.get_meshes()
-                collection = ax.plot_surface(x, y, z,
-                    cmap=getattr(cm, 'viridis', cm.jet),
-                    rstride=1, cstride=1, linewidth=0.1)
-                if isinstance(s.surface_color, (float, int)) or isinstance(s.surface_color, Callable):
-                    color_array = s.get_color_array()
-                    color_array = color_array.reshape(color_array.size)
-                    collection.set_array(color_array)
-                else:
-                    collection.set_color(s.surface_color)
+                skw = dict(rstride = 1, cstride = 1, linewidth = 0.1)
+                if self._use_cm:
+                    skw["cmap"] = next(self._cm)
+                surface_kw = self._kwargs.get("surface_kw", dict())
+                c = self.ax.plot_surface(x, y, z,
+                    **merge({}, skw, surface_kw))
+                self._add_colorbar(c, s.label)
 
-                xlims.append(s._xlim)
-                ylims.append(s._ylim)
-                zlims.append(s._zlim)
+                xlims.append((np.amin(x), np.amax(x)))
+                ylims.append((np.amin(y), np.amax(y)))
+                zlims.append((np.amin(z), np.amax(z)))
             elif s.is_implicit:
                 points = s.get_raster()
                 if len(points) == 2:
                     # interval math plotting
                     x, y = _matplotlib_list(points[0])
-                    ax.fill(x, y, edgecolor='None')
+                    self.ax.fill(x, y, edgecolor='None')
                 else:
                     # use contourf or contour depending on whether it is
                     # an inequality or equality.
                     # XXX: ``contour`` plots multiple lines. Should be fixed.
-                    colormap = ListedColormap(["white", "blue"])
+                    colormap = ListedColormap(["#FFFFFF00", next(self._cl)])
                     xarray, yarray, zarray, plot_type = points
                     if plot_type == 'contour':
-                        ax.contour(xarray, yarray, zarray, cmap=colormap)
+                        self.ax.contour(xarray, yarray, zarray, cmap=colormap)
                     else:
-                        ax.contourf(xarray, yarray, zarray, cmap=colormap)
+                        self.ax.contourf(xarray, yarray, zarray, cmap=colormap)
+            elif s.is_vector:
+                if s.is_2Dvector:
+                    xx, yy, uu, vv = s.get_data()
+                    magn = np.sqrt(uu**2 + vv**2)
+                    streamlines = self._kwargs.get("streamlines", False)
+                    if streamlines:
+                        skw = dict()
+                        stream_kw = self._kwargs.get("stream_kw", dict())
+                        if self._use_cm:
+                            skw["cmap"] = next(self._cm)
+                            skw["color"] = magn
+                            s = self.ax.streamplot(xx, yy, uu, vv,
+                                **merge({}, skw, stream_kw))
+                        else:
+                            skw["color"] = next(self._cl)
+                            self.ax.streamplot(xx, yy, uu, vv,
+                                **merge({}, skw, stream_kw))
+                    else:
+                        qkw = dict()
+                        quiver_kw = self._kwargs.get("quiver_kw", dict())
+                        if self._use_cm:
+                            qkw["cmap"] = next(self._cm)
+                            q = self.ax.quiver(xx, yy, uu, vv, magn,
+                                **merge({}, qkw, quiver_kw))
+                            self._add_colorbar(q, s.label)
+                        else:
+                            qkw["color"] = next(self._cl)
+                            self.ax.quiver(xx, yy, uu, vv,
+                                **merge({}, qkw, quiver_kw))
+                        
+                else:
+                    xx, yy, zz, uu, vv, ww = s.get_data()
+                    magn = np.sqrt(uu**2 + vv**2 + ww**2)
+                    streamlines = self._kwargs.get("streamlines", False)
+                    if streamlines:
+                        raise NotImplementedError(
+                            "Matplotlib currently doesn't expose any function " +
+                            "to create streamlines in 3D."
+                        )
+                    else:
+                        qkw = dict()
+                        quiver_kw = self._kwargs.get("quiver_kw", dict())
+                        if self._use_cm:
+                            qkw["cmap"] = next(self._cm)
+                            qkw["array"] = magn.flatten()
+                            q = self.ax.quiver(xx, yy, zz, uu, vv, ww,
+                                **merge({}, qkw, quiver_kw))
+                            self._add_colorbar(q, s.label)
+                        else:
+                            qkw["color"] = next(self._cl)
+                            self.ax.quiver(xx, yy, zz, uu, vv, ww,
+                                **merge({}, qkw, quiver_kw))
+                    xlims.append((np.amin(xx), np.amax(xx)))
+                    ylims.append((np.amin(yy), np.amax(yy)))
+                    zlims.append((np.amin(zz), np.amax(zz)))
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
                 )
 
         Axes3D = mpl_toolkits.mplot3d.Axes3D
-        if not isinstance(ax, Axes3D):
-            ax.autoscale_view(
-                scalex=ax.get_autoscalex_on(),
-                scaley=ax.get_autoscaley_on())
+        if not isinstance(self.ax, Axes3D):
+            self.ax.autoscale_view(
+                scalex=self.ax.get_autoscalex_on(),
+                scaley=self.ax.get_autoscaley_on())
         else:
             # XXX Workaround for matplotlib issue
             # https://github.com/matplotlib/matplotlib/issues/17130
             if xlims:
                 xlims = np.array(xlims)
                 xlim = (np.amin(xlims[:, 0]), np.amax(xlims[:, 1]))
-                ax.set_xlim(xlim)
+                self.ax.set_xlim(xlim)
             else:
-                ax.set_xlim([0, 1])
+                self.ax.set_xlim([0, 1])
 
             if ylims:
                 ylims = np.array(ylims)
                 ylim = (np.amin(ylims[:, 0]), np.amax(ylims[:, 1]))
-                ax.set_ylim(ylim)
+                self.ax.set_ylim(ylim)
             else:
-                ax.set_ylim([0, 1])
+                self.ax.set_ylim([0, 1])
 
             if zlims:
                 zlims = np.array(zlims)
                 zlim = (np.amin(zlims[:, 0]), np.amax(zlims[:, 1]))
-                ax.set_zlim(zlim)
+                self.ax.set_zlim(zlim)
             else:
-                ax.set_zlim([0, 1])
+                self.ax.set_zlim([0, 1])
 
         # Set global options.
         # TODO The 3D stuff
         # XXX The order of those is important.
-        if parent.xscale and not isinstance(ax, Axes3D):
-            ax.set_xscale(parent.xscale)
-        if parent.yscale and not isinstance(ax, Axes3D):
-            ax.set_yscale(parent.yscale)
-        if not isinstance(ax, Axes3D):  # XXX in the distant future remove this check
-            ax.set_autoscale_on(parent.autoscale)
-        if parent.axis_center:
-            val = parent.axis_center
-            if isinstance(ax, Axes3D):
+        if self.xscale and not isinstance(self.ax, Axes3D):
+            self.ax.set_xscale(self.xscale)
+        if self.yscale and not isinstance(self.ax, Axes3D):
+            self.ax.set_yscale(self.yscale)
+        if self.axis_center:
+            val = self.axis_center
+            if isinstance(self.ax, Axes3D):
                 pass
             elif val == 'center':
-                ax.spines['left'].set_position('center')
-                ax.spines['bottom'].set_position('center')
+                self.ax.spines['left'].set_position('center')
+                self.ax.spines['bottom'].set_position('center')
+                self.ax.yaxis.set_ticks_position('left')
+                self.ax.xaxis.set_ticks_position('bottom')
+                self.ax.spines['right'].set_visible(False)
+                self.ax.spines['top'].set_visible(False)
             elif val == 'auto':
-                xl, xh = ax.get_xlim()
-                yl, yh = ax.get_ylim()
+                xl, xh = self.ax.get_xlim()
+                yl, yh = self.ax.get_ylim()
                 pos_left = ('data', 0) if xl*xh <= 0 else 'center'
                 pos_bottom = ('data', 0) if yl*yh <= 0 else 'center'
-                ax.spines['left'].set_position(pos_left)
-                ax.spines['bottom'].set_position(pos_bottom)
+                self.ax.spines['left'].set_position(pos_left)
+                self.ax.spines['bottom'].set_position(pos_bottom)
+                self.ax.yaxis.set_ticks_position('left')
+                self.ax.xaxis.set_ticks_position('bottom')
+                self.ax.spines['right'].set_visible(False)
+                self.ax.spines['top'].set_visible(False)
             else:
-                ax.spines['left'].set_position(('data', val[0]))
-                ax.spines['bottom'].set_position(('data', val[1]))
-        if not parent.axis:
-            ax.set_axis_off()
-        if parent.legend:
-            if ax.legend():
-                ax.legend_.set_visible(parent.legend)
-        if parent.margin:
-            ax.set_xmargin(parent.margin)
-            ax.set_ymargin(parent.margin)
-        if parent.title:
-            ax.set_title(parent.title)
-        if parent.xlabel:
-            ax.set_xlabel(parent.xlabel, position=(1, 0))
-        if parent.ylabel:
-            ax.set_ylabel(parent.ylabel, position=(0, 1))
-        if isinstance(ax, Axes3D) and parent.zlabel:
-            ax.set_zlabel(parent.zlabel, position=(0, 1))
-        if parent.annotations:
-            for a in parent.annotations:
-                ax.annotate(**a)
-        if parent.markers:
-            for marker in parent.markers:
-                # make a copy of the marker dictionary
-                # so that it doesn't get altered
-                m = marker.copy()
-                args = m.pop('args')
-                ax.plot(*args, **m)
-        if parent.rectangles:
-            for r in parent.rectangles:
-                rect = matplotlib.patches.Rectangle(**r)
-                ax.add_patch(rect)
-        if parent.fill:
-            ax.fill_between(**parent.fill)
+                self.ax.spines['left'].set_position(('data', val[0]))
+                self.ax.spines['bottom'].set_position(('data', val[1]))
+                self.ax.yaxis.set_ticks_position('left')
+                self.ax.xaxis.set_ticks_position('bottom')
+                self.ax.spines['right'].set_visible(False)
+                self.ax.spines['top'].set_visible(False)
+        else:
+            self.ax.grid()
+        if self.legend:
+            handles, _ = self.ax.get_legend_handles_labels()
+            # Show the legend only if there are legend entries. For example,
+            # if we are plotting only parametric expressions, there will be 
+            # only colorbars, no legend entries.
+            if len(handles) > 0:
+                self.ax.legend(loc="best")
+        if self.title:
+            self.ax.set_title(self.title)
+        if self.xlabel:
+            self.ax.set_xlabel(self.xlabel,
+                position=(1, 0) if self.axis_center else (0.5, 0))
+        if self.ylabel:
+            self.ax.set_ylabel(self.ylabel,
+                position=(0, 1) if self.axis_center else (0, 0.5))
+        if isinstance(self.ax, Axes3D) and self.zlabel:
+            self.ax.set_zlabel(self.zlabel, position=(0, 1))
 
-        # xlim and ylim shoulld always be set at last so that plot limits
+        # xlim and ylim should always be set at last so that plot limits
         # doesn't get altered during the process.
-        if parent.xlim:
-            ax.set_xlim(parent.xlim)
-        if parent.ylim:
-            ax.set_ylim(parent.ylim)
+        if self.xlim:
+            self.ax.set_xlim(self.xlim)
+        if self.ylim:
+            self.ax.set_ylim(self.ylim)
+        if self.zlim:
+            self.ax.set_zlim(self.zlim)
 
 
     def process_series(self):
@@ -314,20 +449,7 @@ class MatplotlibBackend(Plot):
         # previously shown, it would not be possible to show it again. This
         # behaviour is specific to Matplotlib
         self._create_figure()
-
-        if (self.nrows == 1) and (self.ncols == 1):
-            # ordinary plot
-            series_list = [self.series]
-        else:
-            # PlotGrid
-            series_list = self.series
-
-        parent = self
-        for i, (series, ax) in enumerate(zip(series_list, self.ax)):
-            if not ((self.nrows == 1) and (self.ncols == 1)):
-                # PlotGrid
-                parent = self.subplots[i]
-            self._process_series(series, ax, parent)
+        self._process_series(self.series)
 
     def show(self):
         """ Display the current plot.

@@ -10,8 +10,6 @@
 |    zscale     |     Y     |   N   |    Y   |    N   |  N  |
 |     grid      |     Y     |   Y   |    Y   |    Y   |  Y  |
 |    aspect     |     Y     |   N   |    N   |    N   |  N  |
-|   autoscale   |     Y     |   N   |    N   |    N   |  N  |
-|    margin     |     Y     |   N   |    N   |    N   |  N  |
 |     size      |     Y     |   Y   |    Y   |    Y   |  Y  |
 |     title     |     Y     |   Y   |    Y   |    Y   |  Y  |
 |    xlabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
@@ -101,8 +99,6 @@ class Plot:
     - ylim : tuple of two floats
     - zlim : tuple of two floats
     - aspect : tuple of two floats or {'auto'}
-    - autoscale : bool
-    - margin : float in [0, 1]
     - backend : a subclass of Plot
     - size : optional tuple of two floats, (width, height); default: None
 
@@ -177,8 +173,6 @@ class Plot:
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
         self.legend = kwargs.get("legend", False)
-        self.autoscale = kwargs.get("autoscale", True)
-        self.margin = kwargs.get("margin", 0)
 
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.

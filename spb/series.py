@@ -565,10 +565,6 @@ class Parametric3DLineSeries(Line3DBaseSeries):
         list_y = np.ma.masked_invalid(list_y)
         list_z = np.ma.masked_invalid(list_z)
 
-        self._xlim = (np.amin(list_x), np.amax(list_x))
-        self._ylim = (np.amin(list_y), np.amax(list_y))
-        self._zlim = (np.amin(list_z), np.amax(list_z))
-
         return list_x, list_y, list_z
 
 
@@ -626,8 +622,6 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         self.n1 = kwargs.get('n1', 50)
         self.n2 = kwargs.get('n2', 50)
         self.surface_color = kwargs.get('surface_color', None)
-        self._xlim = (self.start_x, self.end_x)
-        self._ylim = (self.start_y, self.end_y)
 
     def __str__(self):
         return ('cartesian surface: %s for'
@@ -647,7 +641,6 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         mesh_z = f(mesh_x, mesh_y)
         mesh_z = np.array(mesh_z, dtype=np.float64)
         mesh_z = np.ma.masked_invalid(mesh_z)
-        self._zlim = (np.amin(mesh_z), np.amax(mesh_z))
         return mesh_x, mesh_y, mesh_z
 
 
@@ -710,10 +703,6 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         mesh_x = np.ma.masked_invalid(mesh_x)
         mesh_y = np.ma.masked_invalid(mesh_y)
         mesh_z = np.ma.masked_invalid(mesh_z)
-
-        self._xlim = (np.amin(mesh_x), np.amax(mesh_x))
-        self._ylim = (np.amin(mesh_y), np.amax(mesh_y))
-        self._zlim = (np.amin(mesh_z), np.amax(mesh_z))
 
         return mesh_x, mesh_y, mesh_z
 

@@ -22,3 +22,6 @@ pyvista_bg_color = mayavi_bg_color
 from spb.backends.plotly import PlotlyBackend as TWO_D_B
 # backend for 3D plots
 from spb.backends.k3d import K3DBackend as THREE_D_B
+
+from spb.backends.matplotlib import MatplotlibBackend as TWO_D_B
+THREE_D_B = TWO_D_B
