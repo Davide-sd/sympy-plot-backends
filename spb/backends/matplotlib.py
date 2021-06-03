@@ -8,6 +8,7 @@ import matplotlib.cm as cm
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap
 import mpl_toolkits
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
 import numpy as np
 from mergedeep import merge
 import itertools
@@ -123,6 +124,9 @@ class MatplotlibBackend(Plot):
     def __init__(self, *args, **kwargs):
         # set global options like title, axis labels, ...
         super().__init__(*args, **kwargs)
+
+        # see self._add_handle for more info about the following dictionary
+        self._handles = dict()
     
     def _init_cyclers(self):
         self._cl = itertools.cycle(self.colorloop)
@@ -206,18 +210,28 @@ class MatplotlibBackend(Plot):
             # TODO: colorbar position? used space?
             cb = self._fig.colorbar(c, ax=self.ax)
             cb.set_label(label, rotation=90)
+    
+    def _add_handle(self, i, h, kw=None):
+        """ self._handle is a dictionary where:
+            key: integer corresponding to the i-th series.
+            value: a list of two elements:
+                1. handle of the object created by Matplotlib commands
+                2. optionally, keyword arguments used to create the handle. 
+                    Some object can't be updated, hence we need to reconstruct
+                    it from scratch at every update.
+        This dictionary will be used with iplot
+        """
+        self._handles[i] = [h if not isinstance(h, (list, tuple)) else h[0], kw]
 
     def _process_series(self, series):
         # XXX Workaround for matplotlib issue
         # https://github.com/matplotlib/matplotlib/issues/17130
         xlims, ylims, zlims = [], [], []
 
-        # TODO: do I need this?
         self.ax.cla()
-
         self._init_cyclers()
 
-        for s in series:
+        for i, s in enumerate(series):
             if s.is_2Dline:
                 x, y = s.get_data()
                 line_kw = self._kwargs.get("line_kw", dict())
@@ -228,15 +242,18 @@ class MatplotlibBackend(Plot):
                             **merge({}, lkw, line_kw))
                     self.ax.add_collection(c)
                     self._add_colorbar(c, s.label)
+                    self._add_handle(i, c)
                 else:
                     lkw = dict(label=s.label)
-                    self.ax.plot(x, y, **merge({}, lkw, line_kw))
+                    l = self.ax.plot(x, y, **merge({}, lkw, line_kw))
+                    self._add_handle(i, l)
             elif s.is_contour:
                 ckw = dict(cmap = next(self._cm))
                 contour_kw = self._kwargs.get("contour_kw", dict())
                 c = self.ax.contourf(*s.get_meshes(), 
                         **merge({}, ckw, contour_kw))
                 self._add_colorbar(c, s.label, True)
+                self._add_handle(i, c)
             elif s.is_3Dline:
                 x, y, z = s.get_data()
                 lkw = dict()
@@ -245,46 +262,54 @@ class MatplotlibBackend(Plot):
                     segments = self.get_segments(x, y, z)
                     lkw["cmap"] = next(self._cm)
                     lkw["array"] = s.discretized_var
-                    art3d = mpl_toolkits.mplot3d.art3d
-                    c = art3d.Line3DCollection(segments, **merge({}, lkw, line_kw))
+                    c = Line3DCollection(segments, **merge({}, lkw, line_kw))
                     self.ax.add_collection(c)
                     self._add_colorbar(c, s.label)
+                    self._add_handle(i, c)
                 else:
                     lkw["label"] = s.label
-                    self.ax.plot(x, y, z, **merge({}, lkw, line_kw))
+                    l = self.ax.plot(x, y, z, **merge({}, lkw, line_kw))
+                    self._add_handle(i, l)
 
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
                 zlims.append((np.amin(z), np.amax(z)))
             elif s.is_3Dsurface:
-                x, y, z = s.get_meshes()
+                x, y, z = s.get_data()
                 skw = dict(rstride = 1, cstride = 1, linewidth = 0.1)
                 if self._use_cm:
                     skw["cmap"] = next(self._cm)
                 surface_kw = self._kwargs.get("surface_kw", dict())
-                c = self.ax.plot_surface(x, y, z,
-                    **merge({}, skw, surface_kw))
+                kw = merge({}, skw, surface_kw)
+                c = self.ax.plot_surface(x, y, z, **kw)
                 self._add_colorbar(c, s.label)
+                self._add_handle(i, c, kw)
 
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
                 zlims.append((np.amin(z), np.amax(z)))
             elif s.is_implicit:
-                points = s.get_raster()
+                points = s.get_data()
                 if len(points) == 2:
                     # interval math plotting
                     x, y = _matplotlib_list(points[0])
-                    self.ax.fill(x, y, edgecolor='None')
+                    c = self.ax.fill(x, y, edgecolor='None')
+                    self._add_handle(i, c)
                 else:
                     # use contourf or contour depending on whether it is
                     # an inequality or equality.
                     # XXX: ``contour`` plots multiple lines. Should be fixed.
                     colormap = ListedColormap(["#FFFFFF00", next(self._cl)])
                     xarray, yarray, zarray, plot_type = points
+                    ckw = dict(cmap = colormap)
+                    contour_kw = self._kwargs.get("contour_kw", dict())
                     if plot_type == 'contour':
-                        self.ax.contour(xarray, yarray, zarray, cmap=colormap)
+                        c = self.ax.contour(xarray, yarray, zarray, 
+                            **merge({}, ckw, contour_kw))
                     else:
-                        self.ax.contourf(xarray, yarray, zarray, cmap=colormap)
+                        c = self.ax.contourf(xarray, yarray, zarray,
+                            **merge({}, ckw, contour_kw))
+                    self._add_handle(i, c)
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
@@ -296,12 +321,15 @@ class MatplotlibBackend(Plot):
                         if self._use_cm:
                             skw["cmap"] = next(self._cm)
                             skw["color"] = magn
+                            kw = merge({}, skw, stream_kw)
                             s = self.ax.streamplot(xx, yy, uu, vv,
-                                **merge({}, skw, stream_kw))
+                                **kw)
                         else:
                             skw["color"] = next(self._cl)
-                            self.ax.streamplot(xx, yy, uu, vv,
-                                **merge({}, skw, stream_kw))
+                            kw = merge({}, skw, stream_kw)
+                            s = self.ax.streamplot(xx, yy, uu, vv,
+                                **kw)
+                        self._add_handle(i, s, kw)
                     else:
                         qkw = dict()
                         quiver_kw = self._kwargs.get("quiver_kw", dict())
@@ -312,9 +340,9 @@ class MatplotlibBackend(Plot):
                             self._add_colorbar(q, s.label)
                         else:
                             qkw["color"] = next(self._cl)
-                            self.ax.quiver(xx, yy, uu, vv,
+                            q = self.ax.quiver(xx, yy, uu, vv,
                                 **merge({}, qkw, quiver_kw))
-                        
+                        self._add_handle(i, q)
                 else:
                     xx, yy, zz, uu, vv, ww = s.get_data()
                     magn = np.sqrt(uu**2 + vv**2 + ww**2)
@@ -330,13 +358,16 @@ class MatplotlibBackend(Plot):
                         if self._use_cm:
                             qkw["cmap"] = next(self._cm)
                             qkw["array"] = magn.flatten()
+                            kw = merge({}, qkw, quiver_kw)
                             q = self.ax.quiver(xx, yy, zz, uu, vv, ww,
-                                **merge({}, qkw, quiver_kw))
+                                **kw)
                             self._add_colorbar(q, s.label)
                         else:
                             qkw["color"] = next(self._cl)
-                            self.ax.quiver(xx, yy, zz, uu, vv, ww,
-                                **merge({}, qkw, quiver_kw))
+                            kw = merge({}, qkw, quiver_kw)
+                            q = self.ax.quiver(xx, yy, zz, uu, vv, ww,
+                                **kw)
+                        self._add_handle(i, q, kw)
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
                     zlims.append((np.amin(zz), np.amax(zz)))
@@ -439,6 +470,68 @@ class MatplotlibBackend(Plot):
         if self.zlim:
             self.ax.set_zlim(self.zlim)
 
+    def _update_interactive(self, params):
+        # With this backend, data is only being added once the plot is shown.
+        # However, iplot doesn't call the show method. The following line of
+        # code will add the numerical data (if not already present).
+        if len(self._handles) == 0:
+            self.process_series()
+
+        for i, s in enumerate(self.series):
+            if s.is_interactive:
+                self.series[i].update_data(params)
+                if s.is_2Dline:
+                    x, y = self.series[i].get_data()
+                    if isinstance(self._handles[i][0], LineCollection):
+                        segments = self.get_segments(x, y)
+                        self._handles[i][0].set_segments(segments)
+                    else:
+                        self._handles[i][0].set_data(x, y)
+                elif s.is_3Dline:
+                    x, y, z = self.series[i].get_data()
+                    if isinstance(self._handles[i][0], Line3DCollection):
+                        segments = self.get_segments(x, y, z)
+                        self._handles[i][0].set_segments(segments)
+                    else:
+                        self._handles[i][0].set_data_3d(x, y, z)
+                elif s.is_3Dsurface:
+                    x, y, z = self.series[i].get_data()
+                    # NOTE: there isn't a straightforward way of updating data
+                    # for a surface plot. Easiest way: delete old, create new.
+                    # TODO: by setting the keyword arguments, somehow the update
+                    # becomes really really slow.
+                    self._handles[i][0].remove()
+                    self._handles[i][0] = self.ax.plot_surface(x, y, z,
+                            **self._handles[i][1])
+                elif s.is_vector and s.is_3D:
+                    streamlines = self._kwargs.get("streamlines", False)
+                    if streamlines:
+                        raise NotImplementedError
+                    xx, yy, zz, uu, vv, ww = self.series[i].get_data()
+                    # NOTE: there isn't a straightforward way of updating data
+                    # for a surface plot. Easiest way: delete old, create new.
+                    self._handles[i][0].remove()
+                    self._handles[i][0] = self.ax.quiver(xx, yy, zz, uu, vv, ww,
+                            **self._handles[i][1])
+                elif s.is_vector:
+                    xx, yy, uu, vv = self.series[i].get_data()
+                    magn = np.sqrt(uu**2 + vv**2)
+                    streamlines = self._kwargs.get("streamlines", False)
+                    if streamlines:
+                        raise NotImplementedError
+                        
+                        # # TODO: there is no remove() for StreamPlotSet. Is it
+                        # # possible to implement a workaround?
+                        # kw = self._handles[i][1]
+                        # if self._use_cm:
+                        #     kw["color"] = magn
+                        # self._handles[i][0].remove()
+                        # self._handles[i][0] = self.ax.streamplot(xx, yy, uu, vv,
+                        #         **kw)
+                    else:
+                        # TODO: is the colormap scaling as well?
+                        self._handles[i][0].set_UVC(uu, vv, magn)
+        
 
     def process_series(self):
         """
