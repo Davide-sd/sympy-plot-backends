@@ -2,6 +2,7 @@ from collections.abc import Callable
 from sympy import latex
 from sympy.external import import_module
 from spb.backends.base_backend import Plot
+from spb.defaults import mpl_jupyterthemes
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -133,6 +134,14 @@ class MatplotlibBackend(Plot):
         self._cm = itertools.cycle(self.colormaps)
     
     def _create_figure(self):
+        if (self._get_mode() == 0) and mpl_jupyterthemes:
+            # set matplotlib style to match the used Jupyter theme
+            try:
+                from jupyterthemes import jtplot
+                jtplot.style()
+            except:
+                pass
+
         is_3Dvector = any([s.is_3Dvector for s in self.series])
         aspect = self.aspect
         if aspect != 'auto':
@@ -377,33 +386,6 @@ class MatplotlibBackend(Plot):
                 )
 
         Axes3D = mpl_toolkits.mplot3d.Axes3D
-        if not isinstance(self.ax, Axes3D):
-            self.ax.autoscale_view(
-                scalex=self.ax.get_autoscalex_on(),
-                scaley=self.ax.get_autoscaley_on())
-        else:
-            # XXX Workaround for matplotlib issue
-            # https://github.com/matplotlib/matplotlib/issues/17130
-            if xlims:
-                xlims = np.array(xlims)
-                xlim = (np.amin(xlims[:, 0]), np.amax(xlims[:, 1]))
-                self.ax.set_xlim(xlim)
-            else:
-                self.ax.set_xlim([0, 1])
-
-            if ylims:
-                ylims = np.array(ylims)
-                ylim = (np.amin(ylims[:, 0]), np.amax(ylims[:, 1]))
-                self.ax.set_ylim(ylim)
-            else:
-                self.ax.set_ylim([0, 1])
-
-            if zlims:
-                zlims = np.array(zlims)
-                zlim = (np.amin(zlims[:, 0]), np.amax(zlims[:, 1]))
-                self.ax.set_zlim(zlim)
-            else:
-                self.ax.set_zlim([0, 1])
 
         # Set global options.
         # TODO The 3D stuff
@@ -461,6 +443,38 @@ class MatplotlibBackend(Plot):
         if isinstance(self.ax, Axes3D) and self.zlabel:
             self.ax.set_zlabel(self.zlabel, position=(0, 1))
 
+        self._set_lims(xlims, ylims, zlims)
+    
+    def _set_lims(self, xlims, ylims, zlims):
+        Axes3D = mpl_toolkits.mplot3d.Axes3D
+        if not isinstance(self.ax, Axes3D):
+            self.ax.autoscale_view(
+                scalex=self.ax.get_autoscalex_on(),
+                scaley=self.ax.get_autoscaley_on())
+        else:
+            # XXX Workaround for matplotlib issue
+            # https://github.com/matplotlib/matplotlib/issues/17130
+            if xlims:
+                xlims = np.array(xlims)
+                xlim = (np.amin(xlims[:, 0]), np.amax(xlims[:, 1]))
+                self.ax.set_xlim(xlim)
+            else:
+                self.ax.set_xlim([0, 1])
+
+            if ylims:
+                ylims = np.array(ylims)
+                ylim = (np.amin(ylims[:, 0]), np.amax(ylims[:, 1]))
+                self.ax.set_ylim(ylim)
+            else:
+                self.ax.set_ylim([0, 1])
+
+            if zlims:
+                zlims = np.array(zlims)
+                zlim = (np.amin(zlims[:, 0]), np.amax(zlims[:, 1]))
+                self.ax.set_zlim(zlim)
+            else:
+                self.ax.set_zlim([0, 1])
+            
         # xlim and ylim should always be set at last so that plot limits
         # doesn't get altered during the process.
         if self.xlim:
@@ -477,6 +491,7 @@ class MatplotlibBackend(Plot):
         if len(self._handles) == 0:
             self.process_series()
 
+        xlims, ylims, zlims = [], [], []
         for i, s in enumerate(self.series):
             if s.is_interactive:
                 self.series[i].update_data(params)
@@ -494,6 +509,9 @@ class MatplotlibBackend(Plot):
                         self._handles[i][0].set_segments(segments)
                     else:
                         self._handles[i][0].set_data_3d(x, y, z)
+                    xlims.append((np.amin(x), np.amax(x)))
+                    ylims.append((np.amin(y), np.amax(y)))
+                    zlims.append((np.amin(z), np.amax(z)))
                 elif s.is_3Dsurface:
                     x, y, z = self.series[i].get_data()
                     # NOTE: there isn't a straightforward way of updating data
@@ -503,6 +521,9 @@ class MatplotlibBackend(Plot):
                     self._handles[i][0].remove()
                     self._handles[i][0] = self.ax.plot_surface(x, y, z,
                             **self._handles[i][1])
+                    xlims.append((np.amin(x), np.amax(x)))
+                    ylims.append((np.amin(y), np.amax(y)))
+                    zlims.append((np.amin(z), np.amax(z)))
                 elif s.is_vector and s.is_3D:
                     streamlines = self._kwargs.get("streamlines", False)
                     if streamlines:
@@ -513,6 +534,9 @@ class MatplotlibBackend(Plot):
                     self._handles[i][0].remove()
                     self._handles[i][0] = self.ax.quiver(xx, yy, zz, uu, vv, ww,
                             **self._handles[i][1])
+                    xlims.append((np.amin(xx), np.amax(xx)))
+                    ylims.append((np.amin(yy), np.amax(yy)))
+                    zlims.append((np.amin(zz), np.amax(zz)))
                 elif s.is_vector:
                     xx, yy, uu, vv = self.series[i].get_data()
                     magn = np.sqrt(uu**2 + vv**2)
@@ -532,6 +556,18 @@ class MatplotlibBackend(Plot):
                         # TODO: is the colormap scaling as well?
                         self._handles[i][0].set_UVC(uu, vv, magn)
         
+        # Update the plot limits according to the new data
+        Axes3D = mpl_toolkits.mplot3d.Axes3D
+        if not isinstance(self.ax, Axes3D):
+            # https://stackoverflow.com/questions/10984085/automatically-rescale-ylim-and-xlim-in-matplotlib
+            # recompute the ax.dataLim
+            self.ax.relim()
+            # update ax.viewLim using the new dataLim
+            self.ax.autoscale_view()
+        else:
+            pass
+        
+        self._set_lims(xlims, ylims, zlims)
 
     def process_series(self):
         """

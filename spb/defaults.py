@@ -1,3 +1,6 @@
+# use jupyter themes for matplotlib
+mpl_jupyterthemes = True
+
 # Find more Plotly themes at the following page:
 # https://plotly.com/python/templates/
 plotly_theme = "plotly_dark"
