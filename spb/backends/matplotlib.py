@@ -2,7 +2,7 @@ from collections.abc import Callable
 from sympy import latex
 from sympy.external import import_module
 from spb.backends.base_backend import Plot
-from spb.defaults import mpl_jupyterthemes
+from spb.defaults import mpl_use_jupyterthemes, mpl_jupyterthemes
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -108,8 +108,8 @@ class MatplotlibBackend(Plot):
             https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
         
         use_cm : boolean
-            If True, apply a color map to the meshes/surface. If False, solid
-            colors will be used instead. Default to True.
+            If True, apply a color map to the mesh/surface or parametric lines. 
+            If False, solid colors will be used instead. Default to True.
     """
 
     colormaps = [
@@ -134,11 +134,11 @@ class MatplotlibBackend(Plot):
         self._cm = itertools.cycle(self.colormaps)
     
     def _create_figure(self):
-        if (self._get_mode() == 0) and mpl_jupyterthemes:
+        if (self._get_mode() == 0) and mpl_use_jupyterthemes:
             # set matplotlib style to match the used Jupyter theme
             try:
                 from jupyterthemes import jtplot
-                jtplot.style()
+                jtplot.style(mpl_jupyterthemes)
             except:
                 pass
 

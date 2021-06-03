@@ -307,7 +307,7 @@ class BokehBackend(Plot):
                 # them with np.nan
                 y = [t if (t is not None) else np.nan for t in y]
                 
-                if s.is_parametric:
+                if s.is_parametric and self._use_cm:
                     u = s.discretized_var
                     ds, line, cb = self._create_gradient_line(x, y, u,
                             next(self._cm), s.label)

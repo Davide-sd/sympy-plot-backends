@@ -1,5 +1,7 @@
 # use jupyter themes for matplotlib
-mpl_jupyterthemes = True
+# https://github.com/dunovank/jupyter-themes#jtplotstyle-examples
+mpl_use_jupyterthemes = True
+mpl_jupyterthemes = None
 
 # Find more Plotly themes at the following page:
 # https://plotly.com/python/templates/
