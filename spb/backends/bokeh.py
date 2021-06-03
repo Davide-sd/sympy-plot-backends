@@ -293,10 +293,10 @@ class BokehBackend(Plot):
         self._ccm = itertools.cycle(self.contour_colormaps)
         self._qcm = itertools.cycle(self.quivers_colormaps)
 
-    def _process_series(self, series):
+    def _process_series(self, series):d
         self._init_cyclers()
-        # clear figure. need to clear both the renderers as well as the colorbars
-        # which are added to the right side.
+        # clear figure. need to clear both the renderers as well as the
+        # colorbars which are added to the right side.
         self._fig.renderers = []
         self._fig.right = []
 
@@ -312,7 +312,8 @@ class BokehBackend(Plot):
                     ds, line, cb = self._create_gradient_line(x, y, u,
                             next(self._cm), s.label)
                     self._fig.add_glyph(ds, line)
-                    self._fig.add_layout(cb, "right")
+                    if self.legend:
+                        self._fig.add_layout(cb, "right")
                 else:
                     lkw = dict(
                         line_width = 2, legend_label = s.label,
