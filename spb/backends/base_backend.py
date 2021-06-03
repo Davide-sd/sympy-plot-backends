@@ -172,12 +172,18 @@ class Plot:
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
-        self.legend = kwargs.get("legend", False)
-
+        
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.
         self._series = []
         self._series.extend(args)
+
+        # auto-legend: if more than 1 data series has been provided and the user
+        # has not set legend=False, then show the legend for better clarity.
+        self.legend = kwargs.get("legend", None)
+        if self.legend is None:
+            if len(self._series) > 1:
+                self.legend = True
 
         # Objects used to render/display the plots, which depends on the 
         # plotting library.

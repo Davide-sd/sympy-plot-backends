@@ -293,7 +293,7 @@ class BokehBackend(Plot):
         self._ccm = itertools.cycle(self.contour_colormaps)
         self._qcm = itertools.cycle(self.quivers_colormaps)
 
-    def _process_series(self, series):d
+    def _process_series(self, series):
         self._init_cyclers()
         # clear figure. need to clear both the renderers as well as the
         # colorbars which are added to the right side.
