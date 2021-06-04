@@ -1,5 +1,6 @@
 from pytest import raises
 from spb.backends.base_backend import Plot
+from spb.backends.matplotlib import MB, unset_show
 from spb.backends.bokeh import BB
 from spb.backends.plotly import PB
 from spb.backends.k3d import KB
@@ -10,6 +11,17 @@ from spb import (
 )
 from sympy import symbols, cos, sin, Matrix, pi
 import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.quiver import Quiver
+from matplotlib.axes import Axes
+from matplotlib.colors import ListedColormap
+from matplotlib.collections import LineCollection
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import numpy as np
+
+unset_show()
 
 x, y, z = symbols("x, y, z")
 
@@ -90,6 +102,156 @@ def test_common_keywords():
     assert p.zlim == (-3, 3)
     assert p.size == (5, 10)
     assert p._kwargs == kw
+
+def test_plot_sum():
+    # the choice of the backend doesn't matter
+    p1 = plot(sin(x), backend=PB, show=False)
+    p2 = plot(cos(x), backend=PB, show=False)
+    p3 = p1 + p2
+    assert isinstance(p3, PB)
+    assert len(p3.series) == 2
+    assert p3.series[0].expr == sin(x)
+    assert p3.series[1].expr == cos(x)
+    # two or more series in the result: automatic legend turned on
+    assert p3.legend == True
+
+    # merge keyword dictionaries: the latter override the formers
+    p4 = plot(sin(x), backend=PB, show=False)
+    p5 = plot(cos(x), backend=PB, show=False, line_kw=dict(line_color="red"))
+    p6 = p4 + p5
+    assert isinstance(p6, PB)
+    assert isinstance(p6._kwargs, dict)
+    assert "line_kw" in p6._kwargs
+    assert "line_color" in p6._kwargs["line_kw"]
+    assert p6._kwargs["line_kw"]["line_color"] == "red"
+
+    # summing plots with different backends: the first backend will be used in
+    # the result
+    p7 = plot(sin(x), backend=MB, show=False)
+    p8 = plot(cos(x), backend=PB, show=False)
+    p9 = p7 + p8
+    assert isinstance(p9, MB)
+
+def test_MatplotlibBackend():
+    assert hasattr(MB, "colorloop")
+    assert isinstance(MB.colorloop, (ListedColormap, list, tuple))
+    assert hasattr(MB, "colormaps")
+    assert isinstance(MB.colormaps, (list, tuple))
+
+    series = [UnsupportedSeries()]
+    raises(NotImplementedError, lambda: Plot(*series, backend=MB).process_series())
+
+    ### test for line_kw, surface_kw, quiver_kw, stream_kw: they should override
+    ### defualt settings.
+
+    p = p2(MB, line_kw=dict(color="red"))
+    assert len(p.series) == 2
+    # MatplotlibBackend only add data to the plot when the following method
+    # is internally called. But show=False, hence it is not called.
+    p.process_series()
+    f, ax = p.fig
+    assert isinstance(f, plt.Figure)
+    assert isinstance(ax, Axes)
+    assert len(ax.get_lines()) == 2
+    assert ax.get_lines()[0].get_label() == "sin(x)"
+    assert ax.get_lines()[0].get_color() == "red"
+    assert ax.get_lines()[1].get_label() == "cos(x)"
+    assert ax.get_lines()[1].get_color() == "red"
+
+    p = p3(MB, line_kw=dict(color="red"))
+    assert len(p.series) == 1
+    # parametric plot. The label is shown on the colorbar, which is only visible
+    # when legend=True.
+    p.legend = True
+    p.process_series()
+    f, ax = p.fig
+    # parametric plot with use_cm=True -> LineCollection
+    assert len(ax.collections) == 1
+    assert isinstance(ax.collections[0], LineCollection)
+    assert f.axes[1].get_ylabel() == "(cos(x), sin(x))"
+    assert all(*(ax.collections[0].get_color() - np.array([1., 0., 0., 1.])) == 0)
+
+
+    p = p4(MB, line_kw=dict(color="red"))
+    assert len(p.series) == 1
+    p.legend = True
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.collections) == 1
+    assert isinstance(ax.collections[0], Line3DCollection)
+    assert f.axes[1].get_ylabel() == "(cos(x), sin(x), x)"
+    assert all(*(ax.collections[0].get_color() - np.array([1., 0., 0., 1.])) == 0)
+
+    # use_cm=False will force to apply a default solid color to the mesh. 
+    # Here, I override that solid color with a custom color.
+    p = p5(MB, surface_kw=dict(color="red"))
+    assert len(p.series) == 1
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.collections) == 1
+    assert isinstance(ax.collections[0], Poly3DCollection)
+    # TODO: apparently, without showing the plot, the colors are not applied
+    # to a Poly3DCollection... -.-'
+#     # matplotlib renders shadows, hence there are different red colors. Here
+#     # we check that the G, B components are zero, hence the color is Red.
+#     colors = ax.collections[0].get_facecolors()
+#     assert all(c[1] == 0 and c[2] == 0 for c in colors)
+    # casso
+
+    p = p6(MB, contour_kw=dict(cmap="jet"))
+    assert len(p.series) == 1
+    p.process_series()
+    f, ax = p.fig
+    # TODO: isn't there an exact number of collections associated to contour plots?
+    assert len(ax.collections) > 0
+    assert f.axes[1].get_ylabel() == str(cos(x**2 + y**2))
+    # TODO: how to retrieve the colormap from a contour series?????
+#     assert ax.collections[0].cmap.name == "jet"
+
+    p = p7(MB,
+            quiver_kw=dict(color="red"),
+            contour_kw=dict(cmap="jet"))
+    assert len(p.series) == 2
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.collections) > 0
+    assert isinstance(ax.collections[-1], Quiver)
+    assert f.axes[1].get_ylabel() == "Magnitude"
+    # TODO: how to retrieve the colormap from a contour series?????
+#     assert ax.collections[0].cmap.name == "jet"
+
+    p = p8(MB,
+            stream_kw=dict(color="red"),
+            contour_kw=dict(cmap="jet"))
+    assert len(p.series) == 2
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.collections) > 0
+    assert isinstance(ax.collections[-1], LineCollection)
+    assert f.axes[1].get_ylabel() == "x + y"
+    assert all(*(ax.collections[-1].get_color() - np.array([1., 0., 0., 1.])) == 0)
+
+    p = p9(MB, quiver_kw=dict(cmap="jet"))
+    assert len(p.series) == 1
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.collections) == 1
+    assert isinstance(ax.collections[0], Line3DCollection)
+    assert ax.collections[0].cmap.name == "jet"
+
+    p = p10(MB, stream_kw=dict())
+    raises(NotImplementedError, 
+        lambda: p.process_series())
+
+    p = p12(MB, contour_kw=dict(cmap="jet"))
+    assert len(p.series) == 1
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.collections) > 0
+    # TODO: how to retrieve the colormap from a contour series?????
+#     assert ax.collections[0].cmap.name == "jet"
+
+
 
 class PBchild(PB):
     colorloop = ["red", "green", "blue"]

@@ -31,6 +31,7 @@ from itertools import cycle
 from matplotlib import cm
 from sympy.utilities.iterables import is_sequence
 from spb.series import BaseSeries
+from mergedeep import merge
 
 class Plot:
     """Base class for all backends. A backend represents the plotting library,
@@ -182,6 +183,7 @@ class Plot:
         # has not set legend=False, then show the legend for better clarity.
         self.legend = kwargs.get("legend", None)
         if self.legend is None:
+            self.legend = False
             if len(self._series) > 1:
                 self.legend = True
 
@@ -377,6 +379,31 @@ class Plot:
 
     def __delitem__(self, index):
         del self._series[index]
+    
+    def __add__(self, other):
+        if not isinstance(other, Plot):
+            raise TypeError(
+            "Both sides of the `+` operator must be instances of the Plot " +
+            "class.\n Received: {} + {}".format(type(self), type(other)))
+        return self._do_sum(other)
+        
+    def __radd__(self, other):
+        if not isinstance(other, Plot):
+            raise TypeError(
+            "Both sides of the `+` operator must be instances of the Plot " +
+            "class.\n Received: {} + {}".format(type(self), type(other)))
+        return other._do_sum(self)
+    
+    def _do_sum(self, other):
+        """ Differently from Plot.extend, this method creates a new plot object,
+        which uses the series of both plots and merges the _kwargs dictionary
+        of `self` with the one of `other`.
+        """
+        series = []
+        series.extend(self.series)
+        series.extend(other.series)
+        kwargs = merge({}, self._kwargs, other._kwargs)
+        return type(self)(*series, **kwargs)
 
     def append(self, arg):
         """Adds an element from a plot's series to an existing plot.
@@ -412,6 +439,9 @@ class Plot:
         """
         if isinstance(arg, BaseSeries):
             self._series.append(arg)
+            # auto legend
+            if len(self._series) > 1:
+                    self.legend = True
         else:
             raise TypeError('Must specify element of plot to append.')
 
@@ -448,6 +478,9 @@ class Plot:
             self._series.extend(arg)
         else:
             raise TypeError('Expecting Plot or sequence of BaseSeries')
+        # auto legend
+        if len(self._series) > 1:
+                self.legend = True
 
 class PlotGrid:
     """This class helps to plot subplots from already created sympy plots

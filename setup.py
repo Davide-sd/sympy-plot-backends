@@ -42,6 +42,7 @@ setup(
         "PyQt5",
         # "mayavi",
         "k3d",
+        "vtk",
         # "pyvista",    # still immature jupyter notebook experience
         # "ipyvtklink"
     ]

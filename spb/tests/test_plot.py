@@ -10,15 +10,13 @@ from sympy.core.sympify import sympify
 from sympy.external import import_module
 from spb.functions import (
     plot, plot_parametric, plot3d_parametric_line, plot3d,
-    plot3d_parametric_surface, plot_contour,
-    set_matplotlib_backend
+    plot3d_parametric_surface, plot_contour
 )
 from spb.backends.base_backend import Plot, PlotGrid
 from spb.backends.matplotlib import unset_show, MatplotlibBackend
 from sympy.testing.pytest import skip, raises, warns
 from sympy.utilities import lambdify as lambdify_
 
-set_matplotlib_backend()
 unset_show()
 
 
@@ -603,10 +601,10 @@ def test_plot_limits():
     x = Symbol('x')
     p = plot(x, x**2, (x, -10, 10))
 
-    xmin, xmax = p.ax[0].get_xlim()
+    xmin, xmax = p.ax.get_xlim()
     assert abs(xmin + 10) < 2
     assert abs(xmax - 10) < 2
-    ymin, ymax = p.ax[0].get_ylim()
+    ymin, ymax = p.ax.get_ylim()
     assert abs(ymin + 10) < 10
     assert abs(ymax - 100) < 10
 
@@ -621,25 +619,25 @@ def test_plot3d_parametric_line_limits():
     v2 = (sin(x), cos(x), x, (x, -5, 5))
     p = plot3d_parametric_line(v1, v2)
 
-    xmin, xmax = p.ax[0].get_xlim()
+    xmin, xmax = p.ax.get_xlim()
     assert abs(xmin + 2) < 1e-2
     assert abs(xmax - 2) < 1e-2
-    ymin, ymax = p.ax[0].get_ylim()
+    ymin, ymax = p.ax.get_ylim()
     assert abs(ymin + 2) < 1e-2
     assert abs(ymax - 2) < 1e-2
-    zmin, zmax = p.ax[0].get_zlim()
+    zmin, zmax = p.ax.get_zlim()
     assert abs(zmin + 10) < 1e-2
     assert abs(zmax - 10) < 1e-2
 
     p = plot3d_parametric_line(v2, v1)
 
-    xmin, xmax = p.ax[0].get_xlim()
+    xmin, xmax = p.ax.get_xlim()
     assert abs(xmin + 2) < 1e-2
     assert abs(xmax - 2) < 1e-2
-    ymin, ymax = p.ax[0].get_ylim()
+    ymin, ymax = p.ax.get_ylim()
     assert abs(ymin + 2) < 1e-2
     assert abs(ymax - 2) < 1e-2
-    zmin, zmax = p.ax[0].get_zlim()
+    zmin, zmax = p.ax.get_zlim()
     assert abs(zmin + 10) < 1e-2
     assert abs(zmax - 10) < 1e-2
 
