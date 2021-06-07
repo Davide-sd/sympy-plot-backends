@@ -33,6 +33,7 @@ from itertools import cycle
 from matplotlib import cm
 from sympy.utilities.iterables import is_sequence
 from spb.series import BaseSeries
+from cplot import get_srgb1
 
 class Plot:
     """Base class for all backends. A backend represents the plotting library,
@@ -276,6 +277,32 @@ class Plot:
         except NameError:
             return 3      # Probably standard Python interpreter
     
+    def _get_image(self, s, rgba=False, n=100):
+        x, y, z = s.get_data()
+        magn = np.absolute(z)
+        angle = np.angle(z)
+        colors = (get_srgb1(z, s.alpha, s.colorspace) * 255).astype(np.uint8)
+                
+        img = np.zeros((*x.shape, 3) if not rgba else x.shape, dtype=np.uint32)
+        pixel = img
+        if rgba:
+            pixel = img.view(dtype=np.uint8).reshape((*x.shape, 4))
+
+        for i in range(s.n1):
+            for j in range(s.n2):
+                pixel[j, i] = colors[j, i] if not rgba else [*colors[j, i], 255]
+        
+        # compute the chroma colors to be displayed on the colorbar
+        # from -pi to pi by discretizing a complex unit-circle of radius 1
+        zn = 1 * np.exp(1j * np.linspace(0, 2 * np.pi, n))
+        discr = np.linspace(0, 1, n)
+        chroma_colors = get_srgb1(zn, s.alpha, s.colorspace)
+        chroma_colors = (chroma_colors * 255).astype(np.uint8)
+        # shift the argument from [0, 2*pi] to [-pi, pi]
+        chroma_colors = np.roll(chroma_colors, int(len(chroma_colors) / 2), axis=0)
+
+        return x, y, z, np.dstack([magn, angle]), img, discr, chroma_colors, np.pi
+
     def _get_pixels(self, s, interval_list):
         """ Create the necessary data to visualize a Bokeh/Plotly Heatmap.
         Heatmap can be thought as an image composed of pixels, each one having

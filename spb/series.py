@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from sympy import sympify, Tuple
+from sympy import sympify, Tuple, re, im
 from sympy.core.relational import (Equality, GreaterThan, LessThan,
                 Relational, StrictLessThan, StrictGreaterThan)
 from sympy.logic.boolalg import BooleanFunction
@@ -86,8 +86,11 @@ class BaseSeries:
     is_3Dvector = False
     # Represents a 2D or 3D vector
 
-    is_streamlines = False
-    # Wheter to represent the vector field as streamlines or quivers
+    is_complex = False
+    # Represent a complex expression
+
+    is_point = False
+    # If True, the rendering will use points, not lines.
 
     def __init__(self):
         super().__init__()
@@ -1170,7 +1173,7 @@ def _set_discretization_points(kwargs, pt):
                 Parametric3DLineSeries, ImplicitSeries]:
         if "n1" in kwargs.keys() and ("n" not in kwargs.keys()):
             kwargs["n"] = kwargs["n1"]
-    elif pt in [SurfaceOver2DRangeSeries, ContourSeries]:
+    elif pt in [SurfaceOver2DRangeSeries, ContourSeries, ComplexSeries]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]
@@ -1209,8 +1212,6 @@ class Vector2DSeries(VectorBase):
         self.u = SurfaceOver2DRangeSeries(u, range1, range2, **kwargs)
         self.v = SurfaceOver2DRangeSeries(v, range1, range2, **kwargs)
         self.label = label
-        # whether to draw streamlines or quivers
-        # self.is_streamlines = streamlines
 
     def get_data(self):
         x, y, u = self.u.get_data()
@@ -1238,8 +1239,6 @@ class Vector3DSeries(VectorBase):
         self.n1 = kwargs.get('n1', 10)
         self.n2 = kwargs.get('n2', 10)
         self.n3 = kwargs.get('n3', 10)
-        # # whether to draw streamlines or quivers
-        # self.is_streamlines = streamlines
 
     def get_data(self):
         x, y, z = np.meshgrid(
@@ -1263,3 +1262,90 @@ class Vector3DSeries(VectorBase):
             a = np.array(a, dtype=np.float64)
             return np.ma.masked_invalid(a)
         return x, y, z, _convert(uu), _convert(vv), _convert(ww)
+
+# class ComplexBaseSeries(BaseSeries):
+#     is_complex = True
+
+#     def __new__(cls):
+#         pass
+
+class ComplexSeries(BaseSeries):
+    is_complex = True
+    is_point = False
+    # is_line = False
+    is_domain_coloring = False
+
+    def __init__(self, expr, range_x, label, **kwargs):
+        self.expr = sympify(expr)
+        if isinstance(self.expr, (list, tuple)):
+            self.is_2Dline = True
+            self.is_point = True
+            self.var = None
+            self.start = None
+            self.end = None
+        else:
+            self.var = sympify(range_x[0])
+            self.start = complex(range_x[1])
+            self.end = complex(range_x[2])
+            if np.imag(self.start) == np.imag(self.end):
+                self.is_2Dline = True
+            else:
+                self.is_domain_coloring = True
+        
+        self.n1 = kwargs.get('n1', 300)
+        self.n2 = kwargs.get('n2', 300)
+        self.xscale = kwargs.get('xscale', 'linear')
+        self.yscale = kwargs.get('yscale', 'linear')
+
+        # these will be passed to cplot.get_srgb1
+        self.alpha = kwargs.get('alpha', 1)
+        self.colorspace = kwargs.get('colorspace', 'cam16')
+
+        self.real = kwargs.get('real', True)
+        self.imag = kwargs.get('imag', True)
+
+        if self.real and self.imag:
+            self.label = label
+        elif self.real:
+            self.label = "re(%s)" % label
+        elif self.imag:
+            self.label = "im(%s)" % label
+        else:
+            self.label = label
+    
+    def get_data(self):
+        if isinstance(self.expr, (list, tuple)):
+            # list of complex points
+            x_list, y_list = [], []
+            for p in self.expr:
+                x_list.append(float(re(p)))
+                y_list.append(float(im(p)))
+            return x_list, y_list
+        
+        # TODO: do I need this???
+        from sympy import lambdify
+
+        if np.imag(self.start) == np.imag(self.end):
+            # compute the real and imaginary part of the complex function
+            x = self._discretize(self.start, self.end, self.n1, self.xscale)
+            f = lambdify([self.var], self.expr)
+            y = f(x + np.imag(self.start) * 1j)
+            x, real, imag = np.real(x), np.real(y), np.imag(y)
+            if self.real and self.imag:
+                return x, real, imag
+            elif self.real:
+                return x, real
+            elif self.imag:
+                return x, imag
+        
+        # Domain coloring
+        start_x = np.real(self.start)
+        end_x = np.real(self.end)
+        start_y = np.imag(self.start)
+        end_y = np.imag(self.end)
+        x = self._discretize(start_x, end_x, self.n1, self.xscale)
+        y = self._discretize(start_y, end_y, self.n2, self.yscale)
+        xx, yy = np.meshgrid(x, y)
+        f = lambdify([self.var], self.expr)
+        zz = f(xx + 1j * yy)
+        return xx, yy, zz

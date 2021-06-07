@@ -165,6 +165,7 @@ class PlotlyBackend(Plot):
         
         self._fig.data = []
         
+        count = 0
         for ii, s in enumerate(series):
             if s.is_2Dline:
                 x, y = s.get_data()
@@ -174,7 +175,7 @@ class PlotlyBackend(Plot):
                     # TODO: show the colorbar with the u parameter
                     lkw = dict(
                         line_color = next(self._cl),
-                        mode = "lines+markers",
+                        mode = "lines+markers" if not s.is_point else "markers",
                         marker = dict(
                             color = u,
                             colorscale = next(self._cm),
@@ -188,13 +189,14 @@ class PlotlyBackend(Plot):
                     )
                 else:
                     lkw = dict(
-                        mode = "lines",
+                        mode = "lines" if not s.is_point else "markers",
                         line_color = next(self._cl)
                     )
                     self._fig.add_trace(
                         go.Scatter(x = x, y = y, name = s.label, 
                             **merge({}, lkw, line_kw))
                     )
+                count += 1
             elif s.is_3Dline:
                 x, y, z = s.get_data()
                 u = s.discretized_var
@@ -206,7 +208,7 @@ class PlotlyBackend(Plot):
                         color = u,
                         showscale = True,
                         colorbar = dict(
-                            x = 1 + 0.1 * ii,
+                            x = 1 + 0.1 * count,
                             title = s.label,
                             titleside = 'right',
                         ),
@@ -220,6 +222,7 @@ class PlotlyBackend(Plot):
                         **merge({}, lkw, line_kw)
                     )
                 )
+                count += 1
             elif s.is_3Dsurface:
                 xx, yy, zz = s.get_data()
                 # create a solid color to be used when self._use_cm=False
@@ -231,7 +234,7 @@ class PlotlyBackend(Plot):
                 skw = dict(
                     showscale = self.legend and show_3D_colorscales,
                     colorbar = dict(
-                        x = 1 + 0.1 * ii,
+                        x = 1 + 0.1 * count,
                         title = s.label,
                         titleside = 'right',
                     ),
@@ -268,6 +271,7 @@ class PlotlyBackend(Plot):
                                 showlegend = False
                             )
                         )
+                count += 1
             elif s.is_contour:
                 xx, yy, zz = s.get_data()
                 xx = xx[0, :]
@@ -285,13 +289,14 @@ class PlotlyBackend(Plot):
                         # scale down the color bar to make room for legend
                         len = 0.75 if (show_2D_vectors and self.legend) else 1,
                         yanchor = "bottom", y=0,
-                        x = 1 + 0.1 * ii,
+                        x = 1 + 0.1 * count,
                     )
                 )
                 # user-provided values
                 contour_kw = self._kwargs.get("contour_kw", dict())
                 self._fig.add_trace(go.Contour(x = xx, y = yy, z = zz,
                         **merge({}, ckw, contour_kw)))
+                count += 1
             elif s.is_implicit:
                 points = s.get_data()
                 if len(points) == 2:
@@ -333,6 +338,7 @@ class PlotlyBackend(Plot):
                     contour_kw = self._kwargs.get("contour_kw", dict())
                     self._fig.add_trace(go.Contour(x = x, y = y, z = z,
                             **merge({}, ckw, contour_kw)))
+                count += 1
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
@@ -404,6 +410,72 @@ class PlotlyBackend(Plot):
                                 v = vv.flatten(), w = ww.flatten(),
                                 **merge({}, qkw, quiver_kw))
                         )
+                count += 1
+            elif s.is_complex:
+                x, y, z, magn_angle, img, discr, colors, pi = self._get_image(s)
+                xmin, xmax = x.min(), x.max()
+                ymin, ymax = y.min(), y.max()
+
+                self._fig.add_trace(go.Image(
+                    x0 = xmin,
+                    y0 = ymin,
+                    dx = (xmax - xmin) / s.n1,
+                    dy = (ymax - ymin) / s.n2,
+                    z = img,
+                    name = s.label,
+                    customdata = magn_angle,
+                    hovertemplate = ("x: %{x}<br />y: %{y}<br />RGB: %{z}" +
+                        "<br />Abs: %{customdata[0]}<br />Arg: %{customdata[1]}")
+                ))
+
+                # chroma/phase-colorbar
+                self._fig.add_trace(go.Scatter(
+                    x = [xmin, xmax],
+                    y = [ymin, ymax],
+                    showlegend = False,
+                    mode = "markers",
+                    marker = dict(
+                        opacity = 0,
+                        colorscale = ["rgb(%s, %s, %s)" % tuple(c) for c in colors],
+                        color = [-pi, pi],
+                        colorbar = dict(
+                            tickvals = [-pi, -pi / 2, 0, pi / 2, pi],
+                            ticktext = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"],
+                            x = 1 + 0.1 * count,
+                            title = "Argument",
+                            titleside = 'right',
+                        ),
+                        showscale = True,
+                    )
+                ))
+
+                # lightness/magnitude-colorbar
+                self._fig.add_trace(go.Scatter(
+                    x = [xmin, xmax],
+                    y = [ymin, ymax],
+                    showlegend = False,
+                    mode = "markers",
+                    marker = dict(
+                        opacity = 0,
+                        colorscale = [[0, "black"], [1, "white"]],
+                        color = [0, 1e20],
+                        colorbar = dict(
+                            tickvals = [0, 1e20],
+                            ticktext = ["0", "&#x221e;"],
+                            x = 1 + 0.1 * (count + 1),
+                            title = "Magnitude",
+                            titleside = 'right',
+                        ),
+                        showscale = True,
+                    )
+                ))
+
+                self._fig.update_layout(
+                    yaxis = dict(
+                        autorange = "reversed"
+                    )
+                )
+                count += 2
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}".format(type(s), type(self).__name__)

@@ -7,6 +7,7 @@ from bokeh.io import curdoc
 from bokeh.models import (
     LinearColorMapper, ColumnDataSource, MultiLine, ColorBar, Segment
 )
+from bokeh.models.tickers import FixedTicker
 from bokeh.io import export_png, export_svg
 import itertools
 import colorcet as cc
@@ -267,6 +268,15 @@ class BokehBackend(Plot):
             ("x", "$x"),
             ("y", "$y")
         ]
+
+        # with complex domain coloring, need to show the magnitude and phase
+        # in the tooltip
+        if any([s.is_complex and s.is_domain_coloring for s in self.series]):
+            TOOLTIPS += [
+                ("Abs", "@abs"),
+                ("Arg", "@arg")
+            ]
+
         self._fig = figure(
             title = self.title,
             x_axis_label = self.xlabel if self.xlabel else "x",
@@ -319,7 +329,10 @@ class BokehBackend(Plot):
                         color=next(self._cl)
                     )
                     line_kw = self._kwargs.get("line_kw", dict())
-                    self._fig.line(x, y, **merge({}, lkw, line_kw))
+                    if not s.is_point:
+                        self._fig.line(x, y, **merge({}, lkw, line_kw))
+                    else:
+                        self._fig.dot(x, y, **merge({"size": 20}, lkw, line_kw))
             elif s.is_contour:
                 x, y, z = s.get_data()
                 x = x.flatten()
@@ -386,6 +399,34 @@ class BokehBackend(Plot):
                     glyph = Segment(x0="x0", y0="y0", x1="x1", y1="y1",
                         **merge({}, qkw, quiver_kw))
                     self._fig.add_glyph(source, glyph)
+            elif s.is_complex:
+                x, y, z, magn_angle, img, discr, colors, pi = self._get_image(s, True)
+                
+                source = ColumnDataSource({
+                    "image": [img],
+                    "abs": [magn_angle[:, :, 0]],
+                    "arg": [magn_angle[:, :, 1]]
+                })
+
+                self._fig.image_rgba(source=source, x=x.min(), y=y.min(),
+                        dw=x.max() - x.min(), dh=y.max() - y.min())
+                
+                # chroma/phase-colorbar
+                cm1 = LinearColorMapper(palette=[tuple(c) for c in colors], 
+                        low=-pi, high=pi)
+                ticks = [-pi, -pi/2 , 0, pi/2, pi]
+                labels = ["-π", "-π / 2", "0", "π / 2", "π"]
+                colorbar1 = ColorBar(color_mapper=cm1, title="Argument",
+                    ticker = FixedTicker(ticks = ticks),
+                    major_label_overrides = {k: v for k, v in zip(ticks, labels)})
+                self._fig.add_layout(colorbar1, 'right')
+
+                # lightness/magnitude-colorbar
+                cm2 = LinearColorMapper(palette=bp.gray(100), low=0, high=1)
+                colorbar2 = ColorBar(color_mapper=cm2, title="Magnitude",
+                    ticker = FixedTicker(ticks = [0, 1]),
+                    major_label_overrides = {0: "0", 1: "∞"})
+                self._fig.add_layout(colorbar2, 'right')
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__) +
