@@ -418,7 +418,7 @@ class BokehBackend(Plot):
                         **merge({}, qkw, quiver_kw))
                     self._fig.add_glyph(source, glyph)
             elif s.is_complex:
-                x, y, z, magn_angle, img, discr, colors, pi = self._get_image(s, True)
+                x, y, z, magn_angle, img, discr, colors = self._get_image(s, True)
                 
                 source = ColumnDataSource({
                     "image": [img],
@@ -431,8 +431,8 @@ class BokehBackend(Plot):
                 
                 # chroma/phase-colorbar
                 cm1 = LinearColorMapper(palette=[tuple(c) for c in colors], 
-                        low=-pi, high=pi)
-                ticks = [-pi, -pi/2 , 0, pi/2, pi]
+                        low=-self.pi, high=self.pi)
+                ticks = [-self.pi, -self.pi/2 , 0, self.pi/2, self.pi]
                 labels = ["-π", "-π / 2", "0", "π / 2", "π"]
                 colorbar1 = ColorBar(color_mapper=cm1, title="Argument",
                     ticker = FixedTicker(ticks = ticks),

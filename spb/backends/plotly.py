@@ -443,7 +443,7 @@ class PlotlyBackend(Plot):
                         )
                 count += 1
             elif s.is_complex:
-                x, y, z, magn_angle, img, discr, colors, pi = self._get_image(s)
+                x, y, z, magn_angle, img, discr, colors = self._get_image(s)
                 xmin, xmax = x.min(), x.max()
                 ymin, ymax = y.min(), y.max()
 
@@ -468,9 +468,9 @@ class PlotlyBackend(Plot):
                     marker = dict(
                         opacity = 0,
                         colorscale = ["rgb(%s, %s, %s)" % tuple(c) for c in colors],
-                        color = [-pi, pi],
+                        color = [-self.pi, self.pi],
                         colorbar = dict(
-                            tickvals = [-pi, -pi / 2, 0, pi / 2, pi],
+                            tickvals = [-self.pi, -self.pi / 2, 0, self.pi / 2, self.pi],
                             ticktext = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"],
                             x = 1 + 0.1 * count,
                             title = "Argument",

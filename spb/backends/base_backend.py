@@ -332,7 +332,7 @@ class Plot:
         # shift the argument from [0, 2*pi] to [-pi, pi]
         chroma_colors = np.roll(chroma_colors, int(len(chroma_colors) / 2), axis=0)
 
-        return x, y, z, np.dstack([magn, angle]), img, discr, chroma_colors, np.pi
+        return x, y, z, np.dstack([magn, angle]), img, discr, chroma_colors
 
     def _get_pixels(self, s, interval_list):
         """ Create the necessary data to visualize a Bokeh/Plotly Heatmap.
