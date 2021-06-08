@@ -7,6 +7,7 @@ import warnings
 from matplotlib.tri import Triangulation
 import itertools
 from mergedeep import merge
+import colorcet as cc
 
 # TODO:
 # 1. load the plot with menu minimized
@@ -55,6 +56,10 @@ class K3DBackend(Plot):
         k3d.basic_color_maps.BlackBodyRadiation, k3d.matplotlib_color_maps.Plasma,
         k3d.matplotlib_color_maps.Autumn, k3d.matplotlib_color_maps.Winter,
         k3d.paraview_color_maps.Nic_Edge, k3d.paraview_color_maps.Haze
+    ]
+
+    cyclic_colormaps = [
+        k3d.paraview_color_maps.Erdc_iceFire_H
     ]
 
     quivers_colormaps = [
@@ -120,6 +125,7 @@ class K3DBackend(Plot):
     def _init_cyclers(self):
         self._cl = itertools.cycle(self.colorloop)
         self._cm = itertools.cycle(self.colormaps)
+        self._cyccm = itertools.cycle(self.cyclic_colormaps)
         self._qcm = itertools.cycle(self.quivers_colormaps)
 
     def _process_series(self, series):
@@ -151,7 +157,10 @@ class K3DBackend(Plot):
 
             elif s.is_3Dsurface:
                 x, y, z = s.get_data()
-                
+                attribute = z
+                if s.is_complex:
+                    z, attribute = self._get_abs_arg(z)
+
                 if s.is_parametric:
                     vertices, indices = get_vertices_indices(x, y, z)
                     vertices = vertices.astype(np.float32)
@@ -168,10 +177,12 @@ class K3DBackend(Plot):
                     flat_shading = False,
                     wireframe = False,
                     color = self._convert_to_int(next(self._cl)),
+                    volume_bounds = (min(x), max(x), min(y), max(y), min(z), max(z))
                 )
                 if self._use_cm:
-                    a["color_map"] = next(self._cm)
-                    a["attribute"] = z
+                    a["color_map"] = (next(self._cm) if not s.is_complex 
+                            else next(self._cyccm))
+                    a["attribute"] = attribute
                 surface_kw = self._kwargs.get("surface_kw", dict())
                 surf = k3d.mesh(vertices, indices, 
                         **merge({}, a, surface_kw))

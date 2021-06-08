@@ -1291,6 +1291,8 @@ class ComplexSeries(BaseSeries):
                 self.is_2Dline = True
                 if kwargs.get('absarg', False):
                     self.is_parametric = True
+            elif kwargs.get("threed", False):
+                self.is_3Dsurface = True
             else:
                 self.is_domain_coloring = True
         

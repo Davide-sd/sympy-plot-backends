@@ -152,6 +152,11 @@ class Plot:
     # child backends can provide a list of color maps to render surfaces.
     colormaps = []
 
+    # pi number is used in all backends to set the ranges for the colorbars in
+    # complex plot. It is defined here for commodity, rather than importing 
+    # math or numpy on each backend.
+    pi = np.pi
+
     def __new__(cls, *args, **kwargs):
         backend = cls._get_backend(kwargs)
         return backend(*args, **kwargs)
@@ -298,10 +303,15 @@ class Plot:
         except NameError:
             return 3      # Probably standard Python interpreter
     
+    def _get_abs_arg(self, z):
+        """ Compute the absolute value and the argument of the provided
+        complex number.
+        """
+        return np.absolute(z), np.angle(z)
+    
     def _get_image(self, s, rgba=False, n=100):
         x, y, z = s.get_data()
-        magn = np.absolute(z)
-        angle = np.angle(z)
+        magn, angle = self._get_abs_arg(z)
         colors = (get_srgb1(z, s.alpha, s.colorspace) * 255).astype(np.uint8)
                 
         img = np.zeros((*x.shape, 3) if not rgba else x.shape, dtype=np.uint32)

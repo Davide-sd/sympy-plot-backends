@@ -21,6 +21,8 @@ def complex_plot(*args, show=True, **kwargs):
         2. line plot of the modulus of the complex function colored by its
             argument.
     * complex function over a complex range: domain coloring plot.
+    * complex function over a complex range: 3D plot of the modulus colored by
+        the argument.
 
     Arguments
     =========
@@ -67,6 +69,10 @@ def complex_plot(*args, show=True, **kwargs):
         show : boolean
             Default to True, in which case the plot will be shown on the screen.
         
+        threed : boolean
+            Default to False. When True, it will plot a 3D representation of the
+            absolute value of the complex function colored by its argument.
+
         use_cm : boolean
             If `absarg=True` and `use_cm=True` then plot the modulus of the 
             complex function colored by its argument. If `use_cm=False`, plot 
@@ -130,6 +136,12 @@ def complex_plot(*args, show=True, **kwargs):
         z = symbols("z")
         complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), colorspace="hsl", n=500)
     
+    3D plot of the absolute value of a complex function colored by its argument:
+
+    .. code-block:: python
+        z = symbols("z")
+        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True, 
+            legend=True, zlim=(-1, 6))
 
 
     TODO: problems...

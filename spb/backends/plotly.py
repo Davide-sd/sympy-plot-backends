@@ -247,6 +247,7 @@ class PlotlyBackend(Plot):
                     [0, col],
                     [1, col]
                 ]
+                colormap = next(self._cm) if not s.is_complex else next(self._cyccm)
                 skw = dict(
                     showscale = self.legend and show_3D_colorscales,
                     colorbar = dict(
@@ -254,8 +255,22 @@ class PlotlyBackend(Plot):
                         title = s.label,
                         titleside = 'right',
                     ),
-                    colorscale = next(self._cm) if self._use_cm else colorscale
+                    colorscale = colormap if self._use_cm else colorscale
                 )
+                if s.is_complex:
+                    zz, angle = self._get_abs_arg(zz)
+                    skw["surfacecolor"] = angle
+                    skw["customdata"] = angle
+                    skw["hovertemplate"] = "x: %{x}<br />y: %{y}<br />Abs: %{z}<br />Arg: %{customdata}"
+                    m, M = min(angle.flatten()), max(angle.flatten())
+                    
+                    # show pi symbols on the colorbar if the range is close
+                    # enough to [-pi, pi]
+                    if (abs(m + self.pi) < 1e-02) and (abs(M - self.pi) < 1e-02):
+                        # skw["color"] = [-self.pi, self.pi]
+                        skw["colorbar"]["tickvals"] = [m, -self.pi / 2, 0, self.pi / 2, M]
+                        skw["colorbar"]["ticktext"] = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"]
+                            
                 surface_kw = self._kwargs.get("surface_kw", dict())
                 self._fig.add_trace(
                     go.Surface(
