@@ -31,6 +31,7 @@ import warnings
 import numpy as np
 from itertools import cycle
 from matplotlib import cm
+from matplotlib.colors import Colormap
 from sympy.utilities.iterables import is_sequence
 from spb.series import BaseSeries
 from cplot import get_srgb1
@@ -240,6 +241,26 @@ class Plot:
             self.colorloop = self.colorloop.colors
         self._cl = cycle(self.colorloop)
     
+    def _get_RGB_from_mpl_cm(self, colormap, n=256):
+        """ Extract a list of n RGB colors from the specificied Matplotlib
+        colormap. It is assumed the provided colormap is a valid Matplotlib
+        colormap.
+        """
+        x = np.linspace(0, 1, n)
+        return [c[:-1] for c in [colormap(i) for i in x]]
+    
+    def _RGB_to_hex(self, colormap):
+        if isinstance(colormap, Colormap):
+            colormap = self._get_RGB_from_mpl_cm(colormap)
+
+        _str = '#%02x%02x%02x'
+        r = []
+        for color in colormap:
+            r.append(_str % tuple(int(c * 255) if c <= 1 else c 
+                for c in color))
+        return r
+
+
     def set_color_loop(self, cloop):
         """ Set the default color loop to use when use_cm=False. It must
         be a list of tuple (R, G, B) where 0 <= R,G,B <= 1.

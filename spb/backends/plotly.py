@@ -110,6 +110,12 @@ class PlotlyBackend(Plot):
         'aggrnyl', 'plotly3', 'reds_r', 'ice', 'inferno', 
         'deep_r', 'turbid_r', 'gnbu_r', 'geyser_r', 'oranges_r' 
     ]
+
+    # to be used in complex-parametric plots
+    cyclic_colormaps = [
+        "phase", "twilight", "hsv", "icefire"
+    ]
+
     # a selection of solid colors for wireframe lines that may look good with
     # the above colormaps
     wireframe_colors = [
@@ -145,6 +151,7 @@ class PlotlyBackend(Plot):
     def _init_cyclers(self):
         self._cl = itertools.cycle(self.colorloop)
         self._cm = itertools.cycle(self.colormaps)
+        self._cyccm = itertools.cycle(self.cyclic_colormaps)
         self._wfcm = itertools.cycle(self.wireframe_colors)
         self._qc = itertools.cycle(self.quivers_colors)
     
@@ -172,15 +179,24 @@ class PlotlyBackend(Plot):
                 line_kw = self._kwargs.get("line_kw", dict())
                 if s.is_parametric:
                     u = s.discretized_var
+                    import numpy as np
                     # TODO: show the colorbar with the u parameter
                     lkw = dict(
                         line_color = next(self._cl),
                         mode = "lines+markers" if not s.is_point else "markers",
                         marker = dict(
                             color = u,
-                            colorscale = next(self._cm),
+                            colorscale = (next(self._cm) if not s.is_complex 
+                                    else next(self._cyccm)),
                             size = 6
-                        ))
+                        ),
+                        customdata = u,
+                        hovertemplate = (
+                            "x: %{x}<br />y: %{y}<br />u: %{customdata}" 
+                            if not s.is_complex else
+                            "x: %{x}<br />y: %{y}<br />Arg: %{customdata}"
+                        )
+                    )
                     self._fig.add_trace(
                         go.Scatter(
                             x = x, y = y, name = s.label,

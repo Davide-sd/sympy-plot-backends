@@ -14,6 +14,7 @@ import colorcet as cc
 import os
 import numpy as np
 from mergedeep import merge
+import matplotlib.cm as cm
 
 # TODO: is it possible to further optimize this function?
 #
@@ -236,9 +237,16 @@ class BokehBackend(Plot):
 
     colorloop = bp.Category10[10]
     
+    # to be used in parametric plots
     colormaps = [
         cc.fire, cc.isolum, cc.rainbow, cc.blues, cc.bmy, cc.colorwheel, cc.bgy
     ]
+
+    # to be used in complex-parametric plots
+    cyclic_colormaps = [
+        cm.hsv, cm.twilight, cc.cyclic_mygbm_30_95_c78_s25 
+    ]
+
     # TODO: better selection of discrete color maps for contour plots
     contour_colormaps = [
         bp.Plasma10, bp.Blues9, bp.Greys10
@@ -269,9 +277,12 @@ class BokehBackend(Plot):
             ("y", "$y")
         ]
 
-        # with complex domain coloring, need to show the magnitude and phase
-        # in the tooltip
+        if all([s.is_parametric for s in self.series]):
+            # with parametric plots, also visualize the parameter
+            TOOLTIPS += [("u", "@us")]
         if any([s.is_complex and s.is_domain_coloring for s in self.series]):
+            # with complex domain coloring, shows the magnitude and phase
+            # in the tooltip
             TOOLTIPS += [
                 ("Abs", "@abs"),
                 ("Arg", "@arg")
@@ -298,10 +309,15 @@ class BokehBackend(Plot):
         self._process_series(self._series)
     
     def _init_cyclers(self):
-        # infinity cycler over 10 colors
+        """ Initialize infinity cyclers
+        """
         self._cl = itertools.cycle(self.colorloop)
         self._ccm = itertools.cycle(self.contour_colormaps)
         self._qcm = itertools.cycle(self.quivers_colormaps)
+        # the following color maps are list of RGB tuples. However, Bokeh needs
+        # list of hex strings
+        cyclic_cm = [self._RGB_to_hex(cm) for cm in self.cyclic_colormaps]
+        self._cyccm = itertools.cycle(cyclic_cm)
 
     def _process_series(self, series):
         self._init_cyclers()
@@ -319,8 +335,10 @@ class BokehBackend(Plot):
                 
                 if s.is_parametric:
                     u = s.discretized_var
+                    colormap = (next(self._cm) if not s.is_complex 
+                            else next(self._cyccm))
                     ds, line, cb = self._create_gradient_line(x, y, u,
-                            next(self._cm), s.label)
+                            colormap, s.label)
                     self._fig.add_glyph(ds, line)
                     self._fig.add_layout(cb, "right")
                 else:

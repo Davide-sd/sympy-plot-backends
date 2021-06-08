@@ -1263,32 +1263,34 @@ class Vector3DSeries(VectorBase):
             return np.ma.masked_invalid(a)
         return x, y, z, _convert(uu), _convert(vv), _convert(ww)
 
-# class ComplexBaseSeries(BaseSeries):
-#     is_complex = True
-
-#     def __new__(cls):
-#         pass
 
 class ComplexSeries(BaseSeries):
+    """ Represent a complex number or a complex function.
+    """
     is_complex = True
     is_point = False
-    # is_line = False
     is_domain_coloring = False
 
     def __init__(self, expr, range_x, label, **kwargs):
+        print("ComplexSeries -> __init__", expr)
         self.expr = sympify(expr)
-        if isinstance(self.expr, (list, tuple)):
+        print("\t", self.expr)
+        if isinstance(self.expr, (list, tuple, Tuple)):
+            print("DC 1")
             self.is_2Dline = True
             self.is_point = True
             self.var = None
             self.start = None
             self.end = None
         else:
+            print("DC 2")
             self.var = sympify(range_x[0])
             self.start = complex(range_x[1])
             self.end = complex(range_x[2])
             if np.imag(self.start) == np.imag(self.end):
                 self.is_2Dline = True
+                if kwargs.get('absarg', False):
+                    self.is_parametric = True
             else:
                 self.is_domain_coloring = True
         
@@ -1304,7 +1306,9 @@ class ComplexSeries(BaseSeries):
         self.real = kwargs.get('real', True)
         self.imag = kwargs.get('imag', True)
 
-        if self.real and self.imag:
+        if self.is_parametric:
+            self.label = "Abs(%s)" % label
+        elif self.real and self.imag:
             self.label = label
         elif self.real:
             self.label = "re(%s)" % label
@@ -1314,10 +1318,11 @@ class ComplexSeries(BaseSeries):
             self.label = label
     
     def get_data(self):
-        if isinstance(self.expr, (list, tuple)):
+        if isinstance(self.expr, (list, tuple, Tuple)):
             # list of complex points
             x_list, y_list = [], []
             for p in self.expr:
+                print("ComplexSeries -> get_data", p)
                 x_list.append(float(re(p)))
                 y_list.append(float(im(p)))
             return x_list, y_list
@@ -1331,7 +1336,12 @@ class ComplexSeries(BaseSeries):
             f = lambdify([self.var], self.expr)
             y = f(x + np.imag(self.start) * 1j)
             x, real, imag = np.real(x), np.real(y), np.imag(y)
-            if self.real and self.imag:
+            if self.is_parametric:
+                magn = np.absolute(y)
+                self.discretized_var = np.angle(y)
+                return x, magn
+            elif self.real and self.imag:
+                # TODO: is this being used?
                 return x, real, imag
             elif self.real:
                 return x, real
