@@ -1,5 +1,6 @@
 from spb.defaults import k3d_bg_color
 from spb.backends.base_backend import Plot
+from spb.backends.utils import convert_colormap
 from spb.utils import get_vertices_indices, get_seeds_points
 import k3d
 import numpy as np
@@ -8,10 +9,13 @@ from matplotlib.tri import Triangulation
 import itertools
 from mergedeep import merge
 import colorcet as cc
+from PIL import ImageColor
+import matplotlib.cm as cm
 
 # TODO:
 # 1. load the plot with menu minimized
 # 2. iplot support for streamlines?
+
 
 class K3DBackend(Plot):
     """ A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
@@ -50,6 +54,8 @@ class K3DBackend(Plot):
             colors will be used instead. Default to True.
     """
 
+    _library = "k3d"
+
     # TODO: better selection of colormaps
     colormaps = [
         k3d.basic_color_maps.CoolWarm, k3d.basic_color_maps.Jet,
@@ -59,7 +65,7 @@ class K3DBackend(Plot):
     ]
 
     cyclic_colormaps = [
-        k3d.paraview_color_maps.Erdc_iceFire_H
+        cc.colorwheel, k3d.paraview_color_maps.Erdc_iceFire_H
     ]
 
     quivers_colormaps = [
@@ -80,12 +86,15 @@ class K3DBackend(Plot):
             raise ValueError(
                     "Sorry, K3D backend only works within Jupyter Notebook")
 
+        self._bounds = []
+        self._clipping = []
+
         self._init_cyclers()
 
         self._fig = k3d.plot(
             grid_visible = self.grid,
             menu_visibility = True,
-            background_color = self._kwargs.get("bg_color", k3d_bg_color)
+            background_color = self._kwargs.get("bg_color", k3d_bg_color),
         )
         if (self.xscale == "log") or (self.yscale == "log"):
             warnings.warn("K3D-Jupyter doesn't support log scales. We will " +
@@ -123,10 +132,10 @@ class K3DBackend(Plot):
         return cls._rgb_to_int(color)
 
     def _init_cyclers(self):
-        self._cl = itertools.cycle(self.colorloop)
-        self._cm = itertools.cycle(self.colormaps)
-        self._cyccm = itertools.cycle(self.cyclic_colormaps)
-        self._qcm = itertools.cycle(self.quivers_colormaps)
+        super()._init_cyclers()
+        quivers_colormaps = [convert_colormap(cm, self._library) for cm
+                in self.quivers_colormaps]
+        self._qcm = itertools.cycle(quivers_colormaps)
 
     def _process_series(self, series):
         self._init_cyclers()
@@ -161,6 +170,9 @@ class K3DBackend(Plot):
                 if s.is_complex:
                     z, attribute = self._get_abs_arg(z)
 
+                # TODO:
+                # Can I use get_vertices_indices also for non parametric surfaces?
+
                 if s.is_parametric:
                     vertices, indices = get_vertices_indices(x, y, z)
                     vertices = vertices.astype(np.float32)
@@ -170,6 +182,24 @@ class K3DBackend(Plot):
                     z = z.flatten()
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     indices = Triangulation(x, y).triangles.astype(np.uint32)
+
+                    # look for high aspect ratio meshes, where (dz >> dx, dy) 
+                    # and eventually set the bounds around the mid point of the 
+                    # mesh in order to improve visibility.
+                    # Bounds will be used to set the camera position.
+                    mz, Mz, meanz = z.min(), z.max(), z.mean()
+                    mx, Mx = x.min(), x.max()
+                    my, My = y.min(), y.max()
+                    dx, dy, dz = (Mx - mx), (My - my), (Mz - mz)
+                    # thresholds
+                    t1, t2 = 10, 3
+                    if (dz / dx >= t1) and (dz / dy >= t1):
+                        if abs(Mz / meanz) > t1:
+                            Mz = meanz + t2 * max(dx, dy)
+                        if abs(mz / meanz) > t1:
+                            mz = meanz - t2 * max(dx, dy)
+                        self._bounds.append([mx, Mx, my, My, mz, Mz])
+
                 
                 a = dict(
                     name = s.label if self._kwargs.get("show_label", False) else None,
@@ -177,7 +207,7 @@ class K3DBackend(Plot):
                     flat_shading = False,
                     wireframe = False,
                     color = self._convert_to_int(next(self._cl)),
-                    volume_bounds = (min(x), max(x), min(y), max(y), min(z), max(z))
+                    # volume_bounds = (min(x), max(x), min(y), max(y), min(z), max(z))
                 )
                 if self._use_cm:
                     a["color_map"] = (next(self._cm) if not s.is_complex 
@@ -391,10 +421,48 @@ class K3DBackend(Plot):
                     vectors = np.array((uu, vv, ww)).T * scale
                     self.fig.objects[i].vectors = vectors
 
+    def _get_auto_camera(self, factor=1.5, yaw=40, pitch=60):
+        """ This function is very similar to k3d.plot.Plot.get_auto_camera.
+        However, it uses 
+        """
+        bounds = np.array(self._bounds)
+        bounds = np.dstack([np.min(bounds[:, 0::2], axis=0), 
+                np.max(bounds[:, 1::2], axis=0)]).flatten()
+        center = (bounds[::2] + bounds[1::2]) / 2.0
+        radius = 0.5 * np.sum(np.abs(bounds[::2] - bounds[1::2]) ** 2) ** 0.5
+        cam_distance = radius * factor / np.sin(np.deg2rad(self._fig.camera_fov / 2.0))
+        
+        x = np.sin(np.deg2rad(pitch)) * np.cos(np.deg2rad(yaw))
+        y = np.sin(np.deg2rad(pitch)) * np.sin(np.deg2rad(yaw))
+        z = np.cos(np.deg2rad(pitch))
+
+        if pitch not in [0, 180]:
+            up = [0, 0, 1]
+        else:
+            up = [0, 1, 1]
+
+        asd = [
+            center[0] + x * cam_distance,
+            center[1] + y * cam_distance,
+            center[2] + z * cam_distance,
+            *center,
+            *up
+        ]
+        return asd
+
     def show(self):
         # self._process_series(self._series)
         self.plot_shown = True
+        # self._fig.grid = [-2, 2, -2, 2, 0, 10]
+        if len(self._bounds) > 0:
+            self._fig.camera_auto_fit = False
+            self._fig.camera = self._get_auto_camera()
         self._fig.display()
+        if self.zlim:
+            self._fig.clipping_planes = [
+                [0, 0, 1, self.zlim[0]],
+                [0, 0, -1, self.zlim[1]]
+            ]
     
     def save(self, path, **kwargs):
         if not self.plot_shown:

@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 from plotly.figure_factory import create_quiver, create_streamline
 from mergedeep import merge
 import itertools
+import matplotlib.cm as cm
+from spb.backends.utils import convert_colormap
 
 """
 TODO:
@@ -95,6 +97,9 @@ class PlotlyBackend(Plot):
     in the following page:
     https://plotly.com/python/static-image-export/
     """
+
+    _library = "plotly"
+
     # The following colors corresponds to the discret color map 
     # px.colors.qualitative.Plotly. Thei are here in order to avoid the 
     # following statement: import plotly.express as px
@@ -149,9 +154,7 @@ class PlotlyBackend(Plot):
         self._update_layout()
     
     def _init_cyclers(self):
-        self._cl = itertools.cycle(self.colorloop)
-        self._cm = itertools.cycle(self.colormaps)
-        self._cyccm = itertools.cycle(self.cyclic_colormaps)
+        super()._init_cyclers()
         self._wfcm = itertools.cycle(self.wireframe_colors)
         self._qc = itertools.cycle(self.quivers_colors)
     

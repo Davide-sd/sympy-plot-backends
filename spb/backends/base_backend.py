@@ -31,10 +31,11 @@ import warnings
 import numpy as np
 from itertools import cycle
 from matplotlib import cm
-from matplotlib.colors import Colormap
 from sympy.utilities.iterables import is_sequence
 from spb.series import BaseSeries
+from spb.backends.utils import convert_colormap
 from cplot import get_srgb1
+
 
 class Plot:
     """Base class for all backends. A backend represents the plotting library,
@@ -142,15 +143,25 @@ class Plot:
     MatplotlibBackend, PlotlyBackend, BokehBackend, K3DBackend, MayaviBackend
     """
 
+    # set the name of the plotting library being used. This is required in order
+    # to convert any colormap to the specified plotting library.
+    _library = ""
+
     # Set it to True in the subclasses if they are able to generate plot grids.
     # Also, clearly states in the docstring of the backend if it supports
     # plotgrids or not
     support_plotgrid = False
 
+    # list of colors to be used in line plots or solid color surfaces.
+    # It can also be an instance of matplotlib's ListedColormap.
     colorloop = cm.tab10
 
-    # child backends can provide a list of color maps to render surfaces.
+    # child backends should provide a list of color maps to render surfaces.
     colormaps = []
+
+    # child backends should provide a list of cyclic color maps to render 
+    # complex series (the phase/argument ranges over [-pi, pi]).
+    cyclic_colormaps = []
 
     # pi number is used in all backends to set the ranges for the colorbars in
     # complex plot. It is defined here for commodity, rather than importing 
@@ -236,46 +247,21 @@ class Plot:
         # The user can choose to use the standard color map loop, or set/provide
         # a solid color loop (for the surface color).
         self._use_cm = kwargs.get("use_cm", True)
-        # infinite loop iterator over the provided color maps
-        self._cm = cycle(self.colormaps)
-        # generate a list of RGB tuples (with values from 0 to 1) starting
-        # from matplotlib's tab10 color map. This can be used instead of looping
-        # through the colormaps
+    
+    def _init_cyclers(self):
+        """ Create infinite loop iterators over the provided color maps. """
+
         if not isinstance(self.colorloop, (list, tuple)):
-            # assume it is a matplotlib colormap
+            # assume it is a matplotlib's ListedColormap
             self.colorloop = self.colorloop.colors
         self._cl = cycle(self.colorloop)
-    
-    def _get_RGB_from_mpl_cm(self, colormap, n=256):
-        """ Extract a list of n RGB colors from the specificied Matplotlib
-        colormap. It is assumed the provided colormap is a valid Matplotlib
-        colormap.
-        """
-        x = np.linspace(0, 1, n)
-        return [c[:-1] for c in [colormap(i) for i in x]]
-    
-    def _RGB_to_hex(self, colormap):
-        if isinstance(colormap, Colormap):
-            colormap = self._get_RGB_from_mpl_cm(colormap)
 
-        _str = '#%02x%02x%02x'
-        r = []
-        for color in colormap:
-            r.append(_str % tuple(int(c * 255) if c <= 1 else c 
-                for c in color))
-        return r
-
-
-    def set_color_loop(self, cloop):
-        """ Set the default color loop to use when use_cm=False. It must
-        be a list of tuple (R, G, B) where 0 <= R,G,B <= 1.
-        """
-        if not isinstance(cloop, (tuple, list)):
-            raise TypeError(
-                    "cloop must be a list of RGB tuples with values " +
-                    "from 0 to 1."
-                )
-        self._cl = cloop
+        colormaps = [convert_colormap(cm, self._library) for cm
+                in self.colormaps]
+        self._cm = cycle(colormaps)
+        cyclic_colormaps = [convert_colormap(cm, self._library) for cm
+                in self.cyclic_colormaps]
+        self._cyccm = cycle(cyclic_colormaps)
     
     def _get_mode(self):
         """ Verify which environment is used to run the code.

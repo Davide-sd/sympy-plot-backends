@@ -15,6 +15,7 @@ import os
 import numpy as np
 from mergedeep import merge
 import matplotlib.cm as cm
+from spb.backends.utils import convert_colormap
 
 # TODO: is it possible to further optimize this function?
 #
@@ -235,6 +236,8 @@ class BokehBackend(Plot):
     Do a quick search on the web to find the appropriate installer.
     """
 
+    _library = "bokeh"
+
     colorloop = bp.Category10[10]
     
     # to be used in parametric plots
@@ -248,6 +251,7 @@ class BokehBackend(Plot):
     ]
 
     # TODO: better selection of discrete color maps for contour plots
+    # DO I need this or can I just use colormaps?
     contour_colormaps = [
         bp.Plasma10, bp.Blues9, bp.Greys10
     ]
@@ -309,15 +313,13 @@ class BokehBackend(Plot):
         self._process_series(self._series)
     
     def _init_cyclers(self):
-        """ Initialize infinity cyclers
-        """
-        self._cl = itertools.cycle(self.colorloop)
-        self._ccm = itertools.cycle(self.contour_colormaps)
-        self._qcm = itertools.cycle(self.quivers_colormaps)
-        # the following color maps are list of RGB tuples. However, Bokeh needs
-        # list of hex strings
-        cyclic_cm = [self._RGB_to_hex(cm) for cm in self.cyclic_colormaps]
-        self._cyccm = itertools.cycle(cyclic_cm)
+        super()._init_cyclers()
+        contour_colormaps = [convert_colormap(cm, self._library) for cm
+                in self.contour_colormaps]
+        self._ccm = itertools.cycle(contour_colormaps)
+        quivers_colormaps = [convert_colormap(cm, self._library) for cm
+                in self.quivers_colormaps]
+        self._qcm = itertools.cycle(quivers_colormaps)
 
     def _process_series(self, series):
         self._init_cyclers()
