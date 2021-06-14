@@ -1272,18 +1272,14 @@ class ComplexSeries(BaseSeries):
     is_domain_coloring = False
 
     def __init__(self, expr, range_x, label, **kwargs):
-        print("ComplexSeries -> __init__", expr)
         self.expr = sympify(expr)
-        print("\t", self.expr)
         if isinstance(self.expr, (list, tuple, Tuple)):
-            print("DC 1")
             self.is_2Dline = True
             self.is_point = True
             self.var = None
             self.start = None
             self.end = None
         else:
-            print("DC 2")
             self.var = sympify(range_x[0])
             self.start = complex(range_x[1])
             self.end = complex(range_x[2])
@@ -1296,6 +1292,7 @@ class ComplexSeries(BaseSeries):
             else:
                 self.is_domain_coloring = True
         
+        self.gpd = kwargs.get("gpd", False)
         self.n1 = kwargs.get('n1', 300)
         self.n2 = kwargs.get('n2', 300)
         self.xscale = kwargs.get('xscale', 'linear')
@@ -1324,7 +1321,6 @@ class ComplexSeries(BaseSeries):
             # list of complex points
             x_list, y_list = [], []
             for p in self.expr:
-                print("ComplexSeries -> get_data", p)
                 x_list.append(float(re(p)))
                 y_list.append(float(im(p)))
             return x_list, y_list
@@ -1339,16 +1335,19 @@ class ComplexSeries(BaseSeries):
             y = f(x + np.imag(self.start) * 1j)
             x, real, imag = np.real(x), np.real(y), np.imag(y)
             if self.is_parametric:
-                magn = np.absolute(y)
-                self.discretized_var = np.angle(y)
-                return x, magn
+                mag = np.absolute(y)
+                arg = np.angle(y)
+                if self.gpd:
+                    return x, mag, arg
+                self.discretized_var = arg
+                return x, mag
             elif self.real and self.imag:
-                # TODO: is this being used?
                 return x, real, imag
             elif self.real:
                 return x, real
             elif self.imag:
                 return x, imag
+            return x, y
         
         # Domain coloring
         start_x = np.real(self.start)

@@ -1,12 +1,13 @@
-from sympy import symbols, cos, sin, log, Eq
+from sympy import symbols, cos, sin, log, Eq, I, Abs, exp, pi, gamma
 from sympy.vector import CoordSys3D
 from pytest import raises
 from spb.plot_data import _build_series
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     ParametricSurfaceSeries, SurfaceOver2DRangeSeries, InteractiveSeries,
-    ImplicitSeries, Vector2DSeries, Vector3DSeries
+    ImplicitSeries, Vector2DSeries, Vector3DSeries, ComplexSeries
 )
+import numpy as np
 
 def test_build_series():
     x, y, u, v = symbols("x, y, u, v")
@@ -109,3 +110,82 @@ def test_vectors():
     assert isinstance(s, Vector3DSeries)
     s = _build_series(l2, (x, -10, 10), (y, -5, 5), (z, -8, 8), pt="v3d")
     assert isinstance(s, Vector3DSeries)
+
+def test_complex():
+    x, y, z = symbols("x:z")
+    e1 = 1 + exp(-Abs(x)) * sin(I * sin(5 * x))
+
+    def do_test_1(s, n):
+        assert isinstance(s, ComplexSeries)
+        data = s.get_data()
+        assert len(data) == n
+        return data
+    
+    ### Complex line plots
+
+    # return x, mag(e1), arg(e1)
+    s1 = _build_series(e1, (x, -5, 5), absarg=True)
+    data1 = do_test_1(s1, 3)
+    s2 = _build_series(e1, (x, -5, 5), absarg=True, pt="c")
+    data2 = do_test_1(s2, 3)
+    assert all(t1 == t2 for t1, t2 in zip(data1[0], data2[0]))
+    assert all(t1 == t2 for t1, t2 in zip(data1[1], data2[1]))
+    assert all(t1 == t2 for t1, t2 in zip(data1[2], data2[2]))
+
+    # return x, real(e1), imag(e1)
+    s1 = _build_series(e1, (x, -5, 5))
+    data1 = do_test_1(s1, 3)
+    s2 = _build_series(e1, (x, -5, 5), pt="c")
+    data2 = do_test_1(s2, 3)
+    assert all(t1 == t2 for t1, t2 in zip(data1[0], data2[0]))
+    assert all(t1 == t2 for t1, t2 in zip(data1[1], data2[1]))
+    assert all(t1 == t2 for t1, t2 in zip(data1[2], data2[2]))
+    xx, real, imag = data1
+
+    # return x, real(e1)
+    s1 = _build_series(e1, (x, -5, 5), imag=False)
+    data1 = do_test_1(s1, 2)
+    assert np.all(data1[0] == xx)
+    assert np.all(data1[1] == real)
+    s2 = _build_series(e1, (x, -5, 5), imag=False, pt="c")
+    data2 = do_test_1(s2, 2)
+    assert all(t1 == t2 for t1, t2 in zip(data1[0], data2[0]))
+    assert all(t1 == t2 for t1, t2 in zip(data1[1], data2[1]))
+
+    # return x, imag(e1)
+    s1 = _build_series(e1, (x, -5, 5), real=False)
+    data1 = do_test_1(s1, 2)
+    assert np.all(data1[0] == xx)
+    assert np.all(data1[1] == imag)
+    s2 = _build_series(e1, (x, -5, 5), real=False, pt="c")
+    data2 = do_test_1(s2, 2)
+    assert all(t1 == t2 for t1, t2 in zip(data1[0], data2[0]))
+    assert all(t1 == t2 for t1, t2 in zip(data1[1], data2[1]))
+
+    # return x, e1 (complex numbers)
+    s1 = _build_series(e1, (x, -5, 5), real=False, imag=False)
+    data1 = do_test_1(s1, 2)
+    assert np.all(data1[0] == xx)
+    assert any(isinstance(d, complex) for d in data1[1].flatten())
+    s2 = _build_series(e1, (x, -5, 5), real=False, imag=False, pt="c")
+    data2 = do_test_1(s2, 2)
+    assert all(t1 == t2 for t1, t2 in zip(data1[0], data2[0]))
+    assert all(t1 == t2 for t1, t2 in zip(data1[1], data2[1]))
+
+
+    ### Lists of complex numbers: returns real, imag
+    e2 = z * exp(2 * pi * I * z)
+    l2 = [e2.subs(z, t / 20) for t in range(20)]
+    s = _build_series(l2)
+    do_test_1(s, 2)
+
+
+    ### Domain coloring: returns x, y, z where z is an array of complex numbers
+    s1 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I))
+    data1 = do_test_1(s1, 3)
+    assert any(isinstance(d, complex) for d in data1[-1].flatten())
+    s2 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), pt="c")
+    data2 = do_test_1(s2, 3)
+    assert all(t1 == t2 for t1, t2 in zip(data1[0].flatten(), data2[0].flatten()))
+    assert all(t1 == t2 for t1, t2 in zip(data1[1].flatten(), data2[1].flatten()))
+    assert all(t1 == t2 for t1, t2 in zip(data1[2].flatten(), data2[2].flatten()))

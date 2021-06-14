@@ -19,10 +19,10 @@ def complex_plot(*args, show=True, **kwargs):
     * complex function over a line range:
         1. line plot separating the real and imaginary parts.
         2. line plot of the modulus of the complex function colored by its
-            argument.
+            argument, if `absarg=True`.
     * complex function over a complex range: domain coloring plot.
     * complex function over a complex range: 3D plot of the modulus colored by
-        the argument.
+        the argument, if `threed=True`.
 
     Arguments
     =========
