@@ -1,5 +1,6 @@
 from collections.abc import Callable
-from sympy import sympify, Tuple
+from sympy import sympify, Tuple, symbols, solve
+from sympy.geometry import Plane
 from sympy.core.relational import (Equality, GreaterThan, LessThan,
                 Relational, StrictLessThan, StrictGreaterThan)
 from sympy.logic.boolalg import BooleanFunction
@@ -638,6 +639,14 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
                     str(self.var_y),
                     str((self.start_y, self.end_y)))
 
+    def _correct(self, a, b):
+        """ If the provided expression is a scalar, we need to
+        convert its dimension to the appropriate grid size.
+        """
+        if a.shape != b.shape:
+            return b * np.ones_like(a)
+        return b
+
     def get_meshes(self):
         mesh_x, mesh_y = np.meshgrid(np.linspace(self.start_x, self.end_x,
                                                  num=self.n1),
@@ -645,7 +654,7 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
                                                  num=self.n2))
         f = vectorized_lambdify((self.var_x, self.var_y), self.expr)
         mesh_z = f(mesh_x, mesh_y)
-        mesh_z = np.array(mesh_z, dtype=np.float64)
+        mesh_z = self._correct(mesh_x, mesh_z).astype(np.float64)
         mesh_z = np.ma.masked_invalid(mesh_z)
         self._zlim = (np.amin(mesh_z), np.amax(mesh_z))
         return mesh_x, mesh_y, mesh_z
@@ -1036,10 +1045,12 @@ class InteractiveSeries(BaseSeries):
             self.is_parametric = True
         elif (nexpr == 2) and (npar == 2):
             self.is_vector = True
+            self.is_slice = False
             self.is_2Dvector = True
         elif (nexpr == 3) and (npar == 3):
             self.is_vector = True
             self.is_3Dvector = True
+            self.is_slice = False
 
         # from the expression's free symbols, remove the ones used in
         # the parameters and the ranges
@@ -1082,9 +1093,21 @@ class InteractiveSeries(BaseSeries):
             # 2D or 3D lines
             self.ranges = {k: v for k, v in zip(discr_symbols, discretizations)}
         else:
-            # surfaces, needs mesh grids
-            meshes = np.meshgrid(*discretizations)
-            self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
+            _slice = kwargs.get("slice", None)
+            if _slice is not None:
+                # sliced 3D vector fields: the discretizations are provided by
+                # the plane or the surface
+                self.is_slice = True
+                kwargs2 = kwargs.copy()
+                kwargs2 = _set_discretization_points(kwargs2, SliceVector3DSeries)
+                slice_surf = GeometricPlaneSeries(
+                    _slice, *ranges, "", **kwargs2)
+                self.ranges = {k: v for k, v in
+                    zip(discr_symbols, slice_surf.get_data())}
+            else:
+                # surfaces: needs mesh grids
+                meshes = np.meshgrid(*discretizations)
+                self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
         
         # this will be used in update_data
         self._discret_shape = discretizations[0].shape
@@ -1135,7 +1158,7 @@ class InteractiveSeries(BaseSeries):
         
     def get_data(self):
         # if the expression depends only on the ranges, the user can call get_data
-        # directly without calling update_dat
+        # directly without calling update_data
         if (self.data is None) and (len(self.signature) == len(self.ranges)):
             self.update_data(dict())
         if self.data is None:
@@ -1182,17 +1205,21 @@ def _set_discretization_points(kwargs, pt):
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]
-    elif pt in [Vector3DSeries]:
+    elif pt in [Vector3DSeries, SliceVector3DSeries]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]
             kwargs["n3"] = kwargs["n"]
     return kwargs
 
+
 class VectorBase(BaseSeries):
+    """ Represent a vector field.
+    """
     is_vector = True
     is_2D = False
     is_3D = False
+    is_slice = False
 
     def _correct(self, a, b):
         """ If one of the provided vector components is a scalar, we need to
@@ -1202,22 +1229,26 @@ class VectorBase(BaseSeries):
             return b * np.ones_like(a)
         return b
 
+
 class Vector2DSeries(VectorBase):
+    """ Represents a 2D vector field.
+    """
     is_2Dvector = True
 
     def __init__(self, u, v, range1, range2, label, **kwargs):
         self.u = SurfaceOver2DRangeSeries(u, range1, range2, **kwargs)
         self.v = SurfaceOver2DRangeSeries(v, range1, range2, **kwargs)
         self.label = label
-        # whether to draw streamlines or quivers
-        # self.is_streamlines = streamlines
 
     def get_data(self):
         x, y, u = self.u.get_data()
         _, _, v = self.v.get_data()
         return x, y, self._correct(x, u), self._correct(x, v)
 
+
 class Vector3DSeries(VectorBase):
+    """ Represents a 3D vector field.
+    """
     is_3D = True
     is_3Dvector = True
 
@@ -1238,15 +1269,18 @@ class Vector3DSeries(VectorBase):
         self.n1 = kwargs.get('n1', 10)
         self.n2 = kwargs.get('n2', 10)
         self.n3 = kwargs.get('n3', 10)
-        # # whether to draw streamlines or quivers
-        # self.is_streamlines = streamlines
+    
+    def _discretize(self):
+        """ This method allows to reduce code repetition.
+        """
+        return np.meshgrid(
+            np.linspace(self.start_x, self.end_x, num=self.n1),
+            np.linspace(self.start_y, self.end_y, num=self.n2),
+            np.linspace(self.start_z, self.end_z, num=self.n3)
+        )
 
     def get_data(self):
-        x, y, z = np.meshgrid(
-                        np.linspace(self.start_x, self.end_x, num=self.n1),
-                        np.linspace(self.start_y, self.end_y, num=self.n2),
-                        np.linspace(self.start_z, self.end_z, num=self.n3)
-                    )
+        x, y, z = self._discretize()
         fu = vectorized_lambdify((self.var_x, self.var_y, self.var_z), self.u)
         fv = vectorized_lambdify((self.var_x, self.var_y, self.var_z), self.v)
         fw = vectorized_lambdify((self.var_x, self.var_y, self.var_z), self.w)
@@ -1254,7 +1288,6 @@ class Vector3DSeries(VectorBase):
         vv = fv(x, y, z)
         ww = fw(x, y, z)
 
-        
         uu = self._correct(x, uu)
         vv = self._correct(y, vv)
         ww = self._correct(z, ww)
@@ -1263,3 +1296,73 @@ class Vector3DSeries(VectorBase):
             a = np.array(a, dtype=np.float64)
             return np.ma.masked_invalid(a)
         return x, y, z, _convert(uu), _convert(vv), _convert(ww)
+
+
+class SliceVector3DSeries(Vector3DSeries):
+    """ Represents a 3D vector field plotted over a slice, which can be a slice
+    plane or a slice surface.
+    """
+    is_slice = True
+
+    def __init__(self, plane, u, v, w, range_x, range_y, range_z, label,
+            **kwargs):
+        if isinstance(plane, Plane):
+            self.plane = GeometricPlaneSeries(sympify(plane), 
+                    range_x, range_y, range_z, **kwargs)
+        else:
+            self.plane = SurfaceOver2DRangeSeries(plane,
+                range_x, range_y, "", **kwargs)
+        super().__init__(u, v, w, range_x, range_y, range_z, label, **kwargs)
+    
+    def _discretize(self):
+        """ This method allows to reduce code repetition.
+        """
+        return self.plane.get_data()
+
+
+class GeometricPlaneSeries(SurfaceBaseSeries):
+    """ Represents a plane in a 3D domain.
+    """
+    is_3Dsurface = True
+
+    def __init__(self, plane, x_range, y_range, z_range, label="", **kwargs):
+        self.plane = sympify(plane)
+        if not isinstance(self.plane, Plane):
+            raise TypeError(
+                "`plane` must be an instance of sympy.geometry.Plane")
+        self.x_range = sympify(x_range)
+        self.y_range = sympify(y_range)
+        self.z_range = sympify(z_range)
+        self.label = label
+        self.n1 = kwargs.get("n1", 20)
+        self.n2 = kwargs.get("n2", 20)
+        self.n3 = kwargs.get("n3", 20)
+    
+    def get_data(self):
+        x, y, z = symbols("x, y, z")
+        fs = self.plane.equation(x, y, z).free_symbols
+        xx, yy, zz = None, None, None
+        if fs == set([x]):
+            # parallel to yz plane (normal vector (1, 0, 0))
+            s = SurfaceOver2DRangeSeries(self.plane.p1[0], 
+                    (x, *self.z_range[1:]), (y, *self.y_range[1:]), "", 
+                    n1=self.n3, n2=self.n2)
+            xx, yy, zz = s.get_data()
+            xx, yy, zz = zz, yy, xx
+        elif fs == set([y]):
+            # parallel to xz plane (normal vector (0, 1, 0))
+            s = SurfaceOver2DRangeSeries(self.plane.p1[1], 
+                    (x, *self.x_range[1:]), (y, *self.z_range[1:]), "", 
+                    n1=self.n1, n2=self.n3)
+            xx, yy, zz = s.get_data()
+            xx, yy, zz = xx, zz, yy
+        else:
+            # parallel to xy plane, or any other plane
+            eq = self.plane.equation(x, y, z)
+            if z in eq.free_symbols:
+                eq = solve(eq, z)[0]
+            s = SurfaceOver2DRangeSeries(eq, 
+                    (x, *self.x_range[1:]), (y, *self.y_range[1:]), "", 
+                    n1=self.n1, n2=self.n2)
+            xx, yy, zz = s.get_data()
+        return xx, yy, zz

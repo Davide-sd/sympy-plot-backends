@@ -1,10 +1,12 @@
 from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
 from spb.series import (
-    Vector2DSeries, Vector3DSeries, ContourSeries, _set_discretization_points
+    Vector2DSeries, Vector3DSeries, ContourSeries, SliceVector3DSeries,
+    _set_discretization_points
 )
 from spb.utils import _plot_sympify, _unpack_args, _split_vector, _is_range
 from sympy import S, sqrt, Expr, Tuple, Dummy, Symbol
+from sympy.geometry import Plane
 from sympy.vector import Vector, BaseScalar
 from sympy.matrices.dense import DenseMatrix
 from sympy.core.compatibility import is_sequence
@@ -14,7 +16,6 @@ from sympy.core.compatibility import is_sequence
 TODO:
 *   check length of ranges and if the scalar free symbols are compatible with
     the ones provided in the vector.
-*   slice planes for 3D vector fields
 """
 
 def _build_series(expr, *ranges, label="", show=True, **kwargs):
@@ -77,9 +78,32 @@ def _build_series(expr, *ranges, label="", show=True, **kwargs):
 
         if len(ranges) > 3:
             raise ValueError("Too many ranges for 3D vector plot.")
-
-        return split_expr, ranges, Vector3DSeries(*split_expr, *ranges, label, 
-                **kwargs)
+        
+        _slice = kwargs.pop("slice", None)
+        if _slice is None:
+            return split_expr, ranges, Vector3DSeries(*split_expr, *ranges,
+                 label, **kwargs)
+        
+        # verify that the slices are of the correct type
+        def _check_slice(s):
+            if not isinstance(s, (Expr, Plane)):
+                raise ValueError(
+                    "A slice must be of type Plane or Expr.\n" +
+                    "Received: {}, {}".format(type(s), s)
+                )
+        if isinstance(_slice, (list, tuple, Tuple)):
+            for s in _slice:
+                _check_slice(s)
+        else:
+            _check_slice(_slice)
+            _slice = [_slice]
+        
+        series = []
+        for s in _slice:
+            series.append(SliceVector3DSeries(
+                s, *split_expr, *ranges, label, **kwargs))
+        return split_expr, ranges, series
+        
 
 def _preprocess(*args):
     """ Loops over the arguments and build a list of arguments having the
@@ -151,7 +175,7 @@ def vector_plot(*args, show=True, **kwargs):
         
         n : int
             Set the same number of discretization points in all directions for
-            the quivers or streamlines. It overrides n1, n2, n3.  Default to 25.
+            the quivers or streamlines. It overrides n1, n2, n3. Default to 25.
 
         nc : int
             Number of discretization points for the scalar contour plot.
@@ -173,6 +197,16 @@ def vector_plot(*args, show=True, **kwargs):
         
         show : boolean
             Default to True, in which case the plot will be shown on the screen. 
+
+        slice : Plane, list, Expr
+            Plot the 3D vector field over the provided slice. It can be:
+                Plane: a Plane object from sympy.geometry module.
+                list: a list of planes.
+                Expr: a symbolic expression representing a surface.
+            The number of discretization points will be `n1`, `n2`, `n3`. 
+            Note that:
+                1. only quivers plots are supported with slices.
+                2. `n3` will be used only with planes parallel to xz or yz.
 
         streamlines : boolean
             Whether to plot the vector field using streamlines (True) or quivers
@@ -211,12 +245,24 @@ def vector_plot(*args, show=True, **kwargs):
             scalar=sqrt((-sin(y))**2 + cos(x)**2), legend=True)
     
 
-    3D vectpr plot:
+    3D vector field:
 
     .. code-block:: python
         x, y, z = symbols("x, y, z")
         vector_plot([x, y, z], (x, -10, 10), (y, -10, 10), (z, -10, 10),
                 n=8)
+    
+
+    3D vector field with 3 orthogonal slice planes:
+
+    .. code-block:: python
+        x, y, z = symbols("x, y, z")
+        vector_plot([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10), n=8,
+            slice=[
+                Plane((-10, 0, 0), (1, 0, 0)),
+                Plane((0, -10, 0), (0, 2, 0)),
+                Plane((0, 0, -10), (0, 0, 1)),
+            ])
     """
     args = _plot_sympify(args)
     args = _preprocess(*args)
@@ -230,7 +276,10 @@ def vector_plot(*args, show=True, **kwargs):
     series = []
     for a in args:
         split_expr, ranges, s = _build_series(a[0], *a[1:-1], label=a[-1], **kwargs)
-        series.append(s)
+        if isinstance(s, (list, tuple)):
+            series += s
+        else:
+            series.append(s)
     
     # add a scalar series only on 2D plots
     if all([isinstance(s, Vector2DSeries) for s in series]):

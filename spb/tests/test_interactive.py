@@ -1,6 +1,7 @@
-from sympy import symbols, cos, sin, Tuple
+from sympy import symbols, cos, sin, Tuple, Plane
 import param
 import panel as pn
+import numpy as np
 import bokeh.models as bm
 from spb.interactive import iplot, DynamicParam, MyList, InteractivePlot
 from spb.series import InteractiveSeries
@@ -164,6 +165,7 @@ def test_interactiveseries():
         else:
             assert not s.is_2Dvector
             assert s.is_3Dvector
+        return t
     
     # 2D vectors
     params = {
@@ -191,3 +193,63 @@ def test_interactiveseries():
             str(m2), x, (10, 10, 10))
     test_vector(l2, ranges, params, Tuple(-a * sin(y), b * cos(x), c * cos(z)),
             str(tuple(l2)), x, (10, 10, 10))
+
+
+    # Sliced 3D vectors: single slice
+    v3 = a * z * i + b * y * j + c * x * k
+    t = iplot(
+            (v3, *ranges),
+            params = params,
+            fig_kw = dict(
+                n1 = 5, n2 = 6, n3 = 7,
+                slice = Plane((1, 2, 3), (1, 0, 0)),
+                backend = PB
+            ),
+            show=False
+        )
+    assert len(t._backend.series) == 1
+    s = t._backend.series[0]
+    assert isinstance(s, InteractiveSeries)
+    assert s.is_3Dvector
+    assert s.is_slice
+    xx, yy, zz, uu, vv, ww = s.get_data()
+    assert all([t.shape == (6, 7) for t in [xx, yy, zz, uu, vv, ww]])
+    assert np.all(xx == 1)
+    assert (np.min(yy.flatten()) == -4) and (np.max(yy.flatten()) == 4)
+    assert (np.min(zz.flatten()) == -6) and (np.max(zz.flatten()) == 6)
+
+    # Sliced 3D vectors: multiple slices. Test that each slice creates a
+    # corresponding series
+    t = iplot(
+        (v3, *ranges),
+        params = params,
+        fig_kw = dict(
+            n1 = 5, n2 = 6, n3 = 7,
+            slice = [
+                Plane((1, 2, 3), (1, 0, 0)),
+                Plane((1, 2, 3), (0, 1, 0)),
+                Plane((1, 2, 3), (0, 0, 1))
+            ],
+            backend = PB
+        ),
+        show=False
+    )
+    assert len(t._backend.series) == 3
+    assert all([isinstance(s, InteractiveSeries) for s in t._backend.series])
+    assert all([s.is_3Dvector for s in t._backend.series])
+    assert all([s.is_slice for s in t._backend.series])
+    xx1, yy1, zz1, uu1, vv1, ww1 = t._backend.series[0].get_data()
+    xx2, yy2, zz2, uu2, vv2, ww2 = t._backend.series[1].get_data()
+    xx3, yy3, zz3, uu3, vv3, ww3 = t._backend.series[2].get_data()
+    assert all([t.shape == (6, 7) for t in [xx1, yy1, zz1, uu1, vv1, ww1]])
+    assert all([t.shape == (7, 5) for t in [xx2, yy2, zz2, uu2, vv2, ww2]])
+    assert all([t.shape == (6, 5) for t in [xx3, yy3, zz3, uu3, vv3, ww3]])
+    assert np.all(xx1 == 1)
+    assert (np.min(yy1.flatten()) == -4) and (np.max(yy1.flatten()) == 4)
+    assert (np.min(zz1.flatten()) == -6) and (np.max(zz1.flatten()) == 6)
+    assert np.all(yy2 == 2)
+    assert (np.min(xx2.flatten()) == -5) and (np.max(xx2.flatten()) == 5)
+    assert (np.min(zz2.flatten()) == -6) and (np.max(zz2.flatten()) == 6)
+    assert np.all(zz3 == 3)
+    assert (np.min(xx3.flatten()) == -5) and (np.max(xx3.flatten()) == 5)
+    assert (np.min(yy3.flatten()) == -4) and (np.max(yy3.flatten()) == 4)
