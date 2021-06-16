@@ -146,9 +146,8 @@ class K3DBackend(Plot):
 
         for s in series:
             if s.is_3Dline:
-                x, y, z = s.get_data()
+                x, y, z, param = s.get_data()
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
-                u = s.discretized_var
                 # keyword arguments for the line object
                 a = dict(
                     width = 0.1,
@@ -157,29 +156,34 @@ class K3DBackend(Plot):
                     shader = "mesh",
                 )
                 if self._use_cm:
-                    a["attribute"] = u,
+                    a["attribute"] = param.astype(np.float32),
                     a["color_map"] = next(self._cm)
                     a["color_range"] = [s.start, s.end]
                 line_kw = self._kwargs.get("line_kw", dict())
                 line = k3d.line(vertices, **merge({}, a, line_kw))
                 self._fig += line
 
-            elif s.is_3Dsurface:
+            elif s.is_3Dsurface and (not s.is_complex):
                 x, y, z = s.get_data()
-                attribute = z
-                if s.is_complex:
-                    z, attribute = self._get_abs_arg(z)
+                print("K3D is_surface", 
+                    len(x) if not hasattr(x, "shape") else x.shape,
+                    len(y) if not hasattr(y, "shape") else y.shape,
+                    len(z) if not hasattr(z, "shape") else z.shape,
+                )
 
                 # TODO:
                 # Can I use get_vertices_indices also for non parametric surfaces?
 
                 if s.is_parametric:
+                    print("K3D is_parametric surface")
                     vertices, indices = get_vertices_indices(x, y, z)
                     vertices = vertices.astype(np.float32)
                 else:
+                    print("K3D is_surface")
                     x = x.flatten()
                     y = y.flatten()
                     z = z.flatten()
+                    print(np.amin(z), np.amax(z))
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     indices = Triangulation(x, y).triangles.astype(np.uint32)
 
@@ -212,7 +216,7 @@ class K3DBackend(Plot):
                 if self._use_cm:
                     a["color_map"] = (next(self._cm) if not s.is_complex 
                             else next(self._cyccm))
-                    a["attribute"] = attribute
+                    a["attribute"] = z
                 surface_kw = self._kwargs.get("surface_kw", dict())
                 surf = k3d.mesh(vertices, indices, 
                         **merge({}, a, surface_kw))
@@ -376,6 +380,56 @@ class K3DBackend(Plot):
                     colors = vec_colors,
                 )
                 self._fig += vec
+            elif s.is_complex and (not s.is_domain_coloring):
+                x, y, z, mag, arg = s.get_data()
+                print("K3D is_surface", 
+                    len(x) if not hasattr(x, "shape") else x.shape,
+                    len(y) if not hasattr(y, "shape") else y.shape,
+                    len(z) if not hasattr(z, "shape") else z.shape,
+                )
+
+                x = x.flatten()
+                y = y.flatten()
+                z = mag.flatten()
+                print(np.amin(mag), np.amax(mag))
+                vertices = np.vstack([x, y, z]).T.astype(np.float32)
+                indices = Triangulation(x, y).triangles.astype(np.uint32)
+
+                # look for high aspect ratio meshes, where (dz >> dx, dy) 
+                # and eventually set the bounds around the mid point of the 
+                # mesh in order to improve visibility.
+                # Bounds will be used to set the camera position.
+                mz, Mz, meanz = z.min(), z.max(), z.mean()
+                mx, Mx = x.min(), x.max()
+                my, My = y.min(), y.max()
+                dx, dy, dz = (Mx - mx), (My - my), (Mz - mz)
+                # thresholds
+                t1, t2 = 10, 3
+                if (dz / dx >= t1) and (dz / dy >= t1):
+                    if abs(Mz / meanz) > t1:
+                        Mz = meanz + t2 * max(dx, dy)
+                    if abs(mz / meanz) > t1:
+                        mz = meanz - t2 * max(dx, dy)
+                    self._bounds.append([mx, Mx, my, My, mz, Mz])
+
+                
+                a = dict(
+                    name = s.label if self._kwargs.get("show_label", False) else None,
+                    side = "double",
+                    flat_shading = False,
+                    wireframe = False,
+                    color = self._convert_to_int(next(self._cl)),
+                    # volume_bounds = (min(x), max(x), min(y), max(y), min(z), max(z))
+                )
+                if self._use_cm:
+                    a["color_map"] = (next(self._cm) if not s.is_complex 
+                            else next(self._cyccm))
+                    a["attribute"] = arg.flatten().astype(np.float32)
+                surface_kw = self._kwargs.get("surface_kw", dict())
+                surf = k3d.mesh(vertices, indices, 
+                        **merge({}, a, surface_kw))
+                    
+                self._fig += surf
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__) +
@@ -400,13 +454,12 @@ class K3DBackend(Plot):
                     x, y, z = self.series[i].get_data()
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     self._fig.objects[i].vertices = vertices
-                elif s.is_3Dsurface:
+                elif s.is_3Dsurface and (not s.is_complex):
                     x, y, z = self.series[i].get_data()
-                    x = x.flatten()
-                    y = y.flatten()
-                    z = z.flatten()
+                    x, y, z = [t.flatten().astype(np.float32) for t in [x, y, z]]
                     vertices = np.vstack([x, y, z]).astype(np.float32)
-                    self._fig.objects[i].vertices= vertices.T
+                    self._fig.objects[i].vertices = vertices.T
+                    self._fig.objects[i].attribute = z
                 elif s.is_vector and s.is_3D:
                     if self._kwargs.get("streamlines", False):
                         raise NotImplementedError
@@ -420,6 +473,15 @@ class K3DBackend(Plot):
                     scale = qkw["scale"]
                     vectors = np.array((uu, vv, ww)).T * scale
                     self.fig.objects[i].vectors = vectors
+                elif s.is_complex:
+                    if s.is_3Dsurface:
+                        x, y, z, mag, arg = s.get_data()
+                        x, y, z = [t.flatten().astype(np.float32) for t in [x, y, mag]]
+                        vertices = np.vstack([x, y, z]).astype(np.float32)
+                        self._fig.objects[i].vertices= vertices.T
+                        self._fig.objects[i].attribute = arg.flatten().astype(np.float32)
+                    else:
+                        raise NotImplementedError
 
     def _get_auto_camera(self, factor=1.5, yaw=40, pitch=60):
         """ This function is very similar to k3d.plot.Plot.get_auto_camera.

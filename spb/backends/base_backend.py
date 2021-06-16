@@ -289,17 +289,16 @@ class Plot:
         except NameError:
             return 3      # Probably standard Python interpreter
     
-    def _get_abs_arg(self, z):
-        """ Compute the absolute value and the argument of the provided
-        complex number.
-        """
-        return np.absolute(z), np.angle(z)
+    # def _get_abs_arg(self, z):
+    #     """ Compute the absolute value and the argument of the provided
+    #     complex number.
+    #     """
+    #     return np.absolute(z), np.angle(z)
     
     def _get_image(self, s, rgba=False, n=100):
-        x, y, z = s.get_data()
-        magn, angle = self._get_abs_arg(z)
+        x, y, z, magn, angle = s.get_data()
         colors = (get_srgb1(z, s.alpha, s.colorspace) * 255).astype(np.uint8)
-                
+ 
         img = np.zeros((*x.shape, 3) if not rgba else x.shape, dtype=np.uint32)
         pixel = img
         if rgba:
@@ -317,8 +316,8 @@ class Plot:
         chroma_colors = (chroma_colors * 255).astype(np.uint8)
         # shift the argument from [0, 2*pi] to [-pi, pi]
         chroma_colors = np.roll(chroma_colors, int(len(chroma_colors) / 2), axis=0)
-
-        return x, y, z, np.dstack([magn, angle]), img, discr, chroma_colors
+        print("_get_image", x.shape, y.shape, z.shape)
+        return x, y, np.dstack([magn, angle]), img, discr, chroma_colors
 
     def _get_pixels(self, s, interval_list):
         """ Create the necessary data to visualize a Bokeh/Plotly Heatmap.

@@ -330,20 +330,23 @@ class BokehBackend(Plot):
 
         for i, s in enumerate(series):
             if s.is_2Dline:
-                x, y = s.get_data()
-                # Bokeh is not able to deal with None values. Need to replace
-                # them with np.nan
-                y = [t if (t is not None) else np.nan for t in y]
                 
                 if s.is_parametric:
-                    u = s.discretized_var
+                    x, y, param = s.get_data()
+                    # Bokeh is not able to deal with None values. Need to replace
+                    # them with np.nan
+                    y = [t if (t is not None) else np.nan for t in y]
                     colormap = (next(self._cm) if not s.is_complex 
                             else next(self._cyccm))
-                    ds, line, cb = self._create_gradient_line(x, y, u,
+                    ds, line, cb = self._create_gradient_line(x, y, param,
                             colormap, s.label)
                     self._fig.add_glyph(ds, line)
                     self._fig.add_layout(cb, "right")
                 else:
+                    x, y = s.get_data()
+                    # Bokeh is not able to deal with None values. Need to replace
+                    # them with np.nan
+                    y = [t if (t is not None) else np.nan for t in y]
                     lkw = dict(
                         line_width = 2, legend_label = s.label,
                         color=next(self._cl)
@@ -419,8 +422,8 @@ class BokehBackend(Plot):
                     glyph = Segment(x0="x0", y0="y0", x1="x1", y1="y1",
                         **merge({}, qkw, quiver_kw))
                     self._fig.add_glyph(source, glyph)
-            elif s.is_complex:
-                x, y, z, magn_angle, img, discr, colors = self._get_image(s, True)
+            elif s.is_complex and s.is_domain_coloring:
+                x, y, magn_angle, img, discr, colors = self._get_image(s, True)
                 
                 source = ColumnDataSource({
                     "image": [img],
@@ -524,6 +527,17 @@ class BokehBackend(Plot):
                             {'field': 'magnitude', 'transform': color_mapper})
                         rend[i].data_source.data.update(data)
                         rend[i].glyph.line_color = line_color
+                elif s.is_complex and s.is_domain_coloring:
+                    print("Bokeh -> update_interactive -> is_domain_coloring")
+                    # TODO: for some unkown reason, domain_coloring and 
+                    # interactive plot don't like each other...
+                    x, y, z, magn_angle, img, discr, colors = self._get_image(s)
+                    source = {
+                        "image": [img],
+                        "abs": [magn_angle[:, :, 0]],
+                        "arg": [magn_angle[:, :, 1]]
+                    }
+                    rend[i].data_source.data.update(source)
 
     def save(self, path, **kwargs):
         self._process_series(self._series)

@@ -177,23 +177,23 @@ class PlotlyBackend(Plot):
         
         count = 0
         for ii, s in enumerate(series):
+            # print(s.is_complex, s.is_2Dline, s.is_parametric, s.real, s.imag,
+            #     s.is_3Dsurface, s.is_domain_coloring)
             if s.is_2Dline:
-                x, y = s.get_data()
                 line_kw = self._kwargs.get("line_kw", dict())
                 if s.is_parametric:
-                    u = s.discretized_var
-                    import numpy as np
+                    x, y, param = s.get_data()
                     # TODO: show the colorbar with the u parameter
                     lkw = dict(
                         line_color = next(self._cl),
                         mode = "lines+markers" if not s.is_point else "markers",
                         marker = dict(
-                            color = u,
+                            color = param,
                             colorscale = (next(self._cm) if not s.is_complex 
                                     else next(self._cyccm)),
                             size = 6
                         ),
-                        customdata = u,
+                        customdata = param,
                         hovertemplate = (
                             "x: %{x}<br />y: %{y}<br />u: %{customdata}" 
                             if not s.is_complex else
@@ -207,6 +207,7 @@ class PlotlyBackend(Plot):
                         )
                     )
                 else:
+                    x, y = s.get_data()
                     lkw = dict(
                         mode = "lines" if not s.is_point else "markers",
                         line_color = next(self._cl)
@@ -217,14 +218,13 @@ class PlotlyBackend(Plot):
                     )
                 count += 1
             elif s.is_3Dline:
-                x, y, z = s.get_data()
-                u = s.discretized_var
+                x, y, z, param = s.get_data()
                 lkw = dict(
                     mode = "lines",
                     line = dict(
                         width = 4,
                         colorscale = next(self._cm),
-                        color = u,
+                        color = param,
                         showscale = True,
                         colorbar = dict(
                             x = 1 + 0.1 * count,
@@ -242,8 +242,10 @@ class PlotlyBackend(Plot):
                     )
                 )
                 count += 1
-            elif s.is_3Dsurface:
+            elif s.is_3Dsurface and (not s.is_complex):
                 xx, yy, zz = s.get_data()
+                print("Plotly is_3Dsurface", xx.shape, yy.shape, zz.shape)
+
                 # create a solid color to be used when self._use_cm=False
                 col = next(self._cl)
                 colorscale = [
@@ -260,20 +262,7 @@ class PlotlyBackend(Plot):
                     ),
                     colorscale = colormap if self._use_cm else colorscale
                 )
-                if s.is_complex:
-                    zz, angle = self._get_abs_arg(zz)
-                    skw["surfacecolor"] = angle
-                    skw["customdata"] = angle
-                    skw["hovertemplate"] = "x: %{x}<br />y: %{y}<br />Abs: %{z}<br />Arg: %{customdata}"
-                    m, M = min(angle.flatten()), max(angle.flatten())
-                    
-                    # show pi symbols on the colorbar if the range is close
-                    # enough to [-pi, pi]
-                    if (abs(m + self.pi) < 1e-02) and (abs(M - self.pi) < 1e-02):
-                        # skw["color"] = [-self.pi, self.pi]
-                        skw["colorbar"]["tickvals"] = [m, -self.pi / 2, 0, self.pi / 2, M]
-                        skw["colorbar"]["ticktext"] = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"]
-                            
+                
                 surface_kw = self._kwargs.get("surface_kw", dict())
                 self._fig.add_trace(
                     go.Surface(
@@ -446,70 +435,113 @@ class PlotlyBackend(Plot):
                         )
                 count += 1
             elif s.is_complex:
-                x, y, z, magn_angle, img, discr, colors = self._get_image(s)
-                xmin, xmax = x.min(), x.max()
-                ymin, ymax = y.min(), y.max()
+                if s.is_domain_coloring:
+                    print("Plotly -> process_series -> is_domain_coloring")
+                    x, y, magn_angle, img, discr, colors = self._get_image(s)
+                    xmin, xmax = x.min(), x.max()
+                    ymin, ymax = y.min(), y.max()
 
-                self._fig.add_trace(go.Image(
-                    x0 = xmin,
-                    y0 = ymin,
-                    dx = (xmax - xmin) / s.n1,
-                    dy = (ymax - ymin) / s.n2,
-                    z = img,
-                    name = s.label,
-                    customdata = magn_angle,
-                    hovertemplate = ("x: %{x}<br />y: %{y}<br />RGB: %{z}" +
-                        "<br />Abs: %{customdata[0]}<br />Arg: %{customdata[1]}")
-                ))
+                    self._fig.add_trace(go.Image(
+                        x0 = xmin,
+                        y0 = ymin,
+                        dx = (xmax - xmin) / s.n1,
+                        dy = (ymax - ymin) / s.n2,
+                        z = img,
+                        name = s.label,
+                        customdata = magn_angle,
+                        hovertemplate = ("x: %{x}<br />y: %{y}<br />RGB: %{z}" +
+                            "<br />Abs: %{customdata[0]}<br />Arg: %{customdata[1]}")
+                    ))
 
-                # chroma/phase-colorbar
-                self._fig.add_trace(go.Scatter(
-                    x = [xmin, xmax],
-                    y = [ymin, ymax],
-                    showlegend = False,
-                    mode = "markers",
-                    marker = dict(
-                        opacity = 0,
-                        colorscale = ["rgb(%s, %s, %s)" % tuple(c) for c in colors],
-                        color = [-self.pi, self.pi],
+                    # chroma/phase-colorbar
+                    self._fig.add_trace(go.Scatter(
+                        x = [xmin, xmax],
+                        y = [ymin, ymax],
+                        showlegend = False,
+                        mode = "markers",
+                        marker = dict(
+                            opacity = 0,
+                            colorscale = ["rgb(%s, %s, %s)" % tuple(c) for c in colors],
+                            color = [-self.pi, self.pi],
+                            colorbar = dict(
+                                tickvals = [-self.pi, -self.pi / 2, 0, self.pi / 2, self.pi],
+                                ticktext = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"],
+                                x = 1 + 0.1 * count,
+                                title = "Argument",
+                                titleside = 'right',
+                            ),
+                            showscale = True,
+                        )
+                    ))
+
+                    # lightness/magnitude-colorbar
+                    self._fig.add_trace(go.Scatter(
+                        x = [xmin, xmax],
+                        y = [ymin, ymax],
+                        showlegend = False,
+                        mode = "markers",
+                        marker = dict(
+                            opacity = 0,
+                            colorscale = [[0, "black"], [1, "white"]],
+                            color = [0, 1e20],
+                            colorbar = dict(
+                                tickvals = [0, 1e20],
+                                ticktext = ["0", "&#x221e;"],
+                                x = 1 + 0.1 * (count + 1),
+                                title = "Magnitude",
+                                titleside = 'right',
+                            ),
+                            showscale = True,
+                        )
+                    ))
+
+                    self._fig.update_layout(
+                        yaxis = dict(
+                            autorange = "reversed"
+                        )
+                    )
+                    count += 2
+                else:
+                    xx, yy, zz, mag, angle = s.get_data()
+                    print("Plotly is_complex is_3Dsurface", xx.shape, yy.shape, zz.shape)
+
+                    # create a solid color to be used when self._use_cm=False
+                    col = next(self._cl)
+                    colorscale = [
+                        [0, col],
+                        [1, col]
+                    ]
+                    colormap = next(self._cm) if not s.is_complex else next(self._cyccm)
+                    skw = dict(
+                        name = s.label,
+                        showscale = self.legend and show_3D_colorscales,
                         colorbar = dict(
-                            tickvals = [-self.pi, -self.pi / 2, 0, self.pi / 2, self.pi],
-                            ticktext = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"],
                             x = 1 + 0.1 * count,
-                            title = "Argument",
+                            title = s.label,
                             titleside = 'right',
                         ),
-                        showscale = True,
+                        colorscale = colormap if self._use_cm else colorscale,
+                        surfacecolor = angle,
+                        customdata = angle,
+                        hovertemplate = "x: %{x}<br />y: %{y}<br />Abs: %{z}<br />Arg: %{customdata}"
                     )
-                ))
-
-                # lightness/magnitude-colorbar
-                self._fig.add_trace(go.Scatter(
-                    x = [xmin, xmax],
-                    y = [ymin, ymax],
-                    showlegend = False,
-                    mode = "markers",
-                    marker = dict(
-                        opacity = 0,
-                        colorscale = [[0, "black"], [1, "white"]],
-                        color = [0, 1e20],
-                        colorbar = dict(
-                            tickvals = [0, 1e20],
-                            ticktext = ["0", "&#x221e;"],
-                            x = 1 + 0.1 * (count + 1),
-                            title = "Magnitude",
-                            titleside = 'right',
-                        ),
-                        showscale = True,
+                    m, M = min(angle.flatten()), max(angle.flatten())
+                    
+                    # show pi symbols on the colorbar if the range is close
+                    # enough to [-pi, pi]
+                    if (abs(m + self.pi) < 1e-02) and (abs(M - self.pi) < 1e-02):
+                        skw["colorbar"]["tickvals"] = [m, -self.pi / 2, 0, self.pi / 2, M]
+                        skw["colorbar"]["ticktext"] = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"]
+                                
+                    surface_kw = self._kwargs.get("surface_kw", dict())
+                    self._fig.add_trace(
+                        go.Surface(
+                            x = xx, y = yy, z = mag,
+                            **merge({}, skw, surface_kw)
+                        )
                     )
-                ))
-
-                self._fig.update_layout(
-                    yaxis = dict(
-                        autorange = "reversed"
-                    )
-                )
-                count += 2
+                    
+                    count += 1
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}".format(type(s), type(self).__name__)
@@ -520,18 +552,26 @@ class PlotlyBackend(Plot):
             if s.is_interactive:
                 self.series[i].update_data(params)
                 if s.is_2Dline and s.is_parametric:
-                    x, y = self.series[i].get_data()
+                    x, y, param = self.series[i].get_data()
                     self.fig.data[i]["x"] = x
                     self.fig.data[i]["y"] = y
-                elif s.is_2Dline and (not s.is_parametric):
+                    self.fig.data[i]["marker"]["color"] = param
+                    self.fig.data[i]["customdata"] = param
+                elif s.is_2Dline:
                     x, y = self.series[i].get_data()
                     self.fig.data[i]["y"] = y
-                elif s.is_3Dline or (s.is_3Dsurface and s.is_parametric):
+                elif s.is_3Dline:
+                    x, y, z, param = s.get_data()
+                    self.fig.data[i]["x"] = x
+                    self.fig.data[i]["y"] = y
+                    self.fig.data[i]["z"] = z
+                    self.fig.data[i]["line"]["color"] = param
+                if s.is_3Dsurface and s.is_parametric:
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["x"] = x
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["z"] = z
-                elif s.is_3Dsurface and (not s.is_parametric):
+                elif s.is_3Dsurface and (not s.is_complex):
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["z"] = z
                 elif s.is_vector and s.is_3D:
@@ -564,6 +604,30 @@ class PlotlyBackend(Plot):
                         data = quivers.data[0]
                     self.fig.data[i]["x"] = data["x"]
                     self.fig.data[i]["y"] = data["y"]
+                elif s.is_complex:
+                    if s.is_domain_coloring:
+                        raise NotImplementedError
+                        # TODO: for some unkown reason, domain_coloring and 
+                        # interactive plot don't like each other...
+                        # x, y, z, magn_angle, img, discr, colors = self._get_image(s)
+                        # self.fig.data[i]["z"] = img
+                        # self.fig.data[i]["x0"] = -4
+                        # self.fig.data[i]["y0"] = -5
+                        # # self.fig.data[i]["customdata"] = magn_angle
+                    else:
+                        xx, yy, zz, mag, angle = s.get_data()
+                        self.fig.data[i]["z"] = mag
+                        self.fig.data[i]["surfacecolor"] = angle
+                        self.fig.data[i]["customdata"] = angle
+                        m, M = min(angle.flatten()), max(angle.flatten())
+                        # show pi symbols on the colorbar if the range is close
+                        # enough to [-pi, pi]
+                        if (abs(m + self.pi) < 1e-02) and (abs(M - self.pi) < 1e-02):
+                            self.fig.data[i]["colorbar"]["tickvals"] = [m, -self.pi / 2, 0, self.pi / 2, M]
+                            self.fig.data[i]["colorbar"]["ticktext"] = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"]
+                            
+                    
+
 
 
     def _update_layout(self):

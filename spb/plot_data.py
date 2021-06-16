@@ -8,7 +8,7 @@ from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
     ParametricSurfaceSeries, ImplicitSeries, InteractiveSeries,
     _set_discretization_points, Vector2DSeries, Vector3DSeries,
-    ContourSeries, ComplexSeries
+    ContourSeries, ComplexSeries, ComplexInteractiveSeries
 )
 from spb.backends.base_backend import Plot 
 from spb.utils import _unpack_args, _plot_sympify, _check_arguments
@@ -147,6 +147,9 @@ def _build_series(*args, **kwargs):
             k = str(nexpr) + str(npar)
             if k == "00":
                 args = [exprs, ranges, label]
+                if kwargs.get("is_complex", False):
+                    _cls = ComplexInteractiveSeries
+                    args = [exprs[0], ranges[0], label]
             elif k == "22":
                 if isinstance(args[0], (Vector, DenseMatrix)):
                     split_expr, ranges = _split_vector(exprs[0], ranges)

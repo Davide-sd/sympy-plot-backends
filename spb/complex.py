@@ -1,13 +1,69 @@
 from sympy import Tuple, Expr
-from spb.series import ComplexSeries, _set_discretization_points
+from spb.series import (
+    ComplexSeries, ComplexInteractiveSeries, _set_discretization_points
+)
 from spb.vectors import _preprocess
 from spb.utils import _plot_sympify
 from spb.utils import _check_arguments
 from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
 
-def _build_series(expr, ranges, label, kwargs):
-    pass
+# def _build_series(expr, ranges, label, kwargs):
+def _build_series(*args, interactive=False, **kwargs):
+    series = []
+    cls = ComplexSeries if not interactive else ComplexInteractiveSeries
+    
+    print("_build_series", args, [type(a) for a in args])
+    if all([a.is_complex for a in args]):
+        # args is a list of complex numbers
+        for a in args:
+            series.append(cls([a], None, str(a), **kwargs))
+    elif ((len(args) > 0) and 
+            all([isinstance(a, (list, tuple, Tuple)) for a in args]) and
+            all([len(a) > 0 for a in args]) and
+            all([isinstance(a[0], (list, tuple, Tuple)) for a in args])):
+        # args is a list of tuples of the form (list, label) where list 
+        # contains complex points
+        for a in args:
+            series.append(cls(a[0], None, a[-1], **kwargs))
+    else:
+        args = _check_arguments(args, 1, 1)
+        
+        for a in args:
+            expr, ranges, label = a[0], a[1:-1], a[-1]
+
+            # ranges need to contain complex numbers
+            ranges = list(ranges)
+            for i, r in enumerate(ranges):
+                ranges[i] = (r[0], complex(r[1]), complex(r[2]))
+
+            if expr.is_complex:
+                # complex number
+                series.append(cls([expr], None, label, **kwargs))
+            else:
+                if ((ranges[0][1].imag == ranges[0][2].imag) and
+                        not kwargs.get('absarg', False)):
+                    # complex expression evaluated over a line: need to add two
+                    # series, one for the real and imaginary part, respectively
+
+                    # NOTE: as a design choice, a complex function plotted over 
+                    # a line will create two data series, one for the real part,
+                    # the other for the imaginary part. This is undoubtely
+                    # inefficient as we must evaluate the same expression two
+                    # times. On the other hand, it allows to maintain a 
+                    # one-to-one correspondance between Plot.series and 
+                    # backend.data, which doesn't require a redesign of the
+                    # backend in order to work with iplot
+                    # (backend._update_interactive).
+
+                    kw1, kw2 = kwargs.copy(), kwargs.copy()
+                    kw1["real"], kw1["imag"] = True, False
+                    kw2["real"], kw2["imag"] = False, True
+                    series.append(cls(expr, *ranges, label, **kw1))
+                    series.append(cls(expr, *ranges, label, **kw2))
+                else:
+                    series.append(cls(expr, *ranges, label, **kwargs))
+    return series
 
 def complex_plot(*args, show=True, **kwargs):
     """ Plot complex numbers or complex functions. By default, the aspect ratio 
@@ -143,69 +199,18 @@ def complex_plot(*args, show=True, **kwargs):
         complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True, 
             legend=True, zlim=(-1, 6))
 
-
-    TODO: problems...
-        p = complex_plot(exp(2 * pi * I * z), (z, 0, 0.1), 
-             legend=True, backend=BB, absarg=True)
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ComplexSeries)
     if not "aspect" in kwargs.keys():
         kwargs["aspect"] = "equal"
-    series = []
     
-    if all([a.is_complex for a in args]):
-        # args is a list of complex numbers
-        for a in args:
-            series.append(ComplexSeries([a], None, str(a), **kwargs))
-    elif ((len(args) > 0) and 
-            all([isinstance(a, (list, tuple, Tuple)) for a in args]) and
-            all([len(a) > 0 for a in args]) and
-            all([isinstance(a[0], (list, tuple, Tuple)) for a in args])):
-        # args is a list of tuples of the form (list, label) where list 
-        # contains complex points
-        for a in args:
-            series.append(ComplexSeries(a[0], None, a[-1], **kwargs))
-    else:
-        args = _check_arguments(args, 1, 1)
-        
-        for a in args:
-            expr, ranges, label = a[0], a[1:-1], a[-1]
-
-            # ranges need to contain complex numbers
-            ranges = list(ranges)
-            for i, r in enumerate(ranges):
-                ranges[i] = (r[0], complex(r[1]), complex(r[2]))
-
-            if expr.is_complex:
-                # complex number
-                series.append(ComplexSeries([expr], None, label, **kwargs))
-            else:
-                if ((ranges[0][1].imag == ranges[0][2].imag) and
-                        not kwargs.get('absarg', False)):
-                    # complex expression evaluated over a line: need to add two
-                    # series, one for the real and imaginary part, respectively
-
-                    # NOTE: as a design choice, a complex function plotted over 
-                    # a line will create two data series, one for the real part,
-                    # the other for the imaginary part. This is undoubtely
-                    # inefficient as we must evaluate the same expression two
-                    # times. On the other hand, it allows to maintain a 
-                    # one-to-one correspondance between Plot.series and 
-                    # backend.data, which doesn't require a redesign of the
-                    # backend in order to work with iplot
-                    # (backend._update_interactive).
-
-                    kw1, kw2 = kwargs.copy(), kwargs.copy()
-                    kw1["real"], kw1["imag"] = True, False
-                    kw2["real"], kw2["imag"] = False, True
-                    series.append(ComplexSeries(expr, *ranges, label, **kw1))
-                    series.append(ComplexSeries(expr, *ranges, label, **kw2))
-                else:
-                    series.append(ComplexSeries(expr, *ranges, label, **kwargs))
+    series = _build_series(*args, **kwargs)
     
     if not "backend" in kwargs:
         kwargs["backend"] = TWO_D_B
+        if any(s.is_3Dsurface for s in series):
+            kwargs["backend"] = THREE_D_B
         
     p = Plot(*series, **kwargs)
     if show:
