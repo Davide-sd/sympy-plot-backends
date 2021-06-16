@@ -333,6 +333,8 @@ def smart_plot(*args, show=True, **kwargs):
                 "pinter": to specify an interactive plot. In such a case, you
                         will also have to provide a `param` dictionary mapping
                         theparameters to their values.
+                        To specify a complex-interactive plot, set 
+                        `is_complex=True`.
                 "v2d": to specify a 2D vector plot.
                 "v3d": to specify a 3D vector plot.
                 "c": to specify a complex plot.
