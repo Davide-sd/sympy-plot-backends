@@ -1,4 +1,4 @@
-from spb.defaults import plotly_theme
+from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.utils import get_seeds_points
 import plotly.graph_objects as go
@@ -472,7 +472,7 @@ class PlotlyBackend(Plot):
 
     def _update_layout(self):
         self._fig.update_layout(
-            template = self._kwargs.get("theme", plotly_theme),
+            template = self._kwargs.get("theme", cfg["plotly"]["theme"]),
             width = None if not self.size else self.size[0],
             height = None if not self.size else self.size[1],
             title = r"<b>%s</b>" % ("" if not self.title else self.title),

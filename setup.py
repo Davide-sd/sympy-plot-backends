@@ -6,7 +6,7 @@ def readme():
 
 setup(
     name = 'sympy_plot_backends',
-    version = '0.8.3',
+    version = '0.8.4',
     description = 'Backends for plotting with SymPy',
     long_description = readme(),
     classifiers=[
@@ -27,6 +27,7 @@ setup(
     include_package_data=True,
     zip_safe = False,
     install_requires = [
+        "appdirs",
         "numpy",
         "sympy",
         "matplotlib",

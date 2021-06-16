@@ -1,5 +1,4 @@
 from spb.backends.base_backend import Plot
-from spb.defaults import TWO_D_B, THREE_D_B
 from spb.series import (
     Vector2DSeries, Vector3DSeries, ContourSeries, SliceVector3DSeries,
     _set_discretization_points
@@ -285,6 +284,7 @@ def vector_plot(*args, show=True, **kwargs):
     
     # add a scalar series only on 2D plots
     if all([isinstance(s, Vector2DSeries) for s in series]):
+        from spb.defaults import TWO_D_B
         backend = kwargs.pop("backend", TWO_D_B)
 
         # don't pop this keyword: some backend needs it to decide the color
@@ -345,6 +345,7 @@ def vector_plot(*args, show=True, **kwargs):
             cs = ContourSeries(scalar_field, *cranges, scalar_label, **cs_kwargs)
             series = [cs] + series
     elif all([isinstance(s, Vector3DSeries)  for s in series]):
+        from spb.defaults import THREE_D_B
         backend = kwargs.pop("backend", THREE_D_B)
     else:
         raise ValueError("Mixing 2D vectors with 3D vectors is not allowed.")

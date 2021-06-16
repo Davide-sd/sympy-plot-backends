@@ -9,6 +9,12 @@ from sympy.testing.tmpfiles import TmpFileManager
 
 import os
 
+# use MatplotlibBackend for the tests
+from spb.defaults import set_defaults, cfg
+cfg["backend_2D"] = "matplotlib"
+cfg["backend_3D"] = "matplotlib"
+set_defaults(cfg)
+
 #Set plots not to show
 unset_show()
 

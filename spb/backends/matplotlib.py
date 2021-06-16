@@ -2,7 +2,6 @@ from collections.abc import Callable
 from sympy import latex
 from sympy.external import import_module
 from spb.backends.base_backend import Plot
-from spb.defaults import mpl_use_jupyterthemes, mpl_jupyterthemes
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -134,11 +133,15 @@ class MatplotlibBackend(Plot):
         self._cm = itertools.cycle(self.colormaps)
     
     def _create_figure(self):
-        if (self._get_mode() == 0) and mpl_use_jupyterthemes:
+        # the following import is here in order to avoid a circular import error
+        from spb.defaults import cfg
+        use_jupyterthemes = cfg["matplotlib"]["use_jupyterthemes"]
+        mpl_jupytertheme = cfg["matplotlib"]["jupytertheme"]
+        if (self._get_mode() == 0) and use_jupyterthemes:
             # set matplotlib style to match the used Jupyter theme
             try:
                 from jupyterthemes import jtplot
-                jtplot.style(mpl_jupyterthemes)
+                jtplot.style(mpl_jupytertheme)
             except:
                 pass
 

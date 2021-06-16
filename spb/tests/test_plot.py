@@ -17,6 +17,12 @@ from spb.backends.matplotlib import unset_show, MatplotlibBackend
 from sympy.testing.pytest import skip, raises, warns
 from sympy.utilities import lambdify as lambdify_
 
+# use MatplotlibBackend for the tests
+from spb.defaults import set_defaults, cfg
+cfg["backend_2D"] = "matplotlib"
+cfg["backend_3D"] = "matplotlib"
+set_defaults(cfg)
+
 unset_show()
 
 

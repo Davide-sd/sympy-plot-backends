@@ -1,4 +1,4 @@
-from spb.defaults import k3d_bg_color
+from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.utils import get_vertices_indices, get_seeds_points
 import k3d
@@ -17,10 +17,6 @@ class K3DBackend(Plot):
 
     Keyword Arguments
     =================
-        
-        bg_color : int
-            Packed RGB color of the plot background.
-            Default to 0xFFFFFF (white).
         
         line_kw : dict
             A dictionary of keywords/values which is passed to K3D's line
@@ -80,7 +76,7 @@ class K3DBackend(Plot):
         self._fig = k3d.plot(
             grid_visible = self.grid,
             menu_visibility = True,
-            background_color = self._kwargs.get("bg_color", k3d_bg_color)
+            background_color = int(cfg["k3d"]["bg_color"])
         )
         if (self.xscale == "log") or (self.yscale == "log"):
             warnings.warn("K3D-Jupyter doesn't support log scales. We will " +

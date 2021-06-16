@@ -13,7 +13,6 @@ from spb.series import (
 from spb.backends.base_backend import Plot 
 from spb.utils import _unpack_args, _plot_sympify, _check_arguments
 from spb.vectors import _preprocess, _split_vector
-from spb.defaults import TWO_D_B, THREE_D_B
 
 """
 TODO:
@@ -328,6 +327,7 @@ def smart_plot(*args, show=True, **kwargs):
         series.append(_build_series(*arg, **kwargs))
     
     if "backend" not in kwargs.keys():
+        from spb.defaults import TWO_D_B, THREE_D_B
         is_3D = any([s.is_3D for s in series])
         kwargs["backend"] = THREE_D_B if is_3D else TWO_D_B
     plots = Plot(*series, **kwargs)

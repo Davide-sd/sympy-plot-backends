@@ -1,4 +1,4 @@
-from spb.defaults import bokeh_theme
+from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
@@ -262,7 +262,7 @@ class BokehBackend(Plot):
         
         self._init_cyclers()
 
-        curdoc().theme = kwargs.get("theme", bokeh_theme)
+        curdoc().theme = kwargs.get("theme", cfg["bokeh"]["theme"])
         TOOLTIPS = [
             ("x", "$x"),
             ("y", "$y")
