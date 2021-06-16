@@ -129,6 +129,11 @@ class PlotlyBackend(Plot):
         # "black", "orange", "silver", "darkcyan", "magenta"
     ]
 
+    # color bar spacing
+    _cbs = 0.15
+    # color bar scale down factor
+    _cbsdf = 0.75
+
     def __new__(cls, *args, **kwargs):
         # Since Plot has its __new__ method, this will prevent infinite
         # recursion
@@ -147,6 +152,36 @@ class PlotlyBackend(Plot):
         self._cm = itertools.cycle(self.colormaps)
         self._wfcm = itertools.cycle(self.wireframe_colors)
         self._qc = itertools.cycle(self.quivers_colors)
+    
+    def _create_colorbar(self, k, label, sc=False):
+        """ This method reduces code repetition.
+        
+        Parameters
+        ==========
+            k : int
+                index of the current color bar
+            label : str
+                Name to display besides the color bar
+            sc : boolean
+                Scale Down the color bar to make room for the legend.
+                Default to False
+        """
+        return dict(
+            x = 1 + self._cbs * k,
+            title = label,
+            titleside = 'right',
+            # scale down the color bar to make room for legend
+            len = self._cbsdf if (sc and self.legend) else 1,
+            yanchor = "bottom", y = 0
+        )
+    
+    def _solid_colorscale(self):
+        # create a solid color to be used when self._use_cm=False
+        col = next(self._cl)
+        return [
+            [0, col],
+            [1, col]
+        ]
     
     def _process_series(self, series):
         self._init_cyclers()
@@ -169,82 +204,66 @@ class PlotlyBackend(Plot):
             if s.is_2Dline:
                 x, y = s.get_data()
                 line_kw = self._kwargs.get("line_kw", dict())
-                if s.is_parametric:
+                if s.is_parametric and self._use_cm:
+                    # NOTE: Plotly is currently unable to plot 2D gradient line.
+                    # here we use gradient markers to visualize the range of the
+                    # parameter.
                     u = s.discretized_var
-                    # TODO: show the colorbar with the u parameter
                     lkw = dict(
+                        name = s.label,
                         line_color = next(self._cl),
                         mode = "lines+markers",
                         marker = dict(
                             color = u,
+                            size = 6,
                             colorscale = next(self._cm),
-                            size = 6
+                            showscale = self.legend,
+                            colorbar = self._create_colorbar(ii, s.label, True)
                         ))
                     self._fig.add_trace(
-                        go.Scatter(
-                            x = x, y = y, name = s.label,
-                            **merge({}, lkw, line_kw)
-                        )
-                    )
+                        go.Scatter(x = x, y = y, **merge({}, lkw, line_kw)))
                 else:
                     lkw = dict(
+                        name = s.label,
                         mode = "lines",
                         line_color = next(self._cl)
                     )
                     self._fig.add_trace(
-                        go.Scatter(x = x, y = y, name = s.label, 
-                            **merge({}, lkw, line_kw))
-                    )
+                        go.Scatter(x = x, y = y, **merge({}, lkw, line_kw)))
             elif s.is_3Dline:
                 x, y, z = s.get_data()
                 u = s.discretized_var
                 lkw = dict(
+                    name = s.label,
                     mode = "lines",
                     line = dict(
                         width = 4,
-                        colorscale = next(self._cm),
+                        colorscale = (next(self._cm) if self._use_cm 
+                            else self._solid_colorscale()),
                         color = u,
-                        showscale = True,
-                        colorbar = dict(
-                            x = 1 + 0.1 * ii,
-                            title = s.label,
-                            titleside = 'right',
-                        ),
+                        showscale = self.legend and self._use_cm,
+                        colorbar = self._create_colorbar(ii, s.label, True)
                     )
                 )
                 line_kw = self._kwargs.get("line_kw", dict())
                 self._fig.add_trace(
                     go.Scatter3d(
-                        x = x, y = y, z = z,
-                        name = s.label,
-                        **merge({}, lkw, line_kw)
-                    )
-                )
+                        x = x, y = y, z = z, **merge({}, lkw, line_kw)))
             elif s.is_3Dsurface:
                 xx, yy, zz = s.get_data()
-                # create a solid color to be used when self._use_cm=False
-                col = next(self._cl)
-                colorscale = [
-                    [0, col],
-                    [1, col]
-                ]
                 skw = dict(
+                    name = s.label,
                     showscale = self.legend and show_3D_colorscales,
-                    colorbar = dict(
-                        x = 1 + 0.1 * ii,
-                        title = s.label,
-                        titleside = 'right',
-                    ),
-                    colorscale = next(self._cm) if self._use_cm else colorscale
+                    colorbar = self._create_colorbar(ii, s.label),
+                    colorscale = (next(self._cm) if self._use_cm 
+                            else self._solid_colorscale())
                 )
                 surface_kw = self._kwargs.get("surface_kw", dict())
                 self._fig.add_trace(
                     go.Surface(
-                        x = xx, y = yy, z = zz, name = s.label,
-                        **merge({}, skw, surface_kw)
-                    )
-                )
+                        x = xx, y = yy, z = zz, **merge({}, skw, surface_kw)))
                 
+                # TODO: remove this? Making it works with iplot is difficult
                 if self._kwargs.get("wireframe", False):
                     line_marker = dict(
                         color = next(self._wfcm),
@@ -279,14 +298,8 @@ class PlotlyBackend(Plot):
                         showlabels = False,
                     ),
                     colorscale = next(self._cm),
-                    colorbar = dict(
-                        title = s.label,
-                        titleside = 'right',
-                        # scale down the color bar to make room for legend
-                        len = 0.75 if (show_2D_vectors and self.legend) else 1,
-                        yanchor = "bottom", y=0,
-                        x = 1 + 0.1 * ii,
-                    )
+                    colorbar = self._create_colorbar(ii, s.label,
+                            show_2D_vectors)
                 )
                 # user-provided values
                 contour_kw = self._kwargs.get("contour_kw", dict())
@@ -341,8 +354,11 @@ class PlotlyBackend(Plot):
                         # NOTE: currently, it is not possible to create streamlines with
                         # a color scale: https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
                         # default values
-                        skw = dict( line_color = next(self._qc), arrow_scale = 0.15,
-                            name = s.label)
+                        skw = dict(
+                            line_color = next(self._qc),
+                            arrow_scale = 0.15,
+                            name = s.label
+                        )
                         # user-provided values
                         stream_kw = self._kwargs.get("stream_kw", dict())
                         stream = create_streamline(xx[0, :], yy[:, 0], uu, vv,
@@ -367,11 +383,7 @@ class PlotlyBackend(Plot):
 
                         # default values
                         skw = dict( colorscale = next(self._cm), sizeref = 0.3,
-                                colorbar = dict(
-                                    title = s.label,
-                                    titleside = 'right',
-                                    x = 1 + 0.1 * ii,
-                                ),
+                                colorbar = self._create_colorbar(ii, s.label),
                                 starts = dict(
                                     x = seeds_points[:, 0],
                                     y = seeds_points[:, 1],
@@ -392,11 +404,8 @@ class PlotlyBackend(Plot):
                             colorscale = next(self._cm),
                             sizemode = "absolute", 
                             sizeref = 40,
-                            colorbar = dict(
-                                x = 1 + 0.1 * ii,
-                                title = s.label,
-                                titleside = 'right',
-                            ))
+                            colorbar = self._create_colorbar(ii, s.label)
+                        )
                         # user-provided values
                         quiver_kw = self._kwargs.get("quiver_kw", dict())
                         self._fig.add_trace(

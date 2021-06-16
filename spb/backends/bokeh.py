@@ -295,8 +295,8 @@ class BokehBackend(Plot):
 
     def _process_series(self, series):
         self._init_cyclers()
-        # clear figure. need to clear both the renderers as well as the colorbars
-        # which are added to the right side.
+        # clear figure. need to clear both the renderers as well as the
+        # colorbars which are added to the right side.
         self._fig.renderers = []
         self._fig.right = []
 
@@ -307,12 +307,13 @@ class BokehBackend(Plot):
                 # them with np.nan
                 y = [t if (t is not None) else np.nan for t in y]
                 
-                if s.is_parametric:
+                if s.is_parametric and self._use_cm:
                     u = s.discretized_var
                     ds, line, cb = self._create_gradient_line(x, y, u,
                             next(self._cm), s.label)
                     self._fig.add_glyph(ds, line)
-                    self._fig.add_layout(cb, "right")
+                    if self.legend:
+                        self._fig.add_layout(cb, "right")
                 else:
                     lkw = dict(
                         line_width = 2, legend_label = s.label,

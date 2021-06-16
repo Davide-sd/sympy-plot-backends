@@ -1,3 +1,8 @@
+# use jupyter themes for matplotlib
+# https://github.com/dunovank/jupyter-themes#jtplotstyle-examples
+mpl_use_jupyterthemes = True
+mpl_jupyterthemes = None
+
 # Find more Plotly themes at the following page:
 # https://plotly.com/python/templates/
 plotly_theme = "plotly_dark"
@@ -22,3 +27,6 @@ pyvista_bg_color = mayavi_bg_color
 from spb.backends.plotly import PlotlyBackend as TWO_D_B
 # backend for 3D plots
 from spb.backends.k3d import K3DBackend as THREE_D_B
+
+from spb.backends.matplotlib import MatplotlibBackend as TWO_D_B
+THREE_D_B = TWO_D_B
