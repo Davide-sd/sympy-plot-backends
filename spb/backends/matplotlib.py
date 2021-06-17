@@ -129,7 +129,10 @@ class MatplotlibBackend(Plot):
         self._handles = dict()
     
     def _init_cyclers(self):
-        self._cl = itertools.cycle(self.colorloop)
+        if isinstance(self.colorloop, ListedColormap):
+            self._cl = itertools.cycle(self.colorloop.colors)
+        else:
+            self._cl = itertools.cycle(self.colorloop)
         self._cm = itertools.cycle(self.colormaps)
     
     def _create_figure(self):
@@ -245,10 +248,10 @@ class MatplotlibBackend(Plot):
 
         for i, s in enumerate(series):
             if s.is_2Dline:
-                x, y = s.get_data()
                 line_kw = self._kwargs.get("line_kw", dict())
                 if s.is_parametric and self._use_cm:
-                    lkw = dict(array=s.discretized_var, cmap=next(self._cm))
+                    x, y, param = s.get_data()
+                    lkw = dict(array=param, cmap=next(self._cm))
                     segments = self.get_segments(x, y)
                     c = LineCollection(segments,
                             **merge({}, lkw, line_kw))
@@ -256,6 +259,10 @@ class MatplotlibBackend(Plot):
                     self._add_colorbar(c, s.label)
                     self._add_handle(i, c)
                 else:
+                    if s.is_parametric:
+                        x, y, param = s.get_data()
+                    else:
+                        x, y = s.get_data()
                     lkw = dict(label=s.label)
                     l = self.ax.plot(x, y, **merge({}, lkw, line_kw))
                     self._add_handle(i, l)
@@ -267,13 +274,13 @@ class MatplotlibBackend(Plot):
                 self._add_colorbar(c, s.label, True)
                 self._add_handle(i, c)
             elif s.is_3Dline:
-                x, y, z = s.get_data()
+                x, y, z, param = s.get_data()
                 lkw = dict()
                 line_kw = self._kwargs.get("line_kw", dict())
                 if self._use_cm:
                     segments = self.get_segments(x, y, z)
                     lkw["cmap"] = next(self._cm)
-                    lkw["array"] = s.discretized_var
+                    lkw["array"] = param
                     c = Line3DCollection(segments, **merge({}, lkw, line_kw))
                     self.ax.add_collection(c)
                     self._add_colorbar(c, s.label)

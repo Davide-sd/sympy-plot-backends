@@ -4,6 +4,7 @@ import panel as pn
 from sympy import latex, Tuple
 from spb.backends.base_backend import Plot
 from spb.series import InteractiveSeries
+from spb.complex import _build_series
 from spb.utils import _plot_sympify, _unpack_args
 from spb.defaults import TWO_D_B, THREE_D_B
 import warnings
@@ -272,23 +273,32 @@ class InteractivePlot(DynamicParam, PanelLayout):
         # the interactive series
         kwargs["params"] = self.read_parameters()
         _slice = kwargs.get("slice", None)
+        is_complex = kwargs.get("is_complex", False)
         series = []
-        for a in args:
-            # with interactive-parametric plots, vectors could have more free
-            # symbols than the number of dimensions. We set fill_ranges=False
-            # in order to not fill ranges, otherwise ranges will be created also
-            # for parameters. This means the user must provided all the necessary
-            # ranges.
-            exprs, ranges, label = _unpack_args(*a, matrices=True, fill_ranges=False)
-            if isinstance(_slice, (tuple, list)):
-                # Sliced 3D vector field: each slice creates a unique series
-                kwargs2 = kwargs.copy()
-                kwargs2.pop("slice")
-                for s in _slice:
-                    kwargs2["slice"] = s
-                    series.append(InteractiveSeries(exprs, ranges, label, **kwargs2))
-            else:
-                series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
+        if is_complex:
+            new_args = []
+            for a in args:
+                exprs, ranges, label = _unpack_args(*a, matrices=False, fill_ranges=False)
+                new_args.append(Tuple(exprs[0], ranges[0], label, sympify=False))
+            series = _build_series(*new_args, interactive=True, **kwargs)
+        else:
+            for a in args:
+                # with interactive-parametric plots, vectors could have more free
+                # symbols than the number of dimensions. We set fill_ranges=False
+                # in order to not fill ranges, otherwise ranges will be created also
+                # for parameters. This means the user must provided all the necessary
+                # ranges.
+                exprs, ranges, label = _unpack_args(*a, matrices=True, fill_ranges=False)
+                if isinstance(_slice, (tuple, list)):
+                    # Sliced 3D vector field: each slice creates a unique series
+                    kwargs2 = kwargs.copy()
+                    kwargs2.pop("slice")
+                    for s in _slice:
+                        kwargs2["slice"] = s
+                        series.append(InteractiveSeries(exprs, ranges, label, **kwargs2))
+                else:
+                    series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
+        
         return series
     
     @property

@@ -7,12 +7,15 @@ from bokeh.io import curdoc
 from bokeh.models import (
     LinearColorMapper, ColumnDataSource, MultiLine, ColorBar, Segment
 )
+from bokeh.models.tickers import FixedTicker
 from bokeh.io import export_png, export_svg
 import itertools
 import colorcet as cc
 import os
 import numpy as np
 from mergedeep import merge
+import matplotlib.cm as cm
+from spb.backends.utils import convert_colormap
 
 # TODO: is it possible to further optimize this function?
 #
@@ -233,12 +236,22 @@ class BokehBackend(Plot):
     Do a quick search on the web to find the appropriate installer.
     """
 
+    _library = "bokeh"
+
     colorloop = bp.Category10[10]
     
+    # to be used in parametric plots
     colormaps = [
         cc.fire, cc.isolum, cc.rainbow, cc.blues, cc.bmy, cc.colorwheel, cc.bgy
     ]
+
+    # to be used in complex-parametric plots
+    cyclic_colormaps = [
+        cm.hsv, cm.twilight, cc.cyclic_mygbm_30_95_c78_s25 
+    ]
+
     # TODO: better selection of discrete color maps for contour plots
+    # DO I need this or can I just use colormaps?
     contour_colormaps = [
         bp.Plasma10, bp.Blues9, bp.Greys10
     ]
@@ -267,6 +280,18 @@ class BokehBackend(Plot):
             ("x", "$x"),
             ("y", "$y")
         ]
+
+        if all([s.is_parametric for s in self.series]):
+            # with parametric plots, also visualize the parameter
+            TOOLTIPS += [("u", "@us")]
+        if any([s.is_complex and s.is_domain_coloring for s in self.series]):
+            # with complex domain coloring, shows the magnitude and phase
+            # in the tooltip
+            TOOLTIPS += [
+                ("Abs", "@abs"),
+                ("Arg", "@arg")
+            ]
+
         self._fig = figure(
             title = self.title,
             x_axis_label = self.xlabel if self.xlabel else "x",
@@ -288,10 +313,13 @@ class BokehBackend(Plot):
         self._process_series(self._series)
     
     def _init_cyclers(self):
-        # infinity cycler over 10 colors
-        self._cl = itertools.cycle(self.colorloop)
-        self._ccm = itertools.cycle(self.contour_colormaps)
-        self._qcm = itertools.cycle(self.quivers_colormaps)
+        super()._init_cyclers()
+        contour_colormaps = [convert_colormap(cm, self._library) for cm
+                in self.contour_colormaps]
+        self._ccm = itertools.cycle(contour_colormaps)
+        quivers_colormaps = [convert_colormap(cm, self._library) for cm
+                in self.quivers_colormaps]
+        self._qcm = itertools.cycle(quivers_colormaps)
 
     def _process_series(self, series):
         self._init_cyclers()
@@ -302,25 +330,33 @@ class BokehBackend(Plot):
 
         for i, s in enumerate(series):
             if s.is_2Dline:
-                x, y = s.get_data()
-                # Bokeh is not able to deal with None values. Need to replace
-                # them with np.nan
-                y = [t if (t is not None) else np.nan for t in y]
                 
-                if s.is_parametric and self._use_cm:
-                    u = s.discretized_var
-                    ds, line, cb = self._create_gradient_line(x, y, u,
-                            next(self._cm), s.label)
+                if s.is_parametric:
+                    x, y, param = s.get_data()
+                    # Bokeh is not able to deal with None values. Need to replace
+                    # them with np.nan
+                    y = [t if (t is not None) else np.nan for t in y]
+                    colormap = (next(self._cm) if not s.is_complex 
+                            else next(self._cyccm))
+                    ds, line, cb = self._create_gradient_line(x, y, param,
+                            colormap, s.label)
                     self._fig.add_glyph(ds, line)
                     if self.legend:
                         self._fig.add_layout(cb, "right")
                 else:
+                    x, y = s.get_data()
+                    # Bokeh is not able to deal with None values. Need to replace
+                    # them with np.nan
+                    y = [t if (t is not None) else np.nan for t in y]
                     lkw = dict(
                         line_width = 2, legend_label = s.label,
                         color=next(self._cl)
                     )
                     line_kw = self._kwargs.get("line_kw", dict())
-                    self._fig.line(x, y, **merge({}, lkw, line_kw))
+                    if not s.is_point:
+                        self._fig.line(x, y, **merge({}, lkw, line_kw))
+                    else:
+                        self._fig.dot(x, y, **merge({"size": 20}, lkw, line_kw))
             elif s.is_contour:
                 x, y, z = s.get_data()
                 x = x.flatten()
@@ -387,6 +423,34 @@ class BokehBackend(Plot):
                     glyph = Segment(x0="x0", y0="y0", x1="x1", y1="y1",
                         **merge({}, qkw, quiver_kw))
                     self._fig.add_glyph(source, glyph)
+            elif s.is_complex and s.is_domain_coloring:
+                x, y, magn_angle, img, discr, colors = self._get_image(s, True)
+                
+                source = ColumnDataSource({
+                    "image": [img],
+                    "abs": [magn_angle[:, :, 0]],
+                    "arg": [magn_angle[:, :, 1]]
+                })
+
+                self._fig.image_rgba(source=source, x=x.min(), y=y.min(),
+                        dw=x.max() - x.min(), dh=y.max() - y.min())
+                
+                # chroma/phase-colorbar
+                cm1 = LinearColorMapper(palette=[tuple(c) for c in colors], 
+                        low=-self.pi, high=self.pi)
+                ticks = [-self.pi, -self.pi/2 , 0, self.pi/2, self.pi]
+                labels = ["-π", "-π / 2", "0", "π / 2", "π"]
+                colorbar1 = ColorBar(color_mapper=cm1, title="Argument",
+                    ticker = FixedTicker(ticks = ticks),
+                    major_label_overrides = {k: v for k, v in zip(ticks, labels)})
+                self._fig.add_layout(colorbar1, 'right')
+
+                # lightness/magnitude-colorbar
+                cm2 = LinearColorMapper(palette=bp.gray(100), low=0, high=1)
+                colorbar2 = ColorBar(color_mapper=cm2, title="Magnitude",
+                    ticker = FixedTicker(ticks = [0, 1]),
+                    major_label_overrides = {0: "0", 1: "∞"})
+                self._fig.add_layout(colorbar2, 'right')
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__) +
@@ -440,9 +504,10 @@ class BokehBackend(Plot):
                     x, y = self.series[i].get_data()
                     rend[i].data_source.data.update({'x': x, 'y': y})
                 elif s.is_2Dline and s.is_parametric:
-                    x, y = self.series[i].get_data()
-                    u = s.discretized_var
-                    xs, ys, us = self._get_segments(x, y, u)
+                    # TODO: how to update the colorbar (speaking about complex
+                    # plots)
+                    x, y, param = self.series[i].get_data()
+                    xs, ys, us = self._get_segments(x, y, param)
                     rend[i].data_source.data.update({'xs': xs, 'ys': ys, 'us': us})
                 elif s.is_2Dvector:
                     x, y, u, v = s.get_data()
@@ -464,6 +529,17 @@ class BokehBackend(Plot):
                             {'field': 'magnitude', 'transform': color_mapper})
                         rend[i].data_source.data.update(data)
                         rend[i].glyph.line_color = line_color
+                elif s.is_complex and s.is_domain_coloring:
+                    print("Bokeh -> update_interactive -> is_domain_coloring")
+                    # TODO: for some unkown reason, domain_coloring and 
+                    # interactive plot don't like each other...
+                    x, y, z, magn_angle, img, discr, colors = self._get_image(s)
+                    source = {
+                        "image": [img],
+                        "abs": [magn_angle[:, :, 0]],
+                        "arg": [magn_angle[:, :, 1]]
+                    }
+                    rend[i].data_source.data.update(source)
 
     def save(self, path, **kwargs):
         self._process_series(self._series)

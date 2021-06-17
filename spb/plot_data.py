@@ -1,4 +1,4 @@
-from sympy import Tuple, S
+from sympy import Tuple, S, I
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import Boolean
 from sympy.matrices.dense import DenseMatrix
@@ -8,7 +8,7 @@ from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
     ParametricSurfaceSeries, ImplicitSeries, InteractiveSeries,
     _set_discretization_points, Vector2DSeries, Vector3DSeries,
-    ContourSeries
+    ContourSeries, ComplexSeries, ComplexInteractiveSeries
 )
 from spb.backends.base_backend import Plot 
 from spb.utils import _unpack_args, _plot_sympify, _check_arguments
@@ -34,7 +34,8 @@ def _build_series(*args, **kwargs):
         "pinter": [InteractiveSeries, 0, 0],
         "v2d": [Vector2DSeries, 2, 2],
         "v3d": [Vector3DSeries, 3, 3],
-        "pc": [ContourSeries, 1, 2]
+        "pc": [ContourSeries, 1, 2],
+        "c": [ComplexSeries, 1, 1]
     }
 
     # In the following dictionary the key is composed of two characters:
@@ -65,7 +66,11 @@ def _build_series(*args, **kwargs):
 
         pt = ""
         skip_check = False
-        if isinstance(exprs[0], (Boolean, Relational)):
+
+        if ((len(ranges) > 0) and 
+            (ranges[0][1].has(I) or ranges[0][2].has(I))):
+            pt = "c"
+        elif isinstance(exprs[0], (Boolean, Relational)):
             # implicit series
             pt = "pi"
         elif isinstance(exprs[0], (DenseMatrix, Vector)):
@@ -77,16 +82,31 @@ def _build_series(*args, **kwargs):
                 args = [split_expr, *ranges, label]
                 pt = "v3d"
         elif isinstance(exprs[0], (list, tuple, Tuple)):
-            # Two possible cases:
-            # 1. The actual parametric expression has been provided in the form
-            #    (expr1, expr2, expr3 [optional]), range1, range2 [optional]
-            # 2. A vector has been written as a tuple/list
-            fs = set().union(*[e.free_symbols for e in exprs[0]])
-            npar = len(fs)
-            nexpr = len(exprs[0])
-            tmp = str(nexpr) + str(npar)
-            if tmp in reverse_mapping.keys():
-                pt = reverse_mapping[tmp]
+            if any(t.has(I) for t in exprs[0]):
+                # list of complex points
+                pt = "c"
+                skip_check = True
+                if len(args) == 2:
+                    # no range has been provided
+                    args = [args[0], None, args[1]]
+            else:
+                # Two possible cases:
+                # 1. The actual parametric expression has been provided in the form
+                #    (expr1, expr2, expr3 [optional]), range1, range2 [optional]
+                # 2. A vector has been written as a tuple/list
+                fs = set().union(*[e.free_symbols for e in exprs[0]])
+                npar = len(fs)
+                nexpr = len(exprs[0])
+                tmp = str(nexpr) + str(npar)
+                if tmp in reverse_mapping.keys():
+                    pt = reverse_mapping[tmp]
+        elif exprs[0].has(I):
+            # complex series -> return complex numbers
+            pt = "c"
+            # if absargs=True, by setting the following to True, I can return 
+            # (x, magn, args) rather then (x, mag) which is usually used by
+            # backends
+            kwargs["gpd"] = True
         else:
             # the actual expression (parametric or not) is not contained in a
             # tuple. For example:
@@ -126,6 +146,9 @@ def _build_series(*args, **kwargs):
             k = str(nexpr) + str(npar)
             if k == "00":
                 args = [exprs, ranges, label]
+                if kwargs.get("is_complex", False):
+                    _cls = ComplexInteractiveSeries
+                    args = [exprs[0], ranges[0], label]
             elif k == "22":
                 if isinstance(args[0], (Vector, DenseMatrix)):
                     split_expr, ranges = _split_vector(exprs[0], ranges)
@@ -141,8 +164,8 @@ def _build_series(*args, **kwargs):
         else:
             raise ValueError("Wrong `pt` value. Please, check the docstring " +
                 "of `get_plot_data` to list the possible values.")
-
     kwargs = _set_discretization_points(kwargs, _cls)
+    kwargs["gpd"] = True
     return _cls(*args, **kwargs)
 
 
@@ -173,6 +196,7 @@ def get_plot_data(*args, **kwargs):
                         theparameters to their values.
                 "v2d": to specify a 2D vector plot.
                 "v3d": to specify a 3D vector plot.
+                "c": to specify a complex plot.
 
     Examples
     ========
@@ -249,11 +273,38 @@ def get_plot_data(*args, **kwargs):
         arrays. `xx, yy` represent the mesh grid. This is returned by objects of
         type non-equalities (greater than, less than, ...).
 
+    Get the real and imaginary part of a complex function over a real range:
+
+    .. code-block:: python
+        z = symbols("z")
+        xx, real, imag = get_plot_data(sqrt(z), (z, -3, 3), pt="c")
+    
+    Note the use of pt="c" to specify a complex plot: the expression doesn't 
+    contain the imaginary unit, hence we need to aid the detection algorithm.
+    
+    Get the magnitude and argument of a complex function over a real range:
+
+    .. code-block:: python
+        z = symbols("z")
+        expr = 1 + exp(-Abs(z)) * sin(I * sin(5 * z))
+        xx, mag, arg = get_plot_data(expr, (z, -3, 3), absarg=True)
+
+    Compute a complex function over a complex range:
+
+    .. code-block:: python
+        z = symbols("z")
+        xx, yy, zz, abs, arg = get_plot_data(gamma(z), (z, -3 - 3*I, 3 + 3*I))
+    
+    Here, `xx, yy, zz` are 2D arrays. `xx` is the real part of the domain.
+    `yy` is the complex part of the domain. `zz` contains complex numbers.
+    `abs` and `arg` are the absolute value and argument of `zz`.
+
     See also
     ========
 
     plot, plot_parametric, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_contour, plot_implicit
+    plot3d_parametric_surface, plot_contour, plot_implicit,
+    vector_plot, complex_plot
     """
     return _build_series(*args, **kwargs).get_data()
 
@@ -283,8 +334,11 @@ def smart_plot(*args, show=True, **kwargs):
                 "pinter": to specify an interactive plot. In such a case, you
                         will also have to provide a `param` dictionary mapping
                         theparameters to their values.
+                        To specify a complex-interactive plot, set 
+                        `is_complex=True`.
                 "v2d": to specify a 2D vector plot.
                 "v3d": to specify a 3D vector plot.
+                "c": to specify a complex plot.
 
     Examples
     ========
@@ -315,7 +369,8 @@ def smart_plot(*args, show=True, **kwargs):
     ========
 
     plot, plot_parametric, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_contour, plot_implicit, vector_plot
+    plot3d_parametric_surface, plot_contour, plot_implicit,
+    vector_plot, complex_plot
     """
 
     args = _plot_sympify(args)

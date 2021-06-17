@@ -32,6 +32,9 @@ from matplotlib import cm
 from sympy.utilities.iterables import is_sequence
 from spb.series import BaseSeries
 from mergedeep import merge
+from spb.backends.utils import convert_colormap
+from cplot import get_srgb1
+
 
 class Plot:
     """Base class for all backends. A backend represents the plotting library,
@@ -137,15 +140,30 @@ class Plot:
     MatplotlibBackend, PlotlyBackend, BokehBackend, K3DBackend, MayaviBackend
     """
 
+    # set the name of the plotting library being used. This is required in order
+    # to convert any colormap to the specified plotting library.
+    _library = ""
+
     # Set it to True in the subclasses if they are able to generate plot grids.
     # Also, clearly states in the docstring of the backend if it supports
     # plotgrids or not
     support_plotgrid = False
 
+    # list of colors to be used in line plots or solid color surfaces.
+    # It can also be an instance of matplotlib's ListedColormap.
     colorloop = cm.tab10
 
-    # child backends can provide a list of color maps to render surfaces.
+    # child backends should provide a list of color maps to render surfaces.
     colormaps = []
+
+    # child backends should provide a list of cyclic color maps to render 
+    # complex series (the phase/argument ranges over [-pi, pi]).
+    cyclic_colormaps = []
+
+    # pi number is used in all backends to set the ranges for the colorbars in
+    # complex plot. It is defined here for commodity, rather than importing 
+    # math or numpy on each backend.
+    pi = np.pi
 
     def __new__(cls, *args, **kwargs):
         backend = cls._get_backend(kwargs)
@@ -231,26 +249,21 @@ class Plot:
         # The user can choose to use the standard color map loop, or set/provide
         # a solid color loop (for the surface color).
         self._use_cm = kwargs.get("use_cm", True)
-        # infinite loop iterator over the provided color maps
-        self._cm = cycle(self.colormaps)
-        # generate a list of RGB tuples (with values from 0 to 1) starting
-        # from matplotlib's tab10 color map. This can be used instead of looping
-        # through the colormaps
+    
+    def _init_cyclers(self):
+        """ Create infinite loop iterators over the provided color maps. """
+
         if not isinstance(self.colorloop, (list, tuple)):
-            # assume it is a matplotlib colormap
+            # assume it is a matplotlib's ListedColormap
             self.colorloop = self.colorloop.colors
         self._cl = cycle(self.colorloop)
-    
-    def set_color_loop(self, cloop):
-        """ Set the default color loop to use when use_cm=False. It must
-        be a list of tuple (R, G, B) where 0 <= R,G,B <= 1.
-        """
-        if not isinstance(cloop, (tuple, list)):
-            raise TypeError(
-                    "cloop must be a list of RGB tuples with values " +
-                    "from 0 to 1."
-                )
-        self._cl = cloop
+
+        colormaps = [convert_colormap(cm, self._library) for cm
+                in self.colormaps]
+        self._cm = cycle(colormaps)
+        cyclic_colormaps = [convert_colormap(cm, self._library) for cm
+                in self.cyclic_colormaps]
+        self._cyccm = cycle(cyclic_colormaps)
     
     def _get_mode(self):
         """ Verify which environment is used to run the code.
@@ -278,6 +291,36 @@ class Plot:
         except NameError:
             return 3      # Probably standard Python interpreter
     
+    # def _get_abs_arg(self, z):
+    #     """ Compute the absolute value and the argument of the provided
+    #     complex number.
+    #     """
+    #     return np.absolute(z), np.angle(z)
+    
+    def _get_image(self, s, rgba=False, n=100):
+        x, y, z, magn, angle = s.get_data()
+        colors = (get_srgb1(z, s.alpha, s.colorspace) * 255).astype(np.uint8)
+ 
+        img = np.zeros((*x.shape, 3) if not rgba else x.shape, dtype=np.uint32)
+        pixel = img
+        if rgba:
+            pixel = img.view(dtype=np.uint8).reshape((*x.shape, 4))
+
+        for i in range(s.n1):
+            for j in range(s.n2):
+                pixel[j, i] = colors[j, i] if not rgba else [*colors[j, i], 255]
+        
+        # compute the chroma colors to be displayed on the colorbar
+        # from -pi to pi by discretizing a complex unit-circle of radius 1
+        zn = 1 * np.exp(1j * np.linspace(0, 2 * np.pi, n))
+        discr = np.linspace(0, 1, n)
+        chroma_colors = get_srgb1(zn, s.alpha, s.colorspace)
+        chroma_colors = (chroma_colors * 255).astype(np.uint8)
+        # shift the argument from [0, 2*pi] to [-pi, pi]
+        chroma_colors = np.roll(chroma_colors, int(len(chroma_colors) / 2), axis=0)
+        print("_get_image", x.shape, y.shape, z.shape)
+        return x, y, np.dstack([magn, angle]), img, discr, chroma_colors
+
     def _get_pixels(self, s, interval_list):
         """ Create the necessary data to visualize a Bokeh/Plotly Heatmap.
         Heatmap can be thought as an image composed of pixels, each one having
