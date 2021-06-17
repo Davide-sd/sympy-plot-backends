@@ -274,7 +274,7 @@ def get_plot_data(*args, **kwargs):
         arrays. `xx, yy` represent the mesh grid. This is returned by objects of
         type non-equalities (greater than, less than, ...).
 
-    Get the real and imaginary part of a complex function over a line range:
+    Get the real and imaginary part of a complex function over a real range:
 
     .. code-block:: python
         z = symbols("z")
@@ -283,7 +283,7 @@ def get_plot_data(*args, **kwargs):
     Note the use of pt="c" to specify a complex plot: the expression doesn't 
     contain the imaginary unit, hence we need to aid the detection algorithm.
     
-    Get the magnitude and argument of a complex function over a line range:
+    Get the magnitude and argument of a complex function over a real range:
 
     .. code-block:: python
         z = symbols("z")
@@ -294,9 +294,11 @@ def get_plot_data(*args, **kwargs):
 
     .. code-block:: python
         z = symbols("z")
-        xx, yy, zz = get_plot_data(gamma(z), (z, -3 - 3*I, 3 + 3*I))
+        xx, yy, zz, abs, arg = get_plot_data(gamma(z), (z, -3 - 3*I, 3 + 3*I))
     
-    Here, `xx, yy, zz` are 2D arrays. `zz` contains complex numbers.
+    Here, `xx, yy, zz` are 2D arrays. `xx` is the real part of the domain.
+    `yy` is the complex part of the domain. `zz` contains complex numbers.
+    `abs` and `arg` are the absolute value and argument of `zz`.
 
     See also
     ========

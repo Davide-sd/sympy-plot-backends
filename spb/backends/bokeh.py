@@ -503,9 +503,10 @@ class BokehBackend(Plot):
                     x, y = self.series[i].get_data()
                     rend[i].data_source.data.update({'x': x, 'y': y})
                 elif s.is_2Dline and s.is_parametric:
-                    x, y = self.series[i].get_data()
-                    u = s.discretized_var
-                    xs, ys, us = self._get_segments(x, y, u)
+                    # TODO: how to update the colorbar (speaking about complex
+                    # plots)
+                    x, y, param = self.series[i].get_data()
+                    xs, ys, us = self._get_segments(x, y, param)
                     rend[i].data_source.data.update({'xs': xs, 'ys': ys, 'us': us})
                 elif s.is_2Dvector:
                     x, y, u, v = s.get_data()

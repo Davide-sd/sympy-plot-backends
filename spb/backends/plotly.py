@@ -566,7 +566,7 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["z"] = z
                     self.fig.data[i]["line"]["color"] = param
-                if s.is_3Dsurface and s.is_parametric:
+                elif s.is_3Dsurface and s.is_parametric:
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["x"] = x
                     self.fig.data[i]["y"] = y

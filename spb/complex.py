@@ -72,7 +72,7 @@ def complex_plot(*args, show=True, **kwargs):
     Depending on the provided expression, this function will produce different 
     types of plots:
     * list of complex numbers: creates a scatter plot.
-    * complex function over a line range:
+    * complex function over a real range:
         1. line plot separating the real and imaginary parts.
         2. line plot of the modulus of the complex function colored by its
             argument, if `absarg=True`.
@@ -202,8 +202,6 @@ def complex_plot(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ComplexSeries)
-    if not "aspect" in kwargs.keys():
-        kwargs["aspect"] = "equal"
     
     series = _build_series(*args, **kwargs)
     
@@ -211,7 +209,26 @@ def complex_plot(*args, show=True, **kwargs):
         kwargs["backend"] = TWO_D_B
         if any(s.is_3Dsurface for s in series):
             kwargs["backend"] = THREE_D_B
-        
+    
+    if all(not s.is_parametric for s in series):
+        # when plotting real/imaginary or domain coloring/3D plots, the 
+        # horizontal axis is the real, the vertical axis is the imaginary
+        if kwargs.get("xlabel", None) is None:
+            kwargs["xlabel"] = "Real"
+        if kwargs.get("ylabel", None) is None:
+            kwargs["ylabel"] = "Imaginary"
+        if kwargs.get("zlabel", None) is None:
+            kwargs["zlabel"] = "Abs"
+    else:
+        if kwargs.get("xlabel", None) is None:
+            kwargs["xlabel"] = "Real"
+        if kwargs.get("ylabel", None) is None:
+            kwargs["ylabel"] = "Abs"
+
+
+    if kwargs.get("aspect", None) and any(s.is_domain_coloring for s in series):
+        kwargs["aspect"] = "equal"
+    
     p = Plot(*series, **kwargs)
     if show:
         p.show()
