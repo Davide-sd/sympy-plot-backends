@@ -214,9 +214,9 @@ def complex_plot(*args, show=True, **kwargs):
         # when plotting real/imaginary or domain coloring/3D plots, the 
         # horizontal axis is the real, the vertical axis is the imaginary
         if kwargs.get("xlabel", None) is None:
-            kwargs["xlabel"] = "Real"
+            kwargs["xlabel"] = "Re"
         if kwargs.get("ylabel", None) is None:
-            kwargs["ylabel"] = "Imaginary"
+            kwargs["ylabel"] = "Im"
         if kwargs.get("zlabel", None) is None:
             kwargs["zlabel"] = "Abs"
     else:

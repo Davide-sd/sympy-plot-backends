@@ -212,22 +212,25 @@ class PlotlyBackend(Plot):
         
         count = 0
         for ii, s in enumerate(series):
-            # print(s.is_complex, s.is_2Dline, s.is_parametric, s.real, s.imag,
-            #     s.is_3Dsurface, s.is_domain_coloring)
             if s.is_2Dline:
                 line_kw = self._kwargs.get("line_kw", dict())
                 if s.is_parametric:
                     x, y, param = s.get_data()
-                    # TODO: show the colorbar with the u parameter
+                    # hides/show the colormap depending on self._use_cm
+                    mode = "lines+markers" if not s.is_point else "markers"
+                    if (not s.is_point) and (not self._use_cm):
+                        mode = "lines"
                     lkw = dict(
                         name = s.label,
                         line_color = next(self._cl),
-                        mode = "lines+markers" if not s.is_point else "markers",
+                        mode = mode,
                         marker = dict(
                             color = param,
                             colorscale = (next(self._cm) if not s.is_complex 
                                     else next(self._cyccm)),
-                            size = 6
+                            size = 6,
+                            showscale = self.legend and self._use_cm,
+                            colorbar = self._create_colorbar(ii, s.label, True)
                         ),
                         customdata = param,
                         hovertemplate = (
@@ -248,6 +251,11 @@ class PlotlyBackend(Plot):
                     self._fig.add_trace(
                         go.Scatter(x = x, y = y, **merge({}, lkw, line_kw)))
             elif s.is_3Dline:
+                # NOTE: As a design choice, I decided to show the legend entry
+                # as well as the colorbar (if use_cm=True). Even though the
+                # legend entry shows the wrong color (black line), it is useful
+                # in order to hide/show a specific series whenever we are  
+                # plotting multiple series.
                 x, y, z, param = s.get_data()
                 lkw = dict(
                     name = s.label,

@@ -1000,7 +1000,10 @@ class InteractiveSeries(BaseSeries):
         # free symbols of the parameters
         params = kwargs.get("params", dict())
         # number of discretization points
-        n = kwargs.get("n", 250)
+        self.n1 = kwargs.get("n1", 250)
+        self.n2 = kwargs.get("n2", 250)
+        self.n3 = kwargs.get("n3", 250)
+        n = [self.n1, self.n2, self.n3]
 
         self.xscale = kwargs.get('xscale', 'linear')
         self.yscale = kwargs.get('yscale', 'linear')
@@ -1035,7 +1038,10 @@ class InteractiveSeries(BaseSeries):
             self.start = float(ranges[0][1])
             self.end = float(ranges[0][2])
         elif (nexpr == 1) and (npar == 2):
-            self.is_3Dsurface = True
+            if kwargs.get("threed", False):
+                self.is_3Dsurface = True
+            else:
+                self.is_contour = True
         elif (nexpr == 3) and (npar == 2):
             self.is_3Dsurface = True
             self.is_parametric = True
@@ -1078,12 +1084,7 @@ class InteractiveSeries(BaseSeries):
             if i == 1: # y direction
                 scale = self.yscale
             discretizations.append(
-                self._discretize(float(r[1]), float(r[2]), n, scale=scale))
-        
-        # in this case the parametric class has one parameter, u. 
-        # Its discretization will be used by the backends for the gradient color
-        if self.is_parametric and (self.is_2Dline or self.is_3Dline):
-            self.discretized_var = discretizations[0]
+                self._discretize(float(r[1]), float(r[2]), n[i], scale=scale))
 
         if len(ranges) == 1:
             # 2D or 3D lines
@@ -1104,9 +1105,6 @@ class InteractiveSeries(BaseSeries):
                 # surfaces: needs mesh grids
                 meshes = np.meshgrid(*discretizations)
                 self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
-        
-        # this will be used in update_data
-        self._discret_shape = discretizations[0].shape
         
         self.data = None
         if len(params) > 0:
@@ -1146,7 +1144,8 @@ class InteractiveSeries(BaseSeries):
         """
         results = self._evaluate(params)
 
-        if ((self.is_3Dsurface and (not self.is_parametric)) or
+        if (self.is_contour or
+            (self.is_3Dsurface and (not self.is_parametric)) or
             (self.is_2Dline and (not self.is_parametric))):
             # in the case of single-expression 2D lines of 3D surfaces
             results = [*self.ranges.values(), results]
@@ -1363,13 +1362,11 @@ class ComplexInteractiveSeries(InteractiveSeries, ComplexSeries):
             xx, yy = np.meshgrid(x, y)
             zz = xx + 1j * yy
             self.ranges = {self.var: zz}
-            self._discret_shape = zz.shape
         else:
             # line plot
             x = self._discretize(complex(r[1]).real, complex(r[2]).real,
                     self.n1, scale=self.xscale)
             self.ranges = {self.var: x + 0j}
-            self._discret_shape = x.shape
         
         self.data = None
         if len(params) > 0:

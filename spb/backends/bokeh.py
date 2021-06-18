@@ -336,8 +336,19 @@ class BokehBackend(Plot):
                     # Bokeh is not able to deal with None values. Need to replace
                     # them with np.nan
                     y = [t if (t is not None) else np.nan for t in y]
-                    colormap = (next(self._cm) if not s.is_complex 
-                            else next(self._cyccm))
+                    if self._use_cm:
+                        colormap = (next(self._cm) if not s.is_complex 
+                                else next(self._cyccm))
+                    else:
+                        # NOTE: As a design choice, I decided to use a MultiLine
+                        # with solid colors, instead of using a Line glyph.
+                        # If that was not the case, it would be a little bit
+                        # messier to set the tooltip, which is set in the
+                        # __ini__ method.
+                        # This means we will see colorbars with solid colors
+                        # instead of a classic legend, which is not really good.
+                        color = next(self._cl)
+                        colormap = [color, color]
                     ds, line, cb = self._create_gradient_line(x, y, param,
                             colormap, s.label)
                     self._fig.add_glyph(ds, line)

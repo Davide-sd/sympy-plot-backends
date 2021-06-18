@@ -202,7 +202,7 @@ class Plot:
         self.legend = kwargs.get("legend", None)
         if self.legend is None:
             self.legend = False
-            if len(self._series) > 1:
+            if (len(self._series) > 1) or any(s.is_parametric for s in self.series):
                 self.legend = True
 
         # Objects used to render/display the plots, which depends on the 
@@ -297,7 +297,7 @@ class Plot:
     #     """
     #     return np.absolute(z), np.angle(z)
     
-    def _get_image(self, s, rgba=False, n=100):
+    def _get_image(self, s, rgba=False, n=256):
         x, y, z, magn, angle = s.get_data()
         colors = (get_srgb1(z, s.alpha, s.colorspace) * 255).astype(np.uint8)
  

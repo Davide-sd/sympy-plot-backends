@@ -84,6 +84,7 @@ class K3DBackend(Plot):
 
         self._bounds = []
         self._clipping = []
+        self._handles = dict()
 
         self._init_cyclers()
 
@@ -140,7 +141,7 @@ class K3DBackend(Plot):
         for o in self._fig.objects:
             self._fig.remove_class(o)
 
-        for s in series:
+        for ii, s in enumerate(series):
             if s.is_3Dline:
                 x, y, z, param = s.get_data()
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
@@ -359,12 +360,15 @@ class K3DBackend(Plot):
                 vectors = np.array((uu, vv, ww)).T * scale
                 origins = np.array((xx, yy, zz)).T
                 if self._use_cm and ("color" not in quiver_kw.keys()):
-                    colors = k3d.helpers.map_colors(magnitude, next(self._qcm), [])
+                    colormap = next(self._qcm)
+                    colors = k3d.helpers.map_colors(magnitude, colormap, [])
+                    self._handles[ii] = [qkw, colormap]
                 else:
                     col = quiver_kw.get("color", next(self._cl))
                     if not isinstance(col, int):
                         col = self._convert_to_int(col)
                     colors = col * np.ones(len(magnitude))
+                    self._handles[ii] = [qkw, None]
                 vec_colors = np.zeros(2 * len(colors))
                 for i, c in enumerate(colors):
                     vec_colors[2 * i] = c
@@ -415,7 +419,7 @@ class K3DBackend(Plot):
                     flat_shading = False,
                     wireframe = False,
                     color = self._convert_to_int(next(self._cl)),
-                    # volume_bounds = (min(x), max(x), min(y), max(y), min(z), max(z))
+                    color_range = [-np.pi, np.pi]
                 )
                 if self._use_cm:
                     a["color_map"] = (next(self._cm) if not s.is_complex 
@@ -443,6 +447,7 @@ class K3DBackend(Plot):
         self._fig.auto_rendering = True
     
     def _update_interactive(self, params):
+        # self._fig.auto_rendering = False
         for i, s in enumerate(self.series):
             if s.is_interactive:
                 self.series[i].update_data(params)
@@ -450,25 +455,38 @@ class K3DBackend(Plot):
                     x, y, z = self.series[i].get_data()
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     self._fig.objects[i].vertices = vertices
+
                 elif s.is_3Dsurface and (not s.is_complex):
                     x, y, z = self.series[i].get_data()
                     x, y, z = [t.flatten().astype(np.float32) for t in [x, y, z]]
                     vertices = np.vstack([x, y, z]).astype(np.float32)
                     self._fig.objects[i].vertices = vertices.T
                     self._fig.objects[i].attribute = z
+                    self._fig.objects[i].color_range = [z.min(), z.max()]
+
                 elif s.is_vector and s.is_3D:
                     if self._kwargs.get("streamlines", False):
                         raise NotImplementedError
-                    # TODO: do I need to modify the colors too?
+
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()
-                    xx, yy, zz, uu, vv, ww = [t.astype(np.float32) for t in 
-                        [xx, yy, zz, uu, vv, ww]]
-                    qkw = dict(scale = 0.5)
-                    quiver_kw = self._kwargs.get("quiver_kw", dict())
-                    qkw = merge(qkw, quiver_kw)
+                    xx, yy, zz, uu, vv, ww = [t.flatten().astype(np.float32) 
+                        for t in [xx, yy, zz, uu, vv, ww]]
+                    magnitude = np.sqrt(uu**2 + vv**2 + ww**2)
+                    qkw, colormap = self._handles[i]
+                    if colormap is not None:
+                        colors = k3d.helpers.map_colors(magnitude, colormap, [])
+                        vec_colors = np.zeros(2 * len(colors))
+                        for j, c in enumerate(colors):
+                            # print("j", j, "c", c)
+                            vec_colors[2 * j] = c
+                            vec_colors[2 * j + 1] = c
+                        vec_colors = vec_colors.astype(np.uint32)
+                        self.fig.objects[i].colors = vec_colors
+                        
                     scale = qkw["scale"]
                     vectors = np.array((uu, vv, ww)).T * scale
                     self.fig.objects[i].vectors = vectors
+
                 elif s.is_complex:
                     if s.is_3Dsurface:
                         x, y, z, mag, arg = s.get_data()
@@ -478,6 +496,7 @@ class K3DBackend(Plot):
                         self._fig.objects[i].attribute = arg.flatten().astype(np.float32)
                     else:
                         raise NotImplementedError
+        # self._fig.auto_rendering = True
 
     def _get_auto_camera(self, factor=1.5, yaw=40, pitch=60):
         """ This function is very similar to k3d.plot.Plot.get_auto_camera.

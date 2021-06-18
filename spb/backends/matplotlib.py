@@ -6,9 +6,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.collections import LineCollection
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import ListedColormap, Normalize
 import mpl_toolkits
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import numpy as np
 from mergedeep import merge
 import itertools
@@ -111,9 +112,15 @@ class MatplotlibBackend(Plot):
             If False, solid colors will be used instead. Default to True.
     """
 
+    _library = "matplotlib"
+
     colormaps = [
         cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
         cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer
+    ]
+
+    cyclic_colormaps = [
+        cm.twilight, cm.hsv
     ]
 
     def __new__(cls, *args, **kwargs):
@@ -129,12 +136,22 @@ class MatplotlibBackend(Plot):
         self._handles = dict()
     
     def _init_cyclers(self):
-        if isinstance(self.colorloop, ListedColormap):
-            self._cl = itertools.cycle(self.colorloop.colors)
-        else:
-            self._cl = itertools.cycle(self.colorloop)
-        self._cm = itertools.cycle(self.colormaps)
-    
+        super()._init_cyclers()
+        
+        # For flexibily, spb.backends.utils.convert_colormap returns numpy 
+        # ndarrays whenever plotly/colorcet/k3d color map are given. Here we
+        # create ListedColormap that can be used by Matplotlib
+        def process_iterator(it, colormaps):
+            cm = []
+            for i in range(len(colormaps)):
+                c = next(it)
+                cm.append(c if not isinstance(c, np.ndarray) else ListedColormap(c))
+            return itertools.cycle(cm)
+
+        self._cm = process_iterator(self._cm, self.colormaps)
+        self._cyccm = process_iterator(self._cyccm, self.cyclic_colormaps)
+
+
     def _create_figure(self):
         # the following import is here in order to avoid a circular import error
         from spb.defaults import cfg
@@ -225,8 +242,10 @@ class MatplotlibBackend(Plot):
             # TODO: colorbar position? used space?
             cb = self._fig.colorbar(c, ax=self.ax)
             cb.set_label(label, rotation=90)
+            return True
+        return False
     
-    def _add_handle(self, i, h, kw=None):
+    def _add_handle(self, i, h, kw=None, *args):
         """ self._handle is a dictionary where:
             key: integer corresponding to the i-th series.
             value: a list of two elements:
@@ -234,9 +253,11 @@ class MatplotlibBackend(Plot):
                 2. optionally, keyword arguments used to create the handle. 
                     Some object can't be updated, hence we need to reconstruct
                     it from scratch at every update.
+                3. anything else needed to reconstruct the object.
         This dictionary will be used with iplot
         """
-        self._handles[i] = [h if not isinstance(h, (list, tuple)) else h[0], kw]
+        self._handles[i] = [h if not isinstance(h, (list, tuple)) 
+                else h[0], kw, *args]
 
     def _process_series(self, series):
         # XXX Workaround for matplotlib issue
@@ -251,13 +272,15 @@ class MatplotlibBackend(Plot):
                 line_kw = self._kwargs.get("line_kw", dict())
                 if s.is_parametric and self._use_cm:
                     x, y, param = s.get_data()
-                    lkw = dict(array=param, cmap=next(self._cm))
+                    colormap = (next(self._cm) if not s.is_complex 
+                            else next(self._cyccm))
+                    lkw = dict(array=param, cmap=colormap)
+                    kw = merge({}, lkw, line_kw)
                     segments = self.get_segments(x, y)
-                    c = LineCollection(segments,
-                            **merge({}, lkw, line_kw))
+                    c = LineCollection(segments, **kw)
                     self.ax.add_collection(c)
-                    self._add_colorbar(c, s.label)
-                    self._add_handle(i, c)
+                    is_cb_added = self._add_colorbar(c, s.label)
+                    self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 else:
                     if s.is_parametric:
                         x, y, param = s.get_data()
@@ -266,13 +289,15 @@ class MatplotlibBackend(Plot):
                     lkw = dict(label=s.label)
                     l = self.ax.plot(x, y, **merge({}, lkw, line_kw))
                     self._add_handle(i, l)
+
             elif s.is_contour:
+                x, y, z = s.get_data()
                 ckw = dict(cmap = next(self._cm))
                 contour_kw = self._kwargs.get("contour_kw", dict())
-                c = self.ax.contourf(*s.get_meshes(), 
-                        **merge({}, ckw, contour_kw))
+                kw = merge({}, ckw, contour_kw)
+                c = self.ax.contourf(x, y, z, **kw)
                 self._add_colorbar(c, s.label, True)
-                self._add_handle(i, c)
+                self._add_handle(i, c, kw, self._fig.axes[-1])
             elif s.is_3Dline:
                 x, y, z, param = s.get_data()
                 lkw = dict()
@@ -293,7 +318,7 @@ class MatplotlibBackend(Plot):
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
                 zlims.append((np.amin(z), np.amax(z)))
-            elif s.is_3Dsurface:
+            elif s.is_3Dsurface and (not s.is_complex):
                 x, y, z = s.get_data()
                 skw = dict(rstride = 1, cstride = 1, linewidth = 0.1)
                 if self._use_cm:
@@ -301,8 +326,8 @@ class MatplotlibBackend(Plot):
                 surface_kw = self._kwargs.get("surface_kw", dict())
                 kw = merge({}, skw, surface_kw)
                 c = self.ax.plot_surface(x, y, z, **kw)
-                self._add_colorbar(c, s.label)
-                self._add_handle(i, c, kw)
+                is_cb_added = self._add_colorbar(c, s.label)
+                self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
 
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
@@ -329,6 +354,7 @@ class MatplotlibBackend(Plot):
                         c = self.ax.contourf(xarray, yarray, zarray,
                             **merge({}, ckw, contour_kw))
                     self._add_handle(i, c)
+
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
@@ -340,28 +366,25 @@ class MatplotlibBackend(Plot):
                         if self._use_cm:
                             skw["cmap"] = next(self._cm)
                             skw["color"] = magn
-                            kw = merge({}, skw, stream_kw)
-                            s = self.ax.streamplot(xx, yy, uu, vv,
-                                **kw)
                         else:
                             skw["color"] = next(self._cl)
-                            kw = merge({}, skw, stream_kw)
-                            s = self.ax.streamplot(xx, yy, uu, vv,
-                                **kw)
+                        kw = merge({}, skw, stream_kw)
+                        s = self.ax.streamplot(xx, yy, uu, vv, **kw)
                         self._add_handle(i, s, kw)
                     else:
                         qkw = dict()
                         quiver_kw = self._kwargs.get("quiver_kw", dict())
                         if self._use_cm:
                             qkw["cmap"] = next(self._cm)
-                            q = self.ax.quiver(xx, yy, uu, vv, magn,
-                                **merge({}, qkw, quiver_kw))
-                            self._add_colorbar(q, s.label)
+                            kw = merge({}, qkw, quiver_kw)
+                            q = self.ax.quiver(xx, yy, uu, vv, magn, **kw)
+                            is_cb_added = self._add_colorbar(q, s.label)
                         else:
+                            is_cb_added = False
                             qkw["color"] = next(self._cl)
-                            q = self.ax.quiver(xx, yy, uu, vv,
-                                **merge({}, qkw, quiver_kw))
-                        self._add_handle(i, q)
+                            kw = merge({}, qkw, quiver_kw)
+                            q = self.ax.quiver(xx, yy, uu, vv, **kw)
+                        self._add_handle(i, q, kw, is_cb_added, self._fig.axes[-1])
                 else:
                     xx, yy, zz, uu, vv, ww = s.get_data()
                     magn = np.sqrt(uu**2 + vv**2 + ww**2)
@@ -380,16 +403,88 @@ class MatplotlibBackend(Plot):
                             kw = merge({}, qkw, quiver_kw)
                             q = self.ax.quiver(xx, yy, zz, uu, vv, ww,
                                 **kw)
-                            self._add_colorbar(q, s.label)
+                            is_cb_added = self._add_colorbar(q, s.label)
                         else:
                             qkw["color"] = next(self._cl)
                             kw = merge({}, qkw, quiver_kw)
-                            q = self.ax.quiver(xx, yy, zz, uu, vv, ww,
-                                **kw)
-                        self._add_handle(i, q, kw)
+                            q = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
+                        self._add_handle(i, q, kw, is_cb_added, self._fig.axes[-1])
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
                     zlims.append((np.amin(zz), np.amax(zz)))
+
+            elif s.is_complex:
+                if s.is_domain_coloring:
+                    x, y, magn_angle, img, discr, colors = self._get_image(s)
+                    contour_kw = self._kwargs.get("contour_kw", dict())
+                    ckw = dict(
+                        extent = [np.amin(x), np.amax(x), np.amin(y), np.amax(y)], 
+                        interpolation = "nearest",
+                        origin = "lower",
+                    )
+                    kw = merge({}, ckw, contour_kw)
+                    image = self.ax.imshow(img, **kw)
+                    self._add_handle(i, image, kw)
+
+                    # lightness/magnitude-colorbar
+                    cb1 = self._fig.colorbar(
+                        cm.ScalarMappable(cmap = cm.Greys_r),
+                        orientation = 'vertical',
+                        label = 'Magnitude',
+                        ticks = [0, 1],
+                        ax = self.ax
+                    )
+                    cb1.ax.set_yticklabels(["0", r"$\infty$"])
+
+                    # chroma/phase-colorbar
+                    colormap = ListedColormap(colors / 255.0)
+                    norm = Normalize(vmin=-self.pi, vmax=self.pi)
+                    cb2 = self._fig.colorbar(
+                        cm.ScalarMappable(norm=norm, cmap=colormap),
+                        orientation='vertical',
+                        label='Argument',
+                        ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
+                        ax = self.ax
+                    )
+                    cb2.ax.set_yticklabels([r"-$\pi$", r"-$\pi / 2$", "0", 
+                            r"$\pi / 2$", r"$\pi$"])
+                else:
+                    x, y, z, mag, angle = s.get_data()
+                    colormap = next(self._cyccm)
+                    
+                    # NOTE: Since I'm using a cyclical color map to plot the
+                    # argument, it makes sense to normalize the colors in the
+                    # range [-pi, pi] rather than [min(angle), max(angle)],
+                    # otherwise the meaning of the plot would be really 
+                    # confusing when abs(min(angle)) < pi or abs(max(angle)).
+                    norm = Normalize(vmin=-np.pi, vmax=np.pi)
+                    facecolors = norm(angle)
+                    skw = dict(rstride = 1, cstride = 1, linewidth = 0.1)
+                    if self._use_cm:
+                        skw["facecolors"] = colormap(facecolors)
+                    surface_kw = self._kwargs.get("surface_kw", dict())
+                    kw = merge({}, skw, surface_kw)
+                    c = self.ax.plot_surface(x, y, mag, **kw)
+                    
+                    if self._use_cm:
+                        # this colorbar is essential to understand the plot.
+                        # Always show it, expect when use_cm=False
+                        mappable = cm.ScalarMappable(cmap = colormap, norm = norm)
+                        mappable.set_array(facecolors)
+                        cb = self._fig.colorbar(
+                            mappable, 
+                            orientation = 'vertical',
+                            label = 'Argument',
+                            ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
+                            ax = self.ax
+                        )
+                        cb.ax.set_yticklabels([r"-$\pi$", r"-$\pi / 2$", "0", 
+                            r"$\pi / 2$", r"$\pi$"])
+                    self._add_handle(i, c, kw, colormap, norm)
+
+                    xlims.append((np.amin(x), np.amax(x)))
+                    ylims.append((np.amin(y), np.amax(y)))
+                    zlims.append((np.amin(mag), np.amax(mag)))
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
@@ -461,6 +556,21 @@ class MatplotlibBackend(Plot):
             self.ax.autoscale_view(
                 scalex=self.ax.get_autoscalex_on(),
                 scaley=self.ax.get_autoscaley_on())
+
+            # NOTE: Hack in order to make interactive contour plots to scale to
+            # the appropriate range
+            if xlims and (
+                any(s.is_contour for s in self.series) or
+                any(s.is_vector and (not s.is_3D) for s in self.series) or
+                any(s.is_2Dline and s.is_parametric for s in self.series)):
+                xlims = np.array(xlims)
+                xlim = (np.amin(xlims[:, 0]), np.amax(xlims[:, 1]))
+                self.ax.set_xlim(xlim)
+            if ylims and (any(s.is_contour for s in self.series) or
+                any(s.is_2Dline and s.is_parametric for s in self.series)):
+                ylims = np.array(ylims)
+                ylim = (np.amin(ylims[:, 0]), np.amax(ylims[:, 1]))
+                self.ax.set_ylim(ylim)
         else:
             # XXX Workaround for matplotlib issue
             # https://github.com/matplotlib/matplotlib/issues/17130
@@ -494,24 +604,50 @@ class MatplotlibBackend(Plot):
         if self.zlim:
             self.ax.set_zlim(self.zlim)
 
+    def _update_colorbar(self, cax, param, kw, label):
+        """ This method reduces code repetition.
+        The name is misleading: here we create a new colorbar which will be 
+        placed on the same colorbar axis as the original.
+        """
+        cax.clear()
+        norm = Normalize(vmin=np.amin(param), vmax=np.amax(param))
+        mappable = cm.ScalarMappable(cmap = kw["cmap"], norm = norm)
+        self._fig.colorbar(
+            mappable, 
+            orientation = 'vertical',
+            label = label,
+            cax = cax
+        )
+
     def _update_interactive(self, params):
         # With this backend, data is only being added once the plot is shown.
         # However, iplot doesn't call the show method. The following line of
         # code will add the numerical data (if not already present).
         if len(self._handles) == 0:
             self.process_series()
-
+        
         xlims, ylims, zlims = [], [], []
         for i, s in enumerate(self.series):
             if s.is_interactive:
                 self.series[i].update_data(params)
                 if s.is_2Dline:
-                    x, y = self.series[i].get_data()
-                    if isinstance(self._handles[i][0], LineCollection):
+                    if s.is_parametric and self._use_cm:
+                        x, y, param = self.series[i].get_data()
                         segments = self.get_segments(x, y)
                         self._handles[i][0].set_segments(segments)
+                        self._handles[i][0].set_array(param)
+                        kw, is_cb_added, cax = self._handles[i][1:]
+                        if is_cb_added:
+                            self._update_colorbar(cax, param, kw, s.label)
+                        xlims.append((np.amin(x), np.amax(x)))
+                        ylims.append((np.amin(y), np.amax(y)))
                     else:
+                        if s.is_parametric:
+                            x, y, param = self.series[i].get_data()
+                        else:
+                            x, y = self.series[i].get_data()
                         self._handles[i][0].set_data(x, y)
+                        
                 elif s.is_3Dline:
                     x, y, z = self.series[i].get_data()
                     if isinstance(self._handles[i][0], Line3DCollection):
@@ -522,31 +658,51 @@ class MatplotlibBackend(Plot):
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(z), np.amax(z)))
-                elif s.is_3Dsurface:
+                
+                elif s.is_contour:
                     x, y, z = self.series[i].get_data()
-                    # NOTE: there isn't a straightforward way of updating data
-                    # for a surface plot. Easiest way: delete old, create new.
+                    kw, cax = self._handles[i][1:]
+                    for c in self._handles[i][0].collections:
+                        c.remove()
+                    self._handles[i][0] = self.ax.contourf(x, y, z, **kw)
+
+                    self._update_colorbar(cax, z, kw, s.label)
+                    xlims.append((np.amin(x), np.amax(x)))
+                    ylims.append((np.amin(y), np.amax(y)))
+                
+                elif s.is_3Dsurface and (not s.is_complex):
+                    x, y, z = self.series[i].get_data()
                     # TODO: by setting the keyword arguments, somehow the update
                     # becomes really really slow.
+                    kw, is_cb_added, cax = self._handles[i][1:]
                     self._handles[i][0].remove()
                     self._handles[i][0] = self.ax.plot_surface(x, y, z,
                             **self._handles[i][1])
+
+                    if is_cb_added:
+                        self._update_colorbar(cax, z, kw, s.label)
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(z), np.amax(z)))
+                
                 elif s.is_vector and s.is_3D:
                     streamlines = self._kwargs.get("streamlines", False)
                     if streamlines:
                         raise NotImplementedError
+
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()
-                    # NOTE: there isn't a straightforward way of updating data
-                    # for a surface plot. Easiest way: delete old, create new.
+                    kw, is_cb_added, cax = self._handles[i][1:]
                     self._handles[i][0].remove()
                     self._handles[i][0] = self.ax.quiver(xx, yy, zz, uu, vv, ww,
-                            **self._handles[i][1])
+                            **kw)
+                    
+                    if is_cb_added:
+                        magn = np.sqrt(uu**2 + vv**2 + ww**2)
+                        self._update_colorbar(cax, magn, kw, s.label)
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
                     zlims.append((np.amin(zz), np.amax(zz)))
+                
                 elif s.is_vector:
                     xx, yy, uu, vv = self.series[i].get_data()
                     magn = np.sqrt(uu**2 + vv**2)
@@ -554,18 +710,48 @@ class MatplotlibBackend(Plot):
                     if streamlines:
                         raise NotImplementedError
                         
-                        # # TODO: there is no remove() for StreamPlotSet. Is it
-                        # # possible to implement a workaround?
-                        # kw = self._handles[i][1]
-                        # if self._use_cm:
-                        #     kw["color"] = magn
-                        # self._handles[i][0].remove()
-                        # self._handles[i][0] = self.ax.streamplot(xx, yy, uu, vv,
-                        #         **kw)
+                        # TODO: streamlines are composed by lines and arrows.
+                        # Arrows belongs to a PatchCollection. Currently,
+                        # there is no way to remove a PatchCollectio....
+                        kw = self._handles[i][1]
+                        self._handles[i][0].lines.remove()
+                        self._handles[i][0].arrows.remove()
+                        self._handles[i][0] = self.ax.streamplot(xx, yy, uu, vv,
+                            **kw)
                     else:
-                        # TODO: is the colormap scaling as well?
-                        self._handles[i][0].set_UVC(uu, vv, magn)
-        
+                        kw, is_cb_added, cax = self._handles[i][1:]
+                        
+                        if is_cb_added:
+                            self._handles[i][0].set_UVC(uu, vv, magn)
+                            self._update_colorbar(cax, magn, kw, s.label)
+                        else:
+                            self._handles[i][0].set_UVC(uu, vv)
+                    xlims.append((np.amin(xx), np.amax(xx)))
+                    ylims.append((np.amin(yy), np.amax(yy)))
+                
+                elif s.is_complex:
+                    if s.is_domain_coloring:
+                        x, y, magn_angle, img, discr, colors = self._get_image(s)
+                        self._handles[i][0].remove()
+                        self._handles[i][0] = self.ax.imshow(img, 
+                            **self._handles[i][1])
+                    else:
+                        x, y, z, mag, angle = s.get_data()
+                        self._handles[i][0].remove()
+                        kw, colormap, norm = self._handles[i][1:]
+
+                        if self._use_cm:
+                            norm = Normalize(vmin=-np.pi, vmax=np.pi)
+                            facecolors = norm(angle)
+                            kw["facecolors"] = colormap(facecolors)
+                            
+                        self._handles[i][0] = self.ax.plot_surface(x, y, mag,
+                            **kw)
+
+                        xlims.append((np.amin(x), np.amax(x)))
+                        ylims.append((np.amin(y), np.amax(y)))
+                        zlims.append((np.amin(mag), np.amax(mag)))
+
         # Update the plot limits according to the new data
         Axes3D = mpl_toolkits.mplot3d.Axes3D
         if not isinstance(self.ax, Axes3D):
