@@ -273,6 +273,7 @@ class BokehBackend(Plot):
                 hide_banner=True
             )
         
+        self._handles = dict()
         self._init_cyclers()
 
         curdoc().theme = kwargs.get("theme", cfg["bokeh"]["theme"])
@@ -327,52 +328,47 @@ class BokehBackend(Plot):
         # colorbars which are added to the right side.
         self._fig.renderers = []
         self._fig.right = []
-
+        
         for i, s in enumerate(series):
             if s.is_2Dline:
-                
-                if s.is_parametric:
+                if s.is_parametric and self._use_cm:
                     x, y, param = s.get_data()
-                    # Bokeh is not able to deal with None values. Need to replace
-                    # them with np.nan
+                    # Bokeh is not able to deal with None values. 
+                    # Need to replace them with np.nan.
                     y = [t if (t is not None) else np.nan for t in y]
-                    if self._use_cm:
-                        colormap = (next(self._cm) if not s.is_complex 
-                                else next(self._cyccm))
-                    else:
-                        # NOTE: As a design choice, I decided to use a MultiLine
-                        # with solid colors, instead of using a Line glyph.
-                        # If that was not the case, it would be a little bit
-                        # messier to set the tooltip, which is set in the
-                        # __ini__ method.
-                        # This means we will see colorbars with solid colors
-                        # instead of a classic legend, which is not really good.
-                        color = next(self._cl)
-                        colormap = [color, color]
+                    colormap = (next(self._cm) if not s.is_complex 
+                            else next(self._cyccm))
                     ds, line, cb = self._create_gradient_line(x, y, param,
                             colormap, s.label)
                     self._fig.add_glyph(ds, line)
                     if self.legend:
+                        self._handles[i] = cb
                         self._fig.add_layout(cb, "right")
                 else:
-                    x, y = s.get_data()
-                    # Bokeh is not able to deal with None values. Need to replace
-                    # them with np.nan
-                    y = [t if (t is not None) else np.nan for t in y]
+                    if s.is_parametric:
+                        x, y, param = s.get_data()
+                        y = [t if (t is not None) else np.nan for t in y]
+                        source = {"xs": x, "ys": y, "us": param}
+                    else:
+                        x, y = s.get_data()
+                        y = [t if (t is not None) else np.nan for t in y]
+                        source = {"xs": x, "ys": y}
+
                     lkw = dict(
                         line_width = 2, legend_label = s.label,
                         color=next(self._cl)
                     )
                     line_kw = self._kwargs.get("line_kw", dict())
                     if not s.is_point:
-                        self._fig.line(x, y, **merge({}, lkw, line_kw))
+                        self._fig.line("xs", "ys", source=source, 
+                            **merge({}, lkw, line_kw))
                     else:
-                        self._fig.dot(x, y, **merge({"size": 20}, lkw, line_kw))
+                        self._fig.dot("xs", "ys", source=source,
+                            **merge({"size": 20}, lkw, line_kw))
+
             elif s.is_contour:
                 x, y, z = s.get_data()
-                x = x.flatten()
-                y = y.flatten()
-                zz = z.flatten()
+                x, y, zz = [t.flatten() for t in [x, y, z]]
                 minx, miny, minz = min(x), min(y), min(zz)
                 maxx, maxy, maxz = max(x), max(y), max(zz)
 
@@ -389,6 +385,8 @@ class BokehBackend(Plot):
                 colorbar = ColorBar(color_mapper=colormapper, title=s.label,
                     **merge({}, cbkw, colorbar_kw))
                 self._fig.add_layout(colorbar, 'right')
+                self._handles[i] = colorbar
+
             elif s.is_implicit:
                 points = s.get_data()
                 # TODO: add color to the legend
@@ -407,6 +405,7 @@ class BokehBackend(Plot):
                     self._fig.image(image=[z], x=min(x), y=min(y),
                         dw=abs(max(x) - min(x)), dh=abs(max(y) - min(y)),
                         palette=cm, legend_label=s.label)
+
             elif s.is_2Dvector:
                 streamlines = self._kwargs.get("streamlines", False)
                 if streamlines:
@@ -434,6 +433,7 @@ class BokehBackend(Plot):
                     glyph = Segment(x0="x0", y0="y0", x1="x1", y1="y1",
                         **merge({}, qkw, quiver_kw))
                     self._fig.add_glyph(source, glyph)
+
             elif s.is_complex and s.is_domain_coloring:
                 x, y, magn_angle, img, discr, colors = self._get_image(s, True)
                 
@@ -462,6 +462,7 @@ class BokehBackend(Plot):
                     ticker = FixedTicker(ticks = [0, 1]),
                     major_label_overrides = {0: "0", 1: "∞"})
                 self._fig.add_layout(colorbar2, 'right')
+
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__) +
@@ -486,9 +487,8 @@ class BokehBackend(Plot):
 
     def _create_gradient_line(self, x, y, u, colormap, name):
         xs, ys, us = self._get_segments(x, y, u)
-
         color_mapper = LinearColorMapper(palette = colormap, 
-            low = min(u), high = max(u))
+            low = min(us), high = max(us))
         data_source = ColumnDataSource(dict(xs = xs, ys = ys, us = us))
 
         lkw = dict(
@@ -507,31 +507,56 @@ class BokehBackend(Plot):
 
     def _update_interactive(self, params):
         rend = self.fig.renderers
+        
         for i, s in enumerate(self.series):
             if s.is_interactive:
                 self.series[i].update_data(params)
                 
-                if s.is_2Dline and (not s.is_parametric):
-                    x, y = self.series[i].get_data()
-                    rend[i].data_source.data.update({'x': x, 'y': y})
-                elif s.is_2Dline and s.is_parametric:
-                    # TODO: how to update the colorbar (speaking about complex
-                    # plots)
+                if s.is_2Dline and s.is_parametric and self._use_cm:
                     x, y, param = self.series[i].get_data()
                     xs, ys, us = self._get_segments(x, y, param)
-                    rend[i].data_source.data.update({'xs': xs, 'ys': ys, 'us': us})
+                    rend[i].data_source.data.update(
+                        {'xs': xs, 'ys': ys, 'us': us})
+                    if i in self._handles.keys():
+                        cb = self._handles[i]
+                        cb.color_mapper.update(low = min(us), high = max(us))
+
+                elif s.is_2Dline:
+                    if s.is_parametric:
+                        x, y, param = self.series[i].get_data()
+                        source = {"xs": x, "ys": y, "us": param}
+                    else:
+                        x, y = self.series[i].get_data()
+                        source = {"xs": x, "ys": y}
+                    rend[i].data_source.data.update(source)
+
+                elif s.is_contour:
+                    x, y, z = s.get_data()
+                    cb = self._handles[i]
+                    rend[i].data_source.data.update({"image": [z]})
+                    zz = z.flatten()
+                    # TODO: as of Bokeh 2.3.2, the following line going to update
+                    # the values of the color mapper, but the redraw is not 
+                    # applied, hence there is an error in the visualization.
+                    # Keep track of the following issue:
+                    # https://github.com/bokeh/bokeh/issues/11116
+                    cb.color_mapper.update(low = min(zz), high=max(zz))
+
                 elif s.is_2Dvector:
                     x, y, u, v = s.get_data()
                     streamlines = self._kwargs.get("streamlines", False)
                     if streamlines:
-                        sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
+                        sqk = dict(color=next(self._cl), line_width=2, 
+                            line_alpha=0.8)
                         stream_kw = self._kwargs.get("stream_kw", dict())
                         density = stream_kw.pop("density", 2)
-                        xs, ys = compute_streamlines(x[0, :], y[:, 0], u, v, density=density)
+                        xs, ys = compute_streamlines(x[0, :], y[:, 0], u, v, 
+                            density=density)
                         rend[i].data_source.data.update({'xs': xs, 'ys': ys})
                     else:
                         quiver_kw = self._kwargs.get("quiver_kw", dict())
-                        data, quiver_kw = self._get_quivers_data(x, y, u, v, **quiver_kw)
+                        data, quiver_kw = self._get_quivers_data(x, y, u, v, 
+                            **quiver_kw)
                         mag = data["magnitude"]
                         color_mapper = LinearColorMapper(
                             palette=self.quivers_colormaps[i], 
@@ -540,8 +565,8 @@ class BokehBackend(Plot):
                             {'field': 'magnitude', 'transform': color_mapper})
                         rend[i].data_source.data.update(data)
                         rend[i].glyph.line_color = line_color
+
                 elif s.is_complex and s.is_domain_coloring:
-                    print("Bokeh -> update_interactive -> is_domain_coloring")
                     # TODO: for some unkown reason, domain_coloring and 
                     # interactive plot don't like each other...
                     x, y, z, magn_angle, img, discr, colors = self._get_image(s)

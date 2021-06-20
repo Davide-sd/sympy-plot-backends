@@ -1395,19 +1395,12 @@ def _set_discretization_points(kwargs, pt):
                 Parametric3DLineSeries, ImplicitSeries]:
         if "n1" in kwargs.keys() and ("n" not in kwargs.keys()):
             kwargs["n"] = kwargs["n1"]
-    elif pt in [SurfaceOver2DRangeSeries, ContourSeries, ComplexSeries]:
+    elif pt in [SurfaceOver2DRangeSeries, ContourSeries, ComplexSeries,
+            ParametricSurfaceSeries, Vector2DSeries, ComplexInteractiveSeries]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]
-    elif pt in [ParametricSurfaceSeries]:
-        if "n" in kwargs.keys():
-            kwargs["n1"] = kwargs["n"]
-            kwargs["n2"] = kwargs["n"]
-    elif pt in [Vector2DSeries]:
-        if "n" in kwargs.keys():
-            kwargs["n1"] = kwargs["n"]
-            kwargs["n2"] = kwargs["n"]
-    elif pt in [Vector3DSeries, SliceVector3DSeries]:
+    elif pt in [Vector3DSeries, SliceVector3DSeries, InteractiveSeries]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]

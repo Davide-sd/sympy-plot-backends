@@ -3,7 +3,7 @@ import param
 import panel as pn
 from sympy import latex, Tuple
 from spb.backends.base_backend import Plot
-from spb.series import InteractiveSeries
+from spb.series import InteractiveSeries, _set_discretization_points
 from spb.complex import _build_series
 from spb.utils import _plot_sympify, _unpack_args
 from spb.defaults import TWO_D_B, THREE_D_B
@@ -272,6 +272,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         # read the parameters to generate the initial numerical data for
         # the interactive series
         kwargs["params"] = self.read_parameters()
+        kwargs = _set_discretization_points(kwargs, InteractiveSeries)
         _slice = kwargs.get("slice", None)
         is_complex = kwargs.get("is_complex", False)
         series = []

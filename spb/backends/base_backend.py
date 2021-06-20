@@ -197,12 +197,20 @@ class Plot:
         self._series = []
         self._series.extend(args)
 
+        # make custom keywords available inside self
+        self._kwargs = kwargs
+
+        # The user can choose to use the standard color map loop, or set/provide
+        # a solid color loop (for the surface color).
+        self._use_cm = kwargs.get("use_cm", True)
+
         # auto-legend: if more than 1 data series has been provided and the user
         # has not set legend=False, then show the legend for better clarity.
         self.legend = kwargs.get("legend", None)
         if self.legend is None:
             self.legend = False
-            if (len(self._series) > 1) or any(s.is_parametric for s in self.series):
+            if ((len(self._series) > 1) or 
+                (any(s.is_parametric for s in self.series) and self._use_cm)):
                 self.legend = True
 
         # Objects used to render/display the plots, which depends on the 
@@ -242,13 +250,6 @@ class Plot:
                 self._series.append(p.series)
         self.nrows = kwargs.get("nrows", 1)
         self.ncols = kwargs.get("ncols", 1)
-    
-        # make custom keywords available inside self
-        self._kwargs = kwargs
-
-        # The user can choose to use the standard color map loop, or set/provide
-        # a solid color loop (for the surface color).
-        self._use_cm = kwargs.get("use_cm", True)
     
     def _init_cyclers(self):
         """ Create infinite loop iterators over the provided color maps. """

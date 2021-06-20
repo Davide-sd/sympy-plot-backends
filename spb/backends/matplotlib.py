@@ -335,6 +335,7 @@ class MatplotlibBackend(Plot):
             elif s.is_implicit:
                 points = s.get_data()
                 if len(points) == 2:
+                    print("Case 1")
                     # interval math plotting
                     x, y = _matplotlib_list(points[0])
                     c = self.ax.fill(x, y, edgecolor='None')
@@ -348,9 +349,11 @@ class MatplotlibBackend(Plot):
                     ckw = dict(cmap = colormap)
                     contour_kw = self._kwargs.get("contour_kw", dict())
                     if plot_type == 'contour':
+                        print("Case 2")
                         c = self.ax.contour(xarray, yarray, zarray, 
                             **merge({}, ckw, contour_kw))
                     else:
+                        print("Case 3")
                         c = self.ax.contourf(xarray, yarray, zarray,
                             **merge({}, ckw, contour_kw))
                     self._add_handle(i, c)
