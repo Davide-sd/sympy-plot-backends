@@ -186,7 +186,7 @@ class Plot:
         self.ylabel = kwargs.get("ylabel", None)
         self.zlabel = kwargs.get("zlabel", None)
         self.aspect = kwargs.get("aspect", "auto")
-        self.axis_center = kwargs.get("axis_center", "auto")
+        self.axis_center = kwargs.get("axis_center", None)
         self.grid = kwargs.get("grid", True)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
@@ -349,7 +349,7 @@ class Plot:
             "You are using {}, hence the visualized ".format(type(self)) +
             "result is just an approximation."
         )
-        
+
         # look for the minimum delta_x and delta_y
         dx = min([abs(interval[0].start - interval[0].end) for interval in intervals_list])
         dy = min([abs(interval[1].start - interval[1].end) for interval in intervals_list])

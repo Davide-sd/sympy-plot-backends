@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from sympy import latex
 from sympy.external import import_module
+from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 import matplotlib
 import matplotlib.pyplot as plt
@@ -132,6 +133,8 @@ class MatplotlibBackend(Plot):
         # set global options like title, axis labels, ...
         super().__init__(*args, **kwargs)
 
+        if self.axis_center is None:
+            self.axis_center = cfg["matplotlib"]["axis_center"]
         # see self._add_handle for more info about the following dictionary
         self._handles = dict()
     
@@ -531,7 +534,7 @@ class MatplotlibBackend(Plot):
                 self.ax.xaxis.set_ticks_position('bottom')
                 self.ax.spines['right'].set_visible(False)
                 self.ax.spines['top'].set_visible(False)
-        else:
+        if self.grid:
             self.ax.grid()
         if self.legend:
             handles, _ = self.ax.get_legend_handles_labels()

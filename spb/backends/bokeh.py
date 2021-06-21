@@ -14,13 +14,27 @@ import colorcet as cc
 import os
 import numpy as np
 from mergedeep import merge
+import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from spb.backends.utils import convert_colormap
 
-# TODO: is it possible to further optimize this function?
-#
-# The following function comes from
-# https://docs.bokeh.org/en/latest/docs/gallery/quiver.html
+def get_contour_data(X, Y, Z):
+    """ Uses Matplotlib contours to create a data source to plot contour levels.
+
+    Credit to: https://stackoverflow.com/a/37633519/2329968
+    """
+    cs = plt.contour(X, Y, Z)
+    xs = []
+    ys = []
+    for isolevel in cs.collections:
+        for path in isolevel.get_paths():
+            v = path.vertices
+            x = v[:, 0]
+            y = v[:, 1]
+            xs.append(x.tolist())
+            ys.append(y.tolist())
+    return ColumnDataSource(data={'xs': xs, 'ys': ys})
+
 def compute_streamlines(x, y, u, v, density=1.0):
     ''' Return streamlines of a vector flow.
 
@@ -28,7 +42,10 @@ def compute_streamlines(x, y, u, v, density=1.0):
     * u and v are 2d arrays (shape [y,x]) giving velocities.
     * density controls the closeness of the streamlines.
 
+    Credit: https://docs.bokeh.org/en/latest/docs/gallery/quiver.html
     '''
+
+    # TODO: is it possible to further optimize this function?
 
     ## Set up some constants - size of the grid used.
     NGX = len(x)
@@ -293,12 +310,17 @@ class BokehBackend(Plot):
                 ("Arg", "@arg")
             ]
 
+        sizing_mode = cfg["bokeh"]["sizing_mode"]
+        if any(s.is_complex and s.is_domain_coloring for s in self.series):
+            # for complex domain coloring
+            sizing_mode = None
+
         self._fig = figure(
             title = self.title,
             x_axis_label = self.xlabel if self.xlabel else "x",
             y_axis_label = self.ylabel if self.ylabel else "y",
-            sizing_mode = "fixed" if self.size else "stretch_width",
-            width = int(self.size[0]) if self.size else 500,
+            sizing_mode = "fixed" if self.size else sizing_mode,
+            width = int(self.size[0]) if self.size else 600,
             height = int(self.size[1]) if self.size else 400,
             x_axis_type = self.xscale,
             y_axis_type = self.yscale,
@@ -400,15 +422,21 @@ class BokehBackend(Plot):
                         palette=cm, legend_label=s.label)
                 else:
                     x, y, z, plot_type = points
-
                     if plot_type == "contour":
-                        # Bokeh currently doesn't support contour plots
-                        raise NotImplementedError
-
-                    cm = ["#00000000", next(self._cl)]
-                    self._fig.image(image=[z], x=min(x), y=min(y),
-                        dw=abs(max(x) - min(x)), dh=abs(max(y) - min(y)),
-                        palette=cm, legend_label=s.label)
+                        source = get_contour_data(x, y, z)
+                        lkw = dict(
+                            line_color = next(self._cl),
+                            source = source,
+                            legend_label = s.label
+                        )
+                        line_kw = self._kwargs.get("line_kw", dict())
+                        self._fig.multi_line('xs', 'ys', 
+                            **merge({}, lkw, line_kw))
+                    else:
+                        cm = ["#00000000", next(self._cl)]
+                        self._fig.image(image=[z], x=min(x), y=min(y),
+                            dw=abs(max(x) - min(x)), dh=abs(max(y) - min(y)),
+                            palette=cm, legend_label=s.label)
 
             elif s.is_2Dvector:
                 streamlines = self._kwargs.get("streamlines", False)

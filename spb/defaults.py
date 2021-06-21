@@ -20,7 +20,10 @@ def _hardcoded_defaults():
 
         # Find more Bokeh themes at the following page:
         # https://docs.bokeh.org/en/latest/docs/reference/themes.html
-        bokeh = { "theme": "dark_minimal" },
+        bokeh = { 
+            "theme": "dark_minimal",
+            "sizing_mode": "stretch_width"
+        },
 
         k3d = { "bg_color": 0xFFFFFF },
 
@@ -37,6 +40,8 @@ def _hardcoded_defaults():
         },
 
         matplotlib = {
+            "axis_center": None, # "auto"
+            "grid": True,
             "use_jupyterthemes": True,
             "jupytertheme": None
         },

@@ -244,7 +244,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.end = float(var_start_end[2])
         self.n = kwargs.get('n', 300)
         self.adaptive = kwargs.get('adaptive', True)
-        self.depth = kwargs.get('depth', 12)
+        self.depth = kwargs.get('depth', 9)
         self.line_color = kwargs.get('line_color', None)
         self.xscale = kwargs.get('xscale', 'linear')
 
@@ -288,9 +288,9 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             y_coords = []
             def sample(p, q, depth):
                 """ Samples recursively if three points are almost collinear.
-                For depth < 6, points are added irrespective of whether they
-                satisfy the collinearity condition or not. The maximum depth
-                allowed is 12.
+                For depth < self.depth, points are added irrespective of whether 
+                they satisfy the collinearity condition or not. The maximum 
+                depth allowed is self.depth.
                 """
                 # Randomly sample to avoid aliasing.
                 random = 0.45 + np.random.rand() * 0.1
@@ -309,7 +309,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
 
                 # Sample irrespective of whether the line is flat till the
                 # depth of 6. We are not using linspace to avoid aliasing.
-                elif depth < 6:
+                elif depth < self.depth:
                     sample(p, new_point, depth + 1)
                     sample(new_point, q, depth + 1)
 
@@ -380,7 +380,7 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         self.end = float(var_start_end[2])
         self.n = kwargs.get('n', 300)
         self.adaptive = kwargs.get('adaptive', True)
-        self.depth = kwargs.get('depth', 12)
+        self.depth = kwargs.get('depth', 9)
         self.line_color = kwargs.get('line_color', None)
 
     def __str__(self):
@@ -442,10 +442,10 @@ class Parametric2DLineSeries(Line2DBaseSeries):
 
         def sample(param_p, param_q, p, q, depth):
             """ Samples recursively if three points are almost collinear.
-            For depth < 6, points are added irrespective of whether they
-            satisfy the collinearity condition or not. The maximum depth
-            allowed is 12.
-            """
+                For depth < self.depth, points are added irrespective of whether 
+                they satisfy the collinearity condition or not. The maximum 
+                depth allowed is self.depth.
+                """
             # Randomly sample to avoid aliasing.
             random = 0.45 + np.random.rand() * 0.1
             param_new = param_p + random * (param_q - param_p)
@@ -461,7 +461,7 @@ class Parametric2DLineSeries(Line2DBaseSeries):
 
             # Sample irrespective of whether the line is flat till the
             # depth of 6. We are not using linspace to avoid aliasing.
-            elif depth < 6:
+            elif depth < self.depth:
                 sample(param_p, param_new, p, new_point, depth + 1)
                 sample(param_new, param_q, new_point, q, depth + 1)
 

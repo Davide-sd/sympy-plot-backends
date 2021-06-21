@@ -225,8 +225,8 @@ def complex_plot(*args, show=True, **kwargs):
         if kwargs.get("ylabel", None) is None:
             kwargs["ylabel"] = "Abs"
 
-
-    if kwargs.get("aspect", None) and any(s.is_domain_coloring for s in series):
+    if ((kwargs.get("aspect", None) is None) and 
+            any(s.is_domain_coloring for s in series)):
         kwargs["aspect"] = "equal"
     
     p = Plot(*series, **kwargs)
