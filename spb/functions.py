@@ -935,12 +935,13 @@ def plot_contour(*args, show=True, **kwargs):
 def plot_implicit(*args, show=True, **kwargs):
     """Plot implicit equations / inequalities.
 
-    plot_implicit, by default, uses interval arithmetic to plot functions. If
-    the expression cannot be plotted using interval arithmetic, it defaults to
-    a generating a contour using a mesh grid of fixed number of points. By
-    setting `adaptive=False`, you can force plot_implicit to use the mesh
-    grid. The mesh grid method can be effective when adaptive plotting using
-    interval arithmetic fails to plot with small line width.
+    plot_implicit, by default, generates a contour using a mesh grid of fixed
+    number of points. The greater the number of points, the greater the memory
+    used. By setting `adaptive=True` interval arithmetic will be used to plot
+    functions. If the expression cannot be plotted using interval arithmetic, 
+    it defaults to generating a contour using a mesh grid. With interval
+    arithmetic, the line width can become very small; in those cases, it is
+    better to use the mesh grid approach.
 
     Arguments
     =========
@@ -967,7 +968,6 @@ def plot_implicit(*args, show=True, **kwargs):
             If set to True, the internal algorithm uses interval arithmetic.
             It switches to a fall back algorithm (meshgrid approach) if the
             expression cannot be plotted using interval arithmetic.
-            Set to adaptive=False if you want to use a mesh grid. 
 
         depth : integer
             The depth of recursion for adaptive mesh grid. Default value is 0.
@@ -978,7 +978,7 @@ def plot_implicit(*args, show=True, **kwargs):
 
         n : integer
             The number of discretization points when `adaptive=False`. 
-            Default value is 300. The greater the value the more accurate the
+            Default value is 1000. The greater the value the more accurate the
             plot, but the more memory will be used.
 
         show : Boolean
@@ -1093,9 +1093,9 @@ def plot_implicit(*args, show=True, **kwargs):
     args = _check_arguments(args, 1, 2)
     
     series_kw = dict()
-    series_kw["n"] = kwargs.pop("n", 300)
-    series_kw["use_interval_math"] = kwargs.pop("adaptive", True)
+    series_kw["n"] = kwargs.pop("n", 1000)
     series_kw["depth"] = kwargs.pop("depth", 0)
+    series_kw["adaptive"] = kwargs.pop("adaptive", False)
 
     series = []
     xmin, xmax, ymin, ymax = oo, -oo, oo, -oo

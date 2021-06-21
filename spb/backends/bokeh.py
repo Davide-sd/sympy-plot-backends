@@ -400,7 +400,11 @@ class BokehBackend(Plot):
                         palette=cm, legend_label=s.label)
                 else:
                     x, y, z, plot_type = points
-                    # TODO: need to separate the cases: contour vs contourf
+
+                    if plot_type == "contour":
+                        # Bokeh currently doesn't support contour plots
+                        raise NotImplementedError
+
                     cm = ["#00000000", next(self._cl)]
                     self._fig.image(image=[z], x=min(x), y=min(y),
                         dw=abs(max(x) - min(x)), dh=abs(max(y) - min(y)),

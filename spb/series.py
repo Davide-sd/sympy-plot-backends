@@ -756,7 +756,6 @@ class ImplicitSeries(BaseSeries):
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="",
             **kwargs):
-            # use_interval_math=True, depth=0, n=300):
         super().__init__()
         expr, has_equality = self._has_equality(sympify(expr))
         self.expr = expr
@@ -768,9 +767,17 @@ class ImplicitSeries(BaseSeries):
         self.end_y = float(var_start_end_y[2])
         self.get_points = self.get_raster
         self.has_equality = has_equality
-        self.n = kwargs.get("n", 300)
+        self.n = kwargs.get("n", 1000)
         self.label = label
-        self.use_interval_math = kwargs.get("use_interval_math", True)
+        self.adaptive = kwargs.get("adaptive", False)
+
+        if isinstance(expr, BooleanFunction):
+            self.adaptive = True
+            warnings.warn(
+                "The provided expression contains Boolean functions. " +
+                "In order to plot the expression, the algorithm " +
+                "automatically switched to an adaptive sampling."
+            )
 
         # Check whether the depth is greater than 4 or less than 0.
         depth = kwargs.get("depth", 0)
@@ -833,12 +840,12 @@ class ImplicitSeries(BaseSeries):
             # XXX: AttributeError("'list' object has no attribute 'is_real'")
             # That needs fixing somehow - we shouldn't be catching
             # AttributeError here.
-            if self.use_interval_math:
+            if self.adaptive:
                 warnings.warn("Adaptive meshing could not be applied to the"
                             " expression. Using uniform meshing.")
-            self.use_interval_math = False
+            self.adaptive = False
 
-        if self.use_interval_math:
+        if self.adaptive:
             return self._get_raster_interval(func)
         else:
             return self._get_meshes_grid()
@@ -1346,9 +1353,6 @@ class ComplexInteractiveSeries(InteractiveSeries, ComplexSeries):
         signature, f = get_lambda(self.expr)
         self.signature = signature
         self.function = f
-
-        import inspect
-        print(inspect.getsource(f))
 
         # Discretize the ranges. In the following dictionary self.ranges:
         #    key: symbol associate to this particular range
