@@ -42,7 +42,7 @@ def _hardcoded_defaults():
         matplotlib = {
             "axis_center": None, # "auto"
             "grid": True,
-            "use_jupyterthemes": True,
+            "use_jupyterthemes": False,
             "jupytertheme": None
         },
 

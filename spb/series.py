@@ -1240,10 +1240,6 @@ class ComplexSeries(BaseSeries):
         self.xscale = kwargs.get('xscale', 'linear')
         self.yscale = kwargs.get('yscale', 'linear')
 
-        # these will be passed to cplot.get_srgb1
-        self.alpha = kwargs.get('alpha', 1)
-        self.colorspace = kwargs.get('colorspace', 'cam16')
-
         self.real = kwargs.get('real', True)
         self.imag = kwargs.get('imag', True)
 
@@ -1257,6 +1253,16 @@ class ComplexSeries(BaseSeries):
             self.label = "im(%s)" % label
         else:
             self.label = label
+        
+        # domain coloring mode
+        self.coloring = kwargs.get("coloring", "a")
+        if not isinstance(self.coloring, str):
+            raise ValueError("`coloring` must be of type string.")
+        self.coloring = self.coloring.lower()
+        self.phaseres = kwargs.get("phaseres", 20)
+        # these will be passed to cplot.get_srgb1
+        self.alpha = kwargs.get('alpha', 1)
+        self.colorspace = kwargs.get('colorspace', 'cam16')
 
     def _correct_output(self, x, r):
         """ Obtain the correct output depending the initialized settings.
@@ -1291,9 +1297,61 @@ class ComplexSeries(BaseSeries):
             return x, r
         
         print("ComplexSeries._correct_output -> domain coloring or 3D")
-        # Domain coloring / 3D
-        return np.real(x), np.imag(x), r, np.absolute(r), np.angle(r)
+        
+        if self.is_domain_coloring:
+            return (np.real(x), np.imag(x), 
+                    np.dstack([np.absolute(r), np.angle(r)]), 
+                    *self._domain_coloring(r))
 
+        # 3D
+        return (np.real(x), np.imag(x), np.absolute(r), np.angle(r), 
+                *self._domain_coloring(r))
+
+    def _domain_coloring(self, w):
+        from spb.complex.hsv_color_grading import color_grading
+        from spb.complex.wegert import (
+            bw_stripes_phase, bw_stripes_mag, domain_coloring,
+            enhanced_domain_coloring, enhanced_domain_coloring_phase,
+            enhanced_domain_coloring_mag, bw_stripes_imag, bw_stripes_real,
+            cartesian_chessboard, polar_chessboard
+        )
+        from cplot import get_srgb1
+        _mapping = {
+            "a": domain_coloring,
+            "b": enhanced_domain_coloring,
+            "c": enhanced_domain_coloring_mag,
+            "d": enhanced_domain_coloring_phase,
+            "e": color_grading,
+            "f": None,
+            "g": bw_stripes_mag,
+            "h": bw_stripes_phase,
+            "i": bw_stripes_real,
+            "j": bw_stripes_imag,
+            "k": cartesian_chessboard,
+            "l": polar_chessboard,
+        }
+        colorscale = None
+        if not self.coloring in _mapping.keys():
+            raise KeyError(
+                "`coloring` must be one of the following: {}".format(_mapping.keys()))
+        if self.coloring == "f":
+            zn = 1 * np.exp(1j * np.linspace(0, 2 * np.pi, 256))
+            colorscale = get_srgb1(zn, self.alpha, self.colorspace)
+            colorscale = (colorscale * 255).astype(np.uint8)
+            # shift the argument from [0, 2*pi] to [-pi, pi]
+            colorscale = np.roll(colorscale, int(len(colorscale) / 2), axis=0)
+            rgb = (get_srgb1(w, self.alpha, self.colorspace) * 255).astype(np.uint8)
+            return rgb, colorscale
+        print("self.coloring", self.coloring)
+        if self.coloring <= "e":
+            print("self.coloring <= 'e'")
+            from matplotlib.colors import hsv_to_rgb
+            H = np.linspace(0, 1, 256)
+            S = V = np.ones_like(H)
+            colorscale = hsv_to_rgb(np.dstack([H, S, V]))
+            colorscale = (colorscale.reshape((-1, 3)) * 255).astype(np.uint8)
+            colorscale = np.roll(colorscale, int(len(colorscale) / 2), axis=0)
+        return _mapping[self.coloring](w, phaseres=self.phaseres), colorscale
     
     def get_data(self):
         if isinstance(self.expr, (list, tuple, Tuple)):

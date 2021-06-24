@@ -7,11 +7,14 @@ from mergedeep import merge
 import itertools
 import matplotlib.cm as cm
 from spb.backends.utils import convert_colormap
+import warnings
 
 """
 TODO:
 1. iplot support for 2D/3D streamlines.
-2. colorbar title on the side, vertically aligned
+2. iplot support for domain coloring.
+3. custom surface color for 3D complex plots.
+
 """
 
 class PlotlyBackend(Plot):
@@ -455,7 +458,7 @@ class PlotlyBackend(Plot):
             elif s.is_complex:
                 if s.is_domain_coloring:
                     print("Plotly -> process_series -> is_domain_coloring")
-                    x, y, magn_angle, img, discr, colors = self._get_image(s)
+                    x, y, magn_angle, img, colors = s.get_data()
                     xmin, xmax = x.min(), x.max()
                     ymin, ymax = y.min(), y.max()
 
@@ -471,58 +474,63 @@ class PlotlyBackend(Plot):
                             "<br />Abs: %{customdata[0]}<br />Arg: %{customdata[1]}")
                     ))
 
-                    # chroma/phase-colorbar
-                    self._fig.add_trace(go.Scatter(
-                        x = [xmin, xmax],
-                        y = [ymin, ymax],
-                        showlegend = False,
-                        mode = "markers",
-                        marker = dict(
-                            opacity = 0,
-                            colorscale = ["rgb(%s, %s, %s)" % tuple(c) for c in colors],
-                            color = [-self.pi, self.pi],
-                            colorbar = dict(
-                                tickvals = [-self.pi, -self.pi / 2, 0, self.pi / 2, self.pi],
-                                ticktext = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"],
-                                x = 1 + 0.1 * count,
-                                title = "Argument",
-                                titleside = 'right',
-                            ),
-                            showscale = True,
-                        )
-                    ))
+                    if colors is not None: 
+                        # chroma/phase-colorbar
+                        self._fig.add_trace(go.Scatter(
+                            x = [xmin, xmax],
+                            y = [ymin, ymax],
+                            showlegend = False,
+                            mode = "markers",
+                            marker = dict(
+                                opacity = 0,
+                                colorscale = ["rgb(%s, %s, %s)" % tuple(c) for c in colors],
+                                color = [-self.pi, self.pi],
+                                colorbar = dict(
+                                    tickvals = [-self.pi, -self.pi / 2, 0, self.pi / 2, self.pi],
+                                    ticktext = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"],
+                                    x = 1 + 0.1 * count,
+                                    title = "Argument",
+                                    titleside = 'right',
+                                ),
+                                showscale = True,
+                            )
+                        ))
 
-                    # lightness/magnitude-colorbar
-                    self._fig.add_trace(go.Scatter(
-                        x = [xmin, xmax],
-                        y = [ymin, ymax],
-                        showlegend = False,
-                        mode = "markers",
-                        marker = dict(
-                            opacity = 0,
-                            colorscale = [[0, "black"], [1, "white"]],
-                            color = [0, 1e20],
-                            colorbar = dict(
-                                tickvals = [0, 1e20],
-                                ticktext = ["0", "&#x221e;"],
-                                x = 1 + 0.1 * (count + 1),
-                                title = "Magnitude",
-                                titleside = 'right',
-                            ),
-                            showscale = True,
-                        )
-                    ))
+                    if s.coloring == "f":
+                        # lightness/magnitude-colorbar
+                        self._fig.add_trace(go.Scatter(
+                            x = [xmin, xmax],
+                            y = [ymin, ymax],
+                            showlegend = False,
+                            mode = "markers",
+                            marker = dict(
+                                opacity = 0,
+                                colorscale = [[0, "black"], [1, "white"]],
+                                color = [0, 1e20],
+                                colorbar = dict(
+                                    tickvals = [0, 1e20],
+                                    ticktext = ["0", "&#x221e;"],
+                                    x = 1 + 0.1 * (count + 1),
+                                    title = "Magnitude",
+                                    titleside = 'right',
+                                ),
+                                showscale = True,
+                            )
+                        ))
 
-                    self._fig.update_layout(
-                        yaxis = dict(
-                            autorange = "reversed"
-                        )
-                    )
+                    # self._fig.update_layout(
+                    #     yaxis = dict(
+                    #         autorange = "reversed"
+                    #     )
+                    # )
                     count += 2
                 else:
-                    xx, yy, zz, mag, angle = s.get_data()
-                    print("Plotly is_complex is_3Dsurface", xx.shape, yy.shape, zz.shape)
-
+                    xx, yy, mag, angle, colors, colorscale = s.get_data()
+                    # print("Plotly is_complex is_3Dsurface", xx.shape, yy.shape, zz.shape)
+                    if s.coloring != "a":
+                        warnings.warn("Plotly doesn't support custom coloring " +
+                            "over surfaces. The surface color will show the " +
+                            "argument of the complex function.")
                     # create a solid color to be used when self._use_cm=False
                     col = next(self._cl)
                     colorscale = [
@@ -633,7 +641,7 @@ class PlotlyBackend(Plot):
                         # self.fig.data[i]["y0"] = -5
                         # # self.fig.data[i]["customdata"] = magn_angle
                     else:
-                        xx, yy, zz, mag, angle = s.get_data()
+                        xx, yy, mag, angle, colors, colorscale = s.get_data()
                         self.fig.data[i]["z"] = mag
                         self.fig.data[i]["surfacecolor"] = angle
                         self.fig.data[i]["customdata"] = angle
@@ -644,10 +652,6 @@ class PlotlyBackend(Plot):
                             self.fig.data[i]["colorbar"]["tickvals"] = [m, -self.pi / 2, 0, self.pi / 2, M]
                             self.fig.data[i]["colorbar"]["ticktext"] = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"]
                             
-                    
-
-
-
     def _update_layout(self):
         self._fig.update_layout(
             template = self._kwargs.get("theme", cfg["plotly"]["theme"]),

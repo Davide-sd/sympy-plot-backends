@@ -291,31 +291,6 @@ class Plot:
                 return 2  # Other type (?)
         except NameError:
             return 3      # Probably standard Python interpreter
-    
-    
-    def _get_image(self, s, rgba=False, n=256):
-        x, y, z, magn, angle = s.get_data()
-        colors = (get_srgb1(z, s.alpha, s.colorspace) * 255).astype(np.uint8)
- 
-        img = np.zeros((*x.shape, 3) if not rgba else x.shape, dtype=np.uint32)
-        pixel = img
-        if rgba:
-            pixel = img.view(dtype=np.uint8).reshape((*x.shape, 4))
-
-        for i in range(s.n1):
-            for j in range(s.n2):
-                pixel[j, i] = colors[j, i] if not rgba else [*colors[j, i], 255]
-        
-        # compute the chroma colors to be displayed on the colorbar
-        # from -pi to pi by discretizing a complex unit-circle of radius 1
-        zn = 1 * np.exp(1j * np.linspace(0, 2 * np.pi, n))
-        discr = np.linspace(0, 1, n)
-        chroma_colors = get_srgb1(zn, s.alpha, s.colorspace)
-        chroma_colors = (chroma_colors * 255).astype(np.uint8)
-        # shift the argument from [0, 2*pi] to [-pi, pi]
-        chroma_colors = np.roll(chroma_colors, int(len(chroma_colors) / 2), axis=0)
-        print("_get_image", x.shape, y.shape, z.shape)
-        return x, y, np.dstack([magn, angle]), img, discr, chroma_colors
 
     def _get_pixels(self, s, intervals_list):
         """ Create the necessary data to visualize a Bokeh/Plotly Heatmap.

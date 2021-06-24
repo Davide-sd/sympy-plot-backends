@@ -421,7 +421,8 @@ class MatplotlibBackend(Plot):
 
             elif s.is_complex:
                 if s.is_domain_coloring:
-                    x, y, magn_angle, img, discr, colors = self._get_image(s)
+                    # x, y, magn_angle, img, discr, colors = self._get_image(s)
+                    x, y, _, img, colors = s.get_data()
                     contour_kw = self._kwargs.get("contour_kw", dict())
                     ckw = dict(
                         extent = [np.amin(x), np.amax(x), np.amin(y), np.amax(y)], 
@@ -433,50 +434,53 @@ class MatplotlibBackend(Plot):
                     self._add_handle(i, image, kw)
 
                     # lightness/magnitude-colorbar
-                    cb1 = self._fig.colorbar(
-                        cm.ScalarMappable(cmap = cm.Greys_r),
-                        orientation = 'vertical',
-                        label = 'Magnitude',
-                        ticks = [0, 1],
-                        ax = self.ax
-                    )
-                    cb1.ax.set_yticklabels(["0", r"$\infty$"])
-
-                    # chroma/phase-colorbar
-                    colormap = ListedColormap(colors / 255.0)
-                    norm = Normalize(vmin=-self.pi, vmax=self.pi)
-                    cb2 = self._fig.colorbar(
-                        cm.ScalarMappable(norm=norm, cmap=colormap),
-                        orientation='vertical',
-                        label='Argument',
-                        ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
-                        ax = self.ax
-                    )
-                    cb2.ax.set_yticklabels([r"-$\pi$", r"-$\pi / 2$", "0", 
-                            r"$\pi / 2$", r"$\pi$"])
-                else:
-                    x, y, z, mag, angle = s.get_data()
-                    colormap = next(self._cyccm)
+                    if s.coloring == "f":
+                        cb1 = self._fig.colorbar(
+                            cm.ScalarMappable(cmap = cm.Greys_r),
+                            orientation = 'vertical',
+                            label = 'Magnitude',
+                            ticks = [0, 1],
+                            ax = self.ax
+                        )
+                        cb1.ax.set_yticklabels(["0", r"$\infty$"])
                     
-                    # NOTE: Since I'm using a cyclical color map to plot the
-                    # argument, it makes sense to normalize the colors in the
-                    # range [-pi, pi] rather than [min(angle), max(angle)],
-                    # otherwise the meaning of the plot would be really 
-                    # confusing when abs(min(angle)) < pi or abs(max(angle)).
-                    norm = Normalize(vmin=-np.pi, vmax=np.pi)
-                    facecolors = norm(angle)
+                    # chroma/phase-colorbar
+                    if colors is not None:
+                        colors = colors / 255.0
+
+                        colormap = ListedColormap(colors)
+                        norm = Normalize(vmin=-self.pi, vmax=self.pi)
+                        cb2 = self._fig.colorbar(
+                            cm.ScalarMappable(norm=norm, cmap=colormap),
+                            orientation='vertical',
+                            label='Argument',
+                            ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
+                            ax = self.ax
+                        )
+                        cb2.ax.set_yticklabels([r"-$\pi$", r"-$\pi / 2$", "0", 
+                                r"$\pi / 2$", r"$\pi$"])
+                else:
+                    x, y, mag, arg, facecolors, colorscale = s.get_data()
+                    
                     skw = dict(rstride = 1, cstride = 1, linewidth = 0.1)
                     if self._use_cm:
-                        skw["facecolors"] = colormap(facecolors)
+                        skw["facecolors"] = facecolors / 255
                     surface_kw = self._kwargs.get("surface_kw", dict())
                     kw = merge({}, skw, surface_kw)
                     c = self.ax.plot_surface(x, y, mag, **kw)
                     
-                    if self._use_cm:
+                    if self._use_cm and (colorscale is not None):
+                        if len(colorscale.shape) == 3:
+                            colorscale = colorscale.reshape((-1, 3))
+                        else:
+                            colorscale = colorscale / 255.0
+
                         # this colorbar is essential to understand the plot.
-                        # Always show it, expect when use_cm=False
-                        mappable = cm.ScalarMappable(cmap = colormap, norm = norm)
-                        mappable.set_array(facecolors)
+                        # Always show it, except when use_cm=False
+                        norm = Normalize(vmin=-np.pi, vmax=np.pi)
+                        mappable = cm.ScalarMappable(
+                            cmap = ListedColormap(colorscale),
+                            norm = norm)
                         cb = self._fig.colorbar(
                             mappable, 
                             orientation = 'vertical',
@@ -486,7 +490,7 @@ class MatplotlibBackend(Plot):
                         )
                         cb.ax.set_yticklabels([r"-$\pi$", r"-$\pi / 2$", "0", 
                             r"$\pi / 2$", r"$\pi$"])
-                    self._add_handle(i, c, kw, colormap, norm)
+                    self._add_handle(i, c, kw)
 
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
@@ -737,19 +741,17 @@ class MatplotlibBackend(Plot):
                 
                 elif s.is_complex:
                     if s.is_domain_coloring:
-                        x, y, magn_angle, img, discr, colors = self._get_image(s)
+                        x, y, _, img, colors = s.get_data()
                         self._handles[i][0].remove()
                         self._handles[i][0] = self.ax.imshow(img, 
                             **self._handles[i][1])
                     else:
-                        x, y, z, mag, angle = s.get_data()
+                        x, y, mag, arg, facecolors, colorscale = s.get_data()
                         self._handles[i][0].remove()
-                        kw, colormap, norm = self._handles[i][1:]
+                        kw = self._handles[i][1]
 
                         if self._use_cm:
-                            norm = Normalize(vmin=-np.pi, vmax=np.pi)
-                            facecolors = norm(angle)
-                            kw["facecolors"] = colormap(facecolors)
+                            kw["facecolors"] = facecolors / 255
                             
                         self._handles[i][0] = self.ax.plot_surface(x, y, mag,
                             **kw)

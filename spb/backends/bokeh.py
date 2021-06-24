@@ -467,8 +467,9 @@ class BokehBackend(Plot):
                     self._fig.add_glyph(source, glyph)
 
             elif s.is_complex and s.is_domain_coloring:
-                x, y, magn_angle, img, discr, colors = self._get_image(s, True)
-                
+                x, y, magn_angle, img, colors = s.get_data()
+                img = self._get_img(img)
+
                 source = ColumnDataSource({
                     "image": [img],
                     "abs": [magn_angle[:, :, 0]],
@@ -478,22 +479,24 @@ class BokehBackend(Plot):
                 self._fig.image_rgba(source=source, x=x.min(), y=y.min(),
                         dw=x.max() - x.min(), dh=y.max() - y.min())
                 
-                # chroma/phase-colorbar
-                cm1 = LinearColorMapper(palette=[tuple(c) for c in colors], 
-                        low=-self.pi, high=self.pi)
-                ticks = [-self.pi, -self.pi/2 , 0, self.pi/2, self.pi]
-                labels = ["-π", "-π / 2", "0", "π / 2", "π"]
-                colorbar1 = ColorBar(color_mapper=cm1, title="Argument",
-                    ticker = FixedTicker(ticks = ticks),
-                    major_label_overrides = {k: v for k, v in zip(ticks, labels)})
-                self._fig.add_layout(colorbar1, 'right')
+                if colors is not None:
+                    # chroma/phase-colorbar
+                    cm1 = LinearColorMapper(palette=[tuple(c) for c in colors], 
+                            low=-self.pi, high=self.pi)
+                    ticks = [-self.pi, -self.pi/2 , 0, self.pi/2, self.pi]
+                    labels = ["-π", "-π / 2", "0", "π / 2", "π"]
+                    colorbar1 = ColorBar(color_mapper=cm1, title="Argument",
+                        ticker = FixedTicker(ticks = ticks),
+                        major_label_overrides = {k: v for k, v in zip(ticks, labels)})
+                    self._fig.add_layout(colorbar1, 'right')
 
-                # lightness/magnitude-colorbar
-                cm2 = LinearColorMapper(palette=bp.gray(100), low=0, high=1)
-                colorbar2 = ColorBar(color_mapper=cm2, title="Magnitude",
-                    ticker = FixedTicker(ticks = [0, 1]),
-                    major_label_overrides = {0: "0", 1: "∞"})
-                self._fig.add_layout(colorbar2, 'right')
+                if s.coloring == "f":
+                    # lightness/magnitude-colorbar
+                    cm2 = LinearColorMapper(palette=bp.gray(100), low=0, high=1)
+                    colorbar2 = ColorBar(color_mapper=cm2, title="Magnitude",
+                        ticker = FixedTicker(ticks = [0, 1]),
+                        major_label_overrides = {0: "0", 1: "∞"})
+                    self._fig.add_layout(colorbar2, 'right')
 
             else:
                 raise NotImplementedError(
@@ -507,6 +510,14 @@ class BokehBackend(Plot):
             self._fig.legend.click_policy = "hide"
             self._fig.add_layout(self._fig.legend[0], 'right')
     
+    def _get_img(self, img):
+        new_img = np.zeros(img.shape[:2], dtype=np.uint32)
+        pixel = new_img.view(dtype=np.uint8).reshape((*img.shape[:2], 4))
+        for i in range(img.shape[1]):
+            for j in range(img.shape[0]):
+                pixel[j, i] = [*img[j, i], 255]
+        return new_img
+
     def _get_segments(self, x, y, u):
         # MultiLine works with line segments, not with line points! :|
         xs = [x[i-1:i+1] for i in range(1, len(x))]
@@ -601,7 +612,8 @@ class BokehBackend(Plot):
                 elif s.is_complex and s.is_domain_coloring:
                     # TODO: for some unkown reason, domain_coloring and 
                     # interactive plot don't like each other...
-                    x, y, z, magn_angle, img, discr, colors = self._get_image(s)
+                    x, y, magn_angle, img, _ = s.get_data()
+                    img = self._get_img(img)
                     source = {
                         "image": [img],
                         "abs": [magn_angle[:, :, 0]],

@@ -381,16 +381,14 @@ class K3DBackend(Plot):
                 )
                 self._fig += vec
             elif s.is_complex and (not s.is_domain_coloring):
-                x, y, z, mag, arg = s.get_data()
-                print("K3D is_surface", 
-                    len(x) if not hasattr(x, "shape") else x.shape,
-                    len(y) if not hasattr(y, "shape") else y.shape,
-                    len(z) if not hasattr(z, "shape") else z.shape,
-                )
+                x, y, mag, arg, colors, colorscale = s.get_data()
+                # print("K3D is_surface", 
+                #     len(x) if not hasattr(x, "shape") else x.shape,
+                #     len(y) if not hasattr(y, "shape") else y.shape,
+                #     len(z) if not hasattr(z, "shape") else z.shape,
+                # )
 
-                x = x.flatten()
-                y = y.flatten()
-                z = mag.flatten()
+                x, y, z = [t.flatten() for t in [x, y, mag]]
                 print(np.amin(mag), np.amax(mag))
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 indices = Triangulation(x, y).triangles.astype(np.uint32)
@@ -422,9 +420,8 @@ class K3DBackend(Plot):
                     color_range = [-np.pi, np.pi]
                 )
                 if self._use_cm:
-                    a["color_map"] = (next(self._cm) if not s.is_complex 
-                            else next(self._cyccm))
-                    a["attribute"] = arg.flatten().astype(np.float32)
+                    colors = colors.reshape((-1, 3))
+                    a["colors"] = [self._rgb_to_int(c) for c in colors]
                 surface_kw = self._kwargs.get("surface_kw", dict())
                 surf = k3d.mesh(vertices, indices, 
                         **merge({}, a, surface_kw))
@@ -489,11 +486,14 @@ class K3DBackend(Plot):
 
                 elif s.is_complex:
                     if s.is_3Dsurface:
-                        x, y, z, mag, arg = s.get_data()
+                        x, y, mag, arg, colors, colorscale = s.get_data()
                         x, y, z = [t.flatten().astype(np.float32) for t in [x, y, mag]]
                         vertices = np.vstack([x, y, z]).astype(np.float32)
                         self._fig.objects[i].vertices= vertices.T
-                        self._fig.objects[i].attribute = arg.flatten().astype(np.float32)
+                        if self._use_cm:
+                            colors = colors.reshape((-1, 3))
+                            colors = [self._rgb_to_int(c) for c in colors]
+                            self._fig.objects[i].colors = colors
                     else:
                         raise NotImplementedError
         # self._fig.auto_rendering = True
