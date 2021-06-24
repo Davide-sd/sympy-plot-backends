@@ -13,7 +13,6 @@ def _build_series(*args, interactive=False, **kwargs):
     series = []
     cls = ComplexSeries if not interactive else ComplexInteractiveSeries
     
-    print("_build_series", args, [type(a) for a in args])
     if all([a.is_complex for a in args]):
         # args is a list of complex numbers
         for a in args:
@@ -76,9 +75,9 @@ def complex_plot(*args, show=True, **kwargs):
         1. line plot separating the real and imaginary parts.
         2. line plot of the modulus of the complex function colored by its
             argument, if `absarg=True`.
-    * complex function over a complex range: domain coloring plot.
-    * complex function over a complex range: 3D plot of the modulus colored by
-        the argument, if `threed=True`.
+    * complex function over a complex range:
+        1. domain coloring plot.
+        2. 3D plot of the modulus colored by the argument, if `threed=True`.
 
     Arguments
     =========
@@ -117,10 +116,6 @@ def complex_plot(*args, show=True, **kwargs):
         n : int
             Set the same number of discretization points in all directions.
             Default to 300.
-
-        nc : int
-            Number of discretization points for the scalar contour plot.
-            Default to 100.
         
         show : boolean
             Default to True, in which case the plot will be shown on the screen.
@@ -138,17 +133,47 @@ def complex_plot(*args, show=True, **kwargs):
     Domain Coloring Arguments
     =========================
 
+        coloring : str
+            Default to "a". Chose between different coloring options:
+            "a": standard domain coloring using HSV.
+            "b": enhanced domain coloring using HSV, showing iso-modulus and
+                is-phase lines.
+            "c": enhanced domain coloring using HSV, showing iso-modulus lines.
+            "d": enhanced domain coloring using HSV, showing iso-phase lines.
+            "e": HSV color grading. Read the following article to understand it:
+                https://www.codeproject.com/Articles/80641/Visualizing-Complex-Functions
+            "f": domain coloring implemented by cplot:
+                https://github.com/nschloe/cplot
+                Use `alpha` and `colorspace` keyword arguments to further 
+                customize the appearance.
+            "g": alternating black and white stripes corresponding to modulus.
+            "h": alternating black and white stripes corresponding to phase.
+            "i": alternating black and white stripes corresponding to real part.
+            "j": alternating black and white stripes corresponding to imaginary 
+                part.
+            "k": cartesian chessboard on the complex points space. The result 
+                will hide zeros.
+            "l": polar Chessboard on the complex points space. The result will 
+                show conformality.
+
         alpha : float
+            This parameter works when `coloring="f"`.
             Default to 1. Can be `0 <= alpha <= 1`. It adjust the use of colors.
             A value less than 1 adds more color which can help isolating the
             roots and poles (which are still black and white, respectively).
             alpha=0 ignores the magnitude of f(z) completely.
         
         colorspace : str
+            This parameter works when `coloring="f"`.
             Default to `"cam16"`. Other options are `"cielab", "oklab", "hsl"`.
             It can be set to `"hsl"` to get the common fully saturated, vibrant
             colors. This is usually a bad idea since it creates artifacts which
             are not related with the underlying data.
+        
+        phaseres : int
+            This parameter works when `coloring` is different from `"f"`.
+            Default value to 20. It controls the number of iso-phase or 
+            iso-modulus lines.
 
     Examples
     ========

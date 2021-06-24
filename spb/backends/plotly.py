@@ -279,7 +279,6 @@ class PlotlyBackend(Plot):
             
             elif s.is_3Dsurface and (not s.is_complex):
                 xx, yy, zz = s.get_data()
-                print("Plotly is_3Dsurface", xx.shape, yy.shape, zz.shape)
 
                 # create a solid color to be used when self._use_cm=False
                 col = next(self._cl)
@@ -457,7 +456,6 @@ class PlotlyBackend(Plot):
                 count += 1
             elif s.is_complex:
                 if s.is_domain_coloring:
-                    print("Plotly -> process_series -> is_domain_coloring")
                     x, y, magn_angle, img, colors = s.get_data()
                     xmin, xmax = x.min(), x.max()
                     ymin, ymax = y.min(), y.max()
@@ -517,16 +515,9 @@ class PlotlyBackend(Plot):
                                 showscale = True,
                             )
                         ))
-
-                    # self._fig.update_layout(
-                    #     yaxis = dict(
-                    #         autorange = "reversed"
-                    #     )
-                    # )
                     count += 2
                 else:
                     xx, yy, mag, angle, colors, colorscale = s.get_data()
-                    # print("Plotly is_complex is_3Dsurface", xx.shape, yy.shape, zz.shape)
                     if s.coloring != "a":
                         warnings.warn("Plotly doesn't support custom coloring " +
                             "over surfaces. The surface color will show the " +

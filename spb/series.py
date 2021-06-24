@@ -1130,7 +1130,6 @@ class InteractiveSeries(BaseSeries):
         """
         args = []
         for s in self.signature:
-            print("CIS.update_data -> symbol", s)
             if s in params.keys():
                 args.append(params[s])
             else:
@@ -1157,21 +1156,17 @@ class InteractiveSeries(BaseSeries):
             # in the case of single-expression 2D lines of 3D surfaces
             results = [*self.ranges.values(), results]
             self.data = results
-            print("WTF1")
     
         elif (self.is_parametric and (self.is_3Dline or self.is_2Dline)):
             # also add the parameter
             results = [*results, *self.ranges.values()]
-            print("WTF2")
             self.data = results
         
         elif self.is_vector:
             # in order to plot a vector, we also need the discretized region
             self.data = [*self.ranges.values(), *results]
-            print("WTF4")
         else:
             self.data = results
-            print("WTF5")
         
     def get_data(self):
         # if the expression depends only on the ranges, the user can call get_data
@@ -1278,25 +1273,16 @@ class ComplexSeries(BaseSeries):
             r : np.ndarray
                 Numerical evaluation result.
         """
-        print("ComplexSeries._correct_output", x.shape, r.shape)
-
         if self.start.imag == self.end.imag:
             if self.is_parametric:
-                print("ComplexSeries._correct_output -> parametric")
                 return np.real(x), np.absolute(r), np.angle(r)
             elif self.real and self.imag:
-                print("ComplexSeries._correct_output -> real and imag")
                 return np.real(x), np.real(r), np.imag(r)
             elif self.real:
-                print("ComplexSeries._correct_output -> real")
                 return np.real(x), np.real(r)
             elif self.imag:
-                print("ComplexSeries._correct_output -> imag")
                 return np.real(x), np.imag(r)
-            print("ComplexSeries._correct_output -> something else")
             return x, r
-        
-        print("ComplexSeries._correct_output -> domain coloring or 3D")
         
         if self.is_domain_coloring:
             return (np.real(x), np.imag(x), 
@@ -1334,6 +1320,7 @@ class ComplexSeries(BaseSeries):
         if not self.coloring in _mapping.keys():
             raise KeyError(
                 "`coloring` must be one of the following: {}".format(_mapping.keys()))
+        
         if self.coloring == "f":
             zn = 1 * np.exp(1j * np.linspace(0, 2 * np.pi, 256))
             colorscale = get_srgb1(zn, self.alpha, self.colorspace)
@@ -1342,9 +1329,8 @@ class ComplexSeries(BaseSeries):
             colorscale = np.roll(colorscale, int(len(colorscale) / 2), axis=0)
             rgb = (get_srgb1(w, self.alpha, self.colorspace) * 255).astype(np.uint8)
             return rgb, colorscale
-        print("self.coloring", self.coloring)
+        
         if self.coloring <= "e":
-            print("self.coloring <= 'e'")
             from matplotlib.colors import hsv_to_rgb
             H = np.linspace(0, 1, 256)
             S = V = np.ones_like(H)
@@ -1436,7 +1422,6 @@ class ComplexInteractiveSeries(InteractiveSeries, ComplexSeries):
         
     def update_data(self, params):
         results = self._evaluate(params)
-        print("CIS.update_data len(results)", len(results))
         self.data = self._correct_output(self.ranges[self.var], results)
 
 

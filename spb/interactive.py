@@ -421,7 +421,23 @@ def iplot(*args, show=True, **kwargs):
             },
             fig_kw = { "legend": True }
         )
-
+    
+    A parametric complex domain coloring plot. Note: whenever we want to create
+    parametric complex plots, we must set `is_complex=True`:
+    
+    .. code-block:: python
+        var("x:z")
+        iplot(
+            ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
+            params = {
+                x: (1, (-2, 2))
+            },
+            fig_kw = dict(
+                backend = MB,
+                is_complex = True,
+                coloring = "b"
+            )
+        )
     """
     i = InteractivePlot(*args, **kwargs)
     if show:

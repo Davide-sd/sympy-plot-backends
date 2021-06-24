@@ -49,8 +49,7 @@ def saw_func(x, dx, a, b):
 
 @to_rgb_255
 def bw_stripes_phase(w, phaseres=20, **kwargs):
-    """ Alternating black and white stripes corresponding to phase. Also
-    appropriate for electric field lines. """
+    """ Alternating black and white stripes corresponding to phase. """
     arg = np.angle(w)
     # normalize the argument to [0, 1]
     arg[arg < 0] += 2 * np.pi
@@ -144,16 +143,6 @@ def bw_stripes_real(w, phaseres=20, **kwargs):
 def cartesian_chessboard(w, phaseres=20, **kwargs):
     """ Cartesian Chessboard on the complex points space. The result will hide
     zeros.
-
-    Parameters
-    ==========
-        w : array (NxM)
-            Result of the evaluation of a complex function.
-    
-    Returns
-    =======
-        RGB : array (NxMx3)
-            Values in the range [0, 255].
     """
     blackx = rect_func(np.real(w), 4 / phaseres)
     blacky = rect_func(np.imag(w), 4 / phaseres)
@@ -164,16 +153,6 @@ def cartesian_chessboard(w, phaseres=20, **kwargs):
 def polar_chessboard(w, phaseres=20, **kwargs):
     """ Polar Chessboard on the complex points space. The result will show
     conformality.
-
-    Parameters
-    ==========
-        w : array (NxM)
-            Result of the evaluation of a complex function.
-    
-    Returns
-    =======
-        RGB : array (NxMx3)
-            Values in the range [0, 255].
     """
     mag, arg = np.absolute(w), np.angle(w)
     # normalize the argument to [0, 1]
