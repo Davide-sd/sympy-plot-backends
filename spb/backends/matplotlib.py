@@ -460,8 +460,9 @@ class MatplotlibBackend(Plot):
                         cb2.ax.set_yticklabels([r"-$\pi$", r"-$\pi / 2$", "0", 
                                 r"$\pi / 2$", r"$\pi$"])
                 else:
-                    x, y, mag, arg, facecolors, colorscale = s.get_data()
-                    
+                    x, y, mag_arg, facecolors, colorscale = s.get_data()
+                    mag = mag_arg[:, :, 0]
+
                     skw = dict(rstride = 1, cstride = 1, linewidth = 0.1)
                     if self._use_cm:
                         skw["facecolors"] = facecolors / 255
@@ -746,7 +747,8 @@ class MatplotlibBackend(Plot):
                         self._handles[i][0] = self.ax.imshow(img, 
                             **self._handles[i][1])
                     else:
-                        x, y, mag, arg, facecolors, colorscale = s.get_data()
+                        x, y, mag_arg, facecolors, colorscale = s.get_data()
+                        mag = mag_arg[:, :, 0]
                         self._handles[i][0].remove()
                         kw = self._handles[i][1]
 

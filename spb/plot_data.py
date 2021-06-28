@@ -8,7 +8,8 @@ from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
     ParametricSurfaceSeries, ImplicitSeries, InteractiveSeries,
     _set_discretization_points, Vector2DSeries, Vector3DSeries,
-    ContourSeries, ComplexSeries, ComplexInteractiveSeries
+    ContourSeries, ComplexSeries, ComplexInteractiveSeries,
+    SliceVector3DSeries
 )
 from spb.backends.base_backend import Plot 
 from spb.utils import _unpack_args, _plot_sympify, _check_arguments
@@ -34,6 +35,7 @@ def _build_series(*args, **kwargs):
         "pinter": [InteractiveSeries, 0, 0],
         "v2d": [Vector2DSeries, 2, 2],
         "v3d": [Vector3DSeries, 3, 3],
+        "v3ds": [SliceVector3DSeries, 3, 3],
         "pc": [ContourSeries, 1, 2],
         "c": [ComplexSeries, 1, 1]
     }
@@ -103,10 +105,6 @@ def _build_series(*args, **kwargs):
         elif exprs[0].has(I):
             # complex series -> return complex numbers
             pt = "c"
-            # if absargs=True, by setting the following to True, I can return 
-            # (x, magn, args) rather then (x, mag) which is usually used by
-            # backends
-            kwargs["gpd"] = True
         else:
             # the actual expression (parametric or not) is not contained in a
             # tuple. For example:
@@ -140,6 +138,11 @@ def _build_series(*args, **kwargs):
             # SurfaceOver2DRangeSeries, validate the provided expressions/ranges
             args = _check_arguments(args, nexpr, npar)[0]
 
+        _slice = kwargs.pop("slice", None)
+        if pt == "v3d" and (_slice is not None):
+            args = [_slice] + list(args)
+            _cls, nexpr, npar = mapping["v3ds"]
+
     else:
         if pt in mapping.keys():
             _cls, nexpr, npar = mapping[pt]
@@ -159,13 +162,18 @@ def _build_series(*args, **kwargs):
                     split_expr, ranges = _split_vector(exprs[0], ranges)
                     args = [split_expr, *ranges, label]
                 args = _check_arguments(args, 3, 3)[0]
+
+                _slice = kwargs.pop("slice", None)
+                if _slice is not None:
+                    args = [_slice] + list(args)
+                    _cls = SliceVector3DSeries
             else:
                 args = _check_arguments(args, nexpr, npar)[0]
         else:
             raise ValueError("Wrong `pt` value. Please, check the docstring " +
                 "of `get_plot_data` to list the possible values.")
     kwargs = _set_discretization_points(kwargs, _cls)
-    kwargs["gpd"] = True
+    
     return _cls(*args, **kwargs)
 
 
@@ -272,6 +280,17 @@ def get_plot_data(*args, **kwargs):
     `data = (xx, yy, zz, 'contourf') where `xx, yy, zz` are two-dimensional numpy
         arrays. `xx, yy` represent the mesh grid. This is returned by objects of
         type non-equalities (greater than, less than, ...).
+
+    Get the necessary data to plot a 3D vector field over a slice plane:
+
+    .. code-block:: python
+        var("x:z")
+        xx, yy, zz, uu, vv, ww = get_plot_data(
+            Matrix([z, y, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5), 
+            slice = Plane((-2, 0, 0), (1, 1, 1)), n=5
+        )
+    
+    Here `xx, yy, zz, uu, vv, ww` are three dimensional numpy arrays.
 
     Get the real and imaginary part of a complex function over a real range:
 

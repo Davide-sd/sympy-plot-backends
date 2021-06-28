@@ -44,39 +44,18 @@ class BaseSeries:
     # inheritance.
 
     is_2Dline = False
-    # Some of the backends expect:
-    #  - get_points returning 1D np.arrays list_x, list_y
-    #  - get_color_array returning 1D np.array (done in Line2DBaseSeries)
-    # with the colors calculated at the points from get_points
 
     is_3Dline = False
-    # Some of the backends expect:
-    #  - get_points returning 1D np.arrays list_x, list_y, list_y
-    #  - get_color_array returning 1D np.array (done in Line2DBaseSeries)
-    # with the colors calculated at the points from get_points
 
     is_3Dsurface = False
-    # Some of the backends expect:
-    #   - get_meshes returning mesh_x, mesh_y, mesh_z (2D np.arrays)
-    #   - get_points an alias for get_meshes
 
     is_contour = False
-    # Some of the backends expect:
-    #   - get_meshes returning mesh_x, mesh_y, mesh_z (2D np.arrays)
-    #   - get_points an alias for get_meshes
 
     is_implicit = False
-    # Some of the backends expect:
-    #   - get_meshes returning mesh_x (1D array), mesh_y(1D array,
-    #     mesh_z (2D np.arrays)
-    #   - get_points an alias for get_meshes
     # Different from is_contour as the colormap in backend will be
     # different
 
     is_parametric = False
-    # The calculation of aesthetics expects:
-    #   - get_parameter_points returning one or two np.arrays (1D or 2D)
-    # used for calculation aesthetics
 
     is_interactive = False
     # An interactive series can update its data.
@@ -113,10 +92,18 @@ class BaseSeries:
         return any(flagslines)
     
     @staticmethod
-    def _discretize(start, end, N, base=10, scale="linear"):
+    def _discretize(start, end, N, scale="linear"):
         if scale == "linear":
             return np.linspace(start, end, N)
-        return np.logspace(start, end, N, base=base)
+        return np.geomspace(start, end, N)
+    
+    def _correct_size(self, a, b):
+        """ If `a` is a scalar, we need to convert its dimension to the 
+        appropriate grid size given by `b`.
+        """
+        if a.shape != b.shape:
+            return a * np.ones_like(b)
+        return a
     
     def get_data(self):
         """ All child series should implement this method to return the
@@ -127,12 +114,7 @@ class BaseSeries:
 
 ### 2D lines
 class Line2DBaseSeries(BaseSeries):
-    """A base class for 2D lines.
-
-    - adding the label, steps and only_integers options
-    - making is_2Dline true
-    - defining get_segments and get_color_array
-    """
+    """ A base class for 2D lines. """
 
     is_2Dline = True
 
@@ -144,11 +126,6 @@ class Line2DBaseSeries(BaseSeries):
         self.steps = False
         self.only_integers = False
         self.line_color = None
-
-    def _correct_size(self, l, p):
-        if l.size != p.size:
-            return l * np.ones(p.size)
-        return l
 
     def get_data(self):
         """ Return lists of coordinates for plotting the line.
@@ -184,36 +161,6 @@ class Line2DBaseSeries(BaseSeries):
                 z = np.repeat(points[2], 3)[1:-1]
                 points = (x, y, z, points[3])
         return points
-
-    def get_segments(self):
-        SymPyDeprecationWarning(
-                feature="get_segments",
-                issue=21329,
-                deprecated_since_version="1.9",
-                useinstead="MatplotlibBackend.get_segments").warn()
-
-        points = type(self).get_data(self)
-        points = np.ma.array(points).T.reshape(-1, 1, self._dim)
-        return np.ma.concatenate([points[:-1], points[1:]], axis=1)
-
-    def get_color_array(self):
-        c = self.line_color
-        if hasattr(c, '__call__'):
-            f = np.vectorize(c)
-            nargs = arity(c)
-            if nargs == 1 and self.is_parametric:
-                x = self.get_parameter_points()
-                return f(centers_of_segments(x))
-            else:
-                variables = list(map(centers_of_segments, self.get_points()))
-                if nargs == 1:
-                    return f(variables[0])
-                elif nargs == 2:
-                    return f(*variables[:2])
-                else:  # only if the line is 3D (otherwise raises an error)
-                    return f(*variables)
-        else:
-            return c*np.ones(self.n)
 
 
 class List2DSeries(Line2DBaseSeries):
@@ -348,20 +295,14 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         return (np.array(x_coords), np.array(y_coords))
 
     def _uniform_sampling(self):
+        start, end, N = self.start, self.end, self.n
         if self.only_integers is True:
-            if self.xscale == 'log':
-                list_x = np.logspace(int(self.start), int(self.end),
-                        num=int(self.end) - int(self.start) + 1)
-            else:
-                list_x = np.linspace(int(self.start), int(self.end),
-                    num=int(self.end) - int(self.start) + 1)
-        else:
-            if self.xscale == 'log':
-                list_x = np.logspace(self.start, self.end, num=self.n)
-            else:
-                list_x = np.linspace(self.start, self.end, num=self.n)
+            start, end = int(start), int(end)
+            N = end - start + 1
+        list_x = self._discretize(start, end, N, scale=self.xscale)
         f = vectorized_lambdify([self.var], self.expr)
         list_y = f(list_x)
+        list_y = self._correct_size(list_y, list_x)
         return (list_x, list_y)
 
 class Parametric2DLineSeries(Line2DBaseSeries):
@@ -382,17 +323,15 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         self.adaptive = kwargs.get('adaptive', True)
         self.depth = kwargs.get('depth', 9)
         self.line_color = kwargs.get('line_color', None)
+        self.scale = kwargs.get("xscale", "linear")
 
     def __str__(self):
         return 'parametric cartesian line: (%s, %s) for %s over %s' % (
             str(self.expr_x), str(self.expr_y), str(self.var),
             str((self.start, self.end)))
 
-    def get_parameter_points(self):
-        return np.linspace(self.start, self.end, num=self.n)
-
     def _uniform_sampling(self):
-        param = self.get_parameter_points()
+        param = self._discretize(self.start, self.end, self.n, scale=self.scale)
         fx = vectorized_lambdify([self.var], self.expr_x)
         fy = vectorized_lambdify([self.var], self.expr_y)
         list_x = fx(param)
@@ -540,17 +479,15 @@ class Parametric3DLineSeries(Line3DBaseSeries):
         self.end = float(var_start_end[2])
         self.n = kwargs.get('n', 300)
         self.line_color = kwargs.get('line_color', None)
+        self.scale = kwargs.get("xscale", "linear")
 
     def __str__(self):
         return '3D parametric cartesian line: (%s, %s, %s) for %s over %s' % (
             str(self.expr_x), str(self.expr_y), str(self.expr_z),
             str(self.var), str((self.start, self.end)))
 
-    def get_parameter_points(self):
-        return np.linspace(self.start, self.end, num=self.n)
-
     def get_points(self):
-        param = self.get_parameter_points()
+        param = self._discretize(self.start, self.end, self.n, scale=self.scale)
         fx = vectorized_lambdify([self.var], self.expr_x)
         fy = vectorized_lambdify([self.var], self.expr_y)
         fz = vectorized_lambdify([self.var], self.expr_z)
@@ -584,34 +521,11 @@ class SurfaceBaseSeries(BaseSeries):
 
     def __init__(self):
         super().__init__()
-        self.surface_color = None
     
-    def get_data(self):
-        return self.get_meshes()
-
-    def get_color_array(self):
-        c = self.surface_color
-        if isinstance(c, Callable):
-            f = np.vectorize(c)
-            nargs = arity(c)
-            if self.is_parametric:
-                variables = list(map(centers_of_faces, self.get_parameter_meshes()))
-                if nargs == 1:
-                    return f(variables[0])
-                elif nargs == 2:
-                    return f(*variables)
-            variables = list(map(centers_of_faces, self.get_meshes()))
-            if nargs == 1:
-                return f(variables[0])
-            elif nargs == 2:
-                return f(*variables[:2])
-            else:
-                return f(*variables)
-        else:
-            if isinstance(self, SurfaceOver2DRangeSeries):
-                return c*np.ones(min(self.n1, self.n2))
-            else:
-                return c*np.ones(min(self.n1, self.n2))
+    def _discretize(self, s1, e1, n1, scale1, s2, e2, n2, scale2):
+        mesh_x = super()._discretize(s1, e1, n1, scale1)
+        mesh_y = super()._discretize(s2, e2, n2, scale2)
+        return np.meshgrid(mesh_x, mesh_y)
 
 
 class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
@@ -629,7 +543,8 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         self.label = label
         self.n1 = kwargs.get('n1', 50)
         self.n2 = kwargs.get('n2', 50)
-        self.surface_color = kwargs.get('surface_color', None)
+        self.xscale = kwargs.get("xscale", "linear")
+        self.yscale = kwargs.get("yscale", "linear")
 
     def __str__(self):
         return ('cartesian surface: %s for'
@@ -640,22 +555,14 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
                     str(self.var_y),
                     str((self.start_y, self.end_y)))
 
-    def _correct(self, a, b):
-        """ If the provided expression is a scalar, we need to
-        convert its dimension to the appropriate grid size.
-        """
-        if a.shape != b.shape:
-            return b * np.ones_like(a)
-        return b
-
-    def get_meshes(self):
-        mesh_x, mesh_y = np.meshgrid(np.linspace(self.start_x, self.end_x,
-                                                 num=self.n1),
-                                     np.linspace(self.start_y, self.end_y,
-                                                 num=self.n2))
+    def get_data(self):
+        mesh_x, mesh_y = self._discretize(
+            self.start_x, self.end_x, self.n1, self.xscale,
+            self.start_y, self.end_y, self.n2, self.yscale
+        )
         f = vectorized_lambdify((self.var_x, self.var_y), self.expr)
         mesh_z = f(mesh_x, mesh_y)
-        mesh_z = self._correct(mesh_x, mesh_z).astype(np.float64)
+        mesh_z = self._correct_size(mesh_z, mesh_x).astype(np.float64)
         mesh_z = np.ma.masked_invalid(mesh_z)
         return mesh_x, mesh_y, mesh_z
 
@@ -682,7 +589,8 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.label = label
         self.n1 = kwargs.get('n1', 50)
         self.n2 = kwargs.get('n2', 50)
-        self.surface_color = kwargs.get('surface_color', None)
+        self.xscale = kwargs.get("xscale", "linear")
+        self.yscale = kwargs.get("yscale", "linear")
 
     def __str__(self):
         return ('parametric cartesian surface: (%s, %s, %s) for'
@@ -695,15 +603,12 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
                     str(self.var_v),
                     str((self.start_v, self.end_v)))
 
-    def get_parameter_meshes(self):
-        return np.meshgrid(np.linspace(self.start_u, self.end_u,
-                                       num=self.n1),
-                           np.linspace(self.start_v, self.end_v,
-                                       num=self.n2))
-
-    def get_meshes(self):
-
-        mesh_u, mesh_v = self.get_parameter_meshes()
+    def get_data(self):
+        mesh_u, mesh_v = self._discretize(
+            self.start_u, self.end_u, self.n1, self.xscale,
+            self.start_v, self.end_v, self.n2, self.yscale
+        )
+        
         fx = vectorized_lambdify((self.var_u, self.var_v), self.expr_x)
         fy = vectorized_lambdify((self.var_u, self.var_v), self.expr_y)
         fz = vectorized_lambdify((self.var_u, self.var_v), self.expr_z)
@@ -712,9 +617,9 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         mesh_y = fy(mesh_u, mesh_v)
         mesh_z = fz(mesh_u, mesh_v)
 
-        mesh_x = np.array(mesh_x, dtype=np.float64)
-        mesh_y = np.array(mesh_y, dtype=np.float64)
-        mesh_z = np.array(mesh_z, dtype=np.float64)
+        mesh_x = self._correct_size(np.array(mesh_x, dtype=np.float64), mesh_u)
+        mesh_y = self._correct_size(np.array(mesh_y, dtype=np.float64), mesh_u)
+        mesh_z = self._correct_size(np.array(mesh_z, dtype=np.float64), mesh_u)
 
         mesh_x = np.ma.masked_invalid(mesh_x)
         mesh_y = np.ma.masked_invalid(mesh_y)
@@ -723,7 +628,6 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         return mesh_x, mesh_y, mesh_z
 
 
-### Contours
 class ContourSeries(SurfaceOver2DRangeSeries):
     """Representation for a contour plot."""
 
@@ -765,11 +669,13 @@ class ImplicitSeries(BaseSeries):
         self.var_y = sympify(var_start_end_y[0])
         self.start_y = float(var_start_end_y[1])
         self.end_y = float(var_start_end_y[2])
-        self.get_points = self.get_raster
         self.has_equality = has_equality
-        self.n = kwargs.get("n", 1000)
+        self.n1 = kwargs.get("n1", 1000)
+        self.n2 = kwargs.get("n2", 1000)
         self.label = label
         self.adaptive = kwargs.get("adaptive", False)
+        self.xscale = kwargs.get("xscale", "linear")
+        self.yscale = kwargs.get("yscale", "linear")
 
         if isinstance(expr, BooleanFunction):
             self.adaptive = True
@@ -825,11 +731,8 @@ class ImplicitSeries(BaseSeries):
                     str((self.start_x, self.end_x)),
                     str(self.var_y),
                     str((self.start_y, self.end_y)))
-
-    def get_data(self):
-        return self.get_raster()
         
-    def get_raster(self):
+    def get_data(self):
         func = experimental_lambdify((self.var_x, self.var_y), self.expr,
                                     use_interval=True)
         xinterval = interval(self.start_x, self.end_x)
@@ -944,12 +847,12 @@ class ImplicitSeries(BaseSeries):
         else:
             raise NotImplementedError("The expression is not supported for "
                                     "plotting in uniform meshed plot.")
-        xarray = np.linspace(self.start_x, self.end_x, self.n)
-        yarray = np.linspace(self.start_y, self.end_y, self.n)
+        xarray = self._discretize(self.start_x, self.end_x, self.n1, self.xscale)
+        yarray = self._discretize(self.start_y, self.end_y, self.n2, self.yscale)
         x_grid, y_grid = np.meshgrid(xarray, yarray)
-
         func = vectorized_lambdify((self.var_x, self.var_y), expr)
         z_grid = func(x_grid, y_grid)
+        z_grid = self._correct_size(z_grid, x_grid)
         z_grid[np.ma.where(z_grid < 0)] = -1
         z_grid[np.ma.where(z_grid > 0)] = 1
         if equal:
@@ -999,6 +902,8 @@ class InteractiveSeries(BaseSeries):
     evaluated by calling update_data(params), passing in all the necessary
     parameters. Once update_data(params) has been executed, then get_data()
     can be used.
+
+    NOTE: the __init__ method expects every expression to be already sympified.
     """
 
     is_interactive = True
@@ -1090,6 +995,7 @@ class InteractiveSeries(BaseSeries):
             scale = self.xscale
             if i == 1: # y direction
                 scale = self.yscale
+            
             discretizations.append(
                 self._discretize(float(r[1]), float(r[2]), n[i], scale=scale))
 
@@ -1104,8 +1010,7 @@ class InteractiveSeries(BaseSeries):
                 self.is_slice = True
                 kwargs2 = kwargs.copy()
                 kwargs2 = _set_discretization_points(kwargs2, SliceVector3DSeries)
-                slice_surf = GeometricPlaneSeries(
-                    _slice, *ranges, "", **kwargs2)
+                slice_surf = _build_plane_series(_slice, ranges, **kwargs2)
                 self.ranges = {k: v for k, v in
                     zip(discr_symbols, slice_surf.get_data())}
             else:
@@ -1134,8 +1039,25 @@ class InteractiveSeries(BaseSeries):
                 args.append(params[s])
             else:
                 args.append(self.ranges[s])
-    
-        return self.function(*args)
+        results = self.function(*args)
+
+        # discretized ranges all have the same shape. Take the first!
+        discr = list(self.ranges.values())[0]
+        if isinstance(results, (list, tuple)):
+            results = list(results)
+            for i, r in enumerate(results):
+                results[i] = self._correct_size(
+                    # the evaluation might produce an int/float. Need this conversion!
+                    np.array(r),
+                    discr
+                )
+        elif isinstance(results, (int, float)):
+            results = self._correct_size(
+                # the evaluation might produce an int/float. Need this conversion!
+                np.array(results),
+                discr
+            )
+        return results
 
     def update_data(self, params):
         """ Update the data based on the values of the parameters.
@@ -1195,7 +1117,7 @@ class ComplexSeries(BaseSeries):
     is_point = False
     is_domain_coloring = False
 
-    def __init__(self, expr, r, label, **kwargs):
+    def __init__(self, expr, r, label="", **kwargs):
         expr = sympify(expr)
         nolist = False
         if isinstance(expr, (list, tuple, Tuple)):
@@ -1273,6 +1195,7 @@ class ComplexSeries(BaseSeries):
             r : np.ndarray
                 Numerical evaluation result.
         """
+        r = self._correct_size(np.array(r), x)
         if self.start.imag == self.end.imag:
             if self.is_parametric:
                 return np.real(x), np.absolute(r), np.angle(r)
@@ -1283,14 +1206,10 @@ class ComplexSeries(BaseSeries):
             elif self.imag:
                 return np.real(x), np.imag(r)
             return x, r
-        
-        if self.is_domain_coloring:
-            return (np.real(x), np.imag(x), 
-                    np.dstack([np.absolute(r), np.angle(r)]), 
-                    *self._domain_coloring(r))
 
-        # 3D
-        return (np.real(x), np.imag(x), np.absolute(r), np.angle(r), 
+        # 3D or domain coloring
+        return (np.real(x), np.imag(x), 
+                np.dstack([np.absolute(r), np.angle(r)]), 
                 *self._domain_coloring(r))
 
     def _domain_coloring(self, w):
@@ -1439,11 +1358,12 @@ def _set_discretization_points(kwargs, pt):
             trying to create: plot, plot_parametric, ...
     """
     if pt in [LineOver1DRangeSeries, Parametric2DLineSeries, 
-                Parametric3DLineSeries, ImplicitSeries]:
+                Parametric3DLineSeries]:
         if "n1" in kwargs.keys() and ("n" not in kwargs.keys()):
             kwargs["n"] = kwargs["n1"]
     elif pt in [SurfaceOver2DRangeSeries, ContourSeries, ComplexSeries,
-            ParametricSurfaceSeries, Vector2DSeries, ComplexInteractiveSeries]:
+            ParametricSurfaceSeries, Vector2DSeries, ComplexInteractiveSeries,
+            ImplicitSeries]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]
@@ -1463,14 +1383,6 @@ class VectorBase(BaseSeries):
     is_3D = False
     is_slice = False
 
-    def _correct(self, a, b):
-        """ If one of the provided vector components is a scalar, we need to
-        convert its dimension to the appropriate grid size.
-        """
-        if a.shape != b.shape:
-            return b * np.ones_like(a)
-        return b
-
 
 class Vector2DSeries(VectorBase):
     """ Represents a 2D vector field.
@@ -1485,7 +1397,7 @@ class Vector2DSeries(VectorBase):
     def get_data(self):
         x, y, u = self.u.get_data()
         _, _, v = self.v.get_data()
-        return x, y, self._correct(x, u), self._correct(x, v)
+        return x, y, self._correct_size(u, x), self._correct_size(v, x)
 
 
 class Vector3DSeries(VectorBase):
@@ -1494,7 +1406,7 @@ class Vector3DSeries(VectorBase):
     is_3D = True
     is_3Dvector = True
 
-    def __init__(self, u, v, w, range_x, range_y, range_z, label, **kwargs):
+    def __init__(self, u, v, w, range_x, range_y, range_z, label="", **kwargs):
         self.u = sympify(u)
         self.v = sympify(v)
         self.w = sympify(w)
@@ -1511,14 +1423,17 @@ class Vector3DSeries(VectorBase):
         self.n1 = kwargs.get('n1', 10)
         self.n2 = kwargs.get('n2', 10)
         self.n3 = kwargs.get('n3', 10)
+        self.xscale = kwargs.get("xscale", "linear")
+        self.yscale = kwargs.get("yscale", "linear")
+        self.zscale = kwargs.get("zscale", "linear")
 
     def _discretize(self):
         """ This method allows to reduce code repetition.
         """
-        return np.meshgrid(
-            np.linspace(self.start_x, self.end_x, num=self.n1),
-            np.linspace(self.start_y, self.end_y, num=self.n2),
-            np.linspace(self.start_z, self.end_z, num=self.n3))
+        x = super()._discretize(self.start_x, self.end_x, self.n1, self.xscale)
+        y = super()._discretize(self.start_y, self.end_y, self.n2, self.yscale)
+        z = super()._discretize(self.start_z, self.end_z, self.n3, self.zscale)
+        return np.meshgrid(x, y, z)
 
     def get_data(self):
         x, y, z = self._discretize()
@@ -1528,14 +1443,21 @@ class Vector3DSeries(VectorBase):
         uu = fu(x, y, z)
         vv = fv(x, y, z)
         ww = fw(x, y, z)
-        uu = self._correct(x, uu)
-        vv = self._correct(y, vv)
-        ww = self._correct(z, ww)
+        uu = self._correct_size(uu, x)
+        vv = self._correct_size(vv, y)
+        ww = self._correct_size(ww, z)
         def _convert(a):
             a = np.array(a, dtype=np.float64)
             return np.ma.masked_invalid(a)
         return x, y, z, _convert(uu), _convert(vv), _convert(ww)
 
+
+def _build_plane_series(plane, ranges, **kwargs):
+    """ This method reduced code repetition. """
+    if isinstance(plane, Plane):
+        return GeometricPlaneSeries(sympify(plane), *ranges, **kwargs)
+    else:
+        return SurfaceOver2DRangeSeries(plane, *ranges, **kwargs)
 
 class SliceVector3DSeries(Vector3DSeries):
     """ Represents a 3D vector field plotted over a slice, which can be a slice
@@ -1543,14 +1465,10 @@ class SliceVector3DSeries(Vector3DSeries):
     """
     is_slice = True
 
-    def __init__(self, plane, u, v, w, range_x, range_y, range_z, label,
+    def __init__(self, plane, u, v, w, range_x, range_y, range_z, label="",
             **kwargs):
-        if isinstance(plane, Plane):
-            self.plane = GeometricPlaneSeries(sympify(plane), 
-                    range_x, range_y, range_z, **kwargs)
-        else:
-            self.plane = SurfaceOver2DRangeSeries(plane,
-                    range_x, range_y, **kwargs)
+        self.plane = _build_plane_series(plane, [range_x, range_y, range_z],
+                **kwargs)
         super().__init__(u, v, w, range_x, range_y, range_z, label, **kwargs)
     
     def _discretize(self):
@@ -1576,6 +1494,9 @@ class GeometricPlaneSeries(SurfaceBaseSeries):
         self.n1 = kwargs.get("n1", 20)
         self.n2 = kwargs.get("n2", 20)
         self.n3 = kwargs.get("n3", 20)
+        self.xscale = kwargs.get("xscale", "linear")
+        self.yscale = kwargs.get("yscale", "linear")
+        self.zscale = kwargs.get("zscale", "linear")
     
     def get_data(self):
         x, y, z = symbols("x, y, z")
@@ -1585,14 +1506,16 @@ class GeometricPlaneSeries(SurfaceBaseSeries):
             # parallel to yz plane (normal vector (1, 0, 0))
             s = SurfaceOver2DRangeSeries(self.plane.p1[0], 
                     (x, *self.z_range[1:]), (y, *self.y_range[1:]), "", 
-                    n1=self.n3, n2=self.n2)
+                    n1=self.n3, n2=self.n2,
+                    xscale=self.xscale, yscale=self.yscale, zscale=self.zscale)
             xx, yy, zz = s.get_data()
             xx, yy, zz = zz, yy, xx
         elif fs == set([y]):
             # parallel to xz plane (normal vector (0, 1, 0))
             s = SurfaceOver2DRangeSeries(self.plane.p1[1], 
                     (x, *self.x_range[1:]), (y, *self.z_range[1:]), "", 
-                    n1=self.n1, n2=self.n3)
+                    n1=self.n1, n2=self.n3,
+                    xscale=self.xscale, yscale=self.yscale, zscale=self.zscale)
             xx, yy, zz = s.get_data()
             xx, yy, zz = xx, zz, yy
         else:
@@ -1602,6 +1525,7 @@ class GeometricPlaneSeries(SurfaceBaseSeries):
                 eq = solve(eq, z)[0]
             s = SurfaceOver2DRangeSeries(eq, 
                     (x, *self.x_range[1:]), (y, *self.y_range[1:]), "", 
-                    n1=self.n1, n2=self.n2)
+                    n1=self.n1, n2=self.n2,
+                    xscale=self.xscale, yscale=self.yscale, zscale=self.zscale)
             xx, yy, zz = s.get_data()
         return xx, yy, zz

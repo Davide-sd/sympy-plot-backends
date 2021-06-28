@@ -7,9 +7,9 @@ from spb.backends.k3d import KB
 from spb.series import BaseSeries
 from spb import (
     plot, plot3d, vector_plot, plot_contour, plot_implicit, plot_parametric,
-    plot3d_parametric_line
+    plot3d_parametric_line, complex_plot
 )
-from sympy import symbols, cos, sin, Matrix, pi
+from sympy import symbols, cos, sin, Matrix, pi, sqrt, I
 import plotly.graph_objects as go
 import matplotlib
 import matplotlib.pyplot as plt
@@ -31,6 +31,8 @@ each backend:
 1. produces the necessary numerical data.
 2. raises the necessary errors
 3. correctly use the common keyword arguments to customize the plot.
+All this should be a decent starting point to provide a common user-experience
+between the different backends.
 """
 
 # TODO:
@@ -77,6 +79,14 @@ p13 = lambda B: plot3d(
     (cos(x**2 + y**2), (x, 2, 3), (y, -3, 3)),
     backend=B, use_cm=False, show=False
 )
+p14 = lambda B, line_kw: complex_plot(sqrt(x), (x, -5, 5), backend=B,
+        line_kw=line_kw, show=False)
+p15 = lambda B, line_kw: complex_plot(sqrt(x), (x, -5, 5), absarg=True, 
+        backend=B, line_kw=line_kw, show=False)
+p16 = lambda B, contour_kw: complex_plot(sqrt(x), (x, -5 - 5*I, 5 + 5*I), 
+        backend=B, contour_kw=contour_kw, show=False)
+p17 = lambda B, surface_kw: complex_plot(sqrt(x), (x, -5 - 5*I, 5 + 5*I), 
+        backend=B, threed=True, surface_kw=surface_kw, show=False)
 
 class UnsupportedSeries(BaseSeries):
     pass
@@ -251,6 +261,38 @@ def test_MatplotlibBackend():
     # TODO: how to retrieve the colormap from a contour series?????
 #     assert ax.collections[0].cmap.name == "jet"
 
+    p = p14(MB, line_kw=dict(color="red"))
+    assert len(p.series) == 2
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.get_lines()) == 2
+    assert ax.get_lines()[0].get_label() == "re(sqrt(x))"
+    assert ax.get_lines()[0].get_color() == "red"
+    assert ax.get_lines()[1].get_label() == "im(sqrt(x))"
+    assert ax.get_lines()[1].get_color() == "red"
+
+    p = p15(MB, line_kw=dict(color="red"))
+    assert len(p.series) == 1
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.collections) == 1
+    assert isinstance(ax.collections[0], LineCollection)
+    assert f.axes[1].get_ylabel() == "Abs(sqrt(x))"
+    assert all(*(ax.collections[0].get_color() - np.array([1., 0., 0., 1.])) == 0)
+
+    p = p16(MB, contour_kw=dict())
+    assert len(p.series) == 1
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.images) == 1
+    assert f.axes[1].get_ylabel() == "Argument"
+
+    p = p17(MB, surface_kw=dict(color="red"))
+    assert len(p.series) == 1
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.collections) == 1
+    assert isinstance(ax.collections[0], Poly3DCollection)
 
 
 class PBchild(PB):
@@ -381,7 +423,7 @@ def test_PlotlyBackend():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
-    assert isinstance(f.data[0], go.Heatmap)
+    assert isinstance(f.data[0], go.Contour)
     assert f.data[0]["colorscale"] == ((0, 'rgba(0,0,0,0)'), (1, 'red'))
 
     p = p12(PB, contour_kw=dict(fillcolor="red"))
@@ -391,11 +433,51 @@ def test_PlotlyBackend():
     assert isinstance(f.data[0], go.Contour)
     assert f.data[0]["fillcolor"] == "red"
 
+    p = p14(PB, line_kw=dict(line_color="red"))
+    assert len(p.series) == 2
+    f = p.fig
+    assert isinstance(f, go.Figure)
+    assert len(f.data) == 2
+    assert isinstance(f.data[0], go.Scatter)
+    assert f.data[0]["name"] == "re(sqrt(x))"
+    assert f.data[0]["line"]["color"] == "red"
+    assert isinstance(f.data[1], go.Scatter)
+    assert f.data[1]["name"] == "im(sqrt(x))"
+    assert f.data[1]["line"]["color"] == "red"
+    assert f.layout["showlegend"] == True
+
+    p = p15(PB, line_kw=dict(line_color="red"))
+    assert len(p.series) == 1
+    f = p.fig
+    assert len(f.data) == 1
+    assert isinstance(f.data[0], go.Scatter)
+    assert f.data[0]["name"] == "Abs(sqrt(x))"
+    assert f.data[0]["line"]["color"] == "red"
+
+    p = p16(PB, contour_kw=dict())
+    assert len(p.series) == 1
+    f = p.fig
+    assert len(f.data) == 2
+    assert isinstance(f.data[0], go.Image)
+    assert f.data[0]["name"] == "sqrt(x)"
+    assert isinstance(f.data[1], go.Scatter)
+    assert f.data[1]["marker"]["colorbar"]["title"]["text"] == "Argument"
+
+    p = p17(PB, surface_kw=dict())
+    assert len(p.series) == 1
+    f = p.fig
+    assert len(f.data) == 1
+    assert isinstance(f.data[0], go.Surface)
+    assert f.data[0]["name"] == "sqrt(x)"
+    assert f.data[0]["showscale"] == False
+    assert f.layout["showlegend"] == False
+
+
 class BBchild(BB):
     colorloop = ["red", "green", "blue"]
 
 def test_BokehBackend():
-    from bokeh.models.glyphs import Line, MultiLine, Image, Segment
+    from bokeh.models.glyphs import Line, MultiLine, Image, Segment, ImageRGBA
     from bokeh.plotting.figure import Figure
 
     assert hasattr(BB, "colorloop")
@@ -499,6 +581,32 @@ def test_BokehBackend():
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, Image)
 
+    p = p14(BB, line_kw=dict(line_color="red"))
+    assert len(p.series) == 2
+    f = p.fig
+    assert isinstance(f, Figure)
+    assert len(f.renderers) == 2
+    assert isinstance(f.renderers[0].glyph, Line)
+    assert f.legend[0].items[0].label["value"] == "re(sqrt(x))"
+    assert f.renderers[0].glyph.line_color == "red"
+    assert isinstance(f.renderers[1].glyph, Line)
+    assert f.legend[0].items[1].label["value"] == "im(sqrt(x))"
+    assert f.renderers[1].glyph.line_color == "red"
+    assert f.legend[0].visible == True
+
+    p = p15(BB, line_kw=dict(line_color="red"))
+    assert len(p.series) == 1
+    f = p.fig
+    assert len(f.renderers) == 1
+    assert isinstance(f.renderers[0].glyph, MultiLine)
+    assert f.renderers[0].glyph.line_color == "red"
+
+    p = p16(BB, contour_kw=dict())
+    assert len(p.series) == 1
+    f = p.fig
+    assert len(f.renderers) == 1
+    assert isinstance(f.renderers[0].glyph, ImageRGBA)
+
 class KBchild1(KB):
     def _get_mode(self):
         # tells the backend it is running into Jupyter, even if it is not.
@@ -587,3 +695,13 @@ def test_K3DBackend():
     # K3D doesn't support 2D plots
     raises(NotImplementedError, lambda: p11(KBchild1, contour_kw=dict()))
     raises(NotImplementedError, lambda: p12(KBchild1, contour_kw=dict()))
+    raises(NotImplementedError, lambda: p14(KBchild1, line_kw=dict()))
+    raises(NotImplementedError, lambda: p15(KBchild1, line_kw=dict()))
+    raises(NotImplementedError, lambda: p16(KBchild1, contour_kw=dict()))
+
+    p = p17(KBchild1, surface_kw=dict())
+    assert len(p.series) == 1
+    f = p.fig
+    assert len(f.objects) == 1
+    assert isinstance(f.objects[0], Mesh)
+    assert f.objects[0].name is None

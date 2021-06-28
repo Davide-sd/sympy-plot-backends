@@ -380,8 +380,9 @@ class K3DBackend(Plot):
                     colors = vec_colors,
                 )
                 self._fig += vec
-            elif s.is_complex and (not s.is_domain_coloring):
-                x, y, mag, arg, colors, colorscale = s.get_data()
+            elif s.is_complex and s.is_3Dsurface and (not s.is_domain_coloring):
+                x, y, mag_arg, colors, colorscale = s.get_data()
+                mag, arg = mag_arg[:, :, 0], mag_arg[:, :, 1]
                 # print("K3D is_surface", 
                 #     len(x) if not hasattr(x, "shape") else x.shape,
                 #     len(y) if not hasattr(y, "shape") else y.shape,
@@ -486,7 +487,8 @@ class K3DBackend(Plot):
 
                 elif s.is_complex:
                     if s.is_3Dsurface:
-                        x, y, mag, arg, colors, colorscale = s.get_data()
+                        x, y, mag_arg, colors, colorscale = s.get_data()
+                        mag, arg = mag_arg[:, :, 0], mag_arg[:, :, 1]
                         x, y, z = [t.flatten().astype(np.float32) for t in [x, y, mag]]
                         vertices = np.vstack([x, y, z]).astype(np.float32)
                         self._fig.objects[i].vertices= vertices.T

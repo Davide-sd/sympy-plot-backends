@@ -1,5 +1,6 @@
 from sympy import (
-    symbols, cos, sin, log, Eq, I, Abs, exp, pi, gamma, Matrix, Tuple, sqrt
+    symbols, cos, sin, log, Eq, I, Abs, exp, pi, gamma, Matrix, Tuple, sqrt,
+    Plane
 )
 from sympy.vector import CoordSys3D
 from pytest import raises
@@ -8,7 +9,7 @@ from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     ParametricSurfaceSeries, SurfaceOver2DRangeSeries, InteractiveSeries,
     ImplicitSeries, Vector2DSeries, Vector3DSeries, ComplexSeries,
-    ComplexInteractiveSeries
+    ComplexInteractiveSeries, SliceVector3DSeries
 )
 import numpy as np
 
@@ -117,6 +118,9 @@ def test_vectors():
     assert isinstance(s, Vector3DSeries)
     s = _build_series(l2, (x, -10, 10), (y, -5, 5), (z, -8, 8), pt="v3d")
     assert isinstance(s, Vector3DSeries)
+    s = _build_series(l2, (x, -10, 10), (y, -5, 5), (z, -8, 8),
+        slice=Plane((-2, 0, 0), (1, 0, 0)))
+    assert isinstance(s, SliceVector3DSeries)
 
 
 def test_complex():
@@ -188,7 +192,6 @@ def test_complex():
     # complex numbers
     s1 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I))
     data1 = do_test_1(s1, 5)
-    assert any(isinstance(d, complex) for d in data1[2].flatten())
     s2 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), pt="c")
     data2 = do_test_1(s2, 5)
     test_equal_results(data1, data2)

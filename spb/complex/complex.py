@@ -30,7 +30,6 @@ def _build_series(*args, interactive=False, **kwargs):
         
         for a in args:
             expr, ranges, label = a[0], a[1:-1], a[-1]
-
             # ranges need to contain complex numbers
             ranges = list(ranges)
             for i, r in enumerate(ranges):

@@ -3,8 +3,10 @@ import param
 import panel as pn
 from sympy import latex, Tuple
 from spb.backends.base_backend import Plot
-from spb.series import InteractiveSeries, _set_discretization_points
-from spb.complex.complex import _build_series
+from spb.series import ( InteractiveSeries, _set_discretization_points, 
+    Vector2DSeries, ContourSeries )
+from spb.complex.complex import _build_series as _build_complex_series
+from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify, _unpack_args
 from spb.defaults import TWO_D_B, THREE_D_B
 import warnings
@@ -275,13 +277,17 @@ class InteractivePlot(DynamicParam, PanelLayout):
         kwargs = _set_discretization_points(kwargs, InteractiveSeries)
         _slice = kwargs.get("slice", None)
         is_complex = kwargs.get("is_complex", False)
+        is_vector = kwargs.get("is_vector", False)
         series = []
         if is_complex:
             new_args = []
             for a in args:
                 exprs, ranges, label = _unpack_args(*a, matrices=False, fill_ranges=False)
                 new_args.append(Tuple(exprs[0], ranges[0], label, sympify=False))
-            series = _build_series(*new_args, interactive=True, **kwargs)
+            series = _build_complex_series(*new_args, interactive=True, **kwargs)
+        elif is_vector:
+            args = _preprocess(*args, matrices=False, fill_ranges=False)
+            series = _build_vector_series(*args, interactive=True, **kwargs)
         else:
             for a in args:
                 # with interactive-parametric plots, vectors could have more free
@@ -355,18 +361,6 @@ def iplot(*args, show=True, **kwargs):
             This dictionary will be passed to the backend: check its
             documentations to find more keyword arguments.
         
-        show : bool
-            Default to True.
-            If True, it will return an object that will be rendered on the
-            output cell of a Jupyter Notebook. If False, it returns an instance
-            of `InteractivePlot`.
-        
-        use_latex : bool
-            Default to True.
-            If True, the latex representation of the symbols will be used in the
-            labels of the parameter-controls. If False, the string
-            representation will be used instead.
-        
         layout : str
             The layout for the controls/plot. Possible values:
                 'tb': controls in the top bar.
@@ -378,6 +372,29 @@ def iplot(*args, show=True, **kwargs):
         
         ncols : int
             Number of columns to lay out the widgets. Default to 2.
+        
+        is_complex : boolean
+            Default to False. If True, it directs the internal algorithm to
+            create all the necessary series (for example, one for the real part,
+            one for the imaginary part).
+
+        is_vector : boolean
+            Default to False. If True, it directs the internal algorithm to
+            create all the necessary series (for example, plotting the magnitude
+            of the vector field as a contour plot).
+        
+        show : bool
+            Default to True.
+            If True, it will return an object that will be rendered on the
+            output cell of a Jupyter Notebook. If False, it returns an instance
+            of `InteractivePlot`.
+        
+        use_latex : bool
+            Default to True.
+            If True, the latex representation of the symbols will be used in the
+            labels of the parameter-controls. If False, the string
+            representation will be used instead.
+
     
     Examples
     ========
@@ -420,6 +437,25 @@ def iplot(*args, show=True, **kwargs):
                 A2: (2, (0, 10), 40, "Ampl 2"),
             },
             fig_kw = { "legend": True }
+        )
+    
+    A 3D slice-vector plot. Note: whenever we want to create parametric vector
+    plots, we should set `is_vector=True`:
+
+    .. code-block:: python
+        var("a, b, x:z")
+        iplot(
+            (Matrix([z * a, y * b, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5)),
+            params = {
+                a: (1, (0, 5)),
+                b: (1, (0, 5))
+            },
+            fig_kw = dict(
+                n = 50,
+                is_vector = True,
+                scalar = x * y,
+                slice = Plane((-2, 0, 0), (1, 0, 0))
+            )
         )
     
     A parametric complex domain coloring plot. Note: whenever we want to create

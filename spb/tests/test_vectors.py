@@ -2,7 +2,7 @@ from sympy import symbols, Matrix, Tuple, cos, sqrt
 from sympy.geometry import Plane
 from sympy.vector import CoordSys3D
 
-from spb.vectors import _preprocess,_build_series, vector_plot
+from spb.vectors import _preprocess,_series, vector_plot
 from spb.utils import _plot_sympify, _split_vector
 from spb.series import (
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries, ContourSeries
@@ -97,7 +97,7 @@ def test_split_vector():
     raises(ValueError, lambda: _split_vector([x], ranges_in))
     raises(ValueError, lambda: _split_vector([x, x, x, x], ranges_in))
 
-def test_build_series():
+def test_series():
     x, y, z = symbols("x:z")
     N = CoordSys3D("N")
     v1 = x * N.i + y * N.j
@@ -107,7 +107,7 @@ def test_build_series():
 
     # Tests for 2D vectors
     args = pw(v1, "test")[0]
-    _, _, s = _build_series(args[0], *args[1:-1], label=args[-1])
+    _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector2DSeries)
     # auto generate ranges
     t1 = (s.u.var_x, s.u.start_x, s.u.end_x)
@@ -116,7 +116,7 @@ def test_build_series():
     assert (t2 == (x, -10.0, 10.0)) or (t2 == (y, -10.0, 10.0))
 
     args = pw(v1, (x, -5, 5), "test")[0]
-    _, _, s = _build_series(args[0], *args[1:-1], label=args[-1])
+    _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector2DSeries)
     assert (s.u.var_x, s.u.start_x, s.u.end_x) == (x, -5.0, 5.0)
     # auto generate range
@@ -126,17 +126,17 @@ def test_build_series():
     # raise error because the missing range could be any symbol.
     args = pw([1, 2], (x, -5, 5), "test")[0]
     raises(ValueError, 
-        lambda: _build_series(args[0], *args[1:-1], label=args[-1]))
+        lambda: _series(args[0], *args[1:-1], label=args[-1]))
     
     # too many free symbols in the 2D vector
     args = pw([x + y, z], (x, -5, 5), "test")[0]
     raises(ValueError, 
-        lambda: _build_series(args[0], *args[1:-1], label=args[-1]))
+        lambda: _series(args[0], *args[1:-1], label=args[-1]))
     
 
     # Tests for 3D vectors
     args = pw(v2, "test")[0]
-    _, _, s = _build_series(args[0], *args[1:-1], label=args[-1])
+    _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector3DSeries)
     # auto generate ranges
     t1 = (s.var_x, s.start_x, s.end_x)
@@ -150,7 +150,7 @@ def test_build_series():
         (t3 == (z, -10.0, 10.0)) )
 
     args = pw(v2, (x, -5, 5), "test")[0]
-    _, _, s = _build_series(args[0], *args[1:-1], label=args[-1])
+    _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector3DSeries)
     t1 = (s.var_x, s.start_x, s.end_x)
     t2 = (s.var_y, s.start_y, s.end_y)
@@ -163,18 +163,18 @@ def test_build_series():
     # raise error because the missing range could be any symbol.
     args = pw(Matrix([1, 2, 3]), (x, -5, 5), "test")[0]
     raises(ValueError, 
-        lambda: _build_series(args[0], *args[1:-1], label=args[-1]))
+        lambda: _series(args[0], *args[1:-1], label=args[-1]))
     
     # too many free symbols in the 3D vector
     a = symbols("a")
     args = pw(Matrix([x + y, z, a + x]), (x, -5, 5), "test")[0]
     raises(ValueError, 
-        lambda: _build_series(args[0], *args[1:-1], label=args[-1]))
+        lambda: _series(args[0], *args[1:-1], label=args[-1]))
     
 
     # Test for 3D vector slices
     # Single slicing plane
-    _, _, s = _build_series(v2, Tuple(x, -5, 5), Tuple(y, -4, 4),
+    _, _, s = _series(v2, Tuple(x, -5, 5), Tuple(y, -4, 4),
         Tuple(z, -3, 3), label="test", slice=Plane((1, 2, 3), (1, 0, 0)),
         n1=5, n2=6, n3=7)
     assert isinstance(s, (tuple, list))
@@ -190,7 +190,7 @@ def test_build_series():
     assert (np.min(zz.flatten()) == -3) and (np.max(zz.flatten()) == 3)
 
     # multiple slicing planes
-    _, _, s = _build_series(v2, Tuple(x, -5, 5), Tuple(y, -4, 4),
+    _, _, s = _series(v2, Tuple(x, -5, 5), Tuple(y, -4, 4),
         Tuple(z, -3, 3), label="test",
         slice=[
             Plane((1, 2, 3), (1, 0, 0)),
@@ -218,7 +218,7 @@ def test_build_series():
     assert (np.min(yy3.flatten()) == -4) and (np.max(yy3.flatten()) == 4)
 
     # slicing expression (surface)
-    _, _, s = _build_series(v2, Tuple(x, -5, 5), Tuple(y, -4, 4),
+    _, _, s = _series(v2, Tuple(x, -5, 5), Tuple(y, -4, 4),
         Tuple(z, -3, 3), label="test", slice=cos(x**2 + y**2),
         n1=5, n2=6, n3=7)
     assert isinstance(s, (tuple, list))
@@ -233,13 +233,13 @@ def test_build_series():
     assert (np.min(yy.flatten()) == -4) and (np.max(yy.flatten()) == 4)
 
     # must fail because slice is not an Expr or a Plane or a list of Planes
-    raises(ValueError, lambda: _build_series(v2, Tuple(x, -5, 5), 
+    raises(ValueError, lambda: _series(v2, Tuple(x, -5, 5), 
         Tuple(y, -4, 4), Tuple(z, -3, 3), label="test", n1=5, n2=6, n3=7,
         slice=[-1]))
-    raises(ValueError, lambda: _build_series(v2, Tuple(x, -5, 5), 
+    raises(ValueError, lambda: _series(v2, Tuple(x, -5, 5), 
         Tuple(y, -4, 4), Tuple(z, -3, 3), label="test", n1=5, n2=6, n3=7,
         slice=0))
-    raises(ValueError, lambda: _build_series(v2, Tuple(x, -5, 5), 
+    raises(ValueError, lambda: _series(v2, Tuple(x, -5, 5), 
         Tuple(y, -4, 4), Tuple(z, -3, 3), label="test", n1=5, n2=6, n3=7,
         slice="test"))
 
@@ -251,7 +251,7 @@ def test_vector_plot():
 
     # this will stop inside vector_plot, because we are mixing 2D and 3D vectors
     raises(ValueError, lambda: vector_plot(v1, v2))
-    # this will stop inside _build_series, because 3 ranges have been provided
+    # this will stop inside _series, because 3 ranges have been provided
     # for a 2D vector plot (v1)
     raises(ValueError, lambda: vector_plot(v1, v2, (x, -5, 5), (y, -2, 2), 
         (z, -3, 3)))

@@ -517,7 +517,8 @@ class PlotlyBackend(Plot):
                         ))
                     count += 2
                 else:
-                    xx, yy, mag, angle, colors, colorscale = s.get_data()
+                    xx, yy, mag_angle, colors, colorscale = s.get_data()
+                    mag, angle = mag_angle[:, :, 0], mag_angle[:, :, 1]
                     if s.coloring != "a":
                         warnings.warn("Plotly doesn't support custom coloring " +
                             "over surfaces. The surface color will show the " +
@@ -632,7 +633,8 @@ class PlotlyBackend(Plot):
                         # self.fig.data[i]["y0"] = -5
                         # # self.fig.data[i]["customdata"] = magn_angle
                     else:
-                        xx, yy, mag, angle, colors, colorscale = s.get_data()
+                        xx, yy, mag_angle, colors, colorscale = s.get_data()
+                        mag, angle = mag_angle[:, :, 0], mag_angle[:, :, 1]
                         self.fig.data[i]["z"] = mag
                         self.fig.data[i]["surfacecolor"] = angle
                         self.fig.data[i]["customdata"] = angle
