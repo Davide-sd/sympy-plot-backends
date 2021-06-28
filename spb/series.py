@@ -97,7 +97,8 @@ class BaseSeries:
             return np.linspace(start, end, N)
         return np.geomspace(start, end, N)
     
-    def _correct_size(self, a, b):
+    @staticmethod
+    def _correct_size(a, b):
         """ If `a` is a scalar, we need to convert its dimension to the 
         appropriate grid size given by `b`.
         """
@@ -654,7 +655,6 @@ class ImplicitSeries(BaseSeries):
 
     .. [2] Jeffrey Allen Tupper. Graphing Equations with Generalized Interval
     Arithmetic. Master's thesis. University of Toronto, 1996
-    
     """
     is_implicit = True
 
@@ -834,31 +834,53 @@ class ImplicitSeries(BaseSeries):
         In the case of equality, ``contour`` function of matplotlib can
         be used. In other cases, matplotlib's ``contourf`` is used.
         """
-        equal = False
-        if isinstance(self.expr, Equality):
-            expr = self.expr.lhs - self.expr.rhs
-            equal = True
-
-        elif isinstance(self.expr, (GreaterThan, StrictGreaterThan)):
-            expr = self.expr.lhs - self.expr.rhs
-
-        elif isinstance(self.expr, (LessThan, StrictLessThan)):
-            expr = self.expr.rhs - self.expr.lhs
-        else:
-            raise NotImplementedError("The expression is not supported for "
-                                    "plotting in uniform meshed plot.")
+        expr, equality = self._preprocess_meshgrid_expression(self.expr)
         xarray = self._discretize(self.start_x, self.end_x, self.n1, self.xscale)
         yarray = self._discretize(self.start_y, self.end_y, self.n2, self.yscale)
         x_grid, y_grid = np.meshgrid(xarray, yarray)
         func = vectorized_lambdify((self.var_x, self.var_y), expr)
         z_grid = func(x_grid, y_grid)
-        z_grid = self._correct_size(z_grid, x_grid)
-        z_grid[np.ma.where(z_grid < 0)] = -1
-        z_grid[np.ma.where(z_grid > 0)] = 1
-        if equal:
+        zgrid = self._postprocess_meshgrid_result(z_grid, x_grid)
+        if equality:
             return xarray, yarray, z_grid, 'contour'
         else:
             return xarray, yarray, z_grid, 'contourf'
+    
+    @staticmethod
+    def _preprocess_meshgrid_expression(expr):
+        """ If the expression is a Relational, rewrite it as a single 
+        expression. This method reduces code repetition. 
+
+        Returns
+        =======
+            expr : Expr
+                The rewritten expression
+            
+            equality : Boolean
+                Wheter the original expression was an Equality or not.
+        """
+        equality = False
+        if isinstance(expr, Equality):
+            expr = expr.lhs - expr.rhs
+            equality = True
+
+        elif isinstance(expr, (GreaterThan, StrictGreaterThan)):
+            expr = expr.lhs - expr.rhs
+
+        elif isinstance(expr, (LessThan, StrictLessThan)):
+            expr = expr.rhs - expr.lhs
+        else:
+            raise NotImplementedError("The expression is not supported for "
+                                    "plotting in uniform meshed plot.")
+        return expr, equality
+    
+    @staticmethod
+    def _postprocess_meshgrid_result(z_grid, x_grid):
+        """ Bound the result to -1, 1. This method reduces code repetition. """
+        z_grid = ImplicitSeries._correct_size(z_grid, x_grid)
+        z_grid[np.ma.where(z_grid < 0)] = -1
+        z_grid[np.ma.where(z_grid > 0)] = 1
+        return z_grid
 
 
 ##############################################################################
@@ -933,7 +955,12 @@ class InteractiveSeries(BaseSeries):
         #             "expressions uses {} ranges.".format(npar))
 
         # set series attributes
-        if (nexpr == 1) and (npar == 1):
+        if ((nexpr == 1) and (exprs[0].has(BooleanFunction) or 
+            exprs[0].has(Relational))):
+            self.is_implicit = True
+            exprs = list(exprs)
+            exprs[0], self.equality = ImplicitSeries._preprocess_meshgrid_expression(exprs[0])
+        elif (nexpr == 1) and (npar == 1):
             self.is_2Dline = True
         elif (nexpr == 2) and (npar == 1):
             self.is_2Dline = True
@@ -1075,8 +1102,18 @@ class InteractiveSeries(BaseSeries):
         if (self.is_contour or
             (self.is_3Dsurface and (not self.is_parametric)) or
             (self.is_2Dline and (not self.is_parametric))):
-            # in the case of single-expression 2D lines of 3D surfaces
+            # in the case of single-expression 2D lines or 3D surfaces
             results = [*self.ranges.values(), results]
+            self.data = results
+        
+        elif self.is_implicit:
+            ranges = list(self.ranges.values())
+            xr = ranges[0]
+            yr = ranges[1]
+            results = ImplicitSeries._postprocess_meshgrid_result(results, xr)
+            results = [xr[0, :], yr[:, 0], results, 
+                "contour" if self.equality else "contourf"
+                ]
             self.data = results
     
         elif (self.is_parametric and (self.is_3Dline or self.is_2Dline)):

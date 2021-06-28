@@ -976,10 +976,15 @@ def plot_implicit(*args, show=True, **kwargs):
             increasing `depth` we are increasing the number of pixels, thus
             obtaining a more accurate plot.
 
+        n1, n2 : int
+            Number of discretization points in the horizontal and vertical
+            directions when `adaptive=False`. Default to 1000.
+
         n : integer
-            The number of discretization points when `adaptive=False`. 
-            Default value is 1000. The greater the value the more accurate the
-            plot, but the more memory will be used.
+            Set the number of discretization points when `adaptive=False` in
+            both direction simultaneously. Default value is 1000. 
+            The greater the value the more accurate the plot, but the more 
+            memory will be used.
 
         show : Boolean
             Default value is True. If set to False, the plot will not be shown.
@@ -1026,28 +1031,7 @@ def plot_implicit(*args, show=True, **kwargs):
         >>> p2 = plot_implicit(
         ...     Eq(x**2 + y**2, 3), (x, -3, 3), (y, -3, 3))
 
-    With depth of recursion as argument:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> p3 = plot_implicit(
-        ...     Eq(x**2 + y**2, 5), (x, -4, 4), (y, -4, 4), depth = 2)
-
-    Using mesh grid and not using adaptive meshing:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> p4 = plot_implicit(
-        ...     Eq(x**2 + y**2, 5), (x, -5, 5), (y, -2, 2),
-        ...     adaptive=False)
-
-    Using mesh grid without using adaptive meshing with number of points
+    Using mesh grid without adaptive meshing with number of points
     specified:
 
     .. plot::
@@ -1055,9 +1039,34 @@ def plot_implicit(*args, show=True, **kwargs):
         :format: doctest
         :include-source: True
 
+        >>> p3 = plot_implicit(
+        ...     (x**2 + y**2 - 1)**3 - x**2 * y**3,
+        ...     (x, -1.5, 1.5), (y, -1.5, 1.5), 
+        ...     n = 1000)
+    
+    Using adaptive meshing and Boolean expressions:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> p4 = plot_implicit(
+        ...     Eq(y, sin(x)) & (y > 0),
+        ...     Eq(y, sin(x)) & (y < 0), 
+        ...     (x, -2 * pi, 2 * pi), (y, -4, 4),
+        ...     adaptive=True)
+
+    Using adaptive meshing with depth of recursion as argument:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
         >>> p5 = plot_implicit(
-        ...     Eq(x**2 + y**2, 5), (x, -5, 5), (y, -2, 2),
-        ...     adaptive=False, n=400)
+        ...     Eq(x**2 + y**2, 5), (x, -4, 4), (y, -4, 4),
+        ...     adaptive=True, depth = 2)
 
     Plotting regions:
 
@@ -1068,32 +1077,16 @@ def plot_implicit(*args, show=True, **kwargs):
 
         >>> p6 = plot_implicit(y > x**2)
 
-    Plotting Using boolean conjunctions:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> p7 = plot_implicit(And(y > x, y > -x))
-
-    When plotting an expression with a single variable (y - 1, for example),
-    specify the x or the y variable explicitly:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> p8 = plot_implicit(y - 1)
-        >>> p9 = plot_implicit(x - 1)
     """
     from spb.defaults import TWO_D_B
     args = _plot_sympify(args)
     args = _check_arguments(args, 1, 2)
     
+    kwargs = _set_discretization_points(kwargs, ImplicitSeries)
+
     series_kw = dict()
-    series_kw["n"] = kwargs.pop("n", 1000)
+    series_kw["n1"] = kwargs.pop("n1", 1000)
+    series_kw["n2"] = kwargs.pop("n2", 1000)
     series_kw["depth"] = kwargs.pop("depth", 0)
     series_kw["adaptive"] = kwargs.pop("adaptive", False)
 

@@ -8,6 +8,7 @@ import itertools
 import matplotlib.cm as cm
 from spb.backends.utils import convert_colormap
 import warnings
+import numpy as np
 
 """
 TODO:
@@ -592,6 +593,16 @@ class PlotlyBackend(Plot):
                 elif s.is_3Dsurface and (not s.is_complex):
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["z"] = z
+                elif s.is_contour:
+                    _, _, zz = s.get_data()
+                    self.fig.data[i]["z"] = zz
+                elif s.is_implicit:
+                    points = s.get_data()
+                    if len(points) == 2:
+                        raise NotImplementedError
+                    else:
+                        _, _, zz, _ = points
+                        self.fig.data[i]["z"] = zz
                 elif s.is_vector and s.is_3D:
                     streamlines = self._kwargs.get("streamlines", False)
                     if streamlines:

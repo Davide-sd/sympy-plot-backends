@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from spb.backends.utils import convert_colormap
 
-def get_contour_data(X, Y, Z):
+def get_contour_data(X, Y, Z, get_source=True):
     """ Uses Matplotlib contours to create a data source to plot contour levels.
 
     Credit to: https://stackoverflow.com/a/37633519/2329968
@@ -33,7 +33,10 @@ def get_contour_data(X, Y, Z):
             y = v[:, 1]
             xs.append(x.tolist())
             ys.append(y.tolist())
-    return ColumnDataSource(data={'xs': xs, 'ys': ys})
+    data = {'xs': xs, 'ys': ys}
+    if not get_source:
+        return data
+    return ColumnDataSource(data=data)
 
 def compute_streamlines(x, y, u, v, density=1.0):
     ''' Return streamlines of a vector flow.
@@ -584,6 +587,20 @@ class BokehBackend(Plot):
                     # Keep track of the following issue:
                     # https://github.com/bokeh/bokeh/issues/11116
                     cb.color_mapper.update(low = min(zz), high=max(zz))
+                
+                elif s.is_implicit:
+                    points = s.get_data()
+                    if len(points) == 2:
+                        raise NotImplementedError
+                    else:
+                        x, y, z, plot_type = points
+                        if plot_type == "contour":
+                            data = get_contour_data(x, y, z, False)
+                            # TODO: for some unkown reason, this is not updating!
+                            rend[i].data_source.data.update(data)
+                        else:
+                            source = {"image": [z]}
+                            rend[i].data_source.data.update(source)
 
                 elif s.is_2Dvector:
                     x, y, u, v = s.get_data()

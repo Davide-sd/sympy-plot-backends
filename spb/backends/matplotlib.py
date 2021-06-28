@@ -338,7 +338,6 @@ class MatplotlibBackend(Plot):
             elif s.is_implicit:
                 points = s.get_data()
                 if len(points) == 2:
-                    print("Case 1")
                     # interval math plotting
                     x, y = _matplotlib_list(points[0])
                     c = self.ax.fill(x, y, edgecolor='None')
@@ -351,15 +350,12 @@ class MatplotlibBackend(Plot):
                     xarray, yarray, zarray, plot_type = points
                     ckw = dict(cmap = colormap)
                     contour_kw = self._kwargs.get("contour_kw", dict())
+                    kw = merge({}, ckw, contour_kw)
                     if plot_type == 'contour':
-                        print("Case 2")
-                        c = self.ax.contour(xarray, yarray, zarray, 
-                            **merge({}, ckw, contour_kw))
+                        c = self.ax.contour(xarray, yarray, zarray, **kw)
                     else:
-                        print("Case 3")
-                        c = self.ax.contourf(xarray, yarray, zarray,
-                            **merge({}, ckw, contour_kw))
-                    self._add_handle(i, c)
+                        c = self.ax.contourf(xarray, yarray, zarray, **kw)
+                    self._add_handle(i, c, kw)
 
             elif s.is_vector:
                 if s.is_2Dvector:
@@ -696,6 +692,22 @@ class MatplotlibBackend(Plot):
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(z), np.amax(z)))
                 
+                elif s.is_implicit:
+                    points = s.get_data()
+                    if len(points) == 2:
+                        raise NotImplementedError
+                    else:
+                        for c in self._handles[i][0].collections:
+                            c.remove()
+                        xx, yy, zz, plot_type = points
+                        kw = self._handles[i][1]
+                        f = self.ax.contourf
+                        if plot_type == 'contour':
+                            f = self.ax.contour
+                        self._handles[i][0] = f(xx, yy, zz, **kw)
+                        xlims.append((np.amin(xx), np.amax(xx)))
+                        ylims.append((np.amin(yy), np.amax(yy)))
+
                 elif s.is_vector and s.is_3D:
                     streamlines = self._kwargs.get("streamlines", False)
                     if streamlines:
