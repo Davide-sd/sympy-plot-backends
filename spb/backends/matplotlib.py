@@ -345,16 +345,18 @@ class MatplotlibBackend(Plot):
                 else:
                     # use contourf or contour depending on whether it is
                     # an inequality or equality.
-                    # XXX: ``contour`` plots multiple lines. Should be fixed.
-                    colormap = ListedColormap(["#FFFFFF00", next(self._cl)])
-                    xarray, yarray, zarray, plot_type = points
-                    ckw = dict(cmap = colormap)
-                    contour_kw = self._kwargs.get("contour_kw", dict())
-                    kw = merge({}, ckw, contour_kw)
+                    xarray, yarray, zarray, ones, plot_type = points
                     if plot_type == 'contour':
-                        c = self.ax.contour(xarray, yarray, zarray, **kw)
+                        ckw = dict(cmap = next(self._cm))
+                        contour_kw = self._kwargs.get("contour_kw", dict())
+                        kw = merge({}, ckw, contour_kw)
+                        c = self.ax.contour(xarray, yarray, zarray, [0.], **kw)
                     else:
-                        c = self.ax.contourf(xarray, yarray, zarray, **kw)
+                        colormap = ListedColormap(["#FFFFFF00", next(self._cl)])
+                        ckw = dict(cmap = colormap)
+                        contour_kw = self._kwargs.get("contour_kw", dict())
+                        kw = merge({}, ckw, contour_kw)
+                        c = self.ax.contourf(xarray, yarray, ones, **kw)
                     self._add_handle(i, c, kw)
 
             elif s.is_vector:
@@ -699,12 +701,15 @@ class MatplotlibBackend(Plot):
                     else:
                         for c in self._handles[i][0].collections:
                             c.remove()
-                        xx, yy, zz, plot_type = points
+                        xx, yy, zz, ones, plot_type = points
                         kw = self._handles[i][1]
                         f = self.ax.contourf
                         if plot_type == 'contour':
-                            f = self.ax.contour
-                        self._handles[i][0] = f(xx, yy, zz, **kw)
+                            self._handles[i][0] = self.ax.contour(xx, yy, zz,
+                                    [0.], **kw)
+                        else:
+                            self._handles[i][0] = self.ax.contourf(xx, yy, ones,
+                                    **kw)
                         xlims.append((np.amin(xx), np.amax(xx)))
                         ylims.append((np.amin(yy), np.amax(yy)))
 

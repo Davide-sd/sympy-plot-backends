@@ -840,11 +840,11 @@ class ImplicitSeries(BaseSeries):
         x_grid, y_grid = np.meshgrid(xarray, yarray)
         func = vectorized_lambdify((self.var_x, self.var_y), expr)
         z_grid = func(x_grid, y_grid)
-        zgrid = self._postprocess_meshgrid_result(z_grid, x_grid)
+        z_grid, ones = self._postprocess_meshgrid_result(z_grid, x_grid)
         if equality:
-            return xarray, yarray, z_grid, 'contour'
+            return xarray, yarray, z_grid, ones, 'contour'
         else:
-            return xarray, yarray, z_grid, 'contourf'
+            return xarray, yarray, z_grid, ones, 'contourf'
     
     @staticmethod
     def _preprocess_meshgrid_expression(expr):
@@ -878,9 +878,11 @@ class ImplicitSeries(BaseSeries):
     def _postprocess_meshgrid_result(z_grid, x_grid):
         """ Bound the result to -1, 1. This method reduces code repetition. """
         z_grid = ImplicitSeries._correct_size(z_grid, x_grid)
-        z_grid[np.ma.where(z_grid < 0)] = -1
-        z_grid[np.ma.where(z_grid > 0)] = 1
-        return z_grid
+        # ones contains data useful to plot regions, or in case of Plotly,
+        # contour lines too.
+        ones = np.ones_like(z_grid, dtype=np.int8)
+        ones[np.ma.where(z_grid < 0)] = -1
+        return z_grid, ones
 
 
 ##############################################################################
@@ -1111,7 +1113,7 @@ class InteractiveSeries(BaseSeries):
             xr = ranges[0]
             yr = ranges[1]
             results = ImplicitSeries._postprocess_meshgrid_result(results, xr)
-            results = [xr[0, :], yr[:, 0], results, 
+            results = [xr[0, :], yr[:, 0], *results, 
                 "contour" if self.equality else "contourf"
                 ]
             self.data = results

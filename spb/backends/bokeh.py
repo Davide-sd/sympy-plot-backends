@@ -23,7 +23,7 @@ def get_contour_data(X, Y, Z, get_source=True):
 
     Credit to: https://stackoverflow.com/a/37633519/2329968
     """
-    cs = plt.contour(X, Y, Z)
+    cs = plt.contour(X, Y, Z, [0.])
     xs = []
     ys = []
     for isolevel in cs.collections:
@@ -424,11 +424,12 @@ class BokehBackend(Plot):
                         dw=abs(max(x) - min(x)), dh=abs(max(y) - min(y)),
                         palette=cm, legend_label=s.label)
                 else:
-                    x, y, z, plot_type = points
+                    x, y, z, ones, plot_type = points
                     if plot_type == "contour":
                         source = get_contour_data(x, y, z)
                         lkw = dict(
                             line_color = next(self._cl),
+                            line_width = 2,
                             source = source,
                             legend_label = s.label
                         )
@@ -437,7 +438,7 @@ class BokehBackend(Plot):
                             **merge({}, lkw, line_kw))
                     else:
                         cm = ["#00000000", next(self._cl)]
-                        self._fig.image(image=[z], x=min(x), y=min(y),
+                        self._fig.image(image=[ones], x=min(x), y=min(y),
                             dw=abs(max(x) - min(x)), dh=abs(max(y) - min(y)),
                             palette=cm, legend_label=s.label)
 
@@ -593,13 +594,13 @@ class BokehBackend(Plot):
                     if len(points) == 2:
                         raise NotImplementedError
                     else:
-                        x, y, z, plot_type = points
+                        x, y, z, ones, plot_type = points
                         if plot_type == "contour":
                             data = get_contour_data(x, y, z, False)
                             # TODO: for some unkown reason, this is not updating!
                             rend[i].data_source.data.update(data)
                         else:
-                            source = {"image": [z]}
+                            source = {"image": [ones]}
                             rend[i].data_source.data.update(source)
 
                 elif s.is_2Dvector:

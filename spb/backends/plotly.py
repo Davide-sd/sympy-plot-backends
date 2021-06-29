@@ -361,7 +361,7 @@ class PlotlyBackend(Plot):
                     self._fig.add_trace(go.Heatmap(x = x, y = y, z = pixels,
                         **merge({}, ckw, contour_kw)))
                 else:
-                    x, y, z, plot_type = points
+                    x, y, z, ones, plot_type = points
                     zf = z.flatten()
                     m, M = min(zf), max(zf)
                     col = next(self._cl)
@@ -383,7 +383,11 @@ class PlotlyBackend(Plot):
                         line = dict( color = col )
                     )
                     contour_kw = self._kwargs.get("contour_kw", dict())
-                    self._fig.add_trace(go.Contour(x = x, y = y, z = z,
+                    # TODO: sadly, Plotly does not support yet setting contour 
+                    # levels, hence the visualization will look ugly whenever
+                    # plot_type="contour". 
+                    # https://github.com/plotly/plotly.js/issues/4503
+                    self._fig.add_trace(go.Contour(x = x, y = y, z = ones,
                             **merge({}, ckw, contour_kw)))
                 count += 1
             elif s.is_vector:
@@ -576,33 +580,40 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["marker"]["color"] = param
                     self.fig.data[i]["customdata"] = param
+
                 elif s.is_2Dline:
                     x, y = self.series[i].get_data()
                     self.fig.data[i]["y"] = y
+
                 elif s.is_3Dline:
                     x, y, z, param = s.get_data()
                     self.fig.data[i]["x"] = x
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["z"] = z
                     self.fig.data[i]["line"]["color"] = param
+
                 elif s.is_3Dsurface and s.is_parametric:
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["x"] = x
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["z"] = z
+
                 elif s.is_3Dsurface and (not s.is_complex):
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["z"] = z
+
                 elif s.is_contour:
                     _, _, zz = s.get_data()
                     self.fig.data[i]["z"] = zz
+
                 elif s.is_implicit:
                     points = s.get_data()
                     if len(points) == 2:
                         raise NotImplementedError
                     else:
-                        _, _, zz, _ = points
-                        self.fig.data[i]["z"] = zz
+                        _, _, zz, ones, _ = points
+                        self.fig.data[i]["z"] = ones
+
                 elif s.is_vector and s.is_3D:
                     streamlines = self._kwargs.get("streamlines", False)
                     if streamlines:
@@ -611,6 +622,7 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["u"] = u.flatten()
                     self.fig.data[i]["v"] = v.flatten()
                     self.fig.data[i]["w"] = w.flatten()
+
                 elif s.is_vector:
                     x, y, u, v = self.series[i].get_data()
                     streamlines = self._kwargs.get("streamlines", False)
@@ -633,6 +645,7 @@ class PlotlyBackend(Plot):
                         data = quivers.data[0]
                     self.fig.data[i]["x"] = data["x"]
                     self.fig.data[i]["y"] = data["y"]
+
                 elif s.is_complex:
                     if s.is_domain_coloring:
                         raise NotImplementedError
