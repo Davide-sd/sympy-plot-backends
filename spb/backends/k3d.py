@@ -160,7 +160,8 @@ class K3DBackend(Plot):
                 line = k3d.line(vertices, **merge({}, a, line_kw))
                 self._fig += line
 
-            elif s.is_3Dsurface and (not s.is_complex):
+            elif ((s.is_3Dsurface and (not s.is_complex)) or
+                (s.is_3Dsurface and s.is_complex and (s.real or s.imag))):
                 x, y, z = s.get_data()
                 print("K3D is_surface", 
                     len(x) if not hasattr(x, "shape") else x.shape,
@@ -207,12 +208,10 @@ class K3DBackend(Plot):
                     side = "double",
                     flat_shading = False,
                     wireframe = False,
-                    color = self._convert_to_int(next(self._cl)),
-                    # volume_bounds = (min(x), max(x), min(y), max(y), min(z), max(z))
+                    color = self._convert_to_int(next(self._cl))
                 )
                 if self._use_cm:
-                    a["color_map"] = (next(self._cm) if not s.is_complex 
-                            else next(self._cyccm))
+                    a["color_map"] = next(self._cm)
                     a["attribute"] = z
                 surface_kw = self._kwargs.get("surface_kw", dict())
                 surf = k3d.mesh(vertices, indices, 
@@ -454,7 +453,8 @@ class K3DBackend(Plot):
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     self._fig.objects[i].vertices = vertices
 
-                elif s.is_3Dsurface and (not s.is_complex):
+                elif ((s.is_3Dsurface and (not s.is_complex)) or
+                    (s.is_3Dsurface and s.is_complex and (s.real or s.imag))):
                     x, y, z = self.series[i].get_data()
                     x, y, z = [t.flatten().astype(np.float32) for t in [x, y, z]]
                     vertices = np.vstack([x, y, z]).astype(np.float32)

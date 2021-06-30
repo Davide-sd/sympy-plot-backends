@@ -57,13 +57,13 @@ def test_lin_log_scale():
 
     s = ImplicitSeries(cos(x**2 + y**2) > 0, (x, 1, 5), (y, 1, 5),
                 n=10, xscale="linear", yscale="linear", adaptive=False)
-    xx, yy, _, _ = s.get_data()
+    xx, yy, _, _, _ = s.get_data()
     assert np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
     assert np.isclose(yy[1] - yy[0], yy[-1] - yy[-2])
 
     s = ImplicitSeries(cos(x**2 + y**2) > 0, (x, 1, 5), (y, 1, 5),
                 n=10, xscale="log", yscale="log", adaptive=False)
-    xx, yy, _, _ = s.get_data()
+    xx, yy, _, _, _ = s.get_data()
     assert not np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
     assert not np.isclose(yy[1] - yy[0], yy[-1] - yy[-2])
 

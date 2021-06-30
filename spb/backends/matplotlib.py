@@ -321,7 +321,8 @@ class MatplotlibBackend(Plot):
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
                 zlims.append((np.amin(z), np.amax(z)))
-            elif s.is_3Dsurface and (not s.is_complex):
+            elif ((s.is_3Dsurface and (not s.is_complex)) or
+                (s.is_3Dsurface and s.is_complex and (s.real or s.imag))):
                 x, y, z = s.get_data()
                 skw = dict(rstride = 1, cstride = 1, linewidth = 0.1)
                 if self._use_cm:
@@ -679,7 +680,8 @@ class MatplotlibBackend(Plot):
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                 
-                elif s.is_3Dsurface and (not s.is_complex):
+                elif ((s.is_3Dsurface and (not s.is_complex)) or
+                    (s.is_3Dsurface and s.is_complex and (s.real or s.imag))):
                     x, y, z = self.series[i].get_data()
                     # TODO: by setting the keyword arguments, somehow the update
                     # becomes really really slow.

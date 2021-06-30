@@ -1196,11 +1196,17 @@ class ComplexSeries(BaseSeries):
         self.xscale = kwargs.get('xscale', 'linear')
         self.yscale = kwargs.get('yscale', 'linear')
 
-        self.real = kwargs.get('real', True)
-        self.imag = kwargs.get('imag', True)
+        self.real = kwargs.get('real', False)
+        self.imag = kwargs.get('imag', False)
+        self.abs = kwargs.get('abs', False)
+        self.arg = kwargs.get('arg', False)
+        if self.abs and self.arg:
+            self.is_parametric = True
 
-        if self.is_parametric:
+        if self.is_parametric or self.abs:
             self.label = "Abs(%s)" % label
+        elif self.arg:
+            self.label = "Arg(%s)" % label
         elif self.real and self.imag:
             self.label = label
         elif self.real:
@@ -1244,9 +1250,22 @@ class ComplexSeries(BaseSeries):
                 return np.real(x), np.real(r)
             elif self.imag:
                 return np.real(x), np.imag(r)
+            elif self.abs:
+                return np.real(x), np.absolute(r)
+            elif self.arg:
+                return np.real(x), np.angle(r)
             return x, r
+        
+        # 3D
+        if not self.is_domain_coloring:
+            if self.real and self.imag:
+                return np.real(x), np.imag(x), np.real(r), np.imag(r)
+            elif self.real:
+                return np.real(x), np.imag(x), np.real(r)
+            elif self.imag:
+                return np.real(x), np.imag(x), np.imag(r)
 
-        # 3D or domain coloring
+        # 2D or 3D domain coloring
         return (np.real(x), np.imag(x), 
                 np.dstack([np.absolute(r), np.angle(r)]), 
                 *self._domain_coloring(r))

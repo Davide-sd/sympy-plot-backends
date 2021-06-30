@@ -54,13 +54,33 @@ def _build_series(*args, interactive=False, **kwargs):
                     # backend in order to work with iplot
                     # (backend._update_interactive).
 
-                    kw1, kw2 = kwargs.copy(), kwargs.copy()
-                    kw1["real"], kw1["imag"] = True, False
-                    kw2["real"], kw2["imag"] = False, True
-                    series.append(cls(expr, *ranges, label, **kw1))
-                    series.append(cls(expr, *ranges, label, **kw2))
+                    kw = kwargs.copy()
+                    real = kw.pop("real", True)
+                    imag = kw.pop("imag", True)
+                    _abs = kw.pop("abs", False)
+                    arg = kw.pop("arg", False)
+
+                    def func(flag, key):
+                        if flag:
+                            kw2 = kw.copy()
+                            kw2[key] = True
+                            series.append(cls(expr, *ranges, label, **kw2))
+                    
+                    func(real, "real")
+                    func(imag, "imag")
+                    func(_abs, "abs")
+                    func(arg, "arg")
                 else:
-                    series.append(cls(expr, *ranges, label, **kwargs))
+                    real = kwargs.get("real", False)
+                    imag = kwargs.get("imag", False)
+                    if real and imag:
+                        kw1, kw2 = kwargs.copy(), kwargs.copy()
+                        kw1["real"], kw1["imag"] = True, False
+                        kw2["real"], kw2["imag"] = False, True
+                        series.append(cls(expr, *ranges, label, **kw1))
+                        series.append(cls(expr, *ranges, label, **kw2))
+                    else:
+                        series.append(cls(expr, *ranges, label, **kwargs))
     return series
 
 def complex_plot(*args, show=True, **kwargs):
@@ -74,9 +94,11 @@ def complex_plot(*args, show=True, **kwargs):
         1. line plot separating the real and imaginary parts.
         2. line plot of the modulus of the complex function colored by its
             argument, if `absarg=True`.
+        3. line plot of the modulus and the argument.
     * complex function over a complex range:
         1. domain coloring plot.
         2. 3D plot of the modulus colored by the argument, if `threed=True`.
+        3. 3D plot of the real and imaginary part.
 
     Arguments
     =========
@@ -106,8 +128,16 @@ def complex_plot(*args, show=True, **kwargs):
         absarg : boolean
             If True, plot the modulus of the complex function colored by its
             argument. If False, separately plot the real and imaginary parts.
-            Default to False. 
+            Default to False.
         
+        abs : boolean
+            If True, and if the provided range is a real segment, plot the 
+            modulus of the complex function. Default to False.
+        
+        arg : boolean
+            If True, and if the provided range is a real segment, plot the 
+            argument of the complex function. Default to False.
+
         n1, n2 : int
             Number of discretization points in the real/imaginary-directions,
             respectively. Default to 300.
@@ -115,6 +145,18 @@ def complex_plot(*args, show=True, **kwargs):
         n : int
             Set the same number of discretization points in all directions.
             Default to 300.
+        
+        real : boolean
+            If True, and if the provided range is a real segment, plot the 
+            real part of the complex function.
+            If a complex range is given and `threed=True`, plot a 3D 
+            representation of the real part. Default to False.
+        
+        imag : boolean
+            If True, and if the provided range is a real segment, plot the 
+            imaginary part of the complex function.
+            If a complex range is given and `threed=True`, plot a 3D 
+            representation of the imaginary part. Default to False.
         
         show : boolean
             Default to True, in which case the plot will be shown on the screen.
@@ -209,12 +251,19 @@ def complex_plot(*args, show=True, **kwargs):
         complex_plot((cos(z) + sin(I * z), "f"), (z, -2, 2), legend=True,
             absarg=True)
     
+    Plot the modulus and the argument of a complex function:
+
+    .. code-block:: python
+        z = symbols("z")
+        complex_plot((cos(z) + sin(I * z), "f"), (z, -2, 2), legend=True,
+            abs=True, arg=True, real=False, imag=False)
+    
     Domain coloring plot. Note that it might be necessary to increase the number
     of discretization points in order to get a smoother plot:
 
     .. code-block:: python
         z = symbols("z")
-        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), colorspace="hsl", n=500)
+        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), coloring="b", n=500)
     
     3D plot of the absolute value of a complex function colored by its argument:
 
@@ -222,6 +271,13 @@ def complex_plot(*args, show=True, **kwargs):
         z = symbols("z")
         complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True, 
             legend=True, zlim=(-1, 6))
+    
+    3D plot of the real part a complex function:
+
+    .. code-block:: python
+        z = symbols("z")
+        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True, 
+            real=True)
 
     """
     args = _plot_sympify(args)

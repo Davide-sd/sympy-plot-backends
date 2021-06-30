@@ -35,18 +35,20 @@ The following plotting libraries are supported: [Matplolib](https://matplotlib.o
 Each backend has its own advantages and disadvantages, as we can see from the following table:
 
 |                        | Matplolib | Bokeh | Plotly |  K3D |
-|:----------------------:|:---------:|:-----:|:------:|:---:|
-|           2D           |     Y     |   Y   |    Y   |  N  |
-|           3D           |     Y     |   N   |    Y   |  Y  |
-|        Implicit        |     Y     |   Y   |    Y   |  N  |
-|        PlotGrid        |     N     |   N   |    N   |  N  |
-|      Latex Support     |     Y     |   N   |    Y   |  Y  |
-|      Save Picture      |     Y     |   Y   |    Y   |  Y  |
-|       Jupyter NB       |     Y     |   Y   |    Y   |  Y  |
-|   Python Interpreter   |     Y     |   Y   |    Y   |  N  |
-| Parametric-Interactive |     Y     |   Y   |    Y   |  Y  |
-|      Vector Plots      |     Y     |   Y   |    Y   |  Y  |
-|      Complex Plots     |     Y     |   Y   |    Y   |  Y  |
+|:----------------------:|:---------:|:-----:|:------:|:----:|
+|           2D           |     Y     |   Y   |    Y   |   N  |
+|           3D           |     Y     |   N   |    Y   |   Y  |
+|        Implicit        |     Y     |   Y   |    Y   |   N  |
+|        PlotGrid        |     N     |   N   |    N   |   N  |
+|      Latex Support     |     Y     |   N   |    Y   |   Y  |
+|      Save Picture      |     Y     |   Y   |    Y   |   Y  |
+|       Jupyter NB       |     Y     |   Y   |    Y   |   Y  |
+|   Python Interpreter   |     Y     |   Y   |    Y   |   N  |
+| Parametric-Interactive |     Y     |   Y   |    Y   |   Y  |
+|    Vector Plots 2D     |     Y     |   Y   |    Y   |   N  |
+|    Vector Plots 3D     |     Y     |   N   |    Y   |   Y  |
+|   Complex Plots 2D     |     Y     |   Y   |    Y   |   N  |
+|   Complex Plots 3D     |     Y     |   N   |    Y   |   Y  |
 
 In particular:
 * Matplotlib (default with SymPy) is good but it lacks interactivity (of course, we can use [ipympl](https://github.com/matplotlib/ipympl), but it doesn't do miracles especially with 3D plots).

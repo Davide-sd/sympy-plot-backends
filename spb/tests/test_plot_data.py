@@ -147,29 +147,53 @@ def test_complex():
     data2 = do_test_1(s2, 3)
     test_equal_results(data1, data2)
 
-    # return x, real(e1), imag(e1)
-    s1 = _build_series(e1, (x, -5, 5))
-    data1 = do_test_1(s1, 3)
-    s2 = _build_series(e1, (x, -5, 5), pt="c")
-    data2 = do_test_1(s2, 3)
-    test_equal_results(data1, data2)
-    xx, real, imag = data1
-
     # return x, real(e1)
-    s1 = _build_series(e1, (x, -5, 5), imag=False)
+    s1 = _build_series(e1, (x, -5, 5), real=True)
     data1 = do_test_1(s1, 2)
-    test_equal_results(data1, (xx, real))
-    s2 = _build_series(e1, (x, -5, 5), imag=False, pt="c")
+    s2 = _build_series(e1, (x, -5, 5), real=True, pt="c")
     data2 = do_test_1(s2, 2)
     test_equal_results(data1, data2)
+    xx, real = data1
 
     # return x, imag(e1)
-    s1 = _build_series(e1, (x, -5, 5), real=False)
+    s1 = _build_series(e1, (x, -5, 5), imag=True)
     data1 = do_test_1(s1, 2)
-    test_equal_results(data1, (xx, imag))
-    s2 = _build_series(e1, (x, -5, 5), real=False, pt="c")
+    s2 = _build_series(e1, (x, -5, 5), imag=True, pt="c")
     data2 = do_test_1(s2, 2)
     test_equal_results(data1, data2)
+    _, imag = data1
+
+    # return x, real(e1), imag(e1)
+    s1 = _build_series(e1, (x, -5, 5), real=True, imag=True)
+    data1 = do_test_1(s1, 3)
+    s2 = _build_series(e1, (x, -5, 5), real=True, imag=True, pt="c")
+    data2 = do_test_1(s2, 3)
+    test_equal_results(data1, data2)
+    test_equal_results(data1, (xx, real, imag))
+
+    # return x, abs(e1)
+    s1 = _build_series(e1, (x, -5, 5), abs=True)
+    data1 = do_test_1(s1, 2)
+    s2 = _build_series(e1, (x, -5, 5), abs=True, pt="c")
+    data2 = do_test_1(s2, 2)
+    test_equal_results(data1, data2)
+    xx, _abs = data1
+
+    # return x, arg(e1)
+    s1 = _build_series(e1, (x, -5, 5), arg=True)
+    data1 = do_test_1(s1, 2)
+    s2 = _build_series(e1, (x, -5, 5), arg=True, pt="c")
+    data2 = do_test_1(s2, 2)
+    test_equal_results(data1, data2)
+    _, arg = data1
+
+    # return x, abs(e1), arg(e1)
+    s1 = _build_series(e1, (x, -5, 5), absarg=True)
+    data1 = do_test_1(s1, 3)
+    s2 = _build_series(e1, (x, -5, 5), absarg=True, pt="c")
+    data2 = do_test_1(s2, 3)
+    test_equal_results(data1, data2)
+    test_equal_results(data1, (xx, _abs, arg))
 
     # return x, e1 (complex numbers)
     s1 = _build_series(e1, (x, -5, 5), real=False, imag=False)
@@ -188,10 +212,40 @@ def test_complex():
     do_test_1(s, 2)
 
 
-    ### Domain coloring: returns x, y, z, mag, arg where z is an array of 
-    # complex numbers
+    ### Domain coloring: returns x, y, (mag, arg), ...
     s1 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I))
     data1 = do_test_1(s1, 5)
     s2 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), pt="c")
     data2 = do_test_1(s2, 5)
     test_equal_results(data1, data2)
+    xx, yy, mag_arg, _, _ = data1
+    mag, arg = mag_arg[:, :, 0], mag_arg[:, :, 1]
+
+    ### 3D real part
+    s1 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True, real=True)
+    data1 = do_test_1(s1, 3)
+    s2 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), 
+            threed=True, real=True, pt="c")
+    data2 = do_test_1(s2, 3)
+    test_equal_results(data1, data2)
+    xx, yy, real = data1
+
+    ### 3D imaginary part
+    s1 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True, imag=True)
+    data1 = do_test_1(s1, 3)
+    s2 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), 
+            threed=True, imag=True, pt="c")
+    data2 = do_test_1(s2, 3)
+    test_equal_results(data1, data2)
+    _, _, imag = data1
+
+    ### 3D real and imaginary parts
+    s1 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), 
+            threed=True, real=True, imag=True)
+    data1 = do_test_1(s1, 4)
+    s2 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), 
+            threed=True, real=True, imag=True, pt="c")
+    data2 = do_test_1(s2, 4)
+    test_equal_results(data1, data2)
+    _, _, real2, imag2 = data1
+    test_equal_results((real, imag), (real2, imag2))

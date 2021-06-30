@@ -312,11 +312,11 @@ def get_plot_data(*args, **kwargs):
 
     .. code-block:: python
         z = symbols("z")
-        xx, yy, zz, abs, arg = get_plot_data(gamma(z), (z, -3 - 3*I, 3 + 3*I))
+        xx, yy, abs, arg, _, _ = get_plot_data(gamma(z), (z, -3 - 3*I, 3 + 3*I))
     
-    Here, `xx, yy, zz` are 2D arrays. `xx` is the real part of the domain.
-    `yy` is the complex part of the domain. `zz` contains complex numbers.
-    `abs` and `arg` are the absolute value and argument of `zz`.
+    Here, `xx, yy` are 2D arrays. `xx` is the real part of the domain.
+    `yy` is the complex part of the domain. `abs` and `arg` are the absolute 
+    value and argument of the complex function.
 
     See also
     ========

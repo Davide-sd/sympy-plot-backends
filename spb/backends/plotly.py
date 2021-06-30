@@ -278,7 +278,8 @@ class PlotlyBackend(Plot):
                     go.Scatter3d(
                         x = x, y = y, z = z, **merge({}, lkw, line_kw)))
             
-            elif s.is_3Dsurface and (not s.is_complex):
+            elif ((s.is_3Dsurface and (not s.is_complex)) or
+                (s.is_3Dsurface and s.is_complex and (s.real or s.imag))):
                 xx, yy, zz = s.get_data()
 
                 # create a solid color to be used when self._use_cm=False
@@ -287,7 +288,7 @@ class PlotlyBackend(Plot):
                     [0, col],
                     [1, col]
                 ]
-                colormap = next(self._cm) if not s.is_complex else next(self._cyccm)
+                colormap = next(self._cm)
                 skw = dict(
                     name = s.label,
                     showscale = self.legend and show_3D_colorscales,
@@ -598,7 +599,8 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["z"] = z
 
-                elif s.is_3Dsurface and (not s.is_complex):
+                elif ((s.is_3Dsurface and (not s.is_complex)) or
+                    (s.is_3Dsurface and s.is_complex and (s.real or s.imag))):
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["z"] = z
 
