@@ -530,7 +530,8 @@ class K3DBackend(Plot):
         return asd
 
     def show(self):
-        # self._process_series(self._series)
+        if len(self._fig.objects) != len(self.series):
+            self._process_series(self._series)
         self.plot_shown = True
         # self._fig.grid = [-2, 2, -2, 2, 0, 10]
         if len(self._bounds) > 0:

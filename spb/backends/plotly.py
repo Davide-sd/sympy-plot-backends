@@ -733,6 +733,8 @@ class PlotlyBackend(Plot):
         )
     
     def show(self):
+        if len(self._fig.data) != len(self.series):
+            self._process_series(self.series)
         self._fig.show()
 
     def save(self, path, **kwargs):

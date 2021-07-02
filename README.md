@@ -38,6 +38,10 @@ Each backend has its own advantages and disadvantages, as we can see from the fo
 |:----------------------:|:---------:|:-----:|:------:|:----:|
 |           2D           |     Y     |   Y   |    Y   |   N  |
 |           3D           |     Y     |   N   |    Y   |   Y  |
+|    Vector Plots 2D     |     Y     |   Y   |    Y   |   N  |
+|    Vector Plots 3D     |     Y     |   N   |    Y   |   Y  |
+|   Complex Plots 2D     |     Y     |   Y   |    Y   |   N  |
+|   Complex Plots 3D     |     Y     |   N   |    Y   |   Y  |
 |        Implicit        |     Y     |   Y   |    Y   |   N  |
 |        PlotGrid        |     N     |   N   |    N   |   N  |
 |      Latex Support     |     Y     |   N   |    Y   |   Y  |
@@ -45,18 +49,20 @@ Each backend has its own advantages and disadvantages, as we can see from the fo
 |       Jupyter NB       |     Y     |   Y   |    Y   |   Y  |
 |   Python Interpreter   |     Y     |   Y   |    Y   |   N  |
 | Parametric-Interactive |     Y     |   Y   |    Y   |   Y  |
-|    Vector Plots 2D     |     Y     |   Y   |    Y   |   N  |
-|    Vector Plots 3D     |     Y     |   N   |    Y   |   Y  |
-|   Complex Plots 2D     |     Y     |   Y   |    Y   |   N  |
-|   Complex Plots 3D     |     Y     |   N   |    Y   |   Y  |
 
 In particular:
-* Matplotlib (default with SymPy) is good but it lacks interactivity (of course, we can use [ipympl](https://github.com/matplotlib/ipympl), but it doesn't do miracles especially with 3D plots).
-* Matplotlib and Plotly are the two most general backends, both supporting 2D and 3D plots.
-* K3D only supports 3D plots but, compared to Matplotlib,it is blazingly fast in the user-interaction. Hence, we can increase significantly the number of discretization points obtaining smoother plots. This backends use an aspect ratio of 1 on all axis: they don't scale the visualization. What you see is the object as you would see it in reality.
-* K3D can only be used with Jupyter Notebook, whereas the other backends can also be used with IPython or a simple Python interpreter.
-* Plotly and Bokeh require external libraries in order to export plots to png or svg. Read the docstrings of the respective classes to understand what you need to install.
-* **Parametric-Interactive**: thanks to [holovis'z panel](https://github.com/holoviz/panel), we can use widgets (sliders, buttons, ...) to visually explore the symbolic expression. This functionality only works within Jupyter Notebook. Currently, `MatplotlibBackend` doesn't support this feature.
+
+* Matplotlib (default with SymPy) is a good general backend supporting all kinds of plots, but it is very slow at rendering 3D plots and it lacks interactivity ([ipympl](https://github.com/matplotlib/ipympl) does what it can).
+* Plotly is another general backend supporting all kinds of plot. Interactivity and data exploration are great, however it does have a few limitations:
+  * Slower rendering than all other backends because it adds HTML elements to the DOM of the notebook.
+  * Lack of gradient lines.
+  * Generally inferior when plotting implicit expression in comparison to Matplotlib. Also, it can be really slow when plotting multiple implicit expressions simultaneously.
+  * No wireframe support for 3D plots, which could lead to difficult to understand plots.
+* Bokeh: interactivity and data exploration are great, however:
+  * Generally inferior when plotting implicit expression in comparison to Matplotlib.
+  * Lack of contour plot.
+* K3D only supports 3D plots but, compared to Matplotlib, it offers amazing 3D performance: we can increase significantly the number of discretization points obtaining smoother plots. It can only be used with Jupyter Notebook, whereas the other backends can also be used with IPython or a simple Python interpreter. This backends use an aspect ratio of 1 on all axis: they don't scale the visualization. What you see is the object as you would see it in reality.
+* **Parametric-Interactive**: thanks to [holovis'z panel](https://github.com/holoviz/panel), we can use widgets (sliders, buttons, ...) to visually explore the symbolic expression.
 
 The following table shows the common keyword arguments implemented in SymPy's `Plot` class, which is the parent class for all backends. Because each plotting library is unique, some of these options may not be supported by a specific backend (or have not been implemented yet):
 
@@ -71,8 +77,6 @@ The following table shows the common keyword arguments implemented in SymPy's `P
 |     grid      |     Y     |   Y   |    Y   |  Y  |
 |  axis_center  |     Y     |   N   |    N   |  N  |
 |    aspect     |     Y     |   Y   |    Y   |  N  |
-|   autoscale   |     Y     |   N   |    N   |  N  |
-|    margin     |     Y     |   N   |    N   |  N  |
 |     size      |     Y     |   Y   |    Y   |  Y  |
 |     title     |     Y     |   Y   |    Y   |  Y  |
 |    xlabel     |     Y     |   Y   |    Y   |  Y  |
@@ -81,19 +85,7 @@ The following table shows the common keyword arguments implemented in SymPy's `P
 
 For example, while SymPy's default backend (Matplotlib) is implemented to mimic hand-plotted 2D charts, that is the horizontal and vertical axis are not necessarely fixed to the bottom-side and left-side of the plot respectively (we can specify their location with `axis_center`), I didn't implement this feature on Bokeh and Plotly because it doesn't add any value to my personal use. If you find that some options could be implemented, please consider contributing with a PR.
 
-Other options are only available to a specific backend, for example:
-
-|  keyword arg  | Matplolib | Bokeh | Plotly | K3D |
-|:-------------:|:---------:|:-----:|:------:|:---:|
-|     theme     |     N     |   Y   |    Y   |  N  |
-|   wireframe   |     N     |   N   |    Y   |  Y  |
-|   bg_color    |     N     |   N   |    N   |  Y  |
-|   fg_color    |     N     |   N   |    N   |  Y  |
-|  grid_color   |     N     |   N   |    N   |  Y  |
-|    use_cm     |     Y     |   Y   |    Y   |  Y  |
-|   show_label  |     N     |   N   |    N   |  Y  |
-
-Please, read the docstring associated to each backend to find out what they do.
+Please, read the docstring associated to each backend to find out more options and what they do.
 
 
 ## Warnings
@@ -101,6 +93,7 @@ Please, read the docstring associated to each backend to find out what they do.
 While this module is based on `sympy.plotting`, there are some differences (structural and usability) that make them incompatible. Interchanging between these two modules might lead to some errors! I suggest to use this module instead of `sympy.plotting`. On the usability side, the main differences are:
 1. `label` keyword argument has been removed.
 2. `nb_of_points_*` keyword arguments have been removed.
+3. `ImplicitSeries` now uses mesh grid algorithm and contour plots by default. It is going to automatically switch to an adaptive algorithm if Boolean expressions are found.
 
 Read the tutorials to find out the alternatives to those keyword arguments.
 

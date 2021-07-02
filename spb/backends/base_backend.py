@@ -511,7 +511,7 @@ class Plot:
             raise TypeError('Expecting Plot or sequence of BaseSeries')
         # auto legend
         if len(self._series) > 1:
-                self.legend = True
+            self.legend = True
 
 class PlotGrid:
     """This class helps to plot subplots from already created sympy plots

@@ -652,6 +652,7 @@ class BokehBackend(Plot):
             export_png(self._fig, filename=path)
     
     def show(self):
+        self._process_series(self._series)
         show(self._fig)
     
     def _get_quivers_data(self, xs, ys, u, v, **quiver_kw):
