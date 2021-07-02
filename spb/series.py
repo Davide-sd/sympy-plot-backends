@@ -200,6 +200,99 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         return 'cartesian line: %s for %s over %s' % (
             str(self.expr), str(self.var), str((self.start, self.end)))
 
+    @staticmethod
+    def adaptive_sampling(f, start, end, max_depth=9, xscale="linear"):
+        """ The adaptive sampling is done by recursively checking if three
+        points are almost collinear. If they are not collinear, then more
+        points are added between those points.
+
+        Parameters
+        ==========
+            f : callable
+                The function to be numerical evaluated
+            
+            start, end : floats
+                start and end values of the discretized domain
+            
+            max_depth : int
+                Controls the smootheness of the overall evaluation. The higher
+                the number, the smoother the function, the more memory will be
+                used by this recursive procedure. Default value is 9.
+            
+            xscale : str
+                Discretization strategy. Can be "linear" or "log". Default to
+                "linear".
+
+        References
+        ==========
+
+        .. [1] Adaptive polygonal approximation of parametric curves,
+               Luiz Henrique de Figueiredo.
+        """
+        x_coords = []
+        y_coords = []
+
+        def sample(p, q, depth):
+            """ Samples recursively if three points are almost collinear.
+            For depth < max_depth, points are added irrespective of whether 
+            they satisfy the collinearity condition or not. The maximum 
+            depth allowed is max_depth.
+            """
+            # Randomly sample to avoid aliasing.
+            random = 0.45 + np.random.rand() * 0.1
+            if xscale == 'log':
+                xnew = 10**(np.log10(p[0]) + random * (np.log10(q[0]) -
+                                                        np.log10(p[0])))
+            else:
+                xnew = p[0] + random * (q[0] - p[0])
+            
+            ynew = f(xnew)
+            new_point = np.array([xnew, ynew])
+
+            # Maximum depth
+            if depth > max_depth:
+                x_coords.append(q[0])
+                y_coords.append(q[1])
+
+            # Sample irrespective of whether the line is flat till the
+            # depth of 6. We are not using linspace to avoid aliasing.
+            elif depth < max_depth:
+                sample(p, new_point, depth + 1)
+                sample(new_point, q, depth + 1)
+
+            # Sample ten points if complex values are encountered
+            # at both ends. If there is a real value in between, then
+            # sample those points further.
+            elif p[1] is None and q[1] is None:
+                if xscale == 'log':
+                    xarray = np.logspace(p[0], q[0], 10)
+                else:
+                    xarray = np.linspace(p[0], q[0], 10)
+
+                yarray = list(map(f, xarray))
+                if any(y is not None for y in yarray):
+                    for i in range(len(yarray) - 1):
+                        if yarray[i] is not None or yarray[i + 1] is not None:
+                            sample([xarray[i], yarray[i]],
+                                [xarray[i + 1], yarray[i + 1]], depth + 1)
+
+            # Sample further if one of the end points in None (i.e. a
+            # complex value) or the three points are not almost collinear.
+            elif (p[1] is None or q[1] is None or new_point[1] is None
+                    or not flat(p, new_point, q)):
+                sample(p, new_point, depth + 1)
+                sample(new_point, q, depth + 1)
+            else:
+                x_coords.append(q[0])
+                y_coords.append(q[1])
+
+        f_start = f(start)
+        f_end = f(end)
+        x_coords.append(start)
+        y_coords.append(f_start)
+        sample(np.array([start, f_start]), np.array([end, f_end]), 0)
+        return x_coords, y_coords
+
     def get_points(self):
         """ Return lists of coordinates for plotting. Depending on the
         `adaptive` option, this function will either use an adaptive algorithm
@@ -212,88 +305,14 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
 
             y: list
                 List of y-coordinates
-
-
-        Explanation
-        ===========
-
-        The adaptive sampling is done by recursively checking if three
-        points are almost collinear. If they are not collinear, then more
-        points are added between those points.
-
-        References
-        ==========
-
-        .. [1] Adaptive polygonal approximation of parametric curves,
-               Luiz Henrique de Figueiredo.
-
         """
         if self.only_integers or not self.adaptive:
             return self._uniform_sampling()
         else:
             f = lambdify([self.var], self.expr)
-            x_coords = []
-            y_coords = []
-            def sample(p, q, depth):
-                """ Samples recursively if three points are almost collinear.
-                For depth < self.depth, points are added irrespective of whether 
-                they satisfy the collinearity condition or not. The maximum 
-                depth allowed is self.depth.
-                """
-                # Randomly sample to avoid aliasing.
-                random = 0.45 + np.random.rand() * 0.1
-                if self.xscale == 'log':
-                    xnew = 10**(np.log10(p[0]) + random * (np.log10(q[0]) -
-                                                           np.log10(p[0])))
-                else:
-                    xnew = p[0] + random * (q[0] - p[0])
-                ynew = f(xnew)
-                new_point = np.array([xnew, ynew])
-
-                # Maximum depth
-                if depth > self.depth:
-                    x_coords.append(q[0])
-                    y_coords.append(q[1])
-
-                # Sample irrespective of whether the line is flat till the
-                # depth of 6. We are not using linspace to avoid aliasing.
-                elif depth < self.depth:
-                    sample(p, new_point, depth + 1)
-                    sample(new_point, q, depth + 1)
-
-                # Sample ten points if complex values are encountered
-                # at both ends. If there is a real value in between, then
-                # sample those points further.
-                elif p[1] is None and q[1] is None:
-                    if self.xscale == 'log':
-                        xarray = np.logspace(p[0], q[0], 10)
-                    else:
-                        xarray = np.linspace(p[0], q[0], 10)
-                    yarray = list(map(f, xarray))
-                    if any(y is not None for y in yarray):
-                        for i in range(len(yarray) - 1):
-                            if yarray[i] is not None or yarray[i + 1] is not None:
-                                sample([xarray[i], yarray[i]],
-                                    [xarray[i + 1], yarray[i + 1]], depth + 1)
-
-                # Sample further if one of the end points in None (i.e. a
-                # complex value) or the three points are not almost collinear.
-                elif (p[1] is None or q[1] is None or new_point[1] is None
-                        or not flat(p, new_point, q)):
-                    sample(p, new_point, depth + 1)
-                    sample(new_point, q, depth + 1)
-                else:
-                    x_coords.append(q[0])
-                    y_coords.append(q[1])
-
-            f_start = f(self.start)
-            f_end = f(self.end)
-            x_coords.append(self.start)
-            y_coords.append(f_start)
-            sample(np.array([self.start, f_start]),
-                   np.array([self.end, f_end]), 0)
-
-        return (np.array(x_coords), np.array(y_coords))
+            x_coords, y_coords = self.adaptive_sampling(f, self.start, self.end,
+                self.depth, self.xscale)
+            return (np.array(x_coords), np.array(y_coords))
 
     def _uniform_sampling(self):
         start, end, N = self.start, self.end, self.n
@@ -342,66 +361,63 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         list_x = self._correct_size(list_x, param)
         list_y = self._correct_size(list_y, param)
         return list_x, list_y, param
-
-    def get_points(self):
-        """ Return lists of coordinates for plotting. Depending on the
-        `adaptive` option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
-
-        Returns
-        =======
-            x: list
-                List of x-coordinates
-
-            y: list
-                List of y-coordinates
-
-
-        Explanation
-        ===========
-
-        The adaptive sampling is done by recursively checking if three
+    
+    @staticmethod
+    def adaptive_sampling(fx, fy, start, end, max_depth=9):
+        """ The adaptive sampling is done by recursively checking if three
         points are almost collinear. If they are not collinear, then more
         points are added between those points.
+
+        Parameters
+        ==========
+            fx : callable
+                The function to be numerical evaluated in the horizontal 
+                direction.
+            
+            fy : callable
+                The function to be numerical evaluated in the vertical 
+                direction.
+            
+            start, end : floats
+                start and end values of the discretized domain
+            
+            max_depth : int
+                Controls the smootheness of the overall evaluation. The higher
+                the number, the smoother the function, the more memory will be
+                used by this recursive procedure. Default value is 9.
 
         References
         ==========
 
         .. [1] Adaptive polygonal approximation of parametric curves,
-            Luiz Henrique de Figueiredo.
-
+               Luiz Henrique de Figueiredo.
         """
-        if not self.adaptive:
-            return self._uniform_sampling()
-
-        f_x = lambdify([self.var], self.expr_x)
-        f_y = lambdify([self.var], self.expr_y)
         x_coords = []
         y_coords = []
         param = []
 
         def sample(param_p, param_q, p, q, depth):
             """ Samples recursively if three points are almost collinear.
-                For depth < self.depth, points are added irrespective of whether 
+                For depth < max_depth, points are added irrespective of whether 
                 they satisfy the collinearity condition or not. The maximum 
-                depth allowed is self.depth.
+                depth allowed is max_depth.
                 """
             # Randomly sample to avoid aliasing.
             random = 0.45 + np.random.rand() * 0.1
             param_new = param_p + random * (param_q - param_p)
-            xnew = f_x(param_new)
-            ynew = f_y(param_new)
+            xnew = fx(param_new)
+            ynew = fy(param_new)
             new_point = np.array([xnew, ynew])
 
             # Maximum depth
-            if depth > self.depth:
+            if depth > max_depth:
                 x_coords.append(q[0])
                 y_coords.append(q[1])
                 param.append(param_p)
 
             # Sample irrespective of whether the line is flat till the
             # depth of 6. We are not using linspace to avoid aliasing.
-            elif depth < self.depth:
+            elif depth < max_depth:
                 sample(param_p, param_new, p, new_point, depth + 1)
                 sample(param_new, param_q, new_point, q, depth + 1)
 
@@ -411,8 +427,8 @@ class Parametric2DLineSeries(Line2DBaseSeries):
             elif ((p[0] is None and q[1] is None) or
                     (p[1] is None and q[1] is None)):
                 param_array = np.linspace(param_p, param_q, 10)
-                x_array = list(map(f_x, param_array))
-                y_array = list(map(f_y, param_array))
+                x_array = list(map(fx, param_array))
+                y_array = list(map(fy, param_array))
                 if any(x is not None and y is not None
                         for x, y in zip(x_array, y_array)):
                     for i in range(len(y_array) - 1):
@@ -435,17 +451,38 @@ class Parametric2DLineSeries(Line2DBaseSeries):
                 y_coords.append(q[1])
                 param.append(param_p)
 
-        f_start_x = f_x(self.start)
-        f_start_y = f_y(self.start)
-        start = [f_start_x, f_start_y]
-        f_end_x = f_x(self.end)
-        f_end_y = f_y(self.end)
-        end = [f_end_x, f_end_y]
+        f_start_x = fx(start)
+        f_start_y = fy(start)
+        start_array = [f_start_x, f_start_y]
+        f_end_x = fx(end)
+        f_end_y = fy(end)
+        end_array = [f_end_x, f_end_y]
         x_coords.append(f_start_x)
         y_coords.append(f_start_y)
-        param.append(self.start)
-        sample(self.start, self.end, start, end, 0)
+        param.append(start)
+        sample(start, end, start_array, end_array, 0)
+        return x_coords, y_coords, param
 
+    def get_points(self):
+        """ Return lists of coordinates for plotting. Depending on the
+        `adaptive` option, this function will either use an adaptive algorithm
+        or it will uniformly sample the expression over the provided range.
+
+        Returns
+        =======
+            x: list
+                List of x-coordinates
+
+            y: list
+                List of y-coordinates
+        """
+        if not self.adaptive:
+            return self._uniform_sampling()
+
+        fx = lambdify([self.var], self.expr_x)
+        fy = lambdify([self.var], self.expr_y)
+        x_coords, y_coords, param = self.adaptive_sampling(fx, fy, self.start,
+            self.end, self.depth)
         return np.array(x_coords), np.array(y_coords), np.array(param)
 
 
@@ -1183,7 +1220,10 @@ class ComplexSeries(BaseSeries):
             self.end = complex(r[2])
             if self.start.imag == self.end.imag:
                 self.is_2Dline = True
+                self.adaptive = kwargs.get("adaptive", True)
+                self.depth = kwargs.get("depth", 9)
                 if kwargs.get('absarg', False):
+                    self.adaptive = False
                     self.is_parametric = True
             elif kwargs.get("threed", False):
                 self.is_3Dsurface = True
@@ -1240,7 +1280,7 @@ class ComplexSeries(BaseSeries):
             r : np.ndarray
                 Numerical evaluation result.
         """
-        r = self._correct_size(np.array(r), x)
+        r = self._correct_size(np.array(r), np.array(x))
         if self.start.imag == self.end.imag:
             if self.is_parametric:
                 return np.real(x), np.absolute(r), np.angle(r)
@@ -1269,6 +1309,99 @@ class ComplexSeries(BaseSeries):
         return (np.real(x), np.imag(x), 
                 np.dstack([np.absolute(r), np.angle(r)]), 
                 *self._domain_coloring(r))
+    
+    def adaptive_sampling(self, f):
+        """ The adaptive sampling is done by recursively checking if three
+        points are almost collinear. If they are not collinear, then more
+        points are added between those points.
+
+        Different from LineOver1DRangeSeries and Parametric2DLineSeries, this
+        is an instance method because I really need to access other useful 
+        methods.
+
+        References
+        ==========
+
+        .. [1] Adaptive polygonal approximation of parametric curves,
+               Luiz Henrique de Figueiredo.
+        """
+        # TODO: need to modify this method in order to be able to work with
+        # absarg=True.
+        x_coords = []
+        y_coords = []
+        imag = np.imag(self.start)
+
+        def sample(p, q, depth):
+            """ Samples recursively if three points are almost collinear.
+            For depth < self.depth, points are added irrespective of whether 
+            they satisfy the collinearity condition or not. The maximum 
+            depth allowed is self.depth.
+            """
+            # Randomly sample to avoid aliasing.
+            random = 0.45 + np.random.rand() * 0.1
+            if self.xscale == 'log':
+                xnew = 10**(np.log10(p[0]) + random * (np.log10(q[0]) -
+                                                        np.log10(p[0])))
+            else:
+                xnew = p[0] + random * (q[0] - p[0])
+            
+            ynew = f(xnew + imag * 1j)
+            # _correct_output is going to return different number of elements, 
+            # depending on the user-provided keyword arguments.
+            r = self._correct_output(xnew, ynew)
+            xnew, ynew = r[:2]
+            new_point = np.array([xnew, ynew])
+
+            # Maximum depth
+            if depth > self.depth:
+                x_coords.append(q[0])
+                y_coords.append(q[1])
+
+            # Sample irrespective of whether the line is flat till the
+            # depth of 6. We are not using linspace to avoid aliasing.
+            elif depth < self.depth:
+                sample(p, new_point, depth + 1)
+                sample(new_point, q, depth + 1)
+
+            # Sample ten points if complex values are encountered
+            # at both ends. If there is a real value in between, then
+            # sample those points further.
+            elif p[1] is None and q[1] is None:
+                if self.xscale == 'log':
+                    xarray = np.logspace(p[0], q[0], 10)
+                else:
+                    xarray = np.linspace(p[0], q[0], 10)
+
+                yarray = list(map(f, xarray + imag * 1j))
+                if any(y is not None for y in yarray):
+                    for i in range(len(yarray) - 1):
+                        if yarray[i] is not None or yarray[i + 1] is not None:
+                            sample([xarray[i], yarray[i]],
+                                [xarray[i + 1], yarray[i + 1]], depth + 1)
+
+            # Sample further if one of the end points in None (i.e. a
+            # complex value) or the three points are not almost collinear.
+            elif (p[1] is None or q[1] is None or new_point[1] is None
+                    or not flat(p, new_point, q)):
+                sample(p, new_point, depth + 1)
+                sample(new_point, q, depth + 1)
+            else:
+                x_coords.append(q[0])
+                y_coords.append(q[1])
+
+        f_start = f(self.start)
+        f_end = f(self.end)
+
+        # _correct_output is going to return different number of elements, 
+        # depending on the user-provided keyword arguments.
+        rs = self._correct_output(self.start, f_start)
+        re = self._correct_output(self.end, f_end)
+        start, f_start, end, f_end = rs[0], rs[1], re[0], re[1]
+        x_coords.append(start)
+        y_coords.append(f_start)
+        sample(np.array([start, f_start]), np.array([end, f_end]), 0)
+
+        return x_coords, y_coords
 
     def _domain_coloring(self, w):
         from spb.complex.hsv_color_grading import color_grading
@@ -1329,11 +1462,15 @@ class ComplexSeries(BaseSeries):
         from sympy import lambdify
 
         if np.imag(self.start) == np.imag(self.end):
-            # compute the real/imaginary part/magnitude/argument of the complex 
-            # function
-            x = self._discretize(self.start, self.end, self.n1, self.xscale)
             f = lambdify([self.var], self.expr)
-            y = f(x + np.imag(self.start) * 1j)
+            if self.adaptive:
+                x, y = self.adaptive_sampling(f)
+                return [np.array(t) for t in [x, y]]
+            else:
+            # compute the real/imaginary/magnitude/argument of the complex 
+            # function
+                x = self._discretize(self.start, self.end, self.n1, self.xscale)
+                y = f(x + np.imag(self.start) * 1j)
             return self._correct_output(x, y)
         
         # Domain coloring

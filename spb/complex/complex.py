@@ -134,9 +134,19 @@ def complex_plot(*args, show=True, **kwargs):
             If True, and if the provided range is a real segment, plot the 
             modulus of the complex function. Default to False.
         
+        adaptive : boolean
+            Attempt to create line plots by using an adaptive algorithm.
+            Default to True. If `absarg=True`, the function will automatically
+            switch to `adaptive=False`, using a uniformly-spaced grid.
+        
         arg : boolean
             If True, and if the provided range is a real segment, plot the 
             argument of the complex function. Default to False.
+        
+        depth : int
+            Controls the smootheness of the overall evaluation. The higher
+            the number, the smoother the function, the more memory will be
+            used by the recursive procedure. Default value is 9.
 
         n1, n2 : int
             Number of discretization points in the real/imaginary-directions,

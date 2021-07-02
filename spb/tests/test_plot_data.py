@@ -138,69 +138,71 @@ def test_complex():
             print("i = {}".format(i))
             assert np.array_equal(d1, d2)
 
-    ### Complex line plots
+    ### Complex line plots: use adaptive=False in order to compare results.
 
     # return x, mag(e1), arg(e1)
-    s1 = _build_series(e1, (x, -5, 5), absarg=True)
+    s1 = _build_series(e1, (x, -5, 5), adaptive=False, absarg=True)
     data1 = do_test_1(s1, 3)
-    s2 = _build_series(e1, (x, -5, 5), absarg=True, pt="c")
+    s2 = _build_series(e1, (x, -5, 5), adaptive=False, absarg=True, pt="c")
     data2 = do_test_1(s2, 3)
     test_equal_results(data1, data2)
-
+    
     # return x, real(e1)
-    s1 = _build_series(e1, (x, -5, 5), real=True)
+    s1 = _build_series(e1, (x, -5, 5), adaptive=False, real=True)
     data1 = do_test_1(s1, 2)
-    s2 = _build_series(e1, (x, -5, 5), real=True, pt="c")
+    s2 = _build_series(e1, (x, -5, 5), adaptive=False, real=True, pt="c")
     data2 = do_test_1(s2, 2)
     test_equal_results(data1, data2)
     xx, real = data1
 
     # return x, imag(e1)
-    s1 = _build_series(e1, (x, -5, 5), imag=True)
+    s1 = _build_series(e1, (x, -5, 5), adaptive=False, imag=True)
     data1 = do_test_1(s1, 2)
-    s2 = _build_series(e1, (x, -5, 5), imag=True, pt="c")
+    s2 = _build_series(e1, (x, -5, 5), adaptive=False, imag=True, pt="c")
     data2 = do_test_1(s2, 2)
     test_equal_results(data1, data2)
     _, imag = data1
 
     # return x, real(e1), imag(e1)
-    s1 = _build_series(e1, (x, -5, 5), real=True, imag=True)
+    s1 = _build_series(e1, (x, -5, 5), adaptive=False, real=True, imag=True)
     data1 = do_test_1(s1, 3)
-    s2 = _build_series(e1, (x, -5, 5), real=True, imag=True, pt="c")
+    s2 = _build_series(e1, (x, -5, 5), adaptive=False, real=True, imag=True,
+            pt="c")
     data2 = do_test_1(s2, 3)
     test_equal_results(data1, data2)
     test_equal_results(data1, (xx, real, imag))
 
     # return x, abs(e1)
-    s1 = _build_series(e1, (x, -5, 5), abs=True)
+    s1 = _build_series(e1, (x, -5, 5), adaptive=False, abs=True)
     data1 = do_test_1(s1, 2)
-    s2 = _build_series(e1, (x, -5, 5), abs=True, pt="c")
+    s2 = _build_series(e1, (x, -5, 5), adaptive=False, abs=True, pt="c")
     data2 = do_test_1(s2, 2)
     test_equal_results(data1, data2)
     xx, _abs = data1
 
     # return x, arg(e1)
-    s1 = _build_series(e1, (x, -5, 5), arg=True)
+    s1 = _build_series(e1, (x, -5, 5), adaptive=False, arg=True)
     data1 = do_test_1(s1, 2)
-    s2 = _build_series(e1, (x, -5, 5), arg=True, pt="c")
+    s2 = _build_series(e1, (x, -5, 5), adaptive=False, arg=True, pt="c")
     data2 = do_test_1(s2, 2)
     test_equal_results(data1, data2)
     _, arg = data1
 
     # return x, abs(e1), arg(e1)
-    s1 = _build_series(e1, (x, -5, 5), absarg=True)
+    s1 = _build_series(e1, (x, -5, 5), adaptive=False, absarg=True)
     data1 = do_test_1(s1, 3)
-    s2 = _build_series(e1, (x, -5, 5), absarg=True, pt="c")
+    s2 = _build_series(e1, (x, -5, 5), adaptive=False, absarg=True, pt="c")
     data2 = do_test_1(s2, 3)
     test_equal_results(data1, data2)
     test_equal_results(data1, (xx, _abs, arg))
 
     # return x, e1 (complex numbers)
-    s1 = _build_series(e1, (x, -5, 5), real=False, imag=False)
+    s1 = _build_series(e1, (x, -5, 5), adaptive=False, real=False, imag=False)
     data1 = do_test_1(s1, 2)
     test_equal_results((data1[0],), (xx,))
     assert any(isinstance(d, complex) for d in data1[1].flatten())
-    s2 = _build_series(e1, (x, -5, 5), real=False, imag=False, pt="c")
+    s2 = _build_series(e1, (x, -5, 5), adaptive=False, real=False, imag=False, 
+            pt="c")
     data2 = do_test_1(s2, 2)
     test_equal_results(data1, data2)
 
