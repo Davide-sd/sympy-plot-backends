@@ -376,6 +376,10 @@ class BokehBackend(Plot):
                         source = {"xs": x, "ys": y, "us": param}
                     else:
                         x, y = s.get_data()
+                        x, y, modified = self._detect_poles(x, y)
+                        if modified:
+                            self._fig.y_range.start = self.ylim[0]
+                            self._fig.y_range.end = self.ylim[1]
                         y = [t if (t is not None) else np.nan for t in y]
                         source = {"xs": x, "ys": y}
 
@@ -574,6 +578,7 @@ class BokehBackend(Plot):
                         source = {"xs": x, "ys": y, "us": param}
                     else:
                         x, y = self.series[i].get_data()
+                        x, y, _ = self._detect_poles(x, y)
                         source = {"xs": x, "ys": y}
                     rend[i].data_source.data.update(source)
 

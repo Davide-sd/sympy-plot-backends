@@ -191,7 +191,8 @@ class Plot:
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
-        
+        self.detect_poles = kwargs.get("detect_poles", True)
+
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.
         self._series = []
@@ -350,6 +351,65 @@ class Plot:
                 jstart, jend = int((sy - s.start_y) / dy), int((ey - s.start_y) / dy)
                 pixels[jstart:jend, istart:iend] = 1
         return xarr, yarr, pixels
+
+    def _detect_poles(self, x, y):
+        """ Try to detect for discontinuities by computing the numerical 
+        gradient of the provided data.
+
+        NOTE: The data produced by the series module is perfectly fine. It is 
+        just the way the data is rendered that connects segments between
+        discontinuities, so it makes sense for this function to be placed in
+        the backend.
+
+        Returns
+        =======
+            x, y : np.ndarrays
+            modified : boolean
+                If the data has been processed and the y-range has changed, then
+                `modified=True`. This will be used by Bokeh in order to update 
+                the y-range.
+        """
+        if self.detect_poles:
+            # TODO: eps should be a function of the number of discretization points and the x-range
+            eps = self._kwargs.get("eps", 1e-01)
+            b = np.abs((np.roll(y, -1) - y)) / np.abs(x)
+            b = np.arctan(b)
+            c = y
+            idx = np.abs(b - np.pi / 2) < eps
+            c[idx] = np.nan
+            yy = c.copy()
+            c = np.ma.masked_invalid(c)
+            if any(idx) and (self.ylim is None):
+                # auto select a ylim range. At this point, yy contains NaN 
+                # values at the discontinuities. I'm going to combine two 
+                # strategies:
+                # 1. select the minimum positive value and the maximum negative
+                #   value just before a discontinuity.
+                # 2. compute area_rms, a route mean square of the areas of the 
+                #   rectangles (x[i] - x[i-1]) * y[i]
+                #   Then mask away yy where the areas at y[i] are greater than
+                #   area_rms
+                
+                # select indeces just before and just after NaN values
+                idx = np.argwhere(np.isnan(yy)).reshape(-1)
+                idxb, idxp = idx - 1, idx + 1
+                idx = [i for i in list(idxb) + list(idxp) if ((i >= 0) and 
+                        (i < len(yy)))]
+                v = yy[idx]
+                vp = [k for k in v if k >= 0]
+                vn = [k for k in v if k < 0]
+                max1, min1 = np.min(vp), np.max(vn)
+
+                # root mean square approach
+                areas = np.abs(np.roll(x, -1) - x) * yy
+                area_rms = np.sqrt(np.mean(areas**2))
+                yy[np.abs(areas) > area_rms] = np.nan
+                min2, max2 = np.nanmin(yy), np.nanmax(yy)
+                
+                self.ylim = np.max([min1, min2]), np.min([max1, max2])
+                return x, c, True
+            return x, c, False
+        return x, y, False
 
     @property
     def fig(self):

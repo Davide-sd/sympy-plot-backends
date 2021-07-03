@@ -289,6 +289,7 @@ class MatplotlibBackend(Plot):
                         x, y, param = s.get_data()
                     else:
                         x, y = s.get_data()
+                    x, y, _ = self._detect_poles(x, y)
                     lkw = dict(label=s.label)
                     l = self.ax.plot(x, y, **merge({}, lkw, line_kw))
                     self._add_handle(i, l)
@@ -656,6 +657,7 @@ class MatplotlibBackend(Plot):
                             x, y, param = self.series[i].get_data()
                         else:
                             x, y = self.series[i].get_data()
+                            x, y, _ = self._detect_poles(x, y)
                         self._handles[i][0].set_data(x, y)
                         
                 elif s.is_3Dline:

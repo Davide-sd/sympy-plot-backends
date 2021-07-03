@@ -247,6 +247,7 @@ class PlotlyBackend(Plot):
                         go.Scatter(x = x, y = y, **merge({}, lkw, line_kw)))
                 else:
                     x, y = s.get_data()
+                    x, y, _ = self._detect_poles(x, y)
                     lkw = dict(
                         name = s.label,
                         mode = "lines" if not s.is_point else "markers",
@@ -584,6 +585,7 @@ class PlotlyBackend(Plot):
 
                 elif s.is_2Dline:
                     x, y = self.series[i].get_data()
+                    x, y, _ = self._detect_poles(x, y)
                     self.fig.data[i]["y"] = y
 
                 elif s.is_3Dline:
