@@ -191,7 +191,11 @@ class Plot:
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
-        self.detect_poles = kwargs.get("detect_poles", True)
+        # TODO: it would be nice to have detect_poles=True by default. 
+        # At this point of development, if that were True there could be times
+        # where the algorithm kicks in even when there are no poles. Needs to
+        # dig deeper into it...
+        self.detect_poles = kwargs.get("detect_poles", False)
 
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.
@@ -369,46 +373,72 @@ class Plot:
                 `modified=True`. This will be used by Bokeh in order to update 
                 the y-range.
         """
-        if self.detect_poles:
-            # TODO: eps should be a function of the number of discretization points and the x-range
-            eps = self._kwargs.get("eps", 1e-01)
-            b = np.abs((np.roll(y, -1) - y)) / np.abs(x)
-            b = np.arctan(b)
-            c = y
-            idx = np.abs(b - np.pi / 2) < eps
-            c[idx] = np.nan
-            yy = c.copy()
-            c = np.ma.masked_invalid(c)
-            if any(idx) and (self.ylim is None):
-                # auto select a ylim range. At this point, yy contains NaN 
-                # values at the discontinuities. I'm going to combine two 
-                # strategies:
-                # 1. select the minimum positive value and the maximum negative
-                #   value just before a discontinuity.
-                # 2. compute area_rms, a route mean square of the areas of the 
-                #   rectangles (x[i] - x[i-1]) * y[i]
-                #   Then mask away yy where the areas at y[i] are greater than
-                #   area_rms
-                
-                # select indeces just before and just after NaN values
-                idx = np.argwhere(np.isnan(yy)).reshape(-1)
-                idxb, idxp = idx - 1, idx + 1
-                idx = [i for i in list(idxb) + list(idxp) if ((i >= 0) and 
-                        (i < len(yy)))]
-                v = yy[idx]
-                vp = [k for k in v if k >= 0]
-                vn = [k for k in v if k < 0]
-                max1, min1 = np.min(vp), np.max(vn)
+        if len(x) < 5:
+            # failsafe mechanism: when we plot Piecewise functions, there could
+            # be pieces to be evaluated at specific locations, for example x=1.
+            # Say we want to plot y=2 at x=0, x=1, x=2, ... These pieces are 
+            # going to be combined by Piecewise, thus obtaining a "line" with
+            # a few number of points. The number 5 used above is just a 
+            # reasonable assumption about the number of those points that are
+            # going to be combined. Given the low number of these points, we
+            # don't want them to be evaluated by the following algorithm, because 
+            # it could fail or raise warnings.
+            return x, y, False
 
-                # root mean square approach
-                areas = np.abs(np.roll(x, -1) - x) * yy
-                area_rms = np.sqrt(np.mean(areas**2))
-                yy[np.abs(areas) > area_rms] = np.nan
-                min2, max2 = np.nanmin(yy), np.nanmax(yy)
-                
-                self.ylim = np.max([min1, min2]), np.min([max1, max2])
-                return x, c, True
-            return x, c, False
+        try:
+            # TODO: here I used a try-except because there might be times where
+            # there are None values inside y. Let's suppose we are plotting
+            # log(x), (x, -10, 10). Then for x <= 0 there will be None values,
+            # which makes the algorithm fails (can't subtract None values)
+            if self.detect_poles:
+                # TODO: should eps be a function of the number of discretization 
+                # points and the x-range?
+                eps = self._kwargs.get("eps", 1e-01)
+                yr = np.roll(y, -1)
+                # need to set this condition, otherwise there is a change that a
+                # "false positive" discontinuity gets inserted at the end of y,
+                # then setting ylim when it should not.
+                yr[-1] = y[-1]
+                b = np.abs((yr - y)) / np.abs(x)
+                b = np.arctan(b)
+                c = y
+                idx = np.abs(b - np.pi / 2) < eps
+                c[idx] = np.nan
+                yy = c.copy()
+                c = np.ma.masked_invalid(c)
+                if any(idx) and (self.ylim is None):
+                    # auto select a ylim range. At this point, yy contains NaN 
+                    # values at the discontinuities. I'm going to combine two 
+                    # strategies:
+                    # 1. select the minimum positive value and the maximum negative
+                    #   value just before a discontinuity.
+                    # 2. compute area_rms, a route mean square of the areas of the 
+                    #   rectangles (x[i] - x[i-1]) * y[i]
+                    #   Then mask away yy where the areas at y[i] are greater than
+                    #   area_rms
+                    
+                    # select indeces just before and just after NaN values
+                    idx = np.argwhere(np.isnan(yy)).reshape(-1)
+                    idxb, idxp = idx - 1, idx + 1
+                    idx = [i for i in list(idxb) + list(idxp) if ((i >= 0) and 
+                            (i < len(yy)))]
+                    v = yy[idx]
+                    vp = [k for k in v if k >= 0]
+                    vn = [k for k in v if k < 0]
+                    max1 = np.inf if vp == [] else np.min(vp)
+                    min1 = -np.inf if vn == [] else np.max(vn)
+
+                    # root mean square approach
+                    areas = np.abs(np.roll(x, -1) - x) * yy
+                    area_rms = np.sqrt(np.mean([a**2 for a in areas if not np.isnan(a)]))
+                    yy[np.abs(areas) > area_rms] = np.nan
+                    min2, max2 = np.nanmin(yy), np.nanmax(yy)
+
+                    self.ylim = np.max([min1, min2]), np.min([max1, max2])
+                    return x, c, True
+                return x, c, False
+        except:
+            pass
         return x, y, False
 
     @property

@@ -167,11 +167,12 @@ class Line2DBaseSeries(BaseSeries):
 class List2DSeries(Line2DBaseSeries):
     """Representation for a line consisting of list of points."""
 
-    def __init__(self, list_x, list_y, label=""):
+    def __init__(self, list_x, list_y, label="", **kwargs):
         super().__init__()
         self.list_x = np.array(list_x)
         self.list_y = np.array(list_y)
         self.label = label
+        self.is_point = kwargs.get("is_point", False)
 
     def __str__(self):
         return 'list plot'
@@ -324,6 +325,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         list_y = f(list_x)
         list_y = self._correct_size(list_y, list_x)
         return (list_x, list_y)
+
 
 class Parametric2DLineSeries(Line2DBaseSeries):
     """Representation for a line consisting of two parametric sympy expressions

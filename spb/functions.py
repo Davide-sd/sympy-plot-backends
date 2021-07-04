@@ -23,7 +23,10 @@ every time you call ``show()`` and the old one is left to the garbage collector.
 """
 
 
-from sympy import Expr, Tuple, Symbol, oo
+from sympy import (
+    Expr, Tuple, Symbol, oo, Piecewise, piecewise_fold,
+    UniversalSet, EmptySet, UniversalSet, FiniteSet, Interval, Union
+)
 
 from spb.backends.base_backend import Plot
 from spb.utils import _is_range, _plot_sympify, _check_arguments
@@ -36,22 +39,113 @@ from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries,
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
     ParametricSurfaceSeries, ContourSeries, ImplicitSeries,
-    _set_discretization_points
+    _set_discretization_points, List2DSeries
 )
 
-# def set_matplotlib_backend():
-#     """ Set MatplotlibBackend as the plotting backend for tests.
-#     """
-#     from spb.backends.matplotlib import MB
-#     global TWO_D_B, THREE_D_B
-#     TWO_D_B = MB
-#     THREE_D_B = MB
+def _get_endpoints(i, _min, _max):
+    """ Given the end points of a local range, compute the 
+    appropriate end points of the interval in such a way that the interval is
+    contained in the local range.
 
-####New API for plotting module ####
+    Returns
+    =======
+        a, b : float
+            The appropriate end points
+        skip : boolean
+            Indicate whether to add the series or to skip it. Series whose
+            domain doesn't overlap with the provided local range [_min, _max]
+            will be discarded.
+    """
+    a, b, lopen, ropen = i.args
+    
+    skip = False
+    if (a >= _max) or (b <= _min):
+        skip = True
+        
+    if not skip:
+        if a < _min:
+            a = _min
+        if b > _max:
+            b = _max
+    
+        eps = (b - a) / 1e06
+        if lopen:
+            a += eps
+        if ropen:
+            b -= eps
+    return a, b, skip
 
-# TODO: Add color arrays for plots.
-# TODO: Add more plotting options for 3d plots.
-# TODO: Adaptive sampling for 3D plots.
+def _process_piecewise(piecewise, _range, label, **kwargs):
+    s = EmptySet
+    series = []
+    _min, _max = _range[1], _range[2]
+
+    # for the label, attach the number of the piece
+    count = 1
+    if "Piecewise(" in label:
+        # piecewise string representation are usually very long. Cut it short if
+        # the user didn't specify any custom label.
+        label = "P"
+
+    for arg in piecewise.args:
+        expr, cond = arg.args
+        cond = cond.as_set()
+        if isinstance(cond, Interval):
+            s = s.union(cond)
+            a, b, skip = _get_endpoints(cond, _min, _max)
+            if not skip:
+                series.append(LineOver1DRangeSeries(expr, (_range[0], a, b), 
+                        label + str(count)))
+                count += 1
+        elif isinstance(cond, FiniteSet):
+            s = s.union(cond)
+            loc, val = [], []
+            for _loc in cond.args:
+                loc.append(float(_loc))
+                val.append(float(piecewise.evalf(subs={_range[0]: _loc})))
+            series.append(List2DSeries(loc, val, label + str(count), 
+                    is_point=True))
+            count += 1
+        elif isinstance(cond, UniversalSet.func):
+            # at this point the condition should be UniversalSet (or True)
+            # meaning the complementary part of the domain.
+            # NOTE: there should not be any more arg after this one...
+            s = s.complement(Interval(_min, _max, True, True))
+            if isinstance(s, Union):
+                s1 = [t for t in s.args if isinstance(t, Interval)]
+                s2 = [t for t in s.args if isinstance(t, FiniteSet)]
+            else:
+                s1, s2 = [s], []
+
+            for t in s1:
+                a, b, skip = _get_endpoints(t, _min, _max)
+                if not skip:
+                    series.append(LineOver1DRangeSeries(expr, 
+                            (_range[0], a, b), label + str(count)))
+                    count += 1
+            for t in s2:
+                loc, val = [], []
+                for _loc in t.args:
+                    loc.append(float(_loc))
+                    val.append(float(expr.evalf(subs={_range[0]: _loc})))
+                series.append(List2DSeries(loc, val, label + str(count), 
+                        is_point=True))
+                count += 1
+    return series
+
+def _build_line_series(*args, **kwargs):
+    """ Loop over the provided arguments. If a piecewise function is found,
+    decompose it in such a way that each argument gets its own series.
+    """
+    series = []
+    for arg in args:
+        expr, r, label = arg
+        if expr.has(Piecewise):
+            expr = piecewise_fold(expr)
+            series += _process_piecewise(expr, r, label, **kwargs)
+        else:
+            series.append(LineOver1DRangeSeries(*arg, **kwargs))
+    return series
 
 def plot(*args, show=True, **kwargs):
     """Plots a function of a single variable as a curve.
@@ -258,7 +352,8 @@ def plot(*args, show=True, **kwargs):
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 1)
-    series = [LineOver1DRangeSeries(*arg, **kwargs) for arg in plot_expr]
+    # series = [LineOver1DRangeSeries(*arg, **kwargs) for arg in plot_expr]
+    series = _build_line_series(*plot_expr, **kwargs)
 
     plots = Plot(*series, **kwargs)
     if show:

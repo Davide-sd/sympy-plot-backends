@@ -291,6 +291,9 @@ class MatplotlibBackend(Plot):
                         x, y = s.get_data()
                     x, y, _ = self._detect_poles(x, y)
                     lkw = dict(label=s.label)
+                    if s.is_point:
+                        lkw["marker"] = "o"
+                        lkw["linestyle"] = "None"
                     l = self.ax.plot(x, y, **merge({}, lkw, line_kw))
                     self._add_handle(i, l)
 
