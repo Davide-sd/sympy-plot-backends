@@ -14,11 +14,6 @@ from spb.utils import get_lambda
 import warnings
 import numpy as np
 
-"""
-TODO:
-1. InteractiveSeries: allow for setting the number of discretization points
-    individually on each direction.
-"""
 
 ### The base class for all series
 class BaseSeries:
@@ -119,14 +114,12 @@ class Line2DBaseSeries(BaseSeries):
 
     is_2Dline = True
 
-    _dim = 2
-
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
         self.label = None
-        self.steps = False
-        self.only_integers = False
-        self.line_color = None
+        self.steps = kwargs.get("steps", False)
+        self.only_integers = kwargs.get("only_integers", False)
+        self.is_point = kwargs.get("is_point", False)
 
     def get_data(self):
         """ Return lists of coordinates for plotting the line.
@@ -187,7 +180,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
     """Representation for a line consisting of a SymPy expression over a range."""
 
     def __init__(self, expr, var_start_end, label="", **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self.expr = sympify(expr)
         self.label = label
         self.var = sympify(var_start_end[0])
@@ -196,7 +189,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.n = kwargs.get('n', 1000)
         self.adaptive = kwargs.get('adaptive', True)
         self.depth = kwargs.get('depth', 9)
-        self.line_color = kwargs.get('line_color', None)
         self.xscale = kwargs.get('xscale', 'linear')
 
     def __str__(self):
@@ -346,7 +338,6 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         self.n = kwargs.get('n', 300)
         self.adaptive = kwargs.get('adaptive', True)
         self.depth = kwargs.get('depth', 9)
-        self.line_color = kwargs.get('line_color', None)
         self.scale = kwargs.get("xscale", "linear")
 
     def __str__(self):
@@ -498,7 +489,6 @@ class Line3DBaseSeries(Line2DBaseSeries):
 
     is_2Dline = False
     is_3Dline = True
-    _dim = 3
 
     def __init__(self):
         super().__init__()
@@ -520,7 +510,6 @@ class Parametric3DLineSeries(Line3DBaseSeries):
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
         self.n = kwargs.get('n', 300)
-        self.line_color = kwargs.get('line_color', None)
         self.scale = kwargs.get("xscale", "linear")
 
     def __str__(self):

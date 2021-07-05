@@ -1,25 +1,21 @@
 """Plotting module for Sympy.
 
-A plot is represented by the ``Plot`` class that contains a reference to the
-backend and a list of the data series to be plotted. The data series are
-instances of classes meant to simplify getting points and meshes from sympy
-expressions. ``plot_backends`` is a dictionary with all the backends.
+A plot is represented by the ``Plot`` class that contains a list of the data 
+series to be plotted. The data series are instances of classes meant to simplify
+getting points and meshes from sympy expressions. ``plot_backends``
+is a dictionary with all the backends.
 
-This module gives only the essential. For all the fancy stuff use directly
-the backend. You can get the backend wrapper for every plot from the
-``_backend`` attribute. Moreover the data series classes have various useful
-methods like ``get_points``, ``get_meshes``, etc, that may
-be useful if you wish to use another plotting library.
-
-Especially if you need publication ready graphs and this module is not enough
-for you - just get the ``_backend`` attribute and add whatever you want
-directly to it. In the case of matplotlib (the common way to graph data in
-python) just copy ``_backend.fig`` which is the figure and ``_backend.ax``
-which is the axis and work on them as you would on any other matplotlib object.
+This module gives only the essential. Especially if you need publication ready 
+graphs and this module is not enough for you, use directly the backend, which 
+can be accessed with the ``fig`` attribute:
+* MatplotlibBackend.fig: returns a tuple (fig, ax) representing the figure and
+    axes of Matplotlib.
+* BokehBackend.fig: return the Bokeh figure object.
+* PlotlyBackend.fig: return the Plotly figure object.
+* K3DBackend.fig: return the K3D plot object.
 
 Simplicity of code takes much greater importance than performance. Don't use it
-if you care at all about performance. A new backend instance is initialized
-every time you call ``show()`` and the old one is left to the garbage collector.
+if you care at all about performance.
 """
 
 
@@ -181,66 +177,6 @@ def plot(*args, show=True, **kwargs):
         range may change in the future if a more advanced default range
         detection algorithm is implemented.
 
-    show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    line_color : string, or float, or function, optional
-        Specifies the color for the plot.
-        See ``Plot`` to see how to set color for the plots.
-        Note that by setting ``line_color``, it would be applied simultaneously
-        to all the series.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    xlabel : str, optional
-        Label for the x-axis.
-
-    ylabel : str, optional
-        Label for the y-axis.
-
-    xscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis.
-
-    yscale : 'linear' or 'log', optional
-        Sets the scaling of the y-axis.
-
-    axis_center : (float, float), optional
-        Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)```.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)```.
-
-    annotations : list, optional
-        A list of dictionaries specifying the type of annotation
-        required. The keys in the dictionary should be equivalent
-        to the arguments of the matplotlib's annotate() function.
-
-    markers : list, optional
-        A list of dictionaries specifying the type the markers required.
-        The keys in the dictionary should be equivalent to the arguments
-        of the matplotlib's plot() function along with the marker
-        related keyworded arguments.
-
-    rectangles : list, optional
-        A list of dictionaries specifying the dimensions of the
-        rectangles to be plotted. The keys in the dictionary should be
-        equivalent to the arguments of the matplotlib's
-        patches.Rectangle class.
-
-    fill : dict, optional
-        A dictionary specifying the type of color filling required in
-        the plot. The keys in the dictionary should be equivalent to the
-        arguments of the matplotlib's fill_between() function.
-
     adaptive : bool, optional
         The default value is set to ``True``. Set adaptive to ``False``
         and specify ``n`` if uniform sampling is required.
@@ -250,7 +186,11 @@ def plot(*args, show=True, **kwargs):
         random point near the midpoint of two points that has to be
         further sampled. Hence the same plots can appear slightly
         different.
-
+    
+    axis_center : (float, float), optional
+        Tuple of two floats denoting the coordinates of the center or
+        {'center', 'auto'}. Only available with MatplotlibBackend.
+    
     depth : int, optional
         Recursion depth of the adaptive algorithm. A depth of value
         ``n`` samples a maximum of `2^{n}` points.
@@ -274,12 +214,49 @@ def plot(*args, show=True, **kwargs):
 
         If the ``adaptive`` flag is set to ``True``, this will be
         ignored.
+    
+    only_integers : boolean, optional
+        Default to False. If True, discretize the domain with integer numbers.
+        This can be useful to plot sums.
 
+    show : bool, optional
+        The default value is set to ``True``. Set show to ``False`` and
+        the function will not display the plot. The returned instance of
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
+    
     size : (float, float), optional
         A tuple in the form (width, height) in inches to specify the size of
         the overall figure. The default value is set to ``None``, meaning
         the size will be set by the default backend.
+    
+    steps : boolean, optional
+        Default to False. If True, connects consecutive points with steps rather
+        than straight segments.
 
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    xlabel : str, optional
+        Label for the x-axis.
+
+    ylabel : str, optional
+        Label for the y-axis.
+
+    xscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis.
+
+    yscale : 'linear' or 'log', optional
+        Sets the scaling of the y-axis.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, ``(min, max)```.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, ``(min, max)```.
+
+ 
     Examples
     ========
 
@@ -362,7 +339,6 @@ def plot(*args, show=True, **kwargs):
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 1)
-    # series = [LineOver1DRangeSeries(*arg, **kwargs) for arg in plot_expr]
     series = _build_line_series(*plot_expr, **kwargs)
 
     plots = Plot(*series, **kwargs)
@@ -427,12 +403,6 @@ def plot_parametric(*args, show=True, **kwargs):
 
         Specifies the number of the points used for the uniform
         sampling.
-
-    line_color : string, or float, or function, optional
-        Specifies the color for the plot.
-        See ``Plot`` to see how to set color for the plots.
-        Note that by setting ``line_color``, it would be applied simultaneously
-        to all the series.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -519,35 +489,6 @@ def plot_parametric(*args, show=True, **kwargs):
     Hence, repeating the same plot command can give slightly different
     results because of the random sampling.
 
-    If there are multiple plots, then the same optional arguments are
-    applied to all the plots drawn in the same canvas. If you want to
-    set these options separately, you can index the returned ``Plot``
-    object and set it.
-
-    For example, when you specify ``line_color`` once, it would be
-    applied simultaneously to both series.
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-        >>> from sympy import pi
-        >>> expr1 = (u, cos(2*pi*u)/2 + 1/2)
-        >>> expr2 = (u, sin(2*pi*u)/2 + 1/2)
-        >>> p = plot_parametric(expr1, expr2, (u, 0, 1), line_color='blue')
-
-    If you want to specify the line color for the specific series, you
-    should index each item and apply the property manually.
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-        >>> p[0].line_color = 'red'
-        >>> p.show()
-
     See Also
     ========
 
@@ -610,18 +551,6 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     Arguments for ``Parametric3DLineSeries`` class.
 
     ``n``: The range is uniformly sampled at ``n`` number of points.
-
-    Aesthetics:
-
-    ``line_color``: string, or float, or function, optional
-        Specifies the color for the plot.
-        See ``Plot`` to see how to set color for the plots.
-        Note that by setting ``line_color``, it would be applied simultaneously
-        to all the series.
-
-    If there are multiple plots, then the same series arguments are applied to
-    all the plots. If you want to set these options separately, you can index
-    the returned ``Plot`` object and set it.
 
     Arguments for ``Plot`` class.
 
@@ -742,15 +671,6 @@ def plot3d(*args, show=True, **kwargs):
 
     ``n``: int. The x and y ranges are sampled uniformly at ``n`` of points.
     It overrides ``n1`` and ``n2``.
-
-    Aesthetics:
-
-    ``surface_color``: Function which returns a float. Specifies the color for
-    the surface of the plot. See ``sympy.plotting.Plot`` for more details.
-
-    If there are multiple plots, then the same series arguments are applied to
-    all the plots. If you want to set these options separately, you can index
-    the returned ``Plot`` object and set it.
 
     Arguments for ``Plot`` class:
 
@@ -884,16 +804,6 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     ``n``: int. The u and v ranges are sampled uniformly at ``n`` of points.
     It overrides ``n1`` and ``n2``.
 
-    Aesthetics:
-
-    ``surface_color``: Function which returns a float. Specifies the color for
-    the surface of the plot. See ``sympy.plotting.Plot`` for more details.
-
-    If there are multiple plots, then the same series arguments are applied for
-    all the plots. If you want to set these options separately, you can index
-    the returned ``Plot`` object and set it.
-
-
     Arguments for ``Plot`` class:
 
     ``title`` : str. Title of the plot.
@@ -997,15 +907,6 @@ def plot_contour(*args, show=True, **kwargs):
 
     ``n``: int. The x and y ranges are sampled uniformly at ``n`` of points.
     It overrides ``n1`` and ``n2``.
-
-    Aesthetics:
-
-    ``surface_color``: Function which returns a float. Specifies the color for
-    the surface of the plot. See ``sympy.plotting.Plot`` for more details.
-
-    If there are multiple plots, then the same series arguments are applied to
-    all the plots. If you want to set these options separately, you can index
-    the returned ``Plot`` object and set it.
 
     Arguments for ``Plot`` class:
 
