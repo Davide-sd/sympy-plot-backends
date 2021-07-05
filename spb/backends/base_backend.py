@@ -386,10 +386,9 @@ class Plot:
             return x, y, False
 
         try:
-            # TODO: here I used a try-except because there might be times where
-            # there are None values inside y. Let's suppose we are plotting
-            # log(x), (x, -10, 10). Then for x <= 0 there will be None values,
-            # which makes the algorithm fails (can't subtract None values)
+            # TODO: once we are confident on this algorithm, we might try to 
+            # remove this try-except
+
             if self.detect_poles:
                 # TODO: should eps be a function of the number of discretization 
                 # points and the x-range?
@@ -406,6 +405,7 @@ class Plot:
                 c[idx] = np.nan
                 yy = c.copy()
                 c = np.ma.masked_invalid(c)
+                
                 if any(idx) and (self.ylim is None):
                     # auto select a ylim range. At this point, yy contains NaN 
                     # values at the discontinuities. I'm going to combine two 
@@ -430,7 +430,8 @@ class Plot:
 
                     # root mean square approach
                     areas = np.abs(np.roll(x, -1) - x) * yy
-                    area_rms = np.sqrt(np.mean([a**2 for a in areas if not np.isnan(a)]))
+                    area_rms = np.sqrt(np.mean([a**2 for a in areas 
+                            if not np.isnan(a)]))
                     yy[np.abs(areas) > area_rms] = np.nan
                     min2, max2 = np.nanmin(yy), np.nanmax(yy)
 

@@ -275,6 +275,7 @@ class MatplotlibBackend(Plot):
                 line_kw = self._kwargs.get("line_kw", dict())
                 if s.is_parametric and self._use_cm:
                     x, y, param = s.get_data()
+                    x, y, _ = self._detect_poles(x, y)
                     colormap = (next(self._cm) if not s.is_complex 
                             else next(self._cyccm))
                     lkw = dict(array=param, cmap=colormap)

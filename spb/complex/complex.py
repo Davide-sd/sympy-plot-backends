@@ -147,14 +147,26 @@ def complex_plot(*args, show=True, **kwargs):
             Controls the smootheness of the overall evaluation. The higher
             the number, the smoother the function, the more memory will be
             used by the recursive procedure. Default value is 9.
+        
+        detect_poles : boolean
+            Chose whether to detect and correctly plot poles. Defaulto to False.
+            This improve detection, increase the number of discretization points
+            and/or change the value of `eps`.
+        
+        eps : float
+            An arbitrary small value used by the `detect_poles` algorithm.
+            Default value to 0.1. Before changing this value, it is better to
+            increase the number of discretization points.
 
         n1, n2 : int
             Number of discretization points in the real/imaginary-directions,
-            respectively. Default to 300.
+            respectively. For domain coloring plots (2D and 3D), default to 300.
+            For line plots default to 1000.
         
         n : int
             Set the same number of discretization points in all directions.
-            Default to 300.
+            For domain coloring plots (2D and 3D), default to 300. For line 
+            plots default to 1000.
         
         real : boolean
             If True, and if the provided range is a real segment, plot the 

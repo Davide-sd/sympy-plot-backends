@@ -147,6 +147,8 @@ class Line2DBaseSeries(BaseSeries):
                 and Parametric3DLineSeries.
         """
         points = self.get_points()
+        points = [np.array(p, dtype=np.float64) for p in points]
+
         if self.steps is True:
             if self.is_2Dline:
                 x, y = points[0], points[1]
@@ -169,8 +171,8 @@ class List2DSeries(Line2DBaseSeries):
 
     def __init__(self, list_x, list_y, label="", **kwargs):
         super().__init__()
-        self.list_x = np.array(list_x)
-        self.list_y = np.array(list_y)
+        self.list_x = np.array(list_x, dtype=np.float64)
+        self.list_y = np.array(list_y, dtype=np.float64)
         self.label = label
         self.is_point = kwargs.get("is_point", False)
 
@@ -191,7 +193,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
-        self.n = kwargs.get('n', 300)
+        self.n = kwargs.get('n', 1000)
         self.adaptive = kwargs.get('adaptive', True)
         self.depth = kwargs.get('depth', 9)
         self.line_color = kwargs.get('line_color', None)
@@ -313,7 +315,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             f = lambdify([self.var], self.expr)
             x_coords, y_coords = self.adaptive_sampling(f, self.start, self.end,
                 self.depth, self.xscale)
-            return (np.array(x_coords), np.array(y_coords))
+            return (x_coords, y_coords)
 
     def _uniform_sampling(self):
         start, end, N = self.start, self.end, self.n
@@ -324,7 +326,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         f = vectorized_lambdify([self.var], self.expr)
         list_y = f(list_x)
         list_y = self._correct_size(list_y, list_x)
-        return (list_x, list_y)
+        return list_x, list_y
 
 
 class Parametric2DLineSeries(Line2DBaseSeries):
@@ -485,7 +487,7 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         fy = lambdify([self.var], self.expr_y)
         x_coords, y_coords, param = self.adaptive_sampling(fx, fy, self.start,
             self.end, self.depth)
-        return np.array(x_coords), np.array(y_coords), np.array(param)
+        return (x_coords, y_coords, param)
 
 
 ### 3D lines
@@ -1233,8 +1235,14 @@ class ComplexSeries(BaseSeries):
                 self.is_domain_coloring = True
         
         self.expr = sympify(expr)
-        self.n1 = kwargs.get('n1', 300)
-        self.n2 = kwargs.get('n2', 300)
+        if self.is_2Dline:
+            # could be lot of poles: need decent discretization in order to
+            # reliabily detect them.
+            self.n1 = kwargs.get('n1', 1000)
+            self.n2 = kwargs.get('n2', 1000)
+        else:
+            self.n1 = kwargs.get('n1', 300)
+            self.n2 = kwargs.get('n2', 300)
         self.xscale = kwargs.get('xscale', 'linear')
         self.yscale = kwargs.get('yscale', 'linear')
 

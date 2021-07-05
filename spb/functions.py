@@ -257,6 +257,16 @@ def plot(*args, show=True, **kwargs):
 
         If the ``adaptive`` flag is set to ``False``, this will be
         ignored.
+    
+    detect_poles : boolean
+            Chose whether to detect and correctly plot poles. Defaulto to False.
+            This improve detection, increase the number of discretization points
+            and/or change the value of `eps`.
+        
+    eps : float
+        An arbitrary small value used by the `detect_poles` algorithm.
+        Default value to 0.1. Before changing this value, it is better to
+        increase the number of discretization points.
 
     n : int, optional
         Used when the ``adaptive`` is set to ``False``. The function
