@@ -248,27 +248,46 @@ class InteractivePlot(DynamicParam, PanelLayout):
     """
 
     # NOTE: why isn't Plot a parent class for InteractivePlot?
-    # If that was the case, it would not be trivial to instantiate the selected
-    # backend. Therefore, in the following implementation the backend (the
-    # actual plot) is an instance attribute of InteractivePlot.
+    # If that was the case, we would need to create multiple subclasses of 
+    # InteractivePlot, each one targeting a different backend.
+    # Instead, we keep the backend (the actual plot) as an instance attribute.
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
-    def __init__(self, *args, name="", params=None, fig_kw=dict(), **kwargs):
+    def __init__(self, *args, name="", params=None, aux=dict(), **kwargs):
+        """ 
+        Parameters
+        ==========
+            args : tuple
+                The usual plot arguments
+            name : str
+                Unused parameter
+            params : dict
+                In the keys there will be the symbols, in the values we will
+                find the parameters to create the slider associated to a symbol.
+            aux : dict
+                Auxiliary dictionary containing keyword arguments to be passed
+                to DynamicParam.
+            kwargs : dict
+                Usual keyword arguments to be used by the backends and series.
+        """
         layout = kwargs.pop("layout", "tb")
         ncols = kwargs.pop("ncols", 2)
 
+        if "use_latex" not in aux.keys():
+            aux["use_latex"] = kwargs.pop("use_latex", True)
+
         args = list(map(_plot_sympify, args))
-        super().__init__(*args, name=name, params=params, **kwargs)
+        super().__init__(*args, name=name, params=params, **aux)
         PanelLayout.__init__(self, layout, ncols)
 
         # create the series
-        series = self._create_series(*args, **fig_kw)
+        series = self._create_series(*args, **kwargs)
         is_3D = all([s.is_3D for s in series])
         # create the plot
-        Backend = fig_kw.pop("backend", THREE_D_B if is_3D else TWO_D_B)
-        self._backend = Backend(*series, **fig_kw)
+        Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
+        self._backend = Backend(*series, **kwargs)
     
     def _create_series(self, *args, **kwargs):
         # read the parameters to generate the initial numerical data for
@@ -355,12 +374,6 @@ def iplot(*args, show=True, **kwargs):
             Note that (at the moment) the parameters cannot be linked together
             (ie, one parameter can't depend on another one).
         
-        fig_kw : dict
-            A dictionary with the usual keyword arguments to customize the plot,
-            such as title, xlabel, n (number of discretization points), ...
-            This dictionary will be passed to the backend: check its
-            documentations to find more keyword arguments.
-        
         layout : str
             The layout for the controls/plot. Possible values:
                 'tb': controls in the top bar.
@@ -394,6 +407,9 @@ def iplot(*args, show=True, **kwargs):
             If True, the latex representation of the symbols will be used in the
             labels of the parameter-controls. If False, the string
             representation will be used instead.
+        
+        All the usual keyword arguments to customize the plot, such as title, 
+        xlabel, n (number of discretization points), ...
 
     
     Examples
@@ -410,13 +426,11 @@ def iplot(*args, show=True, **kwargs):
         iplot(
             (expr, (x, -10, 10), (y, -10, 10)),
             params = { d: (0.15, (0, 1)) },
-            fig_kw = dict(
-                title = "My Title",
-                xlabel = "x axis",
-                ylabel = "y axis",
-                zlabel = "z axis",
-                n = 100
-            )
+            title = "My Title",
+            xlabel = "x axis",
+            ylabel = "y axis",
+            zlabel = "z axis",
+            n = 100
         )
     
     A line plot illustrating the use of multiple expressions and:
@@ -435,8 +449,7 @@ def iplot(*args, show=True, **kwargs):
                 k: (1, (0, 5)),
                 A1: (2, (0, 10), 20, "Ampl 1"),
                 A2: (2, (0, 10), 40, "Ampl 2"),
-            },
-            fig_kw = { "legend": True }
+            }
         )
     
     A 3D slice-vector plot. Note: whenever we want to create parametric vector
@@ -450,12 +463,10 @@ def iplot(*args, show=True, **kwargs):
                 a: (1, (0, 5)),
                 b: (1, (0, 5))
             },
-            fig_kw = dict(
-                n = 50,
-                is_vector = True,
-                scalar = x * y,
-                slice = Plane((-2, 0, 0), (1, 0, 0))
-            )
+            n = 50,
+            is_vector = True,
+            scalar = x * y,
+            slice = Plane((-2, 0, 0), (1, 0, 0))
         )
     
     A parametric complex domain coloring plot. Note: whenever we want to create
@@ -468,11 +479,9 @@ def iplot(*args, show=True, **kwargs):
             params = {
                 x: (1, (-2, 2))
             },
-            fig_kw = dict(
-                backend = MB,
-                is_complex = True,
-                coloring = "b"
-            )
+            backend = MB,
+            is_complex = True,
+            coloring = "b"
         )
     """
     i = InteractivePlot(*args, **kwargs)

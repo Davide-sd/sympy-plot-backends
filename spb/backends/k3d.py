@@ -163,25 +163,25 @@ class K3DBackend(Plot):
             elif ((s.is_3Dsurface and (not s.is_complex)) or
                 (s.is_3Dsurface and s.is_complex and (s.real or s.imag))):
                 x, y, z = s.get_data()
-                print("K3D is_surface", 
-                    len(x) if not hasattr(x, "shape") else x.shape,
-                    len(y) if not hasattr(y, "shape") else y.shape,
-                    len(z) if not hasattr(z, "shape") else z.shape,
-                )
+                # print("K3D is_surface", 
+                #     len(x) if not hasattr(x, "shape") else x.shape,
+                #     len(y) if not hasattr(y, "shape") else y.shape,
+                #     len(z) if not hasattr(z, "shape") else z.shape,
+                # )
 
                 # TODO:
                 # Can I use get_vertices_indices also for non parametric surfaces?
 
                 if s.is_parametric:
-                    print("K3D is_parametric surface")
+                    # print("K3D is_parametric surface")
                     vertices, indices = get_vertices_indices(x, y, z)
                     vertices = vertices.astype(np.float32)
                 else:
-                    print("K3D is_surface")
+                    # print("K3D is_surface")
                     x = x.flatten()
                     y = y.flatten()
                     z = z.flatten()
-                    print(np.amin(z), np.amax(z))
+                    # print(np.amin(z), np.amax(z))
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     indices = Triangulation(x, y).triangles.astype(np.uint32)
 
@@ -389,7 +389,7 @@ class K3DBackend(Plot):
                 # )
 
                 x, y, z = [t.flatten() for t in [x, y, mag]]
-                print(np.amin(mag), np.amax(mag))
+                # print(np.amin(mag), np.amax(mag))
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 indices = Triangulation(x, y).triangles.astype(np.uint32)
 

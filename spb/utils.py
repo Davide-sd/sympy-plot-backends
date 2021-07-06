@@ -7,16 +7,13 @@ from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 import numpy as np
 
-def get_lambda(expr, modules="numpy", **kwargs):
+def get_lambda(expr, **kwargs):
     """ Create a lambda function to numerically evaluate expr by sorting 
     alphabetically the function arguments.
     Parameters
     ----------
         expr : Expr
             The Sympy expression to convert.
-        modules : str
-            The numerical module to use for evaluation. Default to "numpy".
-            See help(lambdify) for other choices.
         **kwargs
             Other keyword arguments to the function lambdify.
     Returns
@@ -27,7 +24,7 @@ def get_lambda(expr, modules="numpy", **kwargs):
             The generated lambda function.ò 
     """
     signature = list(ordered(expr.free_symbols))
-    return signature, lambdify(signature, expr, modules=modules, **kwargs)
+    return signature, lambdify(signature, expr, **kwargs)
 
 
 def _create_ranges(free_symbols, ranges, npar):

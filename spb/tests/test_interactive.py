@@ -146,10 +146,8 @@ def test_interactiveseries():
         t = iplot(
             (v, *ranges),
             params = params,
-            fig_kw = dict(
-                n = n,
-                backend = PB
-            ),
+            n = n,
+            backend = PB,
             show=False
         )
 
@@ -200,11 +198,9 @@ def test_interactiveseries():
     t = iplot(
             (v3, *ranges),
             params = params,
-            fig_kw = dict(
-                n1 = 5, n2 = 6, n3 = 7,
-                slice = Plane((1, 2, 3), (1, 0, 0)),
-                backend = PB
-            ),
+            n1 = 5, n2 = 6, n3 = 7,
+            slice = Plane((1, 2, 3), (1, 0, 0)),
+            backend = PB,
             show=False
         )
     assert len(t._backend.series) == 1
@@ -223,15 +219,13 @@ def test_interactiveseries():
     t = iplot(
         (v3, *ranges),
         params = params,
-        fig_kw = dict(
-            n1 = 5, n2 = 6, n3 = 7,
-            slice = [
-                Plane((1, 2, 3), (1, 0, 0)),
-                Plane((1, 2, 3), (0, 1, 0)),
-                Plane((1, 2, 3), (0, 0, 1))
-            ],
-            backend = PB
-        ),
+        n1 = 5, n2 = 6, n3 = 7,
+        slice = [
+            Plane((1, 2, 3), (1, 0, 0)),
+            Plane((1, 2, 3), (0, 1, 0)),
+            Plane((1, 2, 3), (0, 0, 1))
+        ],
+        backend = PB,
         show=False
     )
     assert len(t._backend.series) == 3
