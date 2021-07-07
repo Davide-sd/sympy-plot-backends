@@ -7,6 +7,7 @@ from spb.plot_data import get_plot_data, smart_plot
 from spb.interactive import iplot
 from spb.vectors import vector_plot
 from spb.complex.complex import complex_plot
+from spb.backends.plotgrid import plotgrid
 
 # aliases
 parametric_plot = plot_parametric

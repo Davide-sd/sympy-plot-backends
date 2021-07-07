@@ -183,15 +183,22 @@ class MatplotlibBackend(Plot):
             else:
                 aspect = float(aspect[1]) / aspect[0]
 
-        self._fig = plt.figure(figsize=self.size)
-        is_3D = [s.is_3D for s in self.series]
-        if any(is_3D) and (not all(is_3D)):
-            raise ValueError('The matplotlib backend can not mix 2D and 3D.')
+        
+        if self._kwargs.get("fig", None) is not None:
+            # We assume we are generating a PlotGrid object, hence the figure 
+            # and the axes are provided by the user.
+            self._fig = self._kwargs.pop("fig", None)
+            self.ax = self._kwargs.pop("ax", None)
+        else:
+            self._fig = plt.figure(figsize=self.size)
+            is_3D = [s.is_3D for s in self.series]
+            if any(is_3D) and (not all(is_3D)):
+                raise ValueError('The matplotlib backend can not mix 2D and 3D.')
 
-        kwargs = dict(aspect=aspect)
-        if all(is_3D):
-            kwargs["projection"] = "3d"
-        self.ax = self._fig.add_subplot(1, 1, 1, **kwargs)
+            kwargs = dict(aspect=aspect)
+            if all(is_3D):
+                kwargs["projection"] = "3d"
+            self.ax = self._fig.add_subplot(1, 1, 1, **kwargs)
             
     @property
     def fig(self):

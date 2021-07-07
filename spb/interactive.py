@@ -13,12 +13,6 @@ import warnings
 
 pn.extension("plotly")
 
-
-"""
-TODO:
-    1. Automatic axis labeling based on provided expressions
-"""
-
 class MyList(param.ObjectSelector):
     """ Represent a list of numbers discretizing a log-spaced slider.
     This parameter will be rendered by pn.widgets.DiscreteSlider
