@@ -64,7 +64,8 @@ def plot_implicit_tests(name):
 
     #Test plots which cannot be rendered using the adaptive algorithm
     with warns(UserWarning, match="Adaptive meshing could not be applied"):
-        plot_and_save(Eq(y, re(cos(x) + I*sin(x))), name=name, dir=temp_dir)
+        plot_and_save(Eq(y, re(cos(x) + I*sin(x))), adaptive=True, 
+            name=name, dir=temp_dir)
 
     plot_and_save(x**2 - 1, title='An implicit plot', dir=temp_dir)
 
@@ -125,6 +126,8 @@ def test_region_and():
 def test_nb_discretization_n():
     x, y = symbols('x y')
     p = plot_implicit(Eq(y, cos(x)), (x, -5, 5), (y, -2, 2))
-    assert p._series[0].n == 300
+    assert p._series[0].n1 == 1000
+    assert p._series[0].n2 == 1000
     p = plot_implicit(Eq(y, cos(x)), (x, -5, 5), (y, -2, 2), n=200)
-    assert p._series[0].n == 200
+    assert p._series[0].n1 == 200
+    assert p._series[0].n2 == 200

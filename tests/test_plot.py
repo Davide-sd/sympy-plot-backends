@@ -12,7 +12,7 @@ from spb.functions import (
     plot, plot_parametric, plot3d_parametric_line, plot3d,
     plot3d_parametric_surface, plot_contour
 )
-from spb.backends.base_backend import Plot, PlotGrid
+from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import unset_show, MatplotlibBackend
 from sympy.testing.pytest import skip, raises, warns
 from sympy.utilities import lambdify as lambdify_
@@ -422,44 +422,6 @@ def test_plot_and_save_6():
         p.save(os.path.join(tmpdir, filename))
 
 
-def test_plotgrid_and_save():
-    if not matplotlib:
-        skip("Matplotlib not the default backend")
-
-    x = Symbol('x')
-    y = Symbol('y')
-
-    with TemporaryDirectory(prefix='sympy_') as tmpdir:
-        p1 = plot(x)
-        p2 = plot_parametric((sin(x), cos(x)), (x, sin(x)), show=False)
-        p3 = plot_parametric(
-            cos(x), sin(x), adaptive=False, n=500, show=False)
-        p4 = plot3d_parametric_line(sin(x), cos(x), x, show=False)
-        # symmetric grid
-        p = PlotGrid(2, 2, p1, p2, p3, p4)
-        filename = 'test_grid1.png'
-        p.save(os.path.join(tmpdir, filename))
-        p.close()
-
-        # grid size greater than the number of subplots
-        p = PlotGrid(3, 4, p1, p2, p3, p4)
-        filename = 'test_grid2.png'
-        p.save(os.path.join(tmpdir, filename))
-        p.close()
-
-        p5 = plot(cos(x),(x, -pi, pi), show=False)
-        p5[0].line_color = lambda a: a
-        p6 = plot(Piecewise((1, x > 0), (0, True)), (x, -1, 1), show=False)
-        p7 = plot_contour(
-            (x**2 + y**2, (x, -5, 5), (y, -5, 5)),
-            (x**3 + y**3, (x, -3, 3), (y, -3, 3)), show=False)
-        # unsymmetric grid (subplots in one line)
-        p = PlotGrid(1, 3, p5, p6, p7)
-        filename = 'test_grid3.png'
-        p.save(os.path.join(tmpdir, filename))
-        p.close()
-
-
 def test_append_issue_7140():
     if not matplotlib:
         skip("Matplotlib not the default backend")
@@ -659,9 +621,6 @@ def test_plot_size():
     p2 = plot(sin(x), backend=MatplotlibBackend, size=(5, 10))
     s2 = p2.fig[0].get_size_inches()
     assert (s2[0] == 5) and (s2[1] == 10)
-    p3 = PlotGrid(2, 1, p1, p2, size=(6, 2))
-    s3 = p3._backend.fig[0].get_size_inches()
-    assert (s3[0] == 6) and (s3[1] == 2)
 
 def test_issue_20113():
     if not matplotlib:
@@ -687,21 +646,6 @@ def test_issue_20113():
         p4.save("test/path")
     with raises(NotImplementedError):
         p4.close()
-    
-    # Test PlotGrid support for different backends
-    p5 = plot(sin(x), backend=MatplotlibBackend, show=False)
-    p6 = plot(cos(x), backend=MatplotlibBackend, show=False)
-    p7 = plot(log(x), backend=MatplotlibBackend, show=False)
-    # everything works fine with MatplotlibBackend
-    PlotGrid(3, 1, p5, p6, p7)
-    # raise error if the provided plots are generated with different backends
-    with raises(TypeError):
-        PlotGrid(3, 1, p2, p3, p4)
-    # raise error if the backend doesn't support PlotGrid
-    p8 = plot(sin(x), backend=DummyBackendOk)
-    p9 = plot(cos(x), backend=DummyBackendOk)
-    with raises(ValueError):
-        PlotGrid(3, 1, p8, p9)
 
 
 def test_custom_coloring():

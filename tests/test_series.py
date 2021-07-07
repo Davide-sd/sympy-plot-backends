@@ -79,12 +79,12 @@ def test_lin_log_scale():
     assert not np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
 
     s = ComplexSeries(cos(x), (x, 1e-05, 1e05), real=True, imag=False,
-                n=10, xscale="linear")
+                n=10, xscale="linear", adaptive=False)
     xx, yy = s.get_data()
     assert np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
 
     s = ComplexSeries(cos(x), (x, 1e-05, 1e05), real=True, imag=False,
-                n=10, xscale="log")
+                n=10, xscale="log", adaptive=False)
     xx, yy = s.get_data()
     assert not np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
 
@@ -333,30 +333,30 @@ def test_interactive():
 
     # real and imag
     s1 = ComplexInteractiveSeries((z**2 + 1) / (z**2 - 1), (z, -3, 3), 
-            "", n1=50)
+            "", adaptive=False, n1=50)
     s2 = ComplexSeries((z**2 + 1) / (z**2 - 1), (z, -3, 3), 
-            "", n1=50)
+            "", adaptive=False, n1=50)
     do_test(s1.get_data(), s2.get_data())
 
     # only real
     s1 = ComplexInteractiveSeries((z**2 + 1) / (z**2 - 1), (z, -3, 3), 
-            "", n1=50, imag=False)
+            "", adaptive=False, n1=50, imag=False)
     s2 = ComplexSeries((z**2 + 1) / (z**2 - 1), (z, -3, 3), 
-            "", n1=50, imag=False)
+            "", adaptive=False, n1=50, imag=False)
     do_test(s1.get_data(), s2.get_data())
 
     # only imag
     s1 = ComplexInteractiveSeries((z**2 + 1) / (z**2 - 1), (z, -3, 3), 
-            "", n1=50, real=False)
+            "", adaptive=False, n1=50, real=False)
     s2 = ComplexSeries((z**2 + 1) / (z**2 - 1), (z, -3, 3), 
-            "", n1=50, real=False)
+            "", adaptive=False, n1=50, real=False)
     do_test(s1.get_data(), s2.get_data())
 
     # magnitude and argument
     s1 = ComplexInteractiveSeries((z**2 + 1) / (z**2 - 1), (z, -3, 3), 
-            "", n1=50, absarg=True)
+            "", adaptive=False, n1=50, absarg=True)
     s2 = ComplexSeries((z**2 + 1) / (z**2 - 1), (z, -3, 3), 
-            "", n1=50, absarg=True)
+            "", adaptive=False, n1=50, absarg=True)
     do_test(s1.get_data(), s2.get_data())
 
     # domai coloring or 3D
