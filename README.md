@@ -52,8 +52,8 @@ Each backend has its own advantages and disadvantages, as we can see from the fo
 
 In particular:
 
-* Matplotlib (default with SymPy) is a good general backend supporting all kinds of plots, but it is very slow at rendering 3D plots and it lacks interactivity ([ipympl](https://github.com/matplotlib/ipympl) does what it can).
-* Plotly is another general backend supporting all kinds of plot. Interactivity and data exploration are great, however it does have a few limitations:
+* Matplotlib (default with SymPy) is a good general backend supporting all kinds of plots, but it is very slow at rendering 3D plots and it lacks interactivity (even with [ipympl](https://github.com/matplotlib/ipympl), interactivity falls behind in comparison to other plotting libraries).
+* Plotly is another general backend supporting many kinds of plot. Interactivity and data exploration are great, however it does have a few limitations:
   * Slower rendering than all other backends because it adds HTML elements to the DOM of the notebook.
   * Lack of gradient lines.
   * Generally inferior when plotting implicit expression in comparison to Matplotlib. Also, it can be really slow when plotting multiple implicit expressions simultaneously.
@@ -92,21 +92,23 @@ Please, read the docstring associated to each backend to find out more options a
 
 While this module is based on `sympy.plotting`, there are some differences (structural and usability) that make them incompatible. Interchanging between these two modules might lead to some errors! I suggest to use this module instead of `sympy.plotting`. On the usability side, the main differences are:
 1. `label` keyword argument has been removed.
-2. `nb_of_points_*` keyword arguments have been removed.
+2. `nb_of_points_*` keyword arguments have been replaced by `n` or `n1, n2`.
 3. `ImplicitSeries` now uses mesh grid algorithm and contour plots by default. It is going to automatically switch to an adaptive algorithm if Boolean expressions are found.
-
-Read the tutorials to find out the alternatives to those keyword arguments.
 
 Currently, this module must be considered in beta phase. If you find any bug, please open an issue. If you feel like some feature could be implemented, open an issue or create a PR.
 
 Finally, **some backend comes with a memory cost**. Since they require external libraries and/or open a server-process in order to visualize the data, memory usage can quickly rise if we are showing many plots. Keep an eye on you system monitor and act accordingly (close the kernels, restart the browser, etc.). 
 
 
-## Requirements
+## Known Bugs
 
-The following list of requirements will automatically be downloaded once you install the module:
+To implement this module, a great effort went into the integration of several libraries and maintaining a consistent user experience with the different backends.
 
-`numpy, sympy, matplotlib, plotly>=4.14.3, colorcet, param, panel, holoviews, bokeh, PyQt5, mayavi, k3d`
+However, there are a few known bugs inherited from dependency-libraries that we should be aware of:
+
+* As a design choice, I decided to include `iplot` when importing everything (`from spb import *`), which uses [holovis'z panel](https://github.com/holoviz/panel). However, this brings out a bug: once we decide to use `BokehBackend`, we can't go back to other backends (the plots won't be visible in the output cell). The only way to be fix this problem is to close Jupyter server and start again.
+* The aforementioned bug also manifests itself while using `plotgrid` with different types of plots (`PlotlyBackend, BokehBackend`, etc.).
+
 
 
 ## Installation
