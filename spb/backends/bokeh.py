@@ -3,12 +3,12 @@ from spb.backends.base_backend import Plot
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
 import bokeh.palettes as bp
-from bokeh.io import curdoc
 from bokeh.models import (
     LinearColorMapper, ColumnDataSource, MultiLine, ColorBar, Segment
 )
 from bokeh.models.tickers import FixedTicker
 from bokeh.io import export_png, export_svg
+from bokeh.events import PanEnd
 import itertools
 import colorcet as cc
 import os
@@ -288,7 +288,9 @@ class BokehBackend(Plot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self._run_in_notebook = False
         if self._get_mode() == 0:
+            self._run_in_notebook = True
             output_notebook(
                 hide_banner=True
             )
@@ -296,7 +298,6 @@ class BokehBackend(Plot):
         self._handles = dict()
         self._init_cyclers()
 
-        curdoc().theme = kwargs.get("theme", cfg["bokeh"]["theme"])
         TOOLTIPS = [
             ("x", "$x"),
             ("y", "$y")
@@ -335,7 +336,7 @@ class BokehBackend(Plot):
         )
         self._fig.axis.visible = self.grid
         self._fig.grid.visible = self.grid
-        
+        self._fig.on_event(PanEnd, self._pan_update)
         self._process_series(self._series)
     
     def _init_cyclers(self):
@@ -358,9 +359,6 @@ class BokehBackend(Plot):
             if s.is_2Dline:
                 if s.is_parametric and self._use_cm:
                     x, y, param = s.get_data()
-                    # Bokeh is not able to deal with None values. 
-                    # Need to replace them with np.nan.
-                    y = [t if (t is not None) else np.nan for t in y]
                     colormap = (next(self._cm) if not s.is_complex 
                             else next(self._cyccm))
                     ds, line, cb = self._create_gradient_line(x, y, param,
@@ -372,7 +370,6 @@ class BokehBackend(Plot):
                 else:
                     if s.is_parametric:
                         x, y, param = s.get_data()
-                        y = [t if (t is not None) else np.nan for t in y]
                         source = {"xs": x, "ys": y, "us": param}
                     else:
                         x, y = s.get_data()
@@ -380,7 +377,6 @@ class BokehBackend(Plot):
                         if modified:
                             self._fig.y_range.start = self.ylim[0]
                             self._fig.y_range.end = self.ylim[1]
-                        y = [t if (t is not None) else np.nan for t in y]
                         source = {"xs": x, "ys": y}
 
                     lkw = dict(
@@ -517,6 +513,29 @@ class BokehBackend(Plot):
             # interactive legend
             self._fig.legend.click_policy = "hide"
             self._fig.add_layout(self._fig.legend[0], 'right')
+    
+    def _pan_update(self):
+        rend = self.fig.renderers
+        for i, s in enumerate(self.series):
+            if s.is_2Dline and not s.is_parametric:
+                s.start = self._fig.x_range.start
+                s.end = self._fig.x_range.end
+                x, y = s.get_data()
+                x, y, _ = self._detect_poles(x, y)
+                source = {"xs": x, "ys": y}
+                rend[i].data_source.data.update(source)
+            elif s.is_complex and s.is_2Dline and s.is_parametric and self._use_cm:
+                # this is when absarg=True
+                s.start = complex(self._fig.x_range.start)
+                s.end = complex(self._fig.x_range.end)
+                x, y, param = s.get_data()
+                xs, ys, us = self._get_segments(x, y, param)
+                rend[i].data_source.data.update(
+                    {'xs': xs, 'ys': ys, 'us': us})
+                if i in self._handles.keys():
+                    cb = self._handles[i]
+                    cb.color_mapper.update(low = min(us), high = max(us))
+                
     
     def _get_img(self, img):
         new_img = np.zeros(img.shape[:2], dtype=np.uint32)
@@ -656,9 +675,27 @@ class BokehBackend(Plot):
             self._fig.output_backend = "canvas"
             export_png(self._fig, filename=path)
     
+    def _launch_server(self, doc):
+        """ By launching a server application, we can use Python callbacks
+        associated to events.
+        """
+        doc.theme = self._kwargs.get("theme", cfg["bokeh"]["theme"])
+        doc.add_root(self._fig)
+
     def show(self):
         self._process_series(self._series)
-        show(self._fig)
+        if self._run_in_notebook:
+            # TODO: the current way we are launching the server only works within
+            # Jupyter Notebook. Is there another way of launching it so that it can
+            # run from any Python interpreter?
+            show(self._launch_server)
+        else:
+            # if the backend it running from a python interpreter, the server
+            # wont' work. Hence, launch a static figure, which doesn't listen
+            # to events (no pan-auto-update).
+            from bokeh.io import curdoc
+            curdoc().theme = self._kwargs.get("theme", cfg["bokeh"]["theme"])
+            show(self._fig)
     
     def _get_quivers_data(self, xs, ys, u, v, **quiver_kw):
         """ Compute the segments coordinates to plot quivers.

@@ -58,7 +58,7 @@ In particular:
   * Lack of gradient lines.
   * Generally inferior when plotting implicit expression in comparison to Matplotlib. Also, it can be really slow when plotting multiple implicit expressions simultaneously.
   * No wireframe support for 3D plots, which could lead to difficult to understand plots.
-* Bokeh: interactivity and data exploration are great, however:
+* Bokeh: interactivity and data exploration are great. It supports auto-update while panning the plot (only works with lines), however:
   * Generally inferior when plotting implicit expression in comparison to Matplotlib.
   * Lack of contour plot.
 * K3D only supports 3D plots but, compared to Matplotlib, it offers amazing 3D performance: we can increase significantly the number of discretization points obtaining smoother plots. It can only be used with Jupyter Notebook, whereas the other backends can also be used with IPython or a simple Python interpreter. This backends use an aspect ratio of 1 on all axis: they don't scale the visualization. What you see is the object as you would see it in reality.
