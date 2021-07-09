@@ -215,8 +215,9 @@ class BokehBackend(Plot):
     Keyword Arguments
     =================
 
-        colorbar_kw : dict
-            A dictionary with keyword arguments to customize the colorbar.
+        contour_kw : dict
+            A dictionary with keyword arguments to customize the contour.
+            This might be useful to change the `palette` to a custom value.
 
         line_kw : dict
             A dictionary of keywords/values which is passed to Plotly's scatter
@@ -262,22 +263,12 @@ class BokehBackend(Plot):
     
     # to be used in parametric plots
     colormaps = [
-        cc.fire, cc.isolum, cc.rainbow, cc.blues, cc.bmy, cc.colorwheel, cc.bgy
+        cc.bmy, 'aggrnyl', cc.kbc, cc.bjy, 'plotly3'
     ]
 
     # to be used in complex-parametric plots
     cyclic_colormaps = [
         cm.hsv, cm.twilight, cc.cyclic_mygbm_30_95_c78_s25 
-    ]
-
-    # TODO: better selection of discrete color maps for contour plots
-    # DO I need this or can I just use colormaps?
-    contour_colormaps = [
-        bp.Plasma10, bp.Blues9, bp.Greys10
-    ]
-
-    quivers_colormaps = [
-        cc.bmy, cc.bgy, cc.isolum, cc.fire
     ]
 
     def __new__(cls, *args, **kwargs):
@@ -338,15 +329,6 @@ class BokehBackend(Plot):
         self._fig.grid.visible = self.grid
         self._fig.on_event(PanEnd, self._pan_update)
         self._process_series(self._series)
-    
-    def _init_cyclers(self):
-        super()._init_cyclers()
-        contour_colormaps = [convert_colormap(cm, self._library) for cm
-                in self.contour_colormaps]
-        self._ccm = itertools.cycle(contour_colormaps)
-        quivers_colormaps = [convert_colormap(cm, self._library) for cm
-                in self.quivers_colormaps]
-        self._qcm = itertools.cycle(quivers_colormaps)
 
     def _process_series(self, series):
         self._init_cyclers()
@@ -397,18 +379,17 @@ class BokehBackend(Plot):
                 minx, miny, minz = min(x), min(y), min(zz)
                 maxx, maxy, maxz = max(x), max(y), max(zz)
 
-                cm = next(self._ccm)
+                contour_kw = self._kwargs.get("contour_kw", dict()).copy()
+                cm = contour_kw.pop("palette", next(self._cm))
+                
                 self._fig.image(image=[z], x=minx, y=miny,
                         dw=abs(maxx - minx), dh=abs(maxy - miny),
                         palette=cm)
                 
                 colormapper = LinearColorMapper(palette=cm, low=minz, high=maxz)
-                # default options
-                cbkw = dict(width = 8)
-                # user defined options
-                colorbar_kw = self._kwargs.get("colorbar_kw", dict())
-                colorbar = ColorBar(color_mapper=colormapper, title=s.label,
-                    **merge({}, cbkw, colorbar_kw))
+                cbkw = dict(width = 8, title=s.label)
+                colorbar = ColorBar(color_mapper=colormapper,
+                    **merge({}, cbkw, contour_kw))
                 self._fig.add_layout(colorbar, 'right')
                 self._handles[i] = colorbar
 
@@ -457,18 +438,26 @@ class BokehBackend(Plot):
                     data, quiver_kw = self._get_quivers_data(x, y, u, v, **quiver_kw)
                     mag = data["magnitude"]
                     
-                    color_mapper = LinearColorMapper(palette=next(self._qcm), 
+                    color_mapper = LinearColorMapper(palette=next(self._cm), 
                         low=min(mag), high=max(mag))
-                    is_contour = (True if ("scalar" not in self._kwargs.keys()) else
-                        (False if not self._kwargs["scalar"] else True))
+                    # don't use color map if a scalar field is visible or if
+                    # use_cm=False
+                    solid = (True if ("scalar" not in self._kwargs.keys()) else
+                        (False if ((not self._kwargs["scalar"]) or 
+                        (self._kwargs["scalar"] is None)) else True))
                     line_color = ({'field': 'magnitude', 'transform': color_mapper}
-                        if not is_contour else next(self._cl))
+                        if ((not solid) and self._use_cm) else next(self._cl))
                     source = ColumnDataSource(data=data)
                     # default quivers options
                     qkw = dict(line_color=line_color, line_width=1, name=s.label)
                     glyph = Segment(x0="x0", y0="y0", x1="x1", y1="y1",
                         **merge({}, qkw, quiver_kw))
                     self._fig.add_glyph(source, glyph)
+                    if isinstance(line_color, dict):
+                        colorbar = ColorBar(color_mapper=color_mapper,
+                            width = 8, title=s.label)
+                        self._fig.add_layout(colorbar, 'right')
+                        self._handles[i] = colorbar
 
             elif s.is_complex and s.is_domain_coloring:
                 x, y, magn_angle, img, colors = s.get_data()

@@ -52,23 +52,15 @@ class K3DBackend(Plot):
 
     _library = "k3d"
 
-    # TODO: better selection of colormaps
     colormaps = [
-        k3d.basic_color_maps.CoolWarm, k3d.basic_color_maps.Jet,
-        k3d.basic_color_maps.BlackBodyRadiation, k3d.matplotlib_color_maps.Plasma,
-        k3d.matplotlib_color_maps.Autumn, k3d.matplotlib_color_maps.Winter,
-        k3d.paraview_color_maps.Nic_Edge, k3d.paraview_color_maps.Haze
-    ]
-
-    cyclic_colormaps = [
-        cc.colorwheel, k3d.paraview_color_maps.Erdc_iceFire_H
-    ]
-
-    quivers_colormaps = [
         k3d.basic_color_maps.CoolWarm, k3d.matplotlib_color_maps.Plasma,
         k3d.matplotlib_color_maps.Winter, k3d.matplotlib_color_maps.Viridis,
         k3d.paraview_color_maps.Haze, k3d.matplotlib_color_maps.Summer,
         k3d.paraview_color_maps.Blue_to_Yellow
+    ]
+
+    cyclic_colormaps = [
+        cc.colorwheel, k3d.paraview_color_maps.Erdc_iceFire_H
     ]
     
     def __new__(cls, *args, **kwargs):
@@ -128,12 +120,6 @@ class K3DBackend(Plot):
         color = [int(c * 255) for c in color]
         return cls._rgb_to_int(color)
 
-    def _init_cyclers(self):
-        super()._init_cyclers()
-        quivers_colormaps = [convert_colormap(cm, self._library) for cm
-                in self.quivers_colormaps]
-        self._qcm = itertools.cycle(quivers_colormaps)
-
     def _process_series(self, series):
         self._init_cyclers()
         self._fig.auto_rendering = False
@@ -144,6 +130,9 @@ class K3DBackend(Plot):
         for ii, s in enumerate(series):
             if s.is_3Dline:
                 x, y, z, param = s.get_data()
+                # K3D doesn't like masked arrays, so filled them with NaN
+                x, y, z = [np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) 
+                        else t for t in [x, y, z]]
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 # keyword arguments for the line object
                 a = dict(
@@ -163,6 +152,9 @@ class K3DBackend(Plot):
             elif ((s.is_3Dsurface and (not s.is_complex)) or
                 (s.is_3Dsurface and s.is_complex and (s.real or s.imag))):
                 x, y, z = s.get_data()
+                # K3D doesn't like masked arrays, so filled them with NaN
+                x, y, z = [np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) 
+                        else t for t in [x, y, z]]
                 # print("K3D is_surface", 
                 #     len(x) if not hasattr(x, "shape") else x.shape,
                 #     len(y) if not hasattr(y, "shape") else y.shape,
@@ -212,7 +204,7 @@ class K3DBackend(Plot):
                 )
                 if self._use_cm:
                     a["color_map"] = next(self._cm)
-                    a["attribute"] = z
+                    a["attribute"] = z.astype(np.float32)
                 surface_kw = self._kwargs.get("surface_kw", dict())
                 surf = k3d.mesh(vertices, indices, 
                         **merge({}, a, surface_kw))
@@ -221,6 +213,9 @@ class K3DBackend(Plot):
             
             elif s.is_3Dvector and self._kwargs.get("streamlines", False):
                 xx, yy, zz, uu, vv, ww = s.get_data()
+                # K3D doesn't like masked arrays, so filled them with NaN
+                xx, yy, zz, uu, vv, ww = [np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) 
+                        else t for t in [xx, yy, zz, uu, vv, ww]]
                 magnitude = np.sqrt(uu**2 + vv**2 + ww**2)
                 min_mag = min(magnitude.flatten())
                 max_mag = max(magnitude.flatten())
@@ -332,7 +327,7 @@ class K3DBackend(Plot):
 
                 skw = dict( width=0.1, shader='mesh', compression_level=9 )
                 if self._use_cm and ("color" not in stream_kw.keys()):
-                    skw["color_map"] = next(self._qcm)
+                    skw["color_map"] = next(self._cm)
                     skw["color_range"] = [min_mag, max_mag]
                     skw["attribute"] = attributes
                 else:
@@ -347,6 +342,9 @@ class K3DBackend(Plot):
                 )
             elif s.is_3Dvector:
                 xx, yy, zz, uu, vv, ww = s.get_data()
+                # K3D doesn't like masked arrays, so filled them with NaN
+                xx, yy, zz, uu, vv, ww = [np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) 
+                        else t for t in [xx, yy, zz, uu, vv, ww]]
                 xx, yy, zz, uu, vv, ww = [t.flatten().astype(np.float32) for t
                     in [xx, yy, zz, uu, vv, ww]]
                 # default values
@@ -359,7 +357,7 @@ class K3DBackend(Plot):
                 vectors = np.array((uu, vv, ww)).T * scale
                 origins = np.array((xx, yy, zz)).T
                 if self._use_cm and ("color" not in quiver_kw.keys()):
-                    colormap = next(self._qcm)
+                    colormap = next(self._cm)
                     colors = k3d.helpers.map_colors(magnitude, colormap, [])
                     self._handles[ii] = [qkw, colormap]
                 else:
@@ -382,14 +380,8 @@ class K3DBackend(Plot):
             elif s.is_complex and s.is_3Dsurface and (not s.is_domain_coloring):
                 x, y, mag_arg, colors, colorscale = s.get_data()
                 mag, arg = mag_arg[:, :, 0], mag_arg[:, :, 1]
-                # print("K3D is_surface", 
-                #     len(x) if not hasattr(x, "shape") else x.shape,
-                #     len(y) if not hasattr(y, "shape") else y.shape,
-                #     len(z) if not hasattr(z, "shape") else z.shape,
-                # )
 
                 x, y, z = [t.flatten() for t in [x, y, mag]]
-                # print(np.amin(mag), np.amax(mag))
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 indices = Triangulation(x, y).triangles.astype(np.uint32)
 
@@ -401,6 +393,7 @@ class K3DBackend(Plot):
                 mx, Mx = x.min(), x.max()
                 my, My = y.min(), y.max()
                 dx, dy, dz = (Mx - mx), (My - my), (Mz - mz)
+                print("asd", dx, dy, dz, dz / dx, dz / dy)
                 # thresholds
                 t1, t2 = 10, 3
                 if (dz / dx >= t1) and (dz / dy >= t1):
@@ -422,6 +415,16 @@ class K3DBackend(Plot):
                 if self._use_cm:
                     colors = colors.reshape((-1, 3))
                     a["colors"] = [self._rgb_to_int(c) for c in colors]
+                    
+                    r = []
+                    loc = np.linspace(0, 1, colorscale.shape[0])
+                    colorscale = colorscale / 255
+                    for l, c in zip(loc, colorscale):
+                        r.append(l)
+                        r += list(c)
+                    
+                    a["color_map"] = r
+                    a["color_range"] = [-np.pi, np.pi]
                 surface_kw = self._kwargs.get("surface_kw", dict())
                 surf = k3d.mesh(vertices, indices, 
                         **merge({}, a, surface_kw))
@@ -500,43 +503,21 @@ class K3DBackend(Plot):
                         raise NotImplementedError
         # self._fig.auto_rendering = True
 
-    def _get_auto_camera(self, factor=1.5, yaw=40, pitch=60):
-        """ This function is very similar to k3d.plot.Plot.get_auto_camera.
-        However, it uses 
-        """
-        bounds = np.array(self._bounds)
-        bounds = np.dstack([np.min(bounds[:, 0::2], axis=0), 
-                np.max(bounds[:, 1::2], axis=0)]).flatten()
-        center = (bounds[::2] + bounds[1::2]) / 2.0
-        radius = 0.5 * np.sum(np.abs(bounds[::2] - bounds[1::2]) ** 2) ** 0.5
-        cam_distance = radius * factor / np.sin(np.deg2rad(self._fig.camera_fov / 2.0))
-        
-        x = np.sin(np.deg2rad(pitch)) * np.cos(np.deg2rad(yaw))
-        y = np.sin(np.deg2rad(pitch)) * np.sin(np.deg2rad(yaw))
-        z = np.cos(np.deg2rad(pitch))
-
-        if pitch not in [0, 180]:
-            up = [0, 0, 1]
-        else:
-            up = [0, 1, 1]
-
-        asd = [
-            center[0] + x * cam_distance,
-            center[1] + y * cam_distance,
-            center[2] + z * cam_distance,
-            *center,
-            *up
-        ]
-        return asd
-
     def show(self):
         if len(self._fig.objects) != len(self.series):
             self._process_series(self._series)
         self.plot_shown = True
-        # self._fig.grid = [-2, 2, -2, 2, 0, 10]
+        
         if len(self._bounds) > 0:
+            # there are very high aspect ratio meshes. We are going to compute a
+            # new camera position to improve user experience
             self._fig.camera_auto_fit = False
-            self._fig.camera = self._get_auto_camera()
+            bounds = np.array(self._bounds)
+            bounds = np.dstack([np.min(bounds[:, 0::2], axis=0), 
+                    np.max(bounds[:, 1::2], axis=0)]).flatten()
+            self._fig.camera = self._fig.get_auto_camera(1.5, 40, 60, 
+                bounds)
+
         self._fig.display()
         if self.zlim:
             self._fig.clipping_planes = [

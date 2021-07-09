@@ -207,7 +207,7 @@ def complex_plot(*args, show=True, **kwargs):
                 https://www.codeproject.com/Articles/80641/Visualizing-Complex-Functions
             "f": domain coloring implemented by cplot:
                 https://github.com/nschloe/cplot
-                Use `alpha` and `colorspace` keyword arguments to further 
+                Use `abs_scaling` and `colorspace` keyword arguments to further 
                 customize the appearance.
             "g": alternating black and white stripes corresponding to modulus.
             "h": alternating black and white stripes corresponding to phase.

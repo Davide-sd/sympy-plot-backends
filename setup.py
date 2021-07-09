@@ -6,7 +6,7 @@ def readme():
 
 setup(
     name = 'sympy_plot_backends',
-    version = '0.11.3',
+    version = '0.11.4',
     description = 'Backends for plotting with SymPy',
     long_description = readme(),
     classifiers=[
@@ -29,6 +29,7 @@ setup(
     install_requires = [
         "appdirs",
         "numpy",
+        "scipy", # helps when lambdifying expressions
         "sympy",
         "matplotlib",
         "mergedeep",
@@ -44,6 +45,7 @@ setup(
         # "mayavi",
         "k3d",
         "vtk", # needed for streamlines in k3d
+        "cplot"
         # "pyvista",    # still immature jupyter notebook experience
         # "ipyvtklink"
     ]

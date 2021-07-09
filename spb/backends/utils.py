@@ -153,6 +153,12 @@ def convert_colormap(cm, to, n=256):
             discr = np.linspace(0, 1, n)
             colors = (cm(discr) * 255).astype(int)
             r = ['#%02x%02x%02x' % tuple(c[:-1]) for c in colors]
+        elif isinstance(cm, str):
+            # Plotly color scale
+            discr = np.linspace(0, 1, n)
+            colors = np.array(get_plotly_colors(cm, discr))
+            colors = (colors * 255).astype(np.uint8)
+            r = ['#%02x%02x%02x' % tuple(c) for c in colors]
         elif (isinstance(cm, np.ndarray) or 
                 all([isinstance(c, (list, tuple)) for c in cm])):
             if isinstance(cm, (list, tuple)):

@@ -1,6 +1,5 @@
 from collections.abc import Callable
 from sympy import latex
-from sympy.external import import_module
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 import matplotlib
@@ -222,7 +221,6 @@ class MatplotlibBackend(Plot):
             z: list
                 List of z-coordinates for a 3D line.
         """
-        np = import_module('numpy')
         if z is not None:
             dim = 3
             points = (x, y, z)
@@ -391,7 +389,12 @@ class MatplotlibBackend(Plot):
                     else:
                         qkw = dict()
                         quiver_kw = self._kwargs.get("quiver_kw", dict())
-                        if self._use_cm:
+                        # don't use color map if a scalar field is visible or if
+                        # use_cm=False
+                        solid = (True if ("scalar" not in self._kwargs.keys())
+                            else (False if ((not self._kwargs["scalar"]) or 
+                            (self._kwargs["scalar"] is None)) else True))
+                        if (not solid) and self._use_cm:
                             qkw["cmap"] = next(self._cm)
                             kw = merge({}, qkw, quiver_kw)
                             q = self.ax.quiver(xx, yy, uu, vv, magn, **kw)

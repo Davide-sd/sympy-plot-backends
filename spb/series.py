@@ -1262,7 +1262,7 @@ class ComplexSeries(BaseSeries):
         self.coloring = self.coloring.lower()
         self.phaseres = kwargs.get("phaseres", 20)
         # these will be passed to cplot.get_srgb1
-        self.alpha = kwargs.get('alpha', 1)
+        self.abs_scaling = kwargs.get('abs_scaling', "h-1")
         self.colorspace = kwargs.get('colorspace', 'cam16')
 
     def _correct_output(self, x, r):
@@ -1432,11 +1432,11 @@ class ComplexSeries(BaseSeries):
         
         if self.coloring == "f":
             zn = 1 * np.exp(1j * np.linspace(0, 2 * np.pi, 256))
-            colorscale = get_srgb1(zn, self.alpha, self.colorspace)
+            colorscale = get_srgb1(zn, self.abs_scaling, self.colorspace)
             colorscale = (colorscale * 255).astype(np.uint8)
             # shift the argument from [0, 2*pi] to [-pi, pi]
             colorscale = np.roll(colorscale, int(len(colorscale) / 2), axis=0)
-            rgb = (get_srgb1(w, self.alpha, self.colorspace) * 255).astype(np.uint8)
+            rgb = (get_srgb1(w, self.abs_scaling, self.colorspace) * 255).astype(np.uint8)
             return rgb, colorscale
         
         if self.coloring <= "e":
@@ -1722,4 +1722,7 @@ class GeometricPlaneSeries(SurfaceBaseSeries):
                     n1=self.n1, n2=self.n2,
                     xscale=self.xscale, yscale=self.yscale, zscale=self.zscale)
             xx, yy, zz = s.get_data()
+            if len(fs) > 1:
+                idx = np.logical_or(zz < self.z_range[1], zz > self.z_range[2])
+                zz[idx] = np.nan
         return xx, yy, zz

@@ -1,30 +1,3 @@
-"""
--------------------------------------------------------------
-|  keyword arg  | Matplolib | Bokeh | Plotly | Mayavi | K3D |
--------------------------------------------------------------
-|     xlim      |     Y     |   Y   |    Y   |    N   |  N  |
-|     ylim      |     Y     |   Y   |    Y   |    N   |  N  |
-|     zlim      |     Y     |   N   |    Y   |    N   |  N  |
-|    xscale     |     Y     |   Y   |    Y   |    N   |  N  |
-|    yscale     |     Y     |   Y   |    Y   |    N   |  N  |
-|    zscale     |     Y     |   N   |    Y   |    N   |  N  |
-|     grid      |     Y     |   Y   |    Y   |    Y   |  Y  |
-|    aspect     |     Y     |   N   |    N   |    N   |  N  |
-|     size      |     Y     |   Y   |    Y   |    Y   |  Y  |
-|     title     |     Y     |   Y   |    Y   |    Y   |  Y  |
-|    xlabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
-|    ylabel     |     Y     |   Y   |    Y   |    Y   |  Y  |
-|    zlabel     |     Y     |   N   |    Y   |    Y   |  Y  |
-|  line_color   |     Y     |   N   |    N   |    N   |  N  |
-| surface_color |     Y     |   N   |    N   |    N   |  N  |
--------------------------------------------------------------
-|       2D      |     Y     |   Y   |    Y   |    N   |  N  |
-|       3D      |     Y     |   N   |    Y   |    Y   |  Y  |
-| Latex Support |     Y     |   N   |    Y   |    N   |  Y  |
-| Save Picture  |     Y     |   Y   |    Y   |    Y   |  Y  |
--------------------------------------------------------------
-"""
-
 import warnings
 import numpy as np
 from itertools import cycle
@@ -43,16 +16,19 @@ class Plot:
 
     How the plotting module works:
 
-    1. Whenever a plotting function is called, the provided expressions are
-        processed and a list of instances of the `BaseSeries` class is created,
-        containing the necessary information to plot the expressions (eg the
-        expression, ranges, series name, ...). Eventually, these objects will
-        generate the numerical data to be plotted.
-    2. A Plot object is instantiated, which stores the list of series and the
-        main attributes of the plot (eg axis labels, title, ...).
-    3. The backend will then loops through each series object to generate and
-        plot the numerical data and set the axis labels, title, ..., according
-        to the provided values.
+    1. The user creates the symbolic expressions and calls one of the plotting 
+        functions.
+    2. The plotting functions generate a list of instances of the `BaseSeries` 
+        class, containing the necessary information to plot the expressions 
+        (eg the expression, ranges, series name, ...). Eventually, these objects 
+        will generate the numerical data to be plotted.
+    3. The plotting functions instantiate the `Plot` class, which stores the 
+        list of series and the main attributes of the plot 
+        (eg axis labels, title, ...).
+        Among the keyword arguments, there must be `backend` which specify the 
+        backend to be used.
+    4. The backend (a child class of `Plot`) will render the numerical data to a
+        plot and (eventually) show it on the screen.
 
     The backend should check if it supports the data series that it's given.
     Please, explore the `MatplotlibBackend` source code to understand how a 
@@ -80,7 +56,6 @@ class Plot:
         backend-specific commands. For example, MatplotlibBackend stores a tuple
         (figure, axes).
 
-    
     The arguments for the constructor Plot must be subclasses of BaseSeries.
 
     Any global option can be specified as a keyword argument. The global options
@@ -93,6 +68,7 @@ class Plot:
     - legend : bool
     - xscale : {'linear', 'log'}
     - yscale : {'linear', 'log'}
+    - zscale : {'linear', 'log'}
     - grid : bool
     - axis_center : tuple of two floats or {'center', 'auto'}
     - xlim : tuple of two floats
@@ -102,33 +78,41 @@ class Plot:
     - backend : a subclass of Plot
     - size : optional tuple of two floats, (width, height); default: None
 
-    Note that a backend migh not use some option!
+    Examples
+    ========
 
-    Some data series support additional aesthetics or options. However, a 
-    backend might not be able to use them. In particular:
+    Combine multiple plots together to create a new plot:
 
-    ListSeries, LineOver1DRangeSeries, Parametric2DLineSeries,
-    Parametric3DLineSeries support the following:
+    .. code-block:: python
+        from sympy import *
+        from spb import *
+        x = symbols("x")
+        p1 = plot(sin(x), cos(x))
+        p2 = plot(sin(x) * cos(x), log(x))
+        p3 = p1 + p2
+        p3.show()
 
-    - line_color : string, or float, or function, optional
-        Specifies the color for the plot, which depends on the backend being
-        used.
+    Combine multiple plots together to extend an existing plot:
 
-        For example, if ``MatplotlibBackend`` is being used, then
-        Matplotlib string colors are acceptable ("red", "r", "cyan", "c", ...).
-        Alternatively, we can use a float number `0 < color < 1` wrapped in a
-        string (for example, `line_color="0.5"`) to specify grayscale colors.
-        Alternatively, We can specify a function returning a single
-        float value: this will be used to apply a color-loop (for example,
-        `line_color=lambda x: math.cos(x)`).
-
-        Note that by setting line_color, it would be applied simultaneously
-        to all the series.
+    .. code-block:: python
+        from sympy import *
+        from spb import *
+        x = symbols("x")
+        p1 = plot(sin(x), cos(x))
+        p2 = plot(sin(x) * cos(x), log(x))
+        p1.extend(p2)
+        p1.show()
     
-    SurfaceOver2DRangeSeries, ParametricSurfaceSeries support the following:
+    To access the data series, use the index notation. Let's generate the
+    numerical data associated to the first series:
 
-    - syrface_color : string, or float, or function, optional
-        Identical to line_color, but it applied to the surface.
+    .. code-block:: python
+        from sympy import *
+        from spb import *
+        x = symbols("x")
+        p1 = plot(sin(x), cos(x))
+        xx, yy = p1[0].get_data()
+
     
     See also
     ========
