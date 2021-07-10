@@ -155,46 +155,20 @@ class K3DBackend(Plot):
                 # K3D doesn't like masked arrays, so filled them with NaN
                 x, y, z = [np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) 
                         else t for t in [x, y, z]]
-                # print("K3D is_surface", 
-                #     len(x) if not hasattr(x, "shape") else x.shape,
-                #     len(y) if not hasattr(y, "shape") else y.shape,
-                #     len(z) if not hasattr(z, "shape") else z.shape,
-                # )
 
                 # TODO:
                 # Can I use get_vertices_indices also for non parametric surfaces?
-
                 if s.is_parametric:
-                    # print("K3D is_parametric surface")
                     vertices, indices = get_vertices_indices(x, y, z)
                     vertices = vertices.astype(np.float32)
                 else:
-                    # print("K3D is_surface")
                     x = x.flatten()
                     y = y.flatten()
                     z = z.flatten()
-                    # print(np.amin(z), np.amax(z))
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     indices = Triangulation(x, y).triangles.astype(np.uint32)
-
-                    # look for high aspect ratio meshes, where (dz >> dx, dy) 
-                    # and eventually set the bounds around the mid point of the 
-                    # mesh in order to improve visibility.
-                    # Bounds will be used to set the camera position.
-                    mz, Mz, meanz = z.min(), z.max(), z.mean()
-                    mx, Mx = x.min(), x.max()
-                    my, My = y.min(), y.max()
-                    dx, dy, dz = (Mx - mx), (My - my), (Mz - mz)
-                    # thresholds
-                    t1, t2 = 10, 3
-                    if (dz / dx >= t1) and (dz / dy >= t1):
-                        if abs(Mz / meanz) > t1:
-                            Mz = meanz + t2 * max(dx, dy)
-                        if abs(mz / meanz) > t1:
-                            mz = meanz - t2 * max(dx, dy)
-                        self._bounds.append([mx, Mx, my, My, mz, Mz])
-
                 
+                self._high_aspect_ratio(x, y, z)
                 a = dict(
                     name = s.label if self._kwargs.get("show_label", False) else None,
                     side = "double",
@@ -384,26 +358,8 @@ class K3DBackend(Plot):
                 x, y, z = [t.flatten() for t in [x, y, mag]]
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 indices = Triangulation(x, y).triangles.astype(np.uint32)
+                self._high_aspect_ratio(x, y, z)
 
-                # look for high aspect ratio meshes, where (dz >> dx, dy) 
-                # and eventually set the bounds around the mid point of the 
-                # mesh in order to improve visibility.
-                # Bounds will be used to set the camera position.
-                mz, Mz, meanz = z.min(), z.max(), z.mean()
-                mx, Mx = x.min(), x.max()
-                my, My = y.min(), y.max()
-                dx, dy, dz = (Mx - mx), (My - my), (Mz - mz)
-                print("asd", dx, dy, dz, dz / dx, dz / dy)
-                # thresholds
-                t1, t2 = 10, 3
-                if (dz / dx >= t1) and (dz / dy >= t1):
-                    if abs(Mz / meanz) > t1:
-                        Mz = meanz + t2 * max(dx, dy)
-                    if abs(mz / meanz) > t1:
-                        mz = meanz - t2 * max(dx, dy)
-                    self._bounds.append([mx, Mx, my, My, mz, Mz])
-
-                
                 a = dict(
                     name = s.label if self._kwargs.get("show_label", False) else None,
                     side = "double",
@@ -445,6 +401,25 @@ class K3DBackend(Plot):
             self._fig += k3d.text2d(self.title, 
                  position=[0.025, 0.015], color=0, size=1, label_box=False)
         self._fig.auto_rendering = True
+    
+    def _high_aspect_ratio(self, x, y, z):
+        """ Look for high aspect ratio meshes, where (dz >> dx, dy) and 
+        eventually set the bounds around the mid point of the mesh in order to  
+        improve visibility. Bounds will be used to set the camera position.
+        """
+        mz, Mz, meanz = z.min(), z.max(), z.mean()
+        mx, Mx = x.min(), x.max()
+        my, My = y.min(), y.max()
+        dx, dy, dz = (Mx - mx), (My - my), (Mz - mz)
+        
+        # thresholds
+        t1, t2 = 10, 3
+        if (dz / dx >= t1) and (dz / dy >= t1):
+            if abs(Mz / meanz) > t1:
+                Mz = meanz + t2 * max(dx, dy)
+            if abs(mz / meanz) > t1:
+                mz = meanz - t2 * max(dx, dy)
+            self._bounds.append([mx, Mx, my, My, mz, Mz])
     
     def _update_interactive(self, params):
         # self._fig.auto_rendering = False

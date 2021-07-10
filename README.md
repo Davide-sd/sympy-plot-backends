@@ -18,7 +18,7 @@ This module contains a few plotting backends that can be used with [SymPy](githu
 
 On top of the usual plotting functions exposed by SymPy (`plot`, `plot_parametric`, `plot3d`, etc.), this module offers:
 * capability to use a different backend.
-* `vector_plot` function to quickly visualize 2D/3D vector fields.
+* `vector_plot` function to quickly visualize 2D/3D vector fields with quivers or streamlines.
 * `complex_plot` function to quickly visualize 2D/3D complex functions. In particular, we can visualize the real and imaginary parts, the modulus and argument, 2D/3D domain coloring.
 * `iplot` function to create parametric-interactive plots using widgets (sliders, buttons, etc.).
 * `get_plot_data` function to easily extract the numerical data from symbolic expressions, which can later be used to create custom plots with our plotting library of choice.
@@ -118,8 +118,6 @@ However, there are a few known bugs inherited from dependency-libraries that we 
 ## Installation
 
 Click the _launch binder_ icon below to interactively explore the notebooks in the tutorial folder.
-
-
 
 1. Download this repository: `git clone https://github.com/Davide-sd/sympy-plot-backends`
 2. Move into the module folder, `sympy_plot_backends` and install the module with the command `pip install -e .`.
