@@ -1207,6 +1207,7 @@ class ComplexSeries(BaseSeries):
         """ This method reduces code repetition between ComplexSeries and
         ComplexInteractiveSeries.
         """
+        self.function = None
         if nolist:
             self.var = sympify(r[0])
             self.start = complex(r[1])
@@ -1220,8 +1221,34 @@ class ComplexSeries(BaseSeries):
                     self.is_parametric = True
             elif kwargs.get("threed", False):
                 self.is_3Dsurface = True
+            elif kwargs.get('abs', False) or kwargs.get('arg', False):
+                levels = kwargs.get("levels", (7, 4))
+                self.abs_levels = np.asarray([2.0 ** k for k in np.arange(0, levels[0]) - levels[0] // 2])
+                self.arg_levels = np.linspace(0.0, 2 * np.pi, levels[1], endpoint=False)
+                # https://github.com/nschloe/cplot/blob/main/src/cplot/_main.py
+                # assert levels in [-pi, pi], like np.angle
+                self.arg_levels = np.mod(self.arg_levels + np.pi, 2 * np.pi) - np.pi
+                # Contour levels must be increasing
+                self.arg_levels = np.sort(self.arg_levels)
+
+                is_level1 = (self.arg_levels > -np.pi + 0.1) & (self.arg_levels < np.pi - 0.1)
+                if kwargs.get("level1", True):
+                    self.arg_levels = self.arg_levels[is_level1]
+                    self.angle_func = np.angle
+                    self.angle_range = (-np.pi, np.pi)
+                else:
+                    self.arg_levels = self.arg_levels[~is_level1]
+                    self.arg_levels = np.mod(self.arg_levels, 2 * np.pi)
+                    self.angle_func = lambda k: np.mod(np.angle(k), 2 * np.pi)
+                    self.angle_range = (0.0, 2 * np.pi)
+
+                self.is_contour = True
             else:
                 self.is_domain_coloring = True
+            
+            # TODO: do I need this???
+            from sympy import lambdify
+            self.function = lambdify([self.var], expr)
         
         self.expr = sympify(expr)
         if self.is_2Dline:
@@ -1303,6 +1330,12 @@ class ComplexSeries(BaseSeries):
                 return np.real(x), np.imag(x), np.real(r)
             elif self.imag:
                 return np.real(x), np.imag(x), np.imag(r)
+            elif self.abs and self.arg:
+                return np.real(x), np.imag(x), np.absolute(r), np.angle(r)
+            elif self.abs:
+                return np.real(x), np.imag(x), np.absolute(r), r
+            elif self.arg:
+                return np.real(x), np.imag(x), np.angle(r), r
 
         # 2D or 3D domain coloring
         return (np.real(x), np.imag(x), 
@@ -1456,20 +1489,16 @@ class ComplexSeries(BaseSeries):
                 x_list.append(float(re(p)))
                 y_list.append(float(im(p)))
             return x_list, y_list
-        
-        # TODO: do I need this???
-        from sympy import lambdify
 
         if np.imag(self.start) == np.imag(self.end):
-            f = lambdify([self.var], self.expr)
             if self.adaptive:
-                x, y = self.adaptive_sampling(f)
+                x, y = self.adaptive_sampling(self.function)
                 return [np.array(t) for t in [x, y]]
             else:
             # compute the real/imaginary/magnitude/argument of the complex 
             # function
                 x = self._discretize(self.start, self.end, self.n1, self.xscale)
-                y = f(x + np.imag(self.start) * 1j)
+                y = self.function(x + np.imag(self.start) * 1j)
             return self._correct_output(x, y)
         
         # Domain coloring
@@ -1480,9 +1509,8 @@ class ComplexSeries(BaseSeries):
         x = self._discretize(start_x, end_x, self.n1, self.xscale)
         y = self._discretize(start_y, end_y, self.n2, self.yscale)
         xx, yy = np.meshgrid(x, y)
-        f = lambdify([self.var], self.expr)
         domain = xx + 1j * yy
-        zz = f(domain)
+        zz = self.function(domain)
         return self._correct_output(domain, zz)
 
 

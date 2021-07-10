@@ -76,10 +76,16 @@ class MatplotlibBackend(Plot):
         
         contour_kw : dict
             A dictionary of keywords/values which is passed to Matplotlib's
-            contourf function to customize the appearance.
+            contour/contourf function to customize the appearance.
             Refer to the following web page to learn more about customization:
             https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
         
+        image_kw : dict
+            A dictionary of keywords/values which is passed to Matplotlib's
+            imshow function to customize the appearance.
+            Refer to the following web page to learn more about customization:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
+
         line_kw : dict
             A dictionary of keywords/values which is passed to Matplotlib's
             plot functions to customize the appearance of the lines.
@@ -303,7 +309,7 @@ class MatplotlibBackend(Plot):
                     l = self.ax.plot(x, y, **merge({}, lkw, line_kw))
                     self._add_handle(i, l)
 
-            elif s.is_contour:
+            elif s.is_contour and (not s.is_complex):
                 x, y, z = s.get_data()
                 ckw = dict(cmap = next(self._cm))
                 contour_kw = self._kwargs.get("contour_kw", dict())
@@ -311,6 +317,42 @@ class MatplotlibBackend(Plot):
                 c = self.ax.contourf(x, y, z, **kw)
                 self._add_colorbar(c, s.label, True)
                 self._add_handle(i, c, kw, self._fig.axes[-1])
+            
+            elif s.is_contour and s.is_complex:
+                # this is specifically tailored to create cplot-like contour
+                # lines for magnitude/argument of a complex function.
+                x, y, z, r = s.get_data()
+                ckw = dict(cmap = next(self._cm))
+                contour_kw = self._kwargs.get("contour_kw", dict())
+                kw = merge({}, ckw, contour_kw)
+
+                levels = contour_kw.pop("levels", None)
+                if levels is None:
+                    if s.abs:
+                        ckw["levels"] = s.abs_levels
+                        c = self.ax.contour(x, y, z, **kw)
+                    else:
+                        levels = s.arg_levels
+                        if len(levels) > 0:
+                            c = self.ax.contour(x, y, s.angle_func(r),
+                                    levels=levels, **kw)
+                            
+                            for level, allseg in zip(levels, c.allsegs):
+                                for segment in allseg:
+                                    xx, yy = segment.T
+                                    zz = xx + 1j * yy
+                                    angle = s.angle_func(s.function(zz))
+                                    # cut off segments close to the branch cut
+                                    is_near_branch_cut = np.logical_or(
+                                        *[
+                                            np.abs(angle - bc) < np.abs(angle - level)
+                                            for bc in s.angle_range
+                                        ]
+                                    )
+                                    segment[is_near_branch_cut] = np.nan
+
+                self._add_handle(i, c, kw, self._fig.axes[-1])
+
             elif s.is_3Dline:
                 x, y, z, param = s.get_data()
                 lkw = dict()
@@ -437,13 +479,13 @@ class MatplotlibBackend(Plot):
                 if s.is_domain_coloring:
                     # x, y, magn_angle, img, discr, colors = self._get_image(s)
                     x, y, _, img, colors = s.get_data()
-                    contour_kw = self._kwargs.get("contour_kw", dict())
-                    ckw = dict(
+                    image_kw = self._kwargs.get("image_kw", dict())
+                    ikw = dict(
                         extent = [np.amin(x), np.amax(x), np.amin(y), np.amax(y)], 
                         interpolation = "nearest",
                         origin = "lower",
                     )
-                    kw = merge({}, ckw, contour_kw)
+                    kw = merge({}, ikw, image_kw)
                     image = self.ax.imshow(img, **kw)
                     self._add_handle(i, image, kw)
 
@@ -685,7 +727,7 @@ class MatplotlibBackend(Plot):
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(z), np.amax(z)))
                 
-                elif s.is_contour:
+                elif s.is_contour and (not s.is_complex):
                     x, y, z = self.series[i].get_data()
                     kw, cax = self._handles[i][1:]
                     for c in self._handles[i][0].collections:

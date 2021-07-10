@@ -80,7 +80,28 @@ def _build_series(*args, interactive=False, **kwargs):
                         series.append(cls(expr, *ranges, label, **kw1))
                         series.append(cls(expr, *ranges, label, **kw2))
                     else:
-                        series.append(cls(expr, *ranges, label, **kwargs))
+                        if ((kwargs.get("coloring", None) == "f") and 
+                            (not kwargs.get("threed", False))):
+                            # cplot shows contour lines for absolute value and 
+                            # the argument of a complex function.
+                            def pop_kw(k, *dicts):
+                                for d in dicts:
+                                    if k in d.keys():
+                                        d.pop(k)
+
+                            kw1 = kwargs.copy()
+                            kw2 = kwargs.copy()
+                            pop_kw("arg", kw1, kw2)
+                            pop_kw("abs", kw1, kw2)
+                            pop_kw("coloring", kw1)
+                            if kwargs.get("abs", False):
+                                series.append(cls(expr, *ranges, label, abs=True, **kw1))
+                            if kwargs.get("arg", False):
+                                series.append(cls(expr, *ranges, label, arg=True, levels1=True, **kw1))
+                                series.append(cls(expr, *ranges, label, arg=True, levels1=False, **kw1))
+                            series.append(cls(expr, *ranges, label, **kw2))
+                        else:
+                            series.append(cls(expr, *ranges, label, **kwargs))
     return series
 
 def complex_plot(*args, show=True, **kwargs):
@@ -207,8 +228,26 @@ def complex_plot(*args, show=True, **kwargs):
                 https://www.codeproject.com/Articles/80641/Visualizing-Complex-Functions
             "f": domain coloring implemented by cplot:
                 https://github.com/nschloe/cplot
-                Use `abs_scaling` and `colorspace` keyword arguments to further 
-                customize the appearance.
+                Use the following keywords to further customize the appearance:
+                    `abs_scaling`: str
+                        Default to "h-1". It can be used to adjust the use of 
+                        colors. h with a value less than 1.0 adds more color 
+                        which can help isolating the roots and poles (which are 
+                        still black and white, respectively). "h-0.0" ignores 
+                        the magnitude of f(z) completely. "arctan" is another
+                        possible scaling.
+                    `colorspace` : str
+                        Default to "cam16". Can be set to "hsl" to get the 
+                        common fully saturated, vibrant colors.
+                    `abs` and/or `args` : boolean
+                        Set them to True to show contour lines for absolute 
+                        value and argument.
+                    `levels` : (n_abs, n_arg)
+                        Number of contour levels for the absolute value and the
+                        argument.
+                WARNING: if `abs=True` and/or `arg=True`, only MatplotlibBackend
+                will be able to render the plot! Moreover, `iplot` won't be
+                able to update these contour lines.
             "g": alternating black and white stripes corresponding to modulus.
             "h": alternating black and white stripes corresponding to phase.
             "i": alternating black and white stripes corresponding to real part.

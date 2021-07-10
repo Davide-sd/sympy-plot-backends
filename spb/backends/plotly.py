@@ -327,7 +327,7 @@ class PlotlyBackend(Plot):
                             )
                         )
                 count += 1
-            elif s.is_contour:
+            elif s.is_contour and (not s.is_complex):
                 xx, yy, zz = s.get_data()
                 xx = xx[0, :]
                 yy = yy[:, 0]
@@ -606,7 +606,7 @@ class PlotlyBackend(Plot):
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["z"] = z
 
-                elif s.is_contour:
+                elif s.is_contour and (not s.is_complex):
                     _, _, zz = s.get_data()
                     self.fig.data[i]["z"] = zz
 

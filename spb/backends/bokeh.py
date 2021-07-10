@@ -373,7 +373,7 @@ class BokehBackend(Plot):
                         self._fig.dot("xs", "ys", source=source,
                             **merge({"size": 20}, lkw, line_kw))
 
-            elif s.is_contour:
+            elif s.is_contour and (not s.is_complex):
                 x, y, z = s.get_data()
                 x, y, zz = [t.flatten() for t in [x, y, z]]
                 minx, miny, minz = min(x), min(y), min(zz)
@@ -388,8 +388,7 @@ class BokehBackend(Plot):
                 
                 colormapper = LinearColorMapper(palette=cm, low=minz, high=maxz)
                 cbkw = dict(width = 8, title=s.label)
-                colorbar = ColorBar(color_mapper=colormapper,
-                    **merge({}, cbkw, contour_kw))
+                colorbar = ColorBar(color_mapper=colormapper, **cbkw)
                 self._fig.add_layout(colorbar, 'right')
                 self._handles[i] = colorbar
 
@@ -590,7 +589,7 @@ class BokehBackend(Plot):
                         source = {"xs": x, "ys": y}
                     rend[i].data_source.data.update(source)
 
-                elif s.is_contour:
+                elif s.is_contour and (not s.is_complex):
                     x, y, z = s.get_data()
                     cb = self._handles[i]
                     rend[i].data_source.data.update({"image": [z]})

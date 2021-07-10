@@ -484,10 +484,6 @@ def test_BokehBackend():
     assert isinstance(BB.colorloop, (list, tuple))
     assert hasattr(BB, "colormaps")
     assert isinstance(BB.colormaps, (list, tuple))
-    assert hasattr(BB, "contour_colormaps")
-    assert isinstance(BB.contour_colormaps, (list, tuple))
-    assert hasattr(BB, "quivers_colormaps")
-    assert isinstance(BB.quivers_colormaps, (list, tuple))
 
     series = [UnsupportedSeries()]
     raises(NotImplementedError, lambda: Plot(*series, backend=PB))
@@ -555,7 +551,7 @@ def test_BokehBackend():
 
     p = p8(BB,
             stream_kw=dict(line_color="red"),
-            contour_kw=dict(contours=dict(coloring="lines")))
+            contour_kw=dict())
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
@@ -624,8 +620,6 @@ def test_K3DBackend():
     assert isinstance(KB.colorloop, (list, tuple, ListedColormap))
     assert hasattr(KB, "colormaps")
     assert isinstance(KB.colormaps, (list, tuple))
-    assert hasattr(KB, "quivers_colormaps")
-    assert isinstance(KB.quivers_colormaps, (list, tuple))
 
     series = [UnsupportedSeries()]
     raises(NotImplementedError, lambda: Plot(*series, backend=KBchild2))
