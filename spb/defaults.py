@@ -25,7 +25,11 @@ def _hardcoded_defaults():
             "sizing_mode": "stretch_width"
         },
 
-        k3d = { "bg_color": 0xFFFFFF },
+        k3d = { 
+            "bg_color": 3620427,
+            "grid_color": 0x888888,
+            "label_color": 0XDDDDDD,
+        },
 
         mayavi = { 
             "bg_color": (0.22, 0.24, 0.29),

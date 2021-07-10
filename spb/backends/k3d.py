@@ -83,7 +83,9 @@ class K3DBackend(Plot):
         self._fig = k3d.plot(
             grid_visible = self.grid,
             menu_visibility = True,
-            background_color = int(cfg["k3d"]["bg_color"])
+            background_color = int(cfg["k3d"]["bg_color"]),
+            grid_color = int(cfg["k3d"]["grid_color"]),
+            label_color = int(cfg["k3d"]["10526880"]),
         )
         if (self.xscale == "log") or (self.yscale == "log"):
             warnings.warn("K3D-Jupyter doesn't support log scales. We will " +
