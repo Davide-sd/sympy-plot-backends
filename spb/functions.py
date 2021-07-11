@@ -218,6 +218,10 @@ def plot(*args, show=True, **kwargs):
     only_integers : boolean, optional
         Default to False. If True, discretize the domain with integer numbers.
         This can be useful to plot sums.
+    
+    polar : boolean
+        Default to False. If True, generate a polar plot of a curve with radius
+        `expr` as a function of the range
 
     show : bool, optional
         The default value is set to ``True``. Set show to ``False`` and
@@ -315,6 +319,11 @@ def plot(*args, show=True, **kwargs):
        >>> plot(x**2, adaptive=False, n=400)
        Plot object containing:
        [0]: cartesian line: x**2 for x over (-10.0, 10.0)
+    
+    Polar plot:
+    
+    .. code-block:: python
+        plot(1 + sin(10 * x) / 10, (x, 0, 2 * pi), polar=True, aspect="equal")
 
     See Also
     ========
@@ -1115,3 +1124,11 @@ def plot_implicit(*args, show=True, **kwargs):
     if show:
         p.show()
     return p
+
+def polar_plot(*args, **kwargs):
+    """ The following function creates a 2D polar plot. It's the same as calling
+    `plot(*args, polar=True, **kwargs). Refer to `plot` for a complete docstring
+    with examples.
+    """
+    kwargs["polar"] = True
+    return plot(*args, **kwargs)

@@ -190,6 +190,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.adaptive = kwargs.get('adaptive', True)
         self.depth = kwargs.get('depth', 9)
         self.xscale = kwargs.get('xscale', 'linear')
+        self.polar = kwargs.get("polar", False)
 
     def __str__(self):
         return 'cartesian line: %s for %s over %s' % (
@@ -302,12 +303,18 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                 List of y-coordinates
         """
         if self.only_integers or not self.adaptive:
-            return self._uniform_sampling()
+            x, y = self._uniform_sampling()
+            x, y = np.array(x), np.array(y)
         else:
             f = lambdify([self.var], self.expr)
-            x_coords, y_coords = self.adaptive_sampling(f, self.start, self.end,
+            x, y = self.adaptive_sampling(f, self.start, self.end,
                 self.depth, self.xscale)
-            return (x_coords, y_coords)
+        
+        if self.polar:
+            t = x.copy()
+            x = y * np.cos(t)
+            y = y * np.sin(t)
+        return x, y
 
     def _uniform_sampling(self):
         start, end, N = self.start, self.end, self.n
