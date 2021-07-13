@@ -2,6 +2,10 @@ from sympy import (
     symbols, cos, sin, log, Eq, I, Abs, exp, pi, gamma, Matrix, Tuple, sqrt,
     Plane
 )
+from sympy.geometry import (
+    Plane, Polygon, Circle, Ellipse, Line, Segment, Ray,
+    Line3D, Curve, Point2D, Point3D, Line3D, Segment3D, Ray3D,
+)
 from sympy.vector import CoordSys3D
 from pytest import raises
 from spb.plot_data import _build_series
@@ -9,8 +13,10 @@ from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     ParametricSurfaceSeries, SurfaceOver2DRangeSeries, InteractiveSeries,
     ImplicitSeries, Vector2DSeries, Vector3DSeries, ComplexSeries,
-    ComplexInteractiveSeries, SliceVector3DSeries
+    ComplexInteractiveSeries, SliceVector3DSeries, GeometrySeries, 
+    PlaneSeries, PlaneInteractiveSeries
 )
+
 import numpy as np
 
 def test_build_series():
@@ -79,6 +85,35 @@ def test_build_series():
     s = _build_series(u * sqrt(x), (x, -5, 5), params={u: 1}, pt="pinter", 
         is_complex=True)
     assert isinstance(s, ComplexInteractiveSeries)
+
+def test_geometry():
+    def do_test(*g, s=GeometrySeries, **kwargs):
+        s1 = _build_series(*g, pt="g", **kwargs)
+        assert isinstance(s1, s)
+        s2 = _build_series(*g, **kwargs)
+        assert isinstance(s2, s)
+        assert np.array_equal(s1.get_data(), s2.get_data(), equal_nan=True)
+
+    x, y, z = symbols("x, y, z")
+    do_test(Point2D(1, 2))
+    do_test(Point3D(1, 2, 3))
+    do_test(Ray((1, 2), (3, 4)))
+    do_test(Segment((1, 2), (3, 4)))
+    do_test(Line((1, 2), (3, 4)), (x, -5, 5))
+    do_test(Ray3D((1, 2, 3), (3, 4, 5)))
+    do_test(Segment3D((1, 2, 3), (3, 4, 5)))
+    do_test(Line3D((1, 2, 3), (3, 4, 5)))
+    do_test(Polygon((1, 2), 3, n=10))
+    do_test(Circle((1, 2), 3))
+    do_test(Ellipse((1, 2), hradius=3, vradius=2))
+    do_test(Plane((0, 0, 0), (1, 1, 1)), (x, -5, 5), (y, -4, 4), (z, -3, 3),
+        s=PlaneSeries)
+
+    # Interactive series. Note that GeometryInteractiveSeries is an instance of
+    # GeometrySeries
+    do_test(Point2D(x, y), params={x: 1, y:2})
+    do_test(Plane((x, y, z), (1, 1, 1)), (x, -5, 5), (y, -4, 4), (z, -3, 3), 
+        params={x: 1, y:2, z:3}, s=PlaneInteractiveSeries)
 
 def test_vectors():
     x, y, z = symbols("x:z")

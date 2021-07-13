@@ -1859,7 +1859,8 @@ class GeometrySeries(BaseSeries):
     def get_data(self):
         expr = self.expr.subs(self.params)
         if isinstance(expr, Point3D):
-            return [float(expr.x)], [float(expr.y)], [float(expr.z)], [0]
+            return (np.array([expr.x], dtype=float), np.array([expr.y], dtype=float),
+                np.array([expr.z], dtype=float), np.array([0], dtype=float))
         elif isinstance(expr, Point2D):
             return np.array([expr.x], dtype=float), np.array([expr.y], dtype=float)
         elif isinstance(expr, Polygon):

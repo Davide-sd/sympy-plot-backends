@@ -1,15 +1,16 @@
-from sympy import Tuple, S, I
+from sympy import Tuple, S, I, Plane
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import Boolean
 from sympy.matrices.dense import DenseMatrix
 from sympy.vector import Vector
+from sympy.geometry.entity import GeometryEntity
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries,
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
     ParametricSurfaceSeries, ImplicitSeries, InteractiveSeries,
     _set_discretization_points, Vector2DSeries, Vector3DSeries,
     ContourSeries, ComplexSeries, ComplexInteractiveSeries,
-    SliceVector3DSeries
+    SliceVector3DSeries, GeometrySeries, PlaneInteractiveSeries
 )
 from spb.backends.base_backend import Plot 
 from spb.utils import _unpack_args, _plot_sympify, _check_arguments
@@ -37,7 +38,8 @@ def _build_series(*args, **kwargs):
         "v3d": [Vector3DSeries, 3, 3],
         "v3ds": [SliceVector3DSeries, 3, 3],
         "pc": [ContourSeries, 1, 2],
-        "c": [ComplexSeries, 1, 1]
+        "c": [ComplexSeries, 1, 1],
+        "g": [GeometrySeries, 9, 9]
     }
 
     # In the following dictionary the key is composed of two characters:
@@ -72,6 +74,9 @@ def _build_series(*args, **kwargs):
         if ((len(ranges) > 0) and 
             (ranges[0][1].has(I) or ranges[0][2].has(I))):
             pt = "c"
+        elif isinstance(exprs[0], GeometryEntity):
+            pt = "g"
+            skip_check = True
         elif isinstance(exprs[0], (Boolean, Relational)):
             # implicit series
             pt = "pi"
@@ -167,13 +172,18 @@ def _build_series(*args, **kwargs):
                 if _slice is not None:
                     args = [_slice] + list(args)
                     _cls = SliceVector3DSeries
+            elif k == "99":
+                _cls = GeometrySeries
+                if (isinstance(exprs[0], Plane) and 
+                        len(kwargs.get("params", dict())) > 0):
+                        _cls = PlaneInteractiveSeries
+                        args = [exprs, ranges, label]
             else:
                 args = _check_arguments(args, nexpr, npar)[0]
         else:
             raise ValueError("Wrong `pt` value. Please, check the docstring " +
                 "of `get_plot_data` to list the possible values.")
     kwargs = _set_discretization_points(kwargs, _cls)
-    
     return _cls(*args, **kwargs)
 
 
@@ -358,6 +368,7 @@ def smart_plot(*args, show=True, **kwargs):
                 "v2d": to specify a 2D vector plot.
                 "v3d": to specify a 3D vector plot.
                 "c": to specify a complex plot.
+                "g": to specify a geometric entity plot.
 
     Examples
     ========
