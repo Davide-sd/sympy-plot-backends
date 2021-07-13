@@ -269,8 +269,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         layout = kwargs.pop("layout", "tb")
         ncols = kwargs.pop("ncols", 2)
 
-        if "use_latex" not in aux.keys():
-            aux["use_latex"] = kwargs.pop("use_latex", True)
+        aux.setdefault("use_latex", kwargs.pop("use_latex", True))
 
         args = list(map(_plot_sympify, args))
         super().__init__(*args, name=name, params=params, **aux)
@@ -318,7 +317,6 @@ class InteractivePlot(DynamicParam, PanelLayout):
                         series.append(InteractiveSeries(exprs, ranges, label, **kwargs2))
                 else:
                     series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
-        
         return series
     
     @property
@@ -476,6 +474,25 @@ def iplot(*args, show=True, **kwargs):
             backend = MB,
             is_complex = True,
             coloring = "b"
+        )
+    
+
+    A parametric plot of a symbolic polygon. Note the use of `param` to create
+    an integer slider.
+
+    .. code-block:: python
+        import param
+        iplot(
+            (Polygon((a, b), c, n=d), ),
+            params = {
+                a: (0, (-2, 2)),
+                b: (0, (-2, 2)),
+                c: (1, (0, 5)),
+                d: param.Integer(3, softbounds=(3, 10), label="n"),
+            },
+            fill = False,
+            aspect = "equal",
+            use_latex = False
         )
     """
     i = InteractivePlot(*args, **kwargs)

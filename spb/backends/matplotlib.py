@@ -8,7 +8,7 @@ import matplotlib.cm as cm
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, Normalize
 import mpl_toolkits
-from mpl_toolkits.mplot3d.art3d import Line3DCollection
+from mpl_toolkits.mplot3d.art3d import Line3DCollection, Path3DCollection
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import numpy as np
 from mergedeep import merge
@@ -302,7 +302,7 @@ class MatplotlibBackend(Plot):
                     else:
                         x, y = s.get_data()
                     x, y, _ = self._detect_poles(x, y)
-                    lkw = dict(label=s.label)
+                    lkw = dict(label=s.label, color=next(self._cl))
                     if s.is_point:
                         lkw["marker"] = "o"
                         lkw["linestyle"] = "None"
@@ -357,19 +357,26 @@ class MatplotlibBackend(Plot):
                 x, y, z, param = s.get_data()
                 lkw = dict()
                 line_kw = self._kwargs.get("line_kw", dict())
-                if self._use_cm:
-                    segments = self.get_segments(x, y, z)
-                    lkw["cmap"] = next(self._cm)
-                    lkw["array"] = param
-                    c = Line3DCollection(segments, **merge({}, lkw, line_kw))
-                    self.ax.add_collection(c)
-                    self._add_colorbar(c, s.label)
-                    self._add_handle(i, c)
-                else:
-                    lkw["label"] = s.label
-                    l = self.ax.plot(x, y, z, **merge({}, lkw, line_kw))
-                    self._add_handle(i, l)
 
+                if len(x) > 1:
+                    if self._use_cm:
+                        segments = self.get_segments(x, y, z)
+                        lkw["cmap"] = next(self._cm)
+                        lkw["array"] = param
+                        c = Line3DCollection(segments, **merge({}, lkw, line_kw))
+                        self.ax.add_collection(c)
+                        self._add_colorbar(c, s.label)
+                        self._add_handle(i, c)
+                    else:
+                        lkw["label"] = s.label
+                        l = self.ax.plot(x, y, z, **merge({}, lkw, line_kw))
+                        self._add_handle(i, l)
+                else:
+                    # 3D points
+                    lkw["label"] = s.label
+                    lkw["color"] = next(self._cl)
+                    l = self.ax.scatter(x, y, z, **merge({}, lkw, line_kw))
+                    self._add_handle(i, l)
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
                 zlims.append((np.amin(z), np.amax(z)))
@@ -552,6 +559,14 @@ class MatplotlibBackend(Plot):
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(mag), np.amax(mag)))
+            elif s.is_geometry:
+                x, y = s.get_data()
+                color = next(self._cl)
+                fkw = dict(facecolor=color, fill=s.fill, edgecolor=color)
+                fill_kw = self._kwargs.get("fill_kw", dict())
+                kw = merge({}, fkw, fill_kw)
+                c = self.ax.fill(x, y, **kw)
+                self._add_handle(i, c, kw)
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
@@ -714,14 +729,20 @@ class MatplotlibBackend(Plot):
                         else:
                             x, y = self.series[i].get_data()
                             x, y, _ = self._detect_poles(x, y)
+                        # TODO: Point2D are update but not visible.
                         self._handles[i][0].set_data(x, y)
                         
                 elif s.is_3Dline:
-                    x, y, z = self.series[i].get_data()
+                    x, y, z, _ = self.series[i].get_data()
                     if isinstance(self._handles[i][0], Line3DCollection):
+                        # gradient lines
                         segments = self.get_segments(x, y, z)
                         self._handles[i][0].set_segments(segments)
+                    elif isinstance(self._handles[i][0], Path3DCollection):
+                        # 3D points
+                        self._handles[i][0]._offsets3d = (x, y, z)
                     else:
+                        # solid lines
                         self._handles[i][0].set_data_3d(x, y, z)
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
@@ -838,6 +859,13 @@ class MatplotlibBackend(Plot):
                         xlims.append((np.amin(x), np.amax(x)))
                         ylims.append((np.amin(y), np.amax(y)))
                         zlims.append((np.amin(mag), np.amax(mag)))
+                
+                elif s.is_geometry and not (s.is_2Dline):
+                    # TODO: fill doesn't update
+                    x, y = self.series[i].get_data()
+                    self._handles[i][0].remove()
+                    self._handles[i][0] = self.ax.fill(x, y, **self._handles[i][1])
+
 
         # Update the plot limits according to the new data
         Axes3D = mpl_toolkits.mplot3d.Axes3D

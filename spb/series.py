@@ -1,6 +1,11 @@
 from collections.abc import Callable
 from sympy import sympify, Tuple, symbols, solve, re, im
-from sympy.geometry import Plane
+from sympy.geometry import (
+    Plane, Polygon, Circle, Ellipse, Line, Segment, Ray,
+    Line3D, Curve, Point2D, Point3D
+)
+from sympy.geometry.entity import GeometryEntity
+from sympy.geometry.line import LinearEntity2D, LinearEntity3D
 from sympy.core.relational import (Equality, GreaterThan, LessThan,
                 Relational, StrictLessThan, StrictGreaterThan)
 from sympy.logic.boolalg import BooleanFunction
@@ -65,6 +70,9 @@ class BaseSeries:
 
     is_point = False
     # If True, the rendering will use points, not lines.
+
+    is_geometry = False
+    # If True, it represents an object of the sympy.geometry module
 
     def __init__(self):
         super().__init__()
@@ -569,6 +577,7 @@ class SurfaceBaseSeries(BaseSeries):
 class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     """Representation for a 3D surface consisting of a sympy expression and 2D
     range."""
+
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         super().__init__()
         self.expr = sympify(expr)
@@ -969,7 +978,22 @@ class InteractiveSeries(BaseSeries):
 
     is_interactive = True
 
+    def __new__(cls, *args, **kwargs):
+        if isinstance(args[0][0], Plane):
+            return PlaneInteractiveSeries(*args, **kwargs)
+        elif (isinstance(args[0][0], GeometryEntity) and 
+                (not isinstance(args[0][0], Curve))):
+            return GeometryInteractiveSeries(*args, **kwargs)
+        return object.__new__(cls)
+
     def __init__(self, exprs, ranges, label="", **kwargs):
+        # take care of Curve from sympy.geometry, which can be seen as 
+        # parametric series
+        if isinstance(exprs[0], Curve):
+            c = exprs[0]
+            exprs = c.functions
+            ranges = [c.limits]
+
         # free symbols of the parameters
         params = kwargs.get("params", dict())
         # number of discretization points
@@ -1522,6 +1546,8 @@ class ComplexSeries(BaseSeries):
 
 
 class ComplexInteractiveSeries(InteractiveSeries, ComplexSeries):
+    def __new__(cls, *args, **kwargs):
+        return object.__new__(cls)
 
     def __init__(self, expr, r, label="", **kwargs):
         params = kwargs.get("params", dict())
@@ -1684,7 +1710,7 @@ class Vector3DSeries(VectorBase):
 def _build_plane_series(plane, ranges, **kwargs):
     """ This method reduced code repetition. """
     if isinstance(plane, Plane):
-        return GeometricPlaneSeries(sympify(plane), *ranges, **kwargs)
+        return PlaneSeries(sympify(plane), *ranges, **kwargs)
     else:
         return SurfaceOver2DRangeSeries(plane, *ranges, **kwargs)
 
@@ -1706,12 +1732,13 @@ class SliceVector3DSeries(Vector3DSeries):
         return self.plane.get_data()
 
 
-class GeometricPlaneSeries(SurfaceBaseSeries):
+class PlaneSeries(SurfaceBaseSeries):
     """ Represents a plane in a 3D domain.
     """
     is_3Dsurface = True
 
-    def __init__(self, plane, x_range, y_range, z_range, label="", **kwargs):
+    def __init__(self, plane, x_range, y_range, z_range=None, label="", 
+            params=dict(), **kwargs):
         self.plane = sympify(plane)
         if not isinstance(self.plane, Plane):
             raise TypeError(
@@ -1726,10 +1753,12 @@ class GeometricPlaneSeries(SurfaceBaseSeries):
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
+        self.params = params
     
     def get_data(self):
         x, y, z = symbols("x, y, z")
-        fs = self.plane.equation(x, y, z).free_symbols
+        plane = self.plane.subs(self.params)
+        fs = plane.equation(x, y, z).free_symbols
         xx, yy, zz = None, None, None
         if fs == set([x]):
             # parallel to yz plane (normal vector (1, 0, 0))
@@ -1749,7 +1778,7 @@ class GeometricPlaneSeries(SurfaceBaseSeries):
             xx, yy, zz = xx, zz, yy
         else:
             # parallel to xy plane, or any other plane
-            eq = self.plane.equation(x, y, z)
+            eq = plane.equation(x, y, z)
             if z in eq.free_symbols:
                 eq = solve(eq, z)[0]
             s = SurfaceOver2DRangeSeries(eq, 
@@ -1761,3 +1790,142 @@ class GeometricPlaneSeries(SurfaceBaseSeries):
                 idx = np.logical_or(zz < self.z_range[1], zz > self.z_range[2])
                 zz[idx] = np.nan
         return xx, yy, zz
+
+class PlaneInteractiveSeries(PlaneSeries, InteractiveSeries):
+    """ Represent a geometric plane.
+
+    NOTE: In the MRO, PlaneSeries has the precedence over InteractiveSeries.
+    This is because Numpy and Scipy don't have correspondence with Plane. 
+    Hence, we got to use get_data() implemented in PlaneSeries.
+    """
+
+    def __new__(cls, *args, **kwargs):
+        return object.__new__(cls)
+
+    def __init__(self, exprs, ranges, label="", **kwargs):
+        PlaneSeries.__init__(self, exprs[0], *ranges, label=label, **kwargs)
+
+    def update_data(self, params):
+        self.params = params
+
+
+class GeometrySeries(BaseSeries):
+    is_geometry = True
+
+    def __new__(cls, *args, **kwargs):
+        if isinstance(args[0], Plane):
+            return PlaneSeries(*args, **kwargs)
+        elif isinstance(args[0], Curve):
+            new_cls = (Parametric2DLineSeries if len(args[0].functions) == 2 
+                else Parametric3DLineSeries)
+            label = [a for a in args if isinstance(a, str)]
+            label = label[0] if len(label) > 0 else str(args[0])
+            return new_cls(
+                *args[0].functions, args[0].limits, label, **kwargs)
+        return object.__new__(cls)
+
+    def __init__(self, expr, _range=None, label="", params=dict(), **kwargs):
+        if not isinstance(expr, GeometryEntity):
+            raise ValueError("`expr` must be a geomtric entity.\n" +
+                "Received: type(expr) = {}\n".format(type(expr)) + 
+                "Expr: {}".format(expr)
+            )
+        
+        r = expr.free_symbols.difference(set(params.keys()))
+        if len(r) > 0:
+            raise ValueError(
+                "Too many free symbols. Please, specify the values of the " +
+                "following symbols with the `params` dictionary: {}".format(r)
+            )
+        
+        self.expr = expr
+        self._range = _range
+        self.label = label
+        self.params = params
+        self.fill = kwargs.get("fill", True)
+        if isinstance(expr, (LinearEntity3D, Point3D)):
+            self.is_3Dline = True
+            self.start = 0
+            self.end = 0
+            if isinstance(expr, Point3D):
+                self.is_point = True
+        elif (isinstance(expr, LinearEntity2D) or 
+            (isinstance(expr, (Polygon, Circle, Ellipse)) and (not self.fill))):
+            self.is_2Dline = True
+        elif isinstance(expr, Point2D):
+            self.is_point = True
+            self.is_2Dline = True
+    
+    def get_data(self):
+        expr = self.expr.subs(self.params)
+        if isinstance(expr, Point3D):
+            return [float(expr.x)], [float(expr.y)], [float(expr.z)], [0]
+        elif isinstance(expr, Point2D):
+            return np.array([expr.x], dtype=float), np.array([expr.y], dtype=float)
+        elif isinstance(expr, Polygon):
+            x = [float(v.x) for v in expr.vertices]
+            y = [float(v.y) for v in expr.vertices]
+            x.append(x[0])
+            y.append(y[0])
+            return np.array(x), np.array(y)
+        elif isinstance(expr, Circle):
+            cx, cy = float(expr.center[0]), float(expr.center[1])
+            r = float(expr.radius)
+            t = np.linspace(0, 2 * np.pi, 200)
+            x, y = cx + r * np.cos(t), cy + r * np.sin(t)
+            x = np.append(x, x[0])
+            y = np.append(y, y[0])
+            return x, y
+        elif isinstance(expr, Ellipse):
+            cx, cy = float(expr.center[0]), float(expr.center[1])
+            a = float(expr.hradius)
+            e = float(expr.eccentricity)
+            x = np.linspace(-a, a, 200)
+            y = np.sqrt((a**2 - x**2) * (1 - e**2))
+            x += cx
+            x, y = np.concatenate((x, x[::-1])), np.concatenate((cy + y, cy - y[::-1]))
+            x = np.append(x, x[0])
+            y = np.append(y, y[0])
+            return x, y
+        elif isinstance(expr, LinearEntity3D):
+            p1, p2 = expr.points
+            x = np.array([p1.x, p2.x], dtype=float)
+            y = np.array([p1.y, p2.y], dtype=float)
+            z = np.array([p1.z, p2.z], dtype=float)
+            param = np.zeros_like(x)
+            return x, y, z, param
+        elif isinstance(expr, (Segment, Ray)):
+            p1, p2 = expr.points
+            x = np.array([p1.x, p2.x])
+            y = np.array([p1.y, p2.y])
+            return x.astype(float), y.astype(float)
+        else: # Line
+            p1, p2 = expr.points
+            if self._range is None:
+                x = np.array([p1.x, p2.x])
+                y = np.array([p1.y, p2.y])
+            else:
+                m = expr.slope
+                q = p1[1] - m * p1[0]
+                x = np.array([self._range[1], self._range[2]])
+                y = m * x + q
+            return x.astype(float), y.astype(float)
+
+class GeometryInteractiveSeries(GeometrySeries, InteractiveSeries):
+    """ Represent a geometry entity.
+
+    NOTE: In the MRO, GeometrySeries has the precedence over InteractiveSeries.
+    This is because Numpy and Scipy don't have correspondence with Line, 
+    Segment, Polygon, ... Hence, we got to use get_data() implemented in
+    GeometrySeries.
+    """
+
+    def __new__(cls, *args, **kwargs):
+        return object.__new__(cls)
+
+    def __init__(self, exprs, ranges, label="", **kwargs):
+        r = ranges[0] if len(ranges) > 0 else None
+        GeometrySeries.__init__(self, exprs[0], _range=r, label=label, **kwargs)
+
+    def update_data(self, params):
+        self.params = params

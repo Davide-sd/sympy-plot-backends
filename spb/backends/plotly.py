@@ -246,6 +246,7 @@ class PlotlyBackend(Plot):
                     self._fig.add_trace(
                         go.Scatter(x = x, y = y, **merge({}, lkw, line_kw)))
                 else:
+                    print("asdasdasdasd", s.is_point, s.expr)
                     x, y = s.get_data()
                     x, y, _ = self._detect_poles(x, y)
                     lkw = dict(
@@ -262,18 +263,25 @@ class PlotlyBackend(Plot):
                 # in order to hide/show a specific series whenever we are  
                 # plotting multiple series.
                 x, y, z, param = s.get_data()
-                lkw = dict(
-                    name = s.label,
-                    mode = "lines",
-                    line = dict(
-                        width = 4,
-                        colorscale = (next(self._cm) if self._use_cm 
-                            else self._solid_colorscale()),
-                        color = param,
-                        showscale = self.legend and self._use_cm,
-                        colorbar = self._create_colorbar(ii, s.label, True)
+                if not s.is_point:
+                    lkw = dict(
+                        name = s.label,
+                        mode = "lines",
+                        line = dict(
+                            width = 4,
+                            colorscale = (next(self._cm) if self._use_cm 
+                                else self._solid_colorscale()),
+                            color = param,
+                            showscale = self.legend and self._use_cm,
+                            colorbar = self._create_colorbar(ii, s.label, True)
+                        )
                     )
-                )
+                else:
+                    lkw = dict(
+                        name = s.label,
+                        mode = "markers",
+                        line_color = next(self._cl)
+                    )
                 line_kw = self._kwargs.get("line_kw", dict())
                 self._fig.add_trace(
                     go.Scatter3d(
@@ -567,6 +575,19 @@ class PlotlyBackend(Plot):
                     )
                     
                     count += 1
+            
+            elif s.is_geometry:
+                x, y = s.get_data()
+                lkw = dict(
+                    name = s.label,
+                    mode = "lines",
+                    fill = "toself",
+                    line_color = next(self._cl)
+                )
+                line_kw = self._kwargs.get("line_kw", dict())
+                self._fig.add_trace(
+                    go.Scatter(x = x, y = y, **merge({}, lkw, line_kw)))
+
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}".format(type(s), type(self).__name__)
@@ -586,6 +607,8 @@ class PlotlyBackend(Plot):
                 elif s.is_2Dline:
                     x, y = self.series[i].get_data()
                     x, y, _ = self._detect_poles(x, y)
+                    if s.is_geometry:
+                        self.fig.data[i]["x"] = x
                     self.fig.data[i]["y"] = y
 
                 elif s.is_3Dline:
@@ -672,7 +695,12 @@ class PlotlyBackend(Plot):
                         if (abs(m + self.pi) < 1e-02) and (abs(M - self.pi) < 1e-02):
                             self.fig.data[i]["colorbar"]["tickvals"] = [m, -self.pi / 2, 0, self.pi / 2, M]
                             self.fig.data[i]["colorbar"]["ticktext"] = ["-&#x3C0;", "-&#x3C0; / 2", "0", "&#x3C0; / 2", "&#x3C0;"]
-                            
+                
+                elif s.is_geometry and not (s.is_2Dline):
+                    x, y = self.series[i].get_data()
+                    self.fig.data[i]["x"] = x
+                    self.fig.data[i]["y"] = y
+
     def _update_layout(self):
         self._fig.update_layout(
             template = self._kwargs.get("theme", cfg["plotly"]["theme"]),

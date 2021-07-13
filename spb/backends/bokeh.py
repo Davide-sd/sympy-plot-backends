@@ -489,6 +489,13 @@ class BokehBackend(Plot):
                         ticker = FixedTicker(ticks = [0, 1]),
                         major_label_overrides = {0: "0", 1: "∞"})
                     self._fig.add_layout(colorbar2, 'right')
+            
+            elif s.is_geometry:
+                x, y = s.get_data()
+                color = next(self._cl)
+                pkw = dict(alpha=0.5, line_width=2, line_color=color, fill_color=color)
+                patch_kw = self._kwargs.get("patch_kw", dict())
+                self._fig.patch(x, y, **merge({}, pkw, patch_kw))
 
             else:
                 raise NotImplementedError(
@@ -632,7 +639,7 @@ class BokehBackend(Plot):
                             **quiver_kw)
                         mag = data["magnitude"]
                         color_mapper = LinearColorMapper(
-                            palette=self.quivers_colormaps[i], 
+                            palette=next(self._cm), 
                             low=min(mag), high=max(mag))
                         line_color = quiver_kw.get("line_color",
                             {'field': 'magnitude', 'transform': color_mapper})
@@ -650,6 +657,12 @@ class BokehBackend(Plot):
                         "arg": [magn_angle[:, :, 1]]
                     }
                     rend[i].data_source.data.update(source)
+                
+                elif s.is_geometry and (not s.is_2Dline):
+                    x, y = s.get_data()
+                    source = {"x": x, "y": y}
+                    rend[i].data_source.data.update(source)
+
 
     def save(self, path, **kwargs):
         self._process_series(self._series)

@@ -85,7 +85,7 @@ class K3DBackend(Plot):
             menu_visibility = True,
             background_color = int(cfg["k3d"]["bg_color"]),
             grid_color = int(cfg["k3d"]["grid_color"]),
-            label_color = int(cfg["k3d"]["10526880"]),
+            label_color = int(cfg["k3d"]["label_color"]),
         )
         if (self.xscale == "log") or (self.yscale == "log"):
             warnings.warn("K3D-Jupyter doesn't support log scales. We will " +
@@ -130,7 +130,19 @@ class K3DBackend(Plot):
             self._fig.remove_class(o)
 
         for ii, s in enumerate(series):
-            if s.is_3Dline:
+            if s.is_3Dline and s.is_point:
+                x, y, z, _ = s.get_data()
+                positions = np.vstack([x, y, z]).T.astype(np.float32)
+                a = dict(
+                    point_size=0.2, 
+                    color = self._convert_to_int(next(self._cl))
+                )
+                line_kw = self._kwargs.get("line_kw", dict())
+                plt_points = k3d.points(positions=positions, **merge({}, a, line_kw))
+                plt_points.shader = 'mesh'
+                self._fig += plt_points
+                
+            elif s.is_3Dline:
                 x, y, z, param = s.get_data()
                 # K3D doesn't like masked arrays, so filled them with NaN
                 x, y, z = [np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) 
@@ -428,8 +440,14 @@ class K3DBackend(Plot):
         for i, s in enumerate(self.series):
             if s.is_interactive:
                 self.series[i].update_data(params)
-                if s.is_3Dline:
-                    x, y, z = self.series[i].get_data()
+
+                if s.is_3Dline and s.is_point:
+                    x, y, z, _ = self.series[i].get_data()
+                    positions = np.vstack([x, y, z]).T.astype(np.float32)
+                    self._fig.objects[i].positions = positions
+
+                elif s.is_3Dline:
+                    x, y, z, _ = self.series[i].get_data()
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     self._fig.objects[i].vertices = vertices
 

@@ -268,11 +268,15 @@ def _unpack_args(*args, matrices=False, fill_ranges=True):
     >>> _unpack_args(*args)
         ([sin(x + y), cos(x - y), x + y], [(x, -2, 2), (y, -3, 3)], 'f3')
     """
+    print("_unpack_args", args)
     ranges = [t for t in args if _is_range(t)]
     labels = [t for t in args if isinstance(t, str)]
     label = "" if not labels else labels[0]
     results = [not (_is_range(a) or isinstance(a, str)) for a in args]
     exprs = [a for a, b in zip(args, results) if b]
+    print("ranges", ranges)
+    print("label", label)
+    print("exprs", exprs)
 
     if label == "":
         if len(exprs) == 1:

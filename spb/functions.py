@@ -23,9 +23,11 @@ from sympy import (
     Expr, Tuple, Symbol, oo, Piecewise, piecewise_fold,
     UniversalSet, EmptySet, UniversalSet, FiniteSet, Interval, Union
 )
+from sympy.geometry.entity import GeometryEntity
+from sympy.geometry import Plane
 
 from spb.backends.base_backend import Plot
-from spb.utils import _is_range, _plot_sympify, _check_arguments
+from spb.utils import _is_range, _plot_sympify, _check_arguments, _unpack_args
 
 # N.B.
 # When changing the minimum module version for matplotlib, please change
@@ -35,7 +37,8 @@ from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries,
     Parametric3DLineSeries, SurfaceOver2DRangeSeries,
     ParametricSurfaceSeries, ContourSeries, ImplicitSeries,
-    _set_discretization_points, List2DSeries
+    _set_discretization_points, List2DSeries, GeometrySeries, 
+    PlaneSeries
 )
 
 def _get_endpoints(i, _min, _max):
@@ -1132,3 +1135,113 @@ def polar_plot(*args, **kwargs):
     """
     kwargs["polar"] = True
     return plot(*args, **kwargs)
+
+def geometry_plot(*args, show=True, **kwargs):
+    """ Plot entities from the sympy.geometry module.
+
+    Arguments
+    =========
+        geom : GeometryEntity
+            Represent the geometric entity to be plotted.
+
+        label : str
+            The name of the complex function to be eventually shown on the
+            legend. If none is provided, the string representation of the 
+            function will be used.
+        
+        To specify multiple complex functions, wrap them into a tuple.
+        Refer to the examples to learn more.
+
+    Keyword Arguments
+    =================
+
+        fill : boolean
+            Default to True. Fill the polygon/circle/ellipse.
+        
+        params : dict
+            Substitution dictionary to properly evaluate symbolic geometric
+            entities. The keys contains symbols, the values the numeric number
+            associated to the symbol.
+        
+    Examples
+    ========
+
+    Plot several numeric geometric entitiesy. By default, circles, ellipses and 
+    polygons are going to be filled. Plotting Curve objects is the same as 
+    `plot_parametric`.
+
+    .. code-block:: python
+        geometry_plot(
+            Circle(Point(0, 0), 5),
+            Ellipse(Point(-3, 2), hradius=3, eccentricity=Rational(4, 5)),
+            Polygon((4, 0), 4, n=5),
+            Curve((cos(x), sin(x)), (x, 0, 2 * pi)),
+            Segment((-4, -6), (6, 6)),
+            Point2D(0, 0))
+    
+    Plot several numeric geometric entities defined by numbers only, turn off 
+    fill. Every entity is represented as a line.
+
+    .. code-block:: python
+        geometry_plot(
+            Circle(Point(0, 0), 5),
+            Ellipse(Point(-3, 2), hradius=3, eccentricity=Rational(4, 5)),
+            Polygon((4, 0), 4, n=5),
+            Curve((cos(x), sin(x)), (x, 0, 2 * pi)),
+            Segment((-4, -6), (6, 6)),
+            Point2D(0, 0), fill=False)
+    
+    Plot several symbolic geometric entities. We need to pass in the `params`
+    dictionary, which will be used to substitute symbols before numerical
+    evaluation. Note: here we also set custom labels:
+
+    .. code-block:: python
+        a, b, c, d = symbols("a, b, c, d")
+        geometry_plot(
+            (Polygon((a, b), c, n=d), "triangle"),
+            (Polygon((a + 2, b + 3), c, n=d + 1), "square"),
+            params = {a: 0, b: 1, c: 2, d: 3}
+        )
+    
+    Plot 3D geometric entities. Note: when plotting a Plane, we must always
+    provide the x/y/z ranges:
+
+    .. code-block:: python
+        geometry_plot(
+            (Point3D(5, 5, 5), "center"),
+            (Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4)), "line"),
+            (Plane((0, 0, 0), (1, 1, 1)), (x, -5, 5), (y, -4, 4), (z, -10, 10))
+        )
+
+    """
+    from spb.defaults import TWO_D_B, THREE_D_B
+    args = _plot_sympify(args)
+    
+    series = []
+    if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
+        args = [args]
+    
+    for a in args:
+        exprs, ranges, label = _unpack_args(*a)
+        r = ranges if len(ranges) > 0 else [None]
+        if len(exprs) == 1:
+            series.append(GeometrySeries(exprs[0], *r, label, **kwargs))
+        else:
+            # this is the case where the user provided: v1, v2, ..., range
+            # we use the same ranges for each expression
+            for e in exprs:
+                series.append(GeometrySeries(e, *r, str(e), **kwargs))
+
+    any_3D = any(s.is_3D for s in series)
+    if ("aspect" not in kwargs) and (not any_3D):
+        kwargs["aspect"] = "equal"
+
+    if any_3D:
+        kwargs.setdefault('backend', THREE_D_B)
+    else:
+        kwargs.setdefault('backend', TWO_D_B)
+
+    p = Plot(*series, **kwargs)
+    if show:
+        p.show()
+    return p
