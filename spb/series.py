@@ -105,6 +105,10 @@ class BaseSeries:
         """ If `a` is a scalar, we need to convert its dimension to the 
         appropriate grid size given by `b`.
         """
+        if not isinstance(a, np.ndarray):
+            # `a` is a scalar (int or float)
+            a = np.array(a)
+
         if a.shape != b.shape:
             return a * np.ones_like(b)
         return a
@@ -249,7 +253,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                                                         np.log10(p[0])))
             else:
                 xnew = p[0] + random * (q[0] - p[0])
-            
+
             ynew = f(xnew)
             new_point = np.array([xnew, ynew])
 
@@ -607,7 +611,9 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
             self.start_x, self.end_x, self.n1, self.xscale,
             self.start_y, self.end_y, self.n2, self.yscale
         )
-        f = vectorized_lambdify((self.var_x, self.var_y), self.expr)
+        from sympy import lambdify
+        f = lambdify((self.var_x, self.var_y), self.expr)
+        # f = vectorized_lambdify((self.var_x, self.var_y), self.expr)
         mesh_z = f(mesh_x, mesh_y)
         mesh_z = self._correct_size(mesh_z, mesh_x).astype(np.float64)
         mesh_z = np.ma.masked_invalid(mesh_z)
@@ -922,7 +928,13 @@ class ImplicitSeries(BaseSeries):
     
     @staticmethod
     def _postprocess_meshgrid_result(z_grid, x_grid):
-        """ Bound the result to -1, 1. This method reduces code repetition. """
+        """ Bound the result to -1, 1. This method reduces code repetition. 
+        While with Matplotlib we can directly plot the result z_grid and set the
+        contour levels, this is not possible with Plotly. Hence, Plotly will
+        use the ones matrix. The result will be slightly different: while
+        Matplotlib will render smooth lines, Plotly will looks 
+        square-ish/segmented.
+        """
         z_grid = ImplicitSeries._correct_size(z_grid, x_grid)
         # ones contains data useful to plot regions, or in case of Plotly,
         # contour lines too.
@@ -1363,10 +1375,18 @@ class ComplexSeries(BaseSeries):
                 return np.real(x), np.imag(x), np.imag(r)
             elif self.abs and self.arg:
                 return np.real(x), np.imag(x), np.absolute(r), np.angle(r)
-            elif self.abs:
+            elif self.is_contour and self.abs:
+                # NOTE: specific hack in order to get coloring="f" to work
+                # properly on MatplotlibBackend with cplot
                 return np.real(x), np.imag(x), np.absolute(r), r
-            elif self.arg:
+            elif self.is_contour and self.arg:
+                # NOTE: specific hack in order to get coloring="f" to work
+                # properly on MatplotlibBackend with cplot
                 return np.real(x), np.imag(x), np.angle(r), r
+            elif self.abs:
+                return np.real(x), np.imag(x), np.absolute(r)
+            elif self.arg:
+                return np.real(x), np.imag(x), np.angle(r)
 
         # 2D or 3D domain coloring
         return (np.real(x), np.imag(x), 

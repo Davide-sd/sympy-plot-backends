@@ -286,6 +286,11 @@ class BokehBackend(Plot):
                 hide_banner=True
             )
         
+        # add colors if needed
+        if ((len([s for s in self._series if s.is_2Dline]) > 10) and 
+                (self.colorloop == bp.Category10[10])):
+            self.colorloop = bp.Category20[20]
+        
         self._handles = dict()
         self._init_cyclers()
 
@@ -341,8 +346,8 @@ class BokehBackend(Plot):
             if s.is_2Dline:
                 if s.is_parametric and self._use_cm:
                     x, y, param = s.get_data()
-                    colormap = (next(self._cm) if not s.is_complex 
-                            else next(self._cyccm))
+                    colormap = (next(self._cyccm) if self._use_cyclic_cm(param, s.is_complex)
+                            else next(self._cm))
                     ds, line, cb = self._create_gradient_line(x, y, param,
                             colormap, s.label)
                     self._fig.add_glyph(ds, line)

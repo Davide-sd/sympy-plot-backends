@@ -138,6 +138,11 @@ class MatplotlibBackend(Plot):
         # set global options like title, axis labels, ...
         super().__init__(*args, **kwargs)
 
+        # add colors if needed
+        if ((len([s for s in self._series if s.is_2Dline]) > 10) and 
+                (self.colorloop == cm.tab10)):
+            self.colorloop = cm.tab20
+
         if self.axis_center is None:
             self.axis_center = cfg["matplotlib"]["axis_center"]
         # see self._add_handle for more info about the following dictionary
@@ -287,8 +292,8 @@ class MatplotlibBackend(Plot):
                 if s.is_parametric and self._use_cm:
                     x, y, param = s.get_data()
                     x, y, _ = self._detect_poles(x, y)
-                    colormap = (next(self._cm) if not s.is_complex 
-                            else next(self._cyccm))
+                    colormap = (next(self._cyccm) if self._use_cyclic_cm(param, s.is_complex) 
+                            else next(self._cm))
                     lkw = dict(array=param, cmap=colormap)
                     kw = merge({}, lkw, line_kw)
                     segments = self.get_segments(x, y)
@@ -322,7 +327,7 @@ class MatplotlibBackend(Plot):
                 # this is specifically tailored to create cplot-like contour
                 # lines for magnitude/argument of a complex function.
                 x, y, z, r = s.get_data()
-                ckw = dict(cmap = next(self._cm))
+                ckw = dict(colors="#a0a0a050", linestyles="solid")
                 contour_kw = self._kwargs.get("contour_kw", dict())
                 kw = merge({}, ckw, contour_kw)
 
@@ -330,6 +335,7 @@ class MatplotlibBackend(Plot):
                 if levels is None:
                     if s.abs:
                         ckw["levels"] = s.abs_levels
+                        kw = merge({}, ckw, contour_kw)
                         c = self.ax.contour(x, y, z, **kw)
                     else:
                         levels = s.arg_levels
@@ -646,33 +652,39 @@ class MatplotlibBackend(Plot):
                 any(s.is_vector and (not s.is_3D) for s in self.series) or
                 any(s.is_2Dline and s.is_parametric for s in self.series)):
                 xlims = np.array(xlims)
-                xlim = (np.amin(xlims[:, 0]), np.amax(xlims[:, 1]))
+                xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
                 self.ax.set_xlim(xlim)
             if ylims and (any(s.is_contour for s in self.series) or
                 any(s.is_2Dline and s.is_parametric for s in self.series)):
                 ylims = np.array(ylims)
-                ylim = (np.amin(ylims[:, 0]), np.amax(ylims[:, 1]))
+                ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
                 self.ax.set_ylim(ylim)
         else:
             # XXX Workaround for matplotlib issue
             # https://github.com/matplotlib/matplotlib/issues/17130
             if xlims:
                 xlims = np.array(xlims)
-                xlim = (np.amin(xlims[:, 0]), np.amax(xlims[:, 1]))
+                xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
                 self.ax.set_xlim(xlim)
             else:
                 self.ax.set_xlim([0, 1])
 
             if ylims:
                 ylims = np.array(ylims)
-                ylim = (np.amin(ylims[:, 0]), np.amax(ylims[:, 1]))
+                ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
                 self.ax.set_ylim(ylim)
             else:
                 self.ax.set_ylim([0, 1])
 
             if zlims:
                 zlims = np.array(zlims)
-                zlim = (np.amin(zlims[:, 0]), np.amax(zlims[:, 1]))
+                zlim = [np.nanmin(zlims[:, 0]), np.nanmax(zlims[:, 1])]
+                if np.isnan(zlim[0]): 
+                    zlim[0] = -10
+                    if not np.isnan(zlim[1]):
+                        zlim[0] = zlim[1] - 10
+                if np.isnan(zlim[1]): zlim[1] = 10
+                zlim = (-10 if np.isnan(z) else z for z in zlim)
                 self.ax.set_zlim(zlim)
             else:
                 self.ax.set_zlim([0, 1])

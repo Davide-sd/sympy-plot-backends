@@ -39,27 +39,31 @@ def _build_series(*args, interactive=False, **kwargs):
                 # complex number
                 series.append(cls([expr], None, label, **kwargs))
             else:
-                if ((ranges[0][1].imag == ranges[0][2].imag) and
-                        not kwargs.get('absarg', False)):
-                    # complex expression evaluated over a line: need to add two
-                    # series, one for the real and imaginary part, respectively
-
+                if (ranges[0][1].imag == ranges[0][2].imag):
                     # NOTE: as a design choice, a complex function plotted over 
-                    # a line will create two data series, one for the real part,
-                    # the other for the imaginary part. This is undoubtely
-                    # inefficient as we must evaluate the same expression two
-                    # times. On the other hand, it allows to maintain a 
-                    # one-to-one correspondance between Plot.series and 
-                    # backend.data, which doesn't require a redesign of the
-                    # backend in order to work with iplot
-                    # (backend._update_interactive).
+                    # a line will create one or more data series, depending on 
+                    # the keyword arguments (one for the real part, one for the 
+                    # imaginary part, etc.). This is undoubtely inefficient as 
+                    # we must evaluate the same expression multiple times.
+                    # On the other hand, it allows to maintain a  one-to-one 
+                    # correspondance between Plot.series and backend.data, which
+                    # doesn't require a redesign of the backend in order to work 
+                    # with iplot (backend._update_interactive).
 
                     kw = kwargs.copy()
-                    real = kw.pop("real", True)
-                    imag = kw.pop("imag", True)
-                    _abs = kw.pop("abs", False)
-                    arg = kw.pop("arg", False)
-
+                    real, imag, _abs, arg, absarg = True, True, False, False, False
+                    absarg = kw.pop("absarg", False)
+                    if absarg:
+                        real = kw.pop("real", False)
+                        imag = kw.pop("imag", False)
+                        _abs = kw.pop("abs", False)
+                        arg = kw.pop("arg", False)
+                    else:
+                        real = kw.pop("real", True)
+                        imag = kw.pop("imag", True)
+                        _abs = kw.pop("abs", False)
+                        arg = kw.pop("arg", False)
+                    
                     def func(flag, key):
                         if flag:
                             kw2 = kw.copy()
@@ -70,18 +74,13 @@ def _build_series(*args, interactive=False, **kwargs):
                     func(imag, "imag")
                     func(_abs, "abs")
                     func(arg, "arg")
+                    func(absarg, "absarg")
                 else:
-                    real = kwargs.get("real", False)
-                    imag = kwargs.get("imag", False)
-                    if real and imag:
-                        kw1, kw2 = kwargs.copy(), kwargs.copy()
-                        kw1["real"], kw1["imag"] = True, False
-                        kw2["real"], kw2["imag"] = False, True
-                        series.append(cls(expr, *ranges, label, **kw1))
-                        series.append(cls(expr, *ranges, label, **kw2))
-                    else:
+                    # here we have 2D domain coloring or 3D plots
+                    if not kwargs.get("threed", False):
                         if ((kwargs.get("coloring", None) == "f") and 
                             (not kwargs.get("threed", False))):
+                            # NOTE: special case for cplot:
                             # cplot shows contour lines for absolute value and 
                             # the argument of a complex function.
                             def pop_kw(k, *dicts):
@@ -94,14 +93,33 @@ def _build_series(*args, interactive=False, **kwargs):
                             pop_kw("arg", kw1, kw2)
                             pop_kw("abs", kw1, kw2)
                             pop_kw("coloring", kw1)
+                            series.append(cls(expr, *ranges, label, **kw2))
                             if kwargs.get("abs", False):
                                 series.append(cls(expr, *ranges, label, abs=True, **kw1))
                             if kwargs.get("arg", False):
                                 series.append(cls(expr, *ranges, label, arg=True, levels1=True, **kw1))
                                 series.append(cls(expr, *ranges, label, arg=True, levels1=False, **kw1))
-                            series.append(cls(expr, *ranges, label, **kw2))
                         else:
                             series.append(cls(expr, *ranges, label, **kwargs))
+                    else:
+                        kw = kwargs.copy()
+                        real = kw.pop("real", False)
+                        imag = kw.pop("imag", False)
+                        _abs = kw.pop("abs", False)
+
+                        def func(flag, key):
+                            if flag:
+                                kw2 = kw.copy()
+                                kw2[key] = True
+                                series.append(cls(expr, *ranges, label, **kw2))
+                        
+                        if all(not t for t in [real, imag, _abs]):
+                            # add abs plot colored by the argument
+                            series.append(cls(expr, *ranges, label, **kwargs))
+                        func(real, "real")
+                        func(imag, "imag")
+                        func(_abs, "abs")
+
     return series
 
 def complex_plot(*args, show=True, **kwargs):

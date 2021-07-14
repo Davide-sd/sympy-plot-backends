@@ -164,7 +164,7 @@ class K3DBackend(Plot):
                 self._fig += line
 
             elif ((s.is_3Dsurface and (not s.is_complex)) or
-                (s.is_3Dsurface and s.is_complex and (s.real or s.imag))):
+                (s.is_3Dsurface and s.is_complex and (s.real or s.imag or s.abs))):
                 x, y, z = s.get_data()
                 # K3D doesn't like masked arrays, so filled them with NaN
                 x, y, z = [np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) 

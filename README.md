@@ -18,6 +18,8 @@ This module contains a few plotting backends that can be used with [SymPy](githu
 
 On top of the usual plotting functions exposed by SymPy (`plot`, `plot_parametric`, `plot3d`, etc.), this module offers:
 * capability to use a different backend.
+* capability to correctly visualize discontinuities on 2D line plots.
+* capability to correctlt visualize 2D line plots of piecewise functions.
 * `vector_plot` function to quickly visualize 2D/3D vector fields with quivers or streamlines.
 * `complex_plot` function to quickly visualize 2D/3D complex functions. In particular, we can visualize the real and imaginary parts, the modulus and argument, 2D/3D domain coloring.
 * `polar_plot` function.

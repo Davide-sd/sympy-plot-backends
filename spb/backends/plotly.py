@@ -8,7 +8,6 @@ import itertools
 import matplotlib.cm as cm
 from spb.backends.utils import convert_colormap
 import warnings
-import numpy as np
 
 """
 TODO:
@@ -105,7 +104,7 @@ class PlotlyBackend(Plot):
     _library = "plotly"
 
     # The following colors corresponds to the discret color map 
-    # px.colors.qualitative.Plotly. Thei are here in order to avoid the 
+    # px.colors.qualitative.Plotly. They are here in order to avoid the 
     # following statement: import plotly.express as px
     # which happens to slow down the loading phase.
     colorloop = [
@@ -156,6 +155,21 @@ class PlotlyBackend(Plot):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # add colors if needed
+        default_cl = [
+            '#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A',
+            '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'
+        ]
+        if ((len([s for s in self._series if s.is_2Dline]) > 10) and 
+                (self.colorloop == default_cl)):
+            # this corresponds to px.colors.qualitative.Light24
+            self.colorloop = ['#FD3216', '#00FE35', '#6A76FC', '#FED4C4', 
+                '#FE00CE', '#0DF9FF', '#F6F926', '#FF9616', '#479B55', 
+                '#EEA6FB', '#DC587D', '#D626FF', '#6E899C', '#00B5F7', 
+                '#B68E00', '#C9FBE5', '#FF0092', '#22FFA7', '#E3EE9E', 
+                '#86CE00', '#BC7196', '#7E7DCD', '#FC6955', '#E48F72']
+
         self._fig = go.Figure()
         # this is necessary in order for the series to be added even if
         # show=False
@@ -230,8 +244,8 @@ class PlotlyBackend(Plot):
                         mode = mode,
                         marker = dict(
                             color = param,
-                            colorscale = (next(self._cm) if not s.is_complex 
-                                    else next(self._cyccm)),
+                            colorscale = (next(self._cyccm) if self._use_cyclic_cm(param, s.is_complex) 
+                                    else next(self._cm)),
                             size = 6,
                             showscale = self.legend and self._use_cm,
                             colorbar = self._create_colorbar(ii, s.label, True)
@@ -246,7 +260,6 @@ class PlotlyBackend(Plot):
                     self._fig.add_trace(
                         go.Scatter(x = x, y = y, **merge({}, lkw, line_kw)))
                 else:
-                    print("asdasdasdasd", s.is_point, s.expr)
                     x, y = s.get_data()
                     x, y, _ = self._detect_poles(x, y)
                     lkw = dict(

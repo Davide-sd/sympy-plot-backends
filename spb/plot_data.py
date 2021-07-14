@@ -75,6 +75,9 @@ def _build_series(*args, **kwargs):
             (ranges[0][1].has(I) or ranges[0][2].has(I))):
             pt = "c"
         elif isinstance(exprs[0], GeometryEntity):
+            if len(ranges) == 0:
+                ranges = [None]
+            args = [*exprs, *ranges, label]
             pt = "g"
             skip_check = True
         elif isinstance(exprs[0], (Boolean, Relational)):
@@ -174,6 +177,9 @@ def _build_series(*args, **kwargs):
                     _cls = SliceVector3DSeries
             elif k == "99":
                 _cls = GeometrySeries
+                if len(ranges) == 0:
+                    ranges = [None]
+                args = [*exprs, *ranges, label]
                 if (isinstance(exprs[0], Plane) and 
                         len(kwargs.get("params", dict())) > 0):
                         _cls = PlaneInteractiveSeries

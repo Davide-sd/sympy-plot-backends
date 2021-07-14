@@ -272,6 +272,20 @@ class Plot:
         except NameError:
             return 3      # Probably standard Python interpreter
 
+    def _use_cyclic_cm(self, param, is_complex):
+        """ When using complex_plot and `absarg=True`, it might happens that the
+        argument is not fully covering the range [-pi, pi]. In such occurences,
+        the use of a cyclic colormap would create a misleading plot.
+        """
+        eps = 0.1
+        use_cyclic_cm = False
+        if is_complex:
+            m, M = np.amin(param), np.amax(param)
+            if ((m != M) and (abs(abs(m) - np.pi) < eps) and
+                    (abs(abs(M) - np.pi) < eps)):
+                use_cyclic_cm = True
+        return use_cyclic_cm
+    
     def _get_pixels(self, s, intervals_list):
         """ Create the necessary data to visualize a Bokeh/Plotly Heatmap.
         Heatmap can be thought as an image composed of pixels, each one having
@@ -317,7 +331,7 @@ class Plot:
         dy = (s.end_y - s.start_y) / n2
 
         xarr = np.linspace(s.start_x, s.end_x, n1)
-        yarr = np.linspace(s.start_x, s.end_x, n2)
+        yarr = np.linspace(s.start_y, s.end_y, n2)
 
         pixels = np.zeros((n2, n1), dtype=np.dtype('b'))
         if len(intervals_list):

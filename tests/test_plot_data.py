@@ -90,8 +90,12 @@ def test_geometry():
     def do_test(*g, s=GeometrySeries, **kwargs):
         s1 = _build_series(*g, pt="g", **kwargs)
         assert isinstance(s1, s)
+        # since the range could be None, it is imperative to test that label
+        # receive the correct value.
+        assert s1.label == str(g[0])
         s2 = _build_series(*g, **kwargs)
         assert isinstance(s2, s)
+        assert s2.label == str(g[0])
         assert np.array_equal(s1.get_data(), s2.get_data(), equal_nan=True)
 
     x, y, z = symbols("x, y, z")
