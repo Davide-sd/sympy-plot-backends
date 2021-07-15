@@ -6,7 +6,7 @@ def readme():
 
 setup(
     name = 'sympy_plot_backends',
-    version = '0.12.2',
+    version = '0.12.3',
     description = 'Backends for plotting with SymPy',
     long_description = readme(),
     classifiers=[
@@ -23,6 +23,7 @@ setup(
     packages = [
         'spb',
         'spb.backends'
+        'spb.complex'
     ],
     include_package_data=True,
     zip_safe = False,

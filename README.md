@@ -110,9 +110,10 @@ To implement this module, a great effort went into the integration of several li
 
 However, there are a few known bugs inherited from dependency-libraries that we should be aware of:
 
-* the `iplot` function uses [holovis'z panel](https://github.com/holoviz/panel). However, this introduces a bug: once we decide to use `BokehBackend`, we can't go back to other backends (the plots won't be visible in the output cell). The only way to fix this problem is to close Jupyter server and start again.
+* At the moment, `complex_plot` is using NumPy to create numerical data. It appears that NumPy has an ambiguity on the brach cut of a function, which can lead to a flipped-sign of the imaginary part. You can verify this by plotting `complex_plot(sqrt(x), (x, -10, 10))`. Watch out!
+* The `iplot` function uses [holovis'z panel](https://github.com/holoviz/panel). However, this introduces a bug: once we decide to use `BokehBackend`, we can't go back to other backends (the plots won't be visible in the output cell). The only way to fix this problem is to close Jupyter server and start again.
 * The aforementioned bug also manifests itself while using `plotgrid` with different types of plots (`PlotlyBackend, BokehBackend`, etc.).
-* While using the `iplot` function with BokehBackend:
+* While using the `iplot` function with `BokehBackend`:
   * the user-defined theme won't be applied.
   * rendering of gradient lines is slow.
   * color bars might not update their ranges.
