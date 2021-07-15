@@ -1,5 +1,6 @@
 from sympy import (
-    symbols, cos, sin, log, Eq, I, Abs, exp, pi, gamma, Matrix, Tuple, Plane, S
+    symbols, cos, sin, log, Eq, I, Abs, exp, pi, gamma, Matrix, Tuple, Plane, S,
+    sqrt, re
 )
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
@@ -366,4 +367,10 @@ def test_interactive():
             (z, -3 - 4 * I, 3 + 4 * I), "", n1=50)
     do_test(s1.get_data(), s2.get_data())
 
+    # test complex discretization for SurfaceOver2DRangeSeries and InteractiveSeries
+    s1 = SurfaceOver2DRangeSeries(re(sqrt(x**2 * y**2)), (x, -5, 5), (y, -5, 5),
+                is_complex=True, n1=50, n2=50)
+    s2 = InteractiveSeries([re(sqrt(x**2 * y**2))], [(x, -5, 5), (y, -5, 5)],
+                is_complex=True, n1=50, n2=50)
+    do_test(s1.get_data(), s2.get_data())
 

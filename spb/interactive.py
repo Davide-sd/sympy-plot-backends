@@ -295,7 +295,8 @@ class InteractivePlot(DynamicParam, PanelLayout):
             new_args = []
             for a in args:
                 exprs, ranges, label = _unpack_args(*a, matrices=False, fill_ranges=False)
-                new_args.append(Tuple(exprs[0], ranges[0], label, sympify=False))
+                new_args.append(Tuple(exprs[0], *ranges, label, sympify=False))
+                # new_args.append(Tuple(exprs[0], ranges[0], label, sympify=False))
             series = _build_complex_series(*new_args, interactive=True, **kwargs)
         elif is_vector:
             args = _preprocess(*args, matrices=False, fill_ranges=False)

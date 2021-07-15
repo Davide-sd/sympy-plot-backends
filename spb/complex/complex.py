@@ -1,10 +1,10 @@
-from sympy import Tuple, Expr
+from sympy import Tuple, Expr, re, im, arg as argument, sqrt
 from spb.series import (
-    ComplexSeries, ComplexInteractiveSeries, _set_discretization_points
+    ComplexSeries, ComplexInteractiveSeries, _set_discretization_points,
+    SurfaceOver2DRangeSeries, InteractiveSeries
 )
 from spb.vectors import _preprocess
-from spb.utils import _plot_sympify
-from spb.utils import _check_arguments
+from spb.utils import _plot_sympify, _check_arguments, _is_range
 from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
 
@@ -26,10 +26,49 @@ def _build_series(*args, interactive=False, **kwargs):
         for a in args:
             series.append(cls(a[0], None, a[-1], **kwargs))
     else:
-        args = _check_arguments(args, 1, 1)
+        new_args = []
+
+        def add_series(argument):
+            nexpr, npar = 1, 1
+            if len([b for b in argument if _is_range(b)]) > 1:
+                # function of two variables
+                npar = 2
+            new_args.append(_check_arguments([argument], nexpr, npar)[0])
+        if all(isinstance(a, (list, tuple, Tuple)) for a in args):
+            # plotting multiple expressions
+            for a in args:
+                add_series(a)
+        else:
+            # plotting a single expression
+            add_series(args)
         
-        for a in args:
+        for a in new_args:
             expr, ranges, label = a[0], a[1:-1], a[-1]
+            
+            if len(ranges) == 2:
+                # function of two variables
+                _cls = SurfaceOver2DRangeSeries if not interactive else InteractiveSeries
+                kw = kwargs.copy()
+                real = kw.pop("real", True)
+                imag = kw.pop("imag", False)
+                _abs = kw.pop("abs", False)
+
+                def func(flag, key, expr, label):
+                    if flag:
+                        kw2 = kw.copy()
+                        kw2[key] = True
+                        kw2.setdefault("is_complex", True)
+                        if not interactive:
+                            series.append(SurfaceOver2DRangeSeries(expr, *ranges, label, **kw2))
+                        else:
+                            series.append(InteractiveSeries([expr], ranges, label, **kw2))
+                
+                func(real, "real", re(expr), "Re(%s)" % label)
+                func(imag, "imag", im(expr), "Im(%s)" % label)
+                func(_abs, "abs", sqrt(re(expr)**2 + im(expr)**2), "Abs(%s)" % label)
+                continue
+            
+            # From now on we are dealing with a function of one variable.
             # ranges need to contain complex numbers
             ranges = list(ranges)
             for i, r in enumerate(ranges):
@@ -129,15 +168,21 @@ def complex_plot(*args, show=True, **kwargs):
     Depending on the provided expression, this function will produce different 
     types of plots:
     * list of complex numbers: creates a scatter plot.
-    * complex function over a real range:
+    * function of 1 variable over a real range:
         1. line plot separating the real and imaginary parts.
         2. line plot of the modulus of the complex function colored by its
             argument, if `absarg=True`.
-        3. line plot of the modulus and the argument.
+        3. line plot of the modulus and the argument, if `abs=True, arg=True`.
+    * function of 2 variables over 2 real ranges:
+        1. By default, a surface plot of the real part is created.
+        2. By toggling `real=True, imag=True, abs=True` we can create surface
+            plots of the real, imaginary part or the absolute value.
     * complex function over a complex range:
         1. domain coloring plot.
         2. 3D plot of the modulus colored by the argument, if `threed=True`.
         3. 3D plot of the real and imaginary part.
+
+    Explore the example below to better understand how to use it.
 
     Arguments
     =========
@@ -337,6 +382,13 @@ def complex_plot(*args, show=True, **kwargs):
         complex_plot((cos(z) + sin(I * z), "f"), (z, -2, 2), legend=True,
             abs=True, arg=True, real=False, imag=False)
     
+    Plot the real and imaginary part of a function of two variables over two
+    real ranges:
+
+    .. code-block:: python
+        x, y = symbols("x, y")
+        complex_plot(sqrt(x*y), (x, -5, 5), (y, -5, 5), real=True, imag=True)
+    
     Domain coloring plot. Note that it might be necessary to increase the number
     of discretization points in order to get a smoother plot:
 
@@ -369,7 +421,16 @@ def complex_plot(*args, show=True, **kwargs):
         if any(s.is_3Dsurface for s in series):
             kwargs["backend"] = THREE_D_B
     
-    if all(not s.is_parametric for s in series):
+    if all(isinstance(s, (SurfaceOver2DRangeSeries, InteractiveSeries)) for
+            s in series):
+        # function of 2 variables
+        if kwargs.get("xlabel", None) is None:
+            kwargs["xlabel"] = str(series[0].var_x)
+        if kwargs.get("ylabel", None) is None:
+            kwargs["ylabel"] = str(series[0].var_y)
+        # do not set anything for zlabel since it could be f(x,y) or 
+        # abs(f(x, y)) or something else
+    elif all(not s.is_parametric for s in series):
         # when plotting real/imaginary or domain coloring/3D plots, the 
         # horizontal axis is the real, the vertical axis is the imaginary
         if kwargs.get("xlabel", None) is None:
@@ -385,7 +446,7 @@ def complex_plot(*args, show=True, **kwargs):
             kwargs["ylabel"] = "Abs"
 
     if ((kwargs.get("aspect", None) is None) and 
-            any(s.is_domain_coloring for s in series)):
+            any(s.is_complex and s.is_domain_coloring for s in series)):
         kwargs["aspect"] = "equal"
     
     p = Plot(*series, **kwargs)

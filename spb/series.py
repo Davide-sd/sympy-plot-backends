@@ -584,13 +584,15 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         super().__init__()
+        self.complex_discr = kwargs.get("is_complex", False)
+        func = float if not self.complex_discr else complex
         self.expr = sympify(expr)
         self.var_x = sympify(var_start_end_x[0])
-        self.start_x = float(var_start_end_x[1])
-        self.end_x = float(var_start_end_x[2])
+        self.start_x = func(var_start_end_x[1])
+        self.end_x = func(var_start_end_x[2])
         self.var_y = sympify(var_start_end_y[0])
-        self.start_y = float(var_start_end_y[1])
-        self.end_y = float(var_start_end_y[2])
+        self.start_y = func(var_start_end_y[1])
+        self.end_y = func(var_start_end_y[2])
         self.label = label
         self.n1 = kwargs.get('n1', 50)
         self.n2 = kwargs.get('n2', 50)
@@ -615,7 +617,10 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         f = lambdify((self.var_x, self.var_y), self.expr)
         # f = vectorized_lambdify((self.var_x, self.var_y), self.expr)
         mesh_z = f(mesh_x, mesh_y)
-        mesh_z = self._correct_size(mesh_z, mesh_x).astype(np.float64)
+        mesh_z = self._correct_size(mesh_z, mesh_x)
+        if self.complex_discr:
+            return np.real(mesh_x), np.real(mesh_y), mesh_z
+        mesh_z = mesh_z.astype(np.float64)
         mesh_z = np.ma.masked_invalid(mesh_z)
         return mesh_x, mesh_y, mesh_z
 
@@ -1014,6 +1019,14 @@ class InteractiveSeries(BaseSeries):
         self.n3 = kwargs.get("n3", 250)
         n = [self.n1, self.n2, self.n3]
 
+        # TODO / NOTE: even though we have the ComplexSeries and 
+        # ComplexInteractiveSeries classes, they are already doing a lot of work.
+        # For the moment, we are going to allow InteractiveSeries to be able
+        # to use complex discretization. In doing so, we can create 3D surfaces 
+        # of the real/imaginary/absolute value of a function of 2 variables.
+        self.complex_discr = kwargs.get("is_complex", False)
+        castfunc = float if not self.complex_discr else complex
+
         self.xscale = kwargs.get('xscale', 'linear')
         self.yscale = kwargs.get('yscale', 'linear')
         self.label = label
@@ -1099,7 +1112,7 @@ class InteractiveSeries(BaseSeries):
                 scale = self.yscale
             
             discretizations.append(
-                self._discretize(float(r[1]), float(r[2]), n[i], scale=scale))
+                self._discretize(castfunc(r[1]), castfunc(r[2]), n[i], scale=scale))
 
         if len(ranges) == 1:
             # 2D or 3D lines
@@ -1178,7 +1191,10 @@ class InteractiveSeries(BaseSeries):
             (self.is_3Dsurface and (not self.is_parametric)) or
             (self.is_2Dline and (not self.is_parametric))):
             # in the case of single-expression 2D lines or 3D surfaces
-            results = [*self.ranges.values(), results]
+            if self.complex_discr:
+                results = [*[np.real(r) for r in self.ranges.values()], results]
+            else:
+                results = [*self.ranges.values(), results]
             self.data = results
         
         elif self.is_implicit:
