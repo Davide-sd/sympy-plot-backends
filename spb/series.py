@@ -1,19 +1,33 @@
-from collections.abc import Callable
 from sympy import sympify, Tuple, symbols, solve, re, im
 from sympy.geometry import (
-    Plane, Polygon, Circle, Ellipse, Line, Segment, Ray,
-    Line3D, Curve, Point2D, Point3D
+    Plane,
+    Polygon,
+    Circle,
+    Ellipse,
+    Line,
+    Segment,
+    Ray,
+    Line3D,
+    Curve,
+    Point2D,
+    Point3D,
 )
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
-from sympy.core.relational import (Equality, GreaterThan, LessThan,
-                Relational, StrictLessThan, StrictGreaterThan)
+from sympy.core.relational import (
+    Equality,
+    GreaterThan,
+    LessThan,
+    Relational,
+    StrictLessThan,
+    StrictGreaterThan,
+)
 from sympy.logic.boolalg import BooleanFunction
 from sympy.plotting.experimental_lambdify import (
-    vectorized_lambdify, lambdify, experimental_lambdify)
-from sympy.utilities.exceptions import SymPyDeprecationWarning
-from sympy.core.function import arity
-from sympy.core.compatibility import is_sequence
+    vectorized_lambdify,
+    lambdify,
+    experimental_lambdify,
+)
 from sympy.plotting.intervalmath import interval
 from spb.utils import get_lambda
 import warnings
@@ -79,30 +93,23 @@ class BaseSeries:
 
     @property
     def is_3D(self):
-        flags3D = [
-            self.is_3Dline,
-            self.is_3Dsurface,
-            self.is_3Dvector
-        ]
+        flags3D = [self.is_3Dline, self.is_3Dsurface, self.is_3Dvector]
         return any(flags3D)
 
     @property
     def is_line(self):
-        flagslines = [
-            self.is_2Dline,
-            self.is_3Dline
-        ]
+        flagslines = [self.is_2Dline, self.is_3Dline]
         return any(flagslines)
-    
+
     @staticmethod
     def _discretize(start, end, N, scale="linear"):
         if scale == "linear":
             return np.linspace(start, end, N)
         return np.geomspace(start, end, N)
-    
+
     @staticmethod
     def _correct_size(a, b):
-        """ If `a` is a scalar, we need to convert its dimension to the 
+        """If `a` is a scalar, we need to convert its dimension to the
         appropriate grid size given by `b`.
         """
         if not isinstance(a, np.ndarray):
@@ -112,9 +119,9 @@ class BaseSeries:
         if a.shape != b.shape:
             return a * np.ones_like(b)
         return a
-    
+
     def get_data(self):
-        """ All child series should implement this method to return the
+        """All child series should implement this method to return the
         numerical data which can be used by a plotting library.
         """
         raise NotImplementedError
@@ -122,7 +129,7 @@ class BaseSeries:
 
 ### 2D lines
 class Line2DBaseSeries(BaseSeries):
-    """ A base class for 2D lines. """
+    """A base class for 2D lines."""
 
     is_2Dline = True
 
@@ -134,7 +141,7 @@ class Line2DBaseSeries(BaseSeries):
         self.is_point = kwargs.get("is_point", False)
 
     def get_data(self):
-        """ Return lists of coordinates for plotting the line.
+        """Return lists of coordinates for plotting the line.
 
         Returns
         =======
@@ -146,7 +153,7 @@ class Line2DBaseSeries(BaseSeries):
 
             z: list (optional)
                 List of z-coordinates in case of Parametric3DLineSeries
-            
+
             param : list (optional)
                 List containing the parameter, in case of Parametric2DLineSeries
                 and Parametric3DLineSeries.
@@ -182,7 +189,7 @@ class List2DSeries(Line2DBaseSeries):
         self.is_point = kwargs.get("is_point", False)
 
     def __str__(self):
-        return 'list plot'
+        return "list plot"
 
     def get_points(self):
         return (self.list_x, self.list_y)
@@ -198,19 +205,22 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
-        self.n = kwargs.get('n', 1000)
-        self.adaptive = kwargs.get('adaptive', True)
-        self.depth = kwargs.get('depth', 9)
-        self.xscale = kwargs.get('xscale', 'linear')
+        self.n = kwargs.get("n", 1000)
+        self.adaptive = kwargs.get("adaptive", True)
+        self.depth = kwargs.get("depth", 9)
+        self.xscale = kwargs.get("xscale", "linear")
         self.polar = kwargs.get("polar", False)
 
     def __str__(self):
-        return 'cartesian line: %s for %s over %s' % (
-            str(self.expr), str(self.var), str((self.start, self.end)))
+        return "cartesian line: %s for %s over %s" % (
+            str(self.expr),
+            str(self.var),
+            str((self.start, self.end)),
+        )
 
     @staticmethod
     def adaptive_sampling(f, start, end, max_depth=9, xscale="linear"):
-        """ The adaptive sampling is done by recursively checking if three
+        """The adaptive sampling is done by recursively checking if three
         points are almost collinear. If they are not collinear, then more
         points are added between those points.
 
@@ -218,15 +228,15 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         ==========
             f : callable
                 The function to be numerical evaluated
-            
+
             start, end : floats
                 start and end values of the discretized domain
-            
+
             max_depth : int
                 Controls the smootheness of the overall evaluation. The higher
                 the number, the smoother the function, the more memory will be
                 used by this recursive procedure. Default value is 9.
-            
+
             xscale : str
                 Discretization strategy. Can be "linear" or "log". Default to
                 "linear".
@@ -241,16 +251,17 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         y_coords = []
 
         def sample(p, q, depth):
-            """ Samples recursively if three points are almost collinear.
-            For depth < max_depth, points are added irrespective of whether 
-            they satisfy the collinearity condition or not. The maximum 
+            """Samples recursively if three points are almost collinear.
+            For depth < max_depth, points are added irrespective of whether
+            they satisfy the collinearity condition or not. The maximum
             depth allowed is max_depth.
             """
             # Randomly sample to avoid aliasing.
             random = 0.45 + np.random.rand() * 0.1
-            if xscale == 'log':
-                xnew = 10**(np.log10(p[0]) + random * (np.log10(q[0]) -
-                                                        np.log10(p[0])))
+            if xscale == "log":
+                xnew = 10 ** (
+                    np.log10(p[0]) + random * (np.log10(q[0]) - np.log10(p[0]))
+                )
             else:
                 xnew = p[0] + random * (q[0] - p[0])
 
@@ -272,7 +283,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             # at both ends. If there is a real value in between, then
             # sample those points further.
             elif p[1] is None and q[1] is None:
-                if xscale == 'log':
+                if xscale == "log":
                     xarray = np.logspace(p[0], q[0], 10)
                 else:
                     xarray = np.linspace(p[0], q[0], 10)
@@ -281,13 +292,20 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                 if any(y is not None for y in yarray):
                     for i in range(len(yarray) - 1):
                         if yarray[i] is not None or yarray[i + 1] is not None:
-                            sample([xarray[i], yarray[i]],
-                                [xarray[i + 1], yarray[i + 1]], depth + 1)
+                            sample(
+                                [xarray[i], yarray[i]],
+                                [xarray[i + 1], yarray[i + 1]],
+                                depth + 1,
+                            )
 
             # Sample further if one of the end points in None (i.e. a
             # complex value) or the three points are not almost collinear.
-            elif (p[1] is None or q[1] is None or new_point[1] is None
-                    or not flat(p, new_point, q)):
+            elif (
+                p[1] is None
+                or q[1] is None
+                or new_point[1] is None
+                or not flat(p, new_point, q)
+            ):
                 sample(p, new_point, depth + 1)
                 sample(new_point, q, depth + 1)
             else:
@@ -302,7 +320,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         return x_coords, y_coords
 
     def get_points(self):
-        """ Return lists of coordinates for plotting. Depending on the
+        """Return lists of coordinates for plotting. Depending on the
         `adaptive` option, this function will either use an adaptive algorithm
         or it will uniformly sample the expression over the provided range.
 
@@ -319,9 +337,10 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             x, y = np.array(x), np.array(y)
         else:
             f = lambdify([self.var], self.expr)
-            x, y = self.adaptive_sampling(f, self.start, self.end,
-                self.depth, self.xscale)
-        
+            x, y = self.adaptive_sampling(
+                f, self.start, self.end, self.depth, self.xscale
+            )
+
         if self.polar:
             t = x.copy()
             x = y * np.cos(t)
@@ -354,15 +373,18 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
-        self.n = kwargs.get('n', 300)
-        self.adaptive = kwargs.get('adaptive', True)
-        self.depth = kwargs.get('depth', 9)
+        self.n = kwargs.get("n", 300)
+        self.adaptive = kwargs.get("adaptive", True)
+        self.depth = kwargs.get("depth", 9)
         self.scale = kwargs.get("xscale", "linear")
 
     def __str__(self):
-        return 'parametric cartesian line: (%s, %s) for %s over %s' % (
-            str(self.expr_x), str(self.expr_y), str(self.var),
-            str((self.start, self.end)))
+        return "parametric cartesian line: (%s, %s) for %s over %s" % (
+            str(self.expr_x),
+            str(self.expr_y),
+            str(self.var),
+            str((self.start, self.end)),
+        )
 
     def _uniform_sampling(self):
         param = self._discretize(self.start, self.end, self.n, scale=self.scale)
@@ -375,26 +397,26 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         list_x = self._correct_size(list_x, param)
         list_y = self._correct_size(list_y, param)
         return list_x, list_y, param
-    
+
     @staticmethod
     def adaptive_sampling(fx, fy, start, end, max_depth=9):
-        """ The adaptive sampling is done by recursively checking if three
+        """The adaptive sampling is done by recursively checking if three
         points are almost collinear. If they are not collinear, then more
         points are added between those points.
 
         Parameters
         ==========
             fx : callable
-                The function to be numerical evaluated in the horizontal 
+                The function to be numerical evaluated in the horizontal
                 direction.
-            
+
             fy : callable
-                The function to be numerical evaluated in the vertical 
+                The function to be numerical evaluated in the vertical
                 direction.
-            
+
             start, end : floats
                 start and end values of the discretized domain
-            
+
             max_depth : int
                 Controls the smootheness of the overall evaluation. The higher
                 the number, the smoother the function, the more memory will be
@@ -411,11 +433,11 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         param = []
 
         def sample(param_p, param_q, p, q, depth):
-            """ Samples recursively if three points are almost collinear.
-                For depth < max_depth, points are added irrespective of whether 
-                they satisfy the collinearity condition or not. The maximum 
-                depth allowed is max_depth.
-                """
+            """Samples recursively if three points are almost collinear.
+            For depth < max_depth, points are added irrespective of whether
+            they satisfy the collinearity condition or not. The maximum
+            depth allowed is max_depth.
+            """
             # Randomly sample to avoid aliasing.
             random = 0.45 + np.random.rand() * 0.1
             param_new = param_p + random * (param_q - param_p)
@@ -438,26 +460,36 @@ class Parametric2DLineSeries(Line2DBaseSeries):
             # Sample ten points if complex values are encountered
             # at both ends. If there is a real value in between, then
             # sample those points further.
-            elif ((p[0] is None and q[1] is None) or
-                    (p[1] is None and q[1] is None)):
+            elif (p[0] is None and q[1] is None) or (p[1] is None and q[1] is None):
                 param_array = np.linspace(param_p, param_q, 10)
                 x_array = list(map(fx, param_array))
                 y_array = list(map(fy, param_array))
-                if any(x is not None and y is not None
-                        for x, y in zip(x_array, y_array)):
+                if any(
+                    x is not None and y is not None for x, y in zip(x_array, y_array)
+                ):
                     for i in range(len(y_array) - 1):
-                        if ((x_array[i] is not None and y_array[i] is not None) or
-                                (x_array[i + 1] is not None and y_array[i + 1] is not None)):
+                        if (x_array[i] is not None and y_array[i] is not None) or (
+                            x_array[i + 1] is not None and y_array[i + 1] is not None
+                        ):
                             point_a = [x_array[i], y_array[i]]
                             point_b = [x_array[i + 1], y_array[i + 1]]
-                            sample(param_array[i], param_array[i], point_a,
-                                   point_b, depth + 1)
+                            sample(
+                                param_array[i],
+                                param_array[i],
+                                point_a,
+                                point_b,
+                                depth + 1,
+                            )
 
             # Sample further if one of the end points in None (i.e. a complex
             # value) or the three points are not almost collinear.
-            elif (p[0] is None or p[1] is None
-                    or q[1] is None or q[0] is None
-                    or not flat(p, new_point, q)):
+            elif (
+                p[0] is None
+                or p[1] is None
+                or q[1] is None
+                or q[0] is None
+                or not flat(p, new_point, q)
+            ):
                 sample(param_p, param_new, p, new_point, depth + 1)
                 sample(param_new, param_q, new_point, q, depth + 1)
             else:
@@ -478,7 +510,7 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         return x_coords, y_coords, param
 
     def get_points(self):
-        """ Return lists of coordinates for plotting. Depending on the
+        """Return lists of coordinates for plotting. Depending on the
         `adaptive` option, this function will either use an adaptive algorithm
         or it will uniformly sample the expression over the provided range.
 
@@ -495,8 +527,9 @@ class Parametric2DLineSeries(Line2DBaseSeries):
 
         fx = lambdify([self.var], self.expr_x)
         fy = lambdify([self.var], self.expr_y)
-        x_coords, y_coords, param = self.adaptive_sampling(fx, fy, self.start,
-            self.end, self.depth)
+        x_coords, y_coords, param = self.adaptive_sampling(
+            fx, fy, self.start, self.end, self.depth
+        )
         return (x_coords, y_coords, param)
 
 
@@ -516,7 +549,7 @@ class Line3DBaseSeries(Line2DBaseSeries):
 class Parametric3DLineSeries(Line3DBaseSeries):
     """Representation for a 3D line consisting of three parametric sympy
     expressions and a range."""
-    
+
     is_parametric = True
 
     def __init__(self, expr_x, expr_y, expr_z, var_start_end, label="", **kwargs):
@@ -528,13 +561,17 @@ class Parametric3DLineSeries(Line3DBaseSeries):
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
-        self.n = kwargs.get('n', 300)
+        self.n = kwargs.get("n", 300)
         self.scale = kwargs.get("xscale", "linear")
 
     def __str__(self):
-        return '3D parametric cartesian line: (%s, %s, %s) for %s over %s' % (
-            str(self.expr_x), str(self.expr_y), str(self.expr_z),
-            str(self.var), str((self.start, self.end)))
+        return "3D parametric cartesian line: (%s, %s, %s) for %s over %s" % (
+            str(self.expr_x),
+            str(self.expr_y),
+            str(self.expr_z),
+            str(self.var),
+            str((self.start, self.end)),
+        )
 
     def get_points(self):
         param = self._discretize(self.start, self.end, self.n, scale=self.scale)
@@ -571,7 +608,7 @@ class SurfaceBaseSeries(BaseSeries):
 
     def __init__(self):
         super().__init__()
-    
+
     def _discretize(self, s1, e1, n1, scale1, s2, e2, n2, scale2):
         mesh_x = super()._discretize(s1, e1, n1, scale1)
         mesh_y = super()._discretize(s2, e2, n2, scale2)
@@ -594,26 +631,33 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         self.start_y = func(var_start_end_y[1])
         self.end_y = func(var_start_end_y[2])
         self.label = label
-        self.n1 = kwargs.get('n1', 50)
-        self.n2 = kwargs.get('n2', 50)
+        self.n1 = kwargs.get("n1", 50)
+        self.n2 = kwargs.get("n2", 50)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
 
     def __str__(self):
-        return ('cartesian surface: %s for'
-                ' %s over %s and %s over %s') % (
-                    str(self.expr),
-                    str(self.var_x),
-                    str((self.start_x, self.end_x)),
-                    str(self.var_y),
-                    str((self.start_y, self.end_y)))
+        return ("cartesian surface: %s for" " %s over %s and %s over %s") % (
+            str(self.expr),
+            str(self.var_x),
+            str((self.start_x, self.end_x)),
+            str(self.var_y),
+            str((self.start_y, self.end_y)),
+        )
 
     def get_data(self):
         mesh_x, mesh_y = self._discretize(
-            self.start_x, self.end_x, self.n1, self.xscale,
-            self.start_y, self.end_y, self.n2, self.yscale
+            self.start_x,
+            self.end_x,
+            self.n1,
+            self.xscale,
+            self.start_y,
+            self.end_y,
+            self.n2,
+            self.yscale,
         )
         from sympy import lambdify
+
         f = lambdify((self.var_x, self.var_y), self.expr)
         # f = vectorized_lambdify((self.var_x, self.var_y), self.expr)
         mesh_z = f(mesh_x, mesh_y)
@@ -632,8 +676,15 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
     is_parametric = True
 
     def __init__(
-        self, expr_x, expr_y, expr_z, var_start_end_u, var_start_end_v,
-        label="", **kwargs):
+        self,
+        expr_x,
+        expr_y,
+        expr_z,
+        var_start_end_u,
+        var_start_end_v,
+        label="",
+        **kwargs
+    ):
         super().__init__()
         self.expr_x = sympify(expr_x)
         self.expr_y = sympify(expr_y)
@@ -645,28 +696,37 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.start_v = float(var_start_end_v[1])
         self.end_v = float(var_start_end_v[2])
         self.label = label
-        self.n1 = kwargs.get('n1', 50)
-        self.n2 = kwargs.get('n2', 50)
+        self.n1 = kwargs.get("n1", 50)
+        self.n2 = kwargs.get("n2", 50)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
 
     def __str__(self):
-        return ('parametric cartesian surface: (%s, %s, %s) for'
-                ' %s over %s and %s over %s') % (
-                    str(self.expr_x),
-                    str(self.expr_y),
-                    str(self.expr_z),
-                    str(self.var_u),
-                    str((self.start_u, self.end_u)),
-                    str(self.var_v),
-                    str((self.start_v, self.end_v)))
+        return (
+            "parametric cartesian surface: (%s, %s, %s) for"
+            " %s over %s and %s over %s"
+        ) % (
+            str(self.expr_x),
+            str(self.expr_y),
+            str(self.expr_z),
+            str(self.var_u),
+            str((self.start_u, self.end_u)),
+            str(self.var_v),
+            str((self.start_v, self.end_v)),
+        )
 
     def get_data(self):
         mesh_u, mesh_v = self._discretize(
-            self.start_u, self.end_u, self.n1, self.xscale,
-            self.start_v, self.end_v, self.n2, self.yscale
+            self.start_u,
+            self.end_u,
+            self.n1,
+            self.xscale,
+            self.start_v,
+            self.end_v,
+            self.n2,
+            self.yscale,
         )
-        
+
         fx = vectorized_lambdify((self.var_u, self.var_v), self.expr_x)
         fy = vectorized_lambdify((self.var_u, self.var_v), self.expr_y)
         fz = vectorized_lambdify((self.var_u, self.var_v), self.expr_z)
@@ -693,16 +753,17 @@ class ContourSeries(SurfaceOver2DRangeSeries):
     is_contour = True
 
     def __str__(self):
-        return ('contour: %s for '
-                '%s over %s and %s over %s') % (
-                    str(self.expr),
-                    str(self.var_x),
-                    str((self.start_x, self.end_x)),
-                    str(self.var_y),
-                    str((self.start_y, self.end_y)))
+        return ("contour: %s for " "%s over %s and %s over %s") % (
+            str(self.expr),
+            str(self.var_x),
+            str((self.start_x, self.end_x)),
+            str(self.var_y),
+            str((self.start_y, self.end_y)),
+        )
+
 
 class ImplicitSeries(BaseSeries):
-    """ Representation for Implicit plot
+    """Representation for Implicit plot
 
     References
     ==========
@@ -713,10 +774,10 @@ class ImplicitSeries(BaseSeries):
     .. [2] Jeffrey Allen Tupper. Graphing Equations with Generalized Interval
     Arithmetic. Master's thesis. University of Toronto, 1996
     """
+
     is_implicit = True
 
-    def __init__(self, expr, var_start_end_x, var_start_end_y, label="",
-            **kwargs):
+    def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         super().__init__()
         expr, has_equality = self._has_equality(sympify(expr))
         self.expr = expr
@@ -737,9 +798,9 @@ class ImplicitSeries(BaseSeries):
         if isinstance(expr, BooleanFunction):
             self.adaptive = True
             warnings.warn(
-                "The provided expression contains Boolean functions. " +
-                "In order to plot the expression, the algorithm " +
-                "automatically switched to an adaptive sampling."
+                "The provided expression contains Boolean functions. "
+                + "In order to plot the expression, the algorithm "
+                + "automatically switched to an adaptive sampling."
             )
 
         # Check whether the depth is greater than 4 or less than 0.
@@ -749,9 +810,9 @@ class ImplicitSeries(BaseSeries):
         elif depth < 0:
             depth = 0
         self.depth = 4 + depth
-    
+
     def _has_equality(self, expr):
-        # Represents whether the expression contains an Equality, GreaterThan 
+        # Represents whether the expression contains an Equality, GreaterThan
         # or LessThan
         has_equality = False
 
@@ -769,8 +830,7 @@ class ImplicitSeries(BaseSeries):
         if isinstance(expr, BooleanFunction):
             arg_expand(expr)
             # Check whether there is an equality in the expression provided.
-            if any(isinstance(e, (Equality, GreaterThan, LessThan))
-                    for e in arg_list):
+            if any(isinstance(e, (Equality, GreaterThan, LessThan)) for e in arg_list):
                 has_equality = True
         elif not isinstance(expr, Relational):
             expr = Equality(expr, 0)
@@ -781,17 +841,18 @@ class ImplicitSeries(BaseSeries):
         return expr, has_equality
 
     def __str__(self):
-        return ('Implicit equation: %s for '
-                '%s over %s and %s over %s') % (
-                    str(self.expr),
-                    str(self.var_x),
-                    str((self.start_x, self.end_x)),
-                    str(self.var_y),
-                    str((self.start_y, self.end_y)))
-        
+        return ("Implicit equation: %s for " "%s over %s and %s over %s") % (
+            str(self.expr),
+            str(self.var_x),
+            str((self.start_x, self.end_x)),
+            str(self.var_y),
+            str((self.start_y, self.end_y)),
+        )
+
     def get_data(self):
-        func = experimental_lambdify((self.var_x, self.var_y), self.expr,
-                                    use_interval=True)
+        func = experimental_lambdify(
+            (self.var_x, self.var_y), self.expr, use_interval=True
+        )
         xinterval = interval(self.start_x, self.end_x)
         yinterval = interval(self.start_y, self.end_y)
         try:
@@ -801,8 +862,10 @@ class ImplicitSeries(BaseSeries):
             # That needs fixing somehow - we shouldn't be catching
             # AttributeError here.
             if self.adaptive:
-                warnings.warn("Adaptive meshing could not be applied to the"
-                            " expression. Using uniform meshing.")
+                warnings.warn(
+                    "Adaptive meshing could not be applied to the"
+                    " expression. Using uniform meshing."
+                )
             self.adaptive = False
 
         if self.adaptive:
@@ -811,51 +874,55 @@ class ImplicitSeries(BaseSeries):
             return self._get_meshes_grid()
 
     def _get_raster_interval(self, func):
-        """ Uses interval math to adaptively mesh and obtain the plot"""
+        """Uses interval math to adaptively mesh and obtain the plot"""
         k = self.depth
         interval_list = []
-        #Create initial 32 divisions
+        # Create initial 32 divisions
         xsample = np.linspace(self.start_x, self.end_x, 33)
         ysample = np.linspace(self.start_y, self.end_y, 33)
 
-        #Add a small jitter so that there are no false positives for equality.
+        # Add a small jitter so that there are no false positives for equality.
         # Ex: y==x becomes True for x interval(1, 2) and y interval(1, 2)
-        #which will draw a rectangle.
-        jitterx = (np.random.rand(
-            len(xsample)) * 2 - 1) * (self.end_x - self.start_x) / 2**20
-        jittery = (np.random.rand(
-            len(ysample)) * 2 - 1) * (self.end_y - self.start_y) / 2**20
+        # which will draw a rectangle.
+        jitterx = (
+            (np.random.rand(len(xsample)) * 2 - 1)
+            * (self.end_x - self.start_x)
+            / 2 ** 20
+        )
+        jittery = (
+            (np.random.rand(len(ysample)) * 2 - 1)
+            * (self.end_y - self.start_y)
+            / 2 ** 20
+        )
         xsample += jitterx
         ysample += jittery
 
-        xinter = [interval(x1, x2) for x1, x2 in zip(xsample[:-1],
-                           xsample[1:])]
-        yinter = [interval(y1, y2) for y1, y2 in zip(ysample[:-1],
-                           ysample[1:])]
+        xinter = [interval(x1, x2) for x1, x2 in zip(xsample[:-1], xsample[1:])]
+        yinter = [interval(y1, y2) for y1, y2 in zip(ysample[:-1], ysample[1:])]
         interval_list = [[x, y] for x in xinter for y in yinter]
         plot_list = []
 
-        #recursive call refinepixels which subdivides the intervals which are
-        #neither True nor False according to the expression.
+        # recursive call refinepixels which subdivides the intervals which are
+        # neither True nor False according to the expression.
         def refine_pixels(interval_list):
-            """ Evaluates the intervals and subdivides the interval if the
+            """Evaluates the intervals and subdivides the interval if the
             expression is partially satisfied."""
             temp_interval_list = []
             plot_list = []
             for intervals in interval_list:
 
-                #Convert the array indices to x and y values
+                # Convert the array indices to x and y values
                 intervalx = intervals[0]
                 intervaly = intervals[1]
                 func_eval = func(intervalx, intervaly)
-                #The expression is valid in the interval. Change the contour
-                #array values to 1.
+                # The expression is valid in the interval. Change the contour
+                # array values to 1.
                 if func_eval[1] is False or func_eval[0] is False:
                     pass
                 elif func_eval == (True, True):
                     plot_list.append([intervalx, intervaly])
                 elif func_eval[1] is None or func_eval[0] is None:
-                    #Subdivide
+                    # Subdivide
                     avgx = intervalx.mid
                     avgy = intervaly.mid
                     a = interval(intervalx.start, avgx)
@@ -872,10 +939,10 @@ class ImplicitSeries(BaseSeries):
             interval_list, plot_list_temp = refine_pixels(interval_list)
             plot_list.extend(plot_list_temp)
             k = k - 1
-        #Check whether the expression represents an equality
-        #If it represents an equality, then none of the intervals
-        #would have satisfied the expression due to floating point
-        #differences. Add all the undecided values to the plot.
+        # Check whether the expression represents an equality
+        # If it represents an equality, then none of the intervals
+        # would have satisfied the expression due to floating point
+        # differences. Add all the undecided values to the plot.
         if self.has_equality:
             for intervals in interval_list:
                 intervalx = intervals[0]
@@ -883,7 +950,7 @@ class ImplicitSeries(BaseSeries):
                 func_eval = func(intervalx, intervaly)
                 if func_eval[1] and func_eval[0] is not False:
                     plot_list.append([intervalx, intervaly])
-        return plot_list, 'fill'
+        return plot_list, "fill"
 
     def _get_meshes_grid(self):
         """Generates the mesh for generating a contour.
@@ -899,20 +966,20 @@ class ImplicitSeries(BaseSeries):
         z_grid = func(x_grid, y_grid)
         z_grid, ones = self._postprocess_meshgrid_result(z_grid, x_grid)
         if equality:
-            return xarray, yarray, z_grid, ones, 'contour'
+            return xarray, yarray, z_grid, ones, "contour"
         else:
-            return xarray, yarray, z_grid, ones, 'contourf'
-    
+            return xarray, yarray, z_grid, ones, "contourf"
+
     @staticmethod
     def _preprocess_meshgrid_expression(expr):
-        """ If the expression is a Relational, rewrite it as a single 
-        expression. This method reduces code repetition. 
+        """If the expression is a Relational, rewrite it as a single
+        expression. This method reduces code repetition.
 
         Returns
         =======
             expr : Expr
                 The rewritten expression
-            
+
             equality : Boolean
                 Wheter the original expression was an Equality or not.
         """
@@ -927,17 +994,19 @@ class ImplicitSeries(BaseSeries):
         elif isinstance(expr, (LessThan, StrictLessThan)):
             expr = expr.rhs - expr.lhs
         else:
-            raise NotImplementedError("The expression is not supported for "
-                                    "plotting in uniform meshed plot.")
+            raise NotImplementedError(
+                "The expression is not supported for "
+                "plotting in uniform meshed plot."
+            )
         return expr, equality
-    
+
     @staticmethod
     def _postprocess_meshgrid_result(z_grid, x_grid):
-        """ Bound the result to -1, 1. This method reduces code repetition. 
+        """Bound the result to -1, 1. This method reduces code repetition.
         While with Matplotlib we can directly plot the result z_grid and set the
         contour levels, this is not possible with Plotly. Hence, Plotly will
         use the ones matrix. The result will be slightly different: while
-        Matplotlib will render smooth lines, Plotly will looks 
+        Matplotlib will render smooth lines, Plotly will looks
         square-ish/segmented.
         """
         z_grid = ImplicitSeries._correct_size(z_grid, x_grid)
@@ -952,16 +1021,23 @@ class ImplicitSeries(BaseSeries):
 # Finding the centers of line segments or mesh faces
 ##############################################################################
 
+
 def centers_of_segments(array):
     return np.mean(np.vstack((array[:-1], array[1:])), 0)
 
 
 def centers_of_faces(array):
-    return np.mean(np.dstack((array[:-1, :-1],
-                             array[1:, :-1],
-                             array[:-1, 1:],
-                             array[:-1, :-1],
-                             )), 2)
+    return np.mean(
+        np.dstack(
+            (
+                array[:-1, :-1],
+                array[1:, :-1],
+                array[:-1, 1:],
+                array[:-1, :-1],
+            )
+        ),
+        2,
+    )
 
 
 def flat(x, y, z, eps=1e-3):
@@ -980,9 +1056,9 @@ def flat(x, y, z, eps=1e-3):
 
 
 class InteractiveSeries(BaseSeries):
-    """ Represent an interactive series, in which the expressions can be either
+    """Represent an interactive series, in which the expressions can be either
     a line or a surface (parametric or not). On top of the usual ranges (x, y or
-    u, v, which must be provided), the expressions can use any number of 
+    u, v, which must be provided), the expressions can use any number of
     parameters.
 
     This class internally convert the expressions to a lambda function, which is
@@ -998,13 +1074,14 @@ class InteractiveSeries(BaseSeries):
     def __new__(cls, *args, **kwargs):
         if isinstance(args[0][0], Plane):
             return PlaneInteractiveSeries(*args, **kwargs)
-        elif (isinstance(args[0][0], GeometryEntity) and 
-                (not isinstance(args[0][0], Curve))):
+        elif isinstance(args[0][0], GeometryEntity) and (
+            not isinstance(args[0][0], Curve)
+        ):
             return GeometryInteractiveSeries(*args, **kwargs)
         return object.__new__(cls)
 
     def __init__(self, exprs, ranges, label="", **kwargs):
-        # take care of Curve from sympy.geometry, which can be seen as 
+        # take care of Curve from sympy.geometry, which can be seen as
         # parametric series
         if isinstance(exprs[0], Curve):
             c = exprs[0]
@@ -1019,22 +1096,24 @@ class InteractiveSeries(BaseSeries):
         self.n3 = kwargs.get("n3", 250)
         n = [self.n1, self.n2, self.n3]
 
-        # TODO / NOTE: even though we have the ComplexSeries and 
+        # TODO / NOTE: even though we have the ComplexSeries and
         # ComplexInteractiveSeries classes, they are already doing a lot of work.
         # For the moment, we are going to allow InteractiveSeries to be able
-        # to use complex discretization. In doing so, we can create 3D surfaces 
+        # to use complex discretization. In doing so, we can create 3D surfaces
         # of the real/imaginary/absolute value of a function of 2 variables.
         self.complex_discr = kwargs.get("is_complex", False)
         castfunc = float if not self.complex_discr else complex
 
-        self.xscale = kwargs.get('xscale', 'linear')
-        self.yscale = kwargs.get('yscale', 'linear')
+        self.xscale = kwargs.get("xscale", "linear")
+        self.yscale = kwargs.get("yscale", "linear")
         self.label = label
         nexpr, npar = len(exprs), len(ranges)
 
         if nexpr == 0:
-            raise ValueError("At least one expression must be provided." +
-                "\nReceived: {}".format((exprs, ranges, label)))
+            raise ValueError(
+                "At least one expression must be provided."
+                + "\nReceived: {}".format((exprs, ranges, label))
+            )
         # # TODO: do I really need this?
         # if npar > 2:
         #     raise ValueError(
@@ -1043,11 +1122,12 @@ class InteractiveSeries(BaseSeries):
         #             "expressions uses {} ranges.".format(npar))
 
         # set series attributes
-        if ((nexpr == 1) and (exprs[0].has(BooleanFunction) or 
-            exprs[0].has(Relational))):
+        if (nexpr == 1) and (exprs[0].has(BooleanFunction) or exprs[0].has(Relational)):
             self.is_implicit = True
             exprs = list(exprs)
-            exprs[0], self.equality = ImplicitSeries._preprocess_meshgrid_expression(exprs[0])
+            exprs[0], self.equality = ImplicitSeries._preprocess_meshgrid_expression(
+                exprs[0]
+            )
         elif (nexpr == 1) and (npar == 1):
             self.is_2Dline = True
         elif (nexpr == 2) and (npar == 1):
@@ -1087,11 +1167,12 @@ class InteractiveSeries(BaseSeries):
         fs = fs.difference(params.keys()).difference([r[0] for r in ranges])
         if len(fs) > 0:
             raise ValueError(
-                "Incompatible expression and parameters.\n" +
-                "Expression: {}\n".format((exprs, ranges, label)) +
-                "Specify what these symbols represent: {}\n".format(fs) +
-                "Are they ranges or parameters?")
-        
+                "Incompatible expression and parameters.\n"
+                + "Expression: {}\n".format((exprs, ranges, label))
+                + "Specify what these symbols represent: {}\n".format(fs)
+                + "Are they ranges or parameters?"
+            )
+
         # if we are dealing with parametric expressions, we pack them into a
         # Tuple so that it can be lambdified
         self.expr = exprs[0] if len(exprs) == 1 else Tuple(*exprs, sympify=False)
@@ -1108,11 +1189,12 @@ class InteractiveSeries(BaseSeries):
         for i, r in enumerate(ranges):
             discr_symbols.append(r[0])
             scale = self.xscale
-            if i == 1: # y direction
+            if i == 1:  # y direction
                 scale = self.yscale
-            
+
             discretizations.append(
-                self._discretize(castfunc(r[1]), castfunc(r[2]), n[i], scale=scale))
+                self._discretize(castfunc(r[1]), castfunc(r[2]), n[i], scale=scale)
+            )
 
         if len(ranges) == 1:
             # 2D or 3D lines
@@ -1126,19 +1208,20 @@ class InteractiveSeries(BaseSeries):
                 kwargs2 = kwargs.copy()
                 kwargs2 = _set_discretization_points(kwargs2, SliceVector3DSeries)
                 slice_surf = _build_plane_series(_slice, ranges, **kwargs2)
-                self.ranges = {k: v for k, v in
-                    zip(discr_symbols, slice_surf.get_data())}
+                self.ranges = {
+                    k: v for k, v in zip(discr_symbols, slice_surf.get_data())
+                }
             else:
                 # surfaces: needs mesh grids
                 meshes = np.meshgrid(*discretizations)
                 self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
-        
+
         self.data = None
         if len(params) > 0:
             self.update_data(params)
-    
+
     def _evaluate(self, params):
-        """ Update the data based on the values of the parameters.
+        """Update the data based on the values of the parameters.
 
         Parameters
         ==========
@@ -1164,18 +1247,18 @@ class InteractiveSeries(BaseSeries):
                 results[i] = self._correct_size(
                     # the evaluation might produce an int/float. Need this conversion!
                     np.array(r),
-                    discr
+                    discr,
                 )
         elif isinstance(results, (int, float)):
             results = self._correct_size(
                 # the evaluation might produce an int/float. Need this conversion!
                 np.array(results),
-                discr
+                discr,
             )
         return results
 
     def update_data(self, params):
-        """ Update the data based on the values of the parameters.
+        """Update the data based on the values of the parameters.
 
         Parameters
         ==========
@@ -1187,37 +1270,42 @@ class InteractiveSeries(BaseSeries):
         """
         results = self._evaluate(params)
 
-        if (self.is_contour or
-            (self.is_3Dsurface and (not self.is_parametric)) or
-            (self.is_2Dline and (not self.is_parametric))):
+        if (
+            self.is_contour
+            or (self.is_3Dsurface and (not self.is_parametric))
+            or (self.is_2Dline and (not self.is_parametric))
+        ):
             # in the case of single-expression 2D lines or 3D surfaces
             if self.complex_discr:
                 results = [*[np.real(r) for r in self.ranges.values()], results]
             else:
                 results = [*self.ranges.values(), results]
             self.data = results
-        
+
         elif self.is_implicit:
             ranges = list(self.ranges.values())
             xr = ranges[0]
             yr = ranges[1]
             results = ImplicitSeries._postprocess_meshgrid_result(results, xr)
-            results = [xr[0, :], yr[:, 0], *results, 
-                "contour" if self.equality else "contourf"
-                ]
+            results = [
+                xr[0, :],
+                yr[:, 0],
+                *results,
+                "contour" if self.equality else "contourf",
+            ]
             self.data = results
-    
-        elif (self.is_parametric and (self.is_3Dline or self.is_2Dline)):
+
+        elif self.is_parametric and (self.is_3Dline or self.is_2Dline):
             # also add the parameter
             results = [*results, *self.ranges.values()]
             self.data = results
-        
+
         elif self.is_vector:
             # in order to plot a vector, we also need the discretized region
             self.data = [*self.ranges.values(), *results]
         else:
             self.data = results
-        
+
     def get_data(self):
         # if the expression depends only on the ranges, the user can call get_data
         # directly without calling update_data
@@ -1225,22 +1313,23 @@ class InteractiveSeries(BaseSeries):
             self.update_data(dict())
         if self.data is None:
             raise ValueError(
-                "To generate the numerical data, call update_data(params), " +
-                "providing the necessary parameters.")
+                "To generate the numerical data, call update_data(params), "
+                + "providing the necessary parameters."
+            )
         return self.data
-    
+
     def __str__(self):
         ranges = [(k, v[0], v[-1]) for k, v in self.ranges.items()]
-        return ('interactive expression: %s with ranges'
-                ' %s and parameters %s') % (
-                    str(self.expr),
-                    ", ".join([str(r) for r in ranges]),
-                    str(self.signature))
+        return ("interactive expression: %s with ranges" " %s and parameters %s") % (
+            str(self.expr),
+            ", ".join([str(r) for r in ranges]),
+            str(self.signature),
+        )
 
 
 class ComplexSeries(BaseSeries):
-    """ Represent a complex number or a complex function.
-    """
+    """Represent a complex number or a complex function."""
+
     is_complex = True
     is_point = False
     is_domain_coloring = False
@@ -1259,11 +1348,11 @@ class ComplexSeries(BaseSeries):
             # we are not plotting list of complex points, but real/imag or
             # magnitude/argument plots
             nolist = True
-        
+
         self._init_attributes(expr, r, label, nolist, **kwargs)
-    
+
     def _init_attributes(self, expr, r, label, nolist, **kwargs):
-        """ This method reduces code repetition between ComplexSeries and
+        """This method reduces code repetition between ComplexSeries and
         ComplexInteractiveSeries.
         """
         self.function = None
@@ -1275,14 +1364,16 @@ class ComplexSeries(BaseSeries):
                 self.is_2Dline = True
                 self.adaptive = kwargs.get("adaptive", True)
                 self.depth = kwargs.get("depth", 9)
-                if kwargs.get('absarg', False):
+                if kwargs.get("absarg", False):
                     self.adaptive = False
                     self.is_parametric = True
             elif kwargs.get("threed", False):
                 self.is_3Dsurface = True
-            elif kwargs.get('abs', False) or kwargs.get('arg', False):
+            elif kwargs.get("abs", False) or kwargs.get("arg", False):
                 levels = kwargs.get("levels", (7, 4))
-                self.abs_levels = np.asarray([2.0 ** k for k in np.arange(0, levels[0]) - levels[0] // 2])
+                self.abs_levels = np.asarray(
+                    [2.0 ** k for k in np.arange(0, levels[0]) - levels[0] // 2]
+                )
                 self.arg_levels = np.linspace(0.0, 2 * np.pi, levels[1], endpoint=False)
                 # https://github.com/nschloe/cplot/blob/main/src/cplot/_main.py
                 # assert levels in [-pi, pi], like np.angle
@@ -1290,7 +1381,9 @@ class ComplexSeries(BaseSeries):
                 # Contour levels must be increasing
                 self.arg_levels = np.sort(self.arg_levels)
 
-                is_level1 = (self.arg_levels > -np.pi + 0.1) & (self.arg_levels < np.pi - 0.1)
+                is_level1 = (self.arg_levels > -np.pi + 0.1) & (
+                    self.arg_levels < np.pi - 0.1
+                )
                 if kwargs.get("level1", True):
                     self.arg_levels = self.arg_levels[is_level1]
                     self.angle_func = np.angle
@@ -1304,27 +1397,28 @@ class ComplexSeries(BaseSeries):
                 self.is_contour = True
             else:
                 self.is_domain_coloring = True
-            
+
             # TODO: do I need this???
             from sympy import lambdify
+
             self.function = lambdify([self.var], expr)
-        
+
         self.expr = sympify(expr)
         if self.is_2Dline:
             # could be lot of poles: need decent discretization in order to
             # reliabily detect them.
-            self.n1 = kwargs.get('n1', 1000)
-            self.n2 = kwargs.get('n2', 1000)
+            self.n1 = kwargs.get("n1", 1000)
+            self.n2 = kwargs.get("n2", 1000)
         else:
-            self.n1 = kwargs.get('n1', 300)
-            self.n2 = kwargs.get('n2', 300)
-        self.xscale = kwargs.get('xscale', 'linear')
-        self.yscale = kwargs.get('yscale', 'linear')
+            self.n1 = kwargs.get("n1", 300)
+            self.n2 = kwargs.get("n2", 300)
+        self.xscale = kwargs.get("xscale", "linear")
+        self.yscale = kwargs.get("yscale", "linear")
 
-        self.real = kwargs.get('real', False)
-        self.imag = kwargs.get('imag', False)
-        self.abs = kwargs.get('abs', False)
-        self.arg = kwargs.get('arg', False)
+        self.real = kwargs.get("real", False)
+        self.imag = kwargs.get("imag", False)
+        self.abs = kwargs.get("abs", False)
+        self.arg = kwargs.get("arg", False)
         if self.abs and self.arg:
             self.is_parametric = True
 
@@ -1340,7 +1434,7 @@ class ComplexSeries(BaseSeries):
             self.label = "im(%s)" % label
         else:
             self.label = label
-        
+
         # domain coloring mode
         self.coloring = kwargs.get("coloring", "a")
         if not isinstance(self.coloring, str):
@@ -1348,11 +1442,11 @@ class ComplexSeries(BaseSeries):
         self.coloring = self.coloring.lower()
         self.phaseres = kwargs.get("phaseres", 20)
         # these will be passed to cplot.get_srgb1
-        self.abs_scaling = kwargs.get('abs_scaling', "h-1")
-        self.colorspace = kwargs.get('colorspace', 'cam16')
+        self.abs_scaling = kwargs.get("abs_scaling", "h-1")
+        self.colorspace = kwargs.get("colorspace", "cam16")
 
     def _correct_output(self, x, r):
-        """ Obtain the correct output depending the initialized settings.
+        """Obtain the correct output depending the initialized settings.
 
         This method reduces code repetition between ComplexSeries and
         ComplexInteractiveSeries.
@@ -1380,7 +1474,7 @@ class ComplexSeries(BaseSeries):
             elif self.arg:
                 return np.real(x), np.angle(r)
             return x, r
-        
+
         # 3D
         if not self.is_domain_coloring:
             if self.real and self.imag:
@@ -1405,17 +1499,20 @@ class ComplexSeries(BaseSeries):
                 return np.real(x), np.imag(x), np.angle(r)
 
         # 2D or 3D domain coloring
-        return (np.real(x), np.imag(x), 
-                np.dstack([np.absolute(r), np.angle(r)]), 
-                *self._domain_coloring(r))
-    
+        return (
+            np.real(x),
+            np.imag(x),
+            np.dstack([np.absolute(r), np.angle(r)]),
+            *self._domain_coloring(r),
+        )
+
     def adaptive_sampling(self, f):
-        """ The adaptive sampling is done by recursively checking if three
+        """The adaptive sampling is done by recursively checking if three
         points are almost collinear. If they are not collinear, then more
         points are added between those points.
 
         Different from LineOver1DRangeSeries and Parametric2DLineSeries, this
-        is an instance method because I really need to access other useful 
+        is an instance method because I really need to access other useful
         methods.
 
         References
@@ -1431,21 +1528,22 @@ class ComplexSeries(BaseSeries):
         imag = np.imag(self.start)
 
         def sample(p, q, depth):
-            """ Samples recursively if three points are almost collinear.
-            For depth < self.depth, points are added irrespective of whether 
-            they satisfy the collinearity condition or not. The maximum 
+            """Samples recursively if three points are almost collinear.
+            For depth < self.depth, points are added irrespective of whether
+            they satisfy the collinearity condition or not. The maximum
             depth allowed is self.depth.
             """
             # Randomly sample to avoid aliasing.
             random = 0.45 + np.random.rand() * 0.1
-            if self.xscale == 'log':
-                xnew = 10**(np.log10(p[0]) + random * (np.log10(q[0]) -
-                                                        np.log10(p[0])))
+            if self.xscale == "log":
+                xnew = 10 ** (
+                    np.log10(p[0]) + random * (np.log10(q[0]) - np.log10(p[0]))
+                )
             else:
                 xnew = p[0] + random * (q[0] - p[0])
-            
+
             ynew = f(xnew + imag * 1j)
-            # _correct_output is going to return different number of elements, 
+            # _correct_output is going to return different number of elements,
             # depending on the user-provided keyword arguments.
             r = self._correct_output(xnew, ynew)
             xnew, ynew = r[:2]
@@ -1466,7 +1564,7 @@ class ComplexSeries(BaseSeries):
             # at both ends. If there is a real value in between, then
             # sample those points further.
             elif p[1] is None and q[1] is None:
-                if self.xscale == 'log':
+                if self.xscale == "log":
                     xarray = np.logspace(p[0], q[0], 10)
                 else:
                     xarray = np.linspace(p[0], q[0], 10)
@@ -1475,13 +1573,20 @@ class ComplexSeries(BaseSeries):
                 if any(y is not None for y in yarray):
                     for i in range(len(yarray) - 1):
                         if yarray[i] is not None or yarray[i + 1] is not None:
-                            sample([xarray[i], yarray[i]],
-                                [xarray[i + 1], yarray[i + 1]], depth + 1)
+                            sample(
+                                [xarray[i], yarray[i]],
+                                [xarray[i + 1], yarray[i + 1]],
+                                depth + 1,
+                            )
 
             # Sample further if one of the end points in None (i.e. a
             # complex value) or the three points are not almost collinear.
-            elif (p[1] is None or q[1] is None or new_point[1] is None
-                    or not flat(p, new_point, q)):
+            elif (
+                p[1] is None
+                or q[1] is None
+                or new_point[1] is None
+                or not flat(p, new_point, q)
+            ):
                 sample(p, new_point, depth + 1)
                 sample(new_point, q, depth + 1)
             else:
@@ -1491,7 +1596,7 @@ class ComplexSeries(BaseSeries):
         f_start = f(self.start)
         f_end = f(self.end)
 
-        # _correct_output is going to return different number of elements, 
+        # _correct_output is going to return different number of elements,
         # depending on the user-provided keyword arguments.
         rs = self._correct_output(self.start, f_start)
         re = self._correct_output(self.end, f_end)
@@ -1505,12 +1610,19 @@ class ComplexSeries(BaseSeries):
     def _domain_coloring(self, w):
         from spb.complex.hsv_color_grading import color_grading
         from spb.complex.wegert import (
-            bw_stripes_phase, bw_stripes_mag, domain_coloring,
-            enhanced_domain_coloring, enhanced_domain_coloring_phase,
-            enhanced_domain_coloring_mag, bw_stripes_imag, bw_stripes_real,
-            cartesian_chessboard, polar_chessboard
+            bw_stripes_phase,
+            bw_stripes_mag,
+            domain_coloring,
+            enhanced_domain_coloring,
+            enhanced_domain_coloring_phase,
+            enhanced_domain_coloring_mag,
+            bw_stripes_imag,
+            bw_stripes_real,
+            cartesian_chessboard,
+            polar_chessboard,
         )
         from cplot import get_srgb1
+
         _mapping = {
             "a": domain_coloring,
             "b": enhanced_domain_coloring,
@@ -1528,26 +1640,30 @@ class ComplexSeries(BaseSeries):
         colorscale = None
         if not self.coloring in _mapping.keys():
             raise KeyError(
-                "`coloring` must be one of the following: {}".format(_mapping.keys()))
-        
+                "`coloring` must be one of the following: {}".format(_mapping.keys())
+            )
+
         if self.coloring == "f":
             zn = 1 * np.exp(1j * np.linspace(0, 2 * np.pi, 256))
             colorscale = get_srgb1(zn, self.abs_scaling, self.colorspace)
             colorscale = (colorscale * 255).astype(np.uint8)
             # shift the argument from [0, 2*pi] to [-pi, pi]
             colorscale = np.roll(colorscale, int(len(colorscale) / 2), axis=0)
-            rgb = (get_srgb1(w, self.abs_scaling, self.colorspace) * 255).astype(np.uint8)
+            rgb = (get_srgb1(w, self.abs_scaling, self.colorspace) * 255).astype(
+                np.uint8
+            )
             return rgb, colorscale
-        
+
         if self.coloring <= "e":
             from matplotlib.colors import hsv_to_rgb
+
             H = np.linspace(0, 1, 256)
             S = V = np.ones_like(H)
             colorscale = hsv_to_rgb(np.dstack([H, S, V]))
             colorscale = (colorscale.reshape((-1, 3)) * 255).astype(np.uint8)
             colorscale = np.roll(colorscale, int(len(colorscale) / 2), axis=0)
         return _mapping[self.coloring](w, phaseres=self.phaseres), colorscale
-    
+
     def get_data(self):
         if isinstance(self.expr, (list, tuple, Tuple)):
             # list of complex points
@@ -1562,12 +1678,12 @@ class ComplexSeries(BaseSeries):
                 x, y = self.adaptive_sampling(self.function)
                 return [np.array(t) for t in [x, y]]
             else:
-            # compute the real/imaginary/magnitude/argument of the complex 
-            # function
+                # compute the real/imaginary/magnitude/argument of the complex
+                # function
                 x = self._discretize(self.start, self.end, self.n1, self.xscale)
                 y = self.function(x + np.imag(self.start) * 1j)
             return self._correct_output(x, y)
-        
+
         # Domain coloring
         start_x = np.real(self.start)
         end_x = np.real(self.end)
@@ -1587,22 +1703,23 @@ class ComplexInteractiveSeries(InteractiveSeries, ComplexSeries):
 
     def __init__(self, expr, r, label="", **kwargs):
         params = kwargs.get("params", dict())
-        
+
         self._init_attributes(expr, r, label, True, **kwargs)
-        self.xscale = kwargs.get('xscale', 'linear')
-        self.yscale = kwargs.get('yscale', 'linear')
-        
+        self.xscale = kwargs.get("xscale", "linear")
+        self.yscale = kwargs.get("yscale", "linear")
+
         # from the expression's free symbols, remove the ones used in
         # the parameters and the ranges
         fs = expr.free_symbols
         fs = fs.difference(params.keys()).difference(set([r[0]]))
         if len(fs) > 0:
             raise ValueError(
-                "Incompatible expression and parameters.\n" +
-                "Expression: {}\n".format((expr, r, label)) +
-                "Specify what these symbols represent: {}\n".format(fs) +
-                "Are they ranges or parameters?")
-        
+                "Incompatible expression and parameters.\n"
+                + "Expression: {}\n".format((expr, r, label))
+                + "Specify what these symbols represent: {}\n".format(fs)
+                + "Are they ranges or parameters?"
+            )
+
         # generate the lambda function
         signature, f = get_lambda(self.expr)
         self.signature = signature
@@ -1613,30 +1730,33 @@ class ComplexInteractiveSeries(InteractiveSeries, ComplexSeries):
         #    val: the numpy array representing the discretization
         if complex(r[1]).imag != complex(r[2]).imag:
             # domain coloring
-            x = self._discretize(complex(r[1]).real, complex(r[2]).real,
-                    self.n1, scale=self.xscale)
-            y = self._discretize(complex(r[1]).imag, complex(r[2]).imag,
-                    self.n2, scale=self.yscale)
+            x = self._discretize(
+                complex(r[1]).real, complex(r[2]).real, self.n1, scale=self.xscale
+            )
+            y = self._discretize(
+                complex(r[1]).imag, complex(r[2]).imag, self.n2, scale=self.yscale
+            )
             xx, yy = np.meshgrid(x, y)
             zz = xx + 1j * yy
             self.ranges = {self.var: zz}
         else:
             # line plot
-            x = self._discretize(complex(r[1]).real, complex(r[2]).real,
-                    self.n1, scale=self.xscale)
+            x = self._discretize(
+                complex(r[1]).real, complex(r[2]).real, self.n1, scale=self.xscale
+            )
             self.ranges = {self.var: x + 0j}
-        
+
         self.data = None
         if len(params) > 0:
             self.update_data(params)
-        
+
     def update_data(self, params):
         results = self._evaluate(params)
         self.data = self._correct_output(self.ranges[self.var], results)
 
 
 def _set_discretization_points(kwargs, pt):
-    """ This function allows the user two use the keyword arguments n, n1 and n2
+    """This function allows the user two use the keyword arguments n, n1 and n2
     to specify the number of discretization points in two directions.
 
     Parameters
@@ -1648,13 +1768,18 @@ def _set_discretization_points(kwargs, pt):
             The type of the series, which indicates the kind of plot we are
             trying to create: plot, plot_parametric, ...
     """
-    if pt in [LineOver1DRangeSeries, Parametric2DLineSeries, 
-                Parametric3DLineSeries]:
+    if pt in [LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries]:
         if "n1" in kwargs.keys() and ("n" not in kwargs.keys()):
             kwargs["n"] = kwargs["n1"]
-    elif pt in [SurfaceOver2DRangeSeries, ContourSeries, ComplexSeries,
-            ParametricSurfaceSeries, Vector2DSeries, ComplexInteractiveSeries,
-            ImplicitSeries]:
+    elif pt in [
+        SurfaceOver2DRangeSeries,
+        ContourSeries,
+        ComplexSeries,
+        ParametricSurfaceSeries,
+        Vector2DSeries,
+        ComplexInteractiveSeries,
+        ImplicitSeries,
+    ]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]
@@ -1667,8 +1792,8 @@ def _set_discretization_points(kwargs, pt):
 
 
 class VectorBase(BaseSeries):
-    """ Represent a vector field.
-    """
+    """Represent a vector field."""
+
     is_vector = True
     is_2D = False
     is_3D = False
@@ -1676,8 +1801,8 @@ class VectorBase(BaseSeries):
 
 
 class Vector2DSeries(VectorBase):
-    """ Represents a 2D vector field.
-    """
+    """Represents a 2D vector field."""
+
     is_2Dvector = True
 
     def __init__(self, u, v, range1, range2, label, **kwargs):
@@ -1692,8 +1817,8 @@ class Vector2DSeries(VectorBase):
 
 
 class Vector3DSeries(VectorBase):
-    """ Represents a 3D vector field.
-    """
+    """Represents a 3D vector field."""
+
     is_3D = True
     is_3Dvector = True
 
@@ -1711,16 +1836,15 @@ class Vector3DSeries(VectorBase):
         self.start_z = float(range_z[1])
         self.end_z = float(range_z[2])
         self.label = label
-        self.n1 = kwargs.get('n1', 10)
-        self.n2 = kwargs.get('n2', 10)
-        self.n3 = kwargs.get('n3', 10)
+        self.n1 = kwargs.get("n1", 10)
+        self.n2 = kwargs.get("n2", 10)
+        self.n3 = kwargs.get("n3", 10)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
 
     def _discretize(self):
-        """ This method allows to reduce code repetition.
-        """
+        """This method allows to reduce code repetition."""
         x = super()._discretize(self.start_x, self.end_x, self.n1, self.xscale)
         y = super()._discretize(self.start_y, self.end_y, self.n2, self.yscale)
         z = super()._discretize(self.start_z, self.end_z, self.n3, self.zscale)
@@ -1737,48 +1861,49 @@ class Vector3DSeries(VectorBase):
         uu = self._correct_size(uu, x)
         vv = self._correct_size(vv, y)
         ww = self._correct_size(ww, z)
+
         def _convert(a):
             a = np.array(a, dtype=np.float64)
             return np.ma.masked_invalid(a)
+
         return x, y, z, _convert(uu), _convert(vv), _convert(ww)
 
 
 def _build_plane_series(plane, ranges, **kwargs):
-    """ This method reduced code repetition. """
+    """This method reduced code repetition."""
     if isinstance(plane, Plane):
         return PlaneSeries(sympify(plane), *ranges, **kwargs)
     else:
         return SurfaceOver2DRangeSeries(plane, *ranges, **kwargs)
 
+
 class SliceVector3DSeries(Vector3DSeries):
-    """ Represents a 3D vector field plotted over a slice, which can be a slice
+    """Represents a 3D vector field plotted over a slice, which can be a slice
     plane or a slice surface.
     """
+
     is_slice = True
 
-    def __init__(self, plane, u, v, w, range_x, range_y, range_z, label="",
-            **kwargs):
-        self.plane = _build_plane_series(plane, [range_x, range_y, range_z],
-                **kwargs)
+    def __init__(self, plane, u, v, w, range_x, range_y, range_z, label="", **kwargs):
+        self.plane = _build_plane_series(plane, [range_x, range_y, range_z], **kwargs)
         super().__init__(u, v, w, range_x, range_y, range_z, label, **kwargs)
-    
+
     def _discretize(self):
-        """ This method allows to reduce code repetition.
-        """
+        """This method allows to reduce code repetition."""
         return self.plane.get_data()
 
 
 class PlaneSeries(SurfaceBaseSeries):
-    """ Represents a plane in a 3D domain.
-    """
+    """Represents a plane in a 3D domain."""
+
     is_3Dsurface = True
 
-    def __init__(self, plane, x_range, y_range, z_range=None, label="", 
-            params=dict(), **kwargs):
+    def __init__(
+        self, plane, x_range, y_range, z_range=None, label="", params=dict(), **kwargs
+    ):
         self.plane = sympify(plane)
         if not isinstance(self.plane, Plane):
-            raise TypeError(
-                "`plane` must be an instance of sympy.geometry.Plane")
+            raise TypeError("`plane` must be an instance of sympy.geometry.Plane")
         self.x_range = sympify(x_range)
         self.y_range = sympify(y_range)
         self.z_range = sympify(z_range)
@@ -1790,7 +1915,7 @@ class PlaneSeries(SurfaceBaseSeries):
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
         self.params = params
-    
+
     def get_data(self):
         x, y, z = symbols("x, y, z")
         plane = self.plane.subs(self.params)
@@ -1798,18 +1923,32 @@ class PlaneSeries(SurfaceBaseSeries):
         xx, yy, zz = None, None, None
         if fs == set([x]):
             # parallel to yz plane (normal vector (1, 0, 0))
-            s = SurfaceOver2DRangeSeries(self.plane.p1[0], 
-                    (x, *self.z_range[1:]), (y, *self.y_range[1:]), "", 
-                    n1=self.n3, n2=self.n2,
-                    xscale=self.xscale, yscale=self.yscale, zscale=self.zscale)
+            s = SurfaceOver2DRangeSeries(
+                self.plane.p1[0],
+                (x, *self.z_range[1:]),
+                (y, *self.y_range[1:]),
+                "",
+                n1=self.n3,
+                n2=self.n2,
+                xscale=self.xscale,
+                yscale=self.yscale,
+                zscale=self.zscale,
+            )
             xx, yy, zz = s.get_data()
             xx, yy, zz = zz, yy, xx
         elif fs == set([y]):
             # parallel to xz plane (normal vector (0, 1, 0))
-            s = SurfaceOver2DRangeSeries(self.plane.p1[1], 
-                    (x, *self.x_range[1:]), (y, *self.z_range[1:]), "", 
-                    n1=self.n1, n2=self.n3,
-                    xscale=self.xscale, yscale=self.yscale, zscale=self.zscale)
+            s = SurfaceOver2DRangeSeries(
+                self.plane.p1[1],
+                (x, *self.x_range[1:]),
+                (y, *self.z_range[1:]),
+                "",
+                n1=self.n1,
+                n2=self.n3,
+                xscale=self.xscale,
+                yscale=self.yscale,
+                zscale=self.zscale,
+            )
             xx, yy, zz = s.get_data()
             xx, yy, zz = xx, zz, yy
         else:
@@ -1817,21 +1956,29 @@ class PlaneSeries(SurfaceBaseSeries):
             eq = plane.equation(x, y, z)
             if z in eq.free_symbols:
                 eq = solve(eq, z)[0]
-            s = SurfaceOver2DRangeSeries(eq, 
-                    (x, *self.x_range[1:]), (y, *self.y_range[1:]), "", 
-                    n1=self.n1, n2=self.n2,
-                    xscale=self.xscale, yscale=self.yscale, zscale=self.zscale)
+            s = SurfaceOver2DRangeSeries(
+                eq,
+                (x, *self.x_range[1:]),
+                (y, *self.y_range[1:]),
+                "",
+                n1=self.n1,
+                n2=self.n2,
+                xscale=self.xscale,
+                yscale=self.yscale,
+                zscale=self.zscale,
+            )
             xx, yy, zz = s.get_data()
             if len(fs) > 1:
                 idx = np.logical_or(zz < self.z_range[1], zz > self.z_range[2])
                 zz[idx] = np.nan
         return xx, yy, zz
 
+
 class PlaneInteractiveSeries(PlaneSeries, InteractiveSeries):
-    """ Represent a geometric plane.
+    """Represent a geometric plane.
 
     NOTE: In the MRO, PlaneSeries has the precedence over InteractiveSeries.
-    This is because Numpy and Scipy don't have correspondence with Plane. 
+    This is because Numpy and Scipy don't have correspondence with Plane.
     Hence, we got to use get_data() implemented in PlaneSeries.
     """
 
@@ -1852,28 +1999,31 @@ class GeometrySeries(BaseSeries):
         if isinstance(args[0], Plane):
             return PlaneSeries(*args, **kwargs)
         elif isinstance(args[0], Curve):
-            new_cls = (Parametric2DLineSeries if len(args[0].functions) == 2 
-                else Parametric3DLineSeries)
+            new_cls = (
+                Parametric2DLineSeries
+                if len(args[0].functions) == 2
+                else Parametric3DLineSeries
+            )
             label = [a for a in args if isinstance(a, str)]
             label = label[0] if len(label) > 0 else str(args[0])
-            return new_cls(
-                *args[0].functions, args[0].limits, label, **kwargs)
+            return new_cls(*args[0].functions, args[0].limits, label, **kwargs)
         return object.__new__(cls)
 
     def __init__(self, expr, _range=None, label="", params=dict(), **kwargs):
         if not isinstance(expr, GeometryEntity):
-            raise ValueError("`expr` must be a geomtric entity.\n" +
-                "Received: type(expr) = {}\n".format(type(expr)) + 
-                "Expr: {}".format(expr)
+            raise ValueError(
+                "`expr` must be a geomtric entity.\n"
+                + "Received: type(expr) = {}\n".format(type(expr))
+                + "Expr: {}".format(expr)
             )
-        
+
         r = expr.free_symbols.difference(set(params.keys()))
         if len(r) > 0:
             raise ValueError(
-                "Too many free symbols. Please, specify the values of the " +
-                "following symbols with the `params` dictionary: {}".format(r)
+                "Too many free symbols. Please, specify the values of the "
+                + "following symbols with the `params` dictionary: {}".format(r)
             )
-        
+
         self.expr = expr
         self._range = _range
         self.label = label
@@ -1885,18 +2035,23 @@ class GeometrySeries(BaseSeries):
             self.end = 0
             if isinstance(expr, Point3D):
                 self.is_point = True
-        elif (isinstance(expr, LinearEntity2D) or 
-            (isinstance(expr, (Polygon, Circle, Ellipse)) and (not self.fill))):
+        elif isinstance(expr, LinearEntity2D) or (
+            isinstance(expr, (Polygon, Circle, Ellipse)) and (not self.fill)
+        ):
             self.is_2Dline = True
         elif isinstance(expr, Point2D):
             self.is_point = True
             self.is_2Dline = True
-    
+
     def get_data(self):
         expr = self.expr.subs(self.params)
         if isinstance(expr, Point3D):
-            return (np.array([expr.x], dtype=float), np.array([expr.y], dtype=float),
-                np.array([expr.z], dtype=float), np.array([0], dtype=float))
+            return (
+                np.array([expr.x], dtype=float),
+                np.array([expr.y], dtype=float),
+                np.array([expr.z], dtype=float),
+                np.array([0], dtype=float),
+            )
         elif isinstance(expr, Point2D):
             return np.array([expr.x], dtype=float), np.array([expr.y], dtype=float)
         elif isinstance(expr, Polygon):
@@ -1918,7 +2073,7 @@ class GeometrySeries(BaseSeries):
             a = float(expr.hradius)
             e = float(expr.eccentricity)
             x = np.linspace(-a, a, 200)
-            y = np.sqrt((a**2 - x**2) * (1 - e**2))
+            y = np.sqrt((a ** 2 - x ** 2) * (1 - e ** 2))
             x += cx
             x, y = np.concatenate((x, x[::-1])), np.concatenate((cy + y, cy - y[::-1]))
             x = np.append(x, x[0])
@@ -1936,7 +2091,7 @@ class GeometrySeries(BaseSeries):
             x = np.array([p1.x, p2.x])
             y = np.array([p1.y, p2.y])
             return x.astype(float), y.astype(float)
-        else: # Line
+        else:  # Line
             p1, p2 = expr.points
             if self._range is None:
                 x = np.array([p1.x, p2.x])
@@ -1948,11 +2103,12 @@ class GeometrySeries(BaseSeries):
                 y = m * x + q
             return x.astype(float), y.astype(float)
 
+
 class GeometryInteractiveSeries(GeometrySeries, InteractiveSeries):
-    """ Represent a geometry entity.
+    """Represent a geometry entity.
 
     NOTE: In the MRO, GeometrySeries has the precedence over InteractiveSeries.
-    This is because Numpy and Scipy don't have correspondence with Line, 
+    This is because Numpy and Scipy don't have correspondence with Line,
     Segment, Polygon, ... Hence, we got to use get_data() implemented in
     GeometrySeries.
     """

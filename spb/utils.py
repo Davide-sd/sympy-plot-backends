@@ -7,8 +7,9 @@ from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 import numpy as np
 
+
 def get_lambda(expr, **kwargs):
-    """ Create a lambda function to numerically evaluate expr by sorting 
+    """Create a lambda function to numerically evaluate expr by sorting
     alphabetically the function arguments.
     Parameters
     ----------
@@ -21,14 +22,14 @@ def get_lambda(expr, **kwargs):
         s : list
             The function signature: a list of the ordered function arguments.
         f : lambda
-            The generated lambda function.ò 
+            The generated lambda function.ò
     """
     signature = list(ordered(expr.free_symbols))
     return signature, lambdify(signature, expr, **kwargs)
 
 
 def _create_ranges(free_symbols, ranges, npar):
-    """ This function does two things:
+    """This function does two things:
     1. Check if the number of free symbols is in agreement with the type of plot
         chosen. For example, plot() requires 1 free symbol; plot3d() requires 2
         free symbols.
@@ -51,15 +52,16 @@ def _create_ranges(free_symbols, ranges, npar):
 
     if len(free_symbols) > npar:
         raise ValueError(
-            "Too many free symbols.\n" +
-            "Expected {} free symbols.\n".format(npar) +
-            "Received {}: {}".format(len(free_symbols), free_symbols)
+            "Too many free symbols.\n"
+            + "Expected {} free symbols.\n".format(npar)
+            + "Received {}: {}".format(len(free_symbols), free_symbols)
         )
 
     # TODO: should I keep it?
     if len(ranges) > npar:
         raise ValueError(
-            "Too many ranges. Received %s, expected %s" % (len(ranges), npar))
+            "Too many ranges. Received %s, expected %s" % (len(ranges), npar)
+        )
 
     # free symbols in the ranges provided by the user
     rfs = set().union([r[0] for r in ranges])
@@ -75,7 +77,7 @@ def _create_ranges(free_symbols, ranges, npar):
         # if there is still room, fill them with dummys
         for i in range(npar - len(ranges)):
             ranges.append(get_default_range(Dummy()))
-    
+
     if len(free_symbols) == npar:
         # there could be times when this condition is not met, for example
         # plotting the function f(x, y) = x (which is a plane); in this case,
@@ -83,16 +85,17 @@ def _create_ranges(free_symbols, ranges, npar):
         rfs = set().union([r[0] for r in ranges])
         if free_symbols.difference(rfs) != set():
             raise ValueError(
-                "Incompatible free symbols of the expressions with the ranges.\n" +
-                "Free symbols in the expressions: {}\n".format(free_symbols) +
-                "Free symbols in the ranges: {}".format(rfs)
+                "Incompatible free symbols of the expressions with the ranges.\n"
+                + "Free symbols in the expressions: {}\n".format(free_symbols)
+                + "Free symbols in the ranges: {}".format(rfs)
             )
     return ranges
 
+
 def _check_arguments(args, nexpr, npar):
-    """ Checks the arguments and converts into tuples of the
+    """Checks the arguments and converts into tuples of the
     form (exprs, ranges, name_expr).
-    
+
     Parameters
     ==========
 
@@ -146,9 +149,10 @@ def _check_arguments(args, nexpr, npar):
 
         if not all([_is_range(r) for r in ranges]):
             raise ValueError(
-                        "Expressions must be followed by ranges. Received:\n"
-                        "Expressions: %s\n"
-                        "Others: %s" % (exprs, ranges))
+                "Expressions must be followed by ranges. Received:\n"
+                "Expressions: %s\n"
+                "Others: %s" % (exprs, ranges)
+            )
         free_symbols = set().union(*[e.free_symbols for e in exprs])
         ranges = _create_ranges(free_symbols, ranges, npar)
 
@@ -160,13 +164,21 @@ def _check_arguments(args, nexpr, npar):
         for expr in exprs:
             # need this if-else to deal with both plot/plot3d and
             # plot_parametric/plot3d_parametric_line
-            e = ((expr,) if isinstance(expr, (Expr, Relational, BooleanFunction)) 
-                    else expr)
-            current_label = (label if label else (str(expr)
+            e = (
+                (expr,)
                 if isinstance(expr, (Expr, Relational, BooleanFunction))
-                    else str(e)))
+                else expr
+            )
+            current_label = (
+                label
+                if label
+                else (
+                    str(expr)
+                    if isinstance(expr, (Expr, Relational, BooleanFunction))
+                    else str(e)
+                )
+            )
             output.append((*e, *ranges, current_label))
-
 
     else:
         # In this case, we are plotting multiple expressions, each one with its
@@ -204,7 +216,7 @@ def _check_arguments(args, nexpr, npar):
 
 
 def _plot_sympify(args):
-    """ By allowing the users to set custom labels to the expressions being
+    """By allowing the users to set custom labels to the expressions being
     plotted, a critical issue is raised: whenever a special character like $,
     {, }, ... is used in the label (type string), sympify will raise an error.
     This function recursively loop over the arguments passed to the plot
@@ -226,14 +238,19 @@ def _plot_sympify(args):
 
 
 def _is_range(r):
-    """ A range is defined as (symbol, start, end). start and end should
+    """A range is defined as (symbol, start, end). start and end should
     be numbers.
     """
-    return (isinstance(r, Tuple) and (len(r) == 3) and
-                r.args[1].is_number and r.args[2].is_number)
+    return (
+        isinstance(r, Tuple)
+        and (len(r) == 3)
+        and r.args[1].is_number
+        and r.args[2].is_number
+    )
+
 
 def _unpack_args(*args, matrices=False, fill_ranges=True):
-    """ Given a list/tuple of arguments previously processed by _plot_sympify(),
+    """Given a list/tuple of arguments previously processed by _plot_sympify(),
     separates and returns its components: expressions, ranges, label.
 
     Parameters
@@ -243,7 +260,7 @@ def _unpack_args(*args, matrices=False, fill_ranges=True):
             the expression, it will be converted to a list. This is useful in
             order to deal with vectors (written in form of matrices) for
             iplot.
-        
+
         fill_ranges : boolean
             Default to True. If not enough ranges are provided, the algorithm
             will try to create the missing ones.
@@ -262,7 +279,7 @@ def _unpack_args(*args, matrices=False, fill_ranges=True):
     >>> args = _plot_sympify(args)
     >>> _unpack_args(*args)
         ([sin(x**2 + y**2)], [(x, -2, 2), (y, -3, 3)], 'f2')
-    
+
     >>> args = (sin(x + y), cos(x - y), x + y, (x, -2, 2), (y, -3, 3), "f3")
     >>> args = _plot_sympify(args)
     >>> _unpack_args(*args)
@@ -279,7 +296,7 @@ def _unpack_args(*args, matrices=False, fill_ranges=True):
             label = str(exprs[0])
         else:
             label = str(tuple(exprs))
-    
+
     if matrices and (len(exprs) == 1):
         if isinstance(exprs[0], (list, tuple, Tuple, DenseMatrix)):
             exprs = list(exprs[0])
@@ -291,13 +308,14 @@ def _unpack_args(*args, matrices=False, fill_ranges=True):
 
 
 def ij2k(cols, i, j):
-    """ Create the connectivity for the mesh.
+    """Create the connectivity for the mesh.
     https://github.com/K3D-tools/K3D-jupyter/issues/273
     """
-    return  cols * i + j
+    return cols * i + j
+
 
 def get_vertices_indices(x, y, z):
-    """ Compute the vertices matrix (Nx3) and the connectivity list for
+    """Compute the vertices matrix (Nx3) and the connectivity list for
     triangular faces.
 
     Parameters
@@ -305,27 +323,31 @@ def get_vertices_indices(x, y, z):
         x, y, z : np.array
             2D arrays
     """
-    rows, cols  = x.shape
+    rows, cols = x.shape
     x = x.flatten()
     y = y.flatten()
     z = z.flatten()
     vertices = np.vstack([x, y, z]).T
     indices = []
-    for i in range(1,rows):
-        for j in range(1,cols):
-            indices.append( [ij2k(cols, i, j), ij2k(cols, i - 1, j), ij2k(cols, i, j- 1 )] )
-            indices.append( [ij2k(cols, i - 1, j - 1), ij2k(cols, i , j - 1), ij2k(cols, i - 1, j)] )
+    for i in range(1, rows):
+        for j in range(1, cols):
+            indices.append(
+                [ij2k(cols, i, j), ij2k(cols, i - 1, j), ij2k(cols, i, j - 1)]
+            )
+            indices.append(
+                [ij2k(cols, i - 1, j - 1), ij2k(cols, i, j - 1), ij2k(cols, i - 1, j)]
+            )
     return vertices, indices
 
 
 def _split_vector(expr, ranges, fill_ranges=True):
-    """ Extract the components of the given vector or matrix.
+    """Extract the components of the given vector or matrix.
 
     Parameters
     ==========
         expr : Vector, DenseMatrix or list/tuple
         ranges : list/tuple
-    
+
     Returns
     =======
         split_expr : tuple
@@ -351,12 +373,15 @@ def _split_vector(expr, ranges, fill_ranges=True):
     elif not isinstance(expr, (DenseMatrix, list, tuple, Tuple)):
         raise TypeError(
             "The provided expression must be a symbolic vector, or a "
-            "symbolic matrix, or a tuple/list with 2 or 3 symbolic " +
-            "elements.\nReceived type = {}".format(type(expr)))
+            "symbolic matrix, or a tuple/list with 2 or 3 symbolic "
+            + "elements.\nReceived type = {}".format(type(expr))
+        )
     elif (len(expr) < 2) or (len(expr) > 3):
-        raise ValueError("This function only plots 2D or 3D vectors.\n" +
-            "Received: {}. Number of elements: {}".format(expr, len(expr)))
-    
+        raise ValueError(
+            "This function only plots 2D or 3D vectors.\n"
+            + "Received: {}. Number of elements: {}".format(expr, len(expr))
+        )
+
     if fill_ranges:
         ranges = list(ranges)
         fs = set().union(*[e.free_symbols for e in expr])
@@ -365,7 +390,7 @@ def _split_vector(expr, ranges, fill_ranges=True):
             for s in fs:
                 if s not in fs_ranges:
                     ranges.append(Tuple(s, -10, 10))
-    
+
     if len(expr) == 2:
         xexpr, yexpr = expr
         zexpr = S.Zero
@@ -374,8 +399,9 @@ def _split_vector(expr, ranges, fill_ranges=True):
     split_expr = xexpr, yexpr, zexpr
     return split_expr, ranges
 
+
 def get_seeds_points(xx, yy, zz, uu, vv, ww):
-    """ Returns an optimal list of seeds points to be used to generate 3D
+    """Returns an optimal list of seeds points to be used to generate 3D
     streamlines.
 
     Parameters
@@ -385,7 +411,7 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww):
 
         uu, vv, ww: np.ndarray
             Vector components calculated at the discretized points in space.
-    
+
     Returns
     =======
         points : np.ndarray
@@ -397,7 +423,7 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww):
     coords = np.stack([xx, yy, zz])
     # vector field
     vf = np.stack([uu, vv, ww])
-    
+
     # extract the coordinate of the points at planes:
     # x_min, x_max, y_min, y_max, z_min, z_max
     c_xmin = coords[:, :, 0, :]
@@ -415,20 +441,24 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww):
     vf_ymax = vf[:, -1, :, :]
     vf_zmin = vf[:, :, :, 0]
     vf_zmax = vf[:, :, :, -1]
-    
+
     def find_points_at_input_vectors(vf_plane, coords, i, sign="g"):
         check = {
             "g": lambda x: x > 0,
             "l": lambda x: x < 0,
         }
         # extract coordinates where the vectors are entering the plane
-        tmp = np.where(check[sign](vf_plane[i, :, :]), coords, np.nan * np.zeros_like(coords))
+        tmp = np.where(
+            check[sign](vf_plane[i, :, :]), coords, np.nan * np.zeros_like(coords)
+        )
         # reshape the matrix to obtain an [n x 3] array of coordinates
-        tmp = np.array([tmp[0, :, :].flatten(), tmp[1, :, :].flatten(), tmp[2, :, :].flatten()]).T
+        tmp = np.array(
+            [tmp[0, :, :].flatten(), tmp[1, :, :].flatten(), tmp[2, :, :].flatten()]
+        ).T
         # remove NaN entries
         tmp = [a for a in tmp if not np.all([np.isnan(t) for t in a])]
         return tmp
-    
+
     p_xmin = find_points_at_input_vectors(vf_xmin, c_xmin, 0, "g")
     p_xmax = find_points_at_input_vectors(vf_xmax, c_xmax, 0, "l")
     p_ymin = find_points_at_input_vectors(vf_ymin, c_ymin, 1, "g")

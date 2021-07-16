@@ -1,27 +1,30 @@
-from sympy import Tuple, Expr, re, im, arg as argument, sqrt
+from sympy import Tuple, re, im, sqrt
 from spb.series import (
-    ComplexSeries, ComplexInteractiveSeries, _set_discretization_points,
-    SurfaceOver2DRangeSeries, InteractiveSeries
+    ComplexSeries,
+    ComplexInteractiveSeries,
+    _set_discretization_points,
+    SurfaceOver2DRangeSeries,
+    InteractiveSeries,
 )
-from spb.vectors import _preprocess
 from spb.utils import _plot_sympify, _check_arguments, _is_range
 from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
 
-# def _build_series(expr, ranges, label, kwargs):
 def _build_series(*args, interactive=False, **kwargs):
     series = []
     cls = ComplexSeries if not interactive else ComplexInteractiveSeries
-    
+
     if all([a.is_complex for a in args]):
         # args is a list of complex numbers
         for a in args:
             series.append(cls([a], None, str(a), **kwargs))
-    elif ((len(args) > 0) and 
-            all([isinstance(a, (list, tuple, Tuple)) for a in args]) and
-            all([len(a) > 0 for a in args]) and
-            all([isinstance(a[0], (list, tuple, Tuple)) for a in args])):
-        # args is a list of tuples of the form (list, label) where list 
+    elif (
+        (len(args) > 0)
+        and all([isinstance(a, (list, tuple, Tuple)) for a in args])
+        and all([len(a) > 0 for a in args])
+        and all([isinstance(a[0], (list, tuple, Tuple)) for a in args])
+    ):
+        # args is a list of tuples of the form (list, label) where list
         # contains complex points
         for a in args:
             series.append(cls(a[0], None, a[-1], **kwargs))
@@ -34,6 +37,7 @@ def _build_series(*args, interactive=False, **kwargs):
                 # function of two variables
                 npar = 2
             new_args.append(_check_arguments([argument], nexpr, npar)[0])
+
         if all(isinstance(a, (list, tuple, Tuple)) for a in args):
             # plotting multiple expressions
             for a in args:
@@ -41,13 +45,12 @@ def _build_series(*args, interactive=False, **kwargs):
         else:
             # plotting a single expression
             add_series(args)
-        
+
         for a in new_args:
             expr, ranges, label = a[0], a[1:-1], a[-1]
-            
+
             if len(ranges) == 2:
                 # function of two variables
-                _cls = SurfaceOver2DRangeSeries if not interactive else InteractiveSeries
                 kw = kwargs.copy()
                 real = kw.pop("real", True)
                 imag = kw.pop("imag", False)
@@ -59,15 +62,21 @@ def _build_series(*args, interactive=False, **kwargs):
                         kw2[key] = True
                         kw2.setdefault("is_complex", True)
                         if not interactive:
-                            series.append(SurfaceOver2DRangeSeries(expr, *ranges, label, **kw2))
+                            series.append(
+                                SurfaceOver2DRangeSeries(expr, *ranges, label, **kw2)
+                            )
                         else:
-                            series.append(InteractiveSeries([expr], ranges, label, **kw2))
-                
+                            series.append(
+                                InteractiveSeries([expr], ranges, label, **kw2)
+                            )
+
                 func(real, "real", re(expr), "Re(%s)" % label)
                 func(imag, "imag", im(expr), "Im(%s)" % label)
-                func(_abs, "abs", sqrt(re(expr)**2 + im(expr)**2), "Abs(%s)" % label)
+                func(
+                    _abs, "abs", sqrt(re(expr) ** 2 + im(expr) ** 2), "Abs(%s)" % label
+                )
                 continue
-            
+
             # From now on we are dealing with a function of one variable.
             # ranges need to contain complex numbers
             ranges = list(ranges)
@@ -78,15 +87,15 @@ def _build_series(*args, interactive=False, **kwargs):
                 # complex number
                 series.append(cls([expr], None, label, **kwargs))
             else:
-                if (ranges[0][1].imag == ranges[0][2].imag):
-                    # NOTE: as a design choice, a complex function plotted over 
-                    # a line will create one or more data series, depending on 
-                    # the keyword arguments (one for the real part, one for the 
-                    # imaginary part, etc.). This is undoubtely inefficient as 
+                if ranges[0][1].imag == ranges[0][2].imag:
+                    # NOTE: as a design choice, a complex function plotted over
+                    # a line will create one or more data series, depending on
+                    # the keyword arguments (one for the real part, one for the
+                    # imaginary part, etc.). This is undoubtely inefficient as
                     # we must evaluate the same expression multiple times.
-                    # On the other hand, it allows to maintain a  one-to-one 
+                    # On the other hand, it allows to maintain a  one-to-one
                     # correspondance between Plot.series and backend.data, which
-                    # doesn't require a redesign of the backend in order to work 
+                    # doesn't require a redesign of the backend in order to work
                     # with iplot (backend._update_interactive).
 
                     kw = kwargs.copy()
@@ -102,13 +111,13 @@ def _build_series(*args, interactive=False, **kwargs):
                         imag = kw.pop("imag", True)
                         _abs = kw.pop("abs", False)
                         arg = kw.pop("arg", False)
-                    
+
                     def func(flag, key):
                         if flag:
                             kw2 = kw.copy()
                             kw2[key] = True
                             series.append(cls(expr, *ranges, label, **kw2))
-                    
+
                     func(real, "real")
                     func(imag, "imag")
                     func(_abs, "abs")
@@ -117,10 +126,11 @@ def _build_series(*args, interactive=False, **kwargs):
                 else:
                     # here we have 2D domain coloring or 3D plots
                     if not kwargs.get("threed", False):
-                        if ((kwargs.get("coloring", None) == "f") and 
-                            (not kwargs.get("threed", False))):
+                        if (kwargs.get("coloring", None) == "f") and (
+                            not kwargs.get("threed", False)
+                        ):
                             # NOTE: special case for cplot:
-                            # cplot shows contour lines for absolute value and 
+                            # cplot shows contour lines for absolute value and
                             # the argument of a complex function.
                             def pop_kw(k, *dicts):
                                 for d in dicts:
@@ -134,10 +144,30 @@ def _build_series(*args, interactive=False, **kwargs):
                             pop_kw("coloring", kw1)
                             series.append(cls(expr, *ranges, label, **kw2))
                             if kwargs.get("abs", False):
-                                series.append(cls(expr, *ranges, label, abs=True, **kw1))
+                                series.append(
+                                    cls(expr, *ranges, label, abs=True, **kw1)
+                                )
                             if kwargs.get("arg", False):
-                                series.append(cls(expr, *ranges, label, arg=True, levels1=True, **kw1))
-                                series.append(cls(expr, *ranges, label, arg=True, levels1=False, **kw1))
+                                series.append(
+                                    cls(
+                                        expr,
+                                        *ranges,
+                                        label,
+                                        arg=True,
+                                        levels1=True,
+                                        **kw1
+                                    )
+                                )
+                                series.append(
+                                    cls(
+                                        expr,
+                                        *ranges,
+                                        label,
+                                        arg=True,
+                                        levels1=False,
+                                        **kw1
+                                    )
+                                )
                         else:
                             series.append(cls(expr, *ranges, label, **kwargs))
                     else:
@@ -151,7 +181,7 @@ def _build_series(*args, interactive=False, **kwargs):
                                 kw2 = kw.copy()
                                 kw2[key] = True
                                 series.append(cls(expr, *ranges, label, **kw2))
-                        
+
                         if all(not t for t in [real, imag, _abs]):
                             # add abs plot colored by the argument
                             series.append(cls(expr, *ranges, label, **kwargs))
@@ -161,11 +191,12 @@ def _build_series(*args, interactive=False, **kwargs):
 
     return series
 
+
 def complex_plot(*args, show=True, **kwargs):
-    """ Plot complex numbers or complex functions. By default, the aspect ratio 
+    """Plot complex numbers or complex functions. By default, the aspect ratio
     of the plot is set to ``aspect="equal"``.
-    
-    Depending on the provided expression, this function will produce different 
+
+    Depending on the provided expression, this function will produce different
     types of plots:
     * list of complex numbers: creates a scatter plot.
     * function of 1 variable over a real range:
@@ -188,7 +219,7 @@ def complex_plot(*args, show=True, **kwargs):
     =========
         expr : Expr
             Represent the complex number or complex function to be plotted.
-        
+
         range : 3-element tuple
             Denotes the range of the variables. For example:
             * (z, -5, 5): plot a line from complex point (-5 + 0*I) to (5 + 0*I)
@@ -200,9 +231,9 @@ def complex_plot(*args, show=True, **kwargs):
 
         label : str
             The name of the complex function to be eventually shown on the
-            legend. If none is provided, the string representation of the 
+            legend. If none is provided, the string representation of the
             function will be used.
-        
+
         To specify multiple complex functions, wrap them into a tuple.
         Refer to the examples to learn more.
 
@@ -213,30 +244,30 @@ def complex_plot(*args, show=True, **kwargs):
             If True, plot the modulus of the complex function colored by its
             argument. If False, separately plot the real and imaginary parts.
             Default to False.
-        
+
         abs : boolean
-            If True, and if the provided range is a real segment, plot the 
+            If True, and if the provided range is a real segment, plot the
             modulus of the complex function. Default to False.
-        
+
         adaptive : boolean
             Attempt to create line plots by using an adaptive algorithm.
             Default to True. If `absarg=True`, the function will automatically
             switch to `adaptive=False`, using a uniformly-spaced grid.
-        
+
         arg : boolean
-            If True, and if the provided range is a real segment, plot the 
+            If True, and if the provided range is a real segment, plot the
             argument of the complex function. Default to False.
-        
+
         depth : int
             Controls the smootheness of the overall evaluation. The higher
             the number, the smoother the function, the more memory will be
             used by the recursive procedure. Default value is 9.
-        
+
         detect_poles : boolean
             Chose whether to detect and correctly plot poles. Defaulto to False.
             This improve detection, increase the number of discretization points
             and/or change the value of `eps`.
-        
+
         eps : float
             An arbitrary small value used by the `detect_poles` algorithm.
             Default value to 0.1. Before changing this value, it is better to
@@ -246,34 +277,34 @@ def complex_plot(*args, show=True, **kwargs):
             Number of discretization points in the real/imaginary-directions,
             respectively. For domain coloring plots (2D and 3D), default to 300.
             For line plots default to 1000.
-        
+
         n : int
             Set the same number of discretization points in all directions.
-            For domain coloring plots (2D and 3D), default to 300. For line 
+            For domain coloring plots (2D and 3D), default to 300. For line
             plots default to 1000.
-        
+
         real : boolean
-            If True, and if the provided range is a real segment, plot the 
+            If True, and if the provided range is a real segment, plot the
             real part of the complex function.
-            If a complex range is given and `threed=True`, plot a 3D 
+            If a complex range is given and `threed=True`, plot a 3D
             representation of the real part. Default to False.
-        
+
         imag : boolean
-            If True, and if the provided range is a real segment, plot the 
+            If True, and if the provided range is a real segment, plot the
             imaginary part of the complex function.
-            If a complex range is given and `threed=True`, plot a 3D 
+            If a complex range is given and `threed=True`, plot a 3D
             representation of the imaginary part. Default to False.
-        
+
         show : boolean
             Default to True, in which case the plot will be shown on the screen.
-        
+
         threed : boolean
             Default to False. When True, it will plot a 3D representation of the
             absolute value of the complex function colored by its argument.
 
         use_cm : boolean
-            If `absarg=True` and `use_cm=True` then plot the modulus of the 
-            complex function colored by its argument. If `use_cm=False`, plot 
+            If `absarg=True` and `use_cm=True` then plot the modulus of the
+            complex function colored by its argument. If `use_cm=False`, plot
             the modulus of the complex function with a solid color.
             Default to True.
 
@@ -293,17 +324,17 @@ def complex_plot(*args, show=True, **kwargs):
                 https://github.com/nschloe/cplot
                 Use the following keywords to further customize the appearance:
                     `abs_scaling`: str
-                        Default to "h-1". It can be used to adjust the use of 
-                        colors. h with a value less than 1.0 adds more color 
-                        which can help isolating the roots and poles (which are 
-                        still black and white, respectively). "h-0.0" ignores 
+                        Default to "h-1". It can be used to adjust the use of
+                        colors. h with a value less than 1.0 adds more color
+                        which can help isolating the roots and poles (which are
+                        still black and white, respectively). "h-0.0" ignores
                         the magnitude of f(z) completely. "arctan" is another
                         possible scaling.
                     `colorspace` : str
-                        Default to "cam16". Can be set to "hsl" to get the 
+                        Default to "cam16". Can be set to "hsl" to get the
                         common fully saturated, vibrant colors.
                     `abs` and/or `args` : boolean
-                        Set them to True to show contour lines for absolute 
+                        Set them to True to show contour lines for absolute
                         value and argument.
                     `levels` : (n_abs, n_arg)
                         Number of contour levels for the absolute value and the
@@ -314,11 +345,11 @@ def complex_plot(*args, show=True, **kwargs):
             "g": alternating black and white stripes corresponding to modulus.
             "h": alternating black and white stripes corresponding to phase.
             "i": alternating black and white stripes corresponding to real part.
-            "j": alternating black and white stripes corresponding to imaginary 
+            "j": alternating black and white stripes corresponding to imaginary
                 part.
-            "k": cartesian chessboard on the complex points space. The result 
+            "k": cartesian chessboard on the complex points space. The result
                 will hide zeros.
-            "l": polar Chessboard on the complex points space. The result will 
+            "l": polar Chessboard on the complex points space. The result will
                 show conformality.
 
         alpha : float
@@ -327,17 +358,17 @@ def complex_plot(*args, show=True, **kwargs):
             A value less than 1 adds more color which can help isolating the
             roots and poles (which are still black and white, respectively).
             alpha=0 ignores the magnitude of f(z) completely.
-        
+
         colorspace : str
             This parameter works when `coloring="f"`.
             Default to `"cam16"`. Other options are `"cielab", "oklab", "hsl"`.
             It can be set to `"hsl"` to get the common fully saturated, vibrant
             colors. This is usually a bad idea since it creates artifacts which
             are not related with the underlying data.
-        
+
         phaseres : int
             This parameter works when `coloring` is different from `"f"`.
-            Default value to 20. It controls the number of iso-phase or 
+            Default value to 20. It controls the number of iso-phase or
             iso-modulus lines.
 
     Examples
@@ -363,7 +394,7 @@ def complex_plot(*args, show=True, **kwargs):
     .. code-block:: python
         z = symbols("z")
         complex_plot(sqrt(z), (z, -3, 3), legend=True)
-    
+
     .. code-block:: python
         z = symbols("z")
         complex_plot((cos(z) + sin(I * z), "f"), (z, -2, 2), legend=True)
@@ -374,64 +405,65 @@ def complex_plot(*args, show=True, **kwargs):
         z = symbols("z")
         complex_plot((cos(z) + sin(I * z), "f"), (z, -2, 2), legend=True,
             absarg=True)
-    
+
     Plot the modulus and the argument of a complex function:
 
     .. code-block:: python
         z = symbols("z")
         complex_plot((cos(z) + sin(I * z), "f"), (z, -2, 2), legend=True,
             abs=True, arg=True, real=False, imag=False)
-    
+
     Plot the real and imaginary part of a function of two variables over two
     real ranges:
 
     .. code-block:: python
         x, y = symbols("x, y")
         complex_plot(sqrt(x*y), (x, -5, 5), (y, -5, 5), real=True, imag=True)
-    
+
     Domain coloring plot. Note that it might be necessary to increase the number
     of discretization points in order to get a smoother plot:
 
     .. code-block:: python
         z = symbols("z")
         complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), coloring="b", n=500)
-    
+
     3D plot of the absolute value of a complex function colored by its argument:
 
     .. code-block:: python
         z = symbols("z")
-        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True, 
+        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
             legend=True, zlim=(-1, 6))
-    
+
     3D plot of the real part a complex function:
 
     .. code-block:: python
         z = symbols("z")
-        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True, 
+        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
             real=True)
 
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ComplexSeries)
-    
+
     series = _build_series(*args, **kwargs)
-    
-    if not "backend" in kwargs:
+
+    if "backend" not in kwargs:
         kwargs["backend"] = TWO_D_B
         if any(s.is_3Dsurface for s in series):
             kwargs["backend"] = THREE_D_B
-    
-    if all(isinstance(s, (SurfaceOver2DRangeSeries, InteractiveSeries)) for
-            s in series):
+
+    if all(
+        isinstance(s, (SurfaceOver2DRangeSeries, InteractiveSeries)) for s in series
+    ):
         # function of 2 variables
         if kwargs.get("xlabel", None) is None:
             kwargs["xlabel"] = str(series[0].var_x)
         if kwargs.get("ylabel", None) is None:
             kwargs["ylabel"] = str(series[0].var_y)
-        # do not set anything for zlabel since it could be f(x,y) or 
+        # do not set anything for zlabel since it could be f(x,y) or
         # abs(f(x, y)) or something else
     elif all(not s.is_parametric for s in series):
-        # when plotting real/imaginary or domain coloring/3D plots, the 
+        # when plotting real/imaginary or domain coloring/3D plots, the
         # horizontal axis is the real, the vertical axis is the imaginary
         if kwargs.get("xlabel", None) is None:
             kwargs["xlabel"] = "Re"
@@ -445,10 +477,11 @@ def complex_plot(*args, show=True, **kwargs):
         if kwargs.get("ylabel", None) is None:
             kwargs["ylabel"] = "Abs"
 
-    if ((kwargs.get("aspect", None) is None) and 
-            any(s.is_complex and s.is_domain_coloring for s in series)):
+    if (kwargs.get("aspect", None) is None) and any(
+        s.is_complex and s.is_domain_coloring for s in series
+    ):
         kwargs["aspect"] = "equal"
-    
+
     p = Plot(*series, **kwargs)
     if show:
         p.show()

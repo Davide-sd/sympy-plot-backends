@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import panel as pn
 
+
 def _nrows_ncols(nr, nc, nplots):
-    """ Based on the number of plots to be shown, define the correct number of
+    """Based on the number of plots to be shown, define the correct number of
     rows and/or columns.
     """
     if (nc <= 0) and (nr <= 0):
@@ -23,8 +24,9 @@ def _nrows_ncols(nr, nc, nplots):
         nr = int(np.ceil(nr / nc))
     return nr, nc
 
+
 def plotgrid(*args, **kwargs):
-    """ Combine multiple plots into a grid-like layout.
+    """Combine multiple plots into a grid-like layout.
     This function has two modes of operation, depending on the input arguments.
     Make sure to read the examples to fully understand them.
 
@@ -32,9 +34,9 @@ def plotgrid(*args, **kwargs):
     ==========
         args : sequence
             A sequence of aldready created plots. This, in combination with
-            `nr` and `nc` represents the first mode of operation, where a basic 
+            `nr` and `nc` represents the first mode of operation, where a basic
             grid with (nc * nr) subplots will be created.
-        
+
     Keyword Arguments
     =================
         nr, nc : int
@@ -43,7 +45,7 @@ def plotgrid(*args, **kwargs):
             necessary, and a single column.
             If we set `nc = 1` and `nc = -1`, it will create as many column as
             necessary, and a single row.
-        
+
         gs : dict
             A dictionary mapping Matplotlib's GridSpect objects to the plots.
             The keys represent the cells of the layout. Each cell will host the
@@ -51,7 +53,7 @@ def plotgrid(*args, **kwargs):
             This represents the second mode of operation, as it allows to create
             more complicated layouts.
             NOTE: all plots must be instances of MatplotlibBackend!
-    
+
     Returns
     =======
         Depending on the types of plots, this function returns either:
@@ -61,7 +63,7 @@ def plotgrid(*args, **kwargs):
         plots are not instances of MatplotlibBackend. Read the following
         documentation page to get more information:
         https://panel.holoviz.org/reference/layouts/GridSpec.html
-    
+
 
     Examples
     ========
@@ -78,7 +80,7 @@ def plotgrid(*args, **kwargs):
         p2 = plot(tan(x), backend=MB, detect_poles=True, show=False)
         p3 = plot(exp(-x), backend=MB, show=False)
         plotgrid(p1, p2, p3)
-    
+
     First mode of operation with different backends. Try this on a Jupyter
     Notebook. Note that Matplotlib as been integrated as a picture, thus it
     loses its interactivity.
@@ -94,7 +96,7 @@ def plotgrid(*args, **kwargs):
 
     .. code-block:: python
         from matplotlib.gridspec import GridSpec
-        
+
         p1 = plot(sin(x), cos(x), show=False, backend=MB)
         p2 = plot_contour(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), show=False, backend=BB)
         p3 = complex_plot(sqrt(x), show=False, backend=PB)
@@ -113,13 +115,13 @@ def plotgrid(*args, **kwargs):
 
     """
     gs = kwargs.get("gs", None)
-        
+
     if gs is None:
         # default layout: 1 columns, as many rows as needed
         nr = kwargs.get("nr", -1)
         nc = kwargs.get("nc", 1)
         nr, nc = _nrows_ncols(nr, nc, len(args))
-            
+
         if all(isinstance(a, MB) for a in args):
             fig, ax = plt.subplots(nr, nc)
             ax = ax.flatten()
@@ -136,7 +138,7 @@ def plotgrid(*args, **kwargs):
                         p.process_series()
                         c += 1
         else:
-            fig = pn.GridSpec(sizing_mode='stretch_width')
+            fig = pn.GridSpec(sizing_mode="stretch_width")
             c = 0
             for i in range(nr):
                 for j in range(nc):
@@ -154,7 +156,7 @@ def plotgrid(*args, **kwargs):
         axes = dict()
         for gs, p in gs.items():
             axes[fig.add_subplot(gs)] = p
-            
+
         for ax, p in axes.items():
             kw = p._kwargs
             kw["backend"] = MB
@@ -162,7 +164,7 @@ def plotgrid(*args, **kwargs):
             kw["ax"] = ax
             newplot = Plot(*p.series, **kw)
             newplot.process_series()
-    
+
     if isinstance(fig, plt.Figure):
         fig.tight_layout()
         fig.show()

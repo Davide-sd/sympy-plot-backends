@@ -11,57 +11,46 @@ cfg_dir = user_data_dir(appname)
 os.makedirs(cfg_dir, exist_ok=True)
 file_path = os.path.join(cfg_dir, cfg_file)
 
+
 def _hardcoded_defaults():
     # Hardcoded default values
     return dict(
         # Find more Plotly themes at the following page:
         # https://plotly.com/python/templates/
-        plotly = { "theme": "plotly_dark" },
-
+        plotly={"theme": "plotly_dark"},
         # Find more Bokeh themes at the following page:
         # https://docs.bokeh.org/en/latest/docs/reference/themes.html
-        bokeh = { 
-            "theme": "dark_minimal",
-            "sizing_mode": "stretch_width"
-        },
-
-        k3d = { 
+        bokeh={"theme": "dark_minimal", "sizing_mode": "stretch_width"},
+        k3d={
             "bg_color": 3620427,
             "grid_color": 0x888888,
-            "label_color": 0XDDDDDD,
+            "label_color": 0xDDDDDD,
         },
-
-        mayavi = { 
-            "bg_color": (0.22, 0.24, 0.29),
-            "fg_color": (1, 1, 1)
-        },
-
+        mayavi={"bg_color": (0.22, 0.24, 0.29), "fg_color": (1, 1, 1)},
         # Pyvista default theme
         # https://docs.pyvista.org/examples/02-plot/themes.html
-        pyvista = {
+        pyvista={
             "theme": "default",
             "bg_color": (0.22, 0.24, 0.29),
         },
-
-        matplotlib = {
-            "axis_center": None, # "auto"
+        matplotlib={
+            "axis_center": None,  # "auto"
             "grid": True,
             "use_jupyterthemes": False,
-            "jupytertheme": None
+            "jupytertheme": None,
         },
-
-        backend_2D = "plotly",
-        backend_3D = "k3d",
+        backend_2D="plotly",
+        backend_3D="k3d",
     )
 
+
 def reset():
-    """ Restore original settings.
-    """
+    """Restore original settings."""
     set_defaults(_hardcoded_defaults())
 
+
 def _load_settings():
-    """ Load settings and inject the names into the current namespace.
-    """
+    """Load settings and inject the names into the current namespace."""
     frame = currentframe()
 
     cfg = dict()
@@ -80,6 +69,7 @@ def _load_settings():
     # check that the chosen backends are available
     backends_2D = ["plotly", "bokeh", "matplotlib"]
     backends_3D = ["plotly", "matplotlib", "k3d", "mayavi"]
+
     def check_backend(k, backends):
         if cfg[k] not in backends:
             # restore hardcoded values in order to be able to load the module
@@ -87,11 +77,12 @@ def _load_settings():
             reset()
 
             raise ValueError(
-                "`{}` must be one of the following ".format(k) +
-                "values: {}\n".format(backends) +
-                "Received: = '{}'\n".format(cfg[k]) +
-                "Reset config file to hardcoded default values: done."
+                "`{}` must be one of the following ".format(k)
+                + "values: {}\n".format(backends)
+                + "Received: = '{}'\n".format(cfg[k])
+                + "Reset config file to hardcoded default values: done."
             )
+
     check_backend("backend_2D", backends_2D)
     check_backend("backend_3D", backends_3D)
 
@@ -118,12 +109,13 @@ def _load_settings():
             from spb.backends.k3d import K3DBackend as THREE_D_B
         elif cfg["backend_3D"] == "mayavi":
             from spb.backends.mayavi import MayaviBackend as THREE_D_B
-    
+
     frame.f_globals["TWO_D_B"] = TWO_D_B
     frame.f_globals["THREE_D_B"] = THREE_D_B
 
+
 def set_defaults(cfg):
-    """ Set the default options for the plotting backends.
+    """Set the default options for the plotting backends.
 
     Parameters
     ==========
@@ -148,7 +140,8 @@ def set_defaults(cfg):
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=4)
         warnings.warn("Successfully written settings to {}".format(file_path))
-    
+
     _load_settings()
+
 
 _load_settings()

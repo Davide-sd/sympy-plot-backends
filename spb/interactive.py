@@ -2,9 +2,10 @@ import numpy as np
 import param
 import panel as pn
 from sympy import latex, Tuple
-from spb.backends.base_backend import Plot
-from spb.series import ( InteractiveSeries, _set_discretization_points, 
-    Vector2DSeries, ContourSeries )
+from spb.series import (
+    InteractiveSeries,
+    _set_discretization_points
+)
 from spb.complex.complex import _build_series as _build_complex_series
 from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify, _unpack_args
@@ -13,28 +14,33 @@ import warnings
 
 pn.extension("plotly")
 
+
 class MyList(param.ObjectSelector):
-    """ Represent a list of numbers discretizing a log-spaced slider.
+    """Represent a list of numbers discretizing a log-spaced slider.
     This parameter will be rendered by pn.widgets.DiscreteSlider
     """
+
     pass
+
 
 # explicitely ask panel to use DiscreteSlider when it encounters a MyList object
 pn.Param._mapping[MyList] = pn.widgets.DiscreteSlider
 
+
 class DynamicParam(param.Parameterized):
-    """ Dynamically add parameters based on the user-provided dictionary.
+    """Dynamically add parameters based on the user-provided dictionary.
     Also, generate the lambda functions to be evaluated at a later stage.
     """
+
     # NOTE: why DynamicParam is a child class of param.Parameterized?
     # param is a full-python library, doesn't depend on anything else.
     # In theory, by using a parameterized class it should be possible to create
     # an InteractivePlotGUI class targeting a specific GUI.
     # At this moment, InteractivePlot is built on top of 'panel', so it only
     # works inside a Jupyter Notebook. Maybe it's possible to use PyQt or Tk...
-    
+
     def _tuple_to_dict(self, k, v):
-        """ The user can provide a variable length tuple/list containing:
+        """The user can provide a variable length tuple/list containing:
             (default, softbounds, N, label, spacing)
         where:
             default : float
@@ -42,9 +48,9 @@ class DynamicParam(param.Parameterized):
             softbounds : tuple
                 Tuple of two float (or integer) numbers: (start, end).
             N : int
-                Number of increments in the slider. (start - end) / N represents
-                the step increment. Default to 40. Set N=-1 to have unit step
-                increments.
+                Number of increments in the slider. 
+                (start - end) / N represents the step increment. Default to 40. 
+                Set N=-1 to have unit step increments.
             label : str
                 Label of the slider. Default to None. If None, the string or
                 latex representation will be used. See use_latex for more
@@ -55,10 +61,15 @@ class DynamicParam(param.Parameterized):
         """
         N = 40
         defaults_keys = ["default", "softbounds", "step", "label", "type"]
-        defaults_values = [1, (0, 2), N, "$%s$" % latex(k) if self.use_latex
-                else str(k), "linear"]
+        defaults_values = [
+            1,
+            (0, 2),
+            N,
+            "$%s$" % latex(k) if self.use_latex else str(k),
+            "linear",
+        ]
         values = defaults_values.copy()
-        values[:len(v)] = v
+        values[: len(v)] = v
         # set the step increment for the slider
         _min, _max = values[1][0], values[1][1]
         if values[2] > 0:
@@ -80,25 +91,24 @@ class DynamicParam(param.Parameterized):
                 default = min(options, key=lambda x: abs(x - default))
             return MyList(default=default, objects=options, label=values[3])
 
-        return {k: v for k, v in zip (defaults_keys, values)}
-    
+        return {k: v for k, v in zip(defaults_keys, values)}
+
     def __init__(self, *args, name="", params=None, **kwargs):
         # remove the previous class attributes added by the previous instances
         cls_name = type(self).__name__
         setattr(type(self), "_" + cls_name + "__params", dict())
-        prev_params = [k for k in type(self).__dict__.keys() 
-            if "dyn_param_" in k]
+        prev_params = [k for k in type(self).__dict__.keys() if "dyn_param_" in k]
         for p in prev_params:
             delattr(type(self), p)
-        
+
         # use latex on control labels and legends
         self.use_latex = kwargs.pop("use_latex", True)
-        
+
         # this must be present in order to assure correct behaviour
         super().__init__(name=name, **kwargs)
         if not params:
             raise ValueError("`params` must be provided.")
-        
+
         # The following dictionary will be used to create the appropriate
         # lambda function arguments:
         #    key: the provided symbol
@@ -114,11 +124,11 @@ class DynamicParam(param.Parameterized):
                 if not isinstance(v, param.parameterized.Parameter):
                     v.pop("type", None)
                     v = param.Number(**v)
-            
+
             # TODO: using a private method: not the smartest thing to do
             self.param._add_parameter("dyn_param_{}".format(i), v)
             self.mapping[k] = "dyn_param_{}".format(i)
-    
+
     def read_parameters(self):
         readout = dict()
         for k, v in self.mapping.items():
@@ -132,7 +142,7 @@ def _new_class(cls, **kwargs):
 
 
 class PanelLayout:
-    """ Mixin class to group together the layout functionalities related to
+    """Mixin class to group together the layout functionalities related to
     the library panel.
     """
 
@@ -147,7 +157,7 @@ class PanelLayout:
                     'sbl': controls in the left side bar.
                     'sbr': controls in the right side bar.
                 Default layout to 'tb'.
-            
+
             ncols : int
                 Number of columns to lay out the widgets. Default to 2.
         """
@@ -159,7 +169,7 @@ class PanelLayout:
         #
         # https://panel.holoviz.org/reference/panes/Param.html#disabling-continuous-updates-for-slider-widgets
         #
-        # The procedure is not optimal, as we need to re-map again the 
+        # The procedure is not optimal, as we need to re-map again the
         # parameters with the widgets: for param.Number, param.Integer there is
         # no one-on-one mapping. For example, a bounded param.Integer
         # will create an IntegerSlider, whereas an unbounded param.Integer will
@@ -169,8 +179,8 @@ class PanelLayout:
         layout = layout.lower()
         if layout not in layouts:
             warnings.warn(
-                "`layout` must be one of the following: {}\n".format(layouts) +
-                "Falling back to layout='tb'."
+                "`layout` must be one of the following: {}\n".format(layouts)
+                + "Falling back to layout='tb'."
             )
             layout = "tb"
         self._layout = layout
@@ -190,25 +200,24 @@ class PanelLayout:
             elif isinstance(t, MyList):
                 # TODO: it seems like DiscreteSlider doesn't support throttling
                 widget = pn.widgets.DiscreteSlider
-            
+
             if isinstance(t, param.Number):
                 widgets[v] = {
                     "type": widget,
                     "throttled": True,
                 }
-        
-        self.controls = pn.Param(
-                self, 
-                widgets = widgets,
-                default_layout = _new_class(pn.GridBox, ncols=ncols),
-                show_name = False,
-                sizing_mode = 'stretch_width'
-        )
 
+        self.controls = pn.Param(
+            self,
+            widgets=widgets,
+            default_layout=_new_class(pn.GridBox, ncols=ncols),
+            show_name=False,
+            sizing_mode="stretch_width",
+        )
 
     def layout_controls(self):
         return self.controls
-    
+
     @pn.depends("controls")
     def view(self):
         params = self.read_parameters()
@@ -222,11 +231,12 @@ class PanelLayout:
         # 2. If the following import statement was located at the beginning of
         # the file, there would be a circular import.
         from spb.backends.k3d import KB
+
         if isinstance(self._backend, KB):
             return pn.pane.Pane(self._backend.fig, width=800)
         else:
             return self.fig
-    
+
     def show(self):
         if self._layout == "tb":
             return pn.Column(self.layout_controls, self.view)
@@ -237,12 +247,12 @@ class PanelLayout:
         elif self._layout == "sbr":
             return pn.Row(self.view, self.layout_controls)
 
+
 class InteractivePlot(DynamicParam, PanelLayout):
-    """ Contains all the logic to create parametric-interactive plots.
-    """
+    """Contains all the logic to create parametric-interactive plots."""
 
     # NOTE: why isn't Plot a parent class for InteractivePlot?
-    # If that was the case, we would need to create multiple subclasses of 
+    # If that was the case, we would need to create multiple subclasses of
     # InteractivePlot, each one targeting a different backend.
     # Instead, we keep the backend (the actual plot) as an instance attribute.
 
@@ -250,7 +260,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         return object.__new__(cls)
 
     def __init__(self, *args, name="", params=None, aux=dict(), **kwargs):
-        """ 
+        """
         Parameters
         ==========
             args : tuple
@@ -258,8 +268,8 @@ class InteractivePlot(DynamicParam, PanelLayout):
             name : str
                 Unused parameter
             params : dict
-                In the keys there will be the symbols, in the values we will
-                find the parameters to create the slider associated to a symbol.
+                In the keys there will be the symbols, in the values there will
+                be parameters to create the slider associated to a symbol.
             aux : dict
                 Auxiliary dictionary containing keyword arguments to be passed
                 to DynamicParam.
@@ -281,7 +291,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         # create the plot
         Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
         self._backend = Backend(*series, **kwargs)
-    
+
     def _create_series(self, *args, **kwargs):
         # read the parameters to generate the initial numerical data for
         # the interactive series
@@ -294,7 +304,9 @@ class InteractivePlot(DynamicParam, PanelLayout):
         if is_complex:
             new_args = []
             for a in args:
-                exprs, ranges, label = _unpack_args(*a, matrices=False, fill_ranges=False)
+                exprs, ranges, label = _unpack_args(
+                    *a, matrices=False, fill_ranges=False
+                )
                 new_args.append(Tuple(exprs[0], *ranges, label, sympify=False))
                 # new_args.append(Tuple(exprs[0], ranges[0], label, sympify=False))
             series = _build_complex_series(*new_args, interactive=True, **kwargs)
@@ -308,27 +320,30 @@ class InteractivePlot(DynamicParam, PanelLayout):
                 # in order to not fill ranges, otherwise ranges will be created also
                 # for parameters. This means the user must provided all the necessary
                 # ranges.
-                exprs, ranges, label = _unpack_args(*a, matrices=True, fill_ranges=False)
+                exprs, ranges, label = _unpack_args(
+                    *a, matrices=True, fill_ranges=False
+                )
                 if isinstance(_slice, (tuple, list)):
                     # Sliced 3D vector field: each slice creates a unique series
                     kwargs2 = kwargs.copy()
                     kwargs2.pop("slice")
                     for s in _slice:
                         kwargs2["slice"] = s
-                        series.append(InteractiveSeries(exprs, ranges, label, **kwargs2))
+                        series.append(
+                            InteractiveSeries(exprs, ranges, label, **kwargs2)
+                        )
                 else:
                     series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
         return series
-    
+
     @property
     def fig(self):
-        """ Return the plot object
-        """
+        """Return the plot object"""
         return self._backend.fig
 
 
 def iplot(*args, show=True, **kwargs):
-    """ Create interactive plots of symbolic expressions.
+    """Create interactive plots of symbolic expressions.
     NOTE: this function currently only works within Jupyter Notebook!
 
     Parameters
@@ -337,15 +352,15 @@ def iplot(*args, show=True, **kwargs):
         args : tuples
             Each tuple represents an expression. Depending on the type of
             expression we are plotting, the tuple should have the following
-            forms: 
+            forms:
             1. line: (expr, range, label)
             2. parametric line: (expr1, expr2, expr3 [optional], range, label)
             3. surface (expr, range1, range2, label)
             4. parametric surface (expr1, expr2, expr3, range1, range2, label)
-            
+
             The label is always optional, whereas the ranges must always be
             specified. The ranges will create the discretized domain.
-    
+
     Keyword Arguments
     =================
 
@@ -363,10 +378,10 @@ def iplot(*args, show=True, **kwargs):
                     spacing : str
                         Specify the discretization spacing. Default to "linear",
                         can be changed to "log".
-            
+
             Note that (at the moment) the parameters cannot be linked together
             (ie, one parameter can't depend on another one).
-        
+
         layout : str
             The layout for the controls/plot. Possible values:
                 'tb': controls in the top bar.
@@ -375,10 +390,10 @@ def iplot(*args, show=True, **kwargs):
                 'sbr': controls in the right side bar.
             Default layout to 'tb'. Keep in mind that side bar layouts may not
             work well with some backends.
-        
+
         ncols : int
             Number of columns to lay out the widgets. Default to 2.
-        
+
         is_complex : boolean
             Default to False. If True, it directs the internal algorithm to
             create all the necessary series (for example, one for the real part,
@@ -388,23 +403,23 @@ def iplot(*args, show=True, **kwargs):
             Default to False. If True, it directs the internal algorithm to
             create all the necessary series (for example, plotting the magnitude
             of the vector field as a contour plot).
-        
+
         show : bool
             Default to True.
             If True, it will return an object that will be rendered on the
             output cell of a Jupyter Notebook. If False, it returns an instance
             of `InteractivePlot`.
-        
+
         use_latex : bool
             Default to True.
             If True, the latex representation of the symbols will be used in the
             labels of the parameter-controls. If False, the string
             representation will be used instead.
-        
-        All the usual keyword arguments to customize the plot, such as title, 
+
+        All the usual keyword arguments to customize the plot, such as title,
         xlabel, n (number of discretization points), ...
 
-    
+
     Examples
     ========
 
@@ -425,13 +440,13 @@ def iplot(*args, show=True, **kwargs):
             zlabel = "z axis",
             n = 100
         )
-    
+
     A line plot illustrating the use of multiple expressions and:
     1. some expression may not use all the parameters
     2. custom labeling of the expressions
     3. custom number of steps in the slider
     4. custom labeling of the parameter-sliders
-    
+
     .. code-block:: python
         x, A1, A2, k = symbols("x, A1, A2, k")
         iplot(
@@ -444,7 +459,7 @@ def iplot(*args, show=True, **kwargs):
                 A2: (2, (0, 10), 40, "Ampl 2"),
             }
         )
-    
+
     A 3D slice-vector plot. Note: whenever we want to create parametric vector
     plots, we should set `is_vector=True`:
 
@@ -461,10 +476,10 @@ def iplot(*args, show=True, **kwargs):
             scalar = x * y,
             slice = Plane((-2, 0, 0), (1, 0, 0))
         )
-    
+
     A parametric complex domain coloring plot. Note: whenever we want to create
     parametric complex plots, we must set `is_complex=True`:
-    
+
     .. code-block:: python
         var("x:z")
         iplot(
@@ -476,7 +491,7 @@ def iplot(*args, show=True, **kwargs):
             is_complex = True,
             coloring = "b"
         )
-    
+
 
     A parametric plot of a symbolic polygon. Note the use of `param` to create
     an integer slider.

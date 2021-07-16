@@ -1,23 +1,58 @@
 from sympy import (
-    symbols, cos, sin, log, Eq, I, Abs, exp, pi, gamma, Matrix, Tuple, sqrt,
-    Plane
+    symbols,
+    cos,
+    sin,
+    log,
+    Eq,
+    I,
+    Abs,
+    exp,
+    pi,
+    gamma,
+    Matrix,
+    Tuple,
+    sqrt,
+    Plane,
 )
 from sympy.geometry import (
-    Plane, Polygon, Circle, Ellipse, Line, Segment, Ray,
-    Line3D, Curve, Point2D, Point3D, Line3D, Segment3D, Ray3D,
+    Plane,
+    Polygon,
+    Circle,
+    Ellipse,
+    Line,
+    Segment,
+    Ray,
+    Line3D,
+    Curve,
+    Point2D,
+    Point3D,
+    Line3D,
+    Segment3D,
+    Ray3D,
 )
 from sympy.vector import CoordSys3D
 from pytest import raises
 from spb.plot_data import _build_series
 from spb.series import (
-    LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
-    ParametricSurfaceSeries, SurfaceOver2DRangeSeries, InteractiveSeries,
-    ImplicitSeries, Vector2DSeries, Vector3DSeries, ComplexSeries,
-    ComplexInteractiveSeries, SliceVector3DSeries, GeometrySeries, 
-    PlaneSeries, PlaneInteractiveSeries
+    LineOver1DRangeSeries,
+    Parametric2DLineSeries,
+    Parametric3DLineSeries,
+    ParametricSurfaceSeries,
+    SurfaceOver2DRangeSeries,
+    InteractiveSeries,
+    ImplicitSeries,
+    Vector2DSeries,
+    Vector3DSeries,
+    ComplexSeries,
+    ComplexInteractiveSeries,
+    SliceVector3DSeries,
+    GeometrySeries,
+    PlaneSeries,
+    PlaneInteractiveSeries,
 )
 
 import numpy as np
+
 
 def test_build_series():
     x, y, u, v = symbols("x, y, u, v")
@@ -48,10 +83,10 @@ def test_build_series():
     s = _build_series(u * cos(x), (x, -5, 5), params={u: 1})
     assert isinstance(s, InteractiveSeries)
 
-    s = _build_series(Eq(x**2 + y**2, 5), (x, -5, 5), (y, -2, 2))
+    s = _build_series(Eq(x ** 2 + y ** 2, 5), (x, -5, 5), (y, -2, 2))
     assert isinstance(s, ImplicitSeries)
 
-    s = _build_series(Eq(x**2 + y**2, 5) & (x > y), (x, -5, 5), (y, -2, 2))
+    s = _build_series(Eq(x ** 2 + y ** 2, 5) & (x > y), (x, -5, 5), (y, -2, 2))
     assert isinstance(s, ImplicitSeries)
 
     # test mapping
@@ -71,8 +106,7 @@ def test_build_series():
     s = _build_series(cos(x + y), (x, -5, 5), pt="p3d")
     assert isinstance(s, SurfaceOver2DRangeSeries)
 
-    s = _build_series(cos(x + y), sin(x + y), x, (x, -5, 5), (y, -3, 3),
-            pt="p3ds")
+    s = _build_series(cos(x + y), sin(x + y), x, (x, -5, 5), (y, -3, 3), pt="p3ds")
     assert isinstance(s, ParametricSurfaceSeries)
 
     # missing ranges
@@ -82,9 +116,11 @@ def test_build_series():
     s = _build_series(u * cos(x), (x, -5, 5), params={u: 1}, pt="pinter")
     assert isinstance(s, InteractiveSeries)
 
-    s = _build_series(u * sqrt(x), (x, -5, 5), params={u: 1}, pt="pinter", 
-        is_complex=True)
+    s = _build_series(
+        u * sqrt(x), (x, -5, 5), params={u: 1}, pt="pinter", is_complex=True
+    )
     assert isinstance(s, ComplexInteractiveSeries)
+
 
 def test_geometry():
     def do_test(*g, s=GeometrySeries, **kwargs):
@@ -110,14 +146,22 @@ def test_geometry():
     do_test(Polygon((1, 2), 3, n=10))
     do_test(Circle((1, 2), 3))
     do_test(Ellipse((1, 2), hradius=3, vradius=2))
-    do_test(Plane((0, 0, 0), (1, 1, 1)), (x, -5, 5), (y, -4, 4), (z, -3, 3),
-        s=PlaneSeries)
+    do_test(
+        Plane((0, 0, 0), (1, 1, 1)), (x, -5, 5), (y, -4, 4), (z, -3, 3), s=PlaneSeries
+    )
 
     # Interactive series. Note that GeometryInteractiveSeries is an instance of
     # GeometrySeries
-    do_test(Point2D(x, y), params={x: 1, y:2})
-    do_test(Plane((x, y, z), (1, 1, 1)), (x, -5, 5), (y, -4, 4), (z, -3, 3), 
-        params={x: 1, y:2, z:3}, s=PlaneInteractiveSeries)
+    do_test(Point2D(x, y), params={x: 1, y: 2})
+    do_test(
+        Plane((x, y, z), (1, 1, 1)),
+        (x, -5, 5),
+        (y, -4, 4),
+        (z, -3, 3),
+        params={x: 1, y: 2, z: 3},
+        s=PlaneInteractiveSeries,
+    )
+
 
 def test_vectors():
     x, y, z = symbols("x:z")
@@ -157,8 +201,9 @@ def test_vectors():
     assert isinstance(s, Vector3DSeries)
     s = _build_series(l2, (x, -10, 10), (y, -5, 5), (z, -8, 8), pt="v3d")
     assert isinstance(s, Vector3DSeries)
-    s = _build_series(l2, (x, -10, 10), (y, -5, 5), (z, -8, 8),
-        slice=Plane((-2, 0, 0), (1, 0, 0)))
+    s = _build_series(
+        l2, (x, -10, 10), (y, -5, 5), (z, -8, 8), slice=Plane((-2, 0, 0), (1, 0, 0))
+    )
     assert isinstance(s, SliceVector3DSeries)
 
 
@@ -171,7 +216,7 @@ def test_complex():
         data = s.get_data()
         assert len(data) == n
         return data
-    
+
     def test_equal_results(data1, data2):
         for i, (d1, d2) in enumerate(zip(data1, data2)):
             print("i = {}".format(i))
@@ -185,7 +230,7 @@ def test_complex():
     s2 = _build_series(e1, (x, -5, 5), adaptive=False, absarg=True, pt="c")
     data2 = do_test_1(s2, 3)
     test_equal_results(data1, data2)
-    
+
     # return x, real(e1)
     s1 = _build_series(e1, (x, -5, 5), adaptive=False, real=True)
     data1 = do_test_1(s1, 2)
@@ -205,8 +250,7 @@ def test_complex():
     # return x, real(e1), imag(e1)
     s1 = _build_series(e1, (x, -5, 5), adaptive=False, real=True, imag=True)
     data1 = do_test_1(s1, 3)
-    s2 = _build_series(e1, (x, -5, 5), adaptive=False, real=True, imag=True,
-            pt="c")
+    s2 = _build_series(e1, (x, -5, 5), adaptive=False, real=True, imag=True, pt="c")
     data2 = do_test_1(s2, 3)
     test_equal_results(data1, data2)
     test_equal_results(data1, (xx, real, imag))
@@ -240,11 +284,9 @@ def test_complex():
     data1 = do_test_1(s1, 2)
     test_equal_results((data1[0],), (xx,))
     assert any(isinstance(d, complex) for d in data1[1].flatten())
-    s2 = _build_series(e1, (x, -5, 5), adaptive=False, real=False, imag=False, 
-            pt="c")
+    s2 = _build_series(e1, (x, -5, 5), adaptive=False, real=False, imag=False, pt="c")
     data2 = do_test_1(s2, 2)
     test_equal_results(data1, data2)
-
 
     ### Lists of complex numbers: returns real, imag
     e2 = z * exp(2 * pi * I * z)
@@ -252,40 +294,43 @@ def test_complex():
     s = _build_series(l2)
     do_test_1(s, 2)
 
-
     ### Domain coloring: returns x, y, (mag, arg), ...
-    s1 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I))
+    s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I))
     data1 = do_test_1(s1, 5)
-    s2 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), pt="c")
+    s2 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), pt="c")
     data2 = do_test_1(s2, 5)
     test_equal_results(data1, data2)
     xx, yy, mag_arg, _, _ = data1
     mag, arg = mag_arg[:, :, 0], mag_arg[:, :, 1]
 
     ### 3D real part
-    s1 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True, real=True)
+    s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), threed=True, real=True)
     data1 = do_test_1(s1, 3)
-    s2 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), 
-            threed=True, real=True, pt="c")
+    s2 = _build_series(
+        gamma(z), (z, -3 - 3 * I, 3 + 3 * I), threed=True, real=True, pt="c"
+    )
     data2 = do_test_1(s2, 3)
     test_equal_results(data1, data2)
     xx, yy, real = data1
 
     ### 3D imaginary part
-    s1 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True, imag=True)
+    s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), threed=True, imag=True)
     data1 = do_test_1(s1, 3)
-    s2 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), 
-            threed=True, imag=True, pt="c")
+    s2 = _build_series(
+        gamma(z), (z, -3 - 3 * I, 3 + 3 * I), threed=True, imag=True, pt="c"
+    )
     data2 = do_test_1(s2, 3)
     test_equal_results(data1, data2)
     _, _, imag = data1
 
     ### 3D real and imaginary parts
-    s1 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), 
-            threed=True, real=True, imag=True)
+    s1 = _build_series(
+        gamma(z), (z, -3 - 3 * I, 3 + 3 * I), threed=True, real=True, imag=True
+    )
     data1 = do_test_1(s1, 4)
-    s2 = _build_series(gamma(z), (z, -3 - 3*I, 3 + 3*I), 
-            threed=True, real=True, imag=True, pt="c")
+    s2 = _build_series(
+        gamma(z), (z, -3 - 3 * I, 3 + 3 * I), threed=True, real=True, imag=True, pt="c"
+    )
     data2 = do_test_1(s2, 4)
     test_equal_results(data1, data2)
     _, _, real2, imag2 = data1

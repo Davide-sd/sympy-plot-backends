@@ -5,29 +5,40 @@ from sympy.matrices.dense import DenseMatrix
 from sympy.vector import Vector
 from sympy.geometry.entity import GeometryEntity
 from spb.series import (
-    LineOver1DRangeSeries, Parametric2DLineSeries,
-    Parametric3DLineSeries, SurfaceOver2DRangeSeries,
-    ParametricSurfaceSeries, ImplicitSeries, InteractiveSeries,
-    _set_discretization_points, Vector2DSeries, Vector3DSeries,
-    ContourSeries, ComplexSeries, ComplexInteractiveSeries,
-    SliceVector3DSeries, GeometrySeries, PlaneInteractiveSeries
+    LineOver1DRangeSeries,
+    Parametric2DLineSeries,
+    Parametric3DLineSeries,
+    SurfaceOver2DRangeSeries,
+    ParametricSurfaceSeries,
+    ImplicitSeries,
+    InteractiveSeries,
+    _set_discretization_points,
+    Vector2DSeries,
+    Vector3DSeries,
+    ContourSeries,
+    ComplexSeries,
+    ComplexInteractiveSeries,
+    SliceVector3DSeries,
+    GeometrySeries,
+    PlaneInteractiveSeries,
 )
-from spb.backends.base_backend import Plot 
+from spb.backends.base_backend import Plot
 from spb.utils import _unpack_args, _plot_sympify, _check_arguments
-from spb.vectors import _preprocess, _split_vector
+from spb.vectors import _split_vector
 
 """
 TODO:
     1. Implement smart_plot
 """
 
+
 def _build_series(*args, **kwargs):
-    """ Read the docstring of get_plot_data to unsertand what args and kwargs
+    """Read the docstring of get_plot_data to unsertand what args and kwargs
     are.
     """
 
     mapping = {
-        "p": [LineOver1DRangeSeries, 1, 1], # [cls, nexpr, npar]
+        "p": [LineOver1DRangeSeries, 1, 1],  # [cls, nexpr, npar]
         "pp": [Parametric2DLineSeries, 2, 1],
         "p3dl": [Parametric3DLineSeries, 3, 1],
         "p3ds": [ParametricSurfaceSeries, 3, 2],
@@ -39,7 +50,7 @@ def _build_series(*args, **kwargs):
         "v3ds": [SliceVector3DSeries, 3, 3],
         "pc": [ContourSeries, 1, 2],
         "c": [ComplexSeries, 1, 1],
-        "g": [GeometrySeries, 9, 9]
+        "g": [GeometrySeries, 9, 9],
     }
 
     # In the following dictionary the key is composed of two characters:
@@ -58,7 +69,7 @@ def _build_series(*args, **kwargs):
         "22": "v2d",
         "33": "v3d",
     }
-    
+
     args = _plot_sympify(args)
     exprs, ranges, label = _unpack_args(*args)
     args = [*exprs, *ranges, label]
@@ -71,8 +82,7 @@ def _build_series(*args, **kwargs):
         pt = ""
         skip_check = False
 
-        if ((len(ranges) > 0) and 
-            (ranges[0][1].has(I) or ranges[0][2].has(I))):
+        if (len(ranges) > 0) and (ranges[0][1].has(I) or ranges[0][2].has(I)):
             pt = "c"
         elif isinstance(exprs[0], GeometryEntity):
             if len(ranges) == 0:
@@ -133,12 +143,12 @@ def _build_series(*args, **kwargs):
 
         if pt not in mapping.keys():
             raise ValueError(
-                "Don't know how to plot the expression:\n" +
-                "Received: {}\n".format(args) +
-                "Number of subexpressions: {}\n".format(nexpr) +
-                "Number of parameters: {}".format(npar)
+                "Don't know how to plot the expression:\n"
+                + "Received: {}\n".format(args)
+                + "Number of subexpressions: {}\n".format(nexpr)
+                + "Number of parameters: {}".format(npar)
             )
-        
+
         _cls, nexpr, npar = mapping[pt]
         if not skip_check:
             # In case of LineOver1DRangeSeries, Parametric2DLineSeries,
@@ -180,23 +190,27 @@ def _build_series(*args, **kwargs):
                 if len(ranges) == 0:
                     ranges = [None]
                 args = [*exprs, *ranges, label]
-                if (isinstance(exprs[0], Plane) and 
-                        len(kwargs.get("params", dict())) > 0):
-                        _cls = PlaneInteractiveSeries
-                        args = [exprs, ranges, label]
+                if (
+                    isinstance(exprs[0], Plane)
+                    and len(kwargs.get("params", dict())) > 0
+                ):
+                    _cls = PlaneInteractiveSeries
+                    args = [exprs, ranges, label]
             else:
                 args = _check_arguments(args, nexpr, npar)[0]
         else:
-            raise ValueError("Wrong `pt` value. Please, check the docstring " +
-                "of `get_plot_data` to list the possible values.")
+            raise ValueError(
+                "Wrong `pt` value. Please, check the docstring "
+                + "of `get_plot_data` to list the possible values."
+            )
     kwargs = _set_discretization_points(kwargs, _cls)
     return _cls(*args, **kwargs)
 
 
 def get_plot_data(*args, **kwargs):
-    """ Return the numerical data associated to the a symbolic expression that
+    """Return the numerical data associated to the a symbolic expression that
     we would like to plot. If a symbolic expression can be plotted with any of
-    the plotting functions exposed by spb.functions or spb.vectors, then 
+    the plotting functions exposed by spb.functions or spb.vectors, then
     numerical data will be returned.
 
     Only one expression at a time can be processed by this function.
@@ -233,7 +247,7 @@ def get_plot_data(*args, **kwargs):
        >>> from sympy import symbols, pi
        >>> from sympy.plotting.plot_data import get_plot_data
        >>> u, v, x, y = symbols('u, v, x, y')
-       
+
     Data from a function with a single variable (2D line):
 
     .. get_plot_data::
@@ -242,7 +256,7 @@ def get_plot_data(*args, **kwargs):
        :include-source: True
 
        >>> xx, yy = get_plot_data(cos(x), (x, -5, 5))
-    
+
     Here, `xx` and `yy` are two lists of coordinates.
 
     Data from a function with two variables (surface):
@@ -302,10 +316,10 @@ def get_plot_data(*args, **kwargs):
     .. code-block:: python
         var("x:z")
         xx, yy, zz, uu, vv, ww = get_plot_data(
-            Matrix([z, y, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5), 
+            Matrix([z, y, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5),
             slice = Plane((-2, 0, 0), (1, 1, 1)), n=5
         )
-    
+
     Here `xx, yy, zz, uu, vv, ww` are three dimensional numpy arrays.
 
     Get the real and imaginary part of a complex function over a real range:
@@ -313,10 +327,10 @@ def get_plot_data(*args, **kwargs):
     .. code-block:: python
         z = symbols("z")
         xx, real, imag = get_plot_data(sqrt(z), (z, -3, 3), pt="c")
-    
-    Note the use of pt="c" to specify a complex plot: the expression doesn't 
+
+    Note the use of pt="c" to specify a complex plot: the expression doesn't
     contain the imaginary unit, hence we need to aid the detection algorithm.
-    
+
     Get the magnitude and argument of a complex function over a real range:
 
     .. code-block:: python
@@ -329,9 +343,9 @@ def get_plot_data(*args, **kwargs):
     .. code-block:: python
         z = symbols("z")
         xx, yy, abs, arg, _, _ = get_plot_data(gamma(z), (z, -3 - 3*I, 3 + 3*I))
-    
+
     Here, `xx, yy` are 2D arrays. `xx` is the real part of the domain.
-    `yy` is the complex part of the domain. `abs` and `arg` are the absolute 
+    `yy` is the complex part of the domain. `abs` and `arg` are the absolute
     value and argument of the complex function.
 
     See also
@@ -343,8 +357,9 @@ def get_plot_data(*args, **kwargs):
     """
     return _build_series(*args, **kwargs).get_data()
 
+
 def smart_plot(*args, show=True, **kwargs):
-    """ Smart plot interface. Using the same interface of the other plot
+    """Smart plot interface. Using the same interface of the other plot
     functions, namely (expr, range, label), it unifies the plotting experience.
     If a symbolic expression can be plotted with any of the plotting functions
     exposed by spb.functions or spb.vectors, then this function will be able
@@ -369,7 +384,7 @@ def smart_plot(*args, show=True, **kwargs):
                 "pinter": to specify an interactive plot. In such a case, you
                         will also have to provide a `param` dictionary mapping
                         theparameters to their values.
-                        To specify a complex-interactive plot, set 
+                        To specify a complex-interactive plot, set
                         `is_complex=True`.
                 "v2d": to specify a 2D vector plot.
                 "v3d": to specify a 3D vector plot.
@@ -416,9 +431,10 @@ def smart_plot(*args, show=True, **kwargs):
 
     for arg in args:
         series.append(_build_series(*arg, **kwargs))
-    
+
     if "backend" not in kwargs.keys():
         from spb.defaults import TWO_D_B, THREE_D_B
+
         is_3D = any([s.is_3D for s in series])
         kwargs["backend"] = THREE_D_B if is_3D else TWO_D_B
     plots = Plot(*series, **kwargs)

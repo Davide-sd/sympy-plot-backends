@@ -1,12 +1,12 @@
 """Plotting module for Sympy.
 
-A plot is represented by the ``Plot`` class that contains a list of the data 
-series to be plotted. The data series are instances of classes meant to simplify
-getting points and meshes from sympy expressions. ``plot_backends``
+A plot is represented by the ``Plot`` class that contains a list of the data
+series to be plotted. The data series are instances of classes meant to
+simplify getting points and meshes from sympy expressions. ``plot_backends``
 is a dictionary with all the backends.
 
-This module gives only the essential. Especially if you need publication ready 
-graphs and this module is not enough for you, use directly the backend, which 
+This module gives only the essential. Especially if you need publication ready
+graphs and this module is not enough for you, use directly the backend, which
 can be accessed with the ``fig`` attribute:
 * MatplotlibBackend.fig: returns a tuple (fig, ax) representing the figure and
     axes of Matplotlib.
@@ -20,29 +20,42 @@ if you care at all about performance.
 
 
 from sympy import (
-    Expr, Tuple, Symbol, oo, Piecewise, piecewise_fold,
-    UniversalSet, EmptySet, UniversalSet, FiniteSet, Interval, Union
+    Expr,
+    Tuple,
+    Symbol,
+    oo,
+    Piecewise,
+    piecewise_fold,
+    UniversalSet,
+    EmptySet,
+    FiniteSet,
+    Interval,
+    Union,
 )
-from sympy.geometry.entity import GeometryEntity
-from sympy.geometry import Plane
 
 from spb.backends.base_backend import Plot
-from spb.utils import _is_range, _plot_sympify, _check_arguments, _unpack_args
+from spb.utils import _plot_sympify, _check_arguments, _unpack_args
 
 # N.B.
 # When changing the minimum module version for matplotlib, please change
 # the same in the `SymPyDocTestFinder`` in `sympy/testing/runtests.py`
 
 from spb.series import (
-    LineOver1DRangeSeries, Parametric2DLineSeries,
-    Parametric3DLineSeries, SurfaceOver2DRangeSeries,
-    ParametricSurfaceSeries, ContourSeries, ImplicitSeries,
-    _set_discretization_points, List2DSeries, GeometrySeries, 
-    PlaneSeries
+    LineOver1DRangeSeries,
+    Parametric2DLineSeries,
+    Parametric3DLineSeries,
+    SurfaceOver2DRangeSeries,
+    ParametricSurfaceSeries,
+    ContourSeries,
+    ImplicitSeries,
+    _set_discretization_points,
+    List2DSeries,
+    GeometrySeries,
 )
 
+
 def _get_endpoints(i, _min, _max):
-    """ Given the end points of a local range, compute the 
+    """Given the end points of a local range, compute the
     appropriate end points of the interval in such a way that the interval is
     contained in the local range.
 
@@ -56,23 +69,24 @@ def _get_endpoints(i, _min, _max):
             will be discarded.
     """
     a, b, lopen, ropen = i.args
-    
+
     skip = False
     if (a >= _max) or (b <= _min):
         skip = True
-        
+
     if not skip:
         if a < _min:
             a = _min
         if b > _max:
             b = _max
-    
+
         eps = (b - a) / 1e06
         if lopen:
             a += eps
         if ropen:
             b -= eps
     return a, b, skip
+
 
 def _process_piecewise(piecewise, _range, label, **kwargs):
     s = EmptySet
@@ -82,8 +96,8 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
     # for the label, attach the number of the piece
     count = 1
     if "Piecewise(" in label:
-        # piecewise string representation are usually very long. Cut it short if
-        # the user didn't specify any custom label.
+        # piecewise string representation are usually very long. Cut it short
+        # if the user didn't specify any custom label.
         label = "P"
 
     for arg in piecewise.args:
@@ -93,8 +107,10 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
             s = s.union(cond)
             a, b, skip = _get_endpoints(cond, _min, _max)
             if not skip:
-                series.append(LineOver1DRangeSeries(expr, (_range[0], a, b), 
-                        label + str(count)))
+                series.append(
+                    LineOver1DRangeSeries(expr, (_range[0], a, b),
+                        label + str(count))
+                )
                 count += 1
         elif isinstance(cond, FiniteSet):
             s = s.union(cond)
@@ -102,7 +118,7 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
             for _loc in cond.args:
                 loc.append(float(_loc))
                 val.append(float(piecewise.evalf(subs={_range[0]: _loc})))
-            series.append(List2DSeries(loc, val, label + str(count), 
+            series.append(List2DSeries(loc, val, label + str(count),
                     is_point=True))
             count += 1
         elif isinstance(cond, UniversalSet.func):
@@ -119,21 +135,25 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
             for t in s1:
                 a, b, skip = _get_endpoints(t, _min, _max)
                 if not skip:
-                    series.append(LineOver1DRangeSeries(expr, 
-                            (_range[0], a, b), label + str(count)))
+                    series.append(
+                        LineOver1DRangeSeries(
+                            expr, (_range[0], a, b), label + str(count)
+                        )
+                    )
                     count += 1
             for t in s2:
                 loc, val = [], []
                 for _loc in t.args:
                     loc.append(float(_loc))
                     val.append(float(expr.evalf(subs={_range[0]: _loc})))
-                series.append(List2DSeries(loc, val, label + str(count), 
+                series.append(List2DSeries(loc, val, label + str(count),
                         is_point=True))
                 count += 1
     return series
 
+
 def _build_line_series(*args, **kwargs):
-    """ Loop over the provided arguments. If a piecewise function is found,
+    """Loop over the provided arguments. If a piecewise function is found,
     decompose it in such a way that each argument gets its own series.
     """
     series = []
@@ -145,6 +165,7 @@ def _build_line_series(*args, **kwargs):
         else:
             series.append(LineOver1DRangeSeries(*arg, **kwargs))
     return series
+
 
 def plot(*args, show=True, **kwargs):
     """Plots a function of a single variable as a curve.
@@ -189,23 +210,23 @@ def plot(*args, show=True, **kwargs):
         random point near the midpoint of two points that has to be
         further sampled. Hence the same plots can appear slightly
         different.
-    
+
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with MatplotlibBackend.
-    
+
     depth : int, optional
         Recursion depth of the adaptive algorithm. A depth of value
         ``n`` samples a maximum of `2^{n}` points.
 
         If the ``adaptive`` flag is set to ``False``, this will be
         ignored.
-    
+
     detect_poles : boolean
-            Chose whether to detect and correctly plot poles. Defaulto to False.
-            This improve detection, increase the number of discretization points
-            and/or change the value of `eps`.
-        
+            Chose whether to detect and correctly plot poles. 
+            Defaulto to False. This improve detection, increase the number of 
+            discretization points and/or change the value of `eps`.
+
     eps : float
         An arbitrary small value used by the `detect_poles` algorithm.
         Default value to 0.1. Before changing this value, it is better to
@@ -217,11 +238,11 @@ def plot(*args, show=True, **kwargs):
 
         If the ``adaptive`` flag is set to ``True``, this will be
         ignored.
-    
+
     only_integers : boolean, optional
         Default to False. If True, discretize the domain with integer numbers.
         This can be useful to plot sums.
-    
+
     polar : boolean
         Default to False. If True, generate a polar plot of a curve with radius
         `expr` as a function of the range
@@ -231,15 +252,15 @@ def plot(*args, show=True, **kwargs):
         the function will not display the plot. The returned instance of
         the ``Plot`` class can then be used to save or display the plot
         by calling the ``save()`` and ``show()`` methods respectively.
-    
+
     size : (float, float), optional
         A tuple in the form (width, height) in inches to specify the size of
         the overall figure. The default value is set to ``None``, meaning
         the size will be set by the default backend.
-    
+
     steps : boolean, optional
-        Default to False. If True, connects consecutive points with steps rather
-        than straight segments.
+        Default to False. If True, connects consecutive points with steps 
+        rather than straight segments.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -263,7 +284,7 @@ def plot(*args, show=True, **kwargs):
     ylim : (float, float), optional
         Denotes the y-axis limits, ``(min, max)```.
 
- 
+
     Examples
     ========
 
@@ -322,9 +343,9 @@ def plot(*args, show=True, **kwargs):
        >>> plot(x**2, adaptive=False, n=400)
        Plot object containing:
        [0]: cartesian line: x**2 for x over (-10.0, 10.0)
-    
+
     Polar plot:
-    
+
     .. code-block:: python
         plot(1 + sin(10 * x) / 10, (x, 0, 2 * pi), polar=True, aspect="equal")
 
@@ -335,6 +356,7 @@ def plot(*args, show=True, **kwargs):
 
     """
     from spb.defaults import TWO_D_B
+
     args = _plot_sympify(args)
     free = set()
     for a in args:
@@ -342,12 +364,13 @@ def plot(*args, show=True, **kwargs):
             free |= a.free_symbols
             if len(free) > 1:
                 raise ValueError(
-                    'The same variable should be used in all '
-                    'univariate expressions being plotted.')
-    x = free.pop() if free else Symbol('x')
-    kwargs.setdefault('backend', TWO_D_B)
-    kwargs.setdefault('xlabel', x.name)
-    kwargs.setdefault('ylabel', 'f(%s)' % x.name)
+                    "The same variable should be used in all "
+                    "univariate expressions being plotted."
+                )
+    x = free.pop() if free else Symbol("x")
+    kwargs.setdefault("backend", TWO_D_B)
+    kwargs.setdefault("xlabel", x.name)
+    kwargs.setdefault("ylabel", "f(%s)" % x.name)
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 1)
@@ -507,9 +530,10 @@ def plot_parametric(*args, show=True, **kwargs):
     Plot, Parametric2DLineSeries
     """
     from spb.defaults import TWO_D_B
+
     args = _plot_sympify(args)
     series = []
-    kwargs.setdefault('backend', TWO_D_B)
+    kwargs.setdefault("backend", TWO_D_B)
     kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
     plot_expr = _check_arguments(args, 2, 1)
     series = [Parametric2DLineSeries(*arg, **kwargs) for arg in plot_expr]
@@ -618,8 +642,9 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
 
     """
     from spb.defaults import THREE_D_B
+
     args = _plot_sympify(args)
-    kwargs.setdefault('backend', THREE_D_B)
+    kwargs.setdefault("backend", THREE_D_B)
     kwargs = _set_discretization_points(kwargs, Parametric3DLineSeries)
     series = []
     plot_expr = _check_arguments(args, 3, 1)
@@ -750,8 +775,9 @@ def plot3d(*args, show=True, **kwargs):
 
     """
     from spb.defaults import THREE_D_B
+
     args = _plot_sympify(args)
-    kwargs.setdefault('backend', THREE_D_B)
+    kwargs.setdefault("backend", THREE_D_B)
     kwargs = _set_discretization_points(kwargs, SurfaceOver2DRangeSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 2)
@@ -856,8 +882,9 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
 
     """
     from spb.defaults import THREE_D_B
+
     args = _plot_sympify(args)
-    kwargs.setdefault('backend', THREE_D_B)
+    kwargs.setdefault("backend", THREE_D_B)
     kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
     plot_expr = _check_arguments(args, 3, 2)
     kwargs.setdefault("xlabel", "x")
@@ -868,6 +895,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     if show:
         plots.show()
     return plots
+
 
 def plot_contour(*args, show=True, **kwargs):
     """
@@ -935,8 +963,9 @@ def plot_contour(*args, show=True, **kwargs):
 
     """
     from spb.defaults import TWO_D_B
+
     args = _plot_sympify(args)
-    kwargs.setdefault('backend', TWO_D_B)
+    kwargs.setdefault("backend", TWO_D_B)
     kwargs = _set_discretization_points(kwargs, ContourSeries)
     plot_expr = _check_arguments(args, 1, 2)
     series = [ContourSeries(*arg, **kwargs) for arg in plot_expr]
@@ -956,7 +985,7 @@ def plot_implicit(*args, show=True, **kwargs):
     plot_implicit, by default, generates a contour using a mesh grid of fixed
     number of points. The greater the number of points, the greater the memory
     used. By setting `adaptive=True` interval arithmetic will be used to plot
-    functions. If the expression cannot be plotted using interval arithmetic, 
+    functions. If the expression cannot be plotted using interval arithmetic,
     it defaults to generating a contour using a mesh grid. With interval
     arithmetic, the line width can become very small; in those cases, it is
     better to use the mesh grid approach.
@@ -965,13 +994,13 @@ def plot_implicit(*args, show=True, **kwargs):
     =========
         expr : Expr, Relational, BooleanFunction
             The equation / inequality that is to be plotted.
-        
+
         ranges : tuples
             Two tuple denoting the discretization domain, for example:
             `(x, -10, 10), (y, -10, 10)`
             If no range is given, then the free symbols in the expression will
             be assigned in the order they are sorted.
-        
+
         label : str
             The name of the expression to be eventually shown on the legend.
             If none is provided, the string representation will be used.
@@ -1000,8 +1029,8 @@ def plot_implicit(*args, show=True, **kwargs):
 
         n : integer
             Set the number of discretization points when `adaptive=False` in
-            both direction simultaneously. Default value is 1000. 
-            The greater the value the more accurate the plot, but the more 
+            both direction simultaneously. Default value is 1000.
+            The greater the value the more accurate the plot, but the more
             memory will be used.
 
         show : Boolean
@@ -1059,9 +1088,9 @@ def plot_implicit(*args, show=True, **kwargs):
 
         >>> p3 = plot_implicit(
         ...     (x**2 + y**2 - 1)**3 - x**2 * y**3,
-        ...     (x, -1.5, 1.5), (y, -1.5, 1.5), 
+        ...     (x, -1.5, 1.5), (y, -1.5, 1.5),
         ...     n = 1000)
-    
+
     Using adaptive meshing and Boolean expressions:
 
     .. plot::
@@ -1071,7 +1100,7 @@ def plot_implicit(*args, show=True, **kwargs):
 
         >>> p4 = plot_implicit(
         ...     Eq(y, sin(x)) & (y > 0),
-        ...     Eq(y, sin(x)) & (y < 0), 
+        ...     Eq(y, sin(x)) & (y < 0),
         ...     (x, -2 * pi, 2 * pi), (y, -4, 4),
         ...     adaptive=True)
 
@@ -1097,9 +1126,10 @@ def plot_implicit(*args, show=True, **kwargs):
 
     """
     from spb.defaults import TWO_D_B
+
     args = _plot_sympify(args)
     args = _check_arguments(args, 1, 2)
-    
+
     kwargs = _set_discretization_points(kwargs, ImplicitSeries)
 
     series_kw = dict()
@@ -1112,32 +1142,38 @@ def plot_implicit(*args, show=True, **kwargs):
     xmin, xmax, ymin, ymax = oo, -oo, oo, -oo
     for a in args:
         s = ImplicitSeries(*a, **series_kw)
-        if s.start_x < xmin: xmin = s.start_x
-        if s.end_x > xmax: xmax = s.end_x
-        if s.start_y < ymin: ymin = s.start_y
-        if s.end_y > ymax: ymax = s.end_y
+        if s.start_x < xmin:
+            xmin = s.start_x
+        if s.end_x > xmax:
+            xmax = s.end_x
+        if s.start_y < ymin:
+            ymin = s.start_y
+        if s.end_y > ymax:
+            ymax = s.end_y
         series.append(s)
 
-    kwargs.setdefault('backend', TWO_D_B)
-    kwargs.setdefault('xlim', (xmin, xmax))
-    kwargs.setdefault('ylim', (ymin, ymax))
-    kwargs.setdefault('xlabel', series[-1].var_x.name)
-    kwargs.setdefault('ylabel', series[-1].var_y.name)
+    kwargs.setdefault("backend", TWO_D_B)
+    kwargs.setdefault("xlim", (xmin, xmax))
+    kwargs.setdefault("ylim", (ymin, ymax))
+    kwargs.setdefault("xlabel", series[-1].var_x.name)
+    kwargs.setdefault("ylabel", series[-1].var_y.name)
     p = Plot(*series, **kwargs)
     if show:
         p.show()
     return p
 
+
 def polar_plot(*args, **kwargs):
-    """ The following function creates a 2D polar plot. It's the same as calling
+    """The following function creates a 2D polar plot. It's the same as calling
     `plot(*args, polar=True, **kwargs). Refer to `plot` for a complete docstring
     with examples.
     """
     kwargs["polar"] = True
     return plot(*args, **kwargs)
 
+
 def geometry_plot(*args, show=True, **kwargs):
-    """ Plot entities from the sympy.geometry module.
+    """Plot entities from the sympy.geometry module.
 
     Arguments
     =========
@@ -1146,9 +1182,9 @@ def geometry_plot(*args, show=True, **kwargs):
 
         label : str
             The name of the complex function to be eventually shown on the
-            legend. If none is provided, the string representation of the 
+            legend. If none is provided, the string representation of the
             function will be used.
-        
+
         To specify multiple complex functions, wrap them into a tuple.
         Refer to the examples to learn more.
 
@@ -1157,17 +1193,17 @@ def geometry_plot(*args, show=True, **kwargs):
 
         fill : boolean
             Default to True. Fill the polygon/circle/ellipse.
-        
+
         params : dict
             Substitution dictionary to properly evaluate symbolic geometric
             entities. The keys contains symbols, the values the numeric number
             associated to the symbol.
-        
+
     Examples
     ========
 
-    Plot several numeric geometric entitiesy. By default, circles, ellipses and 
-    polygons are going to be filled. Plotting Curve objects is the same as 
+    Plot several numeric geometric entitiesy. By default, circles, ellipses and
+    polygons are going to be filled. Plotting Curve objects is the same as
     `plot_parametric`.
 
     .. code-block:: python
@@ -1178,8 +1214,8 @@ def geometry_plot(*args, show=True, **kwargs):
             Curve((cos(x), sin(x)), (x, 0, 2 * pi)),
             Segment((-4, -6), (6, 6)),
             Point2D(0, 0))
-    
-    Plot several numeric geometric entities defined by numbers only, turn off 
+
+    Plot several numeric geometric entities defined by numbers only, turn off
     fill. Every entity is represented as a line.
 
     .. code-block:: python
@@ -1190,7 +1226,7 @@ def geometry_plot(*args, show=True, **kwargs):
             Curve((cos(x), sin(x)), (x, 0, 2 * pi)),
             Segment((-4, -6), (6, 6)),
             Point2D(0, 0), fill=False)
-    
+
     Plot several symbolic geometric entities. We need to pass in the `params`
     dictionary, which will be used to substitute symbols before numerical
     evaluation. Note: here we also set custom labels:
@@ -1202,7 +1238,7 @@ def geometry_plot(*args, show=True, **kwargs):
             (Polygon((a + 2, b + 3), c, n=d + 1), "square"),
             params = {a: 0, b: 1, c: 2, d: 3}
         )
-    
+
     Plot 3D geometric entities. Note: when plotting a Plane, we must always
     provide the x/y/z ranges:
 
@@ -1215,12 +1251,13 @@ def geometry_plot(*args, show=True, **kwargs):
 
     """
     from spb.defaults import TWO_D_B, THREE_D_B
+
     args = _plot_sympify(args)
-    
+
     series = []
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
         args = [args]
-    
+
     for a in args:
         exprs, ranges, label = _unpack_args(*a)
         r = ranges if len(ranges) > 0 else [None]
@@ -1237,9 +1274,9 @@ def geometry_plot(*args, show=True, **kwargs):
         kwargs["aspect"] = "equal"
 
     if any_3D:
-        kwargs.setdefault('backend', THREE_D_B)
+        kwargs.setdefault("backend", THREE_D_B)
     else:
-        kwargs.setdefault('backend', TWO_D_B)
+        kwargs.setdefault("backend", TWO_D_B)
 
     p = Plot(*series, **kwargs)
     if show:

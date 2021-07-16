@@ -6,6 +6,7 @@ from spb.functions import plot, plot3d
 from sympy import symbols, sin
 from pytest import raises
 
+
 def test_cfg():
     assert isinstance(cfg, dict)
     assert "backend_2D" in cfg.keys()
@@ -29,6 +30,7 @@ def test_cfg():
     assert "fg_color" in cfg["mayavi"].keys()
     assert isinstance(cfg["mayavi"]["fg_color"], (tuple, list))
 
+
 def test_set_defaults():
     x, y = symbols("x, y")
 
@@ -38,7 +40,7 @@ def test_set_defaults():
     set_defaults(cfg)
     p = plot(sin(x), show=False)
     assert isinstance(p, BB)
-    p = plot3d(sin(x**2 + y**2), show=False)
+    p = plot3d(sin(x ** 2 + y ** 2), show=False)
     assert isinstance(p, MB)
 
     # wrong backends settings -> reset to default settings
@@ -53,6 +55,6 @@ def test_set_defaults():
     set_defaults(cfg)
     reset()
     from spb.defaults import cfg as cfg2
+
     assert cfg2["backend_2D"] == "plotly"
     assert cfg2["backend_3D"] == "k3d"
-    

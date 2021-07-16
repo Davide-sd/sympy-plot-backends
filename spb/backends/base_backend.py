@@ -6,7 +6,6 @@ from sympy.utilities.iterables import is_sequence
 from spb.series import BaseSeries
 from mergedeep import merge
 from spb.backends.utils import convert_colormap
-from cplot import get_srgb1
 
 
 class Plot:
@@ -16,22 +15,22 @@ class Plot:
 
     How the plotting module works:
 
-    1. The user creates the symbolic expressions and calls one of the plotting 
+    1. The user creates the symbolic expressions and calls one of the plotting
         functions.
-    2. The plotting functions generate a list of instances of the `BaseSeries` 
-        class, containing the necessary information to plot the expressions 
-        (eg the expression, ranges, series name, ...). Eventually, these objects 
+    2. The plotting functions generate a list of instances of the `BaseSeries`
+        class, containing the necessary information to plot the expressions
+        (eg the expression, ranges, series name, ...). Eventually, these objects
         will generate the numerical data to be plotted.
-    3. The plotting functions instantiate the `Plot` class, which stores the 
-        list of series and the main attributes of the plot 
+    3. The plotting functions instantiate the `Plot` class, which stores the
+        list of series and the main attributes of the plot
         (eg axis labels, title, ...).
-        Among the keyword arguments, there must be `backend` which specify the 
+        Among the keyword arguments, there must be `backend` which specify the
         backend to be used.
     4. The backend (a child class of `Plot`) will render the numerical data to a
         plot and (eventually) show it on the screen.
 
     The backend should check if it supports the data series that it's given.
-    Please, explore the `MatplotlibBackend` source code to understand how a 
+    Please, explore the `MatplotlibBackend` source code to understand how a
     backend should be coded.
 
     Methods
@@ -47,7 +46,7 @@ class Plot:
     * close(self): used to close the current plot backend (note: some plotting
         library doesn't support this functionality. In that case, just raise a
         warning).
-    
+
     Also, the following attributes are required:
 
     * self._fig: (instance attribute) it stores the backend-specific plot
@@ -102,7 +101,7 @@ class Plot:
         p2 = plot(sin(x) * cos(x), log(x))
         p1.extend(p2)
         p1.show()
-    
+
     To access the data series, use the index notation. Let's generate the
     numerical data associated to the first series:
 
@@ -113,7 +112,7 @@ class Plot:
         p1 = plot(sin(x), cos(x))
         xx, yy = p1[0].get_data()
 
-    
+
     See also
     ========
 
@@ -131,12 +130,12 @@ class Plot:
     # child backends should provide a list of color maps to render surfaces.
     colormaps = []
 
-    # child backends should provide a list of cyclic color maps to render 
+    # child backends should provide a list of cyclic color maps to render
     # complex series (the phase/argument ranges over [-pi, pi]).
     cyclic_colormaps = []
 
     # pi number is used in all backends to set the ranges for the colorbars in
-    # complex plot. It is defined here for commodity, rather than importing 
+    # complex plot. It is defined here for commodity, rather than importing
     # math or numpy on each backend.
     pi = np.pi
 
@@ -148,8 +147,7 @@ class Plot:
     def _get_backend(cls, kwargs):
         backend = kwargs.get("backend", "matplotlib")
         if not ((type(backend) == type) and issubclass(backend, cls)):
-            raise TypeError(
-                "backend must be a subclass of Plot")
+            raise TypeError("backend must be a subclass of Plot")
         return backend
 
     def __init__(self, *args, **kwargs):
@@ -166,7 +164,7 @@ class Plot:
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
-        # TODO: it would be nice to have detect_poles=True by default. 
+        # TODO: it would be nice to have detect_poles=True by default.
         # At this point of development, if that were True there could be times
         # where the algorithm kicks in even when there are no poles. Needs to
         # dig deeper into it...
@@ -189,28 +187,29 @@ class Plot:
         self.legend = kwargs.get("legend", None)
         if self.legend is None:
             self.legend = False
-            if ((len(self._series) > 1) or 
-                (any(s.is_parametric for s in self.series) and self._use_cm)):
+            if (len(self._series) > 1) or (
+                any(s.is_parametric for s in self.series) and self._use_cm
+            ):
                 self.legend = True
 
-        # Objects used to render/display the plots, which depends on the 
+        # Objects used to render/display the plots, which depends on the
         # plotting library.
         self._fig = None
 
-        is_real = \
-            lambda lim: all(getattr(i, 'is_real', True) for i in lim)
-        is_finite = \
-            lambda lim: all(getattr(i, 'is_finite', True) for i in lim)
+        is_real = lambda lim: all(getattr(i, "is_real", True) for i in lim)
+        is_finite = lambda lim: all(getattr(i, "is_finite", True) for i in lim)
 
         # reduce code repetition
         def check_and_set(t_name, t):
             if t:
                 if not is_real(t):
                     raise ValueError(
-                    "All numbers from {}={} must be real".format(t_name, t))
+                        "All numbers from {}={} must be real".format(t_name, t)
+                    )
                 if not is_finite(t):
                     raise ValueError(
-                    "All numbers from {}={} must be finite".format(t_name, t))
+                        "All numbers from {}={} must be finite".format(t_name, t)
+                    )
                 setattr(self, t_name, (float(t[0]), float(t[1])))
 
         self.xlim = None
@@ -221,7 +220,7 @@ class Plot:
         check_and_set("zlim", kwargs.get("zlim", None))
         self.size = None
         check_and_set("size", kwargs.get("size", None))
-    
+
         # PlotGrid-specific attributes.
         self.subplots = kwargs.get("subplots", None)
         if self.subplots is not None:
@@ -230,24 +229,24 @@ class Plot:
                 self._series.append(p.series)
         self.nrows = kwargs.get("nrows", 1)
         self.ncols = kwargs.get("ncols", 1)
-    
+
     def _init_cyclers(self):
-        """ Create infinite loop iterators over the provided color maps. """
+        """Create infinite loop iterators over the provided color maps."""
 
         if not isinstance(self.colorloop, (list, tuple)):
             # assume it is a matplotlib's ListedColormap
             self.colorloop = self.colorloop.colors
         self._cl = cycle(self.colorloop)
 
-        colormaps = [convert_colormap(cm, self._library) for cm
-                in self.colormaps]
+        colormaps = [convert_colormap(cm, self._library) for cm in self.colormaps]
         self._cm = cycle(colormaps)
-        cyclic_colormaps = [convert_colormap(cm, self._library) for cm
-                in self.cyclic_colormaps]
+        cyclic_colormaps = [
+            convert_colormap(cm, self._library) for cm in self.cyclic_colormaps
+        ]
         self._cyccm = cycle(cyclic_colormaps)
-    
+
     def _get_mode(self):
-        """ Verify which environment is used to run the code.
+        """Verify which environment is used to run the code.
 
         Returns
         =======
@@ -259,21 +258,21 @@ class Plot:
 
         # TODO: detect if we are running in Jupyter Lab.
         """
-        
+
         # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
         try:
             shell = get_ipython().__class__.__name__
-            if shell == 'ZMQInteractiveShell':
-                return 0   # Jupyter notebook or qtconsole
-            elif shell == 'TerminalInteractiveShell':
+            if shell == "ZMQInteractiveShell":
+                return 0  # Jupyter notebook or qtconsole
+            elif shell == "TerminalInteractiveShell":
                 return 1  # Terminal running IPython
             else:
                 return 2  # Other type (?)
         except NameError:
-            return 3      # Probably standard Python interpreter
+            return 3  # Probably standard Python interpreter
 
     def _use_cyclic_cm(self, param, is_complex):
-        """ When using complex_plot and `absarg=True`, it might happens that the
+        """When using complex_plot and `absarg=True`, it might happens that the
         argument is not fully covering the range [-pi, pi]. In such occurences,
         the use of a cyclic colormap would create a misleading plot.
         """
@@ -281,13 +280,12 @@ class Plot:
         use_cyclic_cm = False
         if is_complex:
             m, M = np.amin(param), np.amax(param)
-            if ((m != M) and (abs(abs(m) - np.pi) < eps) and
-                    (abs(abs(M) - np.pi) < eps)):
+            if (m != M) and (abs(abs(m) - np.pi) < eps) and (abs(abs(M) - np.pi) < eps):
                 use_cyclic_cm = True
         return use_cyclic_cm
-    
+
     def _get_pixels(self, s, intervals_list):
-        """ Create the necessary data to visualize a Bokeh/Plotly Heatmap.
+        """Create the necessary data to visualize a Bokeh/Plotly Heatmap.
         Heatmap can be thought as an image composed of pixels, each one having
         a different color value. We can think of the adaptively computed data as
         a "non-uniform grid". This function convert the data to a uniform grid
@@ -303,7 +301,7 @@ class Plot:
                 It will be used to access to attributes of the series.
             intervals_list : list
                 The already computed interval_list
-        
+
         Returns
         =======
             xarr, yarr : 1D np.ndarrays
@@ -311,17 +309,21 @@ class Plot:
             pixels : 2D np.ndarray (n x n)
                 The computed matrix to be used as the heatmap
         """
-        
+
         warnings.warn(
-            "Currently, only MatplotlibBackend is capable of correctly " +
-            "visualizing the data generated by the adaptive algorithm. " +
-            "You are using {}, hence the visualized ".format(type(self)) +
-            "result is just an approximation."
+            "Currently, only MatplotlibBackend is capable of correctly "
+            + "visualizing the data generated by the adaptive algorithm. "
+            + "You are using {}, hence the visualized ".format(type(self))
+            + "result is just an approximation."
         )
 
         # look for the minimum delta_x and delta_y
-        dx = min([abs(interval[0].start - interval[0].end) for interval in intervals_list])
-        dy = min([abs(interval[1].start - interval[1].end) for interval in intervals_list])
+        dx = min(
+            [abs(interval[0].start - interval[0].end) for interval in intervals_list]
+        )
+        dy = min(
+            [abs(interval[1].start - interval[1].end) for interval in intervals_list]
+        )
         # compute the number of pixels in the horizontal and vertical directions
         n1 = int(np.ceil(abs(s.start_x - s.end_x) / dx))
         n2 = int(np.ceil(abs(s.start_y - s.end_y) / dy))
@@ -333,7 +335,7 @@ class Plot:
         xarr = np.linspace(s.start_x, s.end_x, n1)
         yarr = np.linspace(s.start_y, s.end_y, n2)
 
-        pixels = np.zeros((n2, n1), dtype=np.dtype('b'))
+        pixels = np.zeros((n2, n1), dtype=np.dtype("b"))
         if len(intervals_list):
             for intervals in intervals_list:
                 intervalx = intervals[0]
@@ -346,10 +348,10 @@ class Plot:
         return xarr, yarr, pixels
 
     def _detect_poles(self, x, y):
-        """ Try to detect for discontinuities by computing the numerical 
+        """Try to detect for discontinuities by computing the numerical
         gradient of the provided data.
 
-        NOTE: The data produced by the series module is perfectly fine. It is 
+        NOTE: The data produced by the series module is perfectly fine. It is
         just the way the data is rendered that connects segments between
         discontinuities, so it makes sense for this function to be placed in
         the backend.
@@ -359,27 +361,27 @@ class Plot:
             x, y : np.ndarrays
             modified : boolean
                 If the data has been processed and the y-range has changed, then
-                `modified=True`. This will be used by Bokeh in order to update 
+                `modified=True`. This will be used by Bokeh in order to update
                 the y-range.
         """
         if len(x) < 5:
             # failsafe mechanism: when we plot Piecewise functions, there could
             # be pieces to be evaluated at specific locations, for example x=1.
-            # Say we want to plot y=2 at x=0, x=1, x=2, ... These pieces are 
+            # Say we want to plot y=2 at x=0, x=1, x=2, ... These pieces are
             # going to be combined by Piecewise, thus obtaining a "line" with
-            # a few number of points. The number 5 used above is just a 
+            # a few number of points. The number 5 used above is just a
             # reasonable assumption about the number of those points that are
             # going to be combined. Given the low number of these points, we
-            # don't want them to be evaluated by the following algorithm, because 
+            # don't want them to be evaluated by the following algorithm, because
             # it could fail or raise warnings.
             return x, y, False
 
         try:
-            # TODO: once we are confident on this algorithm, we might try to 
+            # TODO: once we are confident on this algorithm, we might try to
             # remove this try-except
 
             if self.detect_poles:
-                # TODO: should eps be a function of the number of discretization 
+                # TODO: should eps be a function of the number of discretization
                 # points and the x-range?
                 eps = self._kwargs.get("eps", 1e-01)
                 yr = np.roll(y, -1)
@@ -394,23 +396,26 @@ class Plot:
                 c[idx] = np.nan
                 yy = c.copy()
                 c = np.ma.masked_invalid(c)
-                
+
                 if any(idx) and (self.ylim is None):
-                    # auto select a ylim range. At this point, yy contains NaN 
-                    # values at the discontinuities. I'm going to combine two 
+                    # auto select a ylim range. At this point, yy contains NaN
+                    # values at the discontinuities. I'm going to combine two
                     # strategies:
                     # 1. select the minimum positive value and the maximum negative
                     #   value just before a discontinuity.
-                    # 2. compute area_rms, a route mean square of the areas of the 
+                    # 2. compute area_rms, a route mean square of the areas of the
                     #   rectangles (x[i] - x[i-1]) * y[i]
                     #   Then mask away yy where the areas at y[i] are greater than
                     #   area_rms
-                    
+
                     # select indeces just before and just after NaN values
                     idx = np.argwhere(np.isnan(yy)).reshape(-1)
                     idxb, idxp = idx - 1, idx + 1
-                    idx = [i for i in list(idxb) + list(idxp) if ((i >= 0) and 
-                            (i < len(yy)))]
+                    idx = [
+                        i
+                        for i in list(idxb) + list(idxp)
+                        if ((i >= 0) and (i < len(yy)))
+                    ]
                     v = yy[idx]
                     vp = [k for k in v if k >= 0]
                     vn = [k for k in v if k < 0]
@@ -419,8 +424,9 @@ class Plot:
 
                     # root mean square approach
                     areas = np.abs(np.roll(x, -1) - x) * yy
-                    area_rms = np.sqrt(np.mean([a**2 for a in areas 
-                            if not np.isnan(a)]))
+                    area_rms = np.sqrt(
+                        np.mean([a ** 2 for a in areas if not np.isnan(a)])
+                    )
                     yy[np.abs(areas) > area_rms] = np.nan
                     min2, max2 = np.nanmin(yy), np.nanmax(yy)
 
@@ -433,53 +439,49 @@ class Plot:
 
     @property
     def fig(self):
-        """ Returns the objects used to render/display the plots, which depends
-        on the backend (hence the plotting library). For example, 
+        """Returns the objects used to render/display the plots, which depends
+        on the backend (hence the plotting library). For example,
         MatplotlibBackend will return a tuple: (figure, axes). Other plotting
         libraries may return a single object.
         """
         return self._fig
-    
+
     @property
     def series(self):
-        """ Returns the series associated to the current plot.
-        """
+        """Returns the series associated to the current plot."""
         return self._series
-    
+
     def _update_interactive(self, params):
-        """ Implement the logic to update the data generated by
+        """Implement the logic to update the data generated by
         InteractiveSeries.
         """
         raise NotImplementedError
 
     def show(self):
-        """ Implement the functionalities to display the plot.
-        """
+        """Implement the functionalities to display the plot."""
         raise NotImplementedError
 
     def save(self, path, **kwargs):
-        """ Implement the functionalities to save the plot.
+        """Implement the functionalities to save the plot.
 
         Parameters
         ==========
 
             path : str
                 File path with extension.
-            
+
             kwargs : dict
                 Optional backend-specific parameters.
         """
         raise NotImplementedError
 
     def close(self):
-        """ Implement the functionalities to close the plot.
-        """
+        """Implement the functionalities to close the plot."""
         raise NotImplementedError
 
     def __str__(self):
-        series_strs = [('[%d]: ' % i) + str(s)
-                       for i, s in enumerate(self._series)]
-        return 'Plot object containing:\n' + '\n'.join(series_strs)
+        series_strs = [("[%d]: " % i) + str(s) for i, s in enumerate(self._series)]
+        return "Plot object containing:\n" + "\n".join(series_strs)
 
     def __getitem__(self, index):
         return self._series[index]
@@ -490,23 +492,25 @@ class Plot:
 
     def __delitem__(self, index):
         del self._series[index]
-    
+
     def __add__(self, other):
         if not isinstance(other, Plot):
             raise TypeError(
-            "Both sides of the `+` operator must be instances of the Plot " +
-            "class.\n Received: {} + {}".format(type(self), type(other)))
+                "Both sides of the `+` operator must be instances of the Plot "
+                + "class.\n Received: {} + {}".format(type(self), type(other))
+            )
         return self._do_sum(other)
-        
+
     def __radd__(self, other):
         if not isinstance(other, Plot):
             raise TypeError(
-            "Both sides of the `+` operator must be instances of the Plot " +
-            "class.\n Received: {} + {}".format(type(self), type(other)))
+                "Both sides of the `+` operator must be instances of the Plot "
+                + "class.\n Received: {} + {}".format(type(self), type(other))
+            )
         return other._do_sum(self)
-    
+
     def _do_sum(self, other):
-        """ Differently from Plot.extend, this method creates a new plot object,
+        """Differently from Plot.extend, this method creates a new plot object,
         which uses the series of both plots and merges the _kwargs dictionary
         of `self` with the one of `other`.
         """
@@ -552,9 +556,9 @@ class Plot:
             self._series.append(arg)
             # auto legend
             if len(self._series) > 1:
-                    self.legend = True
+                self.legend = True
         else:
-            raise TypeError('Must specify element of plot to append.')
+            raise TypeError("Must specify element of plot to append.")
 
     def extend(self, arg):
         """Adds all series from another plot.
@@ -588,7 +592,7 @@ class Plot:
         elif is_sequence(arg) and all([isinstance(a, BaseSeries) for a in arg]):
             self._series.extend(arg)
         else:
-            raise TypeError('Expecting Plot or sequence of BaseSeries')
+            raise TypeError("Expecting Plot or sequence of BaseSeries")
         # auto legend
         if len(self._series) > 1:
             self.legend = True
