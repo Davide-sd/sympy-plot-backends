@@ -21,7 +21,7 @@ setup(
     url="https://github.com/Davide-sd/sympy-plot-backends",
     author="Davide Sandona",
     author_email="sandona.davide@gmail.com",
-    license="GNU GPL v3",
+    license="BSD License",
     packages=find_packages(exclude=("tests", )),
     include_package_data=True,
     zip_safe=False,

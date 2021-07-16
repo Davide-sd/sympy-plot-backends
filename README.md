@@ -5,12 +5,12 @@
 This module contains a few plotting backends that can be used with [SymPy](github.com/sympy/sympy) as an alternative to the default Matplotlib backend. A backend represents the plotting library: it provides the necessary functionalities to quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots).
 
 <div>
-<img src="imgs/iplot_bokeh.png" width=250/>
-<img src="imgs/plotly-vectors.png" width=250/>
-<img src="imgs/plotly_streamlines.png" width=250/>
-<img src="imgs/k3d-1.png" width=250/>
-<img src="imgs/bokeh_domain_coloring.png" width=250/>
-<img src="imgs/k3d_domain_coloring.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/iplot_bokeh.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/plotly-vectors.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/plotly_streamlines.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/k3d-1.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/bokeh_domain_coloring.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/k3d_domain_coloring.png" width=250/>
 </div>
 
 
@@ -123,6 +123,13 @@ However, there are a few known bugs inherited from dependency-libraries that we 
 ## Installation
 
 Click the _launch binder_ icon below to interactively explore the notebooks in the tutorial folder.
+
+The repository is avaliable on PyPi:
+```
+pip install sympy_plot_backends
+```
+
+If you'd like to play with the code:
 
 1. Download this repository: `git clone https://github.com/Davide-sd/sympy-plot-backends`
 2. Move into the module folder, `sympy_plot_backends` and install the module with the command `pip install -e .`.

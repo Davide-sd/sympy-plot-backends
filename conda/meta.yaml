@@ -1,0 +1,71 @@
+{% set data = load_setup_py_data() %}
+
+package:
+  name: {{ data['name'] }}
+  version: {{ data['version'] }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - appdirs
+    - bokeh
+    - colorcet
+    - cplot
+    - holoviews
+    - ipyevents
+    - ipympl
+    - k3d
+    - matplotlib
+    - mergedeep
+    - numpy
+    - panel
+    - param
+    - pip
+    - plotly >=4.14.3
+    - pyqt5
+    - python
+    - scipy
+    - sympy
+    - vtk
+  run:
+    - appdirs
+    - bokeh
+    - colorcet
+    - cplot
+    - holoviews
+    - ipyevents
+    - ipympl
+    - k3d
+    - matplotlib
+    - mergedeep
+    - numpy
+    - panel
+    - param
+    - plotly >=4.14.3
+    - pyqt5
+    - python
+    - scipy
+    - sympy
+    - vtk
+
+test:
+  imports:
+    - spb
+    - spb.backends
+    - spb.complex
+
+about:
+  home: {{ data['url'] }}
+  license: {{ data['license'] }}
+  license_family: BSD
+  license_file: 
+  summary: {{ data['description'] }}
+  doc_url: 
+  dev_url: 
+
