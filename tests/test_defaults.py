@@ -47,7 +47,7 @@ def test_set_defaults():
     cfg["backend_2D"] = "k3d"
     raises(ValueError, lambda: set_defaults(cfg))
     p = plot(sin(x), show=False)
-    assert isinstance(p, PB)
+    assert isinstance(p, MB)
 
     # reset original settings
     cfg["backend_2D"] = "bokeh"
@@ -56,5 +56,5 @@ def test_set_defaults():
     reset()
     from spb.defaults import cfg as cfg2
 
-    assert cfg2["backend_2D"] == "plotly"
-    assert cfg2["backend_3D"] == "k3d"
+    assert cfg2["backend_2D"] == "matplotlib"
+    assert cfg2["backend_3D"] == "matplotlib"

@@ -39,8 +39,8 @@ def _hardcoded_defaults():
             "use_jupyterthemes": False,
             "jupytertheme": None,
         },
-        backend_2D="plotly",
-        backend_3D="k3d",
+        backend_2D="matplotlib",
+        backend_3D="matplotlib",
     )
 
 
