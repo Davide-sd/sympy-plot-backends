@@ -7,7 +7,7 @@ def readme():
 
 setup(
     name="sympy_plot_backends",
-    version="0.12.3",
+    version="0.12.4",
     description="Backends for plotting with SymPy",
     long_description=readme(),
     classifiers=[
