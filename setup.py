@@ -7,15 +7,15 @@ def readme():
 
 setup(
     name="sympy_plot_backends",
-    version="0.12.5",
+    version="0.12.6",
     description="Backends for plotting with SymPy",
     long_description=readme(),
     long_description_content_type="text/markdown",
     classifiers=[
-        "Development Status :: Beta",
-        "License :: GNU GPL v3",
-        "Programming Language :: Python :: 3.7",
-        "Topic :: Mathematics, Engineering",
+        "Development Status :: 4 - Beta",
+        "License :: OSI Approved :: BSD License",
+        "Programming Language :: Python :: 3.9",
+        "Topic :: Scientific/Engineering :: Mathematics",
     ],
     keywords="sympy plot plotting backend plotly bokeh mayavi k3d panel",
     url="https://github.com/Davide-sd/sympy-plot-backends",
