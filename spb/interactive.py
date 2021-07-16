@@ -89,7 +89,7 @@ class DynamicParam(param.Parameterized):
             default = values[0]
             if default not in options:
                 default = min(options, key=lambda x: abs(x - default))
-            return MyList(default=default, objects=options, label=values[3])
+            return MyList(default=default, objects=list(options), label=values[3])
 
         return {k: v for k, v in zip(defaults_keys, values)}
 
