@@ -1,5 +1,4 @@
-from setuptools import setup
-
+from setuptools import setup, find_packages
 
 def readme():
     with open("README.md") as f:
@@ -22,7 +21,7 @@ setup(
     author="Davide Sandona",
     author_email="sandona.davide@gmail.com",
     license="GNU GPL v3",
-    packages=["spb", "spb.backends" "spb.complex"],
+    packages=find_packages(exclude=("tests", )),
     include_package_data=True,
     zip_safe=False,
     install_requires=[
@@ -41,11 +40,8 @@ setup(
         "bokeh",
         "ipyevents",
         "PyQt5",
-        # "mayavi",
         "k3d",
         "vtk",  # needed for streamlines in k3d
         "cplot"
-        # "pyvista",    # still immature jupyter notebook experience
-        # "ipyvtklink"
     ],
 )
