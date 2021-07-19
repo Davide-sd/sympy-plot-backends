@@ -16,7 +16,6 @@ requirements:
     - appdirs
     - bokeh
     - colorcet
-    - cplot
     - holoviews
     - ipyevents
     - ipympl
@@ -28,7 +27,6 @@ requirements:
     - param
     - pip
     - plotly >=4.14.3
-    - pyqt5
     - python
     - scipy
     - sympy
@@ -37,7 +35,6 @@ requirements:
     - appdirs
     - bokeh
     - colorcet
-    - cplot
     - holoviews
     - ipyevents
     - ipympl
@@ -48,7 +45,6 @@ requirements:
     - panel
     - param
     - plotly >=4.14.3
-    - pyqt5
     - python
     - scipy
     - sympy
