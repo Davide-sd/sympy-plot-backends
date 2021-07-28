@@ -6,7 +6,7 @@ from spb.series import (
     InteractiveSeries,
     _set_discretization_points
 )
-from spb.complex.complex import _build_series as _build_complex_series
+from spb.ccomplex.complex import _build_series as _build_complex_series
 from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify, _unpack_args
 from spb.defaults import TWO_D_B, THREE_D_B

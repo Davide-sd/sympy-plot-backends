@@ -1,5 +1,7 @@
 # Sympy Plotting Backends
 
+[![PyPI version](https://badge.fury.io/py/sympy-plot-backends.svg)](https://badge.fury.io/py/sympy-plot-backends)
+[![Install with conda](https://anaconda.org/davide_sd/sympy_plot_backends/badges/installer/conda.svg)](https://anaconda.org/Davide_sd/sympy_plot_backends)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Davide-sd/sympy-plot-backends/HEAD)
 
 This module contains a few plotting backends that can be used with [SymPy](github.com/sympy/sympy) as an alternative to the default Matplotlib backend. A backend represents the plotting library: it provides the necessary functionalities to quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots).
@@ -149,7 +151,7 @@ var("u, v")
 p3ds(v * cos(u), v * sin(u), v + sin(3 * v) / 3 - 4, (u, 0, 2 * pi), (v, 0, 2 * pi))
 ```
 <div align="center">
-<img src="imgs/k3d-3.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/k3d-3.png" width=250/>
 </div>
 
 Look at the notebooks in the [tutorials](\tutorials) folder to fully understand what this module offers.

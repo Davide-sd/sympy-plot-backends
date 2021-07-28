@@ -1,5 +1,5 @@
 from sympy import symbols, I, sqrt, sin, asin, cos, Plane
-from spb.complex.complex import _build_series as _build_complex_series
+from spb.ccomplex.complex import _build_series as _build_complex_series
 from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify
 from spb.series import (

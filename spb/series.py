@@ -1609,8 +1609,8 @@ class ComplexSeries(BaseSeries):
         )
 
     def _domain_coloring(self, w):
-        from spb.complex.hsv_color_grading import color_grading
-        from spb.complex.wegert import (
+        from spb.ccomplex.hsv_color_grading import color_grading
+        from spb.ccomplex.wegert import (
             bw_stripes_phase,
             bw_stripes_mag,
             domain_coloring,
