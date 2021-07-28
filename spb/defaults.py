@@ -26,13 +26,6 @@ def _hardcoded_defaults():
             "grid_color": 0x888888,
             "label_color": 0xDDDDDD,
         },
-        mayavi={"bg_color": (0.22, 0.24, 0.29), "fg_color": (1, 1, 1)},
-        # Pyvista default theme
-        # https://docs.pyvista.org/examples/02-plot/themes.html
-        pyvista={
-            "theme": "default",
-            "bg_color": (0.22, 0.24, 0.29),
-        },
         matplotlib={
             "axis_center": None,  # "auto"
             "grid": True,
@@ -41,6 +34,9 @@ def _hardcoded_defaults():
         },
         backend_2D="matplotlib",
         backend_3D="matplotlib",
+        complex={
+            "modules": None     # "mpmath"
+        }
     )
 
 

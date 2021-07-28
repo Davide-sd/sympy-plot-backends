@@ -244,7 +244,7 @@ def test_data_shape():
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
 
-    s = ComplexSeries(1, (x, -5, 5))
+    s = ComplexSeries(1, (x, -5, 5), modules=None)
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
@@ -254,7 +254,8 @@ def test_data_shape():
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
 
-    s = ComplexSeries(1, (x, -5 - 2 * I, 5 + 2 * I), domain_coloring=True)
+    s = ComplexSeries(1, (x, -5 - 2 * I, 5 + 2 * I), domain_coloring=True,
+            modules=None)
     rr, ii, mag_arg, colors, _ = s.get_data()
     assert (rr.shape == ii.shape) and (rr.shape[:2] == colors.shape[:2])
 
@@ -328,7 +329,8 @@ def test_data_shape():
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
 
-    s = ComplexInteractiveSeries(S.One, (x, -5, 5), real=True, imag=False)
+    s = ComplexInteractiveSeries(S.One, (x, -5, 5), real=True, imag=False,
+            modules=None)
     s.update_data(dict())
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
@@ -444,10 +446,11 @@ def test_interactive():
 
     # complex function evaluated over a real line with numpy
     s1 = InteractiveSeries(
-        [(z ** 2 + 1) / (z ** 2 - 1)], [(z, -3, 3)], "", n1=50, is_complex=True)
+        [(z ** 2 + 1) / (z ** 2 - 1)], [(z, -3, 3)], "", n1=50,
+        is_complex=True, modules=None)
     s2 = LineOver1DRangeSeries(
         (z ** 2 + 1) / (z ** 2 - 1), (z, -3, 3), "", adaptive=False,
-        n=50, is_complex=True)
+        n=50, is_complex=True, modules=None)
     do_test(s1.get_data(), s2.get_data())
 
     # complex function evaluated over a real line with mpmath
@@ -463,10 +466,10 @@ def test_interactive():
     expr = (z ** 2 + 1) / (z ** 2 - 1)
     s1 = InteractiveSeries(
         [expr], [(z, -3, 3)], "",
-        n1=50, is_complex=True, absarg=expr)
+        n1=50, is_complex=True, absarg=expr, modules=None)
     s2 = LineOver1DRangeSeries(
         expr, (z, -3, 3), "", adaptive=False,
-        n=50, is_complex=True, absarg=expr)
+        n=50, is_complex=True, absarg=expr, modules=None)
     do_test(s1.get_data(), s2.get_data())
 
     # abs/arg values of complex function evaluated over a real line wit mpmath
@@ -482,11 +485,11 @@ def test_interactive():
     # domain coloring or 3D
     s1 = ComplexInteractiveSeries(
         u * (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I), "",
-        n1=20, n2=20, domain_coloring=True, params = {u: 1}
+        n1=20, n2=20, domain_coloring=True, params = {u: 1}, modules=None
     )
     s2 = ComplexSeries(
         (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I), "",
-        n1=20, n2=20, domain_coloring=True
+        n1=20, n2=20, domain_coloring=True, modules=None
     )
     do_test(s1.get_data(), s2.get_data())
 
@@ -558,7 +561,7 @@ def test_complex_discretization():
     # Interactive series produces the same numerical data as LineOver1DRangeSeries.
     # NOTE: InteractiveSeries doesn't support adaptive algorithm!
     s1 = LineOver1DRangeSeries(im(sqrt(-x)), (x, -10, 10), "s1",
-            adaptive=False, is_complex=True, n=10)
+            adaptive=False, is_complex=True, modules=None, n=10)
     s2 = InteractiveSeries([im(sqrt(-x))], [(x, -10, 10)], "s2",
             is_complex=True, modules=None, n1=10)
     s3 = InteractiveSeries([im(sqrt(-x))], [(x, -10, 10)], "s3",
@@ -569,7 +572,7 @@ def test_complex_discretization():
 
     expr = sqrt(-x)
     s1 = LineOver1DRangeSeries(expr, (x, -10, 10), "s1",
-            adaptive=False, is_complex=True, n=10, absarg=expr)
+            adaptive=False, is_complex=True, modules=None, n=10, absarg=expr)
     s2 = InteractiveSeries([expr], [(x, -10, 10)], "s2",
             is_complex=True, modules=None, n1=10, absarg=expr)
     s3 = InteractiveSeries([expr], [(x, -10, 10)], "s3",

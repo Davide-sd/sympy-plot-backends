@@ -15,6 +15,8 @@ from spb.series import (
 # is to assure that the expected objects are being created.
 
 def bcs(*args, **kwargs):
+    # use Numpy for the following tests to speed things up
+    kwargs["modules"] = None
     args = _plot_sympify(args)
     return _build_complex_series(*args, **kwargs)
 

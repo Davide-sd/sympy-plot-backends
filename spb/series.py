@@ -1478,7 +1478,6 @@ class ComplexPointSeries(BaseSeries):
         self._init_attributes(expr, label)
 
     def _init_attributes(self, expr, label):
-        print("expr", expr, type(expr))
         if isinstance(expr, (list, tuple)):
             self.expr = Tuple(*expr)
         elif isinstance(expr, Expr):

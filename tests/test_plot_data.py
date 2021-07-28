@@ -213,46 +213,46 @@ def test_complex():
 
     # return x, mag(e1), arg(e1)
     s1 = _build_series(e1, (x, -5, 5), adaptive=False, real=False, imag=False,
-            absarg=True, n=10)
+            absarg=True, n=10, modules=None)
     data1 = do_test_1(s1, 3, LineOver1DRangeSeries)
     s2 = _build_series(e1, (x, -5, 5), adaptive=False, real=False, imag=False,
-            absarg=True, n=10, pt="p")
+            absarg=True, n=10, pt="p", modules=None)
     data2 = do_test_1(s2, 3, LineOver1DRangeSeries)
     test_equal_results(data1, data2)
 
     # return x, real(e1)
     s1 = _build_series(e1, (x, -5, 5), adaptive=False, n=10,
-            real=True, imag=False)
+            real=True, imag=False, modules=None)
     data1 = do_test_1(s1, 2, LineOver1DRangeSeries)
     s2 = _build_series(e1, (x, -5, 5), adaptive=False, n=10,
-            real=True, imag=False, pt="p")
+            real=True, imag=False, pt="p", modules=None)
     data2 = do_test_1(s2, 2, LineOver1DRangeSeries)
     test_equal_results(data1, data2)
 
     # return x, imag(e1)
     s1 = _build_series(e1, (x, -5, 5), adaptive=False, n=10,
-            real=False, imag=True)
+            real=False, imag=True, modules=None)
     data1 = do_test_1(s1, 2, LineOver1DRangeSeries)
     s2 = _build_series(e1, (x, -5, 5), adaptive=False, n=10,
-            real=False, imag=True, pt="p")
+            real=False, imag=True, pt="p", modules=None)
     data2 = do_test_1(s2, 2, LineOver1DRangeSeries)
     test_equal_results(data1, data2)
 
     # return x, abs(e1)
     s1 = _build_series(e1, (x, -5, 5), adaptive=False, n=10,
-            real=False, imag=False, abs=True)
+            real=False, imag=False, abs=True, modules=None)
     data1 = do_test_1(s1, 2, LineOver1DRangeSeries)
     s2 = _build_series(e1, (x, -5, 5), adaptive=False, n=10,
-            real=False, imag=False, abs=True, pt="p")
+            real=False, imag=False, abs=True, pt="p", modules=None)
     data2 = do_test_1(s2, 2, LineOver1DRangeSeries)
     test_equal_results(data1, data2)
 
     # return x, arg(e1)
     s1 = _build_series(e1, (x, -5, 5), adaptive=False, n=10,
-            real=False, imag=False, arg=True)
+            real=False, imag=False, arg=True, modules=None)
     data1 = do_test_1(s1, 2, LineOver1DRangeSeries)
     s2 = _build_series(e1, (x, -5, 5), adaptive=False, n=10,
-            real=False, imag=False, arg=True, pt="p")
+            real=False, imag=False, arg=True, pt="p", modules=None)
     data2 = do_test_1(s2, 2, LineOver1DRangeSeries)
     test_equal_results(data1, data2)
 
@@ -264,10 +264,10 @@ def test_complex():
 
     ### Domain coloring: returns x, y, (mag, arg), ...
     s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I),
-            n1=10, n2=10)
+            n1=10, n2=10, modules=None)
     data1 = do_test_1(s1, 5, ComplexSeries)
     s2 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I),
-            n1=10, n2=10, pt="c")
+            n1=10, n2=10, pt="c", modules=None)
     data2 = do_test_1(s2, 5, ComplexSeries)
     test_equal_results(data1, data2)
     _, _, mag_arg, _, _ = data1
@@ -275,38 +275,41 @@ def test_complex():
 
     ### 3D complex function: real part
     s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), n1=10, n2=10,
-            threed=True, real=True, imag=False)
+            threed=True, real=True, imag=False, modules=None)
     data1 = do_test_1(s1, 3, ComplexSeries)
     s2 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), n1=10, n2=10,
-            threed=True, real=True, imag=False, pt="p3d")
+            threed=True, real=True, imag=False, pt="p3d", modules=None)
     data2 = do_test_1(s2, 3, ComplexSeries)
     test_equal_results(data1, data2)
 
     ### 3D complex function:  imaginary part
     s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), n1=10, n2=10,
-            threed=True, real=False, imag=True)
+            threed=True, real=False, imag=True, modules=None)
     data1 = do_test_1(s1, 3, ComplexSeries)
     s2 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), n1=10, n2=10,
-            threed=True, real=False, imag=True, pt="p3d")
+            threed=True, real=False, imag=True, pt="p3d", modules=None)
     data2 = do_test_1(s2, 3, ComplexSeries)
     test_equal_results(data1, data2)
 
     ### 3D complex function:  absolute value
     s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), n1=10, n2=10,
-            threed=True, real=False, imag=False, abs=True)
+            threed=True, real=False, imag=False, abs=True, modules=None)
     data1 = do_test_1(s1, 3, ComplexSeries)
     s2 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), n1=10, n2=10,
-            threed=True, real=False, imag=False, abs=True, pt="p3d")
+            threed=True, real=False, imag=False, abs=True, pt="p3d",
+            modules=None)
     data2 = do_test_1(s2, 3, ComplexSeries)
     test_equal_results(data1, data2)
     _, _, mag2 = data1
 
     ### 3D complex function:  argument
     s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), n1=10, n2=10,
-            threed=True, real=False, imag=False, abs=False, arg=True)
+            threed=True, real=False, imag=False, abs=False, arg=True,
+            modules=None)
     data1 = do_test_1(s1, 3, ComplexSeries)
     s2 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), n1=10, n2=10,
-            threed=True, real=False, imag=False, abs=False, arg=True, pt="p3d")
+            threed=True, real=False, imag=False, abs=False, arg=True, pt="p3d",
+            modules=None)
     data2 = do_test_1(s2, 3, ComplexSeries)
     test_equal_results(data1, data2)
     _, _, arg2 = data1
@@ -315,36 +318,44 @@ def test_complex():
 
     ### 3D functions of 2 variables: real part
     s1 = _build_series(sqrt(x), (x, -5, 5), (y, -5, 5), n1=10, n2=10,
-            threed=True, real=True, imag=False, abs=False, arg=False)
+            threed=True, real=True, imag=False, abs=False, arg=False,
+            modules=None)
     data1 = do_test_1(s1, 3, SurfaceOver2DRangeSeries)
     s2 = _build_series(sqrt(x), (x, -5, 5), (y, -5, 5), n1=10, n2=10,
-            threed=True, real=True, imag=False, abs=False, arg=False, pt="p3d")
+            threed=True, real=True, imag=False, abs=False, arg=False, pt="p3d",
+            modules=None)
     data2 = do_test_1(s2, 3, SurfaceOver2DRangeSeries)
     test_equal_results(data1, data2)
 
     ### 3D functions of 2 variables: imaginary part
     s1 = _build_series(sqrt(x), (x, -5, 5), (y, -5, 5), n1=10, n2=10,
-            threed=True, real=False, imag=True, abs=False, arg=False)
+            threed=True, real=False, imag=True, abs=False, arg=False,
+            modules=None)
     data1 = do_test_1(s1, 3, SurfaceOver2DRangeSeries)
     s2 = _build_series(sqrt(x), (x, -5, 5), (y, -5, 5), n1=10, n2=10,
-            threed=True, real=False, imag=True, abs=False, arg=False, pt="p3d")
+            threed=True, real=False, imag=True, abs=False, arg=False, pt="p3d",
+            modules=None)
     data2 = do_test_1(s2, 3, SurfaceOver2DRangeSeries)
     test_equal_results(data1, data2)
 
     ### 3D functions of 2 variables: absolute value
     s1 = _build_series(sqrt(x), (x, -5, 5), (y, -5, 5), n1=10, n2=10,
-            threed=True, real=False, imag=False, abs=True, arg=False)
+            threed=True, real=False, imag=False, abs=True, arg=False,
+            modules=None)
     data1 = do_test_1(s1, 3, SurfaceOver2DRangeSeries)
     s2 = _build_series(sqrt(x), (x, -5, 5), (y, -5, 5), n1=10, n2=10,
-            threed=True, real=False, imag=False, abs=True, arg=False, pt="p3d")
+            threed=True, real=False, imag=False, abs=True, arg=False, pt="p3d",
+            modules=None)
     data2 = do_test_1(s2, 3, SurfaceOver2DRangeSeries)
     test_equal_results(data1, data2)
 
     ### 3D functions of 2 variables: argument
     s1 = _build_series(sqrt(x), (x, -5, 5), (y, -5, 5), n1=10, n2=10,
-            threed=True, real=False, imag=False, abs=False, arg=True)
+            threed=True, real=False, imag=False, abs=False, arg=True,
+            modules=None)
     data1 = do_test_1(s1, 3, SurfaceOver2DRangeSeries)
     s2 = _build_series(sqrt(x), (x, -5, 5), (y, -5, 5), n1=10, n2=10,
-            threed=True, real=False, imag=False, abs=False, arg=True, pt="p3d")
+            threed=True, real=False, imag=False, abs=False, arg=True, pt="p3d",
+            modules=None)
     data2 = do_test_1(s2, 3, SurfaceOver2DRangeSeries)
     test_equal_results(data1, data2)

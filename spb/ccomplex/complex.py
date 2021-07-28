@@ -1,4 +1,5 @@
 from sympy import Tuple, re, im, sqrt, arg
+from spb.defaults import cfg
 from spb.series import (
     LineOver1DRangeSeries,
     ComplexSeries,
@@ -26,6 +27,8 @@ def _build_series(*args, interactive=False, **kwargs):
         "absarg": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
         "arg": [lambda t: arg(t), "Arg(%s)"],
     }
+    # option to be used with lambdify with complex functions
+    kwargs.setdefault("modules", cfg["complex"]["modules"])
 
     if all([a.is_complex for a in args]):
         # args is a list of complex numbers
