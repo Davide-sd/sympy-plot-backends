@@ -274,7 +274,8 @@ def complex_plot(*args, show=True, **kwargs):
             * (z, -5, 5): plot a line from complex point (-5 + 0*I) to (5 + 0*I)
             * (z, -5 + 2*I, 5 + 2*I): plot a line from complex point (-5 + 2*I)
                 to (5 + 2 * I). Note the same imaginary part for the start/end
-                point.
+                point. Also note that we can specify the ranges by using
+                standard Python complex numbers, for example (z, -5+2j, 5+2j).
             * (z, -5 - 3*I, 5 + 3*I): domain coloring plot of the complex
                 function over the specified domain.
 
@@ -292,7 +293,7 @@ def complex_plot(*args, show=True, **kwargs):
         absarg : boolean
             If True, plot the modulus of the complex function colored by its
             argument. If False, separately plot the real and imaginary parts.
-            Default to False.
+            Default to False. This is only available for line plots.
 
         abs : boolean
             If True, and if the provided range is a real segment, plot the
@@ -300,8 +301,7 @@ def complex_plot(*args, show=True, **kwargs):
 
         adaptive : boolean
             Attempt to create line plots by using an adaptive algorithm.
-            Default to True. If `absarg=True`, the function will automatically
-            switch to `adaptive=False`, using a uniformly-spaced grid.
+            Default to True.
 
         arg : boolean
             If True, and if the provided range is a real segment, plot the
@@ -488,7 +488,7 @@ def complex_plot(*args, show=True, **kwargs):
     .. code-block:: python
         z = symbols("z")
         complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
-            real=True)
+            real=True, imag=False)
 
     """
     args = _plot_sympify(args)
