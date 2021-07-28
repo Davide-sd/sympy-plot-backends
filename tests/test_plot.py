@@ -2,39 +2,17 @@ import os
 from tempfile import TemporaryDirectory
 
 from sympy import (
-    pi,
-    sin,
-    cos,
-    Symbol,
-    Integral,
-    Sum,
-    sqrt,
-    log,
-    exp,
-    Ne,
-    oo,
-    LambertW,
-    I,
-    meijerg,
-    exp_polar,
-    Piecewise,
-    And,
-    real_root,
-    symbols,
-    Tuple,
-    Expr,
-    Integer,
+    pi, sin, cos, Symbol, Integral, Sum, sqrt,
+    log, exp, Ne, oo, LambertW, I,
+    meijerg, exp_polar, Piecewise, And,
+    real_root, symbols, Tuple, Expr, Integer,
 )
 from sympy.core.singleton import S
 from sympy.core.sympify import sympify
 from sympy.external import import_module
 from spb.functions import (
-    plot,
-    plot_parametric,
-    plot3d_parametric_line,
-    plot3d,
-    plot3d_parametric_surface,
-    plot_contour,
+    plot, plot_parametric, plot3d_parametric_line,
+    plot3d, plot3d_parametric_surface, plot_contour,
 )
 from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import unset_show, MatplotlibBackend
@@ -387,20 +365,12 @@ def test_plot_and_save_4():
     # Examples from the 'advanced' notebook
     ###
 
-    # XXX: This raises the warning "The evaluation of the expression is
-    # problematic. We are trying a failback method that may still work. Please
-    # report this as a bug." It has to use the fallback because using evalf()
-    # is the only way to evaluate the integral. We should perhaps just remove
-    # that warning.
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
-        with warns(
-            UserWarning, match="The evaluation of the expression is problematic"
-        ):
-            i = Integral(log((sin(x) ** 2 + 1) * sqrt(x ** 2 + 1)), (x, 0, y))
-            p = plot(i, (y, 1, 5))
-            filename = "test_advanced_integral.png"
-            p.save(os.path.join(tmpdir, filename))
-            p.close()
+        i = Integral(log((sin(x) ** 2 + 1) * sqrt(x ** 2 + 1)), (x, 0, y))
+        p = plot(i, (y, 1, 5))
+        filename = "test_advanced_integral.png"
+        p.save(os.path.join(tmpdir, filename))
+        p.close()
 
 
 def test_plot_and_save_5():

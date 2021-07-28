@@ -20,6 +20,7 @@ from spb.utils import get_lambda
 import warnings
 import numpy as np
 
+old_lambdify = lambdify
 
 ### The base class for all series
 class BaseSeries:
@@ -287,6 +288,13 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         x_coords = []
         y_coords = []
 
+        def _func(t, extract=True):
+            if t is None:
+                return t
+            if extract:
+                return t.real if not isinstance(t, mpf) else float(t)
+            return t if not isinstance(t, mpf) else float(t)
+
         def sample(p, q, depth):
             """Samples recursively if three points are almost collinear.
             For depth < max_depth, points are added irrespective of whether
@@ -303,12 +311,12 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                 xnew = p[0] + random * (q[0] - p[0])
 
             ynew = f(xnew)
-            new_point = np.array([xnew, ynew if not isinstance(ynew, mpf) else float(ynew)])
+            new_point = np.array([xnew, _func(ynew, False)])
 
             # Maximum depth
             if depth > max_depth:
-                x_coords.append(q[0].real)
-                y_coords.append(q[1].real)
+                x_coords.append(q[0] if q[0] is None else q[0].real)
+                y_coords.append(q[1] if q[1] is None else q[1].real)
 
             # Sample irrespective of whether the line is flat till the
             # depth of 6. We are not using linspace to avoid aliasing.
@@ -346,14 +354,14 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                 sample(p, new_point, depth + 1)
                 sample(new_point, q, depth + 1)
             else:
-                x_coords.append(q[0].real)
-                y_coords.append(q[1].real)
+                x_coords.append(q[0] if q[0] is None else q[0].real)
+                y_coords.append(q[1] if q[1] is None else q[1].real)
 
         f_start = f(start)
-        f_start = f_start.real if not isinstance(f_start.real, mpf) else float(f_start.real)
+        f_start = _func(f_start)
         f_end = f(end)
-        f_end = f_end.real if not isinstance(f_end.real, mpf) else float(f_end.real)
-        x_coords.append(start.real)
+        f_end = _func(f_end)
+        x_coords.append(start)
         y_coords.append(f_start)
         sample(np.array([start, f_start]), np.array([end, f_end]), 0)
         return x_coords, y_coords
@@ -371,17 +379,31 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             y: list
                 List of y-coordinates
         """
+        
+        # TODO: this wrapper function is a very awful hack in order to pass 
+        # test inside test_plot.py. Need a better and more reliable lambdify...
+        # Once that's done, we must remove this wrapper function and the 
+        # following try/except.
+        def _doit(g):
+            if self.only_integers or not self.adaptive:
+                x, y = self._uniform_sampling(g)
+                x, y = np.array(x), np.array(y)
+            else:
+                x, y = self.adaptive_sampling(
+                    g, self.start, self.end, self.depth, self.xscale
+                )
+            return x, y
 
-        from sympy import lambdify
-        f = lambdify([self.var], self.expr, self.modules)
-
-        if self.only_integers or not self.adaptive:
-            x, y = self._uniform_sampling(f)
-            x, y = np.array(x), np.array(y)
-        else:
-            x, y = self.adaptive_sampling(
-                f, self.start, self.end, self.depth, self.xscale
-            )
+        try:
+            from sympy import lambdify
+            f = lambdify([self.var], self.expr, self.modules)
+            x, y = _doit(f)
+        except:
+            if self.only_integers or not self.adaptive:
+                f2 = vectorized_lambdify([self.var], self.expr)
+            else:
+                f2 = old_lambdify([self.var], self.expr)
+            x, y = _doit(f2)
 
         if self.is_complex and (self.absarg is not None):
             # compute the argument at the x locations. Right now, x contains the
