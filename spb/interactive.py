@@ -48,8 +48,8 @@ class DynamicParam(param.Parameterized):
             softbounds : tuple
                 Tuple of two float (or integer) numbers: (start, end).
             N : int
-                Number of increments in the slider. 
-                (start - end) / N represents the step increment. Default to 40. 
+                Number of increments in the slider.
+                (start - end) / N represents the step increment. Default to 40.
                 Set N=-1 to have unit step increments.
             label : str
                 Label of the slider. Default to None. If None, the string or

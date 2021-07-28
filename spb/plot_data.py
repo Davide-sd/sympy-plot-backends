@@ -32,6 +32,7 @@ TODO:
     1. Implement smart_plot
 """
 
+
 def _deal_with_complex_series(exprs, ranges, interactive, kwargs, pt):
     """ Look for complex-related keyword arguments. If found, build and return
     a complex-related data series.

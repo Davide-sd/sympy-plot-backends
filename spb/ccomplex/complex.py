@@ -1,4 +1,4 @@
-from sympy import Tuple, re, im, sqrt, arg, Symbol
+from sympy import Tuple, re, im, sqrt, arg
 from spb.series import (
     LineOver1DRangeSeries,
     ComplexSeries,
@@ -12,6 +12,7 @@ from spb.series import (
 from spb.utils import _plot_sympify, _check_arguments, _is_range
 from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
+
 
 def _build_series(*args, interactive=False, **kwargs):
     series = []

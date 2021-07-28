@@ -1,7 +1,7 @@
 from sympy import sympify, Tuple, symbols, solve, re, im, Add, Mul, Expr
 from sympy.geometry import (
-    Plane, Polygon, Circle, Ellipse, Line, Segment, Ray,
-    Line3D, Curve, Point2D, Point3D,
+    Plane, Polygon, Circle, Ellipse, Segment, Ray,
+    Curve, Point2D, Point3D,
 )
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
@@ -132,6 +132,7 @@ class BaseSeries:
         # so I'm relying on the global keyword hack.
 
         global _wrapper_complex_func
+
         def _wrapper_complex_func(args):
             try:
                 r = f(*args)
@@ -147,9 +148,8 @@ class BaseSeries:
                 r = np.nan
             return r
 
-
         from multiprocessing import Pool, cpu_count
-        pool = Pool(processes = cpu_count())
+        pool = Pool(processes=cpu_count())
         return pool.map(_wrapper_complex_func, args)
 
 
@@ -379,10 +379,10 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             y: list
                 List of y-coordinates
         """
-        
-        # TODO: this wrapper function is a very awful hack in order to pass 
+
+        # TODO: this wrapper function is a very awful hack in order to pass
         # test inside test_plot.py. Need a better and more reliable lambdify...
-        # Once that's done, we must remove this wrapper function and the 
+        # Once that's done, we must remove this wrapper function and the
         # following try/except.
         def _doit(g):
             if self.only_integers or not self.adaptive:
@@ -1265,7 +1265,6 @@ class InteractiveSeries(BaseSeries):
             self.is_3Dvector = True
             self.is_slice = False
 
-
         if self.is_2Dline and self.is_complex and (self.absarg is not None):
             # here we are dealing with a complex line plot with absarg=True.
             # The series should return x, abs, arg so that the line can be
@@ -1366,7 +1365,6 @@ class InteractiveSeries(BaseSeries):
                 else:
                     args.append(self.ranges[s])
             results = self.function(*args)
-
 
         if self.is_complex and (self.absarg is not None):
             from sympy import lambdify, arg as argument
@@ -1514,7 +1512,7 @@ class ComplexPointInteractiveSeries(InteractiveSeries, ComplexPointSeries):
         if len(fs) > 0:
             raise ValueError(
                 "Incompatible expression and parameters.\n"
-                + "Expression: {}\n".format((expr, r, label))
+                + "Expression: {}\n".format((expr, label))
                 + "Specify what these symbols represent: {}\n".format(fs)
                 + "Are they ranges or parameters?"
             )
@@ -1639,7 +1637,7 @@ class ComplexSeries(BaseSeries):
             "l": polar_chessboard,
         }
         colorscale = None
-        if not self.coloring in _mapping.keys():
+        if self.coloring not in _mapping.keys():
             raise KeyError(
                 "`coloring` must be one of the following: {}".format(_mapping.keys())
             )

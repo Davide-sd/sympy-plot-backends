@@ -1,10 +1,6 @@
 from sympy import (
-    symbols,
-    cos, sin, log, sqrt, exp,
-    Eq, Matrix, Tuple,
-    pi, gamma,
-    Plane,
-    S, Abs, I, re, im
+    symbols, cos, sin, log, sqrt,
+    Tuple, pi, Plane, S, I, im
 )
 from spb.series import (
     LineOver1DRangeSeries,

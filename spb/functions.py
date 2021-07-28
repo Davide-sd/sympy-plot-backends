@@ -223,8 +223,8 @@ def plot(*args, show=True, **kwargs):
         ignored.
 
     detect_poles : boolean
-            Chose whether to detect and correctly plot poles. 
-            Defaulto to False. This improve detection, increase the number of 
+            Chose whether to detect and correctly plot poles.
+            Defaulto to False. This improve detection, increase the number of
             discretization points and/or change the value of `eps`.
 
     eps : float
@@ -259,7 +259,7 @@ def plot(*args, show=True, **kwargs):
         the size will be set by the default backend.
 
     steps : boolean, optional
-        Default to False. If True, connects consecutive points with steps 
+        Default to False. If True, connects consecutive points with steps
         rather than straight segments.
 
     title : str, optional

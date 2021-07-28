@@ -1,11 +1,11 @@
 from sympy import (
-    symbols, cos, sin, log, Eq, I, Abs,
-    exp, pi, gamma, Matrix, Tuple, sqrt, Plane,
+    symbols, cos, sin, Eq, I, Abs,
+    exp, pi, gamma, sqrt
 )
 from sympy.geometry import (
     Plane, Polygon, Circle, Ellipse, Line, Segment,
-    Ray, Line3D, Curve, Point2D, Point3D,
-    Line3D, Segment3D, Ray3D,
+    Ray, Line3D, Point2D, Point3D,
+    Segment3D, Ray3D,
 )
 from sympy.vector import CoordSys3D
 from pytest import raises
@@ -22,8 +22,6 @@ from spb.series import (
     Vector3DSeries,
     ComplexSeries,
     ComplexInteractiveSeries,
-    ComplexPointSeries,
-    ComplexPointInteractiveSeries,
     SliceVector3DSeries,
     GeometrySeries,
     PlaneSeries,

@@ -6,8 +6,8 @@ from spb.series import (
     ComplexPointSeries, ComplexPointInteractiveSeries,
     ComplexSeries, ComplexInteractiveSeries,
     LineOver1DRangeSeries, SurfaceOver2DRangeSeries,
-    InteractiveSeries, ComplexInteractiveSeries, ComplexSeries,
-    ContourSeries, Vector2DSeries, Vector3DSeries, SliceVector3DSeries
+    InteractiveSeries, ContourSeries, Vector2DSeries,
+    Vector3DSeries, SliceVector3DSeries
 )
 
 # The _build_series functions are going to create different objects
