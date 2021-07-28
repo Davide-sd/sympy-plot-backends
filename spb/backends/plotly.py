@@ -353,15 +353,16 @@ class PlotlyBackend(Plot):
                         ),
                     )
                 else:
-                    lkw = dict(name=s.label, mode="markers", line_color=next(self._cl))
+                    lkw = dict(
+                        name=s.label,
+                        mode="markers",
+                        line_color=next(self._cl))
                 line_kw = self._kwargs.get("line_kw", dict())
                 self._fig.add_trace(
                     go.Scatter3d(x=x, y=y, z=z, **merge({}, lkw, line_kw))
                 )
 
-            elif (s.is_3Dsurface and (not s.is_complex)) or (
-                s.is_3Dsurface and s.is_complex and (s.real or s.imag)
-            ):
+            elif (s.is_3Dsurface and not s.is_domain_coloring):
                 xx, yy, zz = s.get_data()
 
                 # create a solid color to be used when self._use_cm=False
@@ -406,6 +407,7 @@ class PlotlyBackend(Plot):
                             )
                         )
                 count += 1
+
             elif s.is_contour and (not s.is_complex):
                 xx, yy, zz = s.get_data()
                 xx = xx[0, :]
@@ -425,6 +427,7 @@ class PlotlyBackend(Plot):
                     go.Contour(x=xx, y=yy, z=zz, **merge({}, ckw, contour_kw))
                 )
                 count += 1
+
             elif s.is_implicit:
                 points = s.get_data()
                 if len(points) == 2:
@@ -474,6 +477,7 @@ class PlotlyBackend(Plot):
                         go.Contour(x=x, y=y, z=ones, **merge({}, ckw, contour_kw))
                     )
                 count += 1
+
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
@@ -555,8 +559,9 @@ class PlotlyBackend(Plot):
                             )
                         )
                 count += 1
+
             elif s.is_complex:
-                if s.is_domain_coloring:
+                if not s.is_3Dsurface:
                     x, y, magn_angle, img, colors = s.get_data()
                     xmin, xmax = x.min(), x.max()
                     ymin, ymax = y.min(), y.max()
@@ -650,40 +655,47 @@ class PlotlyBackend(Plot):
                         )
                     # create a solid color to be used when self._use_cm=False
                     col = next(self._cl)
-                    colorscale = [[0, col], [1, col]]
-                    colormap = next(self._cm) if not s.is_complex else next(self._cyccm)
+                    if self._use_cm:
+                        tmp = []
+                        locations = list(range(0, len(colorscale)))
+                        locations = [t / (len(colorscale) - 1) for t in locations]
+                        for loc, c in zip(locations, colorscale):
+                            tmp.append([loc, "rgb" + str(tuple(c))])
+                        colorscale = tmp
+                        # print(colorscale)
+                    else:
+                        colorscale = [[0, col], [1, col]]
+                    colormap = next(self._cyccm)
                     skw = dict(
                         name=s.label,
-                        showscale=self.legend and show_3D_colorscales,
+                        showscale=True,
                         colorbar=dict(
                             x=1 + 0.1 * count,
-                            title=s.label,
+                            title="Argument",
                             titleside="right",
+                            tickvals = [
+                                -self.pi,
+                                -self.pi / 2,
+                                0,
+                                self.pi / 2,
+                                self.pi,
+                            ],
+                            ticktext = [
+                                "-&#x3C0;",
+                                "-&#x3C0; / 2",
+                                "0",
+                                "&#x3C0; / 2",
+                                "&#x3C0;",
+                            ]
                         ),
-                        colorscale=colormap if self._use_cm else colorscale,
+                        cmin = -self.pi,
+                        cmax = self.pi,
+                        colorscale=colorscale,
+                        # colorscale=colormap if self._use_cm else colorscale,
                         surfacecolor=angle,
                         customdata=angle,
                         hovertemplate="x: %{x}<br />y: %{y}<br />Abs: %{z}<br />Arg: %{customdata}",
                     )
-                    m, M = min(angle.flatten()), max(angle.flatten())
-
-                    # show pi symbols on the colorbar if the range is close
-                    # enough to [-pi, pi]
-                    if (abs(m + self.pi) < 1e-02) and (abs(M - self.pi) < 1e-02):
-                        skw["colorbar"]["tickvals"] = [
-                            m,
-                            -self.pi / 2,
-                            0,
-                            self.pi / 2,
-                            M,
-                        ]
-                        skw["colorbar"]["ticktext"] = [
-                            "-&#x3C0;",
-                            "-&#x3C0; / 2",
-                            "0",
-                            "&#x3C0; / 2",
-                            "&#x3C0;",
-                        ]
 
                     surface_kw = self._kwargs.get("surface_kw", dict())
                     self._fig.add_trace(
@@ -736,9 +748,10 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["z"] = z
 
-                elif (s.is_3Dsurface and (not s.is_complex)) or (
-                    s.is_3Dsurface and s.is_complex and (s.real or s.imag)
-                ):
+                # elif (s.is_3Dsurface and (not s.is_complex)) or (
+                #     s.is_3Dsurface and s.is_complex and (s.real or s.imag)
+                # ):
+                elif s.is_3Dsurface and (not s.is_domain_coloring):
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["z"] = z
 
@@ -787,7 +800,7 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["y"] = data["y"]
 
                 elif s.is_complex:
-                    if s.is_domain_coloring:
+                    if not s.is_3Dsurface:
                         raise NotImplementedError
                         # TODO: for some unkown reason, domain_coloring and
                         # interactive plot don't like each other...

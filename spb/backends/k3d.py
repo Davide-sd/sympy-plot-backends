@@ -161,9 +161,7 @@ class K3DBackend(Plot):
                 line = k3d.line(vertices, **merge({}, a, line_kw))
                 self._fig += line
 
-            elif (s.is_3Dsurface and (not s.is_complex)) or (
-                s.is_3Dsurface and s.is_complex and (s.real or s.imag or s.abs)
-            ):
+            elif (s.is_3Dsurface and not s.is_domain_coloring):
                 x, y, z = s.get_data()
                 # K3D doesn't like masked arrays, so filled them with NaN
                 x, y, z = [
@@ -340,6 +338,7 @@ class K3DBackend(Plot):
                 self._fig += k3d.line(
                     vertices.astype(np.float32), **merge({}, skw, stream_kw)
                 )
+
             elif s.is_3Dvector:
                 xx, yy, zz, uu, vv, ww = s.get_data()
                 # K3D doesn't like masked arrays, so filled them with NaN
@@ -380,7 +379,8 @@ class K3DBackend(Plot):
                     colors=vec_colors,
                 )
                 self._fig += vec
-            elif s.is_complex and s.is_3Dsurface and (not s.is_domain_coloring):
+
+            elif s.is_complex and s.is_3Dsurface:
                 x, y, mag_arg, colors, colorscale = s.get_data()
                 mag, arg = mag_arg[:, :, 0], mag_arg[:, :, 1]
 
@@ -414,6 +414,7 @@ class K3DBackend(Plot):
                 surf = k3d.mesh(vertices, indices, **merge({}, a, surface_kw))
 
                 self._fig += surf
+
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
@@ -466,9 +467,7 @@ class K3DBackend(Plot):
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     self._fig.objects[i].vertices = vertices
 
-                elif (s.is_3Dsurface and (not s.is_complex)) or (
-                    s.is_3Dsurface and s.is_complex and (s.real or s.imag)
-                ):
+                elif s.is_3Dsurface and (not s.is_domain_coloring):
                     x, y, z = self.series[i].get_data()
                     x, y, z = [t.flatten().astype(np.float32) for t in [x, y, z]]
                     vertices = np.vstack([x, y, z]).astype(np.float32)

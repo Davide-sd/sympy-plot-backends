@@ -1,7 +1,10 @@
-from sympy import Tuple, re, im, sqrt
+from sympy import Tuple, re, im, sqrt, arg, Symbol
 from spb.series import (
+    LineOver1DRangeSeries,
     ComplexSeries,
     ComplexInteractiveSeries,
+    ComplexPointSeries,
+    ComplexPointInteractiveSeries,
     _set_discretization_points,
     SurfaceOver2DRangeSeries,
     InteractiveSeries,
@@ -12,12 +15,23 @@ from spb.defaults import TWO_D_B, THREE_D_B
 
 def _build_series(*args, interactive=False, **kwargs):
     series = []
-    cls = ComplexSeries if not interactive else ComplexInteractiveSeries
+    # apply the user-specified function to the expression
+    #   keys: the user specified keyword arguments
+    #   values: [function, label]
+    mapping = {
+        "real": [lambda t: re(t), "Re(%s)"],
+        "imag": [lambda t: im(t), "Im(%s)"],
+        "abs": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
+        "absarg": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
+        "arg": [lambda t: arg(t), "Arg(%s)"],
+    }
 
     if all([a.is_complex for a in args]):
         # args is a list of complex numbers
+        cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         for a in args:
-            series.append(cls([a], None, str(a), **kwargs))
+            # series.append(cls([a], None, str(a), **kwargs))
+            series.append(cls([a], str(a), **kwargs))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
@@ -26,8 +40,10 @@ def _build_series(*args, interactive=False, **kwargs):
     ):
         # args is a list of tuples of the form (list, label) where list
         # contains complex points
+        cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         for a in args:
-            series.append(cls(a[0], None, a[-1], **kwargs))
+            # series.append(cls(a[0], None, a[-1], **kwargs))
+            series.append(cls(a[0], a[-1], **kwargs))
     else:
         new_args = []
 
@@ -39,8 +55,19 @@ def _build_series(*args, interactive=False, **kwargs):
             new_args.append(_check_arguments([argument], nexpr, npar)[0])
 
         if all(isinstance(a, (list, tuple, Tuple)) for a in args):
+            # deals with the case:
+            # complex_plot((expr1, "name1"), (expr2, "name2"), range)
+            # Modify the tuples (expr, "name") to (expr, range, "name")
+            npar = len([b for b in args if _is_range(b)])
+            tmp = []
+            for i in range(len(args) - npar):
+                a = args[i]
+                tmp.append(a)
+                if len(a) == 2 and isinstance(a[-1], str):
+                    tmp[i] = (a[0], *args[len(args) - npar:], a[-1])
+
             # plotting multiple expressions
-            for a in args:
+            for a in tmp:
                 add_series(a)
         else:
             # plotting a single expression
@@ -53,28 +80,25 @@ def _build_series(*args, interactive=False, **kwargs):
                 # function of two variables
                 kw = kwargs.copy()
                 real = kw.pop("real", True)
-                imag = kw.pop("imag", False)
+                imag = kw.pop("imag", True)
                 _abs = kw.pop("abs", False)
+                _arg = kw.pop("arg", False)
 
-                def func(flag, key, expr, label):
+                def add_surface_series(flag, key):
                     if flag:
                         kw2 = kw.copy()
                         kw2[key] = True
                         kw2.setdefault("is_complex", True)
+                        f, lbl_wrapper = mapping[key]
                         if not interactive:
-                            series.append(
-                                SurfaceOver2DRangeSeries(expr, *ranges, label, **kw2)
-                            )
+                            series.append(SurfaceOver2DRangeSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
                         else:
-                            series.append(
-                                InteractiveSeries([expr], ranges, label, **kw2)
-                            )
+                            series.append(InteractiveSeries([f(expr)], ranges, lbl_wrapper % label, **kw2))
 
-                func(real, "real", re(expr), "Re(%s)" % label)
-                func(imag, "imag", im(expr), "Im(%s)" % label)
-                func(
-                    _abs, "abs", sqrt(re(expr) ** 2 + im(expr) ** 2), "Abs(%s)" % label
-                )
+                add_surface_series(real, "real")
+                add_surface_series(imag, "imag")
+                add_surface_series(_abs, "abs")
+                add_surface_series(_arg, "arg")
                 continue
 
             # From now on we are dealing with a function of one variable.
@@ -84,8 +108,10 @@ def _build_series(*args, interactive=False, **kwargs):
                 ranges[i] = (r[0], complex(r[1]), complex(r[2]))
 
             if expr.is_complex:
-                # complex number
-                series.append(cls([expr], None, label, **kwargs))
+                # complex number with its own label
+                cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
+                series.append(cls([expr], label, **kwargs))
+
             else:
                 if ranges[0][1].imag == ranges[0][2].imag:
                     # NOTE: as a design choice, a complex function plotted over
@@ -99,36 +125,44 @@ def _build_series(*args, interactive=False, **kwargs):
                     # with iplot (backend._update_interactive).
 
                     kw = kwargs.copy()
-                    real, imag, _abs, arg, absarg = True, True, False, False, False
                     absarg = kw.pop("absarg", False)
                     if absarg:
                         real = kw.pop("real", False)
                         imag = kw.pop("imag", False)
                         _abs = kw.pop("abs", False)
-                        arg = kw.pop("arg", False)
+                        _arg = kw.pop("arg", False)
                     else:
                         real = kw.pop("real", True)
                         imag = kw.pop("imag", True)
                         _abs = kw.pop("abs", False)
-                        arg = kw.pop("arg", False)
+                        _arg = kw.pop("arg", False)
 
-                    def func(flag, key):
+                    def add_line_series(flag, key):
                         if flag:
                             kw2 = kw.copy()
-                            kw2[key] = True
-                            series.append(cls(expr, *ranges, label, **kw2))
+                            # NOTE: in case of absarg=True, set absarg=expr so
+                            # that the series knows the original expression from
+                            # which to compute the argument
+                            kw2[key] = True if key != "absarg" else expr
+                            kw2["is_complex"] = True
+                            f, lbl_wrapper = mapping[key]
+                            if not interactive:
+                                series.append(LineOver1DRangeSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
+                            else:
+                                series.append(InteractiveSeries([f(expr)], ranges, lbl_wrapper % label, **kw2))
 
-                    func(real, "real")
-                    func(imag, "imag")
-                    func(_abs, "abs")
-                    func(arg, "arg")
-                    func(absarg, "absarg")
+                    add_line_series(real, "real")
+                    add_line_series(imag, "imag")
+                    add_line_series(_abs, "abs")
+                    add_line_series(_arg, "arg")
+                    add_line_series(absarg, "absarg")
+
                 else:
-                    # here we have 2D domain coloring or 3D plots
+                    # 2D domain coloring or 3D plots
+                    cls = ComplexSeries if not interactive else ComplexInteractiveSeries
+
                     if not kwargs.get("threed", False):
-                        if (kwargs.get("coloring", None) == "f") and (
-                            not kwargs.get("threed", False)
-                        ):
+                        if kwargs.get("coloring", None) == "f":
                             # NOTE: special case for cplot:
                             # cplot shows contour lines for absolute value and
                             # the argument of a complex function.
@@ -142,7 +176,7 @@ def _build_series(*args, interactive=False, **kwargs):
                             pop_kw("arg", kw1, kw2)
                             pop_kw("abs", kw1, kw2)
                             pop_kw("coloring", kw1)
-                            series.append(cls(expr, *ranges, label, **kw2))
+                            series.append(cls(expr, *ranges, label, domain_coloring=True, **kw2))
                             if kwargs.get("abs", False):
                                 series.append(
                                     cls(expr, *ranges, label, abs=True, **kw1)
@@ -169,25 +203,34 @@ def _build_series(*args, interactive=False, **kwargs):
                                     )
                                 )
                         else:
-                            series.append(cls(expr, *ranges, label, **kwargs))
+                            series.append(cls(expr, *ranges, label, domain_coloring=True, **kwargs))
+
                     else:
+                        # 3D plots of complex functions over a complex range
+
+                        # NOTE: need this kw copy in case the user is plotting
+                        # multiple expressions
                         kw = kwargs.copy()
                         real = kw.pop("real", False)
                         imag = kw.pop("imag", False)
                         _abs = kw.pop("abs", False)
+                        _arg = kw.pop("arg", False)
 
-                        def func(flag, key):
+                        if all(not t for t in [real, imag, _abs, _arg]):
+                            # add abs plot colored by the argument
+                            series.append(cls(expr, *ranges, label, domain_coloring=True, **kwargs))
+
+                        def add_complex_series(flag, key):
                             if flag:
                                 kw2 = kw.copy()
-                                kw2[key] = True
-                                series.append(cls(expr, *ranges, label, **kw2))
+                                kw2["domain_coloring"] = False
+                                f, lbl_wrapper = mapping[key]
+                                series.append(cls(f(expr), *ranges, lbl_wrapper % label, **kw2))
 
-                        if all(not t for t in [real, imag, _abs]):
-                            # add abs plot colored by the argument
-                            series.append(cls(expr, *ranges, label, **kwargs))
-                        func(real, "real")
-                        func(imag, "imag")
-                        func(_abs, "abs")
+                        add_complex_series(real, "real")
+                        add_complex_series(imag, "imag")
+                        add_complex_series(_abs, "abs")
+                        add_complex_series(_arg, "arg")
 
     return series
 
@@ -205,13 +248,15 @@ def complex_plot(*args, show=True, **kwargs):
             argument, if `absarg=True`.
         3. line plot of the modulus and the argument, if `abs=True, arg=True`.
     * function of 2 variables over 2 real ranges:
-        1. By default, a surface plot of the real part is created.
-        2. By toggling `real=True, imag=True, abs=True` we can create surface
-            plots of the real, imaginary part or the absolute value.
+        1. By default, a surface plot of the real and imaginary part is created.
+        2. By toggling `real=True, imag=True, abs=True, arg=True` we can create
+            surface plots of the real, imaginary part or the absolute value or
+            the argument.
     * complex function over a complex range:
         1. domain coloring plot.
         2. 3D plot of the modulus colored by the argument, if `threed=True`.
-        3. 3D plot of the real and imaginary part.
+        3. 3D plot of the real and imaginary part by toggling `real=True`,
+            `imag=True`.
 
     Explore the example below to better understand how to use it.
 

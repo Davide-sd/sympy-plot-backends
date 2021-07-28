@@ -14,8 +14,10 @@ from spb import (
     plot_parametric,
     plot3d_parametric_line,
     complex_plot,
+    geometry_plot
 )
 from sympy import symbols, cos, sin, Matrix, pi, sqrt, I
+from sympy.geometry import Line, Circle, Polygon
 import plotly.graph_objects as go
 import matplotlib
 import matplotlib.pyplot as plt
@@ -156,7 +158,8 @@ p15 = lambda B, line_kw: complex_plot(
     sqrt(x), (x, -5, 5), absarg=True, backend=B, line_kw=line_kw, show=False
 )
 p16 = lambda B, contour_kw: complex_plot(
-    sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, contour_kw=contour_kw, show=False
+    sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, contour_kw=contour_kw,
+    show=False
 )
 p17 = lambda B, surface_kw: complex_plot(
     sqrt(x),
@@ -165,6 +168,15 @@ p17 = lambda B, surface_kw: complex_plot(
     threed=True,
     surface_kw=surface_kw,
     show=False,
+)
+# cplot domain coloring: there should be 2 color bars
+p18 = lambda B, contour_kw: complex_plot(
+    sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, coloring="f",
+    contour_kw=contour_kw, show=False
+)
+p19 = lambda B: geometry_plot(
+    Line((1, 2), (5, 4)), Circle((0, 0), 4), Polygon((2, 2), 3, n=6),
+    backend=B, show=False, fill=False
 )
 
 
@@ -357,9 +369,9 @@ def test_MatplotlibBackend():
     p.process_series()
     f, ax = p.fig
     assert len(ax.get_lines()) == 2
-    assert ax.get_lines()[0].get_label() == "re(sqrt(x))"
+    assert ax.get_lines()[0].get_label() == "Re(sqrt(x))"
     assert ax.get_lines()[0].get_color() == "red"
-    assert ax.get_lines()[1].get_label() == "im(sqrt(x))"
+    assert ax.get_lines()[1].get_label() == "Im(sqrt(x))"
     assert ax.get_lines()[1].get_color() == "red"
 
     p = p15(MB, line_kw=dict(color="red"))
@@ -384,6 +396,15 @@ def test_MatplotlibBackend():
     f, ax = p.fig
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], Poly3DCollection)
+
+    p = p19(MB)
+    assert len(p.series) == 3
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.lines) == 3
+    assert ax.get_lines()[0].get_label() == str(Line((1, 2), (5, 4)))
+    assert ax.get_lines()[1].get_label() == str(Circle((0, 0), 4))
+    assert ax.get_lines()[2].get_label() == str(Polygon((2, 2), 3, n=6))
 
 
 class PBchild(PB):
@@ -440,6 +461,7 @@ def test_PlotlyBackend():
     assert isinstance(f.data[0], go.Scatter)
     assert f.data[0]["name"] == "(cos(x), sin(x))"
     assert f.data[0]["line"]["color"] == "red"
+    assert f.data[0]["marker"]["colorbar"]["title"]["text"] == "(cos(x), sin(x))"
 
     p = p4(PB, line_kw=dict(line_color="red"))
     assert len(p.series) == 1
@@ -461,6 +483,7 @@ def test_PlotlyBackend():
     assert f.data[0]["showscale"] == False
     assert f.data[0]["colorscale"] == ((0, "cyan"), (1, "cyan"))
     assert f.layout["showlegend"] == False
+    assert f.data[0]["colorbar"]["title"]["text"] == "cos(x**2 + y**2)"
 
     p = p6(PB, contour_kw=dict(contours=dict(coloring="lines")))
     assert len(p.series) == 1
@@ -534,10 +557,10 @@ def test_PlotlyBackend():
     assert isinstance(f, go.Figure)
     assert len(f.data) == 2
     assert isinstance(f.data[0], go.Scatter)
-    assert f.data[0]["name"] == "re(sqrt(x))"
+    assert f.data[0]["name"] == "Re(sqrt(x))"
     assert f.data[0]["line"]["color"] == "red"
     assert isinstance(f.data[1], go.Scatter)
-    assert f.data[1]["name"] == "im(sqrt(x))"
+    assert f.data[1]["name"] == "Im(sqrt(x))"
     assert f.data[1]["line"]["color"] == "red"
     assert f.layout["showlegend"] == True
 
@@ -548,6 +571,7 @@ def test_PlotlyBackend():
     assert isinstance(f.data[0], go.Scatter)
     assert f.data[0]["name"] == "Abs(sqrt(x))"
     assert f.data[0]["line"]["color"] == "red"
+    assert p.fig.data[0]["marker"]["colorbar"]["title"]["text"] == "Abs(sqrt(x))"
 
     p = p16(PB, contour_kw=dict())
     assert len(p.series) == 1
@@ -564,8 +588,28 @@ def test_PlotlyBackend():
     assert len(f.data) == 1
     assert isinstance(f.data[0], go.Surface)
     assert f.data[0]["name"] == "sqrt(x)"
-    assert f.data[0]["showscale"] == False
-    assert f.layout["showlegend"] == False
+    assert f.data[0]["showscale"] == True
+    assert f.data[0]["colorbar"]["title"]["text"] == "Argument"
+
+    # cplot domain coloring: there should be 2 color bars
+    p = p18(PB, contour_kw=dict())
+    assert len(p.series) == 1
+    f = p.fig
+    assert len(f.data) == 3
+    assert isinstance(f.data[0], go.Image)
+    assert isinstance(f.data[1], go.Scatter)
+    assert isinstance(f.data[2], go.Scatter)
+    assert f.data[0]["name"] == "sqrt(x)"
+    assert f.data[1]["marker"]["colorbar"]["title"]["text"] == "Argument"
+    assert f.data[2]["marker"]["colorbar"]["title"]["text"] == "Magnitude"
+
+    p = p19(PB)
+    assert len(p.series) == 3
+    f = p.fig
+    assert len(f.data) == 3
+    assert f.data[0]["name"] == str(Line((1, 2), (5, 4)))
+    assert f.data[1]["name"] == str(Circle((0, 0), 4))
+    assert f.data[2]["name"] == str(Polygon((2, 2), 3, n=6))
 
 
 class BBchild(BB):
@@ -620,6 +664,9 @@ def test_BokehBackend():
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, MultiLine)
     assert f.renderers[0].glyph.line_color == "red"
+    # 1 colorbar
+    assert len(p.fig.right) == 1
+    assert p.fig.right[0].title == "(cos(x), sin(x))"
 
     # Bokeh doesn't support 3D plots
     raises(NotImplementedError, lambda: p4(BB, line_kw=dict(line_color="red")))
@@ -634,6 +681,8 @@ def test_BokehBackend():
     f = p.fig
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, Image)
+    # 1 colorbar
+    assert len(f.right) == 1
     assert f.right[0].title == str(cos(x ** 2 + y ** 2))
 
     p = p7(BB, contour_kw=dict(), quiver_kw=dict(line_color="red"))
@@ -642,6 +691,8 @@ def test_BokehBackend():
     assert len(f.renderers) == 2
     assert isinstance(f.renderers[0].glyph, Image)
     assert isinstance(f.renderers[1].glyph, Segment)
+    # 1 colorbar
+    assert len(f.right) == 1
     assert f.right[0].title == "Magnitude"
     assert f.renderers[1].glyph.line_color == "red"
 
@@ -651,6 +702,8 @@ def test_BokehBackend():
     assert len(f.renderers) == 2
     assert isinstance(f.renderers[0].glyph, Image)
     assert isinstance(f.renderers[1].glyph, MultiLine)
+    # 1 colorbar
+    assert len(f.right) == 1
     assert f.right[0].title == "x + y"
     assert f.renderers[1].glyph.line_color == "red"
 
@@ -679,10 +732,10 @@ def test_BokehBackend():
     assert isinstance(f, Figure)
     assert len(f.renderers) == 2
     assert isinstance(f.renderers[0].glyph, Line)
-    assert f.legend[0].items[0].label["value"] == "re(sqrt(x))"
+    assert f.legend[0].items[0].label["value"] == "Re(sqrt(x))"
     assert f.renderers[0].glyph.line_color == "red"
     assert isinstance(f.renderers[1].glyph, Line)
-    assert f.legend[0].items[1].label["value"] == "im(sqrt(x))"
+    assert f.legend[0].items[1].label["value"] == "Im(sqrt(x))"
     assert f.renderers[1].glyph.line_color == "red"
     assert f.legend[0].visible == True
 
@@ -692,12 +745,36 @@ def test_BokehBackend():
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, MultiLine)
     assert f.renderers[0].glyph.line_color == "red"
+    # 1 colorbar
+    assert len(f.right) == 1
+    assert f.right[0].title == "Abs(sqrt(x))"
 
     p = p16(BB, contour_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, ImageRGBA)
+    assert p.fig.right[0].title == "Argument"
+
+    # cplot domain coloring: there should be 2 color bars
+    p = p18(BB, contour_kw=dict())
+    assert len(p.series) == 1
+    f = p.fig
+    assert len(f.renderers) == 1
+    assert isinstance(f.renderers[0].glyph, ImageRGBA)
+    assert len(p.fig.right) == 2
+    assert p.fig.right[0].title == "Argument"
+    assert p.fig.right[1].title == "Magnitude"
+
+    p = p19(BB)
+    assert len(p.series) == 3
+    f = p.fig
+    assert len(f.renderers) == 3
+    # TODO: for some reasons, this fails with:
+    # TypeError: __init__() takes 1 positional argument but 3 were given
+    # assert f.legend[0].items[0].label["value"] == str(Line((1, 2), (5, 4)))
+    assert f.legend[0].items[1].label["value"] == str(Circle((0, 0), 4))
+    assert f.legend[0].items[2].label["value"] == str(Polygon((2, 2), 3, n=6))
 
 
 class KBchild1(KB):

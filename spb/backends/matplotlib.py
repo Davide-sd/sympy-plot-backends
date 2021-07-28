@@ -198,6 +198,9 @@ class MatplotlibBackend(Plot):
                 aspect = "auto"
             elif aspect == "equal":
                 aspect = 1.0
+                if any(s.is_3D for s in self.series):
+                    # for 3D plots, aspect must be "auto"
+                    aspect = "auto"
             else:
                 aspect = float(aspect[1]) / aspect[0]
 
@@ -395,9 +398,8 @@ class MatplotlibBackend(Plot):
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
                 zlims.append((np.amin(z), np.amax(z)))
-            elif (s.is_3Dsurface and (not s.is_complex)) or (
-                s.is_3Dsurface and s.is_complex and (s.real or s.imag)
-            ):
+
+            elif (s.is_3Dsurface and not s.is_domain_coloring):
                 x, y, z = s.get_data()
                 skw = dict(rstride=1, cstride=1, linewidth=0.1)
                 if self._use_cm:
@@ -411,6 +413,7 @@ class MatplotlibBackend(Plot):
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
                 zlims.append((np.amin(z), np.amax(z)))
+
             elif s.is_implicit:
                 points = s.get_data()
                 if len(points) == 2:
@@ -507,7 +510,7 @@ class MatplotlibBackend(Plot):
                     zlims.append((np.amin(zz), np.amax(zz)))
 
             elif s.is_complex:
-                if s.is_domain_coloring:
+                if not s.is_3Dsurface:
                     # x, y, magn_angle, img, discr, colors = self._get_image(s)
                     x, y, _, img, colors = s.get_data()
                     image_kw = self._kwargs.get("image_kw", dict())
@@ -585,6 +588,7 @@ class MatplotlibBackend(Plot):
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(mag), np.amax(mag)))
+
             elif s.is_geometry:
                 x, y = s.get_data()
                 color = next(self._cl)
@@ -593,6 +597,7 @@ class MatplotlibBackend(Plot):
                 kw = merge({}, fkw, fill_kw)
                 c = self.ax.fill(x, y, **kw)
                 self._add_handle(i, c, kw)
+
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
@@ -792,9 +797,7 @@ class MatplotlibBackend(Plot):
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
 
-                elif (s.is_3Dsurface and (not s.is_complex)) or (
-                    s.is_3Dsurface and s.is_complex and (s.real or s.imag)
-                ):
+                elif s.is_3Dsurface and (not s.is_domain_coloring):
                     x, y, z = self.series[i].get_data()
                     # TODO: by setting the keyword arguments, somehow the update
                     # becomes really really slow.
@@ -871,7 +874,7 @@ class MatplotlibBackend(Plot):
                     ylims.append((np.amin(yy), np.amax(yy)))
 
                 elif s.is_complex:
-                    if s.is_domain_coloring:
+                    if not s.is_3Dsurface:
                         x, y, _, img, colors = s.get_data()
                         self._handles[i][0].remove()
                         self._handles[i][0] = self.ax.imshow(img, **self._handles[i][1])
