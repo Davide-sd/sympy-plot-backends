@@ -1291,6 +1291,13 @@ class InteractiveSeries(BaseSeries):
         self.signature = signature
         self.function = f
 
+        self.absarg_f = None
+        if self.absarg is not None:
+            # also lambdify the `absarg` expression
+            from sympy import lambdify, arg as argument
+            self.absarg_f = lambdify(signature, argument(self.absarg),
+                    modules=self.modules)
+
         # Discretize the ranges. In the following dictionary self.ranges:
         #    key: symbol associate to this particular range
         #    val: the numpy array representing the discretization
@@ -1367,12 +1374,10 @@ class InteractiveSeries(BaseSeries):
             results = self.function(*args)
 
         if self.is_complex and (self.absarg is not None):
-            from sympy import lambdify, arg as argument
-            f = lambdify(self.signature, argument(self.absarg), modules=self.modules)
             if self.modules != "mpmath":
-                angle = f(*args)
+                angle = self.absarg_f(*args)
             else:
-                angle = self._evaluate_mpmath(f, args)
+                angle = self._evaluate_mpmath(self.absarg_f, args)
                 angle = np.array([float(a) for a in angle]).reshape(discr.shape)
             results = [results, angle]
 
