@@ -1265,23 +1265,13 @@ class InteractiveSeries(BaseSeries):
             self.is_3Dvector = True
             self.is_slice = False
 
-        if self.is_2Dline and self.is_complex and (self.absarg is not None):
+        if self.is_2Dline and self.is_complex and isinstance(self.absarg, Expr):
             # here we are dealing with a complex line plot with absarg=True.
             # The series should return x, abs, arg so that the line can be
             # colored by the argument.
             self.is_parametric = True
 
-        # from the expression's free symbols, remove the ones used in
-        # the parameters and the ranges
-        fs = set().union(*[e.free_symbols for e in exprs])
-        fs = fs.difference(params.keys()).difference([r[0] for r in ranges])
-        if len(fs) > 0:
-            raise ValueError(
-                "Incompatible expression and parameters.\n"
-                + "Expression: {}\n".format((exprs, ranges, label))
-                + "Specify what these symbols represent: {}\n".format(fs)
-                + "Are they ranges or parameters?"
-            )
+        self._check_fs(exprs, ranges, label, params)
 
         # Generate the lambda function.
         # If we are dealing with parametric expressions, we pack them into a
@@ -1292,7 +1282,7 @@ class InteractiveSeries(BaseSeries):
         self.function = f
 
         self.absarg_f = None
-        if self.absarg is not None:
+        if isinstance(self.absarg, Expr):
             # also lambdify the `absarg` expression
             from sympy import lambdify, arg as argument
             self.absarg_f = lambdify(signature, argument(self.absarg),
@@ -1337,6 +1327,26 @@ class InteractiveSeries(BaseSeries):
         if len(params) > 0:
             self.update_data(params)
 
+    def _check_fs(self, exprs, ranges, label, params):
+        """ Checks if there are enogh parameters and free symbols.
+        This method reduces code repetition.
+        """
+        # from the expression's free symbols, remove the ones used in
+        # the parameters and the ranges
+        fs = set().union(*[e.free_symbols for e in exprs])
+        fs = fs.difference(params.keys())
+        if ranges is not None:
+            fs = fs.difference([r[0] for r in ranges])
+
+        if len(fs) > 0:
+            raise ValueError(
+                "Incompatible expression and parameters.\n"
+                + "Expression: {}\n".format(
+                    (exprs, ranges, label) if ranges is not None else (exprs, label))
+                + "Specify what these symbols represent: {}\n".format(fs)
+                + "Are they ranges or parameters?"
+            )
+
     def _evaluate(self, params):
         """Update the data based on the values of the parameters.
 
@@ -1373,7 +1383,7 @@ class InteractiveSeries(BaseSeries):
                     args.append(self.ranges[s])
             results = self.function(*args)
 
-        if self.is_complex and (self.absarg is not None):
+        if self.is_complex and isinstance(self.absarg, Expr):
             if self.modules != "mpmath":
                 angle = self.absarg_f(*args)
             else:
@@ -1508,18 +1518,7 @@ class ComplexPointInteractiveSeries(InteractiveSeries, ComplexPointSeries):
 
         params = kwargs.get("params", dict())
         self.modules = kwargs.get("modules", None)
-
-        # from the expression's free symbols, remove the ones used in
-        # the parameters and the ranges
-        fs = self.expr.free_symbols
-        fs = fs.difference(params.keys())
-        if len(fs) > 0:
-            raise ValueError(
-                "Incompatible expression and parameters.\n"
-                + "Expression: {}\n".format((expr, label))
-                + "Specify what these symbols represent: {}\n".format(fs)
-                + "Are they ranges or parameters?"
-            )
+        self._check_fs(expr, None, label, params)
 
         # generate the lambda function
         signature, f = get_lambda(self.expr, modules=self.modules)
@@ -1707,17 +1706,7 @@ class ComplexInteractiveSeries(InteractiveSeries, ComplexSeries):
         self.yscale = kwargs.get("yscale", "linear")
         self.modules = kwargs.get("modules", None)
 
-        # from the expression's free symbols, remove the ones used in
-        # the parameters and the ranges
-        fs = expr.free_symbols
-        fs = fs.difference(params.keys()).difference(set([r[0]]))
-        if len(fs) > 0:
-            raise ValueError(
-                "Incompatible expression and parameters.\n"
-                + "Expression: {}\n".format((expr, r, label))
-                + "Specify what these symbols represent: {}\n".format(fs)
-                + "Are they ranges or parameters?"
-            )
+        self._check_fs([expr], [r], label, params)
 
         # generate the lambda function
         signature, f = get_lambda(self.expr, modules=self.modules)
