@@ -24,12 +24,6 @@ def test_cfg():
     assert "bg_color" in cfg["k3d"].keys()
     assert isinstance(cfg["k3d"]["bg_color"], int)
 
-    assert "mayavi" in cfg.keys()
-    assert "bg_color" in cfg["mayavi"].keys()
-    assert isinstance(cfg["mayavi"]["bg_color"], (tuple, list))
-    assert "fg_color" in cfg["mayavi"].keys()
-    assert isinstance(cfg["mayavi"]["fg_color"], (tuple, list))
-
 
 def test_set_defaults():
     x, y = symbols("x, y")
