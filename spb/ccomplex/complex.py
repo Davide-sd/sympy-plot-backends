@@ -467,3 +467,18 @@ def complex_plot(*args, show=True, **kwargs):
     if show:
         p.show()
     return p
+
+def complex_plot3d(*args, **kwargs):
+    """ Wrapper function of `complex_plot`, which sets `threed=True`. As such,
+    it is not guaranteed that the output plot is 3D: it dependes on the user
+    provided arguments.
+
+    Read `complex_plot` documentation to learn about its usage.
+
+    See Also
+    ========
+
+    complex_plot
+    """
+    kwargs["threed"] = True
+    return complex_plot(*args, **kwargs)
