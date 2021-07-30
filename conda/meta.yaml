@@ -54,7 +54,7 @@ test:
   imports:
     - spb
     - spb.backends
-    - spb.complex
+    - spb.ccomplex
 
 about:
   home: {{ data['url'] }}
