@@ -166,7 +166,9 @@ def _build_series(*args, interactive=False, **kwargs):
                     cls = ComplexSeries if not interactive else ComplexInteractiveSeries
 
                     if not kwargs.get("threed", False):
-                        series.append(cls(expr, *ranges, label, domain_coloring=True, **kwargs))
+                        mkw = kwargs.copy()
+                        mkw.setdefault("coloring", cfg["complex"]["coloring"])
+                        series.append(cls(expr, *ranges, label, domain_coloring=True, **mkw))
 
                     else:
                         # 3D plots of complex functions over a complex range
@@ -181,7 +183,9 @@ def _build_series(*args, interactive=False, **kwargs):
 
                         if all(not t for t in [real, imag, _abs, _arg]):
                             # add abs plot colored by the argument
-                            series.append(cls(expr, *ranges, label, domain_coloring=True, **kwargs))
+                            mkw = kwargs.copy()
+                            mkw.setdefault("coloring", cfg["complex"]["coloring"])
+                            series.append(cls(expr, *ranges, label, domain_coloring=True, **mkw))
 
                         def add_complex_series(flag, key):
                             if flag:

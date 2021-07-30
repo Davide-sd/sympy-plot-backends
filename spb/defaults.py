@@ -35,7 +35,8 @@ def _hardcoded_defaults():
         backend_2D="matplotlib",
         backend_3D="matplotlib",
         complex={
-            "modules": None     # "mpmath"
+            "modules": None,     # "mpmath"
+            "coloring": "a"
         }
     )
 
