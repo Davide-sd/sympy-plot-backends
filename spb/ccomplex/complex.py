@@ -360,60 +360,33 @@ def complex_plot(*args, show=True, **kwargs):
     Domain Coloring Arguments
     =========================
 
-        coloring : str
+        coloring : str or callable
             Default to "a". Chose between different coloring options:
             "a": standard domain coloring using HSV.
             "b": enhanced domain coloring using HSV, showing iso-modulus and
                 is-phase lines.
             "c": enhanced domain coloring using HSV, showing iso-modulus lines.
             "d": enhanced domain coloring using HSV, showing iso-phase lines.
-            "e": HSV color grading. Read the following article to understand it:
-                https://www.codeproject.com/Articles/80641/Visualizing-Complex-Functions
-            "f": domain coloring implemented by cplot:
-                https://github.com/nschloe/cplot
-                Use the following keywords to further customize the appearance:
-                    `abs_scaling`: str
-                        Default to "h-1". It can be used to adjust the use of
-                        colors. h with a value less than 1.0 adds more color
-                        which can help isolating the roots and poles (which are
-                        still black and white, respectively). "h-0.0" ignores
-                        the magnitude of f(z) completely. "arctan" is another
-                        possible scaling.
-                    `colorspace` : str
-                        Default to "cam16". Can be set to "hsl" to get the
-                        common fully saturated, vibrant colors.
-                    `abs` and/or `args` : boolean
-                        Set them to True to show contour lines for absolute
-                        value and argument.
-                    `levels` : (n_abs, n_arg)
-                        Number of contour levels for the absolute value and the
-                        argument.
-                WARNING: if `abs=True` and/or `arg=True`, only MatplotlibBackend
-                will be able to render the plot! Moreover, `iplot` won't be
-                able to update these contour lines.
-            "g": alternating black and white stripes corresponding to modulus.
-            "h": alternating black and white stripes corresponding to phase.
-            "i": alternating black and white stripes corresponding to real part.
-            "j": alternating black and white stripes corresponding to imaginary
+            "e": alternating black and white stripes corresponding to modulus.
+            "f": alternating black and white stripes corresponding to phase.
+            "g": alternating black and white stripes corresponding to real part.
+            "h": alternating black and white stripes corresponding to imaginary
                 part.
-            "k": cartesian chessboard on the complex points space. The result
+            "i": cartesian chessboard on the complex points space. The result
                 will hide zeros.
-            "l": polar Chessboard on the complex points space. The result will
+            "j": polar Chessboard on the complex points space. The result will
                 show conformality.
 
-        alpha : float
-            This parameter works when `coloring="f"`.
-            Default to 1. Can be `0 <= alpha <= 1`. It adjust the use of colors.
-            A value less than 1 adds more color which can help isolating the
-            roots and poles (which are still black and white, respectively).
-            alpha=0 ignores the magnitude of f(z) completely.
-
-        colorspace : str
-            This parameter works when `coloring="f"`.
-            Default to `"cam16"`. Other options are `"cielab", "oklab", "hsl"`.
-            It can be set to `"hsl"` to get the common fully saturated, vibrant
-            colors. This is usually a bad idea since it creates artifacts which
-            are not related with the underlying data.
+            The user can also provide a callable, `f(w)`, where `w` is an
+            [n x m] Numpy array (provided by the plotting module) containing
+            the results (complex numbers) of the evaluation of the complex
+            function. The callable should return:
+                img : ndarray [n x m x 3]
+                    An array of RGB colors (0 <= R,G,B <= 255)
+                colorscale : ndarray [N x 3] or None
+                    An array with N RGB colors, (0 <= R,G,B <= 255).
+                    If `colorscale=None`, no color bar will be shown on the
+                    plot.
 
         phaseres : int
             This parameter works when `coloring` is different from `"f"`.

@@ -256,13 +256,15 @@ def test_data_shape():
 
     s = ComplexSeries(1, (x, -5 - 2 * I, 5 + 2 * I), domain_coloring=True,
             modules=None)
-    rr, ii, mag_arg, colors, _ = s.get_data()
+    rr, ii, mag, arg, colors, _ = s.get_data()
     assert (rr.shape == ii.shape) and (rr.shape[:2] == colors.shape[:2])
+    assert (rr.shape == mag.shape) and (rr.shape == arg.shape)
 
     s = ComplexSeries(1, (x, -5 - 2 * I, 5 + 2 * I), domain_coloring=True,
             modules="mpmath")
-    rr, ii, mag_arg, colors, _ = s.get_data()
+    rr, ii, mag, arg, colors, _ = s.get_data()
     assert (rr.shape == ii.shape) and (rr.shape[:2] == colors.shape[:2])
+    assert (rr.shape == mag.shape) and (rr.shape == arg.shape)
 
     # Corresponds to LineOver1DRangeSeries
     s = InteractiveSeries([S.One], [Tuple(x, -5, 5)])

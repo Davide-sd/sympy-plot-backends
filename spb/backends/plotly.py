@@ -8,6 +8,7 @@ import itertools
 import matplotlib.cm as cm
 from spb.backends.utils import convert_colormap
 import warnings
+import numpy as np
 
 """
 TODO:
@@ -562,7 +563,7 @@ class PlotlyBackend(Plot):
 
             elif s.is_complex:
                 if not s.is_3Dsurface:
-                    x, y, magn_angle, img, colors = s.get_data()
+                    x, y, mag, angle, img, colors = s.get_data()
                     xmin, xmax = x.min(), x.max()
                     ymin, ymax = y.min(), y.max()
 
@@ -574,7 +575,7 @@ class PlotlyBackend(Plot):
                             dy=(ymax - ymin) / s.n2,
                             z=img,
                             name=s.label,
-                            customdata=magn_angle,
+                            customdata=np.dstack([mag, angle]),
                             hovertemplate=(
                                 "x: %{x}<br />y: %{y}<br />RGB: %{z}"
                                 + "<br />Abs: %{customdata[0]}<br />Arg: %{customdata[1]}"
@@ -620,33 +621,9 @@ class PlotlyBackend(Plot):
                             )
                         )
 
-                    if s.coloring == "f":
-                        # lightness/magnitude-colorbar
-                        self._fig.add_trace(
-                            go.Scatter(
-                                x=[xmin, xmax],
-                                y=[ymin, ymax],
-                                showlegend=False,
-                                mode="markers",
-                                marker=dict(
-                                    opacity=0,
-                                    colorscale=[[0, "black"], [1, "white"]],
-                                    color=[0, 1e20],
-                                    colorbar=dict(
-                                        tickvals=[0, 1e20],
-                                        ticktext=["0", "&#x221e;"],
-                                        x=1 + 0.1 * (count + 1),
-                                        title="Magnitude",
-                                        titleside="right",
-                                    ),
-                                    showscale=True,
-                                ),
-                            )
-                        )
-                    count += 2
+                    count += 1
                 else:
-                    xx, yy, mag_angle, colors, colorscale = s.get_data()
-                    mag, angle = mag_angle[:, :, 0], mag_angle[:, :, 1]
+                    xx, yy, mag, angle, colors, colorscale = s.get_data()
                     if s.coloring != "a":
                         warnings.warn(
                             "Plotly doesn't support custom coloring "
@@ -810,8 +787,7 @@ class PlotlyBackend(Plot):
                         # self.fig.data[i]["y0"] = -5
                         # # self.fig.data[i]["customdata"] = magn_angle
                     else:
-                        xx, yy, mag_angle, colors, colorscale = s.get_data()
-                        mag, angle = mag_angle[:, :, 0], mag_angle[:, :, 1]
+                        xx, yy, mag, angle, colors, colorscale = s.get_data()
                         self.fig.data[i]["z"] = mag
                         self.fig.data[i]["surfacecolor"] = angle
                         self.fig.data[i]["customdata"] = angle

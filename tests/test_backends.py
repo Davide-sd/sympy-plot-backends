@@ -158,8 +158,8 @@ p15 = lambda B, line_kw: complex_plot(
     sqrt(x), (x, -5, 5), absarg=True, backend=B, line_kw=line_kw, show=False
 )
 p16 = lambda B, contour_kw: complex_plot(
-    sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, contour_kw=contour_kw,
-    show=False
+    sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, coloring="a",
+    contour_kw=contour_kw, show=False
 )
 p17 = lambda B, surface_kw: complex_plot(
     sqrt(x),
@@ -169,12 +169,7 @@ p17 = lambda B, surface_kw: complex_plot(
     surface_kw=surface_kw,
     show=False,
 )
-# cplot domain coloring: there should be 2 color bars
-p18 = lambda B, contour_kw: complex_plot(
-    sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, coloring="f",
-    contour_kw=contour_kw, show=False
-)
-p19 = lambda B: geometry_plot(
+p18 = lambda B: geometry_plot(
     Line((1, 2), (5, 4)), Circle((0, 0), 4), Polygon((2, 2), 3, n=6),
     backend=B, show=False, fill=False
 )
@@ -397,7 +392,7 @@ def test_MatplotlibBackend():
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], Poly3DCollection)
 
-    p = p19(MB)
+    p = p18(MB)
     assert len(p.series) == 3
     p.process_series()
     f, ax = p.fig
@@ -591,19 +586,7 @@ def test_PlotlyBackend():
     assert f.data[0]["showscale"] == True
     assert f.data[0]["colorbar"]["title"]["text"] == "Argument"
 
-    # cplot domain coloring: there should be 2 color bars
-    p = p18(PB, contour_kw=dict())
-    assert len(p.series) == 1
-    f = p.fig
-    assert len(f.data) == 3
-    assert isinstance(f.data[0], go.Image)
-    assert isinstance(f.data[1], go.Scatter)
-    assert isinstance(f.data[2], go.Scatter)
-    assert f.data[0]["name"] == "sqrt(x)"
-    assert f.data[1]["marker"]["colorbar"]["title"]["text"] == "Argument"
-    assert f.data[2]["marker"]["colorbar"]["title"]["text"] == "Magnitude"
-
-    p = p19(PB)
+    p = p18(PB)
     assert len(p.series) == 3
     f = p.fig
     assert len(f.data) == 3
@@ -756,17 +739,7 @@ def test_BokehBackend():
     assert isinstance(f.renderers[0].glyph, ImageRGBA)
     assert p.fig.right[0].title == "Argument"
 
-    # cplot domain coloring: there should be 2 color bars
-    p = p18(BB, contour_kw=dict())
-    assert len(p.series) == 1
-    f = p.fig
-    assert len(f.renderers) == 1
-    assert isinstance(f.renderers[0].glyph, ImageRGBA)
-    assert len(p.fig.right) == 2
-    assert p.fig.right[0].title == "Argument"
-    assert p.fig.right[1].title == "Magnitude"
-
-    p = p19(BB)
+    p = p18(BB)
     assert len(p.series) == 3
     f = p.fig
     assert len(f.renderers) == 3

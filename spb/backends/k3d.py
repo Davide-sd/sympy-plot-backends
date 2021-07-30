@@ -381,8 +381,7 @@ class K3DBackend(Plot):
                 self._fig += vec
 
             elif s.is_complex and s.is_3Dsurface:
-                x, y, mag_arg, colors, colorscale = s.get_data()
-                mag, arg = mag_arg[:, :, 0], mag_arg[:, :, 1]
+                x, y, mag, arg, colors, colorscale = s.get_data()
 
                 x, y, z = [t.flatten() for t in [x, y, mag]]
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
@@ -499,19 +498,16 @@ class K3DBackend(Plot):
                     vectors = np.array((uu, vv, ww)).T * scale
                     self.fig.objects[i].vectors = vectors
 
-                elif s.is_complex:
-                    if s.is_3Dsurface:
-                        x, y, mag_arg, colors, colorscale = s.get_data()
-                        mag, arg = mag_arg[:, :, 0], mag_arg[:, :, 1]
-                        x, y, z = [t.flatten().astype(np.float32) for t in [x, y, mag]]
-                        vertices = np.vstack([x, y, z]).astype(np.float32)
-                        self._fig.objects[i].vertices = vertices.T
-                        if self._use_cm:
-                            colors = colors.reshape((-1, 3))
-                            colors = [self._rgb_to_int(c) for c in colors]
-                            self._fig.objects[i].colors = colors
-                    else:
-                        raise NotImplementedError
+                elif s.is_complex and s.is_3Dsurface:
+                    x, y, mag, _, colors, _ = s.get_data()
+                    x, y, z = [t.flatten().astype(np.float32) for t in [x, y, mag]]
+                    vertices = np.vstack([x, y, z]).astype(np.float32)
+                    self._fig.objects[i].vertices = vertices.T
+                    if self._use_cm:
+                        colors = colors.reshape((-1, 3))
+                        colors = [self._rgb_to_int(c) for c in colors]
+                        self._fig.objects[i].colors = colors
+
         # self._fig.auto_rendering = True
 
     def show(self):

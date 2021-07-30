@@ -499,15 +499,15 @@ class BokehBackend(Plot):
                         self._fig.add_layout(colorbar, "right")
                         self._handles[i] = colorbar
 
-            elif s.is_complex and s.is_domain_coloring:
-                x, y, magn_angle, img, colors = s.get_data()
+            elif s.is_complex and s.is_domain_coloring and not s.is_3Dsurface:
+                x, y, mag, angle, img, colors = s.get_data()
                 img = self._get_img(img)
 
                 source = ColumnDataSource(
                     {
                         "image": [img],
-                        "abs": [magn_angle[:, :, 0]],
-                        "arg": [magn_angle[:, :, 1]],
+                        "abs": [mag],
+                        "arg": [angle],
                     }
                 )
 
@@ -533,17 +533,6 @@ class BokehBackend(Plot):
                         major_label_overrides={k: v for k, v in zip(ticks, labels)},
                     )
                     self._fig.add_layout(colorbar1, "right")
-
-                if s.coloring == "f":
-                    # lightness/magnitude-colorbar
-                    cm2 = LinearColorMapper(palette=bp.gray(100), low=0, high=1)
-                    colorbar2 = ColorBar(
-                        color_mapper=cm2,
-                        title="Magnitude",
-                        ticker=FixedTicker(ticks=[0, 1]),
-                        major_label_overrides={0: "0", 1: "∞"},
-                    )
-                    self._fig.add_layout(colorbar2, "right")
 
             elif s.is_geometry:
                 x, y = s.get_data()
@@ -702,15 +691,15 @@ class BokehBackend(Plot):
                         rend[i].data_source.data.update(data)
                         rend[i].glyph.line_color = line_color
 
-                elif s.is_complex and s.is_domain_coloring:
+                elif s.is_complex and s.is_domain_coloring and not s.is_3Dsurface:
                     # TODO: for some unkown reason, domain_coloring and
                     # interactive plot don't like each other...
-                    x, y, magn_angle, img, _ = s.get_data()
+                    x, y, mag, angle, img, _ = s.get_data()
                     img = self._get_img(img)
                     source = {
                         "image": [img],
-                        "abs": [magn_angle[:, :, 0]],
-                        "arg": [magn_angle[:, :, 1]],
+                        "abs": [mag],
+                        "arg": [angle],
                     }
                     rend[i].data_source.data.update(source)
 

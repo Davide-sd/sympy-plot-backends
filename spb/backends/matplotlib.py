@@ -512,7 +512,7 @@ class MatplotlibBackend(Plot):
             elif s.is_complex:
                 if not s.is_3Dsurface:
                     # x, y, magn_angle, img, discr, colors = self._get_image(s)
-                    x, y, _, img, colors = s.get_data()
+                    x, y, _, _, img, colors = s.get_data()
                     image_kw = self._kwargs.get("image_kw", dict())
                     ikw = dict(
                         extent=[np.amin(x), np.amax(x), np.amin(y), np.amax(y)],
@@ -522,17 +522,6 @@ class MatplotlibBackend(Plot):
                     kw = merge({}, ikw, image_kw)
                     image = self.ax.imshow(img, **kw)
                     self._add_handle(i, image, kw)
-
-                    # lightness/magnitude-colorbar
-                    if s.coloring == "f":
-                        cb1 = self._fig.colorbar(
-                            cm.ScalarMappable(cmap=cm.Greys_r),
-                            orientation="vertical",
-                            label="Magnitude",
-                            ticks=[0, 1],
-                            ax=self.ax,
-                        )
-                        cb1.ax.set_yticklabels(["0", r"$\infty$"])
 
                     # chroma/phase-colorbar
                     if colors is not None:
@@ -551,8 +540,7 @@ class MatplotlibBackend(Plot):
                             [r"-$\pi$", r"-$\pi / 2$", "0", r"$\pi / 2$", r"$\pi$"]
                         )
                 else:
-                    x, y, mag_arg, facecolors, colorscale = s.get_data()
-                    mag = mag_arg[:, :, 0]
+                    x, y, mag, arg, facecolors, colorscale = s.get_data()
 
                     skw = dict(rstride=1, cstride=1, linewidth=0.1)
                     if self._use_cm:
@@ -875,12 +863,11 @@ class MatplotlibBackend(Plot):
 
                 elif s.is_complex:
                     if not s.is_3Dsurface:
-                        x, y, _, img, colors = s.get_data()
+                        x, y, _, _, img, colors = s.get_data()
                         self._handles[i][0].remove()
                         self._handles[i][0] = self.ax.imshow(img, **self._handles[i][1])
                     else:
-                        x, y, mag_arg, facecolors, colorscale = s.get_data()
-                        mag = mag_arg[:, :, 0]
+                        x, y, mag, arg, facecolors, colorscale = s.get_data()
                         self._handles[i][0].remove()
                         kw = self._handles[i][1]
 

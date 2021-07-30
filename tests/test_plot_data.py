@@ -27,6 +27,7 @@ from spb.series import (
     PlaneSeries,
     PlaneInteractiveSeries,
 )
+from spb.ccomplex.wegert import domain_coloring, create_colorscale
 from pytest import raises
 import numpy as np
 
@@ -265,13 +266,25 @@ def test_complex():
     ### Domain coloring: returns x, y, (mag, arg), ...
     s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I),
             n1=10, n2=10, modules=None)
-    data1 = do_test_1(s1, 5, ComplexSeries)
+    data1 = do_test_1(s1, 6, ComplexSeries)
     s2 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I),
             n1=10, n2=10, pt="c", modules=None)
-    data2 = do_test_1(s2, 5, ComplexSeries)
+    data2 = do_test_1(s2, 6, ComplexSeries)
     test_equal_results(data1, data2)
-    _, _, mag_arg, _, _ = data1
-    mag1, arg1 = mag_arg[:, :, 0], mag_arg[:, :, 1]
+    _, _, mag1, arg1, _, _ = data1
+
+    # custom domain coloring function
+    def func(w):
+        return domain_coloring(w), create_colorscale()
+    s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I),
+            n1=10, n2=10, modules=None, coloring=func)
+    data1 = do_test_1(s1, 6, ComplexSeries)
+    s2 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I),
+            n1=10, n2=10, pt="c", modules=None, coloring=func)
+    data2 = do_test_1(s2, 6, ComplexSeries)
+    test_equal_results(data1, data2)
+    _, _, mag1b, arg1b, _, _ = data1
+    test_equal_results([mag1, arg1], [mag1b, arg1b])
 
     ### 3D complex function: real part
     s1 = _build_series(gamma(z), (z, -3 - 3 * I, 3 + 3 * I), n1=10, n2=10,
