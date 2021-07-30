@@ -166,48 +166,7 @@ def _build_series(*args, interactive=False, **kwargs):
                     cls = ComplexSeries if not interactive else ComplexInteractiveSeries
 
                     if not kwargs.get("threed", False):
-                        if kwargs.get("coloring", None) == "f":
-                            # NOTE: special case for cplot:
-                            # cplot shows contour lines for absolute value and
-                            # the argument of a complex function.
-                            def pop_kw(k, *dicts):
-                                for d in dicts:
-                                    if k in d.keys():
-                                        d.pop(k)
-
-                            kw1 = kwargs.copy()
-                            kw2 = kwargs.copy()
-                            pop_kw("arg", kw1, kw2)
-                            pop_kw("abs", kw1, kw2)
-                            pop_kw("coloring", kw1)
-                            series.append(cls(expr, *ranges, label, domain_coloring=True, **kw2))
-                            if kwargs.get("abs", False):
-                                series.append(
-                                    cls(expr, *ranges, label, abs=True, **kw1)
-                                )
-                            if kwargs.get("arg", False):
-                                series.append(
-                                    cls(
-                                        expr,
-                                        *ranges,
-                                        label,
-                                        arg=True,
-                                        levels1=True,
-                                        **kw1
-                                    )
-                                )
-                                series.append(
-                                    cls(
-                                        expr,
-                                        *ranges,
-                                        label,
-                                        arg=True,
-                                        levels1=False,
-                                        **kw1
-                                    )
-                                )
-                        else:
-                            series.append(cls(expr, *ranges, label, domain_coloring=True, **kwargs))
+                        series.append(cls(expr, *ranges, label, domain_coloring=True, **kwargs))
 
                     else:
                         # 3D plots of complex functions over a complex range

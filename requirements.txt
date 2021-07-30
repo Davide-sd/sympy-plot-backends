@@ -15,4 +15,3 @@ ipyevents
 PyQt5
 k3d
 vtk
-cplot

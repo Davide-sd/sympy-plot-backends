@@ -7,7 +7,7 @@ def readme():
 
 setup(
     name="sympy_plot_backends",
-    version="0.12.9",
+    version="0.12.10",
     description="Backends for plotting with SymPy",
     long_description=readme(),
     long_description_content_type="text/markdown",
@@ -42,6 +42,5 @@ setup(
         "ipyevents",
         "k3d",
         "vtk",  # needed for streamlines in k3d
-        "cplot"
     ],
 )
