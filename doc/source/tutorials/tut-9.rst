@@ -35,7 +35,8 @@ like to plot a line:
     plot(sin(x))
 
 .. raw:: html
-	:file: figs/tut-9/fig-01.html
+	
+    <iframe src="../_static/tut-9/fig-01.html" height="500px" width="100%"></iframe>
 
 Note that there are no axis labels. This design choice is motivated by the
 fact that ``smart_plot`` is a very general function which must work with all
@@ -52,7 +53,8 @@ arguments. Let's try to plot a function of two variables:
         xlabel="x", ylabel="y", zlabel="f(x, y)", n=200)
 
 .. raw:: html
-	:file: figs/tut-9/fig-02.html
+	
+    <iframe src="../_static/tut-9/fig-02.html" height="500px" width="100%"></iframe>
 
 What if we would like to draw contours of the previous expression? We need to
 explicitly inform the function of our intentions by setting the ``pt`` keyword
@@ -67,7 +69,8 @@ encounters functions of two variables.
         xlabel="x", ylabel="y", pt="pc")
 
 .. raw:: html
-	:file: figs/tut-9/fig-03.html
+	
+    <iframe src="../_static/tut-9/fig-03.html" height="500px" width="100%"></iframe>
 
 Let's now try to plot a 2D vector field:
 
@@ -76,7 +79,8 @@ Let's now try to plot a 2D vector field:
     plot([-y, x], (x, -5, 5), (y, -3, 3), aspect="equal", n=15, legend=True)
 
 .. raw:: html
-	:file: figs/tut-9/fig-04.html
+	
+    <iframe src="../_static/tut-9/fig-04.html" height="500px" width="100%"></iframe>
 
 What happened? Why is there a shaded region? Why are the ranges not considered?
 
@@ -95,7 +99,8 @@ to quickly plot vector fields, always wrap them into matrices:
         aspect="equal", n=15, legend=True)
 
 .. raw:: html
-	:file: figs/tut-9/fig-05.html
+	
+    <iframe src="../_static/tut-9/fig-05.html" height="500px" width="100%"></iframe>
 
 Let's now try something more complicated. We are going to plot a vector field
 and a line with the same command:
@@ -110,9 +115,11 @@ and a line with the same command:
     )
 
 .. raw:: html
-	:file: figs/tut-9/fig-06.html
+	
+    <iframe src="../_static/tut-9/fig-06.html" height="500px" width="100%"></iframe>
 
 A few things to note here:
+
 * The number of discretization points ``n=20`` has been correctly applied to
   the vector field. However, if we closely inspect the line, it clearly has
   more points. That's because the line has been adaptively sampled. In order
@@ -133,7 +140,7 @@ Let's try to plot a combination of a geometric entity with a line:
         backend=MB, aspect="equal", fill=False
     )
 
-.. figure:: figs/tut-9/fig-07.png
+.. figure:: ../_static/tut-9/fig-07.png
 
 Note that the first tuple only contains one element, the expression
 to be plotted.
@@ -144,4 +151,4 @@ Just for fun, let's try a complex plot:
 
     plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), backend=MB, coloring="b")
 
-.. figure:: figs/tut-9/fig-08.png
+.. figure:: ../_static/tut-9/fig-08.png

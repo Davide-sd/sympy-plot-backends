@@ -104,7 +104,8 @@ Then, we restart the kernel and launch a couple of tests:
     plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), n=n)
 
 .. raw:: html
-	:file: figs/tut-3/fig-02.html
+	
+    <iframe src="../_static/tut-3/fig-02.html" height="500px" width="100%"></iframe>
 
 Let's now discuss a few customization options. The user can read the
 documentation of each backend to find out more information.

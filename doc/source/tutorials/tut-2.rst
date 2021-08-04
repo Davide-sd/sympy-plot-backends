@@ -27,7 +27,7 @@ First, let's examine a plot created with Matplotlib:
     )
     plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), backend=MB)
 
-.. figure:: figs/tut-2/fig-01.png
+.. figure:: ../_static/tut-2/fig-01.png
 
 Here, we can guess what the exact shape of the surface is going to be. We could
 increase the number of discretization points, in the ``u`` and ``v`` directions,
@@ -51,7 +51,8 @@ use ``n1`` and ``n2`` to specify different numbers of discretization points.
                             backend=KB, n=n)
 
 .. raw:: html
-	:file: figs/tut-2/fig-02.html
+	
+    <iframe src="../_static/tut-2/fig-02.html" height="500px" width="100%"></iframe>
 
 To interact with the plot:
 
@@ -93,7 +94,8 @@ we are using, we ultimately have to decide if the plot is correct or not:
     plot3d(expr, backend=KB, n=n)
 
 .. raw:: html
-	:file: figs/tut-2/fig-03.html
+	
+    <iframe src="../_static/tut-2/fig-03.html" height="500px" width="100%"></iframe>
 
 Here, the vertical wall at $x=0$ is rendered, but should not!!! There is a
 discontinuity there.
@@ -112,7 +114,8 @@ mind that K3D natively support latex. Let's try it:
         title=r"\text{K3D - Latex support} \qquad f(x, y) = " + latex(expr))
 
 .. raw:: html
-	:file: figs/tut-2/fig-04.html
+	
+    <iframe src="../_static/tut-2/fig-04.html" height="500px" width="100%"></iframe>
 
 .. code-block:: python
 
@@ -126,7 +129,8 @@ mind that K3D natively support latex. Let's try it:
                             backend=KB, n=n, use_cm=True)
 
 .. raw:: html
-	:file: figs/tut-2/fig-05.html
+	
+    <iframe src="../_static/tut-2/fig-05.html" height="500px" width="100%"></iframe>
 
 Let's now try ``PlotlyBackend``. The main difference between ``PlotlyBackend``
 and ``K3DBackend`` is that the former can stretch the axis, whereas the latter
@@ -140,7 +144,8 @@ reality. We can control this behaviour by setting an appropriate value for the
                             backend=PB, n=n, aspect="cube")
 
 .. raw:: html
-	:file: figs/tut-2/fig-06.html
+	
+    <iframe src="../_static/tut-2/fig-06.html" height="500px" width="100%"></iframe>
 
 Note that the z axis is stretched!
 
@@ -171,7 +176,8 @@ The two other major differences are:
                             backend=PB, n=n)
 
 .. raw:: html
-	:file: figs/tut-2/fig-07.html
+	
+    <iframe src="../_static/tut-2/fig-07.html" height="500px" width="100%"></iframe>
 
 .. code-block:: python
 
@@ -185,4 +191,5 @@ The two other major differences are:
                             backend=KB, n=n)
 
 .. raw:: html
-	:file: figs/tut-2/fig-08.html
+	
+    <iframe src="../_static/tut-2/fig-08.html" height="500px" width="100%"></iframe>

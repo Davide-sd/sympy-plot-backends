@@ -40,7 +40,8 @@ over a real range. All we have to do is the following:
     plot_complex(expr, (x, -2, 2), backend=PB)
 
 .. raw:: html
-	:file: figs/tut-7/fig-01.html
+	
+    <iframe src="../_static/tut-7/fig-01.html" height="500px" width="100%"></iframe>
 
 We set ``absarg=True`` in order to create a plot of the magnitude of a complex
 function colored by its argument:
@@ -50,7 +51,8 @@ function colored by its argument:
     plot_complex(expr, (x, -2, 2), absarg=True, backend=PB)
 
 .. raw:: html
-	:file: figs/tut-7/fig-02.html
+	
+    <iframe src="../_static/tut-7/fig-02.html" height="500px" width="100%"></iframe>
 
 Note that Plotly is unable to plot gradient lines, so the change in phase is
 represented by colored markers. By hovering the markers we get a tooltip
@@ -62,7 +64,7 @@ Let's try a different backend:
 
     plot_complex(expr, (x, -2, 2), absarg=True, backend=MB)
 
-.. figure:: figs/tut-7/fig-03.png
+.. figure:: ../_static/tut-7/fig-03.png
 
 If we are only interested in the absolute value without argument-coloring,
 we can set ``use_cm=False``:
@@ -72,7 +74,8 @@ we can set ``use_cm=False``:
     plot_complex(expr, (x, -2, 2), absarg=True, use_cm=False, backend=PB)
 
 .. raw:: html
-	:file: figs/tut-7/fig-04.html
+	
+    <iframe src="../_static/tut-7/fig-04.html" height="500px" width="100%"></iframe>
 
 Note that we can visualize every quantity by turning on the respective flag:
 
@@ -82,7 +85,8 @@ Note that we can visualize every quantity by turning on the respective flag:
         arg=True, backend=PB)
 
 .. raw:: html
-	:file: figs/tut-7/fig-05.html
+	
+    <iframe src="../_static/tut-7/fig-05.html" height="500px" width="100%"></iframe>
 
 The numerical data of all the above plots have been generated with Numpy.
 We can also choose Mpmath by setting ``modules="mpmath"``: this option will be
@@ -99,7 +103,8 @@ Let's illustrate the differences by plotting the imaginary part of a function:
     (p1 + p2).show()
 
 .. raw:: html
-	:file: figs/tut-7/fig-06.html
+	
+    <iframe src="../_static/tut-7/fig-06.html" height="500px" width="100%"></iframe>
 
 As we can see, there are regions in the plot where Numpy and Mpmath computes
 the same imaginary part, and other regions where the imaginary parts have
@@ -114,7 +119,8 @@ opposite sign. This also leads to different arguments:
     (p1 + p2).show()
 
 .. raw:: html
-	:file: figs/tut-7/fig-07.html
+	
+    <iframe src="../_static/tut-7/fig-07.html" height="500px" width="100%"></iframe>
 
 The above results are also valid when creating domain coloring plots
 (next section). Therefore, the user should carefully select the numerical
@@ -137,7 +143,8 @@ are going to be plotted:
     plot_complex(sqrt(x * y), (x, -5, 5), (y, -5, 5))
 
 .. raw:: html
-	:file: figs/tut-7/fig-08.html
+	
+    <iframe src="../_static/tut-7/fig-08.html" height="500px" width="100%"></iframe>
 
 To plot only the imaginary part:
 
@@ -146,7 +153,8 @@ To plot only the imaginary part:
     plot_complex(sqrt(x * y), (x, -5, 5), (y, -5, 5), real=False, imag=True)
 
 .. raw:: html
-	:file: figs/tut-7/fig-09.html
+	
+    <iframe src="../_static/tut-7/fig-09.html" height="500px" width="100%"></iframe>
 
 To plot the absolute value:
 
@@ -156,7 +164,8 @@ To plot the absolute value:
         real=False, imag=False, abs=True)
 
 .. raw:: html
-	:file: figs/tut-7/fig-10.html
+	
+    <iframe src="../_static/tut-7/fig-10.html" height="500px" width="100%"></iframe>
 
 
 Domain Coloring
@@ -179,7 +188,8 @@ Let's start with the default:
     plot_complex(gamma(z), (z, -4 - 2 * I, 4 + 2 * I), backend=PB)
 
 .. raw:: html
-	:file: figs/tut-7/fig-11.html
+	
+    <iframe src="../_static/tut-7/fig-11.html" height="500px" width="100%"></iframe>
 
 More generally, we can think of the result of domain coloring as a picture.
 The complex domain is discretized with ``n1`` points in the horizontal
@@ -202,7 +212,7 @@ Let's now try a different coloring with ``MatplotlibBackend``:
     plot_complex(gamma(z), (z, -4 - 2 * I, 4 + 2 * I),
         coloring="b", backend=MB)
 
-.. figure:: figs/tut-7/fig-12.png
+.. figure:: ../_static/tut-7/fig-12.png
 
 Note how much faster the picture was generated: there is no javascript
 involved. However, we lost a lot of information: by hovering over the picture,
@@ -217,7 +227,8 @@ argument in 3D, by setting ``threed=True``:
         backend=PB, threed=True, zlim=(0, 10), n=100)
 
 .. raw:: html
-	:file: figs/tut-7/fig-13.html
+	
+    <iframe src="../_static/tut-7/fig-13.html" height="500px" width="100%"></iframe>
 
 There are a few things to point out:
 
@@ -245,7 +256,8 @@ Let's try a different coloring with K3D:
         backend=KB, zlim=(0, 10))
 
 .. raw:: html
-	:file: figs/tut-7/fig-14.html
+	
+    <iframe src="../_static/tut-7/fig-14.html" height="500px" width="100%"></iframe>
 
 Considering that complex functions can go to infinity, a fixed-aspect ratio
 plotting library (like K3D) might not be the best choice! Here we set ``zlim``
@@ -261,7 +273,8 @@ the respective flags:
         zlim=(0, 10), real=True, imag=True, abs=True)
 
 .. raw:: html
-	:file: figs/tut-7/fig-15.html
+	
+    <iframe src="../_static/tut-7/fig-15.html" height="500px" width="100%"></iframe>
 
 Again, we can use "Cotrols -> Objects" and chose which mesh to hide.
 

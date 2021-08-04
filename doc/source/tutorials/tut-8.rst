@@ -76,7 +76,8 @@ requires a different approach:
         (x, 0, 10), backend=PB)
 
 .. raw:: html
-	:file: figs/tut-8/fig-01.html
+	
+    <iframe src="../_static/tut-8/fig-01.html" height="500px" width="100%"></iframe>
 
 Now, we'd like to fill the first curve. First, we extract the figure
 object; then we set the necessary attribute to get the job done:
@@ -88,7 +89,8 @@ object; then we set the necessary attribute to get the job done:
     f
 
 .. raw:: html
-	:file: figs/tut-8/fig-02.html
+	
+    <iframe src="../_static/tut-8/fig-02.html" height="500px" width="100%"></iframe>
 
 At this point we have to convert ``expr3`` to numerical data. We can do
 it with ``get_plot_data``, which requires the same arguments as the
@@ -118,7 +120,8 @@ can add the bars with the appropriate command:
     f
 
 .. raw:: html
-	:file: figs/tut-8/fig-03.html
+	
+    <iframe src="../_static/tut-8/fig-03.html" height="500px" width="100%"></iframe>
 
 Thatâs it, job done.
 
@@ -207,4 +210,4 @@ Finally, we create the custom plot:
     
     plt.show()
 
-.. figure:: figs/tut-8/fig-04.png
+.. figure:: ../_static/tut-8/fig-04.png

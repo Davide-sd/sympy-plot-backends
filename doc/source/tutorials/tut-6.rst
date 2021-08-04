@@ -41,7 +41,7 @@ Let's create simple vector:
     v1 = -sin(y) * i + cos(x) * j
     v1
 
-.. figure:: figs/tut-6/equation-1.png
+.. figure:: ../_static/tut-6/equation-1.png
 
 .. code:: ipython3
 
@@ -49,7 +49,8 @@ Let's create simple vector:
         quiver_kw=dict(scale=0.3))
 
 .. raw:: html
-	:file: figs/tut-6/fig-01.html
+	
+    <iframe src="../_static/tut-6/fig-01.html" height="500px" width="100%"></iframe>
 
 Here, we used Plotly. A few things to note:
 
@@ -76,7 +77,8 @@ magnitude. We can disable it by setting the keyword argument ``scalar=None``:
         quiver_kw=dict(scale=0.3), scalar=None)
 
 .. raw:: html
-	:file: figs/tut-6/fig-02.html
+	
+    <iframe src="../_static/tut-6/fig-02.html" height="500px" width="100%"></iframe>
 
 Alternatively, we can set ``scalar`` to any scalar field, for example:
 
@@ -87,7 +89,8 @@ Alternatively, we can set ``scalar`` to any scalar field, for example:
         quiver_kw=dict(scale=0.3), scalar=x2*y2)
 
 .. raw:: html
-	:file: figs/tut-6/fig-03.html
+	
+    <iframe src="../_static/tut-6/fig-03.html" height="500px" width="100%"></iframe>
 
 Instead of visualizing quivers, we can plot streamlines by setting
 ``streamlines=True``:
@@ -98,7 +101,8 @@ Instead of visualizing quivers, we can plot streamlines by setting
         streamlines=True, stream_kw=dict(density=2, arrow_scale=0.2))
 
 .. raw:: html
-	:file: figs/tut-6/fig-04.html
+	
+    <iframe src="../_static/tut-6/fig-04.html" height="500px" width="100%"></iframe>
 
 A few things to note:
 
@@ -204,7 +208,8 @@ The principle of operation is the same as 2D vector fields.
         xlabel="x", ylabel="y", zlabel="z")
 
 .. raw:: html
-	:file: figs/tut-6/fig-10.html
+	
+    <iframe src="../_static/tut-6/fig-10.html" height="500px" width="100%"></iframe>
 
 A few things to note:
 
@@ -244,7 +249,8 @@ Therefore, we might get a better idea by using streamlines:
     )
 
 .. raw:: html
-	:file: figs/tut-6/fig-11.html
+	
+    <iframe src="../_static/tut-6/fig-11.html" height="500px" width="100%"></iframe>
 
 With the usual ``stream_kw`` dictionary we customize the appearance of the
 streamlines. In order to generate them, we need to provide starting points,
@@ -267,7 +273,8 @@ Now, let's change a little bit the vector for illustrative purposes:
     p1.show()
 
 .. raw:: html
-	:file: figs/tut-6/fig-12.html
+	
+    <iframe src="../_static/tut-6/fig-12.html" height="500px" width="100%"></iframe>
 
 A few things to note here:
 
@@ -290,7 +297,8 @@ Now just for fun, let's visualize the original vector field with K3D:
         xlabel="x", ylabel="y", zlabel="z")
 
 .. raw:: html
-	:file: figs/tut-6/fig-13.html
+	
+    <iframe src="../_static/tut-6/fig-13.html" height="500px" width="100%"></iframe>
 
 Note that we used different keyword argument to customize the size of
 the quivers.

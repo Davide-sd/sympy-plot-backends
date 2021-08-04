@@ -55,7 +55,6 @@ extensions = [
     'sphinx.ext.mathjax',
     'numpydoc',
     'sphinx.ext.viewcode',
-    # 'sphinx_rtd_dark_mode',
     'matplotlib.sphinxext.plot_directive',
     'jupyter_sphinx',   # used to run interactive.py docstring examples
     'nbsphinx',
@@ -63,6 +62,7 @@ extensions = [
     'bokeh.sphinxext.bokeh_plot',
     'bokeh.sphinxext.bokeh_model',
     'sphinx_rtd_theme',
+    # 'sphinx_rtd_dark_mode',
 ]
 
 nbsphinx_allow_errors = True
@@ -111,7 +111,23 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = [
+    '_static',
+    '_static/tut-1',
+    '_static/tut-2',
+    '_static/tut-3',
+    '_static/tut-4',
+    '_static/tut-5',
+    '_static/tut-6',
+    '_static/tut-7',
+    '_static/tut-8',
+    '_static/tut-9',
+]
+
+# html_js_files = [
+#     'k3d.js',
+#     'plotly-2.2.0.min.js',
+# ]
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

@@ -3,7 +3,7 @@
 
 In this tutorial we are going to see how to create simple parametric-interactive
 plots, that is, plots where we can move sliders to change parameters.
-The word _simple_ refer to the fact that:
+The word *simple* refer to the fact that:
 
 * the function expects one-output-value widgets in order to work properly,
   such as sliders, spinners, etc.
@@ -11,7 +11,7 @@ The word _simple_ refer to the fact that:
 * we don't have many options regarding the overall layout.
 
 The function that allows to do that is `iplot`, which stands for
-_interactive plot_. Keep in mind that it only works inside Jupyter Notebook,
+*interactive plot*. Keep in mind that it only works inside Jupyter Notebook,
 since it is based on `holoviz's panel <https://panel.holoviz.org/>`_.
 
 .. jupyter-execute::
@@ -217,13 +217,13 @@ In this example we are going to illustrate the use of
 Let's say we would like to visualize the Fourier Series approximation of a
 `sawtooth wave <https://mathworld.wolfram.com/SawtoothWave.html>`_, defined as:
 
-.. figure:: figs/tut-4/equation-1.png
+.. figure:: ../_static/tut-4/equation-1.png
 
 where ``T`` is the period. Its
 `Fourier Series <https://mathworld.wolfram.com/FourierSeriesSawtoothWave.html>`_
 is:
 
-.. figure:: figs/tut-4/equation-2.png
+.. figure:: ../_static/tut-4/equation-2.png
 
 .. jupyter-execute::
 

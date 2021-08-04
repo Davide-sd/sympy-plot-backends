@@ -53,7 +53,7 @@ Only ``MatplotlibBackend``, ``BokehBackend`` and ``PlotlyBackend`` support
 
     plot(sin(x), cos(x), log(x), backend=MB)
 
-.. figure:: figs/tut-1/fig-01.png
+.. figure:: ../_static/tut-1/fig-01.png
 
 Once we plot multiple expression simultaneously, the legend will automatically
 show up. We can disable it by setting ``legend=False``.
@@ -72,8 +72,9 @@ Let's visualize the same plot with ``PlotlyBackend``:
     plot(sin(x), cos(x), log(x), backend=PB)
 
 .. raw:: html
-	:file: figs/tut-1/fig-02.html
-
+    
+    <iframe src="../_static/tut-1/fig-02.html" height="500px" width="100%"></iframe>
+    
 We can also interact with this plot using the top toolbar, however there are
 more natural ways:
 
@@ -120,7 +121,7 @@ expression. We can do that in the following way:
             backend=MB, legend=True, title="Latex Support",
             xlabel=r"$\xi$", ylabel=r"$\eta$", detect_poles=False)
 
-.. figure:: figs/tut-1/fig-04.png
+.. figure:: ../_static/tut-1/fig-04.png
 
 At the time of writing this, there might be problems when using Plotly with
 Latex on Firefox (https://github.com/plotly/plotly.js/issues/5374).
@@ -141,7 +142,8 @@ detection is turned off, for example:
     plot(tan(x), (x, -10, 10), backend=PB)
 
 .. raw:: html
-	:file: figs/tut-1/fig-05.html
+    
+    <iframe src="../_static/tut-1/fig-05.html" height="500px" width="100%"></iframe>
 
 As we can see, the plot is hardly readable:
 * There is a pretty huge data range covered by the y-axis, thus "flattening"
@@ -155,7 +157,8 @@ We can turn-on the singularity detection by setting ``detect_poles=True``:
     plot(tan(x), (x, -10, 10), backend=PB, detect_poles=True)
 
 .. raw:: html
-	:file: figs/tut-1/fig-06.html
+    
+    <iframe src="../_static/tut-1/fig-06.html" height="500px" width="100%"></iframe>
 
 Here:
 
@@ -183,7 +186,9 @@ detection. We can easily fix it by scrolling the y-axis or by setting the
     plot(tan(x), (x, -10, 10), backend=PB, detect_poles=True, ylim=(-7, 7))
 
 .. raw:: html
-	:file: figs/tut-1/fig-07.html
+    
+    <iframe src="../_static/tut-1/fig-07.html" height="500px" width="100%"></iframe>
+
 
 Plotting Piecewise functions
 ============================
@@ -202,7 +207,7 @@ Finally, we can also correctly plot ``Piecewise`` expressions, for example:
     display(pf)
     plot(pf, backend=MB, detect_poles=True)
 
-.. figure:: figs/tut-1/fig-08.png
+.. figure:: ../_static/tut-1/fig-08.png
 
 As a design choice, the algorithm is going to extract the different pieces and
 plot them separately. Note that points are visible too!
