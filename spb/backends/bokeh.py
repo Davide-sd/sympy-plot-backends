@@ -217,52 +217,57 @@ def compute_streamlines(x, y, u, v, density=1.0):
 
 
 class BokehBackend(Plot):
-    """A backend for plotting SymPy's symbolic expressions using Bokeh.
-    Note: this implementation only implements 2D plots.
+    """
+    A backend for plotting SymPy's symbolic expressions using Bokeh.
+    This implementation only supports 2D plots.
 
-    Keyword Arguments
-    =================
+    Parameters
+    ==========
 
-        contour_kw : dict
-            A dictionary with keyword arguments to customize the contour.
-            This might be useful to change the `palette` to a custom value.
+    contour_kw : dict, optional
+        A dictionary with keyword arguments to customize the contour.
+        This might be useful to change the `palette` to a custom value.
 
-        line_kw : dict
-            A dictionary of keywords/values which is passed to Plotly's scatter
-            functions to customize the appearance. Default to:
-            ``line_kw = dict(line_width = 2)``
-            Refer to this documentation page:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html?highlight=line#bokeh.plotting.Figure.line
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to Plotly's scatter
+        functions to customize the appearance. Default to:
+        ``line_kw = dict(line_width = 2)``
+        Refer to this documentation page:
+        https://docs.bokeh.org/en/latest/docs/reference/plotting.html?highlight=line#bokeh.plotting.Figure.line
 
-        quiver_kw : dict
-            A dictionary with keyword arguments to customize the quivers.
-            Default to:
-                ```dict(
-                        scale = 1,
-                        pivot = "mid",      # can be "mid", "tip" or "tail"
-                        arrow_heads = True,  # show/hide arrow
-                        line_width = 1
-                    )
-                ```
+    quiver_kw : dict, optional
+        A dictionary with keyword arguments to customize the quivers.
+        Default to
 
-        stream_kw : dict
-            A dictionary with keyword arguments to customize the streamlines.
-            Default to: ``dict(line_width=2, line_alpha=0.8)``
+        .. code-block:: python
 
-        theme : str
-            Set the theme. Default to "dark_minimal". Find more Bokeh themes at
-            the following page:
-            https://docs.bokeh.org/en/latest/docs/reference/themes.html
+           dict(
+               scale = 1,
+               pivot = "mid",      # "mid", "tip" or "tail"
+               arrow_heads = True,  # show/hide arrow
+               line_width = 1
+           )
 
-    Export
-    ======
+    stream_kw : dict, optional
+        A dictionary with keyword arguments to customize the streamlines.
+        Default to: ``dict(line_width=2, line_alpha=0.8)``
 
-    In order to export the plots you will need to install the packages listed
-    in the following page:
+    theme : str, optional
+        Set the theme. Default to ``"dark_minimal"``. Find more Bokeh themes
+        at the following page:
+        https://docs.bokeh.org/en/latest/docs/reference/themes.html
+
+
+    Notes
+    =====
+
+    In order to export the plots, the user also need to install the packages
+    listed in the following page:
     https://docs.bokeh.org/en/latest/docs/user_guide/export.html
 
     At the time of writing this backend, geckodriver is not available to pip.
     Do a quick search on the web to find the appropriate installer.
+
     """
 
     _library = "bokeh"
@@ -709,9 +714,20 @@ class BokehBackend(Plot):
                     rend[i].data_source.data.update(source)
 
     def save(self, path, **kwargs):
-        self._process_series(self._series)
+        # TODO: an error get raised if I uncomment the following line
+        # self._process_series(self._series)
         ext = os.path.splitext(path)[1]
-        if ext == ".svg":
+
+        # TODO:
+        # https://docs.bokeh.org/en/latest/docs/user_guide/embed.html
+        
+        if (ext == ".html") or (ext == ".htm"):
+            from bokeh.resources import CDN
+            from bokeh.embed import file_html
+            html = file_html(self.fig, CDN, "bokeh_plot")
+            with open(path, 'w') as f:
+                f.write(html)
+        elif ext == ".svg":
             self._fig.output_backend = "svg"
             export_svg(self.fig, filename=path)
         else:

@@ -54,83 +54,81 @@ def _matplotlib_list(interval_list):
 
 
 class MatplotlibBackend(Plot):
-    """A backend for plotting SymPy's symbolic expressions using Matplotlib.
+    """
+    A backend for plotting SymPy's symbolic expressions using Matplotlib.
 
-    Keyword Arguments
-    =================
+    Parameters
+    ==========
 
-        aspect : str or tuple
-            Default to "auto". Possible values:
-                * "equal": sets equal spacing on the axis of a 2D plot.
-                * tuple containing 2 float numbers
+    aspect : str or tuple, optional
+        Default to ``"auto"``. Possible values:
 
-        axis_center : str or None
-            Set the location of the intersection between the horizontal and
-            vertical axis (only works for 2D plots). Possible values:
-                "center": center of the current plot area.
-                "auto": an algorithm will choose an appropriate value.
-                tuple of two float numbers to specify the interested center.
-                None: standard Matplotlib layout with vertical axis on the left,
-                    horizontal axis on the bottom and a grid.
-            Default to "auto".
+        * ``"equal"``: sets equal spacing on the axis of a 2D plot.
+        * tuple containing 2 float numbers
 
-        contour_kw : dict
-            A dictionary of keywords/values which is passed to Matplotlib's
-            contour/contourf function to customize the appearance.
-            Refer to the following web page to learn more about customization:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
+    axis_center : str or None, optional
+        Set the location of the intersection between the horizontal and
+        vertical axis (only works for 2D plots). Possible values:
 
-        image_kw : dict
-            A dictionary of keywords/values which is passed to Matplotlib's
-            imshow function to customize the appearance.
-            Refer to the following web page to learn more about customization:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
+        * ``"center"``: center of the current plot area.
+        * ``"auto"``: an algorithm will choose an appropriate value.
+        * tuple of two float numbers to specify the interested center.
+        * ``None``: standard Matplotlib layout with vertical axis on the left,
+          horizontal axis on the bottom and a grid.
+        
+        Default to ``"auto"``.
 
-        line_kw : dict
-            A dictionary of keywords/values which is passed to Matplotlib's
-            plot functions to customize the appearance of the lines.
-            Refer to the following web pages to learn more about customization:
-                If the plot is using solid colors:
-                https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-                If the plot is using color maps:
-                https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+    contour_kw : dict, optional
+        A dictionary of keywords/values which is passed to Matplotlib's
+        contour/contourf function to customize the appearance.
+        Refer to the following web page to learn more about customization:
+        https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
 
-        quiver_kw : dict
-            A dictionary of keywords/values which is passed to Matplotlib's
-            quivers function to customize the appearance.
-            Refer to this documentation page:
-            https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
+    image_kw : dict, optional
+        A dictionary of keywords/values which is passed to Matplotlib's
+        imshow function to customize the appearance.
+        Refer to the following web page to learn more about customization:
+        https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
 
-        surface_kw : dict
-            A dictionary of keywords/values which is passed to Matplotlib's
-            surface function to customize the appearance.
-            Refer to this documentation page:
-            https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to Matplotlib's plot
+        functions to customize the appearance of the lines.
+        Refer to the following web pages to learn more about customization:
+        
+        * If the plot is using solid colors:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+        * If the plot is using color maps:
+          https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
 
-        stream_kw : dict
-            A dictionary of keywords/values which is passed to Matplotlib's
-            streamplot function to customize the appearance.
-            For 2D vector fields, refer to this documentation page:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+    quiver_kw : dict, optional
+        A dictionary of keywords/values which is passed to Matplotlib's quivers
+        function to customize the appearance.
+        Refer to this documentation page:
+        https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
 
-        use_cm : boolean
-            If True, apply a color map to the mesh/surface or parametric lines.
-            If False, solid colors will be used instead. Default to True.
+    surface_kw : dict, optional
+        A dictionary of keywords/values which is passed to Matplotlib's
+        surface function to customize the appearance.
+        Refer to this documentation page:
+        https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
+
+    stream_kw : dict, optional
+        A dictionary of keywords/values which is passed to Matplotlib's
+        streamplot function to customize the appearance.
+        For 2D vector fields, refer to this documentation page:
+        https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+
+    use_cm : boolean, optional
+        If True, apply a color map to the mesh/surface or parametric lines.
+        If False, solid colors will be used instead. Default to True.
+
     """
 
     _library = "matplotlib"
 
     colormaps = [
-        cm.viridis,
-        cm.autumn,
-        cm.winter,
-        cm.plasma,
-        cm.jet,
-        cm.gnuplot,
-        cm.brg,
-        cm.coolwarm,
-        cm.cool,
-        cm.summer,
+        cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
+        cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer,
     ]
 
     cyclic_colormaps = [cm.twilight, cm.hsv]
@@ -227,7 +225,8 @@ class MatplotlibBackend(Plot):
 
     @staticmethod
     def get_segments(x, y, z=None):
-        """Convert two list of coordinates to a list of segments to be used
+        """
+        Convert two list of coordinates to a list of segments to be used
         with Matplotlib's LineCollection.
 
         Parameters
@@ -507,7 +506,7 @@ class MatplotlibBackend(Plot):
                         self._add_handle(i, q, kw, is_cb_added, self._fig.axes[-1])
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
-                    zlims.append((np.amin(zz), np.amax(zz)))
+                    zlims.append((np.nanmin(zz), np.nanmax(zz)))
 
             elif s.is_complex:
                 if not s.is_3Dsurface:
@@ -834,7 +833,7 @@ class MatplotlibBackend(Plot):
                         self._update_colorbar(cax, magn, kw, s.label)
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
-                    zlims.append((np.amin(zz), np.amax(zz)))
+                    zlims.append((np.nanmin(zz), np.nanmax(zz)))
 
                 elif s.is_vector:
                     xx, yy, uu, vv = self.series[i].get_data()

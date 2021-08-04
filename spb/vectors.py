@@ -263,14 +263,24 @@ def _preprocess(*args, matrices=False, fill_ranges=True):
     return new_args
 
 
-def vector_plot(*args, show=True, **kwargs):
-    """Plot a 2D or 3D vector field. By default, the aspect ratio of the plot
+def plot_vector(*args, show=True, **kwargs):
+    """
+    Plot a 2D or 3D vector field. By default, the aspect ratio of the plot
     is set to ``aspect="equal"``.
 
-    Arguments
-    =========
+    Typical usage examples are in the followings:
+
+    - Plotting a vector field with a single range.
+        ``plot(expr, range1, range2, range3 [optional], **kwargs)``
+    - Plotting multiple vector fields with different ranges and custom labels.
+        ``plot((expr1, range1, range2, range3 [optional], label1), (expr2, range4, range5, range6 [optional], label2), **kwargs)``
+
+    Parameters
+    ==========
+
+    args :
         expr : Vector, or Matrix with 2 or 3 elements, or list/tuple  with 2 or
-                3 elements)
+                3 elements
             Represent the vector to be plotted.
             Note: if a 3D vector is given with a list/tuple, it might happens
             that the internal algorithm could think of it as a range. Therefore,
@@ -282,116 +292,154 @@ def vector_plot(*args, show=True, **kwargs):
             vector plots, 2 ranges should be provided. For 3D vector plots, 3
             ranges are needed.
 
-        label : str
+        label : str, optional
             The name of the vector field to be eventually shown on the legend.
             If none is provided, the string representation of the vector will
             be used.
 
-        To specify multiple vector fields, wrap them into a tuple. Refer to the
-        examples to learn more.
+    contours_kw : dict
+        A dictionary of keywords/values which is passed to the backend
+        contour function to customize the appearance. Refer to the plotting
+        library (backend) manual for more informations.
 
-    Keyword Arguments
-    =================
+    n1, n2, n3 : int
+        Number of discretization points for the quivers or streamlines in the
+        x/y/z-direction, respectively. Default to 25.
 
-        contours_kw : dict
-            A dictionary of keywords/values which is passed to the plotting
-            library contour function to customize the appearance. Refer to the
-            plotting library (backend) manual for more informations.
+    n : int
+        Set the same number of discretization points in all directions for
+        the quivers or streamlines. It overrides ``n1``, ``n2``, ``n3``.
+        Default to 25.
 
-        n1, n2, n3 : int
-            Number of discretization points in the x/y/z-direction respectively
-            for the quivers or streamlines. Default to 25.
+    nc : int
+        Number of discretization points for the scalar contour plot.
+        Default to 100.
 
-        n : int
-            Set the same number of discretization points in all directions for
-            the quivers or streamlines. It overrides n1, n2, n3. Default to 25.
+    quiver_kw : dict
+        A dictionary of keywords/values which is passed to the backend quivers-
+        plotting function to customize the appearance. Refer to the plotting
+        library (backend) manual for more informations.
 
-        nc : int
-            Number of discretization points for the scalar contour plot.
-            Default to 100.
+    scalar : boolean, Expr, None or list/tuple of 2 elements
+        Represents the scalar field to be plotted in the background of a 2D
+        vector field plot. Can be:
 
-        quiver_kw : dict
-            A dictionary of keywords/values which is passed to the plotting
-            library quivers function to customize the appearance. Refer to the
-            plotting library (backend) manual for more informations.
+            - True: plot the magnitude of the vector field. Only works when a
+              single vector field is plotted.
+            - False/None: do not plot any scalar field.
+            - Expr: a symbolic expression representing the scalar field.
+            - List/Tuple: [scalar_expr, label], where the label will be shown
+              on the colorbar.
+        Default to True.
 
-        scalar : boolean, Expr, None or list/tuple of 2 elements
-            Represents the scalar field to be plotted in the background. Can be:
-                True: plot the magnitude of the vector field.
-                False/None: do not plot any scalar field.
-                Expr: a symbolic expression representing the scalar field.
-                List/Tuple: [scalar_expr, label], where the label will be shown
-                    on the colorbar.
-            Default to True.
+    show : boolean
+        The default value is set to ``True``. Set show to ``False`` and
+        the function will not display the plot. The returned instance of
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
-        show : boolean
-            Default to True, in which case the plot will be shown on the screen.
+    slice : Plane, list, Expr
+        Plot the 3D vector field over the provided slice. It can be:
+            - a Plane object from sympy.geometry module.
+            - a list of planes.
+            - a symbolic expression representing a surface of two variables.
+        The number of discretization points will be ``n1``, ``n2``, ``n3``.
+        Note that:
+            - only quivers plots are supported with slices. Streamlines plots
+              are unaffected.
+            - ``n3`` will only be used with planes parallel to xz or yz.
 
-        slice : Plane, list, Expr
-            Plot the 3D vector field over the provided slice. It can be:
-                Plane: a Plane object from sympy.geometry module.
-                list: a list of planes.
-                Expr: a symbolic expression representing a surface.
-            The number of discretization points will be `n1`, `n2`, `n3`.
-            Note that:
-                1. only quivers plots are supported with slices.
-                2. `n3` will be used only with planes parallel to xz or yz.
+    streamlines : boolean
+        Whether to plot the vector field using streamlines (True) or quivers
+        (False). Default to False.
 
-        streamlines : boolean
-            Whether to plot the vector field using streamlines (True) or quivers
-            (False). Default to False.
-
-        stream_kw : dict
-            A dictionary of keywords/values which is passed to the backend
-            streamlines-plotting function to customize the appearance. Refer to
-            the backend's manual for more informations.
+    stream_kw : dict
+        A dictionary of keywords/values which is passed to the backend
+        streamlines-plotting function to customize the appearance. Refer to
+        the backend's manual for more informations.
 
     Examples
     ========
 
+    .. plot::
+        :context: reset
+        :format: doctest
+        :include-source: True
+
+        >>> from sympy import symbols, sin, cos, Plane, Matrix, sqrt
+        >>> from spb.vectors import plot_vector
+        >>> x, y, z = symbols('x, y, z')
+
     Quivers plot of a 2D vector field with a contour plot in background
-    representing the vector's magnitude (a scalar field):
+    representing the vector's magnitude (a scalar field).
 
-    .. code-block:: python
-        x, y = symbols("x, y")
-        vector_plot([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3))
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
 
+        >>> plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3))
+        Plot object containing:
+        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
-    Streamlines plot of a 2D vector field with no background scalar field:
+    Streamlines plot of a 2D vector field with no background scalar field.
 
-    .. code-block:: python
-        x, y = symbols("x, y")
-        vector_plot([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
-                streamlines=True, scalar=None)
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
 
-
-    Plot of two 2D vectors with background the contour plot of magnitude of the
-    first vector:
-
-    .. code-block:: python
-        x, y = symbols("x, y")
-        vector_plot([-sin(y), cos(x)], [y, x], n=20,
-            scalar=sqrt((-sin(y))**2 + cos(x)**2), legend=True)
-
-
-    3D vector field:
-
-    .. code-block:: python
-        x, y, z = symbols("x, y, z")
-        vector_plot([x, y, z], (x, -10, 10), (y, -10, 10), (z, -10, 10),
-                n=8)
+        >>> plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
+        ...     streamlines=True, scalar=None)
+        Plot object containing:
+        [0]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
 
-    3D vector field with 3 orthogonal slice planes:
+    Plot multiple 2D vectors fields, setting a background scalar field to be
+    the magnitude of the first vector.
 
-    .. code-block:: python
-        x, y, z = symbols("x, y, z")
-        vector_plot([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10), n=8,
-            slice=[
-                Plane((-10, 0, 0), (1, 0, 0)),
-                Plane((0, -10, 0), (0, 2, 0)),
-                Plane((0, 0, -10), (0, 0, 1)),
-            ])
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_vector([-sin(y), cos(x)], [y, x], (x, -5, 5), (y, -3, 3), n=20,
+        ...     scalar=sqrt((-sin(y))**2 + cos(x)**2), legend=True)
+        Plot object containing:
+        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)
+        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -5.0, 5.0), (y, -3.0, 3.0)
+        [2]: 2D vector series: [y, x] over (x, -5.0, 5.0), (y, -3.0, 3.0)
+
+    3D vector field.
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_vector([x, y, z], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+        ...     n=8)
+        Plot object containing:
+        [0]: 3D vector series: [x, y, z] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0)
+
+    3D vector field with 3 orthogonal slice planes.
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+        ...     n=8, slice=[
+        ...         Plane((-10, 0, 0), (1, 0, 0)),
+        ...         Plane((0, -10, 0), (0, 2, 0)),
+        ...         Plane((0, 0, -10), (0, 0, 1))])
+        Plot object containing:
+        [0]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(-10, 0, 0), (1, 0, 0))
+        [1]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, -10, 0), (0, 2, 0))
+        [2]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, 0, -10), (0, 0, 1))
+    
     """
     args = _plot_sympify(args)
     args = _preprocess(*args)

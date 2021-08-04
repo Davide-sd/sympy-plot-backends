@@ -41,6 +41,11 @@ def _hardcoded_defaults():
     )
 
 
+def get_default_settings():
+    """Return the default setting dictionary for inspection."""
+    return _hardcoded_defaults()
+
+
 def reset():
     """Restore original settings."""
     set_defaults(_hardcoded_defaults())
@@ -119,19 +124,16 @@ def set_defaults(cfg):
         cfg : dict
             Dictionary containing the new values
 
-    Example
-    =======
+    Examples
+    ========
 
-    Change the default 2D plotting backend to BokehBackend and set the its
-    theme to "night_sky"
+    Change the default 2D plotting backend to MatplotlibBackend.
 
-    .. code-block:: python
-        from spb.defaults import cfg, set_defaults
-        ## to visualize the available options
-        # print(cfg)
-        cfg["backend_2D"] = "bokeh"
-        cfg["bokeh"]["theme"] = "night_sky"
-        set_defaults(cfg)
+        >>> from spb.defaults import cfg, set_defaults
+        >>> ## to visualize the current settings
+        >>> # print(cfg)
+        >>> cfg["backend_2D"] = "matplotlib"
+        >>> set_defaults(cfg)
 
     """
     with open(file_path, "w", encoding="utf-8") as f:

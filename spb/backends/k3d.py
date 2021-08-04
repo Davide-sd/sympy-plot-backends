@@ -17,34 +17,35 @@ import colorcet as cc
 class K3DBackend(Plot):
     """A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
 
-    Keyword Arguments
-    =================
+    Parameters
+    ==========
 
-        line_kw : dict
-            A dictionary of keywords/values which is passed to K3D's line
-            functions to customize the appearance. Default to:
-            ``line_kw = dict(width=0.1, shader="mesh")``
-            Set `use_cm=False` to switch to a solid color.
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to K3D's line
+        functions to customize the appearance. Default to:
+        ``line_kw = dict(width=0.1, shader="mesh")``
+        Set ``use_cm=False`` to switch to a solid color.
 
-        quiver_kw : dict
-            A dictionary to customize the apppearance of quivers. Default to:
-            ``quiver_kw = dict(scale = 1)``.
-            Set `use_cm=False` to switch to a solid color.
+    quiver_kw : dict, optional
+        A dictionary to customize the apppearance of quivers. Default to:
+        ``quiver_kw = dict(scale = 1)``.
+        Set ``use_cm=False`` to switch to a solid color.
 
-        show_label : boolean
-            Show/hide labels of the expressions. Default to False (labels not
-            visible).
+    show_label : boolean, optional
+        Show/hide labels of the expressions. Default to False (labels not
+        visible).
 
-        stream_kw : dict
-            A dictionary to customize the apppearance of streamlines.
-            Default to:
-            ``stream_kw = dict( width=0.1, shader='mesh' )``
-            Refer to k3d.line for more options.
-            Set `use_cm=False` to switch to a solid color.
+    stream_kw : dict, optional
+        A dictionary to customize the apppearance of streamlines.
+        Default to:
+        ``stream_kw = dict( width=0.1, shader='mesh' )``
+        Refer to k3d.line for more options.
+        Set ``use_cm=False`` to switch to a solid color.
 
-        use_cm : boolean
-            If True, apply a color map to the meshes/surface. If False, solid
-            colors will be used instead. Default to True.
+    use_cm : boolean, optional
+        If True, apply a color map to the meshes/surface. If False, solid
+        colors will be used instead. Default to True.
+
     """
 
     _library = "k3d"

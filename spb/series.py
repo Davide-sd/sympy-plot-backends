@@ -246,7 +246,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.polar = kwargs.get("polar", False)
         self.modules = kwargs.get("modules", None)
         self.absarg = kwargs.get("absarg", None)
-        if self.absarg is not None:
+        if self.is_complex and (self.absarg is not None):
             self.is_parametric = True
 
     def __str__(self):
@@ -732,8 +732,8 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         self.start_y = func(var_start_end_y[1])
         self.end_y = func(var_start_end_y[2])
         self.label = label
-        self.n1 = kwargs.get("n1", 50)
-        self.n2 = kwargs.get("n2", 50)
+        self.n1 = kwargs.get("n1", 100)
+        self.n2 = kwargs.get("n2", 100)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.modules = kwargs.get("modules", None)
@@ -1208,6 +1208,7 @@ class InteractiveSeries(BaseSeries):
         self.modules = kwargs.get("modules", None)
         self.absarg = kwargs.get("absarg", None)
 
+        self.polar = kwargs.get("polar", False)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.label = label
@@ -1431,6 +1432,11 @@ class InteractiveSeries(BaseSeries):
                 results = [np.real(r) for r in results]
             else:
                 results = [*self.ranges.values(), results]
+                if self.is_2Dline and self.polar:
+                    # TODO: test this!!!!
+                    t = results[0].copy()
+                    k = results[1].copy()
+                    results = [k * np.cos(t), k * np.sin(t)]
             self.data = results
 
         elif self.is_implicit:
@@ -1511,6 +1517,12 @@ class ComplexPointSeries(BaseSeries):
 
     def get_data(self):
         return self._evaluate(self.expr)
+    
+    def __str__(self):
+        p = "point"
+        if len(self.expr) > 1:
+            p += "s"
+        return "complex %s %s" % (p, self.expr)
 
 class ComplexPointInteractiveSeries(InteractiveSeries, ComplexPointSeries):
     def __init__(self, expr, label="", **kwargs):
@@ -1579,6 +1591,17 @@ class ComplexSeries(BaseSeries):
             raise TypeError(
                 "`coloring` must be a character from 'a' to 'j' or a callable.")
         self.phaseres = kwargs.get("phaseres", 20)
+    
+    def __str__(self):
+        from sympy import re, im
+        prefix = "cartesian surface" if self.is_3Dsurface else "domain coloring"
+        return (prefix + ": %s for" " %s over %s and %s over %s") % (
+                str(self.expr),
+                str(re(self.var)),
+                str((self.start.real, self.end.real)),
+                str(im(self.var)),
+                str((self.start.imag, self.end.imag)),
+            )
 
     def _correct_output(self, x, r):
         """Obtain the correct output depending the initialized settings.
@@ -1740,6 +1763,13 @@ class Vector2DSeries(VectorBase):
         self.u = SurfaceOver2DRangeSeries(u, range1, range2, **kwargs)
         self.v = SurfaceOver2DRangeSeries(v, range1, range2, **kwargs)
         self.label = label
+    
+    def __str__(self):
+        r1 = (self.u.var_x, self.u.start_x, self.u.end_x)
+        r2 = (self.u.var_y, self.u.start_y, self.u.end_y)
+        return "2D vector series: [%s, %s] over %s, %s" % (
+            self.u.expr, self.v.expr, r1, r2
+        )
 
     def get_data(self):
         x, y, u = self.u.get_data()
@@ -1773,6 +1803,14 @@ class Vector3DSeries(VectorBase):
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
+    
+    def __str__(self):
+        r1 = (self.var_x, self.start_x, self.end_x)
+        r2 = (self.var_y, self.start_y, self.end_y)
+        r3 = (self.var_z, self.start_z, self.end_z)
+        return "3D vector series: [%s, %s, %s] over %s, %s, %s" % (
+            self.u, self.v, self.w, r1, r2, r3
+        )
 
     def _discretize(self):
         """This method allows to reduce code repetition."""
@@ -1822,6 +1860,16 @@ class SliceVector3DSeries(Vector3DSeries):
     def _discretize(self):
         """This method allows to reduce code repetition."""
         return self.plane.get_data()
+    
+    def __str__(self):
+        s = "sliced " + super().__str__() + " with plane {}".format(self.plane.plane)
+        return s
+        # r1 = (self.var_x, self.start_x, self.end_x)
+        # r2 = (self.var_y, self.start_y, self.end_y)
+        # r3 = (self.var_z, self.start_z, self.end_z)
+        # return "3D vector series: [%s, %s, %s] over %s, %s, %s" % (
+        #     self.u, self.v, self.w, r1, r2, r3
+        # )
 
 
 class PlaneSeries(SurfaceBaseSeries):
@@ -1846,6 +1894,11 @@ class PlaneSeries(SurfaceBaseSeries):
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
         self.params = params
+    
+    def __str__(self):
+        return "plane series of %s over %s, %s, %s" % (
+            self.plane, self.x_range, self.y_range, self.z_range
+        )
 
     def get_data(self):
         x, y, z = symbols("x, y, z")
@@ -2033,6 +2086,9 @@ class GeometrySeries(BaseSeries):
                 x = np.array([self._range[1], self._range[2]])
                 y = m * x + q
             return x.astype(float), y.astype(float)
+    
+    def __str__(self):
+        return "geometry entity: %s" % str(self.expr)
 
 
 class GeometryInteractiveSeries(GeometrySeries, InteractiveSeries):

@@ -343,173 +343,249 @@ class InteractivePlot(DynamicParam, PanelLayout):
 
 
 def iplot(*args, show=True, **kwargs):
-    """Create interactive plots of symbolic expressions.
+    """
+    Create interactive plots of symbolic expressions.
+    
     NOTE: this function currently only works within Jupyter Notebook!
 
     Parameters
     ==========
 
-        args : tuples
-            Each tuple represents an expression. Depending on the type of
-            expression we are plotting, the tuple should have the following
-            forms:
-            1. line: (expr, range, label)
-            2. parametric line: (expr1, expr2, expr3 [optional], range, label)
-            3. surface (expr, range1, range2, label)
-            4. parametric surface (expr1, expr2, expr3, range1, range2, label)
+    args : tuples
+        Each tuple represents an expression. Depending on the type of
+        expression, the tuple should have the following forms:
 
-            The label is always optional, whereas the ranges must always be
-            specified. The ranges will create the discretized domain.
+        1. line: ``(expr, range, label [optional])``
+        2. parametric line: ``(expr1, expr2, expr3 [optional], range, label [optional])``
+        3. surface ``(expr, range1, range2, label [optional])``
+        4. parametric surface ``(expr1, expr2, expr3, range1, range2, label [optional])``
 
-    Keyword Arguments
-    =================
+        The label is always optional, whereas the ranges must always be
+        specified. The ranges will create the discretized domain.
 
-        params : dict
-            A dictionary mapping the parameter-symbols to a parameter.
-            The parameter can be:
-            1. an instance of param.parameterized.Parameter (at the moment,
-                param.Number is supported, which will result in a slider).
-            2. a tuple of the form:
-                (default, (min, max), N [optional], label [optional], spacing [optional])
-                where:
-                    N is the number of steps of the slider.
-                    (min, max) must be finite numbers.
-                    label: the custom text associated to the slider.
-                    spacing : str
-                        Specify the discretization spacing. Default to "linear",
-                        can be changed to "log".
+    params : dict
+        A dictionary mapping the parameter-symbols to a parameter.
+        The parameter can be:
 
-            Note that (at the moment) the parameters cannot be linked together
-            (ie, one parameter can't depend on another one).
+        1. an instance of ``param.parameterized.Parameter`` (at the moment,
+           ``param.Number`` is supported, which will result in a slider).
+        2. a tuple of the form:
+           ``(default, (min, max), N [optional], label [optional], spacing [optional])``
+           where:
 
-        layout : str
-            The layout for the controls/plot. Possible values:
-                'tb': controls in the top bar.
-                'bb': controls in the bottom bar.
-                'sbl': controls in the left side bar.
-                'sbr': controls in the right side bar.
-            Default layout to 'tb'. Keep in mind that side bar layouts may not
-            work well with some backends.
+           - N : int
+                Number of steps of the slider.
+           - (min, max) : (float, float)
+                End values of the range. Must be finite numbers.
+           - label: str
+                Custom text associated to the slider.
+           - spacing : str
+                Specify the discretization spacing. Default to ``"linear"``, can
+                be changed to ``"log"``.
 
-        ncols : int
-            Number of columns to lay out the widgets. Default to 2.
+        Note that the parameters cannot be linked together (ie, one parameter
+        cannot depend on another one).
 
-        is_complex : boolean
-            Default to False. If True, it directs the internal algorithm to
-            create all the necessary series (for example, one for the real part,
-            one for the imaginary part).
+    backend : Plot, optional
+        The backend to be used to generate the plot. It must be a subclass of
+        ``spb.backends.base_backend.Plot``. If not provided, the module will
+        use the default backend. If ``MatplotlibBackend`` is used,
+        we must run the command ``%matplotlib widget`` at the start of the
+        notebook, otherwise the plot will not update.
 
-        is_vector : boolean
-            Default to False. If True, it directs the internal algorithm to
-            create all the necessary series (for example, plotting the magnitude
-            of the vector field as a contour plot).
+    layout : str, optional
+        The layout for the controls/plot. Possible values:
 
-        show : bool
-            Default to True.
-            If True, it will return an object that will be rendered on the
-            output cell of a Jupyter Notebook. If False, it returns an instance
-            of `InteractivePlot`.
+        - ``'tb'``: controls in the top bar.
+        - ``'bb'``: controls in the bottom bar.
+        - ``'sbl'``: controls in the left side bar.
+        - ``'sbr'``: controls in the right side bar.
+        
+        Default layout to ``'tb'``. Keep in mind that side bar layouts may not
+        work well with some backends.
 
-        use_latex : bool
-            Default to True.
-            If True, the latex representation of the symbols will be used in the
-            labels of the parameter-controls. If False, the string
-            representation will be used instead.
+    ncols : int, optional
+        Number of columns to lay out the widgets. Default to 2.
 
-        All the usual keyword arguments to customize the plot, such as title,
-        xlabel, n (number of discretization points), ...
+    is_complex : boolean, optional
+        Default to False. If True, it directs the internal algorithm to
+        create all the necessary series to create a complex plot (for example,
+        one for the real part, one for the imaginary part).
+
+    is_vector : boolean, optional
+        Default to False. If True, it directs the internal algorithm to
+        create all the necessary series to create a vector plot (for example,
+        plotting the magnitude of the vector field as a contour plot).
+
+    show : bool, optional
+        Default to True.
+        If True, it will return an object that will be rendered on the
+        output cell of a Jupyter Notebook. If False, it returns an instance
+        of ``InteractivePlot``, which can later be be shown by calling the
+        ``show()`` method.
+
+    use_latex : bool, optional
+        Default to True.
+        If True, the latex representation of the symbols will be used in the
+        labels of the parameter-controls. If False, the string
+        representation will be used instead.
+
+    detect_poles : boolean
+            Chose whether to detect and correctly plot poles.
+            Defaulto to False. To improve detection, increase the number of
+            discretization points and/or change the value of `eps`.
+
+    eps : float
+        An arbitrary small value used by the `detect_poles` algorithm.
+        Default value to 0.1. Before changing this value, it is better to
+        increase the number of discretization points.
+
+    n1, n2, n3 : int, optional
+        Set the number of discretization points in the three directions,
+        respectively.
+
+    n : int, optional
+        Set the number of discretization points on all directions.
+        It overrides ``n1, n2, n3``.
+    
+    nc : int, optional
+        Number of discretization points for the contour plot when
+        ``is_complex=True``.
+
+    polar : boolean, optional
+        Default to False. If True, generate a polar plot of a curve with radius
+        `expr` as a function of the range
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    xlabel : str, optional
+        Label for the x-axis.
+
+    ylabel : str, optional
+        Label for the y-axis.
+
+    zlabel : str, optional
+        Label for the z-axis.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, ``(min, max)``.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, ``(min, max)``.
+
+    zlim : (float, float), optional
+        Denotes the z-axis limits, ``(min, max)``.
 
 
     Examples
     ========
 
+    .. jupyter-execute::
+
+        >>> from sympy import (symbols, sqrt, cos, exp, sin, pi,
+        ...     Matrix, Plane, Polygon, I, log)
+        >>> from spb.interactive import iplot
+        >>> from spb.backends.matplotlib import MB
+        >>> x, y, z = symbols("x, y, z")
+
     Surface plot between -10 <= x, y <= 10 with a damping parameter varying from
-    0 to 1 with a default value of 0.15:
+    0 to 1, with a default value of 0.15, discretized with 100 points on both
+    directions. Note the use of ``threed=True`` to specify a 3D plot. If
+    ``threed=False``, a contour plot will be generated.
+    
+    .. jupyter-execute::
 
-    .. code-block:: python
-        x, y, d = symbols("x, y, d")
-        r = sqrt(x**2 + y**2)
-        expr = 10 * cos(r) * exp(-r * d)
-
-        iplot(
-            (expr, (x, -10, 10), (y, -10, 10)),
-            params = { d: (0.15, (0, 1)) },
-            title = "My Title",
-            xlabel = "x axis",
-            ylabel = "y axis",
-            zlabel = "z axis",
-            n = 100
-        )
+        >>> r = sqrt(x**2 + y**2)
+        >>> d = symbols('d')
+        >>> expr = 10 * cos(r) * exp(-r * d)
+        >>> iplot(
+        ...     (expr, (x, -10, 10), (y, -10, 10)),
+        ...     params = { d: (0.15, (0, 1)) },
+        ...     title = "My Title",
+        ...     xlabel = "x axis",
+        ...     ylabel = "y axis",
+        ...     zlabel = "z axis",
+        ...     backend = MB,
+        ...     n = 100,
+        ...     threed = True)
 
     A line plot illustrating the use of multiple expressions and:
-    1. some expression may not use all the parameters
-    2. custom labeling of the expressions
-    3. custom number of steps in the slider
-    4. custom labeling of the parameter-sliders
 
-    .. code-block:: python
-        x, A1, A2, k = symbols("x, A1, A2, k")
-        iplot(
-            (log(x) + A1 * sin(k * x), (x, 0, 20), "f1"),
-            (exp(-(x - 2)) + A2 * cos(x), (x, 0, 20), "f2"),
-            (A1 + A1 * cos(x), A2 * sin(x), (x, 0, pi)),
-            params = {
-                k: (1, (0, 5)),
-                A1: (2, (0, 10), 20, "Ampl 1"),
-                A2: (2, (0, 10), 40, "Ampl 2"),
-            }
-        )
+    1. some expression may not use all the parameters.
+    2. custom labeling of the expressions.
+    3. custom number of steps in the slider.
+    4. custom labeling of the parameter-sliders.
+
+    .. jupyter-execute::
+
+        >>> A1, A2, k = symbols("A1, A2, k")
+        >>> iplot(
+        ...     (log(x) + A1 * sin(k * x), (x, 1e-05, 20), "f1"),
+        ...     (exp(-(x - 2)) + A2 * cos(x), (x, 0, 20), "f2"),
+        ...     (A1 + A1 * cos(x), A2 * sin(x), (x, 0, pi)),
+        ...     params = {
+        ...         k: (1, (0, 5)),
+        ...         A1: (2, (0, 10), 20, "Ampl 1"),
+        ...         A2: (2, (0, 10), 40, "Ampl 2"),
+        ...     },
+        ...     backend = MB,
+        ...     ylim=(-4, 10))
 
     A 3D slice-vector plot. Note: whenever we want to create parametric vector
-    plots, we should set `is_vector=True`:
+    plots, we should set ``is_vector=True``.
 
-    .. code-block:: python
-        var("a, b, x:z")
-        iplot(
-            (Matrix([z * a, y * b, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5)),
-            params = {
-                a: (1, (0, 5)),
-                b: (1, (0, 5))
-            },
-            n = 50,
-            is_vector = True,
-            scalar = x * y,
-            slice = Plane((-2, 0, 0), (1, 0, 0))
-        )
+    .. jupyter-execute::
+
+        >>> a, b = symbols("a, b")
+        >>> iplot(
+        ...     (Matrix([z * a, y * b, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5)),
+        ...     params = {
+        ...         a: (1, (0, 5)),
+        ...         b: (1, (0, 5))
+        ...     },
+        ...     backend = MB,
+        ...     n = 10,
+        ...     is_vector = True,
+        ...     quiver_kw = {"length": 0.15},
+        ...     slice = Plane((0, 0, 0), (0, 1, 0)))
 
     A parametric complex domain coloring plot. Note: whenever we want to create
-    parametric complex plots, we must set `is_complex=True`:
+    parametric complex plots, we must set ``is_complex=True``.
 
-    .. code-block:: python
-        var("x:z")
-        iplot(
-            ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
-            params = {
-                x: (1, (-2, 2))
-            },
-            backend = MB,
-            is_complex = True,
-            coloring = "b"
-        )
+    .. jupyter-execute::
+
+        >>> iplot(
+        ...     ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
+        ...     params = {
+        ...         x: (1, (-2, 2))
+        ...     },
+        ...     backend = MB,
+        ...     is_complex = True,
+        ...     coloring = "b")
 
 
-    A parametric plot of a symbolic polygon. Note the use of `param` to create
+    A parametric plot of a symbolic polygon. Note the use of ``param`` to create
     an integer slider.
 
-    .. code-block:: python
-        import param
-        iplot(
-            (Polygon((a, b), c, n=d), ),
-            params = {
-                a: (0, (-2, 2)),
-                b: (0, (-2, 2)),
-                c: (1, (0, 5)),
-                d: param.Integer(3, softbounds=(3, 10), label="n"),
-            },
-            fill = False,
-            aspect = "equal",
-            use_latex = False
-        )
+    .. jupyter-execute::
+
+        >>> import param
+        >>> a, b, c, d = symbols('a:d')
+        >>> iplot(
+        ...     (Polygon((a, b), c, n=d), ),
+        ...     params = {
+        ...         a: (0, (-2, 2)),
+        ...         b: (0, (-2, 2)),
+        ...         c: (1, (0, 5)),
+        ...         d: param.Integer(3, softbounds=(3, 10), label="n"),
+        ...     },
+        ...     backend = MB,
+        ...     fill = False,
+        ...     aspect = "equal",
+        ...     use_latex = False)
+
     """
     i = InteractivePlot(*args, **kwargs)
     if show:

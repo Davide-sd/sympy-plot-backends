@@ -60,7 +60,7 @@ def _build_series(*args, interactive=False, **kwargs):
 
         if all(isinstance(a, (list, tuple, Tuple)) for a in args):
             # deals with the case:
-            # complex_plot((expr1, "name1"), (expr2, "name2"), range)
+            # plot_complex((expr1, "name1"), (expr2, "name2"), range)
             # Modify the tuples (expr, "name") to (expr, range, "name")
             npar = len([b for b in args if _is_range(b)])
             tmp = []
@@ -202,229 +202,294 @@ def _build_series(*args, interactive=False, **kwargs):
     return series
 
 
-def complex_plot(*args, show=True, **kwargs):
+def plot_complex(*args, show=True, **kwargs):
     """Plot complex numbers or complex functions. By default, the aspect ratio
     of the plot is set to ``aspect="equal"``.
 
     Depending on the provided expression, this function will produce different
     types of plots:
+
     * list of complex numbers: creates a scatter plot.
     * function of 1 variable over a real range:
         1. line plot separating the real and imaginary parts.
         2. line plot of the modulus of the complex function colored by its
-            argument, if `absarg=True`.
+           argument, if `absarg=True`.
         3. line plot of the modulus and the argument, if `abs=True, arg=True`.
     * function of 2 variables over 2 real ranges:
         1. By default, a surface plot of the real and imaginary part is created.
         2. By toggling `real=True, imag=True, abs=True, arg=True` we can create
-            surface plots of the real, imaginary part or the absolute value or
-            the argument.
+           surface plots of the real, imaginary part or the absolute value or
+           the argument.
     * complex function over a complex range:
         1. domain coloring plot.
         2. 3D plot of the modulus colored by the argument, if `threed=True`.
         3. 3D plot of the real and imaginary part by toggling `real=True`,
-            `imag=True`.
+           `imag=True`.
 
-    Explore the example below to better understand how to use it.
-
-    Arguments
-    =========
+    Parameters
+    ==========
+    args :
         expr : Expr
             Represent the complex number or complex function to be plotted.
 
         range : 3-element tuple
             Denotes the range of the variables. For example:
-            * (z, -5, 5): plot a line from complex point (-5 + 0*I) to (5 + 0*I)
-            * (z, -5 + 2*I, 5 + 2*I): plot a line from complex point (-5 + 2*I)
-                to (5 + 2 * I). Note the same imaginary part for the start/end
-                point. Also note that we can specify the ranges by using
-                standard Python complex numbers, for example (z, -5+2j, 5+2j).
-            * (z, -5 - 3*I, 5 + 3*I): domain coloring plot of the complex
-                function over the specified domain.
+
+            * ``(z, -5, 5)``: plot a line from complex point ``(-5 + 0*I)`` to
+              ``(5 + 0*I)``
+            * ``(z, -5 + 2*I, 5 + 2*I)``: plot a line from complex point
+              ``(-5 + 2*I)`` to ``(5 + 2 * I)``. Note the same imaginary part
+              for the start/end point. Also note that we can specify the ranges
+              by using standard Python complex numbers, for example
+              ``(z, -5+2j, 5+2j)``.
+            * ``(z, -5 - 3*I, 5 + 3*I)``: domain coloring plot of the complex
+              function over the specified domain.
 
         label : str
             The name of the complex function to be eventually shown on the
             legend. If none is provided, the string representation of the
             function will be used.
 
-        To specify multiple complex functions, wrap them into a tuple.
-        Refer to the examples to learn more.
+    absarg : boolean
+        If True, plot the modulus of the complex function colored by its
+        argument. If False, separately plot the real and imaginary parts.
+        Default to False. This is only available for line plots.
 
-    Keyword Arguments
-    =================
+    abs : boolean
+        If True, and if the provided range is a real segment, plot the
+        modulus of the complex function. Default to False.
 
-        absarg : boolean
-            If True, plot the modulus of the complex function colored by its
-            argument. If False, separately plot the real and imaginary parts.
-            Default to False. This is only available for line plots.
+    adaptive : boolean
+        Attempt to create line plots by using an adaptive algorithm.
+        Default to True.
 
-        abs : boolean
-            If True, and if the provided range is a real segment, plot the
-            modulus of the complex function. Default to False.
+    arg : boolean
+        If True, and if the provided range is a real segment, plot the
+        argument of the complex function. Default to False.
 
-        adaptive : boolean
-            Attempt to create line plots by using an adaptive algorithm.
-            Default to True.
+    depth : int
+        Controls the smootheness of the overall evaluation. The higher
+        the number, the smoother the function, the more memory will be
+        used by the recursive procedure. Default value is 9.
 
-        arg : boolean
-            If True, and if the provided range is a real segment, plot the
-            argument of the complex function. Default to False.
+    detect_poles : boolean
+        Chose whether to detect and correctly plot poles. Defaulto to False.
+        This improve detection, increase the number of discretization points
+        and/or change the value of `eps`.
 
-        depth : int
-            Controls the smootheness of the overall evaluation. The higher
-            the number, the smoother the function, the more memory will be
-            used by the recursive procedure. Default value is 9.
+    eps : float
+        An arbitrary small value used by the `detect_poles` algorithm.
+        Default value to 0.1. Before changing this value, it is better to
+        increase the number of discretization points.
 
-        detect_poles : boolean
-            Chose whether to detect and correctly plot poles. Defaulto to False.
-            This improve detection, increase the number of discretization points
-            and/or change the value of `eps`.
+    n1, n2 : int
+        Number of discretization points in the real/imaginary-directions,
+        respectively. For domain coloring plots (2D and 3D), default to 300.
+        For line plots default to 1000.
 
-        eps : float
-            An arbitrary small value used by the `detect_poles` algorithm.
-            Default value to 0.1. Before changing this value, it is better to
-            increase the number of discretization points.
+    n : int
+        Set the same number of discretization points in all directions.
+        For domain coloring plots (2D and 3D), default to 300. For line
+        plots default to 1000.
 
-        n1, n2 : int
-            Number of discretization points in the real/imaginary-directions,
-            respectively. For domain coloring plots (2D and 3D), default to 300.
-            For line plots default to 1000.
+    real : boolean
+        If True, and if the provided range is a real segment, plot the
+        real part of the complex function.
+        If a complex range is given and ``threed=True``, plot a 3D
+        representation of the real part. Default to False.
 
-        n : int
-            Set the same number of discretization points in all directions.
-            For domain coloring plots (2D and 3D), default to 300. For line
-            plots default to 1000.
+    imag : boolean
+        If True, and if the provided range is a real segment, plot the
+        imaginary part of the complex function.
+        If a complex range is given and ``threed=True``, plot a 3D
+        representation of the imaginary part. Default to False.
 
-        real : boolean
-            If True, and if the provided range is a real segment, plot the
-            real part of the complex function.
-            If a complex range is given and `threed=True`, plot a 3D
-            representation of the real part. Default to False.
+    show : boolean
+        Default to True, in which case the plot will be shown on the screen.
 
-        imag : boolean
-            If True, and if the provided range is a real segment, plot the
-            imaginary part of the complex function.
-            If a complex range is given and `threed=True`, plot a 3D
-            representation of the imaginary part. Default to False.
+    threed : boolean
+        Default to False. When True, it will plot a 3D representation of the
+        absolute value of the complex function colored by its argument.
 
-        show : boolean
-            Default to True, in which case the plot will be shown on the screen.
+    use_cm : boolean
+        If ``absarg=True`` and ``use_cm=True`` then plot the modulus of the
+        complex function colored by its argument. If ``use_cm=False``, plot
+        the modulus of the complex function with a solid color.
+        Default to True.
 
-        threed : boolean
-            Default to False. When True, it will plot a 3D representation of the
-            absolute value of the complex function colored by its argument.
+    coloring : str or callable
+        Choose between different domain coloring options. Default to "a".
 
-        use_cm : boolean
-            If `absarg=True` and `use_cm=True` then plot the modulus of the
-            complex function colored by its argument. If `use_cm=False`, plot
-            the modulus of the complex function with a solid color.
-            Default to True.
+        - ``"a"``: standard domain coloring using HSV.
+        - ``"b"``: enhanced domain coloring using HSV, showing iso-modulus
+            and is-phase lines.
+        - ``"c"``: enhanced domain coloring using HSV, showing iso-modulus
+            lines.
+        - ``"d"``: enhanced domain coloring using HSV, showing iso-phase
+            lines.
+        - ``"e"``: alternating black and white stripes corresponding to
+            modulus.
+        - ``"f"``: alternating black and white stripes corresponding to
+            phase.
+        - ``"g"``: alternating black and white stripes corresponding to
+            real part.
+        - ``"h"``: alternating black and white stripes corresponding to
+            imaginary part.
+        - ``"i"``: cartesian chessboard on the complex points space. The
+            result will hide zeros.
+        - ``"j"``: polar Chessboard on the complex points space. The result
+            will show conformality.
 
-    Domain Coloring Arguments
-    =========================
+        The user can also provide a callable, `f(w)`, where `w` is an
+        [n x m] Numpy array (provided by the plotting module) containing
+        the results (complex numbers) of the evaluation of the complex
+        function. The callable should return:
 
-        coloring : str or callable
-            Default to "a". Chose between different coloring options:
-            "a": standard domain coloring using HSV.
-            "b": enhanced domain coloring using HSV, showing iso-modulus and
-                is-phase lines.
-            "c": enhanced domain coloring using HSV, showing iso-modulus lines.
-            "d": enhanced domain coloring using HSV, showing iso-phase lines.
-            "e": alternating black and white stripes corresponding to modulus.
-            "f": alternating black and white stripes corresponding to phase.
-            "g": alternating black and white stripes corresponding to real part.
-            "h": alternating black and white stripes corresponding to imaginary
-                part.
-            "i": cartesian chessboard on the complex points space. The result
-                will hide zeros.
-            "j": polar Chessboard on the complex points space. The result will
-                show conformality.
+        - img : ndarray [n x m x 3]
+            An array of RGB colors (0 <= R,G,B <= 255)
+        - colorscale : ndarray [N x 3] or None
+            An array with N RGB colors, (0 <= R,G,B <= 255).
+            If `colorscale=None`, no color bar will be shown on the plot.
 
-            The user can also provide a callable, `f(w)`, where `w` is an
-            [n x m] Numpy array (provided by the plotting module) containing
-            the results (complex numbers) of the evaluation of the complex
-            function. The callable should return:
-                img : ndarray [n x m x 3]
-                    An array of RGB colors (0 <= R,G,B <= 255)
-                colorscale : ndarray [N x 3] or None
-                    An array with N RGB colors, (0 <= R,G,B <= 255).
-                    If `colorscale=None`, no color bar will be shown on the
-                    plot.
+    phaseres : int
+        Default value to 20. It controls the number of iso-phase and/or
+        iso-modulus lines in domain coloring plots.
 
-        phaseres : int
-            This parameter works when `coloring` is different from `"f"`.
-            Default value to 20. It controls the number of iso-phase or
-            iso-modulus lines.
 
     Examples
     ========
 
+    .. plot::
+        :context: reset
+        :format: doctest
+        :include-source: True
+
+        >>> from sympy import I, symbols, exp, sqrt, cos, sin, pi, gamma
+        >>> from spb import plot_complex
+        >>> x, y, z = symbols('x, y, z')
+
     Plot individual complex points:
 
-    .. code-block:: python
-        complex_plot(3 + 2 * I, 4 * I, 2, aspect="equal", legend=True)
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_complex(3 + 2 * I, 4 * I, 2)
+        Plot object containing:
+        [0]: complex point (3 + 2*I,)
+        [1]: complex point (4*I,)
+        [2]: complex point (2,)
 
     Plot two lists of complex points:
 
-    .. code-block:: python
-        z = symbols("z")
-        expr1 = z * exp(2 * pi * I * z)
-        expr2 = 2 * expr1
-        l1 = [expr1.subs(z, t / 20) for t in range(20)]
-        l2 = [expr2.subs(z, t / 20) for t in range(20)]
-        complex_plot((l1, "f1"), (l2, "f2"), aspect="equal", legend=True)
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> expr1 = z * exp(2 * pi * I * z)
+        >>> expr2 = 2 * expr1
+        >>> n = 15
+        >>> l1 = [expr1.subs(z, t / n) for t in range(n)]
+        >>> l2 = [expr2.subs(z, t / n) for t in range(n)]
+        >>> plot_complex((l1, "f1"), (l2, "f2"))
+        Plot object containing:
+        [0]: complex points (0.0, 0.0666666666666667*exp(0.133333333333333*I*pi), 0.133333333333333*exp(0.266666666666667*I*pi), 0.2*exp(0.4*I*pi), 0.266666666666667*exp(0.533333333333333*I*pi), 0.333333333333333*exp(0.666666666666667*I*pi), 0.4*exp(0.8*I*pi), 0.466666666666667*exp(0.933333333333333*I*pi), 0.533333333333333*exp(1.06666666666667*I*pi), 0.6*exp(1.2*I*pi), 0.666666666666667*exp(1.33333333333333*I*pi), 0.733333333333333*exp(1.46666666666667*I*pi), 0.8*exp(1.6*I*pi), 0.866666666666667*exp(1.73333333333333*I*pi), 0.933333333333333*exp(1.86666666666667*I*pi))
+        [1]: complex points (0, 0.133333333333333*exp(0.133333333333333*I*pi), 0.266666666666667*exp(0.266666666666667*I*pi), 0.4*exp(0.4*I*pi), 0.533333333333333*exp(0.533333333333333*I*pi), 0.666666666666667*exp(0.666666666666667*I*pi), 0.8*exp(0.8*I*pi), 0.933333333333333*exp(0.933333333333333*I*pi), 1.06666666666667*exp(1.06666666666667*I*pi), 1.2*exp(1.2*I*pi), 1.33333333333333*exp(1.33333333333333*I*pi), 1.46666666666667*exp(1.46666666666667*I*pi), 1.6*exp(1.6*I*pi), 1.73333333333333*exp(1.73333333333333*I*pi), 1.86666666666667*exp(1.86666666666667*I*pi))
 
     Plot the real and imaginary part of a function:
 
-    .. code-block:: python
-        z = symbols("z")
-        complex_plot(sqrt(z), (z, -3, 3), legend=True)
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
 
-    .. code-block:: python
-        z = symbols("z")
-        complex_plot((cos(z) + sin(I * z), "f"), (z, -2, 2), legend=True)
+        >>> plot_complex(sqrt(x), (x, -3, 3))
+        Plot object containing:
+        [0]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for x over ((-3+0j), (3+0j))
+        [1]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for x over ((-3+0j), (3+0j))
 
     Plot the modulus of a complex function colored by its magnitude:
 
-    .. code-block:: python
-        z = symbols("z")
-        complex_plot((cos(z) + sin(I * z), "f"), (z, -2, 2), legend=True,
-            absarg=True)
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_complex((cos(x) + sin(I * x), "f"), (x, -2, 2), absarg=True)
+        Plot object containing:
+        [0]: cartesian line: sqrt((-sin(re(x))*sinh(im(x)) + cos(im(x))*sinh(re(x)))**2 + (-sin(im(x))*cosh(re(x)) + cos(re(x))*cosh(im(x)))**2) for x over ((-2+0j), (2+0j))
 
     Plot the modulus and the argument of a complex function:
 
-    .. code-block:: python
-        z = symbols("z")
-        complex_plot((cos(z) + sin(I * z), "f"), (z, -2, 2), legend=True,
-            abs=True, arg=True, real=False, imag=False)
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_complex((cos(x) + sin(I * x), "f"), (x, -2, 2),
+        ...     abs=True, arg=True, real=False, imag=False)
+        Plot object containing:
+        [0]: cartesian line: sqrt((-sin(re(x))*sinh(im(x)) + cos(im(x))*sinh(re(x)))**2 + (-sin(im(x))*cosh(re(x)) + cos(re(x))*cosh(im(x)))**2) for x over ((-2+0j), (2+0j))
+        [1]: cartesian line: arg(cos(x) + I*sinh(x)) for x over ((-2+0j), (2+0j))
 
     Plot the real and imaginary part of a function of two variables over two
     real ranges:
 
-    .. code-block:: python
-        x, y = symbols("x, y")
-        complex_plot(sqrt(x*y), (x, -5, 5), (y, -5, 5), real=True, imag=True)
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_complex(sqrt(x*y), (x, -5, 5), (y, -5, 5),
+        ...     real=True, imag=True)
+        Plot object containing:
+        [0]: cartesian surface: (re(x*y)**2 + im(x*y)**2)**(1/4)*cos(atan2(im(x*y), re(x*y))/2) for x over ((-5+0j), (5+0j)) and y over ((-5+0j), (5+0j))
+        [1]: cartesian surface: (re(x*y)**2 + im(x*y)**2)**(1/4)*sin(atan2(im(x*y), re(x*y))/2) for x over ((-5+0j), (5+0j)) and y over ((-5+0j), (5+0j))
 
     Domain coloring plot. Note that it might be necessary to increase the number
     of discretization points in order to get a smoother plot:
 
-    .. code-block:: python
-        z = symbols("z")
-        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), coloring="b", n=500)
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), coloring="b", n=500)
+        Plot object containing:
+        [0]: domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
     3D plot of the absolute value of a complex function colored by its argument:
 
-    .. code-block:: python
-        z = symbols("z")
-        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
-            legend=True, zlim=(-1, 6))
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
+        ...     zlim=(-1, 6))
+        Plot object containing:
+        [0]: cartesian surface: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
     3D plot of the real part a complex function:
 
-    .. code-block:: python
-        z = symbols("z")
-        complex_plot(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
-            real=True, imag=False)
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
+        ...     real=True, imag=False)
+        Plot object containing:
+        [0]: cartesian surface: re(gamma(z)) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
+
+    References
+    ==========
+
+    Domain Coloring colorschemes are based on Elias Wegert's book
+    `"Visual Complex Functions" <https://www.springer.com/de/book/9783034801799>`_.
+    The book provides the background to better understand the images.
 
     """
     args = _plot_sympify(args)
@@ -463,26 +528,28 @@ def complex_plot(*args, show=True, **kwargs):
             kwargs["ylabel"] = "Abs"
 
     if (kwargs.get("aspect", None) is None) and any(
-        s.is_complex and s.is_domain_coloring for s in series
+        (s.is_complex and s.is_domain_coloring) or s.is_point for s in series
     ):
-        kwargs["aspect"] = "equal"
+        # set aspect equal for 2D domain coloring or complex points
+        kwargs.setdefault("aspect", "equal")
 
     p = Plot(*series, **kwargs)
     if show:
         p.show()
     return p
 
-def complex_plot3d(*args, **kwargs):
-    """ Wrapper function of `complex_plot`, which sets `threed=True`. As such,
-    it is not guaranteed that the output plot is 3D: it dependes on the user
-    provided arguments.
+def plot3d_complex(*args, **kwargs):
+    """ Wrapper function of ``plot_complex``, which sets ``threed=True``.
+    As such, it is not guaranteed that the output plot is 3D: it dependes on
+    the user provided arguments.
 
-    Read `complex_plot` documentation to learn about its usage.
+    Read ``plot_complex`` documentation to learn about its usage.
 
     See Also
     ========
 
-    complex_plot
+    plot_complex
+
     """
     kwargs["threed"] = True
-    return complex_plot(*args, **kwargs)
+    return plot_complex(*args, **kwargs)

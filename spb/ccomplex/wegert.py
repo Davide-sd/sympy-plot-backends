@@ -166,7 +166,8 @@ def cartesian_chessboard(w, phaseres=20):
 
 @to_rgb_255
 def polar_chessboard(w, phaseres=20):
-    """Polar Chessboard on the complex points space. The result will show
+    """
+    Polar Chessboard on the complex points space. The result will show
     conformality.
     """
     mag, arg = np.absolute(w), np.angle(w)
@@ -180,7 +181,8 @@ def polar_chessboard(w, phaseres=20):
     return np.dstack([black, black, black])
 
 def create_colorscale(N=256):
-    """ Create a HSV colorscale which will be used to map argument values from
+    """
+    Create a HSV colorscale which will be used to map argument values from
     [-pi, pi]. Red color is associated to zero.
 
     Parameters
@@ -204,23 +206,29 @@ def wegert(coloring, w, phaseres=20, N=256):
     """
     Parameters
     ==========
-        coloring : str
-            A character from "a" to "j".
-        w : np.ndarray [n x m]
-            Numpy array with the results (complex numbers) of the evaluation of
-            a complex function.
-        phaseres : int
-            Number of constant-phase lines.
-        N : int
-            Number of discretized color in the colorscale. Default to 256.
+
+    coloring : str
+        A character from ``"a"`` to ``"j"``.
+
+    w : ndarray [n x m]
+        Numpy array with the results (complex numbers) of the evaluation of
+        a complex function.
+
+    phaseres : int
+        Number of constant-phase lines.
+
+    N : int
+        Number of discretized color in the colorscale. Default to 256.
 
     Returns
     =======
-        img : np.ndarray [n x m x 3]
-            An array of RGB colors (0 <= R,G,B <= 255)
-        colorscale : np.ndarray [N x 3] or None
-            RGB colors to be used in the colorscale. If the function computes
-            black and white colors, None will be returned.
+
+    img : np.ndarray [n x m x 3]
+        An array of RGB colors (0 <= R,G,B <= 255)
+
+    colorscale : np.ndarray [N x 3] or None
+        RGB colors to be used in the colorscale. If the function computes
+        black and white colors, ``None`` will be returned.
     """
     mapping = {
         "a": [domain_coloring, True],

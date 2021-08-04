@@ -9,6 +9,7 @@ import matplotlib.cm as cm
 from spb.backends.utils import convert_colormap
 import warnings
 import numpy as np
+import os
 
 """
 TODO:
@@ -20,87 +21,94 @@ TODO:
 
 
 class PlotlyBackend(Plot):
-    """A backend for plotting SymPy's symbolic expressions using Plotly.
+    """
+    A backend for plotting SymPy's symbolic expressions using Plotly.
 
-    Keyword Arguments
-    =================
+    Parameters
+    ==========
 
-        aspect : str
-            Default to "auto". Possible values:
-            "equal": sets equal spacing on the axis of a 2D plot.
-            "cube", "auto" for 3D plots.
+    aspect : str, optional
+        Default to ``"auto"``. Possible values:
+        
+        - ``"equal"``: sets equal spacing on the axis of a 2D plot.
+        - ``"cube"``, ``"auto"`` for 3D plots.
 
-        contour_kw : dict
-            A dictionary of keywords/values which is passed to Plotly's contour
-            function to customize the appearance.
-            Refer to the following web pages to learn more about customization:
-            https://plotly.com/python/contour-plots/
-            https://plotly.com/python/builtin-colorscales/
+    contour_kw : dict, optional
+        A dictionary of keywords/values which is passed to Plotly's contour
+        function to customize the appearance.
+        Refer to the following web pages to learn more about customization:
+        https://plotly.com/python/contour-plots/
+        https://plotly.com/python/builtin-colorscales/
 
-        line_kw : dict
-            A dictionary of keywords/values which is passed to Plotly's scatter
-            functions to customize the appearance.
-            Refer to the following web pages to learn more about customization:
-            https://plotly.com/python/line-and-scatter/
-            https://plotly.com/python/3d-scatter-plots/
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to Plotly's scatter
+        functions to customize the appearance.
+        Refer to the following web pages to learn more about customization:
+        https://plotly.com/python/line-and-scatter/
+        https://plotly.com/python/3d-scatter-plots/
 
-        quiver_kw : dict
-            A dictionary of keywords/values which is passed to Plotly's quivers
-            function to customize the appearance.
-            For 2D vector fields, default to:
-                ``dict( scale = 0.075 )``
-                Refer to this documentation page:
-                https://plotly.com/python/quiver-plots/
-            For 3D vector fields, default to:
-                ``dict( sizemode = "absolute", sizeref = 40 )``
-                Refer to this documentation page:
-                https://plotly.com/python/cone-plot/
+    quiver_kw : dict, optional
+        A dictionary of keywords/values which is passed to Plotly's quivers
+        function to customize the appearance.
 
-        surface_kw : dict
-            A dictionary of keywords/values which is passed to Plotly's
-            Surface function to customize the appearance.
-            Refer to this documentation page:
-            https://plotly.com/python/3d-surface-plots/
+        - For 2D vector fields, default to: ``dict( scale = 0.075 )``
+          Refer to this documentation page:
+          https://plotly.com/python/quiver-plots/
+        - For 3D vector fields, default to: ``dict( sizemode = "absolute", sizeref = 40 )``
+          Refer to this documentation page:
+          https://plotly.com/python/cone-plot/
 
-        stream_kw : dict
-            A dictionary of keywords/values which is passed to Plotly's
-            streamlines function to customize the appearance.
-            For 2D vector fields, defaul to:
-                ``dict( arrow_scale = 0.15 )``
-                Refer to this documentation page:
-                https://plotly.com/python/streamline-plots/
-            For 3D vector fields, default to:
-                ```dict(
+    surface_kw : dict, optional
+        A dictionary of keywords/values which is passed to Plotly's
+        Surface function to customize the appearance.
+        Refer to this documentation page:
+        https://plotly.com/python/3d-surface-plots/
+
+    stream_kw : dict, optional
+        A dictionary of keywords/values which is passed to Plotly's
+        streamlines function to customize the appearance.
+        
+        - For 2D vector fields, defaul to: ``dict( arrow_scale = 0.15 )``
+          Refer to this documentation page:
+          https://plotly.com/python/streamline-plots/
+        - For 3D vector fields, default to:
+
+          .. code-block::
+
+                dict(
                         sizeref = 0.3,
                         starts = dict(
                             x = seeds_points[:, 0],
                             y = seeds_points[:, 1],
                             z = seeds_points[:, 2]
                     ))
-                ```
-            where `seeds_points` are the starting points of the streamlines.
-            Refer to this documentation page:
-            https://plotly.com/python/streamtube-plot/
 
-        theme : str
-            Set the theme. Default to "plotly_dark". Find more Plotly themes at
-            the following page:
-            https://plotly.com/python/templates/
+          where ``seeds_points`` are the starting points of the streamlines.
+          Refer to this documentation page:
+          https://plotly.com/python/streamtube-plot/
 
-        use_cm : boolean
-            If True, apply a color map to the meshes/surface. If False, solid
-            colors will be used instead. Default to True.
+    theme : str, optional
+        Set the theme. Default to ``"plotly_dark"``. Find more Plotly themes at
+        the following page:
+        https://plotly.com/python/templates/
 
-        wireframe : boolean
-            Visualize the wireframe lines on surfaces. Default to False.
-            Note that it may have a negative impact on the performances.
+    use_cm : boolean, optional
+        If True, apply a color map to the meshes/surface. If False, solid
+        colors will be used instead. Default to True.
 
-    Export
-    ======
+    wireframe : boolean, optional
+        Visualize the wireframe lines on surfaces. Default to False.
+        Note that it definitely have a negative impact on the performances, and
+        it does not work with ``iplot``.
 
-    In order to export the plots you will need to install the packages listed
-    in the following page:
+
+    Notes
+    =====
+
+    In order to export the plots, the user also need to install the packages
+    listed in the following page:
     https://plotly.com/python/static-image-export/
+
     """
 
     _library = "plotly"
@@ -883,7 +891,12 @@ class PlotlyBackend(Plot):
     def save(self, path, **kwargs):
         self._process_series(self._series)
         self._update_layout()
-        self._fig.write_image(path)
+
+        ext = os.path.splitext(path)[1]
+        if (ext == ".html") or (ext == ".htm"):
+            self.fig.write_html(path, **kwargs)
+        else:
+            self._fig.write_image(path)
 
 
 PB = PlotlyBackend
