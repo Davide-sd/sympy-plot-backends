@@ -12,7 +12,7 @@ with open(os.path.join(here, 'spb', '_version.py')) as f:
 
 setup(
     name="sympy_plot_backends",
-    version=version_ns["version"],
+    version=version_ns["__version__"],
     description="Backends for plotting with SymPy",
     long_description=readme(),
     long_description_content_type="text/markdown",

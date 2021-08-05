@@ -271,16 +271,22 @@ def plot_vector(*args, show=True, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a vector field with a single range.
-        ``plot(expr, range1, range2, range3 [optional], **kwargs)``
+
+      .. code-block::
+        
+          plot(expr, range1, range2, range3 [optional], **kwargs)
+        
     - Plotting multiple vector fields with different ranges and custom labels.
-        ``plot((expr1, range1, range2, range3 [optional], label1), (expr2, range4, range5, range6 [optional], label2), **kwargs)``
+    
+      .. code-block::
+        
+          plot((expr1, range1, range2, range3 [optional], label1), (expr2, range4, range5, range6 [optional], label2), **kwargs)``
 
     Parameters
     ==========
 
     args :
-        expr : Vector, or Matrix with 2 or 3 elements, or list/tuple  with 2 or
-                3 elements
+        expr : Vector, or Matrix/list/tuple  with 2 or 3 elements
             Represent the vector to be plotted.
             Note: if a 3D vector is given with a list/tuple, it might happens
             that the internal algorithm could think of it as a range. Therefore,
@@ -324,12 +330,13 @@ def plot_vector(*args, show=True, **kwargs):
         Represents the scalar field to be plotted in the background of a 2D
         vector field plot. Can be:
 
-            - True: plot the magnitude of the vector field. Only works when a
-              single vector field is plotted.
-            - False/None: do not plot any scalar field.
-            - Expr: a symbolic expression representing the scalar field.
-            - List/Tuple: [scalar_expr, label], where the label will be shown
-              on the colorbar.
+        - ``True``: plot the magnitude of the vector field. Only works when a
+            single vector field is plotted.
+        - ``False``/``None``: do not plot any scalar field.
+        - ``Expr``: a symbolic expression representing the scalar field.
+        - ``list``/``tuple``: [scalar_expr, label], where the label will be
+            shown on the colorbar.
+        
         Default to True.
 
     show : boolean
@@ -340,14 +347,17 @@ def plot_vector(*args, show=True, **kwargs):
 
     slice : Plane, list, Expr
         Plot the 3D vector field over the provided slice. It can be:
-            - a Plane object from sympy.geometry module.
-            - a list of planes.
-            - a symbolic expression representing a surface of two variables.
+
+        - a Plane object from sympy.geometry module.
+        - a list of planes.
+        - a symbolic expression representing a surface of two variables.
+        
         The number of discretization points will be ``n1``, ``n2``, ``n3``.
         Note that:
-            - only quivers plots are supported with slices. Streamlines plots
-              are unaffected.
-            - ``n3`` will only be used with planes parallel to xz or yz.
+
+        - only quivers plots are supported with slices. Streamlines plots
+            are unaffected.
+        - ``n3`` will only be used with planes parallel to xz or yz.
 
     streamlines : boolean
         Whether to plot the vector field using streamlines (True) or quivers

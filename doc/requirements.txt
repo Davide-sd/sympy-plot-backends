@@ -1,4 +1,4 @@
-numpy
+numpydoc
 sphinx-math-dollar
 jupyter-sphinx
 nbsphinx
