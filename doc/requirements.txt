@@ -1,3 +1,4 @@
+matplotlib
 numpydoc
 sphinx-math-dollar
 jupyter-sphinx
