@@ -20,7 +20,6 @@ import sys
 import inspect
 import os
 import sys
-import sympy
 import sphinx_rtd_theme
 
 # from: 
