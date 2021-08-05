@@ -39,7 +39,7 @@ setup(
         "mergedeep==1.3.4",
         "ipympl==0.7.0",
         "plotly>=4.14.3",
-        "colorcet==1.0.0",
+        "colorcet",
         "param==1.11.1",
         "panel==0.12.0",
         "holoviews==1.14.5",
