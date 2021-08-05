@@ -32,31 +32,31 @@ def plotgrid(*args, **kwargs):
 
     Parameters
     ==========
-        args : sequence
-            A sequence of aldready created plots. This, in combination with
-            `nr` and `nc` represents the first mode of operation, where a basic
-            grid with (nc * nr) subplots will be created.
 
-    Keyword Arguments
-    =================
-        nr, nc : int
-            Number of rows and columns.
-            By default, `nc = 1` and `nr = -1`: this will create as many rows as
-            necessary, and a single column.
-            If we set `nc = 1` and `nc = -1`, it will create as many column as
-            necessary, and a single row.
+    args : sequence
+        A sequence of aldready created plots. This, in combination with
+        `nr` and `nc` represents the first mode of operation, where a basic
+        grid with (nc * nr) subplots will be created.
 
-        gs : dict
-            A dictionary mapping Matplotlib's GridSpect objects to the plots.
-            The keys represent the cells of the layout. Each cell will host the
-            associated plot.
-            This represents the second mode of operation, as it allows to create
-            more complicated layouts.
-            NOTE: all plots must be instances of MatplotlibBackend!
+    nr, nc : int
+        Number of rows and columns.
+        By default, `nc = 1` and `nr = -1`: this will create as many rows as
+        necessary, and a single column.
+        If we set `nc = 1` and `nc = -1`, it will create as many column as
+        necessary, and a single row.
+
+    gs : dict
+        A dictionary mapping Matplotlib's GridSpect objects to the plots.
+        The keys represent the cells of the layout. Each cell will host the
+        associated plot.
+        This represents the second mode of operation, as it allows to create
+        more complicated layouts.
+        NOTE: all plots must be instances of MatplotlibBackend!
 
     Returns
     =======
         Depending on the types of plots, this function returns either:
+        
         * None: if all plots are instances of MatplotlibBackend.
         * an instance of holoviz's panel GridSpec, which will be rendered on
         Jupyter Notebook when mixed types of plots are received or when all the
@@ -100,7 +100,7 @@ def plotgrid(*args, **kwargs):
         p1 = plot(sin(x), cos(x), show=False, backend=MB)
         p2 = plot_contour(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), show=False, backend=BB)
         p3 = complex_plot(sqrt(x), show=False, backend=PB)
-        p4 = vector_plot(Matrix([-y, x]), (x, -5, 5), (y, -5, 5), show=False, backend=MB)
+        p4 = plot_vector(Matrix([-y, x]), (x, -5, 5), (y, -5, 5), show=False, backend=MB)
         p5 = complex_plot(gamma(z), (z, -3-3*I, 3+3*I), show=False, backend=MB)
 
         gs = GridSpec(3, 3)

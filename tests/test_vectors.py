@@ -2,7 +2,7 @@ from sympy import symbols, Matrix, Tuple, cos, sqrt
 from sympy.geometry import Plane
 from sympy.vector import CoordSys3D
 
-from spb.vectors import _preprocess, _series, vector_plot
+from spb.vectors import _preprocess, _series, plot_vector
 from spb.utils import _plot_sympify, _split_vector
 from spb.series import (
     Vector2DSeries,
@@ -310,24 +310,24 @@ def test_series():
     )
 
 
-def test_vector_plot():
+def test_plot_vector():
     x, y, z = symbols("x:z")
     N = CoordSys3D("N")
     v1 = x * N.i + y * N.j
     v2 = z * N.i + x * N.j + y * N.k
 
-    # this will stop inside vector_plot, because we are mixing 2D and 3D vectors
-    raises(ValueError, lambda: vector_plot(v1, v2))
+    # this will stop inside plot_vector, because we are mixing 2D and 3D vectors
+    raises(ValueError, lambda: plot_vector(v1, v2))
     # this will stop inside _series, because 3 ranges have been provided
     # for a 2D vector plot (v1)
-    raises(ValueError, lambda: vector_plot(v1, v2, (x, -5, 5), (y, -2, 2), (z, -3, 3)))
+    raises(ValueError, lambda: plot_vector(v1, v2, (x, -5, 5), (y, -2, 2), (z, -3, 3)))
 
     # scalar is not one of [None,True,False,Expr]
-    raises(ValueError, lambda: vector_plot(v1, scalar="s"))
+    raises(ValueError, lambda: plot_vector(v1, scalar="s"))
 
     # single 2D vector field with magnitude scalar field: contour series should
     # have the same range as the vector series
-    p = vector_plot(v1, (x, -5, 5), (y, -2, 2), show=False)
+    p = plot_vector(v1, (x, -5, 5), (y, -2, 2), show=False)
     assert len(p.series) == 2
     assert isinstance(p.series[0], ContourSeries)
     assert isinstance(p.series[1], Vector2DSeries)
@@ -338,7 +338,7 @@ def test_vector_plot():
 
     # multiple 2D vector field with magnitude scalar field: contour series
     # should cover the entire ranges of the vector fields
-    p = vector_plot(
+    p = plot_vector(
         (v1, (x, -5, -3), (y, -2, 2)),
         (v1, (x, -1, 1), (y, -4, -3)),
         (v1, (x, 2, 6), (y, 3, 5)),

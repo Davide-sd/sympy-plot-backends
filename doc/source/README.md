@@ -25,7 +25,7 @@ In particular:
 To save the plots:
 * Matplotlib: just use `ipympl` save button.
 * Bokeh: just use `p.save(filename, CDN [optional])`
-* Plotly: just use `p.save(filenameinclude_plotlyjs="require", full_html=False)`
+* Plotly: just use `p.save(filenameinclude_plotlyjs="cdn", full_html=True)`
 * K3D: use:
 
 ```
@@ -34,22 +34,15 @@ with open('fig-01.html', 'w') as f:
     f.write(p.fig.get_snapshot())
 ```
 
-Once K3D plot has been saved, we need to modify it:
+To inclue Bokeh, Plotly, K3D plots use:
 
-* Open the file in a text editor
-* Replace `"canvasTarget"` with a unique ID.
-* Remove everything above the body-script tag
-* Insert the following at the top:
 ```
-<div style="display: flex; height: 400px;">
-<div id="UNIQUE-ID" style="position: relative; width: 100%;"></div>
-```
-* Remove closing body/html tags with `</div>`.
+.. raw::
 
-All images have been moved in the `tutorials/fig` folder in a logical manner.
+    <iframe src="../_static/tut-1/fig-05.html" height="500px" width="100%"></iframe>
+```
+
+All images have been moved in the `_static/tut-*` folder in a logical manner.
 
 Generate the documentation with `make clean html`.
 
-Insert `plotly.js` and `k3d.js` into `doc/build/html/tutorials`
-
-Everything is ready to be used/viewed.

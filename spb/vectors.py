@@ -274,13 +274,13 @@ def plot_vector(*args, show=True, **kwargs):
 
       .. code-block::
         
-          plot(expr, range1, range2, range3 [optional], **kwargs)
+         plot(expr, range1, range2, range3 [optional], **kwargs)
         
     - Plotting multiple vector fields with different ranges and custom labels.
     
       .. code-block::
         
-          plot((expr1, range1, range2, range3 [optional], label1), (expr2, range4, range5, range6 [optional], label2), **kwargs)``
+         plot((expr1, range1, range2, range3 [optional], label1), (expr2, range4, range5, range6 [optional], label2), **kwargs)
 
     Parameters
     ==========

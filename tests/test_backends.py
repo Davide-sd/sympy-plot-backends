@@ -8,12 +8,12 @@ from spb.series import BaseSeries
 from spb import (
     plot,
     plot3d,
-    vector_plot,
+    plot_vector,
     plot_contour,
     plot_implicit,
     plot_parametric,
     plot3d_parametric_line,
-    complex_plot,
+    plot_complex,
     geometry_plot
 )
 from sympy import symbols, cos, sin, Matrix, pi, sqrt, I
@@ -86,7 +86,7 @@ p6 = lambda B, contour_kw: plot_contour(
     show=False,
     contour_kw=contour_kw,
 )
-p7 = lambda B, contour_kw, quiver_kw: vector_plot(
+p7 = lambda B, contour_kw, quiver_kw: plot_vector(
     Matrix([x, y]),
     (x, -5, 5),
     (y, -4, 4),
@@ -95,7 +95,7 @@ p7 = lambda B, contour_kw, quiver_kw: vector_plot(
     quiver_kw=quiver_kw,
     contour_kw=contour_kw,
 )
-p8 = lambda B, stream_kw, contour_kw: vector_plot(
+p8 = lambda B, stream_kw, contour_kw: plot_vector(
     Matrix([x, y]),
     (x, -5, 5),
     (y, -4, 4),
@@ -106,7 +106,7 @@ p8 = lambda B, stream_kw, contour_kw: vector_plot(
     stream_kw=stream_kw,
     contour_kw=contour_kw,
 )
-p9 = lambda B, quiver_kw: vector_plot(
+p9 = lambda B, quiver_kw: plot_vector(
     Matrix([z, y, x]),
     (x, -5, 5),
     (y, -4, 4),
@@ -116,7 +116,7 @@ p9 = lambda B, quiver_kw: vector_plot(
     quiver_kw=quiver_kw,
     show=False,
 )
-p10 = lambda B, stream_kw: vector_plot(
+p10 = lambda B, stream_kw: plot_vector(
     Matrix([z, y, x]),
     (x, -5, 5),
     (y, -4, 4),
@@ -151,17 +151,17 @@ p13 = lambda B: plot3d(
     use_cm=False,
     show=False,
 )
-p14 = lambda B, line_kw: complex_plot(
+p14 = lambda B, line_kw: plot_complex(
     sqrt(x), (x, -5, 5), backend=B, line_kw=line_kw, show=False
 )
-p15 = lambda B, line_kw: complex_plot(
+p15 = lambda B, line_kw: plot_complex(
     sqrt(x), (x, -5, 5), absarg=True, backend=B, line_kw=line_kw, show=False
 )
-p16 = lambda B, contour_kw: complex_plot(
+p16 = lambda B, contour_kw: plot_complex(
     sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, coloring="a",
     contour_kw=contour_kw, show=False
 )
-p17 = lambda B, surface_kw: complex_plot(
+p17 = lambda B, surface_kw: plot_complex(
     sqrt(x),
     (x, -5 - 5 * I, 5 + 5 * I),
     backend=B,

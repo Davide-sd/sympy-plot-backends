@@ -188,7 +188,7 @@ class MatplotlibBackend(Plot):
         aspect = self.aspect
         if aspect != "auto":
             if aspect == "equal" and is_3Dvector:
-                # vector_plot uses an aspect="equal" by default. In that case
+                # plot_vector uses an aspect="equal" by default. In that case
                 # we would get:
                 # NotImplementedError: Axes3D currently only supports the aspect
                 # argument 'auto'. You passed in 1.0.
