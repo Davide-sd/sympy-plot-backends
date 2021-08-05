@@ -130,7 +130,7 @@ the function a list containing the components of the vector. For example:
         backend=BB, xlabel="x", ylabel="y", quiver_kw=dict(scale=0.5))
 
 .. raw:: html
-	:file: figs/tut-6/fig-05.html
+	:file: ../_static/tut-6/fig-05.html
 
 
 Here, we used Bokeh. A few things to note:
@@ -154,7 +154,7 @@ and decrease the number of discretization points for the quivers:
         quiver_kw=dict(scale=0.5), nc=250, n=20)
 
 .. raw:: html
-	:file: figs/tut-6/fig-06.html
+	:file: ../_static/tut-6/fig-06.html
 
 Note that by increasing ``nc``, the plot is slower to render.
 Having discovered that Bokeh doesn't handle that well a contour plot,
@@ -167,7 +167,7 @@ let's disable the scalar field:
         quiver_kw=dict(scale=0.5), scalar=None)
 
 .. raw:: html
-	:file: figs/tut-6/fig-07.html
+	:file: ../_static/tut-6/fig-07.html
 
 By default, a color map will be applied to the quivers based on the local
 magnitude value. We can further customize the color of the quivers by using
@@ -181,7 +181,7 @@ the ``quiver_kw``:
         scalar=None)
 
 .. raw:: html
-	:file: figs/tut-6/fig-08.html
+	:file: ../_static/tut-6/fig-08.html
 
 Finally, Bokeh also "supports" streamlines:
 
@@ -191,7 +191,7 @@ Finally, Bokeh also "supports" streamlines:
         backend=BB, xlabel="x", ylabel="y", streamlines=True)
 
 .. raw:: html
-	:file: figs/tut-6/fig-09.html
+	:file: ../_static/tut-6/fig-09.html
 
 
 3D Vector Fields
