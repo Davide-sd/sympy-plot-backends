@@ -22,7 +22,6 @@ import os
 import sys
 import sympy
 import sphinx_rtd_theme
-import spb
 
 
 # -- Project information -----------------------------------------------------
@@ -31,7 +30,14 @@ project = 'Sympy Plotting Backends'
 copyright = '2021, Davide Sandona\''
 author = 'Davide Sandona\''
 
-v = spb.__version__
+here = os.path.dirname(__file__)
+repo = os.path.join(here, '..', '..')
+_version_py = os.path.join(repo, 'spb', '_version.py')
+version_ns = {}
+with open(_version_py) as f:
+    exec (f.read(), version_ns)
+
+v = version_ns["__version__"]
 # The short X.Y version
 version = ".".join(v.split(".")[:-1])
 # The full version, including alpha/beta/rc tags
@@ -125,8 +131,6 @@ html_static_path = [
 ]
 
 # html_js_files = [
-#     'k3d.js',
-#     'plotly-2.2.0.min.js',
 # ]
 
 # Custom sidebar templates, must be a dictionary that maps document names

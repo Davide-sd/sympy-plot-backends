@@ -1,13 +1,18 @@
 from setuptools import setup, find_packages
+import os
 
 def readme():
     with open("README.md") as f:
         return f.read()
 
+here = os.path.dirname(os.path.abspath(__file__))
+version_ns = {}
+with open(os.path.join(here, 'spb', '_version.py')) as f:
+    exec (f.read(), {}, version_ns)
 
 setup(
     name="sympy_plot_backends",
-    version="0.12.10",
+    version=version_ns["version"],
     description="Backends for plotting with SymPy",
     long_description=readme(),
     long_description_content_type="text/markdown",

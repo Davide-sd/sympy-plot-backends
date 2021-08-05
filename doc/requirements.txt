@@ -1,0 +1,6 @@
+numpy
+sphinx-math-dollar
+jupyter_sphinx
+nbsphinx
+nbsphinx_link
+sphinx_rtd_theme

@@ -1,5 +1,4 @@
-__version__ = "0.12.10"
-
+from spb._version import __version__
 from spb.functions import (
     plot,
     plot_parametric,
