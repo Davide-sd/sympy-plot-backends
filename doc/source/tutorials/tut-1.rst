@@ -109,7 +109,7 @@ Here, we can:
 * Click the legend entries to hide/show the data series.
 * Move the cursor over a line: a tooltip will show the coordinate of that point
   in the data series.
-* Use the toolbar to change the tool, for example we can select the _Box Zoom_
+* Use the toolbar to change the tool, for example we can select the *Box Zoom*
   to zoom into a rectangular region.
 
 Is some occasion, it might be helpful to assign a custom label to a specific
@@ -146,6 +146,7 @@ detection is turned off, for example:
     <iframe src="../_static/tut-1/fig-05.html" height="500px" width="100%"></iframe>
 
 As we can see, the plot is hardly readable:
+
 * There is a pretty huge data range covered by the y-axis, thus "flattening"
   the non-linearities.
 * There is a continous line that connects the points even through singularities.
