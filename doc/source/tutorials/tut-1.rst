@@ -97,7 +97,7 @@ Let's now visualize the same plot with ``BokehBackend``:
     plot(sin(x), cos(x), log(x), backend=BB)
 
 .. raw:: html
-	:file: figs/tut-1/fig-03.html
+	:file: ../_static/tut-1/fig-03.html
 
 Here, we can:
 

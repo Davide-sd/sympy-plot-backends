@@ -90,7 +90,7 @@ Then, we restart the kernel and launch a couple of tests:
     plot(sin(x), cos(x), log(x))
 
 .. raw:: html
-	:file: figs/tut-3/fig-01.html
+	:file: ../_static/tut-3/fig-01.html
 
 .. code:: ipython3
 
