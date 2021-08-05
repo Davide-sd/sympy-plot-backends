@@ -24,7 +24,7 @@ import sphinx_rtd_theme
 
 # from: 
 # https://sphinx-rtd-tutorial.readthedocs.io/en/latest/sphinx-config.html#autodoc-configuration
-sys.path.insert(0, os.path.abspath('../../spb/'))
+sys.path.insert(0, os.path.abspath('../../'))
 
 # -- Project information -----------------------------------------------------
 
