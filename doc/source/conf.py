@@ -67,8 +67,6 @@ extensions = [
     'jupyter_sphinx',   # used to run interactive.py docstring examples
     'nbsphinx',
     'nbsphinx_link',
-    'bokeh.sphinxext.bokeh_plot',
-    'bokeh.sphinxext.bokeh_model',
     'sphinx_rtd_theme',
     # 'sphinx_rtd_dark_mode',
 ]
