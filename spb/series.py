@@ -1517,7 +1517,7 @@ class ComplexPointSeries(BaseSeries):
 
     def get_data(self):
         return self._evaluate(self.expr)
-    
+
     def __str__(self):
         p = "point"
         if len(self.expr) > 1:
@@ -1591,7 +1591,7 @@ class ComplexSeries(BaseSeries):
             raise TypeError(
                 "`coloring` must be a character from 'a' to 'j' or a callable.")
         self.phaseres = kwargs.get("phaseres", 20)
-    
+
     def __str__(self):
         from sympy import re, im
         prefix = "cartesian surface" if self.is_3Dsurface else "domain coloring"
@@ -1763,7 +1763,7 @@ class Vector2DSeries(VectorBase):
         self.u = SurfaceOver2DRangeSeries(u, range1, range2, **kwargs)
         self.v = SurfaceOver2DRangeSeries(v, range1, range2, **kwargs)
         self.label = label
-    
+
     def __str__(self):
         r1 = (self.u.var_x, self.u.start_x, self.u.end_x)
         r2 = (self.u.var_y, self.u.start_y, self.u.end_y)
@@ -1803,7 +1803,7 @@ class Vector3DSeries(VectorBase):
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
-    
+
     def __str__(self):
         r1 = (self.var_x, self.start_x, self.end_x)
         r2 = (self.var_y, self.start_y, self.end_y)
@@ -1860,7 +1860,7 @@ class SliceVector3DSeries(Vector3DSeries):
     def _discretize(self):
         """This method allows to reduce code repetition."""
         return self.plane.get_data()
-    
+
     def __str__(self):
         s = "sliced " + super().__str__() + " with plane {}".format(self.plane.plane)
         return s
@@ -1894,7 +1894,7 @@ class PlaneSeries(SurfaceBaseSeries):
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
         self.params = params
-    
+
     def __str__(self):
         return "plane series of %s over %s, %s, %s" % (
             self.plane, self.x_range, self.y_range, self.z_range
@@ -2086,7 +2086,7 @@ class GeometrySeries(BaseSeries):
                 x = np.array([self._range[1], self._range[2]])
                 y = m * x + q
             return x.astype(float), y.astype(float)
-    
+
     def __str__(self):
         return "geometry entity: %s" % str(self.expr)
 

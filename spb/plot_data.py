@@ -450,7 +450,7 @@ def smart_plot(*args, show=True, **kwargs):
 
     Plotting a vector field and a line plot with automatic detection. Note that
     we are also setting the number of discretization point and the aspect ratio.
-        
+
     .. plot::
         :context: close-figs
         :format: doctest
