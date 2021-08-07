@@ -265,69 +265,39 @@ def get_plot_data(*args, **kwargs):
     Examples
     ========
 
-    .. plot::
-        :context: reset
-        :format: doctest
-        :include-source: True
-
-        >>> from sympy import (symbols, pi, sin, cos, exp, Plane,
-        ...     Matrix, gamma, I, sqrt, Abs)
-        >>> from spb.plot_data import get_plot_data
-        >>> u, v, x, y, z = symbols('u, v, x:z')
+    >>> from sympy import (symbols, pi, sin, cos, exp, Plane,
+    ...     Matrix, gamma, I, sqrt, Abs)
+    >>> from spb.plot_data import get_plot_data
+    >>> u, v, x, y, z = symbols('u, v, x:z')
 
     Data from a function with a single variable (2D line):
 
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> xx, yy = get_plot_data(cos(x), (x, -5, 5))
+    >>> xx, yy = get_plot_data(cos(x), (x, -5, 5))
 
     Here, ``xx`` and ``yy`` are two lists of coordinates.
 
     Data from a function with two variables (surface):
 
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> xx, yy, zz = get_plot_data(cos(x * y), (x, -5, 5), (y, -10, 10))
+    >>> xx, yy, zz = get_plot_data(cos(x * y), (x, -5, 5), (y, -10, 10))
 
     Here, ``xx, yy, zz`` are two-dimensional numpy arrays. `
     `xx, yy`` represent the mesh grid.
 
     Data from a 2D parametric function with one variable (2D line):
 
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> xx, yy, param = get_plot_data(cos(u), sin(u), (u, 0, 2 * pi))
+    >>> xx, yy, param = get_plot_data(cos(u), sin(u), (u, 0, 2 * pi))
 
     Here, ``xx, yy`` are two lists of coordinates.
 
     Data from a 3D parametric function with one variables (3D line):
 
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> xx, yy, zz, param = get_plot_data(cos(u), sin(u), u, (u, -5, 5))
+    >>> xx, yy, zz, param = get_plot_data(cos(u), sin(u), u, (u, -5, 5))
 
     Here, ``xx, yy, zz`` are three lists of coordinates.
 
     Data from an implicit relation:
 
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> data = get_plot_data(x > y)
+    >>> data = get_plot_data(x > y)
 
     Here, ``data`` depends on the specific case. Its shape could be:
 
@@ -340,49 +310,39 @@ def get_plot_data(*args, **kwargs):
       two-dimensional numpy arrays. ``xx, yy`` represent the mesh grid.
       This is returned by objects of type non-equalities (greater than,
       less than, ...).
+    
+    Get data from a symbolic geometry entity:
+
+    >>> xx, yy = get_plot_data(Ellipse(Point(0, 0), 5, 1), n=10)
+    
+    Get data from a plane: being a 3D entity, it requires three ranges, even
+    if the plane is parallel to one of the xy, yz, xz planes.
+
+    >>> xx, yy, zz = get_plot_data(Plane((0, 0, 0), (1, 1, 0)),
+    ...     (x, -10, 10), (y, -10, 10), (z, -10, 10))
 
     Get the necessary data to plot a 3D vector field over a slice plane:
 
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> xx, yy, zz, uu, vv, ww = get_plot_data(
-        ...     Matrix([z, y, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5),
-        ...     slice = Plane((-2, 0, 0), (1, 1, 1)), n=5)
+    >>> xx, yy, zz, uu, vv, ww = get_plot_data(
+    ...     Matrix([z, y, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5),
+    ...     slice = Plane((-2, 0, 0), (1, 1, 1)), n=5)
 
     Here ``xx, yy, zz, uu, vv, ww`` are three dimensional numpy arrays.
 
     Get the real part of a complex function over a real range:
 
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> xx, real = get_plot_data(sqrt(x), (x, -3, 3),
-        ...     real=True, imag=False)
+    >>> xx, real = get_plot_data(sqrt(x), (x, -3, 3),
+    ...     real=True, imag=False)
 
     Get the magnitude and argument of a complex function over a real range:
 
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> expr = 1 + exp(-Abs(x)) * sin(I * sin(5 * x))
-        >>> xx, mag, arg = get_plot_data(expr, (x, -3, 3), absarg=True)
+    >>> expr = 1 + exp(-Abs(x)) * sin(I * sin(5 * x))
+    >>> xx, mag, arg = get_plot_data(expr, (x, -3, 3), absarg=True)
 
     Compute a complex function over a complex range:
 
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> xx, yy, abs, arg, img, colorscale = get_plot_data(gamma(z), 
-        ...     (z, -3 - 3*I, 3 + 3*I))
+    >>> xx, yy, abs, arg, img, colorscale = get_plot_data(gamma(z), 
+    ...     (z, -3 - 3*I, 3 + 3*I))
 
     Here, ``xx, yy`` are 2D arrays representing the real and the imaginary part
     of the domain, respectively. ``abs`` and ``arg`` are the absolute value and

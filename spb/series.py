@@ -1991,9 +1991,9 @@ class GeometrySeries(BaseSeries):
     is_geometry = True
 
     def __new__(cls, *args, **kwargs):
-        print("GeometrySeries.__new__")
-        for a in args:
-            print(type(a), a)
+        # print("GeometrySeries.__new__")
+        # for a in args:
+        #     print(type(a), a)
 
         if isinstance(args[0], Plane):
             # kw = kwargs.copy()
@@ -2033,6 +2033,7 @@ class GeometrySeries(BaseSeries):
         self.label = label
         self.params = params
         self.fill = kwargs.get("fill", True)
+        self.n = kwargs.get("n", 200)
         if isinstance(expr, (LinearEntity3D, Point3D)):
             self.is_3Dline = True
             self.start = 0
@@ -2067,7 +2068,7 @@ class GeometrySeries(BaseSeries):
         elif isinstance(expr, Circle):
             cx, cy = float(expr.center[0]), float(expr.center[1])
             r = float(expr.radius)
-            t = np.linspace(0, 2 * np.pi, 200)
+            t = np.linspace(0, 2 * np.pi, self.n)
             x, y = cx + r * np.cos(t), cy + r * np.sin(t)
             x = np.append(x, x[0])
             y = np.append(y, y[0])
@@ -2076,7 +2077,7 @@ class GeometrySeries(BaseSeries):
             cx, cy = float(expr.center[0]), float(expr.center[1])
             a = float(expr.hradius)
             e = float(expr.eccentricity)
-            x = np.linspace(-a, a, 200)
+            x = np.linspace(-a, a, self.n)
             y = np.sqrt((a ** 2 - x ** 2) * (1 - e ** 2))
             x += cx
             x, y = np.concatenate((x, x[::-1])), np.concatenate((cy + y, cy - y[::-1]))
