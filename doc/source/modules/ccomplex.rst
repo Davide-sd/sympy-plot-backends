@@ -13,7 +13,7 @@ Complex Functions
 Domain Coloring
 ===============
 
-.. module:: spb.ccomplex.wegert
+.. automodule:: spb.ccomplex.wegert
 
 .. autofunction:: wegert
 

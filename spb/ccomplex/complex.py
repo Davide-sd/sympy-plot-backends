@@ -319,6 +319,7 @@ def plot_complex(*args, show=True, **kwargs):
 
     coloring : str or callable
         Choose between different domain coloring options. Default to "a".
+        Refer to [#fn1]_ for more information.
 
         - ``"a"``: standard domain coloring using HSV.
         - ``"b"``: enhanced domain coloring using HSV, showing iso-modulus
@@ -487,9 +488,9 @@ def plot_complex(*args, show=True, **kwargs):
     References
     ==========
 
-    Domain Coloring colorschemes are based on Elias Wegert's book
-    `"Visual Complex Functions" <https://www.springer.com/de/book/9783034801799>`_.
-    The book provides the background to better understand the images.
+    .. [#fn1] Domain Coloring is based on Elias Wegert's book
+       `"Visual Complex Functions" <https://www.springer.com/de/book/9783034801799>`_.
+       The book provides the background to better understand the images.
 
     """
     args = _plot_sympify(args)

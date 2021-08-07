@@ -7,8 +7,8 @@ The book provides the background to better understand the images.
 Original code:
 https://it.mathworks.com/matlabcentral/fileexchange/44375-phase-plots-of-complex-functions?s_tid=mwa_osa_a
 
-Elias Wegert kindly granted permission to re-license the colorscheme routine under
-BSD 3 clauses.
+Elias Wegert kindly granted permission to re-license the colorscheme routine
+under BSD 3 clauses.
 """
 
 import numpy as np
@@ -166,7 +166,7 @@ def polar_chessboard(w, phaseres=20):
 def create_colorscale(N=256):
     """
     Create a HSV colorscale which will be used to map argument values from
-    [-pi, pi]. Red color is associated to zero.
+    [-pi, pi] in a colorbar. Red color is associated to zero.
 
     Parameters
     ==========
@@ -186,12 +186,33 @@ def create_colorscale(N=256):
     return colorscale
 
 def wegert(coloring, w, phaseres=20, N=256):
-    """
+    """ Choose between different domain coloring options.
+
     Parameters
     ==========
 
     coloring : str
-        A character from ``"a"`` to ``"j"``.
+        Default to "a". Possible options:
+
+        - ``"a"``: standard domain coloring using HSV.
+        - ``"b"``: enhanced domain coloring using HSV, showing iso-modulus
+            and is-phase lines.
+        - ``"c"``: enhanced domain coloring using HSV, showing iso-modulus
+            lines.
+        - ``"d"``: enhanced domain coloring using HSV, showing iso-phase
+            lines.
+        - ``"e"``: alternating black and white stripes corresponding to
+            modulus.
+        - ``"f"``: alternating black and white stripes corresponding to
+            phase.
+        - ``"g"``: alternating black and white stripes corresponding to
+            real part.
+        - ``"h"``: alternating black and white stripes corresponding to
+            imaginary part.
+        - ``"i"``: cartesian chessboard on the complex points space. The
+            result will hide zeros.
+        - ``"j"``: polar Chessboard on the complex points space. The result
+            will show conformality.
 
     w : ndarray [n x m]
         Numpy array with the results (complex numbers) of the evaluation of
