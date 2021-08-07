@@ -452,8 +452,7 @@ class BokehBackend(Plot):
                         )
 
             elif s.is_2Dvector:
-                streamlines = self._kwargs.get("streamlines", False)
-                if streamlines:
+                if s.is_streamlines:
                     x, y, u, v = s.get_data()
                     sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
                     stream_kw = self._kwargs.get("stream_kw", dict())
@@ -671,8 +670,7 @@ class BokehBackend(Plot):
 
                 elif s.is_2Dvector:
                     x, y, u, v = s.get_data()
-                    streamlines = self._kwargs.get("streamlines", False)
-                    if streamlines:
+                    if s.is_streamlines:
                         sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
                         stream_kw = self._kwargs.get("stream_kw", dict())
                         density = stream_kw.pop("density", 2)

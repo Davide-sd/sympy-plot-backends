@@ -1261,10 +1261,12 @@ class InteractiveSeries(BaseSeries):
             self.is_vector = True
             self.is_slice = False
             self.is_2Dvector = True
+            self.is_streamlines = kwargs.get("streamlines", False)
         elif (nexpr == 3) and (npar == 3):
             self.is_vector = True
             self.is_3Dvector = True
             self.is_slice = False
+            self.is_streamlines = kwargs.get("streamlines", False)
 
         if self.is_2Dline and self.is_complex and isinstance(self.absarg, Expr):
             # here we are dealing with a complex line plot with absarg=True.
@@ -1752,6 +1754,7 @@ class VectorBase(BaseSeries):
     is_2D = False
     is_3D = False
     is_slice = False
+    is_streamlines = False
 
 
 class Vector2DSeries(VectorBase):
@@ -1760,9 +1763,13 @@ class Vector2DSeries(VectorBase):
     is_2Dvector = True
 
     def __init__(self, u, v, range1, range2, label, **kwargs):
-        self.u = SurfaceOver2DRangeSeries(u, range1, range2, **kwargs)
-        self.v = SurfaceOver2DRangeSeries(v, range1, range2, **kwargs)
+        kw = kwargs.copy()
+        kw.setdefault("n1", 25)
+        kw.setdefault("n2", 25)
+        self.u = SurfaceOver2DRangeSeries(u, range1, range2, **kw)
+        self.v = SurfaceOver2DRangeSeries(v, range1, range2, **kw)
         self.label = label
+        self.is_streamlines = kw.get("streamlines", False)
 
     def __str__(self):
         r1 = (self.u.var_x, self.u.start_x, self.u.end_x)
@@ -1803,6 +1810,7 @@ class Vector3DSeries(VectorBase):
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
+        self.is_streamlines = kwargs.get("streamlines", False)
 
     def __str__(self):
         r1 = (self.var_x, self.start_x, self.end_x)
@@ -1880,6 +1888,8 @@ class PlaneSeries(SurfaceBaseSeries):
     def __init__(
         self, plane, x_range, y_range, z_range=None, label="", params=dict(), **kwargs
     ):
+        print("PlaneSeries.__init__", plane, x_range, y_range, z_range)
+        print("\t", type(z_range))
         self.plane = sympify(plane)
         if not isinstance(self.plane, Plane):
             raise TypeError("`plane` must be an instance of sympy.geometry.Plane")
@@ -1904,6 +1914,7 @@ class PlaneSeries(SurfaceBaseSeries):
         x, y, z = symbols("x, y, z")
         plane = self.plane.subs(self.params)
         fs = plane.equation(x, y, z).free_symbols
+        print("PlaneSeries.get_data", fs)
         xx, yy, zz = None, None, None
         if fs == set([x]):
             # parallel to yz plane (normal vector (1, 0, 0))
@@ -1980,7 +1991,16 @@ class GeometrySeries(BaseSeries):
     is_geometry = True
 
     def __new__(cls, *args, **kwargs):
+        print("GeometrySeries.__new__")
+        for a in args:
+            print(type(a), a)
+
         if isinstance(args[0], Plane):
+            # kw = kwargs.copy()
+            # if isinstance(args[3], str):
+            #     args = list(args)
+            #     kw["label"] = args.pop(3)
+
             return PlaneSeries(*args, **kwargs)
         elif isinstance(args[0], Curve):
             new_cls = (

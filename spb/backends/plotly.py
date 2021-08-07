@@ -1,6 +1,6 @@
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from spb.utils import get_seeds_points
+from spb.backends.utils import get_seeds_points
 import plotly.graph_objects as go
 from plotly.figure_factory import create_quiver, create_streamline
 from mergedeep import merge
@@ -490,8 +490,7 @@ class PlotlyBackend(Plot):
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
-                    streamlines = self._kwargs.get("streamlines", False)
-                    if streamlines:
+                    if s.is_streamlines:
                         # NOTE: currently, it is not possible to create streamlines with
                         # a color scale: https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
                         # default values
@@ -517,14 +516,20 @@ class PlotlyBackend(Plot):
                         self._fig.add_trace(quiver.data[0])
                 else:
                     xx, yy, zz, uu, vv, ww = s.get_data()
-                    streamlines = self._kwargs.get("streamlines", False)
-                    if streamlines:
-                        seeds_points = get_seeds_points(xx, yy, zz, uu, vv, ww)
+                    if s.is_streamlines:
+                        stream_kw = self._kwargs.get("stream_kw", dict()).copy()
+                        seeds_points = get_seeds_points(
+                            xx, yy, zz, uu, vv, ww, to_numpy=True, **stream_kw)
 
                         # default values
                         skw = dict(
-                            colorscale=next(self._cm),
+                            colorscale=(
+                                next(self._cm)
+                                if self._use_cm
+                                else self._solid_colorscale()
+                            ),
                             sizeref=0.3,
+                            showscale=self.legend and self._use_cm,
                             colorbar=self._create_colorbar(ii, s.label),
                             starts=dict(
                                 x=seeds_points[:, 0],
@@ -532,8 +537,14 @@ class PlotlyBackend(Plot):
                                 z=seeds_points[:, 2],
                             ),
                         )
-                        # user-provided values
-                        stream_kw = self._kwargs.get("stream_kw", dict())
+                        
+                        # the following keywords must be removed otherwise
+                        # Plotly's Stramtube raises error
+                        _kws = ["starts", "max_prop", "npoints", "radius"]
+                        for _k in _kws:
+                            if _k in stream_kw.keys():
+                                stream_kw.pop(_k)
+
                         self._fig.add_trace(
                             go.Streamtube(
                                 x=xx.flatten(),
@@ -753,8 +764,7 @@ class PlotlyBackend(Plot):
                         self.fig.data[i]["z"] = ones
 
                 elif s.is_vector and s.is_3D:
-                    streamlines = self._kwargs.get("streamlines", False)
-                    if streamlines:
+                    if s.is_streamlines:
                         raise NotImplementedError
                     _, _, _, u, v, w = self.series[i].get_data()
                     self.fig.data[i]["u"] = u.flatten()
@@ -763,8 +773,7 @@ class PlotlyBackend(Plot):
 
                 elif s.is_vector:
                     x, y, u, v = self.series[i].get_data()
-                    streamlines = self._kwargs.get("streamlines", False)
-                    if streamlines:
+                    if s.is_streamlines:
                         streams = create_streamline(x[0, :], y[:, 0], u, v)
                         data = streams.data[0]
                         # TODO: iplot doesn't work with 2D streamlines. Why?

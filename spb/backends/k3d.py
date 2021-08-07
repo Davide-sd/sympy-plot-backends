@@ -1,7 +1,8 @@
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import convert_colormap
-from spb.utils import get_vertices_indices, get_seeds_points
+from spb.utils import get_vertices_indices
+from spb.backends.utils import compute_streamtubes
 import k3d
 import numpy as np
 import warnings
@@ -198,138 +199,22 @@ class K3DBackend(Plot):
 
                 self._fig += surf
 
-            elif s.is_3Dvector and self._kwargs.get("streamlines", False):
+            elif s.is_3Dvector and s.is_streamlines:
                 xx, yy, zz, uu, vv, ww = s.get_data()
                 # K3D doesn't like masked arrays, so filled them with NaN
                 xx, yy, zz, uu, vv, ww = [
-                    np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) else t
-                    for t in [xx, yy, zz, uu, vv, ww]
-                ]
-                magnitude = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
-                min_mag = min(magnitude.flatten())
-                max_mag = max(magnitude.flatten())
+                    np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray)
+                    else t for t in [xx, yy, zz, uu, vv, ww]]
 
-                import vtk
-                from vtk.util import numpy_support
-
-                vector_field = np.array([uu.flatten(), vv.flatten(), ww.flatten()]).T
-                vtk_vector_field = numpy_support.numpy_to_vtk(
-                    num_array=vector_field, deep=True, array_type=vtk.VTK_FLOAT
-                )
-                vtk_vector_field.SetName("vector_field")
-
-                points = vtk.vtkPoints()
-                points.SetNumberOfPoints(s.n2 * s.n1 * s.n3)
-                for i, (x, y, z) in enumerate(
-                    zip(xx.flatten(), yy.flatten(), zz.flatten())
-                ):
-                    points.SetPoint(i, [x, y, z])
-
-                grid = vtk.vtkStructuredGrid()
-                grid.SetDimensions([s.n2, s.n1, s.n3])
-                grid.SetPoints(points)
-                grid.GetPointData().SetVectors(vtk_vector_field)
+                vertices, magn = compute_streamtubes(
+                    xx, yy, zz, uu, vv, ww, self._kwargs)
 
                 stream_kw = self._kwargs.get("stream_kw", dict())
-                starts = stream_kw.pop("starts", None)
-                max_prop = stream_kw.pop("max_prop", 500)
-
-                streamer = vtk.vtkStreamTracer()
-                streamer.SetInputData(grid)
-                streamer.SetMaximumPropagation(max_prop)
-
-                if starts is None:
-                    seeds_points = get_seeds_points(xx, yy, zz, uu, vv, ww)
-                    seeds = vtk.vtkPolyData()
-                    points = vtk.vtkPoints()
-                    for p in seeds_points:
-                        points.InsertNextPoint(p)
-                    seeds.SetPoints(points)
-                    streamer.SetSourceData(seeds)
-                    streamer.SetIntegrationDirectionToForward()
-                elif isinstance(starts, dict):
-                    if not all([t in starts.keys() for t in ["x", "y", "z"]]):
-                        raise KeyError(
-                            "``starts`` must contains the following keys: "
-                            + "'x', 'y', 'z', whose values are going to be "
-                            + "lists of coordinates."
-                        )
-                    seeds_points = np.array([starts["x"], starts["y"], starts["z"]]).T
-                    seeds = vtk.vtkPolyData()
-                    points = vtk.vtkPoints()
-                    for p in seeds_points:
-                        points.InsertNextPoint(p)
-                    seeds.SetPoints(points)
-                    streamer.SetSourceData(seeds)
-                    streamer.SetIntegrationDirectionToBoth()
-                else:
-                    npoints = stream_kw.get("npoints", 200)
-                    radius = stream_kw.get("radius", None)
-                    center = 0, 0, 0
-                    if not radius:
-                        xmin, xmax = min(xx[0, :, 0]), max(xx[0, :, 0])
-                        ymin, ymax = min(yy[:, 0, 0]), max(yy[:, 0, 0])
-                        zmin, zmax = min(zz[0, 0, :]), max(zz[0, 0, :])
-                        radius = max(
-                            [abs(xmax - xmin), abs(ymax - ymin), abs(zmax - zmin)]
-                        )
-                        center = (xmax - xmin) / 2, (ymax - ymin) / 2, (zmax - zmin) / 2
-                    seeds = vtk.vtkPointSource()
-                    seeds.SetRadius(radius)
-                    seeds.SetCenter(*center)
-                    seeds.SetNumberOfPoints(npoints)
-
-                    streamer.SetSourceConnection(seeds.GetOutputPort())
-                    streamer.SetIntegrationDirectionToBoth()
-
-                streamer.SetComputeVorticity(0)
-                streamer.SetIntegrator(vtk.vtkRungeKutta4())
-                streamer.Update()
-
-                streamline = streamer.GetOutput()
-                streamlines_points = numpy_support.vtk_to_numpy(
-                    streamline.GetPoints().GetData()
-                )
-                streamlines_velocity = numpy_support.vtk_to_numpy(
-                    streamline.GetPointData().GetArray("vector_field")
-                )
-                streamlines_speed = np.linalg.norm(streamlines_velocity, axis=1)
-
-                vtkLines = streamline.GetLines()
-                vtkLines.InitTraversal()
-                point_list = vtk.vtkIdList()
-
-                lines = []
-                lines_attributes = []
-
-                while vtkLines.GetNextCell(point_list):
-                    start_id = point_list.GetId(0)
-                    end_id = point_list.GetId(point_list.GetNumberOfIds() - 1)
-                    l = []
-                    v = []
-
-                    for i in range(start_id, end_id):
-                        l.append(streamlines_points[i])
-                        v.append(streamlines_speed[i])
-
-                    lines.append(np.array(l))
-                    lines_attributes.append(np.array(v))
-
-                count = sum([len(l) for l in lines])
-                vertices = np.nan * np.zeros((count + (len(lines) - 1), 3))
-                attributes = np.zeros(count + (len(lines) - 1))
-                c = 0
-                for k, (l, a) in enumerate(zip(lines, lines_attributes)):
-                    vertices[c : c + len(l), :] = l
-                    attributes[c : c + len(l)] = a
-                    if k < len(lines) - 1:
-                        c = c + len(l) + 1
-
-                skw = dict(width=0.1, shader="mesh", compression_level=9)
+                skw = dict(width=0.1, shader="mesh")
                 if self._use_cm and ("color" not in stream_kw.keys()):
                     skw["color_map"] = next(self._cm)
-                    skw["color_range"] = [min_mag, max_mag]
-                    skw["attribute"] = attributes
+                    skw["color_range"] = [np.nanmin(magn), np.nanmax(magn)]
+                    skw["attribute"] = magn
                 else:
                     col = stream_kw.pop("color", next(self._cl))
                     if not isinstance(col, int):
@@ -337,8 +222,7 @@ class K3DBackend(Plot):
                     stream_kw["color"] = col
 
                 self._fig += k3d.line(
-                    vertices.astype(np.float32), **merge({}, skw, stream_kw)
-                )
+                    vertices.astype(np.float32), **merge({}, skw, stream_kw))
 
             elif s.is_3Dvector:
                 xx, yy, zz, uu, vv, ww = s.get_data()
@@ -476,7 +360,7 @@ class K3DBackend(Plot):
                     self._fig.objects[i].color_range = [z.min(), z.max()]
 
                 elif s.is_vector and s.is_3D:
-                    if self._kwargs.get("streamlines", False):
+                    if self.is_streamlines:
                         raise NotImplementedError
 
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()

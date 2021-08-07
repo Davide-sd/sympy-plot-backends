@@ -1,5 +1,6 @@
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
+from spb.backends.utils import compute_streamtubes
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.collections import LineCollection
@@ -441,8 +442,7 @@ class MatplotlibBackend(Plot):
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
                     magn = np.sqrt(uu ** 2 + vv ** 2)
-                    streamlines = self._kwargs.get("streamlines", False)
-                    if streamlines:
+                    if s.is_streamlines:
                         skw = dict()
                         stream_kw = self._kwargs.get("stream_kw", dict())
                         if self._use_cm:
@@ -484,12 +484,32 @@ class MatplotlibBackend(Plot):
                 else:
                     xx, yy, zz, uu, vv, ww = s.get_data()
                     magn = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
-                    streamlines = self._kwargs.get("streamlines", False)
-                    if streamlines:
-                        raise NotImplementedError(
-                            "Matplotlib currently doesn't expose any function "
-                            + "to create streamlines in 3D."
-                        )
+                    
+                    if s.is_streamlines:
+                        vertices, magn = compute_streamtubes(
+                            xx, yy, zz, uu, vv, ww, self._kwargs)
+
+                        lkw = dict()
+                        line_kw = self._kwargs.get("line_kw", dict())
+
+                        if self._use_cm:
+                            segments = self.get_segments(
+                                vertices[:, 0], vertices[:, 1], vertices[:, 2])
+                            lkw["cmap"] = next(self._cm)
+                            lkw["array"] = magn
+                            c = Line3DCollection(segments, **merge({}, lkw, line_kw))
+                            self.ax.add_collection(c)
+                            self._add_colorbar(c, s.label)
+                            self._add_handle(i, c)
+                        else:
+                            lkw["label"] = s.label
+                            l = self.ax.plot(vertices[:, 0], vertices[:, 1],
+                                vertices[:, 2], **merge({}, lkw, line_kw))
+                            self._add_handle(i, l)
+
+                        xlims.append((np.amin(xx), np.amax(xx)))
+                        ylims.append((np.amin(yy), np.amax(yy)))
+                        zlims.append((np.amin(zz), np.amax(zz)))
                     else:
                         qkw = dict()
                         quiver_kw = self._kwargs.get("quiver_kw", dict())
@@ -819,8 +839,7 @@ class MatplotlibBackend(Plot):
                         ylims.append((np.amin(yy), np.amax(yy)))
 
                 elif s.is_vector and s.is_3D:
-                    streamlines = self._kwargs.get("streamlines", False)
-                    if streamlines:
+                    if s.is_streamlines:
                         raise NotImplementedError
 
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()
@@ -838,8 +857,7 @@ class MatplotlibBackend(Plot):
                 elif s.is_vector:
                     xx, yy, uu, vv = self.series[i].get_data()
                     magn = np.sqrt(uu ** 2 + vv ** 2)
-                    streamlines = self._kwargs.get("streamlines", False)
-                    if streamlines:
+                    if s.is_streamlines:
                         raise NotImplementedError
 
                         # TODO: streamlines are composed by lines and arrows.

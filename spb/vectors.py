@@ -280,7 +280,8 @@ def plot_vector(*args, show=True, **kwargs):
     
       .. code-block::
         
-         plot((expr1, range1, range2, range3 [optional], label1), (expr2, range4, range5, range6 [optional], label2), **kwargs)
+         plot((expr1, range1, range2, range3 [optional], label1),
+            (expr2, range4, range5, range6 [optional], label2), **kwargs)
 
     Parameters
     ==========
@@ -366,7 +367,24 @@ def plot_vector(*args, show=True, **kwargs):
     stream_kw : dict
         A dictionary of keywords/values which is passed to the backend
         streamlines-plotting function to customize the appearance. Refer to
-        the backend's manual for more informations.
+        the Notes section to learn more.
+
+        For 3D vector fields, by default the streamlines will start at the
+        boundaries of the domain where the vectors are pointed inward.
+        Depending on the vector field, this may results in too tight
+        streamlines. Use the ``starts`` keyword argument to control the
+        generation of streamlines:
+
+        - ``starts=None``: the default aforementioned behaviour.
+        - ``starts=dict(x=x_list, y=y_list, z=z_list)``: specify the starting
+          points of the streamlines.
+        - ``starts=True``: randomly create starting points inside the domain.
+          In this setup we can set the number of starting point with ``npoints``
+          (default value to 200).
+
+        If 3D streamlines appears to be cut short inside the specified domain,
+        try to increase ``max_prop`` (default value to 5000).
+
 
     Examples
     ========
@@ -450,18 +468,23 @@ def plot_vector(*args, show=True, **kwargs):
         [1]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, -10, 0), (0, 2, 0))
         [2]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, 0, -10), (0, 0, 1))
     
+    3D vector streamlines starting at a random location:
+
+    >>> plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10), backend=MB,
+    ...     streamlines=True,
+    ...     stream_kw=dict(
+    ...         starts=True,
+    ...         npoints=1000
+    ...     ))
+    Plot object containing:
+    [0]: 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0)
     """
     args = _plot_sympify(args)
     args = _preprocess(*args)
 
     kwargs = _set_discretization_points(kwargs, Vector3DSeries)
-    # TODO: do I need these?
-    if "n1" not in kwargs:
-        kwargs["n1"] = 25
-    if "n2" not in kwargs:
-        kwargs["n2"] = 25
-    if "aspect" not in kwargs.keys():
-        kwargs["aspect"] = "equal"
+    kwargs.setdefault("aspect", "equal")
+    kwargs.setdefault("legend", True)
 
     series = _build_series(*args, **kwargs)
     if all([isinstance(s, (Vector2DSeries, ContourSeries)) for s in series]):
