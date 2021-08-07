@@ -718,7 +718,7 @@ class BokehBackend(Plot):
 
         # TODO:
         # https://docs.bokeh.org/en/latest/docs/user_guide/embed.html
-        
+
         if (ext == ".html") or (ext == ".htm"):
             from bokeh.resources import CDN
             from bokeh.embed import file_html

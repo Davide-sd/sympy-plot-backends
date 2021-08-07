@@ -273,13 +273,13 @@ def plot_vector(*args, show=True, **kwargs):
     - Plotting a vector field with a single range.
 
       .. code-block::
-        
+
          plot(expr, range1, range2, range3 [optional], **kwargs)
-        
+
     - Plotting multiple vector fields with different ranges and custom labels.
-    
+
       .. code-block::
-        
+
          plot((expr1, range1, range2, range3 [optional], label1),
             (expr2, range4, range5, range6 [optional], label2), **kwargs)
 
@@ -337,7 +337,7 @@ def plot_vector(*args, show=True, **kwargs):
         - ``Expr``: a symbolic expression representing the scalar field.
         - ``list``/``tuple``: [scalar_expr, label], where the label will be
             shown on the colorbar.
-        
+
         Default to True.
 
     show : boolean
@@ -352,7 +352,7 @@ def plot_vector(*args, show=True, **kwargs):
         - a Plane object from sympy.geometry module.
         - a list of planes.
         - a symbolic expression representing a surface of two variables.
-        
+
         The number of discretization points will be ``n1``, ``n2``, ``n3``.
         Note that:
 
@@ -467,7 +467,7 @@ def plot_vector(*args, show=True, **kwargs):
         [0]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(-10, 0, 0), (1, 0, 0))
         [1]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, -10, 0), (0, 2, 0))
         [2]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, 0, -10), (0, 0, 1))
-    
+
     3D vector streamlines starting at a random location:
 
     >>> plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10), backend=MB,

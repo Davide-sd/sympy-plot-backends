@@ -398,5 +398,3 @@ def _split_vector(expr, ranges, fill_ranges=True):
         xexpr, yexpr, zexpr = expr
     split_expr = xexpr, yexpr, zexpr
     return split_expr, ranges
-
-

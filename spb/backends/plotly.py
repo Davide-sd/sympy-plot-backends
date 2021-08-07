@@ -29,7 +29,7 @@ class PlotlyBackend(Plot):
 
     aspect : str, optional
         Default to ``"auto"``. Possible values:
-        
+
         - ``"equal"``: sets equal spacing on the axis of a 2D plot.
         - ``"cube"``, ``"auto"`` for 3D plots.
 
@@ -67,7 +67,7 @@ class PlotlyBackend(Plot):
     stream_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's
         streamlines function to customize the appearance.
-        
+
         - For 2D vector fields, defaul to: ``dict( arrow_scale = 0.15 )``
           Refer to this documentation page:
           https://plotly.com/python/streamline-plots/
@@ -537,7 +537,7 @@ class PlotlyBackend(Plot):
                                 z=seeds_points[:, 2],
                             ),
                         )
-                        
+
                         # the following keywords must be removed otherwise
                         # Plotly's Stramtube raises error
                         _kws = ["starts", "max_prop", "npoints", "radius"]

@@ -76,7 +76,7 @@ class MatplotlibBackend(Plot):
         * tuple of two float numbers to specify the interested center.
         * ``None``: standard Matplotlib layout with vertical axis on the left,
           horizontal axis on the bottom and a grid.
-        
+
         Default to ``"auto"``.
 
     contour_kw : dict, optional
@@ -95,7 +95,7 @@ class MatplotlibBackend(Plot):
         A dictionary of keywords/values which is passed to Matplotlib's plot
         functions to customize the appearance of the lines.
         Refer to the following web pages to learn more about customization:
-        
+
         * If the plot is using solid colors:
           https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
         * If the plot is using color maps:
@@ -484,7 +484,7 @@ class MatplotlibBackend(Plot):
                 else:
                     xx, yy, zz, uu, vv, ww = s.get_data()
                     magn = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
-                    
+
                     if s.is_streamlines:
                         vertices, magn = compute_streamtubes(
                             xx, yy, zz, uu, vv, ww, self._kwargs)

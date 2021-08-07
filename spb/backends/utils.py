@@ -359,11 +359,11 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
 
     xx, yy, zz, uu, vv, ww : np.ndarray [n x m x r]
         Discretized volume and vector components
-    
+
     to_numpy : boolean (Default to True)
         If True, return a [N x 3] numpy array of coordinates. If False, return
         a vtk object representing seeds points.
-    
+
     kw : dict
         Keyword arguments controlling the generation of streamlines.
 
@@ -406,7 +406,7 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
         x, y, z = [t if not isinstance(t, np.ndarray) else t.flatten()
             for t in [x, y, z]]
         points = np.array([x, y, z]).T
-        
+
         if to_numpy:
             return points
 
@@ -416,7 +416,7 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
             seeds_points.InsertNextPoint(p)
         seeds.SetPoints(seeds_points)
         return seeds
-    
+
     else:
         # generate a random cloud of points
         npoints = kw.get("npoints", 200)
@@ -443,7 +443,7 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
             # Extract the points from the point cloud.
             points = numpy_support.vtk_to_numpy(source.GetPoints().GetData())
             return points
-        
+
         return seeds
 
 
@@ -455,7 +455,7 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
 
     xx, yy, zz, uu, vv, ww : np.ndarray [n x m x r]
         Discretized volume and vector components
-    
+
     kwargs : dict
         Keyword arguments passed to the backend.
 
@@ -467,7 +467,7 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
         A matrix of x-y-z coordinates of the streamtubes, which also
         contains NaN values. Think of the streamtubes as a single long
         tube: NaN values separate the different sections.
-    
+
     attributes : np.ndarray [N]
         An array containing the magnitudes of the streamtubes. It also
         contains NaN values.
@@ -475,7 +475,7 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
 
     Notes
     =====
-    
+
     To compute streamlines in a 3D vector field there are multiple options:
 
     * custom built integrator. Requires times to be implemented and properly
@@ -565,7 +565,7 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
 
         lines.append(np.array(l))
         lines_attributes.append(np.array(v))
-    
+
     # create a matrix of coordinates from all the lines previously extracted.
     # NaN values will be used by the backends to separate the different
     # streamtubes
@@ -578,5 +578,5 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
         attributes[c : c + len(l)] = a
         if k < len(lines) - 1:
             c = c + len(l) + 1
-    
+
     return vertices, attributes
