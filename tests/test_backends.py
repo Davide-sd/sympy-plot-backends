@@ -364,7 +364,7 @@ def test_MatplotlibBackend():
         "y": np.linspace(-4, 4, 10),
         "z": np.linspace(-3, 3, 10),
     }))
-    
+
     # other keywords: it should not raise errors
     p = p10(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
 

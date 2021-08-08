@@ -470,7 +470,7 @@ def plot_vector(*args, show=True, **kwargs):
        [0]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(-10, 0, 0), (1, 0, 0))
        [1]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, 10, 0), (0, 2, 0))
        [2]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, 0, -10), (0, 0, 1))
-    
+
     3D vector streamlines starting at a 1000 random points:
 
     .. plot::
