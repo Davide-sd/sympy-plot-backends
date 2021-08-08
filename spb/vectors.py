@@ -442,42 +442,51 @@ def plot_vector(*args, show=True, **kwargs):
     3D vector field.
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_vector([x, y, z], (x, -10, 10), (y, -10, 10), (z, -10, 10),
-        ...     n=8)
-        Plot object containing:
-        [0]: 3D vector series: [x, y, z] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0)
+       >>> plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+       ...      n=8, quiver_kw={"length": 0.1},
+       ...      xlabel="x", ylabel="y", zlabel="z")
+       Plot object containing:
+       [0]: 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0)
 
     3D vector field with 3 orthogonal slice planes.
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
-        ...     n=8, slice=[
-        ...         Plane((-10, 0, 0), (1, 0, 0)),
-        ...         Plane((0, -10, 0), (0, 2, 0)),
-        ...         Plane((0, 0, -10), (0, 0, 1))])
-        Plot object containing:
-        [0]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(-10, 0, 0), (1, 0, 0))
-        [1]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, -10, 0), (0, 2, 0))
-        [2]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, 0, -10), (0, 0, 1))
+       >>> plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+       ...      n=8, quiver_kw={"length": 0.1},
+       ...      slice=[
+       ...          Plane((-10, 0, 0), (1, 0, 0)),
+       ...          Plane((0, 10, 0), (0, 2, 0)),
+       ...          Plane((0, 0, -10), (0, 0, 1))],
+       ...      xlabel="x", ylabel="y", zlabel="z")
+       Plot object containing:
+       [0]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(-10, 0, 0), (1, 0, 0))
+       [1]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, 10, 0), (0, 2, 0))
+       [2]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) with plane Plane(Point3D(0, 0, -10), (0, 0, 1))
+    
+    3D vector streamlines starting at a 1000 random points:
 
-    3D vector streamlines starting at a random location:
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-    >>> plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10), backend=MB,
-    ...     streamlines=True,
-    ...     stream_kw=dict(
-    ...         starts=True,
-    ...         npoints=1000
-    ...     ))
-    Plot object containing:
-    [0]: 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0)
+       >>> plot_vector(Matrix([z, y, x]), (x, -10, 10), (y, -10, 10), (z, -10, 10),
+       ...     streamlines=True,
+       ...     stream_kw=dict(
+       ...         starts=True,
+       ...         npoints=1000
+       ...     ),
+       ...     xlabel="x", ylabel="y", zlabel="z")
+       Plot object containing:
+       [0]: 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0)
     """
     args = _plot_sympify(args)
     args = _preprocess(*args)

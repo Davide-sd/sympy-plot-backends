@@ -116,7 +116,7 @@ p9 = lambda B, quiver_kw: plot_vector(
     quiver_kw=quiver_kw,
     show=False,
 )
-p10 = lambda B, stream_kw: plot_vector(
+p10 = lambda B, stream_kw, kwargs=dict(): plot_vector(
     Matrix([z, y, x]),
     (x, -5, 5),
     (y, -4, 4),
@@ -126,6 +126,7 @@ p10 = lambda B, stream_kw: plot_vector(
     streamlines=True,
     show=False,
     stream_kw=stream_kw,
+    **kwargs
 )
 p11 = lambda B, contour_kw: plot_implicit(
     x > y, (x, -5, 5), (y, -4, 4), n=20, backend=B, show=False, contour_kw=contour_kw
@@ -349,7 +350,23 @@ def test_MatplotlibBackend():
     assert ax.collections[0].cmap.name == "jet"
 
     p = p10(MB, stream_kw=dict())
-    raises(NotImplementedError, lambda: p.process_series())
+    assert len(p.series) == 1
+    p.process_series()
+    f, ax = p.fig
+    assert len(ax.collections) == 1
+    assert isinstance(ax.collections[0], Line3DCollection)
+    assert f.axes[1].get_ylabel() == "Matrix([[z], [y], [x]])"
+
+    # test different combinations for streamlines: it should not raise errors
+    p = p10(MB, stream_kw=dict(starts=True))
+    p = p10(MB, stream_kw=dict(starts={
+        "x": np.linspace(-5, 5, 10),
+        "y": np.linspace(-4, 4, 10),
+        "z": np.linspace(-3, 3, 10),
+    }))
+    
+    # other keywords: it should not raise errors
+    p = p10(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
 
     p = p12(MB, contour_kw=dict(cmap="jet"))
     assert len(p.series) == 1
@@ -531,6 +548,17 @@ def test_PlotlyBackend():
     assert isinstance(f.data[0], go.Streamtube)
     assert f.data[0]["colorscale"] == ((0, "red"), (1, "red"))
     assert f.data[0]["colorbar"]["title"]["text"] == str(Matrix([z, y, x]))
+
+    # test different combinations for streamlines: it should not raise errors
+    p = p10(PB, stream_kw=dict(starts=True))
+    p = p10(PB, stream_kw=dict(starts={
+        "x": np.linspace(-5, 5, 10),
+        "y": np.linspace(-4, 4, 10),
+        "z": np.linspace(-3, 3, 10),
+    }))
+
+    # other keywords: it should not raise errors
+    p = p10(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
 
     p = p11(PB, contour_kw=dict(colorscale=[[0, "rgba(0,0,0,0)"], [1, "red"]]))
     assert len(p.series) == 1
@@ -834,6 +862,17 @@ def test_K3DBackend():
     assert len(f.objects) == 1
     assert isinstance(f.objects[0], Line)
     assert f.objects[0].color == 16711680
+
+    # test different combinations for streamlines: it should not raise errors
+    p = p10(KBchild1, stream_kw=dict(starts=True))
+    p = p10(KBchild1, stream_kw=dict(starts={
+        "x": np.linspace(-5, 5, 10),
+        "y": np.linspace(-4, 4, 10),
+        "z": np.linspace(-3, 3, 10),
+    }))
+
+    # other keywords: it should not raise errors
+    p = p10(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError, lambda: p11(KBchild1, contour_kw=dict()))

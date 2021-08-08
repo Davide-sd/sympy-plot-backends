@@ -10,9 +10,10 @@ from spb.series import (
     SliceVector3DSeries,
     ContourSeries,
 )
-
+from spb.backends.utils import get_seeds_points
 import numpy as np
 from pytest import raises
+from vtk import vtkPolyData, vtkPointSource
 
 
 def pw(*args):
@@ -394,3 +395,56 @@ def test_vector_data():
     assert uu.shape == xx.shape
     assert vv.shape == yy.shape
     assert ww.shape == zz.shape
+
+def test_get_seeds_points():
+    x, y, z = symbols("x:z")
+    s = Vector3DSeries(z, y, x, (x, -5, 5), (y, -3, 3), (z, -2, 2))
+    xx, yy, zz, uu, vv, ww = s.get_data()
+
+    # verify that spb.backends.utils.get_seeds_points returns the correct
+    # data type based on the parameters
+
+    # Case 1: search boundary points where the vector is pointing inward the
+    # domain
+    d = get_seeds_points(xx, yy, zz, uu, vv, ww, True,
+        **dict(starts=None))
+    assert isinstance(d, np.ndarray)
+    assert len(d.shape) == 2 and (d.shape[1] == 3)
+
+    d = get_seeds_points(xx, yy, zz, uu, vv, ww, False,
+        **dict(starts=None))
+    assert isinstance(d, vtkPolyData)
+
+    # Case 2: user-provided starting points
+    xx2 = np.linspace(-5, 5, 10)
+    yy2 = np.linspace(-3, 3, 10)
+    zz2 = np.linspace(-2, 2, 10)
+    d = get_seeds_points(xx, yy, zz, uu, vv, ww, True,
+        **dict(starts={
+            "x": xx2,
+            "y": yy2,
+            "z": zz2
+        }))
+    assert isinstance(d, np.ndarray)
+    assert len(d.shape) == 2 and (d.shape == (10, 3))
+    assert np.all(d[:, 0] == xx2)
+    assert np.all(d[:, 1] == yy2)
+    assert np.all(d[:, 2] == zz2)
+
+    d = get_seeds_points(xx, yy, zz, uu, vv, ww, False,
+        **dict(starts={
+            "x": xx2,
+            "y": yy2,
+            "z": zz2
+        }))
+    assert isinstance(d, vtkPolyData)
+
+    # Case 3: generate random locations
+    d = get_seeds_points(xx, yy, zz, uu, vv, ww, True,
+        **dict(starts=True, npoints=10))
+    assert isinstance(d, np.ndarray)
+    assert len(d.shape) == 2 and (d.shape == (10, 3))
+
+    d = get_seeds_points(xx, yy, zz, uu, vv, ww, False,
+        **dict(starts=True, npoints=10))
+    assert isinstance(d, vtkPointSource)

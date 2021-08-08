@@ -9,7 +9,7 @@ from sympy.geometry import (
 )
 from sympy.vector import CoordSys3D
 from pytest import raises
-from spb.plot_data import _build_series
+from spb.plot_data import _build_series, get_plot_data
 from spb.series import (
     LineOver1DRangeSeries,
     Parametric2DLineSeries,
@@ -125,7 +125,8 @@ def test_geometry():
     do_test(Circle((1, 2), 3))
     do_test(Ellipse((1, 2), hradius=3, vradius=2))
     do_test(
-        Plane((0, 0, 0), (1, 1, 1)), (x, -5, 5), (y, -4, 4), (z, -3, 3), s=PlaneSeries
+        Plane((0, 0, 0), (1, 1, 1)), (x, -5, 5), (y, -4, 4), (z, -3, 3),
+        s=PlaneSeries
     )
 
     # Interactive series. Note that GeometryInteractiveSeries is an instance of
@@ -139,6 +140,20 @@ def test_geometry():
         params={x: 1, y: 2, z: 3},
         s=PlaneInteractiveSeries,
     )
+
+    # not enough ranges for PlaneSeries: this series require all three ranges
+    # for reliably computing data
+    raises(TypeError, lambda: get_plot_data(Plane((0, 0, 0), (1, 1, 1))))
+    raises(TypeError, lambda: get_plot_data(
+            Plane((0, 0, 0), (1, 1, 1)), (x, -5, 5)))
+    raises(TypeError, lambda: get_plot_data(
+            Plane((0, 0, 0), (1, 1, 1)), (x, -5, 5), (y, -5, 5)))
+    raises(TypeError, lambda: get_plot_data(
+            Plane((0, 0, 0), (1, 1, 1)), None, (y, -5, 5)))
+    raises(TypeError, lambda: get_plot_data(
+            Plane((0, 0, 0), (1, 1, 1)), (x, -5, 5), None, (y, -5, 5)))
+    raises(TypeError, lambda: get_plot_data(
+            Plane((0, 0, 0), (1, 1, 1)), None, (x, -5, 5), (y, -5, 5)))
 
 
 def test_vectors():

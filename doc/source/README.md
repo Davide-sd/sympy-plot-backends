@@ -25,7 +25,7 @@ In particular:
 To save the plots:
 * Matplotlib: just use `ipympl` save button.
 * Bokeh: just use `p.save(filename, CDN [optional])`
-* Plotly: just use `p.save(filenameinclude_plotlyjs="cdn", full_html=True)`
+* Plotly: just use `p.save(filename, include_plotlyjs="cdn", full_html=True)`
 * K3D: use:
 
 ```

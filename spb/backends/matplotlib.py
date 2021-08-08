@@ -523,6 +523,7 @@ class MatplotlibBackend(Plot):
                             qkw["color"] = next(self._cl)
                             kw = merge({}, qkw, quiver_kw)
                             q = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
+                            is_cb_added = False
                         self._add_handle(i, q, kw, is_cb_added, self._fig.axes[-1])
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
