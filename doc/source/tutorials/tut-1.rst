@@ -1,3 +1,5 @@
+.. _tut1:
+
 1 - 2D Backends
 ---------------
 
@@ -212,3 +214,111 @@ Finally, we can also correctly plot ``Piecewise`` expressions, for example:
 
 As a design choice, the algorithm is going to extract the different pieces and
 plot them separately. Note that points are visible too!
+
+Combining Plots
+===============
+
+Let's consider two different plots:
+
+.. plot::
+   :context: reset
+   :format: doctest
+   :include-source: True
+
+   >>> from sympy import *
+   >>> from spb import *
+   >>> from spb.backends.matplotlib import MB
+   >>> x = symbols("x")
+   >>> p1 = plot(sin(x), cos(x), backend=MB)
+   >>> p2 = plot(log(x), exp(-x / 5) * sin(5 * x), (x, 1e-05, 10),
+   ...     backend=MB, line_kw=dict(linestyle="--"))
+
+In this case, both `p1` and `p2` contains two data series. Note that we used
+the ``line_kw`` dictionary to provide custom options that have been passed
+to Matplotlib. Type ``help(MB)`` (or any other backend) to discover more
+customization options.
+
+In case we need to access these data series we can use the index notation:
+
+>>> s1 = p1[0]
+>>> type(s1)
+
+The data series are responsible to generate the numerical data. We can also
+extract the numerical data with:
+
+>>> data = s1.get_data()
+
+We can combine 2 plot objects in 3 ways:
+
+1. by calling ``p1.extend(p2)``: this method copy all the data series from
+   ``p2`` into ``p1``.
+2. by calling the ``p1.append(p2[idx])``: copy the data series at index
+   ``idx`` of ``p2`` and append it to ``p1``.
+3. by summing plot objects ``p1 + p2``: create a new plot copying all the
+   data series from ``p1`` and ``p2`` and also merge the keyword arguments
+   of the two plots.
+
+Let's try the first way. Note that the keyword arguments of ``p2`` are lost:
+
+
+.. plot::
+   :context: close-figs
+   :format: doctest
+   :include-source: True
+
+   >>> p1.extend(p2)
+   >>> p1.show()
+
+Let's append a data series from ``p2`` into ``p1``. In this case too the
+keyword arguments of ``p2`` are disregarded:
+
+.. plot::
+   :context: close-figs
+   :format: doctest
+   :include-source: True
+
+   >>> p1 = plot(sin(x), cos(x), backend=MB, show=False)
+   >>> p2 = plot(log(x), exp(-x / 5) * sin(5 * x), (x, 1e-05, 10),
+   ...     backend=MB, line_kw=dict(linestyle="--"), show=False)
+   >>> p1.append(p2[1])
+   >>> p1.show()
+
+Finally, let's add the plot objects. In this case, the keyword arguments
+will be merged:
+
+.. plot::
+   :context: close-figs
+   :format: doctest
+   :include-source: True
+
+   >>> p1 = plot(sin(x), cos(x), backend=MB, show=False)
+   >>> p2 = plot(log(x), exp(-x / 5) * sin(5 * x), (x, 1e-05, 10),
+   ...     backend=MB, line_kw=dict(linestyle="--"), show=False)
+   >>> p3 = (p1 + p2)
+   >>> p3.show()
+
+As you can see, the keyword arguments have been merged, thus every data
+series is affected by them!
+
+
+Saving Plots
+============
+
+Generally, there are two ways to save a plot:
+
+1. Manually, by clicking the save button in the toolbar. For Matplotlib, this
+   only works if the magic line ``%matplotlib widget`` has been executed.
+2. Programmatically, by calling the `save` method of a plot object. This
+   method is just a wrapper to the `save` method exposed by the actual
+   plotting library, therefore we can save jpg, png, pdf, svg or html files
+   if the library supports these functionality.
+
+Note that some backends requires additional dependencies to be installed
+in order to export pictures. Run the following command and follow the links
+in the Reference section to learn more.
+
+>>> help(MB.save)
+
+>>> help(PB.save)
+
+>>> help(MB.save)
