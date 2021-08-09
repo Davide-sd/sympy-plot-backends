@@ -61,68 +61,78 @@ class MatplotlibBackend(Plot):
     Parameters
     ==========
 
-    aspect : str or tuple, optional
-        Default to ``"auto"``. Possible values:
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. Possible values:
 
+        * ``'auto'``: Matplotlib will fit the plot in the vibile area.
         * ``"equal"``: sets equal spacing on the axis of a 2D plot.
-        * tuple containing 2 float numbers
-
-    axis_center : str or None, optional
+        * tuple containing 2 float numbers, from which the aspect ratio is
+          computed.
+    
+    axis_center : (float, float) or str or None, optional
         Set the location of the intersection between the horizontal and
-        vertical axis (only works for 2D plots). Possible values:
+        vertical axis in a 2D plot. It can be:
 
-        * ``"center"``: center of the current plot area.
-        * ``"auto"``: an algorithm will choose an appropriate value.
-        * tuple of two float numbers to specify the interested center.
-        * ``None``: standard Matplotlib layout with vertical axis on the left,
-          horizontal axis on the bottom and a grid.
-
-        Default to ``"auto"``.
+        * ``None``: traditional layout, with the horizontal axis fixed on the
+          bottom and the vertical axis fixed on the left. This is the default
+          value.
+        * a tuple ``(x, y)`` specifying the exact intersection point.
+        * ``'center'``: center of the current plot area.
+        * ``'auto'``: the intersection point is automatically computed.
 
     contour_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's
         contour/contourf function to customize the appearance.
-        Refer to the following web page to learn more about customization:
-        https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
+        Refer to [#fn1]_ to learn more about customization.
 
     image_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's
         imshow function to customize the appearance.
-        Refer to the following web page to learn more about customization:
-        https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
+        Refer to [#fn2]_ to learn more about customization.
 
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's plot
         functions to customize the appearance of the lines.
-        Refer to the following web pages to learn more about customization:
+        To learn more about customization:
 
-        * If the plot is using solid colors:
-          https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-        * If the plot is using color maps:
-          https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+        * Refer to [#fn3]_ if the plot is using solid colors.
+        * Refer to [#fn4]_ if the plot is using color maps.
 
     quiver_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's quivers
         function to customize the appearance.
-        Refer to this documentation page:
-        https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
+        Refer to [#fn5]_ to learn more about customization.
 
     surface_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's
         surface function to customize the appearance.
-        Refer to this documentation page:
-        https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
+        Refer to [#fn6]_ to learn more about customization.
 
     stream_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's
         streamplot function to customize the appearance.
-        For 2D vector fields, refer to this documentation page:
-        https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+        Refer to [#fn7]_ to learn more about customization.
 
     use_cm : boolean, optional
         If True, apply a color map to the mesh/surface or parametric lines.
         If False, solid colors will be used instead. Default to True.
+    
 
+    References
+    ==========
+    .. [#fn1] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
+    .. [#fn2] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
+    .. [#fn3] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+    .. [#fn4] https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+    .. [#fn5] https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
+    .. [#fn6] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
+    .. [#fn7] https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+
+
+    See also
+    ========
+
+    Plot, PlotlyBackend, BokehBackend, K3DBackend
     """
 
     _library = "matplotlib"
@@ -937,23 +947,20 @@ class MatplotlibBackend(Plot):
         else:
             self.close()
 
-    def save(self, path):
+    def save(self, path, **kwargs):
         """Save the current plot at the specified location.
 
-        Parameters
+        Refer to [#fn8]_ to visualize all the available keyword arguments.
+
+        References
         ==========
-
-            path : str
-                The filename of the output image.
-
-            kwargs : dict
-                Optional backend-specific parameters.
+        .. [#fn8] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html
         """
-        # the plot must first be created and then saved
-        # TODO: do I really need to show the plot in order to save it, or can I
-        # just create it and the save it?
+        # NOTE: the plot must first be created and then saved. Turns out that in
+        # in the process the plot will also be shown. That's standard Matplotlib
+        # behaviour.
         self.show()
-        self._fig.savefig(path)
+        self._fig.savefig(path, **kwargs)
 
     def close(self):
         """Close the current plot."""

@@ -16,107 +16,124 @@ class Plot:
     How the plotting module works:
 
     1. The user creates the symbolic expressions and calls one of the plotting
-        functions.
+       functions.
     2. The plotting functions generate a list of instances of the `BaseSeries`
-        class, containing the necessary information to plot the expressions
-        (eg the expression, ranges, series name, ...). Eventually, these objects
-        will generate the numerical data to be plotted.
-    3. The plotting functions instantiate the `Plot` class, which stores the
-        list of series and the main attributes of the plot
-        (eg axis labels, title, ...).
-        Among the keyword arguments, there must be `backend` which specify the
-        backend to be used.
-    4. The backend (a child class of `Plot`) will render the numerical data to a
-        plot and (eventually) show it on the screen.
+       class, containing the necessary information to plot the expressions
+       (eg the expression, ranges, series name, ...). Eventually, these objects
+       will generate the numerical data to be plotted.
+    3. The plotting functions instantiate the ``Plot`` class, which stores the
+       list of series and the main attributes of the plot (eg axis labels,
+       title, etc.). Among the keyword arguments, there must be ``backend``,
+       a subclass of ``Plot`` which specify the backend to be used.
+    4. The backend will render the numerical data to a plot and (eventually)
+       show it on the screen.
 
     The backend should check if it supports the data series that it's given.
-    Please, explore the `MatplotlibBackend` source code to understand how a
+    Please, explore the ``MatplotlibBackend`` source code to understand how a
     backend should be coded.
 
-    Methods
-    =======
+    Notes
+    =====
 
     In order to be used by SymPy plotting functions, a backend must implement
-    the following methods:
+    the following methods and attributes:
 
-    * `show(self)`: used to loop over the data series, generate the numerical
-        data, plot it and set the axis labels, title, ...
-    * save(self, path): used to save the current plot to the specified file
-        path.
-    * close(self): used to close the current plot backend (note: some plotting
-        library doesn't support this functionality. In that case, just raise a
-        warning).
+    * ``show(self)``: used to loop over the data series, generate the numerical
+      data, plot it and set the axis labels, title, ...
+    * ``save(self, path, **kwargs)``: used to save the current plot to the
+      specified file path.
+    * ``self._fig``: an instance attribute to store the backend-specific plot
+      object/s, which can be retrieved with the ``Plot.fig`` attribute. These
+      objects can then be used to further customize the resulting plot, using
+      backend-specific commands. For example, ``MatplotlibBackend`` stores a
+      tuple (figure, axes).
 
-    Also, the following attributes are required:
+    Parameters
+    ==========
 
-    * self._fig: (instance attribute) it stores the backend-specific plot
-        object/s, which can be retrieved with the Plot.fig attribute. These
-        objects can then be used to further customize the resulting plot, using
-        backend-specific commands. For example, MatplotlibBackend stores a tuple
-        (figure, axes).
+    title : str, optional
+        Set the title of the plot. Default to an empty string.
 
-    The arguments for the constructor Plot must be subclasses of BaseSeries.
+    xlabel, ylabel, zlabel : str, optional
+        Set the labels of the plot. Default to an empty string.
 
-    Any global option can be specified as a keyword argument. The global options
-    for a figure are:
+    legend : bool, optional
+        Show or hide the legend. By default, the backend will automatically
+        set it to True if multiple data series are shown.
 
-    - title : str
-    - xlabel : str
-    - ylabel : str
-    - zlabel : str
-    - legend : bool
-    - xscale : {'linear', 'log'}
-    - yscale : {'linear', 'log'}
-    - zscale : {'linear', 'log'}
-    - grid : bool
-    - axis_center : tuple of two floats or {'center', 'auto'}
-    - xlim : tuple of two floats
-    - ylim : tuple of two floats
-    - zlim : tuple of two floats
-    - aspect : tuple of two floats or {'auto'}
-    - backend : a subclass of Plot
-    - size : optional tuple of two floats, (width, height); default: None
+    xscale, yscale, zscale : str, optional
+        Discretization strategy for the provided domain along the specified
+        direction. Can be either ``'linear'`` or ``'log'``. Default to
+        ``'linear'``. If the backend supports it, the specified direction will
+        use the user-provided scale. By default, all backends uses linear
+        scales for both axis. None of the backends support logarithmic scale
+        for 3D plots.
+
+    grid : bool, optional
+        Show/Hide the grid. The default value depends on the backend.
+
+    xlim, ylim, zlim : (float, float), optional
+        Focus the plot to the specified range. The tuple must be in the form
+        ``(min_val, max_val)``.
+    
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. It only works for 2D plots.
+        The values depends on the backend. Read the interested backend's
+        documentation to find out the possible values.
+
+    backend : Plot
+        The subclass to be used to generate the plot.
+
+    size : (float, float) or None, optional
+        Set the size of the plot, ``(width, height)``. Default to None.
 
     Examples
     ========
 
     Combine multiple plots together to create a new plot:
 
-    .. code-block:: python
-        from sympy import *
-        from spb import *
-        x = symbols("x")
-        p1 = plot(sin(x), cos(x))
-        p2 = plot(sin(x) * cos(x), log(x))
-        p3 = p1 + p2
-        p3.show()
+    .. plot::
+        :context: reset
+        :format: doctest
+        :include-source: True
+
+        >>> from sympy import *
+        >>> from spb import *
+        >>> x = symbols("x")
+        >>> p1 = plot(sin(x), cos(x), show=False)
+        >>> p2 = plot(sin(x) * cos(x), log(x), show=False)
+        >>> p3 = p1 + p2
+        >>> p3.show()
 
     Combine multiple plots together to extend an existing plot:
 
-    .. code-block:: python
-        from sympy import *
-        from spb import *
-        x = symbols("x")
-        p1 = plot(sin(x), cos(x))
-        p2 = plot(sin(x) * cos(x), log(x))
-        p1.extend(p2)
-        p1.show()
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
 
-    To access the data series, use the index notation. Let's generate the
+        >>> from sympy import *
+        >>> from spb import *
+        >>> x = symbols("x")
+        >>> p1 = plot(sin(x), cos(x), show=False)
+        >>> p2 = plot(sin(x) * cos(x), log(x), show=False)
+        >>> p1.extend(p2)
+        >>> p1.show()
+
+    Use the index notation to access the data series. Let's generate the
     numerical data associated to the first series:
 
-    .. code-block:: python
-        from sympy import *
-        from spb import *
-        x = symbols("x")
-        p1 = plot(sin(x), cos(x))
-        xx, yy = p1[0].get_data()
+        >>> from sympy import *
+        >>> from spb import *
+        >>> x = symbols("x")
+        >>> p1 = plot(sin(x), cos(x), show=False)
+        >>> xx, yy = p1[0].get_data()
 
 
     See also
     ========
 
-    MatplotlibBackend, PlotlyBackend, BokehBackend, K3DBackend, MayaviBackend
+    MatplotlibBackend, PlotlyBackend, BokehBackend, K3DBackend
     """
 
     # set the name of the plotting library being used. This is required in order
@@ -440,9 +457,7 @@ class Plot:
     @property
     def fig(self):
         """Returns the objects used to render/display the plots, which depends
-        on the backend (hence the plotting library). For example,
-        MatplotlibBackend will return a tuple: (figure, axes). Other plotting
-        libraries may return a single object.
+        on the backend (hence the plotting library).
         """
         return self._fig
 
@@ -467,16 +482,12 @@ class Plot:
         Parameters
         ==========
 
-            path : str
-                File path with extension.
+        path : str
+            File path with extension.
 
-            kwargs : dict
-                Optional backend-specific parameters.
+        kwargs : dict
+            Optional backend-specific parameters.
         """
-        raise NotImplementedError
-
-    def close(self):
-        """Implement the functionalities to close the plot."""
         raise NotImplementedError
 
     def __str__(self):
@@ -523,6 +534,13 @@ class Plot:
     def append(self, arg):
         """Adds an element from a plot's series to an existing plot.
 
+        Parameters
+        ==========
+
+        arg : BaseSeries
+            An instance of ``BaseSeries`` which will be used to generate the
+            numerical data.
+
         Examples
         ========
 
@@ -535,7 +553,7 @@ class Plot:
            :include-source: True
 
            >>> from sympy import symbols
-           >>> from sympy.plotting import plot
+           >>> from spb import plot
            >>> x = symbols('x')
            >>> p1 = plot(x*x, show=False)
            >>> p2 = plot(x, show=False)
@@ -563,6 +581,11 @@ class Plot:
     def extend(self, arg):
         """Adds all series from another plot.
 
+        Parameters
+        ==========
+
+        arg : Plot or sequence of BaseSeries
+
         Examples
         ========
 
@@ -574,7 +597,7 @@ class Plot:
            :include-source: True
 
            >>> from sympy import symbols
-           >>> from sympy.plotting import plot
+           >>> from spb import plot
            >>> x = symbols('x')
            >>> p1 = plot(x**2, show=False)
            >>> p2 = plot(x, -x, show=False)
@@ -585,6 +608,11 @@ class Plot:
            [1]: cartesian line: x for x over (-10.0, 10.0)
            [2]: cartesian line: -x for x over (-10.0, 10.0)
            >>> p1.show()
+        
+        See Also
+        ========
+
+        append
 
         """
         if isinstance(arg, Plot):

@@ -37,13 +37,16 @@ matplotlib = import_module(
 class DummyBackendNotOk(Plot):
     """Used to verify if users can create their own backends.
     This backend is meant to raise NotImplementedError for methods `show`,
-    `save`, `close`.
+    `save`.
     """
 
     def __new__(cls, *args, **kwargs):
         # Since Plot has its __new__ method, this will prevent infinite
         # recursion
         return object.__new__(cls)
+    
+    def close(self):
+        raise NotImplementedError
 
 
 class DummyBackendOk(Plot):
@@ -61,9 +64,9 @@ class DummyBackendOk(Plot):
 
     def save(self):
         pass
-
+    
     def close(self):
-        pass
+        raise NotImplementedError
 
 
 def test_plot_and_save_1():

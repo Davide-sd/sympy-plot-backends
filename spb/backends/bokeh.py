@@ -232,8 +232,7 @@ class BokehBackend(Plot):
         A dictionary of keywords/values which is passed to Plotly's scatter
         functions to customize the appearance. Default to:
         ``line_kw = dict(line_width = 2)``
-        Refer to this documentation page:
-        https://docs.bokeh.org/en/latest/docs/reference/plotting.html?highlight=line#bokeh.plotting.Figure.line
+        Refer to [#fn1]_ to learn more about customization.
 
     quiver_kw : dict, optional
         A dictionary with keyword arguments to customize the quivers.
@@ -254,20 +253,19 @@ class BokehBackend(Plot):
 
     theme : str, optional
         Set the theme. Default to ``"dark_minimal"``. Find more Bokeh themes
-        at the following page:
-        https://docs.bokeh.org/en/latest/docs/reference/themes.html
+        at [#fn2]_ .
+        
+
+    References
+    ==========
+    .. [#fn1] https://docs.bokeh.org/en/latest/docs/reference/plotting.html?highlight=line#bokeh.plotting.Figure.line
+    .. [#fn2] https://docs.bokeh.org/en/latest/docs/reference/themes.html
 
 
-    Notes
-    =====
+    See also
+    ========
 
-    In order to export the plots, the user also need to install the packages
-    listed in the following page:
-    https://docs.bokeh.org/en/latest/docs/user_guide/export.html
-
-    At the time of writing this backend, geckodriver is not available to pip.
-    Do a quick search on the web to find the appropriate installer.
-
+    Plot, MatplotlibBackend, PlotlyBackend, K3DBackend
     """
 
     _library = "bokeh"
@@ -712,17 +710,36 @@ class BokehBackend(Plot):
                     rend[i].data_source.data.update(source)
 
     def save(self, path, **kwargs):
+        """ Export the plot to a static picture or to an interactive html file.
+
+        Refer to [#fn3]_ and [#fn4]_ to visualize all the available keyword
+        arguments.
+
+        Notes
+        =====
+        
+        1. In order to export static pictures, the user also need to install the
+           packages listed in [#fn5]_.
+        2. When exporting a fully portable html file, by default the necessary
+           Javascript libraries will be loaded with a CDN. This creates the
+           smallest file size possible, but it requires an internet connection
+           in order to view/load the file and its dependencies.
+
+        References
+        ==========
+        .. [#fn3] https://docs.bokeh.org/en/latest/docs/user_guide/export.html
+        .. [#fn4] https://docs.bokeh.org/en/latest/docs/user_guide/embed.html
+        .. [#fn5] https://docs.bokeh.org/en/latest/docs/reference/io.html#module-bokeh.io.export
+
+        """
         # TODO: an error get raised if I uncomment the following line
         # self._process_series(self._series)
         ext = os.path.splitext(path)[1]
-
-        # TODO:
-        # https://docs.bokeh.org/en/latest/docs/user_guide/embed.html
-
-        if (ext == ".html") or (ext == ".htm"):
+        if ext.lower() in [".html", ".html"]:
             from bokeh.resources import CDN
             from bokeh.embed import file_html
-            html = file_html(self.fig, CDN, "bokeh_plot")
+            skw = dict(resources=CDN, title="Bokeh Plot")
+            html = file_html(self.fig, **merge(skw, kwargs))
             with open(path, 'w') as f:
                 f.write(html)
         elif ext == ".svg":
@@ -742,6 +759,7 @@ class BokehBackend(Plot):
         doc.add_root(self._fig)
 
     def show(self):
+        """Visualize the plot on the screen."""
         self._process_series(self._series)
         if self._run_in_notebook:
             # TODO: the current way we are launching the server only works within

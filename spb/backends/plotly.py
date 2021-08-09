@@ -28,7 +28,8 @@ class PlotlyBackend(Plot):
     ==========
 
     aspect : str, optional
-        Default to ``"auto"``. Possible values:
+        Set the aspect ratio of the plot. Default to ``"auto"``.
+        Possible values:
 
         - ``"equal"``: sets equal spacing on the axis of a 2D plot.
         - ``"cube"``, ``"auto"`` for 3D plots.
@@ -36,61 +37,39 @@ class PlotlyBackend(Plot):
     contour_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's contour
         function to customize the appearance.
-        Refer to the following web pages to learn more about customization:
-        https://plotly.com/python/contour-plots/
-        https://plotly.com/python/builtin-colorscales/
+        Refer to [#fn1]_ and [#fn2]_  to learn more about customization.
 
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's scatter
         functions to customize the appearance.
-        Refer to the following web pages to learn more about customization:
-        https://plotly.com/python/line-and-scatter/
-        https://plotly.com/python/3d-scatter-plots/
+        Refer to [#fn3]_ and [#fn4]_ to learn more about customization.
 
     quiver_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's quivers
         function to customize the appearance.
 
         - For 2D vector fields, default to: ``dict( scale = 0.075 )``
-          Refer to this documentation page:
-          https://plotly.com/python/quiver-plots/
+          Refer to [#fn5]_ for more options.
         - For 3D vector fields, default to: ``dict( sizemode = "absolute", sizeref = 40 )``
-          Refer to this documentation page:
-          https://plotly.com/python/cone-plot/
+          Refer [#fn6]_ for more options.
 
     surface_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's
         Surface function to customize the appearance.
-        Refer to this documentation page:
-        https://plotly.com/python/3d-surface-plots/
+        Refer to [#fn7]_ for more options.
 
     stream_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's
         streamlines function to customize the appearance.
 
         - For 2D vector fields, defaul to: ``dict( arrow_scale = 0.15 )``
-          Refer to this documentation page:
-          https://plotly.com/python/streamline-plots/
-        - For 3D vector fields, default to:
-
-          .. code-block::
-
-                dict(
-                        sizeref = 0.3,
-                        starts = dict(
-                            x = seeds_points[:, 0],
-                            y = seeds_points[:, 1],
-                            z = seeds_points[:, 2]
-                    ))
-
-          where ``seeds_points`` are the starting points of the streamlines.
-          Refer to this documentation page:
-          https://plotly.com/python/streamtube-plot/
+          Refer to [#fn8]_ for more options.
+        - For 3D vector fields, default to: ``dict( sizeref = 0.3 )``
+          Refer to [#fn9]_ for more options.
 
     theme : str, optional
         Set the theme. Default to ``"plotly_dark"``. Find more Plotly themes at
-        the following page:
-        https://plotly.com/python/templates/
+        [#fn10]_ .
 
     use_cm : boolean, optional
         If True, apply a color map to the meshes/surface. If False, solid
@@ -100,15 +79,25 @@ class PlotlyBackend(Plot):
         Visualize the wireframe lines on surfaces. Default to False.
         Note that it definitely have a negative impact on the performances, and
         it does not work with ``iplot``.
+    
+    References
+    ==========
+    .. [#fn1] https://plotly.com/python/contour-plots/
+    .. [#fn2] https://plotly.com/python/builtin-colorscales/
+    .. [#fn3] https://plotly.com/python/line-and-scatter/
+    .. [#fn4] https://plotly.com/python/3d-scatter-plots/
+    .. [#fn5] https://plotly.com/python/quiver-plots/
+    .. [#fn6] https://plotly.com/python/cone-plot/
+    .. [#fn7] https://plotly.com/python/3d-surface-plots/
+    .. [#fn8] https://plotly.com/python/streamline-plots/
+    .. [#fn9] https://plotly.com/python/streamtube-plot/
+    .. [#fn10] https://plotly.com/python/templates/
 
 
-    Notes
-    =====
+    See also
+    ========
 
-    In order to export the plots, the user also need to install the packages
-    listed in the following page:
-    https://plotly.com/python/static-image-export/
-
+    Plot, MatplotlibBackend, BokehBackend, K3DBackend
     """
 
     _library = "plotly"
@@ -893,19 +882,36 @@ class PlotlyBackend(Plot):
         )
 
     def show(self):
+        """Visualize the plot on the screen."""
         if len(self._fig.data) != len(self.series):
             self._process_series(self.series)
         self._fig.show()
 
     def save(self, path, **kwargs):
+        """ Export the plot to a static picture or to an interactive html file.
+
+        Refer to [#fn11]_ and [#fn12]_ to visualize all the available keyword
+        arguments.
+
+        Notes
+        =====
+        In order to export static pictures, the user also need to install the
+        packages listed in [#fn11]_.
+
+        References
+        ==========
+        .. [#fn11] https://plotly.com/python/static-image-export/
+        .. [#fn12] https://plotly.com/python/interactive-html-export/
+
+        """
         self._process_series(self._series)
         self._update_layout()
 
         ext = os.path.splitext(path)[1]
-        if (ext == ".html") or (ext == ".htm"):
+        if ext.lower() in [".html", ".html"]:
             self.fig.write_html(path, **kwargs)
         else:
-            self._fig.write_image(path)
+            self._fig.write_image(path, **kwargs)
 
 
 PB = PlotlyBackend

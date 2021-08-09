@@ -28,6 +28,8 @@ from matplotlib.collections import LineCollection
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
+from tempfile import TemporaryDirectory
+import os
 
 unset_show()
 
@@ -887,3 +889,109 @@ def test_K3DBackend():
     assert len(f.objects) == 1
     assert isinstance(f.objects[0], Mesh)
     assert f.objects[0].name is None
+
+def test_save():
+    x, y, z = symbols("x:z")
+
+    # There are already plenty of tests for saving Matplotlib plots in
+    # test_plot.py. Here, I'm going to test that:
+    # 1. the save method accepts keyword arguments.
+    # 2. Bokeh and Plotly should not be able to save static pictures because
+    #    by default they need additional libraries. See the documentation of the
+    #    save methods for each backends to see what is required.
+    #    Hence, if in our system those libraries are installed, tests will fail!
+
+    with TemporaryDirectory(prefix="sympy_") as tmpdir:
+        p = plot(sin(x), cos(x), backend=MB)
+        filename = "test_mpl_save_1.png"
+        p.save(os.path.join(tmpdir, filename))
+        p.close()
+
+        p = plot(sin(x), cos(x), backend=MB)
+        filename = "test_mpl_save_2.pdf"
+        p.save(os.path.join(tmpdir, filename), dpi=150)
+        p.close()
+
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=MB)
+        filename = "test_mpl_save_3.png"
+        p.save(os.path.join(tmpdir, filename))
+        p.close()
+
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=MB)
+        filename = "test_mpl_save_4.pdf"
+        p.save(os.path.join(tmpdir, filename), dpi=150)
+        p.close()
+        
+        # Bokeh requires additional libraries to save static pictures.
+        # Raise an error because their are not installed.
+        p = plot(sin(x), cos(x), backend=BB, show=False)
+        filename = "test_bokeh_save_1.png"
+        raises(RuntimeError, lambda: p.save(os.path.join(tmpdir, filename)))
+
+        p = plot(sin(x), cos(x), backend=BB, show=False)
+        filename = "test_bokeh_save_2.svg"
+        raises(RuntimeError, lambda: p.save(os.path.join(tmpdir, filename)))
+
+        p = plot(sin(x), cos(x), backend=BB, show=False)
+        filename = "test_bokeh_save_3.html"
+        p.save(os.path.join(tmpdir, filename))
+
+        from bokeh.resources import INLINE
+        p = plot(sin(x), cos(x), backend=BB, show=False)
+        filename = "test_bokeh_save_4.html"
+        p.save(os.path.join(tmpdir, filename), resources=INLINE)
+
+        # Plotly requires additional libraries to save static pictures.
+        # Raise an error because their are not installed.
+        p = plot(sin(x), cos(x), backend=PB, show=False)
+        filename = "test_plotly_save_1.png"
+        raises(ValueError, lambda: p.save(os.path.join(tmpdir, filename)))
+
+        p = plot(sin(x), cos(x), backend=PB, show=False)
+        filename = "test_plotly_save_2.svg"
+        raises(ValueError, lambda: p.save(os.path.join(tmpdir, filename)))
+
+        p = plot(sin(x), cos(x), backend=PB, show=False)
+        filename = "test_plotly_save_3.html"
+        p.save(os.path.join(tmpdir, filename))
+
+        p = plot(sin(x), cos(x), backend=PB, show=False)
+        filename = "test_plotly_save_4.html"
+        p.save(os.path.join(tmpdir, filename), include_plotlyjs="cdn")
+
+        # K3D-Jupyter: use KBchild1 in order to run tests.
+        # NOTE: K3D is designed in such a way that the plots need to be shown on
+        # the screen before saving them. It is not possible to show the on the
+        # screen during tests, hence we are only going to test that it proceeds
+        # smoothtly or it raises errors when wrong options are given
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        filename = "test_k3d_save_1.png"
+        p.save(os.path.join(tmpdir, filename))
+
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        filename = "test_k3d_save_2.jpg"
+        raises(ValueError, lambda: p.save(os.path.join(tmpdir, filename)))
+
+        # unexpected keyword argument
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        filename = "test_k3d_save_3.jpg"
+        raises(ValueError, lambda: p.save(os.path.join(tmpdir, filename),
+            parameter=True))
+        
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        filename = "test_k3d_save_4.html"
+        p.save(os.path.join(tmpdir, filename))
+
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        filename = "test_k3d_save_4.html"
+        p.save(os.path.join(tmpdir, filename), include_js=True)
+
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        filename = "test_k3d_save_4.html"
+        raises(TypeError, lambda: p.save(os.path.join(tmpdir, filename),
+            include_js=True, parameter=True))
+        
+
+
+
+

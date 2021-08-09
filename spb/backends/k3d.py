@@ -9,6 +9,7 @@ import warnings
 from matplotlib.tri import Triangulation
 from mergedeep import merge
 import colorcet as cc
+import os
 
 # TODO:
 # 1. load the plot with menu minimized
@@ -47,6 +48,11 @@ class K3DBackend(Plot):
         If True, apply a color map to the meshes/surface. If False, solid
         colors will be used instead. Default to True.
 
+
+    See also
+    ========
+
+    Plot, MatplotlibBackend, PlotlyBackend, BokehBackend
     """
 
     _library = "k3d"
@@ -396,6 +402,8 @@ class K3DBackend(Plot):
         # self._fig.auto_rendering = True
 
     def show(self):
+        """Visualize the plot on the screen."""
+        
         if len(self._fig.objects) != len(self.series):
             self._process_series(self._series)
         self.plot_shown = True
@@ -418,20 +426,54 @@ class K3DBackend(Plot):
             ]
 
     def save(self, path, **kwargs):
+        """ Export the plot to a static picture or to an interactive html file.
+
+        Notes
+        =====
+        
+        K3D-Jupyter is only capable of exporting:
+        
+        1. '.png' pictures: refer to [#fn1]_ to visualize the available keyword
+           arguments.
+        2. '.html' files: when exporting a fully portable html file, by default
+           the required Javascript libraries will be loaded with a CDN. Set
+           ``include_js=True`` to include all the javascript code in the html
+           file: this will create a bigger file size, but can be run without
+           internet connection.
+
+        References
+        ==========
+        .. [#fn1] https://k3d-jupyter.org/k3d.html#k3d.plot.Plot.fetch_screenshot
+
+        """
         if not self.plot_shown:
             raise ValueError(
                 "K3D-Jupyter requires the plot to be shown on the screen "
                 + "before saving it."
             )
+        
+        ext = os.path.splitext(path)[1]
+        if not ext:
+            path += ".png"
 
-        @self._fig.yield_screenshots
-        def _func():
-            self._fig.fetch_screenshot()
-            screenshot = yield
-            with open(path, "wb") as f:
-                f.write(screenshot)
+        if ext in [".html", "htm"]:
+            with open(path, 'w') as f:
+                include_js = kwargs.pop("include_js", False)
+                self.fig.snapshot_include_js = include_js
+                f.write(self.fig.get_snapshot(**kwargs))
+        elif ext == ".png":
+            @self._fig.yield_screenshots
+            def _func():
+                self._fig.fetch_screenshot(**kwargs)
+                screenshot = yield
+                with open(path, "wb") as f:
+                    f.write(screenshot)
 
-        _func()
+            _func()
+        else:
+            raise ValueError(
+                "K3D-Jupyter can only export '.png' images or " +
+                "html files.")
 
 
 KB = K3DBackend

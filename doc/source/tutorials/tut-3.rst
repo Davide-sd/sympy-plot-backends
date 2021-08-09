@@ -1,3 +1,5 @@
+.. _tut3:
+
 3 - Customize The Module
 ------------------------
 
