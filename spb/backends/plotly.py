@@ -604,14 +604,14 @@ class PlotlyBackend(Plot):
                                     colorscale=[
                                         "rgb(%s, %s, %s)" % tuple(c) for c in colors
                                     ],
-                                    color=[-self.pi, self.pi],
+                                    color=[-np.pi, np.pi],
                                     colorbar=dict(
                                         tickvals=[
-                                            -self.pi,
-                                            -self.pi / 2,
+                                            -np.pi,
+                                            -np.pi / 2,
                                             0,
-                                            self.pi / 2,
-                                            self.pi,
+                                            np.pi / 2,
+                                            np.pi,
                                         ],
                                         ticktext=[
                                             "-&#x3C0;",
@@ -659,11 +659,11 @@ class PlotlyBackend(Plot):
                             title="Argument",
                             titleside="right",
                             tickvals = [
-                                -self.pi,
-                                -self.pi / 2,
+                                -np.pi,
+                                -np.pi / 2,
                                 0,
-                                self.pi / 2,
-                                self.pi,
+                                np.pi / 2,
+                                np.pi,
                             ],
                             ticktext = [
                                 "-&#x3C0;",
@@ -673,8 +673,8 @@ class PlotlyBackend(Plot):
                                 "&#x3C0;",
                             ]
                         ),
-                        cmin = -self.pi,
-                        cmax = self.pi,
+                        cmin = -np.pi,
+                        cmax = np.pi,
                         colorscale=colorscale,
                         # colorscale=colormap if self._use_cm else colorscale,
                         surfacecolor=angle,
@@ -800,12 +800,12 @@ class PlotlyBackend(Plot):
                         m, M = min(angle.flatten()), max(angle.flatten())
                         # show pi symbols on the colorbar if the range is close
                         # enough to [-pi, pi]
-                        if (abs(m + self.pi) < 1e-02) and (abs(M - self.pi) < 1e-02):
+                        if (abs(m + np.pi) < 1e-02) and (abs(M - np.pi) < 1e-02):
                             self.fig.data[i]["colorbar"]["tickvals"] = [
                                 m,
-                                -self.pi / 2,
+                                -np.pi / 2,
                                 0,
-                                self.pi / 2,
+                                np.pi / 2,
                                 M,
                             ]
                             self.fig.data[i]["colorbar"]["ticktext"] = [

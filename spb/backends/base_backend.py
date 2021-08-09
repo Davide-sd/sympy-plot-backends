@@ -151,11 +151,6 @@ class Plot:
     # complex series (the phase/argument ranges over [-pi, pi]).
     cyclic_colormaps = []
 
-    # pi number is used in all backends to set the ranges for the colorbars in
-    # complex plot. It is defined here for commodity, rather than importing
-    # math or numpy on each backend.
-    pi = np.pi
-
     def __new__(cls, *args, **kwargs):
         backend = cls._get_backend(kwargs)
         return backend(*args, **kwargs)

@@ -558,7 +558,7 @@ class MatplotlibBackend(Plot):
                         colors = colors / 255.0
 
                         colormap = ListedColormap(colors)
-                        norm = Normalize(vmin=-self.pi, vmax=self.pi)
+                        norm = Normalize(vmin=-np.pi, vmax=np.pi)
                         cb2 = self._fig.colorbar(
                             cm.ScalarMappable(norm=norm, cmap=colormap),
                             orientation="vertical",

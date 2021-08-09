@@ -524,9 +524,9 @@ class BokehBackend(Plot):
                 if colors is not None:
                     # chroma/phase-colorbar
                     cm1 = LinearColorMapper(
-                        palette=[tuple(c) for c in colors], low=-self.pi, high=self.pi
+                        palette=[tuple(c) for c in colors], low=-np.pi, high=np.pi
                     )
-                    ticks = [-self.pi, -self.pi / 2, 0, self.pi / 2, self.pi]
+                    ticks = [-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi]
                     labels = ["-π", "-π / 2", "0", "π / 2", "π"]
                     colorbar1 = ColorBar(
                         color_mapper=cm1,
