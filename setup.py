@@ -1,6 +1,11 @@
 from setuptools import setup, find_packages
 import os
 
+# TODO:
+# 1. can I remove msgpack as a dependency? It should be included with
+#    K3D. If not, do a commit on K3D to fix the issue.
+#    Once its time to remove it, also remove it from conda/meta.yaml
+
 def readme():
     with open("README.md") as f:
         return f.read()
@@ -47,5 +52,6 @@ setup(
         "ipyevents==2.0.1",
         "k3d==2.9.7",
         "vtk",  # needed for streamlines in k3d
+        "msgpack", # in order to export K3D to html
     ],
 )

@@ -31,6 +31,7 @@ requirements:
     - scipy
     - sympy
     - vtk
+    - msgpack
   run:
     - appdirs
     - bokeh
