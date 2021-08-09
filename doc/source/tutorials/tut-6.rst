@@ -233,31 +233,26 @@ Therefore, we might get a better idea by using streamlines:
 
 .. code:: ipython3
 
-    import numpy as np
-    n = 200
     vector_plot(Matrix([z, y, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5),
-        n=20, streamlines=True, backend=PB,
-        xlabel="x", ylabel="y", zlabel="z",
-        stream_kw=dict(
-            starts = dict(
-                    x = np.random.rand(n) * 10 - 5,
-                    y = np.random.rand(n) * 10 - 5,
-                    z = np.random.rand(n) * 10 - 5
-            ),
-            sizeref = 2800,
-        )
-    )
+        n=10, streamlines=True, backend=PB,
+        xlabel="x", ylabel="y", zlabel="z")
 
 .. raw:: html
 	
     <iframe src="../_static/tut-6/fig-11.html" height="500px" width="100%"></iframe>
 
-With the usual ``stream_kw`` dictionary we customize the appearance of the
-streamlines. In order to generate them, we need to provide starting points,
-which are going to be used in the integration process. In this case, we set
-a random clouds of points in our domain. The tricky part is chosing the number
-of points and the size of the streamlines. This is an iterative process.
-Note that the streamlines are coloured according to the local magnitude value.
+In order to generate streamlines, the internal algorithm automatically computed
+optimal starting points (seeds) at the boundaries of the domain, where the
+vectors are pointing inward toward the domain. This tends to produce regularly
+spaced streamlines. We will see later how to change the seeds.
+
+Usually, the tricky part is chosing the size of the streamlines. This is an
+iterative process. Note that the streamlines are coloured according to the
+local magnitude value.
+
+Keep in mind that Plotly uses a different technology to compute streamlines
+than Matplotlib and K3D-Jupyter. Therefore, it may become slower and slower as
+we increase the number of discretization points. 
 
 Now, let's change a little bit the vector for illustrative purposes:
 
