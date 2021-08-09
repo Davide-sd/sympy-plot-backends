@@ -26,19 +26,12 @@ old_lambdify = lambdify
 class BaseSeries:
     """Base class for the data objects containing stuff to be plotted.
 
-    Explanation
-    ===========
+    Notes
+    =====
 
     The backend should check if it supports the data series that it's given.
-    (eg TextBackend supports only LineOver1DRange).
-    It's the backend responsibility to know how to use the class of
-    data series that it's given.
-
-    Some data series classes are grouped (using a class attribute like is_2Dline)
-    according to the api they present (based only on convention). The backend is
-    not obliged to use that api (eg. The LineOver1DRange belongs to the
-    is_2Dline group and presents the get_points method, but the
-    TextBackend does not use the get_points method).
+    It's the backend responsibility to know how to use the data series that
+    it's given.
     """
 
     # Some flags follow. The rationale for using flags instead of checking base
@@ -171,18 +164,19 @@ class Line2DBaseSeries(BaseSeries):
 
         Returns
         =======
-            x: list
-                List of x-coordinates
 
-            y: list
-                List of y-coordinates
+        x: list
+            List of x-coordinates
 
-            z: list (optional)
-                List of z-coordinates in case of Parametric3DLineSeries
+        y: list
+            List of y-coordinates
 
-            param : list (optional)
-                List containing the parameter, in case of Parametric2DLineSeries
-                and Parametric3DLineSeries.
+        z: list (optional)
+            List of z-coordinates in case of Parametric3DLineSeries
+
+        param : list (optional)
+            List containing the parameter, in case of Parametric2DLineSeries
+            and Parametric3DLineSeries.
         """
         points = self.get_points()
         points = [np.array(p, dtype=np.float64) for p in points]
@@ -263,20 +257,21 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
 
         Parameters
         ==========
-            f : callable
-                The function to be numerical evaluated
 
-            start, end : floats
-                start and end values of the discretized domain
+        f : callable
+            The function to be numerical evaluated
 
-            max_depth : int
-                Controls the smootheness of the overall evaluation. The higher
-                the number, the smoother the function, the more memory will be
-                used by this recursive procedure. Default value is 9.
+        start, end : floats
+            start and end values of the discretized domain
 
-            xscale : str
-                Discretization strategy. Can be "linear" or "log". Default to
-                "linear".
+        max_depth : int
+            Controls the smootheness of the overall evaluation. The higher
+            the number, the smoother the function, the more memory will be
+            used by this recursive procedure. Default value is 9.
+
+        xscale : str
+            Discretization strategy. Can be "linear" or "log". Default to
+            "linear".
 
         References
         ==========
@@ -373,11 +368,12 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
 
         Returns
         =======
-            x: list
-                List of x-coordinates
 
-            y: list
-                List of y-coordinates
+        x: list
+            List of x-coordinates
+
+        y: list
+            List of y-coordinates
         """
 
         # TODO: this wrapper function is a very awful hack in order to pass
@@ -507,21 +503,22 @@ class Parametric2DLineSeries(Line2DBaseSeries):
 
         Parameters
         ==========
-            fx : callable
-                The function to be numerical evaluated in the horizontal
-                direction.
 
-            fy : callable
-                The function to be numerical evaluated in the vertical
-                direction.
+        fx : callable
+            The function to be numerical evaluated in the horizontal
+            direction.
 
-            start, end : floats
-                start and end values of the discretized domain
+        fy : callable
+            The function to be numerical evaluated in the vertical
+            direction.
 
-            max_depth : int
-                Controls the smootheness of the overall evaluation. The higher
-                the number, the smoother the function, the more memory will be
-                used by this recursive procedure. Default value is 9.
+        start, end : floats
+            start and end values of the discretized domain
+
+        max_depth : int
+            Controls the smootheness of the overall evaluation. The higher
+            the number, the smoother the function, the more memory will be
+            used by this recursive procedure. Default value is 9.
 
         References
         ==========
@@ -617,11 +614,12 @@ class Parametric2DLineSeries(Line2DBaseSeries):
 
         Returns
         =======
-            x: list
-                List of x-coordinates
 
-            y: list
-                List of y-coordinates
+        x: list
+            List of x-coordinates
+
+        y: list
+            List of y-coordinates
         """
         if not self.adaptive:
             return self._uniform_sampling()
@@ -741,10 +739,8 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     def __str__(self):
         return ("cartesian surface: %s for" " %s over %s and %s over %s") % (
             str(self.expr),
-            str(self.var_x),
-            str((self.start_x, self.end_x)),
-            str(self.var_y),
-            str((self.start_y, self.end_y)),
+            str(self.var_x), str((self.start_x, self.end_x)),
+            str(self.var_y), str((self.start_y, self.end_y)),
         )
 
     def get_data(self):
@@ -776,15 +772,8 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
 
     is_parametric = True
 
-    def __init__(
-        self,
-        expr_x,
-        expr_y,
-        expr_z,
-        var_start_end_u,
-        var_start_end_v,
-        label="",
-        **kwargs
+    def __init__(self, expr_x, expr_y, expr_z,
+        var_start_end_u, var_start_end_v, label="", **kwargs
     ):
         super().__init__()
         self.expr_x = sympify(expr_x)
@@ -807,25 +796,15 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
             "parametric cartesian surface: (%s, %s, %s) for"
             " %s over %s and %s over %s"
         ) % (
-            str(self.expr_x),
-            str(self.expr_y),
-            str(self.expr_z),
-            str(self.var_u),
-            str((self.start_u, self.end_u)),
-            str(self.var_v),
-            str((self.start_v, self.end_v)),
+            str(self.expr_x), str(self.expr_y), str(self.expr_z),
+            str(self.var_u), str((self.start_u, self.end_u)),
+            str(self.var_v), str((self.start_v, self.end_v)),
         )
 
     def get_data(self):
         mesh_u, mesh_v = self._discretize(
-            self.start_u,
-            self.end_u,
-            self.n1,
-            self.xscale,
-            self.start_v,
-            self.end_v,
-            self.n2,
-            self.yscale,
+            self.start_u, self.end_u, self.n1, self.xscale,
+            self.start_v, self.end_v, self.n2, self.yscale,
         )
 
         fx = vectorized_lambdify((self.var_u, self.var_v), self.expr_x)
@@ -856,10 +835,8 @@ class ContourSeries(SurfaceOver2DRangeSeries):
     def __str__(self):
         return ("contour: %s for " "%s over %s and %s over %s") % (
             str(self.expr),
-            str(self.var_x),
-            str((self.start_x, self.end_x)),
-            str(self.var_y),
-            str((self.start_y, self.end_y)),
+            str(self.var_x), str((self.start_x, self.end_x)),
+            str(self.var_y), str((self.start_y, self.end_y)),
         )
 
 
@@ -918,9 +895,7 @@ class ImplicitSeries(BaseSeries):
         has_equality = False
 
         def arg_expand(bool_expr):
-            """
-            Recursively expands the arguments of an Boolean Function
-            """
+            """Recursively expands the arguments of an Boolean Function"""
             for arg in bool_expr.args:
                 if isinstance(arg, BooleanFunction):
                     arg_expand(arg)
@@ -942,7 +917,7 @@ class ImplicitSeries(BaseSeries):
         return expr, has_equality
 
     def __str__(self):
-        return ("Implicit equation: %s for " "%s over %s and %s over %s") % (
+        return ("Implicit expression: %s for %s over %s and %s over %s") % (
             str(self.expr),
             str(self.var_x),
             str((self.start_x, self.end_x)),
@@ -1078,11 +1053,12 @@ class ImplicitSeries(BaseSeries):
 
         Returns
         =======
-            expr : Expr
-                The rewritten expression
 
-            equality : Boolean
-                Wheter the original expression was an Equality or not.
+        expr : Expr
+            The rewritten expression
+
+        equality : Boolean
+            Wheter the original expression was an Equality or not.
         """
         equality = False
         if isinstance(expr, Equality):
@@ -1219,12 +1195,6 @@ class InteractiveSeries(BaseSeries):
                 "At least one expression must be provided."
                 + "\nReceived: {}".format((exprs, ranges, label))
             )
-        # # TODO: do I really need this?
-        # if npar > 2:
-        #     raise ValueError(
-        #             "Depending on the backend, only 2D and 3D plots are " +
-        #             "supported (1 or 2 ranges at most). The provided " +
-        #             "expressions uses {} ranges.".format(npar))
 
         # set series attributes
         if (nexpr == 1) and (exprs[0].has(BooleanFunction) or exprs[0].has(Relational)):
@@ -1485,8 +1455,8 @@ class InteractiveSeries(BaseSeries):
         return self.data
 
     def __str__(self):
-        ranges = [(k, v[0], v[-1]) for k, v in self.ranges.items()]
-        return ("interactive expression: %s with ranges" " %s and parameters %s") % (
+        ranges = [(k, np.amin(v), np.amax(v)) for k, v in self.ranges.items()]
+        return ("interactive expression: %s with ranges %s and parameters %s") % (
             str(self.expr),
             ", ".join([str(r) for r in ranges]),
             str(self.signature),
@@ -1521,10 +1491,9 @@ class ComplexPointSeries(BaseSeries):
         return self._evaluate(self.expr)
 
     def __str__(self):
-        p = "point"
-        if len(self.expr) > 1:
-            p += "s"
-        return "complex %s %s" % (p, self.expr)
+        p = "points" if len(self.expr) > 1 else "point"
+        expr = self.expr if len(self.expr) > 1 else self.expr[0]
+        return "complex %s %s" % (p, expr)
 
 class ComplexPointInteractiveSeries(InteractiveSeries, ComplexPointSeries):
     def __init__(self, expr, label="", **kwargs):
@@ -1549,6 +1518,9 @@ class ComplexPointInteractiveSeries(InteractiveSeries, ComplexPointSeries):
     def update_data(self, params):
         results = self.expr.subs(params)
         self.data = ComplexPointSeries._evaluate(results)
+
+    def __str__(self):
+        return "complex interactive points: %s" % str(self.expr)
 
 class ComplexSeries(BaseSeries):
     """Represent a complex number or a complex function."""
@@ -1613,11 +1585,12 @@ class ComplexSeries(BaseSeries):
 
         Parameters
         ==========
-            x : np.ndarray
-                Discretized domain. Can be a complex line or a complex region.
 
-            r : np.ndarray
-                Numerical evaluation result.
+        x : np.ndarray
+            Discretized domain. Can be a complex line or a complex region.
+
+        r : np.ndarray
+            Numerical evaluation result.
         """
         r = self._correct_size(np.array(r), np.array(x))
 
@@ -1708,7 +1681,13 @@ class ComplexInteractiveSeries(InteractiveSeries, ComplexSeries):
         results = self._evaluate(params)
         self.data = self._correct_output(self.ranges[self.var], results)
 
-
+    def __str__(self):
+        s = "cartesian surface" if self.is_3Dsurface else "domain coloring"
+        return "interactive %s for expression: %s over %s and parameters %s" % (
+            s, str(self.expr),
+            str((self.var, self.start, self.end)),
+            str(self.signature)
+        )
 
 
 def _set_discretization_points(kwargs, pt):
@@ -1718,23 +1697,19 @@ def _set_discretization_points(kwargs, pt):
     Parameters
     ==========
 
-        kwargs : dict
+    kwargs : dict
 
-        pt : type
-            The type of the series, which indicates the kind of plot we are
-            trying to create: plot, plot_parametric, ...
+    pt : type
+        The type of the series, which indicates the kind of plot we are
+        trying to create: plot, plot_parametric, ...
     """
     if pt in [LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries]:
         if "n1" in kwargs.keys() and ("n" not in kwargs.keys()):
             kwargs["n"] = kwargs["n1"]
     elif pt in [
-        SurfaceOver2DRangeSeries,
-        ContourSeries,
-        ComplexSeries,
-        ParametricSurfaceSeries,
-        Vector2DSeries,
-        ComplexInteractiveSeries,
-        ImplicitSeries,
+        SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
+        ComplexSeries, ComplexInteractiveSeries,
+        Vector2DSeries, ImplicitSeries,
     ]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
@@ -1870,14 +1845,9 @@ class SliceVector3DSeries(Vector3DSeries):
         return self.plane.get_data()
 
     def __str__(self):
-        s = "sliced " + super().__str__() + " with plane {}".format(self.plane.plane)
+        s = "sliced " + super().__str__() + " at {}".format(
+            self.plane.plane)
         return s
-        # r1 = (self.var_x, self.start_x, self.end_x)
-        # r2 = (self.var_y, self.start_y, self.end_y)
-        # r3 = (self.var_z, self.start_z, self.end_z)
-        # return "3D vector series: [%s, %s, %s] over %s, %s, %s" % (
-        #     self.u, self.v, self.w, r1, r2, r3
-        # )
 
 
 class PlaneSeries(SurfaceBaseSeries):
@@ -1888,8 +1858,6 @@ class PlaneSeries(SurfaceBaseSeries):
     def __init__(
         self, plane, x_range, y_range, z_range=None, label="", params=dict(), **kwargs
     ):
-        print("PlaneSeries.__init__", plane, x_range, y_range, z_range)
-        print("\t", type(z_range))
         self.plane = sympify(plane)
         if not isinstance(self.plane, Plane):
             raise TypeError("`plane` must be an instance of sympy.geometry.Plane")
@@ -1914,7 +1882,6 @@ class PlaneSeries(SurfaceBaseSeries):
         x, y, z = symbols("x, y, z")
         plane = self.plane.subs(self.params)
         fs = plane.equation(x, y, z).free_symbols
-        print("PlaneSeries.get_data", fs)
         xx, yy, zz = None, None, None
         if fs == set([x]):
             # parallel to yz plane (normal vector (1, 0, 0))
@@ -1986,21 +1953,17 @@ class PlaneInteractiveSeries(PlaneSeries, InteractiveSeries):
     def update_data(self, params):
         self.params = params
 
+    def __str__(self):
+        s = super().__str__()
+        return "interactive " + s + " with parameters " + str(list(self.params.keys()))
+
 
 class GeometrySeries(BaseSeries):
     is_geometry = True
 
     def __new__(cls, *args, **kwargs):
-        # print("GeometrySeries.__new__")
-        # for a in args:
-        #     print(type(a), a)
 
         if isinstance(args[0], Plane):
-            # kw = kwargs.copy()
-            # if isinstance(args[3], str):
-            #     args = list(args)
-            #     kw["label"] = args.pop(3)
-
             return PlaneSeries(*args, **kwargs)
         elif isinstance(args[0], Curve):
             new_cls = (
@@ -2130,3 +2093,7 @@ class GeometryInteractiveSeries(GeometrySeries, InteractiveSeries):
 
     def update_data(self, params):
         self.params = params
+
+    def __str__(self):
+        s = super().__str__()
+        return "interactive " + s + " with parameters " + str(list(self.params.keys()))

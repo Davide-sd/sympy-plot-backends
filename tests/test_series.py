@@ -1,20 +1,18 @@
 from sympy import (
     symbols, cos, sin, log, sqrt,
-    Tuple, pi, Plane, S, I, im
+    Tuple, pi, Plane, S, I, im,
+    Circle, Point
 )
 from spb.series import (
-    LineOver1DRangeSeries,
-    Parametric2DLineSeries,
-    Parametric3DLineSeries,
-    ParametricSurfaceSeries,
-    SurfaceOver2DRangeSeries,
+    LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
+    SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
     InteractiveSeries,
     ImplicitSeries,
-    Vector2DSeries,
-    Vector3DSeries,
-    ComplexSeries,
-    ComplexInteractiveSeries,
-    SliceVector3DSeries,
+    Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
+    ComplexSeries, ComplexInteractiveSeries, ComplexPointSeries,
+    ComplexPointInteractiveSeries,
+    GeometrySeries, GeometryInteractiveSeries,
+    PlaneSeries, PlaneInteractiveSeries
 )
 import numpy as np
 from pytest import warns
@@ -592,3 +590,67 @@ def test_complex_discretization():
             is_complex=True, modules="mpmath", n1=20, n2=20)
     do_test(d1, d2)
     assert np.all(np.abs(d1[-1]) - np.abs(d3[-1])) < 1e-08
+
+def test_str():
+    x, y, z = symbols("x:z")
+
+    s = LineOver1DRangeSeries(cos(x), (x, -4, 3), "test")
+    assert str(s) == "cartesian line: cos(x) for x over (-4.0, 3.0)"
+    s = Parametric2DLineSeries(cos(x), sin(x), (x, -4, 3), "test")
+    assert str(s) == "parametric cartesian line: (cos(x), sin(x)) for x over (-4.0, 3.0)"
+    s = Parametric3DLineSeries(cos(x), sin(x), x, (x, -4, 3), "test")
+    assert str(s) == "3D parametric cartesian line: (cos(x), sin(x), x) for x over (-4.0, 3.0)"
+    s = SurfaceOver2DRangeSeries(cos(x * y), (x, -4, 3), (y, -2, 5), "test")
+    assert str(s) == "cartesian surface: cos(x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
+    s = ContourSeries(cos(x * y), (x, -4, 3), (y, -2, 5), "test")
+    assert str(s) == "contour: cos(x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
+    s = ParametricSurfaceSeries(cos(x * y), sin(x * y), x * y,
+        (x, -4, 3), (y, -2, 5), "test")
+    assert str(s) == "parametric cartesian surface: (cos(x*y), sin(x*y), x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
+    s = ImplicitSeries(x < y, (x, -5, 4), (y, -3, 2), "test")
+    assert str(s) == "Implicit expression: x < y for x over (-5.0, 4.0) and y over (-3.0, 2.0)"
+    s = ComplexPointSeries(2 + 3 * I, "test")
+    assert str(s) == "complex point 2 + 3*I"
+    s = ComplexPointSeries([2 + 3 * I, 4 * I], "test")
+    assert str(s) == "complex points (2 + 3*I, 4*I)"
+    s = ComplexPointInteractiveSeries([2 + 3 * I], "test")
+    assert str(s) == "complex interactive points: (2 + 3*I,)"
+    s = ComplexPointInteractiveSeries([2 + 3 * I, 4 * I], "test")
+    assert str(s) == "complex interactive points: (2 + 3*I, 4*I)"
+    s = ComplexSeries(sqrt(z), (z, -2-3j, 4+5j), "test", threed=True)
+    assert str(s) == "cartesian surface: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+    s = ComplexSeries(sqrt(z), (z, -2-3j, 4+5j), "test", domain_coloring=True)
+    assert str(s) == "domain coloring: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+    s = ComplexInteractiveSeries(x * sqrt(z), (z, -2-3j, 4+5j), "test",
+        threed=True, params={x: 1})
+    assert str(s) == "interactive cartesian surface for expression: x*sqrt(z) over (z, (-2-3j), (4+5j)) and parameters [x, z]"
+    s = ComplexInteractiveSeries(x * sqrt(z), (z, -2-3j, 4+5j), "test",
+        domain_coloring=True, params={x: 1})
+    assert str(s) == "interactive domain coloring for expression: x*sqrt(z) over (z, (-2-3j), (4+5j)) and parameters [x, z]"
+    s = Vector2DSeries(-y, x, (x, -5, 4), (y, -3, 2), "test")
+    assert str(s) == "2D vector series: [-y, x] over (x, -5.0, 4.0), (y, -3.0, 2.0)"
+    s = Vector3DSeries(z, y, x, (x, -5, 4), (y, -3, 2), (z, -6, 7), "test")
+    assert str(s) == "3D vector series: [z, y, x] over (x, -5.0, 4.0), (y, -3.0, 2.0), (z, -6.0, 7.0)"
+    s = SliceVector3DSeries(Plane((0, 0, 0), (1, 0, 0)), z, y, x,
+        (x, -5, 4), (y, -3, 2), (z, -6, 7), "test")
+    assert str(s) == "sliced 3D vector series: [z, y, x] over (x, -5.0, 4.0), (y, -3.0, 2.0), (z, -6.0, 7.0) at Plane(Point3D(0, 0, 0), (1, 0, 0))"
+    s = PlaneSeries(Plane((0, 0, 0), (1, 1, 1)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7), "test")
+    assert str(s) == "plane series of Plane(Point3D(0, 0, 0), (1, 1, 1)) over (x, -5, 4), (y, -3, 2), (z, -6, 7)"
+    s = PlaneInteractiveSeries([Plane((z, 0, 0), (1, 1, 1))],
+        [(x, -5, 4), (y, -3, 2), (z, -6, 7)], "test", params={z: 1})
+    assert str(s) == "interactive plane series of Plane(Point3D(z, 0, 0), (1, 1, 1)) over (x, -5, 4), (y, -3, 2), (z, -6, 7) with parameters [z]"
+    s = GeometrySeries(Circle(Point(0, 0), 5))
+    assert str(s) == "geometry entity: Circle(Point2D(0, 0), 5)"
+    s = GeometryInteractiveSeries([Circle(Point(x, 0), 5)], [], params={x: 1})
+    assert str(s) == "interactive geometry entity: Circle(Point2D(x, 0), 5) with parameters [x]"
+
+    # interactive series
+    s = InteractiveSeries([z * cos(x)], [(x, -4, 3)], "test", params={z: 1})
+    assert str(s) == "interactive expression: z*cos(x) with ranges (x, -4.0, 3.0) and parameters [x, z]"
+    s = InteractiveSeries([z * cos(x * y)], [(x, -4, 3), (y, -2, 1)], "test",
+        params={z: 1})
+    assert str(s) == "interactive expression: z*cos(x*y) with ranges (x, -4.0, 3.0), (y, -2.0, 1.0) and parameters [x, y, z]"
+    s = InteractiveSeries([z * cos(x * y), sin(x * y), x*y],
+        [(x, -4, 3), (y, -2, 1)], "test", params={z: 1})
+    assert str(s) == "interactive expression: (z*cos(x*y), sin(x*y), x*y) with ranges (x, -4.0, 3.0), (y, -2.0, 1.0) and parameters [x, y, z]"

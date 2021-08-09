@@ -245,8 +245,8 @@ def get_plot_data(*args, **kwargs):
     ==========
 
     pt : str, optional
-        Specify which kind of data the user would like to obtain. Default 
-        value is ``None``, indicating the function will use automatic 
+        Specify which kind of data the user would like to obtain. Default
+        value is ``None``, indicating the function will use automatic
         detection. Possible values are:
 
         - ``"p"``: to specify a line plot.
@@ -310,11 +310,11 @@ def get_plot_data(*args, **kwargs):
       two-dimensional numpy arrays. ``xx, yy`` represent the mesh grid.
       This is returned by objects of type non-equalities (greater than,
       less than, ...).
-    
+
     Get data from a symbolic geometry entity:
 
     >>> xx, yy = get_plot_data(Ellipse(Point(0, 0), 5, 1), n=10)
-    
+
     Get data from a plane: being a 3D entity, it requires three ranges, even
     if the plane is parallel to one of the xy, yz, xz planes.
 
@@ -341,7 +341,7 @@ def get_plot_data(*args, **kwargs):
 
     Compute a complex function over a complex range:
 
-    >>> xx, yy, abs, arg, img, colorscale = get_plot_data(gamma(z), 
+    >>> xx, yy, abs, arg, img, colorscale = get_plot_data(gamma(z),
     ...     (z, -3 - 3*I, 3 + 3*I))
 
     Here, ``xx, yy`` are 2D arrays representing the real and the imaginary part
@@ -456,7 +456,7 @@ def smart_plot(*args, show=True, **kwargs):
         ...     slice=Plane((0, 0, 0), (1, 1, 1)),
         ...     quiver_kw={"length": 0.25})
         Plot object containing:
-        [0]: sliced 3D vector series: [z, y, x] over (x, -5.0, 5.0), (y, -5.0, 5.0), (z, -5.0, 5.0) with plane Plane(Point3D(0, 0, 0), (1, 1, 1))
+        [0]: sliced 3D vector series: [z, y, x] over (x, -5.0, 5.0), (y, -5.0, 5.0), (z, -5.0, 5.0) at Plane(Point3D(0, 0, 0), (1, 1, 1))
 
     See also
     ========
