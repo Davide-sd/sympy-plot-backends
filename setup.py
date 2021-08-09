@@ -52,6 +52,6 @@ setup(
         "ipyevents==2.0.1",
         "k3d==2.9.7",
         "vtk",  # needed for streamlines in k3d
-        "msgpack", # in order to export K3D to html
+        "msgpack==1.0.2", # in order to export K3D to html
     ],
 )
