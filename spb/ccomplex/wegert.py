@@ -192,27 +192,27 @@ def wegert(coloring, w, phaseres=20, N=256):
     ==========
 
     coloring : str
-        Default to "a". Possible options:
+        Default to ``"a"``. Possible options:
 
         - ``"a"``: standard domain coloring using HSV.
         - ``"b"``: enhanced domain coloring using HSV, showing iso-modulus
-            and is-phase lines.
+          and is-phase lines.
         - ``"c"``: enhanced domain coloring using HSV, showing iso-modulus
-            lines.
+          lines.
         - ``"d"``: enhanced domain coloring using HSV, showing iso-phase
-            lines.
+          lines.
         - ``"e"``: alternating black and white stripes corresponding to
-            modulus.
+          modulus.
         - ``"f"``: alternating black and white stripes corresponding to
-            phase.
+          phase.
         - ``"g"``: alternating black and white stripes corresponding to
-            real part.
+          real part.
         - ``"h"``: alternating black and white stripes corresponding to
-            imaginary part.
+          imaginary part.
         - ``"i"``: cartesian chessboard on the complex points space. The
-            result will hide zeros.
+          result will hide zeros.
         - ``"j"``: polar Chessboard on the complex points space. The result
-            will show conformality.
+          will show conformality.
 
     w : ndarray [n x m]
         Numpy array with the results (complex numbers) of the evaluation of

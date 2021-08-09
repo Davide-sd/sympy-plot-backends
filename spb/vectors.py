@@ -332,11 +332,11 @@ def plot_vector(*args, show=True, **kwargs):
         vector field plot. Can be:
 
         - ``True``: plot the magnitude of the vector field. Only works when a
-            single vector field is plotted.
+          single vector field is plotted.
         - ``False``/``None``: do not plot any scalar field.
         - ``Expr``: a symbolic expression representing the scalar field.
         - ``list``/``tuple``: [scalar_expr, label], where the label will be
-            shown on the colorbar.
+          shown on the colorbar.
 
         Default to True.
 
@@ -357,7 +357,7 @@ def plot_vector(*args, show=True, **kwargs):
         Note that:
 
         - only quivers plots are supported with slices. Streamlines plots
-            are unaffected.
+          are unaffected.
         - ``n3`` will only be used with planes parallel to xz or yz.
 
     streamlines : boolean

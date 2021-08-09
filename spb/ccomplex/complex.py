@@ -211,20 +211,25 @@ def plot_complex(*args, show=True, **kwargs):
 
     * list of complex numbers: creates a scatter plot.
     * function of 1 variable over a real range:
-        1. line plot separating the real and imaginary parts.
-        2. line plot of the modulus of the complex function colored by its
-           argument, if `absarg=True`.
-        3. line plot of the modulus and the argument, if `abs=True, arg=True`.
+
+      1. line plot separating the real and imaginary parts.
+      2. line plot of the modulus of the complex function colored by its
+         argument, if ``absarg=True``.
+      3. line plot of the modulus and the argument, if ``abs=True, arg=True``.
+
     * function of 2 variables over 2 real ranges:
-        1. By default, a surface plot of the real and imaginary part is created.
-        2. By toggling `real=True, imag=True, abs=True, arg=True` we can create
-           surface plots of the real, imaginary part or the absolute value or
-           the argument.
+
+      1. By default, a surface plot of the real and imaginary part is created.
+      2. By toggling ``real=True, imag=True, abs=True, arg=True`` we can create
+         surface plots of the real, imaginary part or the absolute value or
+         the argument.
+
     * complex function over a complex range:
-        1. domain coloring plot.
-        2. 3D plot of the modulus colored by the argument, if `threed=True`.
-        3. 3D plot of the real and imaginary part by toggling `real=True`,
-           `imag=True`.
+
+      1. domain coloring plot.
+      2. 3D plot of the modulus colored by the argument, if ``threed=True``.
+      3. 3D plot of the real and imaginary part by toggling ``real=True``,
+         ``imag=True``.
 
     Parameters
     ==========
@@ -318,28 +323,28 @@ def plot_complex(*args, show=True, **kwargs):
         Default to True.
 
     coloring : str or callable
-        Choose between different domain coloring options. Default to "a".
+        Choose between different domain coloring options. Default to ``"a"``.
         Refer to [#fn1]_ for more information.
 
         - ``"a"``: standard domain coloring using HSV.
         - ``"b"``: enhanced domain coloring using HSV, showing iso-modulus
-            and is-phase lines.
+          and is-phase lines.
         - ``"c"``: enhanced domain coloring using HSV, showing iso-modulus
-            lines.
+          lines.
         - ``"d"``: enhanced domain coloring using HSV, showing iso-phase
-            lines.
+          lines.
         - ``"e"``: alternating black and white stripes corresponding to
-            modulus.
+          modulus.
         - ``"f"``: alternating black and white stripes corresponding to
-            phase.
+          phase.
         - ``"g"``: alternating black and white stripes corresponding to
-            real part.
+          real part.
         - ``"h"``: alternating black and white stripes corresponding to
-            imaginary part.
+          imaginary part.
         - ``"i"``: cartesian chessboard on the complex points space. The
-            result will hide zeros.
+          result will hide zeros.
         - ``"j"``: polar Chessboard on the complex points space. The result
-            will show conformality.
+          will show conformality.
 
         The user can also provide a callable, `f(w)`, where `w` is an
         [n x m] Numpy array (provided by the plotting module) containing
