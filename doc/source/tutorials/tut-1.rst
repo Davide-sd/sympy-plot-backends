@@ -196,24 +196,53 @@ detection. We can easily fix it by scrolling the y-axis or by setting the
 Plotting Piecewise functions
 ============================
 
-Finally, we can also correctly plot ``Piecewise`` expressions, for example:
+We can also plot ``Piecewise`` expressions, eventually showing the
+discontinuities. For example:
 
 .. code-block:: python
 
-    pf = Piecewise(
+    pf = pf = Piecewise(
         (sin(x), x < -5),
         (2, Eq(x, 0)),
         (3, Eq(x, 2)),
         (cos(x), (x > 0) & (x < 2)),
-        (tan(x), True)
+        (x / 2, True)
     )
     display(pf)
-    plot(pf, backend=MB, detect_poles=True)
+    plot(pf, backend=MB)
 
 .. figure:: ../_static/tut-1/fig-08.png
 
 As a design choice, the algorithm is going to extract the different pieces and
-plot them separately. Note that points are visible too!
+plot them separately. Note that:
+
+* the points are visible too!
+* the number on labels refers to the piece being plotted. So, ``P5`` appears
+  two times because that piece covers two different parts of the range.
+
+Let's try to reduce the plotted range:
+
+.. code-block:: python
+
+    plot(pf, (x, -3, 1.5), backend=MB)
+
+.. figure:: ../_static/tut-1/fig-09.png
+
+Note that ``P1`` and ``P3`` are not visible because they are outside of the
+provided range.
+
+When using ``BokehBackend`` to plot piecewise functions, the user should avoid
+to drag the plot around, as this will recompute the series and override the
+original ranges, thus leading to an incorrect plot (note, this only works
+within Jupyter Notebook):
+
+.. code-block:: python
+
+    plot(pf, (x, -3, 1.5), backend=BB)
+
+.. raw:: html
+   :file: ../_static/tut-1/fig-10.html
+
 
 Combining Plots
 ===============

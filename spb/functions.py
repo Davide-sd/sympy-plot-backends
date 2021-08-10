@@ -42,6 +42,26 @@ from spb.series import (
 def _process_piecewise(piecewise, _range, label, **kwargs):
     """Extract the pieces of an univariate Piecewise function and create the
     necessary series for an univariate plot.
+
+    Notes
+    =====
+
+    As a design choice, the following implementation reuses the existing
+    classes, instead of creating a new one to deal with Piecewise. Here, each
+    piece is going to create at least one series. If a piece is using a union
+    of coditions (for example, ``((x < 0) | (x > 2))``), than two or more series
+    of the same expression are created (for example, one covering ``x < 0`` and
+    the other covering ``x > 2``), both having the same label.
+
+    With this approach we can assign different color and label to each piece,
+    thus making it obvious where discontinuities are located.
+
+    However, if a piece is outside of the provided plotting range, then it will
+    not be added to the plot. This may lead to not-complete plots in some
+    backend, such as BokehBackend, which is capable of auto-recompute the data
+    on mouse drag. If the user drags the mouse over an area previously not
+    shown (thus no data series), there won't be any line on the plot in this
+    area.
     """
     series = []
     irange = Interval(_range[1], _range[2], False, False)
@@ -51,13 +71,14 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
         # if the user didn't specify any custom label.
         label = "P"
 
-    def func(expr, _set, c):
+    def func(expr, _set, c, from_union=False):
         if isinstance(_set, Interval):
             series.append(
                 LineOver1DRangeSeries(
                     expr, (_range[0], _set.args[0], _set.args[1]),
                     label + str(c), **kwargs))
-            c += 1
+            if not from_union:
+                c += 1
         elif isinstance(_set, FiniteSet):
             loc, val = [], []
             for _loc in _set.args:
@@ -65,10 +86,18 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
                 val.append(float(expr.evalf(subs={_range[0]: _loc})))
             series.append(List2DSeries(loc, val, label + str(c),
                     is_point=True))
-            c += 1
+            if not from_union:
+                c += 1
         elif isinstance(_set, Union):
             for _s in _set.args:
-                c = func(expr, _s, c)
+                c = func(expr, _s, c, from_union=True)
+        elif isinstance(_set, EmptySet.func):
+            # in this case, some pieces are outside of the provided range.
+            # don't add any series, but increase the counter nonetheless so that
+            # there is one-to-one correspondance between the expression and
+            # what is plotted.
+            if not from_union:
+                c += 1
         else:
             raise TypeError(
                 "Unhandle situation:\n" +
@@ -92,9 +121,10 @@ def _build_line_series(*args, **kwargs):
     decompose it in such a way that each argument gets its own series.
     """
     series = []
+    pp = kwargs.get("process_piecewise", True)
     for arg in args:
         expr, r, label = arg
-        if expr.has(Piecewise):
+        if expr.has(Piecewise) and pp:
             series += _process_piecewise(expr, r, label, **kwargs)
         else:
             series.append(LineOver1DRangeSeries(*arg, **kwargs))
@@ -177,6 +207,11 @@ def plot(*args, show=True, **kwargs):
     polar : boolean
         Default to False. If True, generate a polar plot of a curve with radius
         `expr` as a function of the range
+
+    process_piecewise : boolean
+        Default to True. If a ``Piecewise`` expression is encountered, extract
+        and plot the pieces separately. This ensure a correct representation
+        of discontinuities. If False, discontinuities won't be visible.
 
     show : bool, optional
         The default value is set to ``True``. Set show to ``False`` and
