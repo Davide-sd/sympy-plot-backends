@@ -44,7 +44,7 @@ class DummyBackendNotOk(Plot):
         # Since Plot has its __new__ method, this will prevent infinite
         # recursion
         return object.__new__(cls)
-    
+
     def close(self):
         raise NotImplementedError
 
@@ -64,7 +64,7 @@ class DummyBackendOk(Plot):
 
     def save(self):
         pass
-    
+
     def close(self):
         raise NotImplementedError
 
@@ -533,7 +533,7 @@ def test_issue_11461():
         skip("Matplotlib not the default backend")
 
     x = Symbol("x")
-    p = plot(real_root((log(x / (x - 2))), 3), show=False)
+    p = plot(real_root((log(x / (x - 2))), 3), show=False, process_piecewise=False)
     # Random number of segments, probably more than 100, but we want to see
     # that there are segments generated, as opposed to when the bug was present
     # and that there are no exceptions.

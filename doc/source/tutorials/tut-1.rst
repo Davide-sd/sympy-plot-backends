@@ -243,6 +243,35 @@ within Jupyter Notebook):
 .. raw:: html
    :file: ../_static/tut-1/fig-10.html
 
+Now, let's consider a case where this standard behaviour with ``Plotwise``
+is going to fail:
+
+.. code-block:: python
+
+    f = real_root((log(x / (x - 2))), 3)
+    display(f)
+    plot(f)
+
+.. figure:: ../_static/tut-1/equation-1.png
+
+.. parsed-literal::
+
+   TypeError: Unhandle situation:
+   expr: Abs(log(x/(x - 2)))**(1/3)*sign(log(x/(x - 2)))
+   cond: ConditionSet(x, Eq(arg(x/(x - 2)), 0), Interval(-10, 10))
+   type(cond): <class 'sympy.sets.conditionset.ConditionSet'>
+
+As we can see from the expression, the conditions are not trivial, hence the 
+current implementation is not able to split the sub-expressions. In these
+occasions we can set ``process_piecewise=False``. This forces the algorithm to
+consider the piecewise as a single function:
+
+.. code-block:: python
+
+    plot(f, process_piecewise=False)
+
+.. figure:: ../_static/tut-1/fig-11.png
+
 
 Combining Plots
 ===============
