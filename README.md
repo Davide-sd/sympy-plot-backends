@@ -11,7 +11,7 @@ This module contains a few plotting backends that can be used with [SymPy](githu
 <div>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/iplot_bokeh.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/plotly-vectors.png" width=250/>
-<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/plotly_streamlines.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/plotly_streamlines_2.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/k3d-1.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/bokeh_domain_coloring.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/k3d_domain_coloring.png" width=250/>
