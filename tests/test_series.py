@@ -1,7 +1,8 @@
 from sympy import (
     symbols, cos, sin, log, sqrt,
     Tuple, pi, Plane, S, I, im,
-    Circle, Point
+    Circle, Point,
+    Piecewise, And, Eq, Interval, Abs
 )
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
@@ -12,10 +13,12 @@ from spb.series import (
     ComplexSeries, ComplexInteractiveSeries, ComplexPointSeries,
     ComplexPointInteractiveSeries,
     GeometrySeries, GeometryInteractiveSeries,
-    PlaneSeries, PlaneInteractiveSeries
+    PlaneSeries, PlaneInteractiveSeries,
+    List2DSeries
 )
+from spb.functions import _process_piecewise
 import numpy as np
-from pytest import warns
+from pytest import warns, raises
 
 def test_lin_log_scale():
     # Verify that data series create the correct spacing in the data.
@@ -654,3 +657,88 @@ def test_str():
     s = InteractiveSeries([z * cos(x * y), sin(x * y), x*y],
         [(x, -4, 3), (y, -2, 1)], "test", params={z: 1})
     assert str(s) == "interactive expression: (z*cos(x*y), sin(x*y), x*y) with ranges (x, -4.0, 3.0), (y, -2.0, 1.0) and parameters [x, y, z]"
+
+def test_piecewise():
+    x = symbols("x")
+
+    # Test that univariate Piecewise objects are processed in such a way to
+    # create multiple series, each one with the correct range
+
+    f = Piecewise(
+        (-1, x < -1),
+        (x, And(-1 <= x, x < 0)),
+        (x**2, And(0 <= x, x < 1)),
+        (x**3, x >= 1)
+    )
+    s = _process_piecewise(f, (x, -5, 5), "A")
+    assert len(s) == 4
+    assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
+    assert (s[0].expr == -1) and (s[0].start == -5) and (s[0].end == -1)
+    assert (s[1].expr == x) and (s[1].start == -1) and (s[1].end == 0)
+    assert (s[2].expr == x**2) and (s[2].start == 0) and (s[2].end == 1)
+    assert (s[3].expr == x**3) and (s[3].start == 1) and (s[3].end == 5)
+    labels = ["A" + str(i + 1) for i in range(5)]
+    assert all(t.label == l for t, l in zip(s, labels))
+
+    f = Piecewise(
+        (1, x < -5),
+        (x, Eq(x, 0)),
+        (x**2, Eq(x, 2)),
+        (x**3, (x > 0) & (x < 2)),
+        (x**4, True)
+    )
+    s = _process_piecewise(f, (x, -10, 10), "B")
+    assert len(s) == 6
+    assert all(isinstance(t, LineOver1DRangeSeries) for t in [s[0], s[3], s[4], s[5]])
+    assert all(isinstance(t, List2DSeries) for t in [s[1], s[2]])
+    assert (s[0].expr == 1) and (s[0].start == -10) and (s[0].end == -5)
+    assert (np.allclose(s[1].list_x, np.array([0.])) and
+        np.allclose(s[1].list_y, np.array([0.])))
+    assert (np.allclose(s[2].list_x, np.array([2.])) and
+        np.allclose(s[2].list_y, np.array([4.])))
+    assert (s[3].expr == x**3) and (s[3].start == 0) and (s[3].end == 2)
+    assert (s[4].expr == x**4) and (s[4].start == -5) and (s[4].end == 0)
+    assert (s[5].expr == x**4) and (s[5].start == 2) and (s[5].end == 10)
+    labels = ["B" + str(i + 1) for i in range(6)]
+    assert all(t.label == l for t, l in zip(s, labels))
+
+    f = Piecewise((x, Interval(0, 1).contains(x)), (0, True))
+    s = _process_piecewise(f, (x, -10, 10), "C")
+    assert len(s) == 3
+    assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
+    assert (s[0].expr == x) and (s[0].start == 0) and (s[0].end == 1)
+    assert (s[1].expr == 0) and (s[1].start == -10) and (s[1].end == 0)
+    assert (s[2].expr == 0) and (s[2].start == 1) and (s[2].end == 10)
+    labels = ["C" + str(i + 1) for i in range(3)]
+    assert all(t.label == l for t, l in zip(s, labels))
+
+    f = Piecewise((x, Interval(0, 1, False, True).contains(x)), (0, True))
+    s = _process_piecewise(f, (x, -10, 10), "D")
+    assert len(s) == 3
+    assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
+    assert (s[0].expr == x) and (s[0].start == 0) and (s[0].end == 1)
+    assert (s[1].expr == 0) and (s[1].start == -10) and (s[1].end == 0)
+    assert (s[2].expr == 0) and (s[2].start == 1) and (s[2].end == 10)
+    labels = ["D" + str(i + 1) for i in range(3)]
+    assert all(t.label == l for t, l in zip(s, labels))
+
+    f = Piecewise((x, x < 1), (x**2, -1 <= x), (x, 3 < x))
+    s = _process_piecewise(f, (x, -10, 10), "E")
+    assert len(s) == 2
+    assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
+    assert (s[0].expr == x) and (s[0].start == -10) and (s[0].end == 1)
+    assert (s[1].expr == x**2) and (s[1].start == 1) and (s[1].end == 10)
+
+    # NotImplementedError: as_set is not implemented for relationals with
+    # periodic solutions
+    p1 = Piecewise((cos(x), x < 0), (0, True))
+    f = Piecewise((0, Eq(p1, 0)), (p1 / Abs(p1), True))
+    raises(NotImplementedError, lambda: _process_piecewise(f, (x, -10, 10), "F"))
+
+    f = Piecewise((1 - x, (x >= 0) & (x < 1)), (0, True))
+    s = _process_piecewise(f, (x, -10, 10), "test")
+    assert len(s) == 3
+    assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
+    assert (s[0].expr == 1 - x) and (s[0].start == 0) and (s[0].end == 1)
+    assert (s[1].expr == 0) and (s[1].start == -10) and (s[1].end == 0)
+    assert (s[2].expr == 0) and (s[2].start == 1) and (s[2].end == 10)

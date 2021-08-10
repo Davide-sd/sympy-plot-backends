@@ -20,19 +20,10 @@ if you care at all about performance.
 
 
 from sympy import (
-    Expr,
-    Tuple,
-    Symbol,
-    oo,
-    Piecewise,
-    piecewise_fold,
-    UniversalSet,
-    EmptySet,
-    FiniteSet,
-    Interval,
-    Union,
+    Expr, Tuple, Symbol, oo,
+    Piecewise, piecewise_fold,
+    UniversalSet, EmptySet, FiniteSet, Interval, Union,
 )
-
 from spb.backends.base_backend import Plot
 from spb.utils import _plot_sympify, _check_arguments, _unpack_args
 
@@ -41,114 +32,58 @@ from spb.utils import _plot_sympify, _check_arguments, _unpack_args
 # the same in the `SymPyDocTestFinder`` in `sympy/testing/runtests.py`
 
 from spb.series import (
-    LineOver1DRangeSeries,
-    Parametric2DLineSeries,
-    Parametric3DLineSeries,
-    SurfaceOver2DRangeSeries,
-    ParametricSurfaceSeries,
-    ContourSeries,
-    ImplicitSeries,
-    _set_discretization_points,
-    List2DSeries,
-    GeometrySeries,
+    LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
+    SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
+    ImplicitSeries, _set_discretization_points,
+    List2DSeries, GeometrySeries
 )
 
 
-def _get_endpoints(i, _min, _max):
-    """Given the end points of a local range, compute the
-    appropriate end points of the interval in such a way that the interval is
-    contained in the local range.
-
-    Returns
-    =======
-        a, b : float
-            The appropriate end points
-        skip : boolean
-            Indicate whether to add the series or to skip it. Series whose
-            domain doesn't overlap with the provided local range [_min, _max]
-            will be discarded.
-    """
-    a, b, lopen, ropen = i.args
-
-    skip = False
-    if (a >= _max) or (b <= _min):
-        skip = True
-
-    if not skip:
-        if a < _min:
-            a = _min
-        if b > _max:
-            b = _max
-
-        eps = (b - a) / 1e06
-        if lopen:
-            a += eps
-        if ropen:
-            b -= eps
-    return a, b, skip
-
-
 def _process_piecewise(piecewise, _range, label, **kwargs):
-    s = EmptySet
+    """Extract the pieces of an univariate Piecewise function and create the
+    necessary series for an univariate plot.
+    """
     series = []
-    _min, _max = _range[1], _range[2]
+    irange = Interval(_range[1], _range[2], False, False)
 
-    # for the label, attach the number of the piece
-    count = 1
     if "Piecewise(" in label:
         # piecewise string representation are usually very long. Cut it short
         # if the user didn't specify any custom label.
         label = "P"
 
-    for arg in piecewise.args:
-        expr, cond = arg.args
-        cond = cond.as_set()
-        if isinstance(cond, Interval):
-            s = s.union(cond)
-            a, b, skip = _get_endpoints(cond, _min, _max)
-            if not skip:
-                series.append(
-                    LineOver1DRangeSeries(expr, (_range[0], a, b),
-                        label + str(count))
-                )
-                count += 1
-        elif isinstance(cond, FiniteSet):
-            s = s.union(cond)
+    def func(expr, _set, c):
+        if isinstance(_set, Interval):
+            series.append(
+                LineOver1DRangeSeries(
+                    expr, (_range[0], _set.args[0], _set.args[1]),
+                    label + str(c), **kwargs))
+            c += 1
+        elif isinstance(_set, FiniteSet):
             loc, val = [], []
-            for _loc in cond.args:
+            for _loc in _set.args:
                 loc.append(float(_loc))
-                val.append(float(piecewise.evalf(subs={_range[0]: _loc})))
-            series.append(List2DSeries(loc, val, label + str(count),
+                val.append(float(expr.evalf(subs={_range[0]: _loc})))
+            series.append(List2DSeries(loc, val, label + str(c),
                     is_point=True))
-            count += 1
-        elif isinstance(cond, UniversalSet.func):
-            # at this point the condition should be UniversalSet (or True)
-            # meaning the complementary part of the domain.
-            # NOTE: there should not be any more arg after this one...
-            s = s.complement(Interval(_min, _max, True, True))
-            if isinstance(s, Union):
-                s1 = [t for t in s.args if isinstance(t, Interval)]
-                s2 = [t for t in s.args if isinstance(t, FiniteSet)]
-            else:
-                s1, s2 = [s], []
+            c += 1
+        elif isinstance(_set, Union):
+            for _s in _set.args:
+                c = func(expr, _s, c)
+        else:
+            raise TypeError(
+                "Unhandle situation:\n" +
+                "expr: {}\ncond: {}\ntype(cond): {}".format(str(expr),
+                    _set, type(_set)))
 
-            for t in s1:
-                a, b, skip = _get_endpoints(t, _min, _max)
-                if not skip:
-                    series.append(
-                        LineOver1DRangeSeries(
-                            expr, (_range[0], a, b), label + str(count)
-                        )
-                    )
-                    count += 1
-            for t in s2:
-                loc, val = [], []
-                for _loc in t.args:
-                    loc.append(float(_loc))
-                    val.append(float(expr.evalf(subs={_range[0]: _loc})))
-                series.append(List2DSeries(loc, val, label + str(count),
-                        is_point=True))
-                count += 1
+        return c
+
+    piecewise = piecewise_fold(piecewise)
+    expr_cond = piecewise.as_expr_set_pairs()
+    # for the label, attach the number of the piece
+    count = 1
+    for expr, cond in expr_cond:
+        count = func(expr, irange.intersection(cond), count)
+
     return series
 
 
@@ -160,7 +95,6 @@ def _build_line_series(*args, **kwargs):
     for arg in args:
         expr, r, label = arg
         if expr.has(Piecewise):
-            expr = piecewise_fold(expr)
             series += _process_piecewise(expr, r, label, **kwargs)
         else:
             series.append(LineOver1DRangeSeries(*arg, **kwargs))
@@ -194,7 +128,7 @@ def plot(*args, show=True, **kwargs):
         range: (symbol, min, max)
             A 3-tuple denoting the range of the x variable. Default values:
             `min=-10` and `max=10`.
-        
+
         label : str, optional
             The label to be shown in the legend. If not provided, the string
             representation of ``expr`` will be used.
@@ -607,7 +541,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     n : int
         The range is uniformly sampled at ``n`` number of points. Default value
         is 300.
-    
+
     show : bool, optional
         The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
@@ -628,7 +562,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
 
     ylabel : str, optional
         Label for the y-axis.
-    
+
     zlabel : str, optional
         Label for the z-axis.
 
@@ -637,7 +571,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
 
     ylim : (float, float), optional
         Denotes the y-axis limits, ``(min, max)``.
-    
+
     zlim : (float, float), optional
         Denotes the z-axis limits, ``(min, max)``.
 
@@ -736,7 +670,7 @@ def plot3d(*args, show=True, **kwargs):
         range_y: (symbol, min, max)
             A 3-tuple denoting the range of the y variable. Default values:
             `min=-10` and `max=10`.
-        
+
         label : str, optional
             The label to be shown in the legend.  If not provided, the string
             representation of ``expr`` will be used.
@@ -752,7 +686,7 @@ def plot3d(*args, show=True, **kwargs):
     n : int, optional
         The x and y ranges are sampled uniformly at ``n`` of points.
         It overrides ``n1`` and ``n2``.
-    
+
     show : bool, optional
         The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
@@ -773,7 +707,7 @@ def plot3d(*args, show=True, **kwargs):
 
     ylabel : str, optional
         Label for the y-axis.
-    
+
     zlabel : str, optional
         Label for the z-axis.
 
@@ -782,7 +716,7 @@ def plot3d(*args, show=True, **kwargs):
 
     ylim : (float, float), optional
         Denotes the y-axis limits, ``(min, max)``.
-    
+
     zlim : (float, float), optional
         Denotes the z-axis limits, ``(min, max)``.
 
@@ -899,7 +833,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
 
         range_v: (symbol, min, max)
             A 3-tuple denoting the range of the ``v`` variable.
-        
+
         label : str, optional
             The label to be shown in the legend.  If not provided, the string
             representation of the expression will be used.
@@ -915,7 +849,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     n : int, optional
         The u and v ranges are sampled uniformly at ``n`` of points.
         It overrides ``n1`` and ``n2``.
-    
+
     show : bool, optional
         The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
@@ -936,7 +870,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
 
     ylabel : str, optional
         Label for the y-axis.
-    
+
     zlabel : str, optional
         Label for the z-axis.
 
@@ -945,7 +879,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
 
     ylim : (float, float), optional
         Denotes the y-axis limits, ``(min, max)``.
-    
+
     zlim : (float, float), optional
         Denotes the z-axis limits, ``(min, max)``.
 
@@ -1024,7 +958,7 @@ def plot_contour(*args, show=True, **kwargs):
        >>> from sympy import symbols, cos, exp
        >>> from spb.functions import plot_contour
        >>> x, y = symbols('x, y')
-    
+
     Contour of a function of two variables.
 
     .. plot::
@@ -1037,7 +971,7 @@ def plot_contour(*args, show=True, **kwargs):
        Plot object containing:
        [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
 
-    
+
     See Also
     ========
 
@@ -1266,7 +1200,7 @@ def plot_polar(*args, **kwargs):
         >>> from sympy import symbols, sin, pi
         >>> from spb.functions import plot_polar
         >>> x = symbols('x')
-       
+
 
     .. plot::
         :context: close-figs
@@ -1332,7 +1266,7 @@ def plot_geometry(*args, show=True, **kwargs):
 
     ylabel : str, optional
         Label for the y-axis.
-    
+
     zlabel : str, optional
         Label for the z-axis.
 
@@ -1341,10 +1275,10 @@ def plot_geometry(*args, show=True, **kwargs):
 
     ylim : (float, float), optional
         Denotes the y-axis limits, ``(min, max)``.
-    
+
     zlim : (float, float), optional
         Denotes the z-axis limits, ``(min, max)``.
-    
+
 
     Examples
     ========
@@ -1436,7 +1370,7 @@ def plot_geometry(*args, show=True, **kwargs):
        >>> plot_geometry(
        ...      (Point3D(5, 5, 5), "center"),
        ...      (Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4)), "line"),
-       ...      (Plane((0, 0, 0), (1, 1, 1)), 
+       ...      (Plane((0, 0, 0), (1, 1, 1)),
        ...          (x, -5, 5), (y, -4, 4), (z, -10, 10)))
        Plot object containing:
        [0]: geometry entity: Point3D(5, 5, 5)
