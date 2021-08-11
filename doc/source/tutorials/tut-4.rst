@@ -13,6 +13,7 @@ The word *simple* refer to the fact that:
 The function that allows to do that is `iplot`, which stands for
 *interactive plot*. Keep in mind that it only works inside Jupyter Notebook,
 since it is based on `holoviz's panel <https://panel.holoviz.org/>`_.
+Refer to :ref:`interactive` to learn more about this function.
 
 .. jupyter-execute::
 
@@ -21,7 +22,6 @@ since it is based on `holoviz's panel <https://panel.holoviz.org/>`_.
     >>> from spb.backends.plotly import PB
     >>> from spb.backends.bokeh import BB
     >>> from spb.backends.matplotlib import MB
-    >>> print(help(iplot))
 
 **NOTE**:
 
@@ -45,7 +45,7 @@ parameter, the damping coefficient. Note: the first time loading a
     >>> expr = 10 * cos(r) * exp(-r * d)
     >>> iplot(
     ...     (expr, (x, -10, 10), (y, -10, 10)),
-    ...     params = { d: (0.15, (0, 1)) },
+    ...     params = { d: (0.15, 0, 1) },
     ...     title = "My Title",
     ...     xlabel = "x axis",
     ...     ylabel = "y axis",
@@ -53,7 +53,7 @@ parameter, the damping coefficient. Note: the first time loading a
     ...     n = 100,
     ...     threed = True,
     ...     use_latex = True,
-    ...     backend = PB
+    ...     backend = MB
     ... )
 
 
@@ -68,15 +68,15 @@ parameter, the damping coefficient. Note: the first time loading a
 * ``(expr, (x, -10, 10), (y, -10, 10))``: with ``iplot``, we must always
   provide all the necessary ranges: it's required by internal algorithm in
   order to automatically detect the kind of expression we are trying to plot.
-* ``params = { d: (0.15, (0, 1)) }``: we specified the dictionary of parameters.
+* ``params = { d: (0.15, 0, 1) }``: we specified the dictionary of parameters.
   In this case there is only one parameter:
 
   * the key represents the symbol
   * the value is a tuple of the form (default, (min, max), N [optional],
-    label [optional]). In the above case, only the first two entries were
-    provided. This tuple will be converted to a ``param.Number``,
-    which represent a float number and will be rendered as a slider.
-    Alternatively, we could have used
+    label [optional], spacing [optional]). In the above case, only the first
+    two entries were provided. This tuple will be converted to a
+    ``param.Number``, which represent a float number and will be rendered as
+    a slider. Alternatively, we could have used
     `holoviz's param library <https://panel.holoviz.org/user_guide/Param.html>`_:
 
     .. code:: ipython3
@@ -95,8 +95,8 @@ parameter, the damping coefficient. Note: the first time loading a
   ``n1`` and ``n2``. 
 * Since ``iplot`` is a very general function, there is a risk of ambiguity:
   the above expression can be plotted with contours or with a 3D surface.
-  With ``threed = True`` we ask for a 3D surface plot. Set ``threed = False``
-  to get a contour plot.
+  With ``threed = True`` we ask for a 3D surface plot. In the above example,
+  set ``threed = False`` to get a contour plot.
 * ``use_latex = True``: by default, the label of the slider will use the
   Latex code of the parameter-symbol to provide a legible experience
   (especially when dealing with symbols with subscripts, superscripts, ...);
@@ -105,6 +105,15 @@ parameter, the damping coefficient. Note: the first time loading a
   doesn't work. If that is the case, then it is better to set
   ``use_latex = False``, which will display the string representation
   of the symbols.
+* ``iplot`` returns two very different objects depending on the value of the
+  keyword argument ``show``:
+
+  * ``show=True`` (default) returns a ``panel`` object that will be rendered
+    in the output cell. We can prevent the rendering from happening by
+    capturing this object in a variable, for example ``p = iplot(...``.
+    Then we can render it on a different cell by simply typing ``p``.
+  * ``show=False`` returns an instance of ``InteractivePlot``, which can be
+    used for debugging purposes.
 
 
 Example 2
@@ -116,7 +125,7 @@ well as the temperature of the coolant.
 
 The only things the Reader needs to be aware of are:
 
-* ``z`` represents the position along the channel. It is the discretized
+* ``z`` represents the position along the anular channel. It is the discretized
   domain;
 * ``ri`` represents the inner radius of the channel;
 * ``ro`` represents the outer radius of the channel;
@@ -166,16 +175,16 @@ Let's try to use ``MatplotlibBackend``:
     ...     (Two, (z, 0, 100), "Two"),
     ...     (Tp, (z, 0, 100), "Tp"),
     ...     params = {
-    ...         ri: (0.2, (0.04, 0.5)),
-    ...         ro: (0.4, (0.2, 1.6)),
-    ...         L: (100, (25, 250)),
-    ...         Pave: (1000, (400, 4000)),
-    ...         Tin: (300, (100, 500)),
-    ...         hc: (1, (0.4, 15)),
-    ...         alpha: (0.031, (0.016, 0.031)),
-    ...         mdot: (1, (0.5, 5)),
-    ...         k: (0.2, (0.1, 2)),
-    ...         cp: (15, (5, 25))
+    ...         ri: (0.2, 0.04, 0.5),
+    ...         ro: (0.4, 0.2, 1.6),
+    ...         L: (100, 25, 250),
+    ...         Pave: (1000, 400, 4000),
+    ...         Tin: (300, 100, 500),
+    ...         hc: (1, 0.4, 15),
+    ...         alpha: (0.031, 0.016, 0.031),
+    ...         mdot: (1, 0.5, 5),
+    ...         k: (0.2, 0.1, 2),
+    ...         cp: (15, 5, 25)
     ...     },
     ...     title = "Temperature distribution",
     ...     xlabel = "Position [cm]",
@@ -195,18 +204,19 @@ Let's try to use ``MatplotlibBackend``:
 * Independently of the number of parameters, ``iplot`` arranges the sliders
   in two columns. We can change the number of columns by setting ``ncols``
   to some integer. We can also chose where to place the controls with the
-  ``layout`` keyword argument. Read the documentation to find out the available
-  options.
+  ``layout`` keyword argument, but this won't work with ``MatplotlibBackend``.
+  Read the documentation to find out the available options.
 * Note that we set the sliders:
 
   * ``0.04 <= ri <= 0.5``
   * ``0.4 <= ro <= 1.6``
-  * Therefore, it is very well possible to break the physical condition
-    ``ri < ro`` (for example, ``ri = 0.5`` and
-    ``ro = 0.4``), which would produce unphysical results.
-    The selection of the bounds and the values of the sliders is critical,
-    and we are responsible for it. Currently it is impossible to set
-    relationships between parameters!
+  
+  Therefore, it is very well possible to break the physical condition
+  ``ri < ro`` (for example, ``ri = 0.5`` and
+  ``ro = 0.4``), which would produce unphysical results.
+  The selection of the bounds and the values of the sliders is critical,
+  and we are responsible for it. Currently it is impossible to set
+  relationships between parameters!
 
 Example 3
 =========
@@ -251,10 +261,10 @@ In the above expressions:
     ...     (sawtooth, (x, 0, 10), "f"),
     ...     (fs, (x, 0, 10), "approx"),
     ...     params = {
-    ...         T: (2, (0, 10)),
+    ...         T: (2, 0, 10),
     ...         m: param.Integer(3, bounds=(1, None), label="Sum up to n ")
     ...     },
     ...     xlabel = "x",
     ...     ylabel = "y",
-    ...     backend = PB
+    ...     backend = MB
     ... )

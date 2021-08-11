@@ -14,10 +14,10 @@ def test_DynamicParam():
     # test _tuple_to_dict
     t = DynamicParam(
         params={
-            a: (1, (0, 5)),
-            b: (2, (1.5, 4.5), 20),
-            c: (3, (2, 5), 30, "test1"),
-            d: (1, (1, 10), 10, "test2", "log"),
+            a: (1, 0, 5),
+            b: (2, 1.5, 4.5, 20),
+            c: (3, 2, 5, 30, "test1"),
+            d: (1, 1, 10, 10, "test2", "log"),
         },
         use_latex=False,
     )
@@ -49,8 +49,8 @@ def test_DynamicParam():
     # test mix tuple and parameters
     t = DynamicParam(
         params={
-            a: (1, (0, 5)),
-            b: (1, (1, 10), 10, "test3", "log"),
+            a: (1, 0, 5),
+            b: (1, 1, 10, 10, "test3", "log"),
             c: param.Boolean(default=True, label="test4"),
             d: param.ObjectSelector(default=5, objects=[1, 2, 3, 4, 5], label="test5"),
             e: param.Number(default=6.1, softbounds=(1.1, 10.1), label="test6"),
@@ -91,8 +91,8 @@ def test_iplot():
     t = iplot(
         ((a + b + c + d) * cos(x), (x, -5, 5)),
         params={
-            a: (2, (1, 3), 5),
-            b: (3, (2, 4000), 10, "label", "log"),
+            a: (2, 1, 3, 5),
+            b: (3, 2, 4000, 10, "label", "log"),
             c: param.Number(0.15, softbounds=(0, 1), label="test", step=0.025),
             d: param.Integer(1, softbounds=(0, 10)),
             y: param.Integer(1, softbounds=(0, None)),
@@ -126,8 +126,8 @@ def test_iplot():
     t = iplot(
         ((a + b) * cos(x), (x, -5, 5)),
         params={
-            a: (1, (0, 5)),
-            b: (1, (1, 10), 10, "test3", "log"),
+            a: (1, 0, 5),
+            b: (1, 1, 10, 10, "test3", "log"),
         },
         use_latex=False,
         show=False,
@@ -172,25 +172,28 @@ def test_interactiveseries():
 
     # 2D vectors
     params = {
-        a: (2, (0, 3)),
-        b: (3, (1, 4)),
+        a: (2, 0, 3),
+        b: (3, 1, 4),
     }
     ranges = (x, -5, 5), (y, -4, 4)
     test_vector(
-        v1, ranges, params, Tuple(-a * sin(ys), b * cos(xs)), str(v1), xs, (10, 10)
+        v1, ranges, params, Tuple(-a * sin(ys), b * cos(xs)), str(v1),
+        xs, (10, 10)
     )
     test_vector(
-        m1, ranges, params, Tuple(-a * sin(y), b * cos(x)), str(tuple(m1)), x, (10, 10)
+        m1, ranges, params, Tuple(-a * sin(y), b * cos(x)), str(tuple(m1)),
+        x, (10, 10)
     )
     test_vector(
-        l1, ranges, params, Tuple(-a * sin(y), b * cos(x)), str(tuple(l1)), x, (8, 8), 8
+        l1, ranges, params, Tuple(-a * sin(y), b * cos(x)), str(tuple(l1)),
+        x, (8, 8), 8
     )
 
     # 3D vectors
     params = {
-        a: (2, (0, 3)),
-        b: (3, (1, 4)),
-        c: (4, (2, 5)),
+        a: (2, 0, 3),
+        b: (3, 1, 4),
+        c: (4, 2, 5),
     }
     ranges = (x, -5, 5), (y, -4, 4), (z, -6, 6)
     test_vector(

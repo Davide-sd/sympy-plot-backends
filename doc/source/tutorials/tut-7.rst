@@ -297,8 +297,8 @@ from spb.interactive import iplot
     iplot(
         (z * sin(x * z) * exp(2 * pi * I / (y * z)), (z, -5, 5)),
         params = {
-            x: (1, (0, 3)),
-            y: (1, (-5, 5)),
+            x: (1, 0, 3),
+            y: (1, -5, 5),
         },
         is_complex = True,
         backend = PB,
@@ -315,7 +315,7 @@ Let's now try to plot the real part of a function of 2 variables:
     iplot(
         (sqrt(x**z * y), (x, -5, 5), (y, -5, 5)),
         params = {
-            z: (1, (0, 2))
+            z: (1, 0, 2)
         },
         backend = KB,
         is_complex = True,
@@ -330,7 +330,7 @@ Let's now try with a domain coloring plot:
     iplot(
         ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
         params = {
-            x: (1, (-2, 2))
+            x: (1, -2, 2)
         },
         backend = MB,
         is_complex = True,
@@ -344,7 +344,7 @@ Finally, let's try with a 3D. Keep in mind that the update might be slow:
     iplot(
         ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
         params = {
-            x: (1, (-2, 2))
+            x: (1, -2, 2)
         },
         backend = KB,
         threed = True,

@@ -399,8 +399,8 @@ to remember is to set ``is_vector = True``:
     iplot(
         ([-a * sin(y), b * cos(x)], (x, -5, 5), (y, -3, 3)),
         params = {
-            a: (1, (0, 2)),
-            b: (1, (0, 2)),
+            a: (1, 0, 2),
+            b: (1, 0, 2),
         },
         xlabel = "x",
         ylabel = "y",
@@ -433,8 +433,8 @@ see the updated plot:
     iplot(
         ([-a * sin(y), b * cos(x)], (x, -5, 5), (y, -3, 3)),
         params = {
-            a: (1, (0, 2)),
-            b: (1, (0, 2)),
+            a: (1, 0, 2),
+            b: (1, 0, 2),
         },
         xlabel = "x",
         ylabel = "y",
@@ -453,8 +453,8 @@ Let's now try to plot 3D vector fields. We are going to use Plotly and K3D:
     iplot(
         ([a * z, b * y, x], (x, -5, 5), (y, -3, 3), (z, -4, 4)),
         params = {
-            a: (1, (0, 2)),
-            b: (1, (0, 2)),
+            a: (1, 0, 2),
+            b: (1, 0, 2),
         },
         xlabel = "x",
         ylabel = "y",
@@ -471,8 +471,8 @@ Let's now try to plot 3D vector fields. We are going to use Plotly and K3D:
     iplot(
         ([-a * sin(y), b * cos(x)], (x, -5, 5), (y, -3, 3)),
         params = {
-            a: (1, (0, 2)),
-            b: (1, (0, 2)),
+            a: (1, 0, 2),
+            b: (1, 0, 2),
         },
         xlabel = "x",
         ylabel = "y",

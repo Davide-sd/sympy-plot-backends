@@ -41,12 +41,16 @@ class DynamicParam(param.Parameterized):
 
     def _tuple_to_dict(self, k, v):
         """The user can provide a variable length tuple/list containing:
-            (default, softbounds, N, label, spacing)
+
+        (default, min, max, N [optional], label [optional], spacing [optional])
+
         where:
             default : float
                 Default value of the slider
-            softbounds : tuple
-                Tuple of two float (or integer) numbers: (start, end).
+            min : float
+                Minimum value of the slider.
+            max : float
+                Maximum value of the slider.
             N : int
                 Number of increments in the slider.
                 (start - end) / N represents the step increment. Default to 40.
@@ -63,7 +67,8 @@ class DynamicParam(param.Parameterized):
         defaults_keys = ["default", "softbounds", "step", "label", "type"]
         defaults_values = [
             1,
-            (0, 2),
+            0,
+            2,
             N,
             "$%s$" % latex(k) if self.use_latex else str(k),
             "linear",
@@ -71,12 +76,12 @@ class DynamicParam(param.Parameterized):
         values = defaults_values.copy()
         values[: len(v)] = v
         # set the step increment for the slider
-        _min, _max = values[1][0], values[1][1]
-        if values[2] > 0:
-            N = values[2]
-            values[2] = (_max - _min) / N
+        _min, _max = values[1], values[2]
+        if values[3] > 0:
+            N = values[3]
+            values[3] = (_max - _min) / N
         else:
-            values[2] = 1
+            values[3] = 1
 
         if values[-1] == "log":
             # In case of a logarithm slider, we need to instantiate the custom
@@ -89,8 +94,14 @@ class DynamicParam(param.Parameterized):
             default = values[0]
             if default not in options:
                 default = min(options, key=lambda x: abs(x - default))
-            return MyList(default=default, objects=list(options), label=values[3])
+            return MyList(default=default, objects=list(options), label=values[4])
 
+        # combine _min, _max into softbounds tuple
+        values = [
+            values[0],
+            (values[1], values[2]),
+            *values[3:]
+        ]
         return {k: v for k, v in zip(defaults_keys, values)}
 
     def __init__(self, *args, name="", params=None, **kwargs):
@@ -345,7 +356,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
 def iplot(*args, show=True, **kwargs):
     """
     Create interactive plots of symbolic expressions.
-    
+
     NOTE: this function currently only works within Jupyter Notebook!
 
     Parameters
@@ -367,15 +378,14 @@ def iplot(*args, show=True, **kwargs):
         A dictionary mapping the parameter-symbols to a parameter.
         The parameter can be:
 
-        1. an instance of ``param.parameterized.Parameter`` (at the moment,
-           ``param.Number`` is supported, which will result in a slider).
+        1. an instance of ``param.parameterized.Parameter``.
         2. a tuple of the form:
-           ``(default, (min, max), N [optional], label [optional], spacing [optional])``
+           ``(default, min, max, N [optional], label [optional], spacing [optional])``
            where:
 
            - N : int
                 Number of steps of the slider.
-           - (min, max) : (float, float)
+           - min, max : float
                 End values of the range. Must be finite numbers.
            - label: str
                 Custom text associated to the slider.
@@ -400,9 +410,10 @@ def iplot(*args, show=True, **kwargs):
         - ``'bb'``: controls in the bottom bar.
         - ``'sbl'``: controls in the left side bar.
         - ``'sbr'``: controls in the right side bar.
-        
-        Default layout to ``'tb'``. Keep in mind that side bar layouts may not
-        work well with some backends.
+
+        Default layout to ``'tb'``. Note that side bar layouts may not
+        work well with some backends, and with ``MatplotlibBackend`` the widgets
+        are always going to be displayed below the figure.
 
     ncols : int, optional
         Number of columns to lay out the widgets. Default to 2.
@@ -447,7 +458,7 @@ def iplot(*args, show=True, **kwargs):
     n : int, optional
         Set the number of discretization points on all directions.
         It overrides ``n1, n2, n3``.
-    
+
     nc : int, optional
         Number of discretization points for the contour plot when
         ``is_complex=True``.
@@ -494,7 +505,7 @@ def iplot(*args, show=True, **kwargs):
     0 to 1, with a default value of 0.15, discretized with 100 points on both
     directions. Note the use of ``threed=True`` to specify a 3D plot. If
     ``threed=False``, a contour plot will be generated.
-    
+
     .. jupyter-execute::
 
         >>> r = sqrt(x**2 + y**2)
@@ -502,7 +513,7 @@ def iplot(*args, show=True, **kwargs):
         >>> expr = 10 * cos(r) * exp(-r * d)
         >>> iplot(
         ...     (expr, (x, -10, 10), (y, -10, 10)),
-        ...     params = { d: (0.15, (0, 1)) },
+        ...     params = { d: (0.15, 0, 1) },
         ...     title = "My Title",
         ...     xlabel = "x axis",
         ...     ylabel = "y axis",
@@ -526,9 +537,9 @@ def iplot(*args, show=True, **kwargs):
         ...     (exp(-(x - 2)) + A2 * cos(x), (x, 0, 20), "f2"),
         ...     (A1 + A1 * cos(x), A2 * sin(x), (x, 0, pi)),
         ...     params = {
-        ...         k: (1, (0, 5)),
-        ...         A1: (2, (0, 10), 20, "Ampl 1"),
-        ...         A2: (2, (0, 10), 40, "Ampl 2"),
+        ...         k: (1, 0, 5),
+        ...         A1: (2, 0, 10, 20, "Ampl 1"),
+        ...         A2: (2, 0, 10, 40, "Ampl 2"),
         ...     },
         ...     backend = MB,
         ...     ylim=(-4, 10))
@@ -542,8 +553,8 @@ def iplot(*args, show=True, **kwargs):
         >>> iplot(
         ...     (Matrix([z * a, y * b, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5)),
         ...     params = {
-        ...         a: (1, (0, 5)),
-        ...         b: (1, (0, 5))
+        ...         a: (1, 0, 5),
+        ...         b: (1, 0, 5)
         ...     },
         ...     backend = MB,
         ...     n = 10,
@@ -559,7 +570,7 @@ def iplot(*args, show=True, **kwargs):
         >>> iplot(
         ...     ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
         ...     params = {
-        ...         x: (1, (-2, 2))
+        ...         x: (1, -2, 2)
         ...     },
         ...     backend = MB,
         ...     is_complex = True,
@@ -576,9 +587,9 @@ def iplot(*args, show=True, **kwargs):
         >>> iplot(
         ...     (Polygon((a, b), c, n=d), ),
         ...     params = {
-        ...         a: (0, (-2, 2)),
-        ...         b: (0, (-2, 2)),
-        ...         c: (1, (0, 5)),
+        ...         a: (0, -2, 2),
+        ...         b: (0, -2, 2),
+        ...         c: (1, 0, 5),
         ...         d: param.Integer(3, softbounds=(3, 10), label="n"),
         ...     },
         ...     backend = MB,
