@@ -4,17 +4,11 @@ from spb.backends.matplotlib import MB, unset_show
 from spb.backends.bokeh import BB
 from spb.backends.plotly import PB
 from spb.backends.k3d import KB
-from spb.series import BaseSeries
+from spb.series import BaseSeries, InteractiveSeries
 from spb import (
-    plot,
-    plot3d,
-    plot_vector,
-    plot_contour,
-    plot_implicit,
-    plot_parametric,
-    plot3d_parametric_line,
-    plot_complex,
-    geometry_plot
+    plot, plot3d, plot_contour, plot_implicit,
+    plot_parametric, plot3d_parametric_line,
+    plot_vector, plot_complex, plot_geometry
 )
 from sympy import symbols, cos, sin, Matrix, pi, sqrt, I
 from sympy.geometry import Line, Circle, Polygon
@@ -51,14 +45,8 @@ between the different backends.
 
 # The following plot functions will be used by the different backends
 p1 = lambda B: plot(
-    sin(x),
-    cos(x),
-    sin(x / 2),
-    cos(x / 2),
-    2 * sin(x),
-    2 * cos(x),
-    backend=B,
-    show=False,
+    sin(x), cos(x), sin(x / 2), cos(x / 2), 2 * sin(x), 2 * cos(x),
+    backend=B, show=False,
 )
 p2 = lambda B, line_kw: plot(
     sin(x), cos(x), line_kw=line_kw, backend=B, show=False, legend=True
@@ -131,7 +119,8 @@ p10 = lambda B, stream_kw, kwargs=dict(): plot_vector(
     **kwargs
 )
 p11 = lambda B, contour_kw: plot_implicit(
-    x > y, (x, -5, 5), (y, -4, 4), n=20, backend=B, show=False, contour_kw=contour_kw
+    x > y, (x, -5, 5), (y, -4, 4), n=20, backend=B, show=False,
+    contour_kw=contour_kw
 )
 p12 = lambda B, contour_kw: plot_implicit(
     x > y,
@@ -172,7 +161,7 @@ p17 = lambda B, surface_kw: plot_complex(
     surface_kw=surface_kw,
     show=False,
 )
-p18 = lambda B: geometry_plot(
+p18 = lambda B: plot_geometry(
     Line((1, 2), (5, 4)), Circle((0, 0), 4), Polygon((2, 2), 3, n=6),
     backend=B, show=False, fill=False
 )
@@ -921,7 +910,7 @@ def test_save():
         filename = "test_mpl_save_4.pdf"
         p.save(os.path.join(tmpdir, filename), dpi=150)
         p.close()
-        
+
         # Bokeh requires additional libraries to save static pictures.
         # Raise an error because their are not installed.
         p = plot(sin(x), cos(x), backend=BB, show=False)
@@ -977,7 +966,7 @@ def test_save():
         filename = "test_k3d_save_3.jpg"
         raises(ValueError, lambda: p.save(os.path.join(tmpdir, filename),
             parameter=True))
-        
+
         p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
         filename = "test_k3d_save_4.html"
         p.save(os.path.join(tmpdir, filename))
@@ -990,8 +979,32 @@ def test_save():
         filename = "test_k3d_save_4.html"
         raises(TypeError, lambda: p.save(os.path.join(tmpdir, filename),
             include_js=True, parameter=True))
-        
 
 
+def test_vectors_update_interactive():
+    a, b, c, x, y, z = symbols("a:c, x:z")
 
+    # Some backends do not support streamlines with iplot. Test that the
+    # backends raise error.
 
+    def func(B):
+        params = { a: 1, b: 2, c: 3 }
+        s = InteractiveSeries(
+            [a * z, b * y, c * x],
+            [(x, -5, 5), (y, -5, 5), (z, -5, 5)],
+            "test",
+            params = params,
+            streamlines = True,
+            n1 = 10, n2 = 10, n3 = 10
+        )
+        p = B()
+        p._series = [s]
+        if B == MB:
+            p.process_series()
+        else:
+            p._process_series(p._series)
+        raises(NotImplementedError, lambda : p._update_interactive(params))
+
+    func(KBchild1)
+    func(PB)
+    func(MB)

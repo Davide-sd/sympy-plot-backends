@@ -77,7 +77,8 @@ class K3DBackend(Plot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self._get_mode() != 0:
-            raise ValueError("Sorry, K3D backend only works within Jupyter Notebook")
+            raise ValueError(
+                "Sorry, K3D backend only works within Jupyter Notebook")
 
         self._bounds = []
         self._clipping = []
@@ -345,6 +346,9 @@ class K3DBackend(Plot):
         # self._fig.auto_rendering = False
         for i, s in enumerate(self.series):
             if s.is_interactive:
+                print("yeah", s.is_vector, s.is_3Dline, s.is_3Dline,
+                    s.is_3Dsurface and (not s.is_domain_coloring),
+                    s.is_vector and s.is_3D)
                 self.series[i].update_data(params)
 
                 if s.is_3Dline and s.is_point:
@@ -366,7 +370,8 @@ class K3DBackend(Plot):
                     self._fig.objects[i].color_range = [z.min(), z.max()]
 
                 elif s.is_vector and s.is_3D:
-                    if self.is_streamlines:
+                    print("good", s.is_streamlines)
+                    if s.is_streamlines:
                         raise NotImplementedError
 
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()
@@ -403,7 +408,7 @@ class K3DBackend(Plot):
 
     def show(self):
         """Visualize the plot on the screen."""
-        
+
         if len(self._fig.objects) != len(self.series):
             self._process_series(self._series)
         self.plot_shown = True
@@ -430,9 +435,9 @@ class K3DBackend(Plot):
 
         Notes
         =====
-        
+
         K3D-Jupyter is only capable of exporting:
-        
+
         1. '.png' pictures: refer to [#fn1]_ to visualize the available keyword
            arguments.
         2. '.html' files: when exporting a fully portable html file, by default
@@ -451,7 +456,7 @@ class K3DBackend(Plot):
                 "K3D-Jupyter requires the plot to be shown on the screen "
                 + "before saving it."
             )
-        
+
         ext = os.path.splitext(path)[1]
         if not ext:
             path += ".png"
