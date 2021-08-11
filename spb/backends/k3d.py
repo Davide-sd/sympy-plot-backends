@@ -346,9 +346,6 @@ class K3DBackend(Plot):
         # self._fig.auto_rendering = False
         for i, s in enumerate(self.series):
             if s.is_interactive:
-                print("yeah", s.is_vector, s.is_3Dline, s.is_3Dline,
-                    s.is_3Dsurface and (not s.is_domain_coloring),
-                    s.is_vector and s.is_3D)
                 self.series[i].update_data(params)
 
                 if s.is_3Dline and s.is_point:
@@ -370,7 +367,6 @@ class K3DBackend(Plot):
                     self._fig.objects[i].color_range = [z.min(), z.max()]
 
                 elif s.is_vector and s.is_3D:
-                    print("good", s.is_streamlines)
                     if s.is_streamlines:
                         raise NotImplementedError
 
@@ -384,7 +380,6 @@ class K3DBackend(Plot):
                         colors = k3d.helpers.map_colors(magnitude, colormap, [])
                         vec_colors = np.zeros(2 * len(colors))
                         for j, c in enumerate(colors):
-                            # print("j", j, "c", c)
                             vec_colors[2 * j] = c
                             vec_colors[2 * j + 1] = c
                         vec_colors = vec_colors.astype(np.uint32)
