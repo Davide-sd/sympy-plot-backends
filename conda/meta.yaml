@@ -50,6 +50,7 @@ requirements:
     - scipy
     - sympy
     - vtk
+    - msgpack
 
 test:
   imports:
