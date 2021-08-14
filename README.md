@@ -24,10 +24,10 @@ On top of the usual plotting functions exposed by SymPy (`plot`, `plot_parametri
 * capability to use a different backend.
 * capability to correctly visualize discontinuities on 2D line plots.
 * capability to correctlt visualize 2D line plots of piecewise functions.
-* `vector_plot` function to quickly visualize 2D/3D vector fields with quivers or streamlines.
-* `complex_plot` function to quickly visualize 2D/3D complex functions. In particular, we can visualize the real and imaginary parts, the modulus and argument, 2D/3D domain coloring.
-* `polar_plot` function.
-* `geometry_plot` to quickly visualize entities from the `sympy.geometry` module.
+* `plot_vector` function to quickly visualize 2D/3D vector fields with quivers or streamlines.
+* `plot_complex` function to quickly visualize 2D/3D complex functions. In particular, we can visualize the real and imaginary parts, the modulus and argument, 2D/3D domain coloring.
+* `plot_polar` function.
+* `plot_geometry` to quickly visualize entities from the `sympy.geometry` module.
 * `iplot` function to create parametric-interactive plots using widgets (sliders, buttons, etc.).
 * `get_plot_data` function to easily extract the numerical data from symbolic expressions, which can later be used to create custom plots with our plotting library of choice.
 * `plotgrid` function, which replaces the `PlotGrid` class: it allows to combine multiple plots into a grid-like layout. It works with Matplotlib, Bokeh and Plotly.
