@@ -39,6 +39,10 @@ def test_build_series():
 
     s = _build_series(cos(x), (x, -5, 5))
     assert isinstance(s, LineOver1DRangeSeries)
+    s = get_plot_data(cos(x), (x, -5, 5), get_series=True)
+    assert isinstance(s, LineOver1DRangeSeries)
+    s = get_plot_data(cos(x), (x, -5, 5), get_series=False)
+    assert isinstance(s, (list, tuple))
 
     s = _build_series((cos(x), sin(x)), (x, -5, 5))
     assert isinstance(s, Parametric2DLineSeries)
@@ -70,6 +74,10 @@ def test_build_series():
     # test mapping
     s = _build_series(cos(x), (x, -5, 5), pt="p")
     assert isinstance(s, LineOver1DRangeSeries)
+    s = get_plot_data(cos(x), (x, -5, 5), pt="p", get_series=True)
+    assert isinstance(s, LineOver1DRangeSeries)
+    s = get_plot_data(cos(x), (x, -5, 5), pt="p", get_series=False)
+    assert isinstance(s, (list, tuple))
 
     s = _build_series(cos(x), sin(x), (x, -5, 5), pt="pp")
     assert isinstance(s, Parametric2DLineSeries)

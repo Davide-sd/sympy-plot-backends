@@ -2,7 +2,7 @@ from sympy import (
     symbols, cos, sin, log, sqrt,
     Tuple, pi, Plane, S, I, im,
     Circle, Point,
-    Piecewise, And, Eq, Interval, Abs
+    Piecewise, And, Eq, Interval, Abs, lambdify
 )
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
@@ -501,6 +501,23 @@ def test_complex_discretization():
 
     # test complex discretization for LineOver1DRangeSeries and
     # SurfaceOver2DRangeSeries and InteractiveSeries
+
+    # is_complex=True should produce (intermediate) complex results, which are
+    # later converted to floats. is_complex=False should produce (intermediate)
+    # float results.
+    s1 = LineOver1DRangeSeries(sqrt(x), (x, -10, 10), "s1",
+            adaptive=False, is_complex=False, modules=None, n=10)
+    s2 = LineOver1DRangeSeries(sqrt(x), (x, -10, 10), "s1",
+            adaptive=False, is_complex=True, modules=None, n=10)
+    d1 = s1._uniform_sampling(lambdify([s1.var], s1.expr, s1.modules))
+    d2 = s2._uniform_sampling(lambdify([s2.var], s2.expr, s2.modules))
+    assert all(isinstance(t, float) for t in d1[0])
+    assert all(isinstance(t, float) for t in d1[1])
+    assert all(isinstance(t, complex) for t in d2[0])
+    assert all(isinstance(t, complex) for t in d2[1])
+    d3 = s1.get_data()
+    with warns(np.ComplexWarning):
+        d4 = s2.get_data()
 
     # Mpmath and Numpy produces different results
     s1 = LineOver1DRangeSeries(im(sqrt(-x)), (x, -10, 10), "s1",

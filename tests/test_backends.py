@@ -630,6 +630,20 @@ def test_BokehBackend():
     series = [UnsupportedSeries()]
     raises(NotImplementedError, lambda: Plot(*series, backend=PB))
 
+    ### Test tools and tooltips on empty figure (populated figure might have
+    # different tooltips, tested later on)
+    from bokeh.models import (PanTool, WheelZoomTool, BoxZoomTool,
+        ResetTool, HoverTool, SaveTool)
+    f = plot(backend=BB, show=False).fig
+    assert len(f.toolbar.tools) == 6
+    assert isinstance(f.toolbar.tools[0], PanTool)
+    assert isinstance(f.toolbar.tools[1], WheelZoomTool)
+    assert isinstance(f.toolbar.tools[2], BoxZoomTool)
+    assert isinstance(f.toolbar.tools[3], ResetTool)
+    assert isinstance(f.toolbar.tools[4], HoverTool)
+    assert isinstance(f.toolbar.tools[5], SaveTool)
+    assert f.toolbar.tools[4].tooltips == [('x', '$x'), ('y', '$y')]
+
     ### Setting custom color loop
 
     assert len(BBchild.colorloop) != len(BB.colorloop)
@@ -667,8 +681,9 @@ def test_BokehBackend():
     assert isinstance(f.renderers[0].glyph, MultiLine)
     assert f.renderers[0].glyph.line_color == "red"
     # 1 colorbar
-    assert len(p.fig.right) == 1
-    assert p.fig.right[0].title == "(cos(x), sin(x))"
+    assert len(f.right) == 1
+    assert f.right[0].title == "(cos(x), sin(x))"
+    assert f.toolbar.tools[-2].tooltips == [('x', '$x'), ('y', '$y'), ("u", "@us")]
 
     # Bokeh doesn't support 3D plots
     raises(NotImplementedError, lambda: p4(BB, line_kw=dict(line_color="red")))
@@ -756,7 +771,9 @@ def test_BokehBackend():
     f = p.fig
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, ImageRGBA)
-    assert p.fig.right[0].title == "Argument"
+    assert f.right[0].title == "Argument"
+    assert (f.toolbar.tools[-2].tooltips == [('x', '$x'), ('y', '$y'),
+        ("Abs", "@abs"), ("Arg", "@arg")])
 
     p = p18(BB)
     assert len(p.series) == 3

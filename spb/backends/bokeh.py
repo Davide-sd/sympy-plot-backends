@@ -301,14 +301,17 @@ class BokehBackend(Plot):
         self._init_cyclers()
 
         TOOLTIPS = [("x", "$x"), ("y", "$y")]
+        if len(self.series) > 0:
+            # empty plots (with len(series)==0) should only have x, y tooltips
 
-        if all([s.is_parametric for s in self.series]):
-            # with parametric plots, also visualize the parameter
-            TOOLTIPS += [("u", "@us")]
-        if any([s.is_complex and s.is_domain_coloring for s in self.series]):
-            # with complex domain coloring, shows the magnitude and phase
-            # in the tooltip
-            TOOLTIPS += [("Abs", "@abs"), ("Arg", "@arg")]
+            if all([s.is_parametric for s in self.series]):
+                # with parametric plots, also visualize the parameter
+                TOOLTIPS += [("u", "@us")]
+            if any([s.is_complex and s.is_domain_coloring for s
+                    in self.series]):
+                # with complex domain coloring, shows the magnitude and phase
+                # in the tooltip
+                TOOLTIPS += [("Abs", "@abs"), ("Arg", "@arg")]
 
         sizing_mode = cfg["bokeh"]["sizing_mode"]
         if any(s.is_complex and s.is_domain_coloring for s in self.series):
