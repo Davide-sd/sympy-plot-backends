@@ -179,12 +179,6 @@ class PanelLayout:
         # event, which is set using throttled=True.
         #
         # https://panel.holoviz.org/reference/panes/Param.html#disabling-continuous-updates-for-slider-widgets
-        #
-        # The procedure is not optimal, as we need to re-map again the
-        # parameters with the widgets: for param.Number, param.Integer there is
-        # no one-on-one mapping. For example, a bounded param.Integer
-        # will create an IntegerSlider, whereas an unbounded param.Integer will
-        # create a IntInput.
 
         layouts = ["tb", "bb", "sbl", "sbr"]
         layout = layout.lower()
@@ -196,27 +190,23 @@ class PanelLayout:
             layout = "tb"
         self._layout = layout
 
-        widgets = {}
+        # NOTE: here I create a temporary panel.Param object in order to reuse
+        # the code from the pn.Param.widget method, which returns the correct
+        # widget associated to a given parameter's type.
+        # Alternatively, I would need to copy parts of that method in order to
+        # deal with the different representations of param.Integer and
+        # param.Number depending if the bounds are None values.
+        # Note that I'm only interested in the widget type: panel is then going
+        # to recreate the widgets and setting the proper throttled value. This
+        # is definitely not an optimal procedure, as we are creating the "same"
+        # widget two times, but it works :)
+        tmp_panel = pn.Param(self)
+        widgets = dict()
         for k, v in self.mapping.items():
+            widgets[v] = { "type": type(tmp_panel.widget(v)) }
             t = getattr(self.param, v)
-            widget = ""
-            if isinstance(t, param.Integer):
-                widget = pn.widgets.IntSlider
-                if t.bounds and any([(b is None) for b in t.bounds]):
-                    widget = pn.widgets.IntInput
-            elif isinstance(t, param.Number):
-                widget = pn.widgets.FloatSlider
-                if t.bounds and any([(b is None) for b in t.bounds]):
-                    widget = pn.widgets.FloatInput
-            elif isinstance(t, MyList):
-                # TODO: it seems like DiscreteSlider doesn't support throttling
-                widget = pn.widgets.DiscreteSlider
-
             if isinstance(t, param.Number):
-                widgets[v] = {
-                    "type": widget,
-                    "throttled": True,
-                }
+                widgets[v]["throttled"] = True
 
         self.controls = pn.Param(
             self,
@@ -375,8 +365,7 @@ def iplot(*args, show=True, **kwargs):
         specified. The ranges will create the discretized domain.
 
     params : dict
-        A dictionary mapping the parameter-symbols to a parameter.
-        The parameter can be:
+        A dictionary mapping the symbols to a parameter. The parameter can be:
 
         1. an instance of ``param.parameterized.Parameter``.
         2. a tuple of the form:
@@ -602,3 +591,70 @@ def iplot(*args, show=True, **kwargs):
     if show:
         return i.show()
     return i
+
+
+def create_widgets(params, **kwargs):
+    """ Create panel's widgets starting from parameters.
+
+    Parameters
+    ==========
+
+    params : dict
+        A dictionary mapping the symbols to a parameter. The parameter can be:
+
+        1. an instance of ``param.parameterized.Parameter``. Refer to [#fn1]_
+           for a list of available parameters.
+        2. a tuple of the form:
+           ``(default, min, max, N [optional], label [optional], spacing [optional])``
+           where:
+
+           - N : int
+                Number of steps of the slider.
+           - min, max : float
+                End values of the range. Must be finite numbers.
+           - label: str
+                Custom text associated to the slider.
+           - spacing : str
+                Specify the discretization spacing. Default to ``"linear"``, can
+                be changed to ``"log"``.
+
+        Note that the parameters cannot be linked together (ie, one parameter
+        cannot depend on another one).
+
+    use_latex : bool, optional
+        Default to True.
+        If True, the latex representation of the symbols will be used in the
+        labels of the parameter-controls. If False, the string representation
+        will be used instead.
+
+
+    Returns
+    =======
+    
+    widgets : dict
+        A dictionary mapping the symbols from ``params`` to the appropriate
+        widget.
+
+
+    Examples
+    ========
+
+    >>> from sympy.abc import x, y, z
+    >>> r = create_widgets({
+    ...     x: (2, 0, 4),
+    ...     y: (200, 1, 1000, 10, "test", "log"),
+    ...     z: param.Integer(3, softbounds=(3, 10), label="n")
+    ... })
+
+
+    References
+    ==========
+    .. [fn1] https://panel.holoviz.org/user_guide/Param.html
+    """
+    dp = DynamicParam(params=params, **kwargs)
+    tmp_panel = pn.Param(dp)
+
+    results = dict()
+    for k, v in dp.mapping.items():
+        results[k] = tmp_panel.widget(v)
+    return results

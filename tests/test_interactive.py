@@ -114,7 +114,7 @@ def test_iplot():
     assert isinstance(gridbox.children[1][0].children[1], bm.Slider)
     assert isinstance(gridbox.children[2][0], bm.Slider)
     assert isinstance(gridbox.children[3][0], bm.Slider)
-    assert isinstance(gridbox.children[4][0], bm.Slider)
+    assert isinstance(gridbox.children[4][0], bm.Spinner)
     assert isinstance(gridbox.children[5][0], bm.CheckboxGroup)
     assert isinstance(gridbox.children[6][0], bm.Select)
 

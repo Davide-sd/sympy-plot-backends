@@ -187,7 +187,6 @@ def _build_series(*args, **kwargs):
                 return r
 
             _cls, nexpr, npar = mapping[pt]
-            print("pt", pt, _cls, nexpr, npar)
             k = str(nexpr) + str(npar)
             if k == "00":
                 args = [exprs, ranges, label]
@@ -261,6 +260,11 @@ def get_plot_data(*args, **kwargs):
           parameters to their values.
         - ``"v2d"``: to specify a 2D vector plot.
         - ``"v3d"``: to specify a 3D vector plot.
+    
+    get_series : boolean, optional
+        If False, it returns the numerical data associated to the provided
+        expression. If True, it returns the data series object which can be
+        used to generate the data. Default to False.
 
     Examples
     ========
@@ -357,7 +361,11 @@ def get_plot_data(*args, **kwargs):
     smart_plot
 
     """
-    return _build_series(*args, **kwargs).get_data()
+    get_series = kwargs.pop("get_series", False)
+    s = _build_series(*args, **kwargs)
+    if get_series:
+        return s
+    return s.get_data()
 
 
 def smart_plot(*args, show=True, **kwargs):

@@ -1,4 +1,4 @@
-from sympy import sympify, Tuple, symbols, solve, re, im, Add, Mul, Expr
+from sympy import sympify, Tuple, symbols, solve, re, im, Add, Mul, Expr, I
 from sympy.geometry import (
     Plane, Polygon, Circle, Ellipse, Segment, Ray,
     Curve, Point2D, Point3D,
@@ -225,8 +225,9 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.var = sympify(var_start_end[0])
 
         self.is_complex = kwargs.get("is_complex", False)
-        if (isinstance(var_start_end[1], (Add, Mul)) or
-                isinstance(var_start_end[2], (Add, Mul)) or self.is_complex):
+        _check = lambda t: isinstance(t, (Add, Mul)) and t.has(I)
+        if (_check(var_start_end[1]) or _check(var_start_end[2])
+                or self.is_complex):
             self.start = complex(var_start_end[1])
             self.end = complex(var_start_end[2])
         else:
