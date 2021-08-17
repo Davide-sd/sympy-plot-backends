@@ -260,7 +260,7 @@ def get_plot_data(*args, **kwargs):
           parameters to their values.
         - ``"v2d"``: to specify a 2D vector plot.
         - ``"v3d"``: to specify a 3D vector plot.
-    
+
     get_series : boolean, optional
         If False, it returns the numerical data associated to the provided
         expression. If True, it returns the data series object which can be

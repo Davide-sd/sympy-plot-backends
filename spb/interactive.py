@@ -630,7 +630,7 @@ def create_widgets(params, **kwargs):
 
     Returns
     =======
-    
+
     widgets : dict
         A dictionary mapping the symbols from ``params`` to the appropriate
         widget.
