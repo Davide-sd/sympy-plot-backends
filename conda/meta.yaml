@@ -31,7 +31,7 @@ requirements:
     - scipy
     - sympy
     - vtk
-    - msgpack
+    - msgpack-python
   run:
     - appdirs
     - bokeh
@@ -50,6 +50,7 @@ requirements:
     - scipy
     - sympy
     - vtk
+    - msgpack-python
 
 test:
   imports:
