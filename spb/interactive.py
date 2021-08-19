@@ -350,7 +350,14 @@ def iplot(*args, show=True, **kwargs):
     """
     Create interactive plots of symbolic expressions.
 
-    NOTE: this function currently only works within Jupyter Notebook!
+    Notes
+    =====
+    
+    This function is specifically designed to work within Jupyter Notebook!
+    It is also possible to use it from a regular Python interpreter, but only
+    with ``BokehBackend`` and ``PlotlyBackend``. In such cases, we have to
+    call ``iplot(..., backend=BB).show()``, which will create a server process
+    loading the interactive plot on the browser.
 
     Parameters
     ==========
