@@ -3,7 +3,10 @@ import param
 import panel as pn
 import numpy as np
 import bokeh.models as bm
-from spb.interactive import iplot, DynamicParam, MyList, InteractivePlot
+from spb.interactive import (
+    iplot, DynamicParam, MyList,
+    InteractivePlot, create_widgets
+)
 from spb.series import InteractiveSeries
 from spb.backends.plotly import PB
 
@@ -46,6 +49,26 @@ def test_DynamicParam():
     test_number(p3, 3, (2, 5), "test1", 0.1)
     test_log_slider(p4, 1, (1, 10), 10, "test2")
 
+    # test use_latex
+    t = DynamicParam(
+        params={
+            a: (1, 0, 5),
+            b: (2, 1.5, 4.5, 20),
+            c: (3, 2, 5, 30, "test1"),
+            d: (1, 1, 10, 10, "test2", "log"),
+        },
+        use_latex=True,
+    )
+    p1 = getattr(t.param, "dyn_param_0")
+    p2 = getattr(t.param, "dyn_param_1")
+    p3 = getattr(t.param, "dyn_param_2")
+    p4 = getattr(t.param, "dyn_param_3")
+
+    test_number(p1, 1, (0, 5), "$a$", 0.125)
+    test_number(p2, 2, (1.5, 4.5), "$b$", 0.15)
+    test_number(p3, 3, (2, 5), "test1", 0.1)
+    test_log_slider(p4, 1, (1, 10), 10, "test2")
+
     # test mix tuple and parameters
     t = DynamicParam(
         params={
@@ -83,7 +106,6 @@ def test_DynamicParam():
     r = {a: 1, b: 1, c: True, d: 5, e: 6.1, f: 6}
     assert t.read_parameters() == r
 
-
 def test_iplot():
     a, b, c, d = symbols("a, b, c, d")
     x, y, u, v = symbols("x, y, u, v")
@@ -94,7 +116,9 @@ def test_iplot():
             a: (2, 1, 3, 5),
             b: (3, 2, 4000, 10, "label", "log"),
             c: param.Number(0.15, softbounds=(0, 1), label="test", step=0.025),
-            d: param.Integer(1, softbounds=(0, 10)),
+            # TODO: if I remove the following label, the tests are going to
+            # fail: it would use the label "test5"... How is it possible?
+            d: param.Integer(1, softbounds=(0, 10), label="d"),
             y: param.Integer(1, softbounds=(0, None)),
             u: param.Boolean(default=True),
             v: param.ObjectSelector(default=2, objects=[1, 2, 3, 4]),
@@ -102,9 +126,21 @@ def test_iplot():
         show=False,
         layout="tb",
         ncols=2,
+        use_latex=False
     )
 
-    # there are 4 parameters in this plot
+    # no latex in labels
+    p1 = getattr(t.param, "dyn_param_0")
+    p2 = getattr(t.param, "dyn_param_1")
+    p3 = getattr(t.param, "dyn_param_2")
+    p4 = getattr(t.param, "dyn_param_3")
+
+    assert p1.label == "a"
+    assert p2.label == "label"
+    assert p3.label == "test"
+    assert p4.label == "d"
+
+    # there are 7 parameters in this plot
     assert len(t.mapping) == 7
 
     # c1 wraps the controls, c2 wraps the plot
@@ -124,6 +160,31 @@ def test_iplot():
     assert len(current_params) == 7
 
     t = iplot(
+        ((a + b + c) * cos(x), (x, -5, 5)),
+        params={
+            a: (2, 1, 3, 5),
+            b: (3, 2, 4000, 10),
+            c: param.Number(0.15, softbounds=(0, 1), label="test", step=0.025),
+        },
+        show=False,
+        layout="tb",
+        ncols=2,
+        use_latex=True
+    )
+
+    # there are 3 parameters in this plot
+    assert len(t.mapping) == 3
+
+    # latex in labels
+    p1 = getattr(t.param, "dyn_param_0")
+    p2 = getattr(t.param, "dyn_param_1")
+    p3 = getattr(t.param, "dyn_param_2")
+
+    assert p1.label == "$a$"
+    assert p2.label == "$b$"
+    assert p3.label == "test"
+
+    t = iplot(
         ((a + b) * cos(x), (x, -5, 5)),
         params={
             a: (1, 0, 5),
@@ -135,6 +196,39 @@ def test_iplot():
 
     new_params = [k for k in InteractivePlot.__dict__.keys() if "dyn_param_" in k]
     assert len(new_params) == 2
+
+def test_create_widgets():
+    x, y, z = symbols("x:z")
+
+    w = create_widgets({
+        x: (2, 0, 4),
+        y: (200, 1, 1000, 10, "$y$", "log"),
+        z: param.Integer(3, softbounds=(3, 10), label="n")
+    }, use_latex = True)
+
+    assert isinstance(w, dict)
+    assert len(w) == 3
+    assert isinstance(w[x], pn.widgets.FloatSlider)
+    assert isinstance(w[y], pn.widgets.DiscreteSlider)
+    assert isinstance(w[z], pn.widgets.IntSlider)
+    assert w[x].name == "$x$"
+    assert w[y].name == "$y$"
+    assert w[z].name == "n"
+
+    w = create_widgets({
+        x: (2, 0, 4),
+        y: (200, 1, 1000, 10, "y", "log"),
+        z: param.Integer(3, softbounds=(3, 10), label="n")
+    }, use_latex = False)
+
+    assert isinstance(w, dict)
+    assert len(w) == 3
+    assert isinstance(w[x], pn.widgets.FloatSlider)
+    assert isinstance(w[y], pn.widgets.DiscreteSlider)
+    assert isinstance(w[z], pn.widgets.IntSlider)
+    assert w[x].name == "x"
+    assert w[y].name == "y"
+    assert w[z].name == "n"
 
 
 def test_interactiveseries():

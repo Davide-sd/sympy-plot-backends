@@ -157,7 +157,7 @@ class PanelLayout:
     the library panel.
     """
 
-    def __init__(self, layout, ncols):
+    def __init__(self, layout, ncols, throttled=False):
         """
         Parameters
         ==========
@@ -171,6 +171,11 @@ class PanelLayout:
 
             ncols : int
                 Number of columns to lay out the widgets. Default to 2.
+
+            throttled : boolean, optional
+                Default to False. If True the recompute will be done at
+                mouse-up event on sliders. If False, every slider tick will
+                force a recompute.
         """
         # NOTE: More often than not, the numerical evaluation is going to be
         # resource-intensive. By default, panel's sliders will force a recompute
@@ -206,7 +211,7 @@ class PanelLayout:
             widgets[v] = { "type": type(tmp_panel.widget(v)) }
             t = getattr(self.param, v)
             if isinstance(t, param.Number):
-                widgets[v]["throttled"] = True
+                widgets[v]["throttled"] = throttled
 
         self.controls = pn.Param(
             self,
@@ -260,7 +265,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
-    def __init__(self, *args, name="", params=None, aux=dict(), **kwargs):
+    def __init__(self, *args, name="", params=None, **kwargs):
         """
         Parameters
         ==========
@@ -271,20 +276,18 @@ class InteractivePlot(DynamicParam, PanelLayout):
             params : dict
                 In the keys there will be the symbols, in the values there will
                 be parameters to create the slider associated to a symbol.
-            aux : dict
-                Auxiliary dictionary containing keyword arguments to be passed
-                to DynamicParam.
             kwargs : dict
                 Usual keyword arguments to be used by the backends and series.
         """
+
         layout = kwargs.pop("layout", "tb")
         ncols = kwargs.pop("ncols", 2)
-
-        aux.setdefault("use_latex", kwargs.pop("use_latex", True))
+        throttled = kwargs.pop("throttled", False)
+        use_latex = kwargs.pop("use_latex", True)
 
         args = list(map(_plot_sympify, args))
-        super().__init__(*args, name=name, params=params, **aux)
-        PanelLayout.__init__(self, layout, ncols)
+        super().__init__(*args, name=name, params=params, use_latex=use_latex)
+        PanelLayout.__init__(self, layout, ncols, throttled)
 
         # create the series
         series = self._create_series(*args, **kwargs)
@@ -455,6 +458,10 @@ def iplot(*args, show=True, **kwargs):
     polar : boolean, optional
         Default to False. If True, generate a polar plot of a curve with radius
         `expr` as a function of the range
+
+    throttled : boolean, optional
+        Default to False. If True the recompute will be done at mouse-up event
+        on sliders. If False, every slider tick will force a recompute.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
