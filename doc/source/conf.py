@@ -65,7 +65,7 @@ extensions = [
     # 'sphinx_rtd_dark_mode',
 ]
 
-nbsphinx_allow_errors = True
+# nbsphinx_allow_errors = True
 
 # hide the table inside classes autodoc
 numpydoc_show_class_members = False

@@ -10,6 +10,7 @@ from spb.ccomplex.complex import _build_series as _build_complex_series
 from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify, _unpack_args
 from spb.defaults import TWO_D_B, THREE_D_B
+from bokeh.models.formatters import TickFormatter
 import warnings
 
 pn.extension("plotly")
@@ -42,7 +43,8 @@ class DynamicParam(param.Parameterized):
     def _tuple_to_dict(self, k, v):
         """The user can provide a variable length tuple/list containing:
 
-        (default, min, max, N [optional], label [optional], spacing [optional])
+        (default, min, max, N [optional], tick_format [optional],
+            label [optional], spacing [optional])
 
         where:
             default : float
@@ -55,6 +57,9 @@ class DynamicParam(param.Parameterized):
                 Number of increments in the slider.
                 (start - end) / N represents the step increment. Default to 40.
                 Set N=-1 to have unit step increments.
+            tick_format : bokeh.models.formatters.TickFormatter or None
+                Default to None. Provide a formatter for the tick value of the
+                slider.
             label : str
                 Label of the slider. Default to None. If None, the string or
                 latex representation will be used. See use_latex for more
@@ -63,6 +68,12 @@ class DynamicParam(param.Parameterized):
                 Discretization spacing. Can be "linear" or "log".
                 Default to "linear".
         """
+        if len(v) >= 5:
+            # remove tick_format, as it won't be used for the creation of the
+            # parameter. Its value has already been stored.
+            v = list(v)
+            v.pop(4)
+
         N = 40
         defaults_keys = ["default", "softbounds", "step", "label", "type"]
         defaults_values = [
@@ -126,8 +137,28 @@ class DynamicParam(param.Parameterized):
         #    val: name of the associated parameter
         self.mapping = {}
 
+        # NOTE: unfortunately, parameters from the param library do not
+        # provide a keyword argument to set a formatter for the slider's tick
+        # value. As a workaround, the user can provide a formatter for each
+        # parameter, which will be stored in the following dictionary and later
+        # used in the instantiation of the widgets.
+        self.formatters = {}
+
         # create and attach the params to the class
         for i, (k, v) in enumerate(params.items()):
+            # store the formatter
+            formatter = None
+            if isinstance(v, (list, tuple)) and (len(v) >= 5):
+                if (v[4] is not None) and (not isinstance(v[4], TickFormatter)):
+                    raise TypeError(
+                        "To format the tick value of the widget associated " +
+                        "to the symbol {}, an instance of ".format(k) +
+                        "bokeh.models.formatters.TickFormatter is expected. " +
+                        "Instead, an instance of {} was given.".format(
+                            type(v[4])))
+                formatter = v[4]
+            self.formatters[k] = formatter
+
             if not isinstance(v, param.parameterized.Parameter):
                 v = self._tuple_to_dict(k, v)
                 # at this stage, v could be a dictionary representing a number,
@@ -212,6 +243,8 @@ class PanelLayout:
             t = getattr(self.param, v)
             if isinstance(t, param.Number):
                 widgets[v]["throttled"] = throttled
+                if self.formatters[k] is not None:
+                    widgets[v]["format"] = self.formatters[k]
 
         self.controls = pn.Param(
             self,
@@ -350,15 +383,6 @@ def iplot(*args, show=True, **kwargs):
     """
     Create interactive plots of symbolic expressions.
 
-    Notes
-    =====
-    
-    This function is specifically designed to work within Jupyter Notebook!
-    It is also possible to use it from a regular Python interpreter, but only
-    with ``BokehBackend`` and ``PlotlyBackend``. In such cases, we have to
-    call ``iplot(..., backend=BB).show()``, which will create a server process
-    loading the interactive plot on the browser.
-
     Parameters
     ==========
 
@@ -366,10 +390,14 @@ def iplot(*args, show=True, **kwargs):
         Each tuple represents an expression. Depending on the type of
         expression, the tuple should have the following forms:
 
-        1. line: ``(expr, range, label [optional])``
-        2. parametric line: ``(expr1, expr2, expr3 [optional], range, label [optional])``
-        3. surface ``(expr, range1, range2, label [optional])``
-        4. parametric surface ``(expr1, expr2, expr3, range1, range2, label [optional])``
+        1. line:
+           ``(expr, range, label [optional])``
+        2. parametric line:
+           ``(expr1, expr2, expr3 [optional], range, label [optional])``
+        3. surface:
+           ``(expr, range1, range2, label [optional])``
+        4. parametric surface:
+           ``(expr1, expr2, expr3, range1, range2, label [optional])``
 
         The label is always optional, whereas the ranges must always be
         specified. The ranges will create the discretized domain.
@@ -379,16 +407,23 @@ def iplot(*args, show=True, **kwargs):
 
         1. an instance of ``param.parameterized.Parameter``.
         2. a tuple of the form:
-           ``(default, min, max, N [optional], label [optional], spacing [optional])``
+           ``(default, min, max, N, tick_format, label, spacing)``
            where:
 
-           - N : int
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers.
+           - N : int, optional
                 Number of steps of the slider.
-           - min, max : float
-                End values of the range. Must be finite numbers.
-           - label: str
+           - tick_format : TickFormatter or None, optional
+                Provide a formatter for the tick value of the slider. If None,
+                ``panel`` will automatically apply a default formatter.
+                Alternatively, an instance of
+                ``bokeh.models.formatters.TickFormatter`` can be used.
+                Default to None.
+           - label: str, optional
                 Custom text associated to the slider.
-           - spacing : str
+           - spacing : str, optional
                 Specify the discretization spacing. Default to ``"linear"``, can
                 be changed to ``"log"``.
 
@@ -498,11 +533,11 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
-        >>> from sympy import (symbols, sqrt, cos, exp, sin, pi,
-        ...     Matrix, Plane, Polygon, I, log)
-        >>> from spb.interactive import iplot
-        >>> from spb.backends.matplotlib import MB
-        >>> x, y, z = symbols("x, y, z")
+       >>> from sympy import (symbols, sqrt, cos, exp, sin, pi,
+       ...     Matrix, Plane, Polygon, I, log)
+       >>> from spb.interactive import iplot
+       >>> from spb.backends.matplotlib import MB
+       >>> x, y, z = symbols("x, y, z")
 
     Surface plot between -10 <= x, y <= 10 with a damping parameter varying from
     0 to 1, with a default value of 0.15, discretized with 100 points on both
@@ -511,59 +546,63 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
-        >>> r = sqrt(x**2 + y**2)
-        >>> d = symbols('d')
-        >>> expr = 10 * cos(r) * exp(-r * d)
-        >>> iplot(
-        ...     (expr, (x, -10, 10), (y, -10, 10)),
-        ...     params = { d: (0.15, 0, 1) },
-        ...     title = "My Title",
-        ...     xlabel = "x axis",
-        ...     ylabel = "y axis",
-        ...     zlabel = "z axis",
-        ...     backend = MB,
-        ...     n = 100,
-        ...     threed = True)
+       >>> r = sqrt(x**2 + y**2)
+       >>> d = symbols('d')
+       >>> expr = 10 * cos(r) * exp(-r * d)
+       >>> iplot(
+       ...     (expr, (x, -10, 10), (y, -10, 10)),
+       ...     params = { d: (0.15, 0, 1) },
+       ...     title = "My Title",
+       ...     xlabel = "x axis",
+       ...     ylabel = "y axis",
+       ...     zlabel = "z axis",
+       ...     backend = MB,
+       ...     n = 100,
+       ...     threed = True)
 
     A line plot illustrating the use of multiple expressions and:
 
     1. some expression may not use all the parameters.
     2. custom labeling of the expressions.
     3. custom number of steps in the slider.
-    4. custom labeling of the parameter-sliders.
+    4. custom format of the value shown on the slider. This might be useful to
+       correctly visualize very small or very big numbers.
+    5. custom labeling of the parameter-sliders.
 
     .. jupyter-execute::
 
-        >>> A1, A2, k = symbols("A1, A2, k")
-        >>> iplot(
-        ...     (log(x) + A1 * sin(k * x), (x, 1e-05, 20), "f1"),
-        ...     (exp(-(x - 2)) + A2 * cos(x), (x, 0, 20), "f2"),
-        ...     (A1 + A1 * cos(x), A2 * sin(x), (x, 0, pi)),
-        ...     params = {
-        ...         k: (1, 0, 5),
-        ...         A1: (2, 0, 10, 20, "Ampl 1"),
-        ...         A2: (2, 0, 10, 40, "Ampl 2"),
-        ...     },
-        ...     backend = MB,
-        ...     ylim=(-4, 10))
+       >>> from bokeh.models.formatters import PrintfTickFormatter
+       >>> formatter = PrintfTickFormatter(format="%.3f")
+       >>> A1, A2, k = symbols("A1, A2, k")
+       >>> iplot(
+       ...     (log(x) + A1 * sin(k * x), (x, 1e-05, 20), "f1"),
+       ...     (exp(-(x - 2)) + A2 * cos(x), (x, 0, 20), "f2"),
+       ...     (10 + 5 * cos(k * x), A2 * 25 * sin(x), (x, 0, pi)),
+       ...     params = {
+       ...         k: (1, 0, 5),
+       ...         A1: (0.05, 0, 1, 20, None, "Ampl 1"),
+       ...         A2: (0.2, 0, 1, 200, formatter, "Ampl 2"),
+       ...     },
+       ...     backend = MB,
+       ...     ylim = (-4, 10))
 
     A 3D slice-vector plot. Note: whenever we want to create parametric vector
     plots, we should set ``is_vector=True``.
 
     .. jupyter-execute::
 
-        >>> a, b = symbols("a, b")
-        >>> iplot(
-        ...     (Matrix([z * a, y * b, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5)),
-        ...     params = {
-        ...         a: (1, 0, 5),
-        ...         b: (1, 0, 5)
-        ...     },
-        ...     backend = MB,
-        ...     n = 10,
-        ...     is_vector = True,
-        ...     quiver_kw = {"length": 0.15},
-        ...     slice = Plane((0, 0, 0), (0, 1, 0)))
+       >>> a, b = symbols("a, b")
+       >>> iplot(
+       ...     (Matrix([z * a, y * b, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5)),
+       ...     params = {
+       ...         a: (1, 0, 5),
+       ...         b: (1, 0, 5)
+       ...     },
+       ...     backend = MB,
+       ...     n = 10,
+       ...     is_vector = True,
+       ...     quiver_kw = {"length": 0.15},
+       ...     slice = Plane((0, 0, 0), (0, 1, 0)))
 
     A parametric complex domain coloring plot. Note: whenever we want to create
     parametric complex plots, we must set ``is_complex=True``.
@@ -585,20 +624,40 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
-        >>> import param
-        >>> a, b, c, d = symbols('a:d')
-        >>> iplot(
-        ...     (Polygon((a, b), c, n=d), ),
-        ...     params = {
-        ...         a: (0, -2, 2),
-        ...         b: (0, -2, 2),
-        ...         c: (1, 0, 5),
-        ...         d: param.Integer(3, softbounds=(3, 10), label="n"),
-        ...     },
-        ...     backend = MB,
-        ...     fill = False,
-        ...     aspect = "equal",
-        ...     use_latex = False)
+       >>> import param
+       >>> a, b, c, d = symbols('a:d')
+       >>> iplot(
+       ...     (Polygon((a, b), c, n=d), ),
+       ...     params = {
+       ...         a: (0, -2, 2),
+       ...         b: (0, -2, 2),
+       ...         c: (1, 0, 5),
+       ...         d: param.Integer(3, softbounds=(3, 10), label="n"),
+       ...     },
+       ...     backend = MB,
+       ...     fill = False,
+       ...     aspect = "equal",
+       ...     use_latex = False)
+
+
+    Notes
+    =====
+
+    This function is specifically designed to work within Jupyter Notebook!
+    It is also possible to use it from a regular Python interpreter, but only
+    with ``BokehBackend`` and ``PlotlyBackend``. In such cases, we have to
+    call ``iplot(..., backend=BB).show()``, which will create a server process
+    loading the interactive plot on the browser.
+
+    One of the provided examples uses an instance of ``PrintfTickFormatter`` to
+    format the value shown by a slider. This class is exposed by Bokeh, but can
+    be used by ``iplot`` with any backend. Refer to [#fn1]_ for more
+    information about tick formatting.
+
+    References
+    ==========
+
+    .. [#fn1] https://docs.bokeh.org/en/latest/docs/user_guide/styling.html#tick-label-formats
 
     """
     i = InteractivePlot(*args, **kwargs)
@@ -616,19 +675,26 @@ def create_widgets(params, **kwargs):
     params : dict
         A dictionary mapping the symbols to a parameter. The parameter can be:
 
-        1. an instance of ``param.parameterized.Parameter``. Refer to [#fn1]_
+        1. an instance of ``param.parameterized.Parameter``. Refer to [#fn2]_
            for a list of available parameters.
         2. a tuple of the form:
-           ``(default, min, max, N [optional], label [optional], spacing [optional])``
+           ``(default, min, max, N, tick_format, label, spacing)``
            where:
 
-           - N : int
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers.
+           - N : int, optional
                 Number of steps of the slider.
-           - min, max : float
-                End values of the range. Must be finite numbers.
-           - label: str
+           - tick_format : TickFormatter or None, optional
+                Provide a formatter for the tick value of the slider. If None,
+                ``panel`` will automatically apply a default formatter.
+                Alternatively, an instance of
+                ``bokeh.models.formatters.TickFormatter`` can be used.
+                Default to None.
+           - label: str, optional
                 Custom text associated to the slider.
-           - spacing : str
+           - spacing : str, optional
                 Specify the discretization spacing. Default to ``"linear"``, can
                 be changed to ``"log"``.
 
@@ -654,16 +720,21 @@ def create_widgets(params, **kwargs):
     ========
 
     >>> from sympy.abc import x, y, z
+    >>> from spb.interactive import create_widgets
+    >>> from bokeh.models.formatters import PrintfTickFormatter
+    >>> formatter = PrintfTickFormatter(format="%.4f")
     >>> r = create_widgets({
-    ...     x: (2, 0, 4),
-    ...     y: (200, 1, 1000, 10, "test", "log"),
+    ...     x: (0.035, -0.035, 0.035, 100, formatter),
+    ...     y: (200, 1, 1000, 10, None, "test", "log"),
     ...     z: param.Integer(3, softbounds=(3, 10), label="n")
     ... })
 
 
     References
     ==========
-    .. [fn1] https://panel.holoviz.org/user_guide/Param.html
+
+    .. [#fn2] https://panel.holoviz.org/user_guide/Param.html
+
     """
     dp = DynamicParam(params=params, **kwargs)
     tmp_panel = pn.Param(dp)
@@ -671,4 +742,6 @@ def create_widgets(params, **kwargs):
     results = dict()
     for k, v in dp.mapping.items():
         results[k] = tmp_panel.widget(v)
+        if dp.formatters[k] is not None:
+            results[k].format = dp.formatters[k]
     return results

@@ -9,7 +9,7 @@ from spb.interactive import (
 )
 from spb.series import InteractiveSeries
 from spb.backends.plotly import PB
-
+from bokeh.models.formatters import PrintfTickFormatter
 
 def test_DynamicParam():
     a, b, c, d, e, f = symbols("a, b, c, d, e, f")
@@ -19,8 +19,8 @@ def test_DynamicParam():
         params={
             a: (1, 0, 5),
             b: (2, 1.5, 4.5, 20),
-            c: (3, 2, 5, 30, "test1"),
-            d: (1, 1, 10, 10, "test2", "log"),
+            c: (3, 2, 5, 30, None, "test1"),
+            d: (1, 1, 10, 10, None, "test2", "log"),
         },
         use_latex=False,
     )
@@ -49,13 +49,19 @@ def test_DynamicParam():
     test_number(p3, 3, (2, 5), "test1", 0.1)
     test_log_slider(p4, 1, (1, 10), 10, "test2")
 
+    # all formatters should be None
+    assert isinstance(t.formatters, dict)
+    assert len(t.formatters) == 4
+    assert all(e is None for e in t.formatters.values())
+
     # test use_latex
+    formatter = PrintfTickFormatter(format="%.4f")
     t = DynamicParam(
         params={
             a: (1, 0, 5),
             b: (2, 1.5, 4.5, 20),
-            c: (3, 2, 5, 30, "test1"),
-            d: (1, 1, 10, 10, "test2", "log"),
+            c: (3, 2, 5, 30, formatter, "test1"),
+            d: (1, 1, 10, 10, None, "test2", "log"),
         },
         use_latex=True,
     )
@@ -69,11 +75,17 @@ def test_DynamicParam():
     test_number(p3, 3, (2, 5), "test1", 0.1)
     test_log_slider(p4, 1, (1, 10), 10, "test2")
 
+    # one formatter should be set
+    assert isinstance(t.formatters, dict)
+    assert len(t.formatters) == 4
+    assert all(t.formatters[k] is None for k in [a, b, d])
+    assert isinstance(t.formatters[c], PrintfTickFormatter)
+
     # test mix tuple and parameters
     t = DynamicParam(
         params={
             a: (1, 0, 5),
-            b: (1, 1, 10, 10, "test3", "log"),
+            b: (1, 1, 10, 10, None, "test3", "log"),
             c: param.Boolean(default=True, label="test4"),
             d: param.ObjectSelector(default=5, objects=[1, 2, 3, 4, 5], label="test5"),
             e: param.Number(default=6.1, softbounds=(1.1, 10.1), label="test6"),
@@ -114,7 +126,7 @@ def test_iplot():
         ((a + b + c + d) * cos(x), (x, -5, 5)),
         params={
             a: (2, 1, 3, 5),
-            b: (3, 2, 4000, 10, "label", "log"),
+            b: (3, 2, 4000, 10, None, "label", "log"),
             c: param.Number(0.15, softbounds=(0, 1), label="test", step=0.025),
             # TODO: if I remove the following label, the tests are going to
             # fail: it would use the label "test5"... How is it possible?
@@ -188,7 +200,7 @@ def test_iplot():
         ((a + b) * cos(x), (x, -5, 5)),
         params={
             a: (1, 0, 5),
-            b: (1, 1, 10, 10, "test3", "log"),
+            b: (1, 1, 10, 10, None, "test3", "log"),
         },
         use_latex=False,
         show=False,
@@ -202,7 +214,7 @@ def test_create_widgets():
 
     w = create_widgets({
         x: (2, 0, 4),
-        y: (200, 1, 1000, 10, "$y$", "log"),
+        y: (200, 1, 1000, 10, None, "$y$", "log"),
         z: param.Integer(3, softbounds=(3, 10), label="n")
     }, use_latex = True)
 
@@ -215,9 +227,10 @@ def test_create_widgets():
     assert w[y].name == "$y$"
     assert w[z].name == "n"
 
+    formatter = PrintfTickFormatter(format="%.4f")
     w = create_widgets({
         x: (2, 0, 4),
-        y: (200, 1, 1000, 10, "y", "log"),
+        y: (200, 1, 1000, 10, formatter, "y", "log"),
         z: param.Integer(3, softbounds=(3, 10), label="n")
     }, use_latex = False)
 
@@ -229,6 +242,9 @@ def test_create_widgets():
     assert w[x].name == "x"
     assert w[y].name == "y"
     assert w[z].name == "n"
+
+    assert all(w[k].format is None for k in [x, z])
+    assert isinstance(w[y].format, PrintfTickFormatter)
 
 
 def test_interactiveseries():
