@@ -10,6 +10,7 @@ from spb.interactive import (
 from spb.series import InteractiveSeries
 from spb.backends.plotly import PB
 from bokeh.models.formatters import PrintfTickFormatter
+from pytest import raises
 
 def test_DynamicParam():
     a, b, c, d, e, f = symbols("a, b, c, d, e, f")
@@ -117,6 +118,18 @@ def test_DynamicParam():
 
     r = {a: 1, b: 1, c: True, d: 5, e: 6.1, f: 6}
     assert t.read_parameters() == r
+
+    # raise error because of an invalid formatter. The formatter must be None
+    # or an instance of bokeh.models.formatters.TickFormatter
+    raises(TypeError, lambda: DynamicParam(
+        params={
+            a: (1, 0, 5),
+            b: (2, 1.5, 4.5, 20),
+            c: (3, 2, 5, 30, True, "test1"),
+            d: (1, 1, 10, 10, None, "test2", "log"),
+        },
+        use_latex=True,
+    ))
 
 def test_iplot():
     a, b, c, d = symbols("a, b, c, d")
