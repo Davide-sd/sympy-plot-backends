@@ -218,6 +218,49 @@ Let's try to use ``MatplotlibBackend``:
   and we are responsible for it. Currently it is impossible to set
   relationships between parameters!
 
+As we can see, there are quite a few widgets in this plot. Maybe we are working
+with a small screen device, or maybe the width of Jupyter Notebook's main
+content area is limiting us. In such cases we can launch the plot on a
+different browser window to use all its available width. This only works with
+``BokehBackend`` and ``PlotlyBackend``. Let's give it a try:
+
+.. code-block:: python
+
+   t = iplot(
+       (Twi, (z, 0, 100), "Twi"),
+       (Two, (z, 0, 100), "Two"),
+       (Tp, (z, 0, 100), "Tp"),
+       params = {
+           ri: (0.2, 0.04, 0.5),
+           ro: (0.4, 0.2, 1.6),
+           L: (100, 25, 250),
+           Pave: (1000, 400, 4000),
+           Tin: (300, 100, 500),
+           hc: (1, 0.4, 15),
+           alpha: (0.031, 0.016, 0.031),
+           mdot: (1, 0.5, 5),
+           k: (0.2, 0.1, 2),
+           cp: (15, 5, 25)
+       },
+       title = "Temperature distribution",
+       xlabel = "Position [cm]",
+       ylabel = "T [K]",
+       ylim = (0, 3000),
+       xlim = (0, 100),
+       backend = BB,
+       layout = "sbl",
+       ncols = 1,
+       size = (800, 600),
+       show = True
+   )
+   t.show()
+
+Here, the ``panel`` object created by ``iplot`` has been "captured" into the
+variable ``t``. With ``t.show()`` we are launching a new server process that
+will server the interactive plot on a new browser window. Note that we layed
+out the widgets differently and we also increased the size of the plot.
+
+
 Example 3
 =========
 

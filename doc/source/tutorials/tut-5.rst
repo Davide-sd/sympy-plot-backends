@@ -429,10 +429,17 @@ to something like the following:
 Obviously, we should attach ``.param.value_throttled`` to all sliders.
 This is left to the Reader as an exercise.
 
-Finally, it's worth pointing out that the creation of these interactive widgets
-is a trial and error procedure. We will have to execute the same code blocks
-over and over again, generating new figures, new widgets, etc.
-Memory consumption constantly goes up, so it is a good idea to keep an eye on
-our system resource monitor. If the browser starts lagging, or memory
-consumption is too high, try to close the browser, close Jupyter server
-and starts over.
+
+Finally, a couple of observations:
+
+1. If we are building complicated applications with several widgets and plots,
+   we can again capture the output ``panel`` object and launch a server by
+   calling the ``show()`` method. For example, ``NCPD().show()`` will open
+   the interactive application on a new browser window. In doing so, we can
+   make better use of all the available space.
+2. The creation of these interactive widgets is a trial and error procedure.
+   We will have to execute the same code blocks over and over again, generating
+   new figures, new widgets, etc. Memory consumption constantly goes up, so it
+   is a good idea to keep an eye on our system resource monitor. If the
+   browser starts lagging, or memory consumption is too high, try to close
+   the browser, close Jupyter server and starts over.
