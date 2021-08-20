@@ -639,20 +639,75 @@ def iplot(*args, show=True, **kwargs):
        ...     aspect = "equal",
        ...     use_latex = False)
 
+    Serves the interactive plot on a separate browser window. Note: only
+    ``BokehBackend`` and ``PlotlyBackend`` are supported for this operation
+    mode.
+
+    .. code-block:: python
+
+       from sympy import *
+       from spb.backends.bokeh import BB
+       from bokeh.models.formatters import PrintfTickFormatter
+       formatter = PrintfTickFormatter(format='%.4f')
+
+       p1, p2, t, r, c = symbols("p1, p2, t, r, c")
+       phi = - (r * t + p1 * sin(c * r * t) + p2 * sin(2 * c * r * t))
+       phip = phi.diff(t)
+       r1 = phip / (1 + phip)
+
+       t = iplot(
+           (r1, (t, 0, 2*pi)),
+           params = { 
+               p1: (0.035, -0.035, 0.035, 50, formatter),
+               p2: (0.005, -0.02, 0.02, 50, formatter),
+               r: (2, 2, 5, 3),
+               c: (3, 1, 5, 4)
+           },
+           polar = True,
+           use_latex = False,
+           backend = BB,
+           aspect = "equal",
+           n = 5000,
+           layout = "sbl",
+           ncols = 1,
+           show = True
+       )
+       t.show()
 
     Notes
     =====
 
-    This function is specifically designed to work within Jupyter Notebook!
-    It is also possible to use it from a regular Python interpreter, but only
-    with ``BokehBackend`` and ``PlotlyBackend``. In such cases, we have to
-    call ``iplot(..., backend=BB).show()``, which will create a server process
-    loading the interactive plot on the browser.
+    1. This function is specifically designed to work within Jupyter Notebook.
+       However, it is also possible to use it from a regular Python interpreter,
+       but only with ``BokehBackend`` and ``PlotlyBackend``. In such cases, we
+       have to call ``iplot(..., backend=BB).show()``, which will create a
+       server process loading the interactive plot on the browser.
 
-    One of the provided examples uses an instance of ``PrintfTickFormatter`` to
-    format the value shown by a slider. This class is exposed by Bokeh, but can
-    be used by ``iplot`` with any backend. Refer to [#fn1]_ for more
-    information about tick formatting.
+    2. Some examples use an instance of ``PrintfTickFormatter`` to format the
+       value shown by a slider. This class is exposed by Bokeh, but can be used
+       by ``iplot`` with any backend. Refer to [#fn1]_ for more information
+       about tick formatting.
+    
+    3. We have seen the duality of the keyword argument ``show``:
+
+       * If True, the function returns a ``panel`` object that will be rendered
+         on the output cell of a Jupyter Notebook.
+       * If False, it returns an instance of ``InteractivePlot``.
+
+       Let's focus on the syntax ``t = iplot(..., show=True, backend=BB)``, as
+       shown in the last example.
+       Here, the variable ``t`` captures the ``panel`` object, thus nothing
+       will be rendered on the output cell. We can use this variable to serve
+       the interactive plot through a server process on a separate browser
+       window, by calling ``t.show()``. In doing so, the overall interactive
+       plot is not subjected to the width limitation of a classical Jupyter
+       Notebook. It is possible to play with the following keyword arguments
+       to further customize the look and take advantage of the full page:
+       ``size, ncols, layout``.
+       As stated before, only ``BokehBackend`` and ``PlotlyBackend`` are
+       supported in this mode of operation.
+
+
 
     References
     ==========
