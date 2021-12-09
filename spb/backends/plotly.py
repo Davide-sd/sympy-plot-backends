@@ -904,8 +904,9 @@ class PlotlyBackend(Plot):
         .. [#fn12] https://plotly.com/python/interactive-html-export/
 
         """
-        self._process_series(self._series)
-        self._update_layout()
+        if (len(self.series) > 0) and (len(self.fig.data) == 0):
+            self._process_series(self._series)
+            self._update_layout()
 
         ext = os.path.splitext(path)[1]
         if ext.lower() in [".html", ".html"]:
