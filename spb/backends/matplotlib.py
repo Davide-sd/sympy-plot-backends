@@ -956,11 +956,12 @@ class MatplotlibBackend(Plot):
         ==========
         .. [#fn8] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html
         """
-        # TODO: if _fig is None, raise an Error  
         # NOTE: the plot must first be created and then saved. Turns out that in
         # in the process the plot will also be shown. That's standard Matplotlib
         # behaviour.
         # self.show()
+        if self._fig is None:
+            self.process_series()
         self._fig.savefig(path, **kwargs)
 
     def close(self):

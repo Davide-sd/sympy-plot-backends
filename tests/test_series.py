@@ -7,18 +7,70 @@ from sympy import (
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-    InteractiveSeries,
+    InteractiveSeries, AbsArgLineSeries,
     ImplicitSeries,
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
     ComplexSeries, ComplexInteractiveSeries, ComplexPointSeries,
     ComplexPointInteractiveSeries,
     GeometrySeries, GeometryInteractiveSeries,
     PlaneSeries, PlaneInteractiveSeries,
-    List2DSeries
+    List2DSeries, AbsArgLineSeries
 )
 from spb.functions import _process_piecewise
 import numpy as np
 from pytest import warns, raises
+
+def test_adaptive():
+    # test that adaptive-related keywords produces the expected results
+
+    from adaptive.learner.learner1D import curvature_loss_function
+    x = symbols("x")
+
+    # use default adaptive options: adaptive_goal=0.01, loss_fn=None
+    s1 = LineOver1DRangeSeries(sin(x), (x, -10, 10), "", adaptive=True)
+    x1, _ = s1.get_data()
+    # use a different goal: set a number
+    s2 = LineOver1DRangeSeries(sin(x), (x, -10, 10), "", adaptive=True,
+        adaptive_goal=0.001)
+    x2, _ = s2.get_data()
+    # use a different goal: set a function
+    s3 = LineOver1DRangeSeries(sin(x), (x, -10, 10), "", adaptive=True,
+        adaptive_goal=lambda l: l.npoints >= 100)
+    x3, _ = s3.get_data()
+    # use a different loss function
+    s4 = LineOver1DRangeSeries(sin(x), (x, -10, 10), "", adaptive=True,
+        adaptive_goal=0.01, loss_fn=curvature_loss_function())
+    x4, _ = s4.get_data()
+    assert len(x1) < len(x2)
+    assert len(x3) >= 100
+    # using the same adaptive_goal value, curvature_loss_function produces
+    # less points than default_loss
+    assert len(x1) > len(x4)
+
+    s1 = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 2*pi),
+        adaptive=True)
+    x1, _, _, = s1.get_data()
+    s2 = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 2*pi),
+        adaptive=True, adaptive_goal=0.001)
+    x2, _, _ = s2.get_data()
+    s3 = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 2*pi),
+        adaptive=True, adaptive_goal=0.01, loss_fn=curvature_loss_function())
+    x3, _, _ = s3.get_data()
+    assert len(x1) < len(x2)
+    assert len(x1) > len(x3)
+
+    s1 = Parametric3DLineSeries(cos(x), sin(x), x, (x, 0, 2*pi),
+        adaptive=True)
+    x1, _, _, _ = s1.get_data()
+    s2 = Parametric3DLineSeries(cos(x), sin(x), x, (x, 0, 2*pi),
+        adaptive=True, adaptive_goal=0.001)
+    x2, _, _, _ = s2.get_data()
+    s3 = Parametric3DLineSeries(cos(x), sin(x), x, (x, 0, 2*pi),
+        adaptive=True, adaptive_goal=0.01, loss_fn=curvature_loss_function())
+    x3, _, _, _ = s3.get_data()
+    assert len(x1) < len(x2)
+    assert len(x1) > len(x3)
+
 
 def test_lin_log_scale():
     # Verify that data series create the correct spacing in the data.
@@ -185,10 +237,20 @@ def test_data_shape():
     assert len(xx) == len(yy)
     assert np.all(yy == 1)
 
-    s = LineOver1DRangeSeries(1, (x, -5, 5), adaptive=False)
+    s = LineOver1DRangeSeries(1, (x, -5, 5), adaptive=False, n=10)
     xx, yy = s.get_data()
-    assert len(xx) == len(yy)
+    assert len(xx) == len(yy) == 10
     assert np.all(yy == 1)
+
+    s = AbsArgLineSeries(1, (x, -5, 5))
+    xx, _abs, _arg = s.get_data()
+    assert len(xx) == len(_abs) == len(_arg)
+    assert np.all(_abs == 1)
+
+    s = AbsArgLineSeries(1, (x, -5, 5), adaptive=False, n=10)
+    xx, _abs, _arg = s.get_data()
+    assert len(xx) == len(_abs) == len(_arg) == 10
+    assert np.all(_abs == 1)
 
     s = Parametric2DLineSeries(sin(x), 1, (x, 0, pi))
     xx, yy, param = s.get_data()
@@ -337,6 +399,96 @@ def test_data_shape():
     s.update_data(dict())
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
+
+def test_only_integers():
+    x, y, u, v = symbols("x, y, u, v")
+
+    s = LineOver1DRangeSeries(sin(x), (x, -5.5, 4.5), "",
+        adaptive=False, only_integers=True)
+    xx, _ = s.get_data()
+    assert len(xx) == 10
+    assert xx.dtype == int
+    assert xx[0] == -5 and xx[-1] == 4
+
+    s = AbsArgLineSeries(sqrt(x), (x, -5.5, 4.5), "",
+        adaptive=False, only_integers=True)
+    xx, _, _ = s.get_data()
+    assert len(xx) == 10
+    assert xx.dtype == int
+    assert xx[0] == -5 and xx[-1] == 4
+
+    s = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 2 * pi), "",
+        adaptive=False, only_integers=True)
+    _, _, p = s.get_data()
+    assert len(p) == 7
+    assert p.dtype == int
+    assert p[0] == 0 and p[-1] == 6
+
+    s = Parametric3DLineSeries(cos(x), sin(x), x, (x, 0, 2 * pi), "",
+        adaptive=False, only_integers=True)
+    _, _, _, p = s.get_data()
+    assert len(p) == 7
+    assert p.dtype == int
+    assert p[0] == 0 and p[-1] == 6
+
+    s = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -5.5, 5.5),
+        (y, -3.5, 3.5), "",
+        adaptive=False, only_integers=True)
+    xx, yy, _ = s.get_data()
+    assert xx.shape == yy.shape == (7, 11)
+    assert xx.dtype == yy.dtype == int
+    assert np.allclose(xx[:, 0] - -5 * np.ones(7, dtype=int), 0)
+    assert np.allclose(xx[0, :] - np.linspace(-5, 5, 11, dtype=int), 0)
+    assert np.allclose(yy[:, 0] - np.linspace(-3, 3, 7, dtype=int), 0)
+    assert np.allclose(yy[0, :] - (-3) * np.ones(11, dtype=int), 0)
+
+    r = 2 + sin(7 * u + 5 * v)
+    expr = (
+        r * cos(u) * sin(v),
+        r * sin(u) * sin(v),
+        r * cos(v)
+    )
+    s = ParametricSurfaceSeries(*expr, (u, 0, 2 * pi), (v, 0, pi), "",
+        adaptive=False, only_integers=True)
+    xx, yy, zz = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == (4, 7)
+
+    # only_integers also works with scalar expressions
+    s = LineOver1DRangeSeries(1, (x, -5.5, 4.5), "",
+        adaptive=False, only_integers=True)
+    xx, _ = s.get_data()
+    assert len(xx) == 10
+    assert xx.dtype == int
+    assert xx[0] == -5 and xx[-1] == 4
+
+    s = Parametric2DLineSeries(cos(x), 1, (x, 0, 2 * pi), "",
+        adaptive=False, only_integers=True)
+    _, _, p = s.get_data()
+    assert len(p) == 7
+    assert p.dtype == int
+    assert p[0] == 0 and p[-1] == 6
+
+    s = SurfaceOver2DRangeSeries(1, (x, -5.5, 5.5), (y, -3.5, 3.5), "",
+        adaptive=False, only_integers=True)
+    xx, yy, _ = s.get_data()
+    assert xx.shape == yy.shape == (7, 11)
+    assert xx.dtype == yy.dtype == int
+    assert np.allclose(xx[:, 0] - -5 * np.ones(7, dtype=int), 0)
+    assert np.allclose(xx[0, :] - np.linspace(-5, 5, 11, dtype=int), 0)
+    assert np.allclose(yy[:, 0] - np.linspace(-3, 3, 7, dtype=int), 0)
+    assert np.allclose(yy[0, :] - (-3) * np.ones(11, dtype=int), 0)
+
+    r = 2 + sin(7 * u + 5 * v)
+    expr = (
+        r * cos(u) * sin(v),
+        1,
+        r * cos(v)
+    )
+    s = ParametricSurfaceSeries(*expr, (u, 0, 2 * pi), (v, 0, pi), "",
+        adaptive=False, only_integers=True)
+    xx, yy, zz = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == (4, 7)
+
 
 
 def test_interactive():
@@ -616,6 +768,8 @@ def test_str():
 
     s = LineOver1DRangeSeries(cos(x), (x, -4, 3), "test")
     assert str(s) == "cartesian line: cos(x) for x over (-4.0, 3.0)"
+    s = AbsArgLineSeries(sqrt(x), (x, -5 + 2j, 5 + 2j), "test")
+    assert str(s) == "absolute-argument line: sqrt(x) for x over ((-5+2j), (5+2j))"
     s = Parametric2DLineSeries(cos(x), sin(x), (x, -4, 3), "test")
     assert str(s) == "parametric cartesian line: (cos(x), sin(x)) for x over (-4.0, 3.0)"
     s = Parametric3DLineSeries(cos(x), sin(x), x, (x, -4, 3), "test")

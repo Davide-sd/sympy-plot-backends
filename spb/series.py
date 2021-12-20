@@ -20,7 +20,94 @@ from spb.utils import get_lambda
 import warnings
 import numpy as np
 
-old_lambdify = lambdify
+from adaptive import Learner1D, LearnerND
+from adaptive.runner import simple, BlockingRunner
+from adaptive.learner.learner1D import default_loss as default_loss_1d
+from adaptive.learner.learnerND import default_loss as default_loss_nd
+
+def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
+        modules=None, adaptive_goal=None, loss_fn=None):
+    from sympy import lambdify
+    from functools import partial
+
+    one_d = hasattr(free_symbols, "__iter__") and (len(free_symbols) == 1)
+
+    goal = lambda l: l.loss() < 0.01
+    if adaptive_goal is not None:
+        if isinstance(adaptive_goal, (int, float)):
+            goal = lambda l: l.loss() < adaptive_goal
+        if callable(adaptive_goal):
+            goal = adaptive_goal
+    
+    lf = default_loss_1d if one_d else default_loss_nd
+    if loss_fn is not None:
+        lf = loss_fn
+    k = "loss_per_interval" if one_d else "loss_per_simplex"
+    d = {k: lf}
+
+    Learner = Learner1D if one_d else LearnerND
+
+    # TODO:
+    # adaptive.runner.simple provides deterministic results with sequential
+    # computing.
+    # adaptive.runner.BlockingRunner provides concurrent computing, which tends
+    # to be faster. However, it requires the function to be pickleble.
+    # Sympy's lambdified functions are not pickleble. While it's possible
+    # to use different executors supporting advanced pickling, it is not
+    # trivial to implement it reliably for multiplatform.
+    # For the time being, use "simple".
+    # Runner = simple if Learner == Learner1D else BlockingRunner
+    Runner = simple
+
+    try:
+        f = lambdify(free_symbols, expr, modules=modules)
+        learner = Learner(partial(wrapper_func, f, *args), bounds=bounds, **d)
+        Runner(learner, goal)
+    except NameError as err:
+        warnings.warn(
+            "The evaluation with %s failed.\n" % ("Numpy" if not modules else modules) +
+            "NameError: {}\n".format(err) +
+            "Trying to evaluate the expression with Sympy, but it might "
+            "be a slow operation."
+        )
+        f = lambdify(free_symbols, expr, modules="sympy")
+        learner = Learner(partial(wrapper_func, f, *args), bounds=bounds, **d)
+        Runner(learner, goal)
+    
+    if Learner == Learner1D:
+        return learner.to_numpy()
+    
+    # For multivariate functions, create a meshgrid where to interpolate the
+    # results. Taken from adaptive.learner.learnerND.plot
+    x, y = learner._bbox
+    lbrt = x[0], y[0], x[1], y[1]
+    scale_factor = np.product(np.diag(learner._transform))
+    a_sq = np.sqrt(np.min(learner.tri.volumes()) * scale_factor)
+    n = max(10, int(0.658 / a_sq) * 2)
+    xs = ys = np.linspace(0, 1, n)
+    xs = xs * (x[1] - x[0]) + x[0]
+    ys = ys * (y[1] - y[0]) + y[0]
+    z = learner._ip()(xs[:, None], ys[None, :]).squeeze()
+    xs, ys = np.meshgrid(xs, ys)
+    return xs, ys, np.rot90(z)
+
+def uniform_eval(free_symbols, expr, *args, modules=None):
+    from sympy import lambdify
+    
+    f = lambdify(free_symbols, expr, modules=modules)
+    try:
+        return f(*args)
+    except (ValueError, TypeError) as err:
+        return [f(*x) for x in zip(*[t.flatten() for t in args])]
+    except NameError as err:
+        warnings.warn(
+            "The evaluation with %s failed.\n" % ("Numpy" if not modules else modules) +
+            "NameError: {}\n".format(err) +
+            "Trying to evaluate the expression with Sympy, but it might "
+            "be a slow operation."
+        )
+        f = lambdify(free_symbols, expr, modules="sympy")
+        return [f(*x).n() for x in zip(*[t.flatten() for t in args])]
 
 ### The base class for all series
 class BaseSeries:
@@ -84,10 +171,16 @@ class BaseSeries:
         return any(flagslines)
 
     @staticmethod
-    def _discretize(start, end, N, scale="linear"):
+    def _discretize(start, end, N, scale="linear", only_integers=False):
+        dtype = float
+        if only_integers is True:
+            start, end = int(start), int(end)
+            N = end - start + 1
+            dtype = int
+        
         if scale == "linear":
-            return np.linspace(start, end, N)
-        return np.geomspace(start, end, N)
+            return np.linspace(start, end, N, dtype=dtype)
+        return np.geomspace(start, end, N, dtype=dtype)
 
     @staticmethod
     def _correct_size(a, b):
@@ -97,9 +190,14 @@ class BaseSeries:
         if not isinstance(a, np.ndarray):
             # `a` is a scalar (int or float)
             a = np.array(a)
-
         if a.shape != b.shape:
-            return a * np.ones_like(b)
+            a = a * np.ones_like(b)
+        if b.dtype == int:
+            # if only_integers=True, then b is an integer discretization.
+            # a is the result of the evaluation, which could be integer.
+            # Instead, it should be float to enabling the possibility of
+            # adding NaN elements.
+            return a.astype(float)
         return a
 
     def get_data(self):
@@ -158,6 +256,13 @@ class Line2DBaseSeries(BaseSeries):
         self.steps = kwargs.get("steps", False)
         self.only_integers = kwargs.get("only_integers", False)
         self.is_point = kwargs.get("is_point", False)
+        self.scale = kwargs.get("xscale", "linear")
+        self.n = kwargs.get("n", 1000)
+        self.modules = kwargs.get("modules", None)
+        self.adaptive = kwargs.get("adaptive", True)
+        self.adaptive_goal = kwargs.get("adaptive_goal", 0.01)
+        self.loss_fn = kwargs.get("loss_fn", None)
+        
 
     def get_data(self):
         """Return lists of coordinates for plotting the line.
@@ -178,8 +283,10 @@ class Line2DBaseSeries(BaseSeries):
             List containing the parameter, in case of Parametric2DLineSeries
             and Parametric3DLineSeries.
         """
+        from numpy import ndarray
+        from numpy.ma import MaskedArray
         points = self.get_points()
-        points = [np.array(p, dtype=np.float64) for p in points]
+        points = [np.array(p, dtype=np.float64) if not isinstance(p, (ndarray, MaskedArray)) else p for p in points]
 
         if self.steps is True:
             if self.is_2Dline:
@@ -202,11 +309,10 @@ class List2DSeries(Line2DBaseSeries):
     """Representation for a line consisting of list of points."""
 
     def __init__(self, list_x, list_y, label="", **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self.list_x = np.array(list_x, dtype=np.float64)
         self.list_y = np.array(list_y, dtype=np.float64)
         self.label = label
-        self.is_point = kwargs.get("is_point", False)
 
     def __str__(self):
         return "list plot"
@@ -216,152 +322,87 @@ class List2DSeries(Line2DBaseSeries):
 
 
 class LineOver1DRangeSeries(Line2DBaseSeries):
-    """Representation for a line consisting of a SymPy expression over a range."""
+    """Representation for a line consisting of a SymPy expression over a
+    real range."""
 
     def __init__(self, expr, var_start_end, label="", **kwargs):
         super().__init__(**kwargs)
         self.expr = sympify(expr)
         self.label = label
         self.var = sympify(var_start_end[0])
-
-        self.is_complex = kwargs.get("is_complex", False)
-        _check = lambda t: isinstance(t, (Add, Mul)) and t.has(I)
-        if (_check(var_start_end[1]) or _check(var_start_end[2])
-                or self.is_complex):
-            self.start = complex(var_start_end[1])
-            self.end = complex(var_start_end[2])
-        else:
-            self.start = float(var_start_end[1])
-            self.end = float(var_start_end[2])
-
-        self.n = kwargs.get("n", 1000)
-        self.adaptive = kwargs.get("adaptive", True)
-        self.depth = kwargs.get("depth", 9)
-        self.xscale = kwargs.get("xscale", "linear")
+        self.start = complex(var_start_end[1])
+        self.end = complex(var_start_end[2])
+        if self.start.imag != self.end.imag:
+            raise ValueError(
+                "%s requires the imaginary " % self.__class__.__name__ +
+                "part of the start and end values of the range to be the same."
+            )
         self.polar = kwargs.get("polar", False)
-        self.modules = kwargs.get("modules", None)
-        self.absarg = kwargs.get("absarg", None)
-        if self.is_complex and (self.absarg is not None):
-            self.is_parametric = True
 
     def __str__(self):
         return "cartesian line: %s for %s over %s" % (
             str(self.expr),
             str(self.var),
-            str((self.start, self.end)),
+            str((self.start.real, self.end.real)),
         )
 
-    def adaptive_sampling(self, f, start, end, max_depth=9, xscale="linear"):
-        """The adaptive sampling is done by recursively checking if three
-        points are almost collinear. If they are not collinear, then more
-        points are added between those points.
+    def _adaptive_sampling(self, go_for_complex):
+        print("Adaptive Sampling")
 
-        Parameters
-        ==========
+        from sympy import lambdify
 
-        f : callable
-            The function to be numerical evaluated
+        def func(f, go_for_complex, imag, x):
+            w = complex(f(x + 1j * imag if go_for_complex else x))
+            return w.real, w.imag
 
-        start, end : floats
-            start and end values of the discretized domain
+        data = adaptive_eval(
+            func, [self.var], self.expr,
+            [self.start.real, self.end.real],
+            go_for_complex,
+            self.start.imag,
+            modules=self.modules,
+            adaptive_goal=self.adaptive_goal,
+            loss_fn=self.loss_fn)
+        return data[:, 0], data[:, 1], data[:, 2]
 
-        max_depth : int
-            Controls the smootheness of the overall evaluation. The higher
-            the number, the smoother the function, the more memory will be
-            used by this recursive procedure. Default value is 9.
+    def _uniform_sampling(self, go_for_complex):
+        print("Uniform Sampling")
 
-        xscale : str
-            Discretization strategy. Can be "linear" or "log". Default to
-            "linear".
+        from sympy import lambdify
 
-        References
-        ==========
+        x = xx = self._discretize(self.start.real, self.end.real, self.n, scale=self.scale, only_integers=self.only_integers)
 
-        .. [1] Adaptive polygonal approximation of parametric curves,
-               Luiz Henrique de Figueiredo.
+        if go_for_complex:
+            xx = xx + 1j * self.start.imag
+        
+        data = uniform_eval([self.var], self.expr, xx, modules=self.modules)
+        if isinstance(data, list):
+            data = np.array([complex(t) for t in data])
+        _re, _im = np.real(data), np.imag(data)
+        
+        # with uniform sampling, if self.expr is a constant then only one
+        # value will be returned, no matter the shape of x.
+        _re = self._correct_size(_re, x)
+        _im = self._correct_size(_im, x)
+        return x, _re, _im
+    
+    def _get_real_imag(self):
+        """ By evaluating the function over a complex range it should
+        return complex values. The imaginary part can be used to mask out the
+        unwanted values.
+        However, if the expression contains instances of Integral, once
+        lambdified it will be evaluated by scipy.integrate.quadpack.quad(), which requires real values in input.
         """
-        from mpmath import mpf
-        x_coords = []
-        y_coords = []
+        from sympy import Integral, Sum
+        go_for_complex = not any([self.expr.has(t) for t in [Integral, Sum]])
 
-        def _func(t, extract=True):
-            if t is None:
-                return t
-            if extract:
-                return t.real if not isinstance(t, mpf) else float(t)
-            return t if not isinstance(t, mpf) else float(t)
+        if self.adaptive:
+            x, _re, _im = self._adaptive_sampling(go_for_complex)
+        else:
+            x, _re, _im = self._uniform_sampling(go_for_complex)
 
-        def sample(p, q, depth):
-            """Samples recursively if three points are almost collinear.
-            For depth < max_depth, points are added irrespective of whether
-            they satisfy the collinearity condition or not. The maximum
-            depth allowed is max_depth.
-            """
-            # Randomly sample to avoid aliasing.
-            random = 0.45 + np.random.rand() * 0.1
-            if xscale == "log":
-                xnew = 10 ** (
-                    np.log10(p[0]) + random * (np.log10(q[0]) - np.log10(p[0]))
-                )
-            else:
-                xnew = p[0] + random * (q[0] - p[0])
-
-            ynew = f(xnew)
-            new_point = np.array([xnew, _func(ynew, False)])
-
-            # Maximum depth
-            if depth > max_depth:
-                x_coords.append(q[0] if q[0] is None else q[0].real)
-                y_coords.append(q[1] if q[1] is None else q[1].real)
-
-            # Sample irrespective of whether the line is flat till the
-            # depth of 6. We are not using linspace to avoid aliasing.
-            elif depth < max_depth:
-                sample(p, new_point, depth + 1)
-                sample(new_point, q, depth + 1)
-
-            # Sample ten points if complex values are encountered
-            # at both ends. If there is a real value in between, then
-            # sample those points further.
-            elif p[1] is None and q[1] is None:
-                if xscale == "log":
-                    xarray = np.logspace(p[0], q[0], 10)
-                else:
-                    xarray = np.linspace(p[0], q[0], 10)
-
-                yarray = list(map(f, xarray))
-                if any(y is not None for y in yarray):
-                    for i in range(len(yarray) - 1):
-                        if yarray[i] is not None or yarray[i + 1] is not None:
-                            sample(
-                                [xarray[i], yarray[i]],
-                                [xarray[i + 1], yarray[i + 1]],
-                                depth + 1,
-                            )
-
-            # Sample further if one of the end points in None (i.e. a
-            # complex value) or the three points are not almost collinear.
-            elif (
-                p[1] is None
-                or q[1] is None
-                or new_point[1] is None
-                or not flat(p, new_point, q)
-            ):
-                sample(p, new_point, depth + 1)
-                sample(new_point, q, depth + 1)
-            else:
-                x_coords.append(q[0] if q[0] is None else q[0].real)
-                y_coords.append(q[1] if q[1] is None else q[1].real)
-
-        f_start = f(start)
-        f_start = _func(f_start)
-        f_end = f(end)
-        f_end = _func(f_end)
-        x_coords.append(start)
-        y_coords.append(f_start)
-        sample(np.array([start, f_start]), np.array([end, f_end]), 0)
-        return x_coords, y_coords
-
+        return x, _re, _im
+    
     def get_points(self):
         """Return lists of coordinates for plotting. Depending on the
         `adaptive` option, this function will either use an adaptive algorithm
@@ -370,111 +411,89 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         Returns
         =======
 
-        x: list
-            List of x-coordinates
+        x : np.ndarray
+            Real Discretized domain.
 
-        y: list
-            List of y-coordinates
+        y : np.ndarray
+            Numerical evaluation result.
         """
+        x, _re, _im = self._get_real_imag()
+        
+        # The evaluation could produce complex numbers. Use the imaginary part
+        # to create a masked array.
+        _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
 
-        # TODO: this wrapper function is a very awful hack in order to pass
-        # test inside test_plot.py. Need a better and more reliable lambdify...
-        # Once that's done, we must remove this wrapper function and the
-        # following try/except.
-        def _doit(g):
-            if self.only_integers or not self.adaptive:
-                x, y = self._uniform_sampling(g)
-                x, y = np.array(x), np.array(y)
-            else:
-                x, y = self.adaptive_sampling(
-                    g, self.start, self.end, self.depth, self.xscale
-                )
-            return x, y
+        return x, _re
+    
 
-        try:
-            from sympy import lambdify
-            f = lambdify([self.var], self.expr, self.modules)
-            x, y = _doit(f)
-        except:
-            if self.only_integers or not self.adaptive:
-                f2 = vectorized_lambdify([self.var], self.expr)
-            else:
-                f2 = old_lambdify([self.var], self.expr)
-            x, y = _doit(f2)
+class AbsArgLineSeries(LineOver1DRangeSeries):
+    """Represents a the absolute value of a complex function colored by its
+    argument over a complex range (a + I*b, c + I * b). Note that the imaginary part of the start and end must be the same.
+    """
 
-        if self.is_complex and (self.absarg is not None):
-            # compute the argument at the x locations. Right now, x contains the
-            # real part of the discretization line. To compute the argument, we
-            # also need the imaginary part.
-            # NOTE: this is clearly a far from optimal approach, as we are going
-            # to evaluate the function again. However, it reuses code.
+    is_parametric = True
+    is_complex = True
+    
+    def __str__(self):
+        return "absolute-argument line: %s for %s over %s" % (
+            str(self.expr),
+            str(self.var),
+            str((self.start, self.end)),
+        )
+    
+    def get_points(self):
+        """Return lists of coordinates for plotting. Depending on the
+        `adaptive` option, this function will either use an adaptive algorithm
+        or it will uniformly sample the expression over the provided range.
 
-            # TODO: can I store another list of x coordinates containing also
-            # the imaginary part in the adaptive_sampling algorithm? In that way
-            # I could remove this interpolation step.
+        Returns
+        =======
 
-            # interpolation line
-            m = (self.end.imag - self.start.imag) / (self.end.real - self.start.real)
-            re = np.array(x)
-            im = m * re - self.start.imag
+        x : np.ndarray
+            Real Discretized domain.
 
-            from sympy import lambdify
-            f2 = lambdify([self.var], self.absarg, self.modules)
+        _abs : np.ndarray
+            Absolute value of the function.
 
-            if self.modules == "mpmath":
-                from mpmath import arg, mpc
-                w = self._evaluate_mpmath(f2, [[mpc(r, i), ] for r, i in zip(re, im)])
-                angle = np.array([float(arg(t)) for t in w])
-            else:
-                w = f2(re + im*1j)
-                angle = np.angle(w)
-            return np.real(x), y, angle
+        _arg : np.ndarray
+            Argument of the function.
+        """
+        x, _re, _im = self._get_real_imag()
+        _abs = np.sqrt(_re**2 + _im**2)
+        _angle = np.arctan2(_im, _re)
 
-        if self.polar:
-            t = x.copy()
-            x = y * np.cos(t)
-            y = y * np.sin(t)
-
-        return np.real(x), y
-
-    def _uniform_sampling(self, f):
-        start, end, N = self.start, self.end, self.n
-        if self.only_integers is True:
-            start, end = int(start), int(end)
-            N = end - start + 1
-        x = self._discretize(start, end, N, scale=self.xscale)
-
-        if self.is_complex and (self.modules == "mpmath"):
-            from mpmath import mpc
-            y = self._evaluate_mpmath(f,
-                    # [[t] for t in x])
-                    [[mpc(t.real, t.imag)] for t in x])
-            y = [float(t.real) for t in y]
-        else:
-            y = f(x)
-
-        y = self._correct_size(y, x)
-        return x, y
+        return x, _abs, _angle
 
 
-class Parametric2DLineSeries(Line2DBaseSeries):
+class ParametricLineBaseSeries(Line2DBaseSeries):
+    is_parametric = True
+
+    def _eval_component(self, expr, param):
+        """ Evaluate the specified expression over a predefined
+        param-discretization.
+        """
+        v = uniform_eval([self.var], expr, param, modules=self.modules)
+        if isinstance(v, list):
+            v = np.array([complex(t) for t in v])
+        re_v, im_v = np.real(v), np.imag(v)
+        re_v = self._correct_size(v, param)
+        re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
+        return re_v
+
+class Parametric2DLineSeries(ParametricLineBaseSeries):
     """Representation for a line consisting of two parametric sympy expressions
     over a range."""
 
     is_parametric = True
 
     def __init__(self, expr_x, expr_y, var_start_end, label="", **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self.expr_x = sympify(expr_x)
         self.expr_y = sympify(expr_y)
         self.label = label
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
-        self.n = kwargs.get("n", 300)
-        self.adaptive = kwargs.get("adaptive", True)
-        self.depth = kwargs.get("depth", 9)
-        self.scale = kwargs.get("xscale", "linear")
 
     def __str__(self):
         return "parametric cartesian line: (%s, %s) for %s over %s" % (
@@ -484,129 +503,29 @@ class Parametric2DLineSeries(Line2DBaseSeries):
             str((self.start, self.end)),
         )
 
+    def _adaptive_sampling(self):
+        print("Adaptive Sampling")
+
+        def func(f, x):
+            w = [complex(t) for t in f(x)]
+            return [t.real if np.isclose(t.imag, 0) else np.nan for t in w]
+
+        data = adaptive_eval(
+            func, [self.var], Tuple(self.expr_x, self.expr_y),
+            [self.start, self.end],
+            modules=self.modules,
+            adaptive_goal=self.adaptive_goal,
+            loss_fn=self.loss_fn)
+        return data[:, 1], data[:, 2], data[:, 0]
+
     def _uniform_sampling(self):
-        param = self._discretize(self.start, self.end, self.n, scale=self.scale)
-        fx = vectorized_lambdify([self.var], self.expr_x)
-        fy = vectorized_lambdify([self.var], self.expr_y)
-        list_x = fx(param)
-        list_y = fy(param)
-        # expr_x or expr_y may be scalars. This allows scalar components
-        # to be plotted as well
-        list_x = self._correct_size(list_x, param)
-        list_y = self._correct_size(list_y, param)
-        return list_x, list_y, param
+        print("Uniform Sampling")
 
-    @staticmethod
-    def adaptive_sampling(fx, fy, start, end, max_depth=9):
-        """The adaptive sampling is done by recursively checking if three
-        points are almost collinear. If they are not collinear, then more
-        points are added between those points.
-
-        Parameters
-        ==========
-
-        fx : callable
-            The function to be numerical evaluated in the horizontal
-            direction.
-
-        fy : callable
-            The function to be numerical evaluated in the vertical
-            direction.
-
-        start, end : floats
-            start and end values of the discretized domain
-
-        max_depth : int
-            Controls the smootheness of the overall evaluation. The higher
-            the number, the smoother the function, the more memory will be
-            used by this recursive procedure. Default value is 9.
-
-        References
-        ==========
-
-        .. [1] Adaptive polygonal approximation of parametric curves,
-               Luiz Henrique de Figueiredo.
-        """
-        x_coords = []
-        y_coords = []
-        param = []
-
-        def sample(param_p, param_q, p, q, depth):
-            """Samples recursively if three points are almost collinear.
-            For depth < max_depth, points are added irrespective of whether
-            they satisfy the collinearity condition or not. The maximum
-            depth allowed is max_depth.
-            """
-            # Randomly sample to avoid aliasing.
-            random = 0.45 + np.random.rand() * 0.1
-            param_new = param_p + random * (param_q - param_p)
-            xnew = fx(param_new)
-            ynew = fy(param_new)
-            new_point = np.array([xnew, ynew])
-
-            # Maximum depth
-            if depth > max_depth:
-                x_coords.append(q[0])
-                y_coords.append(q[1])
-                param.append(param_p)
-
-            # Sample irrespective of whether the line is flat till the
-            # depth of 6. We are not using linspace to avoid aliasing.
-            elif depth < max_depth:
-                sample(param_p, param_new, p, new_point, depth + 1)
-                sample(param_new, param_q, new_point, q, depth + 1)
-
-            # Sample ten points if complex values are encountered
-            # at both ends. If there is a real value in between, then
-            # sample those points further.
-            elif (p[0] is None and q[1] is None) or (p[1] is None and q[1] is None):
-                param_array = np.linspace(param_p, param_q, 10)
-                x_array = list(map(fx, param_array))
-                y_array = list(map(fy, param_array))
-                if any(
-                    x is not None and y is not None for x, y in zip(x_array, y_array)
-                ):
-                    for i in range(len(y_array) - 1):
-                        if (x_array[i] is not None and y_array[i] is not None) or (
-                            x_array[i + 1] is not None and y_array[i + 1] is not None
-                        ):
-                            point_a = [x_array[i], y_array[i]]
-                            point_b = [x_array[i + 1], y_array[i + 1]]
-                            sample(
-                                param_array[i],
-                                param_array[i],
-                                point_a,
-                                point_b,
-                                depth + 1,
-                            )
-
-            # Sample further if one of the end points in None (i.e. a complex
-            # value) or the three points are not almost collinear.
-            elif (
-                p[0] is None
-                or p[1] is None
-                or q[1] is None
-                or q[0] is None
-                or not flat(p, new_point, q)
-            ):
-                sample(param_p, param_new, p, new_point, depth + 1)
-                sample(param_new, param_q, new_point, q, depth + 1)
-            else:
-                x_coords.append(q[0])
-                y_coords.append(q[1])
-                param.append(param_p)
-
-        f_start_x = fx(start)
-        f_start_y = fy(start)
-        start_array = [f_start_x, f_start_y]
-        f_end_x = fx(end)
-        f_end_y = fy(end)
-        end_array = [f_end_x, f_end_y]
-        x_coords.append(f_start_x)
-        y_coords.append(f_start_y)
-        param.append(start)
-        sample(start, end, start_array, end_array, 0)
-        return x_coords, y_coords, param
+        param = self._discretize(self.start, self.end, self.n, scale=self.scale, only_integers=self.only_integers)
+        
+        x = self._eval_component(self.expr_x, param)
+        y = self._eval_component(self.expr_y, param)
+        return x, y, param
 
     def get_points(self):
         """Return lists of coordinates for plotting. Depending on the
@@ -616,44 +535,29 @@ class Parametric2DLineSeries(Line2DBaseSeries):
         Returns
         =======
 
-        x: list
-            List of x-coordinates
+        x : np.ndarray
+            x-coordinates.
 
-        y: list
-            List of y-coordinates
+        y : np.ndarray
+            y-coordinates.
+        
+        param : np.ndarray
+            parameter.
         """
-        if not self.adaptive:
-            return self._uniform_sampling()
-
-        fx = lambdify([self.var], self.expr_x)
-        fy = lambdify([self.var], self.expr_y)
-        x_coords, y_coords, param = self.adaptive_sampling(
-            fx, fy, self.start, self.end, self.depth
-        )
-        return (x_coords, y_coords, param)
+        if self.adaptive:
+            return self._adaptive_sampling()
+        return self._uniform_sampling()
 
 
-### 3D lines
-class Line3DBaseSeries(Line2DBaseSeries):
-    """A base class for 3D lines.
-
-    Most of the stuff is derived from Line2DBaseSeries."""
+class Parametric3DLineSeries(ParametricLineBaseSeries):
+    """Representation for a 3D line consisting of three parametric sympy
+    expressions and a range."""
 
     is_2Dline = False
     is_3Dline = True
 
-    def __init__(self):
-        super().__init__()
-
-
-class Parametric3DLineSeries(Line3DBaseSeries):
-    """Representation for a 3D line consisting of three parametric sympy
-    expressions and a range."""
-
-    is_parametric = True
-
     def __init__(self, expr_x, expr_y, expr_z, var_start_end, label="", **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self.expr_x = sympify(expr_x)
         self.expr_y = sympify(expr_y)
         self.expr_z = sympify(expr_z)
@@ -661,8 +565,6 @@ class Parametric3DLineSeries(Line3DBaseSeries):
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
-        self.n = kwargs.get("n", 300)
-        self.scale = kwargs.get("xscale", "linear")
 
     def __str__(self):
         return "3D parametric cartesian line: (%s, %s, %s) for %s over %s" % (
@@ -672,32 +574,52 @@ class Parametric3DLineSeries(Line3DBaseSeries):
             str(self.var),
             str((self.start, self.end)),
         )
+    
+    def _adaptive_sampling(self):
+        print("Adaptive Sampling")
+
+        def func(f, x):
+            w = [complex(t) for t in f(x)]
+            return [t.real if np.isclose(t.imag, 0) else np.nan for t in w]
+
+        data = adaptive_eval(
+            func, [self.var], Tuple(self.expr_x, self.expr_y, self.expr_z),
+            [self.start, self.end],
+            modules=self.modules,
+            adaptive_goal=self.adaptive_goal,
+            loss_fn=self.loss_fn)
+        return data[:, 1], data[:, 2], data[:, 3], data[:, 0]
+
+    def _uniform_sampling(self):
+        print("Uniform Sampling")
+
+        param = self._discretize(self.start, self.end, self.n, scale=self.scale, only_integers=self.only_integers)
+        
+        x = self._eval_component(self.expr_x, param)
+        y = self._eval_component(self.expr_y, param)
+        z = self._eval_component(self.expr_z, param)
+        return x, y, z, param
 
     def get_points(self):
-        param = self._discretize(self.start, self.end, self.n, scale=self.scale)
-        fx = vectorized_lambdify([self.var], self.expr_x)
-        fy = vectorized_lambdify([self.var], self.expr_y)
-        fz = vectorized_lambdify([self.var], self.expr_z)
+        """Return lists of coordinates for plotting. Depending on the
+        `adaptive` option, this function will either use an adaptive algorithm
+        or it will uniformly sample the expression over the provided range.
 
-        list_x = fx(param)
-        list_y = fy(param)
-        list_z = fz(param)
+        Returns
+        =======
 
-        # expr_x, expr_y or expr_z may be scalars. This allows scalar components
-        # to be plotted as well
-        list_x = self._correct_size(list_x, param)
-        list_y = self._correct_size(list_y, param)
-        list_z = self._correct_size(list_z, param)
+        x : np.ndarray
+            x-coordinates.
 
-        list_x = np.array(list_x, dtype=np.float64)
-        list_y = np.array(list_y, dtype=np.float64)
-        list_z = np.array(list_z, dtype=np.float64)
-
-        list_x = np.ma.masked_invalid(list_x)
-        list_y = np.ma.masked_invalid(list_y)
-        list_z = np.ma.masked_invalid(list_z)
-
-        return list_x, list_y, list_z, param
+        y : np.ndarray
+            y-coordinates.
+        
+        param : np.ndarray
+            parameter.
+        """
+        if self.adaptive:
+            return self._adaptive_sampling()
+        return self._uniform_sampling()
 
 
 ### Surfaces
@@ -706,36 +628,40 @@ class SurfaceBaseSeries(BaseSeries):
 
     is_3Dsurface = True
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super().__init__()
+        self.label = None
+        self.only_integers = kwargs.get("only_integers", False)
+        self.n1 = kwargs.get("n1", 100)
+        self.n2 = kwargs.get("n2", 100)
+        self.xscale = kwargs.get("xscale", "linear")
+        self.yscale = kwargs.get("yscale", "linear")
+        self.adaptive = kwargs.get("adaptive", False)
+        self.adaptive_goal = kwargs.get("adaptive_goal", 0.01)
+        self.loss_fn = kwargs.get("loss_fn", None)
+        self.modules = kwargs.get("modules", None)
 
-    def _discretize(self, s1, e1, n1, scale1, s2, e2, n2, scale2):
-        mesh_x = super()._discretize(s1, e1, n1, scale1)
-        mesh_y = super()._discretize(s2, e2, n2, scale2)
+    def _discretize(self, s1, e1, s2, e2):
+        mesh_x = super()._discretize( s1, e1, self.n1,
+            self.xscale, self.only_integers)
+        mesh_y = super()._discretize(s2, e2, self.n2,
+            self.yscale, self.only_integers)
         return np.meshgrid(mesh_x, mesh_y)
-
 
 class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     """Representation for a 3D surface consisting of a sympy expression and 2D
     range."""
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
-        super().__init__()
-        self.is_complex = kwargs.get("is_complex", False)
-        func = float if not self.is_complex else complex
+        super().__init__(**kwargs)
         self.expr = sympify(expr)
         self.var_x = sympify(var_start_end_x[0])
-        self.start_x = func(var_start_end_x[1])
-        self.end_x = func(var_start_end_x[2])
+        self.start_x = float(var_start_end_x[1])
+        self.end_x = float(var_start_end_x[2])
         self.var_y = sympify(var_start_end_y[0])
-        self.start_y = func(var_start_end_y[1])
-        self.end_y = func(var_start_end_y[2])
+        self.start_y = float(var_start_end_y[1])
+        self.end_y = float(var_start_end_y[2])
         self.label = label
-        self.n1 = kwargs.get("n1", 100)
-        self.n2 = kwargs.get("n2", 100)
-        self.xscale = kwargs.get("xscale", "linear")
-        self.yscale = kwargs.get("yscale", "linear")
-        self.modules = kwargs.get("modules", None)
 
     def __str__(self):
         return ("cartesian surface: %s for" " %s over %s and %s over %s") % (
@@ -743,28 +669,56 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
             str(self.var_x), str((self.start_x, self.end_x)),
             str(self.var_y), str((self.start_y, self.end_y)),
         )
+    
+    def _adaptive_sampling(self):
+        print("Adaptive Sampling")
+        def func(f, xy):
+            return f(*xy)
 
-    def get_data(self):
-        mesh_x, mesh_y = self._discretize(
-            self.start_x, self.end_x, self.n1, self.xscale,
-            self.start_y, self.end_y, self.n2, self.yscale)
+        return adaptive_eval(
+            func, [self.var_x, self.var_y], self.expr,
+            [(self.start_x, self.end_x), (self.start_y, self.end_y)],
+            modules=self.modules,
+            adaptive_goal=self.adaptive_goal,
+            loss_fn=self.loss_fn)
+    
+    def _uniform_sampling(self):
+        print("Uniform Sampling")
+        mesh_x, mesh_y = self._discretize(self.start_x, self.end_x,
+            self.start_y, self.end_y)
 
         from sympy import lambdify
-        f = lambdify((self.var_x, self.var_y), self.expr, modules=self.modules)
 
-        if self.is_complex and (self.modules == "mpmath"):
-            mesh_z = self._evaluate_mpmath(f, [(x, y) for x, y in zip(mesh_x.flatten(), mesh_y.flatten())])
-            mesh_z = np.array([float(a) for a in mesh_z]).reshape(mesh_x.shape)
-        else:
-            mesh_z = f(mesh_x, mesh_y)
-            mesh_z = self._correct_size(mesh_z, mesh_x)
+        v = uniform_eval([self.var_x, self.var_y], self.expr,
+            mesh_x.astype(float), mesh_y.astype(float),
+            modules=self.modules)
+        if isinstance(v, list):
+            v = np.array([complex(t) for t in v]).reshape(mesh_x.shape)
+        re_v, im_v = np.real(v), np.imag(v)
+        re_v = self._correct_size(v, mesh_x)
+        re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
+        return mesh_x, mesh_y, re_v
 
-        mesh_z = mesh_z.astype(np.float64)
-        mesh_z = np.ma.masked_invalid(mesh_z)
+    def get_data(self):
+        """Return arrays of coordinates for plotting. Depending on the
+        `adaptive` option, this function will either use an adaptive algorithm
+        or it will uniformly sample the expression over the provided range.
 
-        if self.is_complex:
-            return np.real(mesh_x), np.real(mesh_y), mesh_z
-        return mesh_x, mesh_y, mesh_z
+        Returns
+        =======
+
+        mesh_x : np.ndarray [n2 x n1]
+            Real Discretized x-domain.
+
+        mesh_y : np.ndarray [n2 x n1]
+            Real Discretized y-domain.
+        
+        z : np.ndarray [n2 x n1]
+            Results of the evaluation.
+        """
+        if self.adaptive:
+            return self._adaptive_sampling()
+        return self._uniform_sampling()
 
 
 class ParametricSurfaceSeries(SurfaceBaseSeries):
@@ -776,7 +730,7 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
     def __init__(self, expr_x, expr_y, expr_z,
         var_start_end_u, var_start_end_v, label="", **kwargs
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.expr_x = sympify(expr_x)
         self.expr_y = sympify(expr_y)
         self.expr_z = sympify(expr_z)
@@ -787,10 +741,16 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.start_v = float(var_start_end_v[1])
         self.end_v = float(var_start_end_v[2])
         self.label = label
-        self.n1 = kwargs.get("n1", 50)
-        self.n2 = kwargs.get("n2", 50)
-        self.xscale = kwargs.get("xscale", "linear")
-        self.yscale = kwargs.get("yscale", "linear")
+        
+        if self.adaptive:
+            # NOTE: turns out that it is difficult to interpolate over 3
+            # parameters in order to get a uniform grid out of the adaptive
+            # results. As a consequence, let's not implement adaptive for this
+            # class.
+            warnings.warn(
+                "ParametricSurfaceSeries does not support adaptive algorithm. "
+                "Automatically switching to a uniform spacing algorithm.")
+            self.adaptive = False
 
     def __str__(self):
         return (
@@ -801,30 +761,33 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
             str(self.var_u), str((self.start_u, self.end_u)),
             str(self.var_v), str((self.start_v, self.end_v)),
         )
+    
+    def _eval_component(self, expr, *args):
+        """ Evaluate the specified expression over a predefined
+        param-discretization.
+        """
+        v = uniform_eval([self.var_u, self.var_v], expr, *args,
+            modules=self.modules)
+        if isinstance(v, list):
+            v = np.array([complex(t) for t in v])
+        re_v, im_v = np.real(v), np.imag(v)
+        re_v = self._correct_size(v, args[0])
+        re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
+        return re_v
 
     def get_data(self):
-        mesh_u, mesh_v = self._discretize(
-            self.start_u, self.end_u, self.n1, self.xscale,
-            self.start_v, self.end_v, self.n2, self.yscale,
-        )
+        print("Uniform Sampling")
 
-        fx = vectorized_lambdify((self.var_u, self.var_v), self.expr_x)
-        fy = vectorized_lambdify((self.var_u, self.var_v), self.expr_y)
-        fz = vectorized_lambdify((self.var_u, self.var_v), self.expr_z)
+        mesh_u, mesh_v = self._discretize(self.start_u, self.end_u,
+            self.start_v, self.end_v)
 
-        mesh_x = fx(mesh_u, mesh_v)
-        mesh_y = fy(mesh_u, mesh_v)
-        mesh_z = fz(mesh_u, mesh_v)
-
-        mesh_x = self._correct_size(np.array(mesh_x, dtype=np.float64), mesh_u)
-        mesh_y = self._correct_size(np.array(mesh_y, dtype=np.float64), mesh_u)
-        mesh_z = self._correct_size(np.array(mesh_z, dtype=np.float64), mesh_u)
-
-        mesh_x = np.ma.masked_invalid(mesh_x)
-        mesh_y = np.ma.masked_invalid(mesh_y)
-        mesh_z = np.ma.masked_invalid(mesh_z)
-
-        return mesh_x, mesh_y, mesh_z
+        mu = mesh_u.astype(float)
+        mv = mesh_v.astype(float)
+        
+        x = self._eval_component(self.expr_x, mu, mv)
+        y = self._eval_component(self.expr_y, mu, mv)
+        z = self._eval_component(self.expr_z, mu, mv)
+        return x, y, z
 
 
 class ContourSeries(SurfaceOver2DRangeSeries):
@@ -1095,43 +1058,6 @@ class ImplicitSeries(BaseSeries):
         return z_grid, ones
 
 
-##############################################################################
-# Finding the centers of line segments or mesh faces
-##############################################################################
-
-
-def centers_of_segments(array):
-    return np.mean(np.vstack((array[:-1], array[1:])), 0)
-
-
-def centers_of_faces(array):
-    return np.mean(
-        np.dstack(
-            (
-                array[:-1, :-1],
-                array[1:, :-1],
-                array[:-1, 1:],
-                array[:-1, :-1],
-            )
-        ),
-        2,
-    )
-
-
-def flat(x, y, z, eps=1e-3):
-    """Checks whether three points are almost collinear"""
-    # Workaround plotting piecewise (#8577):
-    #   workaround for `lambdify` in `.experimental_lambdify` fails
-    #   to return numerical values in some cases. Lower-level fix
-    #   in `lambdify` is possible.
-    x, y, z = [np.real(t) for t in [x, y, z]]
-    vector_a = (x - y).astype(np.float64)
-    vector_b = (z - y).astype(np.float64)
-    dot_product = np.dot(vector_a, vector_b)
-    vector_a_norm = np.linalg.norm(vector_a)
-    vector_b_norm = np.linalg.norm(vector_b)
-    cos_theta = dot_product / (vector_a_norm * vector_b_norm)
-    return abs(cos_theta + 1) < eps
 
 
 class InteractiveSeries(BaseSeries):

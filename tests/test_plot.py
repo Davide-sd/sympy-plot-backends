@@ -425,7 +425,7 @@ def test_plot_and_save_6():
         x2 = 5 * x ** 2 * exp_polar(I * pi) / 2
         m2 = meijerg(((1 / 2,), ()), ((5, 0, 1 / 2), ()), x2)
         expr = (m1 + m2) / (48 * pi)
-        p = plot(expr, (x, 1e-6, 1e-2))
+        p = plot(expr, (x, 1e-6, 1e-2), adaptive=False, n=20)
         p.save(os.path.join(tmpdir, filename))
 
 

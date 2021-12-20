@@ -9,6 +9,7 @@ from spb.series import (
     _set_discretization_points,
     SurfaceOver2DRangeSeries,
     InteractiveSeries,
+    AbsArgLineSeries
 )
 from spb.utils import _plot_sympify, _check_arguments, _is_range
 from spb.backends.base_backend import Plot
@@ -24,7 +25,8 @@ def _build_series(*args, interactive=False, **kwargs):
         "real": [lambda t: re(t), "Re(%s)"],
         "imag": [lambda t: im(t), "Im(%s)"],
         "abs": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
-        "absarg": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
+        # "absarg": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
+        "absarg": [lambda t: t, "Abs(%s)"],
         "arg": [lambda t: arg(t), "Arg(%s)"],
     }
     # option to be used with lambdify with complex functions
@@ -151,7 +153,10 @@ def _build_series(*args, interactive=False, **kwargs):
                             kw2["is_complex"] = True
                             f, lbl_wrapper = mapping[key]
                             if not interactive:
-                                series.append(LineOver1DRangeSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
+                                if key != "absarg":
+                                    series.append(LineOver1DRangeSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
+                                else:
+                                    series.append(AbsArgLineSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
                             else:
                                 series.append(InteractiveSeries([f(expr)], ranges, lbl_wrapper % label, **kw2))
 
