@@ -5,7 +5,7 @@ from spb.series import (
     ContourSeries,
     SliceVector3DSeries,
     _set_discretization_points,
-    InteractiveSeries,
+    InteractiveSeries
 )
 from spb.utils import _plot_sympify, _unpack_args, _split_vector, _is_range
 from sympy import S, sqrt, Expr, Tuple

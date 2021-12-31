@@ -4,7 +4,7 @@ import panel as pn
 from sympy import latex, Tuple
 from spb.series import (
     InteractiveSeries,
-    _set_discretization_points
+    _set_discretization_points,
 )
 from spb.ccomplex.complex import _build_series as _build_complex_series
 from spb.vectors import _preprocess, _build_series as _build_vector_series

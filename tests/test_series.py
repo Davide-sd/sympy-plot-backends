@@ -1,5 +1,5 @@
 from sympy import (
-    symbols, cos, sin, log, sqrt,
+    symbols, cos, sin, tan, log, sqrt, re, arg,
     Tuple, pi, Plane, S, I, im,
     Circle, Point,
     Piecewise, And, Eq, Interval, Abs, lambdify
@@ -7,14 +7,21 @@ from sympy import (
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-    InteractiveSeries, AbsArgLineSeries,
+    InteractiveSeries,
     ImplicitSeries,
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
-    ComplexSeries, ComplexInteractiveSeries, ComplexPointSeries,
-    ComplexPointInteractiveSeries,
+    ComplexSurfaceSeries, ComplexDomainColoringSeries,
+    ComplexInteractiveBaseSeries,
+    ComplexSurfaceInteractiveSeries, ComplexDomainColoringInteractiveSeries,
+    ComplexPointSeries, ComplexPointInteractiveSeries,
     GeometrySeries, GeometryInteractiveSeries,
     PlaneSeries, PlaneInteractiveSeries,
-    List2DSeries, AbsArgLineSeries
+    List2DSeries, AbsArgLineSeries,
+    LineInteractiveSeries, AbsArgLineInteractiveSeries,
+    Parametric2DLineInteractiveSeries, Parametric3DLineInteractiveSeries,
+    ParametricSurfaceInteractiveSeries, SurfaceInteractiveSeries,
+    Vector2DInteractiveSeries, Vector3DInteractiveSeries,
+    SliceVector3DInteractiveSeries, ContourInteractiveSeries
 )
 from spb.functions import _process_piecewise
 import numpy as np
@@ -70,6 +77,104 @@ def test_adaptive():
     x3, _, _, _ = s3.get_data()
     assert len(x1) < len(x2)
     assert len(x1) > len(x3)
+
+
+def test_detect_poles():
+    x, u = symbols("x, u")
+
+    s1 = LineOver1DRangeSeries(tan(x), (x, -pi, pi),
+        adaptive=False, n=1000, detect_poles=False)
+    xx1, yy1 = s1.get_data()
+    s2 = LineOver1DRangeSeries(tan(x), (x, -pi, pi),
+        adaptive=False, n=1000, detect_poles=True, eps=0.01)
+    xx2, yy2 = s2.get_data()
+    # eps is too small: doesn't detect any poles
+    s3 = LineOver1DRangeSeries(tan(x), (x, -pi, pi),
+        adaptive=False, n=1000, detect_poles=True, eps=0.001)
+    xx3, yy3 = s3.get_data()
+
+    assert np.allclose(xx1, xx2) and np.allclose(xx1, xx3)
+    assert not np.any(np.isnan(yy1))
+    assert not np.any(np.isnan(yy3))
+    assert np.any(np.isnan(yy2))
+
+    s1 = LineInteractiveSeries([tan(x)], [(x, -pi, pi)],
+        adaptive=False, n=1000, detect_poles=False)
+    xx1, yy1 = s1.get_data()
+    s2 = LineInteractiveSeries([tan(x)], [(x, -pi, pi)],
+        adaptive=False, n=1000, detect_poles=True, eps=0.01)
+    xx2, yy2 = s2.get_data()
+    # eps is too small: doesn't detect any poles
+    s3 = LineInteractiveSeries([tan(x)], [(x, -pi, pi)],
+        adaptive=False, n=1000, detect_poles=True, eps=0.001)
+    xx3, yy3 = s3.get_data()
+
+    assert np.allclose(xx1, xx2) and np.allclose(xx1, xx3)
+    assert not np.any(np.isnan(yy1))
+    assert not np.any(np.isnan(yy3))
+    assert np.any(np.isnan(yy2))
+
+def test_interactive_instance():
+    # test that the correct data series is produced when instantiating
+    # InteractiveSeries
+    x, y, z, u, v = symbols("x, y, z, u, v")
+
+    s = InteractiveSeries([u * cos(x)], [(x, -5, 5)], params={u: 1},
+        absarg=False)
+    assert isinstance(s, LineInteractiveSeries)
+
+    s = InteractiveSeries([u * cos(x)], [(x, -5, 5)], params={u: 1},
+        absarg=True)
+    assert isinstance(s, AbsArgLineInteractiveSeries)
+
+    s = InteractiveSeries([u * cos(x), u * sin(x)], [(x, -5, 5)],
+        params={u: 1}, absarg=False)
+    assert isinstance(s, Parametric2DLineInteractiveSeries)
+
+    s = InteractiveSeries([u * cos(x), u * sin(x), x], [(x, -5, 5)],
+        params={u: 1}, absarg=False)
+    assert isinstance(s, Parametric3DLineInteractiveSeries)
+
+    s = InteractiveSeries([u * cos(x * y)], [(x, -5, 5), (y, -5, 5)],
+        params={u: 1}, threed=True)
+    assert isinstance(s, SurfaceInteractiveSeries)
+
+    s = InteractiveSeries([u * cos(x * y)], [(x, -5, 5), (y, -5, 5)],
+        params={u: 1}, threed=False)
+    assert isinstance(s, ContourInteractiveSeries)
+
+    s = InteractiveSeries([u * cos(v * x), v * sin(u), u + v],
+        [(u, -5, 5), (v, -5, 5)],
+        params={x: 1})
+    assert isinstance(s, ParametricSurfaceInteractiveSeries)
+
+    s = InteractiveSeries([u * cos(y), u * sin(x)], [(x, -5, 5), (y, -5, 5)],
+        params={u: 1})
+    assert isinstance(s, Vector2DInteractiveSeries)
+
+    s = InteractiveSeries([u * cos(y), u * sin(x), z],
+        [(x, -5, 5), (y, -5, 5), (z, -5, 5)], params={u: 1}, slice=None)
+    assert isinstance(s, Vector3DInteractiveSeries)
+
+    s = InteractiveSeries([u * cos(y), u * sin(x), z],
+        [(x, -5, 5), (y, -5, 5), (z, -5, 5)], params={u: 1},
+        slice=Plane((0, 0, 0), (0, 1, 0)))
+    assert isinstance(s, SliceVector3DInteractiveSeries)
+
+    s = InteractiveSeries([Plane((u * x, y, 0), (0, 1, 0))],
+        [(x, -5, 5), (y, -5, 5), (z, -5, 5)], params={u: 1})
+    assert isinstance(s, PlaneInteractiveSeries)
+
+    s = InteractiveSeries([Circle(Point(0, 0), u * 5)], [], params={u: 1})
+    assert isinstance(s, GeometryInteractiveSeries)
+
+    s = ComplexInteractiveBaseSeries(sqrt(z), (z, -5 - 5j, 5 + 5j),
+        absarg=False)
+    assert isinstance(s, ComplexSurfaceInteractiveSeries)
+
+    s = ComplexInteractiveBaseSeries(sqrt(z), (z, -5 - 5j, 5 + 5j),
+        absarg=True)
+    assert isinstance(s, ComplexDomainColoringInteractiveSeries)
 
 
 def test_lin_log_scale():
@@ -128,26 +233,16 @@ def test_lin_log_scale():
     assert not np.isclose(yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0])
 
     s = ImplicitSeries(
-        cos(x ** 2 + y ** 2) > 0,
-        (x, 1, 5),
-        (y, 1, 5),
-        n=10,
-        xscale="linear",
-        yscale="linear",
-        adaptive=False,
+        cos(x ** 2 + y ** 2) > 0, (x, 1, 5), (y, 1, 5),
+        n=10, xscale="linear", yscale="linear", adaptive=False
     )
     xx, yy, _, _, _ = s.get_data()
     assert np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
     assert np.isclose(yy[1] - yy[0], yy[-1] - yy[-2])
 
     s = ImplicitSeries(
-        cos(x ** 2 + y ** 2) > 0,
-        (x, 1, 5),
-        (y, 1, 5),
-        n=10,
-        xscale="log",
-        yscale="log",
-        adaptive=False,
+        cos(x ** 2 + y ** 2) > 0, (x, 1, 5), (y, 1, 5),
+        n=10, xscale="log", yscale="log", adaptive=False
     )
     xx, yy, _, _, _ = s.get_data()
     assert not np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
@@ -161,36 +256,19 @@ def test_lin_log_scale():
     xx, yy = s.get_data()
     assert not np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
 
-    s = ComplexSeries(
-        cos(x),
-        (x, 1e-05, 1e05),
-        n=10,
-        xscale="linear",
-        adaptive=False,
-    )
+    s = AbsArgLineSeries(cos(x), (x, 1e-05, 1e05), n=10,
+        xscale="linear", adaptive=False)
     xx, yy, _ = s.get_data()
-    assert np.isclose(xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2])
+    assert np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
 
-    s = ComplexSeries(
-        cos(x),
-        (x, 1e-05, 1e05),
-        n=10,
-        xscale="log",
-        adaptive=False,
-    )
+    s = AbsArgLineSeries(cos(x), (x, 1e-05, 1e05), n=10,
+        xscale="log", adaptive=False)
     xx, yy, _ = s.get_data()
-    assert not np.isclose(xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2])
+    assert not np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
 
     s = Vector3DSeries(
-        x,
-        y,
-        z,
-        (x, 1, 1e05),
-        (y, 1, 1e05),
-        (z, 1, 1e05),
-        xscale="linear",
-        yscale="linear",
-        zscale="linear",
+        x, y, z, (x, 1, 1e05), (y, 1, 1e05), (z, 1, 1e05),
+        xscale="linear", yscale="linear", zscale="linear"
     )
     xx, yy, zz, _, _, _ = s.get_data()
     assert np.isclose(
@@ -204,15 +282,8 @@ def test_lin_log_scale():
     )
 
     s = Vector3DSeries(
-        x,
-        y,
-        z,
-        (x, 1, 1e05),
-        (y, 1, 1e05),
-        (z, 1, 1e05),
-        xscale="log",
-        yscale="log",
-        zscale="log",
+        x, y, z, (x, 1, 1e05), (y, 1, 1e05), (z, 1, 1e05),
+        xscale="log", yscale="log", zscale="log"
     )
     xx, yy, zz, _, _, _ = s.get_data()
     assert not np.isclose(
@@ -225,6 +296,27 @@ def test_lin_log_scale():
         zz[0, 0, :][1] - zz[0, 0, :][0], zz[0, 0, :][-1] - zz[0, 0, :][-2]
     )
 
+def test_polar():
+    # test that polar=True produces a different result than polar=False
+    x, u = symbols("x, u")
+
+    s1 = LineOver1DRangeSeries(1 + sin(10 * x) / 10, (x, 0, 2 * pi), "",
+        polar=False)
+    xx1, yy1 = s1.get_data()
+    s2 = LineOver1DRangeSeries(1 + sin(10 * x) / 10, (x, 0, 2 * pi), "",
+        polar=True)
+    xx2, yy2 = s2.get_data()
+    assert not np.allclose(xx1, xx2)
+    assert not np.allclose(yy1, yy2)
+
+    s1 = LineInteractiveSeries([1 + sin(u * x) / 10], [(x, 0, 2 * pi)], "",
+        params={u: 10}, polar=False)
+    xx1, yy1 = s1.get_data()
+    s2 = LineInteractiveSeries([1 + sin(u * x) / 10], [(x, 0, 2 * pi)], "",
+        params={u: 10}, polar=True)
+    xx2, yy2 = s2.get_data()
+    assert not np.allclose(xx1, xx2)
+    assert not np.allclose(yy1, yy2)
 
 def test_data_shape():
     # Verify that the series produces the correct data shape when the input
@@ -307,24 +399,36 @@ def test_data_shape():
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
 
-    s = ComplexSeries(1, (x, -5, 5), modules=None)
+    s = AbsArgLineSeries(1, (x, -5, 5), modules=None)
+    xx, yy, aa = s.get_data()
+    assert (xx.shape == yy.shape) and (xx.shape == aa.shape)
+    assert np.all(aa == 0)
+
+    s = AbsArgLineSeries(1, (x, -5, 5), modules="mpmath")
+    xx, yy, aa = s.get_data()
+    assert (xx.shape == yy.shape) and (xx.shape == aa.shape)
+    assert np.all(aa == 0)
+
+    s = ComplexSurfaceSeries(1, (x, -5 - 2 * I, 5 + 2 * I),
+        n1=10, n2=10, modules=None)
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
 
-    s = ComplexSeries(1, (x, -5, 5), modules="mpmath")
+    s = ComplexSurfaceSeries(1, (x, -5 - 2 * I, 5 + 2 * I),
+        n1=10, n2=10, modules="mpmath")
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
 
-    s = ComplexSeries(1, (x, -5 - 2 * I, 5 + 2 * I), domain_coloring=True,
-            modules=None)
+    s = ComplexDomainColoringSeries(1, (x, -5 - 2 * I, 5 + 2 * I),
+        n1=10, n2=10, modules=None)
     rr, ii, mag, arg, colors, _ = s.get_data()
     assert (rr.shape == ii.shape) and (rr.shape[:2] == colors.shape[:2])
     assert (rr.shape == mag.shape) and (rr.shape == arg.shape)
 
-    s = ComplexSeries(1, (x, -5 - 2 * I, 5 + 2 * I), domain_coloring=True,
-            modules="mpmath")
+    s = ComplexDomainColoringSeries(1, (x, -5 - 2 * I, 5 + 2 * I),
+        n1=10, n2=10, modules="mpmath")
     rr, ii, mag, arg, colors, _ = s.get_data()
     assert (rr.shape == ii.shape) and (rr.shape[:2] == colors.shape[:2])
     assert (rr.shape == mag.shape) and (rr.shape == arg.shape)
@@ -394,11 +498,11 @@ def test_data_shape():
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
 
-    s = ComplexInteractiveSeries(S.One, (x, -5, 5), real=True, imag=False,
-            modules=None)
+    s = ComplexSurfaceInteractiveSeries(S.One, (x, -5-2j, 5+2j), modules=None)
     s.update_data(dict())
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
+    assert np.all(zz == 1)
 
 def test_only_integers():
     x, y, u, v = symbols("x, y, u, v")
@@ -407,28 +511,24 @@ def test_only_integers():
         adaptive=False, only_integers=True)
     xx, _ = s.get_data()
     assert len(xx) == 10
-    assert xx.dtype == int
     assert xx[0] == -5 and xx[-1] == 4
 
     s = AbsArgLineSeries(sqrt(x), (x, -5.5, 4.5), "",
         adaptive=False, only_integers=True)
     xx, _, _ = s.get_data()
     assert len(xx) == 10
-    assert xx.dtype == int
     assert xx[0] == -5 and xx[-1] == 4
 
     s = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 2 * pi), "",
         adaptive=False, only_integers=True)
     _, _, p = s.get_data()
     assert len(p) == 7
-    assert p.dtype == int
     assert p[0] == 0 and p[-1] == 6
 
     s = Parametric3DLineSeries(cos(x), sin(x), x, (x, 0, 2 * pi), "",
         adaptive=False, only_integers=True)
     _, _, _, p = s.get_data()
     assert len(p) == 7
-    assert p.dtype == int
     assert p[0] == 0 and p[-1] == 6
 
     s = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -5.5, 5.5),
@@ -436,11 +536,10 @@ def test_only_integers():
         adaptive=False, only_integers=True)
     xx, yy, _ = s.get_data()
     assert xx.shape == yy.shape == (7, 11)
-    assert xx.dtype == yy.dtype == int
-    assert np.allclose(xx[:, 0] - -5 * np.ones(7, dtype=int), 0)
-    assert np.allclose(xx[0, :] - np.linspace(-5, 5, 11, dtype=int), 0)
-    assert np.allclose(yy[:, 0] - np.linspace(-3, 3, 7, dtype=int), 0)
-    assert np.allclose(yy[0, :] - (-3) * np.ones(11, dtype=int), 0)
+    assert np.allclose(xx[:, 0] - (-5) * np.ones(7), 0)
+    assert np.allclose(xx[0, :] - np.linspace(-5, 5, 11), 0)
+    assert np.allclose(yy[:, 0] - np.linspace(-3, 3, 7), 0)
+    assert np.allclose(yy[0, :] - (-3) * np.ones(11), 0)
 
     r = 2 + sin(7 * u + 5 * v)
     expr = (
@@ -453,30 +552,42 @@ def test_only_integers():
     xx, yy, zz = s.get_data()
     assert xx.shape == yy.shape == zz.shape == (4, 7)
 
+    s = ComplexSurfaceSeries(sqrt(x), (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
+        adaptive=False, only_integers=True)
+    xx, yy, zz = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == (5, 7)
+    assert xx[0, 0] == -3 and xx[-1, -1] == 3
+    assert yy[0, 0] == -2 and yy[-1, -1] == 2
+
+    s = ComplexDomainColoringSeries(sqrt(x), (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
+        adaptive=False, only_integers=True)
+    xx, yy, zz, aa, _, _ = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == aa.shape == (5, 7)
+    assert xx[0, 0] == -3 and xx[-1, -1] == 3
+    assert yy[0, 0] == -2 and yy[-1, -1] == 2
+
+
     # only_integers also works with scalar expressions
     s = LineOver1DRangeSeries(1, (x, -5.5, 4.5), "",
         adaptive=False, only_integers=True)
     xx, _ = s.get_data()
     assert len(xx) == 10
-    assert xx.dtype == int
     assert xx[0] == -5 and xx[-1] == 4
 
     s = Parametric2DLineSeries(cos(x), 1, (x, 0, 2 * pi), "",
         adaptive=False, only_integers=True)
     _, _, p = s.get_data()
     assert len(p) == 7
-    assert p.dtype == int
     assert p[0] == 0 and p[-1] == 6
 
     s = SurfaceOver2DRangeSeries(1, (x, -5.5, 5.5), (y, -3.5, 3.5), "",
         adaptive=False, only_integers=True)
     xx, yy, _ = s.get_data()
     assert xx.shape == yy.shape == (7, 11)
-    assert xx.dtype == yy.dtype == int
-    assert np.allclose(xx[:, 0] - -5 * np.ones(7, dtype=int), 0)
-    assert np.allclose(xx[0, :] - np.linspace(-5, 5, 11, dtype=int), 0)
-    assert np.allclose(yy[:, 0] - np.linspace(-3, 3, 7, dtype=int), 0)
-    assert np.allclose(yy[0, :] - (-3) * np.ones(11, dtype=int), 0)
+    assert np.allclose(xx[:, 0] - (-5) * np.ones(7), 0)
+    assert np.allclose(xx[0, :] - np.linspace(-5, 5, 11), 0)
+    assert np.allclose(yy[:, 0] - np.linspace(-3, 3, 7), 0)
+    assert np.allclose(yy[0, :] - (-3) * np.ones(11), 0)
 
     r = 2 + sin(7 * u + 5 * v)
     expr = (
@@ -489,6 +600,202 @@ def test_only_integers():
     xx, yy, zz = s.get_data()
     assert xx.shape == yy.shape == zz.shape == (4, 7)
 
+    s = ComplexSurfaceSeries(1, (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
+        adaptive=False, only_integers=True)
+    xx, yy, zz = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == (5, 7)
+    assert xx[0, 0] == -3 and xx[-1, -1] == 3
+    assert yy[0, 0] == -2 and yy[-1, -1] == 2
+
+    s = ComplexDomainColoringSeries(1, (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
+        adaptive=False, only_integers=True)
+    xx, yy, zz, aa, _, _ = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == aa.shape == (5, 7)
+    assert xx[0, 0] == -3 and xx[-1, -1] == 3
+    assert yy[0, 0] == -2 and yy[-1, -1] == 2
+
+    s = Vector2DSeries(-y, x, (x, -3.5, 3.5), (y, -4.5, 4.5), "",
+        only_integers=True)
+    xx, yy, uu, vv = s.get_data()
+    assert xx.shape == yy.shape == uu.shape == vv.shape == (9, 7)
+    assert xx[0, 0] == -3 and xx[-1, -1] == 3
+    assert yy[0, 0] == -4 and yy[-1, -1] == 4 
+
+    # only_integers also works with Interactive series
+    s = LineInteractiveSeries([sin(x * y)], [(x, -5.5, 4.5)], "",
+        params={y: 1}, only_integers=True)
+    xx, _ = s.get_data()
+    assert len(xx) == 10
+    assert xx[0] == -5 and xx[-1] == 4
+
+    s = AbsArgLineInteractiveSeries([sqrt(x * y)], [(x, -5.5, 4.5)], "",
+        params={y: 1}, only_integers=True)
+    xx, _, _ = s.get_data()
+    assert len(xx) == 10
+    assert xx[0] == -5 and xx[-1] == 4
+
+    s = SurfaceInteractiveSeries(
+        [u * sin(x * y)], [(x, -5.5, 4.5), (y, -6.5, 6.5)],
+        "", params={u: 1}, only_integers=True)
+    xx, yy, zz = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == (13, 10)
+    assert xx[0, 0] == -5 and xx[-1, -1] == 4
+    assert yy[0, 0] == -6 and yy[-1, -1] == 6
+
+    s = ComplexSurfaceInteractiveSeries(
+        u * sqrt(x), (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
+        params={u: 1}, only_integers=True)
+    xx, yy, zz = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == (5, 7)
+    assert xx[0, 0] == -3 and xx[-1, -1] == 3
+    assert yy[0, 0] == -2 and yy[-1, -1] == 2
+
+    s = Vector2DInteractiveSeries([-u * y, x], [(x, -3.5, 3.5), (y, -4.5, 4.5)],
+        "", params={u: 1}, only_integers=True)
+    xx, yy, uu, vv = s.get_data()
+    assert xx.shape == yy.shape == uu.shape == vv.shape == (9, 7)
+    assert xx[0, 0] == -3 and xx[-1, -1] == 3
+    assert yy[0, 0] == -4 and yy[-1, -1] == 4 
+
+
+def test_is_point():
+    x, u = symbols("x, u")
+    def do_test(s1, s2):
+        assert not s1.is_point
+        assert s2.is_point
+    
+    s1 = LineOver1DRangeSeries(cos(x), (x, -5, 5), "", is_point=False)
+    s2 = LineOver1DRangeSeries(cos(x), (x, -5, 5), "", is_point=True)
+    do_test(s1, s2)
+
+    s1 = AbsArgLineSeries(cos(x), (x, -5, 5), "", is_point=False)
+    s2 = AbsArgLineSeries(cos(x), (x, -5, 5), "", is_point=True)
+    do_test(s1, s2)
+
+    s1 = List2DSeries([0, 1, 2], [3, 4, 5], is_point=False)
+    s2 = List2DSeries([0, 1, 2], [3, 4, 5], is_point=True)
+    do_test(s1, s2)
+
+    s1 = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5), is_point=False)
+    s2 = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5), is_point=True)
+    do_test(s1, s2)
+
+    s1 = Parametric3DLineSeries(cos(x), sin(x), x, (x, -5, 5), is_point=False)
+    s2 = Parametric3DLineSeries(cos(x), sin(x), x, (x, -5, 5), is_point=True)
+    do_test(s1, s2)
+
+    s1 = ComplexPointSeries([1 + 2 * I, 3 + 4 * I], is_point=False)
+    s2 = ComplexPointSeries([1 + 2 * I, 3 + 4 * I], is_point=True)
+    do_test(s1, s2)
+
+    s1 = LineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, is_point=False)
+    s2 = LineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, is_point=True)
+    do_test(s1, s2)
+
+    s1 = AbsArgLineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, is_point=False)
+    s2 = AbsArgLineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, is_point=True)
+    do_test(s1, s2)
+
+    s1 = Parametric2DLineInteractiveSeries([u * cos(x), sin(x)],
+        [(x, -5, 5)], "", params={u: 1}, is_point=False)
+    s2 = Parametric2DLineInteractiveSeries([u * cos(x), sin(x)],
+        [(x, -5, 5)], "", params={u: 1}, is_point=True)
+    do_test(s1, s2)
+
+    s1 = Parametric3DLineInteractiveSeries([u * cos(x), sin(x), x],
+        [(x, -5, 5)], "", params={u: 1}, is_point=False)
+    s2 = Parametric3DLineInteractiveSeries([u * cos(x), sin(x), x],
+        [(x, -5, 5)], "", params={u: 1}, is_point=True)
+    do_test(s1, s2)
+
+    s1 = ComplexPointInteractiveSeries([1 + 2 * I, 3 + 4 * I], is_point=False)
+    s2 = ComplexPointInteractiveSeries([1 + 2 * I, 3 + 4 * I], is_point=True)
+    do_test(s1, s2)
+
+
+def test_steps():
+    x, u = symbols("x, u")
+    def do_test(s1, s2):
+        if not s1.is_parametric:
+            xx1, _ = s1.get_data()
+            xx2, _ = s2.get_data()
+        elif s1.is_parametric and s1.is_2Dline:
+            xx1, _, _ = s1.get_data()
+            xx2, _, _ = s2.get_data()
+        else:
+            xx1, _, _, _ = s1.get_data()
+            xx2, _, _, _ = s2.get_data()
+        assert len(xx1) != len(xx2)
+
+    s1 = LineOver1DRangeSeries(cos(x), (x, -5, 5), "",
+        adaptive=False, n=40, steps=False)
+    s2 = LineOver1DRangeSeries(cos(x), (x, -5, 5), "",
+        adaptive=False, n=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = AbsArgLineSeries(cos(x), (x, -5, 5), "",
+        adaptive=False, n=40, steps=False)
+    s2 = AbsArgLineSeries(cos(x), (x, -5, 5), "",
+        adaptive=False, n=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = List2DSeries([0, 1, 2], [3, 4, 5],
+        adaptive=False, n=40, steps=False)
+    s2 = List2DSeries([0, 1, 2], [3, 4, 5],
+        adaptive=False, n=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5),
+        adaptive=False, n=40, steps=False)
+    s2 = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5),
+        adaptive=False, n=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = Parametric3DLineSeries(cos(x), sin(x), x, (x, -5, 5),
+        adaptive=False, n=40, steps=False)
+    s2 = Parametric3DLineSeries(cos(x), sin(x), x, (x, -5, 5),
+        adaptive=False, n=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = ComplexPointSeries([1 + 2 * I, 3 + 4 * I],
+        adaptive=False, n=40, steps=False)
+    s2 = ComplexPointSeries([1 + 2 * I, 3 + 4 * I],
+        adaptive=False, n=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = LineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, n1=40, steps=False)
+    s2 = LineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, n1=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = AbsArgLineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, n1=40, steps=False)
+    s2 = AbsArgLineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, n1=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = Parametric2DLineInteractiveSeries([u * cos(x), sin(x)],
+        [(x, -5, 5)], "", params={u: 1}, n1=40, steps=False)
+    s2 = Parametric2DLineInteractiveSeries([u * cos(x), sin(x)],
+        [(x, -5, 5)], "", params={u: 1}, n1=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = Parametric3DLineInteractiveSeries([u * cos(x), sin(x), x],
+        [(x, -5, 5)], "", params={u: 1}, n1=40, steps=False)
+    s2 = Parametric3DLineInteractiveSeries([u * cos(x), sin(x), x],
+        [(x, -5, 5)], "", params={u: 1}, n1=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = ComplexPointInteractiveSeries([1 + 2 * I, 3 + 4 * I],
+        n1=40, steps=False)
+    s2 = ComplexPointInteractiveSeries([1 + 2 * I, 3 + 4 * I],
+        n1=40, steps=True)
+    do_test(s1, s2)
 
 
 def test_interactive():
@@ -505,95 +812,64 @@ def test_interactive():
     s2 = LineOver1DRangeSeries(cos(x), (x, -5, 5), "", adaptive=False, n=50)
     do_test(s1.get_data(), s2.get_data())
 
-    s1 = InteractiveSeries(
-        [u * cos(x), u * sin(x)], [(x, -5, 5)], "", params={u: 1}, n1=50
-    )
-    s2 = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5), "", adaptive=False, n=50)
+    s1 = InteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, n1=50, absarg=True)
+    s2 = AbsArgLineSeries(cos(x), (x, -5, 5), "", adaptive=False, n=50)
     do_test(s1.get_data(), s2.get_data())
 
     s1 = InteractiveSeries(
-        [u * cos(x), u * sin(x), u * x], [(x, -5, 5)], "", params={u: 1}, n1=50
-    )
-    s2 = Parametric3DLineSeries(cos(x), sin(x), x, (x, -5, 5), "", adaptive=False, n=50)
+        [u * cos(x), u * sin(x)], [(x, -5, 5)], "", params={u: 1}, n1=50)
+    s2 = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5), "",
+        adaptive=False, n=50)
     do_test(s1.get_data(), s2.get_data())
 
     s1 = InteractiveSeries(
-        [cos(x ** 2 + y ** 2)],
-        [(x, -3, 3), (y, -3, 3)],
-        "",
-        params={u: 1},
-        n1=50,
-        n2=50,
+        [u * cos(x), u * sin(x), u * x], [(x, -5, 5)], "",
+        params={u: 1}, n1=50)
+    s2 = Parametric3DLineSeries(cos(x), sin(x), x, (x, -5, 5), "",
+        adaptive=False, n=50)
+    do_test(s1.get_data(), s2.get_data())
+
+    s1 = InteractiveSeries([cos(x ** 2 + y ** 2)], [(x, -3, 3), (y, -3, 3)],
+        "", params={u: 1}, n1=50, n2=50,
     )
     s2 = SurfaceOver2DRangeSeries(
-        cos(x ** 2 + y ** 2), (x, -3, 3), (y, -3, 3), "", adaptive=False, n1=50, n2=50
-    )
+        cos(x ** 2 + y ** 2), (x, -3, 3), (y, -3, 3), "",
+        adaptive=False, n1=50, n2=50)
     do_test(s1.get_data(), s2.get_data())
 
     s1 = InteractiveSeries(
-        [cos(x + y), sin(x + y), x - y],
-        [(x, -3, 3), (y, -3, 3)],
-        "",
-        params={u: 1},
-        n1=50,
-        n2=50,
-    )
+        [cos(x + y), sin(x + y), x - y], [(x, -3, 3), (y, -3, 3)], "",
+        params={u: 1}, n1=50, n2=50,)
     s2 = ParametricSurfaceSeries(
-        cos(x + y),
-        sin(x + y),
-        x - y,
-        (x, -3, 3),
-        (y, -3, 3),
-        "",
-        adaptive=False,
-        n1=50,
-        n2=50,
-    )
+        cos(x + y), sin(x + y), x - y, (x, -3, 3), (y, -3, 3), "",
+        adaptive=False, n1=50, n2=50,)
     do_test(s1.get_data(), s2.get_data())
 
     s1 = InteractiveSeries(
-        [-u * y, u * x], [(x, -3, 3), (y, -2, 2)], "", params={u: 1}, n1=15, n2=15
-    )
+        [-u * y, u * x], [(x, -3, 3), (y, -2, 2)], "",
+        params={u: 1}, n1=15, n2=15)
     s2 = Vector2DSeries(-y, x, (x, -3, 3), (y, -2, 2), "", n1=15, n2=15)
     do_test(s1.get_data(), s2.get_data())
 
     s1 = InteractiveSeries(
         [u * z, -u * y, u * x],
-        [(x, -3, 3), (y, -2, 2), (z, -1, 1)],
-        "",
-        params={u: 1},
-        n1=15,
-        n2=15,
-        n3=15,
-    )
+        [(x, -3, 3), (y, -2, 2), (z, -1, 1)], "",
+        params={u: 1}, n1=15, n2=15, n3=15,)
     s2 = Vector3DSeries(
-        z, -y, x, (x, -3, 3), (y, -2, 2), (z, -1, 1), "", n1=15, n2=15, n3=15
-    )
+        z, -y, x, (x, -3, 3), (y, -2, 2), (z, -1, 1), "", n1=15, n2=15, n3=15)
     do_test(s1.get_data(), s2.get_data())
 
     s1 = InteractiveSeries(
         [u * z, -u * y, u * x],
-        [(x, -3, 3), (y, -2, 2), (z, -1, 1)],
-        "",
-        params={u: 1},
-        slice=Plane((-1, 0, 0), (1, 0, 0)),
-        n1=15,
-        n2=15,
-        n3=15,
-    )
+        [(x, -3, 3), (y, -2, 2), (z, -1, 1)], "",
+        params={u: 1}, slice=Plane((-1, 0, 0), (1, 0, 0)),
+        n1=15, n2=15, n3=15,)
     s2 = SliceVector3DSeries(
         Plane((-1, 0, 0), (1, 0, 0)),
-        z,
-        -y,
-        x,
-        (x, -3, 3),
-        (y, -2, 2),
-        (z, -1, 1),
-        "",
-        n1=15,
-        n2=15,
-        n3=15,
-    )
+        z, -y, x,
+        (x, -3, 3), (y, -2, 2), (z, -1, 1), "",
+        n1=15, n2=15, n3=15)
     do_test(s1.get_data(), s2.get_data())
 
     ### Test InteractiveSeries and ComplexInteractiveSeries with complex
@@ -601,233 +877,262 @@ def test_interactive():
 
     # complex function evaluated over a real line with numpy
     s1 = InteractiveSeries(
-        [(z ** 2 + 1) / (z ** 2 - 1)], [(z, -3, 3)], "", n1=50,
-        is_complex=True, modules=None)
-    s2 = LineOver1DRangeSeries(
+        [(z ** 2 + 1) / (z ** 2 - 1)], [(z, -3, 3)], "",
+        n1=50, modules=None, absarg=True)
+    s2 = AbsArgLineSeries(
         (z ** 2 + 1) / (z ** 2 - 1), (z, -3, 3), "", adaptive=False,
-        n=50, is_complex=True, modules=None)
+        n=50, modules=None)
     do_test(s1.get_data(), s2.get_data())
 
     # complex function evaluated over a real line with mpmath
     s1 = InteractiveSeries(
         [(z ** 2 + 1) / (z ** 2 - 1)], [(z, -3, 3)], "",
-        n1=11, is_complex=True, modules="mpmath")
-    s2 = LineOver1DRangeSeries(
+        n1=11, modules="mpmath", absarg=True)
+    s2 = AbsArgLineSeries(
         (z ** 2 + 1) / (z ** 2 - 1), (z, -3, 3), "", adaptive=False,
-        n=11, is_complex=True, modules="mpmath")
+        n=11, modules="mpmath")
     do_test(s1.get_data(), s2.get_data())
 
-    # abs/arg values of complex function evaluated over a real line wit numpy
-    expr = (z ** 2 + 1) / (z ** 2 - 1)
-    s1 = InteractiveSeries(
-        [expr], [(z, -3, 3)], "",
-        n1=50, is_complex=True, absarg=expr, modules=None)
-    s2 = LineOver1DRangeSeries(
-        expr, (z, -3, 3), "", adaptive=False,
-        n=50, is_complex=True, absarg=expr, modules=None)
+    # real part of a complex function evaluated over a real line with numpy
+    expr = re((z ** 2 + 1) / (z ** 2 - 1))
+    s1 = InteractiveSeries([expr], [(z, -3, 3)], "", n1=50, modules=None)
+    s2 = LineOver1DRangeSeries(expr, (z, -3, 3), "",
+        adaptive=False, n=50, modules=None)
     do_test(s1.get_data(), s2.get_data())
 
-    # abs/arg values of complex function evaluated over a real line wit mpmath
-    expr = (z ** 2 + 1) / (z ** 2 - 1)
-    s1 = InteractiveSeries(
-        [expr], [(z, -3, 3)], "",
-        n1=50, is_complex=True, absarg=expr, modules="mpmath")
-    s2 = LineOver1DRangeSeries(
-        expr, (z, -3, 3), "", adaptive=False,
-        n=50, is_complex=True, absarg=expr, modules="mpmath")
+    # real part of a complex function evaluated over a real line with mpmath
+    expr = re((z ** 2 + 1) / (z ** 2 - 1))
+    s1 = InteractiveSeries([expr], [(z, -3, 3)], "",
+        n1=50, modules="mpmath")
+    s2 = LineOver1DRangeSeries(expr, (z, -3, 3), "",
+        adaptive=False, n=50, modules="mpmath")
+    do_test(s1.get_data(), s2.get_data())
+
+    # surface over a complex domain
+    s1 = ComplexSurfaceInteractiveSeries(
+        u * (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I), "",
+        n1=20, n2=20, params = {u: 1}, modules=None)
+    s2 = ComplexSurfaceSeries(
+        (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I), "",
+        n1=20, n2=20, modules=None)
+    do_test(s1.get_data(), s2.get_data())
+
+    s1 = ComplexSurfaceInteractiveSeries(
+        u * (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I), "",
+        n1=20, n2=20, params = {u: 1}, modules="mpmath")
+    s2 = ComplexSurfaceSeries(
+        (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I), "",
+        n1=20, n2=20, modules="mpmath")
     do_test(s1.get_data(), s2.get_data())
 
     # domain coloring or 3D
-    s1 = ComplexInteractiveSeries(
+    s1 = ComplexDomainColoringInteractiveSeries(
         u * (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I), "",
-        n1=20, n2=20, domain_coloring=True, params = {u: 1}, modules=None
-    )
-    s2 = ComplexSeries(
+        n1=20, n2=20, params = {u: 1}, modules=None)
+    s2 = ComplexDomainColoringSeries(
         (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I), "",
-        n1=20, n2=20, domain_coloring=True, modules=None
-    )
+        n1=20, n2=20, modules=None)
     do_test(s1.get_data(), s2.get_data())
 
-def test_complex_discretization():
-    x, y, z = symbols("x:z")
-
-    # test complex discretization for LineOver1DRangeSeries and
-    # SurfaceOver2DRangeSeries and InteractiveSeries
-
-    # is_complex=True should produce (intermediate) complex results, which are
-    # later converted to floats. is_complex=False should produce (intermediate)
-    # float results.
-    s1 = LineOver1DRangeSeries(sqrt(x), (x, -10, 10), "s1",
-            adaptive=False, is_complex=False, modules=None, n=10)
-    s2 = LineOver1DRangeSeries(sqrt(x), (x, -10, 10), "s1",
-            adaptive=False, is_complex=True, modules=None, n=10)
-    d1 = s1._uniform_sampling(lambdify([s1.var], s1.expr, s1.modules))
-    d2 = s2._uniform_sampling(lambdify([s2.var], s2.expr, s2.modules))
-    assert all(isinstance(t, float) for t in d1[0])
-    assert all(isinstance(t, float) for t in d1[1])
-    assert all(isinstance(t, complex) for t in d2[0])
-    assert all(isinstance(t, complex) for t in d2[1])
-    d3 = s1.get_data()
-    with warns(np.ComplexWarning):
-        d4 = s2.get_data()
-
-    # Mpmath and Numpy produces different results
-    s1 = LineOver1DRangeSeries(im(sqrt(-x)), (x, -10, 10), "s1",
-            adaptive=False, is_complex=True, modules=None, n=10)
-    s2 = LineOver1DRangeSeries(im(sqrt(-x)), (x, -10, 10), "s1",
-            adaptive=False, is_complex=True, modules="mpmath", n=10)
-    d1, d2 = s1.get_data(), s2.get_data()
-    assert (d1[-1][-1] < 0) and (d2[-1][-1] > 0)
-    assert np.array_equal(d1[-1], -d2[-1])
-
-    def do_test(data1, data2, compare=True):
-        assert len(data1) == len(data2)
-        for d1, d2 in zip(data1, data2):
-            assert (d1.dtype == np.float64) and (d2.dtype == np.float64)
-            if compare:
-                assert np.array_equal(d1, d2)
-
-    # using Numpy and a real discretization will produce NaN value when x<0.
-    with warns(RuntimeWarning, match="invalid value encountered in sqrt"):
-        s1 = LineOver1DRangeSeries(sqrt(x), (x, -10, 10), "s1",
-                adaptive=False, is_complex=False, modules=None, n=20)
-        s1.get_data()
-
-    # using Numpy or Mpmath with complex discretization won't raise warnings.
-    # Results between Numpy as Mpmath shoudl be really close
-    s2 = LineOver1DRangeSeries(sqrt(x), (x, -10, 10), "s2",
-            adaptive=False, is_complex=True, modules=None, n=20)
-    s3 = LineOver1DRangeSeries(sqrt(x), (x, -10, 10), "s3",
-            adaptive=False, is_complex=True, modules="mpmath", n=20)
-    do_test(s2.get_data(), s3.get_data())
+    s1 = ComplexDomainColoringInteractiveSeries(
+        u * (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I), "",
+        n1=20, n2=20, params = {u: 1}, modules="mpmath")
+    s2 = ComplexDomainColoringSeries(
+        (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I), "",
+        n1=20, n2=20, modules="mpmath")
+    do_test(s1.get_data(), s2.get_data())
 
 
-    # using Numpy and a real discretization will produce NaN value when x<0.
-    with warns(RuntimeWarning, match="invalid value encountered in sqrt"):
-        s4 = LineOver1DRangeSeries(sqrt(x), (x, -10, 10), "s4",
-                adaptive=True, is_complex=False, modules=None)
-        s4.get_data()
+def test_mpmath():
+    # test that the argument of complex functions evaluated with mpmath
+    # might be different than the one computed with Numpy (different
+    # behaviour at branch cuts)
+    z, u = symbols("z, u")
 
-    # using Numpy or Mpmath with complex discretization won't raise warnings.
-    # Results between Numpy as Mpmath shoudl be really close.
-    # NOTE: changed the function because the adaptive algorithm works by
-    # checking the collinearity between three points (the x, y coordinates must
-    # be real). Instead, with "mpmath" the y coordinate is a complex number.
-    s5 = LineOver1DRangeSeries(im(sqrt(x)), (x, -10, 10), "s5",
-            adaptive=True, is_complex=True, modules=None)
-    s6 = LineOver1DRangeSeries(im(sqrt(x)), (x, -10, 10), "s6",
-            adaptive=True, is_complex=True, modules="mpmath")
-    # can't directly compare the results because of the adaptive sampling
-    do_test(s5.get_data(), s6.get_data(), False)
+    s1 = LineOver1DRangeSeries(im(sqrt(-z)), (z, 1e-03, 5),
+        adaptive=True, modules=None)
+    s2 = LineOver1DRangeSeries(im(sqrt(-z)), (z, 1e-03, 5),
+        adaptive=True, modules="mpmath")
+    xx1, yy1 = s1.get_data()
+    xx2, yy2 = s2.get_data()
+    assert np.all(yy1 < 0)
+    assert np.all(yy2 > 0)
 
+    s1 = LineOver1DRangeSeries(im(sqrt(-z)), (z, -5, 5),
+        adaptive=False, n=20, modules=None)
+    s2 = LineOver1DRangeSeries(im(sqrt(-z)), (z, -5, 5),
+        adaptive=False, n=20, modules="mpmath")
+    xx1, yy1 = s1.get_data()
+    xx2, yy2 = s2.get_data()
+    assert np.allclose(xx1, xx2)
+    assert not np.allclose(yy1, yy2)
 
-    # Mpmath and Numpy produces different results
-    s1 = SurfaceOver2DRangeSeries(im(sqrt(-x)), (x, -5, 5), (y, -5, 5),
-            is_complex=False, modules=None)
-    s2 = SurfaceOver2DRangeSeries(im(sqrt(-x)), (x, -5, 5), (y, -5, 5),
-            is_complex=True, modules="mpmath")
-    d1, d2 = s1.get_data(), s2.get_data()
-    assert (d1[-1][-1, -1] < 0) and (d2[-1][-1, -1] > 0)
-    assert np.all(np.abs(d1[-1]) - np.abs(d2[-1])) < 1e-08
+    s1 = LineInteractiveSeries([im(sqrt(-z))], [(z, -5, 5)],
+        adaptive=False, n=21, modules=None)
+    s2 = LineInteractiveSeries([im(sqrt(-z))], [(z, -5, 5)],
+        adaptive=False, n=21, modules="mpmath")
+    xx1, yy1 = s1.get_data()
+    xx2, yy2 = s2.get_data()
+    assert np.allclose(xx1, xx2)
+    assert not np.allclose(yy1, yy2)
 
-    # Interactive series produces the same numerical data as LineOver1DRangeSeries.
-    # NOTE: InteractiveSeries doesn't support adaptive algorithm!
-    s1 = LineOver1DRangeSeries(im(sqrt(-x)), (x, -10, 10), "s1",
-            adaptive=False, is_complex=True, modules=None, n=10)
-    s2 = InteractiveSeries([im(sqrt(-x))], [(x, -10, 10)], "s2",
-            is_complex=True, modules=None, n1=10)
-    s3 = InteractiveSeries([im(sqrt(-x))], [(x, -10, 10)], "s3",
-            is_complex=True, modules="mpmath", n1=10)
-    d1, d2, d3 = s1.get_data(), s2.get_data(), s3.get_data()
-    do_test(d1, d2)
-    assert np.all(np.abs(d1[-1]) - np.abs(d3[-1])) < 1e-08
+    # here, there will be different values at x+0j for positive x
+    s1 = ComplexSurfaceSeries(arg(sqrt(-z)), (z, -3 - 3j, 3 + 3j),
+        n1=21, n2=21, modules=None)
+    s2 = ComplexSurfaceSeries(arg(sqrt(-z)), (z, -3 - 3j, 3 + 3j),
+        n1=21, n2=21, modules="mpmath")
+    xx1, yy1, zz1 = s1.get_data()
+    xx2, yy2, zz2 = s2.get_data()
+    assert np.allclose(xx1, xx2)
+    assert np.allclose(yy1, yy2)
+    assert not np.allclose(zz1, zz2)
 
-    expr = sqrt(-x)
-    s1 = LineOver1DRangeSeries(expr, (x, -10, 10), "s1",
-            adaptive=False, is_complex=True, modules=None, n=10, absarg=expr)
-    s2 = InteractiveSeries([expr], [(x, -10, 10)], "s2",
-            is_complex=True, modules=None, n1=10, absarg=expr)
-    s3 = InteractiveSeries([expr], [(x, -10, 10)], "s3",
-            is_complex=True, modules="mpmath", n1=10, absarg=expr)
-    d1, d2, d3 = s1.get_data(), s2.get_data(), s3.get_data()
-    do_test(d1, d2)
-    assert np.all(np.abs(d1[-1]) - np.abs(d3[-1])) < 1e-08
+    s1 = ComplexDomainColoringSeries(arg(sqrt(-z)), (z, -3 - 3j, 3 + 3j),
+        n1=21, n2=21, coloring="a", modules=None)
+    s2 = ComplexDomainColoringSeries(arg(sqrt(-z)), (z, -3 - 3j, 3 + 3j),
+        n1=21, n2=21, coloring="a", modules="mpmath")
+    xx1, yy1, _, aa1, ii1, _ = s1.get_data()
+    xx2, yy2, _, aa2, ii2, _ = s2.get_data()
+    assert np.allclose(xx1, xx2)
+    assert np.allclose(yy1, yy2)
+    assert not np.allclose(aa1, aa2)
+    assert not np.allclose(ii1, ii2)
 
-    # Interactive series produces the same numerical data as SurfaceOver2DRangeSeries
-    s1 = SurfaceOver2DRangeSeries(im(sqrt(-x)), (x, -3, 3), (y, -3, 3),
-            is_complex=True, modules="mpmath", n1=20, n2=20)
-    s2 = InteractiveSeries([im(sqrt(-x))], [(x, -3, 3), (y, -3, 3)], "s2",
-            is_complex=True, modules=None, n1=20, n2=20)
-    s3 = InteractiveSeries([im(sqrt(-x))], [(x, -3, 3), (y, -3, 3)], "s3",
-            is_complex=True, modules="mpmath", n1=20, n2=20)
-    do_test(d1, d2)
-    assert np.all(np.abs(d1[-1]) - np.abs(d3[-1])) < 1e-08
 
 def test_str():
-    x, y, z = symbols("x:z")
+    u, x, y, z = symbols("u, x:z")
 
     s = LineOver1DRangeSeries(cos(x), (x, -4, 3), "test")
     assert str(s) == "cartesian line: cos(x) for x over (-4.0, 3.0)"
+
+    s = LineInteractiveSeries([cos(u * x)], [(x, -4, 3)], "test",
+        params={u: 1})
+    assert str(s) == "interactive cartesian line: cos(u*x) with ranges (x, (-4+0j), (3+0j)) and parameters (u,)"
+
     s = AbsArgLineSeries(sqrt(x), (x, -5 + 2j, 5 + 2j), "test")
-    assert str(s) == "absolute-argument line: sqrt(x) for x over ((-5+2j), (5+2j))"
+    assert str(s) == "cartesian abs-arg line: sqrt(x) for x over ((-5+2j), (5+2j))"
+
+    s = AbsArgLineInteractiveSeries([cos(u * x)], [(x, -4, 3)], "test",
+        params={u: 1})
+    assert str(s) == "interactive cartesian abs-arg line: cos(u*x) with ranges (x, (-4+0j), (3+0j)) and parameters (u,)"
+
     s = Parametric2DLineSeries(cos(x), sin(x), (x, -4, 3), "test")
     assert str(s) == "parametric cartesian line: (cos(x), sin(x)) for x over (-4.0, 3.0)"
+
+    s = Parametric2DLineInteractiveSeries([cos(u * x), sin(x)], [(x, -4, 3)],
+        "test", params={u: 1})
+    assert str(s) == "interactive parametric cartesian line: (cos(u*x), sin(x)) with ranges (x, (-4+0j), (3+0j)) and parameters (u,)"
+
     s = Parametric3DLineSeries(cos(x), sin(x), x, (x, -4, 3), "test")
     assert str(s) == "3D parametric cartesian line: (cos(x), sin(x), x) for x over (-4.0, 3.0)"
+
+    s = Parametric3DLineInteractiveSeries([cos(u*x), sin(x), x], [(x, -4, 3)], "test", params={u: 1})
+    assert str(s) == "interactive 3D parametric cartesian line: (cos(u*x), sin(x), x) with ranges (x, (-4+0j), (3+0j)) and parameters (u,)"
+
     s = SurfaceOver2DRangeSeries(cos(x * y), (x, -4, 3), (y, -2, 5), "test")
     assert str(s) == "cartesian surface: cos(x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
+
+    s = SurfaceInteractiveSeries([cos(u * x * y)], [(x, -4, 3), (y, -2, 5)], "test", params={u: 1})
+    assert str(s) == "interactive cartesian surface: cos(u*x*y) with ranges (x, (-4+0j), (3+0j)), (y, (-2+0j), (5+0j)) and parameters (u,)"
+
     s = ContourSeries(cos(x * y), (x, -4, 3), (y, -2, 5), "test")
     assert str(s) == "contour: cos(x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
+
+    s = ContourInteractiveSeries([cos(u * x * y)], [(x, -4, 3), (y, -2, 5)], "test", params={u: 1})
+    assert str(s) == "interactive contour: cos(u*x*y) with ranges (x, (-4+0j), (3+0j)), (y, (-2+0j), (5+0j)) and parameters (u,)"
+
     s = ParametricSurfaceSeries(cos(x * y), sin(x * y), x * y,
         (x, -4, 3), (y, -2, 5), "test")
     assert str(s) == "parametric cartesian surface: (cos(x*y), sin(x*y), x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
+
+    s = ParametricSurfaceInteractiveSeries([cos(u * x * y), sin(x * y), x * y],
+        [(x, -4, 3), (y, -2, 5)], "test", params={u: 1})
+    assert str(s) == "interactive parametric cartesian surface: (cos(u*x*y), sin(x*y), x*y) with ranges (x, (-4+0j), (3+0j)), (y, (-2+0j), (5+0j)) and parameters (u,)"
+
     s = ImplicitSeries(x < y, (x, -5, 4), (y, -3, 2), "test")
     assert str(s) == "Implicit expression: x < y for x over (-5.0, 4.0) and y over (-3.0, 2.0)"
+
     s = ComplexPointSeries(2 + 3 * I, "test")
-    assert str(s) == "complex point 2 + 3*I"
+    assert str(s) == "complex points: (2 + 3*I,)"
+
     s = ComplexPointSeries([2 + 3 * I, 4 * I], "test")
-    assert str(s) == "complex points (2 + 3*I, 4*I)"
-    s = ComplexPointInteractiveSeries([2 + 3 * I], "test")
-    assert str(s) == "complex interactive points: (2 + 3*I,)"
-    s = ComplexPointInteractiveSeries([2 + 3 * I, 4 * I], "test")
-    assert str(s) == "complex interactive points: (2 + 3*I, 4*I)"
-    s = ComplexSeries(sqrt(z), (z, -2-3j, 4+5j), "test", threed=True)
-    assert str(s) == "cartesian surface: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
-    s = ComplexSeries(sqrt(z), (z, -2-3j, 4+5j), "test", domain_coloring=True)
-    assert str(s) == "domain coloring: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
-    s = ComplexInteractiveSeries(x * sqrt(z), (z, -2-3j, 4+5j), "test",
+    assert str(s) == "complex points: (2 + 3*I, 4*I)"
+
+    s = ComplexPointInteractiveSeries([2 + 3 * I * y], "test", params={y: 1})
+    assert str(s) == "interactive complex points: (3*I*y + 2,) with parameters (y,)"
+
+    s = ComplexPointInteractiveSeries([2 + 3 * I, 4 * I * y], "test",
+        params={y: 1})
+    assert str(s) == "interactive complex points: (2 + 3*I, 4*I*y) with parameters (y,)"
+
+    s = ComplexSurfaceSeries(sqrt(z), (z, -2-3j, 4+5j), "test", threed=False)
+    assert str(s) == "complex contour: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+
+    s = ComplexSurfaceSeries(sqrt(z), (z, -2-3j, 4+5j), "test", threed=True)
+    assert str(s) == "complex cartesian surface: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+
+    s = ComplexDomainColoringSeries(sqrt(z), (z, -2-3j, 4+5j), "test",
+        threed=False)
+    assert str(s) == "complex domain coloring: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+
+    s = ComplexDomainColoringSeries(sqrt(z), (z, -2-3j, 4+5j), "test",
+        threed=True)
+    assert str(s) == "complex 3D domain coloring: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+
+    s = ComplexSurfaceInteractiveSeries(x * sqrt(z), (z, -2-3j, 4+5j), "test",
+        threed=False, params={x: 1})
+    assert str(s) == "interactive complex contour for expression: x*sqrt(z) over (z, (-2-3j), (4+5j)) and parameters (x,)"
+
+    s = ComplexSurfaceInteractiveSeries(x * sqrt(z), (z, -2-3j, 4+5j), "test",
         threed=True, params={x: 1})
-    assert str(s) == "interactive cartesian surface for expression: x*sqrt(z) over (z, (-2-3j), (4+5j)) and parameters [x, z]"
-    s = ComplexInteractiveSeries(x * sqrt(z), (z, -2-3j, 4+5j), "test",
-        domain_coloring=True, params={x: 1})
-    assert str(s) == "interactive domain coloring for expression: x*sqrt(z) over (z, (-2-3j), (4+5j)) and parameters [x, z]"
+    assert str(s) == "interactive complex cartesian surface for expression: x*sqrt(z) over (z, (-2-3j), (4+5j)) and parameters (x,)"
+
+    s = ComplexDomainColoringInteractiveSeries(x * sqrt(z), (z, -2-3j, 4+5j),
+        "test", params={x: 1}, threed=False)
+    assert str(s) == "interactive complex domain coloring for expression: x*sqrt(z) over (z, (-2-3j), (4+5j)) and parameters (x,)"
+
+    s = ComplexDomainColoringInteractiveSeries(x * sqrt(z), (z, -2-3j, 4+5j),
+        "test", params={x: 1}, threed=True)
+    assert str(s) == "interactive complex 3D domain coloring for expression: x*sqrt(z) over (z, (-2-3j), (4+5j)) and parameters (x,)"
+
     s = Vector2DSeries(-y, x, (x, -5, 4), (y, -3, 2), "test")
     assert str(s) == "2D vector series: [-y, x] over (x, -5.0, 4.0), (y, -3.0, 2.0)"
+
     s = Vector3DSeries(z, y, x, (x, -5, 4), (y, -3, 2), (z, -6, 7), "test")
     assert str(s) == "3D vector series: [z, y, x] over (x, -5.0, 4.0), (y, -3.0, 2.0), (z, -6.0, 7.0)"
+
+    s = Vector2DInteractiveSeries([-y, x * z], [(x, -5, 4), (y, -3, 2)],
+        "test", params={z: 1})
+    assert str(s) == "interactive 2D vector series: (-y, x*z) with ranges (x, (-5+0j), (4+0j)), (y, (-3+0j), (2+0j)) and parameters (z,)"
+
+    s = Vector3DInteractiveSeries([-y, x * z, x], [(x, -5, 4), (y, -3, 2)],
+        "test", params={z: 1})
+    assert str(s) == "interactive 3D vector series: (-y, x*z, x) with ranges (x, (-5+0j), (4+0j)), (y, (-3+0j), (2+0j)) and parameters (z,)"
+
     s = SliceVector3DSeries(Plane((0, 0, 0), (1, 0, 0)), z, y, x,
         (x, -5, 4), (y, -3, 2), (z, -6, 7), "test")
-    assert str(s) == "sliced 3D vector series: [z, y, x] over (x, -5.0, 4.0), (y, -3.0, 2.0), (z, -6.0, 7.0) at Plane(Point3D(0, 0, 0), (1, 0, 0))"
+    assert str(s) == "sliced 3D vector series: [z, y, x] over (x, -5.0, 4.0), (y, -3.0, 2.0), (z, -6.0, 7.0) at plane series: Plane(Point3D(0, 0, 0), (1, 0, 0)) over (x, -5, 4), (y, -3, 2), (z, -6, 7)"
+
+    s = SliceVector3DInteractiveSeries(
+        [u * z, u * y, x],
+        [(x, -5, 4), (y, -3, 2), (z, -6, 7)], "test",
+        slice=Plane((0, 0, 0), (1, 0, 0)), params={u: 1})
+    assert str(s) == "sliced interactive 3D vector series: (u*z, u*y, x) with ranges (x, 0.0, 0.0), (y, -3.0, 2.0), (z, -6.0, 7.0) and parameters (u,) over: Plane(Point3D(0, 0, 0), (1, 0, 0))"
+
     s = PlaneSeries(Plane((0, 0, 0), (1, 1, 1)),
         (x, -5, 4), (y, -3, 2), (z, -6, 7), "test")
-    assert str(s) == "plane series of Plane(Point3D(0, 0, 0), (1, 1, 1)) over (x, -5, 4), (y, -3, 2), (z, -6, 7)"
+    assert str(s) == "plane series: Plane(Point3D(0, 0, 0), (1, 1, 1)) over (x, -5, 4), (y, -3, 2), (z, -6, 7)"
+
     s = PlaneInteractiveSeries([Plane((z, 0, 0), (1, 1, 1))],
         [(x, -5, 4), (y, -3, 2), (z, -6, 7)], "test", params={z: 1})
-    assert str(s) == "interactive plane series of Plane(Point3D(z, 0, 0), (1, 1, 1)) over (x, -5, 4), (y, -3, 2), (z, -6, 7) with parameters [z]"
+    assert str(s) == "interactive plane series: Plane(Point3D(z, 0, 0), (1, 1, 1)) over (x, -5, 4), (y, -3, 2), (z, -6, 7) with parameters [z]"
+
     s = GeometrySeries(Circle(Point(0, 0), 5))
     assert str(s) == "geometry entity: Circle(Point2D(0, 0), 5)"
-    s = GeometryInteractiveSeries([Circle(Point(x, 0), 5)], [], params={x: 1})
-    assert str(s) == "interactive geometry entity: Circle(Point2D(x, 0), 5) with parameters [x]"
 
-    # interactive series
-    s = InteractiveSeries([z * cos(x)], [(x, -4, 3)], "test", params={z: 1})
-    assert str(s) == "interactive expression: z*cos(x) with ranges (x, -4.0, 3.0) and parameters [x, z]"
-    s = InteractiveSeries([z * cos(x * y)], [(x, -4, 3), (y, -2, 1)], "test",
-        params={z: 1})
-    assert str(s) == "interactive expression: z*cos(x*y) with ranges (x, -4.0, 3.0), (y, -2.0, 1.0) and parameters [x, y, z]"
-    s = InteractiveSeries([z * cos(x * y), sin(x * y), x*y],
-        [(x, -4, 3), (y, -2, 1)], "test", params={z: 1})
-    assert str(s) == "interactive expression: (z*cos(x*y), sin(x*y), x*y) with ranges (x, -4.0, 3.0), (y, -2.0, 1.0) and parameters [x, y, z]"
+    s = GeometryInteractiveSeries([Circle(Point(x, 0), 5)], [], params={x: 1})
+    assert str(s) == "interactive geometry entity: Circle(Point2D(x, 0), 5) with parameters (x,)"
+
 
 def test_piecewise():
     x = symbols("x")
