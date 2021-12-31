@@ -1,20 +1,27 @@
-from sympy import Tuple, re, im, sqrt, arg
+from sympy import Tuple, re, im, sqrt, arg, Expr, Dummy, I, symbols
 from spb.defaults import cfg
+import warnings
+
 from spb.series import (
     LineOver1DRangeSeries,
-    ComplexSeries,
-    ComplexInteractiveSeries,
+    ComplexSurfaceBaseSeries,
+    ComplexInteractiveBaseSeries,
     ComplexPointSeries,
     ComplexPointInteractiveSeries,
     _set_discretization_points,
     SurfaceOver2DRangeSeries,
-    InteractiveSeries,
-    AbsArgLineSeries
+    InteractiveSeries
 )
+from spb.vectors import plot_vector
 from spb.utils import _plot_sympify, _check_arguments, _is_range
 from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
 
+# NOTE: 
+# * `abs` refers to the absolute value;
+# * `arg` refers to the argument;
+# * `absarg` refers to the absolute value and argument, which will be used to
+#   create "domain coloring" plots.
 
 def _build_series(*args, interactive=False, **kwargs):
     series = []
@@ -25,14 +32,15 @@ def _build_series(*args, interactive=False, **kwargs):
         "real": [lambda t: re(t), "Re(%s)"],
         "imag": [lambda t: im(t), "Im(%s)"],
         "abs": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
-        # "absarg": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
+        # TODO: use Arg instead of Abs in the label and modify the backends
+        # to deal with the case.
         "absarg": [lambda t: t, "Abs(%s)"],
         "arg": [lambda t: arg(t), "Arg(%s)"],
     }
     # option to be used with lambdify with complex functions
     kwargs.setdefault("modules", cfg["complex"]["modules"])
 
-    if all([a.is_complex for a in args]):
+    if all([hasattr(a, "is_complex") and a.is_complex for a in args]):
         # args is a list of complex numbers
         cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         for a in args:
@@ -48,8 +56,16 @@ def _build_series(*args, interactive=False, **kwargs):
         # contains complex points
         cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         for a in args:
-            # series.append(cls(a[0], None, a[-1], **kwargs))
             series.append(cls(a[0], a[-1], **kwargs))
+    elif (
+        (len(args) > 0)
+        and all([isinstance(a, (list, tuple, Tuple)) for a in args])
+        and all([all([isinstance(t, Expr) and t.is_complex for t in a]) for a in args])
+    ):
+        # args is a list of lists
+        cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
+        for a in args:
+            series.append(cls(a, "", **kwargs))
     else:
         new_args = []
 
@@ -82,31 +98,6 @@ def _build_series(*args, interactive=False, **kwargs):
         for a in new_args:
             expr, ranges, label = a[0], a[1:-1], a[-1]
 
-            if len(ranges) == 2:
-                # function of two variables
-                kw = kwargs.copy()
-                real = kw.pop("real", True)
-                imag = kw.pop("imag", True)
-                _abs = kw.pop("abs", False)
-                _arg = kw.pop("arg", False)
-
-                def add_surface_series(flag, key):
-                    if flag:
-                        kw2 = kw.copy()
-                        kw2[key] = True
-                        kw2.setdefault("is_complex", True)
-                        f, lbl_wrapper = mapping[key]
-                        if not interactive:
-                            series.append(SurfaceOver2DRangeSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
-                        else:
-                            series.append(InteractiveSeries([f(expr)], ranges, lbl_wrapper % label, **kw2))
-
-                add_surface_series(real, "real")
-                add_surface_series(imag, "imag")
-                add_surface_series(_abs, "abs")
-                add_surface_series(_arg, "arg")
-                continue
-
             # From now on we are dealing with a function of one variable.
             # ranges need to contain complex numbers
             ranges = list(ranges)
@@ -119,219 +110,395 @@ def _build_series(*args, interactive=False, **kwargs):
                 series.append(cls([expr], label, **kwargs))
 
             else:
+                # NOTE: as a design choice, a complex function will create one
+                # or more data series, depending on the keyword arguments
+                # (one for the real part, one for the imaginary part, etc.).
+                # This is undoubtely inefficient as we must evaluate the same
+                # expression multiple times. On the other hand, it allows to
+                # maintain a one-to-one correspondance between Plot.series
+                # and backend.data, making it easier to work with iplot
+                # (backend._update_interactive).
+
+                kw = kwargs.copy()
+                absarg = kw.pop("absarg", True)
+                real = kw.pop("real", False)
+                imag = kw.pop("imag", False)
+                _abs = kw.pop("abs", False)
+                _arg = kw.pop("arg", False)
+
                 if ranges[0][1].imag == ranges[0][2].imag:
-                    # NOTE: as a design choice, a complex function plotted over
-                    # a line will create one or more data series, depending on
-                    # the keyword arguments (one for the real part, one for the
-                    # imaginary part, etc.). This is undoubtely inefficient as
-                    # we must evaluate the same expression multiple times.
-                    # On the other hand, it allows to maintain a  one-to-one
-                    # correspondance between Plot.series and backend.data, which
-                    # doesn't require a redesign of the backend in order to work
-                    # with iplot (backend._update_interactive).
-
-                    kw = kwargs.copy()
-                    absarg = kw.pop("absarg", False)
-                    if absarg:
-                        real = kw.pop("real", False)
-                        imag = kw.pop("imag", False)
-                        _abs = kw.pop("abs", False)
-                        _arg = kw.pop("arg", False)
-                    else:
-                        real = kw.pop("real", True)
-                        imag = kw.pop("imag", True)
-                        _abs = kw.pop("abs", False)
-                        _arg = kw.pop("arg", False)
-
-                    def add_line_series(flag, key):
+                    # dealing with lines
+                    def add_series(flag, key):
                         if flag:
                             kw2 = kw.copy()
-                            # NOTE: in case of absarg=True, set absarg=expr so
-                            # that the series knows the original expression from
-                            # which to compute the argument
-                            kw2[key] = True if key != "absarg" else expr
-                            kw2["is_complex"] = True
+                            kw2[key] = True
                             f, lbl_wrapper = mapping[key]
                             if not interactive:
-                                if key != "absarg":
-                                    series.append(LineOver1DRangeSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
-                                else:
-                                    series.append(AbsArgLineSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
+                                series.append(LineOver1DRangeSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
                             else:
                                 series.append(InteractiveSeries([f(expr)], ranges, lbl_wrapper % label, **kw2))
 
-                    add_line_series(real, "real")
-                    add_line_series(imag, "imag")
-                    add_line_series(_abs, "abs")
-                    add_line_series(_arg, "arg")
-                    add_line_series(absarg, "absarg")
-
                 else:
                     # 2D domain coloring or 3D plots
-                    cls = ComplexSeries if not interactive else ComplexInteractiveSeries
+                    cls = ComplexSurfaceBaseSeries if not interactive else ComplexInteractiveBaseSeries
+                    kw.setdefault("coloring", cfg["complex"]["coloring"])
 
-                    if not kwargs.get("threed", False):
-                        mkw = kwargs.copy()
-                        mkw.setdefault("coloring", cfg["complex"]["coloring"])
-                        series.append(cls(expr, *ranges, label, domain_coloring=True, **mkw))
+                    def add_series(flag, key):
+                        if flag:
+                            kw2 = kw.copy()
+                            kw2[key] = True
+                            f, lbl_wrapper = mapping[key]
+                            series.append(cls(f(expr), *ranges, lbl_wrapper % label, **kw2))
 
-                    else:
-                        # 3D plots of complex functions over a complex range
-
-                        # NOTE: need this kw copy in case the user is plotting
-                        # multiple expressions
-                        kw = kwargs.copy()
-                        real = kw.pop("real", False)
-                        imag = kw.pop("imag", False)
-                        _abs = kw.pop("abs", False)
-                        _arg = kw.pop("arg", False)
-
-                        if all(not t for t in [real, imag, _abs, _arg]):
-                            # add abs plot colored by the argument
-                            mkw = kwargs.copy()
-                            mkw.setdefault("coloring", cfg["complex"]["coloring"])
-                            series.append(cls(expr, *ranges, label, domain_coloring=True, **mkw))
-
-                        def add_complex_series(flag, key):
-                            if flag:
-                                kw2 = kw.copy()
-                                kw2["domain_coloring"] = False
-                                f, lbl_wrapper = mapping[key]
-                                series.append(cls(f(expr), *ranges, lbl_wrapper % label, **kw2))
-
-                        add_complex_series(real, "real")
-                        add_complex_series(imag, "imag")
-                        add_complex_series(_abs, "abs")
-                        add_complex_series(_arg, "arg")
+                add_series(absarg, "absarg")
+                add_series(real, "real")
+                add_series(imag, "imag")
+                add_series(_abs, "abs")
+                add_series(_arg, "arg")
 
     return series
 
 
-def plot_complex(*args, show=True, **kwargs):
-    """Plot complex numbers or complex functions. By default, the aspect ratio
-    of the plot is set to ``aspect="equal"``.
+def _plot_complex(*args, show=True, **kwargs):
+    """Create the series and setup the backend."""
+    args = _plot_sympify(args)
+    kwargs = _set_discretization_points(kwargs, ComplexSurfaceBaseSeries)
+
+    series = _build_series(*args, **kwargs)
+    if len(series) == 0:
+        warnings.warn("No series found. Check your keyword arguments.")
+
+    if "backend" not in kwargs:
+        kwargs["backend"] = TWO_D_B
+        if any(s.is_3Dsurface for s in series):
+            kwargs["backend"] = THREE_D_B
+
+    if all(
+        isinstance(s, (SurfaceOver2DRangeSeries, InteractiveSeries)) for s in series
+    ):
+        # function of 2 variables
+        if kwargs.get("xlabel", None) is None:
+            if len(series) > 0:
+                kwargs["xlabel"] = str(series[0].var_x)
+        if kwargs.get("ylabel", None) is None:
+            if len(series) > 0:
+                kwargs["ylabel"] = str(series[0].var_y)
+        # do not set anything for zlabel since it could be f(x,y) or
+        # abs(f(x, y)) or something else
+    elif all(not s.is_parametric for s in series):
+        # when plotting real/imaginary or domain coloring/3D plots, the
+        # horizontal axis is the real, the vertical axis is the imaginary
+        if kwargs.get("xlabel", None) is None:
+            kwargs["xlabel"] = "Re"
+        if kwargs.get("ylabel", None) is None:
+            kwargs["ylabel"] = "Im"
+        if kwargs.get("zlabel", None) is None:
+            kwargs["zlabel"] = "Abs"
+    else:
+        if kwargs.get("xlabel", None) is None:
+            kwargs["xlabel"] = "Real"
+        if kwargs.get("ylabel", None) is None:
+            kwargs["ylabel"] = "Abs"
+
+    if (kwargs.get("aspect", None) is None) and any(
+        (s.is_complex and s.is_domain_coloring) or s.is_point for s in series
+    ):
+        # set aspect equal for 2D domain coloring or complex points
+        kwargs.setdefault("aspect", "equal")
+
+    p = Plot(*series, **kwargs)
+    if show:
+        p.show()
+    return p
+
+
+def plot_real_imag(*args, **kwargs):
+    """Plot the real part, the imaginary parts, the absolute value and the
+    argument of a complex function. By default, only the real and imaginary
+    parts will be plotted. Use keyword argument to be more specific.
+    By default, the aspect ratio of the plot is set to ``aspect="equal"``.
 
     Depending on the provided expression, this function will produce different
     types of plots:
 
-    * list of complex numbers: creates a scatter plot.
-    * function of 1 variable over a real range:
+    1. line plot over the reals. 
+    2. surface plot over the complex plane if `threed=True`.
+    3. contour plot over the complex plane if `threed=False`.
 
-      1. line plot separating the real and imaginary parts.
-      2. line plot of the modulus of the complex function colored by its
-         argument, if ``absarg=True``.
-      3. line plot of the modulus and the argument, if ``abs=True, arg=True``.
+    Typical usage examples are in the followings:
 
-    * function of 2 variables over 2 real ranges:
-
-      1. By default, a surface plot of the real and imaginary part is created.
-      2. By toggling ``real=True, imag=True, abs=True, arg=True`` we can create
-         surface plots of the real, imaginary part or the absolute value or
-         the argument.
-
-    * complex function over a complex range:
-
-      1. domain coloring plot.
-      2. 3D plot of the modulus colored by the argument, if ``threed=True``.
-      3. 3D plot of the real and imaginary part by toggling ``real=True``,
-         ``imag=True``.
+    - Plotting a single expression with a single range.
+        ``plot_real_imag(expr, range, **kwargs)``
+    - Plotting a single expression with the default range (-10, 10).
+        ``plot_real_imag(expr, **kwargs)``
+    - Plotting multiple expressions with a single range.
+        ``plot_real_imag(expr1, expr2, ..., range, **kwargs)``
+    - Plotting multiple expressions with multiple ranges.
+        ``plot_real_imag((expr1, range1), (expr2, range2), ..., **kwargs)``
+    - Plotting multiple expressions with multiple ranges and custom labels.
+        ``plot_real_imag((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)``
 
     Parameters
     ==========
     args :
         expr : Expr
-            Represent the complex number or complex function to be plotted.
+            Represent the complex function to be plotted.
 
         range : 3-element tuple
             Denotes the range of the variables. For example:
 
-            * ``(z, -5, 5)``: plot a line from complex point ``(-5 + 0*I)`` to
-              ``(5 + 0*I)``
+            * ``(z, -5, 5)``: plot a line over the reals from point ``-5`` to
+              ``5``
             * ``(z, -5 + 2*I, 5 + 2*I)``: plot a line from complex point
               ``(-5 + 2*I)`` to ``(5 + 2 * I)``. Note the same imaginary part
               for the start/end point. Also note that we can specify the ranges
               by using standard Python complex numbers, for example
               ``(z, -5+2j, 5+2j)``.
-            * ``(z, -5 - 3*I, 5 + 3*I)``: domain coloring plot of the complex
-              function over the specified domain.
+            * ``(z, -5 - 3*I, 5 + 3*I)``: surface or contour plot of the
+              complex function over the specified domain.
 
-        label : str
+        label : str, optional
             The name of the complex function to be eventually shown on the
             legend. If none is provided, the string representation of the
             function will be used.
 
-    absarg : boolean
-        If True, plot the modulus of the complex function colored by its
-        argument. If False, separately plot the real and imaginary parts.
-        Default to False. This is only available for line plots.
+    abs : boolean, optional
+        If True, plot the modulus of the complex function. Default to True.
 
-    abs : boolean
-        If True, and if the provided range is a real segment, plot the
-        modulus of the complex function. Default to False.
-
-    adaptive : boolean
+    adaptive : boolean, optional
         Attempt to create line plots by using an adaptive algorithm.
+        Surface and contour plots do not use an adaptive algorithm.
         Default to True.
 
-    arg : boolean
-        If True, and if the provided range is a real segment, plot the
-        argument of the complex function. Default to False.
+    arg : boolean, optional
+        If True, plot the argument of the complex function. Default to True.
 
-    depth : int
-        Controls the smootheness of the overall evaluation. The higher
-        the number, the smoother the function, the more memory will be
-        used by the recursive procedure. Default value is 9.
-
-    detect_poles : boolean
+    detect_poles : boolean, optional
         Chose whether to detect and correctly plot poles. Defaulto to False.
-        This improve detection, increase the number of discretization points
-        and/or change the value of `eps`.
+        It only works with line plots. To improve detection, increase the
+        number of discretization points if `adaptive=False` and/or change
+        the value of `eps`.
 
-    eps : float
+    eps : float, optional
         An arbitrary small value used by the `detect_poles` algorithm.
         Default value to 0.1. Before changing this value, it is better to
         increase the number of discretization points.
 
-    n1, n2 : int
+    imag : boolean, optional
+        If True, plot the imaginary part of the complex function.
+        Default to True.
+
+    modules : str, optional
+        Specify the modules to be used for the numerical evaluation. Refer to
+        `lambdify` to visualize the available options. Default to None,
+        meaning Numpy/Scipy will be used. Note that other modules might
+        produce different results, based on the way they deal with branch
+        cuts.
+
+    n1, n2 : int, optional
         Number of discretization points in the real/imaginary-directions,
-        respectively. For domain coloring plots (2D and 3D), default to 300.
-        For line plots default to 1000.
+        respectively, when `adaptive=False`. For line plots, default to 1000.
+        For surface/contour plots (2D and 3D), default to 300.
 
-    n : int
-        Set the same number of discretization points in all directions.
-        For domain coloring plots (2D and 3D), default to 300. For line
-        plots default to 1000.
+    n : int, optional
+        Set the same number of discretization points in all directions to be
+        used when `adaptive=False`.
+    
+    real : boolean, optional
+        If True, plot the real part of the complex function. Default to True.
 
-    real : boolean
-        If True, and if the provided range is a real segment, plot the
-        real part of the complex function.
-        If a complex range is given and ``threed=True``, plot a 3D
-        representation of the real part. Default to False.
-
-    imag : boolean
-        If True, and if the provided range is a real segment, plot the
-        imaginary part of the complex function.
-        If a complex range is given and ``threed=True``, plot a 3D
-        representation of the imaginary part. Default to False.
-
-    show : boolean
+    show : boolean, optional
         Default to True, in which case the plot will be shown on the screen.
 
-    threed : boolean
-        Default to False. When True, it will plot a 3D representation of the
-        absolute value of the complex function colored by its argument.
+    threed : boolean, optional
+        It only applies to a complex function over a complex range. If False,
+        contour plots will be shown. If True, 3D surfaces will be shown.
+        Default to False.
 
-    use_cm : boolean
-        If ``absarg=True`` and ``use_cm=True`` then plot the modulus of the
-        complex function colored by its argument. If ``use_cm=False``, plot
-        the modulus of the complex function with a solid color.
+    use_cm : boolean, optional
+        If False, surfaces will be rendered with a solid color.
+        If True, a color map highlighting the elevation will be used.
         Default to True.
+    
+    
+    Examples
+    ========
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import I, symbols, exp, sqrt, cos, sin, pi, gamma
+       >>> from spb import plot_complex
+       >>> x, y, z = symbols('x, y, z')
+
+
+    Plot the real and imaginary parts of a function over reals:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_real_imag(sqrt(x), (x, -3, 3))
+       Plot object containing:
+       [0]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for x over (-3.0, 3.0)
+       [1]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for x over (-3.0, 3.0)
+
+    Plot only the real part:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_real_imag(sqrt(x), (x, -3, 3), imag=False)
+       Plot object containing:
+       [0]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for x over (-3.0, 3.0)
+    
+    Plot only the imaginary part:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_real_imag(sqrt(x), (x, -3, 3), real=False)
+       Plot object containing:
+       [0]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for x over (-3.0, 3.0)
+    
+    Plot only the absolute value and argument:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_real_imag(sqrt(x), (x, -3, 3), real=False, imag=False, abs=True, arg=True)
+       Plot object containing:
+       [0]: cartesian line: sqrt(sqrt(re(x)**2 + im(x)**2)*sin(atan2(im(x), re(x))/2)**2 + sqrt(re(x)**2 + im(x)**2)*cos(atan2(im(x), re(x))/2)**2) for x over (-3.0, 3.0)
+       [1]: cartesian line: arg(sqrt(x)) for x over (-3.0, 3.0)
+
+    3D plot of the real and imaginary part of a function over a complex range: 
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), threed=True)
+       Plot object containing:
+       [0]: cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
+       [1]: cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
+    
+    3D plot of the absolute value of a function over a complex range: 
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), threed=True)
+       Plot object containing:
+       [0]: complex cartesian surface: sqrt(sqrt(re(x)**2 + im(x)**2)*sin(atan2(im(x), re(x))/2)**2 + sqrt(re(x)**2 + im(x)**2)*cos(atan2(im(x), re(x))/2)**2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
+
+    """
+    kwargs["absarg"] = False
+    kwargs.setdefault("abs", False)
+    kwargs.setdefault("arg", False)
+    kwargs.setdefault("real", True)
+    kwargs.setdefault("imag", True)
+    return _plot_complex(*args, **kwargs)
+
+
+def plot_complex(*args, **kwargs):
+    """Plot the absolute value of a complex function colored by its argument.
+    By default, the aspect ratio of the plot is set to ``aspect="equal"``.
+
+    Depending on the provided range, this function will produce different
+    types of plots:
+
+    1. Line plot over the reals. 
+    2. Image plot over the complex plane if `threed=False`. This is also 
+       known as Domain Coloring. Use the `coloring` keyword argument to
+       select a different color scheme.
+    3. If `threed=True`, plot a 3D surface of the absolute value over the
+       complex plane, colored by its argument. Use the `coloring` keyword
+       argument to select a different color scheme.
+
+    Typical usage examples are in the followings:
+
+    - Plotting a single expression with a single range.
+        ``plot_real_imag(expr, range, **kwargs)``
+    - Plotting a single expression with the default range (-10, 10).
+        ``plot_real_imag(expr, **kwargs)``
+    - Plotting multiple expressions with a single range.
+        ``plot_real_imag(expr1, expr2, ..., range, **kwargs)``
+    - Plotting multiple expressions with multiple ranges.
+        ``plot_real_imag((expr1, range1), (expr2, range2), ..., **kwargs)``
+    - Plotting multiple expressions with multiple ranges and custom labels.
+        ``plot_real_imag((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)``
+        
+    Parameters
+    ==========
+    args :
+        expr : Expr
+            Represent the complex function to be plotted.
+
+        range : 3-element tuple
+            Denotes the range of the variables. For example:
+
+            * ``(z, -5, 5)``: plot a line over the reals from point ``-5`` to
+              ``5``
+            * ``(z, -5 + 2*I, 5 + 2*I)``: plot a line from complex point
+              ``(-5 + 2*I)`` to ``(5 + 2 * I)``. Note the same imaginary part
+              for the start/end point. Also note that we can specify the ranges
+              by using standard Python complex numbers, for example
+              ``(z, -5+2j, 5+2j)``.
+            * ``(z, -5 - 3*I, 5 + 3*I)``: surface or contour plot of the
+              complex function over the specified domain.
+
+        label : str, optional
+            The name of the complex function to be eventually shown on the
+            legend. If none is provided, the string representation of the
+            function will be used.
+    
+    adaptive : boolean, optional
+        Attempt to create line plots by using an adaptive algorithm.
+        Image and surface plots do not use an adaptive algorithm.
+        Default to True.
+
+    modules : str, optional
+        Specify the modules to be used for the numerical evaluation. Refer to
+        `lambdify` to visualize the available options. Default to None,
+        meaning Numpy/Scipy will be used. Note that other modules might
+        produce different results, based on the way they deal with branch
+        cuts.
+
+    n1, n2 : int, optional
+        Number of discretization points in the real/imaginary-directions,
+        respectively, when `adaptive=False`. For line plots, default to 1000.
+        For surface/contour plots (2D and 3D), default to 300.
+
+    n : int, optional
+        Set the same number of discretization points in all directions to be
+        used when `adaptive=False`.
+
+    show : boolean, optional
+        Default to True, in which case the plot will be shown on the screen.
+
+    threed : boolean, optional
+        It only applies to a complex function over a complex range. If False,
+        a 2D image plot will be shown. If True, 3D surfaces will be shown.
+        Default to False.
 
     coloring : str or callable
         Choose between different domain coloring options. Default to ``"a"``.
         Refer to [#fn1]_ for more information.
 
-        - ``"a"``: standard domain coloring using HSV.
+        - ``"a"``: standard domain coloring using HSV, showing the argument
+          of the complex function.
         - ``"b"``: enhanced domain coloring using HSV, showing iso-modulus
           and is-phase lines.
         - ``"c"``: enhanced domain coloring using HSV, showing iso-modulus
@@ -371,129 +538,50 @@ def plot_complex(*args, show=True, **kwargs):
     ========
 
     .. plot::
-        :context: reset
-        :format: doctest
-        :include-source: True
+       :context: reset
+       :format: doctest
+       :include-source: True
 
-        >>> from sympy import I, symbols, exp, sqrt, cos, sin, pi, gamma
-        >>> from spb import plot_complex
-        >>> x, y, z = symbols('x, y, z')
+       >>> from sympy import I, symbols, exp, sqrt, cos, sin, pi, gamma
+       >>> from spb import plot_complex
+       >>> x, y, z = symbols('x, y, z')
 
-    Plot individual complex points:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> plot_complex(3 + 2 * I, 4 * I, 2)
-        Plot object containing:
-        [0]: complex point (3 + 2*I,)
-        [1]: complex point (4*I,)
-        [2]: complex point (2,)
-
-    Plot two lists of complex points:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> expr1 = z * exp(2 * pi * I * z)
-        >>> expr2 = 2 * expr1
-        >>> n = 15
-        >>> l1 = [expr1.subs(z, t / n) for t in range(n)]
-        >>> l2 = [expr2.subs(z, t / n) for t in range(n)]
-        >>> plot_complex((l1, "f1"), (l2, "f2"))
-        Plot object containing:
-        [0]: complex points (0.0, 0.0666666666666667*exp(0.133333333333333*I*pi), 0.133333333333333*exp(0.266666666666667*I*pi), 0.2*exp(0.4*I*pi), 0.266666666666667*exp(0.533333333333333*I*pi), 0.333333333333333*exp(0.666666666666667*I*pi), 0.4*exp(0.8*I*pi), 0.466666666666667*exp(0.933333333333333*I*pi), 0.533333333333333*exp(1.06666666666667*I*pi), 0.6*exp(1.2*I*pi), 0.666666666666667*exp(1.33333333333333*I*pi), 0.733333333333333*exp(1.46666666666667*I*pi), 0.8*exp(1.6*I*pi), 0.866666666666667*exp(1.73333333333333*I*pi), 0.933333333333333*exp(1.86666666666667*I*pi))
-        [1]: complex points (0, 0.133333333333333*exp(0.133333333333333*I*pi), 0.266666666666667*exp(0.266666666666667*I*pi), 0.4*exp(0.4*I*pi), 0.533333333333333*exp(0.533333333333333*I*pi), 0.666666666666667*exp(0.666666666666667*I*pi), 0.8*exp(0.8*I*pi), 0.933333333333333*exp(0.933333333333333*I*pi), 1.06666666666667*exp(1.06666666666667*I*pi), 1.2*exp(1.2*I*pi), 1.33333333333333*exp(1.33333333333333*I*pi), 1.46666666666667*exp(1.46666666666667*I*pi), 1.6*exp(1.6*I*pi), 1.73333333333333*exp(1.73333333333333*I*pi), 1.86666666666667*exp(1.86666666666667*I*pi))
-
-    Plot the real and imaginary part of a function:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> plot_complex(sqrt(x), (x, -3, 3))
-        Plot object containing:
-        [0]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for x over ((-3+0j), (3+0j))
-        [1]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for x over ((-3+0j), (3+0j))
 
     Plot the modulus of a complex function colored by its magnitude:
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_complex((cos(x) + sin(I * x), "f"), (x, -2, 2), absarg=True)
-        Plot object containing:
-        [0]: cartesian line: sqrt((-sin(re(x))*sinh(im(x)) + cos(im(x))*sinh(re(x)))**2 + (-sin(im(x))*cosh(re(x)) + cos(re(x))*cosh(im(x)))**2) for x over ((-2+0j), (2+0j))
-
-    Plot the modulus and the argument of a complex function:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> plot_complex((cos(x) + sin(I * x), "f"), (x, -2, 2),
-        ...     abs=True, arg=True, real=False, imag=False)
-        Plot object containing:
-        [0]: cartesian line: sqrt((-sin(re(x))*sinh(im(x)) + cos(im(x))*sinh(re(x)))**2 + (-sin(im(x))*cosh(re(x)) + cos(re(x))*cosh(im(x)))**2) for x over ((-2+0j), (2+0j))
-        [1]: cartesian line: arg(cos(x) + I*sinh(x)) for x over ((-2+0j), (2+0j))
-
-    Plot the real and imaginary part of a function of two variables over two
-    real ranges:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> plot_complex(sqrt(x*y), (x, -5, 5), (y, -5, 5),
-        ...     real=True, imag=True)
-        Plot object containing:
-        [0]: cartesian surface: (re(x*y)**2 + im(x*y)**2)**(1/4)*cos(atan2(im(x*y), re(x*y))/2) for x over ((-5+0j), (5+0j)) and y over ((-5+0j), (5+0j))
-        [1]: cartesian surface: (re(x*y)**2 + im(x*y)**2)**(1/4)*sin(atan2(im(x*y), re(x*y))/2) for x over ((-5+0j), (5+0j)) and y over ((-5+0j), (5+0j))
+       >>> plot_complex((cos(x) + sin(I * x), "f"), (x, -2, 2))
+       Plot object containing:
+       [0]: absolute-argument line: cos(x) + I*sinh(x) for x over ((-2+0j), (2+0j))
 
     Domain coloring plot. Note that it might be necessary to increase the number
     of discretization points in order to get a smoother plot:
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), coloring="b", n=500)
-        Plot object containing:
-        [0]: domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
+       >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), coloring="b", n=500)
+       Plot object containing:
+       [0]: domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
     3D plot of the absolute value of a complex function colored by its argument:
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
+       >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
         ...     zlim=(-1, 6))
-        Plot object containing:
-        [0]: cartesian surface: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
+       Plot object containing:
+       [0]: cartesian surface: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
-    3D plot of the real part a complex function:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
-        ...     real=True, imag=False)
-        Plot object containing:
-        [0]: cartesian surface: re(gamma(z)) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
     References
     ==========
@@ -501,66 +589,300 @@ def plot_complex(*args, show=True, **kwargs):
     .. [#fn1] Domain Coloring is based on Elias Wegert's book
        `"Visual Complex Functions" <https://www.springer.com/de/book/9783034801799>`_.
        The book provides the background to better understand the images.
-
     """
-    args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, ComplexSeries)
+    kwargs["absarg"] = True
+    kwargs["real"] = False
+    kwargs["imag"] = False
+    kwargs["abs"] = False
+    kwargs["arg"] = False
+    return _plot_complex(*args, **kwargs)
 
-    series = _build_series(*args, **kwargs)
 
-    if "backend" not in kwargs:
-        kwargs["backend"] = TWO_D_B
-        if any(s.is_3Dsurface for s in series):
-            kwargs["backend"] = THREE_D_B
+def plot_complex_list(*args, **kwargs):
+    """Plot lists of complex points. By default, the aspect ratio of the plot
+    is set to ``aspect="equal"``.
 
-    if all(
-        isinstance(s, (SurfaceOver2DRangeSeries, InteractiveSeries)) for s in series
-    ):
-        # function of 2 variables
-        if kwargs.get("xlabel", None) is None:
-            kwargs["xlabel"] = str(series[0].var_x)
-        if kwargs.get("ylabel", None) is None:
-            kwargs["ylabel"] = str(series[0].var_y)
-        # do not set anything for zlabel since it could be f(x,y) or
-        # abs(f(x, y)) or something else
-    elif all(not s.is_parametric for s in series):
-        # when plotting real/imaginary or domain coloring/3D plots, the
-        # horizontal axis is the real, the vertical axis is the imaginary
-        if kwargs.get("xlabel", None) is None:
-            kwargs["xlabel"] = "Re"
-        if kwargs.get("ylabel", None) is None:
-            kwargs["ylabel"] = "Im"
-        if kwargs.get("zlabel", None) is None:
-            kwargs["zlabel"] = "Abs"
-    else:
-        if kwargs.get("xlabel", None) is None:
-            kwargs["xlabel"] = "Real"
-        if kwargs.get("ylabel", None) is None:
-            kwargs["ylabel"] = "Abs"
+    Typical usage examples are in the followings:
 
-    if (kwargs.get("aspect", None) is None) and any(
-        (s.is_complex and s.is_domain_coloring) or s.is_point for s in series
-    ):
-        # set aspect equal for 2D domain coloring or complex points
-        kwargs.setdefault("aspect", "equal")
+    - Plotting a single list of complex numbers.
+        ``plot_real_imag(l1, **kwargs)``
+    - Plotting multiple lists of complex numbers.
+        ``plot_real_imag(l1, l2, **kwargs)``
+    - Plotting multiple lists of complex numbers each one with a custom label.
+        ``plot_real_imag((l1, label1), (l2, label2), **kwargs)``
 
-    p = Plot(*series, **kwargs)
-    if show:
-        p.show()
-    return p
 
-def plot3d_complex(*args, **kwargs):
-    """ Wrapper function of ``plot_complex``, which sets ``threed=True``.
-    As such, it is not guaranteed that the output plot is 3D: it dependes on
-    the user provided arguments.
+    Parameters
+    ==========
+    args :
+        numbers : list, tuple
+            A list of complex numbers.
 
-    Read ``plot_complex`` documentation to learn about its usage.
+        label : str
+            The name associated to the list of the complex numbers to be
+            eventually shown on the legend. Default to empty string.
 
-    See Also
+    is_point : boolean
+        If True, a scatter plot will be produced. Otherwise a line plot will
+        be created. Default to True.
+
+    show : boolean
+        Default to True, in which case the plot will be shown on the screen.
+
+
+    Examples
     ========
 
-    plot_complex
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import I, symbols, exp, sqrt, cos, sin, pi, gamma
+       >>> from spb import plot_complex_list
+       >>> x, y, z = symbols('x, y, z')
+
+    Plot individual complex points:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_complex_list(3 + 2 * I, 4 * I, 2)
+       Plot object containing:
+       [0]: complex point (3 + 2*I,)
+       [1]: complex point (4*I,)
+       [2]: complex point (2,)
+
+    Plot two lists of complex points and assign to them custom labels:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> expr1 = z * exp(2 * pi * I * z)
+       >>> expr2 = 2 * expr1
+       >>> n = 15
+       >>> l1 = [expr1.subs(z, t / n) for t in range(n)]
+       >>> l2 = [expr2.subs(z, t / n) for t in range(n)]
+       >>> plot_complex_list((l1, "f1"), (l2, "f2"))
+       Plot object containing:
+       [0]: complex points (0.0, 0.0666666666666667*exp(0.133333333333333*I*pi), 0.133333333333333*exp(0.266666666666667*I*pi), 0.2*exp(0.4*I*pi), 0.266666666666667*exp(0.533333333333333*I*pi), 0.333333333333333*exp(0.666666666666667*I*pi), 0.4*exp(0.8*I*pi), 0.466666666666667*exp(0.933333333333333*I*pi), 0.533333333333333*exp(1.06666666666667*I*pi), 0.6*exp(1.2*I*pi), 0.666666666666667*exp(1.33333333333333*I*pi), 0.733333333333333*exp(1.46666666666667*I*pi), 0.8*exp(1.6*I*pi), 0.866666666666667*exp(1.73333333333333*I*pi), 0.933333333333333*exp(1.86666666666667*I*pi))
+       [1]: complex points (0, 0.133333333333333*exp(0.133333333333333*I*pi), 0.266666666666667*exp(0.266666666666667*I*pi), 0.4*exp(0.4*I*pi), 0.533333333333333*exp(0.533333333333333*I*pi), 0.666666666666667*exp(0.666666666666667*I*pi), 0.8*exp(0.8*I*pi), 0.933333333333333*exp(0.933333333333333*I*pi), 1.06666666666667*exp(1.06666666666667*I*pi), 1.2*exp(1.2*I*pi), 1.33333333333333*exp(1.33333333333333*I*pi), 1.46666666666667*exp(1.46666666666667*I*pi), 1.6*exp(1.6*I*pi), 1.73333333333333*exp(1.73333333333333*I*pi), 1.86666666666667*exp(1.86666666666667*I*pi))
+    
+    """
+    kwargs["absarg"] = False
+    kwargs["abs"] = False
+    kwargs["arg"] = False
+    kwargs["real"] = False
+    kwargs["imag"] = False
+    kwargs["threed"] = False
+    return _plot_complex(*args, **kwargs)
+
+
+def plot_complex_vector(*args, **kwargs):
+    """Plot the vector field ``[re(f), im(f)]`` for a complex function ``f``
+    over the specified complex domain. By default, the aspect ratio of the
+    plot is set to ``aspect="equal"``.
+
+    Typical usage examples are in the followings:
+
+    - Plotting a vector field of a complex function.
+
+      .. code-block::
+
+         plot(expr, range, **kwargs)
+
+    - Plotting multiple vector fields with different ranges and custom labels.
+
+      .. code-block::
+
+         plot((expr1, range1, label1 [optional]),
+            (expr2, range2, label2 [optional]), **kwargs)
+
+    Parameters
+    ==========
+
+    args :
+        expr : Expr
+            Represent the complex function.
+
+        range : 3-element tuples
+            Denotes the range of the variables. For example
+            ``(z, -5 - 3*I, 5 + 3*I)`. Note that we can specify the range
+            by using standard Python complex numbers, for example
+            ``(z, -5-3j, 5+3j)``.
+
+        label : str, optional
+            The name of the complex expression to be eventually shown on the
+            legend. If none is provided, the string representation of the
+            expression will be used.
+
+    contours_kw : dict
+        A dictionary of keywords/values which is passed to the backend
+        contour function to customize the appearance. Refer to the plotting
+        library (backend) manual for more informations.
+
+    n1, n2 : int
+        Number of discretization points for the quivers or streamlines in the
+        x/y-direction, respectively. Default to 25.
+
+    n : int
+        Set the same number of discretization points in all directions for
+        the quivers or streamlines. It overrides ``n1``, ``n2``.
+        Default to 25.
+
+    nc : int
+        Number of discretization points for the scalar contour plot.
+        Default to 100.
+
+    quiver_kw : dict
+        A dictionary of keywords/values which is passed to the backend quivers-
+        plotting function to customize the appearance. Refer to the plotting
+        library (backend) manual for more informations.
+
+    scalar : boolean, Expr, None or list/tuple of 2 elements
+        Represents the scalar field to be plotted in the background of a 2D
+        vector field plot. Can be:
+
+        - ``True``: plot the magnitude of the vector field. Only works when a
+          single vector field is plotted.
+        - ``False``/``None``: do not plot any scalar field.
+        - ``Expr``: a symbolic expression representing the scalar field.
+        - ``list``/``tuple``: [scalar_expr, label], where the label will be
+          shown on the colorbar.
+        
+        Remember: the scalar function must return real data.
+
+        Default to True.
+
+    show : boolean
+        The default value is set to ``True``. Set show to ``False`` and
+        the function will not display the plot. The returned instance of
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
+
+    streamlines : boolean
+        Whether to plot the vector field using streamlines (True) or quivers
+        (False). Default to False.
+
+    stream_kw : dict
+        A dictionary of keywords/values which is passed to the backend
+        streamlines-plotting function to customize the appearance. Refer to
+        the Notes section to learn more.
+    
+
+    Examples
+    ========
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import I, symbols, exp, sqrt, cos, sin, pi, gamma
+       >>> from spb import plot_complex_vector
+       >>> z = symbols('z')
+
+    Quivers plot with a contour plot in background representing the
+    vector's magnitude (a scalar field).
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_complex_vector(z**2, (z, -5 - 5j, 5 + 5j))
+       Plot object containing:
+       [0]: contour: sqrt(((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2)**2 + 4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2) for _x over (-5.0, 5.0) and _y over (-5.0, 5.0)
+       [1]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
+    
+    Only quiver plot.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_complex_vector(z**2, (z, -5 - 5j, 5 + 5j), scalar=False)
+       Plot object containing:
+       [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
+    
+    Only streamlines plot.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_complex_vector(z**2, (z, -5 - 5j, 5 + 5j), scalar=False, streamlines=True)
+       Plot object containing:
+       [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
+    
+    Quivers plot for multiple complex expressions:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_complex_vector((z**2, (z, -5 - 5j, 5 + 0j)), (z**3, (z, -5 - 0j, 5 + 5j)))
+       Plot object containing:
+       [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 0.0)
+       [1]: 2D vector series: [(re(_x) - im(_y))**3 - 3*(re(_x) - im(_y))*(re(_y) + im(_x))**2, 3*(re(_x) - im(_y))**2*(re(_y) + im(_x)) - (re(_y) + im(_x))**3] over (_x, -5.0, 5.0), (_y, 0.0, 5.0)
 
     """
-    kwargs["threed"] = True
-    return plot_complex(*args, **kwargs)
+    # for each argument, generate two series: one for the real part and
+    # another for the imaginary part
+    kwargs["absarg"] = False
+    kwargs["abs"] = False
+    kwargs["arg"] = False
+    kwargs["real"] = True
+    kwargs["imag"] = True
+    kwargs["threed"] = False
+
+    args = _plot_sympify(args)
+    series = _build_series(*args, **kwargs)
+    multiple_expr = len(series) > 2
+
+    def get_label(i):
+        _iterable = args[i] if multiple_expr else args
+        for t in _iterable:
+            if isinstance(t, str):
+                return t
+        return str(args[i][0] if multiple_expr else args[0])
+
+    # create new arguments to be used by plot_vector
+    new_args = []
+    x, y = symbols("x, y", cls=Dummy)
+    for i in range(int(len(series) / 2)):
+        s1 = series[2 * i]
+        s2 = series[2 * i + 1]
+        expr1 = s1.expr
+        expr2 = s2.expr
+        free_symbols = list(expr1.free_symbols)
+        if len(free_symbols) > 0:
+            fs = free_symbols[0]
+            expr1 = expr1.subs({fs: x + I * y})
+            expr2 = expr2.subs({fs: x + I * y})
+        r1 = (x, s1.start.real, s1.end.real)
+        r2 = (y, s1.start.imag, s1.end.imag)
+        label = get_label(i)
+        new_args.append(((expr1, expr2), r1, r2, label))
+    
+    # substitute the complex variable in the scalar field
+    scalar = kwargs.get("scalar", None)
+    if scalar is not None:
+        if isinstance(scalar, Expr):
+            scalar = scalar.subs({fs: x + I * y})
+        elif isinstance(scalar, (list, tuple)):
+            scalar = list(scalar)
+            scalar[0] = scalar[0].subs({fs: x + I * y})
+        kwargs["scalar"] = scalar
+    
+    kwargs.setdefault("xlabel", "x")
+    kwargs.setdefault("ylabel", "y")
+    return plot_vector(*new_args, **kwargs)
+

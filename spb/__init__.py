@@ -12,7 +12,10 @@ from spb.functions import (
 )
 from spb.plot_data import get_plot_data, smart_plot
 from spb.vectors import plot_vector
-from spb.ccomplex.complex import plot_complex, plot3d_complex
+from spb.ccomplex.complex import (
+    plot_complex, plot_complex_list,
+    plot_real_imag, plot_complex_vector
+)
 
 # from spb.interactive import iplot
 # from spb.backends.plotgrid import plotgrid
@@ -27,5 +30,4 @@ implicit_plot = plot_implicit
 polar_plot = plot_polar
 geometry_plot = plot_geometry
 complex_plot = plot_complex
-complex_plot3d = plot3d_complex
 vector_plot = plot_vector
