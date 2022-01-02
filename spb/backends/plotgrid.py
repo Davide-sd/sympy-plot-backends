@@ -3,27 +3,49 @@ from spb.backends.matplotlib import MB
 import matplotlib.pyplot as plt
 import numpy as np
 import panel as pn
+from matplotlib.gridspec import GridSpec
 
 
 def _nrows_ncols(nr, nc, nplots):
-    """Based on the number of plots to be shown, define the correct number of
-    rows and/or columns.
+    """Define the correct number of rows and/or columns based on the number
+    of plots to be shown.
     """
     if (nc <= 0) and (nr <= 0):
-        print("a")
         nc = 1
         nr = nplots
     elif nr <= 0:
-        print("b")
         nr = int(np.ceil(nplots / nc))
     elif nc <= 0:
-        print("c")
         nc = int(np.ceil(nplots / nr))
     elif nr * nc < nplots:
-        print("d")
-        nr = int(np.ceil(nr / nc))
+        nr += 1
+        return _nrows_ncols(nr, nc, nplots)
     return nr, nc
 
+def _create_mpl_figure(mapping):
+    fig = plt.figure()
+    for spec, p in mapping.items():
+        kw = {"projection": "3d"} if (len(p.series) > 0 and
+            p.series[0].is_3D) else {}
+        cur_ax = fig.add_subplot(spec, **kw)
+        kw = p._kwargs
+        kw["backend"] = MB
+        kw["fig"] = fig
+        kw["ax"] = cur_ax
+        p = Plot(*p.series, **kw)
+        p.process_series()
+    return fig
+
+def _create_panel_figure(mapping):
+    fig = pn.GridSpec(sizing_mode="stretch_width")
+    for spec, p in mapping.items():
+        rs = spec.rowspan
+        cs = spec.colspan
+        if isinstance(p, MB) and (not hasattr(p, "ax")):
+            # if the MatplotlibBackend was created without showing it
+            p.process_series()
+        fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = p.fig
+    return fig
 
 def plotgrid(*args, **kwargs):
     """Combine multiple plots into a grid-like layout.
@@ -33,42 +55,41 @@ def plotgrid(*args, **kwargs):
     Parameters
     ==========
 
-    args : sequence
+    args : sequence (optional)
         A sequence of aldready created plots. This, in combination with
         `nr` and `nc` represents the first mode of operation, where a basic
         grid with (nc * nr) subplots will be created.
 
-    nr, nc : int
+    nr, nc : int (optional)
         Number of rows and columns.
-        By default, `nc = 1` and `nr = -1`: this will create as many rows as
-        necessary, and a single column.
-        If we set `nc = 1` and `nc = -1`, it will create as many column as
-        necessary, and a single row.
+        By default, `nc = 1` and `nr = -1`: this will create as many rows
+        as necessary, and a single column.
+        By setting `nc = 1` and `nc = -1`, it will create a single row and
+        as many columns as necessary.
 
-    gs : dict
-        A dictionary mapping Matplotlib's GridSpect objects to the plots.
+    gs : dict (optional)
+        A dictionary mapping Matplotlib's ``GridSpec`` objects to the plots.
         The keys represent the cells of the layout. Each cell will host the
         associated plot.
         This represents the second mode of operation, as it allows to create
         more complicated layouts.
-        NOTE: all plots must be instances of MatplotlibBackend!
+    
+    show : boolean (optional)
+        It applies only to Matplotlib figures. Default to True.
 
     Returns
     =======
-        Depending on the types of plots, this function returns either:
-        
-        * None: if all plots are instances of MatplotlibBackend.
-        * an instance of holoviz's panel GridSpec, which will be rendered on
-        Jupyter Notebook when mixed types of plots are received or when all the
-        plots are not instances of MatplotlibBackend. Read the following
-        documentation page to get more information:
-        https://panel.holoviz.org/reference/layouts/GridSpec.html
+
+    fig : ``plt.Figure`` or ``pn.GridSpec``
+        If all input plots are instances of ``MatplotlibBackend``, than a
+        Matplotlib ``Figure`` will be returned. Otherwise an instance of
+        Holoviz Panel's ``GridSpec`` will be returned.
 
 
     Examples
     ========
 
-    First mode of operation with MatplotlibBackends:
+    First mode of operation with instances of MatplotlibBackend:
 
     .. code-block:: python
         from sympy import *
@@ -82,7 +103,7 @@ def plotgrid(*args, **kwargs):
         plotgrid(p1, p2, p3)
 
     First mode of operation with different backends. Try this on a Jupyter
-    Notebook. Note that Matplotlib as been integrated as a picture, thus it
+    Notebook. Note that Matplotlib has been integrated as a picture, thus it
     loses its interactivity.
 
     .. code-block:: python
@@ -91,7 +112,7 @@ def plotgrid(*args, **kwargs):
         p3 = plot(exp(-x), backend=MB, show=False)
         plotgrid(p1, p2, p3, nr=1, nc=3)
 
-    Second mode of operation: using Matplotlib GridSpec and all plots are
+    Second mode of operation: using Matplotlib GridSpec with all plots being
     instances of MatplotlibBackend:
 
     .. code-block:: python
@@ -114,59 +135,51 @@ def plotgrid(*args, **kwargs):
         plotgrid(gs=mapping)
 
     """
+    show = kwargs.get("show", True)
     gs = kwargs.get("gs", None)
 
-    if gs is None:
+    if (gs is None) and (len(args) == 0):
+        fig = plt.figure()
+
+    elif (gs is None):
+        ### First mode of operation
         # default layout: 1 columns, as many rows as needed
         nr = kwargs.get("nr", -1)
         nc = kwargs.get("nc", 1)
         nr, nc = _nrows_ncols(nr, nc, len(args))
 
-        if all(isinstance(a, MB) for a in args):
-            fig, ax = plt.subplots(nr, nc)
-            ax = ax.flatten()
+        gs = GridSpec(nr, nc)
+        mapping = {}
+        c = 0
+        for i in range(nr):
+            for j in range(nc):
+                mapping[gs[i, j]] = args[c]
+                c += 1
 
-            c = 0
-            for i in range(nr):
-                for j in range(nc):
-                    if c < len(args):
-                        kw = args[c]._kwargs
-                        kw["backend"] = MB
-                        kw["fig"] = fig
-                        kw["ax"] = ax[c]
-                        p = Plot(*args[c].series, **kw)
-                        p.process_series()
-                        c += 1
+        if all(isinstance(a, MB) for a in args):
+            fig = _create_mpl_figure(mapping)
         else:
-            fig = pn.GridSpec(sizing_mode="stretch_width")
-            c = 0
-            for i in range(nr):
-                for j in range(nc):
-                    if c < len(args):
-                        p = args[c]
-                        c += 1
-                        if isinstance(p, MB) and (not hasattr(p, "ax")):
-                            # if the MatplotlibBackend was created without
-                            # showing it
-                            p.process_series()
-                        fig[i, j] = p.fig if not isinstance(p, MB) else p.fig[0]
+            fig = _create_panel_figure(mapping)
 
     else:
-        fig = plt.figure()
-        axes = dict()
-        for gs, p in gs.items():
-            axes[fig.add_subplot(gs)] = p
+        ### Second mode of operation
+        if not isinstance(gs, dict):
+            raise TypeError("``gs`` must be a dictionary.")
+        
+        from matplotlib.gridspec import SubplotSpec
+        if not isinstance(list(gs.keys())[0], SubplotSpec):
+            raise ValueError(
+                "Keys of ``gs`` must be of elements of type "
+                "matplotlib.gridspec.SubplotSpec. Use "
+                "matplotlib.gridspec.GridSpec to create them.")
 
-        for ax, p in axes.items():
-            kw = p._kwargs
-            kw["backend"] = MB
-            kw["fig"] = fig
-            kw["ax"] = ax
-            newplot = Plot(*p.series, **kw)
-            newplot.process_series()
+        if all(isinstance(a, MB) for a in gs.values()):
+            fig = _create_mpl_figure(gs)
+        else:
+            fig = _create_panel_figure(gs)
 
     if isinstance(fig, plt.Figure):
         fig.tight_layout()
-        fig.show()
-    else:
-        return fig
+        if show:
+            fig.show()
+    return fig

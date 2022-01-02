@@ -2332,7 +2332,7 @@ class GeometrySeries(BaseSeries):
             self.is_2Dline = True
 
     def get_data(self):
-        expr = self.expr.evalf(subs=self._params)
+        expr = self.expr.subs(self._params)
         if isinstance(expr, Point3D):
             return (
                 np.array([expr.x], dtype=float),
