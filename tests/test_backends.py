@@ -8,7 +8,7 @@ from spb.series import BaseSeries, InteractiveSeries
 from spb import (
     plot, plot3d, plot_contour, plot_implicit,
     plot_parametric, plot3d_parametric_line,
-    plot_vector, plot_complex, plot_geometry
+    plot_vector, plot_complex, plot_geometry, plot_real_imag
 )
 from sympy import symbols, cos, sin, Matrix, pi, sqrt, I
 from sympy.geometry import Line, Circle, Polygon
@@ -30,12 +30,15 @@ unset_show()
 x, y, z = symbols("x, y, z")
 
 """
-How to test plots? That's a great question. Here, I'm only going to test that
-each backend:
-1. produces the necessary numerical data.
-2. raises the necessary errors
+NOTE
+How to test plots? That's a great question. Here, I test that each backend:
+
+1. receives the correct number of data series.
+2. raises the necessary errors.
 3. correctly use the common keyword arguments to customize the plot.
-All this should be a decent starting point to provide a common user-experience
+4. shows the expected labels.
+
+This should be a decent starting point to provide a common user experience
 between the different backends.
 """
 
@@ -76,7 +79,7 @@ p6 = lambda B, contour_kw: plot_contour(
     show=False,
     contour_kw=contour_kw,
 )
-p7 = lambda B, contour_kw, quiver_kw: plot_vector(
+p7a = lambda B, contour_kw, quiver_kw: plot_vector(
     Matrix([x, y]),
     (x, -5, 5),
     (y, -4, 4),
@@ -85,7 +88,7 @@ p7 = lambda B, contour_kw, quiver_kw: plot_vector(
     quiver_kw=quiver_kw,
     contour_kw=contour_kw,
 )
-p8 = lambda B, stream_kw, contour_kw: plot_vector(
+p7b = lambda B, stream_kw, contour_kw: plot_vector(
     Matrix([x, y]),
     (x, -5, 5),
     (y, -4, 4),
@@ -96,7 +99,18 @@ p8 = lambda B, stream_kw, contour_kw: plot_vector(
     stream_kw=stream_kw,
     contour_kw=contour_kw,
 )
-p9 = lambda B, quiver_kw: plot_vector(
+p7c = lambda B, stream_kw, contour_kw: plot_vector(
+    Matrix([x, y]),
+    (x, -5, 5),
+    (y, -4, 4),
+    backend=B,
+    scalar=[(x + y), "test"],
+    streamlines=True,
+    show=False,
+    stream_kw=stream_kw,
+    contour_kw=contour_kw,
+)
+p9a = lambda B, quiver_kw, **kwargs: plot_vector(
     Matrix([z, y, x]),
     (x, -5, 5),
     (y, -4, 4),
@@ -105,8 +119,9 @@ p9 = lambda B, quiver_kw: plot_vector(
     n=10,
     quiver_kw=quiver_kw,
     show=False,
+    **kwargs
 )
-p10 = lambda B, stream_kw, kwargs=dict(): plot_vector(
+p9b = lambda B, stream_kw, kwargs=dict(): plot_vector(
     Matrix([z, y, x]),
     (x, -5, 5),
     (y, -4, 4),
@@ -118,11 +133,11 @@ p10 = lambda B, stream_kw, kwargs=dict(): plot_vector(
     stream_kw=stream_kw,
     **kwargs
 )
-p11 = lambda B, contour_kw: plot_implicit(
+p11a = lambda B, contour_kw: plot_implicit(
     x > y, (x, -5, 5), (y, -4, 4), n=20, backend=B, show=False,
     contour_kw=contour_kw
 )
-p12 = lambda B, contour_kw: plot_implicit(
+p11b = lambda B, contour_kw: plot_implicit(
     x > y,
     (x, -5, 5),
     (y, -4, 4),
@@ -139,27 +154,29 @@ p13 = lambda B: plot3d(
     (cos(x ** 2 + y ** 2), (x, 0, 1), (y, -3, 3)),
     (cos(x ** 2 + y ** 2), (x, 1, 2), (y, -3, 3)),
     (cos(x ** 2 + y ** 2), (x, 2, 3), (y, -3, 3)),
+    n1 = 5, n2 = 5,
     backend=B,
     use_cm=False,
     show=False,
 )
-p14 = lambda B, line_kw: plot_complex(
+p14 = lambda B, line_kw: plot_real_imag(
     sqrt(x), (x, -5, 5), backend=B, line_kw=line_kw, show=False
 )
-p15 = lambda B, line_kw: plot_complex(
-    sqrt(x), (x, -5, 5), absarg=True, backend=B, line_kw=line_kw, show=False
+p15a = lambda B, line_kw: plot_complex(
+    sqrt(x), (x, -5, 5), backend=B, line_kw=line_kw, show=False
 )
-p16 = lambda B, contour_kw: plot_complex(
+p15b = lambda B, image_kw: plot_complex(
     sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, coloring="a",
-    contour_kw=contour_kw, show=False
+    image_kw=image_kw, show=False
 )
-p17 = lambda B, surface_kw: plot_complex(
+p15c = lambda B, surface_kw: plot_complex(
     sqrt(x),
     (x, -5 - 5 * I, 5 + 5 * I),
     backend=B,
     threed=True,
     surface_kw=surface_kw,
     show=False,
+    n=10
 )
 p18 = lambda B: plot_geometry(
     Line((1, 2), (5, 4)), Circle((0, 0), 4), Polygon((2, 2), 3, n=6),
@@ -255,7 +272,8 @@ def test_MatplotlibBackend():
     # MatplotlibBackend only add data to the plot when the following method
     # is internally called. But show=False, hence it is not called.
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert isinstance(f, plt.Figure)
     assert isinstance(ax, Axes)
     assert len(ax.get_lines()) == 2
@@ -266,11 +284,12 @@ def test_MatplotlibBackend():
 
     p = p3(MB, line_kw=dict(color="red"))
     assert len(p.series) == 1
-    # parametric plot. The label is shown on the colorbar, which is only visible
-    # when legend=True.
+    # parametric plot. The label is shown on the colorbar, which is only
+    # visible when legend=True.
     p.legend = True
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     # parametric plot with use_cm=True -> LineCollection
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], LineCollection)
@@ -281,7 +300,8 @@ def test_MatplotlibBackend():
     assert len(p.series) == 1
     p.legend = True
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], Line3DCollection)
     assert f.axes[1].get_ylabel() == "(cos(x), sin(x), x)"
@@ -292,122 +312,172 @@ def test_MatplotlibBackend():
     p = p5(MB, surface_kw=dict(color="red"))
     assert len(p.series) == 1
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], Poly3DCollection)
     # TODO: apparently, without showing the plot, the colors are not applied
-    # to a Poly3DCollection... -.-'
-    #     # matplotlib renders shadows, hence there are different red colors. Here
-    #     # we check that the G, B components are zero, hence the color is Red.
-    #     colors = ax.collections[0].get_facecolors()
-    #     assert all(c[1] == 0 and c[2] == 0 for c in colors)
-    # casso
+    # to a Poly3DCollection...
 
     p = p6(MB, contour_kw=dict(cmap="jet"))
     assert len(p.series) == 1
     p.process_series()
-    f, ax = p.fig
-    # TODO: isn't there an exact number of collections associated to contour plots?
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.collections) > 0
     assert f.axes[1].get_ylabel() == str(cos(x ** 2 + y ** 2))
     # TODO: how to retrieve the colormap from a contour series?????
-    #     assert ax.collections[0].cmap.name == "jet"
 
-    p = p7(MB, quiver_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
+    p = p7a(MB, quiver_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
     assert len(p.series) == 2
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.collections) > 0
     assert isinstance(ax.collections[-1], Quiver)
     assert f.axes[1].get_ylabel() == "Magnitude"
     # TODO: how to retrieve the colormap from a contour series?????
-    #     assert ax.collections[0].cmap.name == "jet"
 
-    p = p8(MB, stream_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
+    p = p7b(MB, stream_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
     assert len(p.series) == 2
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.collections) > 0
     assert isinstance(ax.collections[-1], LineCollection)
     assert f.axes[1].get_ylabel() == "x + y"
     assert all(*(ax.collections[-1].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
 
-    p = p9(MB, quiver_kw=dict(cmap="jet"))
+    p = p7c(MB, stream_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
+    assert len(p.series) == 2
+    p.process_series()
+    f = p.fig
+    ax = f.axes[0]
+    assert len(ax.collections) > 0
+    assert isinstance(ax.collections[-1], LineCollection)
+    assert f.axes[1].get_ylabel() == "test"
+    assert all(*(ax.collections[-1].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
+
+    p = p9a(MB, quiver_kw=dict(cmap="jet"))
     assert len(p.series) == 1
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], Line3DCollection)
     assert ax.collections[0].cmap.name == "jet"
 
-    p = p10(MB, stream_kw=dict())
+    p = p9a(MB, quiver_kw=dict(cmap=None, color="red"), use_cm=False)
     assert len(p.series) == 1
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
+    assert len(ax.collections) == 1
+    assert isinstance(ax.collections[0], Line3DCollection)
+    assert np.allclose(ax.collections[0].get_color(), np.array([[1., 0., 0., 1.]]))
+
+    p = p9b(MB, stream_kw=dict())
+    assert len(p.series) == 1
+    p.process_series()
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], Line3DCollection)
     assert f.axes[1].get_ylabel() == "Matrix([[z], [y], [x]])"
 
     # test different combinations for streamlines: it should not raise errors
-    p = p10(MB, stream_kw=dict(starts=True))
-    p = p10(MB, stream_kw=dict(starts={
+    p = p9b(MB, stream_kw=dict(starts=True))
+    p = p9b(MB, stream_kw=dict(starts={
         "x": np.linspace(-5, 5, 10),
         "y": np.linspace(-4, 4, 10),
         "z": np.linspace(-3, 3, 10),
     }))
 
     # other keywords: it should not raise errors
-    p = p10(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
+    p = p9b(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
+    f = p.fig
+    ax = f.axes[0]
+    assert len(ax.lines) == 1
+    assert ax.lines[0].get_color() == '#1f77b4'
 
-    p = p12(MB, contour_kw=dict(cmap="jet"))
+    # NOTE: p11a is pretty much the same as p11b for MB
+    p = p11b(MB, contour_kw=dict(cmap="jet"))
     assert len(p.series) == 1
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.collections) > 0
     # TODO: how to retrieve the colormap from a contour series?????
-    #     assert ax.collections[0].cmap.name == "jet"
+
+    p = p13(MB)
+    assert len(p.series) == 6
+    p.process_series()
+    f = p.fig
+    ax = f.axes[0]
+    assert len(ax.collections) == 6
+    # TODO: apparently, without showing the plot, the colors are not applied
+    # to a Poly3DCollection...
 
     p = p14(MB, line_kw=dict(color="red"))
     assert len(p.series) == 2
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.get_lines()) == 2
     assert ax.get_lines()[0].get_label() == "Re(sqrt(x))"
     assert ax.get_lines()[0].get_color() == "red"
     assert ax.get_lines()[1].get_label() == "Im(sqrt(x))"
     assert ax.get_lines()[1].get_color() == "red"
 
-    p = p15(MB, line_kw=dict(color="red"))
+    p = p15a(MB, line_kw=dict(color="red"))
     assert len(p.series) == 1
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], LineCollection)
     assert f.axes[1].get_ylabel() == "Abs(sqrt(x))"
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
 
-    p = p16(MB, contour_kw=dict())
+    p = p15b(MB, image_kw=dict())
     assert len(p.series) == 1
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.images) == 1
     assert f.axes[1].get_ylabel() == "Argument"
+    assert ax.images[0].get_extent() == [-5.0, 5.0, -5.0, 5.0]
 
-    p = p17(MB, surface_kw=dict(color="red"))
+    p = p15b(MB, image_kw=dict(extent=[-6, 6, -7, 7]))
     assert len(p.series) == 1
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
+    assert len(ax.images) == 1
+    assert f.axes[1].get_ylabel() == "Argument"
+    assert ax.images[0].get_extent() == [-6, 6, -7, 7]
+
+    p = p15c(MB, surface_kw=dict(color="red"))
+    assert len(p.series) == 1
+    p.process_series()
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], Poly3DCollection)
+    assert f.axes[1].get_ylabel() == "Argument"
+    # TODO: apparently, without showing the plot, the colors are not applied
+    # to a Poly3DCollection...
 
     p = p18(MB)
     assert len(p.series) == 3
     p.process_series()
-    f, ax = p.fig
+    f = p.fig
+    ax = f.axes[0]
     assert len(ax.lines) == 3
     assert ax.get_lines()[0].get_label() == str(Line((1, 2), (5, 4)))
     assert ax.get_lines()[1].get_label() == str(Circle((0, 0), 4))
     assert ax.get_lines()[2].get_label() == str(Polygon((2, 2), 3, n=6))
+    
 
 
 class PBchild(PB):
@@ -496,7 +566,7 @@ def test_PlotlyBackend():
     assert f.data[0]["contours"]["coloring"] == "lines"
     assert f.data[0]["colorbar"]["title"]["text"] == str(cos(x ** 2 + y ** 2))
 
-    p = p7(
+    p = p7a(
         PB,
         quiver_kw=dict(line_color="red"),
         contour_kw=dict(contours=dict(coloring="lines")),
@@ -510,9 +580,7 @@ def test_PlotlyBackend():
     assert f.data[0]["colorbar"]["title"]["text"] == "Magnitude"
     assert f.data[1]["line"]["color"] == "red"
 
-    p = p8(
-        PB,
-        stream_kw=dict(line_color="red"),
+    p = p7b(PB, stream_kw=dict(line_color="red"),
         contour_kw=dict(contours=dict(coloring="lines")),
     )
     assert len(p.series) == 2
@@ -524,7 +592,12 @@ def test_PlotlyBackend():
     assert f.data[0]["colorbar"]["title"]["text"] == "x + y"
     assert f.data[1]["line"]["color"] == "red"
 
-    p = p9(PB, quiver_kw=dict(sizeref=5))
+    p = p7c(PB, stream_kw=dict(line_color="red"),
+        contour_kw=dict(contours=dict(coloring="lines")))
+    f = p.fig
+    assert f.data[0]["colorbar"]["title"]["text"] == "test"
+
+    p = p9a(PB, quiver_kw=dict(sizeref=5))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -532,7 +605,14 @@ def test_PlotlyBackend():
     assert f.data[0]["sizeref"] == 5
     assert f.data[0]["colorbar"]["title"]["text"] == str(Matrix([z, y, x]))
 
-    p = p10(PB, stream_kw=dict(colorscale=[[0, "red"], [1, "red"]]))
+    cs1 = f.data[0]["colorscale"]
+
+    p = p9a(PB, quiver_kw=dict(colorscale="reds"))
+    f = p.fig
+    cs2 = f.data[0]["colorscale"]
+    assert len(cs1) != len(cs2)
+
+    p = p9b(PB, stream_kw=dict(colorscale=[[0, "red"], [1, "red"]]))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -541,24 +621,24 @@ def test_PlotlyBackend():
     assert f.data[0]["colorbar"]["title"]["text"] == str(Matrix([z, y, x]))
 
     # test different combinations for streamlines: it should not raise errors
-    p = p10(PB, stream_kw=dict(starts=True))
-    p = p10(PB, stream_kw=dict(starts={
+    p = p9b(PB, stream_kw=dict(starts=True))
+    p = p9b(PB, stream_kw=dict(starts={
         "x": np.linspace(-5, 5, 10),
         "y": np.linspace(-4, 4, 10),
         "z": np.linspace(-3, 3, 10),
     }))
 
     # other keywords: it should not raise errors
-    p = p10(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
+    p = p9b(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
 
-    p = p11(PB, contour_kw=dict(colorscale=[[0, "rgba(0,0,0,0)"], [1, "red"]]))
+    p = p11a(PB, contour_kw=dict(colorscale=[[0, "rgba(0,0,0,0)"], [1, "red"]]))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
     assert isinstance(f.data[0], go.Contour)
     assert f.data[0]["colorscale"] == ((0, "rgba(0,0,0,0)"), (1, "red"))
 
-    p = p12(PB, contour_kw=dict(fillcolor="red"))
+    p = p11b(PB, contour_kw=dict(fillcolor="red"))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -578,7 +658,7 @@ def test_PlotlyBackend():
     assert f.data[1]["line"]["color"] == "red"
     assert f.layout["showlegend"] == True
 
-    p = p15(PB, line_kw=dict(line_color="red"))
+    p = p15a(PB, line_kw=dict(line_color="red"))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -587,7 +667,7 @@ def test_PlotlyBackend():
     assert f.data[0]["line"]["color"] == "red"
     assert p.fig.data[0]["marker"]["colorbar"]["title"]["text"] == "Abs(sqrt(x))"
 
-    p = p16(PB, contour_kw=dict())
+    p = p15b(PB, image_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 2
@@ -596,7 +676,9 @@ def test_PlotlyBackend():
     assert isinstance(f.data[1], go.Scatter)
     assert f.data[1]["marker"]["colorbar"]["title"]["text"] == "Argument"
 
-    p = p17(PB, surface_kw=dict())
+    # TODO: set image_kw inside PB
+
+    p = p15c(PB, surface_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -702,7 +784,7 @@ def test_BokehBackend():
     assert len(f.right) == 1
     assert f.right[0].title == str(cos(x ** 2 + y ** 2))
 
-    p = p7(BB, contour_kw=dict(), quiver_kw=dict(line_color="red"))
+    p = p7a(BB, contour_kw=dict(), quiver_kw=dict(line_color="red"))
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
@@ -713,7 +795,7 @@ def test_BokehBackend():
     assert f.right[0].title == "Magnitude"
     assert f.renderers[1].glyph.line_color == "red"
 
-    p = p8(BB, stream_kw=dict(line_color="red"), contour_kw=dict())
+    p = p7b(BB, stream_kw=dict(line_color="red"), contour_kw=dict())
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
@@ -724,20 +806,24 @@ def test_BokehBackend():
     assert f.right[0].title == "x + y"
     assert f.renderers[1].glyph.line_color == "red"
 
+    p = p7c(BB, stream_kw=dict(line_color="red"), contour_kw=dict())
+    f = p.fig
+    assert f.right[0].title == "test"
+
     # Bokeh doesn't support 3D plots
-    raises(NotImplementedError, lambda: p9(BB, quiver_kw=dict(sizeref=5)))
+    raises(NotImplementedError, lambda: p9a(BB, quiver_kw=dict(sizeref=5)))
     raises(
         NotImplementedError,
-        lambda: p10(BB, stream_kw=dict(colorscale=[[0, "red"], [1, "red"]])),
+        lambda: p9b(BB, stream_kw=dict(colorscale=[[0, "red"], [1, "red"]])),
     )
 
-    p = p11(BB, contour_kw=dict())
+    p = p11a(BB, contour_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, Image)
 
-    p = p12(BB, contour_kw=dict())
+    p = p11b(BB, contour_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
@@ -756,7 +842,7 @@ def test_BokehBackend():
     assert f.renderers[1].glyph.line_color == "red"
     assert f.legend[0].visible == True
 
-    p = p15(BB, line_kw=dict(line_color="red"))
+    p = p15a(BB, line_kw=dict(line_color="red"))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
@@ -766,7 +852,7 @@ def test_BokehBackend():
     assert len(f.right) == 1
     assert f.right[0].title == "Abs(sqrt(x))"
 
-    p = p16(BB, contour_kw=dict())
+    p = p15b(BB, image_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
@@ -775,13 +861,13 @@ def test_BokehBackend():
     assert (f.toolbar.tools[-2].tooltips == [('x', '$x'), ('y', '$y'),
         ("Abs", "@abs"), ("Arg", "@arg")])
 
+    from sympy.geometry import Line as SymPyLine
     p = p18(BB)
     assert len(p.series) == 3
     f = p.fig
     assert len(f.renderers) == 3
-    # TODO: for some reasons, this fails with:
-    # TypeError: __init__() takes 1 positional argument but 3 were given
-    # assert f.legend[0].items[0].label["value"] == str(Line((1, 2), (5, 4)))
+    assert all(isinstance(r.glyph, Line) for r in f.renderers)
+    assert f.legend[0].items[0].label["value"] == str(SymPyLine((1, 2), (5, 4)))
     assert f.legend[0].items[1].label["value"] == str(Circle((0, 0), 4))
     assert f.legend[0].items[2].label["value"] == str(Polygon((2, 2), 3, n=6))
 
@@ -851,20 +937,20 @@ def test_K3DBackend():
     # K3D doesn't support 2D plots
     raises(NotImplementedError, lambda: p6(KBchild1, contour_kw=dict()))
     raises(
-        NotImplementedError, lambda: p7(KBchild1, quiver_kw=dict(), contour_kw=dict())
+        NotImplementedError, lambda: p7a(KBchild1, quiver_kw=dict(), contour_kw=dict())
     )
     raises(
-        NotImplementedError, lambda: p8(KBchild1, stream_kw=dict(), contour_kw=dict())
+        NotImplementedError, lambda: p7b(KBchild1, stream_kw=dict(), contour_kw=dict())
     )
 
-    p = p9(KBchild1, quiver_kw=dict(scale=0.5, color=16711680))
+    p = p9a(KBchild1, quiver_kw=dict(scale=0.5, color=16711680))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
     assert isinstance(f.objects[0], Vectors)
     assert all([c == 16711680 for c in f.objects[0].colors])
 
-    p = p10(KBchild1, stream_kw=dict(color=16711680))
+    p = p9b(KBchild1, stream_kw=dict(color=16711680))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
@@ -872,24 +958,24 @@ def test_K3DBackend():
     assert f.objects[0].color == 16711680
 
     # test different combinations for streamlines: it should not raise errors
-    p = p10(KBchild1, stream_kw=dict(starts=True))
-    p = p10(KBchild1, stream_kw=dict(starts={
+    p = p9b(KBchild1, stream_kw=dict(starts=True))
+    p = p9b(KBchild1, stream_kw=dict(starts={
         "x": np.linspace(-5, 5, 10),
         "y": np.linspace(-4, 4, 10),
         "z": np.linspace(-3, 3, 10),
     }))
 
     # other keywords: it should not raise errors
-    p = p10(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
+    p = p9b(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
 
     # K3D doesn't support 2D plots
-    raises(NotImplementedError, lambda: p11(KBchild1, contour_kw=dict()))
-    raises(NotImplementedError, lambda: p12(KBchild1, contour_kw=dict()))
+    raises(NotImplementedError, lambda: p11a(KBchild1, contour_kw=dict()))
+    raises(NotImplementedError, lambda: p11b(KBchild1, contour_kw=dict()))
     raises(NotImplementedError, lambda: p14(KBchild1, line_kw=dict()))
-    raises(NotImplementedError, lambda: p15(KBchild1, line_kw=dict()))
-    raises(NotImplementedError, lambda: p16(KBchild1, contour_kw=dict()))
+    raises(NotImplementedError, lambda: p15a(KBchild1, line_kw=dict()))
+    raises(NotImplementedError, lambda: p15b(KBchild1, image_kw=dict()))
 
-    p = p17(KBchild1, surface_kw=dict())
+    p = p15c(KBchild1, surface_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1

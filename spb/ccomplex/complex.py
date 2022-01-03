@@ -148,6 +148,8 @@ def _build_series(*args, interactive=False, **kwargs):
                             kw2 = kw.copy()
                             kw2[key] = True
                             f, lbl_wrapper = mapping[key]
+                            if key == "absarg":
+                                lbl_wrapper = "%s"
                             series.append(cls(f(expr), *ranges, lbl_wrapper % label, **kw2))
 
                 add_series(absarg, "absarg")
