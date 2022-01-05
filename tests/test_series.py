@@ -1,5 +1,5 @@
 from sympy import (
-    symbols, cos, sin, tan, log, sqrt, re, arg,
+    symbols, cos, sin, tan, log, sqrt, re, arg, Sum, oo,
     Tuple, pi, Plane, S, I, im,
     Circle, Point,
     Piecewise, And, Eq, Interval, Abs, lambdify
@@ -28,7 +28,7 @@ import numpy as np
 from pytest import warns, raises
 
 def test_adaptive():
-    # test that adaptive-related keywords produces the expected results
+    # verify that adaptive-related keywords produces the expected results
 
     from adaptive.learner.learner1D import curvature_loss_function
     x = symbols("x")
@@ -77,6 +77,22 @@ def test_adaptive():
     x3, _, _, _ = s3.get_data()
     assert len(x1) < len(x2)
     assert len(x1) > len(x3)
+
+
+def test_adaptive_zerodivisionerror():
+    x, y = symbols("x, y")
+
+    # adaptive should be able to catch ZeroDivisionError
+    s1 = LineOver1DRangeSeries(1 / x, (x, -10, 10), "", adaptive=True)
+    x1, y1 = s1.get_data()
+
+    s1 = Parametric2DLineSeries(cos(x), 1 / x, (x, -10, 10), "",
+        adaptive=True)
+    x1, y1, p1 = s1.get_data()
+
+    s1 = Parametric3DLineSeries(cos(x), x, 1 / x, (x, -10, 10), "",
+        adaptive=True)
+    x1, y1, z1, p1 = s1.get_data()
 
 
 def test_detect_poles():
@@ -435,71 +451,71 @@ def test_data_shape():
 
     # Corresponds to LineOver1DRangeSeries
     s = InteractiveSeries([S.One], [Tuple(x, -5, 5)])
-    s.update_data(dict())
+    s.params = dict()
     xx, yy = s.get_data()
     assert len(xx) == len(yy)
     assert np.all(yy == 1)
 
     # Corresponds to Parametric2DLineSeries
     s = InteractiveSeries([S.One, sin(x)], [Tuple(x, 0, pi)])
-    s.update_data(dict())
+    s.params = dict()
     xx, yy, param = s.get_data()
     assert (len(xx) == len(yy)) and (len(xx) == len(param))
     assert np.all(xx == 1)
 
     s = InteractiveSeries([sin(x), S.One], [Tuple(x, 0, pi)])
-    s.update_data(dict())
+    s.params = dict()
     xx, yy, param = s.get_data()
     assert (len(xx) == len(yy)) and (len(xx) == len(param))
     assert np.all(yy == 1)
 
     # Corresponds to Parametric3DLineSeries
     s = InteractiveSeries([cos(x), sin(x), S.One], [(x, 0, 2 * pi)])
-    s.update_data(dict())
+    s.params = dict()
     xx, yy, zz, param = s.get_data()
     assert (len(xx) == len(yy)) and (len(xx) == len(param)) and (len(xx) == len(zz))
     assert np.all(zz == 1)
 
     s = InteractiveSeries([S.One, sin(x), x], [(x, 0, 2 * pi)])
-    s.update_data(dict())
+    s.params = dict()
     xx, yy, zz, param = s.get_data()
     assert (len(xx) == len(yy)) and (len(xx) == len(param)) and (len(xx) == len(zz))
     assert np.all(xx == 1)
 
     s = InteractiveSeries([cos(x), S.One, x], [(x, 0, 2 * pi)])
-    s.update_data(dict())
+    s.params = dict()
     xx, yy, zz, param = s.get_data()
     assert (len(xx) == len(yy)) and (len(xx) == len(param)) and (len(xx) == len(zz))
     assert np.all(yy == 1)
 
     # Corresponds to SurfaceOver2DRangeSeries
     s = InteractiveSeries([S.One], [(x, -2, 2), (y, -3, 3)])
-    s.update_data(dict())
+    s.params = dict()
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
 
     # Corresponds to ParametricSurfaceSeries
     s = InteractiveSeries([S.One, x, y], [(x, 0, 1), (y, 0, 1)])
-    s.update_data(dict())
+    s.params = dict()
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(xx == 1)
 
     s = InteractiveSeries([x, S.One, y], [(x, 0, 1), (y, 0, 1)])
-    s.update_data(dict())
+    s.params = dict()
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(yy == 1)
 
     s = InteractiveSeries([x, y, S.One], [(x, 0, 1), (y, 0, 1)])
-    s.update_data(dict())
+    s.params = dict()
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
 
     s = ComplexSurfaceInteractiveSeries(S.One, (x, -5-2j, 5+2j), modules=None)
-    s.update_data(dict())
+    s.params = dict()
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
@@ -1007,7 +1023,7 @@ def test_str():
 
     s = LineInteractiveSeries([cos(u * x)], [(x, -4, 3)], "test",
         params={u: 1})
-    assert str(s) == "interactive cartesian line: cos(u*x) with ranges (x, (-4+0j), (3+0j)) and parameters (u,)"
+    assert str(s) == "interactive cartesian line: cos(u*x) with ranges (x, -4.0, 3.0) and parameters (u,)"
 
     s = AbsArgLineSeries(sqrt(x), (x, -5 + 2j, 5 + 2j), "test")
     assert str(s) == "cartesian abs-arg line: sqrt(x) for x over ((-5+2j), (5+2j))"
@@ -1021,25 +1037,25 @@ def test_str():
 
     s = Parametric2DLineInteractiveSeries([cos(u * x), sin(x)], [(x, -4, 3)],
         "test", params={u: 1})
-    assert str(s) == "interactive parametric cartesian line: (cos(u*x), sin(x)) with ranges (x, (-4+0j), (3+0j)) and parameters (u,)"
+    assert str(s) == "interactive parametric cartesian line: (cos(u*x), sin(x)) with ranges (x, -4.0, 3.0) and parameters (u,)"
 
     s = Parametric3DLineSeries(cos(x), sin(x), x, (x, -4, 3), "test")
     assert str(s) == "3D parametric cartesian line: (cos(x), sin(x), x) for x over (-4.0, 3.0)"
 
     s = Parametric3DLineInteractiveSeries([cos(u*x), sin(x), x], [(x, -4, 3)], "test", params={u: 1})
-    assert str(s) == "interactive 3D parametric cartesian line: (cos(u*x), sin(x), x) with ranges (x, (-4+0j), (3+0j)) and parameters (u,)"
+    assert str(s) == "interactive 3D parametric cartesian line: (cos(u*x), sin(x), x) with ranges (x, -4.0, 3.0) and parameters (u,)"
 
     s = SurfaceOver2DRangeSeries(cos(x * y), (x, -4, 3), (y, -2, 5), "test")
     assert str(s) == "cartesian surface: cos(x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
 
     s = SurfaceInteractiveSeries([cos(u * x * y)], [(x, -4, 3), (y, -2, 5)], "test", params={u: 1})
-    assert str(s) == "interactive cartesian surface: cos(u*x*y) with ranges (x, (-4+0j), (3+0j)), (y, (-2+0j), (5+0j)) and parameters (u,)"
+    assert str(s) == "interactive cartesian surface: cos(u*x*y) with ranges (x, -4.0, 3.0), (y, -2.0, 5.0) and parameters (u,)"
 
     s = ContourSeries(cos(x * y), (x, -4, 3), (y, -2, 5), "test")
     assert str(s) == "contour: cos(x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
 
     s = ContourInteractiveSeries([cos(u * x * y)], [(x, -4, 3), (y, -2, 5)], "test", params={u: 1})
-    assert str(s) == "interactive contour: cos(u*x*y) with ranges (x, (-4+0j), (3+0j)), (y, (-2+0j), (5+0j)) and parameters (u,)"
+    assert str(s) == "interactive contour: cos(u*x*y) with ranges (x, -4.0, 3.0), (y, -2.0, 5.0) and parameters (u,)"
 
     s = ParametricSurfaceSeries(cos(x * y), sin(x * y), x * y,
         (x, -4, 3), (y, -2, 5), "test")
@@ -1047,7 +1063,7 @@ def test_str():
 
     s = ParametricSurfaceInteractiveSeries([cos(u * x * y), sin(x * y), x * y],
         [(x, -4, 3), (y, -2, 5)], "test", params={u: 1})
-    assert str(s) == "interactive parametric cartesian surface: (cos(u*x*y), sin(x*y), x*y) with ranges (x, (-4+0j), (3+0j)), (y, (-2+0j), (5+0j)) and parameters (u,)"
+    assert str(s) == "interactive parametric cartesian surface: (cos(u*x*y), sin(x*y), x*y) with ranges (x, -4.0, 3.0), (y, -2.0, 5.0) and parameters (u,)"
 
     s = ImplicitSeries(x < y, (x, -5, 4), (y, -3, 2), "test")
     assert str(s) == "Implicit expression: x < y for x over (-5.0, 4.0) and y over (-3.0, 2.0)"
@@ -1103,11 +1119,11 @@ def test_str():
 
     s = Vector2DInteractiveSeries([-y, x * z], [(x, -5, 4), (y, -3, 2)],
         "test", params={z: 1})
-    assert str(s) == "interactive 2D vector series: (-y, x*z) with ranges (x, (-5+0j), (4+0j)), (y, (-3+0j), (2+0j)) and parameters (z,)"
+    assert str(s) == "interactive 2D vector series: (-y, x*z) with ranges (x, -5.0, 4.0), (y, -3.0, 2.0) and parameters (z,)"
 
     s = Vector3DInteractiveSeries([-y, x * z, x], [(x, -5, 4), (y, -3, 2)],
         "test", params={z: 1})
-    assert str(s) == "interactive 3D vector series: (-y, x*z, x) with ranges (x, (-5+0j), (4+0j)), (y, (-3+0j), (2+0j)) and parameters (z,)"
+    assert str(s) == "interactive 3D vector series: (-y, x*z, x) with ranges (x, -5.0, 4.0), (y, -3.0, 2.0) and parameters (z,)"
 
     s = SliceVector3DSeries(Plane((0, 0, 0), (1, 0, 0)), z, y, x,
         (x, -5, 4), (y, -3, 2), (z, -6, 7), "test")
@@ -1230,3 +1246,54 @@ def test_piecewise():
     s = _process_piecewise(f, (x, -3, 3), "A")
     labels = ["A2", "A3", "A4", "A5", "A5"]
     assert all(t.label == l for t, l in zip(s, labels))
+
+
+def test_sums():
+    # test that data series are able to deal with sums
+    x, y, u = symbols("x, y, u")
+
+    def do_test(data1, data2):
+        assert len(data1) == len(data2)
+        for d1, d2 in zip(data1, data2):
+            assert np.allclose(d1, d2)
+
+    s = LineOver1DRangeSeries(Sum(1 / x ** y, (x, 1, 1000)), (y, 2, 10),
+        adaptive=False, only_integers=True)
+    xx, yy = s.get_data()
+
+    s1 = LineOver1DRangeSeries(Sum(1 / x, (x, 1, y)), (y, 2, 10),
+        adaptive=False, only_integers=True)
+    xx1, yy1 = s1.get_data()
+
+    s2 = LineInteractiveSeries([Sum(u / x, (x, 1, y))], [(y, 2, 10)],
+        params={u: 1}, only_integers=True)
+    xx2, yy2 = s2.get_data()
+    xx1 = xx1.astype(float)
+    xx2 = xx2.astype(float)
+    do_test([xx1, yy1], [xx2, yy2])
+
+    s = LineOver1DRangeSeries(Sum(1 / x, (x, 1, y)), (y, 2, 10),
+        adaptive=True)
+    raises(TypeError, lambda: s.get_data())
+
+    
+def test_absargline():
+    # verify that AbsArgLineSeries produces the correct results
+    x, u = symbols("x, u")
+
+    s1 = AbsArgLineSeries(sqrt(x), (x, -5, 5), adaptive=False, n=10)
+    s2 = AbsArgLineInteractiveSeries([sqrt(u * x)], [(x, -5, 5)],
+        n1=10, params={u: 1})
+    data1 = s1.get_data()
+    data2 = s2.get_data()
+    assert len(data1) == len(data2)
+    for d1, d2 in zip(data1, data2):
+        assert np.allclose(d1, d2)
+    # there shouldn't be nan values
+    assert np.invert(np.isnan(data1[1])).all()
+    assert np.invert(np.isnan(data1[2])).all()
+
+    s3 = AbsArgLineSeries(sqrt(x), (x, -5, 5), adaptive=True)
+    data3 = s3.get_data()
+    assert np.invert(np.isnan(data3[1])).all()
+    assert np.invert(np.isnan(data3[2])).all()

@@ -20,7 +20,7 @@ if you care at all about performance.
 
 
 from sympy import (
-    Expr, Tuple, Symbol, oo,
+    Expr, Tuple, Symbol, oo, Wild, Sum, sign,
     Piecewise, piecewise_fold,
     UniversalSet, EmptySet, FiniteSet, Interval, Union,
 )
@@ -116,6 +116,56 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
     return series
 
 
+def _process_summations(sum_bound, *args):
+    """Substitute oo (infinity) lower/upper bounds of a summation with an
+    arbitrary big integer number.
+
+    Parameters
+    ==========
+
+    NOTE:
+    Let's consider the following summation: ``Sum(1 / x**2, (x, 1, oo))``
+    The current implementation of lambdify (SymPy 1.9 at the time of
+    writing this) will create something of this form:
+    ``sum(1 / x**2 for x in range(1, INF))``
+    The problem is that type(INF) is float, while ``range`` requires integers,
+    thus the evaluation will fails.
+    Instead of modifying ``lambdify`` (which requires a deep knowledge),
+    let's apply this quick dirty hack: substitute symbolic ``oo`` with an
+    arbitrary large number.
+    """
+    def new_bound(t, bound):
+        if (not t.is_number) or t.is_finite:
+            return t
+        if sign(t) >= 0:
+            return bound
+        return -bound
+
+    args = list(args)
+    expr = args[0]
+
+    # select summations whose lower/upper bound is infinity
+    w = Wild("w", properties=[
+        lambda t: isinstance(t, Sum),
+        lambda t: any((not a[1].is_finite) or (not a[2].is_finite) for i, a in enumerate(t.args) if i > 0)
+    ])
+    
+    for t in list(expr.find(w)):
+        sums_args = list(t.args)
+        for i, a in enumerate(sums_args):
+            if i > 0:
+                sums_args[i] = (a[0], new_bound(a[1], sum_bound),
+                    new_bound(a[2], sum_bound))
+        s = Sum(*sums_args)
+        expr = expr.subs(t, s)
+    args[0] = expr
+    return args
+
+
+
+
+
+
 def _build_line_series(*args, **kwargs):
     """Loop over the provided arguments. If a piecewise function is found,
     decompose it in such a way that each argument gets its own series.
@@ -127,6 +177,7 @@ def _build_line_series(*args, **kwargs):
         if expr.has(Piecewise) and pp:
             series += _process_piecewise(expr, r, label, **kwargs)
         else:
+            arg = _process_summations(1000, *arg)
             series.append(LineOver1DRangeSeries(*arg, **kwargs))
     return series
 
@@ -348,6 +399,9 @@ def plot(*args, show=True, **kwargs):
     series = []
     plot_expr = _check_arguments(args, 1, 1)
     series = _build_line_series(*plot_expr, **kwargs)
+
+    for s in series:
+        print(s)
 
     plots = Plot(*series, **kwargs)
     if show:

@@ -1,4 +1,6 @@
-from sympy import sympify, Tuple, symbols, solve, re, im, Add, Mul, Expr, I
+from sympy import (
+    sympify, Tuple, symbols, solve, re, im, Add, Mul, Expr, I, floor
+)
 from sympy.geometry import (
     Plane, Polygon, Circle, Ellipse, Segment, Ray,
     Curve, Point2D, Point3D,
@@ -11,20 +13,20 @@ from sympy.core.relational import (
 )
 from sympy.logic.boolalg import BooleanFunction
 from sympy.utilities.iterables import ordered
+from sympy.utilities.lambdify import lambdify
 from sympy.plotting.experimental_lambdify import (
     vectorized_lambdify,
-    lambdify,
     experimental_lambdify,
 )
 from sympy.plotting.intervalmath import interval
-from spb.utils import get_lambda
 import warnings
 import numpy as np
 
-from adaptive import Learner1D, LearnerND
-from adaptive.runner import simple, BlockingRunner
+from adaptive import Learner1D
+from adaptive.runner import simple
 from adaptive.learner.learner1D import default_loss as default_loss_1d
-from adaptive.learner.learnerND import default_loss as default_loss_nd
+
+
 
 def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
         modules=None, adaptive_goal=None, loss_fn=None):
@@ -74,9 +76,8 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     loss_fn : callable or None
         The loss function to be used by the learner. Possible values:
 
-        * ``None`` (default): it will use the ``default_loss_1d`` or the
-          ``default_loss_nd`` depending if the function is univariate or
-          multivariate.
+        * ``None`` (default): it will use the ``default_loss_1d`` from the
+          adaptive module.
         * callable : look at adaptive.learner.learner1D or
           adaptive.learner.learnerND to find more loss functions.
     
@@ -96,10 +97,7 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
 
     .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
     """
-    from sympy import lambdify
     from functools import partial
-
-    one_d = hasattr(free_symbols, "__iter__") and (len(free_symbols) == 1)
 
     goal = lambda l: l.loss() < 0.01
     if adaptive_goal is not None:
@@ -108,62 +106,33 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
         if callable(adaptive_goal):
             goal = adaptive_goal
     
-    lf = default_loss_1d if one_d else default_loss_nd
+    lf = default_loss_1d
     if loss_fn is not None:
         lf = loss_fn
-    k = "loss_per_interval" if one_d else "loss_per_simplex"
-    d = {k: lf}
-
-    Learner = Learner1D if one_d else LearnerND
-
-    # TODO:
-    # adaptive.runner.simple provides deterministic results with sequential
-    # computing.
-    # adaptive.runner.BlockingRunner provides concurrent computing, which tends
-    # to be faster. However, it requires the function to be pickleble.
-    # Sympy's lambdified functions are not pickleble. While it's possible
-    # to use different executors supporting advanced pickling, it is not
-    # trivial to implement it reliably for multiplatform.
-    # For the time being, use "simple".
-    # Runner = simple if Learner == Learner1D else BlockingRunner
-    Runner = simple
+    d = {"loss_per_interval": lf}
 
     try:
         f = lambdify(free_symbols, expr, modules=modules)
-        learner = Learner(partial(wrapper_func, f, *args), bounds=bounds, **d)
-        Runner(learner, goal)
-    except NameError as err:
+        learner = Learner1D(partial(wrapper_func, f, *args), bounds=bounds, **d)
+        simple(learner, goal)
+    except Exception as err:
         warnings.warn(
-            "The evaluation with %s failed.\n" % ("Numpy" if not modules else modules) +
-            "NameError: {}\n".format(err) +
+            "The evaluation with %s failed.\n" % (
+                "NumPy/SciPy" if not modules else modules) +
+            "{}: {}\n".format(type(err).__name__, err) +
             "Trying to evaluate the expression with Sympy, but it might "
             "be a slow operation."
         )
         f = lambdify(free_symbols, expr, modules="sympy")
-        learner = Learner(partial(wrapper_func, f, *args), bounds=bounds, **d)
-        Runner(learner, goal)
+        learner = Learner1D(partial(wrapper_func, f, *args), bounds=bounds, **d)
+        simple(learner, goal)
     
-    if Learner == Learner1D:
-        return learner.to_numpy()
-    
-    # For multivariate functions, create a meshgrid where to interpolate the
-    # results. Taken from adaptive.learner.learnerND.plot
-    x, y = learner._bbox
-    lbrt = x[0], y[0], x[1], y[1]
-    scale_factor = np.product(np.diag(learner._transform))
-    a_sq = np.sqrt(np.min(learner.tri.volumes()) * scale_factor)
-    n = max(10, int(0.658 / a_sq) * 2)
-    xs = ys = np.linspace(0, 1, n)
-    xs = xs * (x[1] - x[0]) + x[0]
-    ys = ys * (y[1] - y[0]) + y[0]
-    z = learner._ip()(xs[:, None], ys[None, :]).squeeze()
-    xs, ys = np.meshgrid(xs, ys)
-    return xs, ys, np.rot90(z)
+    return learner.to_numpy()
+
 
 def uniform_eval(free_symbols, expr, *args, modules=None):
     """Convert the expression to a lambda function using the specified
-    module. Flatten the provided arguments and evaluates the function.
-    Finally, return the results.
+    module. Perform the evaluation and return the results.
 
     Parameters
     ==========
@@ -191,29 +160,31 @@ def uniform_eval(free_symbols, expr, *args, modules=None):
         No matter the evaluation ``modules``, the array type is going to be
         complex.
     """
-    from sympy import lambdify
-    f = lambdify(free_symbols, expr, modules=modules)
-    return _uniform_eval(f, *args)
+    # generate two lambda functions: the default one, and the backup in case
+    # of failures with the default one.
+    f1 = lambdify(free_symbols, expr, modules=modules)
+    f2 = lambdify(free_symbols, expr, modules="sympy")
+    return _uniform_eval(f1, f2, *args, modules=modules)
 
-def _uniform_eval(f, *args):
-    def _sequential_eval(func, *a):
-        # TODO: catch ZeroDivision error by mpmath
-        shape = [t.shape for t in a if isinstance(t, np.ndarray)][0]
-        new_args = [t * np.ones(shape) if not isinstance(t, np.ndarray) else t for t in args]
-        return np.array([complex(func(*x)) for x in zip(*[t.flatten() for t in new_args])])
+def _uniform_eval(f1, f2, *args, modules=None):
+    def wrapper_func(func, *args):
+        try:
+            return complex(func(*args))
+        except (ZeroDivisionError, OverflowError):
+            return complex(np.nan, np.nan)
+    wrapper_func = np.vectorize(wrapper_func)
+
     try:
-        return f(*args)
-    except (ValueError, TypeError) as err:
-        return _sequential_eval(f, *args)
-    except NameError as err:
+        return wrapper_func(f1, *args)
+    except Exception as err:
         warnings.warn(
-            "The evaluation with %s failed.\n" % ("Numpy" if not modules else modules) +
-            "NameError: {}\n".format(err) +
+            "The evaluation with %s failed.\n" % (
+                "NumPy/SciPy" if not modules else modules) +
+            "{}: {}\n".format(type(err).__name__, err) +
             "Trying to evaluate the expression with Sympy, but it might "
             "be a slow operation."
         )
-        f = lambdify(free_symbols, expr, modules="sympy")
-        return _sequential_eval(f, *args)
+        return wrapper_func(f2, *args)
 
 
 class BaseSeries:
@@ -279,10 +250,20 @@ class BaseSeries:
 
     @staticmethod
     def _discretize(start, end, N, scale="linear", only_integers=False):
+        """Discretize a 1D domain.
+
+        Returns
+        =======
+
+        domain : np.ndarray with dtype=float or complex
+            The domain's dtype will be float or complex (depending on the
+            type of start/end) even if only_integers=True. It is left for
+            the downstream code to perform further casting, if necessary.
+        """
         if only_integers is True:
             start, end = int(start), int(end)
             N = end - start + 1
-        
+
         if scale == "linear":
             return np.linspace(start, end, N)
         return np.geomspace(start, end, N)
@@ -322,46 +303,6 @@ class BaseSeries:
         library.
         """
         raise NotImplementedError
-
-    def _evaluate_mpmath(self, f, args):
-        """ Use the multiprocessing module to run a parallel evaluation of a
-        lambda function using mpmath.
-        """
-        # TODO: do I still need this? Sure it would be nice, but how much time
-        # does it require for full testing?
-
-        # TODO: this is likely a horrible solution to the following problem:
-        # evaluating a function with mpmath is much slower than using Numpy,
-        # but (IMHO) it provides better results with complex functions in
-        # comparison to Numpy. That's because the two libraries deals with
-        # branch cuts differently.
-        # In order to improve performance, I'd like to use the
-        # multiprocessing module and use the available cores. However,
-        # pool.map requires the scope of the function to be in the global
-        # namespace. Since I'm inside the scope of instance method of a
-        # class, I have not identified a better way to achieve that,
-        # so I'm relying on the global keyword hack.
-
-        global _wrapper_complex_func
-
-        def _wrapper_complex_func(args):
-            try:
-                r = f(*args)
-            except ZeroDivisionError as err:
-                # TODO: in LineOver1DRangeSerie._uniform_sampling, if I convert
-                # the numbers to mpmath.mpc the following evaluation might
-                # produce a ZeroDivisionError. Instead, if I use standard
-                # complex numbers, it doesn't. Can I realiably use standard
-                # complex numbers instead of mpc?
-                warnings.warn(
-                    "Dealing with {} with Mpmath evaluation ".format(err) +
-                    "at the following locations: {}".format(args))
-                r = np.nan
-            return r
-
-        from multiprocessing import Pool, cpu_count
-        pool = Pool(processes=cpu_count())
-        return pool.map(_wrapper_complex_func, args)
 
 
 class Line2DBaseSeries(BaseSeries):
@@ -452,9 +393,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.label = label
         self.var = sympify(var_start_end[0])
         # NOTE: even though this class represents a line over a real range,
-        # the discretization must be complex otherwise some Numpy function
-        # might produce the wrong output (for example, scipy's lambertw).
-        # Also, this class serves as a base class for AbsArgLineSeries
+        # this class serves as a base class for AbsArgLineSeries, which is
+        # capable of plotting a line over a complex range.
         self.start = complex(var_start_end[1])
         self.end = complex(var_start_end[2])
         if self.start.imag != self.end.imag:
@@ -473,26 +413,41 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             str((self.start.real, self.end.real)),
         )
 
-    def _adaptive_sampling(self, go_for_complex):
-        def func(f, go_for_complex, imag, x):
-            w = complex(f(x + 1j * imag if go_for_complex else x))
-            return w.real, w.imag
+    def _adaptive_sampling(self):
+        def func(f, imag, x):
+            try:
+                w = complex(f(x + 1j * imag))
+                return w.real, w.imag
+            except TypeError:
+                w = complex(f(x))
+                return w.real, w.imag
+            except (ZeroDivisionError, OverflowError):
+                return np.nan, np.nan
 
         data = adaptive_eval(
             func, [self.var], self.expr,
             [self.start.real, self.end.real],
-            go_for_complex,
             self.start.imag,
             modules=self.modules,
             adaptive_goal=self.adaptive_goal,
             loss_fn=self.loss_fn)
         return data[:, 0], data[:, 1], data[:, 2]
 
-    def _uniform_sampling(self, go_for_complex):
+    def _uniform_sampling(self):
         x = xx = self._discretize(self.start.real, self.end.real, self.n, scale=self.scale, only_integers=self.only_integers)
 
-        if go_for_complex:
+        if self.is_complex:
             xx = xx + 1j * self.start.imag
+        elif self.only_integers:
+            # NOTE: likely plotting a Sum. The lambdified function is
+            # using ``range``, requiring integer arguments.
+            xx = xx.astype(int)
+            # HACK:
+            # However, now xx is of type np.int64. If the expression contains
+            # powers, for example 2**(-np.int64(3)) than ValueError is raised.
+            # Turns out that by converting to object the evaluation proceed
+            # as expected.
+            xx = xx.astype(object)
         
         data = uniform_eval([self.var], self.expr, xx, modules=self.modules)
         _re, _im = np.real(data), np.imag(data)
@@ -507,18 +462,10 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         """ By evaluating the function over a complex range it should
         return complex values. The imaginary part can be used to mask out the
         unwanted values.
-        However, if the expression contains instances of Integral, once
-        lambdified it will be evaluated by scipy.integrate.quadpack.quad(), which requires real values in input.
         """
-        from sympy import Integral, Sum
-        go_for_complex = not any([self.expr.has(t) for t in [Integral, Sum]])
-
         if self.adaptive:
-            x, _re, _im = self._adaptive_sampling(go_for_complex)
-        else:
-            x, _re, _im = self._uniform_sampling(go_for_complex)
-
-        return x, _re, _im
+            return self._adaptive_sampling()
+        return self._uniform_sampling()
     
     @staticmethod
     def _detect_poles(x, y, eps=0.01):
@@ -615,6 +562,54 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         im_v = self._correct_size(im_v, param)
         re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
         return re_v
+    
+    def _adaptive_sampling(self):
+        def func(f, is_2Dline, x):
+            try:
+                w = [complex(t) for t in f(x)]
+                return [t.real if np.isclose(t.imag, 0) else np.nan for t in w]
+            except (ZeroDivisionError, OverflowError):
+                return [np.nan for t in range(2 if is_2Dline else 3)]
+
+        expr = Tuple(self.expr_x, self.expr_y)
+        if not self.is_2Dline:
+            expr = Tuple(self.expr_x, self.expr_y, self.expr_z)
+        
+        data = adaptive_eval(
+            func, [self.var], expr,
+            [self.start, self.end],
+            self.is_2Dline,
+            modules=self.modules,
+            adaptive_goal=self.adaptive_goal,
+            loss_fn=self.loss_fn)
+
+        if self.is_2Dline:
+            return data[:, 1], data[:, 2], data[:, 0]
+        return data[:, 1], data[:, 2], data[:, 3], data[:, 0]
+    
+    def get_points(self):
+        """Return coordinates for plotting. Depending on the `adaptive`
+        option, this function will either use an adaptive algorithm
+        or it will uniformly sample the expression over the provided range.
+
+        Returns
+        =======
+
+        x : np.ndarray
+            x-coordinates.
+
+        y : np.ndarray
+            y-coordinates.
+        
+        z : np.ndarray (optional)
+            z-coordinates in the case of Parametric3DLineSeries.
+        
+        param : np.ndarray
+            parameter.
+        """
+        if self.adaptive:
+            return self._adaptive_sampling()
+        return self._uniform_sampling()
 
 class Parametric2DLineSeries(ParametricLineBaseSeries):
     """Representation for a line consisting of two parametric sympy expressions
@@ -639,46 +634,12 @@ class Parametric2DLineSeries(ParametricLineBaseSeries):
             str((self.start, self.end)),
         )
 
-    def _adaptive_sampling(self):
-        def func(f, x):
-            w = [complex(t) for t in f(x)]
-            return [t.real if np.isclose(t.imag, 0) else np.nan for t in w]
-
-        data = adaptive_eval(
-            func, [self.var], Tuple(self.expr_x, self.expr_y),
-            [self.start, self.end],
-            modules=self.modules,
-            adaptive_goal=self.adaptive_goal,
-            loss_fn=self.loss_fn)
-        return data[:, 1], data[:, 2], data[:, 0]
-
     def _uniform_sampling(self):
         param = self._discretize(self.start, self.end, self.n, scale=self.scale, only_integers=self.only_integers)
         
         x = self._eval_component(self.expr_x, param)
         y = self._eval_component(self.expr_y, param)
         return x, y, param
-
-    def get_points(self):
-        """Return lists of coordinates for plotting. Depending on the
-        `adaptive` option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
-
-        Returns
-        =======
-
-        x : np.ndarray
-            x-coordinates.
-
-        y : np.ndarray
-            y-coordinates.
-        
-        param : np.ndarray
-            parameter.
-        """
-        if self.adaptive:
-            return self._adaptive_sampling()
-        return self._uniform_sampling()
 
 
 class Parametric3DLineSeries(ParametricLineBaseSeries):
@@ -706,19 +667,6 @@ class Parametric3DLineSeries(ParametricLineBaseSeries):
             str(self.var),
             str((self.start, self.end)),
         )
-    
-    def _adaptive_sampling(self):
-        def func(f, x):
-            w = [complex(t) for t in f(x)]
-            return [t.real if np.isclose(t.imag, 0) else np.nan for t in w]
-
-        data = adaptive_eval(
-            func, [self.var], Tuple(self.expr_x, self.expr_y, self.expr_z),
-            [self.start, self.end],
-            modules=self.modules,
-            adaptive_goal=self.adaptive_goal,
-            loss_fn=self.loss_fn)
-        return data[:, 1], data[:, 2], data[:, 3], data[:, 0]
 
     def _uniform_sampling(self):
         param = self._discretize(self.start, self.end, self.n, scale=self.scale, only_integers=self.only_integers)
@@ -727,27 +675,6 @@ class Parametric3DLineSeries(ParametricLineBaseSeries):
         y = self._eval_component(self.expr_y, param)
         z = self._eval_component(self.expr_z, param)
         return x, y, z, param
-
-    def get_points(self):
-        """Return coordinates for plotting. Depending on the `adaptive`
-        option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
-
-        Returns
-        =======
-
-        x : np.ndarray
-            x-coordinates.
-
-        y : np.ndarray
-            y-coordinates.
-        
-        param : np.ndarray
-            parameter.
-        """
-        if self.adaptive:
-            return self._adaptive_sampling()
-        return self._uniform_sampling()
 
 
 class SurfaceBaseSeries(BaseSeries):
@@ -800,6 +727,10 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     def _adaptive_sampling(self):
         def func(f, xy):
             return f(*xy)
+            try:
+                return f(*xy)
+            except (ZeroDivisionError, OverflowError):
+                return np.nan
 
         return adaptive_eval(
             func, [self.var_x, self.var_y], self.expr,
@@ -814,6 +745,10 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
 
         v = uniform_eval([self.var_x, self.var_y], self.expr,
             mesh_x, mesh_y, modules=self.modules)
+        print("expr", self.expr)
+        print("type(mesh_x)", type(mesh_x), mesh_x.dtype)
+        print("type(mesh_y)", type(mesh_y), mesh_y.dtype)
+        print("v", type(v), v.dtype, v)
         re_v, im_v = np.real(v), np.imag(v)
         re_v = self._correct_size(re_v, mesh_x)
         im_v = self._correct_size(im_v, mesh_x)
@@ -1272,12 +1207,15 @@ class InteractiveSeries(BaseSeries):
         self.expr = exprs[0] if len(exprs) == 1 else Tuple(*exprs, sympify=False)
         self.signature = list(ordered(self.expr.free_symbols))
 
-        # Generate a list of lambda functions, one for each expression.
-        from sympy import lambdify
+        # Generate a list of lambda functions, two for each expression:
+        # 1. the default one.
+        # 2. the backup one, in case of failures with the default one.
         self.functions = []
         for e in exprs:
-            self.functions.append(
-                lambdify(self.signature, e, modules=self.modules))
+            self.functions.append([
+                lambdify(self.signature, e, modules=self.modules),
+                lambdify(self.signature, e, modules="sympy"),
+            ])
 
         # Discretize the ranges. In the dictionary self.ranges:
         #    key: symbol associate to this particular range
@@ -1290,14 +1228,24 @@ class InteractiveSeries(BaseSeries):
             if i == 1:  # y direction
                 scale = self.yscale
             
-            if not self.only_integers:
-                d = BaseSeries._discretize(complex(r[1]), complex(r[2]), n[i], scale=scale, only_integers=self.only_integers)
-            else:
-                _im = complex(r[1]).imag
-                d = BaseSeries._discretize(
-                    complex(r[1]).real, complex(r[2]).real,
-                    n[i], scale=scale, only_integers=self.only_integers)
-                d = d + 1j * _im
+            c_start = complex(r[1])
+            c_end = complex(r[2])
+            start = c_start.real if c_start.imag == c_end.imag == 0 else c_start
+            end = c_end.real if c_start.imag == c_end.imag == 0 else c_end
+            d = BaseSeries._discretize(start, end, n[i], scale=scale, only_integers=self.only_integers)
+            
+            if self.is_complex:
+                d = d + 1j * c_start.imag
+            elif self.only_integers:
+                # NOTE: likely plotting a Sum. The lambdified function is
+                # using ``range``, requiring integer arguments.
+                d = d.astype(int)
+                # HACK:
+                # However, now xx is of type np.int64. If the expression
+                # contains powers, for example 2**(-np.int64(3)) than
+                # ValueError is raised. Turns out that by converting to
+                # object the evaluation proceed as expected.
+                d = d.astype(object)
 
             discretizations.append(d)
 
@@ -1319,6 +1267,33 @@ class InteractiveSeries(BaseSeries):
                 # surfaces: needs mesh grids
                 meshes = np.meshgrid(*discretizations)
                 self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
+    
+    @property
+    def params(self):
+        """Return the current parameters' dictionary."""
+        return self._params
+    
+    @params.setter
+    def params(self, p):
+        """Update the data based on the values of the parameters.
+
+        Parameters
+        ==========
+
+        p : dict
+            key: symbol associated to the parameter
+            val: the value
+        """
+        self._params = p
+    
+    def _str(self, series_type):
+        ranges = [(k, np.amin(v), np.amax(v)) for k, v in self.ranges.items()]
+        return ("interactive %s: %s with ranges %s and parameters %s") % (
+            series_type,
+            str(self.expr),
+            ", ".join([str(r) for r in ranges]),
+            str(tuple(self._params.keys())),
+        )
     
     def _check_fs(self, exprs, ranges, label, params):
         """ Checks if there are enogh parameters and free symbols.
@@ -1355,35 +1330,12 @@ class InteractiveSeries(BaseSeries):
 
         results = []
         for f in self.functions:
-            r = _uniform_eval(f, *args)
+            r = _uniform_eval(*f, *args)
             # the evaluation might produce an int/float. Need this correction.
             r = self._correct_size(np.array(r), discr)
             results.append(r)
         
         return results
-    
-    # TODO: change `update_data` to `update_param`, or create a property
-    def update_data(self, params):
-        """Update the data based on the values of the parameters.
-
-        Parameters
-        ==========
-
-            params : dict
-                key: symbol associated to the parameter
-                val: the value
-
-        """
-        self._params = params
-    
-    def _str(self, series_type):
-        ranges = [(k, np.amin(v), np.amax(v)) for k, v in self.ranges.items()]
-        return ("interactive %s: %s with ranges %s and parameters %s") % (
-            series_type,
-            str(self.expr),
-            ", ".join([str(r) for r in ranges]),
-            str(tuple(self._params.keys())),
-        )
 
 
 class LineInteractiveSeries(InteractiveSeries, Line2DBaseSeries):
@@ -1435,6 +1387,7 @@ class AbsArgLineInteractiveSeries(LineInteractiveSeries):
     Note that the imaginary part of the start and end must be the same.
     """
     is_parametric = True
+    is_complex = True
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
@@ -1853,12 +1806,14 @@ class ComplexInteractiveBaseSeries(InteractiveSeries, ComplexSurfaceBaseSeries):
         self._init_attributes(expr, r, label, **kwargs)
         self._check_fs([expr], [r], label, self._params)
 
-        from sympy import lambdify
-
         self.signature = list(ordered(self.expr.free_symbols))
-        self.functions = [
-            lambdify(self.signature, self.expr, modules=self.modules)
-        ]
+        # Two lambda functions:
+        # 1. the default one.
+        # 2. the backup one, in case of failures with the default one.
+        self.functions = [[
+            lambdify(self.signature, self.expr, modules=self.modules),
+            lambdify(self.signature, self.expr, modules="sympy")
+        ]]
 
         x = self._discretize(
             self.start.real, self.end.real, self.n1,

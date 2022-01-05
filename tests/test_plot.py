@@ -385,12 +385,13 @@ def test_plot_and_save_5():
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         s = Sum(1 / x ** y, (x, 1, oo))
-        p = plot(s, (y, 2, 10))
+        p = plot(s, (y, 2, 10), adaptive=False, only_integers=True)
         filename = "test_advanced_inf_sum.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot(Sum(1 / x, (x, 1, y)), (y, 2, 10), show=False)
+        p = plot(Sum(1 / x, (x, 1, y)), (y, 2, 10), adaptive=False,
+            only_integers=True, show=False)
         p[0].only_integers = True
         p[0].steps = True
         filename = "test_advanced_fin_sum.png"
@@ -622,10 +623,10 @@ def test_plot_size():
     x = Symbol("x")
 
     p1 = plot(sin(x), backend=MatplotlibBackend, size=(8, 4))
-    s1 = p1.fig[0].get_size_inches()
+    s1 = p1.fig.get_size_inches()
     assert (s1[0] == 8) and (s1[1] == 4)
     p2 = plot(sin(x), backend=MatplotlibBackend, size=(5, 10))
-    s2 = p2.fig[0].get_size_inches()
+    s2 = p2.fig.get_size_inches()
     assert (s2[0] == 5) and (s2[1] == 10)
 
 
