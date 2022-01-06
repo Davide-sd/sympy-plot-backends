@@ -1,7 +1,10 @@
-from sympy import symbols, Piecewise, And, Eq, Interval, cos, sin, Abs
+from sympy import (
+    symbols, Piecewise, And, Eq, Interval, cos, sin, Abs,
+    Sum, oo
+)
 import numpy as np
 from spb.functions import (
-    _process_piecewise, plot_list
+    _process_piecewise, plot, plot_list
 )
 from spb.series import LineOver1DRangeSeries, List2DSeries
 from pytest import raises
@@ -32,6 +35,29 @@ def test_plot_list():
     assert all(isinstance(t, List2DSeries) for t in p.series)
     assert p.series[0].label == "cos"
     assert p.series[1].label == "sin"
+
+def test_process_sums():
+    # verify that Sum containing infinity in its boundary, gets replaced with
+    # a Sum with arbitrary big numbers instead.
+    x, y = symbols("x, y")
+
+    expr = Sum(1 / x ** y, (x, 1, oo))
+    p1 = plot(expr, (y, 2, 10), sum_bound=1000, show=False)
+    assert p1[0].expr.args[-1] == (x, 1, 1000)
+    p2 = plot(expr, (y, 2, 10), sum_bound=500, show=False)
+    assert p2[0].expr.args[-1] == (x, 1, 500)
+
+    expr = Sum(1 / x ** y, (x, -oo, 0))
+    p1 = plot(expr, (y, 2, 10), sum_bound=1000, show=False)
+    assert p1[0].expr.args[-1] == (x, -1000, 0)
+    p2 = plot(expr, (y, 2, 10), sum_bound=500, show=False)
+    assert p2[0].expr.args[-1] == (x, -500, 0)
+
+    expr = Sum(1 / x ** y, (x, -oo, oo))
+    p1 = plot(expr, (y, 2, 10), sum_bound=1000, show=False)
+    assert p1[0].expr.args[-1] == (x, -1000, 1000)
+    p2 = plot(expr, (y, 2, 10), sum_bound=500, show=False)
+    assert p2[0].expr.args[-1] == (x, -500, 500)
 
 def test_piecewise():
     x = symbols("x")
