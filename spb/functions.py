@@ -1498,3 +1498,131 @@ def plot_geometry(*args, show=True, **kwargs):
     if show:
         p.show()
     return p
+
+def plot_list(*args, show=True, **kwargs):
+    """Plots lists of coordinates (ie, lists of numbers).
+
+    Typical usage examples are in the followings:
+
+    - Plotting coordinates of a single function.
+        ``plot(x, y, **kwargs)``
+    - Plotting coordinates of multiple functions adding custom labels.
+        ``plot((x1, y1, label1), (x2, y2, label2), **kwargs)``
+
+
+    Parameters
+    ==========
+
+    args :
+        x : list or tuple
+            x-coordinates
+        
+        y : list or tuple
+            y-coordinates
+
+        label : str, optional
+            The label to be shown in the legend.
+
+    axis_center : (float, float), optional
+        Tuple of two floats denoting the coordinates of the center or
+        {'center', 'auto'}. Only available with MatplotlibBackend.
+    
+    is_point : boolean, optional
+        Default to False, which will render a line connecting all the points.
+        If True, a scatter plot will be generated.
+
+    show : bool, optional
+        The default value is set to ``True``. Set show to ``False`` and
+        the function will not display the plot. The returned instance of
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
+
+    size : (float, float), optional
+        A tuple in the form (width, height) in inches to specify the size of
+        the overall figure. The default value is set to ``None``, meaning
+        the size will be set by the default backend.
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    xlabel : str, optional
+        Label for the x-axis.
+
+    ylabel : str, optional
+        Label for the y-axis.
+
+    xscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis.
+
+    yscale : 'linear' or 'log', optional
+        Sets the scaling of the y-axis.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, ``(min, max)``.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, ``(min, max)``.
+
+
+    Examples
+    ========
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import symbols, sin, cos
+       >>> from spb import plot
+       >>> x = symbols('x')
+
+    Plot the coordinates of a single function:
+
+    .. plot::
+       xx = [t / 100 * 6 - 3 for t in list(range(101))]
+       yy = [cos(x).evalf(subs={x: t}) for t in xx]
+       plot_list(xx, yy)
+    
+    Scatter plot of the coordinates of multiple functions:
+
+    .. plot::
+       xx = [t / 100 * 6 - 3 for t in list(range(101))]
+       yy1 = [cos(x).evalf(subs={x: t}) for t in xx]
+       yy2 = [sin(x).evalf(subs={x: t}) for t in xx]
+       plot_list((xx, yy1, "cos"), (xx, yy2, "sin"), is_point=True)
+    """
+    from spb.defaults import TWO_D_B
+
+    series = []
+
+    if (
+        ((len(args) == 2) and (not hasattr(args[0][1], "__iter__"))) or
+        ((len(args) == 3) and isinstance(args[-1], str))
+    ):
+        series.append(List2DSeries(*args, **kwargs))
+    else:
+        for a in args:
+            if not isinstance(a, (list, tuple)):
+                raise TypeError(
+                    "Each argument must be a list or tuple.\n"
+                    "Received type(a) = {}".format(type(a)))
+            if (len(a) < 2) or (len(a) > 3):
+                raise ValueError(
+                    "Each argument must contain 2 or 3 elements.\n"
+                    "Received {} elements.".format(len(a)))
+            if (len(a) == 3) and (not isinstance(a[-1], str)):
+                raise TypeError(
+                    "The label must be of type string.\n"
+                    "Received: {}".format(type(a[-1]))
+                )
+            series.append(List2DSeries(*a, **kwargs))
+    
+    kwargs.setdefault("backend", TWO_D_B)
+    p = Plot(*series, **kwargs)
+    if show:
+        p.show()
+    return p
+    
+        
+    

@@ -369,6 +369,13 @@ class List2DSeries(Line2DBaseSeries):
         super().__init__(**kwargs)
         self.list_x = np.array(list_x, dtype=np.float64)
         self.list_y = np.array(list_y, dtype=np.float64)
+        if len(list_x) != len(list_y):
+            raise ValueError(
+                "The two lists of coordinates must have the same "
+                "number of elements.\n"
+                "Received: len(list_x) = {} ".format(len(self.list_x)) +
+                "and len(list_y) = {}".format(len(self.list_y))
+            )
         self.label = label
 
     def __str__(self):
