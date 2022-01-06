@@ -472,13 +472,15 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         """Compute the steepness of each segment. If it's greater than a
         threshold, set the right-point y-value non NaN.
         """
+        yy = y.copy()
+        threshold = np.pi / 2 - eps
         for i in range(len(x) - 1):
-            dx = x[i + 1] - x[0]
-            dy = abs(y[i + 1] - y[0])
+            dx = x[i + 1] - x[i]
+            dy = abs(y[i + 1] - y[i])
             angle = np.arctan(dy / dx)
-            if angle >= np.pi / 2 - eps:
-                y[i + 1] = np.nan
-        return x, y
+            if angle >= threshold:
+                yy[i + 1] = np.nan
+        return x, yy
     
     def get_points(self):
         """Return coordinates for plotting. Depending on the `adaptive`

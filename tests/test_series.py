@@ -1,6 +1,6 @@
 from sympy import (
     symbols, cos, sin, tan, log, sqrt, re, arg, Sum, oo,
-    Tuple, pi, Plane, S, I, im,
+    Tuple, pi, Plane, S, I, im, frac,
     Circle, Point,
     Piecewise, And, Eq, Interval, Abs, lambdify
 )
@@ -106,12 +106,24 @@ def test_detect_poles():
     xx2, yy2 = s2.get_data()
     # eps is too small: doesn't detect any poles
     s3 = LineOver1DRangeSeries(tan(x), (x, -pi, pi),
-        adaptive=False, n=1000, detect_poles=True, eps=0.001)
+        adaptive=False, n=1000, detect_poles=True, eps=1e-06)
     xx3, yy3 = s3.get_data()
 
     assert np.allclose(xx1, xx2) and np.allclose(xx1, xx3)
     assert not np.any(np.isnan(yy1))
     assert not np.any(np.isnan(yy3))
+    assert np.any(np.isnan(yy2))
+
+    s1 = LineOver1DRangeSeries(frac(x), (x, -10, 10),
+        adaptive=False, n=1000, detect_poles=False)
+    xx1, yy1 = s1.get_data()
+    s2 = LineOver1DRangeSeries(frac(x), (x, -10, 10),
+        adaptive=False, n=1000, detect_poles=True, eps=0.05)
+    xx2, yy2 = s2.get_data()
+    xx3, yy3 = s3.get_data()
+
+    assert np.allclose(xx1, xx2)
+    assert not np.any(np.isnan(yy1))
     assert np.any(np.isnan(yy2))
 
     s1 = LineInteractiveSeries([tan(x)], [(x, -pi, pi)],
@@ -122,7 +134,7 @@ def test_detect_poles():
     xx2, yy2 = s2.get_data()
     # eps is too small: doesn't detect any poles
     s3 = LineInteractiveSeries([tan(x)], [(x, -pi, pi)],
-        adaptive=False, n=1000, detect_poles=True, eps=0.001)
+        adaptive=False, n=1000, detect_poles=True, eps=1e-06)
     xx3, yy3 = s3.get_data()
 
     assert np.allclose(xx1, xx2) and np.allclose(xx1, xx3)
