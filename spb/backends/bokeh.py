@@ -279,12 +279,11 @@ class BokehBackend(Plot):
     cyclic_colormaps = [cm.hsv, cm.twilight, cc.cyclic_mygbm_30_95_c78_s25]
 
     def __new__(cls, *args, **kwargs):
-        # Since Plot has its __new__ method, this will prevent infinite
-        # recursion
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._theme = kwargs.get("theme", cfg["bokeh"]["theme"])
 
         self._run_in_notebook = False
         if self._get_mode() == 0:
@@ -300,10 +299,9 @@ class BokehBackend(Plot):
         self._handles = dict()
         self._init_cyclers()
 
+        # empty plots (len(series)==0) should only have x, y tooltips
         TOOLTIPS = [("x", "$x"), ("y", "$y")]
         if len(self.series) > 0:
-            # empty plots (with len(series)==0) should only have x, y tooltips
-
             if all([s.is_parametric for s in self.series]):
                 # with parametric plots, also visualize the parameter
                 TOOLTIPS += [("u", "@us")]
@@ -337,15 +335,23 @@ class BokehBackend(Plot):
         self._fig.grid.visible = self.grid
         self._fig.on_event(PanEnd, self._pan_update)
         self._process_series(self._series)
+    
+    @staticmethod
+    def _do_sum_kwargs(p1, p2):
+        kw = p1._copy_kwargs()
+        kw["theme"] = p1._theme
+        return kw
 
     def _process_series(self, series):
         self._init_cyclers()
-        # clear figure. need to clear both the renderers as well as the
+        # clear figure. Must clear both the renderers as well as the
         # colorbars which are added to the right side.
         self._fig.renderers = []
         self._fig.right = []
 
         for i, s in enumerate(series):
+            kw = None
+
             if s.is_2Dline:
                 if s.is_parametric and self._use_cm:
                     x, y, param = s.get_data()
@@ -354,9 +360,8 @@ class BokehBackend(Plot):
                         if self._use_cyclic_cm(param, s.is_complex)
                         else next(self._cm)
                     )
-                    ds, line, cb = self._create_gradient_line(
-                        x, y, param, colormap, s.label
-                    )
+                    ds, line, cb, kw = self._create_gradient_line(
+                        x, y, param, colormap, s.label, s.rendering_kw)
                     self._fig.add_glyph(ds, line)
                     if self.legend:
                         self._handles[i] = cb
@@ -367,25 +372,19 @@ class BokehBackend(Plot):
                         source = {"xs": x, "ys": y, "us": param}
                     else:
                         x, y = s.get_data()
-                        x, y, modified = self._detect_poles(x, y)
-                        if modified:
-                            self._fig.y_range.start = self.ylim[0]
-                            self._fig.y_range.end = self.ylim[1]
                         source = {"xs": x, "ys": y}
 
-                    lkw = dict(line_width=2, legend_label=s.label, color=next(self._cl))
-                    line_kw = self._kwargs.get("line_kw", dict())
+                    lkw = dict(line_width=2, legend_label=s.label,
+                        color=next(self._cl))
                     if not s.is_point:
-                        self._fig.line(
-                            "xs", "ys", source=source, **merge({}, lkw, line_kw)
-                        )
+                        kw = merge({}, lkw, s.rendering_kw)
+                        self._fig.line("xs", "ys", source=source, **kw)
                     else:
-                        self._fig.dot(
-                            "xs",
-                            "ys",
-                            source=source,
-                            **merge({"size": 20}, lkw, line_kw)
-                        )
+                        lkw["size"] = 8
+                        if not s.is_filled:
+                            lkw["fill_color"] = "white"
+                        kw = merge({}, lkw, s.rendering_kw)
+                        self._fig.circle("xs", "ys", source=source, **kw)
 
             elif s.is_contour and (not s.is_complex):
                 x, y, z = s.get_data()
@@ -393,8 +392,9 @@ class BokehBackend(Plot):
                 minx, miny, minz = min(x), min(y), min(zz)
                 maxx, maxy, maxz = max(x), max(y), max(zz)
 
-                contour_kw = self._kwargs.get("contour_kw", dict()).copy()
-                cm = contour_kw.pop("palette", next(self._cm))
+                cm = next(self._cm)
+                ckw = dict(palette=cm)
+                kw = merge({}, ckw, s.rendering_kw)
 
                 self._fig.image(
                     image=[z],
@@ -402,7 +402,7 @@ class BokehBackend(Plot):
                     y=miny,
                     dw=abs(maxx - minx),
                     dh=abs(maxy - miny),
-                    palette=cm,
+                    **kw
                 )
 
                 colormapper = LinearColorMapper(palette=cm, low=minz, high=maxz)
@@ -456,16 +456,16 @@ class BokehBackend(Plot):
                 if s.is_streamlines:
                     x, y, u, v = s.get_data()
                     sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
-                    stream_kw = self._kwargs.get("stream_kw", dict())
+                    stream_kw = s.rendering_kw.copy()
                     density = stream_kw.pop("density", 2)
+                    kw = merge({}, sqk, stream_kw)
                     xs, ys = compute_streamlines(
-                        x[0, :], y[:, 0], u, v, density=density
-                    )
-                    self._fig.multi_line(xs, ys, **merge({}, sqk, stream_kw))
+                        x[0, :], y[:, 0], u, v, density=density)
+                    self._fig.multi_line(xs, ys, **kw)
                 else:
                     x, y, u, v = s.get_data()
-                    quiver_kw = self._kwargs.get("quiver_kw", dict())
-                    data, quiver_kw = self._get_quivers_data(x, y, u, v, **quiver_kw)
+                    data, quiver_kw = self._get_quivers_data(x, y, u, v,
+                        **s.rendering_kw.copy())
                     mag = data["magnitude"]
 
                     color_mapper = LinearColorMapper(
@@ -473,29 +473,17 @@ class BokehBackend(Plot):
                     )
                     # don't use color map if a scalar field is visible or if
                     # use_cm=False
-                    solid = (
-                        True
-                        if ("scalar" not in self._kwargs.keys())
-                        else (
-                            False
-                            if (
-                                (not self._kwargs["scalar"])
-                                or (self._kwargs["scalar"] is None)
-                            )
-                            else True
-                        )
-                    )
                     line_color = (
                         {"field": "magnitude", "transform": color_mapper}
-                        if ((not solid) and self._use_cm)
+                        if ((not s.use_quiver_solid_color) and self._use_cm)
                         else next(self._cl)
                     )
                     source = ColumnDataSource(data=data)
                     # default quivers options
                     qkw = dict(line_color=line_color, line_width=1, name=s.label)
+                    kw = merge({}, qkw, quiver_kw)
                     glyph = Segment(
-                        x0="x0", y0="y0", x1="x1", y1="y1", **merge({}, qkw, quiver_kw)
-                    )
+                        x0="x0", y0="y0", x1="x1", y1="y1", **kw)
                     self._fig.add_glyph(source, glyph)
                     if isinstance(line_color, dict):
                         colorbar = ColorBar(
@@ -543,14 +531,17 @@ class BokehBackend(Plot):
                 x, y = s.get_data()
                 color = next(self._cl)
                 pkw = dict(alpha=0.5, line_width=2, line_color=color, fill_color=color)
-                patch_kw = self._kwargs.get("patch_kw", dict())
-                self._fig.patch(x, y, **merge({}, pkw, patch_kw))
+                kw = merge({}, pkw, s.rendering_kw)
+                self._fig.patch(x, y, **kw)
 
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
                     + "Bokeh only supports 2D plots."
                 )
+            
+            if self.update_rendering_kw and (kw is not None):
+                s.rendering_kw = kw
 
         if len(self._fig.legend) > 0:
             self._fig.legend.visible = self.legend
@@ -565,7 +556,6 @@ class BokehBackend(Plot):
                 s.start = self._fig.x_range.start
                 s.end = self._fig.x_range.end
                 x, y = s.get_data()
-                x, y, _ = self._detect_poles(x, y)
                 source = {"xs": x, "ys": y}
                 rend[i].data_source.data.update(source)
             elif s.is_complex and s.is_2Dline and s.is_parametric and self._use_cm:
@@ -597,7 +587,7 @@ class BokehBackend(Plot):
         us = u[:-1]
         return xs, ys, us
 
-    def _create_gradient_line(self, x, y, u, colormap, name):
+    def _create_gradient_line(self, x, y, u, colormap, name, line_kw):
         xs, ys, us = self._get_segments(x, y, u)
         color_mapper = LinearColorMapper(palette=colormap, low=min(us), high=max(us))
         data_source = ColumnDataSource(dict(xs=xs, ys=ys, us=us))
@@ -607,23 +597,17 @@ class BokehBackend(Plot):
             name=name,
             line_color={"field": "us", "transform": color_mapper},
         )
-        line_kw = self._kwargs.get("line_kw", dict())
-        glyph = MultiLine(xs="xs", ys="ys", **merge({}, lkw, line_kw))
-        # default options
-        cbkw = dict(width=8)
-        # user defined options
-        colorbar_kw = self._kwargs.get("colorbar_kw", dict())
-        colorbar = ColorBar(
-            color_mapper=color_mapper, title=name, **merge({}, cbkw, colorbar_kw)
-        )
-        return data_source, glyph, colorbar
+        kw = merge({}, lkw, line_kw)
+        glyph = MultiLine(xs="xs", ys="ys", **kw)
+        colorbar = ColorBar(color_mapper=color_mapper, title=name, width=8)
+        return data_source, glyph, colorbar, kw
 
     def _update_interactive(self, params):
         rend = self.fig.renderers
 
         for i, s in enumerate(self.series):
             if s.is_interactive:
-                self.series[i].update_data(params)
+                self.series[i].params = params
 
                 if s.is_2Dline and s.is_parametric and self._use_cm:
                     x, y, param = self.series[i].get_data()
@@ -639,7 +623,7 @@ class BokehBackend(Plot):
                         source = {"xs": x, "ys": y, "us": param}
                     else:
                         x, y = self.series[i].get_data()
-                        x, y, _ = self._detect_poles(x, y)
+                        # x, y, _ = self._detect_poles(x, y)
                         source = {"xs": x, "ys": y}
                     rend[i].data_source.data.update(source)
 
@@ -672,15 +656,13 @@ class BokehBackend(Plot):
                 elif s.is_2Dvector:
                     x, y, u, v = s.get_data()
                     if s.is_streamlines:
-                        sqk = dict(color=next(self._cl), line_width=2, line_alpha=0.8)
-                        stream_kw = self._kwargs.get("stream_kw", dict())
-                        density = stream_kw.pop("density", 2)
+                        density = s.rendering_kw.copy().pop("density", 2)
                         xs, ys = compute_streamlines(
                             x[0, :], y[:, 0], u, v, density=density
                         )
                         rend[i].data_source.data.update({"xs": xs, "ys": ys})
                     else:
-                        quiver_kw = self._kwargs.get("quiver_kw", dict())
+                        quiver_kw = s.rendering_kw.copy()
                         data, quiver_kw = self._get_quivers_data(
                             x, y, u, v, **quiver_kw
                         )
@@ -758,16 +740,17 @@ class BokehBackend(Plot):
         """By launching a server application, we can use Python callbacks
         associated to events.
         """
-        doc.theme = self._kwargs.get("theme", cfg["bokeh"]["theme"])
+        doc.theme = self._theme
         doc.add_root(self._fig)
 
     def show(self):
         """Visualize the plot on the screen."""
+        print("BB.show()")
         self._process_series(self._series)
         if self._run_in_notebook:
-            # TODO: the current way we are launching the server only works within
-            # Jupyter Notebook. Is there another way of launching it so that it can
-            # run from any Python interpreter?
+            # TODO: the current way we are launching the server only works
+            # within Jupyter Notebook. Is there another way of launching
+            # it so that it can run from any Python interpreter?
             show(self._launch_server)
         else:
             # if the backend it running from a python interpreter, the server
@@ -775,8 +758,9 @@ class BokehBackend(Plot):
             # to events (no pan-auto-update).
             from bokeh.io import curdoc
 
-            curdoc().theme = self._kwargs.get("theme", cfg["bokeh"]["theme"])
+            curdoc().theme = self._theme
             show(self._fig)
+        # show(self._fig)
 
     def _get_quivers_data(self, xs, ys, u, v, **quiver_kw):
         """Compute the segments coordinates to plot quivers.

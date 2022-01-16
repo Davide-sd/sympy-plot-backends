@@ -8,9 +8,12 @@ from spb.series import BaseSeries, InteractiveSeries
 from spb import (
     plot, plot3d, plot_contour, plot_implicit,
     plot_parametric, plot3d_parametric_line,
-    plot_vector, plot_complex, plot_geometry, plot_real_imag
+    plot_vector, plot_complex, plot_geometry, plot_real_imag,
+    plot_list, plot_piecewise
 )
-from sympy import symbols, cos, sin, Matrix, pi, sqrt, I
+from sympy import (
+    symbols, cos, sin, Matrix, pi, sqrt, I, Heaviside, Piecewise, Eq
+)
 from sympy.geometry import Line, Circle, Polygon
 import plotly.graph_objects as go
 import matplotlib
@@ -178,6 +181,17 @@ p15c = lambda B, surface_kw: plot_complex(
     show=False,
     n=10
 )
+p16a = lambda B: plot_list([1, 2, 3], [1, 2, 3], 
+    backend=B, is_point=True, is_filled=False, show=False)
+p16b = lambda B: plot_list([1, 2, 3], [1, 2, 3], 
+    backend=B, is_point=True, is_filled=True, show=False)
+p17a = lambda B: plot_piecewise(
+    Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10),
+    backend=B, show=False)
+p17b = lambda B: plot_piecewise(
+    (Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10)),
+    (Piecewise((sin(x), x < 0), (2, Eq(x, 0)), (cos(x), x > 0)), (x, -6, 4)),
+    backend=B, show=False)
 p18 = lambda B: plot_geometry(
     Line((1, 2), (5, 4)), Circle((0, 0), 4), Polygon((2, 2), 3, n=6),
     backend=B, show=False, fill=False
@@ -222,37 +236,67 @@ def test_common_keywords():
     assert p.ylim == (-2, 2)
     assert p.zlim == (-3, 3)
     assert p.size == (5, 10)
-    assert p._kwargs == kw
 
 
 def test_plot_sum():
-    # the choice of the backend doesn't matter
-    p1 = plot(sin(x), backend=PB, show=False)
-    p2 = plot(cos(x), backend=PB, show=False)
-    p3 = p1 + p2
-    assert isinstance(p3, PB)
-    assert len(p3.series) == 2
-    assert p3.series[0].expr == sin(x)
-    assert p3.series[1].expr == cos(x)
+    # the choice of the backend dictates the keyword arguments inside line_kw
+    p1 = plot(sin(x), backend=PB, line_kw=dict(line_color='black'),
+        xlabel="x1", ylabel="y1", show=False)
+    p2 = plot(cos(x), backend=PB, line_kw=dict(line_dash='dash'),
+        xlabel="x2", ylabel="y2", show=False)
+    p3 = plot(sin(x) * cos(x), backend=PB,
+        line_kw=dict(line_dash='dot'), show=False)
+    p4 = p1 + p2 + p3
+    assert isinstance(p4, PB)
+    assert len(p4.series) == 3
+    assert p4.series[0].expr == sin(x)
+    assert p4.fig.data[0]["line"]["color"] == "black"
+    colors = set()
+    for l in p4.fig.data:
+        colors.add(l["line"]["color"])
+    assert len(colors) == 3
+    assert p4.series[1].expr == cos(x)
+    assert p4.fig.data[1]["line"]["dash"] == "dash"
+    assert p4.series[2].expr == sin(x) * cos(x)
+    assert p4.fig.data[2]["line"]["dash"] == "dot"
     # two or more series in the result: automatic legend turned on
-    assert p3.legend == True
+    assert p4.legend == True
+    # the resulting plot uses the attributes of the first plot in the sum
+    assert p4.xlabel == "x1" and p4.ylabel == "y1"
+    p4 = p2 + p1 + p3
+    assert p4.xlabel == "x2" and p4.ylabel == "y2"
 
-    # merge keyword dictionaries: the latter override the formers
-    p4 = plot(sin(x), backend=PB, show=False)
-    p5 = plot(cos(x), backend=PB, show=False, line_kw=dict(line_color="red"))
-    p6 = p4 + p5
-    assert isinstance(p6, PB)
-    assert isinstance(p6._kwargs, dict)
-    assert "line_kw" in p6._kwargs
-    assert "line_color" in p6._kwargs["line_kw"]
-    assert p6._kwargs["line_kw"]["line_color"] == "red"
+    # summing different types of plots: the result is consistent with the
+    # original visualization. In particular, if no `line_kw` is given to `p2`
+    # then the backend will use automatic coloring to differentiate the
+    # series. 
+    p1 = plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
+        backend=MB, scalar=True, show=False)
+    p2 = plot(sin(x), (x, -3, 3), backend=MB, show=False)
+    p3 = p1 + p2
+    assert isinstance(p3, MB)
+    assert len(p3.series) == 3
+    assert len(p3.fig.axes[0].collections) > 1
+    assert type(p3.fig.axes[0].collections[-1]).__name__ == "Quiver"
+    quiver_col = p3.fig.axes[0].collections[-1].get_facecolors().flatten()[:-1]
+    first_col = np.array(p3.colorloop[0])
+    assert np.allclose(quiver_col, first_col)
+    line_col = np.array(p3.fig.axes[0].lines[0].get_color())
+    second_col = np.array(p3.colorloop[1])
+    assert np.allclose(line_col, second_col)
 
     # summing plots with different backends: the first backend will be used in
     # the result
-    p7 = plot(sin(x), backend=MB, show=False)
-    p8 = plot(cos(x), backend=PB, show=False)
-    p9 = p7 + p8
-    assert isinstance(p9, MB)
+    p1 = plot(sin(x), backend=MB, show=False)
+    p2 = plot(cos(x), backend=PB, show=False)
+    p3 = p1 + p2
+    assert isinstance(p3, MB)
+
+    # summing plots with different backends: fail when backend-specific
+    # keyword arguments are used
+    p1 = plot(sin(x), backend=MB, line_kw=dict(linestyle=":"), show=False)
+    p2 = plot(cos(x), backend=PB, line_kw=dict(line_dash="dash"), show=False)
+    raises(AttributeError, lambda: p1 + p2)
 
 
 def test_MatplotlibBackend():
@@ -281,6 +325,7 @@ def test_MatplotlibBackend():
     assert ax.get_lines()[0].get_color() == "red"
     assert ax.get_lines()[1].get_label() == "cos(x)"
     assert ax.get_lines()[1].get_color() == "red"
+    p.close()
 
     p = p3(MB, line_kw=dict(color="red"))
     assert len(p.series) == 1
@@ -295,6 +340,7 @@ def test_MatplotlibBackend():
     assert isinstance(ax.collections[0], LineCollection)
     assert f.axes[1].get_ylabel() == "(cos(x), sin(x))"
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
+    p.close()
 
     p = p4(MB, line_kw=dict(color="red"))
     assert len(p.series) == 1
@@ -306,6 +352,7 @@ def test_MatplotlibBackend():
     assert isinstance(ax.collections[0], Line3DCollection)
     assert f.axes[1].get_ylabel() == "(cos(x), sin(x), x)"
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
+    p.close()
 
     # use_cm=False will force to apply a default solid color to the mesh.
     # Here, I override that solid color with a custom color.
@@ -318,6 +365,7 @@ def test_MatplotlibBackend():
     assert isinstance(ax.collections[0], Poly3DCollection)
     # TODO: apparently, without showing the plot, the colors are not applied
     # to a Poly3DCollection...
+    p.close()
 
     p = p6(MB, contour_kw=dict(cmap="jet"))
     assert len(p.series) == 1
@@ -327,6 +375,7 @@ def test_MatplotlibBackend():
     assert len(ax.collections) > 0
     assert f.axes[1].get_ylabel() == str(cos(x ** 2 + y ** 2))
     # TODO: how to retrieve the colormap from a contour series?????
+    p.close()
 
     p = p7a(MB, quiver_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
     assert len(p.series) == 2
@@ -337,6 +386,7 @@ def test_MatplotlibBackend():
     assert isinstance(ax.collections[-1], Quiver)
     assert f.axes[1].get_ylabel() == "Magnitude"
     # TODO: how to retrieve the colormap from a contour series?????
+    p.close()
 
     p = p7b(MB, stream_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
     assert len(p.series) == 2
@@ -347,6 +397,7 @@ def test_MatplotlibBackend():
     assert isinstance(ax.collections[-1], LineCollection)
     assert f.axes[1].get_ylabel() == "x + y"
     assert all(*(ax.collections[-1].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
+    p.close()
 
     p = p7c(MB, stream_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
     assert len(p.series) == 2
@@ -357,6 +408,7 @@ def test_MatplotlibBackend():
     assert isinstance(ax.collections[-1], LineCollection)
     assert f.axes[1].get_ylabel() == "test"
     assert all(*(ax.collections[-1].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
+    p.close()
 
     p = p9a(MB, quiver_kw=dict(cmap="jet"))
     assert len(p.series) == 1
@@ -366,6 +418,7 @@ def test_MatplotlibBackend():
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], Line3DCollection)
     assert ax.collections[0].cmap.name == "jet"
+    p.close()
 
     p = p9a(MB, quiver_kw=dict(cmap=None, color="red"), use_cm=False)
     assert len(p.series) == 1
@@ -375,6 +428,7 @@ def test_MatplotlibBackend():
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], Line3DCollection)
     assert np.allclose(ax.collections[0].get_color(), np.array([[1., 0., 0., 1.]]))
+    p.close()
 
     p = p9b(MB, stream_kw=dict())
     assert len(p.series) == 1
@@ -384,6 +438,7 @@ def test_MatplotlibBackend():
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], Line3DCollection)
     assert f.axes[1].get_ylabel() == "Matrix([[z], [y], [x]])"
+    p.close()
 
     # test different combinations for streamlines: it should not raise errors
     p = p9b(MB, stream_kw=dict(starts=True))
@@ -392,6 +447,7 @@ def test_MatplotlibBackend():
         "y": np.linspace(-4, 4, 10),
         "z": np.linspace(-3, 3, 10),
     }))
+    p.close()
 
     # other keywords: it should not raise errors
     p = p9b(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
@@ -399,6 +455,7 @@ def test_MatplotlibBackend():
     ax = f.axes[0]
     assert len(ax.lines) == 1
     assert ax.lines[0].get_color() == '#1f77b4'
+    p.close()
 
     # NOTE: p11a is pretty much the same as p11b for MB
     p = p11b(MB, contour_kw=dict(cmap="jet"))
@@ -408,6 +465,7 @@ def test_MatplotlibBackend():
     ax = f.axes[0]
     assert len(ax.collections) > 0
     # TODO: how to retrieve the colormap from a contour series?????
+    p.close()
 
     p = p13(MB)
     assert len(p.series) == 6
@@ -417,6 +475,7 @@ def test_MatplotlibBackend():
     assert len(ax.collections) == 6
     # TODO: apparently, without showing the plot, the colors are not applied
     # to a Poly3DCollection...
+    p.close()
 
     p = p14(MB, line_kw=dict(color="red"))
     assert len(p.series) == 2
@@ -428,6 +487,7 @@ def test_MatplotlibBackend():
     assert ax.get_lines()[0].get_color() == "red"
     assert ax.get_lines()[1].get_label() == "Im(sqrt(x))"
     assert ax.get_lines()[1].get_color() == "red"
+    p.close()
 
     p = p15a(MB, line_kw=dict(color="red"))
     assert len(p.series) == 1
@@ -438,6 +498,7 @@ def test_MatplotlibBackend():
     assert isinstance(ax.collections[0], LineCollection)
     assert f.axes[1].get_ylabel() == "Abs(sqrt(x))"
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
+    p.close()
 
     p = p15b(MB, image_kw=dict())
     assert len(p.series) == 1
@@ -447,6 +508,7 @@ def test_MatplotlibBackend():
     assert len(ax.images) == 1
     assert f.axes[1].get_ylabel() == "Argument"
     assert ax.images[0].get_extent() == [-5.0, 5.0, -5.0, 5.0]
+    p.close()
 
     p = p15b(MB, image_kw=dict(extent=[-6, 6, -7, 7]))
     assert len(p.series) == 1
@@ -456,6 +518,7 @@ def test_MatplotlibBackend():
     assert len(ax.images) == 1
     assert f.axes[1].get_ylabel() == "Argument"
     assert ax.images[0].get_extent() == [-6, 6, -7, 7]
+    p.close()
 
     p = p15c(MB, surface_kw=dict(color="red"))
     assert len(p.series) == 1
@@ -467,7 +530,43 @@ def test_MatplotlibBackend():
     assert f.axes[1].get_ylabel() == "Argument"
     # TODO: apparently, without showing the plot, the colors are not applied
     # to a Poly3DCollection...
+    p.close()
 
+    # verify markers
+    p = p16a(MB)
+    f = p.fig
+    ax = f.axes[0]
+    assert len(ax.lines) == 1
+    assert ax.lines[0].get_markeredgecolor() != ax.lines[0].get_markerfacecolor()
+    p.close()
+
+    p = p16b(MB)
+    f = p.fig
+    ax = f.axes[0]
+    assert len(ax.lines) == 1
+    assert ax.lines[0].get_markeredgecolor() == ax.lines[0].get_markerfacecolor()
+    p.close()
+
+    # verify that plot_piecewise plotting N functions uses N colors
+    p = p17a(MB)
+    f = p.fig
+    ax = f.axes[0]
+    assert len(ax.lines) == 4
+    colors = set()
+    for l in ax.lines:
+        colors.add(l.get_color())
+    assert len(colors) == 1
+
+    p = p17b(MB)
+    f = p.fig
+    ax = f.axes[0]
+    assert len(ax.lines) == 9
+    colors = set()
+    for l in ax.lines:
+        colors.add(l.get_color())
+    assert len(colors) == 2
+
+    # plot geometry
     p = p18(MB)
     assert len(p.series) == 3
     p.process_series()
@@ -477,7 +576,7 @@ def test_MatplotlibBackend():
     assert ax.get_lines()[0].get_label() == str(Line((1, 2), (5, 4)))
     assert ax.get_lines()[1].get_label() == str(Circle((0, 0), 4))
     assert ax.get_lines()[2].get_label() == str(Polygon((2, 2), 3, n=6))
-    
+    p.close()
 
 
 class PBchild(PB):
@@ -489,8 +588,6 @@ def test_PlotlyBackend():
     assert isinstance(PB.colorloop, (list, tuple))
     assert hasattr(PB, "colormaps")
     assert isinstance(PB.colormaps, (list, tuple))
-    assert hasattr(PB, "wireframe_colors")
-    assert isinstance(PB.wireframe_colors, (list, tuple))
     assert hasattr(PB, "quivers_colors")
     assert isinstance(PB.quivers_colors, (list, tuple))
 
@@ -687,6 +784,32 @@ def test_PlotlyBackend():
     assert f.data[0]["showscale"] == True
     assert f.data[0]["colorbar"]["title"]["text"] == "Argument"
 
+    # test markers
+    p = p16a(PB)
+    assert len(p.series) == 1
+    f = p.fig
+    assert f.data[0]["marker"]["line"]["color"] is not None
+
+    p = p16b(PB)
+    assert len(p.series) == 1
+    f = p.fig
+    assert f.data[0]["marker"]["line"]["color"] is None
+
+    # test plot_piecewise
+    p = p17a(PB)
+    assert len(p.series) == 4
+    colors = set()
+    for l in p.fig.data:
+        colors.add(l["line"]["color"])
+    assert len(colors) == 1
+
+    p = p17b(PB)
+    assert len(p.series) == 9
+    colors = set()
+    for l in p.fig.data:
+        colors.add(l["line"]["color"])
+    assert len(colors) == 2
+
     p = p18(PB)
     assert len(p.series) == 3
     f = p.fig
@@ -701,7 +824,8 @@ class BBchild(BB):
 
 
 def test_BokehBackend():
-    from bokeh.models.glyphs import Line, MultiLine, Image, Segment, ImageRGBA
+    from bokeh.models.glyphs import (Line, MultiLine, Image, Segment,
+        ImageRGBA, Circle as BokehCircle)
     from bokeh.plotting.figure import Figure
 
     assert hasattr(BB, "colorloop")
@@ -861,6 +985,35 @@ def test_BokehBackend():
     assert (f.toolbar.tools[-2].tooltips == [('x', '$x'), ('y', '$y'),
         ("Abs", "@abs"), ("Arg", "@arg")])
 
+    # test markers
+    p = p16a(BB)
+    assert len(p.series) == 1
+    f = p.fig
+    assert isinstance(f.renderers[0].glyph, BokehCircle)
+    assert f.renderers[0].glyph.line_color != f.renderers[0].glyph.fill_color
+
+    p = p16b(BB)
+    assert len(p.series) == 1
+    f = p.fig
+    assert isinstance(f.renderers[0].glyph, BokehCircle)
+    assert f.renderers[0].glyph.line_color == f.renderers[0].glyph.fill_color
+
+    # test plot_piecewise
+    p = p17a(BB)
+    assert len(p.series) == 4
+    colors = set()
+    for l in p.fig.renderers:
+        colors.add(l.glyph.line_color)
+    assert len(colors) == 1
+
+    p = p17b(BB)
+    assert len(p.series) == 9
+    colors = set()
+    for l in p.fig.renderers:
+        colors.add(l.glyph.line_color)
+    assert len(colors) == 2
+
+
     from sympy.geometry import Line as SymPyLine
     p = p18(BB)
     assert len(p.series) == 3
@@ -897,7 +1050,7 @@ def test_K3DBackend():
 
     ### Setting custom color loop
 
-    assert len(KBchild1.colorloop.colors) != len(KBchild2.colorloop)
+    assert len(KBchild1.colorloop) != len(KBchild2.colorloop)
     _p1 = p13(KBchild1)
     _p2 = p13(KBchild2)
     assert len(_p1.series) == len(_p2.series)

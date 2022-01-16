@@ -24,7 +24,7 @@ import numpy as np
 
 from adaptive import Learner1D
 from adaptive.runner import simple
-from adaptive.learner.learner1D import default_loss as default_loss_1d
+from adaptive.learner.learner1D import default_loss
 
 
 
@@ -76,7 +76,7 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     loss_fn : callable or None
         The loss function to be used by the learner. Possible values:
 
-        * ``None`` (default): it will use the ``default_loss_1d`` from the
+        * ``None`` (default): it will use the ``default_loss`` from the
           adaptive module.
         * callable : look at adaptive.learner.learner1D or
           adaptive.learner.learnerND to find more loss functions.
@@ -99,6 +99,12 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     """
     from functools import partial
 
+    # TODO:
+    # As of adaptive 0.13.0, this warning will be raised if the function to
+    # be evaluated returns multiple values. The warning is raised somewhere
+    # inside adaptive. Let's ignore it until a PR is done to fix it.
+    np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
+
     goal = lambda l: l.loss() < 0.01
     if adaptive_goal is not None:
         if isinstance(adaptive_goal, (int, float)):
@@ -106,7 +112,7 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
         if callable(adaptive_goal):
             goal = adaptive_goal
     
-    lf = default_loss_1d
+    lf = default_loss
     if loss_fn is not None:
         lf = loss_fn
     d = {"loss_per_interval": lf}
@@ -247,6 +253,14 @@ class BaseSeries:
     def is_line(self):
         flagslines = [self.is_2Dline, self.is_3Dline]
         return any(flagslines)
+    
+    @property
+    def rendering_kw(self):
+        return self._rendering_kw
+    
+    @rendering_kw.setter
+    def rendering_kw(self, kwargs):
+        self._rendering_kw = kwargs
 
     @staticmethod
     def _discretize(start, end, N, scale="linear", only_integers=False):
@@ -322,7 +336,8 @@ class Line2DBaseSeries(BaseSeries):
         self.adaptive = kwargs.get("adaptive", True)
         self.adaptive_goal = kwargs.get("adaptive_goal", 0.01)
         self.loss_fn = kwargs.get("loss_fn", None)
-
+        self._rendering_kw = kwargs.get("line_kw", dict())
+    
     def get_data(self):
         """Return coordinates for plotting the line.
 
@@ -377,6 +392,7 @@ class List2DSeries(Line2DBaseSeries):
                 "and len(list_y) = {}".format(len(self.list_y))
             )
         self.label = label
+        self.is_filled = kwargs.get("is_filled", True)
 
     def __str__(self):
         return "list plot"
@@ -412,6 +428,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.polar = kwargs.get("polar", False)
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
+        # self._x = None
+        # self._y = None
 
     def __str__(self):
         return "cartesian line: %s for %s over %s" % (
@@ -503,6 +521,9 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         y : np.ndarray
             Numerical evaluation result.
         """
+        # if self._x is not None:
+        #     return self._x, self._y
+
         x, _re, _im = self._get_real_imag()
         # The evaluation could produce complex numbers. Set real elements
         # to NaN where there are non-zero imaginary elements
@@ -513,6 +534,14 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         if self.detect_poles:
             return self._detect_poles(x, _re, self.eps)
         return x, _re
+
+        # self._x, self._y = x, _re
+        # if self.polar:
+        #     self._x = _re * np.cos(x)
+        #     self._y = _re * np.sin(x)
+        # if self.detect_poles:
+        #     self._x, self._y = self._detect_poles(x, _re, self.eps)
+        # return self._x, self._y
     
 
 class AbsArgLineSeries(LineOver1DRangeSeries):
@@ -703,6 +732,7 @@ class SurfaceBaseSeries(BaseSeries):
         self.adaptive_goal = kwargs.get("adaptive_goal", 0.01)
         self.loss_fn = kwargs.get("loss_fn", None)
         self.modules = kwargs.get("modules", None)
+        self._rendering_kw = kwargs.get("surface_kw", dict())
 
     def _discretize(self, s1, e1, s2, e2):
         mesh_x = super()._discretize( s1, e1, self.n1,
@@ -867,6 +897,10 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
 class ContourSeries(SurfaceOver2DRangeSeries):
     """Representation for a contour plot."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._rendering_kw = kwargs.get("contour_kw", dict())
+
     is_3Dsurface = False
     is_contour = True
 
@@ -910,6 +944,7 @@ class ImplicitSeries(BaseSeries):
         self.adaptive = kwargs.get("adaptive", False)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
+        self._rendering_kw = kwargs.get("contour_kw", dict())
 
         if isinstance(expr, BooleanFunction):
             self.adaptive = True
@@ -1166,7 +1201,8 @@ class InteractiveSeries(BaseSeries):
             return GeometryInteractiveSeries(exprs, ranges, *args, **kwargs)
 
         if (nexpr == 1) and (npar == 1):
-            if not "absarg" in kwargs.keys():
+            absarg = kwargs.get("absarg", False)
+            if not absarg:
                 return LineInteractiveSeries(exprs, ranges, *args, **kwargs)
             return AbsArgLineInteractiveSeries(exprs, ranges, *args, **kwargs)
         elif (nexpr == 2) and (npar == 1):
@@ -1362,6 +1398,7 @@ class LineInteractiveSeries(InteractiveSeries, Line2DBaseSeries):
         self.steps = kwargs.get("steps", False)
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
+        self._rendering_kw = kwargs.get("line_kw", dict())
 
     def get_points(self):
         """Return coordinates for plotting the line.
@@ -1439,6 +1476,7 @@ class Parametric2DLineInteractiveSeries(InteractiveSeries, Line2DBaseSeries):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.steps = kwargs.get("steps", False)
+        self._rendering_kw = kwargs.get("line_kw", dict())
 
     def get_points(self):
         """Return coordinates for plotting the line.
@@ -1481,6 +1519,10 @@ class SurfaceInteractiveSeries(InteractiveSeries):
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._rendering_kw = kwargs.get("surface_kw", dict())
+    
     def get_data(self):
         """Return arrays of coordinates for plotting.
 
@@ -1509,6 +1551,10 @@ class ContourInteractiveSeries(SurfaceInteractiveSeries):
     """Representation for an interactive contour plot."""
     is_3Dsurface = False
     is_contour = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._rendering_kw = kwargs.get("contour_kw", dict())
 
     def __str__(self):
         return self._str("contour")
@@ -1562,6 +1608,7 @@ class ComplexPointSeries(Line2DBaseSeries):
         self.is_point = kwargs.get("is_point", True)
         self.steps = kwargs.get("steps", False)
         self.label = label
+        self._rendering_kw = kwargs.get("line_kw", dict())
 
     @staticmethod
     def _evaluate(points):
@@ -1718,6 +1765,13 @@ class ComplexSurfaceSeries(ComplexSurfaceBaseSeries):
             # if not 3D, plot the contours
             self.is_contour = True
             self.is_3Dsurface = False
+        self._init_rendering_kw(**kwargs)
+    
+    def _init_rendering_kw(self, **kwargs):
+        if self.is_3Dsurface:
+            self._rendering_kw = kwargs.get("surface_kw", dict())
+        else:
+            self._rendering_kw = kwargs.get("contour_kw", dict())
 
     def _correct_output(self, domain, z):
         return np.real(domain), np.imag(domain), np.real(z)
@@ -1755,6 +1809,13 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
         super().__init__(*args, **kwargs)
         if kwargs.get("threed", False):
             self.is_3Dsurface = True
+        self._init_rendering_kw(**kwargs)
+    
+    def _init_rendering_kw(self, **kwargs):
+        if self.is_3Dsurface:
+            self._rendering_kw = kwargs.get("surface_kw", dict())
+        else:
+            self._rendering_kw = kwargs.get("image_kw", dict())
 
     def _domain_coloring(self, w):
         if isinstance(self.coloring, str):
@@ -1863,6 +1924,7 @@ class ComplexSurfaceInteractiveSeries(ComplexInteractiveBaseSeries, ComplexSurfa
             # if not 3D, plot the contours
             self.is_contour = True
             self.is_3Dsurface = False
+        self._init_rendering_kw(**kwargs)
 
     def get_data(self):
         """Return arrays of coordinates for plotting.
@@ -1889,6 +1951,10 @@ class ComplexDomainColoringInteractiveSeries(ComplexInteractiveBaseSeries, Compl
     """
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._init_rendering_kw(**kwargs)
 
     def get_data(self):
         """Return arrays of coordinates for plotting.
@@ -1986,6 +2052,10 @@ class VectorBase(BaseSeries):
         self.is_streamlines = kwargs.get("streamlines", False)
         self.modules = kwargs.get("modules", None)
         self.only_integers = kwargs.get("only_integers", False)
+        if self.is_streamlines:
+            self._rendering_kw = kwargs.get("stream_kw", dict())
+        else:
+            self._rendering_kw = kwargs.get("quiver_kw", dict())
     
     def _discretize(self):
         one_d = []
@@ -2044,6 +2114,22 @@ class Vector2DSeries(VectorBase):
         kwargs.setdefault("n1", 25)
         kwargs.setdefault("n2", 25)
         super().__init__((u, v), (range1, range2), label, **kwargs)
+        self._set_use_quiver_solid_color(**kwargs)
+
+    def _set_use_quiver_solid_color(self, **kwargs):
+        # NOTE: this attribute will inform the backend wheter to use a
+        # color map or a solid color for the quivers. It is placed here
+        # because it simplifies the backend logic when dealing with
+        # plot sums.
+        self.use_quiver_solid_color = (
+            True
+            if ("scalar" not in kwargs.keys())
+            else (
+                False
+                if (not kwargs["scalar"]) or (kwargs["scalar"] is None)
+                else True
+            )
+        )
     
     def __str__(self):
         return "2D vector series: [%s, %s] over %s, %s" % (
@@ -2072,6 +2158,10 @@ class VectorInteractiveBaseSeries(InteractiveSeries):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.is_streamlines = kwargs.get("streamlines", False)
+        if self.is_streamlines:
+            self._rendering_kw = kwargs.get("stream_kw", dict())
+        else:
+            self._rendering_kw = kwargs.get("quiver_kw", dict())
 
     def get_data(self):
         discr = [np.real(t) for t in self.ranges.values()]
@@ -2091,7 +2181,9 @@ class VectorInteractiveBaseSeries(InteractiveSeries):
 
 class Vector2DInteractiveSeries(VectorInteractiveBaseSeries, Vector2DSeries):
     """Represents an interactive 2D vector field."""
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._set_use_quiver_solid_color(**kwargs)
 
 class Vector3DInteractiveSeries(VectorInteractiveBaseSeries, Vector3DSeries):
     """Represents an interactive 3D vector field."""
@@ -2156,6 +2248,7 @@ class PlaneSeries(SurfaceBaseSeries):
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
         self._params = params
+        self._rendering_kw = kwargs.get("line_kw", dict())
 
     def __str__(self):
         return "plane series: %s over %s, %s, %s" % (
@@ -2287,13 +2380,16 @@ class GeometrySeries(BaseSeries):
             self.end = 0
             if isinstance(expr, Point3D):
                 self.is_point = True
+            self._rendering_kw = kwargs.get("line_kw", dict())
         elif isinstance(expr, LinearEntity2D) or (
             isinstance(expr, (Polygon, Circle, Ellipse)) and (not self.fill)
         ):
             self.is_2Dline = True
+            self._rendering_kw = kwargs.get("line_kw", dict())
         elif isinstance(expr, Point2D):
             self.is_point = True
             self.is_2Dline = True
+        self._rendering_kw = kwargs.get("fill_kw", dict())
 
     def get_data(self):
         expr = self.expr.subs(self._params)

@@ -74,11 +74,6 @@ class PlotlyBackend(Plot):
     use_cm : boolean, optional
         If True, apply a color map to the meshes/surface. If False, solid
         colors will be used instead. Default to True.
-
-    wireframe : boolean, optional
-        Visualize the wireframe lines on surfaces. Default to False.
-        Note that it definitely have a negative impact on the performances, and
-        it does not work with ``iplot``.
     
     References
     ==========
@@ -119,8 +114,6 @@ class PlotlyBackend(Plot):
         "#FECB52",
     ]
     # a selection of color maps to be used in 3D surfaces, contour plots.
-    # NOTE: if you change any of these, make sure to also change
-    # wireframe_colors.
     colormaps = [
         "aggrnyl",
         "plotly3",
@@ -137,20 +130,6 @@ class PlotlyBackend(Plot):
     # to be used in complex-parametric plots
     cyclic_colormaps = ["phase", "twilight", "hsv", "icefire"]
 
-    # a selection of solid colors for wireframe lines that may look good with
-    # the above colormaps
-    wireframe_colors = [
-        "#0071c3",
-        "#af67d9",
-        "#e64b17",
-        "#1378cd",
-        "#be5466",
-        "#6f969e",
-        "#aa692c",
-        "#60ccc0",
-        "#f2a45d",
-        "#f2a45d",
-    ]
     # a few solid color that offers medium to good contrast against Plotly's
     # default colorscale for contour plots
     # TODO: here I selected black and white, but they are not visible with dark
@@ -178,55 +157,26 @@ class PlotlyBackend(Plot):
     _cbsdf = 0.75
 
     def __new__(cls, *args, **kwargs):
-        # Since Plot has its __new__ method, this will prevent infinite
-        # recursion
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
 
         # add colors if needed
         default_cl = [
-            "#636EFA",
-            "#EF553B",
-            "#00CC96",
-            "#AB63FA",
-            "#FFA15A",
-            "#19D3F3",
-            "#FF6692",
-            "#B6E880",
-            "#FF97FF",
-            "#FECB52",
-        ]
+            "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
+            "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"]
         if (len([s for s in self._series if s.is_2Dline]) > 10) and (
             self.colorloop == default_cl
         ):
             # this corresponds to px.colors.qualitative.Light24
             self.colorloop = [
-                "#FD3216",
-                "#00FE35",
-                "#6A76FC",
-                "#FED4C4",
-                "#FE00CE",
-                "#0DF9FF",
-                "#F6F926",
-                "#FF9616",
-                "#479B55",
-                "#EEA6FB",
-                "#DC587D",
-                "#D626FF",
-                "#6E899C",
-                "#00B5F7",
-                "#B68E00",
-                "#C9FBE5",
-                "#FF0092",
-                "#22FFA7",
-                "#E3EE9E",
-                "#86CE00",
-                "#BC7196",
-                "#7E7DCD",
-                "#FC6955",
-                "#E48F72",
+                "#FD3216", "#00FE35", "#6A76FC", "#FED4C4", "#FE00CE",
+                "#0DF9FF", "#F6F926", "#FF9616", "#479B55", "#EEA6FB",
+                "#DC587D", "#D626FF", "#6E899C", "#00B5F7", "#B68E00",
+                "#C9FBE5", "#FF0092", "#22FFA7", "#E3EE9E", "#86CE00",
+                "#BC7196", "#7E7DCD", "#FC6955", "#E48F72"
             ]
 
         self._fig = go.Figure()
@@ -234,10 +184,15 @@ class PlotlyBackend(Plot):
         # show=False
         self._process_series(self._series)
         self._update_layout()
+    
+    @staticmethod
+    def _do_sum_kwargs(p1, p2):
+        kw = p1._copy_kwargs()
+        kw["theme"] = p1._theme
+        return kw
 
     def _init_cyclers(self):
         super()._init_cyclers()
-        self._wfcm = itertools.cycle(self.wireframe_colors)
         self._qc = itertools.cycle(self.quivers_colors)
 
     def _create_colorbar(self, k, label, sc=False):
@@ -287,8 +242,9 @@ class PlotlyBackend(Plot):
 
         count = 0
         for ii, s in enumerate(series):
+            kw = None
+
             if s.is_2Dline:
-                line_kw = self._kwargs.get("line_kw", dict())
                 if s.is_parametric:
                     x, y, param = s.get_data()
                     # hides/show the colormap depending on self._use_cm
@@ -317,16 +273,29 @@ class PlotlyBackend(Plot):
                             else "x: %{x}<br />y: %{y}<br />Arg: %{customdata}"
                         ),
                     )
-                    self._fig.add_trace(go.Scatter(x=x, y=y, **merge({}, lkw, line_kw)))
+                    kw = merge({}, lkw, s.rendering_kw)
+                    self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
                 else:
                     x, y = s.get_data()
-                    x, y, _ = self._detect_poles(x, y)
+                    color = next(self._cl)
                     lkw = dict(
                         name=s.label,
                         mode="lines" if not s.is_point else "markers",
-                        line_color=next(self._cl),
+                        line_color=color
                     )
-                    self._fig.add_trace(go.Scatter(x=x, y=y, **merge({}, lkw, line_kw)))
+                    if s.is_point:
+                        lkw["marker"] = dict(size=8)
+                        if not s.is_filled:
+                            lkw["marker"] = dict(
+                                color="#E5ECF6",
+                                size=8,
+                                line=dict(
+                                    width=2,
+                                    color=color
+                                )
+                            )
+                    kw = merge({}, lkw, s.rendering_kw)
+                    self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
             elif s.is_3Dline:
                 # NOTE: As a design choice, I decided to show the legend entry
                 # as well as the colorbar (if use_cm=True). Even though the
@@ -355,10 +324,8 @@ class PlotlyBackend(Plot):
                         name=s.label,
                         mode="markers",
                         line_color=next(self._cl))
-                line_kw = self._kwargs.get("line_kw", dict())
-                self._fig.add_trace(
-                    go.Scatter3d(x=x, y=y, z=z, **merge({}, lkw, line_kw))
-                )
+                kw = merge({}, lkw, s.rendering_kw)
+                self._fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **kw))
 
             elif (s.is_3Dsurface and not s.is_domain_coloring):
                 xx, yy, zz = s.get_data()
@@ -374,36 +341,9 @@ class PlotlyBackend(Plot):
                     colorscale=colormap if self._use_cm else colorscale,
                 )
 
-                surface_kw = self._kwargs.get("surface_kw", dict())
-                self._fig.add_trace(
-                    go.Surface(x=xx, y=yy, z=zz, **merge({}, skw, surface_kw))
-                )
+                kw = merge({}, skw, s.rendering_kw)
+                self._fig.add_trace(go.Surface(x=xx, y=yy, z=zz, **kw))
 
-                # TODO: remove this? Making it works with iplot is difficult
-                if self._kwargs.get("wireframe", False):
-                    line_marker = dict(color=next(self._wfcm), width=2)
-                    for i, j, k in zip(xx, yy, zz):
-                        self._fig.add_trace(
-                            go.Scatter3d(
-                                x=i,
-                                y=j,
-                                z=k,
-                                mode="lines",
-                                line=line_marker,
-                                showlegend=False,
-                            )
-                        )
-                    for i, j, k in zip(xx.T, yy.T, zz.T):
-                        self._fig.add_trace(
-                            go.Scatter3d(
-                                x=i,
-                                y=j,
-                                z=k,
-                                mode="lines",
-                                line=line_marker,
-                                showlegend=False,
-                            )
-                        )
                 count += 1
 
             elif s.is_contour and (not s.is_complex):
@@ -420,10 +360,8 @@ class PlotlyBackend(Plot):
                     colorbar=self._create_colorbar(ii, s.label, show_2D_vectors),
                 )
                 # user-provided values
-                contour_kw = self._kwargs.get("contour_kw", dict())
-                self._fig.add_trace(
-                    go.Contour(x=xx, y=yy, z=zz, **merge({}, ckw, contour_kw))
-                )
+                kw = merge({}, ckw, s.rendering_kw)
+                self._fig.add_trace(go.Contour(x=xx, y=yy, z=zz, **kw))
                 count += 1
 
             elif s.is_implicit:
@@ -439,10 +377,8 @@ class PlotlyBackend(Plot):
                         showscale=False,
                         name=s.label,
                     )
-                    contour_kw = self._kwargs.get("contour_kw", dict())
-                    self._fig.add_trace(
-                        go.Heatmap(x=x, y=y, z=pixels, **merge({}, ckw, contour_kw))
-                    )
+                    kw = merge({}, ckw, s.rendering_kw)
+                    self._fig.add_trace(go.Heatmap(x=x, y=y, z=pixels, **kw))
                 else:
                     x, y, z, ones, plot_type = points
                     zf = z.flatten()
@@ -466,14 +402,12 @@ class PlotlyBackend(Plot):
                         name=s.label,
                         line=dict(color=col),
                     )
-                    contour_kw = self._kwargs.get("contour_kw", dict())
+                    kw = merge({}, ckw, s.rendering_kw)
                     # TODO: sadly, Plotly does not support yet setting contour
                     # levels, hence the visualization will look ugly whenever
                     # plot_type="contour".
                     # https://github.com/plotly/plotly.js/issues/4503
-                    self._fig.add_trace(
-                        go.Contour(x=x, y=y, z=ones, **merge({}, ckw, contour_kw))
-                    )
+                    self._fig.add_trace(go.Contour(x=x, y=y, z=ones, **kw))
                 count += 1
 
             elif s.is_vector:
@@ -486,31 +420,25 @@ class PlotlyBackend(Plot):
                         skw = dict(
                             line_color=next(self._qc), arrow_scale=0.15, name=s.label
                         )
-                        # user-provided values
-                        stream_kw = self._kwargs.get("stream_kw", dict())
+                        kw = merge({}, skw, s.rendering_kw)
                         stream = create_streamline(
-                            xx[0, :], yy[:, 0], uu, vv, **merge({}, skw, stream_kw)
-                        )
+                            xx[0, :], yy[:, 0], uu, vv, **kw)
                         self._fig.add_trace(stream.data[0])
                     else:
                         # NOTE: currently, it is not possible to create quivers with
                         # a color scale: https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
                         # default values
                         qkw = dict(line_color=next(self._qc), scale=0.075, name=s.label)
-                        # user-provided values
-                        quiver_kw = self._kwargs.get("quiver_kw", dict())
-                        quiver = create_quiver(
-                            xx, yy, uu, vv, **merge({}, qkw, quiver_kw)
-                        )  # merge two dictionaries
+                        kw = merge({}, qkw, s.rendering_kw)
+                        quiver = create_quiver(xx, yy, uu, vv, **kw)
                         self._fig.add_trace(quiver.data[0])
                 else:
                     xx, yy, zz, uu, vv, ww = s.get_data()
                     if s.is_streamlines:
-                        stream_kw = self._kwargs.get("stream_kw", dict()).copy()
+                        stream_kw = s.rendering_kw.copy()
                         seeds_points = get_seeds_points(
                             xx, yy, zz, uu, vv, ww, to_numpy=True, **stream_kw)
 
-                        # default values
                         skw = dict(
                             colorscale=(
                                 next(self._cm)
@@ -527,12 +455,12 @@ class PlotlyBackend(Plot):
                             ),
                         )
 
-                        # the following keywords must be removed otherwise
-                        # Plotly's Stramtube raises error
-                        _kws = ["starts", "max_prop", "npoints", "radius"]
-                        for _k in _kws:
+                        # remove rendering-unrelated keywords
+                        for _k in ["starts", "max_prop", "npoints", "radius"]:
                             if _k in stream_kw.keys():
                                 stream_kw.pop(_k)
+
+                        kw = merge({}, skw, stream_kw)
 
                         self._fig.add_trace(
                             go.Streamtube(
@@ -542,11 +470,8 @@ class PlotlyBackend(Plot):
                                 u=uu.flatten(),
                                 v=vv.flatten(),
                                 w=ww.flatten(),
-                                **merge({}, skw, stream_kw)
-                            )
-                        )
+                                **kw))
                     else:
-                        # default values
                         qkw = dict(
                             showscale=(not s.is_slice) or self.legend,
                             colorscale=next(self._cm),
@@ -554,8 +479,7 @@ class PlotlyBackend(Plot):
                             sizeref=40,
                             colorbar=self._create_colorbar(ii, s.label),
                         )
-                        # user-provided values
-                        quiver_kw = self._kwargs.get("quiver_kw", dict())
+                        kw = merge({}, qkw, s.rendering_kw)
                         self._fig.add_trace(
                             go.Cone(
                                 x=xx.flatten(),
@@ -564,9 +488,7 @@ class PlotlyBackend(Plot):
                                 u=uu.flatten(),
                                 v=vv.flatten(),
                                 w=ww.flatten(),
-                                **merge({}, qkw, quiver_kw)
-                            )
-                        )
+                                **kw))
                 count += 1
 
             elif s.is_complex:
@@ -574,7 +496,7 @@ class PlotlyBackend(Plot):
                     x, y, mag, angle, img, colors = s.get_data()
                     xmin, xmax = x.min(), x.max()
                     ymin, ymax = y.min(), y.max()
-
+                    
                     self._fig.add_trace(
                         go.Image(
                             x0=xmin,
@@ -682,10 +604,8 @@ class PlotlyBackend(Plot):
                         hovertemplate="x: %{x}<br />y: %{y}<br />Abs: %{z}<br />Arg: %{customdata}",
                     )
 
-                    surface_kw = self._kwargs.get("surface_kw", dict())
-                    self._fig.add_trace(
-                        go.Surface(x=xx, y=yy, z=mag, **merge({}, skw, surface_kw))
-                    )
+                    kw = merge({}, skw, s.rendering_kw)
+                    self._fig.add_trace(go.Surface(x=xx, y=yy, z=mag, **kw))
 
                     count += 1
 
@@ -694,18 +614,21 @@ class PlotlyBackend(Plot):
                 lkw = dict(
                     name=s.label, mode="lines", fill="toself", line_color=next(self._cl)
                 )
-                line_kw = self._kwargs.get("line_kw", dict())
-                self._fig.add_trace(go.Scatter(x=x, y=y, **merge({}, lkw, line_kw)))
+                kw = merge({}, lkw, s.rendering_kw)
+                self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
 
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}".format(type(s), type(self).__name__)
                 )
+            
+            if self.update_rendering_kw and (kw is not None):
+                s.rendering_kw = kw
 
     def _update_interactive(self, params):
         for i, s in enumerate(self.series):
             if s.is_interactive:
-                self.series[i].update_data(params)
+                self.series[i].params = params
                 if s.is_2Dline and s.is_parametric:
                     x, y, param = self.series[i].get_data()
                     self.fig.data[i]["x"] = x
@@ -771,13 +694,11 @@ class PlotlyBackend(Plot):
                         # len(x) = len(y) but those are different from before.
                         raise NotImplementedError
                     else:
-                        # default values
                         qkw = dict(
                             line_color=self.quivers_colors[i], scale=0.075, name=s.label
                         )
-                        # user-provided values
-                        quiver_kw = self._kwargs.get("quiver_kw", dict())
-                        quivers = create_quiver(x, y, u, v, **merge({}, qkw, quiver_kw))
+                        kw = merge({}, qkw, s.rendering_kw)
+                        quivers = create_quiver(x, y, u, v, **kw)
                         data = quivers.data[0]
                     self.fig.data[i]["x"] = data["x"]
                     self.fig.data[i]["y"] = data["y"]
@@ -823,7 +744,7 @@ class PlotlyBackend(Plot):
 
     def _update_layout(self):
         self._fig.update_layout(
-            template=self._kwargs.get("theme", cfg["plotly"]["theme"]),
+            template=self._theme,
             width=None if not self.size else self.size[0],
             height=None if not self.size else self.size[1],
             title=r"<b>%s</b>" % ("" if not self.title else self.title),

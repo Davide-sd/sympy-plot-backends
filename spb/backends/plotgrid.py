@@ -5,6 +5,8 @@ import numpy as np
 import panel as pn
 from matplotlib.gridspec import GridSpec
 
+plt.ioff()
+
 
 def _nrows_ncols(nr, nc, nplots):
     """Define the correct number of rows and/or columns based on the number
@@ -28,12 +30,12 @@ def _create_mpl_figure(mapping):
         kw = {"projection": "3d"} if (len(p.series) > 0 and
             p.series[0].is_3D) else {}
         cur_ax = fig.add_subplot(spec, **kw)
-        kw = p._kwargs
-        kw["backend"] = MB
-        kw["fig"] = fig
-        kw["ax"] = cur_ax
-        p = Plot(*p.series, **kw)
-        p.process_series()
+        # cpa: current plot attributes
+        cpa = p._copy_kwargs()
+        cpa["backend"] = MB
+        cpa["fig"] = fig
+        cpa["ax"] = cur_ax
+        p = Plot(*p.series, **cpa)
     return fig
 
 def _create_panel_figure(mapping):
@@ -41,9 +43,6 @@ def _create_panel_figure(mapping):
     for spec, p in mapping.items():
         rs = spec.rowspan
         cs = spec.colspan
-        if isinstance(p, MB) and (not hasattr(p, "ax")):
-            # if the MatplotlibBackend was created without showing it
-            p.process_series()
         fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = p.fig
     return fig
 

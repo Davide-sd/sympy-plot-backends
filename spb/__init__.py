@@ -9,6 +9,8 @@ from spb.functions import (
     plot_implicit,
     plot_polar,
     plot_geometry,
+    plot_list,
+    plot_piecewise
 )
 from spb.plot_data import get_plot_data, smart_plot
 from spb.vectors import plot_vector

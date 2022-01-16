@@ -49,43 +49,71 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
     As a design choice, the following implementation reuses the existing
     classes, instead of creating a new one to deal with Piecewise. Here, each
     piece is going to create at least one series. If a piece is using a union
-    of coditions (for example, ``((x < 0) | (x > 2))``), than two or more series
-    of the same expression are created (for example, one covering ``x < 0`` and
-    the other covering ``x > 2``), both having the same label.
+    of coditions (for example, ``((x < 0) | (x > 2))``), than two or more
+    series of the same expression are created (for example, one covering
+    ``x < 0`` and the other covering ``x > 2``), both having the same label.
 
-    With this approach we can assign different color and label to each piece,
-    thus making it obvious where discontinuities are located.
-
-    However, if a piece is outside of the provided plotting range, then it will
-    not be added to the plot. This may lead to not-complete plots in some
+    However, if a piece is outside of the provided plotting range, then it
+    will not be added to the plot. This may lead to not-complete plots in some
     backend, such as BokehBackend, which is capable of auto-recompute the data
     on mouse drag. If the user drags the mouse over an area previously not
     shown (thus no data series), there won't be any line on the plot in this
     area.
     """
-    series = []
+    # initial range
     irange = Interval(_range[1], _range[2], False, False)
-
-    if "Piecewise(" in label:
-        # piecewise string representation are usually very long. Cut it short
-        # if the user didn't specify any custom label.
-        label = "P"
+    # ultimately it will contain all the series
+    series = []
+    # only contains Line2DSeries with is_filled=True. They have higher
+    # rendering priority, as such they will be added to `series` at last.
+    filled_series = []
 
     def func(expr, _set, c, from_union=False):
         if isinstance(_set, Interval):
-            series.append(
-                LineOver1DRangeSeries(
-                    expr, (_range[0], _set.args[0], _set.args[1]),
-                    label + str(c), **kwargs))
-            if not from_union:
-                c += 1
+            start, end = _set.args[0], _set.args[1]
+            
+            # arbitrary small offset
+            offset = 1e-06
+            # offset must be small even if the interval is small
+            diff = end - start
+            if diff < 1:
+                e = 0
+                while diff < 1:
+                    diff *= 10
+                    e -= 1
+                offset *= e
+
+            # prevent NaNs from happening at the ends of the interval
+            if _set.left_open:
+                start += offset
+            if _set.right_open:
+                end -= offset
+
+            current_label = str(expr) if "Piecewise(" in label else label
+            main_series = LineOver1DRangeSeries(
+                expr, (_range[0], start, end), current_label, **kwargs)
+            series.append(main_series)
+            xx, yy = main_series.get_data()
+
+            if xx[0] != _range[1]:
+                correct_list = series if _set.left_open else filled_series
+                correct_list.append(
+                    List2DSeries([xx[0]], [yy[0]], is_point=True,
+                        is_filled=not _set.left_open)
+                )
+            if xx[-1] != _range[2]:
+                correct_list = series if _set.right_open else filled_series
+                correct_list.append(
+                    List2DSeries([xx[-1]], [yy[-1]], is_point=True,
+                        is_filled=not _set.right_open)
+                )
         elif isinstance(_set, FiniteSet):
             loc, val = [], []
             for _loc in _set.args:
                 loc.append(float(_loc))
                 val.append(float(expr.evalf(subs={_range[0]: _loc})))
-            series.append(List2DSeries(loc, val, label + str(c),
-                    is_point=True))
+            filled_series.append(List2DSeries(loc, val, is_point=True,
+                is_filled=True))
             if not from_union:
                 c += 1
         elif isinstance(_set, Union):
@@ -113,6 +141,7 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
     for expr, cond in expr_cond:
         count = func(expr, irange.intersection(cond), count)
 
+    series += filled_series
     return series
 
 
@@ -205,7 +234,8 @@ def plot(*args, show=True, **kwargs):
 
     args :
         expr : Expr
-            Expression representing the function of two variables to be plotted.
+            Expression representing the function of one variable to be
+            plotted.
 
         range: (symbol, min, max)
             A 3-tuple denoting the range of the x variable. Default values:
@@ -220,10 +250,7 @@ def plot(*args, show=True, **kwargs):
         and specify ``n`` if uniform sampling is required.
 
         The plotting uses an adaptive algorithm which samples
-        recursively to accurately plot. The adaptive algorithm uses a
-        random point near the midpoint of two points that has to be
-        further sampled. Hence the same plots can appear slightly
-        different.
+        recursively to accurately plot.
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
@@ -253,8 +280,9 @@ def plot(*args, show=True, **kwargs):
         ignored.
 
     only_integers : boolean, optional
-        Default to False. If True, discretize the domain with integer numbers.
-        This can be useful to plot sums.
+        Default to `False`. If True, discretize the domain with integer
+        numbers, which can be useful to plot sums. It only works with
+        `adaptive=False`.
 
     polar : boolean
         Default to False. If True, generate a polar plot of a curve with radius
@@ -400,9 +428,6 @@ def plot(*args, show=True, **kwargs):
     series = []
     plot_expr = _check_arguments(args, 1, 1)
     series = _build_line_series(*plot_expr, **kwargs)
-
-    for s in series:
-        print(s)
 
     plots = Plot(*series, **kwargs)
     if show:
@@ -1248,6 +1273,7 @@ def plot_implicit(*args, show=True, **kwargs):
     series_kw["n2"] = kwargs.pop("n2", 1000)
     series_kw["depth"] = kwargs.pop("depth", 0)
     series_kw["adaptive"] = kwargs.pop("adaptive", False)
+    series_kw["contour_kw"] = kwargs.pop("contour_kw", dict())
 
     series = []
     xmin, xmax, ymin, ymax = oo, -oo, oo, -oo
@@ -1624,6 +1650,216 @@ def plot_list(*args, show=True, **kwargs):
     if show:
         p.show()
     return p
+
+
+def plot_piecewise(*args, **kwargs):
+    """Plots univariate piecewise functions.
+
+    Typical usage examples are in the followings:
+
+    - Plotting a single expression with a single range.
+        ``plot_piecewise(expr, range, **kwargs)``
+    - Plotting a single expression with the default range (-10, 10).
+        ``plot_piecewise(expr, **kwargs)``
+    - Plotting multiple expressions with a single range.
+        ``plot_piecewise(expr1, expr2, ..., range, **kwargs)``
+    - Plotting multiple expressions with multiple ranges.
+        ``plot_piecewise((expr1, range1), (expr2, range2), ..., **kwargs)``
+    - Plotting multiple expressions with multiple ranges and custom labels.
+        ``plot_piecewise((expr1, range1, label1), (expr2, range2, label2), ..., legend=True, **kwargs)``
+
+
+    Parameters
+    ==========
+
+    args :
+        expr : Expr
+            Expression representing the function of one variable to be
+            plotted.
+
+        range: (symbol, min, max)
+            A 3-tuple denoting the range of the x variable. Default values:
+            `min=-10` and `max=10`.
+
+        label : str, optional
+            The label to be shown in the legend. If not provided, the string
+            representation of ``expr`` will be used.
+
+    adaptive : bool, optional
+        The default value is set to ``True``. Set adaptive to ``False``
+        and specify ``n`` if uniform sampling is required.
+
+        The plotting uses an adaptive algorithm which samples
+        recursively to accurately plot.
+
+    axis_center : (float, float), optional
+        Tuple of two floats denoting the coordinates of the center or
+        {'center', 'auto'}. Only available with MatplotlibBackend.
+
+    detect_poles : boolean
+            Chose whether to detect and correctly plot poles.
+            Defaulto to False. To improve detection, increase the number of
+            discretization points and/or change the value of `eps`.
+
+    eps : float
+        An arbitrary small value used by the `detect_poles` algorithm.
+        Default value to 0.1. Before changing this value, it is better to
+        increase the number of discretization points.
+
+    n : int, optional
+        Used when the ``adaptive`` is set to ``False``. The function
+        is uniformly sampled at ``n`` number of points.
+        If the ``adaptive`` flag is set to ``True``, this parameter will be
+        ignored.
+
+    only_integers : boolean, optional
+        Default to `False`. If True, discretize the domain with integer
+        numbers, which can be useful to plot sums. It only works with
+        `adaptive=False`.
+
+    show : bool, optional
+        The default value is set to `True`. Set show to `False` and
+        the function will not display the plot. The returned instance of
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
+
+    size : (float, float), optional
+        A tuple in the form (width, height) in inches to specify the size of
+        the overall figure. The default value is set to ``None``, meaning
+        the size will be set by the default backend.
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    xlabel : str, optional
+        Label for the x-axis.
+
+    ylabel : str, optional
+        Label for the y-axis.
+
+    xscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis.
+
+    yscale : 'linear' or 'log', optional
+        Sets the scaling of the y-axis.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, ``(min, max)``.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, ``(min, max)``.
+
+
+    Examples
+    ========
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import symbols, cos, pi, Heaviside
+       >>> from spb import plot_piecewise
+       >>> x = symbols('x')
+
+    Single Plot
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_piecewise(Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10))
+       Plot object containing:
+       [0]: cartesian line: 0 for x over (-10.0, 0.0)
+       [1]: cartesian line: 1 for x over (1e-06, 10.0)
+       [2]: list plot
+       [3]: list plot
+
+    Multiple plots with different ranges and custom labels.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_piecewise(
+       ...   (Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10)),
+       ...   (Piecewise(
+       ...      (sin(x), x < -5),
+       ...      (cos(x), x > 5),
+       ...      (1 / x, True)), (x, -8, 8)),
+       ...   ylim=(-2, 2))
+       Plot object containing:
+       [0]: cartesian line: 0 for x over (-10.0, 0.0)
+       [1]: cartesian line: 1 for x over (1e-06, 10.0)
+       [2]: list plot
+       [3]: list plot
+       [4]: cartesian line: sin(x) for x over (-10.0, -5.000001)
+       [5]: list plot
+       [6]: cartesian line: cos(x) for x over (5.000001, 10.0)
+       [7]: list plot
+       [8]: cartesian line: 1/x for x over (-5.0, 5.0)
+       [9]: list plot
+       [10]: list plot
+
+
+    See Also
+    ========
+
+    plot, plot_polar, plot_parametric, plot_contour, plot3d,
+    plot3d_parametric_line, plot3d_parametric_surface,
+    plot_implicit, plot_geometry, plot_list
+
+    """
+    from spb.defaults import TWO_D_B
+    Backend = kwargs.pop("backend", TWO_D_B)
+
+    def create_one_color_backend(i):
+        class One_Color_Backend(Backend):
+            colorloop = [Backend.colorloop[i]]
+        return One_Color_Backend
     
-        
+    args = _plot_sympify(args)
+    free = set()
+    for a in args:
+        if isinstance(a, Expr):
+            free |= a.free_symbols
+            if len(free) > 1:
+                raise ValueError(
+                    "The same variable should be used in all "
+                    "univariate expressions being plotted."
+                )
+    
+    show = kwargs.get("show", True)
+    kwargs["process_piecewise"] = True
+    kwargs["show"] = False
+    
+    x = free.pop() if free else Symbol("x")
+    kwargs.setdefault("xlabel", x.name)
+    kwargs.setdefault("ylabel", "f(%s)" % x.name)
+    kwargs.setdefault("update_rendering_kw", True)
+    kwargs.setdefault("legend", False)
+    kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
+    series = []
+
+    plots = []
+    plot_expr = _check_arguments(args, 1, 1)
+    for i, a in enumerate(plot_expr):
+        series = _build_line_series(a, **kwargs)
+        B = create_one_color_backend(i)
+        p = B(*series, **kwargs)
+        plots.append(p)
+    
+    p = plots[0]
+    # reapply original color loop
+    p.colorloop = Backend.colorloop
+    p._init_cyclers()
+    for i in range(1, len(plots)):
+        p = p + plots[i]
+    p.legend = False
+    if show:
+        p.show()
+    return p
     

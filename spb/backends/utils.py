@@ -512,18 +512,18 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
     grid.SetPoints(points)
     grid.GetPointData().SetVectors(vtk_vector_field)
 
-    # copy the extracted dictionary: if multiple vector fields are being plotted
+    # copy the dictionary: if multiple vector fields are being plotted
     # simultaneously, we need the original again.
-    stream_kw = kwargs.get("stream_kw", dict()).copy()
-    starts = stream_kw.get("starts", None)
-    max_prop = stream_kw.pop("max_prop", 5000)
+    kwargs = kwargs.copy()
+    starts = kwargs.get("starts", None)
+    max_prop = kwargs.pop("max_prop", 5000)
 
     streamer = vtkStreamTracer()
     streamer.SetInputData(grid)
     streamer.SetMaximumPropagation(max_prop)
 
     seeds = get_seeds_points(xx, yy, zz, uu, vv, ww,
-        to_numpy=False, **stream_kw)
+        to_numpy=False, **kwargs)
 
     if starts is None:
         streamer.SetSourceData(seeds)

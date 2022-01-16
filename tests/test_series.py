@@ -159,6 +159,7 @@ def test_interactive_instance():
     s = InteractiveSeries([u * cos(x)], [(x, -5, 5)], params={u: 1},
         absarg=False)
     assert isinstance(s, LineInteractiveSeries)
+    assert not isinstance(s, AbsArgLineInteractiveSeries)
 
     s = InteractiveSeries([u * cos(x)], [(x, -5, 5)], params={u: 1},
         absarg=True)
@@ -354,6 +355,140 @@ def test_polar():
     xx2, yy2 = s2.get_data()
     assert not np.allclose(xx1, xx2)
     assert not np.allclose(yy1, yy2)
+
+def test_rendering_kw():
+    # verify that each series exposes the `rendering_kw` attribute
+    u, v, x, y, z = symbols("u, v, x:z")
+
+    s = List2DSeries([1, 2, 3], [4, 5, 6])
+    assert isinstance(s.rendering_kw, dict)
+
+    s = LineOver1DRangeSeries(1, (x, -5, 5))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = AbsArgLineSeries(1, (x, -5, 5))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = Parametric2DLineSeries(sin(x), cos(x), (x, 0, pi))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = Parametric3DLineSeries(cos(x), sin(x), x, (x, 0, 2 * pi))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = SurfaceOver2DRangeSeries(x + y, (x, -2, 2), (y, -3, 3))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = ContourSeries(x + y, (x, -2, 2), (y, -3, 3))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = ParametricSurfaceSeries(1, x, y, (x, 0, 1), (y, 0, 1))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = ComplexPointSeries(x + I * y)
+    assert isinstance(s.rendering_kw, dict)
+
+    s = ComplexSurfaceSeries(1, (x, -5 - 2 * I, 5 + 2 * I))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = ComplexDomainColoringSeries(1, (x, -5 - 2 * I, 5 + 2 * I))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = Vector2DSeries(-y, x, (x, -3, 3), (y, -4, 4))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = Vector3DSeries(z, -y, x, (x, -3, 3), (y, -4, 4), (z, -5, 5))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = SliceVector3DSeries(
+        Plane((-1, 0, 0), (1, 0, 0)),
+        z, -y, x,
+        (x, -3, 3), (y, -2, 2), (z, -1, 1))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = PlaneSeries(Plane((0, 0, 0), (1, 1, 1)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = GeometrySeries(Circle(Point(0, 0), 5))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = LineInteractiveSeries([u * cos(x)], [(x, -5, 5)], params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = AbsArgLineInteractiveSeries([u * cos(x)], [(x, -5, 5)], params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = Parametric2DLineInteractiveSeries(
+        [u * cos(x), u * sin(x)], [(x, -5, 5)], params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = Parametric3DLineInteractiveSeries(
+        [u * cos(x), u * sin(x), x], [(x, -5, 5)], params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = SurfaceInteractiveSeries(
+        [u * cos(x * y)], [(x, -5, 5), (y, -5, 5)], params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = ContourInteractiveSeries(
+        [u * cos(x * y)], [(x, -5, 5), (y, -5, 5)], params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = ParametricSurfaceInteractiveSeries(
+        [u * cos(v * x), v * sin(u), u + v], [(u, -5, 5), (v, -5, 5)],
+        params={x: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = Vector2DInteractiveSeries(
+        [u * cos(y), u * sin(x)], [(x, -5, 5), (y, -5, 5)], params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = Vector3DInteractiveSeries(
+        [u * cos(y), u * sin(x), z], [(x, -5, 5), (y, -5, 5), (z, -5, 5)],
+        params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = SliceVector3DInteractiveSeries([u * cos(y), u * sin(x), z],
+        [(x, -5, 5), (y, -5, 5), (z, -5, 5)], params={u: 1},
+        slice=Plane((0, 0, 0), (0, 1, 0)))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = PlaneInteractiveSeries([Plane((u * x, y, 0), (0, 1, 0))],
+        [(x, -5, 5), (y, -5, 5), (z, -5, 5)], params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = GeometryInteractiveSeries(
+        [Circle(Point(0, 0), u * 5)], [], params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = ComplexPointInteractiveSeries([1 + 2 * I * u, 3 + 4 * I],
+        params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+
+    s = ComplexSurfaceInteractiveSeries(sqrt(z), (z, -5 - 5j, 5 + 5j))
+    assert isinstance(s.rendering_kw, dict)
+
+    s = ComplexDomainColoringInteractiveSeries(
+        sqrt(z), (z, -5 - 5j, 5 + 5j))
+    assert isinstance(s.rendering_kw, dict)
+
+
+def test_use_quiver_solid_color():
+    u, x, y = symbols("u, x, y")
+
+    # verify that the attribute `use_quiver_solid_color` is present
+
+    s = Vector2DSeries(-y, x, (x, -3, 3), (y, -4, 4))
+    assert isinstance(s.rendering_kw, dict)
+    assert hasattr(s, "use_quiver_solid_color")
+    assert s.use_quiver_solid_color
+
+    s = Vector2DInteractiveSeries(
+        [u * cos(y), u * sin(x)], [(x, -5, 5), (y, -5, 5)], params={u: 1})
+    assert isinstance(s.rendering_kw, dict)
+    assert hasattr(s, "use_quiver_solid_color")
+    assert s.use_quiver_solid_color
+
 
 def test_data_shape():
     # Verify that the series produces the correct data shape when the input

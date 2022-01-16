@@ -70,8 +70,6 @@ class K3DBackend(Plot):
     cyclic_colormaps = [cc.colorwheel, k3d.paraview_color_maps.Erdc_iceFire_H]
 
     def __new__(cls, *args, **kwargs):
-        # Since Plot has its __new__ method, this will prevent infinite
-        # recursion
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
@@ -80,6 +78,7 @@ class K3DBackend(Plot):
             raise ValueError(
                 "Sorry, K3D backend only works within Jupyter Notebook")
 
+        self._show_label = kwargs.get("show_label", False)
         self._bounds = []
         self._clipping = []
         self._handles = dict()
@@ -100,6 +99,12 @@ class K3DBackend(Plot):
             )
         self.plot_shown = False
         self._process_series(self._series)
+    
+    @staticmethod
+    def _do_sum_kwargs(p1, p2):
+        kw = p1._copy_kwargs()
+        kw["show_label"] = (p1._show_label or p2._show_label)
+        return kw
 
     @staticmethod
     def _int_to_rgb(RGBint):
@@ -142,8 +147,8 @@ class K3DBackend(Plot):
                 x, y, z, _ = s.get_data()
                 positions = np.vstack([x, y, z]).T.astype(np.float32)
                 a = dict(point_size=0.2, color=self._convert_to_int(next(self._cl)))
-                line_kw = self._kwargs.get("line_kw", dict())
-                plt_points = k3d.points(positions=positions, **merge({}, a, line_kw))
+                kw = merge({}, a, s.rendering_kw)
+                plt_points = k3d.points(positions=positions, **kw)
                 plt_points.shader = "mesh"
                 self._fig += plt_points
 
@@ -158,7 +163,7 @@ class K3DBackend(Plot):
                 # keyword arguments for the line object
                 a = dict(
                     width=0.1,
-                    name=s.label if self._kwargs.get("show_label", False) else None,
+                    name=s.label if self._show_label else None,
                     color=self._convert_to_int(next(self._cl)),
                     shader="mesh",
                 )
@@ -166,8 +171,8 @@ class K3DBackend(Plot):
                     a["attribute"] = (param.astype(np.float32),)
                     a["color_map"] = next(self._cm)
                     a["color_range"] = [s.start, s.end]
-                line_kw = self._kwargs.get("line_kw", dict())
-                line = k3d.line(vertices, **merge({}, a, line_kw))
+                kw = merge({}, a, s.rendering_kw)
+                line = k3d.line(vertices, **kw)
                 self._fig += line
 
             elif (s.is_3Dsurface and not s.is_domain_coloring):
@@ -192,7 +197,7 @@ class K3DBackend(Plot):
 
                 self._high_aspect_ratio(x, y, z)
                 a = dict(
-                    name=s.label if self._kwargs.get("show_label", False) else None,
+                    name=s.label if self._show_label else None,
                     side="double",
                     flat_shading=False,
                     wireframe=False,
@@ -201,8 +206,8 @@ class K3DBackend(Plot):
                 if self._use_cm:
                     a["color_map"] = next(self._cm)
                     a["attribute"] = z.astype(np.float32)
-                surface_kw = self._kwargs.get("surface_kw", dict())
-                surf = k3d.mesh(vertices, indices, **merge({}, a, surface_kw))
+                kw = merge({}, a, s.rendering_kw)
+                surf = k3d.mesh(vertices, indices, **kw)
 
                 self._fig += surf
 
@@ -214,9 +219,9 @@ class K3DBackend(Plot):
                     else t for t in [xx, yy, zz, uu, vv, ww]]
 
                 vertices, magn = compute_streamtubes(
-                    xx, yy, zz, uu, vv, ww, self._kwargs)
+                    xx, yy, zz, uu, vv, ww, s.rendering_kw)
 
-                stream_kw = self._kwargs.get("stream_kw", dict())
+                stream_kw = s.rendering_kw.copy()
                 skw = dict(width=0.1, shader="mesh")
                 if self._use_cm and ("color" not in stream_kw.keys()):
                     skw["color_map"] = next(self._cm)
@@ -228,8 +233,9 @@ class K3DBackend(Plot):
                         col = self._convert_to_int(col)
                     stream_kw["color"] = col
 
+                kw = merge({}, skw, stream_kw)
                 self._fig += k3d.line(
-                    vertices.astype(np.float32), **merge({}, skw, stream_kw))
+                    vertices.astype(np.float32), **kw)
 
             elif s.is_3Dvector:
                 xx, yy, zz, uu, vv, ww = s.get_data()
@@ -244,12 +250,12 @@ class K3DBackend(Plot):
                 # default values
                 qkw = dict(scale=1)
                 # user provided values
-                quiver_kw = self._kwargs.get("quiver_kw", dict())
-                qkw = merge(qkw, quiver_kw)
+                qkw = merge(qkw, s.rendering_kw)
                 scale = qkw["scale"]
                 magnitude = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
                 vectors = np.array((uu, vv, ww)).T * scale
                 origins = np.array((xx, yy, zz)).T
+                quiver_kw = s.rendering_kw
                 if self._use_cm and ("color" not in quiver_kw.keys()):
                     colormap = next(self._cm)
                     colors = k3d.helpers.map_colors(magnitude, colormap, [])
@@ -281,7 +287,7 @@ class K3DBackend(Plot):
                 self._high_aspect_ratio(x, y, z)
 
                 a = dict(
-                    name=s.label if self._kwargs.get("show_label", False) else None,
+                    name=s.label if self._show_label else None,
                     side="double",
                     flat_shading=False,
                     wireframe=False,
@@ -301,8 +307,8 @@ class K3DBackend(Plot):
 
                     a["color_map"] = r
                     a["color_range"] = [-np.pi, np.pi]
-                surface_kw = self._kwargs.get("surface_kw", dict())
-                surf = k3d.mesh(vertices, indices, **merge({}, a, surface_kw))
+                kw = merge({}, a, s.rendering_kw)
+                surf = k3d.mesh(vertices, indices, **kw)
 
                 self._fig += surf
 
@@ -311,6 +317,9 @@ class K3DBackend(Plot):
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
                     + "K3D-Jupyter only supports 3D plots."
                 )
+            
+            if self.update_rendering_kw and (kw is not None):
+                s.rendering_kw = kw
 
         xl = self.xlabel if self.xlabel else "x"
         yl = self.ylabel if self.ylabel else "y"
@@ -346,7 +355,7 @@ class K3DBackend(Plot):
         # self._fig.auto_rendering = False
         for i, s in enumerate(self.series):
             if s.is_interactive:
-                self.series[i].update_data(params)
+                self.series[i].params = params
 
                 if s.is_3Dline and s.is_point:
                     x, y, z, _ = self.series[i].get_data()

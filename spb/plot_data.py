@@ -16,8 +16,8 @@ from spb.series import (
     Vector2DSeries,
     Vector3DSeries,
     ContourSeries,
-    ComplexSeries,
-    ComplexInteractiveSeries,
+    ComplexSurfaceSeries,
+    ComplexInteractiveBaseSeries,
     SliceVector3DSeries,
     GeometrySeries,
     PlaneInteractiveSeries,
@@ -191,7 +191,7 @@ def _build_series(*args, **kwargs):
             if k == "00":
                 args = [exprs, ranges, label]
                 if kwargs.get("is_complex", False):
-                    _cls = ComplexInteractiveSeries
+                    _cls = ComplexInteractiveBaseSeries
                     args = [exprs[0], ranges[0], label]
             elif k == "22":
                 if isinstance(args[0], (Vector, DenseMatrix)):

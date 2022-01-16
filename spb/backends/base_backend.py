@@ -141,8 +141,10 @@ class Plot:
     _library = ""
 
     # list of colors to be used in line plots or solid color surfaces.
-    # It can also be an instance of matplotlib's ListedColormap.
-    colorloop = cm.tab10
+    # As a class attribute it must be a list/tuple in order for
+    # `plot_piecewise` to work correctly. As an instance attribute it can
+    # also be an instance of matplotlib's ListedColormap.
+    colorloop = cm.tab10.colors
 
     # child backends should provide a list of color maps to render surfaces.
     colormaps = []
@@ -153,7 +155,8 @@ class Plot:
 
     def __new__(cls, *args, **kwargs):
         backend = cls._get_backend(kwargs)
-        return backend(*args, **kwargs)
+        return super().__new__(backend)
+        # return backend(*args, **kwargs)
 
     @classmethod
     def _get_backend(cls, kwargs):
@@ -176,6 +179,10 @@ class Plot:
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
+        # NOTE: the following attributes is strictly related to
+        # `plot_piecewise`. If it's True, it means that function created
+        # the current backend.
+        self.update_rendering_kw = kwargs.get("update_rendering_kw", False)
         # TODO: it would be nice to have detect_poles=True by default.
         # At this point of development, if that were True there could be times
         # where the algorithm kicks in even when there are no poles. Needs to
@@ -186,9 +193,12 @@ class Plot:
         # enough to iterate over this list.
         self._series = []
         self._series.extend(args)
+        # self._set_rendering_kw(kwargs)
+        # for s in self._series:
+        #     s.rendering_kw = kwargs
 
         # make custom keywords available inside self
-        self._kwargs = kwargs
+        # self._kwargs = kwargs
 
         # The user can choose to use the standard color map loop, or set/provide
         # a solid color loop (for the surface color).
@@ -197,12 +207,15 @@ class Plot:
         # auto-legend: if more than 1 data series has been provided and the user
         # has not set legend=False, then show the legend for better clarity.
         self.legend = kwargs.get("legend", None)
-        if self.legend is None:
+        if not self.legend:
             self.legend = False
             if (len(self._series) > 1) or (
                 any(s.is_parametric for s in self.series) and self._use_cm
             ):
-                self.legend = True
+                # don't show the legend if `plot_piecewise` created this
+                # backend
+                if not self.update_rendering_kw:
+                    self.legend = True
 
         # Objects used to render/display the plots, which depends on the
         # plotting library.
@@ -233,14 +246,36 @@ class Plot:
         self.size = None
         check_and_set("size", kwargs.get("size", None))
 
-        # PlotGrid-specific attributes.
-        self.subplots = kwargs.get("subplots", None)
-        if self.subplots is not None:
-            self._series = []
-            for p in self.subplots:
-                self._series.append(p.series)
-        self.nrows = kwargs.get("nrows", 1)
-        self.ncols = kwargs.get("ncols", 1)
+        # # PlotGrid-specific attributes.
+        # self.subplots = kwargs.get("subplots", None)
+        # if self.subplots is not None:
+        #     self._series = []
+        #     for p in self.subplots:
+        #         self._series.append(p.series)
+        # self.nrows = kwargs.get("nrows", 1)
+        # self.ncols = kwargs.get("ncols", 1)
+    
+    def _copy_kwargs(self):
+        return dict(
+            title = self.title,
+            xlabel = self.xlabel,
+            ylabel = self.ylabel,
+            zlabel = self.zlabel,
+            aspect = self.aspect,
+            axis_center = self.axis_center,
+            grid = self.grid,
+            xscale = self.xscale,
+            yscale = self.yscale,
+            zscale = self.zscale,
+            update_rendering_kw = self.update_rendering_kw,
+            detect_poles = self.detect_poles,
+            use_cm = self._use_cm,
+            legend = self.legend,
+            xlim = self.xlim,
+            ylim = self.ylim,
+            zlim = self.zlim,
+            size = self.size
+        )
 
     def _init_cyclers(self):
         """Create infinite loop iterators over the provided color maps."""
@@ -376,6 +411,7 @@ class Plot:
                 `modified=True`. This will be used by Bokeh in order to update
                 the y-range.
         """
+        print("DETECT POLES")
         if len(x) < 5:
             # failsafe mechanism: when we plot Piecewise functions, there could
             # be pieces to be evaluated at specific locations, for example x=1.
@@ -451,9 +487,7 @@ class Plot:
 
     @property
     def fig(self):
-        """Returns the objects used to render/display the plots, which depends
-        on the backend (hence the plotting library).
-        """
+        """Returns the figure used to render/display the plots."""
         return self._fig
 
     @property
@@ -523,7 +557,7 @@ class Plot:
         series = []
         series.extend(self.series)
         series.extend(other.series)
-        kwargs = merge({}, self._kwargs, other._kwargs)
+        kwargs = self._do_sum_kwargs(self, other)
         return type(self)(*series, **kwargs)
 
     def append(self, arg):
