@@ -306,16 +306,13 @@ def test_MatplotlibBackend():
     assert isinstance(MB.colormaps, (list, tuple))
 
     series = [UnsupportedSeries()]
-    raises(NotImplementedError, lambda: Plot(*series, backend=MB).process_series())
+    raises(NotImplementedError, lambda: Plot(*series, backend=MB))
 
     ### test for line_kw, surface_kw, quiver_kw, stream_kw: they should override
     ### defualt settings.
 
     p = p2(MB, line_kw=dict(color="red"))
     assert len(p.series) == 2
-    # MatplotlibBackend only add data to the plot when the following method
-    # is internally called. But show=False, hence it is not called.
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert isinstance(f, plt.Figure)
@@ -329,10 +326,6 @@ def test_MatplotlibBackend():
 
     p = p3(MB, line_kw=dict(color="red"))
     assert len(p.series) == 1
-    # parametric plot. The label is shown on the colorbar, which is only
-    # visible when legend=True.
-    p.legend = True
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     # parametric plot with use_cm=True -> LineCollection
@@ -344,8 +337,6 @@ def test_MatplotlibBackend():
 
     p = p4(MB, line_kw=dict(color="red"))
     assert len(p.series) == 1
-    p.legend = True
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
@@ -358,7 +349,6 @@ def test_MatplotlibBackend():
     # Here, I override that solid color with a custom color.
     p = p5(MB, surface_kw=dict(color="red"))
     assert len(p.series) == 1
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
@@ -369,7 +359,6 @@ def test_MatplotlibBackend():
 
     p = p6(MB, contour_kw=dict(cmap="jet"))
     assert len(p.series) == 1
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
@@ -379,7 +368,6 @@ def test_MatplotlibBackend():
 
     p = p7a(MB, quiver_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
     assert len(p.series) == 2
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
@@ -390,7 +378,6 @@ def test_MatplotlibBackend():
 
     p = p7b(MB, stream_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
     assert len(p.series) == 2
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
@@ -401,7 +388,6 @@ def test_MatplotlibBackend():
 
     p = p7c(MB, stream_kw=dict(color="red"), contour_kw=dict(cmap="jet"))
     assert len(p.series) == 2
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
@@ -412,7 +398,6 @@ def test_MatplotlibBackend():
 
     p = p9a(MB, quiver_kw=dict(cmap="jet"))
     assert len(p.series) == 1
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
@@ -422,7 +407,6 @@ def test_MatplotlibBackend():
 
     p = p9a(MB, quiver_kw=dict(cmap=None, color="red"), use_cm=False)
     assert len(p.series) == 1
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
@@ -432,7 +416,6 @@ def test_MatplotlibBackend():
 
     p = p9b(MB, stream_kw=dict())
     assert len(p.series) == 1
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
@@ -460,7 +443,6 @@ def test_MatplotlibBackend():
     # NOTE: p11a is pretty much the same as p11b for MB
     p = p11b(MB, contour_kw=dict(cmap="jet"))
     assert len(p.series) == 1
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
@@ -469,7 +451,6 @@ def test_MatplotlibBackend():
 
     p = p13(MB)
     assert len(p.series) == 6
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 6
@@ -479,7 +460,6 @@ def test_MatplotlibBackend():
 
     p = p14(MB, line_kw=dict(color="red"))
     assert len(p.series) == 2
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.get_lines()) == 2
@@ -491,7 +471,6 @@ def test_MatplotlibBackend():
 
     p = p15a(MB, line_kw=dict(color="red"))
     assert len(p.series) == 1
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
@@ -502,7 +481,6 @@ def test_MatplotlibBackend():
 
     p = p15b(MB, image_kw=dict())
     assert len(p.series) == 1
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.images) == 1
@@ -512,7 +490,6 @@ def test_MatplotlibBackend():
 
     p = p15b(MB, image_kw=dict(extent=[-6, 6, -7, 7]))
     assert len(p.series) == 1
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.images) == 1
@@ -522,7 +499,6 @@ def test_MatplotlibBackend():
 
     p = p15c(MB, surface_kw=dict(color="red"))
     assert len(p.series) == 1
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
@@ -569,7 +545,6 @@ def test_MatplotlibBackend():
     # plot geometry
     p = p18(MB)
     assert len(p.series) == 3
-    p.process_series()
     f = p.fig
     ax = f.axes[0]
     assert len(ax.lines) == 3
@@ -1142,9 +1117,10 @@ def test_save():
     # test_plot.py. Here, I'm going to test that:
     # 1. the save method accepts keyword arguments.
     # 2. Bokeh and Plotly should not be able to save static pictures because
-    #    by default they need additional libraries. See the documentation of the
-    #    save methods for each backends to see what is required.
-    #    Hence, if in our system those libraries are installed, tests will fail!
+    #    by default they need additional libraries. See the documentation of
+    #    the save methods for each backends to see what is required.
+    #    Hence, if in our system those libraries are installed, tests will
+    #    fail!
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         p = plot(sin(x), cos(x), backend=MB)
@@ -1253,12 +1229,7 @@ def test_vectors_update_interactive():
             streamlines = True,
             n1 = 10, n2 = 10, n3 = 10
         )
-        p = B()
-        p._series = [s]
-        if B == MB:
-            p.process_series()
-        else:
-            p._process_series(p._series)
+        p = B(s)
         raises(NotImplementedError, lambda : p._update_interactive(params))
 
     func(KBchild1)
