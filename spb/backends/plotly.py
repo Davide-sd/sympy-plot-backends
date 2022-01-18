@@ -98,58 +98,24 @@ class PlotlyBackend(Plot):
     _library = "plotly"
 
     # The following colors corresponds to the discret color map
-    # px.colors.qualitative.Plotly. They are here in order to avoid the
-    # following statement: import plotly.express as px
-    # which happens to slow down the loading phase.
+    # px.colors.qualitative.Plotly.
     colorloop = [
-        "#636EFA",
-        "#EF553B",
-        "#00CC96",
-        "#AB63FA",
-        "#FFA15A",
-        "#19D3F3",
-        "#FF6692",
-        "#B6E880",
-        "#FF97FF",
-        "#FECB52",
-    ]
+        "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
+        "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"]
     # a selection of color maps to be used in 3D surfaces, contour plots.
     colormaps = [
-        "aggrnyl",
-        "plotly3",
-        "reds_r",
-        "ice",
-        "inferno",
-        "deep_r",
-        "turbid_r",
-        "gnbu_r",
-        "geyser_r",
-        "oranges_r",
-    ]
-
+        "aggrnyl", "plotly3", "reds_r", "ice", "inferno",
+        "deep_r", "turbid_r", "gnbu_r", "geyser_r", "oranges_r"]
     # to be used in complex-parametric plots
     cyclic_colormaps = ["phase", "twilight", "hsv", "icefire"]
 
-    # a few solid color that offers medium to good contrast against Plotly's
-    # default colorscale for contour plots
     # TODO: here I selected black and white, but they are not visible with dark
     # or light theme respectively... Need a better selection of colors.
     # Although, they are placed in the middle of the loop, so they are unlikely
     # going to be used.
     quivers_colors = [
-        "magenta",
-        "crimson",
-        "darkorange",
-        "dodgerblue",
-        "wheat",
-        "slategrey",
-        "white",
-        "black",
-        "darkred",
-        "indigo"
-        # "cyan", "greenyellow", "grey", "darkred", "white",
-        # "black", "orange", "silver", "darkcyan", "magenta"
-    ]
+        "magenta", "crimson", "darkorange", "dodgerblue", "wheat",
+        "slategrey", "white", "black", "darkred", "indigo"]
 
     # color bar spacing
     _cbs = 0.15
@@ -164,12 +130,8 @@ class PlotlyBackend(Plot):
         self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
 
         # add colors if needed
-        default_cl = [
-            "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
-            "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"]
-        if (len([s for s in self._series if s.is_2Dline]) > 10) and (
-            self.colorloop == default_cl
-        ):
+        if ((len([s for s in self._series if s.is_2Dline]) > 10) and
+            (len(self.colorloop) <= 10)):
             # this corresponds to px.colors.qualitative.Light24
             self.colorloop = [
                 "#FD3216", "#00FE35", "#6A76FC", "#FED4C4", "#FE00CE",

@@ -21,15 +21,20 @@ class Plot:
        class, containing the necessary information to plot the expressions
        (eg the expression, ranges, series name, ...). Eventually, these objects
        will generate the numerical data to be plotted.
-    3. The plotting functions instantiate the ``Plot`` class, which stores the
+    3. The plotting functions instantiate the `Plot` class, which stores the
        list of series and the main attributes of the plot (eg axis labels,
-       title, etc.). Among the keyword arguments, there must be ``backend``,
-       a subclass of ``Plot`` which specify the backend to be used.
+       title, etc.). Among the keyword arguments, there must be `backend`,
+       a subclass of `Plot` which specify the backend to be used.
     4. The backend will render the numerical data to a plot and (eventually)
        show it on the screen.
+    
+    It is important to realize that the backend-specific figure object is
+    created at instantion of the backend. Thus, all parameters necessary to
+    render the plot must be provided at instantion. After instantion, the
+    backend is unable to modify the figure.
 
     The backend should check if it supports the data series that it's given.
-    Please, explore the ``MatplotlibBackend`` source code to understand how a
+    Please, explore the `MatplotlibBackend` source code to understand how a
     backend should be coded.
 
     Notes
@@ -38,15 +43,15 @@ class Plot:
     In order to be used by SymPy plotting functions, a backend must implement
     the following methods and attributes:
 
-    * ``show(self)``: used to loop over the data series, generate the numerical
+    * `show(self)`: used to loop over the data series, generate the numerical
       data, plot it and set the axis labels, title, ...
-    * ``save(self, path, **kwargs)``: used to save the current plot to the
+    * `save(self, path, **kwargs)`: used to save the current plot to the
       specified file path.
-    * ``self._fig``: an instance attribute to store the backend-specific plot
-      object/s, which can be retrieved with the ``Plot.fig`` attribute. These
-      objects can then be used to further customize the resulting plot, using
-      backend-specific commands. For example, ``MatplotlibBackend`` stores a
-      tuple (figure, axes).
+    * `self._fig`: an instance attribute to store the backend-specific plot
+      object, which can be retrieved with the `Plot.fig` attribute. This
+      object can then be used to further customize the resulting plot, using
+      backend-specific commands.
+    * `_update_interactive(self, params)`: this 
 
     Parameters
     ==========
@@ -63,8 +68,8 @@ class Plot:
 
     xscale, yscale, zscale : str, optional
         Discretization strategy for the provided domain along the specified
-        direction. Can be either ``'linear'`` or ``'log'``. Default to
-        ``'linear'``. If the backend supports it, the specified direction will
+        direction. Can be either `'linear'` or `'log'`. Default to
+        `'linear'`. If the backend supports it, the specified direction will
         use the user-provided scale. By default, all backends uses linear
         scales for both axis. None of the backends support logarithmic scale
         for 3D plots.
@@ -74,7 +79,7 @@ class Plot:
 
     xlim, ylim, zlim : (float, float), optional
         Focus the plot to the specified range. The tuple must be in the form
-        ``(min_val, max_val)``.
+        `(min_val, max_val)`.
     
     aspect : (float, float) or str, optional
         Set the aspect ratio of the plot. It only works for 2D plots.
@@ -85,7 +90,7 @@ class Plot:
         The subclass to be used to generate the plot.
 
     size : (float, float) or None, optional
-        Set the size of the plot, ``(width, height)``. Default to None.
+        Set the size of the plot, `(width, height)`. Default to None.
 
     Examples
     ========
@@ -156,7 +161,6 @@ class Plot:
     def __new__(cls, *args, **kwargs):
         backend = cls._get_backend(kwargs)
         return super().__new__(backend)
-        # return backend(*args, **kwargs)
 
     @classmethod
     def _get_backend(cls, kwargs):
@@ -180,25 +184,19 @@ class Plot:
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
         # NOTE: the following attributes is strictly related to
-        # `plot_piecewise`. If it's True, it means that function created
-        # the current backend.
+        # `plot_piecewise`. If it's True, it means the backend was
+        # instantiated by that function.
         self.update_rendering_kw = kwargs.get("update_rendering_kw", False)
-        # TODO: it would be nice to have detect_poles=True by default.
-        # At this point of development, if that were True there could be times
-        # where the algorithm kicks in even when there are no poles. Needs to
-        # dig deeper into it...
+        # NOTE: it would be nice to have detect_poles=True by default.
+        # However, the correct detection also depends on the number of points
+        # and the value of `eps`. Getting the detection right is likely to
+        # be a trial-by-error procedure. Hence, keep this parameter to False.
         self.detect_poles = kwargs.get("detect_poles", False)
 
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.
         self._series = []
         self._series.extend(args)
-        # self._set_rendering_kw(kwargs)
-        # for s in self._series:
-        #     s.rendering_kw = kwargs
-
-        # make custom keywords available inside self
-        # self._kwargs = kwargs
 
         # The user can choose to use the standard color map loop, or set/provide
         # a solid color loop (for the surface color).
@@ -245,17 +243,11 @@ class Plot:
         check_and_set("zlim", kwargs.get("zlim", None))
         self.size = None
         check_and_set("size", kwargs.get("size", None))
-
-        # # PlotGrid-specific attributes.
-        # self.subplots = kwargs.get("subplots", None)
-        # if self.subplots is not None:
-        #     self._series = []
-        #     for p in self.subplots:
-        #         self._series.append(p.series)
-        # self.nrows = kwargs.get("nrows", 1)
-        # self.ncols = kwargs.get("ncols", 1)
     
     def _copy_kwargs(self):
+        """Copy the values of the plot attributes into a dictionary which will
+        be later used to create a new `Plot` object having the same attributes.
+        """
         return dict(
             title = self.title,
             xlabel = self.xlabel,
@@ -567,15 +559,15 @@ class Plot:
         ==========
 
         arg : BaseSeries
-            An instance of ``BaseSeries`` which will be used to generate the
+            An instance of `BaseSeries` which will be used to generate the
             numerical data.
 
         Examples
         ========
 
-        Consider two ``Plot`` objects, ``p1`` and ``p2``. To add the
+        Consider two `Plot` objects, `p1` and `p2`. To add the
         second plot's first series object to the first, use the
-        ``append`` method, like so:
+        `append` method, like so:
 
         .. plot::
            :format: doctest
@@ -618,8 +610,8 @@ class Plot:
         Examples
         ========
 
-        Consider two ``Plot`` objects, ``p1`` and ``p2``. To add the
-        second plot to the first, use the ``extend`` method, like so:
+        Consider two `Plot` objects, `p1` and `p2`. To add the
+        second plot to the first, use the `extend` method, like so:
 
         .. plot::
            :format: doctest
