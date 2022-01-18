@@ -26,6 +26,17 @@ from spb.series import (
 import numpy as np
 from pytest import warns, raises
 
+# NOTE:
+#
+# These tests are meant to verify that the data series generates the expected
+# numerical data.
+#
+# If the issue is related to the processing and generation of *Series objects,
+# consider adding tests to test_functions.py.
+# If the issue is related to a particular keyword affecting a backend
+# behaviour, consider adding tests to test_backends.py
+#
+
 def test_adaptive():
     # verify that adaptive-related keywords produces the expected results
 

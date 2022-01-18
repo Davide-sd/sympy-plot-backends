@@ -129,8 +129,10 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
         else:
             raise TypeError(
                 "Unhandle situation:\n" +
-                "expr: {}\ncond: {}\ntype(cond): {}".format(str(expr),
-                    _set, type(_set)))
+                "expr: {}\ncond: {}\ntype(cond): {}\n".format(str(expr),
+                    _set, type(_set)) +
+                "See if you can rewrite the piecewise without "
+                "this type of condition and then plot it again.")
 
         return c
 
@@ -200,7 +202,7 @@ def _build_line_series(*args, **kwargs):
     decompose it in such a way that each argument gets its own series.
     """
     series = []
-    pp = kwargs.get("process_piecewise", True)
+    pp = kwargs.get("process_piecewise", False)
     sum_bound = kwargs.get("sum_bound", 1000)
     for arg in args:
         expr, r, label = arg
