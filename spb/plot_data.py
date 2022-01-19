@@ -16,7 +16,8 @@ from spb.series import (
     Vector2DSeries,
     Vector3DSeries,
     ContourSeries,
-    ComplexSurfaceSeries,
+    ComplexSurfaceBaseSeries,
+    # ComplexSurfaceSeries,
     ComplexInteractiveBaseSeries,
     SliceVector3DSeries,
     GeometrySeries,
@@ -41,7 +42,9 @@ def _deal_with_complex_series(exprs, ranges, interactive, kwargs, pt):
     for t in keys:
         kwargs.setdefault(t, False)
     real, imag, _abs, _arg, absarg = [kwargs.get(t, False) for t in keys]
+    
     if any([real, imag, _abs, _arg, absarg]) or (pt == "c"):
+        
         series = _build_complex_series(*exprs, *ranges,
                 interactive=interactive, **kwargs)
         if len(series) > 1:
@@ -72,7 +75,7 @@ def _build_series(*args, **kwargs):
         "v3d": [Vector3DSeries, 3, 3],
         "v3ds": [SliceVector3DSeries, 3, 3],
         "pc": [ContourSeries, 1, 2],
-        "c": [ComplexSeries, 1, 1],
+        "c": [ComplexSurfaceBaseSeries, 1, 1],
         "g": [GeometrySeries, 9, 9],
     }
 
@@ -190,7 +193,10 @@ def _build_series(*args, **kwargs):
             k = str(nexpr) + str(npar)
             if k == "00":
                 args = [exprs, ranges, label]
-                if kwargs.get("is_complex", False):
+                
+                s, e = [complex(t) for t in ranges[0][1:]]
+                if s.imag != e.imag:
+                    # we are dealing with 2D/3D domain coloring
                     _cls = ComplexInteractiveBaseSeries
                     args = [exprs[0], ranges[0], label]
             elif k == "22":
@@ -233,9 +239,8 @@ def _build_series(*args, **kwargs):
 def get_plot_data(*args, **kwargs):
     """
     Return the numerical data associated to the a symbolic expression that we
-    would like to plot. If a symbolic expression can be plotted with any of the
-    plotting functions exposed by spb.functions or spb.vectors, then numerical
-    data will be returned.
+    would like to plot. If a symbolic expression can be plotted with any of
+    the plotting functions exposed by spb.functions or spb.vectors, then numerical data will be returned.
 
     Only one expression at a time can be processed by this function.
     The shape of the numerical data depends on the provided expression.
@@ -243,23 +248,31 @@ def get_plot_data(*args, **kwargs):
     Parameters
     ==========
 
+    args :
+        expr : Expr
+            Expression (or expressions) representing the function to evaluate.
+
+        range: (symbol, min, max)
+            A 3-tuple (or multiple 3-tuple) denoting the range of the
+            variable.
+
     pt : str, optional
         Specify which kind of data the user would like to obtain. Default
-        value is ``None``, indicating the function will use automatic
+        value is `None`, indicating the function will use automatic
         detection. Possible values are:
 
-        - ``"p"``: to specify a line plot.
-        - ``"pp"``: to specify a 2d parametric line plot.
-        - ``"p3dl"``: to specify a 3d parametric line plot.
-        - ``"p3d"``: to specify a 3d plot.
-        - ``"p3ds"``: to specify a 3d parametric surface plot.
-        - ``"pc"``: to specify a contour plot.
-        - ``"pi"``: to specify an implificit plot.
-        - ``"pinter"``: to specify an interactive plot. In such a case, the
-          user will also have to provide a ``param`` dictionary mapping the
+        - `"p"`: to specify a line plot.
+        - `"pp"`: to specify a 2d parametric line plot.
+        - `"p3dl"`: to specify a 3d parametric line plot.
+        - `"p3d"`: to specify a 3d plot.
+        - `"p3ds"`: to specify a 3d parametric surface plot.
+        - `"pc"`: to specify a contour plot.
+        - `"pi"`: to specify an implificit plot.
+        - `"pinter"`: to specify an interactive plot. In such a case, the
+          user will also have to provide a `param` dictionary mapping the
           parameters to their values.
-        - ``"v2d"``: to specify a 2D vector plot.
-        - ``"v3d"``: to specify a 3D vector plot.
+        - `"v2d"`: to specify a 2D vector plot.
+        - `"v3d"`: to specify a 3D vector plot.
 
     get_series : boolean, optional
         If False, it returns the numerical data associated to the provided
@@ -278,40 +291,40 @@ def get_plot_data(*args, **kwargs):
 
     >>> xx, yy = get_plot_data(cos(x), (x, -5, 5))
 
-    Here, ``xx`` and ``yy`` are two lists of coordinates.
+    Here, `xx` and `yy` are two lists of coordinates.
 
     Data from a function with two variables (surface):
 
     >>> xx, yy, zz = get_plot_data(cos(x * y), (x, -5, 5), (y, -10, 10))
 
-    Here, ``xx, yy, zz`` are two-dimensional numpy arrays. `
-    `xx, yy`` represent the mesh grid.
+    Here, `xx, yy, zz` are two-dimensional numpy arrays. `
+    `xx, yy` represent the mesh grid.
 
     Data from a 2D parametric function with one variable (2D line):
 
     >>> xx, yy, param = get_plot_data(cos(u), sin(u), (u, 0, 2 * pi))
 
-    Here, ``xx, yy`` are two lists of coordinates.
+    Here, `xx, yy` are two lists of coordinates.
 
     Data from a 3D parametric function with one variables (3D line):
 
     >>> xx, yy, zz, param = get_plot_data(cos(u), sin(u), u, (u, -5, 5))
 
-    Here, ``xx, yy, zz`` are three lists of coordinates.
+    Here, `xx, yy, zz` are three lists of coordinates.
 
     Data from an implicit relation:
 
     >>> data = get_plot_data(x > y)
 
-    Here, ``data`` depends on the specific case. Its shape could be:
+    Here, `data` depends on the specific case. Its shape could be:
 
-    - ``data = ((xx, yy), 'fill')`` where ``xx, yy`` are two lists of
+    - `data = ((xx, yy), 'fill')` where `xx, yy` are two lists of
       coordinates.
-    - ``data = (xx, yy, zz, 'contour')`` where ``xx, yy, zz`` are
-      two-dimensional numpy arrays. ``xx, yy`` represent the mesh grid.
-      This is returned by objects of type ``Equality``.
-    - ``data = (xx, yy, zz, 'contourf')`` where ``xx, yy, zz`` are
-      two-dimensional numpy arrays. ``xx, yy`` represent the mesh grid.
+    - `data = (xx, yy, zz, 'contour')` where `xx, yy, zz` are
+      two-dimensional numpy arrays. `xx, yy` represent the mesh grid.
+      This is returned by objects of type `Equality`.
+    - `data = (xx, yy, zz, 'contourf')` where `xx, yy, zz` are
+      two-dimensional numpy arrays. `xx, yy` represent the mesh grid.
       This is returned by objects of type non-equalities (greater than,
       less than, ...).
 
@@ -331,7 +344,7 @@ def get_plot_data(*args, **kwargs):
     ...     Matrix([z, y, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5),
     ...     slice = Plane((-2, 0, 0), (1, 1, 1)), n=5)
 
-    Here ``xx, yy, zz, uu, vv, ww`` are three dimensional numpy arrays.
+    Here `xx, yy, zz, uu, vv, ww` are three dimensional numpy arrays.
 
     Get the real part of a complex function over a real range:
 
@@ -348,11 +361,11 @@ def get_plot_data(*args, **kwargs):
     >>> xx, yy, abs, arg, img, colorscale = get_plot_data(gamma(z),
     ...     (z, -3 - 3*I, 3 + 3*I))
 
-    Here, ``xx, yy`` are 2D arrays representing the real and the imaginary part
-    of the domain, respectively. ``abs`` and ``arg`` are the absolute value and
-    argument of the complex function. ``img`` is a matrix [n x m x 3] of RGB
-    colors, whereas ``colorscale`` is a [N x 3] matrix of RGB colors
-    representing the colorscale being used by ``img``.
+    Here, `xx, yy` are 2D arrays representing the real and the imaginary part
+    of the domain, respectively. `abs` and `arg` are the absolute value and
+    argument of the complex function. `img` is a matrix [n x m x 3] of RGB
+    colors, whereas `colorscale` is a [N x 3] matrix of RGB colors
+    representing the colorscale being used by `img`.
 
 
     See also
@@ -371,35 +384,35 @@ def get_plot_data(*args, **kwargs):
 def smart_plot(*args, show=True, **kwargs):
     """
     Smart plot interface. Using the same interface of the other plot functions,
-    namely ``(expr, range, label)``, it unifies the plotting experience.
+    namely `(expr, range, label)`, it unifies the plotting experience.
     If a symbolic expression can be plotted with any of the plotting functions
-    exposed by ``spb.functions`` or ``spb.vectors`` or ``spb.ccomplex.complex``,
-    then ``smart_plot`` will be able to plot it as well.
+    exposed by `spb.functions` or `spb.vectors` or `spb.ccomplex.complex`,
+    then `smart_plot` will be able to plot it as well.
 
     The usual keyword arguments available on every other plotting functions
-    are available (``xlabel``, ..., ``adaptive``, ``n``, etc.).
+    are available (`xlabel`, ..., `adaptive`, `n`, etc.).
 
     Parameters
     ==========
 
     pt : str
         Specify which kind of plot we are intereseted. Default value is
-        ``None``, indicating the function will use automatic detection.
+        `None`, indicating the function will use automatic detection.
         Possible values are:
 
-        - ``"p"``: to specify a line plot.
-        - ``"pp"``: to specify a 2d parametric line plot.
-        - ``"p3dl"``: to specify a 3d parametric line plot.
-        - ``"p3d"``: to specify a 3d plot.
-        - ``"p3ds"``: to specify a 3d parametric surface plot.
-        - ``"pc"``: to specify a contour plot.
-        - ``"pi"``: to specify an implificit plot.
-        - ``"pinter"``: to specify an interactive plot. In such a case, the
-          user will also have to provide a ``param`` dictionary mapping the
+        - `"p"`: to specify a line plot.
+        - `"pp"`: to specify a 2d parametric line plot.
+        - `"p3dl"`: to specify a 3d parametric line plot.
+        - `"p3d"`: to specify a 3d plot.
+        - `"p3ds"`: to specify a 3d parametric surface plot.
+        - `"pc"`: to specify a contour plot.
+        - `"pi"`: to specify an implificit plot.
+        - `"pinter"`: to specify an interactive plot. In such a case, the
+          user will also have to provide a `param` dictionary mapping the
           parameters to their values.
-        - ``"v2d"``: to specify a 2D vector plot.
-        - ``"v3d"``: to specify a 3D vector plot.
-        - ``"g"``: to specify a geometric entity plot.
+        - `"v2d"`: to specify a 2D vector plot.
+        - `"v3d"`: to specify a 3D vector plot.
+        - `"g"`: to specify a geometric entity plot.
 
     Examples
     ========

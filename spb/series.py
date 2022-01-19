@@ -1915,7 +1915,6 @@ class ComplexInteractiveBaseSeries(InteractiveSeries, ComplexSurfaceBaseSeries):
     """Represent an interactive complex function."""
 
     def __new__(cls, *args, **kwargs):
-        threed = kwargs.get("threed", False)
         domain_coloring = kwargs.get("absarg", False)
         
         if domain_coloring:
