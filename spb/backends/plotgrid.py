@@ -1,10 +1,14 @@
+from sympy.external import import_module
 from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import MB
-import matplotlib.pyplot as plt
-import numpy as np
-import panel as pn
-from matplotlib.gridspec import GridSpec
 
+matplotlib = import_module(
+    'matplotlib',
+    import_kwargs={'fromlist':['pyplot', 'gridspec']},
+    min_module_version='1.1.0',
+    catch=(RuntimeError,))
+plt = matplotlib.pyplot
+GridSpec = matplotlib.gridspec.GridSpec
 plt.ioff()
 
 
@@ -12,6 +16,8 @@ def _nrows_ncols(nr, nc, nplots):
     """Define the correct number of rows and/or columns based on the number
     of plots to be shown.
     """
+    np = import_module('numpy', catch=(RuntimeError,))
+
     if (nc <= 0) and (nr <= 0):
         nc = 1
         nr = nplots
@@ -39,6 +45,11 @@ def _create_mpl_figure(mapping):
     return fig
 
 def _create_panel_figure(mapping):
+    pn = import_module(
+        'panel',
+        min_module_version='0.12.0',
+        catch=(RuntimeError,))
+
     fig = pn.GridSpec(sizing_mode="stretch_width")
     for spec, p in mapping.items():
         rs = spec.rowspan

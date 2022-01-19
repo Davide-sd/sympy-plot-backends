@@ -1,15 +1,16 @@
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import get_seeds_points
-import plotly.graph_objects as go
-from plotly.figure_factory import create_quiver, create_streamline
-from mergedeep import merge
+from sympy.external import import_module
+# import plotly.graph_objects as go
+# from plotly.figure_factory import create_quiver, create_streamline
+# from mergedeep import merge
 import itertools
-import matplotlib.cm as cm
 from spb.backends.utils import convert_colormap
 import warnings
-import numpy as np
+# import numpy as np
 import os
+
 
 """
 TODO:
@@ -126,6 +127,12 @@ class PlotlyBackend(Plot):
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
+        plotly = import_module(
+            'plotly',
+            import_kwargs={'fromlist':['graph_objects', 'figure_factory']},
+            min_module_version='5.0.0',
+            catch=(RuntimeError,))
+        go = plotly.graph_objects
         super().__init__(*args, **kwargs)
         self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
 
@@ -186,6 +193,16 @@ class PlotlyBackend(Plot):
         return [[0, col], [1, col]]
 
     def _process_series(self, series):
+        np = import_module('numpy', catch=(RuntimeError,))
+        plotly = import_module(
+            'plotly',
+            import_kwargs={'fromlist':['graph_objects', 'figure_factory']},
+            min_module_version='5.0.0',
+            catch=(RuntimeError,))
+        go = plotly.graph_objects
+        from plotly.figure_factory import create_quiver, create_streamline
+        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        merge = mergedeep.merge
         self._init_cyclers()
 
         # if legend=True and both 3d lines and surfaces are shown, then hide the

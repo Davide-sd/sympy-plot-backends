@@ -19,8 +19,10 @@ from spb.ccomplex.complex import (
     plot_real_imag, plot_complex_vector
 )
 
+from spb.backends.plotgrid import plotgrid
+# NOTE: it would be nice to have `iplot` readily available, however loading
+# `panel` is a slow operation.
 # from spb.interactive import iplot
-# from spb.backends.plotgrid import plotgrid
 
 # aliases
 parametric_plot = plot_parametric

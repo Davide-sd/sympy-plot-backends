@@ -1,15 +1,20 @@
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import compute_streamtubes
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-from matplotlib.collections import LineCollection
-from matplotlib.colors import ListedColormap, Normalize
-import mpl_toolkits
-from mpl_toolkits.mplot3d.art3d import Line3DCollection, Path3DCollection
-import numpy as np
-from mergedeep import merge
+from sympy.external import import_module
 import itertools
+        
+matplotlib = import_module(
+    'matplotlib',
+    import_kwargs={'fromlist':['pyplot', 'cm', 'collections', 'colors']},
+    min_module_version='1.1.0',
+    catch=(RuntimeError,))
+plt = matplotlib.pyplot
+cm = matplotlib.cm
+LineCollection = matplotlib.collections.LineCollection
+ListedColormap = matplotlib.colors.ListedColormap
+Normalize = matplotlib.colors.Normalize
+plt.ioff()
 
 """
 TODO:
@@ -21,7 +26,6 @@ TODO:
 # Set to False when running tests / doctests so that the plots don't show.
 _show = True
 
-plt.ioff()
 
 def unset_show():
     """
@@ -140,8 +144,7 @@ class MatplotlibBackend(Plot):
 
     colormaps = [
         cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
-        cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer,
-    ]
+        cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer]
 
     cyclic_colormaps = [cm.twilight, cm.hsv]
 
@@ -149,7 +152,6 @@ class MatplotlibBackend(Plot):
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
-        # set global options like title, axis labels, ...
         super().__init__(*args, **kwargs)
 
         # plotgrid() can provide its figure and axes to be populated with
@@ -165,9 +167,8 @@ class MatplotlibBackend(Plot):
 
         if self.axis_center is None:
             self.axis_center = cfg["matplotlib"]["axis_center"]
-        # see self._add_handle for more info about the following dictionary
-        self._handles = dict()
 
+        self._handles = dict()
         self.process_series()
 
     @staticmethod
@@ -176,6 +177,7 @@ class MatplotlibBackend(Plot):
 
     def _init_cyclers(self):
         super()._init_cyclers()
+        np = import_module('numpy', catch=(RuntimeError,))
 
         # For flexibily, spb.backends.utils.convert_colormap returns numpy
         # ndarrays whenever plotly/colorcet/k3d color map are given. Here we
@@ -262,6 +264,7 @@ class MatplotlibBackend(Plot):
             z: list
                 List of z-coordinates for a 3D line.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
         if z is not None:
             dim = 3
             points = (x, y, z)
@@ -310,6 +313,15 @@ class MatplotlibBackend(Plot):
     def _process_series(self, series):
         # XXX Workaround for matplotlib issue
         # https://github.com/matplotlib/matplotlib/issues/17130
+        np = import_module('numpy', catch=(RuntimeError,))
+        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        merge = mergedeep.merge
+        mpl_toolkits = import_module(
+            'mpl_toolkits', # noqa
+            import_kwargs={'fromlist': ['mplot3d']},
+            catch=(RuntimeError,))
+        Line3DCollection = mpl_toolkits.mplot3d.art3d.Line3DCollection
+        Path3DCollection = mpl_toolkits.mplot3d.art3d.Path3DCollection
         xlims, ylims, zlims = [], [], []
 
         self.ax.cla()
@@ -662,6 +674,11 @@ class MatplotlibBackend(Plot):
         self._set_lims(xlims, ylims, zlims)
 
     def _set_lims(self, xlims, ylims, zlims):
+        np = import_module('numpy', catch=(RuntimeError,))
+        mpl_toolkits = import_module(
+            'mpl_toolkits', # noqa
+            import_kwargs={'fromlist': ['mplot3d']},
+            catch=(RuntimeError,))
         Axes3D = mpl_toolkits.mplot3d.Axes3D
         if not isinstance(self.ax, Axes3D):
             self.ax.autoscale_view(
@@ -730,6 +747,7 @@ class MatplotlibBackend(Plot):
         The name is misleading: here we create a new colorbar which will be
         placed on the same colorbar axis as the original.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
         cax.clear()
         norm = Normalize(vmin=np.amin(param), vmax=np.amax(param))
         mappable = cm.ScalarMappable(cmap=kw["cmap"], norm=norm)
@@ -739,6 +757,13 @@ class MatplotlibBackend(Plot):
         # With this backend, data is only being added once the plot is shown.
         # However, iplot doesn't call the show method. The following line of
         # code will add the numerical data (if not already present).
+        np = import_module('numpy', catch=(RuntimeError,))
+        mpl_toolkits = import_module(
+            'mpl_toolkits', # noqa
+            import_kwargs={'fromlist': ['mplot3d']},
+            catch=(RuntimeError,))
+        Line3DCollection = mpl_toolkits.mplot3d.art3d.Line3DCollection
+        Path3DCollection = mpl_toolkits.mplot3d.art3d.Path3DCollection
         if len(self._handles) == 0:
             self.process_series()
 

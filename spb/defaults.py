@@ -1,13 +1,17 @@
-from appdirs import user_data_dir
 import os
 import json
-from mergedeep import merge
 import warnings
 from inspect import currentframe
+from sympy.external import import_module
+
+appdirs = import_module(
+    'appdirs',
+    min_module_version='1.4.4',
+    catch=(RuntimeError,))
 
 appname = "spb"
 cfg_file = "config.json"
-cfg_dir = user_data_dir(appname)
+cfg_dir = appdirs.user_data_dir(appname)
 os.makedirs(cfg_dir, exist_ok=True)
 file_path = os.path.join(cfg_dir, cfg_file)
 
@@ -53,6 +57,9 @@ def reset():
 
 def _load_settings():
     """Load settings and inject the names into the current namespace."""
+    mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+    merge = mergedeep.merge
+
     frame = currentframe()
 
     cfg = dict()

@@ -1,7 +1,7 @@
-import numpy as np
 import param
 import panel as pn
 from sympy import latex, Tuple
+from sympy.external import import_module
 from spb.series import (
     InteractiveSeries,
     _set_discretization_points,
@@ -10,8 +10,17 @@ from spb.ccomplex.complex import _build_series as _build_complex_series
 from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify, _unpack_args
 from spb.defaults import TWO_D_B, THREE_D_B
-from bokeh.models.formatters import TickFormatter
 import warnings
+
+param = import_module(
+    'param',
+    min_module_version='1.11.0',
+    catch=(RuntimeError,))
+pn = import_module(
+    'panel',
+    min_module_version='0.12.0',
+    catch=(RuntimeError,))
+
 
 pn.extension("plotly")
 
@@ -20,7 +29,6 @@ class MyList(param.ObjectSelector):
     """Represent a list of numbers discretizing a log-spaced slider.
     This parameter will be rendered by pn.widgets.DiscreteSlider
     """
-
     pass
 
 
@@ -68,6 +76,8 @@ class DynamicParam(param.Parameterized):
                 Discretization spacing. Can be "linear" or "log".
                 Default to "linear".
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         if len(v) >= 5:
             # remove tick_format, as it won't be used for the creation of the
             # parameter. Its value has already been stored.
@@ -116,6 +126,13 @@ class DynamicParam(param.Parameterized):
         return {k: v for k, v in zip(defaults_keys, values)}
 
     def __init__(self, *args, name="", params=None, **kwargs):
+        bokeh = import_module(
+            'bokeh',
+            import_kwargs={'fromlist':['models']},
+            min_module_version='2.3.0',
+            catch=(RuntimeError,))
+        TickFormatter = bokeh.models.formatters.TickFormatter
+            
         # remove the previous class attributes added by the previous instances
         cls_name = type(self).__name__
         setattr(type(self), "_" + cls_name + "__params", dict())

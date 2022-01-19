@@ -5,7 +5,6 @@ from sympy.vector.operators import _get_coord_systems
 from sympy.utilities.iterables import ordered
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
-import numpy as np
 
 
 def get_lambda(expr, **kwargs):
@@ -323,6 +322,8 @@ def get_vertices_indices(x, y, z):
         x, y, z : np.array
             2D arrays
     """
+    np = import_module('numpy', catch=(RuntimeError,))
+    
     rows, cols = x.shape
     x = x.flatten()
     y = y.flatten()

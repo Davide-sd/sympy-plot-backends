@@ -26,17 +26,16 @@ from sympy import (
 )
 from spb.backends.base_backend import Plot
 from spb.utils import _plot_sympify, _check_arguments, _unpack_args
-
-# N.B.
-# When changing the minimum module version for matplotlib, please change
-# the same in the `SymPyDocTestFinder`` in `sympy/testing/runtests.py`
-
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
     ImplicitSeries, _set_discretization_points,
     List2DSeries, GeometrySeries
 )
+
+# N.B.
+# When changing the minimum module version for matplotlib, please change
+# the same in the `SymPyDocTestFinder`` in `sympy/testing/runtests.py`
 
 
 def _process_piecewise(piecewise, _range, label, **kwargs):

@@ -19,13 +19,8 @@ from sympy.plotting.experimental_lambdify import (
     experimental_lambdify,
 )
 from sympy.plotting.intervalmath import interval
+from sympy.external import import_module
 import warnings
-import numpy as np
-
-from adaptive import Learner1D
-from adaptive.runner import simple
-from adaptive.learner.learner1D import default_loss
-
 
 
 def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
@@ -97,6 +92,15 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
 
     .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
     """
+    np = import_module('numpy', catch=(RuntimeError,))
+    adaptive = import_module(
+        'adaptive',
+        import_kwargs={'fromlist':['runner', 'learner']},
+        min_module_version='0.12.0',
+        catch=(RuntimeError,))
+    simple = adaptive.runner.simple
+    Learner1D = adaptive.learner.learner1D.Learner1D
+    default_loss = adaptive.learner.learner1D.default_loss
     from functools import partial
 
     # TODO:
@@ -173,6 +177,8 @@ def uniform_eval(free_symbols, expr, *args, modules=None):
     return _uniform_eval(f1, f2, *args, modules=modules)
 
 def _uniform_eval(f1, f2, *args, modules=None):
+    np = import_module('numpy', catch=(RuntimeError,))
+
     def wrapper_func(func, *args):
         try:
             return complex(func(*args))
@@ -274,6 +280,8 @@ class BaseSeries:
             type of start/end) even if only_integers=True. It is left for
             the downstream code to perform further casting, if necessary.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         if only_integers is True:
             start, end = int(start), int(end)
             N = end - start + 1
@@ -302,6 +310,8 @@ class BaseSeries:
         new_a : np.ndarray
             An array with the correct shape.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         if not isinstance(a, np.ndarray):
             a = np.array(a)
         if a.shape != b.shape:
@@ -359,6 +369,8 @@ class Line2DBaseSeries(BaseSeries):
             Parametric3DLineSeries or AbsArgLineSeries (and their
             corresponding interactive series).
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         points = self.get_points()
         if self.steps is True:
             if self.is_2Dline:
@@ -382,6 +394,8 @@ class List2DSeries(Line2DBaseSeries):
 
     def __init__(self, list_x, list_y, label="", **kwargs):
         super().__init__(**kwargs)
+        np = import_module('numpy', catch=(RuntimeError,))
+
         self.list_x = np.array(list_x, dtype=np.float64)
         self.list_y = np.array(list_y, dtype=np.float64)
         if len(list_x) != len(list_y):
@@ -439,6 +453,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         )
 
     def _adaptive_sampling(self):
+        np = import_module('numpy', catch=(RuntimeError,))
+
         def func(f, imag, x):
             try:
                 w = complex(f(x + 1j * imag))
@@ -459,6 +475,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         return data[:, 0], data[:, 1], data[:, 2]
 
     def _uniform_sampling(self):
+        np = import_module('numpy', catch=(RuntimeError,))
+
         x = xx = self._discretize(self.start.real, self.end.real, self.n, scale=self.scale, only_integers=self.only_integers)
 
         if self.is_complex:
@@ -497,6 +515,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         """Compute the steepness of each segment. If it's greater than a
         threshold, set the right-point y-value non NaN.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         yy = y.copy()
         threshold = np.pi / 2 - eps
         for i in range(len(x) - 1):
@@ -521,8 +541,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         y : np.ndarray
             Numerical evaluation result.
         """
-        # if self._x is not None:
-        #     return self._x, self._y
+        np = import_module('numpy', catch=(RuntimeError,))
 
         x, _re, _im = self._get_real_imag()
         # The evaluation could produce complex numbers. Set real elements
@@ -535,14 +554,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             return self._detect_poles(x, _re, self.eps)
         return x, _re
 
-        # self._x, self._y = x, _re
-        # if self.polar:
-        #     self._x = _re * np.cos(x)
-        #     self._y = _re * np.sin(x)
-        # if self.detect_poles:
-        #     self._x, self._y = self._detect_poles(x, _re, self.eps)
-        # return self._x, self._y
-    
 
 class AbsArgLineSeries(LineOver1DRangeSeries):
     """Represents the absolute value of a complex function colored by its
@@ -579,6 +590,8 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
         _arg : np.ndarray
             Argument of the function.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         x, _re, _im = self._get_real_imag()
         _abs = np.sqrt(_re**2 + _im**2)
         _angle = np.arctan2(_im, _re)
@@ -594,6 +607,8 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         """Evaluate the specified expression over a predefined
         param-discretization.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         v = uniform_eval([self.var], expr, param, modules=self.modules)
         re_v, im_v = np.real(v), np.imag(v)
         re_v = self._correct_size(re_v, param)
@@ -602,6 +617,8 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         return re_v
     
     def _adaptive_sampling(self):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         def func(f, is_2Dline, x):
             try:
                 w = [complex(t) for t in f(x)]
@@ -735,6 +752,8 @@ class SurfaceBaseSeries(BaseSeries):
         self._rendering_kw = kwargs.get("surface_kw", dict())
 
     def _discretize(self, s1, e1, s2, e2):
+        np = import_module('numpy', catch=(RuntimeError,))
+
         mesh_x = super()._discretize( s1, e1, self.n1,
             self.xscale, self.only_integers)
         mesh_y = super()._discretize(s2, e2, self.n2,
@@ -764,6 +783,8 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         )
     
     def _adaptive_sampling(self):
+        np = import_module('numpy', catch=(RuntimeError,))
+
         def func(f, xy):
             return f(*xy)
             try:
@@ -779,15 +800,13 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
             loss_fn=self.loss_fn)
     
     def _uniform_sampling(self):
+        np = import_module('numpy', catch=(RuntimeError,))
+
         mesh_x, mesh_y = self._discretize(self.start_x, self.end_x,
             self.start_y, self.end_y)
 
         v = uniform_eval([self.var_x, self.var_y], self.expr,
             mesh_x, mesh_y, modules=self.modules)
-        print("expr", self.expr)
-        print("type(mesh_x)", type(mesh_x), mesh_x.dtype)
-        print("type(mesh_y)", type(mesh_y), mesh_y.dtype)
-        print("v", type(v), v.dtype, v)
         re_v, im_v = np.real(v), np.imag(v)
         re_v = self._correct_size(re_v, mesh_x)
         im_v = self._correct_size(im_v, mesh_x)
@@ -861,6 +880,8 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         """ Evaluate the specified expression over a predefined
         param-discretization.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         v = uniform_eval([self.var_u, self.var_v], expr, *args,
             modules=self.modules)
         re_v, im_v = np.real(v), np.imag(v)
@@ -1024,6 +1045,8 @@ class ImplicitSeries(BaseSeries):
 
     def _get_raster_interval(self, func):
         """Uses interval math to adaptively mesh and obtain the plot"""
+        np = import_module('numpy', catch=(RuntimeError,))
+
         k = self.depth
         interval_list = []
         # Create initial 32 divisions
@@ -1107,6 +1130,8 @@ class ImplicitSeries(BaseSeries):
         In the case of equality, ``contour`` function of matplotlib can
         be used. In other cases, matplotlib's ``contourf`` is used.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         expr, equality = self._preprocess_meshgrid_expression(self.expr)
         xarray = self._discretize(self.start_x, self.end_x, self.n1, self.xscale)
         yarray = self._discretize(self.start_y, self.end_y, self.n2, self.yscale)
@@ -1159,6 +1184,8 @@ class ImplicitSeries(BaseSeries):
         Matplotlib will render smooth lines, Plotly will looks
         square-ish/segmented.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         z_grid = ImplicitSeries._correct_size(z_grid, x_grid)
         # ones contains data useful to plot regions, or in case of Plotly,
         # contour lines too.
@@ -1223,6 +1250,8 @@ class InteractiveSeries(BaseSeries):
             return SliceVector3DInteractiveSeries(exprs, ranges, *args, **kwargs)
 
     def __init__(self, exprs, ranges, label="", **kwargs):
+        np = import_module('numpy', catch=(RuntimeError,))
+
         # free symbols of the parameters
         self._params = kwargs.get("params", dict())
         # number of discretization points
@@ -1332,6 +1361,8 @@ class InteractiveSeries(BaseSeries):
         self._params = p
     
     def _str(self, series_type):
+        np = import_module('numpy', catch=(RuntimeError,))
+
         ranges = [(k, np.amin(v), np.amax(v)) for k, v in self.ranges.items()]
         return ("interactive %s: %s with ranges %s and parameters %s") % (
             series_type,
@@ -1363,6 +1394,8 @@ class InteractiveSeries(BaseSeries):
     def _evaluate(self):
         """Evaluate the function based on the current values of the parameters.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         # discretized ranges all have the same shape. Take the first!
         discr = list(self.ranges.values())[0]
 
@@ -1412,6 +1445,8 @@ class LineInteractiveSeries(InteractiveSeries, Line2DBaseSeries):
         y: np.ndarray
             y-coordinates
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+
         results = self._evaluate()[0]
         _re, _im = np.real(results), np.imag(results)
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
@@ -1453,6 +1488,8 @@ class AbsArgLineInteractiveSeries(LineInteractiveSeries):
         arg: np.ndarray
             argument
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         results = self._evaluate()[0]
         _re, _im = np.real(results), np.imag(results)
         _abs = np.sqrt(_re**2 + _im**2)
@@ -1493,6 +1530,8 @@ class Parametric2DLineInteractiveSeries(InteractiveSeries, Line2DBaseSeries):
         z: np.ndarray (optional)
             z-coordinates in case of Parametric3DLineInteractiveSeries
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         results = self._evaluate()
         _re, _im = np.real(results), np.imag(results)
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
@@ -1538,6 +1577,8 @@ class SurfaceInteractiveSeries(InteractiveSeries):
         z : np.ndarray [n2 x n1]
             Results of the evaluation.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         results = self._evaluate()[0]
         _re, _im = np.real(results), np.imag(results)
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
@@ -1579,6 +1620,8 @@ class ParametricSurfaceInteractiveSeries(SurfaceInteractiveSeries):
         z : np.ndarray [n2 x n1]
             z-coordinates.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         results = self._evaluate()
         for i in range(len(results)):
             _re, _im = np.real(results[i]), np.imag(results[i])
@@ -1612,6 +1655,8 @@ class ComplexPointSeries(Line2DBaseSeries):
 
     @staticmethod
     def _evaluate(points):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         x_list, y_list = [], []
         points = np.array([complex(p) for p in points])
         return np.real(points), np.imag(points)
@@ -1733,6 +1778,8 @@ class ComplexSurfaceBaseSeries(BaseSeries):
             )
 
     def _common_eval(self):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         start_x = self.start.real
         end_x = self.end.real
         start_y = self.start.imag
@@ -1774,6 +1821,8 @@ class ComplexSurfaceSeries(ComplexSurfaceBaseSeries):
             self._rendering_kw = kwargs.get("contour_kw", dict())
 
     def _correct_output(self, domain, z):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         return np.real(domain), np.imag(domain), np.real(z)
 
     def get_data(self):
@@ -1825,6 +1874,8 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
         return self.coloring(w)
 
     def _correct_output(self, domain, z):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         return (
             np.real(domain), np.imag(domain),
             np.absolute(z), np.angle(z),
@@ -1872,6 +1923,8 @@ class ComplexInteractiveBaseSeries(InteractiveSeries, ComplexSurfaceBaseSeries):
         return ComplexSurfaceInteractiveSeries(*args, **kwargs)
 
     def __init__(self, expr, r, label="", **kwargs):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         self._params = kwargs.get("params", dict())
         self._init_attributes(expr, r, label, **kwargs)
         self._check_fs([expr], [r], label, self._params)
@@ -1981,6 +2034,8 @@ class ComplexDomainColoringInteractiveSeries(ComplexInteractiveBaseSeries, Compl
         colors : np.ndarray [256 x 3]
             Color scale associated to `img`.
         """
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         domain = list(self.ranges.values())[0]
         results = self._evaluate()[0]
         return (
@@ -2058,12 +2113,16 @@ class VectorBase(BaseSeries):
             self._rendering_kw = kwargs.get("quiver_kw", dict())
     
     def _discretize(self):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         one_d = []
         for r, n, s in zip(self.ranges, self.n, self.scales):
             one_d.append(super()._discretize(r[1], r[2], n, s, self.only_integers))
         return np.meshgrid(*one_d)
     
     def _eval_component(self, meshes, fs, expr):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         v = uniform_eval(fs, expr, *meshes, modules=self.modules)
         re_v, im_v = np.real(v), np.imag(v)
         re_v = self._correct_size(re_v, meshes[0])
@@ -2164,6 +2223,8 @@ class VectorInteractiveBaseSeries(InteractiveSeries):
             self._rendering_kw = kwargs.get("quiver_kw", dict())
 
     def get_data(self):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         discr = [np.real(t) for t in self.ranges.values()]
         results = self._evaluate()
 
@@ -2256,6 +2317,8 @@ class PlaneSeries(SurfaceBaseSeries):
         )
 
     def get_data(self):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         x, y, z = symbols("x, y, z")
         plane = self.plane.subs(self._params)
         fs = plane.equation(x, y, z).free_symbols
@@ -2392,6 +2455,8 @@ class GeometrySeries(BaseSeries):
         self._rendering_kw = kwargs.get("fill_kw", dict())
 
     def get_data(self):
+        np = import_module('numpy', catch=(RuntimeError,))
+        
         expr = self.expr.subs(self._params)
         if isinstance(expr, Point3D):
             return (

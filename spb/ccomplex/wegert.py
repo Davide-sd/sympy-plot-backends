@@ -11,8 +11,8 @@ Elias Wegert kindly granted permission to re-license the colorscheme routine
 under BSD 3 clauses.
 """
 
-import numpy as np
-from matplotlib.colors import hsv_to_rgb
+from sympy.external import import_module
+np = import_module('numpy', catch=(RuntimeError,))
 
 
 def to_rgb_255(func):
@@ -22,6 +22,21 @@ def to_rgb_255(func):
         rgb = func(*args, **kwargs)
         return (rgb * 255).astype(np.uint8)
 
+    return wrapper
+
+def _hsv_to_rgb_helper(arr):
+    matplotlib = import_module(
+        'matplotlib',
+        import_kwargs={'fromlist':['colors']},
+        min_module_version='1.1.0',
+        catch=(RuntimeError,))
+    return matplotlib.colors.hsv_to_rgb(arr)
+
+def hsv_to_rgb(func):
+    """Convert a Numpy array of HSV values to RGB values."""
+    def wrapper(*args, **kwargs):
+        arr = func(*args, **kwargs)
+        return _hsv_to_rgb_helper(arr)
     return wrapper
 
 
@@ -60,6 +75,7 @@ def bw_stripes_mag(w, phaseres=20):
 
 
 @to_rgb_255
+@hsv_to_rgb
 def domain_coloring(w, phaseres=20):
     """Standard domain coloring."""
     arg = np.angle(w)
@@ -68,10 +84,11 @@ def domain_coloring(w, phaseres=20):
     arg /= 2 * np.pi
     H = arg
     S = V = np.ones_like(H)
-    return hsv_to_rgb(np.dstack([H, S, V]))
+    return np.dstack([H, S, V])
 
 
 @to_rgb_255
+@hsv_to_rgb
 def enhanced_domain_coloring(w, phaseres=20):
     """Enhanced domain coloring showing iso-lines for magnitude and phase."""
     mag, arg = np.absolute(w), np.angle(w)
@@ -83,10 +100,11 @@ def enhanced_domain_coloring(w, phaseres=20):
     black = blackp * blackm
     H = arg
     S, V = np.ones_like(H), black
-    return hsv_to_rgb(np.dstack([H, S, V]))
+    return np.dstack([H, S, V])
 
 
 @to_rgb_255
+@hsv_to_rgb
 def enhanced_domain_coloring_phase(w, phaseres=20):
     """Enhanced domain coloring showing iso-lines for phase."""
     arg = np.angle(w)
@@ -96,10 +114,11 @@ def enhanced_domain_coloring_phase(w, phaseres=20):
     blackp = saw_func(arg, 1 / phaseres, 0.75, 1)
     H = arg
     S, V = np.ones_like(H), blackp
-    return hsv_to_rgb(np.dstack([H, S, V]))
+    return np.dstack([H, S, V])
 
 
 @to_rgb_255
+@hsv_to_rgb
 def enhanced_domain_coloring_mag(w, phaseres=20):
     """Enhanced domain coloring showing iso-lines for magnitude."""
     mag, arg = np.absolute(w), np.angle(w)
@@ -109,7 +128,7 @@ def enhanced_domain_coloring_mag(w, phaseres=20):
     blackm = saw_func(np.log(mag), 2 * np.pi / phaseres, 0.75, 1)
     H = arg
     S, V = np.ones_like(H), blackm
-    return hsv_to_rgb(np.dstack([H, S, V]))
+    return np.dstack([H, S, V])
 
 
 @to_rgb_255
@@ -180,7 +199,7 @@ def create_colorscale(N=256):
     """
     H = np.linspace(0, 1, N)
     S = V = np.ones_like(H)
-    colorscale = hsv_to_rgb(np.dstack([H, S, V]))
+    colorscale = _hsv_to_rgb_helper(np.dstack([H, S, V]))
     colorscale = (colorscale.reshape((-1, 3)) * 255).astype(np.uint8)
     colorscale = np.roll(colorscale, int(len(colorscale) / 2), axis=0)
     return colorscale

@@ -1,26 +1,27 @@
+from sympy.external import import_module
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from bokeh.plotting import figure, show
-from bokeh.io import output_notebook
-import bokeh.palettes as bp
-from bokeh.models import (
-    LinearColorMapper,
-    ColumnDataSource,
-    MultiLine,
-    ColorBar,
-    Segment,
-)
-from bokeh.models.tickers import FixedTicker
-from bokeh.io import export_png, export_svg
-from bokeh.events import PanEnd
-import itertools
-import colorcet as cc
-import os
-import numpy as np
-from mergedeep import merge
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 from spb.backends.utils import convert_colormap
+import itertools
+import os
+
+bokeh = import_module(
+    'bokeh',
+    import_kwargs={'fromlist':['models', 'events', 'plotting', 'io', 'palettes']},
+    min_module_version='2.3.0',
+    catch=(RuntimeError,))
+bp = bokeh.palettes
+cc = import_module(
+    'colorcet',
+    min_module_version='3.0.0',
+    catch=(RuntimeError,))
+matplotlib = import_module(
+    'matplotlib',
+    import_kwargs={'fromlist':['pyplot', 'cm']},
+    min_module_version='1.1.0',
+    catch=(RuntimeError,))
+plt = matplotlib.pyplot
+cm = matplotlib.cm
 
 
 def get_contour_data(X, Y, Z, get_source=True):
@@ -41,7 +42,7 @@ def get_contour_data(X, Y, Z, get_source=True):
     data = {"xs": xs, "ys": ys}
     if not get_source:
         return data
-    return ColumnDataSource(data=data)
+    return bokeh.models.ColumnDataSource(data=data)
 
 
 def compute_streamlines(x, y, u, v, density=1.0):
@@ -53,6 +54,7 @@ def compute_streamlines(x, y, u, v, density=1.0):
 
     Credit: https://docs.bokeh.org/en/latest/docs/gallery/quiver.html
     """
+    np = import_module('numpy', catch=(RuntimeError,))
 
     # TODO: is it possible to further optimize this function?
 
@@ -288,7 +290,7 @@ class BokehBackend(Plot):
         self._run_in_notebook = False
         if self._get_mode() == 0:
             self._run_in_notebook = True
-            output_notebook(hide_banner=True)
+            bokeh.io.output_notebook(hide_banner=True)
 
         # add colors if needed
         if (len([s for s in self._series if s.is_2Dline]) > 10) and (
@@ -316,7 +318,7 @@ class BokehBackend(Plot):
             # for complex domain coloring
             sizing_mode = None
 
-        self._fig = figure(
+        self._fig = bokeh.plotting.figure(
             title=self.title,
             x_axis_label=self.xlabel if self.xlabel else "x",
             y_axis_label=self.ylabel if self.ylabel else "y",
@@ -333,7 +335,7 @@ class BokehBackend(Plot):
         )
         self._fig.axis.visible = self.grid
         self._fig.grid.visible = self.grid
-        self._fig.on_event(PanEnd, self._pan_update)
+        self._fig.on_event(bokeh.events.PanEnd, self._pan_update)
         self._process_series(self._series)
     
     @staticmethod
@@ -343,6 +345,9 @@ class BokehBackend(Plot):
         return kw
 
     def _process_series(self, series):
+        np = import_module('numpy', catch=(RuntimeError,))
+        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        merge = mergedeep.merge
         self._init_cyclers()
         # clear figure. Must clear both the renderers as well as the
         # colorbars which are added to the right side.
@@ -405,9 +410,11 @@ class BokehBackend(Plot):
                     **kw
                 )
 
-                colormapper = LinearColorMapper(palette=cm, low=minz, high=maxz)
+                colormapper = bokeh.models.LinearColorMapper(
+                    palette=cm, low=minz, high=maxz)
                 cbkw = dict(width=8, title=s.label)
-                colorbar = ColorBar(color_mapper=colormapper, **cbkw)
+                colorbar = bokeh.models.ColorBar(
+                    color_mapper=colormapper, **cbkw)
                 self._fig.add_layout(colorbar, "right")
                 self._handles[i] = colorbar
 
@@ -468,9 +475,8 @@ class BokehBackend(Plot):
                         **s.rendering_kw.copy())
                     mag = data["magnitude"]
 
-                    color_mapper = LinearColorMapper(
-                        palette=next(self._cm), low=min(mag), high=max(mag)
-                    )
+                    color_mapper = bokeh.models.LinearColorMapper(
+                        palette=next(self._cm), low=min(mag), high=max(mag))
                     # don't use color map if a scalar field is visible or if
                     # use_cm=False
                     line_color = (
@@ -478,17 +484,16 @@ class BokehBackend(Plot):
                         if ((not s.use_quiver_solid_color) and self._use_cm)
                         else next(self._cl)
                     )
-                    source = ColumnDataSource(data=data)
+                    source = bokeh.models.ColumnDataSource(data=data)
                     # default quivers options
                     qkw = dict(line_color=line_color, line_width=1, name=s.label)
                     kw = merge({}, qkw, quiver_kw)
-                    glyph = Segment(
+                    glyph = bokeh.models.Segment(
                         x0="x0", y0="y0", x1="x1", y1="y1", **kw)
                     self._fig.add_glyph(source, glyph)
                     if isinstance(line_color, dict):
-                        colorbar = ColorBar(
-                            color_mapper=color_mapper, width=8, title=s.label
-                        )
+                        colorbar = bokeh.models.ColorBar(
+                            color_mapper=color_mapper, width=8, title=s.label)
                         self._fig.add_layout(colorbar, "right")
                         self._handles[i] = colorbar
 
@@ -496,7 +501,7 @@ class BokehBackend(Plot):
                 x, y, mag, angle, img, colors = s.get_data()
                 img = self._get_img(img)
 
-                source = ColumnDataSource(
+                source = bokeh.models.ColumnDataSource(
                     {
                         "image": [img],
                         "abs": [mag],
@@ -514,17 +519,16 @@ class BokehBackend(Plot):
 
                 if colors is not None:
                     # chroma/phase-colorbar
-                    cm1 = LinearColorMapper(
-                        palette=[tuple(c) for c in colors], low=-np.pi, high=np.pi
-                    )
+                    cm1 = bokeh.models.LinearColorMapper(
+                        palette=[tuple(c) for c in colors],
+                        low=-np.pi, high=np.pi)
                     ticks = [-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi]
                     labels = ["-π", "-π / 2", "0", "π / 2", "π"]
-                    colorbar1 = ColorBar(
+                    colorbar1 = bokeh.models.ColorBar(
                         color_mapper=cm1,
                         title="Argument",
-                        ticker=FixedTicker(ticks=ticks),
-                        major_label_overrides={k: v for k, v in zip(ticks, labels)},
-                    )
+                        ticker=bokeh.models.tickers.FixedTicker(ticks=ticks),
+                        major_label_overrides={k: v for k, v in zip(ticks, labels)})
                     self._fig.add_layout(colorbar1, "right")
 
             elif s.is_geometry:
@@ -570,6 +574,7 @@ class BokehBackend(Plot):
                     cb.color_mapper.update(low=min(us), high=max(us))
 
     def _get_img(self, img):
+        np = import_module('numpy', catch=(RuntimeError,))
         new_img = np.zeros(img.shape[:2], dtype=np.uint32)
         pixel = new_img.view(dtype=np.uint8).reshape((*img.shape[:2], 4))
         for i in range(img.shape[1]):
@@ -588,9 +593,12 @@ class BokehBackend(Plot):
         return xs, ys, us
 
     def _create_gradient_line(self, x, y, u, colormap, name, line_kw):
+        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        merge = mergedeep.merge
         xs, ys, us = self._get_segments(x, y, u)
-        color_mapper = LinearColorMapper(palette=colormap, low=min(us), high=max(us))
-        data_source = ColumnDataSource(dict(xs=xs, ys=ys, us=us))
+        color_mapper = bokeh.models.LinearColorMapper(
+            palette=colormap, low=min(us), high=max(us))
+        data_source = bokeh.models.ColumnDataSource(dict(xs=xs, ys=ys, us=us))
 
         lkw = dict(
             line_width=2,
@@ -598,8 +606,9 @@ class BokehBackend(Plot):
             line_color={"field": "us", "transform": color_mapper},
         )
         kw = merge({}, lkw, line_kw)
-        glyph = MultiLine(xs="xs", ys="ys", **kw)
-        colorbar = ColorBar(color_mapper=color_mapper, title=name, width=8)
+        glyph = bokeh.models.MultiLine(xs="xs", ys="ys", **kw)
+        colorbar = bokeh.models.ColorBar(
+            color_mapper=color_mapper, title=name, width=8)
         return data_source, glyph, colorbar, kw
 
     def _update_interactive(self, params):
@@ -667,9 +676,8 @@ class BokehBackend(Plot):
                             x, y, u, v, **quiver_kw
                         )
                         mag = data["magnitude"]
-                        color_mapper = LinearColorMapper(
-                            palette=next(self._cm), low=min(mag), high=max(mag)
-                        )
+                        color_mapper = bokeh.models.LinearColorMapper(
+                            palette=next(self._cm), low=min(mag), high=max(mag))
                         line_color = quiver_kw.get(
                             "line_color",
                             {"field": "magnitude", "transform": color_mapper},
@@ -717,6 +725,9 @@ class BokehBackend(Plot):
         .. [#fn5] https://docs.bokeh.org/en/latest/docs/reference/io.html#module-bokeh.io.export
 
         """
+        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        merge = mergedeep.merge
+
         # TODO: an error get raised if I uncomment the following line
         # self._process_series(self._series)
         ext = os.path.splitext(path)[1]
@@ -729,12 +740,12 @@ class BokehBackend(Plot):
                 f.write(html)
         elif ext == ".svg":
             self._fig.output_backend = "svg"
-            export_svg(self.fig, filename=path)
+            bokeh.io.export_svg(self.fig, filename=path)
         else:
             if ext == "":
                 path += ".png"
             self._fig.output_backend = "canvas"
-            export_png(self._fig, filename=path)
+            bokeh.io.export_png(self._fig, filename=path)
 
     def _launch_server(self, doc):
         """By launching a server application, we can use Python callbacks
@@ -751,7 +762,7 @@ class BokehBackend(Plot):
             # TODO: the current way we are launching the server only works
             # within Jupyter Notebook. Is there another way of launching
             # it so that it can run from any Python interpreter?
-            show(self._launch_server)
+            bokeh.plotting.show(self._launch_server)
         else:
             # if the backend it running from a python interpreter, the server
             # wont' work. Hence, launch a static figure, which doesn't listen
@@ -759,7 +770,7 @@ class BokehBackend(Plot):
             from bokeh.io import curdoc
 
             curdoc().theme = self._theme
-            show(self._fig)
+            bokeh.plotting.show(self._fig)
         # show(self._fig)
 
     def _get_quivers_data(self, xs, ys, u, v, **quiver_kw):
@@ -794,6 +805,7 @@ class BokehBackend(Plot):
                 A dictionary containing keywords to customize the appearance
                 of Bokeh's Segment glyph
         """
+        np = import_module('numpy', catch=(RuntimeError,))
         scale = quiver_kw.pop("scale", 1.0)
         pivot = quiver_kw.pop("pivot", "mid")
         arrow_heads = quiver_kw.pop("arrow_heads", True)

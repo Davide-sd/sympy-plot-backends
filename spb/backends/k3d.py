@@ -1,15 +1,25 @@
+from sympy.external import import_module
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from spb.backends.utils import convert_colormap
+from spb.backends.utils import convert_colormap, compute_streamtubes
 from spb.utils import get_vertices_indices
-from spb.backends.utils import compute_streamtubes
-import k3d
-import numpy as np
 import warnings
-from matplotlib.tri import Triangulation
-from mergedeep import merge
-import colorcet as cc
 import os
+
+k3d = import_module(
+    'k3d',
+    import_kwargs={'fromlist':['helpers']},
+    min_module_version='2.9.7',
+    catch=(RuntimeError,))
+cc = import_module(
+    'colorcet',
+    min_module_version='3.0.0',
+    catch=(RuntimeError,))
+matplotlib = import_module(
+    'matplotlib',
+    import_kwargs={'fromlist':['tri']},
+    min_module_version='1.1.0',
+    catch=(RuntimeError,))
 
 # TODO:
 # 1. load the plot with menu minimized
@@ -136,6 +146,10 @@ class K3DBackend(Plot):
         return cls._rgb_to_int(color)
 
     def _process_series(self, series):
+        np = import_module('numpy', catch=(RuntimeError,))
+        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        merge = mergedeep.merge
+        Triangulation = matplotlib.tri.Triangulation
         self._init_cyclers()
         self._fig.auto_rendering = False
         # clear data
@@ -352,6 +366,8 @@ class K3DBackend(Plot):
             self._bounds.append([mx, Mx, my, My, mz, Mz])
 
     def _update_interactive(self, params):
+        np = import_module('numpy', catch=(RuntimeError,))
+
         # self._fig.auto_rendering = False
         for i, s in enumerate(self.series):
             if s.is_interactive:
@@ -412,6 +428,7 @@ class K3DBackend(Plot):
 
     def show(self):
         """Visualize the plot on the screen."""
+        np = import_module('numpy', catch=(RuntimeError,))
 
         if len(self._fig.objects) != len(self.series):
             self._process_series(self._series)

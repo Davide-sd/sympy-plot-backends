@@ -1,8 +1,5 @@
-import numpy as np
+from sympy.external import import_module
 from PIL import ImageColor
-from matplotlib.colors import Colormap
-import plotly.colors
-from _plotly_utils.basevalidators import ColorscaleValidator
 
 
 def convert_colormap(cm, to, n=256):
@@ -30,6 +27,14 @@ def convert_colormap(cm, to, n=256):
         A new colormap. Note that the conversion is not guardanteed.
         The function returns the provided colormap if it cannot be converted.
     """
+    np = import_module('numpy', catch=(RuntimeError,))
+    matplotlib = import_module(
+        'matplotlib',
+        import_kwargs={'fromlist':['colors']},
+        min_module_version='1.1.0',
+        catch=(RuntimeError,))
+    Colormap = matplotlib.colors.Colormap
+
     assert isinstance(to, str)
     to = to.lower()
     assert to in ["matplotlib", "plotly", "k3d", "bokeh"]
@@ -211,6 +216,12 @@ def _get_continuous_color(colorscale, intermed):
             An RGB color string in which the components are float numbers in the
             range [0, 255].
     """
+    plotly = import_module(
+        'plotly',
+        import_kwargs={'fromlist':['colors']},
+        min_module_version='5.0.0',
+        catch=(RuntimeError,))
+
     if len(colorscale) < 1:
         raise ValueError("colorscale must have at least one color")
 
@@ -261,9 +272,14 @@ def get_plotly_colors(colorscale_name, loc):
     =======
         An RGB list with components in the range [0, 1] or a list of RGB lists.
     """
+    _plotly_utils = import_module(
+        '_plotly_utils',
+        import_kwargs={'fromlist':['basevalidators']},
+        catch=(RuntimeError,))
+
     # first parameter: Name of the property being validated
     # second parameter: a string, doesn't really matter for our use cae
-    cv = ColorscaleValidator("colorscale", "")
+    cv = _plotly_utils.basevalidators.ColorscaleValidator("colorscale", "")
     # colorscale will be a list of lists: [[loc1, "rgb1"], [loc2, "rgb2"], ...]
     colorscale = cv.validate_coerce(colorscale_name)
 
@@ -274,13 +290,6 @@ def get_plotly_colors(colorscale_name, loc):
     str_color = _get_continuous_color(colorscale, loc)
     return [float(t) / 255 for t in str_color[4:-1].split(",")]
 
-
-
-from vtk import (
-    VTK_FLOAT, vtkPoints, vtkStructuredGrid, vtkStreamTracer,
-     vtkPolyData, vtkPointSource, vtkRungeKutta4, vtkIdList
-)
-from vtk.util import numpy_support
 
 def get_seeds_points_entry_vector(xx, yy, zz, uu, vv, ww):
     """Returns an optimal list of seeds points to be used to generate 3D
@@ -299,8 +308,7 @@ def get_seeds_points_entry_vector(xx, yy, zz, uu, vv, ww):
         points : np.ndarray
             [n x 3] matrix of seed-points coordinates.
     """
-
-    # TODO: OPTIMIZE THIS CODE PLEASE!!!!!!!!!
+    np = import_module('numpy', catch=(RuntimeError,))
 
     coords = np.stack([xx, yy, zz])
     # vector field
@@ -380,6 +388,9 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
         - ``False``: a vtk object representing the seeds points.
 
     """
+    np = import_module('numpy', catch=(RuntimeError,))
+    import vtk
+    from vtk.util import numpy_support
     starts = kw.get("starts", None)
 
     if starts is None:
@@ -388,8 +399,8 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
         if to_numpy:
             return points
 
-        seeds = vtkPolyData()
-        vtk_points = vtkPoints()
+        seeds = vtk.vtkPolyData()
+        vtk_points = vtk.vtkPoints()
         for p in points:
             vtk_points.InsertNextPoint(p)
         seeds.SetPoints(vtk_points)
@@ -410,8 +421,8 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
         if to_numpy:
             return points
 
-        seeds = vtkPolyData()
-        seeds_points = vtkPoints()
+        seeds = vtk.vtkPolyData()
+        seeds_points = vtk.vtkPoints()
         for p in points:
             seeds_points.InsertNextPoint(p)
         seeds.SetPoints(seeds_points)
@@ -432,7 +443,7 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
             )
             center = (xmax - xmin) / 2, (ymax - ymin) / 2, (zmax - zmin) / 2
 
-        seeds = vtkPointSource()
+        seeds = vtk.vtkPointSource()
         seeds.SetRadius(radius)
         seeds.SetCenter(*center)
         seeds.SetNumberOfPoints(npoints)
@@ -493,21 +504,24 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
     extend the one provided by Plotly's Streamtube class. Read ``plot_vector``
     docstring for more information.
     """
+    np = import_module('numpy', catch=(RuntimeError,))
+    import vtk
+    from vtk.util import numpy_support
     n2, n1, n3 = xx.shape
 
     vector_field = np.array([uu.flatten(), vv.flatten(), ww.flatten()]).T
     vtk_vector_field = numpy_support.numpy_to_vtk(
-        num_array=vector_field, deep=True, array_type=VTK_FLOAT)
+        num_array=vector_field, deep=True, array_type=vtk.VTK_FLOAT)
     vtk_vector_field.SetName("vector_field")
 
-    points = vtkPoints()
+    points = vtk.vtkPoints()
     points.SetNumberOfPoints(n2 * n1 * n3)
     for i, (x, y, z) in enumerate(
         zip(xx.flatten(), yy.flatten(), zz.flatten())
     ):
         points.SetPoint(i, [x, y, z])
 
-    grid = vtkStructuredGrid()
+    grid = vtk.vtkStructuredGrid()
     grid.SetDimensions([n2, n1, n3])
     grid.SetPoints(points)
     grid.GetPointData().SetVectors(vtk_vector_field)
@@ -518,7 +532,7 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
     starts = kwargs.get("starts", None)
     max_prop = kwargs.pop("max_prop", 5000)
 
-    streamer = vtkStreamTracer()
+    streamer = vtk.vtkStreamTracer()
     streamer.SetInputData(grid)
     streamer.SetMaximumPropagation(max_prop)
 
@@ -536,7 +550,7 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
         streamer.SetIntegrationDirectionToBoth()
 
     streamer.SetComputeVorticity(0)
-    streamer.SetIntegrator(vtkRungeKutta4())
+    streamer.SetIntegrator(vtk.vtkRungeKutta4())
     streamer.Update()
 
     streamline = streamer.GetOutput()
@@ -548,7 +562,7 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
 
     vtkLines = streamline.GetLines()
     vtkLines.InitTraversal()
-    point_list = vtkIdList()
+    point_list = vtk.vtkIdList()
 
     # extract vtk data to lists
     lines = []
