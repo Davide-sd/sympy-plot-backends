@@ -1,16 +1,27 @@
 from sympy import symbols, cos, sin, Tuple, Plane
-import param
-import panel as pn
-import numpy as np
-import bokeh.models as bm
+from sympy.external import import_module
 from spb.interactive import (
     iplot, DynamicParam, MyList,
     InteractivePlot, create_widgets
 )
 from spb.series import InteractiveSeries
 from spb.backends.plotly import PB
-from bokeh.models.formatters import PrintfTickFormatter
 from pytest import raises
+
+np = import_module('numpy', catch=(RuntimeError,))
+param = import_module(
+    'param',
+    min_module_version='1.11.0',
+    catch=(RuntimeError,))
+pn = import_module(
+    'panel',
+    min_module_version='0.12.0',
+    catch=(RuntimeError,))
+bokeh = import_module(
+    'bokeh',
+    import_kwargs={'fromlist':['models']},
+    min_module_version='2.3.0',
+    catch=(RuntimeError,))
 
 def test_DynamicParam():
     a, b, c, d, e, f = symbols("a, b, c, d, e, f")
@@ -56,7 +67,7 @@ def test_DynamicParam():
     assert all(e is None for e in t.formatters.values())
 
     # test use_latex
-    formatter = PrintfTickFormatter(format="%.4f")
+    formatter = bokeh.models.formatters.PrintfTickFormatter(format="%.4f")
     t = DynamicParam(
         params={
             a: (1, 0, 5),
@@ -80,7 +91,7 @@ def test_DynamicParam():
     assert isinstance(t.formatters, dict)
     assert len(t.formatters) == 4
     assert all(t.formatters[k] is None for k in [a, b, d])
-    assert isinstance(t.formatters[c], PrintfTickFormatter)
+    assert isinstance(t.formatters[c], bokeh.models.formatters.PrintfTickFormatter)
 
     # test mix tuple and parameters
     t = DynamicParam(
@@ -132,6 +143,7 @@ def test_DynamicParam():
     ))
 
 def test_iplot():
+    bm = bokeh.models
     a, b, c, d = symbols("a, b, c, d")
     x, y, u, v = symbols("x, y, u, v")
 
@@ -240,7 +252,7 @@ def test_create_widgets():
     assert w[y].name == "$y$"
     assert w[z].name == "n"
 
-    formatter = PrintfTickFormatter(format="%.4f")
+    formatter = bokeh.models.formatters.PrintfTickFormatter(format="%.4f")
     w = create_widgets({
         x: (2, 0, 4),
         y: (200, 1, 1000, 10, formatter, "y", "log"),
@@ -257,7 +269,7 @@ def test_create_widgets():
     assert w[z].name == "n"
 
     assert all(w[k].format is None for k in [x, z])
-    assert isinstance(w[y].format, PrintfTickFormatter)
+    assert isinstance(w[y].format, bokeh.models.formatters.PrintfTickFormatter)
 
 
 def test_interactiveseries():

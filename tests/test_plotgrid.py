@@ -1,4 +1,5 @@
 from sympy import symbols, sin, cos, pi, tan, I, exp
+from sympy.external import import_module
 from spb.backends.matplotlib import MB
 from spb.backends.plotly import PB
 from spb.backends.bokeh import BB
@@ -7,10 +8,22 @@ from spb.backends.plotgrid import plotgrid, _nrows_ncols
 from spb.functions import plot, plot3d, plot_contour
 from spb.ccomplex.complex import plot_complex
 from spb.vectors import plot_vector
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import panel as pn
 from pytest import raises
+
+matplotlib = import_module(
+    'matplotlib',
+    import_kwargs={'fromlist':['pyplot', 'axes', 'cm', 'collections', 'colors', 'quiver']},
+    min_module_version='1.1.0',
+    catch=(RuntimeError,))
+plt = matplotlib.pyplot
+mpl_toolkits = import_module(
+    'mpl_toolkits', # noqa
+    import_kwargs={'fromlist': ['mplot3d']},
+    catch=(RuntimeError,))
+pn = import_module(
+    'panel',
+    min_module_version='0.12.0',
+    catch=(RuntimeError,))
 
 class KBchild1(KB):
     def _get_mode(self):
@@ -78,8 +91,8 @@ def test_plotgrid_mode_1():
     p = plotgrid(p1, p2, nc=2)
     assert isinstance(p, plt.Figure)
     assert len(p.axes) == 2
-    assert isinstance(p.axes[0], Axes3D)
-    assert not isinstance(p.axes[1], Axes3D)
+    assert isinstance(p.axes[0], mpl_toolkits.mplot3d.Axes3D)
+    assert not isinstance(p.axes[1], mpl_toolkits.mplot3d.Axes3D)
     assert p.axes[0].get_xlabel() == "x" and p.axes[0].get_ylabel() == "y" and p.axes[0].get_zlabel() == "f(x, y)"
     assert len(p.axes[0].collections) == 1
     assert p.axes[1].get_xlabel() == "x" and p.axes[1].get_ylabel() == "f(x)"
@@ -141,7 +154,7 @@ def test_plotgrid_mode_2():
 
     assert isinstance(p, plt.Figure)
     assert len(p.axes) == 5
-    assert isinstance(p.axes[-1], Axes3D)
+    assert isinstance(p.axes[-1], mpl_toolkits.mplot3d.Axes3D)
     test_line_axes(p.axes[0])
     test_line_axes(p.axes[1])
     test_line_axes(p.axes[2])

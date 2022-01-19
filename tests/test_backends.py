@@ -18,16 +18,38 @@ from sympy import (
     symbols, cos, sin, Matrix, pi, sqrt, I, Heaviside, Piecewise, Eq, log
 )
 from sympy.geometry import Line, Circle, Polygon
-import plotly.graph_objects as go
-import matplotlib
-import matplotlib.pyplot as plt
-
-import numpy as np
+from sympy.external import import_module
 from tempfile import TemporaryDirectory
 import os
 
+np = import_module('numpy', catch=(RuntimeError,))
+matplotlib = import_module(
+    'matplotlib',
+    import_kwargs={'fromlist':['pyplot', 'axes', 'cm', 'collections', 'colors', 'quiver']},
+    min_module_version='1.1.0',
+    catch=(RuntimeError,))
+plt = matplotlib.pyplot
+mpl_toolkits = import_module(
+    'mpl_toolkits', # noqa
+    import_kwargs={'fromlist': ['mplot3d']},
+    catch=(RuntimeError,))
+plotly = import_module(
+    'plotly',
+    import_kwargs={'fromlist':['graph_objects', 'figure_factory']},
+    min_module_version='5.0.0',
+    catch=(RuntimeError,))
+go = plotly.graph_objects
+k3d = import_module(
+    'k3d',
+    import_kwargs={'fromlist':['plot', 'objects']},
+    min_module_version='2.9.7',
+    catch=(RuntimeError,))
+bokeh = import_module(
+    'bokeh',
+    import_kwargs={'fromlist':['models', 'resources', 'plotting']},
+    min_module_version='2.3.0',
+    catch=(RuntimeError,))
 unset_show()
-
 
 # NOTE
 # Here, let's test that each backend:
@@ -40,11 +62,13 @@ unset_show()
 # This should be a good starting point to provide a common user experience
 # between different backends.
 #
-# If the issue you are trying to solve is related to the generation of
-# numerical data from a particular data series, consider adding tests to
-# test_series.py.
-# If the issue is related to the processing and generation of *Series objects,
-# consider adding tests to test_functions.py.
+# If your issue is related to the generation of numerical data from a
+# particular data series, consider adding tests to test_series.py.
+# If your issue is related to the processing and generation of *Series
+# objects, consider adding tests to test_functions.py.
+# If your issue il related to the preprocessing and generation of a
+# Vector series or a Complex Series, consider adding tests to
+# test_build_series. 
 #
 
 class UnsupportedSeries(BaseSeries):
@@ -137,8 +161,6 @@ def test_colorloop_colormaps():
 def test_custom_colorloop():
     # verify that it is possible to modify the backend's class attributes
     # in order to change custom coloring
-    from k3d.objects import Mesh
-    from bokeh.models.glyphs import Line
 
     x, y = symbols("x, y")
 
@@ -176,8 +198,8 @@ def test_custom_colorloop():
     assert len(_p1.series) == len(_p2.series)
     f1 = _p1.fig
     f2 = _p2.fig
-    assert all([isinstance(t.glyph, Line) for t in f1.renderers])
-    assert all([isinstance(t.glyph, Line) for t in f2.renderers])
+    assert all([isinstance(t.glyph, bokeh.models.glyphs.Line) for t in f1.renderers])
+    assert all([isinstance(t.glyph, bokeh.models.glyphs.Line) for t in f2.renderers])
     # there are 6 unique colors in _p1 and 3 unique colors in _p2
     assert len(set([r.glyph.line_color for r in f1.renderers])) == 6
     assert len(set([r.glyph.line_color for r in f2.renderers])) == 3
@@ -200,8 +222,8 @@ def test_custom_colorloop():
     assert len(_p1.series) == len(_p2.series)
     f1 = _p1.fig
     f2 = _p2.fig
-    assert all([isinstance(t, Mesh) for t in f1.objects])
-    assert all([isinstance(t, Mesh) for t in f2.objects])
+    assert all([isinstance(t, k3d.objects.Mesh) for t in f1.objects])
+    assert all([isinstance(t, k3d.objects.Mesh) for t in f2.objects])
     # there are 6 unique colors in _p1 and 3 unique colors in _p2
     assert len(set([o.color for o in f1.objects])) == 6
     assert len(set([o.color for o in f2.objects])) == 3
@@ -211,17 +233,15 @@ def test_custom_colorloop():
 def test_bokeh_tools():
     # verify tools and tooltips on empty Bokeh figure (populated figure
     # might have different tooltips, tested later on) 
-    from bokeh.models import (PanTool, WheelZoomTool, BoxZoomTool,
-        ResetTool, HoverTool, SaveTool)
 
     f = plot(backend=BB, show=False).fig
     assert len(f.toolbar.tools) == 6
-    assert isinstance(f.toolbar.tools[0], PanTool)
-    assert isinstance(f.toolbar.tools[1], WheelZoomTool)
-    assert isinstance(f.toolbar.tools[2], BoxZoomTool)
-    assert isinstance(f.toolbar.tools[3], ResetTool)
-    assert isinstance(f.toolbar.tools[4], HoverTool)
-    assert isinstance(f.toolbar.tools[5], SaveTool)
+    assert isinstance(f.toolbar.tools[0], bokeh.models.PanTool)
+    assert isinstance(f.toolbar.tools[1], bokeh.models.WheelZoomTool)
+    assert isinstance(f.toolbar.tools[2], bokeh.models.BoxZoomTool)
+    assert isinstance(f.toolbar.tools[3], bokeh.models.ResetTool)
+    assert isinstance(f.toolbar.tools[4], bokeh.models.HoverTool)
+    assert isinstance(f.toolbar.tools[5], bokeh.models.SaveTool)
     assert f.toolbar.tools[4].tooltips == [('x', '$x'), ('y', '$y')]
 
 
@@ -263,8 +283,6 @@ def test_common_keywords():
 
 
 def test_plot_sum():
-    from matplotlib.quiver import Quiver
-
     x, y = symbols("x, y")
 
     # the choice of the backend dictates the keyword arguments inside line_kw
@@ -305,7 +323,7 @@ def test_plot_sum():
     assert isinstance(p3, MB)
     assert len(p3.series) == 3
     assert len(p3.fig.axes[0].collections) > 1
-    assert isinstance(p3.fig.axes[0].collections[-1], Quiver)
+    assert isinstance(p3.fig.axes[0].collections[-1], matplotlib.quiver.Quiver)
     quiver_col = p3.fig.axes[0].collections[-1].get_facecolors().flatten()[:-1]
     first_col = np.array(p3.colorloop[0])
     assert np.allclose(quiver_col, first_col)
@@ -331,9 +349,6 @@ def test_plot():
     # verify that the backends produce the expected results when `plot()`
     # is called and `line_kw` overrides the default line settings
 
-    from matplotlib.axes import Axes
-    from bokeh.models.glyphs import Line
-
     x = symbols("x")
 
     _plot = lambda B, line_kw: plot(
@@ -343,7 +358,7 @@ def test_plot():
     assert len(p.series) == 2
     f = p.fig
     ax = f.axes[0]
-    assert isinstance(ax, Axes)
+    assert isinstance(ax, matplotlib.axes.Axes)
     assert len(ax.get_lines()) == 2
     assert ax.get_lines()[0].get_label() == "sin(x)"
     assert ax.get_lines()[0].get_color() == "red"
@@ -367,10 +382,10 @@ def test_plot():
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
-    assert isinstance(f.renderers[0].glyph, Line)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Line)
     assert f.legend[0].items[0].label["value"] == "sin(x)"
     assert f.renderers[0].glyph.line_color == "red"
-    assert isinstance(f.renderers[1].glyph, Line)
+    assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.Line)
     assert f.legend[0].items[1].label["value"] == "cos(x)"
     assert f.renderers[1].glyph.line_color == "red"
     assert f.legend[0].visible == True
@@ -383,9 +398,6 @@ def test_plot_parametric():
     # verify that the backends produce the expected results when
     # `plot_parametric()` is called and `line_kw` overrides the default
     # line settings
-
-    from matplotlib.collections import LineCollection
-    from bokeh.models.glyphs import MultiLine
 
     x = symbols("x")
 
@@ -400,7 +412,7 @@ def test_plot_parametric():
     ax = f.axes[0]
     # parametric plot with use_cm=True -> LineCollection
     assert len(ax.collections) == 1
-    assert isinstance(ax.collections[0], LineCollection)
+    assert isinstance(ax.collections[0], matplotlib.collections.LineCollection)
     assert f.axes[1].get_ylabel() == "(cos(x), sin(x))"
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
@@ -418,7 +430,7 @@ def test_plot_parametric():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
-    assert isinstance(f.renderers[0].glyph, MultiLine)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.MultiLine)
     assert f.renderers[0].glyph.line_color == "red"
     # 1 colorbar
     assert len(f.right) == 1
@@ -434,9 +446,6 @@ def test_plot3d_parametric_line():
     # `plot3d_parametric_line()` is called and `line_kw` overrides the
     # default line settings
 
-    from mpl_toolkits.mplot3d.art3d import Line3DCollection
-    from k3d.objects import Line
-
     x = symbols("x")
 
     _plot3d_parametric_line = lambda B, line_kw: plot3d_parametric_line(
@@ -449,7 +458,7 @@ def test_plot3d_parametric_line():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
-    assert isinstance(ax.collections[0], Line3DCollection)
+    assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Line3DCollection)
     assert f.axes[1].get_ylabel() == "(cos(x), sin(x), x)"
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
@@ -471,7 +480,7 @@ def test_plot3d_parametric_line():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
-    assert isinstance(f.objects[0], Line)
+    assert isinstance(f.objects[0], k3d.objects.Line)
     assert f.objects[0].color == 16711680
     assert f.objects[0].name is None
 
@@ -480,9 +489,6 @@ def test_plot3d():
     # verify that the backends produce the expected results when
     # `plot3d()` is called and `surface_kw` overrides the default surface
     # settings
-
-    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-    from k3d.objects import Mesh
 
     x, y = symbols("x, y")
 
@@ -504,7 +510,7 @@ def test_plot3d():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
-    assert isinstance(ax.collections[0], Poly3DCollection)
+    assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Poly3DCollection)
     # TODO: apparently, without showing the plot, the colors are not applied
     # to a Poly3DCollection...
     p.close()
@@ -530,7 +536,7 @@ def test_plot3d():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
-    assert isinstance(f.objects[0], Mesh)
+    assert isinstance(f.objects[0], k3d.objects.Mesh)
     assert f.objects[0].color == 16711680
     assert f.objects[0].name is None
 
@@ -539,8 +545,6 @@ def test_plot_contour():
     # verify that the backends produce the expected results when
     # `plot_contour()` is called and `contour_kw` overrides the default
     # surface settings
-
-    from bokeh.models.glyphs import Image
 
     x, y = symbols("x, y")
 
@@ -576,7 +580,7 @@ def test_plot_contour():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
-    assert isinstance(f.renderers[0].glyph, Image)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
     # 1 colorbar
     assert len(f.right) == 1
     assert f.right[0].title == str(cos(x ** 2 + y ** 2))
@@ -590,9 +594,6 @@ def test_plot_vector_2d_quivers():
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `contour_kw`/`quiver_kw` overrides the
     # default settings
-
-    from matplotlib.quiver import Quiver
-    from bokeh.models.glyphs import Image, Segment
 
     x, y = symbols("x, y")
 
@@ -612,7 +613,7 @@ def test_plot_vector_2d_quivers():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
-    assert isinstance(ax.collections[-1], Quiver)
+    assert isinstance(ax.collections[-1], matplotlib.quiver.Quiver)
     assert f.axes[1].get_ylabel() == "Magnitude"
     # TODO: how to retrieve the colormap from a contour series?????
     p.close()
@@ -634,8 +635,8 @@ def test_plot_vector_2d_quivers():
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
-    assert isinstance(f.renderers[0].glyph, Image)
-    assert isinstance(f.renderers[1].glyph, Segment)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
+    assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.Segment)
     # 1 colorbar
     assert len(f.right) == 1
     assert f.right[0].title == "Magnitude"
@@ -651,9 +652,6 @@ def test_plot_vector_2d_streamlines_custom_scalar_field():
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `contour_kw`/`stream_kw` overrides the
     # default settings
-
-    from matplotlib.collections import LineCollection
-    from bokeh.models.glyphs import Image, MultiLine
 
     x, y = symbols("x, y")
 
@@ -675,7 +673,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
-    assert isinstance(ax.collections[-1], LineCollection)
+    assert isinstance(ax.collections[-1], matplotlib.collections.LineCollection)
     assert f.axes[1].get_ylabel() == "x + y"
     assert all(*(ax.collections[-1].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
@@ -695,8 +693,8 @@ def test_plot_vector_2d_streamlines_custom_scalar_field():
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
-    assert isinstance(f.renderers[0].glyph, Image)
-    assert isinstance(f.renderers[1].glyph, MultiLine)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
+    assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.MultiLine)
     # 1 colorbar
     assert len(f.right) == 1
     assert f.right[0].title == "x + y"
@@ -713,8 +711,6 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `contour_kw`/`stream_kw` overrides the
     # default settings
-
-    from matplotlib.collections import LineCollection
 
     x, y = symbols("x, y")
 
@@ -736,7 +732,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
-    assert isinstance(ax.collections[-1], LineCollection)
+    assert isinstance(ax.collections[-1], matplotlib.collections.LineCollection)
     assert f.axes[1].get_ylabel() == "test"
     assert all(*(ax.collections[-1].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
@@ -761,9 +757,6 @@ def test_plot_vector_3d_quivers():
     # `plot_vector()` is called and `quiver_kw` overrides the
     # default settings
 
-    from mpl_toolkits.mplot3d.art3d import Line3DCollection
-    from k3d.objects import Vectors
-
     x, y, z = symbols("x, y, z")
 
     _plot_vector = lambda B, quiver_kw, **kwargs: plot_vector(
@@ -783,7 +776,7 @@ def test_plot_vector_3d_quivers():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
-    assert isinstance(ax.collections[0], Line3DCollection)
+    assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Line3DCollection)
     assert ax.collections[0].cmap.name == "jet"
     p.close()
 
@@ -792,7 +785,7 @@ def test_plot_vector_3d_quivers():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
-    assert isinstance(ax.collections[0], Line3DCollection)
+    assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Line3DCollection)
     assert np.allclose(ax.collections[0].get_color(), np.array([[1., 0., 0., 1.]]))
     p.close()
 
@@ -819,7 +812,7 @@ def test_plot_vector_3d_quivers():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
-    assert isinstance(f.objects[0], Vectors)
+    assert isinstance(f.objects[0], k3d.objects.Vectors)
     assert all([c == 16711680 for c in f.objects[0].colors])
 
 
@@ -827,9 +820,6 @@ def test_plot_vector_3d_streamlines():
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `stream_kw` overrides the
     # default settings
-
-    from mpl_toolkits.mplot3d.art3d import Line3DCollection
-    from k3d.objects import Line
 
     x, y, z = symbols("x, y, z")
 
@@ -851,7 +841,7 @@ def test_plot_vector_3d_streamlines():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
-    assert isinstance(ax.collections[0], Line3DCollection)
+    assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Line3DCollection)
     assert f.axes[1].get_ylabel() == "Matrix([[z], [y], [x]])"
     p.close()
 
@@ -901,7 +891,7 @@ def test_plot_vector_3d_streamlines():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
-    assert isinstance(f.objects[0], Line)
+    assert isinstance(f.objects[0], k3d.objects.Line)
     assert f.objects[0].color == 16711680
 
     # test different combinations for streamlines: it should not raise errors
@@ -919,8 +909,6 @@ def test_plot_vector_3d_streamlines():
 def test_plot_implicit_adaptive_true():
     # verify that the backends produce the expected results when
     # `plot_implicit()` is called with `adaptive=True`
-
-    from bokeh.models.glyphs import Image
 
     x, y = symbols("x, y")
 
@@ -948,7 +936,7 @@ def test_plot_implicit_adaptive_true():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
-    assert isinstance(f.renderers[0].glyph, Image)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
@@ -959,8 +947,6 @@ def test_plot_implicit_adaptive_false():
     # verify that the backends produce the expected results when
     # `plot_implicit()` is called with `adaptive=True` and `contour_kw`
     # overrides the default settings
-
-    from bokeh.models.glyphs import Image
 
     x, y = symbols("x, y")
 
@@ -994,7 +980,7 @@ def test_plot_implicit_adaptive_false():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
-    assert isinstance(f.renderers[0].glyph, Image)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
@@ -1005,8 +991,6 @@ def test_plot_real_imag():
     # verify that the backends produce the expected results when
     # `plot_real_imag()` is called and `line_kw` overrides the default
     # settings
-
-    from bokeh.models.glyphs import Line
 
     x = symbols("x")
 
@@ -1041,10 +1025,10 @@ def test_plot_real_imag():
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
-    assert isinstance(f.renderers[0].glyph, Line)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Line)
     assert f.legend[0].items[0].label["value"] == "Re(sqrt(x))"
     assert f.renderers[0].glyph.line_color == "red"
-    assert isinstance(f.renderers[1].glyph, Line)
+    assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.Line)
     assert f.legend[0].items[1].label["value"] == "Im(sqrt(x))"
     assert f.renderers[1].glyph.line_color == "red"
     assert f.legend[0].visible == True
@@ -1059,9 +1043,6 @@ def test_plot_complex_1d():
     # `plot_complex()` is called and `line_kw` overrides the default
     # settings
 
-    from matplotlib.collections import LineCollection
-    from bokeh.models.glyphs import MultiLine
-
     x = symbols("x")
 
     _plot_complex = lambda B, line_kw: plot_complex(
@@ -1073,7 +1054,7 @@ def test_plot_complex_1d():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
-    assert isinstance(ax.collections[0], LineCollection)
+    assert isinstance(ax.collections[0], matplotlib.collections.LineCollection)
     assert f.axes[1].get_ylabel() == "Abs(sqrt(x))"
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
@@ -1091,7 +1072,7 @@ def test_plot_complex_1d():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
-    assert isinstance(f.renderers[0].glyph, MultiLine)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.MultiLine)
     assert f.renderers[0].glyph.line_color == "red"
     # 1 colorbar
     assert len(f.right) == 1
@@ -1106,8 +1087,6 @@ def test_plot_complex_2d():
     # verify that the backends produce the expected results when
     # `plot_complex()` is called and `image_kw` overrides the default
     # settings
-
-    from bokeh.models.glyphs import ImageRGBA
 
     x = symbols("x")
 
@@ -1147,7 +1126,7 @@ def test_plot_complex_2d():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
-    assert isinstance(f.renderers[0].glyph, ImageRGBA)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.ImageRGBA)
     assert f.right[0].title == "Argument"
     assert (f.toolbar.tools[-2].tooltips == [('x', '$x'), ('y', '$y'),
         ("Abs", "@abs"), ("Arg", "@arg")])
@@ -1161,9 +1140,6 @@ def test_plot_complex_3d():
     # verify that the backends produce the expected results when
     # `plot_complex()` is called and `surface_kw` overrides the default
     # settings
-
-    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-    from k3d.objects import Mesh
 
     x = symbols("x")
 
@@ -1182,7 +1158,7 @@ def test_plot_complex_3d():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
-    assert isinstance(ax.collections[0], Poly3DCollection)
+    assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Poly3DCollection)
     assert f.axes[1].get_ylabel() == "Argument"
     # TODO: apparently, without showing the plot, the colors are not applied
     # to a Poly3DCollection...
@@ -1204,15 +1180,13 @@ def test_plot_complex_3d():
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
-    assert isinstance(f.objects[0], Mesh)
+    assert isinstance(f.objects[0], k3d.objects.Mesh)
     assert f.objects[0].name is None
 
 
 def test_plot_list_is_filled_false():
     # verify that the backends produce the expected results when
     # `plot_list()` is called with `is_filled=False`
-
-    from bokeh.models.glyphs import Circle
 
     _plot_list = lambda B: plot_list([1, 2, 3], [1, 2, 3], 
         backend=B, is_point=True, is_filled=False, show=False)
@@ -1232,7 +1206,7 @@ def test_plot_list_is_filled_false():
     p = _plot_list(BB)
     assert len(p.series) == 1
     f = p.fig
-    assert isinstance(f.renderers[0].glyph, Circle)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Circle)
     assert f.renderers[0].glyph.line_color != f.renderers[0].glyph.fill_color
 
     # K3D doesn't support 2D plots
@@ -1242,8 +1216,6 @@ def test_plot_list_is_filled_false():
 def test_plot_list_is_filled_true():
     # verify that the backends produce the expected results when
     # `plot_list()` is called with `is_filled=True`
-
-    from bokeh.models.glyphs import Circle
 
     _plot_list = lambda B: plot_list([1, 2, 3], [1, 2, 3], 
         backend=B, is_point=True, is_filled=True, show=False)
@@ -1263,7 +1235,7 @@ def test_plot_list_is_filled_true():
     p = _plot_list(BB)
     assert len(p.series) == 1
     f = p.fig
-    assert isinstance(f.renderers[0].glyph, Circle)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Circle)
     assert f.renderers[0].glyph.line_color == f.renderers[0].glyph.fill_color
 
     # K3D doesn't support 2D plots
@@ -1351,8 +1323,6 @@ def test_plot_piecewise_multiple_series():
 def test_plot_geometry():
     # verify that the backends produce the expected results when
     # `plot_geometry()` is called
-
-    from bokeh.models.glyphs import Line
     from sympy.geometry import Line as SymPyLine
 
     _plot_geometry = lambda B: plot_geometry(
@@ -1381,7 +1351,7 @@ def test_plot_geometry():
     assert len(p.series) == 3
     f = p.fig
     assert len(f.renderers) == 3
-    assert all(isinstance(r.glyph, Line) for r in f.renderers)
+    assert all(isinstance(r.glyph, bokeh.models.glyphs.Line) for r in f.renderers)
     assert f.legend[0].items[0].label["value"] == str(SymPyLine((1, 2), (5, 4)))
     assert f.legend[0].items[1].label["value"] == str(Circle((0, 0), 4))
     assert f.legend[0].items[2].label["value"] == str(Polygon((2, 2), 3, n=6))
@@ -1435,10 +1405,9 @@ def test_save():
         filename = "test_bokeh_save_3.html"
         p.save(os.path.join(tmpdir, filename))
 
-        from bokeh.resources import INLINE
         p = plot(sin(x), cos(x), backend=BB, show=False)
         filename = "test_bokeh_save_4.html"
-        p.save(os.path.join(tmpdir, filename), resources=INLINE)
+        p.save(os.path.join(tmpdir, filename), resources=bokeh.resources.INLINE)
 
         # Plotly requires additional libraries to save static pictures.
         # Raise an error because their are not installed.
@@ -1621,7 +1590,6 @@ def test_plot_size():
 def test_plot_scale_lin_log():
     # verify that backends are applying the correct scale to the axes
     # NOTE: none of the 3D libraries currently support log scale.
-    from bokeh.models.scales import LinearScale, LogScale
 
     x, y = symbols("x, y")
     
@@ -1653,13 +1621,13 @@ def test_plot_scale_lin_log():
     assert p.fig.layout["yaxis"]["type"] == "log"
 
     p = plot(log(x), backend=BB, xscale="linear", yscale="linear", show=False)
-    assert isinstance(p.fig.x_scale, LinearScale)
-    assert isinstance(p.fig.y_scale, LinearScale)
+    assert isinstance(p.fig.x_scale, bokeh.models.scales.LinearScale)
+    assert isinstance(p.fig.y_scale, bokeh.models.scales.LinearScale)
 
     p = plot(log(x), backend=BB, xscale="log", yscale="linear", show=False)
-    assert isinstance(p.fig.x_scale, LogScale)
-    assert isinstance(p.fig.y_scale, LinearScale)
+    assert isinstance(p.fig.x_scale, bokeh.models.scales.LogScale)
+    assert isinstance(p.fig.y_scale, bokeh.models.scales.LinearScale)
 
     p = plot(log(x), backend=BB, xscale="linear", yscale="log", show=False)
-    assert isinstance(p.fig.x_scale, LinearScale)
-    assert isinstance(p.fig.y_scale, LogScale)
+    assert isinstance(p.fig.x_scale, bokeh.models.scales.LinearScale)
+    assert isinstance(p.fig.y_scale, bokeh.models.scales.LogScale)

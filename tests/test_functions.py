@@ -9,7 +9,6 @@ from sympy import (
 from sympy.testing.pytest import skip, warns
 from sympy.external import import_module
 from sympy.testing.tmpfiles import TmpFileManager
-import numpy as np
 from spb.functions import (
     plot_piecewise, plot, plot_list, plot3d_parametric_line,
     plot_parametric, plot3d, plot_contour, plot3d_parametric_surface,
@@ -25,6 +24,8 @@ cfg["backend_2D"] = "matplotlib"
 cfg["backend_3D"] = "matplotlib"
 set_defaults(cfg)
 
+np = import_module('numpy', catch=(RuntimeError,))
+
 unset_show()
 
 # NOTE:
@@ -33,10 +34,12 @@ unset_show()
 # correct data series.
 # Also, legacy tests from the old sympy.plotting module are included.
 #
-# If the issue you are trying to solve is related to the generation of
-# numerical data from a particular data series, consider adding tests to
-# test_series.py.
-# If the issue is related to a particular keyword affecting a backend
+# If your issue is related to the generation of numerical data from a
+# particular data series, consider adding tests to test_series.py.
+# If your issue il related to the preprocessing and generation of a
+# Vector series or a Complex Series, consider adding tests to
+# test_build_series. 
+# If your issue is related to a particular keyword affecting a backend
 # behaviour, consider adding tests to test_backends.py
 #
 

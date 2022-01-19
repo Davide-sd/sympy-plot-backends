@@ -1,6 +1,7 @@
 from sympy import symbols, Matrix, Tuple, cos, sqrt
 from sympy.geometry import Plane
 from sympy.vector import CoordSys3D
+from sympy.external import import_module
 
 from spb.vectors import _preprocess, _series, plot_vector
 from spb.utils import _plot_sympify, _split_vector
@@ -11,9 +12,9 @@ from spb.series import (
     ContourSeries,
 )
 from spb.backends.utils import get_seeds_points
-import numpy as np
 from pytest import raises
-from vtk import vtkPolyData, vtkPointSource
+
+np = import_module('numpy', catch=(RuntimeError,))
 
 
 def pw(*args):
@@ -24,6 +25,9 @@ def pw(*args):
 
 
 def test_preprocess():
+    # verify that the preprocessing is correctly applied to the
+    # input arguments
+
     x, y, z = symbols("x:z")
     N = CoordSys3D("N")
     v1 = x * N.i + y * N.j + z * N.k
@@ -82,6 +86,9 @@ def test_preprocess():
 
 
 def test_split_vector():
+    # verify that the correct components of a vector are retrieved, no matter
+    # the type of the input vector (list, matrix, symbolic vector)
+
     x, y, z = symbols("x:z")
     N = CoordSys3D("N")
     v1 = x * N.i + y * N.j + z * N.k
@@ -112,6 +119,9 @@ def test_split_vector():
 
 
 def test_series():
+    # verify that the correct data series are created from the provided
+    # input vectors and keyword arguments
+
     x, y, z = symbols("x:z")
     N = CoordSys3D("N")
     v1 = x * N.i + y * N.j
@@ -124,17 +134,17 @@ def test_series():
     _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector2DSeries)
     # auto generate ranges
-    t1 = (s.u.var_x, s.u.start_x, s.u.end_x)
-    t2 = (s.u.var_y, s.u.start_y, s.u.end_y)
-    assert (t1 == (x, -10.0, 10.0)) or (t1 == (y, -10.0, 10.0))
-    assert (t2 == (x, -10.0, 10.0)) or (t2 == (y, -10.0, 10.0))
+    t1 = (s.exprs[0], s.ranges[0][1], s.ranges[0][2])
+    t2 = (s.exprs[1], s.ranges[1][1], s.ranges[1][2])
+    assert (t1 == (x, -10.0, 10.0))
+    assert (t2 == (y, -10.0, 10.0))
 
     args = pw(v1, (x, -5, 5), "test")[0]
     _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector2DSeries)
-    assert (s.u.var_x, s.u.start_x, s.u.end_x) == (x, -5.0, 5.0)
+    assert (s.exprs[0], s.ranges[0][1], s.ranges[0][2]) == (x, -5.0, 5.0)
     # auto generate range
-    assert (s.u.var_y, s.u.start_y, s.u.end_y) == (y, -10.0, 10.0)
+    assert (s.exprs[1], s.ranges[1][1], s.ranges[1][2]) == (y, -10.0, 10.0)
 
     # vector doesn't contain free symbols, and not all ranges were provided.
     # raise error because the missing range could be any symbol.
@@ -150,28 +160,22 @@ def test_series():
     _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector3DSeries)
     # auto generate ranges
-    t1 = (s.var_x, s.start_x, s.end_x)
-    t2 = (s.var_y, s.start_y, s.end_y)
-    t3 = (s.var_z, s.start_z, s.end_z)
-    assert (
-        (t1 == (x, -10.0, 10.0)) or (t1 == (y, -10.0, 10.0)) or (t1 == (z, -10.0, 10.0))
-    )
-    assert (
-        (t2 == (x, -10.0, 10.0)) or (t2 == (y, -10.0, 10.0)) or (t2 == (z, -10.0, 10.0))
-    )
-    assert (
-        (t3 == (x, -10.0, 10.0)) or (t3 == (y, -10.0, 10.0)) or (t3 == (z, -10.0, 10.0))
-    )
+    t1 = (s.exprs[0], s.ranges[0][1], s.ranges[0][2])
+    t2 = (s.exprs[1], s.ranges[1][1], s.ranges[1][2])
+    t3 = (s.exprs[2], s.ranges[2][1], s.ranges[2][2])
+    assert t1 == (z, -10.0, 10.0)
+    assert t2 == (x, -10.0, 10.0)
+    assert t3 == (y, -10.0, 10.0)
 
     args = pw(v2, (x, -5, 5), "test")[0]
     _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector3DSeries)
-    t1 = (s.var_x, s.start_x, s.end_x)
-    t2 = (s.var_y, s.start_y, s.end_y)
-    t3 = (s.var_z, s.start_z, s.end_z)
-    assert t1 == (x, -5.0, 5.0)
-    assert (t2 == (y, -10.0, 10.0)) or (t2 == (z, -10.0, 10.0))
-    assert (t3 == (y, -10.0, 10.0)) or (t3 == (z, -10.0, 10.0))
+    t1 = (s.exprs[0], s.ranges[0][1], s.ranges[0][2])
+    t2 = (s.exprs[1], s.ranges[1][1], s.ranges[1][2])
+    t3 = (s.exprs[2], s.ranges[2][1], s.ranges[2][2])
+    assert t1 == (z, -5.0, 5.0)
+    assert t2 == (x, -10.0, 10.0)
+    assert t3 == (y, -10.0, 10.0)
 
     # vector doesn't contain free symbols, and not all ranges were provided.
     # raise error because the missing range could be any symbol.
@@ -312,6 +316,8 @@ def test_series():
 
 
 def test_plot_vector():
+    # verify that `plot_vector()` generates the correct data series
+
     x, y, z = symbols("x:z")
     N = CoordSys3D("N")
     v1 = x * N.i + y * N.j
@@ -356,56 +362,53 @@ def test_plot_vector():
 
 
 def test_vector_data():
+    # verify that vector data series generates data with the correct shape
+
     x, y, z = symbols("x:z")
 
     s = Vector2DSeries(x, y, (x, -5, 5), (y, -3, 3), "test", n1=10, n2=15)
     xx, yy, uu, vv = s.get_data()
-    assert xx.shape == (15, 10)
-    assert yy.shape == (15, 10)
-    assert uu.shape == xx.shape
-    assert vv.shape == yy.shape
+    assert xx.shape == uu.shape == (15, 10)
+    assert yy.shape == vv.shape == (15, 10)
 
     # at least one vector component is a scalar
     s = Vector2DSeries(1, y, (x, -5, 5), (y, -3, 3), "test", n1=10, n2=15)
     xx, yy, uu, vv = s.get_data()
-    assert xx.shape == (15, 10)
-    assert yy.shape == (15, 10)
-    assert uu.shape == xx.shape
-    assert vv.shape == yy.shape
+    assert xx.shape == uu.shape == (15, 10)
+    assert yy.shape == vv.shape == (15, 10)
 
     s = Vector3DSeries(
         x, y, z, (x, -5, 5), (y, -3, 3), (z, -2, 2), "test", n1=10, n2=15, n3=20
     )
     xx, yy, zz, uu, vv, ww = s.get_data()
-    assert xx.shape == (15, 10, 20)
-    assert yy.shape == (15, 10, 20)
-    assert zz.shape == (15, 10, 20)
-    assert uu.shape == xx.shape
-    assert vv.shape == yy.shape
-    assert ww.shape == zz.shape
+    assert xx.shape == uu.shape == (15, 10, 20)
+    assert yy.shape == vv.shape == (15, 10, 20)
+    assert zz.shape == ww.shape == (15, 10, 20)
 
     # at least one vector component is a scalar
     s = Vector3DSeries(
         x, 1, z, (x, -5, 5), (y, -3, 3), (z, -2, 2), "test", n1=10, n2=15, n3=20
     )
     xx, yy, zz, uu, vv, ww = s.get_data()
-    assert xx.shape == (15, 10, 20)
-    assert yy.shape == (15, 10, 20)
-    assert zz.shape == (15, 10, 20)
-    assert uu.shape == xx.shape
-    assert vv.shape == yy.shape
-    assert ww.shape == zz.shape
+    assert xx.shape == uu.shape == (15, 10, 20)
+    assert yy.shape == vv.shape == (15, 10, 20)
+    assert zz.shape == ww.shape == (15, 10, 20)
 
 def test_get_seeds_points():
+    # verify that spb.backends.utils.get_seeds_points returns the correct
+    # data type based on the parameters
+
+    vtk = import_module('vtk', catch=(RuntimeError,))
+
     x, y, z = symbols("x:z")
     s = Vector3DSeries(z, y, x, (x, -5, 5), (y, -3, 3), (z, -2, 2))
     xx, yy, zz, uu, vv, ww = s.get_data()
 
-    # verify that spb.backends.utils.get_seeds_points returns the correct
-    # data type based on the parameters
 
+    #
     # Case 1: search boundary points where the vector is pointing inward the
     # domain
+    #
     d = get_seeds_points(xx, yy, zz, uu, vv, ww, True,
         **dict(starts=None))
     assert isinstance(d, np.ndarray)
@@ -413,9 +416,11 @@ def test_get_seeds_points():
 
     d = get_seeds_points(xx, yy, zz, uu, vv, ww, False,
         **dict(starts=None))
-    assert isinstance(d, vtkPolyData)
+    assert isinstance(d, vtk.vtkPolyData)
 
+    #
     # Case 2: user-provided starting points
+    #
     xx2 = np.linspace(-5, 5, 10)
     yy2 = np.linspace(-3, 3, 10)
     zz2 = np.linspace(-2, 2, 10)
@@ -437,9 +442,11 @@ def test_get_seeds_points():
             "y": yy2,
             "z": zz2
         }))
-    assert isinstance(d, vtkPolyData)
+    assert isinstance(d, vtk.vtkPolyData)
 
+    #
     # Case 3: generate random locations
+    #
     d = get_seeds_points(xx, yy, zz, uu, vv, ww, True,
         **dict(starts=True, npoints=10))
     assert isinstance(d, np.ndarray)
@@ -447,4 +454,4 @@ def test_get_seeds_points():
 
     d = get_seeds_points(xx, yy, zz, uu, vv, ww, False,
         **dict(starts=True, npoints=10))
-    assert isinstance(d, vtkPointSource)
+    assert isinstance(d, vtk.vtkPointSource)

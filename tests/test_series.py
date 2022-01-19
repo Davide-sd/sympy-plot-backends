@@ -4,6 +4,7 @@ from sympy import (
     Circle, Point,
     Piecewise, And, Eq, Interval, Abs, lambdify
 )
+from sympy.external import import_module
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
@@ -23,19 +24,23 @@ from spb.series import (
     Vector2DInteractiveSeries, Vector3DInteractiveSeries,
     SliceVector3DInteractiveSeries, ContourInteractiveSeries
 )
-import numpy as np
 from pytest import warns, raises
+np = import_module('numpy', catch=(RuntimeError,))
 
 # NOTE:
 #
 # These tests are meant to verify that the data series generates the expected
 # numerical data.
 #
-# If the issue is related to the processing and generation of *Series objects,
-# consider adding tests to test_functions.py.
-# If the issue is related to a particular keyword affecting a backend
+# If your issue is related to the processing and generation of *Series
+# objects, consider adding tests to test_functions.py.
+# If your issue il related to the preprocessing and generation of a
+# Vector series or a Complex Series, consider adding tests to
+# test_build_series.
+# If your issue is related to a particular keyword affecting a backend
 # behaviour, consider adding tests to test_backends.py
 #
+
 
 def test_adaptive():
     # verify that adaptive-related keywords produces the expected results

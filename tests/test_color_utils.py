@@ -1,12 +1,39 @@
+from sympy.external import import_module
 from spb.backends.utils import convert_colormap
 from pytest import raises
 
-import matplotlib.cm as cm
-import colorcet as cc
-import k3d
-from _plotly_utils.basevalidators import ColorscaleValidator
-import numpy as np
+# NOTE:
+#
+# Let's verify that it is possible to use a color map from a specific
+# plotting library with any other plotting libraries.
+#
 
+matplotlib = import_module(
+    'matplotlib',
+    import_kwargs={'fromlist':['cm']},
+    min_module_version='1.1.0',
+    catch=(RuntimeError,))
+cm = matplotlib.cm
+
+cc = import_module(
+    'colorcet',
+    min_module_version='3.0.0',
+    catch=(RuntimeError,))
+
+k3d = import_module(
+    'k3d',
+    import_kwargs={'fromlist':['helpers']},
+    min_module_version='2.9.7',
+    catch=(RuntimeError,))
+
+_plotly_utils = import_module(
+        '_plotly_utils',
+        import_kwargs={'fromlist':['basevalidators']},
+        catch=(RuntimeError,))
+
+np = import_module('numpy', catch=(RuntimeError,))
+
+# load color maps
 colorcet_cms = [
     getattr(cc, t)
     for t in dir(cc)
@@ -26,7 +53,7 @@ k3d_cms = (
     + get_cms(k3d.matplotlib_color_maps)
     + get_cms(k3d.paraview_color_maps)
 )
-c = ColorscaleValidator("colorscale", "")
+c = _plotly_utils.basevalidators.ColorscaleValidator("colorscale", "")
 plotly_colorscales = list(c.named_colorscales.keys())
 matplotlib_cm = [cm.jet, cm.Blues]
 

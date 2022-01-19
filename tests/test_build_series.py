@@ -14,9 +14,20 @@ from spb.series import (
     LineInteractiveSeries, AbsArgLineInteractiveSeries
 )
 
-# The _build_series functions are going to create different objects
-# depending on the provided arguments. The aim of the following tests
-# is to assure that the expected objects are being created.
+# NOTE:
+#
+# The _build_series functions are going to create different Complex or
+# Vector series depending on the provided arguments. The aim of the
+# following tests is to assure that the expected objects are being created.
+#
+# If your issue is related to the generation of numerical data from a
+# particular data series, consider adding tests to test_series.py.
+# If your issue is related to the processing and generation of *Series
+# objects not involving Complex or Vector series, consider adding tests
+# to test_functions.py.
+# If your issue is related to a particular keyword affecting a backend
+# behaviour, consider adding tests to test_backends.py
+#
 
 def bcs(*args, **kwargs):
     # use Numpy/Scipy for the following tests to speed things up
