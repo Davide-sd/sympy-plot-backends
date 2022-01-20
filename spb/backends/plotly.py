@@ -1,24 +1,11 @@
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import get_seeds_points
-from sympy.external import import_module
-# import plotly.graph_objects as go
-# from plotly.figure_factory import create_quiver, create_streamline
-# from mergedeep import merge
-import itertools
 from spb.backends.utils import convert_colormap
+from sympy.external import import_module
+import itertools
 import warnings
-# import numpy as np
 import os
-
-
-"""
-TODO:
-1. iplot support for 2D/3D streamlines.
-2. iplot support for domain coloring.
-3. custom surface color for 3D complex plots.
-
-"""
 
 
 class PlotlyBackend(Plot):
@@ -29,11 +16,11 @@ class PlotlyBackend(Plot):
     ==========
 
     aspect : str, optional
-        Set the aspect ratio of the plot. Default to ``"auto"``.
+        Set the aspect ratio of the plot. Default to `"auto"`.
         Possible values:
 
-        - ``"equal"``: sets equal spacing on the axis of a 2D plot.
-        - ``"cube"``, ``"auto"`` for 3D plots.
+        - `"equal"`: sets equal spacing on the axis of a 2D plot.
+        - `"cube"`, `"auto"` for 3D plots.
 
     contour_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's contour
@@ -49,9 +36,9 @@ class PlotlyBackend(Plot):
         A dictionary of keywords/values which is passed to Plotly's quivers
         function to customize the appearance.
 
-        - For 2D vector fields, default to: ``dict( scale = 0.075 )``
+        - For 2D vector fields, default to: `dict( scale = 0.075 )`
           Refer to [#fn5]_ for more options.
-        - For 3D vector fields, default to: ``dict( sizemode = "absolute", sizeref = 40 )``
+        - For 3D vector fields, default to: `dict( sizemode = "absolute", sizeref = 40 )`
           Refer [#fn6]_ for more options.
 
     surface_kw : dict, optional
@@ -63,13 +50,13 @@ class PlotlyBackend(Plot):
         A dictionary of keywords/values which is passed to Plotly's
         streamlines function to customize the appearance.
 
-        - For 2D vector fields, defaul to: ``dict( arrow_scale = 0.15 )``
+        - For 2D vector fields, defaul to: `dict( arrow_scale = 0.15 )`
           Refer to [#fn8]_ for more options.
-        - For 3D vector fields, default to: ``dict( sizeref = 0.3 )``
+        - For 3D vector fields, default to: `dict( sizeref = 0.3 )`
           Refer to [#fn9]_ for more options.
 
     theme : str, optional
-        Set the theme. Default to ``"plotly_dark"``. Find more Plotly themes at
+        Set the theme. Default to `"plotly_dark"`. Find more Plotly themes at
         [#fn10]_ .
 
     use_cm : boolean, optional
@@ -343,52 +330,6 @@ class PlotlyBackend(Plot):
                 self._fig.add_trace(go.Contour(x=xx, y=yy, z=zz, **kw))
                 count += 1
 
-            elif s.is_implicit:
-                points = s.get_data()
-                if len(points) == 2:
-                    # interval math plotting
-                    x, y, pixels = self._get_pixels(s, points[0])
-                    ckw = dict(
-                        colorscale=[
-                            [0, "rgba(0,0,0,0)"],
-                            [1, next(self._cl)],
-                        ],
-                        showscale=False,
-                        name=s.label,
-                    )
-                    kw = merge({}, ckw, s.rendering_kw)
-                    self._fig.add_trace(go.Heatmap(x=x, y=y, z=pixels, **kw))
-                else:
-                    x, y, z, ones, plot_type = points
-                    zf = z.flatten()
-                    m, M = min(zf), max(zf)
-                    col = next(self._cl)
-                    # default values
-                    ckw = dict(
-                        contours=dict(
-                            coloring="none" if plot_type == "contour" else None,
-                            showlabels=False,
-                            type="levels" if plot_type == "contour" else "constraint",
-                            operation="<",
-                            value=[(m + M) / 2],
-                        ),
-                        colorscale=[
-                            [0, "rgba(0,0,0,0)"],
-                            [1, next(self._cl)],
-                        ],
-                        fillcolor=col,
-                        showscale=True,
-                        name=s.label,
-                        line=dict(color=col),
-                    )
-                    kw = merge({}, ckw, s.rendering_kw)
-                    # TODO: sadly, Plotly does not support yet setting contour
-                    # levels, hence the visualization will look ugly whenever
-                    # plot_type="contour".
-                    # https://github.com/plotly/plotly.js/issues/4503
-                    self._fig.add_trace(go.Contour(x=x, y=y, z=ones, **kw))
-                count += 1
-
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
@@ -635,9 +576,6 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["z"] = z
 
-                # elif (s.is_3Dsurface and (not s.is_complex)) or (
-                #     s.is_3Dsurface and s.is_complex and (s.real or s.imag)
-                # ):
                 elif s.is_3Dsurface and (not s.is_domain_coloring):
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["z"] = z
@@ -645,14 +583,6 @@ class PlotlyBackend(Plot):
                 elif s.is_contour and (not s.is_complex):
                     _, _, zz = s.get_data()
                     self.fig.data[i]["z"] = zz
-
-                elif s.is_implicit:
-                    points = s.get_data()
-                    if len(points) == 2:
-                        raise NotImplementedError
-                    else:
-                        _, _, zz, ones, _ = points
-                        self.fig.data[i]["z"] = ones
 
                 elif s.is_vector and s.is_3D:
                     if s.is_streamlines:
@@ -665,12 +595,7 @@ class PlotlyBackend(Plot):
                 elif s.is_vector:
                     x, y, u, v = self.series[i].get_data()
                     if s.is_streamlines:
-                        streams = create_streamline(x[0, :], y[:, 0], u, v)
-                        data = streams.data[0]
-                        # TODO: iplot doesn't work with 2D streamlines. Why?
-                        # Is it possible that the sequential update of x and y
-                        # is the cause of the error? Since at every update,
-                        # len(x) = len(y) but those are different from before.
+                        # TODO: iplot doesn't work with 2D streamlines.
                         raise NotImplementedError
                     else:
                         qkw = dict(
@@ -684,22 +609,17 @@ class PlotlyBackend(Plot):
 
                 elif s.is_complex:
                     if not s.is_3Dsurface:
-                        raise NotImplementedError
                         # TODO: for some unkown reason, domain_coloring and
                         # interactive plot don't like each other...
-                        # x, y, z, magn_angle, img, discr, colors = self._get_image(s)
-                        # self.fig.data[i]["z"] = img
-                        # self.fig.data[i]["x0"] = -4
-                        # self.fig.data[i]["y0"] = -5
-                        # # self.fig.data[i]["customdata"] = magn_angle
+                        raise NotImplementedError
                     else:
                         xx, yy, mag, angle, colors, colorscale = s.get_data()
                         self.fig.data[i]["z"] = mag
                         self.fig.data[i]["surfacecolor"] = angle
                         self.fig.data[i]["customdata"] = angle
                         m, M = min(angle.flatten()), max(angle.flatten())
-                        # show pi symbols on the colorbar if the range is close
-                        # enough to [-pi, pi]
+                        # show pi symbols on the colorbar if the range is
+                        # close enough to [-pi, pi]
                         if (abs(m + np.pi) < 1e-02) and (abs(M - np.pi) < 1e-02):
                             self.fig.data[i]["colorbar"]["tickvals"] = [
                                 m,
@@ -734,7 +654,6 @@ class PlotlyBackend(Plot):
                 type=self.xscale,
                 showgrid=self.grid,  # thin lines in the background
                 zeroline=self.grid,  # thick line at x=0
-                visible=self.grid,  # numbers below
                 constrain="domain",
             ),
             yaxis=dict(
@@ -743,7 +662,6 @@ class PlotlyBackend(Plot):
                 type=self.yscale,
                 showgrid=self.grid,  # thin lines in the background
                 zeroline=self.grid,  # thick line at x=0
-                visible=self.grid,  # numbers below,
                 scaleanchor="x" if self.aspect == "equal" else None,
             ),
             margin=dict(

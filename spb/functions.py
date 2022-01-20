@@ -1369,7 +1369,6 @@ def plot_implicit(*args, show=True, **kwargs):
 
     args = _plot_sympify(args)
     args = _check_arguments(args, 1, 2)
-
     kwargs = _set_discretization_points(kwargs, ImplicitSeries)
 
     series_kw = dict()

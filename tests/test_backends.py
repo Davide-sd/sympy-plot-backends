@@ -938,18 +938,13 @@ def test_plot_implicit_adaptive_true():
     # TODO: where does matplotlib stores fills???
     p.close()
 
-    p = _plot_implicit(PB, contour_kw=dict(colorscale=[[0, "rgba(0,0,0,0)"], [1, "red"]]))
-    assert len(p.series) == 1
-    f = p.fig
-    assert len(f.data) == 1
-    assert isinstance(f.data[0], go.Heatmap)
-    assert f.data[0]["colorscale"] == ((0, "rgba(0,0,0,0)"), (1, "red"))
+    # PlotlyBackend doesn't support 2D plots
+    raises(NotImplementedError,
+        lambda: _plot_implicit(PB, contour_kw=dict()))
 
-    p = _plot_implicit(BB, contour_kw=dict())
-    assert len(p.series) == 1
-    f = p.fig
-    assert len(f.renderers) == 1
-    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
+    # BokehBackend doesn't support 2D plots
+    raises(NotImplementedError,
+        lambda: _plot_implicit(BB, contour_kw=dict()))
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
@@ -982,18 +977,13 @@ def test_plot_implicit_adaptive_false():
     # TODO: how to retrieve the colormap from a contour series?????
     p.close()
 
-    p = _plot_implicit(PB, contour_kw=dict(fillcolor="red"))
-    assert len(p.series) == 1
-    f = p.fig
-    assert len(f.data) == 1
-    assert isinstance(f.data[0], go.Contour)
-    assert f.data[0]["fillcolor"] == "red"
+    # PlotlyBackend doesn't support 2D plots
+    raises(NotImplementedError,
+        lambda: _plot_implicit(PB, contour_kw=dict()))
 
-    p = _plot_implicit(BB, contour_kw=dict())
-    assert len(p.series) == 1
-    f = p.fig
-    assert len(f.renderers) == 1
-    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
+    # BokehBackend doesn't support 2D plots
+    raises(NotImplementedError,
+        lambda: _plot_implicit(BB, contour_kw=dict()))
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,

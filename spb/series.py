@@ -1159,11 +1159,13 @@ class ImplicitSeries(BaseSeries):
         x_grid, y_grid = np.meshgrid(xarray, yarray)
         func = vectorized_lambdify((self.var_x, self.var_y), expr)
         z_grid = func(x_grid, y_grid)
-        z_grid, ones = self._postprocess_meshgrid_result(z_grid, x_grid)
+        z_grid = self._correct_size(z_grid, x_grid)
+        z_grid[np.ma.where(z_grid < 0)] = -1
+        z_grid[np.ma.where(z_grid > 0)] = 1
         if equality:
-            return xarray, yarray, z_grid, ones, "contour"
+            return xarray, yarray, z_grid, 'contour'
         else:
-            return xarray, yarray, z_grid, ones, "contourf"
+            return xarray, yarray, z_grid, 'contourf'
 
     @staticmethod
     def _preprocess_meshgrid_expression(expr):
@@ -1195,24 +1197,6 @@ class ImplicitSeries(BaseSeries):
                 "plotting in uniform meshed plot."
             )
         return expr, equality
-
-    @staticmethod
-    def _postprocess_meshgrid_result(z_grid, x_grid):
-        """Bound the result to -1, 1. This method reduces code repetition.
-        While with Matplotlib we can directly plot the result z_grid and set the
-        contour levels, this is not possible with Plotly. Hence, Plotly will
-        use the ones matrix. The result will be slightly different: while
-        Matplotlib will render smooth lines, Plotly will looks
-        square-ish/segmented.
-        """
-        np = import_module('numpy', catch=(RuntimeError,))
-
-        z_grid = ImplicitSeries._correct_size(z_grid, x_grid)
-        # ones contains data useful to plot regions, or in case of Plotly,
-        # contour lines too.
-        ones = np.ones_like(z_grid, dtype=np.int8)
-        ones[np.ma.where(z_grid < 0)] = -1
-        return z_grid, ones
 
 
 class InteractiveSeries(BaseSeries):

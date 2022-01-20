@@ -56,8 +56,6 @@ def compute_streamlines(x, y, u, v, density=1.0):
     """
     np = import_module('numpy', catch=(RuntimeError,))
 
-    # TODO: is it possible to further optimize this function?
-
     ## Set up some constants - size of the grid used.
     NGX = len(x)
     NGY = len(y)
@@ -233,7 +231,7 @@ class BokehBackend(Plot):
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's scatter
         functions to customize the appearance. Default to:
-        ``line_kw = dict(line_width = 2)``
+        `line_kw = dict(line_width = 2)`
         Refer to [#fn1]_ to learn more about customization.
 
     quiver_kw : dict, optional
@@ -251,10 +249,10 @@ class BokehBackend(Plot):
 
     stream_kw : dict, optional
         A dictionary with keyword arguments to customize the streamlines.
-        Default to: ``dict(line_width=2, line_alpha=0.8)``
+        Default to: `dict(line_width=2, line_alpha=0.8)`
 
     theme : str, optional
-        Set the theme. Default to ``"dark_minimal"``. Find more Bokeh themes
+        Set the theme. Default to `"dark_minimal"`. Find more Bokeh themes
         at [#fn2]_ .
         
 
@@ -418,47 +416,6 @@ class BokehBackend(Plot):
                 self._fig.add_layout(colorbar, "right")
                 self._handles[i] = colorbar
 
-            elif s.is_implicit:
-                points = s.get_data()
-                # TODO: add color to the legend
-                if len(points) == 2:
-                    # interval math plotting
-                    x, y, pixels = self._get_pixels(s, points[0])
-                    x, y = x.flatten(), y.flatten()
-                    cm = ["#00000000", next(self._cl)]
-                    self._fig.image(
-                        image=[pixels],
-                        x=min(x),
-                        y=min(y),
-                        dw=abs(max(x) - min(x)),
-                        dh=abs(max(y) - min(y)),
-                        palette=cm,
-                        legend_label=s.label,
-                    )
-                else:
-                    x, y, z, ones, plot_type = points
-                    if plot_type == "contour":
-                        source = get_contour_data(x, y, z)
-                        lkw = dict(
-                            line_color=next(self._cl),
-                            line_width=2,
-                            source=source,
-                            legend_label=s.label,
-                        )
-                        line_kw = self._kwargs.get("line_kw", dict())
-                        self._fig.multi_line("xs", "ys", **merge({}, lkw, line_kw))
-                    else:
-                        cm = ["#00000000", next(self._cl)]
-                        self._fig.image(
-                            image=[ones],
-                            x=min(x),
-                            y=min(y),
-                            dw=abs(max(x) - min(x)),
-                            dh=abs(max(y) - min(y)),
-                            palette=cm,
-                            legend_label=s.label,
-                        )
-
             elif s.is_2Dvector:
                 if s.is_streamlines:
                     x, y, u, v = s.get_data()
@@ -485,7 +442,6 @@ class BokehBackend(Plot):
                         else next(self._cl)
                     )
                     source = bokeh.models.ColumnDataSource(data=data)
-                    # default quivers options
                     qkw = dict(line_color=line_color, line_width=1, name=s.label)
                     kw = merge({}, qkw, quiver_kw)
                     glyph = bokeh.models.Segment(
@@ -586,9 +542,10 @@ class BokehBackend(Plot):
         # MultiLine works with line segments, not with line points! :|
         xs = [x[i - 1 : i + 1] for i in range(1, len(x))]
         ys = [y[i - 1 : i + 1] for i in range(1, len(y))]
-        # TODO: let n be the number of points. Then, the number of segments will
-        # be (n - 1). Therefore, we remove one parameter. If n is sufficiently
-        # high, there shouldn't be any noticeable problem in the visualization.
+        # let n be the number of points. Then, the number of segments
+        # will be (n - 1). Therefore, we remove one parameter. If n is
+        # sufficiently high, there shouldn't be any noticeable problem in
+        # the visualization.
         us = u[:-1]
         return xs, ys, us
 
@@ -632,7 +589,6 @@ class BokehBackend(Plot):
                         source = {"xs": x, "ys": y, "us": param}
                     else:
                         x, y = self.series[i].get_data()
-                        # x, y, _ = self._detect_poles(x, y)
                         source = {"xs": x, "ys": y}
                     rend[i].data_source.data.update(source)
 
@@ -641,26 +597,12 @@ class BokehBackend(Plot):
                     cb = self._handles[i]
                     rend[i].data_source.data.update({"image": [z]})
                     zz = z.flatten()
-                    # TODO: as of Bokeh 2.3.2, the following line going to update
-                    # the values of the color mapper, but the redraw is not
-                    # applied, hence there is an error in the visualization.
-                    # Keep track of the following issue:
+                    # TODO: as of Bokeh 2.3.2, the following line is going to
+                    # update the values of the color mapper, but the redraw
+                    # is not applied, hence there is an error in the
+                    # visualization. Keep track of the following issue:
                     # https://github.com/bokeh/bokeh/issues/11116
                     cb.color_mapper.update(low=min(zz), high=max(zz))
-
-                elif s.is_implicit:
-                    points = s.get_data()
-                    if len(points) == 2:
-                        raise NotImplementedError
-                    else:
-                        x, y, z, ones, plot_type = points
-                        if plot_type == "contour":
-                            data = get_contour_data(x, y, z, False)
-                            # TODO: for some unkown reason, this is not updating!
-                            rend[i].data_source.data.update(data)
-                        else:
-                            source = {"image": [ones]}
-                            rend[i].data_source.data.update(source)
 
                 elif s.is_2Dvector:
                     x, y, u, v = s.get_data()
@@ -728,8 +670,6 @@ class BokehBackend(Plot):
         mergedeep = import_module('mergedeep', catch=(RuntimeError,))
         merge = mergedeep.merge
 
-        # TODO: an error get raised if I uncomment the following line
-        # self._process_series(self._series)
         ext = os.path.splitext(path)[1]
         if ext.lower() in [".html", ".html"]:
             from bokeh.resources import CDN
@@ -756,7 +696,6 @@ class BokehBackend(Plot):
 
     def show(self):
         """Visualize the plot on the screen."""
-        print("BB.show()")
         self._process_series(self._series)
         if self._run_in_notebook:
             # TODO: the current way we are launching the server only works
@@ -771,7 +710,6 @@ class BokehBackend(Plot):
 
             curdoc().theme = self._theme
             bokeh.plotting.show(self._fig)
-        # show(self._fig)
 
     def _get_quivers_data(self, xs, ys, u, v, **quiver_kw):
         """Compute the segments coordinates to plot quivers.

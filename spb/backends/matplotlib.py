@@ -403,22 +403,22 @@ class MatplotlibBackend(Plot):
                 if len(points) == 2:
                     # interval math plotting
                     x, y = _matplotlib_list(points[0])
-                    c = self.ax.fill(x, y, edgecolor="None")
+                    c = self.ax.fill(x, y, color=next(self._cl),
+                        edgecolor="None")
                     self._add_handle(i, c)
                 else:
                     # use contourf or contour depending on whether it is
                     # an inequality or equality.
-                    xarray, yarray, zarray, ones, plot_type = points
+                    xarray, yarray, zarray, plot_type = points
+                    color = next(self._cl)
+                    colormap = ListedColormap([color, color])
+                    ckw = dict(cmap=colormap)
+                    kw = merge({}, ckw, s.rendering_kw)
                     if plot_type == "contour":
-                        ckw = dict(cmap=next(self._cm))
-                        kw = merge({}, ckw, s.rendering_kw)
                         c = self.ax.contour(xarray, yarray, zarray, [0.0],
                             **kw)
                     else:
-                        colormap = ListedColormap(["#FFFFFF00", next(self._cl)])
-                        ckw = dict(cmap=colormap)
-                        kw = merge({}, ckw, s.rendering_kw)
-                        c = self.ax.contourf(xarray, yarray, ones, **kw)
+                        c = self.ax.contourf(xarray, yarray, zarray, **kw)
                     self._add_handle(i, c, kw)
 
             elif s.is_vector:

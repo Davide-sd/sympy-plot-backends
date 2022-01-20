@@ -607,32 +607,44 @@ def plot_implicit_tests(name):
     TmpFileManager.tmp_folder(temp_dir)
     x, y = symbols("x, y")
     # implicit plot tests
-    plot_and_save(Eq(y, cos(x)), (x, -5, 5), (y, -2, 2), name=name, dir=temp_dir)
+    plot_and_save(Eq(y, cos(x)), (x, -5, 5), (y, -2, 2),
+        name=name, dir=temp_dir, adaptive=False, n=50)
     plot_and_save(
-        Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -4, 4), name=name, dir=temp_dir
-    )
-    plot_and_save(y > 1 / x, (x, -5, 5), (y, -2, 2), name=name, dir=temp_dir)
-    plot_and_save(y < 1 / tan(x), (x, -5, 5), (y, -2, 2), name=name, dir=temp_dir)
+        Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -4, 4),
+        name=name, dir=temp_dir, adaptive=False, n=50)
+    plot_and_save(y > 1 / x, (x, -5, 5), (y, -2, 2),
+        name=name, dir=temp_dir, adaptive=False, n=50)
+    plot_and_save(y < 1 / tan(x), (x, -5, 5), (y, -2, 2),
+        name=name, dir=temp_dir, adaptive=False, n=50)
     plot_and_save(
-        y >= 2 * sin(x) * cos(x), (x, -5, 5), (y, -2, 2), name=name, dir=temp_dir
-    )
-    plot_and_save(y <= x ** 2, (x, -3, 3), (y, -1, 5), name=name, dir=temp_dir)
+        y >= 2 * sin(x) * cos(x), (x, -5, 5), (y, -2, 2),
+        name=name, dir=temp_dir, adaptive=False, n=50)
+    plot_and_save(y <= x ** 2, (x, -3, 3), (y, -1, 5),
+        name=name, dir=temp_dir, adaptive=False, n=50)
 
     # Test all input args for plot_implicit
-    plot_and_save(Eq(y ** 2, x ** 3 - x), dir=temp_dir)
-    plot_and_save(Eq(y ** 2, x ** 3 - x), adaptive=False, dir=temp_dir)
-    plot_and_save(Eq(y ** 2, x ** 3 - x), adaptive=False, n=500, dir=temp_dir)
-    plot_and_save(y > x, (x, -5, 5), dir=temp_dir)
-    plot_and_save(And(y > exp(x), y > x + 2), dir=temp_dir)
-    plot_and_save(Or(y > x, y > -x), dir=temp_dir)
-    plot_and_save(x ** 2 - 1, (x, -5, 5), dir=temp_dir)
-    plot_and_save(x ** 2 - 1, dir=temp_dir)
-    plot_and_save(y > x, depth=-5, dir=temp_dir)
-    plot_and_save(y > x, depth=5, dir=temp_dir)
-    plot_and_save(y > cos(x), adaptive=False, dir=temp_dir)
-    plot_and_save(y < cos(x), adaptive=False, dir=temp_dir)
-    plot_and_save(And(y > cos(x), Or(y > x, Eq(y, x))), dir=temp_dir)
-    plot_and_save(y - cos(pi / x), dir=temp_dir)
+    plot_and_save(Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -5, 5),
+        dir=temp_dir, adaptive=False, n=50)
+    plot_and_save(Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -5, 5),
+        adaptive=False, n=50, dir=temp_dir)
+    plot_and_save(Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -5, 5),
+        adaptive=True, dir=temp_dir)
+    plot_and_save(y > x, (x, -5, 5), (y, -5, 5),
+        dir=temp_dir, adaptive=False, n=50)
+    plot_and_save(And(y > exp(x), y > x + 2), (x, -5, 5), (y, -5, 5),
+        dir=temp_dir, adaptive=True)
+    plot_and_save(Or(y > x, y > -x), (x, -5, 5), (y, -5, 5), dir=temp_dir)
+    plot_and_save(x ** 2 - 1, (x, -5, 5), (y, -5, 5), dir=temp_dir)
+    plot_and_save(x ** 2 - 1, (x, -5, 5), (y, -5, 5), dir=temp_dir)
+    plot_and_save(y > x, (x, -5, 5), (y, -5, 5),
+        adaptive=True, depth=-5, dir=temp_dir)
+    plot_and_save(y > x, (x, -5, 5), (y, -5, 5),
+        adaptive=True, depth=5, dir=temp_dir)
+    plot_and_save(y > cos(x), (x, -5, 5), (y, -5, 5), adaptive=False, dir=temp_dir)
+    plot_and_save(y < cos(x), (x, -5, 5), (y, -5, 5), adaptive=False, dir=temp_dir)
+    plot_and_save(And(y > cos(x), Or(y > x, Eq(y, x))), (x, -5, 5), (y, -5, 5),
+        dir=temp_dir, adaptive=True)
+    plot_and_save(y - cos(pi / x), (x, -5, 5), (y, -5, 5), dir=temp_dir)
 
     # Test plots which cannot be rendered using the adaptive algorithm
     with warns(UserWarning, match="Adaptive meshing could not be applied"):
@@ -678,25 +690,25 @@ def test_plot_implicit_region_and():
 
         test_filename = tmp_file(dir=temp_dir, name="test_region_and")
         cmp_filename = os.path.join(test_directory, "test_region_and.png")
-        p = plot_implicit(r1 & r2, x, y)
+        p = plot_implicit(r1 & r2, (x, -5, 5), (y, -5, 5))
         p.save(test_filename)
         compare_images(cmp_filename, test_filename, 0.005)
 
         test_filename = tmp_file(dir=temp_dir, name="test_region_or")
         cmp_filename = os.path.join(test_directory, "test_region_or.png")
-        p = plot_implicit(r1 | r2, x, y)
+        p = plot_implicit(r1 | r2, (x, -5, 5), (y, -5, 5))
         p.save(test_filename)
         compare_images(cmp_filename, test_filename, 0.005)
 
         test_filename = tmp_file(dir=temp_dir, name="test_region_not")
         cmp_filename = os.path.join(test_directory, "test_region_not.png")
-        p = plot_implicit(~r1, x, y)
+        p = plot_implicit(~r1, (x, -5, 5), (y, -5, 5))
         p.save(test_filename)
         compare_images(cmp_filename, test_filename, 0.005)
 
         test_filename = tmp_file(dir=temp_dir, name="test_region_xor")
         cmp_filename = os.path.join(test_directory, "test_region_xor.png")
-        p = plot_implicit(r1 ^ r2, x, y)
+        p = plot_implicit(r1 ^ r2, (x, -5, 5), (y, -5, 5))
         p.save(test_filename)
         compare_images(cmp_filename, test_filename, 0.005)
     finally:
