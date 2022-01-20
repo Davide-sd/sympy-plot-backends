@@ -1,21 +1,19 @@
 """Plotting module for Sympy.
 
-A plot is represented by the ``Plot`` class that contains a list of the data
+A plot is represented by the `Plot` class that contains a list of the data
 series to be plotted. The data series are instances of classes meant to
-simplify getting points and meshes from sympy expressions. ``plot_backends``
-is a dictionary with all the backends.
+simplify getting points and meshes from sympy expressions.
 
 This module gives only the essential. Especially if you need publication ready
 graphs and this module is not enough for you, use directly the backend, which
-can be accessed with the ``fig`` attribute:
-* MatplotlibBackend.fig: returns a tuple (fig, ax) representing the figure and
-    axes of Matplotlib.
+can be accessed with the `fig` attribute:
+* MatplotlibBackend.fig: returns a Matplotlib figure.
 * BokehBackend.fig: return the Bokeh figure object.
 * PlotlyBackend.fig: return the Plotly figure object.
 * K3DBackend.fig: return the K3D plot object.
 
-Simplicity of code takes much greater importance than performance. Don't use it
-if you care at all about performance.
+Simplicity of code takes much greater importance than performance. Don't use
+it if you care at all about performance.
 """
 
 
@@ -35,7 +33,7 @@ from spb.series import (
 
 # N.B.
 # When changing the minimum module version for matplotlib, please change
-# the same in the `SymPyDocTestFinder`` in `sympy/testing/runtests.py`
+# the same in the `SymPyDocTestFinder` in `sympy/testing/runtests.py`
 
 
 def _process_piecewise(piecewise, _range, label, **kwargs):
@@ -48,9 +46,9 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
     As a design choice, the following implementation reuses the existing
     classes, instead of creating a new one to deal with Piecewise. Here, each
     piece is going to create at least one series. If a piece is using a union
-    of coditions (for example, ``((x < 0) | (x > 2))``), than two or more
+    of coditions (for example, `((x < 0) | (x > 2))`), than two or more
     series of the same expression are created (for example, one covering
-    ``x < 0`` and the other covering ``x > 2``), both having the same label.
+    `x < 0` and the other covering `x > 2`), both having the same label.
 
     However, if a piece is outside of the provided plotting range, then it
     will not be added to the plot. This may lead to not-complete plots in some
@@ -154,14 +152,14 @@ def _process_summations(sum_bound, *args):
     ==========
 
     NOTE:
-    Let's consider the following summation: ``Sum(1 / x**2, (x, 1, oo))``
+    Let's consider the following summation: `Sum(1 / x**2, (x, 1, oo))`
     The current implementation of lambdify (SymPy 1.9 at the time of
     writing this) will create something of this form:
-    ``sum(1 / x**2 for x in range(1, INF))``
-    The problem is that type(INF) is float, while ``range`` requires integers,
+    `sum(1 / x**2 for x in range(1, INF))`
+    The problem is that type(INF) is float, while `range` requires integers,
     thus the evaluation will fails.
-    Instead of modifying ``lambdify`` (which requires a deep knowledge),
-    let's apply this quick dirty hack: substitute symbolic ``oo`` with an
+    Instead of modifying `lambdify` (which requires a deep knowledge),
+    let's apply this quick dirty hack: substitute symbolic `oo` with an
     arbitrary large number.
     """
     def new_bound(t, bound):
@@ -192,10 +190,6 @@ def _process_summations(sum_bound, *args):
     return args
 
 
-
-
-
-
 def _build_line_series(*args, **kwargs):
     """Loop over the provided arguments. If a piecewise function is found,
     decompose it in such a way that each argument gets its own series.
@@ -219,15 +213,15 @@ def plot(*args, show=True, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a single expression with a single range.
-        ``plot(expr, range, **kwargs)``
+        `plot(expr, range, **kwargs)`
     - Plotting a single expression with the default range (-10, 10).
-        ``plot(expr, **kwargs)``
+        `plot(expr, **kwargs)`
     - Plotting multiple expressions with a single range.
-        ``plot(expr1, expr2, ..., range, **kwargs)``
+        `plot(expr1, expr2, ..., range, **kwargs)`
     - Plotting multiple expressions with multiple ranges.
-        ``plot((expr1, range1), (expr2, range2), ..., **kwargs)``
+        `plot((expr1, range1), (expr2, range2), ..., **kwargs)`
     - Plotting multiple expressions with multiple ranges and custom labels.
-        ``plot((expr1, range1, label1), (expr2, range2, label2), ..., legend=True, **kwargs)``
+        `plot((expr1, range1, label1), (expr2, range2, label2), ..., legend=True, **kwargs)`
 
 
     Parameters
@@ -238,80 +232,93 @@ def plot(*args, show=True, **kwargs):
             Expression representing the function of one variable to be
             plotted.
 
-        range: (symbol, min, max)
+        range : (symbol, min, max)
             A 3-tuple denoting the range of the x variable. Default values:
             `min=-10` and `max=10`.
 
         label : str, optional
             The label to be shown in the legend. If not provided, the string
-            representation of ``expr`` will be used.
+            representation of `expr` will be used.
 
     adaptive : bool, optional
-        The default value is set to ``True``. Set adaptive to ``False``
-        and specify ``n`` if uniform sampling is required.
+        The default value is set to `True`, which uses the adaptive algorithm
+        implemented in [#fn1]_ to create smooth plots. Use `adaptive_goal`
+        and `loss_fn` to further customize the output.
 
-        The plotting uses an adaptive algorithm which samples
-        recursively to accurately plot.
+        Set adaptive to `False` and specify `n` if uniform sampling is
+        required.
+    
+    adaptive_goal : callable, int, float or None
+        Controls the "smoothness" of the evaluation. Possible values:
+
+        * `None` (default):  it will use the following goal:
+          `lambda l: l.loss() < 0.01`
+        * number (int or float). The lower the number, the more
+          evaluation points. This number will be used in the following goal:
+          `lambda l: l.loss() < number`
+        * callable: a function requiring one input element, the learner. It
+          must return a float number. Refer to [#fn1]_ for more information.
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with MatplotlibBackend.
-
-    depth : int, optional
-        Recursion depth of the adaptive algorithm. A depth of value
-        ``n`` samples a maximum of `2^{n}` points.
-
-        If the ``adaptive`` flag is set to ``False``, this will be
-        ignored.
+        {'center', 'auto'}. Only available with `MatplotlibBackend`.
 
     detect_poles : boolean
-            Chose whether to detect and correctly plot poles.
-            Defaulto to False. To improve detection, increase the number of
-            discretization points and/or change the value of `eps`.
+        Chose whether to detect and correctly plot poles.
+        Defaulto to `False`. To improve detection, increase the number of
+        discretization points `n` and/or change the value of `eps`.
 
     eps : float
         An arbitrary small value used by the `detect_poles` algorithm.
-        Default value to 0.1. Before changing this value, it is better to
+        Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
+    
+    loss_fn : callable or None
+        The loss function to be used by the `adaptive` learner.
+        Possible values:
+
+        * `None` (default): it will use the `default_loss` from the
+          `adaptive` module.
+        * callable : Refer to [#fn1]_ for more information. Specifically,
+          look at `adaptive.learner.learner1D` to find more loss functions.
 
     n : int, optional
-        Used when the ``adaptive`` is set to ``False``. The function
-        is uniformly sampled at ``n`` number of points.
-        If the ``adaptive`` flag is set to ``True``, this parameter will be
+        Used when the `adaptive` is set to `False`. The function is uniformly
+        sampled at `n` number of points. Default value to 1000.
+        If the `adaptive` flag is set to `True`, this parameter will be
         ignored.
 
     only_integers : boolean, optional
-        Default to `False`. If True, discretize the domain with integer
-        numbers, which can be useful to plot sums. It only works with
+        Default to `False`. If `True`, discretize the domain with integer
+        numbers, which can be useful to plot sums. It only works when
         `adaptive=False`.
 
     polar : boolean
-        Default to False. If True, generate a polar plot of a curve with radius
-        `expr` as a function of the range
-
-    process_piecewise : boolean
-        Default to True. If a ``Piecewise`` expression is encountered, extract
-        and plot the pieces separately. This ensure a correct representation
-        of discontinuities. If False, discontinuities won't be visible.
+        Default to `False`. If `True`, generate a polar plot of a curve
+        with radius `expr` as a function of the range.
 
     show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
+        The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
 
     size : (float, float), optional
-        A tuple in the form (width, height) in inches to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the default backend.
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
 
     steps : boolean, optional
-        Default to False. If True, connects consecutive points with steps
+        Default to `False`. If `True`, connects consecutive points with steps
         rather than straight segments.
+    
+    sum_bound : int, optional
+        When plotting sums, the expression will be pre-processed in order
+        to replace lower/upper bounds set to +/- infinity with a numerical
+        value. Default value to 1000.
 
     title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
+        Title of the plot.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -326,10 +333,10 @@ def plot(*args, show=True, **kwargs):
         Sets the scaling of the y-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)``.
+        Denotes the x-axis limits, `(min, max)`.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)``.
+        Denotes the y-axis limits, `(min, max)`.
 
 
     Examples
@@ -401,12 +408,17 @@ def plot(*args, show=True, **kwargs):
 
         >>> plot(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
         ...     polar=True, aspect="equal")
+    
+    References
+    ==========
+
+    .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
 
     See Also
     ========
 
     plot_polar, plot_parametric, plot_contour, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry
+    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
 
     """
     from spb.defaults import TWO_D_B
@@ -443,55 +455,92 @@ def plot_parametric(*args, show=True, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a single parametric curve with a range
-        ``plot_parametric(expr_x, expr_y, range)``
+        `plot_parametric(expr_x, expr_y, range)`
     - Plotting multiple parametric curves with the same range
-        ``plot_parametric((expr_x, expr_y), ..., range)``
+        `plot_parametric((expr_x, expr_y), ..., range)`
     - Plotting multiple parametric curves with different ranges
-        ``plot_parametric((expr_x, expr_y, range), ...)``
+        `plot_parametric((expr_x, expr_y, range), ...)`
     - Plotting multiple parametric curves with different ranges and
         custom labels
-        ``plot_parametric((expr_x, expr_y, range, label), ...)``
+        `plot_parametric((expr_x, expr_y, range, label), ...)`
 
     Parameters
     ==========
 
     args :
-        ``expr_x`` is the expression representing $x$ component of the
-        parametric function.
+        `expr_x` : Expr
+            The expression representing $x$ component of the parametric
+            function.
 
-        ``expr_y`` is the expression representing $y$ component of the
-        parametric function.
+        `expr_y` : Expr
+            The expression representing $y$ component of the parametric
+            function.
 
-        ``range`` is a 3-tuple denoting the parameter symbol, start and
-        stop. For example, ``(u, 0, 5)``. If the range is not specified, then
-        a default range of (-10, 10) is used.
+        `range` : (symbol, min, max)
+            A 3-tuple denoting the parameter symbol, start and stop. For
+            example, `(u, 0, 5)`. If the range is not specified, then a
+            default range of (-10, 10) is used.
 
-        However, if the arguments are specified as
-        ``(expr_x, expr_y, range), ...``, you must specify the ranges
-        for each expressions manually.
-
-        Default range may change in the future if a more advanced
-        algorithm is implemented.
-
-        ``label`` : An optional string denoting the label of the expression
-        to be visualized on the legend. If not provided, the label will be the
-        string representation of the expression.
+            However, if the arguments are specified as
+            `(expr_x, expr_y, range), ...`, you must specify the ranges
+            for each expressions manually.
+        
+        `label` : str, optional
+            The label to be shown in the legend. If not provided, the string
+            representation of `expr_x` and `expr_y` will be used.
 
     adaptive : bool, optional
-        Specifies whether to use the adaptive sampling or not.
+        The default value is set to `True`, which uses the adaptive algorithm
+        implemented in [#fn1]_ to create smooth plots. Use `adaptive_goal`
+        and `loss_fn` to further customize the output.
 
-        The default value is set to ``True``. Set adaptive to ``False``
-        and specify ``n`` if uniform sampling is required.
+        Set adaptive to `False` and specify `n` if uniform sampling is
+        required.
+    
+    adaptive_goal : callable, int, float or None
+        Controls the "smoothness" of the evaluation. Possible values:
 
-    depth :  int, optional
-        The recursion depth of the adaptive algorithm. A depth of
-        value $n$ samples a maximum of $2^n$ points.
+        * `None` (default):  it will use the following goal:
+          `lambda l: l.loss() < 0.01`
+        * number (int or float). The lower the number, the more
+          evaluation points. This number will be used in the following goal:
+          `lambda l: l.loss() < number`
+        * callable: a function requiring one input element, the learner. It
+          must return a float number. Refer to [#fn1]_ for more information.
+
+    axis_center : (float, float), optional
+        Tuple of two floats denoting the coordinates of the center or
+        {'center', 'auto'}. Only available with `MatplotlibBackend`.
+    
+    loss_fn : callable or None
+        The loss function to be used by the `adaptive` learner.
+        Possible values:
+
+        * `None` (default): it will use the `default_loss` from the
+          `adaptive` module.
+        * callable : Refer to [#fn1]_ for more information. Specifically,
+          look at `adaptive.learner.learner1D` to find more loss functions.
 
     n : int, optional
-        Used when the ``adaptive`` flag is set to ``False``.
+        Used when the `adaptive` is set to `False`. The function is uniformly
+        sampled at `n` number of points. Default value to 1000.
+        If the `adaptive` flag is set to `True`, this parameter will be
+        ignored.
+    
+    show : bool, optional
+        The default value is set to `True`. Set show to `False` and
+        the function will not display the plot. The returned instance of
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
 
-        Specifies the number of the points used for the uniform
-        sampling.
+    size : (float, float), optional
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -505,20 +554,11 @@ def plot_parametric(*args, show=True, **kwargs):
     yscale : 'linear' or 'log', optional
         Sets the scaling of the y-axis.
 
-    axis_center : (float, float), optional
-        Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}
-
     xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)```.
+        Denotes the x-axis limits, `(min, max)`.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)```.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) in inches to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the default backend.
+        Denotes the y-axis limits, `(min, max)`.
 
     Examples
     ========
@@ -584,21 +624,17 @@ def plot_parametric(*args, show=True, **kwargs):
        Plot object containing:
        [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
        [1]: parametric cartesian line: (3*cos(2*u), 5*sin(4*u)) for u over (0.0, 3.141592653589793)
+    
+    References
+    ==========
 
-    Notes
-    =====
-
-    The plotting uses an adaptive algorithm which samples recursively to
-    accurately plot the curve. The adaptive algorithm uses a random point
-    near the midpoint of two points that has to be further sampled.
-    Hence, repeating the same plot command can give slightly different
-    results because of the random sampling.
+    .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
 
     See Also
     ========
 
     plot, plot_polar, plot_contour, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry
+    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
 
     """
     from spb.defaults import TWO_D_B
@@ -622,15 +658,15 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a single expression.
-        ``plot3d_parametric_line(expr_x, expr_y, expr_z, range, **kwargs)``
+        `plot3d_parametric_line(expr_x, expr_y, expr_z, range, **kwargs)`
     - Plotting a single expression with a custom label.
-        ``plot3d_parametric_line(expr_x, expr_y, expr_z, range, label, **kwargs)``
+        `plot3d_parametric_line(expr_x, expr_y, expr_z, range, label, **kwargs)`
     - Plotting multiple expressions with the same ranges.
-        ``plot3d_parametric_line((expr_x1, expr_y1, expr_z1), (expr_x2, expr_y2, expr_z2), ..., range, **kwargs)``
+        `plot3d_parametric_line((expr_x1, expr_y1, expr_z1), (expr_x2, expr_y2, expr_z2), ..., range, **kwargs)`
     - Plotting multiple expressions with different ranges.
-        ``plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1), (expr_x2, expr_y2, expr_z2, range2), ..., **kwargs)``
+        `plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1), (expr_x2, expr_y2, expr_z2, range2), ..., **kwargs)`
     - Plotting multiple expressions with different ranges and custom labels.
-        ``plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1, label1), (expr_x2, expr_y2, expr_z2, range2, label1), ..., **kwargs)``
+        `plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1, label1), (expr_x2, expr_y2, expr_z2, range2, label1), ..., **kwargs)`
 
 
     Parameters
@@ -649,24 +685,54 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
         range : (symbol, min, max)
             A 3-tuple denoting the range of the parameter variable.
 
-        label : str
+        label : str, optional
             An optional string denoting the label of the expression
             to be visualized on the legend. If not provided, the string
             representation of the expression will be used.
 
-    n : int
-        The range is uniformly sampled at ``n`` number of points. Default value
-        is 300.
+    adaptive : bool, optional
+        The default value is set to `True`, which uses the adaptive algorithm
+        implemented in [#fn1]_ to create smooth plots. Use `adaptive_goal`
+        and `loss_fn` to further customize the output.
+
+        Set adaptive to `False` and specify `n` if uniform sampling is
+        required.
+    
+    adaptive_goal : callable, int, float or None
+        Controls the "smoothness" of the evaluation. Possible values:
+
+        * `None` (default):  it will use the following goal:
+          `lambda l: l.loss() < 0.01`
+        * number (int or float). The lower the number, the more
+          evaluation points. This number will be used in the following goal:
+          `lambda l: l.loss() < number`
+        * callable: a function requiring one input element, the learner. It
+          must return a float number. Refer to [#fn1]_ for more information.
+    
+    loss_fn : callable or None
+        The loss function to be used by the `adaptive` learner.
+        Possible values:
+
+        * `None` (default): it will use the `default_loss` from the
+          `adaptive` module.
+        * callable : Refer to [#fn1]_ for more information. Specifically,
+          look at `adaptive.learner.learner1D` to find more loss functions.
+
+    n : int, optional
+        Used when the `adaptive` is set to `False`. The function is uniformly
+        sampled at `n` number of points. Default value to 1000.
+        If the `adaptive` flag is set to `True`, this parameter will be
+        ignored.
 
     show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
+        The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
 
     size : (float, float), optional
-        A tuple in the form (width, height) in inches to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
         the size will be set by the backend.
 
     title : str, optional
@@ -683,13 +749,13 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
         Label for the z-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)``.
+        Denotes the x-axis limits, `(min, max)`.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)``.
+        Denotes the y-axis limits, `(min, max)`.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, ``(min, max)``.
+        Denotes the z-axis limits, `(min, max)`.
 
 
     Examples
@@ -729,12 +795,16 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
        [0]: 3D parametric cartesian line: (cos(u), sin(u), u) for u over (-5.0, 5.0)
        [1]: 3D parametric cartesian line: (sin(u), u**2, u) for u over (-3.0, 3.0)
 
+    References
+    ==========
+
+    .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
 
     See Also
     ========
 
     plot, plot_polar, plot3d, plot_contour, plot3d_parametric_surface,
-    plot_implicit, plot_geometry
+    plot_implicit, plot_geometry, plot_parametric, plot_piecewise
 
     """
     from spb.defaults import THREE_D_B
@@ -761,15 +831,15 @@ def plot3d(*args, show=True, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a single expression.
-        ``plot3d(expr, range_x, range_y, **kwargs)``
+        `plot3d(expr, range_x, range_y, **kwargs)`
     - Plotting multiple expressions with the same ranges.
-        ``plot3d(expr1, expr2, range_x, range_y, **kwargs)``
+        `plot3d(expr1, expr2, range_x, range_y, **kwargs)`
     - Plotting multiple expressions with different ranges.
-        ``plot3d((expr1, range_x1, range_y1), (expr2, range_x2, range_y2), ..., **kwargs)``
+        `plot3d((expr1, range_x1, range_y1), (expr2, range_x2, range_y2), ..., **kwargs)`
     - Plotting multiple expressions with different ranges and custom labels.
-        ``plot3d((expr1, range_x1, range_y1, label1), (expr2, range_x2, range_y2, label2), ..., **kwargs)``
+        `plot3d((expr1, range_x1, range_y1, label1), (expr2, range_x2, range_y2, label2), ..., **kwargs)`
 
-    Note that it is important to specify at least the range_x, otherwise the
+    Note that it is important to specify at least the `range_x`, otherwise the
     function might create a rotated plot.
 
     Parameters
@@ -789,29 +859,58 @@ def plot3d(*args, show=True, **kwargs):
 
         label : str, optional
             The label to be shown in the legend.  If not provided, the string
-            representation of ``expr`` will be used.
+            representation of `expr` will be used.
+
+    adaptive : bool, optional
+        The default value is set to `False`, which uses a uniform sampling
+        strategy with number of discretization points `n1` and `n2` along the
+        x and y directions, respectively.
+
+        Set adaptive to `True` to use the adaptive algorithm implemented in
+        [#fn1]_ to create smooth plots. Use `adaptive_goal` and `loss_fn`
+        to further customize the output.
+    
+    adaptive_goal : callable, int, float or None
+        Controls the "smoothness" of the evaluation. Possible values:
+
+        * `None` (default):  it will use the following goal:
+          `lambda l: l.loss() < 0.01`
+        * number (int or float). The lower the number, the more
+          evaluation points. This number will be used in the following goal:
+          `lambda l: l.loss() < number`
+        * callable: a function requiring one input element, the learner. It
+          must return a float number. Refer to [#fn1]_ for more information.
+    
+    loss_fn : callable or None
+        The loss function to be used by the `adaptive` learner.
+        Possible values:
+
+        * `None` (default): it will use the `default_loss` from the
+          `adaptive` module.
+        * callable : Refer to [#fn1]_ for more information. Specifically,
+          look at `adaptive.learner.learnerND` to find more loss functions.
 
     n1 : int, optional
-        The x range is sampled uniformly at ``n1`` of points. Default value
+        The x range is sampled uniformly at `n1` of points. Default value
         is 100.
 
     n2 : int, optional
-        The y range is sampled uniformly at ``n2`` of points. Default value
+        The y range is sampled uniformly at `n2` of points. Default value
         is 100.
 
     n : int, optional
-        The x and y ranges are sampled uniformly at ``n`` of points.
-        It overrides ``n1`` and ``n2``.
+        The x and y ranges are sampled uniformly at `n` of points.
+        It overrides `n1` and `n2`.
 
     show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
+        The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
 
     size : (float, float), optional
-        A tuple in the form (width, height) in inches to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
         the size will be set by the backend.
 
     title : str, optional
@@ -828,13 +927,13 @@ def plot3d(*args, show=True, **kwargs):
         Label for the z-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)``.
+        Denotes the x-axis limits, `(min, max)`.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)``.
+        Denotes the y-axis limits, `(min, max)`.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, ``(min, max)``.
+        Denotes the z-axis limits, `(min, max)`.
 
 
     Examples
@@ -887,12 +986,16 @@ def plot3d(*args, show=True, **kwargs):
        [0]: cartesian surface: x**2 + y**2 for x over (-5.0, 5.0) and y over (-5.0, 5.0)
        [1]: cartesian surface: x*y for x over (-3.0, 3.0) and y over (-3.0, 3.0)
 
+    References
+    ==========
+
+    .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
 
     See Also
     ========
 
-    plot, plot_polar, plot_contour, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry
+    plot, plot_polar, plot_contour, plot_parametric, plot3d_parametric_line,
+    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
 
     """
     from spb.defaults import THREE_D_B
@@ -921,13 +1024,13 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a single expression.
-        ``plot3d_parametric_surface(expr_x, expr_y, expr_z, range_u, range_v, label, **kwargs)``
+        `plot3d_parametric_surface(expr_x, expr_y, expr_z, range_u, range_v, label, **kwargs)`
     - Plotting multiple expressions with the same ranges.
-        ``plot3d_parametric_surface((expr_x1, expr_y1, expr_z1), (expr_x2, expr_y2, expr_z2), range_u, range_v, **kwargs)``
+        `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1), (expr_x2, expr_y2, expr_z2), range_u, range_v, **kwargs)`
     - Plotting multiple expressions with different ranges.
-        ``plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2), **kwargs)``
+        `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2), **kwargs)`
     - Plotting multiple expressions with different ranges and custom labels.
-        ``plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1, label1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2, label2), **kwargs)``
+        `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1, label1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2, label2), **kwargs)`
 
     Note that it is important to specify both the ranges.
 
@@ -936,45 +1039,45 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
 
     args :
         expr_x: Expr
-            Expression representing the function along ``x``.
+            Expression representing the function along `x`.
 
         expr_y: Expr
-            Expression representing the function along ``y``.
+            Expression representing the function along `y`.
 
         expr_z: Expr
-            Expression representing the function along ``z``.
+            Expression representing the function along `z`.
 
         range_u: (symbol, min, max)
-            A 3-tuple denoting the range of the ``u`` variable.
+            A 3-tuple denoting the range of the `u` variable.
 
         range_v: (symbol, min, max)
-            A 3-tuple denoting the range of the ``v`` variable.
+            A 3-tuple denoting the range of the `v` variable.
 
         label : str, optional
             The label to be shown in the legend.  If not provided, the string
             representation of the expression will be used.
 
     n1 : int, optional
-        The u range is sampled uniformly at ``n1`` of points. Default value
+        The u range is sampled uniformly at `n1` of points. Default value
         is 100.
 
     n2 : int, optional
-        The v range is sampled uniformly at ``n2`` of points. Default value
+        The v range is sampled uniformly at `n2` of points. Default value
         is 100.
 
     n : int, optional
-        The u and v ranges are sampled uniformly at ``n`` of points.
-        It overrides ``n1`` and ``n2``.
+        The u and v ranges are sampled uniformly at `n` of points.
+        It overrides `n1` and `n2`.
 
     show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
+        The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
 
     size : (float, float), optional
-        A tuple in the form (width, height) in inches to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
         the size will be set by the backend.
 
     title : str, optional
@@ -991,13 +1094,13 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         Label for the z-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)``.
+        Denotes the x-axis limits, `(min, max)`.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)``.
+        Denotes the y-axis limits, `(min, max)`.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, ``(min, max)``.
+        Denotes the z-axis limits, `(min, max)`.
 
 
     Examples
@@ -1035,8 +1138,8 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot3d, plot_contour, plot3d_parametric_line,
-    plot_implicit, plot_geometry
+    plot, plot_polar, plot_parametric, plot3d, plot_contour,
+    plot3d_parametric_line, plot_implicit, plot_geometry, plot_piecewise
 
     """
     from spb.defaults import THREE_D_B
@@ -1059,7 +1162,7 @@ def plot_contour(*args, show=True, **kwargs):
     """
     Draws contour plot of a function of two variables.
 
-    This function signature is identical to ``plot3d``: refer to its
+    This function signature is identical to `plot3d`: refer to its
     documentation for a list of available argument and keyword arguments.
 
 
@@ -1091,8 +1194,8 @@ def plot_contour(*args, show=True, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry
+    plot, plot_polar, plot_parametric, plot3d, plot3d_parametric_line,
+    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
 
     """
     from spb.defaults import TWO_D_B
@@ -1136,7 +1239,7 @@ def plot_implicit(*args, show=True, **kwargs):
 
         label : str, optional
             The name of the expression to be eventually shown on the legend.
-            If not provided, the string representation of ``expr`` will be used.
+            If not provided, the string representation of `expr` will be used.
 
         adaptive : Boolean
             The default value is set to False, meaning that the internal
@@ -1165,7 +1268,7 @@ def plot_implicit(*args, show=True, **kwargs):
 
         show : Boolean
             Default value is True. If set to False, the plot will not be shown.
-            See ``Plot`` for further information.
+            See `Plot` for further information.
 
         title : string
             The title for the plot.
@@ -1302,9 +1405,10 @@ def plot_implicit(*args, show=True, **kwargs):
 
 
 def plot_polar(*args, **kwargs):
-    """The following function creates a 2D polar plot. It is identical to call
-    `plot(*args, polar=True, axis="equal", **kwargs). Refer to `plot` for the
-    complete documentation.
+    """The following function creates a 2D polar plot. 
+    
+    This function signature is identical to `plot`: refer to its
+    documentation for a list of available argument and keyword arguments.
 
     Examples
     ========
@@ -1330,8 +1434,8 @@ def plot_polar(*args, **kwargs):
     See Also
     ========
 
-    plot, plot3d, plot_contour, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry
+    plot, plot_parametric, plot3d, plot_contour, plot3d_parametric_line,
+    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
 
     """
     kwargs["polar"] = True
@@ -1344,35 +1448,36 @@ def plot_geometry(*args, show=True, **kwargs):
 
     Parameters
     ==========
+
     geom : GeometryEntity
         Represent the geometric entity to be plotted.
 
     label : str, optional
         The name of the complex function to be eventually shown on the legend.
-        If not provided, the string representation of ``geom`` will be used.
+        If not provided, the string representation of `geom` will be used.
 
     fill : boolean
         Default to True. Fill the polygon/circle/ellipse.
 
     params : dict
         Substitution dictionary to properly evaluate symbolic geometric
-        entities. The keys contains symbols, the values the numeric number
-        associated to the symbol.
+        entities. The keys represents symbols, the values represents the
+        numeric number associated to the symbol.
 
     axis_center : (float, float), optional
-    Tuple of two floats denoting the coordinates of the center or
-    {'center', 'auto'}. Only available with MatplotlibBackend.
+        Tuple of two floats denoting the coordinates of the center or
+        {'center', 'auto'}. Only available with MatplotlibBackend.
 
     show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
+        The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
 
     size : (float, float), optional
-        A tuple in the form (width, height) in inches to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the default backend.
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -1388,13 +1493,13 @@ def plot_geometry(*args, show=True, **kwargs):
         Label for the z-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)``.
+        Denotes the x-axis limits, `(min, max)`.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)``.
+        Denotes the y-axis limits, `(min, max)`.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, ``(min, max)``.
+        Denotes the z-axis limits, `(min, max)`.
 
 
     Examples
@@ -1533,9 +1638,9 @@ def plot_list(*args, show=True, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting coordinates of a single function.
-        ``plot(x, y, **kwargs)``
+        `plot(x, y, **kwargs)`
     - Plotting coordinates of multiple functions adding custom labels.
-        ``plot((x1, y1, label1), (x2, y2, label2), **kwargs)``
+        `plot((x1, y1, label1), (x2, y2, label2), **kwargs)`
 
 
     Parameters
@@ -1558,17 +1663,22 @@ def plot_list(*args, show=True, **kwargs):
     is_point : boolean, optional
         Default to False, which will render a line connecting all the points.
         If True, a scatter plot will be generated.
+    
+    is_filled : boolean, optional
+        Default to True, which will render empty circular markers. It only
+        works if `is_point=True`.
+        If False, filled circular markers will be rendered.
 
     show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
+        The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
 
     size : (float, float), optional
-        A tuple in the form (width, height) in inches to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the default backend.
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -1587,10 +1697,10 @@ def plot_list(*args, show=True, **kwargs):
         Sets the scaling of the y-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)``.
+        Denotes the x-axis limits, `(min, max)`.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)``.
+        Denotes the y-axis limits, `(min, max)`.
 
 
     Examples
@@ -1659,15 +1769,15 @@ def plot_piecewise(*args, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a single expression with a single range.
-        ``plot_piecewise(expr, range, **kwargs)``
+        `plot_piecewise(expr, range, **kwargs)`
     - Plotting a single expression with the default range (-10, 10).
-        ``plot_piecewise(expr, **kwargs)``
+        `plot_piecewise(expr, **kwargs)`
     - Plotting multiple expressions with a single range.
-        ``plot_piecewise(expr1, expr2, ..., range, **kwargs)``
+        `plot_piecewise(expr1, expr2, ..., range, **kwargs)`
     - Plotting multiple expressions with multiple ranges.
-        ``plot_piecewise((expr1, range1), (expr2, range2), ..., **kwargs)``
+        `plot_piecewise((expr1, range1), (expr2, range2), ..., **kwargs)`
     - Plotting multiple expressions with multiple ranges and custom labels.
-        ``plot_piecewise((expr1, range1, label1), (expr2, range2, label2), ..., legend=True, **kwargs)``
+        `plot_piecewise((expr1, range1, label1), (expr2, range2, label2), ..., legend=True, **kwargs)`
 
 
     Parameters
@@ -1684,50 +1794,66 @@ def plot_piecewise(*args, **kwargs):
 
         label : str, optional
             The label to be shown in the legend. If not provided, the string
-            representation of ``expr`` will be used.
+            representation of `expr` will be used.
 
     adaptive : bool, optional
-        The default value is set to ``True``. Set adaptive to ``False``
-        and specify ``n`` if uniform sampling is required.
+        The default value is set to `True`, which uses the adaptive algorithm
+        implemented in [#fn1]_ to create smooth plots. Use `adaptive_goal`
+        and `loss_fn` to further customize the output.
 
-        The plotting uses an adaptive algorithm which samples
-        recursively to accurately plot.
+        Set adaptive to `False` and specify `n` if uniform sampling is
+        required.
+    
+    adaptive_goal : callable, int, float or None
+        Controls the "smoothness" of the evaluation. Possible values:
+
+        * `None` (default):  it will use the following goal:
+          `lambda l: l.loss() < 0.01`
+        * number (int or float). The lower the number, the more
+          evaluation points. This number will be used in the following goal:
+          `lambda l: l.loss() < number`
+        * callable: a function requiring one input element, the learner. It
+          must return a float number. Refer to [#fn1]_ for more information.
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with MatplotlibBackend.
+        {'center', 'auto'}. Only available with `MatplotlibBackend`.
 
     detect_poles : boolean
-            Chose whether to detect and correctly plot poles.
-            Defaulto to False. To improve detection, increase the number of
-            discretization points and/or change the value of `eps`.
+        Chose whether to detect and correctly plot poles.
+        Defaulto to `False`. To improve detection, increase the number of
+        discretization points `n` and/or change the value of `eps`.
 
     eps : float
         An arbitrary small value used by the `detect_poles` algorithm.
-        Default value to 0.1. Before changing this value, it is better to
+        Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
+    
+    loss_fn : callable or None
+        The loss function to be used by the `adaptive` learner.
+        Possible values:
+
+        * `None` (default): it will use the `default_loss` from the
+          `adaptive` module.
+        * callable : Refer to [#fn1]_ for more information. Specifically,
+          look at `adaptive.learner.learner1D` to find more loss functions.
 
     n : int, optional
-        Used when the ``adaptive`` is set to ``False``. The function
-        is uniformly sampled at ``n`` number of points.
-        If the ``adaptive`` flag is set to ``True``, this parameter will be
+        Used when the `adaptive` is set to `False`. The function is uniformly
+        sampled at `n` number of points. Default value to 1000.
+        If the `adaptive` flag is set to `True`, this parameter will be
         ignored.
-
-    only_integers : boolean, optional
-        Default to `False`. If True, discretize the domain with integer
-        numbers, which can be useful to plot sums. It only works with
-        `adaptive=False`.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
 
     size : (float, float), optional
-        A tuple in the form (width, height) in inches to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the default backend.
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -1746,10 +1872,10 @@ def plot_piecewise(*args, **kwargs):
         Sets the scaling of the y-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)``.
+        Denotes the x-axis limits, `(min, max)`.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)``.
+        Denotes the y-axis limits, `(min, max)`.
 
 
     Examples
