@@ -8,8 +8,8 @@ matplotlib = import_module(
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 plt = matplotlib.pyplot
-GridSpec = matplotlib.gridspec.GridSpec
 plt.ioff()
+GridSpec = matplotlib.gridspec.GridSpec
 
 
 def _nrows_ncols(nr, nc, nplots):
@@ -44,13 +44,15 @@ def _create_mpl_figure(mapping):
         p = Plot(*p.series, **cpa)
     return fig
 
-def _create_panel_figure(mapping):
+def _create_panel_figure(mapping, panel_kw):
     pn = import_module(
         'panel',
         min_module_version='0.12.0',
         catch=(RuntimeError,))
+    
+    pn.extension("plotly")
 
-    fig = pn.GridSpec(sizing_mode="stretch_width")
+    fig = pn.GridSpec(**panel_kw)
     for spec, p in mapping.items():
         rs = spec.rowspan
         cs = spec.colspan
@@ -74,15 +76,21 @@ def plotgrid(*args, **kwargs):
         Number of rows and columns.
         By default, `nc = 1` and `nr = -1`: this will create as many rows
         as necessary, and a single column.
-        By setting `nc = 1` and `nc = -1`, it will create a single row and
+        By setting `nr = 1` and `nc = -1`, it will create a single row and
         as many columns as necessary.
 
     gs : dict (optional)
-        A dictionary mapping Matplotlib's ``GridSpec`` objects to the plots.
+        A dictionary mapping Matplotlib's `GridSpec` objects to the plots.
         The keys represent the cells of the layout. Each cell will host the
         associated plot.
         This represents the second mode of operation, as it allows to create
         more complicated layouts.
+    
+    panel_kw : dict (optional)
+        A dictionary of keyword arguments to be passed to panel's `GridSpec`
+        for further customization. Default to
+        `dict(sizing_mode="stretch_width")`. Refer to [#fn1]_ for more
+        information.
     
     show : boolean (optional)
         It applies only to Matplotlib figures. Default to True.
@@ -90,63 +98,72 @@ def plotgrid(*args, **kwargs):
     Returns
     =======
 
-    fig : ``plt.Figure`` or ``pn.GridSpec``
-        If all input plots are instances of ``MatplotlibBackend``, than a
-        Matplotlib ``Figure`` will be returned. Otherwise an instance of
-        Holoviz Panel's ``GridSpec`` will be returned.
+    fig : `plt.Figure` or `pn.GridSpec`
+        If all input plots are instances of `MatplotlibBackend`, than a
+        Matplotlib `Figure` will be returned. Otherwise an instance of
+        Holoviz Panel's `GridSpec` will be returned.
 
 
     Examples
     ========
 
-    First mode of operation with instances of MatplotlibBackend:
+    First mode of operation with instances of `MatplotlibBackend`:
 
     .. code-block:: python
-        from sympy import *
-        from spb.backends.matplotlib import MB
-        from spb import *
+       from sympy import *
+       from spb.backends.matplotlib import MB
+       from spb import *
 
-        x, y, z = symbols("x, y, z")
-        p1 = plot(sin(x), backend=MB, show=False)
-        p2 = plot(tan(x), backend=MB, detect_poles=True, show=False)
-        p3 = plot(exp(-x), backend=MB, show=False)
-        plotgrid(p1, p2, p3)
+       x, y, z = symbols("x, y, z")
+       p1 = plot(sin(x), backend=MB, show=False)
+       p2 = plot(tan(x), backend=MB, detect_poles=True, show=False)
+       p3 = plot(exp(-x), backend=MB, show=False)
+       fig = plotgrid(p1, p2, p3)
 
     First mode of operation with different backends. Try this on a Jupyter
-    Notebook. Note that Matplotlib has been integrated as a picture, thus it
-    loses its interactivity.
+    Notebook. Note:
+    1. the output of `plotgrid` is not captured into a variable. It is
+       captured and rendered by Jupyter Notebook.
+    2. Matplotlib has been integrated as a picture, thus it loses its
+       interactivity.
 
     .. code-block:: python
-        p1 = plot(sin(x), backend=MB, show=False)
-        p2 = plot(tan(x), backend=MB, detect_poles=True, show=False)
-        p3 = plot(exp(-x), backend=MB, show=False)
-        plotgrid(p1, p2, p3, nr=1, nc=3)
+       p1 = plot(sin(x), backend=MB, show=False)
+       p2 = plot(tan(x), backend=MB, detect_poles=True, show=False)
+       p3 = plot(exp(-x), backend=MB, show=False)
+       plotgrid(p1, p2, p3, nr=1, nc=3,
+            panel_kw=dict(sizing_mode="stretch_width", height=250))
 
-    Second mode of operation: using Matplotlib GridSpec with all plots being
-    instances of MatplotlibBackend:
+    Second mode of operation: using Matplotlib GridSpec:
 
     .. code-block:: python
-        from matplotlib.gridspec import GridSpec
+       from matplotlib.gridspec import GridSpec
 
-        p1 = plot(sin(x), cos(x), show=False, backend=MB)
-        p2 = plot_contour(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), show=False, backend=BB)
-        p3 = complex_plot(sqrt(x), show=False, backend=PB)
-        p4 = plot_vector(Matrix([-y, x]), (x, -5, 5), (y, -5, 5), show=False, backend=MB)
-        p5 = complex_plot(gamma(z), (z, -3-3*I, 3+3*I), show=False, backend=MB)
+       p1 = plot(sin(x), cos(x), show=False, backend=MB)
+       p2 = plot_contour(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), show=False, backend=BB)
+       p3 = complex_plot(sqrt(x), show=False, backend=PB)
+       p4 = plot_vector(Matrix([-y, x]), (x, -5, 5), (y, -5, 5), show=False, backend=MB)
+       p5 = complex_plot(gamma(z), (z, -3-3*I, 3+3*I), show=False, backend=MB)
 
-        gs = GridSpec(3, 3)
-        mapping = {
-            gs[0, :1]: p1,
-            gs[1, :1]: p2,
-            gs[2:, :1]: p3,
-            gs[2:, 1:]: p4,
-            gs[0:2, 1:]: p5,
-        }
-        plotgrid(gs=mapping)
+       gs = GridSpec(3, 3)
+       mapping = {
+           gs[0, :1]: p1,
+           gs[1, :1]: p2,
+           gs[2:, :1]: p3,
+           gs[2:, 1:]: p4,
+           gs[0:2, 1:]: p5,
+       }
+       plotgrid(gs=mapping)
+    
+    References
+    ==========
+    
+    .. [#fn1] `adaptive module <https://panel.holoviz.org/reference/layouts/GridSpec.html`_.
 
     """
     show = kwargs.get("show", True)
     gs = kwargs.get("gs", None)
+    panel_kw = kwargs.get("panel_kw", dict(sizing_mode="stretch_width"))
 
     if (gs is None) and (len(args) == 0):
         fig = plt.figure()
@@ -169,24 +186,24 @@ def plotgrid(*args, **kwargs):
         if all(isinstance(a, MB) for a in args):
             fig = _create_mpl_figure(mapping)
         else:
-            fig = _create_panel_figure(mapping)
+            fig = _create_panel_figure(mapping, panel_kw)
 
     else:
         ### Second mode of operation
         if not isinstance(gs, dict):
-            raise TypeError("``gs`` must be a dictionary.")
+            raise TypeError("`gs` must be a dictionary.")
         
         from matplotlib.gridspec import SubplotSpec
         if not isinstance(list(gs.keys())[0], SubplotSpec):
             raise ValueError(
-                "Keys of ``gs`` must be of elements of type "
+                "Keys of `gs` must be of elements of type "
                 "matplotlib.gridspec.SubplotSpec. Use "
                 "matplotlib.gridspec.GridSpec to create them.")
 
         if all(isinstance(a, MB) for a in gs.values()):
             fig = _create_mpl_figure(gs)
         else:
-            fig = _create_panel_figure(gs)
+            fig = _create_panel_figure(gs, panel_kw)
 
     if isinstance(fig, plt.Figure):
         fig.tight_layout()

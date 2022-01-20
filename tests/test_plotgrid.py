@@ -69,9 +69,12 @@ def test_plotgrid_mode_1():
     x, y, z = symbols("x, y, z")
 
     # all plots with MatplotlibBackend: combine them into a matplotlib figure
-    p1 = plot(cos(x), (x, -5, 5), backend=MB, show=False, ylabel="a")
-    p2 = plot(sin(x), (x, -7, 7), backend=MB, show=False, ylabel="b")
-    p3 = plot(tan(x), (x, -10, 10), backend=MB, show=False, ylabel="c")
+    p1 = plot(cos(x), (x, -5, 5), adaptive=False, n=100,
+        backend=MB, show=False, ylabel="a")
+    p2 = plot(sin(x), (x, -7, 7), adaptive=False, n=100, 
+        backend=MB, show=False, ylabel="b")
+    p3 = plot(tan(x), (x, -10, 10), adaptive=False, n=100, 
+        backend=MB, show=False, ylabel="c")
     p = plotgrid(p1, p2, p3)
     assert isinstance(p, plt.Figure)
     assert len(p.axes) == 3
@@ -87,7 +90,8 @@ def test_plotgrid_mode_1():
 
     p1 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
         backend=MB, n1=20, n2=20, show=False)
-    p2 = plot(sin(x), cos(x), (x, -7, 7), backend=MB, show=False)
+    p2 = plot(sin(x), cos(x), (x, -7, 7), adaptive=False, n=100,
+        backend=MB, show=False)
     p = plotgrid(p1, p2, nc=2)
     assert isinstance(p, plt.Figure)
     assert len(p.axes) == 2
@@ -99,7 +103,8 @@ def test_plotgrid_mode_1():
     assert len(p.axes[1].get_lines()) == 2 
 
     # mix different backends
-    p1 = plot(cos(x), (x, -3, 3), backend=MB, show=False)
+    p1 = plot(cos(x), (x, -3, 3), adaptive=False, n=100,
+        backend=MB, show=False)
     p2 = plot_contour(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
         backend=PB, n1=20, n2=20, show=False)
     p3 = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
@@ -128,11 +133,11 @@ def test_plotgrid_mode_2():
         assert len(ax.collections) == 1
 
     # all plots are instances of MatplotlibBackend
-    p1 = plot(exp(x), backend=MB, show=False)
-    p2 = plot(sin(x), backend=MB, show=False)
+    p1 = plot(exp(x), adaptive=False, n=100, backend=MB, show=False)
+    p2 = plot(sin(x), adaptive=False, n=100, backend=MB, show=False)
     p3 = plot(tan(x), backend=MB, show=False, adaptive=False,
         detect_poles=True, eps=0.1, ylim=(-5, 5))
-    p4 = plot(cos(x), backend=MB, show=False)
+    p4 = plot(cos(x), adaptive=False, n=100, backend=MB, show=False)
     p5 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
         backend=MB, n1=20, n2=20, show=False)
     
@@ -162,11 +167,11 @@ def test_plotgrid_mode_2():
     test_3d_axes(p.axes[4])
 
     # Mixture of different backends
-    p1 = plot(exp(x), backend=MB, show=False)
-    p2 = plot(sin(x), backend=PB, show=False)
+    p1 = plot(exp(x), adaptive=False, n=100, backend=MB, show=False)
+    p2 = plot(sin(x), adaptive=False, n=100, backend=PB, show=False)
     p3 = plot(tan(x), backend=MB, show=False, adaptive=False,
         detect_poles=True, eps=0.1, ylim=(-5, 5))
-    p4 = plot(cos(x), backend=BB, show=False)
+    p4 = plot(cos(x), adaptive=False, n=100, backend=BB, show=False)
     p5 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
         backend=KBchild1, n1=20, n2=20, show=False)
 
@@ -187,4 +192,13 @@ def test_plotgrid_mode_2():
     assert isinstance(p.objects[(2, 0, 3, 1)], pn.pane.plot.Matplotlib)
     assert isinstance(p.objects[(2, 1, 3, 3)], pn.pane.plot.Bokeh)
     assert isinstance(p.objects[(0, 1, 2, 3)], pn.pane.ipywidget.IPyWidget)
-    
+
+def test_panel_kw():
+    x = symbols("x")
+    p1 = plot(sin(x), adaptive=False, n=100, backend=MB, show=False)
+    p2 = plot(tan(x), adaptive=False, n=100, backend=PB, show=False)
+    p3 = plot(exp(-x), adaptive=False, n=100, backend=BB, show=False)
+    pg1 = plotgrid(p1, p2, p3, nr=1, nc=3, show=False)
+    pg2 = plotgrid(p1, p2, p3, nr=1, nc=3, show=False,
+        panel_kw=dict(sizing_mode="stretch_width", height=250))
+    assert (pg1.height != pg2.height) and (pg2.height == 250)
