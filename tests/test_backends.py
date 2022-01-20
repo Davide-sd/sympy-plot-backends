@@ -245,6 +245,19 @@ def test_bokeh_tools():
     assert f.toolbar.tools[4].tooltips == [('x', '$x'), ('y', '$y')]
 
 
+def test_MatplotlibBackend():
+    # verify a few important things to assure the correct behaviour
+    
+    # `_handle` is needed in order to correctly update the data with iplot
+    x, y = symbols("x, y")
+    p = plot3d(cos(x**2 + y**2), backend=MB, show=False, n1=10, n2=10)
+    print(type(p._handles))
+    assert hasattr(p, "_handles") and isinstance(p._handles, dict)
+    assert len(p._handles) == 1
+    assert isinstance(p._handles[0], (tuple, list))
+    assert "cmap" in p._handles[0][1].keys()
+
+
 def test_common_keywords():
     # TODO: here I didn't test axis_center, autoscale, margin
     kw = dict(

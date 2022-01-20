@@ -28,13 +28,11 @@ def _hardcoded_defaults():
         k3d={
             "bg_color": 3620427,
             "grid_color": 0x888888,
-            "label_color": 0xDDDDDD,
+            "label_color": 0xDDDDDD
         },
         matplotlib={
-            "axis_center": None,  # "auto"
-            "grid": True,
-            "use_jupyterthemes": False,
-            "jupytertheme": None,
+            "axis_center": None,  # "auto", "center"
+            "grid": True
         },
         backend_2D="matplotlib",
         backend_3D="matplotlib",
@@ -77,7 +75,7 @@ def _load_settings():
 
     # check that the chosen backends are available
     backends_2D = ["plotly", "bokeh", "matplotlib"]
-    backends_3D = ["plotly", "matplotlib", "k3d", "mayavi"]
+    backends_3D = ["plotly", "matplotlib", "k3d"]
 
     def check_backend(k, backends):
         if cfg[k] not in backends:
@@ -104,8 +102,6 @@ def _load_settings():
         from spb.backends.matplotlib import MatplotlibBackend as TWO_D_B
     elif cfg["backend_2D"] == "k3d":
         from spb.backends.k3d import K3DBackend as TWO_D_B
-    elif cfg["backend_2D"] == "mayavi":
-        from spb.backends.mayavi import MayaviBackend as TWO_D_B
 
     if cfg["backend_2D"] == cfg["backend_3D"]:
         THREE_D_B = TWO_D_B
@@ -116,8 +112,6 @@ def _load_settings():
             from spb.backends.matplotlib import MatplotlibBackend as THREE_D_B
         elif cfg["backend_3D"] == "k3d":
             from spb.backends.k3d import K3DBackend as THREE_D_B
-        elif cfg["backend_3D"] == "mayavi":
-            from spb.backends.mayavi import MayaviBackend as THREE_D_B
 
     frame.f_globals["TWO_D_B"] = TWO_D_B
     frame.f_globals["THREE_D_B"] = THREE_D_B

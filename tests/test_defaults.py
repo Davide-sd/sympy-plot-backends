@@ -12,6 +12,10 @@ def test_cfg():
     assert "backend_2D" in cfg.keys()
     assert "backend_3D" in cfg.keys()
 
+    assert "matplotlib" in cfg.keys()
+    assert "axis_center" in cfg["matplotlib"].keys()
+    assert "grid" in cfg["matplotlib"].keys()
+
     assert "plotly" in cfg.keys()
     assert "theme" in cfg["plotly"].keys()
     assert isinstance(cfg["plotly"]["theme"], str)
@@ -22,7 +26,11 @@ def test_cfg():
 
     assert "k3d" in cfg.keys()
     assert "bg_color" in cfg["k3d"].keys()
+    assert "grid_color" in cfg["k3d"].keys()
+    assert "label_color" in cfg["k3d"].keys()
     assert isinstance(cfg["k3d"]["bg_color"], int)
+    assert isinstance(cfg["k3d"]["grid_color"], int)
+    assert isinstance(cfg["k3d"]["label_color"], int)
 
 
 def test_set_defaults():

@@ -16,11 +16,6 @@ ListedColormap = matplotlib.colors.ListedColormap
 Normalize = matplotlib.colors.Normalize
 plt.ioff()
 
-"""
-TODO:
-    1. Besides the axis on the center of the image, there are also a couple of
-        axis with ticks on the bottom/right sides. Delete them?
-"""
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
@@ -37,7 +32,7 @@ def unset_show():
 
 def _matplotlib_list(interval_list):
     """
-    Returns lists for matplotlib ``fill`` command from a list of bounding
+    Returns lists for matplotlib `fill` command from a list of bounding
     rectangular intervals
     """
     xlist = []
@@ -53,7 +48,7 @@ def _matplotlib_list(interval_list):
                 [intervaly.start, intervaly.end, intervaly.end, intervaly.start, None]
             )
     else:
-        # XXX Ugly hack. Matplotlib does not accept empty lists for ``fill``
+        # XXX Ugly hack. Matplotlib does not accept empty lists for `fill`
         xlist.extend([None, None, None, None])
         ylist.extend([None, None, None, None])
     return xlist, ylist
@@ -67,10 +62,10 @@ class MatplotlibBackend(Plot):
     ==========
 
     aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. Possible values:
+        Set the aspect ratio of a 2D plot. Possible values:
 
-        * ``'auto'``: Matplotlib will fit the plot in the vibile area.
-        * ``"equal"``: sets equal spacing on the axis of a 2D plot.
+        * `'auto'`: Matplotlib will fit the plot in the vibile area.
+        * `"equal"`: sets equal spacing on the axis of a 2D plot.
         * tuple containing 2 float numbers, from which the aspect ratio is
           computed.
     
@@ -78,12 +73,12 @@ class MatplotlibBackend(Plot):
         Set the location of the intersection between the horizontal and
         vertical axis in a 2D plot. It can be:
 
-        * ``None``: traditional layout, with the horizontal axis fixed on the
+        * `None`: traditional layout, with the horizontal axis fixed on the
           bottom and the vertical axis fixed on the left. This is the default
           value.
-        * a tuple ``(x, y)`` specifying the exact intersection point.
-        * ``'center'``: center of the current plot area.
-        * ``'auto'``: the intersection point is automatically computed.
+        * a tuple `(x, y)` specifying the exact intersection point.
+        * `'center'`: center of the current plot area.
+        * `'auto'`: the intersection point is automatically computed.
 
     contour_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's
@@ -193,28 +188,14 @@ class MatplotlibBackend(Plot):
         self._cyccm = process_iterator(self._cyccm, self.cyclic_colormaps)
 
     def _create_figure(self):
-        # the following import is here in order to avoid a circular import error
-        from spb.defaults import cfg
-
-        use_jupyterthemes = cfg["matplotlib"]["use_jupyterthemes"]
-        mpl_jupytertheme = cfg["matplotlib"]["jupytertheme"]
-        if (self._get_mode() == 0) and use_jupyterthemes:
-            # set matplotlib style to match the used Jupyter theme
-            try:
-                from jupyterthemes import jtplot
-
-                jtplot.style(mpl_jupytertheme)
-            except:
-                pass
-
         is_3Dvector = any([s.is_3Dvector for s in self.series])
         aspect = self.aspect
         if aspect != "auto":
             if aspect == "equal" and is_3Dvector:
                 # plot_vector uses an aspect="equal" by default. In that case
                 # we would get:
-                # NotImplementedError: Axes3D currently only supports the aspect
-                # argument 'auto'. You passed in 1.0.
+                # NotImplementedError: Axes3D currently only supports the
+                # aspect argument 'auto'. You passed in 1.0.
                 # This fixes it
                 aspect = "auto"
             elif aspect == "equal":
@@ -232,7 +213,8 @@ class MatplotlibBackend(Plot):
             self._fig = plt.figure(figsize=self.size)
             is_3D = [s.is_3D for s in self.series]
             if any(is_3D) and (not all(is_3D)):
-                raise ValueError("The matplotlib backend can not mix 2D and 3D.")
+                raise ValueError(
+                    "The matplotlib backend can not mix 2D and 3D.")
 
             kwargs = dict(aspect=aspect)
             if all(is_3D):
@@ -277,28 +259,33 @@ class MatplotlibBackend(Plot):
     def _add_colorbar(self, c, label, override=False):
         """Add a colorbar for the specificied collection
 
-        Keyword Aurguments
-        ==================
-            override : boolean
-                For parametric plots the colorbar acts like a legend. Hence,
-                when legend=False we don't display the colorbar. However,
-                for contour plots the colorbar is essential to understand it.
-                Hence, to show it we set override=True.
-                Default to False.
+        Parameters
+        ==========
+        
+        c : collection
+        
+        label : str
+
+        override : boolean
+            For parametric plots the colorbar acts like a legend. Hence,
+            when legend=False we don't display the colorbar. However,
+            for contour plots the colorbar is essential to understand it.
+            Hence, to show it we set override=True.
+            Default to False.
         """
         # design choice: instead of showing a legend entry (which
         # would require to work with proxy artists and custom
         # classes in order to create a gradient line), just show a
         # colorbar with the name of the expression on the side.
         if (self.legend and self._use_cm) or override:
-            # TODO: colorbar position? used space?
             cb = self._fig.colorbar(c, ax=self.ax)
             cb.set_label(label, rotation=90)
             return True
         return False
 
     def _add_handle(self, i, h, kw=None, *args):
-        """self._handle is a dictionary where:
+        """self._handle is a dictionary which will be used with iplot.
+        In particular:
             key: integer corresponding to the i-th series.
             value: a list of two elements:
                 1. handle of the object created by Matplotlib commands
@@ -306,13 +293,10 @@ class MatplotlibBackend(Plot):
                     Some object can't be updated, hence we need to reconstruct
                     it from scratch at every update.
                 3. anything else needed to reconstruct the object.
-        This dictionary will be used with iplot
         """
         self._handles[i] = [h if not isinstance(h, (list, tuple)) else h[0], kw, *args]
 
     def _process_series(self, series):
-        # XXX Workaround for matplotlib issue
-        # https://github.com/matplotlib/matplotlib/issues/17130
         np = import_module('numpy', catch=(RuntimeError,))
         mergedeep = import_module('mergedeep', catch=(RuntimeError,))
         merge = mergedeep.merge
@@ -322,6 +306,9 @@ class MatplotlibBackend(Plot):
             catch=(RuntimeError,))
         Line3DCollection = mpl_toolkits.mplot3d.art3d.Line3DCollection
         Path3DCollection = mpl_toolkits.mplot3d.art3d.Path3DCollection
+
+        # XXX Workaround for matplotlib issue
+        # https://github.com/matplotlib/matplotlib/issues/17130
         xlims, ylims, zlims = [], [], []
 
         self.ax.cla()
@@ -407,7 +394,6 @@ class MatplotlibBackend(Plot):
                 c = self.ax.plot_surface(x, y, z, **kw)
                 is_cb_added = self._add_colorbar(c, s.label)
                 self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
-
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
                 zlims.append((np.amin(z), np.amax(z)))
@@ -520,7 +506,6 @@ class MatplotlibBackend(Plot):
 
             elif s.is_complex:
                 if not s.is_3Dsurface:
-                    # x, y, magn_angle, img, discr, colors = self._get_image(s)
                     x, y, _, _, img, colors = s.get_data()
                     ikw = dict(
                         extent=[np.amin(x), np.amax(x), np.amin(y), np.amax(y)],
@@ -579,7 +564,6 @@ class MatplotlibBackend(Plot):
                             [r"-$\pi$", r"-$\pi / 2$", "0", r"$\pi / 2$", r"$\pi$"]
                         )
                     self._add_handle(i, c, kw)
-
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(mag), np.amax(mag)))
@@ -643,13 +627,13 @@ class MatplotlibBackend(Plot):
                 self.ax.grid()
             else:
                 self.ax.grid(which='major', axis='x', linewidth=0.75,
-                    linestyle='-', color='0.75')
+                    linestyle='-', color='0.85')
                 self.ax.grid(which='minor', axis='x', linewidth=0.25,
-                    linestyle='--', color='0.75')
+                    linestyle='--', color='0.80')
                 self.ax.grid(which='major', axis='y', linewidth=0.75,
-                    linestyle='-', color='0.75')
+                    linestyle='-', color='0.85')
                 self.ax.grid(which='minor', axis='y', linewidth=0.25,
-                    linestyle='--', color='0.75')
+                    linestyle='--', color='0.80')
                 self.ax.minorticks_on()
         if self.legend:
             handles, _ = self.ax.get_legend_handles_labels()
@@ -685,7 +669,7 @@ class MatplotlibBackend(Plot):
                 scalex=self.ax.get_autoscalex_on(), scaley=self.ax.get_autoscaley_on()
             )
 
-            # NOTE: Hack in order to make interactive contour plots to scale to
+            # HACK: in order to make interactive contour plots to scale to
             # the appropriate range
             if xlims and (
                 any(s.is_contour for s in self.series)
@@ -754,9 +738,6 @@ class MatplotlibBackend(Plot):
         self._fig.colorbar(mappable, orientation="vertical", label=label, cax=cax)
 
     def _update_interactive(self, params):
-        # With this backend, data is only being added once the plot is shown.
-        # However, iplot doesn't call the show method. The following line of
-        # code will add the numerical data (if not already present).
         np = import_module('numpy', catch=(RuntimeError,))
         mpl_toolkits = import_module(
             'mpl_toolkits', # noqa
@@ -764,6 +745,9 @@ class MatplotlibBackend(Plot):
             catch=(RuntimeError,))
         Line3DCollection = mpl_toolkits.mplot3d.art3d.Line3DCollection
         Path3DCollection = mpl_toolkits.mplot3d.art3d.Path3DCollection
+
+        # iplot doesn't call the show method. The following line of
+        # code will add the numerical data (if not already present).
         if len(self._handles) == 0:
             self.process_series()
 
@@ -787,8 +771,7 @@ class MatplotlibBackend(Plot):
                             x, y, param = self.series[i].get_data()
                         else:
                             x, y = self.series[i].get_data()
-                            # x, y, _ = self._detect_poles(x, y)
-                        # TODO: Point2D are update but not visible.
+                        # TODO: Point2D are updated but not visible.
                         self._handles[i][0].set_data(x, y)
 
                 elif s.is_3Dline:
@@ -813,20 +796,18 @@ class MatplotlibBackend(Plot):
                     for c in self._handles[i][0].collections:
                         c.remove()
                     self._handles[i][0] = self.ax.contourf(x, y, z, **kw)
-
                     self._update_colorbar(cax, z, kw, s.label)
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
 
                 elif s.is_3Dsurface and (not s.is_domain_coloring):
                     x, y, z = self.series[i].get_data()
-                    # TODO: by setting the keyword arguments, somehow the update
-                    # becomes really really slow.
+                    # TODO: by setting the keyword arguments, somehow the
+                    # update becomes really really slow.
                     kw, is_cb_added, cax = self._handles[i][1:]
                     self._handles[i][0].remove()
                     self._handles[i][0] = self.ax.plot_surface(
-                        x, y, z, **self._handles[i][1]
-                    )
+                        x, y, z, **kw)
 
                     if is_cb_added:
                         self._update_colorbar(cax, z, kw, s.label)
@@ -874,9 +855,9 @@ class MatplotlibBackend(Plot):
                     if s.is_streamlines:
                         raise NotImplementedError
 
-                        # TODO: streamlines are composed by lines and arrows.
+                        # Streamlines are composed by lines and arrows.
                         # Arrows belongs to a PatchCollection. Currently,
-                        # there is no way to remove a PatchCollectio....
+                        # there is no way to remove a PatchCollection....
                         kw = self._handles[i][1]
                         self._handles[i][0].lines.remove()
                         self._handles[i][0].arrows.remove()
@@ -901,12 +882,9 @@ class MatplotlibBackend(Plot):
                         x, y, mag, arg, facecolors, colorscale = s.get_data()
                         self._handles[i][0].remove()
                         kw = self._handles[i][1]
-
                         if self._use_cm:
                             kw["facecolors"] = facecolors / 255
-
                         self._handles[i][0] = self.ax.plot_surface(x, y, mag, **kw)
-
                         xlims.append((np.amin(x), np.amax(x)))
                         ylims.append((np.amin(y), np.amax(y)))
                         zlims.append((np.amin(mag), np.amax(mag)))
@@ -917,25 +895,22 @@ class MatplotlibBackend(Plot):
                     self._handles[i][0].remove()
                     self._handles[i][0] = self.ax.fill(x, y, **self._handles[i][1])
 
-        # # Update the plot limits according to the new data
-        # Axes3D = mpl_toolkits.mplot3d.Axes3D
-        # if not isinstance(self.ax, Axes3D):
-        #     # https://stackoverflow.com/questions/10984085/automatically-rescale-ylim-and-xlim-in-matplotlib
-        #     # recompute the ax.dataLim
-        #     self.ax.relim()
-        #     # update ax.viewLim using the new dataLim
-        #     self.ax.autoscale_view()
-        # else:
-        #     pass
-            
-        print("xlims, ylims, zlims", xlims, ylims, zlims)
+        # Update the plot limits according to the new data
+        Axes3D = mpl_toolkits.mplot3d.Axes3D
+        if not isinstance(self.ax, Axes3D):
+            # https://stackoverflow.com/questions/10984085/automatically-rescale-ylim-and-xlim-in-matplotlib
+            # recompute the ax.dataLim
+            self.ax.relim()
+            # update ax.viewLim using the new dataLim
+            self.ax.autoscale_view()
+        else:
+            pass
 
-        # self._set_lims(xlims, ylims, zlims)
+        self._set_lims(xlims, ylims, zlims)
 
     def process_series(self):
-        """
-        Iterates over every ``Plot`` object and further calls
-        _process_series()
+        """ Lool over data series, generates numerical data and add it to the
+        figure.
         """
         # create the figure from scratch every time, otherwise if the plot was
         # previously shown, it would not be possible to show it again. This
@@ -945,7 +920,8 @@ class MatplotlibBackend(Plot):
 
     def show(self):
         """Display the current plot."""
-        # self.process_series()
+        if self._fig is None:
+            self.process_series()
         if _show:
             self._fig.tight_layout()
             self._fig.show()
@@ -961,10 +937,6 @@ class MatplotlibBackend(Plot):
         ==========
         .. [#fn8] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html
         """
-        # NOTE: the plot must first be created and then saved. Turns out that in
-        # in the process the plot will also be shown. That's standard Matplotlib
-        # behaviour.
-        # self.show()
         if self._fig is None:
             self.process_series()
         self._fig.savefig(path, **kwargs)
