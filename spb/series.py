@@ -62,9 +62,9 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
 
         * ``None`` (default):  it will use the following goal:
           ``lambda l: l.loss() < 0.01``
-        * number of type int or float. The slower the number, the more
-          evaluation points. It will use the following goal:
-          ``lambda l: l.loss() < number``
+        * number (int or float). The lower the number, the more
+          evaluation points. This number will be used in the following goal:
+          `lambda l: l.loss() < number`
         * callable: a function requiring one input element, the learner. It
           must return a float number.
 
@@ -100,8 +100,12 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
         catch=(RuntimeError,))
     simple = adaptive.runner.simple
     Learner1D = adaptive.learner.learner1D.Learner1D
-    default_loss = adaptive.learner.learner1D.default_loss
+    LearnerND = adaptive.learner.learnerND.LearnerND
+    default_loss_1d = adaptive.learner.learner1D.default_loss
+    default_loss_nd = adaptive.learner.learnerND.default_loss
     from functools import partial
+
+    one_d = hasattr(free_symbols, "__iter__") and (len(free_symbols) == 1)
 
     # TODO:
     # As of adaptive 0.13.0, this warning will be raised if the function to
@@ -116,14 +120,17 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
         if callable(adaptive_goal):
             goal = adaptive_goal
     
-    lf = default_loss
+    lf = default_loss_1d if one_d else default_loss_nd
     if loss_fn is not None:
         lf = loss_fn
-    d = {"loss_per_interval": lf}
+    k = "loss_per_interval" if one_d else "loss_per_simplex"
+    d = {k: lf}
+
+    Learner = Learner1D if one_d else LearnerND
 
     try:
         f = lambdify(free_symbols, expr, modules=modules)
-        learner = Learner1D(partial(wrapper_func, f, *args), bounds=bounds, **d)
+        learner = Learner(partial(wrapper_func, f, *args), bounds=bounds, **d)
         simple(learner, goal)
     except Exception as err:
         warnings.warn(
@@ -134,10 +141,25 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
             "be a slow operation."
         )
         f = lambdify(free_symbols, expr, modules="sympy")
-        learner = Learner1D(partial(wrapper_func, f, *args), bounds=bounds, **d)
+        learner = Learner(partial(wrapper_func, f, *args), bounds=bounds, **d)
         simple(learner, goal)
     
-    return learner.to_numpy()
+    if one_d:
+        return learner.to_numpy()
+    
+    # For multivariate functions, create a meshgrid where to interpolate the
+    # results. Taken from adaptive.learner.learnerND.plot
+    x, y = learner._bbox
+    lbrt = x[0], y[0], x[1], y[1]
+    scale_factor = np.product(np.diag(learner._transform))
+    a_sq = np.sqrt(np.min(learner.tri.volumes()) * scale_factor)
+    n = max(10, int(0.658 / a_sq) * 2)
+    xs = ys = np.linspace(0, 1, n)
+    xs = xs * (x[1] - x[0]) + x[0]
+    ys = ys * (y[1] - y[0]) + y[0]
+    z = learner._ip()(xs[:, None], ys[None, :]).squeeze()
+    xs, ys = np.meshgrid(xs, ys)
+    return xs, ys, np.rot90(z)
 
 
 def uniform_eval(free_symbols, expr, *args, modules=None):
@@ -786,7 +808,6 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         np = import_module('numpy', catch=(RuntimeError,))
 
         def func(f, xy):
-            return f(*xy)
             try:
                 return f(*xy)
             except (ZeroDivisionError, OverflowError):

@@ -46,7 +46,7 @@ def test_adaptive():
     # verify that adaptive-related keywords produces the expected results
 
     from adaptive.learner.learner1D import curvature_loss_function
-    x = symbols("x")
+    x, y = symbols("x, y")
 
     # use default adaptive options: adaptive_goal=0.01, loss_fn=None
     s1 = LineOver1DRangeSeries(sin(x), (x, -10, 10), "", adaptive=True)
@@ -92,6 +92,17 @@ def test_adaptive():
     x3, _, _, _ = s3.get_data()
     assert len(x1) < len(x2)
     assert len(x1) > len(x3)
+
+    # the more refined the goal, the greater the number of points
+    s1 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
+        adaptive=True, adaptive_goal=0.5)
+    x1, _, _ = s1.get_data()
+    n1 = x1.shape[0] * x1.shape[1]
+    s2 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
+        adaptive=True, adaptive_goal=0.1)
+    x2, _, _ = s2.get_data()
+    n2 = x2.shape[0] * x2.shape[1]
+    assert n1 < n2
 
 
 def test_adaptive_zerodivisionerror():
