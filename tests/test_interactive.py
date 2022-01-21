@@ -4,8 +4,10 @@ from spb.interactive import (
     iplot, DynamicParam, MyList,
     InteractivePlot, create_widgets
 )
+from spb.functions import plot
 from spb.series import InteractiveSeries
 from spb.backends.plotly import PB
+from spb.backends.matplotlib import MB
 from pytest import raises
 
 np = import_module('numpy', catch=(RuntimeError,))
@@ -291,7 +293,7 @@ def test_interactiveseries():
     def test_vector(v, ranges, params, expr, label, symbol, shape, n=10):
         t = iplot((v, *ranges), params=params, n=n, backend=PB, show=False)
 
-        s = t._backend.series[0]
+        s = t.backend.series[0]
         assert isinstance(s, InteractiveSeries)
         assert s.expr == expr
         assert s.label == label
@@ -371,8 +373,8 @@ def test_interactiveseries():
         backend=PB,
         show=False,
     )
-    assert len(t._backend.series) == 1
-    s = t._backend.series[0]
+    assert len(t.backend.series) == 1
+    s = t.backend.series[0]
     assert isinstance(s, InteractiveSeries)
     assert s.is_3Dvector
     assert s.is_slice
@@ -398,13 +400,13 @@ def test_interactiveseries():
         backend=PB,
         show=False,
     )
-    assert len(t._backend.series) == 3
-    assert all([isinstance(s, InteractiveSeries) for s in t._backend.series])
-    assert all([s.is_3Dvector for s in t._backend.series])
-    assert all([s.is_slice for s in t._backend.series])
-    xx1, yy1, zz1, uu1, vv1, ww1 = t._backend.series[0].get_data()
-    xx2, yy2, zz2, uu2, vv2, ww2 = t._backend.series[1].get_data()
-    xx3, yy3, zz3, uu3, vv3, ww3 = t._backend.series[2].get_data()
+    assert len(t.backend.series) == 3
+    assert all([isinstance(s, InteractiveSeries) for s in t.backend.series])
+    assert all([s.is_3Dvector for s in t.backend.series])
+    assert all([s.is_slice for s in t.backend.series])
+    xx1, yy1, zz1, uu1, vv1, ww1 = t.backend.series[0].get_data()
+    xx2, yy2, zz2, uu2, vv2, ww2 = t.backend.series[1].get_data()
+    xx3, yy3, zz3, uu3, vv3, ww3 = t.backend.series[2].get_data()
     assert all([t.shape == (6, 7) for t in [xx1, yy1, zz1, uu1, vv1, ww1]])
     assert all([t.shape == (7, 5) for t in [xx2, yy2, zz2, uu2, vv2, ww2]])
     assert all([t.shape == (6, 5) for t in [xx3, yy3, zz3, uu3, vv3, ww3]])
@@ -417,3 +419,81 @@ def test_interactiveseries():
     assert np.all(zz3 == 3)
     assert (np.min(xx3.flatten()) == -5) and (np.max(xx3.flatten()) == 5)
     assert (np.min(yy3.flatten()) == -4) and (np.max(yy3.flatten()) == 4)
+
+def test_iplot_sum_1():
+    # verify that it is possible to add together different instances of
+    # InteractivePlot (as well as Plot instances), provided that the same
+    # parameters are used.
+
+    x, u = symbols("x, u")
+
+    params = {
+        u: (1, 0, 2)
+    }
+    p1 = iplot(
+        (cos(u * x), (x, -5, 5)),
+        params = params,
+        backend = MB,
+        xlabel = "x1",
+        ylabel = "y1",
+        title = "title 1",
+        legend=True,
+        show = False
+    )
+    p2 = iplot(
+        (sin(u * x), (x, -5, 5)),
+        params = params,
+        backend = MB,
+        xlabel = "x2",
+        ylabel = "y2",
+        title = "title 2",
+        show = False
+    )
+    p3 = plot(sin(x)*cos(x), (x, -5, 5), backend=MB,
+        adaptive=False, n=50,
+        is_point=True, is_filled=True,
+        line_kw=dict(marker="^"), show=False)
+    p = p1 + p2 + p3
+    
+    assert isinstance(p, InteractivePlot)
+    assert isinstance(p.backend, MB)
+    assert p.backend.title == "title 1"
+    assert p.backend.xlabel == "x1"
+    assert p.backend.ylabel == "y1"
+    assert p.backend.legend
+    assert len(p.backend.series) == 3
+    assert len([s for s in p.backend.series if s.is_interactive]) == 2
+    assert len([s for s in p.backend.series if not s.is_interactive]) == 1
+
+def test_iplot_sum_2():
+    # verify that it is not possible to add together different instances of
+    # InteractivePlot when they are using different parameters
+
+    x, u, v = symbols("x, u, v")
+
+    p1 = iplot(
+        (cos(u * x), (x, -5, 5)),
+        params = {
+            u: (1, 0, 1)
+        },
+        backend = MB,
+        xlabel = "x1",
+        ylabel = "y1",
+        title = "title 1",
+        legend=True,
+        show = False
+    )
+    p2 = iplot(
+        (sin(u * x) + v, (x, -5, 5)),
+        params = {
+            u: (1, 0, 1),
+            v: (0, -2, 2)
+        },
+        backend = MB,
+        xlabel = "x2",
+        ylabel = "y2",
+        title = "title 2",
+        show = False
+    )
+    p = p1 + p2
+    raises(KeyError, lambda: p.show())

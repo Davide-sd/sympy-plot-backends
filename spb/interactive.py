@@ -21,7 +21,6 @@ pn = import_module(
     min_module_version='0.12.0',
     catch=(RuntimeError,))
 
-
 pn.extension("plotly")
 
 
@@ -91,7 +90,7 @@ class DynamicParam(param.Parameterized):
             0,
             2,
             N,
-            "$%s$" % latex(k) if self.use_latex else str(k),
+            "$%s$" % latex(k) if self._use_latex else str(k),
             "linear",
         ]
         values = defaults_values.copy()
@@ -141,12 +140,13 @@ class DynamicParam(param.Parameterized):
             delattr(type(self), p)
 
         # use latex on control labels and legends
-        self.use_latex = kwargs.pop("use_latex", True)
+        self._use_latex = kwargs.pop("use_latex", True)
 
         # this must be present in order to assure correct behaviour
         super().__init__(name=name, **kwargs)
         if not params:
             raise ValueError("`params` must be provided.")
+        self._original_params = params
 
         # The following dictionary will be used to create the appropriate
         # lambda function arguments:
@@ -242,6 +242,8 @@ class PanelLayout:
             )
             layout = "tb"
         self._layout = layout
+        self._ncols = ncols
+        self._throttled = throttled
 
         # NOTE: here I create a temporary panel.Param object in order to reuse
         # the code from the pn.Param.widget method, which returns the correct
@@ -362,23 +364,23 @@ class InteractivePlot(DynamicParam, PanelLayout):
                     *a, matrices=False, fill_ranges=False
                 )
                 new_args.append(Tuple(exprs[0], *ranges, label, sympify=False))
-                # new_args.append(Tuple(exprs[0], ranges[0], label, sympify=False))
             series = _build_complex_series(*new_args, interactive=True, **kwargs)
         elif is_vector:
             args = _preprocess(*args, matrices=False, fill_ranges=False)
             series = _build_vector_series(*args, interactive=True, **kwargs)
         else:
             for a in args:
-                # with interactive-parametric plots, vectors could have more free
-                # symbols than the number of dimensions. We set fill_ranges=False
-                # in order to not fill ranges, otherwise ranges will be created also
-                # for parameters. This means the user must provided all the necessary
-                # ranges.
+                # with interactive-parametric plots, vectors could have more
+                # free symbols than the number of dimensions. We set
+                # fill_ranges=False in order to not fill ranges, otherwise
+                # ranges will be created also for parameters. This means
+                # the user must provided all the necessary ranges.
                 exprs, ranges, label = _unpack_args(
                     *a, matrices=True, fill_ranges=False
                 )
                 if isinstance(_slice, (tuple, list)):
-                    # Sliced 3D vector field: each slice creates a unique series
+                    # Sliced 3D vector field: each slice creates a
+                    # unique series
                     kwargs2 = kwargs.copy()
                     kwargs2.pop("slice")
                     for s in _slice:
@@ -394,6 +396,60 @@ class InteractivePlot(DynamicParam, PanelLayout):
     def fig(self):
         """Return the plot object"""
         return self._backend.fig
+    
+    @property
+    def backend(self):
+        """Return the backend"""
+        return self._backend
+    
+    def save(self, *args, **kwargs):
+        """Save the current figure.
+        This is a wrapper to the backend's `save` function. Refer to the
+        backend's documentation to learn more about arguments and keyword
+        arguments.
+        """
+        self._backend.save(*args, **kwargs)
+    
+    def __add__(self, other):
+        return self._do_sum(other)
+
+    def __radd__(self, other):
+        return other._do_sum(self)
+
+    def _do_sum(self, other):
+        """Differently from Plot.extend, this method creates a new plot object,
+        which uses the series of both plots and merges the _kwargs dictionary
+        of `self` with the one of `other`.
+        """
+        from spb.backends.base_backend import Plot
+        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        merge = mergedeep.merge
+
+        if not isinstance(other, (Plot, InteractivePlot)):
+            raise TypeError(
+                "Both sides of the `+` operator must be instances of the "
+                "InteractivePlot or Plot class.\n"
+                "Received: {} + {}".format(type(self), type(other)))
+        
+        series = self._backend.series
+        if isinstance(other, Plot):
+            series.extend(other.series)
+        else:
+            series.extend(other._backend.series)
+        
+        backend_kw = self._backend._copy_kwargs()
+        panel_kw = {
+            "layout": self._layout,
+            "ncols": self._ncols,
+            "throttled": self._throttled,
+            "use_latex": self._use_latex,
+            "params": self._original_params,
+            "show": False
+        }
+
+        new_iplot = type(self)(**merge({}, backend_kw, panel_kw))
+        new_iplot._backend.series.extend(series)
+        return new_iplot
 
 
 def iplot(*args, show=True, **kwargs):
@@ -408,13 +464,13 @@ def iplot(*args, show=True, **kwargs):
         expression, the tuple should have the following forms:
 
         1. line:
-           ``(expr, range, label [optional])``
+           `(expr, range, label [optional])`
         2. parametric line:
-           ``(expr1, expr2, expr3 [optional], range, label [optional])``
+           `(expr1, expr2, expr3 [optional], range, label [optional])`
         3. surface:
-           ``(expr, range1, range2, label [optional])``
+           `(expr, range1, range2, label [optional])`
         4. parametric surface:
-           ``(expr1, expr2, expr3, range1, range2, label [optional])``
+           `(expr1, expr2, expr3, range1, range2, label [optional])`
 
         The label is always optional, whereas the ranges must always be
         specified. The ranges will create the discretized domain.
@@ -422,9 +478,9 @@ def iplot(*args, show=True, **kwargs):
     params : dict
         A dictionary mapping the symbols to a parameter. The parameter can be:
 
-        1. an instance of ``param.parameterized.Parameter``.
+        1. an instance of `param.parameterized.Parameter`.
         2. a tuple of the form:
-           ``(default, min, max, N, tick_format, label, spacing)``
+           `(default, min, max, N, tick_format, label, spacing)`
            where:
 
            - default, min, max : float
@@ -434,36 +490,36 @@ def iplot(*args, show=True, **kwargs):
                 Number of steps of the slider.
            - tick_format : TickFormatter or None, optional
                 Provide a formatter for the tick value of the slider. If None,
-                ``panel`` will automatically apply a default formatter.
+                `panel` will automatically apply a default formatter.
                 Alternatively, an instance of
-                ``bokeh.models.formatters.TickFormatter`` can be used.
+                `bokeh.models.formatters.TickFormatter` can be used.
                 Default to None.
            - label: str, optional
                 Custom text associated to the slider.
            - spacing : str, optional
-                Specify the discretization spacing. Default to ``"linear"``, can
-                be changed to ``"log"``.
+                Specify the discretization spacing. Default to `"linear"`, can
+                be changed to `"log"`.
 
         Note that the parameters cannot be linked together (ie, one parameter
         cannot depend on another one).
 
     backend : Plot, optional
         The backend to be used to generate the plot. It must be a subclass of
-        ``spb.backends.base_backend.Plot``. If not provided, the module will
-        use the default backend. If ``MatplotlibBackend`` is used,
-        we must run the command ``%matplotlib widget`` at the start of the
+        `spb.backends.base_backend.Plot`. If not provided, the module will
+        use the default backend. If `MatplotlibBackend` is used,
+        the command `%matplotlib widget` must be executed at the start of the
         notebook, otherwise the plot will not update.
 
     layout : str, optional
         The layout for the controls/plot. Possible values:
 
-        - ``'tb'``: controls in the top bar.
-        - ``'bb'``: controls in the bottom bar.
-        - ``'sbl'``: controls in the left side bar.
-        - ``'sbr'``: controls in the right side bar.
+        - `'tb'`: controls in the top bar.
+        - `'bb'`: controls in the bottom bar.
+        - `'sbl'`: controls in the left side bar.
+        - `'sbr'`: controls in the right side bar.
 
-        Default layout to ``'tb'``. Note that side bar layouts may not
-        work well with some backends, and with ``MatplotlibBackend`` the widgets
+        Default layout to `'tb'`. Note that side bar layouts may not
+        work well with some backends, and with `MatplotlibBackend` the widgets
         are always going to be displayed below the figure.
 
     ncols : int, optional
@@ -483,8 +539,8 @@ def iplot(*args, show=True, **kwargs):
         Default to True.
         If True, it will return an object that will be rendered on the
         output cell of a Jupyter Notebook. If False, it returns an instance
-        of ``InteractivePlot``, which can later be be shown by calling the
-        ``show()`` method.
+        of `InteractivePlot`, which can later be be shown by calling the
+        `show()` method.
 
     use_latex : bool, optional
         Default to True.
@@ -493,13 +549,13 @@ def iplot(*args, show=True, **kwargs):
         representation will be used instead.
 
     detect_poles : boolean
-            Chose whether to detect and correctly plot poles.
-            Defaulto to False. To improve detection, increase the number of
-            discretization points and/or change the value of `eps`.
+        Chose whether to detect and correctly plot poles.
+        Defaulto to `False`. To improve detection, increase the number of
+        discretization points `n` and/or change the value of `eps`.
 
     eps : float
         An arbitrary small value used by the `detect_poles` algorithm.
-        Default value to 0.1. Before changing this value, it is better to
+        Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
 
     n1, n2, n3 : int, optional
@@ -508,15 +564,15 @@ def iplot(*args, show=True, **kwargs):
 
     n : int, optional
         Set the number of discretization points on all directions.
-        It overrides ``n1, n2, n3``.
+        It overrides `n1, n2, n3`.
 
     nc : int, optional
         Number of discretization points for the contour plot when
-        ``is_complex=True``.
+        `is_complex=True`.
 
     polar : boolean, optional
-        Default to False. If True, generate a polar plot of a curve with radius
-        `expr` as a function of the range
+        Default to False. If True, generate a polar plot of a curve with
+        radius `expr` as a function of the range
 
     throttled : boolean, optional
         Default to False. If True the recompute will be done at mouse-up event
@@ -536,13 +592,13 @@ def iplot(*args, show=True, **kwargs):
         Label for the z-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)``.
+        Denotes the x-axis limits, `(min, max)`.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)``.
+        Denotes the y-axis limits, `(min, max)`.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, ``(min, max)``.
+        Denotes the z-axis limits, `(min, max)`.
 
 
     Examples
@@ -558,8 +614,8 @@ def iplot(*args, show=True, **kwargs):
 
     Surface plot between -10 <= x, y <= 10 with a damping parameter varying from
     0 to 1, with a default value of 0.15, discretized with 100 points on both
-    directions. Note the use of ``threed=True`` to specify a 3D plot. If
-    ``threed=False``, a contour plot will be generated.
+    directions. Note the use of `threed=True` to specify a 3D plot. If
+    `threed=False`, a contour plot will be generated.
 
     .. jupyter-execute::
 
@@ -604,7 +660,7 @@ def iplot(*args, show=True, **kwargs):
        ...     ylim = (-4, 10))
 
     A 3D slice-vector plot. Note: whenever we want to create parametric vector
-    plots, we should set ``is_vector=True``.
+    plots, we should set `is_vector=True`.
 
     .. jupyter-execute::
 
@@ -622,7 +678,7 @@ def iplot(*args, show=True, **kwargs):
        ...     slice = Plane((0, 0, 0), (0, 1, 0)))
 
     A parametric complex domain coloring plot. Note: whenever we want to create
-    parametric complex plots, we must set ``is_complex=True``.
+    parametric complex plots, we must set `is_complex=True`.
 
     .. jupyter-execute::
 
@@ -636,7 +692,7 @@ def iplot(*args, show=True, **kwargs):
         ...     coloring = "b")
 
 
-    A parametric plot of a symbolic polygon. Note the use of ``param`` to create
+    A parametric plot of a symbolic polygon. Note the use of `param` to create
     an integer slider.
 
     .. jupyter-execute::
@@ -656,13 +712,53 @@ def iplot(*args, show=True, **kwargs):
        ...     aspect = "equal",
        ...     use_latex = False)
 
+    Combine together `InteractivePlot` and `Plot` instances. The same
+    parameters dictionary must be used for every `iplot` command. Note that:
+
+    1. the first plot dictates the labels, title and wheter to show the legend
+       or not.
+    2. Instances of `Plot` class must be place on the right side of the `+`
+       sign.
+
+    .. code-block:: python
+
+       from spb.functions import plot
+       u = symbols("u")
+       params = {
+           u: (1, 0, 2)
+       }
+       p1 = iplot(
+           (cos(u * x), (x, -5, 5)),
+           params = params,
+           backend = MB,
+           xlabel = "x1",
+           ylabel = "y1",
+           title = "title 1",
+           legend = True,
+           show = False
+       )
+       p2 = iplot(
+           (sin(u * x), (x, -5, 5)),
+           params = params,
+           backend = MB,
+           xlabel = "x2",
+           ylabel = "y2",
+           title = "title 2",
+           show = False
+       )
+       p3 = plot(sin(x)*cos(x), (x, -5, 5), backend=MB,
+           adaptive=False, n=50,
+           is_point=True, is_filled=True,
+           line_kw=dict(marker="^"), show=False)
+       p = p1 + p2 + p3
+       p.show()
+
     Serves the interactive plot on a separate browser window. Note: only
-    ``BokehBackend`` and ``PlotlyBackend`` are supported for this operation
+    `BokehBackend` and `PlotlyBackend` are supported for this operation
     mode.
 
     .. code-block:: python
 
-       from sympy import *
        from spb.backends.bokeh import BB
        from bokeh.models.formatters import PrintfTickFormatter
        formatter = PrintfTickFormatter(format='%.4f')
@@ -695,35 +791,34 @@ def iplot(*args, show=True, **kwargs):
     =====
 
     1. This function is specifically designed to work within Jupyter Notebook.
-       However, it is also possible to use it from a regular Python interpreter,
-       but only with ``BokehBackend`` and ``PlotlyBackend``. In such cases, we
-       have to call ``iplot(..., backend=BB).show()``, which will create a
-       server process loading the interactive plot on the browser.
+       However, it is also possible to use it from a regular Python,
+       interpreter but only with `BokehBackend` and `PlotlyBackend`.
+       In such cases, it must be called with `iplot(..., backend=BB).show()`, which will create a server process loading the interactive plot on
+       the browser.
 
-    2. Some examples use an instance of ``PrintfTickFormatter`` to format the
-       value shown by a slider. This class is exposed by Bokeh, but can be used
-       by ``iplot`` with any backend. Refer to [#fn1]_ for more information
-       about tick formatting.
+    2. Some examples use an instance of `PrintfTickFormatter` to format the
+       value shown by a slider. This class is exposed by Bokeh, but can be
+       used by `iplot` with any backend. Refer to [#fn1]_ for more
+       information about tick formatting.
     
-    3. We have seen the duality of the keyword argument ``show``:
+    3. The duality of the keyword argument `show`:
 
-       * If True, the function returns a ``panel`` object that will be rendered
+       * If True, the function returns a `panel` object that will be rendered
          on the output cell of a Jupyter Notebook.
-       * If False, it returns an instance of ``InteractivePlot``.
+       * If False, it returns an instance of `InteractivePlot`.
 
-       Let's focus on the syntax ``t = iplot(..., show=True, backend=BB)``, as
+       Let's focus on the syntax `t = iplot(..., show=True, backend=BB)`, as
        shown in the last example.
-       Here, the variable ``t`` captures the ``panel`` object, thus nothing
+       Here, the variable `t` captures the `panel` object, thus nothing
        will be rendered on the output cell. We can use this variable to serve
        the interactive plot through a server process on a separate browser
-       window, by calling ``t.show()``. In doing so, the overall interactive
+       window, by calling `t.show()`. In doing so, the overall interactive
        plot is not subjected to the width limitation of a classical Jupyter
        Notebook. It is possible to play with the following keyword arguments
        to further customize the look and take advantage of the full page:
-       ``size, ncols, layout``.
-       As stated before, only ``BokehBackend`` and ``PlotlyBackend`` are
+       `size, ncols, layout`.
+       As stated before, only `BokehBackend` and `PlotlyBackend` are
        supported in this mode of operation.
-
 
 
     References
@@ -747,10 +842,10 @@ def create_widgets(params, **kwargs):
     params : dict
         A dictionary mapping the symbols to a parameter. The parameter can be:
 
-        1. an instance of ``param.parameterized.Parameter``. Refer to [#fn2]_
+        1. an instance of `param.parameterized.Parameter`. Refer to [#fn2]_
            for a list of available parameters.
         2. a tuple of the form:
-           ``(default, min, max, N, tick_format, label, spacing)``
+           `(default, min, max, N, tick_format, label, spacing)`
            where:
 
            - default, min, max : float
@@ -760,15 +855,15 @@ def create_widgets(params, **kwargs):
                 Number of steps of the slider.
            - tick_format : TickFormatter or None, optional
                 Provide a formatter for the tick value of the slider. If None,
-                ``panel`` will automatically apply a default formatter.
+                `panel` will automatically apply a default formatter.
                 Alternatively, an instance of
-                ``bokeh.models.formatters.TickFormatter`` can be used.
+                `bokeh.models.formatters.TickFormatter` can be used.
                 Default to None.
            - label: str, optional
                 Custom text associated to the slider.
            - spacing : str, optional
-                Specify the discretization spacing. Default to ``"linear"``, can
-                be changed to ``"log"``.
+                Specify the discretization spacing. Default to `"linear"`,
+                can be changed to `"log"`.
 
         Note that the parameters cannot be linked together (ie, one parameter
         cannot depend on another one).
@@ -784,7 +879,7 @@ def create_widgets(params, **kwargs):
     =======
 
     widgets : dict
-        A dictionary mapping the symbols from ``params`` to the appropriate
+        A dictionary mapping the symbols from `params` to the appropriate
         widget.
 
 
