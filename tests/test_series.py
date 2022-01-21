@@ -857,63 +857,88 @@ def test_only_integers():
     assert yy[0, 0] == -4 and yy[-1, -1] == 4 
 
 
-def test_is_point():
+def test_is_point_is_filled():
+    # verify that `is_point` and `is_filled` are attributes and that they
+    # they receive the correct values
+
     x, u = symbols("x, u")
-    def do_test(s1, s2):
-        assert not s1.is_point
-        assert s2.is_point
     
-    s1 = LineOver1DRangeSeries(cos(x), (x, -5, 5), "", is_point=False)
-    s2 = LineOver1DRangeSeries(cos(x), (x, -5, 5), "", is_point=True)
-    do_test(s1, s2)
+    s = LineOver1DRangeSeries(cos(x), (x, -5, 5), "",
+        is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = LineOver1DRangeSeries(cos(x), (x, -5, 5), "",
+        is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
-    s1 = AbsArgLineSeries(cos(x), (x, -5, 5), "", is_point=False)
-    s2 = AbsArgLineSeries(cos(x), (x, -5, 5), "", is_point=True)
-    do_test(s1, s2)
+    s = AbsArgLineSeries(cos(x), (x, -5, 5), "",
+        is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = AbsArgLineSeries(cos(x), (x, -5, 5), "",
+        is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
-    s1 = List2DSeries([0, 1, 2], [3, 4, 5], is_point=False)
-    s2 = List2DSeries([0, 1, 2], [3, 4, 5], is_point=True)
-    do_test(s1, s2)
+    s = List2DSeries([0, 1, 2], [3, 4, 5],
+        is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = List2DSeries([0, 1, 2], [3, 4, 5],
+        is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
-    s1 = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5), is_point=False)
-    s2 = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5), is_point=True)
-    do_test(s1, s2)
+    s = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5),
+        is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5),
+        is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
-    s1 = Parametric3DLineSeries(cos(x), sin(x), x, (x, -5, 5), is_point=False)
-    s2 = Parametric3DLineSeries(cos(x), sin(x), x, (x, -5, 5), is_point=True)
-    do_test(s1, s2)
+    s = Parametric3DLineSeries(cos(x), sin(x), x, (x, -5, 5),
+        is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = Parametric3DLineSeries(cos(x), sin(x), x, (x, -5, 5),
+        is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
-    s1 = ComplexPointSeries([1 + 2 * I, 3 + 4 * I], is_point=False)
-    s2 = ComplexPointSeries([1 + 2 * I, 3 + 4 * I], is_point=True)
-    do_test(s1, s2)
+    s = ComplexPointSeries([1 + 2 * I, 3 + 4 * I],
+        is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = ComplexPointSeries([1 + 2 * I, 3 + 4 * I],
+        is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
-    s1 = LineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
-        params={u: 1}, is_point=False)
-    s2 = LineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
-        params={u: 1}, is_point=True)
-    do_test(s1, s2)
+    s = LineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = LineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
-    s1 = AbsArgLineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
-        params={u: 1}, is_point=False)
-    s2 = AbsArgLineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
-        params={u: 1}, is_point=True)
-    do_test(s1, s2)
+    s = AbsArgLineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = AbsArgLineInteractiveSeries([u * cos(x)], [(x, -5, 5)], "",
+        params={u: 1}, is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
-    s1 = Parametric2DLineInteractiveSeries([u * cos(x), sin(x)],
-        [(x, -5, 5)], "", params={u: 1}, is_point=False)
-    s2 = Parametric2DLineInteractiveSeries([u * cos(x), sin(x)],
-        [(x, -5, 5)], "", params={u: 1}, is_point=True)
-    do_test(s1, s2)
+    s = Parametric2DLineInteractiveSeries([u * cos(x), sin(x)],
+        [(x, -5, 5)], "", params={u: 1}, is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = Parametric2DLineInteractiveSeries([u * cos(x), sin(x)],
+        [(x, -5, 5)], "", params={u: 1}, is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
-    s1 = Parametric3DLineInteractiveSeries([u * cos(x), sin(x), x],
-        [(x, -5, 5)], "", params={u: 1}, is_point=False)
-    s2 = Parametric3DLineInteractiveSeries([u * cos(x), sin(x), x],
-        [(x, -5, 5)], "", params={u: 1}, is_point=True)
-    do_test(s1, s2)
+    s = Parametric3DLineInteractiveSeries([u * cos(x), sin(x), x],
+        [(x, -5, 5)], "", params={u: 1}, is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = Parametric3DLineInteractiveSeries([u * cos(x), sin(x), x],
+        [(x, -5, 5)], "", params={u: 1}, is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
-    s1 = ComplexPointInteractiveSeries([1 + 2 * I, 3 + 4 * I], is_point=False)
-    s2 = ComplexPointInteractiveSeries([1 + 2 * I, 3 + 4 * I], is_point=True)
-    do_test(s1, s2)
+    s = ComplexPointInteractiveSeries([1 + 2 * I, 3 + 4 * I],
+        is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = ComplexPointInteractiveSeries([1 + 2 * I, 3 + 4 * I],
+        is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
 
 
 def test_steps():

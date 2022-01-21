@@ -362,6 +362,7 @@ class Line2DBaseSeries(BaseSeries):
         self.steps = kwargs.get("steps", False)
         self.only_integers = kwargs.get("only_integers", False)
         self.is_point = kwargs.get("is_point", False)
+        self.is_filled = kwargs.get("is_filled", False)
         self.scale = kwargs.get("xscale", "linear")
         self.n = kwargs.get("n", 1000)
         self.modules = kwargs.get("modules", None)
@@ -428,7 +429,6 @@ class List2DSeries(Line2DBaseSeries):
                 "and len(list_y) = {}".format(len(self.list_y))
             )
         self.label = label
-        self.is_filled = kwargs.get("is_filled", True)
 
     def __str__(self):
         return "list plot"
@@ -1271,6 +1271,7 @@ class InteractiveSeries(BaseSeries):
         self.label = label
         self.only_integers = kwargs.get("only_integers", False)
         self.is_point = kwargs.get("is_point", False)
+        self.is_filled = kwargs.get("is_filled", False)
 
         nexpr, npar = len(exprs), len(ranges)
 
@@ -1654,6 +1655,7 @@ class ComplexPointSeries(Line2DBaseSeries):
             self.expr = expr
 
         self.is_point = kwargs.get("is_point", True)
+        self.is_filled = kwargs.get("is_filled", True)
         self.steps = kwargs.get("steps", False)
         self.label = label
         self._rendering_kw = kwargs.get("line_kw", dict())
