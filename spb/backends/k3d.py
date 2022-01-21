@@ -21,10 +21,6 @@ matplotlib = import_module(
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 
-# TODO:
-# 1. load the plot with menu minimized
-# 2. iplot support for streamlines?
-
 
 class K3DBackend(Plot):
     """A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
@@ -35,13 +31,13 @@ class K3DBackend(Plot):
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to K3D's line
         functions to customize the appearance. Default to:
-        ``line_kw = dict(width=0.1, shader="mesh")``
-        Set ``use_cm=False`` to switch to a solid color.
+        `line_kw = dict(width=0.1, shader="mesh")`
+        Set `use_cm=False` to switch to a solid color.
 
     quiver_kw : dict, optional
         A dictionary to customize the apppearance of quivers. Default to:
-        ``quiver_kw = dict(scale = 1)``.
-        Set ``use_cm=False`` to switch to a solid color.
+        `quiver_kw = dict(scale = 1)`.
+        Set `use_cm=False` to switch to a solid color.
 
     show_label : boolean, optional
         Show/hide labels of the expressions. Default to False (labels not
@@ -50,9 +46,9 @@ class K3DBackend(Plot):
     stream_kw : dict, optional
         A dictionary to customize the apppearance of streamlines.
         Default to:
-        ``stream_kw = dict( width=0.1, shader='mesh' )``
+        `stream_kw = dict( width=0.1, shader='mesh' )`
         Refer to k3d.line for more options.
-        Set ``use_cm=False`` to switch to a solid color.
+        Set `use_cm=False` to switch to a solid color.
 
     use_cm : boolean, optional
         If True, apply a color map to the meshes/surface. If False, solid
@@ -118,8 +114,8 @@ class K3DBackend(Plot):
 
     @staticmethod
     def _int_to_rgb(RGBint):
-        """Convert an integer number to an RGB tuple with components from 0 to
-        255.
+        """Convert an integer number to an RGB tuple with components from 0
+        to 255.
 
         https://stackoverflow.com/a/2262152/2329968
         """
@@ -139,8 +135,8 @@ class K3DBackend(Plot):
 
     @classmethod
     def _convert_to_int(cls, color):
-        """Convert the provided RGB tuple with values from 0 to 1 to an integer
-        number.
+        """Convert the provided RGB tuple with values from 0 to 1 to an
+        integer number.
         """
         color = [int(c * 255) for c in color]
         return cls._rgb_to_int(color)
@@ -261,9 +257,7 @@ class K3DBackend(Plot):
                 xx, yy, zz, uu, vv, ww = [
                     t.flatten().astype(np.float32) for t in [xx, yy, zz, uu, vv, ww]
                 ]
-                # default values
                 qkw = dict(scale=1)
-                # user provided values
                 qkw = merge(qkw, s.rendering_kw)
                 scale = qkw["scale"]
                 magnitude = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
@@ -348,8 +342,8 @@ class K3DBackend(Plot):
 
     def _high_aspect_ratio(self, x, y, z):
         """Look for high aspect ratio meshes, where (dz >> dx, dy) and
-        eventually set the bounds around the mid point of the mesh in order to
-        improve visibility. Bounds will be used to set the camera position.
+        eventually set the bounds around the mid point of the mesh in order
+        to improve visibility. Bounds will be used to set the camera position.
         """
         mz, Mz, meanz = z.min(), z.max(), z.mean()
         mx, Mx = x.min(), x.max()
@@ -358,12 +352,14 @@ class K3DBackend(Plot):
 
         # thresholds
         t1, t2 = 10, 3
-        if (dz / dx >= t1) and (dz / dy >= t1):
+        if (dz / dx >= t1) and (dz / dy >= t1) and (self.zlim is None):
             if abs(Mz / meanz) > t1:
                 Mz = meanz + t2 * max(dx, dy)
             if abs(mz / meanz) > t1:
                 mz = meanz - t2 * max(dx, dy)
             self._bounds.append([mx, Mx, my, My, mz, Mz])
+        elif self.zlim:
+            self._bounds.append([mx, Mx, my, My, self.zlim[0], self.zlim[1]])
 
     def _update_interactive(self, params):
         np = import_module('numpy', catch=(RuntimeError,))
@@ -435,8 +431,9 @@ class K3DBackend(Plot):
         self.plot_shown = True
 
         if len(self._bounds) > 0:
-            # there are very high aspect ratio meshes. We are going to compute a
-            # new camera position to improve user experience
+            # when there are very high aspect ratio meshes, or when zlim has
+            # been set, we compute a new camera position to improve user
+            # experience
             self._fig.camera_auto_fit = False
             bounds = np.array(self._bounds)
             bounds = np.dstack(
@@ -452,20 +449,20 @@ class K3DBackend(Plot):
             ]
 
     def save(self, path, **kwargs):
-        """ Export the plot to a static picture or to an interactive html file.
+        """Export the plot to a static picture or to an interactive html file.
 
         Notes
         =====
 
         K3D-Jupyter is only capable of exporting:
 
-        1. '.png' pictures: refer to [#fn1]_ to visualize the available keyword
-           arguments.
-        2. '.html' files: when exporting a fully portable html file, by default
-           the required Javascript libraries will be loaded with a CDN. Set
-           ``include_js=True`` to include all the javascript code in the html
-           file: this will create a bigger file size, but can be run without
-           internet connection.
+        1. '.png' pictures: refer to [#fn1]_ to visualize the available
+           keyword arguments.
+        2. '.html' files: when exporting a fully portable html file, by
+           default the required Javascript libraries will be loaded with a
+           CDN. Set `include_js=True` to include all the javascript code in
+           the html file: this will create a bigger file size, but can be
+           run without internet connection.
 
         References
         ==========
