@@ -254,6 +254,10 @@ class BokehBackend(Plot):
     theme : str, optional
         Set the theme. Default to `"dark_minimal"`. Find more Bokeh themes
         at [#fn2]_ .
+    
+    update_event : bool, optional
+        If True, the backend will update the data series over the visibile
+        range whenever a pan-event is triggered. Default to True.
         
 
     References
@@ -284,6 +288,8 @@ class BokehBackend(Plot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._theme = kwargs.get("theme", cfg["bokeh"]["theme"])
+        self._update_event = kwargs.get("update_event",
+            cfg["bokeh"]["update_event"])
 
         self._run_in_notebook = False
         if self._get_mode() == 0:
@@ -331,7 +337,9 @@ class BokehBackend(Plot):
             tooltips=TOOLTIPS,
             match_aspect=True if self.aspect == "equal" else False,
         )
-        self._fig.axis.visible = self.grid
+        # NOTE: it would be nice to set minor grids. Unfortunately, the
+        # `p._fig.grid.minor_grid_line_alpha` value strongly depends on the
+        # theme. For the moment, don't set them.
         self._fig.grid.visible = self.grid
         self._fig.on_event(bokeh.events.PanEnd, self._pan_update)
         self._process_series(self._series)
@@ -653,8 +661,8 @@ class BokehBackend(Plot):
         Notes
         =====
         
-        1. In order to export static pictures, the user also need to install the
-           packages listed in [#fn5]_.
+        1. In order to export static pictures, the user also need to install
+           the packages listed in [#fn5]_.
         2. When exporting a fully portable html file, by default the necessary
            Javascript libraries will be loaded with a CDN. This creates the
            smallest file size possible, but it requires an internet connection
@@ -697,7 +705,7 @@ class BokehBackend(Plot):
     def show(self):
         """Visualize the plot on the screen."""
         self._process_series(self._series)
-        if self._run_in_notebook:
+        if self._run_in_notebook and self._update_event:
             # TODO: the current way we are launching the server only works
             # within Jupyter Notebook. Is there another way of launching
             # it so that it can run from any Python interpreter?

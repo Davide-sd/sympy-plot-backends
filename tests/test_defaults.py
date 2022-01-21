@@ -22,7 +22,8 @@ def test_cfg():
 
     assert "bokeh" in cfg.keys()
     assert "theme" in cfg["bokeh"].keys()
-    assert isinstance(cfg["bokeh"]["theme"], str)
+    assert isinstance(cfg["bokeh"]["sizing_mode"], str)
+    assert isinstance(cfg["bokeh"]["update_event"], bool)
 
     assert "k3d" in cfg.keys()
     assert "bg_color" in cfg["k3d"].keys()

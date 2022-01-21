@@ -24,7 +24,11 @@ def _hardcoded_defaults():
         plotly={"theme": "plotly_dark"},
         # Find more Bokeh themes at the following page:
         # https://docs.bokeh.org/en/latest/docs/reference/themes.html
-        bokeh={"theme": "dark_minimal", "sizing_mode": "stretch_width"},
+        bokeh={
+            "theme": "dark_minimal",
+            "sizing_mode": "stretch_width",
+            "update_event": True,
+        },
         k3d={
             "bg_color": 3620427,
             "grid_color": 0x888888,
