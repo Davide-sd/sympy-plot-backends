@@ -379,19 +379,9 @@ class Plot:
         del self._series[index]
 
     def __add__(self, other):
-        if not isinstance(other, Plot):
-            raise TypeError(
-                "Both sides of the `+` operator must be instances of the Plot "
-                + "class.\n Received: {} + {}".format(type(self), type(other))
-            )
         return self._do_sum(other)
 
     def __radd__(self, other):
-        if not isinstance(other, Plot):
-            raise TypeError(
-                "Both sides of the `+` operator must be instances of the Plot "
-                + "class.\n Received: {} + {}".format(type(self), type(other))
-            )
         return other._do_sum(self)
 
     def _do_sum(self, other):
@@ -399,6 +389,11 @@ class Plot:
         which uses the series of both plots and merges the _kwargs dictionary
         of `self` with the one of `other`.
         """
+        if not isinstance(other, Plot):
+            raise TypeError(
+                "Both sides of the `+` operator must be instances of the Plot "
+                + "class.\n Received: {} + {}".format(type(self), type(other))
+            )
         series = []
         series.extend(self.series)
         series.extend(other.series)
