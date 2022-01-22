@@ -273,6 +273,15 @@ def plot(*args, show=True, **kwargs):
         Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
     
+    is_point : boolean, optional
+        Default to False, which will render a line connecting all the points.
+        If True, a scatter plot will be generated.
+    
+    is_filled : boolean, optional
+        Default to True, which will render empty circular markers. It only
+        works if `is_point=True`.
+        If False, filled circular markers will be rendered.
+    
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:

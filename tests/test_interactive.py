@@ -236,6 +236,7 @@ def test_iplot():
     new_params = [k for k in InteractivePlot.__dict__.keys() if "dyn_param_" in k]
     assert len(new_params) == 2
 
+
 def test_create_widgets():
     x, y, z = symbols("x:z")
 
@@ -281,7 +282,7 @@ def test_interactiveseries():
     N = CoordSys3D("N")
     i, j, k = N.base_vectors()
     x, y, z = N.base_scalars()
-    a, b, c, xs, ys, zs = symbols("a:c, x:z")
+    a, b, c = symbols("a:c")
     v1 = -a * sin(y) * i + b * cos(x) * j
     m1 = v1.to_matrix(N)
     m1 = m1[:-1]
@@ -305,7 +306,11 @@ def test_interactiveseries():
         else:
             assert not s.is_2Dvector
             assert s.is_3Dvector
-        return t
+        
+        # verify that the backend is able to run the `_update_interactive`
+        # method.
+        new_params = {k: v[0] for k, v in params.items()}
+        t._backend._update_interactive(new_params)
 
     # 2D vectors
     params = {
@@ -314,8 +319,8 @@ def test_interactiveseries():
     }
     ranges = (x, -5, 5), (y, -4, 4)
     test_vector(
-        v1, ranges, params, Tuple(-a * sin(ys), b * cos(xs)), str(v1),
-        xs, (10, 10)
+        v1, ranges, params, Tuple(-a * sin(N.y), b * cos(N.x)), str(v1),
+        N.x, (10, 10)
     )
     test_vector(
         m1, ranges, params, Tuple(-a * sin(y), b * cos(x)), str(tuple(m1)),
@@ -337,9 +342,9 @@ def test_interactiveseries():
         v2,
         ranges,
         params,
-        Tuple(-a * sin(ys), b * cos(xs), c * cos(zs)),
+        Tuple(-a * sin(N.y), b * cos(N.x), c * cos(N.z)),
         str(v2),
-        xs,
+        N.x,
         (10, 10, 10),
     )
     test_vector(

@@ -316,7 +316,6 @@ class PlotlyBackend(Plot):
                 xx, yy, zz = s.get_data()
                 xx = xx[0, :]
                 yy = yy[:, 0]
-                # default values
                 ckw = dict(
                     contours=dict(
                         coloring=None,
@@ -325,7 +324,6 @@ class PlotlyBackend(Plot):
                     colorscale=next(self._cm),
                     colorbar=self._create_colorbar(ii, s.label, show_2D_vectors),
                 )
-                # user-provided values
                 kw = merge({}, ckw, s.rendering_kw)
                 self._fig.add_trace(go.Contour(x=xx, y=yy, z=zz, **kw))
                 count += 1
@@ -333,10 +331,10 @@ class PlotlyBackend(Plot):
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
+                    # NOTE: currently, it is not possible to create
+                    # quivers/streamlines with a color scale: 
+                    # https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
                     if s.is_streamlines:
-                        # NOTE: currently, it is not possible to create streamlines with
-                        # a color scale: https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
-                        # default values
                         skw = dict(
                             line_color=next(self._qc), arrow_scale=0.15, name=s.label
                         )
@@ -345,9 +343,6 @@ class PlotlyBackend(Plot):
                             xx[0, :], yy[:, 0], uu, vv, **kw)
                         self._fig.add_trace(stream.data[0])
                     else:
-                        # NOTE: currently, it is not possible to create quivers with
-                        # a color scale: https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
-                        # default values
                         qkw = dict(line_color=next(self._qc), scale=0.075, name=s.label)
                         kw = merge({}, qkw, s.rendering_kw)
                         quiver = create_quiver(xx, yy, uu, vv, **kw)
@@ -546,6 +541,17 @@ class PlotlyBackend(Plot):
                 s.rendering_kw = kw
 
     def _update_interactive(self, params):
+        np = import_module('numpy', catch=(RuntimeError,))
+        plotly = import_module(
+            'plotly',
+            import_kwargs={'fromlist':['graph_objects', 'figure_factory']},
+            min_module_version='5.0.0',
+            catch=(RuntimeError,))
+        go = plotly.graph_objects
+        from plotly.figure_factory import create_quiver, create_streamline
+        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        merge = mergedeep.merge
+
         for i, s in enumerate(self.series):
             if s.is_interactive:
                 self.series[i].params = params

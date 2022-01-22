@@ -35,8 +35,9 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
         The function to be evaluated, which will return any number of
         elements, depending on the computation to be done. The signature
         must be as follow: ``wrapper_func(f, *args)``
-        where ``f`` is the lambda function representing the symbolic expression;
-        ``*args`` is a list of arguments necessary to perform the evaluation.
+        where ``f`` is the lambda function representing the symbolic
+        expression; ``*args`` is a list of arguments necessary to perform
+        the evaluation.
 
     free_symbols : tuple or list
         The free symbols associated to ``expr``.
@@ -82,8 +83,8 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     data : np.ndarray
         A Numpy array containing the evaluation results. The shape is [NxM],
         where N is the random number of evaluation points and M is the sum
-        between the number of free symbols and the number of elements returned
-        by ``wrapper_func``.
+        between the number of free symbols and the number of elements
+        returned by ``wrapper_func``.
         No matter the evaluation ``modules``, the array type is going to be
         complex.
 
@@ -232,8 +233,8 @@ class BaseSeries:
     it's given.
     """
 
-    # Some flags follow. The rationale for using flags instead of checking base
-    # classes is that setting multiple flags is simpler than multiple
+    # Some flags follow. The rationale for using flags instead of checking
+    # base classes is that setting multiple flags is simpler than multiple
     # inheritance.
 
     is_2Dline = False
@@ -459,13 +460,11 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         if self.start.imag != self.end.imag:
             raise ValueError(
                 "%s requires the imaginary " % self.__class__.__name__ +
-                "part of the start and end values of the range to be the same."
-            )
+                "part of the start and end values of the range "
+                "to be the same.")
         self.polar = kwargs.get("polar", False)
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
-        # self._x = None
-        # self._y = None
 
     def __str__(self):
         return "cartesian line: %s for %s over %s" % (

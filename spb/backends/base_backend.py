@@ -24,8 +24,8 @@ class Plot:
        functions.
     2. The plotting functions generate a list of instances of the `BaseSeries`
        class, containing the necessary information to plot the expressions
-       (eg the expression, ranges, series name, ...). Eventually, these objects
-       will generate the numerical data to be plotted.
+       (eg the expression, ranges, series name, ...). Eventually, these
+       objects will generate the numerical data to be plotted.
     3. The plotting functions instantiate the `Plot` class, which stores the
        list of series and the main attributes of the plot (eg axis labels,
        title, etc.). Among the keyword arguments, there must be `backend`,
@@ -146,8 +146,8 @@ class Plot:
     MatplotlibBackend, PlotlyBackend, BokehBackend, K3DBackend
     """
 
-    # set the name of the plotting library being used. This is required in order
-    # to convert any colormap to the specified plotting library.
+    # set the name of the plotting library being used. This is required in
+    # order to convert any colormap to the specified plotting library.
     _library = ""
 
     # list of colors to be used in line plots or solid color surfaces.
@@ -176,8 +176,8 @@ class Plot:
 
     def __init__(self, *args, **kwargs):
         # Options for the graph as a whole.
-        # The possible values for each option are described in the docstring of
-        # Plot. They are based purely on convention, no checking is done.
+        # The possible values for each option are described in the docstring
+        # of Plot. They are based purely on convention, no checking is done.
         self.title = kwargs.get("title", None)
         self.xlabel = kwargs.get("xlabel", None)
         self.ylabel = kwargs.get("ylabel", None)
@@ -203,12 +203,13 @@ class Plot:
         self._series = []
         self._series.extend(args)
 
-        # The user can choose to use the standard color map loop, or set/provide
-        # a solid color loop (for the surface color).
+        # The user can choose to use the standard color map loop, or
+        # set/provide a solid color loop (for the surface color).
         self._use_cm = kwargs.get("use_cm", True)
 
-        # auto-legend: if more than 1 data series has been provided and the user
-        # has not set legend=False, then show the legend for better clarity.
+        # auto-legend: if more than 1 data series has been provided and the
+        # user has not set legend=False, then show the legend for better
+        # clarity.
         self.legend = kwargs.get("legend", None)
         if not self.legend:
             self.legend = False
@@ -232,12 +233,10 @@ class Plot:
             if t:
                 if not is_real(t):
                     raise ValueError(
-                        "All numbers from {}={} must be real".format(t_name, t)
-                    )
+                        "All numbers from {}={} must be real".format(t_name, t))
                 if not is_finite(t):
                     raise ValueError(
-                        "All numbers from {}={} must be finite".format(t_name, t)
-                    )
+                        "All numbers from {}={} must be finite".format(t_name, t))
                 setattr(self, t_name, (float(t[0]), float(t[1])))
 
         self.xlim = None
@@ -302,7 +301,6 @@ class Plot:
 
         # TODO: detect if we are running in Jupyter Lab.
         """
-
         # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
         try:
             shell = get_ipython().__class__.__name__
@@ -385,9 +383,9 @@ class Plot:
         return other._do_sum(self)
 
     def _do_sum(self, other):
-        """Differently from Plot.extend, this method creates a new plot object,
-        which uses the series of both plots and merges the _kwargs dictionary
-        of `self` with the one of `other`.
+        """Differently from Plot.extend, this method creates a new plot
+        object, which uses the series of both plots and merges the _kwargs
+        dictionary of `self` with the one of `other`.
         """
         if not isinstance(other, Plot):
             raise TypeError(

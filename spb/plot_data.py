@@ -17,7 +17,6 @@ from spb.series import (
     Vector3DSeries,
     ContourSeries,
     ComplexSurfaceBaseSeries,
-    # ComplexSurfaceSeries,
     ComplexInteractiveBaseSeries,
     SliceVector3DSeries,
     GeometrySeries,
@@ -27,11 +26,6 @@ from spb.backends.base_backend import Plot
 from spb.utils import _unpack_args, _plot_sympify, _check_arguments
 from spb.vectors import _split_vector
 from spb.ccomplex.complex import _build_series as _build_complex_series
-
-"""
-TODO:
-    1. Implement smart_plot
-"""
 
 
 def _deal_with_complex_series(exprs, ranges, interactive, kwargs, pt):
@@ -84,8 +78,9 @@ def _build_series(*args, **kwargs):
     #    a line plot or a surface plot have 1 expression. A 2D parametric line
     #    does have 2 parameters, ...
     # 2. The second represent the number of parameters.
-    # There will be ambiguities due to the fact that some series use the same
-    # number of expressions and parameters. This dictionary set a default series
+    # There will be ambiguities due to the fact that some series use the
+    # same number of expressions and parameters. This dictionary set a
+    # default series
     reverse_mapping = {
         "11": "p",
         "21": "pp",
@@ -103,8 +98,8 @@ def _build_series(*args, **kwargs):
     params = kwargs.get("params", dict())
     pt = kwargs.pop("pt", None)
     if pt is None:
-        # Automatic detection based on the number of free symbols and the number
-        # of expressions
+        # Automatic detection based on the number of free symbols and the
+        # number of expressions
         pt = ""
         skip_check = False
 
@@ -173,7 +168,8 @@ def _build_series(*args, **kwargs):
         if not skip_check:
             # In case of LineOver1DRangeSeries, Parametric2DLineSeries,
             # Parametric3DLineSeries, ParametricSurfaceSeries,
-            # SurfaceOver2DRangeSeries, validate the provided expressions/ranges
+            # SurfaceOver2DRangeSeries, validate the provided
+            # expressions/ranges
             args = _check_arguments(args, nexpr, npar)[0]
 
         _slice = kwargs.pop("slice", None)
@@ -429,8 +425,9 @@ def smart_plot(*args, show=True, **kwargs):
         [0]: 2D vector series: [-sin(y), cos(x)] over (x, -5.0, 5.0), (y, -3.0, 3.0)
         [1]: cartesian line: sin(x) for x over (-5.0, 5.0)
 
-    Plotting a vector field and a line plot with automatic detection. Note that
-    we are also setting the number of discretization point and the aspect ratio.
+    Plotting a vector field and a line plot with automatic detection.
+    Note that we are also setting the number of discretization point and
+    the aspect ratio.
 
     .. plot::
         :context: close-figs

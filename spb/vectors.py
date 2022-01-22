@@ -12,13 +12,6 @@ from sympy import S, sqrt, Expr, Tuple
 from sympy.geometry import Plane
 
 
-"""
-TODO:
-*   check length of ranges and if the scalar free symbols are compatible with
-    the ones provided in the vector.
-"""
-
-
 def _build_series(*args, interactive=False, **kwargs):
     """Loop over args and create all the necessary series to display a vector
     plot.
@@ -38,8 +31,8 @@ def _build_series(*args, interactive=False, **kwargs):
     # add a scalar series only on 2D plots
     if all([s.is_2Dvector for s in series]):
         # don't pop this keyword: some backend needs it to decide the color
-        # for quivers (solid color if a scalar field is present, gradient color
-        # otherwise)
+        # for quivers (solid color if a scalar field is present, gradient
+        # color otherwise)
         scalar = kwargs.get("scalar", True)
         if (len(series) == 1) and (scalar is True):
             scalar_field = sqrt(split_expr[0] ** 2 + split_expr[1] ** 2)
@@ -56,7 +49,7 @@ def _build_series(*args, interactive=False, **kwargs):
             scalar_field = None
         else:
             raise ValueError(
-                "``scalar`` must be either:\n"
+                "`scalar` must be either:\n"
                 + "1. True, in which case the magnitude of the vector field "
                 + "will be plotted.\n"
                 + "2. a symbolic expression representing a scalar field.\n"
@@ -65,16 +58,6 @@ def _build_series(*args, interactive=False, **kwargs):
             )
 
         if scalar_field:
-            # TODO: does it makes sense to cross-check the free symbols of the
-            # scalar field with those of the vectors?
-
-            # if not fs.issuperset(scalar_field.free_symbols):
-            #     raise ValueError("The free symbols of the scalar field must be " +
-            #         "a subset of the free symbols in the vector. Received:\n"
-            #         "Vector free symbols: {}\n".format(fs) +
-            #         "Scalar field free symbols: {}".format(scalar_field.free_symbols)
-            #     )
-
             # plot the scalar field over the entire region covered by all
             # vector fields
             _minx, _maxx = float("inf"), -float("inf")
@@ -117,7 +100,8 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
 
     # free symbols contained in the provided vector
     fs = set().union(*[e.free_symbols for e in split_expr])
-    # if we are building a parametric-interactive series, remove the parameters
+    # if we are building a parametric-interactive series, remove the
+    # parameters
     fs = fs.difference(params.keys())
 
     if split_expr[2] is S.Zero:  # 2D case
@@ -266,7 +250,7 @@ def _preprocess(*args, matrices=False, fill_ranges=True):
 def plot_vector(*args, show=True, **kwargs):
     """
     Plot a 2D or 3D vector field. By default, the aspect ratio of the plot
-    is set to ``aspect="equal"``.
+    is set to `aspect="equal"`.
 
     Typical usage examples are in the followings:
 
@@ -315,7 +299,7 @@ def plot_vector(*args, show=True, **kwargs):
 
     n : int
         Set the same number of discretization points in all directions for
-        the quivers or streamlines. It overrides ``n1``, ``n2``, ``n3``.
+        the quivers or streamlines. It overrides `n1`, `n2`, `n3`.
         Default to 25.
 
     nc : int
@@ -331,20 +315,20 @@ def plot_vector(*args, show=True, **kwargs):
         Represents the scalar field to be plotted in the background of a 2D
         vector field plot. Can be:
 
-        - ``True``: plot the magnitude of the vector field. Only works when a
+        - `True`: plot the magnitude of the vector field. Only works when a
           single vector field is plotted.
-        - ``False``/``None``: do not plot any scalar field.
-        - ``Expr``: a symbolic expression representing the scalar field.
-        - ``list``/``tuple``: [scalar_expr, label], where the label will be
+        - `False`/`None`: do not plot any scalar field.
+        - `Expr`: a symbolic expression representing the scalar field.
+        - `list`/`tuple`: [scalar_expr, label], where the label will be
           shown on the colorbar.
 
         Default to True.
 
     show : boolean
-        The default value is set to ``True``. Set show to ``False`` and
+        The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
 
     slice : Plane, list, Expr
         Plot the 3D vector field over the provided slice. It can be:
@@ -353,12 +337,12 @@ def plot_vector(*args, show=True, **kwargs):
         - a list of planes.
         - a symbolic expression representing a surface of two variables.
 
-        The number of discretization points will be ``n1``, ``n2``, ``n3``.
+        The number of discretization points will be `n1`, `n2`, `n3`.
         Note that:
 
         - only quivers plots are supported with slices. Streamlines plots
           are unaffected.
-        - ``n3`` will only be used with planes parallel to xz or yz.
+        - `n3` will only be used with planes parallel to xz or yz.
 
     streamlines : boolean
         Whether to plot the vector field using streamlines (True) or quivers
@@ -372,18 +356,18 @@ def plot_vector(*args, show=True, **kwargs):
         For 3D vector fields, by default the streamlines will start at the
         boundaries of the domain where the vectors are pointed inward.
         Depending on the vector field, this may results in too tight
-        streamlines. Use the ``starts`` keyword argument to control the
+        streamlines. Use the `starts` keyword argument to control the
         generation of streamlines:
 
-        - ``starts=None``: the default aforementioned behaviour.
-        - ``starts=dict(x=x_list, y=y_list, z=z_list)``: specify the starting
+        - `starts=None`: the default aforementioned behaviour.
+        - `starts=dict(x=x_list, y=y_list, z=z_list)`: specify the starting
           points of the streamlines.
-        - ``starts=True``: randomly create starting points inside the domain.
-          In this setup we can set the number of starting point with ``npoints``
+        - `starts=True`: randomly create starting points inside the domain.
+          In this setup we can set the number of starting point with `npoints`
           (default value to 200).
 
         If 3D streamlines appears to be cut short inside the specified domain,
-        try to increase ``max_prop`` (default value to 5000).
+        try to increase `max_prop` (default value to 5000).
 
 
     Examples

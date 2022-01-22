@@ -31,7 +31,8 @@ class MyList(param.ObjectSelector):
     pass
 
 
-# explicitely ask panel to use DiscreteSlider when it encounters a MyList object
+# explicitely ask panel to use DiscreteSlider when it encounters a
+# MyList object
 pn.Param._mapping[MyList] = pn.widgets.DiscreteSlider
 
 
@@ -42,10 +43,10 @@ class DynamicParam(param.Parameterized):
 
     # NOTE: why DynamicParam is a child class of param.Parameterized?
     # param is a full-python library, doesn't depend on anything else.
-    # In theory, by using a parameterized class it should be possible to create
-    # an InteractivePlotGUI class targeting a specific GUI.
+    # In theory, by using a parameterized class it should be possible to
+    # create an InteractivePlotGUI class targeting a specific GUI.
     # At this moment, InteractivePlot is built on top of 'panel', so it only
-    # works inside a Jupyter Notebook. Maybe it's possible to use PyQt or Tk...
+    # works inside a Jupyter Notebook. Maybe it's possible to use PyQt or Tk.
 
     def _tuple_to_dict(self, k, v):
         """The user can provide a variable length tuple/list containing:
@@ -104,8 +105,8 @@ class DynamicParam(param.Parameterized):
             values[3] = 1
 
         if values[-1] == "log":
-            # In case of a logarithm slider, we need to instantiate the custom
-            # parameter MyList.
+            # In case of a logarithm slider, we need to instantiate the
+            # custom parameter MyList.
 
             # # divide the range in N steps evenly spaced in a log scale
             options = np.geomspace(_min, _max, N)
@@ -157,8 +158,8 @@ class DynamicParam(param.Parameterized):
         # NOTE: unfortunately, parameters from the param library do not
         # provide a keyword argument to set a formatter for the slider's tick
         # value. As a workaround, the user can provide a formatter for each
-        # parameter, which will be stored in the following dictionary and later
-        # used in the instantiation of the widgets.
+        # parameter, which will be stored in the following dictionary and
+        # later used in the instantiation of the widgets.
         self.formatters = {}
 
         # create and attach the params to the class
@@ -226,10 +227,10 @@ class PanelLayout:
                 force a recompute.
         """
         # NOTE: More often than not, the numerical evaluation is going to be
-        # resource-intensive. By default, panel's sliders will force a recompute
-        # at every step change. As a consequence, the user experience will be
-        # laggy. To solve this problem, the update must be triggered on mouse-up
-        # event, which is set using throttled=True.
+        # resource-intensive. By default, panel's sliders will force a
+        # recompute at every step change. As a consequence, the user
+        # experience will be laggy. To solve this problem, the update must
+        # be triggered on mouse-up event, which is set using throttled=True.
         #
         # https://panel.holoviz.org/reference/panes/Param.html#disabling-continuous-updates-for-slider-widgets
 
@@ -245,16 +246,16 @@ class PanelLayout:
         self._ncols = ncols
         self._throttled = throttled
 
-        # NOTE: here I create a temporary panel.Param object in order to reuse
-        # the code from the pn.Param.widget method, which returns the correct
-        # widget associated to a given parameter's type.
-        # Alternatively, I would need to copy parts of that method in order to
-        # deal with the different representations of param.Integer and
+        # NOTE: here I create a temporary panel.Param object in order to
+        # reuse the code from the pn.Param.widget method, which returns the
+        # correct widget associated to a given parameter's type.
+        # Alternatively, I would need to copy parts of that method in order
+        # to deal with the different representations of param.Integer and
         # param.Number depending if the bounds are None values.
-        # Note that I'm only interested in the widget type: panel is then going
-        # to recreate the widgets and setting the proper throttled value. This
-        # is definitely not an optimal procedure, as we are creating the "same"
-        # widget two times, but it works :)
+        # Note that I'm only interested in the widget type: panel is then
+        # going to recreate the widgets and setting the proper throttled
+        # value. This is definitely not an optimal procedure, as we are
+        # creating the "same" widget two times, but it works :)
         tmp_panel = pn.Param(self)
         widgets = dict()
         for k, v in self.mapping.items():
@@ -326,8 +327,9 @@ class InteractivePlot(DynamicParam, PanelLayout):
             name : str
                 Unused parameter
             params : dict
-                In the keys there will be the symbols, in the values there will
-                be parameters to create the slider associated to a symbol.
+                In the keys there will be the symbols, in the values there
+                will be parameters to create the slider associated to
+                a symbol.
             kwargs : dict
                 Usual keyword arguments to be used by the backends and series.
         """
@@ -612,10 +614,10 @@ def iplot(*args, show=True, **kwargs):
        >>> from spb.backends.matplotlib import MB
        >>> x, y, z = symbols("x, y, z")
 
-    Surface plot between -10 <= x, y <= 10 with a damping parameter varying from
-    0 to 1, with a default value of 0.15, discretized with 100 points on both
-    directions. Note the use of `threed=True` to specify a 3D plot. If
-    `threed=False`, a contour plot will be generated.
+    Surface plot between -10 <= x, y <= 10 with a damping parameter varying
+    from 0 to 1, with a default value of 0.15, discretized with 100 points
+    on both directions. Note the use of `threed=True` to specify a 3D plot.
+    If `threed=False`, a contour plot will be generated.
 
     .. jupyter-execute::
 

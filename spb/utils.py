@@ -1,39 +1,18 @@
-from sympy import lambdify, Tuple, sympify, Expr, S, Symbol, Dummy
+from sympy import lambdify, Tuple, sympify, Expr, S, Dummy
 from sympy.matrices.dense import DenseMatrix
 from sympy.vector import Vector, BaseScalar
 from sympy.vector.operators import _get_coord_systems
-from sympy.utilities.iterables import ordered
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 
 
-def get_lambda(expr, **kwargs):
-    """Create a lambda function to numerically evaluate expr by sorting
-    alphabetically the function arguments.
-    Parameters
-    ----------
-        expr : Expr
-            The Sympy expression to convert.
-        **kwargs
-            Other keyword arguments to the function lambdify.
-    Returns
-    -------
-        s : list
-            The function signature: a list of the ordered function arguments.
-        f : lambda
-            The generated lambda function.ò
-    """
-    signature = list(ordered(expr.free_symbols))
-    return signature, lambdify(signature, expr, **kwargs)
-
-
 def _create_ranges(free_symbols, ranges, npar):
     """This function does two things:
-    1. Check if the number of free symbols is in agreement with the type of plot
-        chosen. For example, plot() requires 1 free symbol; plot3d() requires 2
-        free symbols.
+    1. Check if the number of free symbols is in agreement with the type of
+       plot chosen. For example, plot() requires 1 free symbol;
+       plot3d() requires 2 free symbols.
     2. Sometime users create plots without providing ranges for the variables.
-        Here we create the necessary ranges.
+       Here we create the necessary ranges.
 
     free_symbols
         The free symbols contained in the expressions to be plotted
@@ -42,7 +21,8 @@ def _create_ranges(free_symbols, ranges, npar):
         The limiting ranges provided by the user
 
     npar
-        The number of free symbols required by the plot functions. For example,
+        The number of free symbols required by the plot functions.
+        For example,
         npar=1 for plot, npar=2 for plot3d, ...
 
     """
@@ -56,11 +36,9 @@ def _create_ranges(free_symbols, ranges, npar):
             + "Received {}: {}".format(len(free_symbols), free_symbols)
         )
 
-    # TODO: should I keep it?
     if len(ranges) > npar:
         raise ValueError(
-            "Too many ranges. Received %s, expected %s" % (len(ranges), npar)
-        )
+            "Too many ranges. Received %s, expected %s" % (len(ranges), npar))
 
     # free symbols in the ranges provided by the user
     rfs = set().union([r[0] for r in ranges])
@@ -84,7 +62,8 @@ def _create_ranges(free_symbols, ranges, npar):
         rfs = set().union([r[0] for r in ranges])
         if free_symbols.difference(rfs) != set():
             raise ValueError(
-                "Incompatible free symbols of the expressions with the ranges.\n"
+                "Incompatible free symbols of the expressions with "
+                "the ranges.\n"
                 + "Free symbols in the expressions: {}\n".format(free_symbols)
                 + "Free symbols in the ranges: {}".format(rfs)
             )
@@ -102,8 +81,8 @@ def _check_arguments(args, nexpr, npar):
         The arguments provided to the plot functions
 
     nexpr
-        The number of sub-expression forming an expression to be plotted. For
-        example:
+        The number of sub-expression forming an expression to be plotted.
+        For example:
         nexpr=1 for plot.
         nexpr=2 for plot_parametric: a curve is represented by a tuple of two
             elements.
@@ -362,15 +341,6 @@ def _split_vector(expr, ranges, fill_ranges=True):
     if isinstance(expr, Vector):
         N = list(_get_coord_systems(expr))[0]
         expr = expr.to_matrix(N)
-        # TODO: experimental_lambdify is not able to deal with base scalars.
-        # Need to replace them both in the vector as well in the ranges.
-        # Sympy's lambdify is able to deal with them. Once experimental_lambdify
-        # is removed, the following code shouldn't be necessary anymore.
-        bs = list(expr.atoms(BaseScalar))
-        bs = sorted(bs, key=str)
-        bs_dict = {b: Symbol(t) for b, t in zip(bs, ["x", "y", "z"])}
-        expr = expr.subs(bs_dict)
-        ranges = [r.subs(bs_dict) for r in ranges]
     elif not isinstance(expr, (DenseMatrix, list, tuple, Tuple)):
         raise TypeError(
             "The provided expression must be a symbolic vector, or a "
