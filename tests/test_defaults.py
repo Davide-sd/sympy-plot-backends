@@ -7,31 +7,40 @@ from sympy import symbols, sin
 from pytest import raises
 
 
-def test_cfg():
+def test_cfg_keys():
     assert isinstance(cfg, dict)
-    assert "backend_2D" in cfg.keys()
-    assert "backend_3D" in cfg.keys()
+    must_have_keys = ["backend_2D", "backend_3D", "matplotlib", "plotly",
+        "k3d", "bokeh", "complex"]
+    for k in must_have_keys:
+        assert k in cfg.keys()
 
-    assert "matplotlib" in cfg.keys()
-    assert "axis_center" in cfg["matplotlib"].keys()
-    assert "grid" in cfg["matplotlib"].keys()
+def test_cfg_matplotlib_keys():
+    matplotlib_keys = ["axis_center", "grid", "show_minor_grid"]
+    for k in matplotlib_keys:
+        assert k in cfg["matplotlib"].keys()
+    assert isinstance(cfg["matplotlib"]["grid"], bool)
+    assert isinstance(cfg["matplotlib"]["show_minor_grid"], bool)
 
-    assert "plotly" in cfg.keys()
+def test_cfg_plotly_keys():
     assert "theme" in cfg["plotly"].keys()
     assert isinstance(cfg["plotly"]["theme"], str)
 
-    assert "bokeh" in cfg.keys()
-    assert "theme" in cfg["bokeh"].keys()
+def test_cfg_bokeh_keys():
+    bokeh_keys = ["theme", "sizing_mode", "update_event", "show_minor_grid",
+        "minor_grid_line_alpha", "minor_grid_line_dash"]
+    for k in bokeh_keys:
+        assert k in cfg["bokeh"].keys()
     assert isinstance(cfg["bokeh"]["sizing_mode"], str)
     assert isinstance(cfg["bokeh"]["update_event"], bool)
+    assert isinstance(cfg["bokeh"]["show_minor_grid"], bool)
+    assert isinstance(cfg["bokeh"]["minor_grid_line_alpha"], (float, int))
+    assert isinstance(cfg["bokeh"]["minor_grid_line_dash"], (list, tuple))
 
-    assert "k3d" in cfg.keys()
-    assert "bg_color" in cfg["k3d"].keys()
-    assert "grid_color" in cfg["k3d"].keys()
-    assert "label_color" in cfg["k3d"].keys()
-    assert isinstance(cfg["k3d"]["bg_color"], int)
-    assert isinstance(cfg["k3d"]["grid_color"], int)
-    assert isinstance(cfg["k3d"]["label_color"], int)
+def test_cfg_k3d_keys():
+    k3d_keys = ["bg_color", "grid_color", "label_color"]
+    for k in k3d_keys:
+        assert k in cfg["k3d"].keys()
+        assert isinstance(cfg["k3d"][k], int)
 
 
 def test_set_defaults():

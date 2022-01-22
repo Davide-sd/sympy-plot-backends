@@ -337,10 +337,11 @@ class BokehBackend(Plot):
             tooltips=TOOLTIPS,
             match_aspect=True if self.aspect == "equal" else False,
         )
-        # NOTE: it would be nice to set minor grids. Unfortunately, the
-        # `p._fig.grid.minor_grid_line_alpha` value strongly depends on the
-        # theme. For the moment, don't set them.
         self._fig.grid.visible = self.grid
+        if cfg["bokeh"]["show_minor_grid"]:
+            self._fig.grid.minor_grid_line_alpha = cfg["bokeh"]["minor_grid_line_alpha"]
+            self._fig.grid.minor_grid_line_color = self._fig.grid.grid_line_color[0]
+            self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
         self._fig.on_event(bokeh.events.PanEnd, self._pan_update)
         self._process_series(self._series)
     

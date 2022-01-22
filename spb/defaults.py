@@ -28,6 +28,9 @@ def _hardcoded_defaults():
             "theme": "dark_minimal",
             "sizing_mode": "stretch_width",
             "update_event": True,
+            "show_minor_grid": True,
+            "minor_grid_line_alpha": 0.2,
+            "minor_grid_line_dash": [2, 2],
         },
         k3d={
             "bg_color": 3620427,
@@ -36,7 +39,8 @@ def _hardcoded_defaults():
         },
         matplotlib={
             "axis_center": None,  # "auto", "center"
-            "grid": True
+            "grid": True,
+            "show_minor_grid": True,
         },
         backend_2D="matplotlib",
         backend_3D="matplotlib",
@@ -71,9 +75,9 @@ def _load_settings():
 
     default_cfg = _hardcoded_defaults()
 
-    # Because the user can directly change the configuration file, we need to assure
-    # that all the necessary options are present (maybe, the user deleted something
-    # accidentally)
+    # Because the user can directly change the configuration file, we need
+    # to assure that all the necessary options are present (maybe, the user
+    # deleted something accidentally)
     cfg = merge({}, default_cfg, cfg)
     frame.f_globals["cfg"] = cfg
 

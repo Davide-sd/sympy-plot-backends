@@ -162,6 +162,7 @@ class MatplotlibBackend(Plot):
 
         if self.axis_center is None:
             self.axis_center = cfg["matplotlib"]["axis_center"]
+        self._show_minor_grid = kwargs.get("show_minor_grid", cfg["matplotlib"]["show_minor_grid"])
 
         self._handles = dict()
         self.process_series()
@@ -634,7 +635,8 @@ class MatplotlibBackend(Plot):
                     linestyle='-', color='0.85')
                 self.ax.grid(which='minor', axis='y', linewidth=0.25,
                     linestyle='--', color='0.80')
-                self.ax.minorticks_on()
+                if self._show_minor_grid:
+                    self.ax.minorticks_on()
         if self.legend:
             handles, _ = self.ax.get_legend_handles_labels()
             # Show the legend only if there are legend entries. For example,
