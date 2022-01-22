@@ -32,9 +32,10 @@ def _build_series(*args, interactive=False, **kwargs):
         "real": [lambda t: re(t), "Re(%s)"],
         "imag": [lambda t: im(t), "Im(%s)"],
         "abs": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
-        # TODO: use Arg instead of Abs in the label and modify the backends
-        # to deal with the case.
-        "absarg": [lambda t: t, "Abs(%s)"],
+        # NOTE: absarg is used to plot the absolute value colored by the
+        # argument. The colorbar indicates the argument, hence the following
+        # label is "Arg"
+        "absarg": [lambda t: t, "Arg(%s)"],
         "arg": [lambda t: arg(t), "Arg(%s)"],
     }
     # option to be used with lambdify with complex functions
@@ -218,7 +219,7 @@ def plot_real_imag(*args, **kwargs):
     """Plot the real part, the imaginary parts, the absolute value and the
     argument of a complex function. By default, only the real and imaginary
     parts will be plotted. Use keyword argument to be more specific.
-    By default, the aspect ratio of the plot is set to ``aspect="equal"``.
+    By default, the aspect ratio of the plot is set to `aspect="equal"`.
 
     Depending on the provided expression, this function will produce different
     types of plots:
@@ -230,15 +231,15 @@ def plot_real_imag(*args, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a single expression with a single range.
-        ``plot_real_imag(expr, range, **kwargs)``
+        `plot_real_imag(expr, range, **kwargs)`
     - Plotting a single expression with the default range (-10, 10).
-        ``plot_real_imag(expr, **kwargs)``
+        `plot_real_imag(expr, **kwargs)`
     - Plotting multiple expressions with a single range.
-        ``plot_real_imag(expr1, expr2, ..., range, **kwargs)``
+        `plot_real_imag(expr1, expr2, ..., range, **kwargs)`
     - Plotting multiple expressions with multiple ranges.
-        ``plot_real_imag((expr1, range1), (expr2, range2), ..., **kwargs)``
+        `plot_real_imag((expr1, range1), (expr2, range2), ..., **kwargs)`
     - Plotting multiple expressions with multiple ranges and custom labels.
-        ``plot_real_imag((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)``
+        `plot_real_imag((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)`
 
     Parameters
     ==========
@@ -249,14 +250,14 @@ def plot_real_imag(*args, **kwargs):
         range : 3-element tuple
             Denotes the range of the variables. For example:
 
-            * ``(z, -5, 5)``: plot a line over the reals from point ``-5`` to
-              ``5``
-            * ``(z, -5 + 2*I, 5 + 2*I)``: plot a line from complex point
-              ``(-5 + 2*I)`` to ``(5 + 2 * I)``. Note the same imaginary part
-              for the start/end point. Also note that we can specify the ranges
-              by using standard Python complex numbers, for example
-              ``(z, -5+2j, 5+2j)``.
-            * ``(z, -5 - 3*I, 5 + 3*I)``: surface or contour plot of the
+            * `(z, -5, 5)`: plot a line over the reals from point `-5` to
+              `5`
+            * `(z, -5 + 2*I, 5 + 2*I)`: plot a line from complex point
+              `(-5 + 2*I)` to `(5 + 2 * I)`. Note the same imaginary part
+              for the start/end point. Also note that we can specify the
+              ranges by using standard Python complex numbers, for example
+              `(z, -5+2j, 5+2j)`.
+            * `(z, -5 - 3*I, 5 + 3*I)`: surface or contour plot of the
               complex function over the specified domain.
 
         label : str, optional
@@ -416,7 +417,7 @@ def plot_real_imag(*args, **kwargs):
 
 def plot_complex(*args, **kwargs):
     """Plot the absolute value of a complex function colored by its argument.
-    By default, the aspect ratio of the plot is set to ``aspect="equal"``.
+    By default, the aspect ratio of the plot is set to `aspect="equal"`.
 
     Depending on the provided range, this function will produce different
     types of plots:
@@ -432,15 +433,15 @@ def plot_complex(*args, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a single expression with a single range.
-        ``plot_real_imag(expr, range, **kwargs)``
+        `plot_real_imag(expr, range, **kwargs)`
     - Plotting a single expression with the default range (-10, 10).
-        ``plot_real_imag(expr, **kwargs)``
+        `plot_real_imag(expr, **kwargs)`
     - Plotting multiple expressions with a single range.
-        ``plot_real_imag(expr1, expr2, ..., range, **kwargs)``
+        `plot_real_imag(expr1, expr2, ..., range, **kwargs)`
     - Plotting multiple expressions with multiple ranges.
-        ``plot_real_imag((expr1, range1), (expr2, range2), ..., **kwargs)``
+        `plot_real_imag((expr1, range1), (expr2, range2), ..., **kwargs)`
     - Plotting multiple expressions with multiple ranges and custom labels.
-        ``plot_real_imag((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)``
+        `plot_real_imag((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)`
         
     Parameters
     ==========
@@ -451,14 +452,14 @@ def plot_complex(*args, **kwargs):
         range : 3-element tuple
             Denotes the range of the variables. For example:
 
-            * ``(z, -5, 5)``: plot a line over the reals from point ``-5`` to
-              ``5``
-            * ``(z, -5 + 2*I, 5 + 2*I)``: plot a line from complex point
-              ``(-5 + 2*I)`` to ``(5 + 2 * I)``. Note the same imaginary part
-              for the start/end point. Also note that we can specify the ranges
-              by using standard Python complex numbers, for example
-              ``(z, -5+2j, 5+2j)``.
-            * ``(z, -5 - 3*I, 5 + 3*I)``: surface or contour plot of the
+            * `(z, -5, 5)`: plot a line over the reals from point `-5` to
+              `5`
+            * `(z, -5 + 2*I, 5 + 2*I)`: plot a line from complex point
+              `(-5 + 2*I)` to `(5 + 2 * I)`. Note the same imaginary part
+              for the start/end point. Also note that we can specify the
+              ranges by using standard Python complex numbers, for example
+              `(z, -5+2j, 5+2j)`.
+            * `(z, -5 - 3*I, 5 + 3*I)`: surface or contour plot of the
               complex function over the specified domain.
 
         label : str, optional
@@ -496,28 +497,28 @@ def plot_complex(*args, **kwargs):
         Default to False.
 
     coloring : str or callable
-        Choose between different domain coloring options. Default to ``"a"``.
+        Choose between different domain coloring options. Default to `"a"`.
         Refer to [#fn1]_ for more information.
 
-        - ``"a"``: standard domain coloring using HSV, showing the argument
+        - `"a"`: standard domain coloring using HSV, showing the argument
           of the complex function.
-        - ``"b"``: enhanced domain coloring using HSV, showing iso-modulus
+        - `"b"`: enhanced domain coloring using HSV, showing iso-modulus
           and is-phase lines.
-        - ``"c"``: enhanced domain coloring using HSV, showing iso-modulus
+        - `"c"`: enhanced domain coloring using HSV, showing iso-modulus
           lines.
-        - ``"d"``: enhanced domain coloring using HSV, showing iso-phase
+        - `"d"`: enhanced domain coloring using HSV, showing iso-phase
           lines.
-        - ``"e"``: alternating black and white stripes corresponding to
+        - `"e"`: alternating black and white stripes corresponding to
           modulus.
-        - ``"f"``: alternating black and white stripes corresponding to
+        - `"f"`: alternating black and white stripes corresponding to
           phase.
-        - ``"g"``: alternating black and white stripes corresponding to
+        - `"g"`: alternating black and white stripes corresponding to
           real part.
-        - ``"h"``: alternating black and white stripes corresponding to
+        - `"h"`: alternating black and white stripes corresponding to
           imaginary part.
-        - ``"i"``: cartesian chessboard on the complex points space. The
+        - `"i"`: cartesian chessboard on the complex points space. The
           result will hide zeros.
-        - ``"j"``: polar Chessboard on the complex points space. The result
+        - `"j"`: polar Chessboard on the complex points space. The result
           will show conformality.
 
         The user can also provide a callable, `f(w)`, where `w` is an
@@ -560,8 +561,8 @@ def plot_complex(*args, **kwargs):
        Plot object containing:
        [0]: absolute-argument line: cos(x) + I*sinh(x) for x over ((-2+0j), (2+0j))
 
-    Domain coloring plot. Note that it might be necessary to increase the number
-    of discretization points in order to get a smoother plot:
+    Domain coloring plot. Note that it might be necessary to increase the
+    number of discretization points in order to get a smoother plot:
 
     .. plot::
        :context: close-figs
@@ -572,7 +573,8 @@ def plot_complex(*args, **kwargs):
        Plot object containing:
        [0]: domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
-    3D plot of the absolute value of a complex function colored by its argument:
+    3D plot of the absolute value of a complex function colored by its
+    argument:
 
     .. plot::
        :context: close-figs
@@ -602,16 +604,16 @@ def plot_complex(*args, **kwargs):
 
 def plot_complex_list(*args, **kwargs):
     """Plot lists of complex points. By default, the aspect ratio of the plot
-    is set to ``aspect="equal"``.
+    is set to `aspect="equal"`.
 
     Typical usage examples are in the followings:
 
     - Plotting a single list of complex numbers.
-        ``plot_real_imag(l1, **kwargs)``
+        `plot_real_imag(l1, **kwargs)`
     - Plotting multiple lists of complex numbers.
-        ``plot_real_imag(l1, l2, **kwargs)``
+        `plot_real_imag(l1, l2, **kwargs)`
     - Plotting multiple lists of complex numbers each one with a custom label.
-        ``plot_real_imag((l1, label1), (l2, label2), **kwargs)``
+        `plot_real_imag((l1, label1), (l2, label2), **kwargs)`
 
 
     Parameters
@@ -685,9 +687,9 @@ def plot_complex_list(*args, **kwargs):
 
 
 def plot_complex_vector(*args, **kwargs):
-    """Plot the vector field ``[re(f), im(f)]`` for a complex function ``f``
+    """Plot the vector field `[re(f), im(f)]` for a complex function `f`
     over the specified complex domain. By default, the aspect ratio of the
-    plot is set to ``aspect="equal"``.
+    plot is set to `aspect="equal"`.
 
     Typical usage examples are in the followings:
 
@@ -713,9 +715,9 @@ def plot_complex_vector(*args, **kwargs):
 
         range : 3-element tuples
             Denotes the range of the variables. For example
-            ``(z, -5 - 3*I, 5 + 3*I)`. Note that we can specify the range
+            `(z, -5 - 3*I, 5 + 3*I)`. Note that we can specify the range
             by using standard Python complex numbers, for example
-            ``(z, -5-3j, 5+3j)``.
+            `(z, -5-3j, 5+3j)`.
 
         label : str, optional
             The name of the complex expression to be eventually shown on the
@@ -733,7 +735,7 @@ def plot_complex_vector(*args, **kwargs):
 
     n : int
         Set the same number of discretization points in all directions for
-        the quivers or streamlines. It overrides ``n1``, ``n2``.
+        the quivers or streamlines. It overrides `n1`, `n2`.
         Default to 25.
 
     nc : int
@@ -741,19 +743,19 @@ def plot_complex_vector(*args, **kwargs):
         Default to 100.
 
     quiver_kw : dict
-        A dictionary of keywords/values which is passed to the backend quivers-
-        plotting function to customize the appearance. Refer to the plotting
-        library (backend) manual for more informations.
+        A dictionary of keywords/values which is passed to the backend
+        quivers-plotting function to customize the appearance. Refer to the
+        plotting library (backend) manual for more informations.
 
     scalar : boolean, Expr, None or list/tuple of 2 elements
         Represents the scalar field to be plotted in the background of a 2D
         vector field plot. Can be:
 
-        - ``True``: plot the magnitude of the vector field. Only works when a
+        - `True`: plot the magnitude of the vector field. Only works when a
           single vector field is plotted.
-        - ``False``/``None``: do not plot any scalar field.
-        - ``Expr``: a symbolic expression representing the scalar field.
-        - ``list``/``tuple``: [scalar_expr, label], where the label will be
+        - `False`/`None`: do not plot any scalar field.
+        - `Expr`: a symbolic expression representing the scalar field.
+        - `list`/`tuple`: [scalar_expr, label], where the label will be
           shown on the colorbar.
         
         Remember: the scalar function must return real data.
@@ -761,10 +763,10 @@ def plot_complex_vector(*args, **kwargs):
         Default to True.
 
     show : boolean
-        The default value is set to ``True``. Set show to ``False`` and
+        The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
 
     streamlines : boolean
         Whether to plot the vector field using streamlines (True) or quivers

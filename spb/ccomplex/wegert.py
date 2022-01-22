@@ -211,26 +211,26 @@ def wegert(coloring, w, phaseres=20, N=256):
     ==========
 
     coloring : str
-        Default to ``"a"``. Possible options:
+        Default to `"a"`. Possible options:
 
-        - ``"a"``: standard domain coloring using HSV.
-        - ``"b"``: enhanced domain coloring using HSV, showing iso-modulus
+        - `"a"`: standard domain coloring using HSV.
+        - `"b"`: enhanced domain coloring using HSV, showing iso-modulus
           and is-phase lines.
-        - ``"c"``: enhanced domain coloring using HSV, showing iso-modulus
+        - `"c"`: enhanced domain coloring using HSV, showing iso-modulus
           lines.
-        - ``"d"``: enhanced domain coloring using HSV, showing iso-phase
+        - `"d"`: enhanced domain coloring using HSV, showing iso-phase
           lines.
-        - ``"e"``: alternating black and white stripes corresponding to
+        - `"e"`: alternating black and white stripes corresponding to
           modulus.
-        - ``"f"``: alternating black and white stripes corresponding to
+        - `"f"`: alternating black and white stripes corresponding to
           phase.
-        - ``"g"``: alternating black and white stripes corresponding to
+        - `"g"`: alternating black and white stripes corresponding to
           real part.
-        - ``"h"``: alternating black and white stripes corresponding to
+        - `"h"`: alternating black and white stripes corresponding to
           imaginary part.
-        - ``"i"``: cartesian chessboard on the complex points space. The
+        - `"i"`: cartesian chessboard on the complex points space. The
           result will hide zeros.
-        - ``"j"``: polar Chessboard on the complex points space. The result
+        - `"j"`: polar Chessboard on the complex points space. The result
           will show conformality.
 
     w : ndarray [n x m]
@@ -251,7 +251,7 @@ def wegert(coloring, w, phaseres=20, N=256):
 
     colorscale : np.ndarray [N x 3] or None
         RGB colors to be used in the colorscale. If the function computes
-        black and white colors, ``None`` will be returned.
+        black and white colors, `None` will be returned.
     """
     mapping = {
         "a": [domain_coloring, True],

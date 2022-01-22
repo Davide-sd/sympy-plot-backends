@@ -1058,7 +1058,7 @@ def test_plot_complex_1d():
     ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], matplotlib.collections.LineCollection)
-    assert f.axes[1].get_ylabel() == "Abs(sqrt(x))"
+    assert f.axes[1].get_ylabel() == "Arg(sqrt(x))"
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
 
@@ -1067,9 +1067,9 @@ def test_plot_complex_1d():
     f = p.fig
     assert len(f.data) == 1
     assert isinstance(f.data[0], go.Scatter)
-    assert f.data[0]["name"] == "Abs(sqrt(x))"
+    assert f.data[0]["name"] == "Arg(sqrt(x))"
     assert f.data[0]["line"]["color"] == "red"
-    assert p.fig.data[0]["marker"]["colorbar"]["title"]["text"] == "Abs(sqrt(x))"
+    assert p.fig.data[0]["marker"]["colorbar"]["title"]["text"] == "Arg(sqrt(x))"
 
     p = _plot_complex(BB, line_kw=dict(line_color="red"))
     assert len(p.series) == 1
@@ -1079,7 +1079,7 @@ def test_plot_complex_1d():
     assert f.renderers[0].glyph.line_color == "red"
     # 1 colorbar
     assert len(f.right) == 1
-    assert f.right[0].title == "Abs(sqrt(x))"
+    assert f.right[0].title == "Arg(sqrt(x))"
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
