@@ -254,11 +254,11 @@ class BokehBackend(Plot):
     theme : str, optional
         Set the theme. Default to `"dark_minimal"`. Find more Bokeh themes
         at [#fn2]_ .
-    
+
     update_event : bool, optional
         If True, the backend will update the data series over the visibile
         range whenever a pan-event is triggered. Default to True.
-        
+
 
     References
     ==========
@@ -344,7 +344,7 @@ class BokehBackend(Plot):
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
         self._fig.on_event(bokeh.events.PanEnd, self._pan_update)
         self._process_series(self._series)
-    
+
     @staticmethod
     def _do_sum_kwargs(p1, p2):
         kw = p1._copy_kwargs()
@@ -508,7 +508,7 @@ class BokehBackend(Plot):
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
                     + "Bokeh only supports 2D plots."
                 )
-            
+
             if self.update_rendering_kw and (kw is not None):
                 s.rendering_kw = kw
 
@@ -661,7 +661,7 @@ class BokehBackend(Plot):
 
         Notes
         =====
-        
+
         1. In order to export static pictures, the user also need to install
            the packages listed in [#fn5]_.
         2. When exporting a fully portable html file, by default the necessary

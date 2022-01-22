@@ -68,7 +68,7 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
     def func(expr, _set, c, from_union=False):
         if isinstance(_set, Interval):
             start, end = _set.args[0], _set.args[1]
-            
+
             # arbitrary small offset
             offset = 1e-06
             # offset must be small even if the interval is small
@@ -177,7 +177,7 @@ def _process_summations(sum_bound, *args):
         lambda t: isinstance(t, Sum),
         lambda t: any((not a[1].is_finite) or (not a[2].is_finite) for i, a in enumerate(t.args) if i > 0)
     ])
-    
+
     for t in list(expr.find(w)):
         sums_args = list(t.args)
         for i, a in enumerate(sums_args):
@@ -247,7 +247,7 @@ def plot(*args, show=True, **kwargs):
 
         Set adaptive to `False` and specify `n` if uniform sampling is
         required.
-    
+
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
@@ -272,16 +272,16 @@ def plot(*args, show=True, **kwargs):
         An arbitrary small value used by the `detect_poles` algorithm.
         Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
-    
+
     is_point : boolean, optional
         Default to False, which will render a line connecting all the points.
         If True, a scatter plot will be generated.
-    
+
     is_filled : boolean, optional
         Default to True, which will render empty circular markers. It only
         works if `is_point=True`.
         If False, filled circular markers will be rendered.
-    
+
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -320,7 +320,7 @@ def plot(*args, show=True, **kwargs):
     steps : boolean, optional
         Default to `False`. If `True`, connects consecutive points with steps
         rather than straight segments.
-    
+
     sum_bound : int, optional
         When plotting sums, the expression will be pre-processed in order
         to replace lower/upper bounds set to +/- infinity with a numerical
@@ -417,7 +417,7 @@ def plot(*args, show=True, **kwargs):
 
         >>> plot(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
         ...     polar=True, aspect="equal")
-    
+
     References
     ==========
 
@@ -493,7 +493,7 @@ def plot_parametric(*args, show=True, **kwargs):
             However, if the arguments are specified as
             `(expr_x, expr_y, range), ...`, you must specify the ranges
             for each expressions manually.
-        
+
         `label` : str, optional
             The label to be shown in the legend. If not provided, the string
             representation of `expr_x` and `expr_y` will be used.
@@ -505,7 +505,7 @@ def plot_parametric(*args, show=True, **kwargs):
 
         Set adaptive to `False` and specify `n` if uniform sampling is
         required.
-    
+
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
@@ -520,7 +520,7 @@ def plot_parametric(*args, show=True, **kwargs):
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with `MatplotlibBackend`.
-    
+
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -535,7 +535,7 @@ def plot_parametric(*args, show=True, **kwargs):
         sampled at `n` number of points. Default value to 1000.
         If the `adaptive` flag is set to `True`, this parameter will be
         ignored.
-    
+
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
@@ -633,7 +633,7 @@ def plot_parametric(*args, show=True, **kwargs):
        Plot object containing:
        [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
        [1]: parametric cartesian line: (3*cos(2*u), 5*sin(4*u)) for u over (0.0, 3.141592653589793)
-    
+
     References
     ==========
 
@@ -706,7 +706,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
 
         Set adaptive to `False` and specify `n` if uniform sampling is
         required.
-    
+
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
@@ -717,7 +717,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
           `lambda l: l.loss() < number`
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn1]_ for more information.
-    
+
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -878,7 +878,7 @@ def plot3d(*args, show=True, **kwargs):
         Set adaptive to `True` to use the adaptive algorithm implemented in
         [#fn1]_ to create smooth plots. Use `adaptive_goal` and `loss_fn`
         to further customize the output.
-    
+
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
@@ -889,7 +889,7 @@ def plot3d(*args, show=True, **kwargs):
           `lambda l: l.loss() < number`
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn1]_ for more information.
-    
+
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -1413,8 +1413,8 @@ def plot_implicit(*args, show=True, **kwargs):
 
 
 def plot_polar(*args, **kwargs):
-    """The following function creates a 2D polar plot. 
-    
+    """The following function creates a 2D polar plot.
+
     This function signature is identical to `plot`: refer to its
     documentation for a list of available argument and keyword arguments.
 
@@ -1657,7 +1657,7 @@ def plot_list(*args, show=True, **kwargs):
     args :
         x : list or tuple
             x-coordinates
-        
+
         y : list or tuple
             y-coordinates
 
@@ -1667,11 +1667,11 @@ def plot_list(*args, show=True, **kwargs):
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with MatplotlibBackend.
-    
+
     is_point : boolean, optional
         Default to False, which will render a line connecting all the points.
         If True, a scatter plot will be generated.
-    
+
     is_filled : boolean, optional
         Default to True, which will render empty circular markers. It only
         works if `is_point=True`.
@@ -1729,7 +1729,7 @@ def plot_list(*args, show=True, **kwargs):
        xx = [t / 100 * 6 - 3 for t in list(range(101))]
        yy = [cos(x).evalf(subs={x: t}) for t in xx]
        plot_list(xx, yy)
-    
+
     Scatter plot of the coordinates of multiple functions:
 
     .. plot::
@@ -1763,7 +1763,7 @@ def plot_list(*args, show=True, **kwargs):
                     "Received: {}".format(type(a[-1]))
                 )
             series.append(List2DSeries(*a, **kwargs))
-    
+
     kwargs.setdefault("backend", TWO_D_B)
     p = Plot(*series, **kwargs)
     if show:
@@ -1811,7 +1811,7 @@ def plot_piecewise(*args, **kwargs):
 
         Set adaptive to `False` and specify `n` if uniform sampling is
         required.
-    
+
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
@@ -1836,7 +1836,7 @@ def plot_piecewise(*args, **kwargs):
         An arbitrary small value used by the `detect_poles` algorithm.
         Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
-    
+
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -1955,7 +1955,7 @@ def plot_piecewise(*args, **kwargs):
         class One_Color_Backend(Backend):
             colorloop = [Backend.colorloop[i]]
         return One_Color_Backend
-    
+
     args = _plot_sympify(args)
     free = set()
     for a in args:
@@ -1966,11 +1966,11 @@ def plot_piecewise(*args, **kwargs):
                     "The same variable should be used in all "
                     "univariate expressions being plotted."
                 )
-    
+
     show = kwargs.get("show", True)
     kwargs["process_piecewise"] = True
     kwargs["show"] = False
-    
+
     x = free.pop() if free else Symbol("x")
     kwargs.setdefault("xlabel", x.name)
     kwargs.setdefault("ylabel", "f(%s)" % x.name)
@@ -1986,7 +1986,7 @@ def plot_piecewise(*args, **kwargs):
         B = create_one_color_backend(i)
         p = B(*series, **kwargs)
         plots.append(p)
-    
+
     p = plots[0]
     # reapply original color loop
     p.colorloop = Backend.colorloop

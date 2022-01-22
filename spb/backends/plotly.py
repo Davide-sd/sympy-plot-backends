@@ -62,7 +62,7 @@ class PlotlyBackend(Plot):
     use_cm : boolean, optional
         If True, apply a color map to the meshes/surface. If False, solid
         colors will be used instead. Default to True.
-    
+
     References
     ==========
     .. [#fn1] https://plotly.com/python/contour-plots/
@@ -140,7 +140,7 @@ class PlotlyBackend(Plot):
         # show=False
         self._process_series(self._series)
         self._update_layout()
-    
+
     @staticmethod
     def _do_sum_kwargs(p1, p2):
         kw = p1._copy_kwargs()
@@ -332,7 +332,7 @@ class PlotlyBackend(Plot):
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
                     # NOTE: currently, it is not possible to create
-                    # quivers/streamlines with a color scale: 
+                    # quivers/streamlines with a color scale:
                     # https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
                     if s.is_streamlines:
                         skw = dict(
@@ -411,7 +411,7 @@ class PlotlyBackend(Plot):
                     x, y, mag, angle, img, colors = s.get_data()
                     xmin, xmax = x.min(), x.max()
                     ymin, ymax = y.min(), y.max()
-                    
+
                     self._fig.add_trace(
                         go.Image(
                             x0=xmin,
@@ -536,7 +536,7 @@ class PlotlyBackend(Plot):
                 raise NotImplementedError(
                     "{} is not supported by {}".format(type(s), type(self).__name__)
                 )
-            
+
             if self.update_rendering_kw and (kw is not None):
                 s.rendering_kw = kw
 

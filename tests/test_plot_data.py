@@ -213,7 +213,7 @@ def test_auto_build_series_complex_interactive():
     assert isinstance(s, ComplexDomainColoringInteractiveSeries)
     assert s.is_3Dsurface
 
-    
+
 
 def test_mapping_build_series():
     # verify that the keyword `pt` produces the expected result
@@ -340,7 +340,7 @@ def test_auto_build_series_complex():
 
 
 def test_mapping_build_series_complex_interactive():
-    # verify that the keyword `pt` produces the expected interactive 
+    # verify that the keyword `pt` produces the expected interactive
     # complex-related data series
 
     x, u = symbols("x, u")

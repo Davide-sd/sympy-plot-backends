@@ -49,7 +49,7 @@ def _create_panel_figure(mapping, panel_kw):
         'panel',
         min_module_version='0.12.0',
         catch=(RuntimeError,))
-    
+
     pn.extension("plotly")
 
     fig = pn.GridSpec(**panel_kw)
@@ -85,13 +85,13 @@ def plotgrid(*args, **kwargs):
         associated plot.
         This represents the second mode of operation, as it allows to create
         more complicated layouts.
-    
+
     panel_kw : dict (optional)
         A dictionary of keyword arguments to be passed to panel's `GridSpec`
         for further customization. Default to
         `dict(sizing_mode="stretch_width")`. Refer to [#fn1]_ for more
         information.
-    
+
     show : boolean (optional)
         It applies only to Matplotlib figures. Default to True.
 
@@ -154,10 +154,10 @@ def plotgrid(*args, **kwargs):
            gs[0:2, 1:]: p5,
        }
        plotgrid(gs=mapping)
-    
+
     References
     ==========
-    
+
     .. [#fn1] `adaptive module <https://panel.holoviz.org/reference/layouts/GridSpec.html`_.
 
     """
@@ -192,7 +192,7 @@ def plotgrid(*args, **kwargs):
         ### Second mode of operation
         if not isinstance(gs, dict):
             raise TypeError("`gs` must be a dictionary.")
-        
+
         from matplotlib.gridspec import SubplotSpec
         if not isinstance(list(gs.keys())[0], SubplotSpec):
             raise ValueError(

@@ -68,7 +68,7 @@ unset_show()
 # objects, consider adding tests to test_functions.py.
 # If your issue il related to the preprocessing and generation of a
 # Vector series or a Complex Series, consider adding tests to
-# test_build_series. 
+# test_build_series.
 #
 
 class UnsupportedSeries(BaseSeries):
@@ -167,7 +167,7 @@ def test_custom_colorloop():
     _plot = lambda B: plot(
         sin(x), cos(x), sin(x / 2), cos(x / 2), 2 * sin(x), 2 * cos(x),
         backend=B, show=False)
-    
+
     assert len(MBchild.colorloop) != len(MB.colorloop)
     _p1 = _plot(MB)
     _p2 = _plot(MBchild)
@@ -232,7 +232,7 @@ def test_custom_colorloop():
 
 def test_bokeh_tools():
     # verify tools and tooltips on empty Bokeh figure (populated figure
-    # might have different tooltips, tested later on) 
+    # might have different tooltips, tested later on)
 
     f = plot(backend=BB, show=False).fig
     assert len(f.toolbar.tools) == 6
@@ -247,7 +247,7 @@ def test_bokeh_tools():
 
 def test_MatplotlibBackend():
     # verify a few important things to assure the correct behaviour
-    
+
     # `_handle` is needed in order to correctly update the data with iplot
     x, y = symbols("x, y")
     p = plot3d(cos(x**2 + y**2), backend=MB, show=False, n1=10, n2=10)
@@ -328,7 +328,7 @@ def test_plot_sum():
     # summing different types of plots: the result is consistent with the
     # original visualization. In particular, if no `line_kw` is given to `p2`
     # then the backend will use automatic coloring to differentiate the
-    # series. 
+    # series.
     p1 = plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
         backend=MB, scalar=True, show=False)
     p2 = plot(sin(x), (x, -3, 3), backend=MB, show=False)
@@ -1191,9 +1191,9 @@ def test_plot_list_is_filled_false():
     # verify that the backends produce the expected results when
     # `plot_list()` is called with `is_filled=False`
 
-    _plot_list = lambda B: plot_list([1, 2, 3], [1, 2, 3], 
+    _plot_list = lambda B: plot_list([1, 2, 3], [1, 2, 3],
         backend=B, is_point=True, is_filled=False, show=False)
-        
+
     p = _plot_list(MB)
     f = p.fig
     ax = f.axes[0]
@@ -1220,7 +1220,7 @@ def test_plot_list_is_filled_true():
     # verify that the backends produce the expected results when
     # `plot_list()` is called with `is_filled=True`
 
-    _plot_list = lambda B: plot_list([1, 2, 3], [1, 2, 3], 
+    _plot_list = lambda B: plot_list([1, 2, 3], [1, 2, 3],
         backend=B, is_point=True, is_filled=True, show=False)
 
     p = _plot_list(MB)
@@ -1492,12 +1492,12 @@ def test_aspect_ratio_2d_issue_11764():
     # NOTE: read the backend docs to understand which options are available.
     x = symbols("x")
 
-    p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi), 
+    p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
         show=False, backend=MB)
     assert p.aspect == "auto"
     assert p.fig.axes[0].get_aspect() == "auto"
     p.close()
-    
+
     p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
         aspect=(1, 1), show=False, backend=MB)
     assert p.aspect == (1, 1)
@@ -1510,22 +1510,22 @@ def test_aspect_ratio_2d_issue_11764():
     assert p.fig.axes[0].get_aspect() == 1
     p.close()
 
-    p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi), 
+    p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
         show=False, backend=PB)
     assert p.aspect == "auto"
     assert p.fig.layout.yaxis.scaleanchor is None
 
-    p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi), 
+    p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
         aspect="equal", show=False, backend=PB)
     assert p.aspect == "equal"
     assert p.fig.layout.yaxis.scaleanchor == "x"
 
-    p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi), 
+    p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
         show=False, backend=BB)
     assert p.aspect == "auto"
     assert not p.fig.match_aspect
 
-    p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi), 
+    p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
         aspect="equal", show=False, backend=BB)
     assert p.aspect == "equal"
     assert p.fig.match_aspect
@@ -1546,7 +1546,7 @@ def test_aspect_ratio_3d():
     raises(NotImplementedError,
         lambda: plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
             n1=20, n2=20, backend=MB, show=False, aspect=(1, 1)))
-    
+
     p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
         n1=20, n2=20, backend=PB, show=False)
     assert p.aspect == "auto"
@@ -1595,7 +1595,7 @@ def test_plot_scale_lin_log():
     # NOTE: none of the 3D libraries currently support log scale.
 
     x, y = symbols("x, y")
-    
+
     p = plot(log(x), backend=MB, xscale="linear", yscale="linear", show=False)
     assert p.fig.axes[0].get_xscale() == "linear"
     assert p.fig.axes[0].get_yscale() == "linear"

@@ -105,7 +105,7 @@ class K3DBackend(Plot):
             )
         self.plot_shown = False
         self._process_series(self._series)
-    
+
     @staticmethod
     def _do_sum_kwargs(p1, p2):
         kw = p1._copy_kwargs()
@@ -325,7 +325,7 @@ class K3DBackend(Plot):
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
                     + "K3D-Jupyter only supports 3D plots."
                 )
-            
+
             if self.update_rendering_kw and (kw is not None):
                 s.rendering_kw = kw
 

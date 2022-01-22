@@ -306,7 +306,7 @@ def test_interactiveseries():
         else:
             assert not s.is_2Dvector
             assert s.is_3Dvector
-        
+
         # verify that the backend is able to run the `_update_interactive`
         # method.
         new_params = {k: v[0] for k, v in params.items()}
@@ -459,7 +459,7 @@ def test_iplot_sum_1():
         is_point=True, is_filled=True,
         line_kw=dict(marker="^"), show=False)
     p = p1 + p2 + p3
-    
+
     assert isinstance(p, InteractivePlot)
     assert isinstance(p.backend, MB)
     assert p.backend.title == "title 1"

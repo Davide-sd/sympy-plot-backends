@@ -3,7 +3,7 @@ from spb.backends.base_backend import Plot
 from spb.backends.utils import compute_streamtubes
 from sympy.external import import_module
 import itertools
-        
+
 matplotlib = import_module(
     'matplotlib',
     import_kwargs={'fromlist':['pyplot', 'cm', 'collections', 'colors']},
@@ -68,7 +68,7 @@ class MatplotlibBackend(Plot):
         * `"equal"`: sets equal spacing on the axis of a 2D plot.
         * tuple containing 2 float numbers, from which the aspect ratio is
           computed.
-    
+
     axis_center : (float, float) or str or None, optional
         Set the location of the intersection between the horizontal and
         vertical axis in a 2D plot. It can be:
@@ -116,7 +116,7 @@ class MatplotlibBackend(Plot):
     use_cm : boolean, optional
         If True, apply a color map to the mesh/surface or parametric lines.
         If False, solid colors will be used instead. Default to True.
-    
+
 
     References
     ==========
@@ -262,9 +262,9 @@ class MatplotlibBackend(Plot):
 
         Parameters
         ==========
-        
+
         c : collection
-        
+
         label : str
 
         override : boolean
@@ -581,7 +581,7 @@ class MatplotlibBackend(Plot):
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
                 )
-            
+
             if self.update_rendering_kw and (kw is not None):
                 s.rendering_kw = kw
 

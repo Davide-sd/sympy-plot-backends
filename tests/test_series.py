@@ -818,7 +818,7 @@ def test_only_integers():
     xx, yy, uu, vv = s.get_data()
     assert xx.shape == yy.shape == uu.shape == vv.shape == (9, 7)
     assert xx[0, 0] == -3 and xx[-1, -1] == 3
-    assert yy[0, 0] == -4 and yy[-1, -1] == 4 
+    assert yy[0, 0] == -4 and yy[-1, -1] == 4
 
     # only_integers also works with Interactive series
     s = LineInteractiveSeries([sin(x * y)], [(x, -5.5, 4.5)], "",
@@ -854,7 +854,7 @@ def test_only_integers():
     xx, yy, uu, vv = s.get_data()
     assert xx.shape == yy.shape == uu.shape == vv.shape == (9, 7)
     assert xx[0, 0] == -3 and xx[-1, -1] == 3
-    assert yy[0, 0] == -4 and yy[-1, -1] == 4 
+    assert yy[0, 0] == -4 and yy[-1, -1] == 4
 
 
 def test_is_point_is_filled():
@@ -862,7 +862,7 @@ def test_is_point_is_filled():
     # they receive the correct values
 
     x, u = symbols("x, u")
-    
+
     s = LineOver1DRangeSeries(cos(x), (x, -5, 5), "",
         is_point=False, is_filled=True)
     assert (not s.is_point) and s.is_filled
@@ -1386,7 +1386,7 @@ def test_sums():
         adaptive=True)
     raises(TypeError, lambda: s.get_data())
 
-    
+
 def test_absargline():
     # verify that AbsArgLineSeries produces the correct results
     x, u = symbols("x, u")

@@ -321,7 +321,7 @@ def test_build_complex_surface_series():
     # when threed=False, there are no 3D surface series, but contours.
     assert all(not t.is_3Dsurface for t in s)
     assert all(s[i].is_contour for i in range(1, len(s)))
-    
+
     # multiple 3D plots (surfaces) of a complex function over a complex range
     s = bcs(sin(z), (z, -5-5j, 5+5j), absarg=True, real=True, imag=True,
         abs=True, arg=True, threed=True, interactive=False)

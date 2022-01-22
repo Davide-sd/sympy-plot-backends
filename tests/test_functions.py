@@ -38,7 +38,7 @@ unset_show()
 # particular data series, consider adding tests to test_series.py.
 # If your issue il related to the preprocessing and generation of a
 # Vector series or a Complex Series, consider adding tests to
-# test_build_series. 
+# test_build_series.
 # If your issue is related to a particular keyword affecting a backend
 # behaviour, consider adding tests to test_backends.py
 #
@@ -46,7 +46,7 @@ unset_show()
 
 def test_plot_list():
     # verify that plot_list creates the correct data series
-    
+
     xx1 = np.linspace(-3, 3)
     yy1 = np.cos(xx1)
     xx2 = np.linspace(-5, 5)

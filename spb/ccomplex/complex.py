@@ -17,7 +17,7 @@ from spb.utils import _plot_sympify, _check_arguments, _is_range
 from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
 
-# NOTE: 
+# NOTE:
 # * `abs` refers to the absolute value;
 # * `arg` refers to the argument;
 # * `absarg` refers to the absolute value and argument, which will be used to
@@ -224,7 +224,7 @@ def plot_real_imag(*args, **kwargs):
     Depending on the provided expression, this function will produce different
     types of plots:
 
-    1. line plot over the reals. 
+    1. line plot over the reals.
     2. surface plot over the complex plane if `threed=True`.
     3. contour plot over the complex plane if `threed=False`.
 
@@ -306,7 +306,7 @@ def plot_real_imag(*args, **kwargs):
     n : int, optional
         Set the same number of discretization points in all directions to be
         used when `adaptive=False`.
-    
+
     real : boolean, optional
         If True, plot the real part of the complex function. Default to True.
 
@@ -322,8 +322,8 @@ def plot_real_imag(*args, **kwargs):
         If False, surfaces will be rendered with a solid color.
         If True, a color map highlighting the elevation will be used.
         Default to True.
-    
-    
+
+
     Examples
     ========
 
@@ -359,7 +359,7 @@ def plot_real_imag(*args, **kwargs):
        >>> plot_real_imag(sqrt(x), (x, -3, 3), imag=False)
        Plot object containing:
        [0]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for x over (-3.0, 3.0)
-    
+
     Plot only the imaginary part:
 
     .. plot::
@@ -370,7 +370,7 @@ def plot_real_imag(*args, **kwargs):
        >>> plot_real_imag(sqrt(x), (x, -3, 3), real=False)
        Plot object containing:
        [0]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for x over (-3.0, 3.0)
-    
+
     Plot only the absolute value and argument:
 
     .. plot::
@@ -383,7 +383,7 @@ def plot_real_imag(*args, **kwargs):
        [0]: cartesian line: sqrt(sqrt(re(x)**2 + im(x)**2)*sin(atan2(im(x), re(x))/2)**2 + sqrt(re(x)**2 + im(x)**2)*cos(atan2(im(x), re(x))/2)**2) for x over (-3.0, 3.0)
        [1]: cartesian line: arg(sqrt(x)) for x over (-3.0, 3.0)
 
-    3D plot of the real and imaginary part of a function over a complex range: 
+    3D plot of the real and imaginary part of a function over a complex range:
 
     .. plot::
        :context: close-figs
@@ -394,8 +394,8 @@ def plot_real_imag(*args, **kwargs):
        Plot object containing:
        [0]: cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
        [1]: cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
-    
-    3D plot of the absolute value of a function over a complex range: 
+
+    3D plot of the absolute value of a function over a complex range:
 
     .. plot::
        :context: close-figs
@@ -422,8 +422,8 @@ def plot_complex(*args, **kwargs):
     Depending on the provided range, this function will produce different
     types of plots:
 
-    1. Line plot over the reals. 
-    2. Image plot over the complex plane if `threed=False`. This is also 
+    1. Line plot over the reals.
+    2. Image plot over the complex plane if `threed=False`. This is also
        known as Domain Coloring. Use the `coloring` keyword argument to
        select a different color scheme.
     3. If `threed=True`, plot a 3D surface of the absolute value over the
@@ -442,7 +442,7 @@ def plot_complex(*args, **kwargs):
         `plot_real_imag((expr1, range1), (expr2, range2), ..., **kwargs)`
     - Plotting multiple expressions with multiple ranges and custom labels.
         `plot_real_imag((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)`
-        
+
     Parameters
     ==========
     args :
@@ -466,7 +466,7 @@ def plot_complex(*args, **kwargs):
             The name of the complex function to be eventually shown on the
             legend. If none is provided, the string representation of the
             function will be used.
-    
+
     adaptive : boolean, optional
         Attempt to create line plots by using an adaptive algorithm.
         Image and surface plots do not use an adaptive algorithm.
@@ -675,7 +675,7 @@ def plot_complex_list(*args, **kwargs):
        Plot object containing:
        [0]: complex points (0.0, 0.0666666666666667*exp(0.133333333333333*I*pi), 0.133333333333333*exp(0.266666666666667*I*pi), 0.2*exp(0.4*I*pi), 0.266666666666667*exp(0.533333333333333*I*pi), 0.333333333333333*exp(0.666666666666667*I*pi), 0.4*exp(0.8*I*pi), 0.466666666666667*exp(0.933333333333333*I*pi), 0.533333333333333*exp(1.06666666666667*I*pi), 0.6*exp(1.2*I*pi), 0.666666666666667*exp(1.33333333333333*I*pi), 0.733333333333333*exp(1.46666666666667*I*pi), 0.8*exp(1.6*I*pi), 0.866666666666667*exp(1.73333333333333*I*pi), 0.933333333333333*exp(1.86666666666667*I*pi))
        [1]: complex points (0, 0.133333333333333*exp(0.133333333333333*I*pi), 0.266666666666667*exp(0.266666666666667*I*pi), 0.4*exp(0.4*I*pi), 0.533333333333333*exp(0.533333333333333*I*pi), 0.666666666666667*exp(0.666666666666667*I*pi), 0.8*exp(0.8*I*pi), 0.933333333333333*exp(0.933333333333333*I*pi), 1.06666666666667*exp(1.06666666666667*I*pi), 1.2*exp(1.2*I*pi), 1.33333333333333*exp(1.33333333333333*I*pi), 1.46666666666667*exp(1.46666666666667*I*pi), 1.6*exp(1.6*I*pi), 1.73333333333333*exp(1.73333333333333*I*pi), 1.86666666666667*exp(1.86666666666667*I*pi))
-    
+
     """
     kwargs["absarg"] = False
     kwargs["abs"] = False
@@ -757,7 +757,7 @@ def plot_complex_vector(*args, **kwargs):
         - `Expr`: a symbolic expression representing the scalar field.
         - `list`/`tuple`: [scalar_expr, label], where the label will be
           shown on the colorbar.
-        
+
         Remember: the scalar function must return real data.
 
         Default to True.
@@ -776,7 +776,7 @@ def plot_complex_vector(*args, **kwargs):
         A dictionary of keywords/values which is passed to the backend
         streamlines-plotting function to customize the appearance. Refer to
         the Notes section to learn more.
-    
+
 
     Examples
     ========
@@ -802,7 +802,7 @@ def plot_complex_vector(*args, **kwargs):
        Plot object containing:
        [0]: contour: sqrt(((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2)**2 + 4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2) for _x over (-5.0, 5.0) and _y over (-5.0, 5.0)
        [1]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
-    
+
     Only quiver plot.
 
     .. plot::
@@ -813,7 +813,7 @@ def plot_complex_vector(*args, **kwargs):
        >>> plot_complex_vector(z**2, (z, -5 - 5j, 5 + 5j), scalar=False)
        Plot object containing:
        [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
-    
+
     Only streamlines plot.
 
     .. plot::
@@ -824,7 +824,7 @@ def plot_complex_vector(*args, **kwargs):
        >>> plot_complex_vector(z**2, (z, -5 - 5j, 5 + 5j), scalar=False, streamlines=True)
        Plot object containing:
        [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
-    
+
     Quivers plot for multiple complex expressions:
 
     .. plot::
@@ -875,7 +875,7 @@ def plot_complex_vector(*args, **kwargs):
         r2 = (y, s1.start.imag, s1.end.imag)
         label = get_label(i)
         new_args.append(((expr1, expr2), r1, r2, label))
-    
+
     # substitute the complex variable in the scalar field
     scalar = kwargs.get("scalar", None)
     if scalar is not None:
@@ -885,8 +885,7 @@ def plot_complex_vector(*args, **kwargs):
             scalar = list(scalar)
             scalar[0] = scalar[0].subs({fs: x + I * y})
         kwargs["scalar"] = scalar
-    
+
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     return plot_vector(*new_args, **kwargs)
-

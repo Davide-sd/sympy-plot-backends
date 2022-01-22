@@ -132,7 +132,7 @@ class DynamicParam(param.Parameterized):
             min_module_version='2.3.0',
             catch=(RuntimeError,))
         TickFormatter = bokeh.models.formatters.TickFormatter
-            
+
         # remove the previous class attributes added by the previous instances
         cls_name = type(self).__name__
         setattr(type(self), "_" + cls_name + "__params", dict())
@@ -398,12 +398,12 @@ class InteractivePlot(DynamicParam, PanelLayout):
     def fig(self):
         """Return the plot object"""
         return self._backend.fig
-    
+
     @property
     def backend(self):
         """Return the backend"""
         return self._backend
-    
+
     def save(self, *args, **kwargs):
         """Save the current figure.
         This is a wrapper to the backend's `save` function. Refer to the
@@ -411,7 +411,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         arguments.
         """
         self._backend.save(*args, **kwargs)
-    
+
     def __add__(self, other):
         return self._do_sum(other)
 
@@ -432,13 +432,13 @@ class InteractivePlot(DynamicParam, PanelLayout):
                 "Both sides of the `+` operator must be instances of the "
                 "InteractivePlot or Plot class.\n"
                 "Received: {} + {}".format(type(self), type(other)))
-        
+
         series = self._backend.series
         if isinstance(other, Plot):
             series.extend(other.series)
         else:
             series.extend(other._backend.series)
-        
+
         backend_kw = self._backend._copy_kwargs()
         panel_kw = {
             "layout": self._layout,
@@ -772,7 +772,7 @@ def iplot(*args, show=True, **kwargs):
 
        t = iplot(
            (r1, (t, 0, 2*pi)),
-           params = { 
+           params = {
                p1: (0.035, -0.035, 0.035, 50, formatter),
                p2: (0.005, -0.02, 0.02, 50, formatter),
                r: (2, 2, 5, 3),
@@ -802,7 +802,7 @@ def iplot(*args, show=True, **kwargs):
        value shown by a slider. This class is exposed by Bokeh, but can be
        used by `iplot` with any backend. Refer to [#fn1]_ for more
        information about tick formatting.
-    
+
     3. The duality of the keyword argument `show`:
 
        * If True, the function returns a `panel` object that will be rendered

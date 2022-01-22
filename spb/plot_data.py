@@ -36,9 +36,9 @@ def _deal_with_complex_series(exprs, ranges, interactive, kwargs, pt):
     for t in keys:
         kwargs.setdefault(t, False)
     real, imag, _abs, _arg, absarg = [kwargs.get(t, False) for t in keys]
-    
+
     if any([real, imag, _abs, _arg, absarg]) or (pt == "c"):
-        
+
         series = _build_complex_series(*exprs, *ranges,
                 interactive=interactive, **kwargs)
         if len(series) > 1:
@@ -189,7 +189,7 @@ def _build_series(*args, **kwargs):
             k = str(nexpr) + str(npar)
             if k == "00":
                 args = [exprs, ranges, label]
-                
+
                 s, e = [complex(t) for t in ranges[0][1:]]
                 if s.imag != e.imag:
                     # we are dealing with 2D/3D domain coloring

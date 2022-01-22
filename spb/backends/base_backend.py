@@ -32,7 +32,7 @@ class Plot:
        a subclass of `Plot` which specify the backend to be used.
     4. The backend will render the numerical data to a plot and (eventually)
        show it on the screen.
-    
+
     It is important to realize that the backend-specific figure object is
     created at instantion of the backend. Thus, all parameters necessary to
     render the plot must be provided at instantion. After instantion, the
@@ -56,7 +56,7 @@ class Plot:
       object, which can be retrieved with the `Plot.fig` attribute. This
       object can then be used to further customize the resulting plot, using
       backend-specific commands.
-    * `_update_interactive(self, params)`: this 
+    * `_update_interactive(self, params)`: this
 
     Parameters
     ==========
@@ -85,7 +85,7 @@ class Plot:
     xlim, ylim, zlim : (float, float), optional
         Focus the plot to the specified range. The tuple must be in the form
         `(min_val, max_val)`.
-    
+
     aspect : (float, float) or str, optional
         Set the aspect ratio of the plot. It only works for 2D plots.
         The values depends on the backend. Read the interested backend's
@@ -247,7 +247,7 @@ class Plot:
         check_and_set("zlim", kwargs.get("zlim", None))
         self.size = None
         check_and_set("size", kwargs.get("size", None))
-    
+
     def _copy_kwargs(self):
         """Copy the values of the plot attributes into a dictionary which will
         be later used to create a new `Plot` object having the same attributes.
@@ -475,7 +475,7 @@ class Plot:
            [1]: cartesian line: x for x over (-10.0, 10.0)
            [2]: cartesian line: -x for x over (-10.0, 10.0)
            >>> p1.show()
-        
+
         See Also
         ========
 
