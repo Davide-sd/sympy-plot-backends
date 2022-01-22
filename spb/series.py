@@ -444,7 +444,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
 
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
-            return AbsArgLineSeries(*args, **kwargs)
+            return super().__new__(AbsArgLineSeries)
         return object.__new__(cls)
 
     def __init__(self, expr, var_start_end, label="", **kwargs):
@@ -1227,33 +1227,33 @@ class InteractiveSeries(BaseSeries):
             )
 
         if isinstance(exprs[0], Plane):
-            return PlaneInteractiveSeries(exprs, ranges, *args, **kwargs)
+            return super().__new__(PlaneInteractiveSeries)
         elif isinstance(exprs[0], GeometryEntity) and (
             not isinstance(exprs[0], Curve)
         ):
-            return GeometryInteractiveSeries(exprs, ranges, *args, **kwargs)
+            return super().__new__(GeometryInteractiveSeries)
 
         if (nexpr == 1) and (npar == 1):
             absarg = kwargs.get("absarg", False)
             if not absarg:
-                return LineInteractiveSeries(exprs, ranges, *args, **kwargs)
-            return AbsArgLineInteractiveSeries(exprs, ranges, *args, **kwargs)
+                return super().__new__(LineInteractiveSeries)
+            return super().__new__(AbsArgLineInteractiveSeries)
         elif (nexpr == 2) and (npar == 1):
-            return Parametric2DLineInteractiveSeries(exprs, ranges, *args, **kwargs)
+            return super().__new__(Parametric2DLineInteractiveSeries)
         elif (nexpr == 3) and (npar == 1):
-            return Parametric3DLineInteractiveSeries(exprs, ranges, *args, **kwargs)
+            return super().__new__(Parametric3DLineInteractiveSeries)
         elif (nexpr == 1) and (npar == 2):
             if kwargs.get("threed", False):
-                return SurfaceInteractiveSeries(exprs, ranges, *args, **kwargs)
-            return ContourInteractiveSeries(exprs, ranges, *args, **kwargs)
+                return super().__new__(SurfaceInteractiveSeries)
+            return super().__new__(ContourInteractiveSeries)
         elif (nexpr == 3) and (npar == 2):
-            return ParametricSurfaceInteractiveSeries(exprs, ranges, *args, **kwargs)
+            return super().__new__(ParametricSurfaceInteractiveSeries)
         elif (nexpr == 2) and (npar == 2):
-            return Vector2DInteractiveSeries(exprs, ranges, *args, **kwargs)
+            return super().__new__(Vector2DInteractiveSeries)
         elif (nexpr == 3) and (npar == 3):
             if kwargs.get("slice", None) is None:
-                return Vector3DInteractiveSeries(exprs, ranges, *args, **kwargs)
-            return SliceVector3DInteractiveSeries(exprs, ranges, *args, **kwargs)
+                return super().__new__(Vector3DInteractiveSeries)
+            return super().__new__(SliceVector3DInteractiveSeries)
 
     def __init__(self, exprs, ranges, label="", **kwargs):
         np = import_module('numpy', catch=(RuntimeError,))
@@ -1728,8 +1728,8 @@ class ComplexSurfaceBaseSeries(BaseSeries):
     def __new__(cls, *args, **kwargs):
         domain_coloring = kwargs.get("absarg", False)
         if domain_coloring:
-            return ComplexDomainColoringSeries(*args, **kwargs)
-        return ComplexSurfaceSeries(*args, **kwargs)
+            return super().__new__(ComplexDomainColoringSeries)
+        return super().__new__(ComplexSurfaceSeries)
 
     def __init__(self, expr, r, label="", **kwargs):
         expr = sympify(expr)
