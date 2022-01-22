@@ -1,6 +1,5 @@
 from sympy.external import import_module
 from spb.backends.utils import convert_colormap
-from pytest import raises
 
 # NOTE:
 #
@@ -10,7 +9,7 @@ from pytest import raises
 
 matplotlib = import_module(
     'matplotlib',
-    import_kwargs={'fromlist':['cm']},
+    import_kwargs={'fromlist': ['cm']},
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 cm = matplotlib.cm
@@ -22,13 +21,13 @@ cc = import_module(
 
 k3d = import_module(
     'k3d',
-    import_kwargs={'fromlist':['helpers']},
+    import_kwargs={'fromlist': ['helpers']},
     min_module_version='2.9.7',
     catch=(RuntimeError,))
 
 _plotly_utils = import_module(
         '_plotly_utils',
-        import_kwargs={'fromlist':['basevalidators']},
+        import_kwargs={'fromlist': ['basevalidators']},
         catch=(RuntimeError,))
 
 np = import_module('numpy', catch=(RuntimeError,))

@@ -1,14 +1,14 @@
 from sympy.external import import_module
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from spb.backends.utils import convert_colormap, compute_streamtubes
+from spb.backends.utils import compute_streamtubes
 from spb.utils import get_vertices_indices
 import warnings
 import os
 
 k3d = import_module(
     'k3d',
-    import_kwargs={'fromlist':['helpers']},
+    import_kwargs={'fromlist': ['helpers']},
     min_module_version='2.9.7',
     catch=(RuntimeError,))
 cc = import_module(
@@ -17,7 +17,7 @@ cc = import_module(
     catch=(RuntimeError,))
 matplotlib = import_module(
     'matplotlib',
-    import_kwargs={'fromlist':['tri']},
+    import_kwargs={'fromlist': ['tri']},
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 

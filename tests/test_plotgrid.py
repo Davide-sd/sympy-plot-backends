@@ -1,4 +1,4 @@
-from sympy import symbols, sin, cos, pi, tan, I, exp
+from sympy import symbols, sin, cos, tan, exp
 from sympy.external import import_module
 from spb.backends.matplotlib import MB
 from spb.backends.plotly import PB
@@ -6,13 +6,13 @@ from spb.backends.bokeh import BB
 from spb.backends.k3d import KB
 from spb.backends.plotgrid import plotgrid, _nrows_ncols
 from spb.functions import plot, plot3d, plot_contour
-from spb.ccomplex.complex import plot_complex
 from spb.vectors import plot_vector
 from pytest import raises
 
 matplotlib = import_module(
     'matplotlib',
-    import_kwargs={'fromlist':['pyplot', 'axes', 'cm', 'collections', 'colors', 'quiver']},
+    import_kwargs={'fromlist': ['pyplot', 'axes', 'cm',
+        'collections', 'colors', 'quiver']},
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 plt = matplotlib.pyplot
@@ -25,11 +25,13 @@ pn = import_module(
     min_module_version='0.12.0',
     catch=(RuntimeError,))
 
+
 class KBchild1(KB):
     def _get_mode(self):
         # tells the backend it is running into Jupyter, even if it is not.
         # this is necessary to run these tests.
         return 0
+
 
 def test_nrows_ncols():
     # default to 1 column
@@ -61,9 +63,11 @@ def test_nrows_ncols():
     nr, nc = _nrows_ncols(3, 2, 5)
     assert nr == 3 and nc == 2
 
+
 def test_empty_plotgrid():
     p = plotgrid()
     assert isinstance(p, plt.Figure)
+
 
 def test_plotgrid_mode_1():
     x, y, z = symbols("x, y, z")
@@ -118,6 +122,7 @@ def test_plotgrid_mode_1():
     assert isinstance(p.objects[(0, 1, 1, 2)], pn.pane.plotly.Plotly)
     assert isinstance(p.objects[(1, 0, 2, 1)], pn.pane.ipywidget.IPyWidget)
     assert isinstance(p.objects[(1, 1, 2, 2)], pn.pane.plot.Bokeh)
+
 
 def test_plotgrid_mode_2():
     from matplotlib.gridspec import GridSpec
@@ -192,6 +197,7 @@ def test_plotgrid_mode_2():
     assert isinstance(p.objects[(2, 0, 3, 1)], pn.pane.plot.Matplotlib)
     assert isinstance(p.objects[(2, 1, 3, 3)], pn.pane.plot.Bokeh)
     assert isinstance(p.objects[(0, 1, 2, 3)], pn.pane.ipywidget.IPyWidget)
+
 
 def test_panel_kw():
     x = symbols("x")

@@ -24,13 +24,15 @@ def to_rgb_255(func):
 
     return wrapper
 
+
 def _hsv_to_rgb_helper(arr):
     matplotlib = import_module(
         'matplotlib',
-        import_kwargs={'fromlist':['colors']},
+        import_kwargs={'fromlist': ['colors']},
         min_module_version='1.1.0',
         catch=(RuntimeError,))
     return matplotlib.colors.hsv_to_rgb(arr)
+
 
 def hsv_to_rgb(func):
     """Convert a Numpy array of HSV values to RGB values."""
@@ -182,6 +184,7 @@ def polar_chessboard(w, phaseres=20):
     black = np.mod(blackp + blackm, 2)
     return np.dstack([black, black, black])
 
+
 def create_colorscale(N=256):
     """
     Create a HSV colorscale which will be used to map argument values from
@@ -203,6 +206,7 @@ def create_colorscale(N=256):
     colorscale = (colorscale.reshape((-1, 3)) * 255).astype(np.uint8)
     colorscale = np.roll(colorscale, int(len(colorscale) / 2), axis=0)
     return colorscale
+
 
 def wegert(coloring, w, phaseres=20, N=256):
     """ Choose between different domain coloring options.
@@ -268,7 +272,8 @@ def wegert(coloring, w, phaseres=20, N=256):
 
     if coloring not in mapping.keys():
         raise KeyError(
-            "`coloring` must be one of the following: {}".format(mapping.keys())
+            "`coloring` must be one of the following: {}".format(
+                mapping.keys())
         )
     func, create_cc = mapping[coloring]
     if create_cc:

@@ -1,7 +1,6 @@
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import get_seeds_points
-from spb.backends.utils import convert_colormap
 from sympy.external import import_module
 import itertools
 import warnings
@@ -116,7 +115,7 @@ class PlotlyBackend(Plot):
     def __init__(self, *args, **kwargs):
         plotly = import_module(
             'plotly',
-            import_kwargs={'fromlist':['graph_objects', 'figure_factory']},
+            import_kwargs={'fromlist': ['graph_objects', 'figure_factory']},
             min_module_version='5.0.0',
             catch=(RuntimeError,))
         go = plotly.graph_objects
@@ -183,11 +182,12 @@ class PlotlyBackend(Plot):
         np = import_module('numpy', catch=(RuntimeError,))
         plotly = import_module(
             'plotly',
-            import_kwargs={'fromlist':['graph_objects', 'figure_factory']},
+            import_kwargs={'fromlist': ['graph_objects', 'figure_factory']},
             min_module_version='5.0.0',
             catch=(RuntimeError,))
         go = plotly.graph_objects
-        from plotly.figure_factory import create_quiver, create_streamline
+        create_quiver = plotly.figure_factory.create_quiver
+        create_streamline = plotly.figure_factory.create_streamline
         mergedeep = import_module('mergedeep', catch=(RuntimeError,))
         merge = mergedeep.merge
         self._init_cyclers()
@@ -495,14 +495,14 @@ class PlotlyBackend(Plot):
                             x=1 + 0.1 * count,
                             title="Argument",
                             titleside="right",
-                            tickvals = [
+                            tickvals=[
                                 -np.pi,
                                 -np.pi / 2,
                                 0,
                                 np.pi / 2,
                                 np.pi,
                             ],
-                            ticktext = [
+                            ticktext=[
                                 "-&#x3C0;",
                                 "-&#x3C0; / 2",
                                 "0",
@@ -510,10 +510,9 @@ class PlotlyBackend(Plot):
                                 "&#x3C0;",
                             ]
                         ),
-                        cmin = -np.pi,
-                        cmax = np.pi,
+                        cmin=-np.pi,
+                        cmax=np.pi,
                         colorscale=colorscale,
-                        # colorscale=colormap if self._use_cm else colorscale,
                         surfacecolor=angle,
                         customdata=angle,
                         hovertemplate="x: %{x}<br />y: %{y}<br />Abs: %{z}<br />Arg: %{customdata}",
@@ -544,11 +543,10 @@ class PlotlyBackend(Plot):
         np = import_module('numpy', catch=(RuntimeError,))
         plotly = import_module(
             'plotly',
-            import_kwargs={'fromlist':['graph_objects', 'figure_factory']},
+            import_kwargs={'fromlist': ['graph_objects', 'figure_factory']},
             min_module_version='5.0.0',
             catch=(RuntimeError,))
-        go = plotly.graph_objects
-        from plotly.figure_factory import create_quiver, create_streamline
+        create_quiver = plotly.figure_factory.create_quiver
         mergedeep = import_module('mergedeep', catch=(RuntimeError,))
         merge = mergedeep.merge
 

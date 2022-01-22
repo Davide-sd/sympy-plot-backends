@@ -25,6 +25,7 @@ bokeh = import_module(
     min_module_version='2.3.0',
     catch=(RuntimeError,))
 
+
 def test_DynamicParam():
     a, b, c, d, e, f = symbols("a, b, c, d, e, f")
 
@@ -116,7 +117,7 @@ def test_DynamicParam():
     test_number(p1, 1, (0, 5), "a", 0.125)
     test_log_slider(p2, 1, (1, 10), 10, "test3")
     assert isinstance(p3, param.Boolean)
-    assert p3.default == True
+    assert p3.default is True
     assert p3.label == "test4"
     assert isinstance(p4, param.ObjectSelector)
     assert p4.label == "test5"
@@ -143,6 +144,7 @@ def test_DynamicParam():
         },
         use_latex=True,
     ))
+
 
 def test_iplot():
     bm = bokeh.models
@@ -425,6 +427,7 @@ def test_interactiveseries():
     assert (np.min(xx3.flatten()) == -5) and (np.max(xx3.flatten()) == 5)
     assert (np.min(yy3.flatten()) == -4) and (np.max(yy3.flatten()) == 4)
 
+
 def test_iplot_sum_1():
     # verify that it is possible to add together different instances of
     # InteractivePlot (as well as Plot instances), provided that the same
@@ -469,6 +472,7 @@ def test_iplot_sum_1():
     assert len(p.backend.series) == 3
     assert len([s for s in p.backend.series if s.is_interactive]) == 2
     assert len([s for s in p.backend.series if not s.is_interactive]) == 1
+
 
 def test_iplot_sum_2():
     # verify that it is not possible to add together different instances of

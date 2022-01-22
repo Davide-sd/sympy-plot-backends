@@ -6,11 +6,10 @@ from spb.series import (
     ComplexPointSeries, ComplexPointInteractiveSeries,
     ComplexSurfaceSeries, ComplexSurfaceInteractiveSeries,
     ComplexDomainColoringSeries, ComplexDomainColoringInteractiveSeries,
-    LineOver1DRangeSeries, SurfaceOver2DRangeSeries,
+    LineOver1DRangeSeries,
     InteractiveSeries, ContourSeries, Vector2DSeries,
     Vector3DSeries, SliceVector3DSeries,
-    AbsArgLineSeries, ComplexSurfaceSeries,
-    ComplexDomainColoringSeries,
+    AbsArgLineSeries,
     LineInteractiveSeries, AbsArgLineInteractiveSeries
 )
 
@@ -29,11 +28,13 @@ from spb.series import (
 # behaviour, consider adding tests to test_backends.py
 #
 
+
 def bcs(*args, **kwargs):
     # use Numpy/Scipy for the following tests to speed things up
     kwargs["modules"] = None
     args = _plot_sympify(args)
     return _build_complex_series(*args, **kwargs)
+
 
 def bvs(*args, **kwargs):
     args = _plot_sympify(args)
@@ -161,7 +162,6 @@ def test_build_complex_line_series():
     assert all(isinstance(t, LineInteractiveSeries) for t in s)
     assert isinstance(s[0], AbsArgLineInteractiveSeries)
     assert all(t.is_2Dline for t in s)
-
 
     # multiple expressions each one with its label and range
     s = bcs((sqrt(x), (x, -5, 5), "f"), (asin(x), (x, -8, 8), "g"),

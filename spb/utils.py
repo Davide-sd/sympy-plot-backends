@@ -1,9 +1,10 @@
-from sympy import lambdify, Tuple, sympify, Expr, S, Dummy
+from sympy import Tuple, sympify, Expr, S, Dummy
 from sympy.matrices.dense import DenseMatrix
-from sympy.vector import Vector, BaseScalar
+from sympy.vector import Vector
 from sympy.vector.operators import _get_coord_systems
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
+from sympy.external import import_module
 
 
 def _create_ranges(free_symbols, ranges, npar):

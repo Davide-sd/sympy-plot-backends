@@ -35,18 +35,18 @@ mpl_toolkits = import_module(
     catch=(RuntimeError,))
 plotly = import_module(
     'plotly',
-    import_kwargs={'fromlist':['graph_objects', 'figure_factory']},
+    import_kwargs={'fromlist': ['graph_objects', 'figure_factory']},
     min_module_version='5.0.0',
     catch=(RuntimeError,))
 go = plotly.graph_objects
 k3d = import_module(
     'k3d',
-    import_kwargs={'fromlist':['plot', 'objects']},
+    import_kwargs={'fromlist': ['plot', 'objects']},
     min_module_version='2.9.7',
     catch=(RuntimeError,))
 bokeh = import_module(
     'bokeh',
-    import_kwargs={'fromlist':['models', 'resources', 'plotting']},
+    import_kwargs={'fromlist': ['models', 'resources', 'plotting']},
     min_module_version='2.3.0',
     catch=(RuntimeError,))
 unset_show()
@@ -229,7 +229,6 @@ def test_custom_colorloop():
     assert len(set([o.color for o in f2.objects])) == 3
 
 
-
 def test_bokeh_tools():
     # verify tools and tooltips on empty Bokeh figure (populated figure
     # might have different tooltips, tested later on)
@@ -284,11 +283,11 @@ def test_common_keywords():
     assert p.ylabel == "y"
     assert p.zlabel == "z"
     assert p.aspect == "equal"
-    assert p.grid == False
+    assert p.grid is False
     assert p.xscale == "log"
     assert p.yscale == "log"
     assert p.zscale == "log"
-    assert p.legend == True
+    assert p.legend is True
     assert p.xlim == (-1, 1)
     assert p.ylim == (-2, 2)
     assert p.zlim == (-3, 3)
@@ -319,7 +318,7 @@ def test_plot_sum():
     assert p4.series[2].expr == sin(x) * cos(x)
     assert p4.fig.data[2]["line"]["dash"] == "dot"
     # two or more series in the result: automatic legend turned on
-    assert p4.legend == True
+    assert p4.legend is True
     # the resulting plot uses the attributes of the first plot in the sum
     assert p4.xlabel == "x1" and p4.ylabel == "y1"
     p4 = p2 + p1 + p3
@@ -389,7 +388,7 @@ def test_plot():
     assert isinstance(f.data[1], go.Scatter)
     assert f.data[1]["name"] == "cos(x)"
     assert f.data[1]["line"]["color"] == "red"
-    assert f.layout["showlegend"] == True
+    assert f.layout["showlegend"] is True
 
     p = _plot(BB, line_kw=dict(line_color="red"))
     assert len(p.series) == 2
@@ -401,7 +400,7 @@ def test_plot():
     assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.Line)
     assert f.legend[0].items[1].label["value"] == "cos(x)"
     assert f.renderers[1].glyph.line_color == "red"
-    assert f.legend[0].visible == True
+    assert f.legend[0].visible is True
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError, lambda: _plot(KBchild1, line_kw=dict(line_color="red")))
@@ -534,9 +533,9 @@ def test_plot3d():
     assert len(f.data) == 1
     assert isinstance(f.data[0], go.Surface)
     assert f.data[0]["name"] == "cos(x**2 + y**2)"
-    assert f.data[0]["showscale"] == False
+    assert not f.data[0]["showscale"]
     assert f.data[0]["colorscale"] == ((0, "cyan"), (1, "cyan"))
-    assert f.layout["showlegend"] == False
+    assert not f.layout["showlegend"]
     assert f.data[0]["colorbar"]["title"]["text"] == "cos(x**2 + y**2)"
 
     # Bokeh doesn't support 3D plots
@@ -1022,7 +1021,7 @@ def test_plot_real_imag():
     assert isinstance(f.data[1], go.Scatter)
     assert f.data[1]["name"] == "Im(sqrt(x))"
     assert f.data[1]["line"]["color"] == "red"
-    assert f.layout["showlegend"] == True
+    assert f.layout["showlegend"] is True
 
     p = _plot_real_imag(BB, line_kw=dict(line_color="red"))
     assert len(p.series) == 2
@@ -1034,7 +1033,7 @@ def test_plot_real_imag():
     assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.Line)
     assert f.legend[0].items[1].label["value"] == "Im(sqrt(x))"
     assert f.renderers[1].glyph.line_color == "red"
-    assert f.legend[0].visible == True
+    assert f.legend[0].visible is True
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
@@ -1173,7 +1172,7 @@ def test_plot_complex_3d():
     assert len(f.data) == 1
     assert isinstance(f.data[0], go.Surface)
     assert f.data[0]["name"] == "sqrt(x)"
-    assert f.data[0]["showscale"] == True
+    assert f.data[0]["showscale"] is True
     assert f.data[0]["colorbar"]["title"]["text"] == "Argument"
 
     # Bokeh doesn't support 3D plots
@@ -1470,7 +1469,7 @@ def test_vectors_update_interactive():
     # backends raise error.
 
     def func(B):
-        params = { a: 1, b: 2, c: 3 }
+        params = {a: 1, b: 2, c: 3}
         s = InteractiveSeries(
             [a * z, b * y, c * x],
             [(x, -5, 5), (y, -5, 5), (z, -5, 5)],
@@ -1480,7 +1479,7 @@ def test_vectors_update_interactive():
             n1 = 10, n2 = 10, n3 = 10
         )
         p = B(s)
-        raises(NotImplementedError, lambda : p._update_interactive(params))
+        raises(NotImplementedError, lambda: p._update_interactive(params))
 
     func(KBchild1)
     func(PB)

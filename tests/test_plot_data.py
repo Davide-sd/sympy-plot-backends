@@ -1,14 +1,10 @@
-from sympy import (
-    symbols, cos, sin, Eq, I, Abs, re, im, arg,
-    exp, pi, gamma, sqrt
-)
+from sympy import symbols, cos, sin, Eq, re, im, arg, sqrt
 from sympy.geometry import (
     Plane, Polygon, Circle, Ellipse, Line, Segment,
     Ray, Line3D, Point2D, Point3D,
     Segment3D, Ray3D,
 )
 from sympy.vector import CoordSys3D
-from pytest import raises
 from spb.plot_data import _build_series, get_plot_data
 from spb.series import (
     LineOver1DRangeSeries,
@@ -17,11 +13,9 @@ from spb.series import (
     Parametric3DLineSeries,
     ParametricSurfaceSeries,
     SurfaceOver2DRangeSeries,
-    ContourSeries,
     ImplicitSeries,
     Vector2DSeries,
     Vector3DSeries,
-    InteractiveSeries,
     LineInteractiveSeries,
     AbsArgLineInteractiveSeries,
     Parametric2DLineInteractiveSeries,
@@ -29,23 +23,15 @@ from spb.series import (
     ParametricSurfaceInteractiveSeries,
     SurfaceInteractiveSeries,
     ContourInteractiveSeries,
-    GeometryInteractiveSeries,
     PlaneInteractiveSeries,
-    Vector2DInteractiveSeries,
-    Vector3DInteractiveSeries,
-    Vector3DInteractiveSeries,
-    SliceVector3DInteractiveSeries,
-    ComplexSurfaceBaseSeries,
     ComplexSurfaceSeries,
     ComplexDomainColoringSeries,
-    ComplexInteractiveBaseSeries,
     ComplexSurfaceInteractiveSeries,
     ComplexDomainColoringInteractiveSeries,
     SliceVector3DSeries,
     GeometrySeries,
     PlaneSeries,
 )
-from spb.ccomplex.wegert import domain_coloring, create_colorscale
 from pytest import raises
 import numpy as np
 
@@ -214,7 +200,6 @@ def test_auto_build_series_complex_interactive():
     assert s.is_3Dsurface
 
 
-
 def test_mapping_build_series():
     # verify that the keyword `pt` produces the expected result
 
@@ -293,7 +278,7 @@ def test_mapping_build_series_interactive():
     assert isinstance(s, ParametricSurfaceInteractiveSeries)
 
 
-def test_auto_build_series_complex():
+def test_mapping_build_series_complex():
     # verify that the keyword `pt` produces the expected complex-related data
     # series
 

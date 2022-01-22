@@ -4,7 +4,7 @@ from spb.backends.matplotlib import MB
 
 matplotlib = import_module(
     'matplotlib',
-    import_kwargs={'fromlist':['pyplot', 'gridspec']},
+    import_kwargs={'fromlist': ['pyplot', 'gridspec']},
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 plt = matplotlib.pyplot
@@ -30,6 +30,7 @@ def _nrows_ncols(nr, nc, nplots):
         return _nrows_ncols(nr, nc, nplots)
     return nr, nc
 
+
 def _create_mpl_figure(mapping):
     fig = plt.figure()
     for spec, p in mapping.items():
@@ -43,6 +44,7 @@ def _create_mpl_figure(mapping):
         cpa["ax"] = cur_ax
         p = Plot(*p.series, **cpa)
     return fig
+
 
 def _create_panel_figure(mapping, panel_kw):
     pn = import_module(
@@ -58,6 +60,7 @@ def _create_panel_figure(mapping, panel_kw):
         cs = spec.colspan
         fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = p.fig
     return fig
+
 
 def plotgrid(*args, **kwargs):
     """Combine multiple plots into a grid-like layout.

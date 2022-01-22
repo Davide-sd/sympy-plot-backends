@@ -394,6 +394,7 @@ def test_vector_data():
     assert yy.shape == vv.shape == (15, 10, 20)
     assert zz.shape == ww.shape == (15, 10, 20)
 
+
 def test_get_seeds_points():
     # verify that spb.backends.utils.get_seeds_points returns the correct
     # data type based on the parameters
@@ -403,7 +404,6 @@ def test_get_seeds_points():
     x, y, z = symbols("x:z")
     s = Vector3DSeries(z, y, x, (x, -5, 5), (y, -3, 3), (z, -2, 2))
     xx, yy, zz, uu, vv, ww = s.get_data()
-
 
     #
     # Case 1: search boundary points where the vector is pointing inward the

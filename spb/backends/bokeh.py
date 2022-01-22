@@ -1,13 +1,11 @@
 from sympy.external import import_module
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from spb.backends.utils import convert_colormap
-import itertools
 import os
 
 bokeh = import_module(
     'bokeh',
-    import_kwargs={'fromlist':['models', 'events', 'plotting', 'io', 'palettes']},
+    import_kwargs={'fromlist': ['models', 'events', 'plotting', 'io', 'palettes']},
     min_module_version='2.3.0',
     catch=(RuntimeError,))
 bp = bokeh.palettes
@@ -17,7 +15,7 @@ cc = import_module(
     catch=(RuntimeError,))
 matplotlib = import_module(
     'matplotlib',
-    import_kwargs={'fromlist':['pyplot', 'cm']},
+    import_kwargs={'fromlist': ['pyplot', 'cm']},
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 plt = matplotlib.pyplot

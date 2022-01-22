@@ -1,5 +1,5 @@
 from sympy import (
-    sympify, Tuple, symbols, solve, re, im, Add, Mul, Expr, I, floor
+    sympify, Tuple, symbols, solve, Expr
 )
 from sympy.geometry import (
     Plane, Polygon, Circle, Ellipse, Segment, Ray,
@@ -96,7 +96,7 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     np = import_module('numpy', catch=(RuntimeError,))
     adaptive = import_module(
         'adaptive',
-        import_kwargs={'fromlist':['runner', 'learner']},
+        import_kwargs={'fromlist': ['runner', 'learner']},
         min_module_version='0.12.0',
         catch=(RuntimeError,))
     simple = adaptive.runner.simple
@@ -151,7 +151,6 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     # For multivariate functions, create a meshgrid where to interpolate the
     # results. Taken from adaptive.learner.learnerND.plot
     x, y = learner._bbox
-    lbrt = x[0], y[0], x[1], y[1]
     scale_factor = np.product(np.diag(learner._transform))
     a_sq = np.sqrt(np.min(learner.tri.volumes()) * scale_factor)
     n = max(10, int(0.658 / a_sq) * 2)
@@ -198,6 +197,7 @@ def uniform_eval(free_symbols, expr, *args, modules=None):
     f1 = lambdify(free_symbols, expr, modules=modules)
     f2 = lambdify(free_symbols, expr, modules="sympy")
     return _uniform_eval(f1, f2, *args, modules=modules)
+
 
 def _uniform_eval(f1, f2, *args, modules=None):
     np = import_module('numpy', catch=(RuntimeError,))
@@ -687,6 +687,7 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
             return self._adaptive_sampling()
         return self._uniform_sampling()
 
+
 class Parametric2DLineSeries(ParametricLineBaseSeries):
     """Representation for a line consisting of two parametric sympy expressions
     over a range."""
@@ -775,11 +776,12 @@ class SurfaceBaseSeries(BaseSeries):
     def _discretize(self, s1, e1, s2, e2):
         np = import_module('numpy', catch=(RuntimeError,))
 
-        mesh_x = super()._discretize( s1, e1, self.n1,
+        mesh_x = super()._discretize(s1, e1, self.n1,
             self.xscale, self.only_integers)
         mesh_y = super()._discretize(s2, e2, self.n2,
             self.yscale, self.only_integers)
         return np.meshgrid(mesh_x, mesh_y)
+
 
 class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     """Representation for a 3D surface consisting of a sympy expression and 2D
@@ -1221,7 +1223,7 @@ class InteractiveSeries(BaseSeries):
         if nexpr == 0:
             raise ValueError(
                 "At least one expression must be provided."
-                + "\nReceived: {}".format((exprs, ranges, label))
+                + "\nReceived: {}".format((exprs, ranges))
             )
 
         if isinstance(exprs[0], Plane):
@@ -1467,6 +1469,7 @@ class LineInteractiveSeries(InteractiveSeries, Line2DBaseSeries):
     def __str__(self):
         return self._str("cartesian line")
 
+
 class AbsArgLineInteractiveSeries(LineInteractiveSeries):
     """Represents the interactive absolute value of a complex function
     colored by its argument over a complex range (a + I*b, c + I * b).
@@ -1662,8 +1665,6 @@ class ComplexPointSeries(Line2DBaseSeries):
     @staticmethod
     def _evaluate(points):
         np = import_module('numpy', catch=(RuntimeError,))
-
-        x_list, y_list = [], []
         points = np.array([complex(p) for p in points])
         return np.real(points), np.imag(points)
 
@@ -1683,6 +1684,7 @@ class ComplexPointSeries(Line2DBaseSeries):
 
     def __str__(self):
         return "complex points: %s" % self.expr
+
 
 class ComplexPointInteractiveSeries(InteractiveSeries, ComplexPointSeries):
     """Representation for an interactive line in the complex plane
@@ -1800,6 +1802,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
             modules=self.modules)
         zz = self._correct_size(np.array(zz), domain)
         return domain, zz
+
 
 class ComplexSurfaceSeries(ComplexSurfaceBaseSeries):
     """Represents a 3D surface or contour plot of a complex function over
@@ -1969,6 +1972,7 @@ class ComplexInteractiveBaseSeries(InteractiveSeries, ComplexSurfaceBaseSeries):
             str(tuple(self._params.keys()))
         )
 
+
 class ComplexSurfaceInteractiveSeries(ComplexInteractiveBaseSeries, ComplexSurfaceSeries):
     """Represents an interactive 3D surface or contour plot of a complex
     function over the complex plane.
@@ -2002,6 +2006,7 @@ class ComplexSurfaceInteractiveSeries(ComplexInteractiveBaseSeries, ComplexSurfa
         domain = list(self.ranges.values())[0]
         results = self._evaluate()[0]
         return self._correct_output(domain, results)
+
 
 class ComplexDomainColoringInteractiveSeries(ComplexInteractiveBaseSeries, ComplexDomainColoringSeries):
     """Represents an interactive 2D/3D domain coloring plot of a complex
@@ -2279,6 +2284,7 @@ class SliceVector3DSeries(Vector3DSeries):
         s = "sliced " + super().__str__() + " at {}".format(
             self.plane)
         return s
+
 
 class SliceVector3DInteractiveSeries(VectorInteractiveBaseSeries, SliceVector3DSeries):
     """Represents an interactive 3D vector field plotted over a slice.

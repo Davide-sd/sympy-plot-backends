@@ -30,7 +30,7 @@ def convert_colormap(cm, to, n=256):
     np = import_module('numpy', catch=(RuntimeError,))
     matplotlib = import_module(
         'matplotlib',
-        import_kwargs={'fromlist':['colors']},
+        import_kwargs={'fromlist': ['colors']},
         min_module_version='1.1.0',
         catch=(RuntimeError,))
     Colormap = matplotlib.colors.Colormap
@@ -218,7 +218,7 @@ def _get_continuous_color(colorscale, intermed):
     """
     plotly = import_module(
         'plotly',
-        import_kwargs={'fromlist':['colors']},
+        import_kwargs={'fromlist': ['colors']},
         min_module_version='5.0.0',
         catch=(RuntimeError,))
 
@@ -274,7 +274,7 @@ def get_plotly_colors(colorscale_name, loc):
     """
     _plotly_utils = import_module(
         '_plotly_utils',
-        import_kwargs={'fromlist':['basevalidators']},
+        import_kwargs={'fromlist': ['basevalidators']},
         catch=(RuntimeError,))
 
     # first parameter: Name of the property being validated
@@ -359,6 +359,7 @@ def get_seeds_points_entry_vector(xx, yy, zz, uu, vv, ww):
     points = np.array(p_xmin + p_xmax + p_ymin + p_ymax + p_zmin + p_zmax)
 
     return points
+
 
 def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
     """

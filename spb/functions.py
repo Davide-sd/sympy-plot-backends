@@ -20,7 +20,7 @@ it if you care at all about performance.
 from sympy import (
     Expr, Tuple, Symbol, oo, Wild, Sum, sign,
     Piecewise, piecewise_fold,
-    UniversalSet, EmptySet, FiniteSet, Interval, Union,
+    EmptySet, FiniteSet, Interval, Union,
 )
 from spb.backends.base_backend import Plot
 from spb.utils import _plot_sympify, _check_arguments, _unpack_args
@@ -1640,6 +1640,7 @@ def plot_geometry(*args, show=True, **kwargs):
         p.show()
     return p
 
+
 def plot_list(*args, show=True, **kwargs):
     """Plots lists of coordinates (ie, lists of numbers).
 
@@ -1997,4 +1998,3 @@ def plot_piecewise(*args, **kwargs):
     if show:
         p.show()
     return p
-    

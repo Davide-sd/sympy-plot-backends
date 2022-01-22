@@ -1,13 +1,12 @@
 
 from sympy.utilities.iterables import is_sequence
 from sympy.external import import_module
-import warnings
 from itertools import cycle
 from spb.series import BaseSeries
 from spb.backends.utils import convert_colormap
 matplotlib = import_module(
     'matplotlib',
-    import_kwargs={'fromlist':['pyplot', 'cm', 'collections', 'colors']},
+    import_kwargs={'fromlist': ['pyplot', 'cm', 'collections', 'colors']},
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 cm = matplotlib.cm
@@ -253,24 +252,24 @@ class Plot:
         be later used to create a new `Plot` object having the same attributes.
         """
         return dict(
-            title = self.title,
-            xlabel = self.xlabel,
-            ylabel = self.ylabel,
-            zlabel = self.zlabel,
-            aspect = self.aspect,
-            axis_center = self.axis_center,
-            grid = self.grid,
-            xscale = self.xscale,
-            yscale = self.yscale,
-            zscale = self.zscale,
-            update_rendering_kw = self.update_rendering_kw,
-            detect_poles = self.detect_poles,
-            use_cm = self._use_cm,
-            legend = self.legend,
-            xlim = self.xlim,
-            ylim = self.ylim,
-            zlim = self.zlim,
-            size = self.size
+            title=self.title,
+            xlabel=self.xlabel,
+            ylabel=self.ylabel,
+            zlabel=self.zlabel,
+            aspect=self.aspect,
+            axis_center=self.axis_center,
+            grid=self.grid,
+            xscale=self.xscale,
+            yscale=self.yscale,
+            zscale=self.zscale,
+            update_rendering_kw=self.update_rendering_kw,
+            detect_poles=self.detect_poles,
+            use_cm=self._use_cm,
+            legend=self.legend,
+            xlim=self.xlim,
+            ylim=self.ylim,
+            zlim=self.zlim,
+            size=self.size
         )
 
     def _init_cyclers(self):

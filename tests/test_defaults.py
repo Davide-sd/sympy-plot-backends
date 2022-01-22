@@ -1,5 +1,4 @@
 from spb.defaults import cfg, set_defaults, reset
-from spb.backends.plotly import PB
 from spb.backends.bokeh import BB
 from spb.backends.matplotlib import MB
 from spb.functions import plot, plot3d
@@ -14,6 +13,7 @@ def test_cfg_keys():
     for k in must_have_keys:
         assert k in cfg.keys()
 
+
 def test_cfg_matplotlib_keys():
     matplotlib_keys = ["axis_center", "grid", "show_minor_grid"]
     for k in matplotlib_keys:
@@ -21,9 +21,11 @@ def test_cfg_matplotlib_keys():
     assert isinstance(cfg["matplotlib"]["grid"], bool)
     assert isinstance(cfg["matplotlib"]["show_minor_grid"], bool)
 
+
 def test_cfg_plotly_keys():
     assert "theme" in cfg["plotly"].keys()
     assert isinstance(cfg["plotly"]["theme"], str)
+
 
 def test_cfg_bokeh_keys():
     bokeh_keys = ["theme", "sizing_mode", "update_event", "show_minor_grid",
@@ -35,6 +37,7 @@ def test_cfg_bokeh_keys():
     assert isinstance(cfg["bokeh"]["show_minor_grid"], bool)
     assert isinstance(cfg["bokeh"]["minor_grid_line_alpha"], (float, int))
     assert isinstance(cfg["bokeh"]["minor_grid_line_dash"], (list, tuple))
+
 
 def test_cfg_k3d_keys():
     k3d_keys = ["bg_color", "grid_color", "label_color"]

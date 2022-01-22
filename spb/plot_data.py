@@ -52,6 +52,7 @@ def _deal_with_complex_series(exprs, ranges, interactive, kwargs, pt):
         return series[0]
     return None
 
+
 def _build_series(*args, **kwargs):
     """Read the docstring of get_plot_data to unsertand what args and kwargs
     are.

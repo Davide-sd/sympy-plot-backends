@@ -1,5 +1,3 @@
-import param
-import panel as pn
 from sympy import latex, Tuple
 from sympy.external import import_module
 from spb.series import (
@@ -128,7 +126,7 @@ class DynamicParam(param.Parameterized):
     def __init__(self, *args, name="", params=None, **kwargs):
         bokeh = import_module(
             'bokeh',
-            import_kwargs={'fromlist':['models']},
+            import_kwargs={'fromlist': ['models']},
             min_module_version='2.3.0',
             catch=(RuntimeError,))
         TickFormatter = bokeh.models.formatters.TickFormatter
@@ -259,7 +257,7 @@ class PanelLayout:
         tmp_panel = pn.Param(self)
         widgets = dict()
         for k, v in self.mapping.items():
-            widgets[v] = { "type": type(tmp_panel.widget(v)) }
+            widgets[v] = {"type": type(tmp_panel.widget(v))}
             t = getattr(self.param, v)
             if isinstance(t, param.Number):
                 widgets[v]["throttled"] = throttled

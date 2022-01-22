@@ -23,6 +23,7 @@ from spb.defaults import TWO_D_B, THREE_D_B
 # * `absarg` refers to the absolute value and argument, which will be used to
 #   create "domain coloring" plots.
 
+
 def _build_series(*args, interactive=False, **kwargs):
     series = []
     # apply the user-specified function to the expression

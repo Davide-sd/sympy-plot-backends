@@ -6,7 +6,7 @@ import itertools
 
 matplotlib = import_module(
     'matplotlib',
-    import_kwargs={'fromlist':['pyplot', 'cm', 'collections', 'colors']},
+    import_kwargs={'fromlist': ['pyplot', 'cm', 'collections', 'colors']},
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 plt = matplotlib.pyplot
@@ -306,7 +306,6 @@ class MatplotlibBackend(Plot):
             import_kwargs={'fromlist': ['mplot3d']},
             catch=(RuntimeError,))
         Line3DCollection = mpl_toolkits.mplot3d.art3d.Line3DCollection
-        Path3DCollection = mpl_toolkits.mplot3d.art3d.Path3DCollection
 
         # XXX Workaround for matplotlib issue
         # https://github.com/matplotlib/matplotlib/issues/17130

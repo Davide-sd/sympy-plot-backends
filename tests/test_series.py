@@ -1,8 +1,7 @@
 from sympy import (
-    symbols, cos, sin, tan, log, sqrt, re, arg, Sum, oo,
+    symbols, cos, sin, tan, log, sqrt, re, arg, Sum,
     Tuple, pi, Plane, S, I, im, frac,
-    Circle, Point,
-    Piecewise, And, Eq, Interval, Abs, lambdify
+    Circle, Point
 )
 from sympy.external import import_module
 from spb.series import (
@@ -24,7 +23,7 @@ from spb.series import (
     Vector2DInteractiveSeries, Vector3DInteractiveSeries,
     SliceVector3DInteractiveSeries, ContourInteractiveSeries
 )
-from pytest import warns, raises
+from pytest import raises
 np = import_module('numpy', catch=(RuntimeError,))
 
 # NOTE:
@@ -168,6 +167,7 @@ def test_detect_poles():
     assert not np.any(np.isnan(yy3))
     assert np.any(np.isnan(yy2))
 
+
 def test_list2dseries():
     xx = np.linspace(-3, 3, 10)
     yy1 = np.cos(xx)
@@ -177,6 +177,7 @@ def test_list2dseries():
     s = List2DSeries(xx, yy1)
     # different number of elements: error
     raises(ValueError, lambda: List2DSeries(xx, yy2))
+
 
 def test_interactive_instance():
     # test that the correct data series is produced when instantiating
@@ -765,7 +766,6 @@ def test_only_integers():
     assert xx[0, 0] == -3 and xx[-1, -1] == 3
     assert yy[0, 0] == -2 and yy[-1, -1] == 2
 
-
     # only_integers also works with scalar expressions
     s = LineOver1DRangeSeries(1, (x, -5.5, 4.5), "",
         adaptive=False, only_integers=True)
@@ -943,6 +943,7 @@ def test_is_point_is_filled():
 
 def test_steps():
     x, u = symbols("x, u")
+
     def do_test(s1, s2):
         if not s1.is_parametric:
             xx1, _ = s1.get_data()
