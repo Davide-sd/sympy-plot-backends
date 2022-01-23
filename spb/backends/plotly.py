@@ -559,7 +559,6 @@ class PlotlyBackend(Plot):
 
                 elif s.is_2Dline:
                     x, y = self.series[i].get_data()
-                    x, y, _ = self._detect_poles(x, y)
                     if s.is_geometry:
                         self.fig.data[i]["x"] = x
                     self.fig.data[i]["y"] = y
