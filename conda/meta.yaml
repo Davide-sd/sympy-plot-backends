@@ -32,6 +32,7 @@ requirements:
     - sympy
     - vtk
     - msgpack-python
+    - adaptive
   run:
     - appdirs
     - bokeh
@@ -51,6 +52,7 @@ requirements:
     - sympy
     - vtk
     - msgpack-python
+    - adaptive
 
 test:
   imports:
