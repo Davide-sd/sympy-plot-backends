@@ -27,7 +27,7 @@ def convert_colormap(cm, to, n=256):
         A new colormap. Note that the conversion is not guardanteed.
         The function returns the provided colormap if it cannot be converted.
     """
-    np = import_module('numpy', catch=(RuntimeError,))
+    np = import_module('numpy')
     matplotlib = import_module(
         'matplotlib',
         import_kwargs={'fromlist': ['colors']},
@@ -219,8 +219,7 @@ def _get_continuous_color(colorscale, intermed):
     plotly = import_module(
         'plotly',
         import_kwargs={'fromlist': ['colors']},
-        min_module_version='5.0.0',
-        catch=(RuntimeError,))
+        min_module_version='5.0.0')
 
     if len(colorscale) < 1:
         raise ValueError("colorscale must have at least one color")
@@ -274,8 +273,7 @@ def get_plotly_colors(colorscale_name, loc):
     """
     _plotly_utils = import_module(
         '_plotly_utils',
-        import_kwargs={'fromlist': ['basevalidators']},
-        catch=(RuntimeError,))
+        import_kwargs={'fromlist': ['basevalidators']})
 
     # first parameter: Name of the property being validated
     # second parameter: a string, doesn't really matter for our use cae
@@ -308,7 +306,7 @@ def get_seeds_points_entry_vector(xx, yy, zz, uu, vv, ww):
         points : np.ndarray
             [n x 3] matrix of seed-points coordinates.
     """
-    np = import_module('numpy', catch=(RuntimeError,))
+    np = import_module('numpy')
 
     coords = np.stack([xx, yy, zz])
     # vector field
@@ -389,7 +387,7 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
         - ``False``: a vtk object representing the seeds points.
 
     """
-    np = import_module('numpy', catch=(RuntimeError,))
+    np = import_module('numpy')
     import vtk
     from vtk.util import numpy_support
     starts = kw.get("starts", None)
@@ -505,7 +503,7 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
     extend the one provided by Plotly's Streamtube class. Read ``plot_vector``
     docstring for more information.
     """
-    np = import_module('numpy', catch=(RuntimeError,))
+    np = import_module('numpy')
     import vtk
     from vtk.util import numpy_support
     n2, n1, n3 = xx.shape

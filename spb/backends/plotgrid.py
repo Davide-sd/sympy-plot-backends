@@ -16,7 +16,7 @@ def _nrows_ncols(nr, nc, nplots):
     """Define the correct number of rows and/or columns based on the number
     of plots to be shown.
     """
-    np = import_module('numpy', catch=(RuntimeError,))
+    np = import_module('numpy')
 
     if (nc <= 0) and (nr <= 0):
         nc = 1
@@ -49,8 +49,7 @@ def _create_mpl_figure(mapping):
 def _create_panel_figure(mapping, panel_kw):
     pn = import_module(
         'panel',
-        min_module_version='0.12.0',
-        catch=(RuntimeError,))
+        min_module_version='0.12.0')
 
     pn.extension("plotly")
 

@@ -9,12 +9,10 @@ import os
 k3d = import_module(
     'k3d',
     import_kwargs={'fromlist': ['helpers']},
-    min_module_version='2.9.7',
-    catch=(RuntimeError,))
+    min_module_version='2.9.7')
 cc = import_module(
     'colorcet',
-    min_module_version='3.0.0',
-    catch=(RuntimeError,))
+    min_module_version='3.0.0')
 matplotlib = import_module(
     'matplotlib',
     import_kwargs={'fromlist': ['tri']},
@@ -142,8 +140,8 @@ class K3DBackend(Plot):
         return cls._rgb_to_int(color)
 
     def _process_series(self, series):
-        np = import_module('numpy', catch=(RuntimeError,))
-        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        np = import_module('numpy')
+        mergedeep = import_module('mergedeep')
         merge = mergedeep.merge
         Triangulation = matplotlib.tri.Triangulation
         self._init_cyclers()
@@ -362,7 +360,7 @@ class K3DBackend(Plot):
             self._bounds.append([mx, Mx, my, My, self.zlim[0], self.zlim[1]])
 
     def _update_interactive(self, params):
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
 
         # self._fig.auto_rendering = False
         for i, s in enumerate(self.series):
@@ -424,7 +422,7 @@ class K3DBackend(Plot):
 
     def show(self):
         """Visualize the plot on the screen."""
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
 
         if len(self._fig.objects) != len(self.series):
             self._process_series(self._series)

@@ -173,7 +173,7 @@ class MatplotlibBackend(Plot):
 
     def _init_cyclers(self):
         super()._init_cyclers()
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
 
         # For flexibily, spb.backends.utils.convert_colormap returns numpy
         # ndarrays whenever plotly/colorcet/k3d color map are given. Here we
@@ -247,7 +247,7 @@ class MatplotlibBackend(Plot):
             z: list
                 List of z-coordinates for a 3D line.
         """
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
         if z is not None:
             dim = 3
             points = (x, y, z)
@@ -298,8 +298,8 @@ class MatplotlibBackend(Plot):
         self._handles[i] = [h if not isinstance(h, (list, tuple)) else h[0], kw, *args]
 
     def _process_series(self, series):
-        np = import_module('numpy', catch=(RuntimeError,))
-        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        np = import_module('numpy')
+        mergedeep = import_module('mergedeep')
         merge = mergedeep.merge
         mpl_toolkits = import_module(
             'mpl_toolkits', # noqa
@@ -659,7 +659,7 @@ class MatplotlibBackend(Plot):
         self._set_lims(xlims, ylims, zlims)
 
     def _set_lims(self, xlims, ylims, zlims):
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
         mpl_toolkits = import_module(
             'mpl_toolkits', # noqa
             import_kwargs={'fromlist': ['mplot3d']},
@@ -732,14 +732,14 @@ class MatplotlibBackend(Plot):
         The name is misleading: here we create a new colorbar which will be
         placed on the same colorbar axis as the original.
         """
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
         cax.clear()
         norm = Normalize(vmin=np.amin(param), vmax=np.amax(param))
         mappable = cm.ScalarMappable(cmap=kw["cmap"], norm=norm)
         self._fig.colorbar(mappable, orientation="vertical", label=label, cax=cax)
 
     def _update_interactive(self, params):
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
         mpl_toolkits = import_module(
             'mpl_toolkits', # noqa
             import_kwargs={'fromlist': ['mplot3d']},

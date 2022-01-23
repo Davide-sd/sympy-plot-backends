@@ -6,8 +6,7 @@ from sympy.external import import_module
 
 appdirs = import_module(
     'appdirs',
-    min_module_version='1.4.4',
-    catch=(RuntimeError,))
+    min_module_version='1.4.4')
 
 appname = "spb"
 cfg_file = "config.json"
@@ -63,7 +62,7 @@ def reset():
 
 def _load_settings():
     """Load settings and inject the names into the current namespace."""
-    mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+    mergedeep = import_module('mergedeep')
     merge = mergedeep.merge
 
     frame = currentframe()

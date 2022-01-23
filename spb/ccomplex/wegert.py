@@ -12,7 +12,7 @@ under BSD 3 clauses.
 """
 
 from sympy.external import import_module
-np = import_module('numpy', catch=(RuntimeError,))
+np = import_module('numpy')
 
 
 def to_rgb_255(func):

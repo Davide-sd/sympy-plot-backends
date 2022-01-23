@@ -116,8 +116,7 @@ class PlotlyBackend(Plot):
         plotly = import_module(
             'plotly',
             import_kwargs={'fromlist': ['graph_objects', 'figure_factory']},
-            min_module_version='5.0.0',
-            catch=(RuntimeError,))
+            min_module_version='5.0.0')
         go = plotly.graph_objects
         super().__init__(*args, **kwargs)
         self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
@@ -179,16 +178,15 @@ class PlotlyBackend(Plot):
         return [[0, col], [1, col]]
 
     def _process_series(self, series):
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
         plotly = import_module(
             'plotly',
             import_kwargs={'fromlist': ['graph_objects', 'figure_factory']},
-            min_module_version='5.0.0',
-            catch=(RuntimeError,))
+            min_module_version='5.0.0')
         go = plotly.graph_objects
         create_quiver = plotly.figure_factory.create_quiver
         create_streamline = plotly.figure_factory.create_streamline
-        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        mergedeep = import_module('mergedeep')
         merge = mergedeep.merge
         self._init_cyclers()
 
@@ -540,14 +538,13 @@ class PlotlyBackend(Plot):
                 s.rendering_kw = kw
 
     def _update_interactive(self, params):
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
         plotly = import_module(
             'plotly',
             import_kwargs={'fromlist': ['graph_objects', 'figure_factory']},
-            min_module_version='5.0.0',
-            catch=(RuntimeError,))
+            min_module_version='5.0.0')
         create_quiver = plotly.figure_factory.create_quiver
-        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        mergedeep = import_module('mergedeep')
         merge = mergedeep.merge
 
         for i, s in enumerate(self.series):

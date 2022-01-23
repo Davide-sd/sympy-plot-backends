@@ -6,13 +6,11 @@ import os
 bokeh = import_module(
     'bokeh',
     import_kwargs={'fromlist': ['models', 'events', 'plotting', 'io', 'palettes']},
-    min_module_version='2.3.0',
-    catch=(RuntimeError,))
+    min_module_version='2.3.0')
 bp = bokeh.palettes
 cc = import_module(
     'colorcet',
-    min_module_version='3.0.0',
-    catch=(RuntimeError,))
+    min_module_version='3.0.0')
 matplotlib = import_module(
     'matplotlib',
     import_kwargs={'fromlist': ['pyplot', 'cm']},
@@ -52,7 +50,7 @@ def compute_streamlines(x, y, u, v, density=1.0):
 
     Credit: https://docs.bokeh.org/en/latest/docs/gallery/quiver.html
     """
-    np = import_module('numpy', catch=(RuntimeError,))
+    np = import_module('numpy')
 
     ## Set up some constants - size of the grid used.
     NGX = len(x)
@@ -350,8 +348,8 @@ class BokehBackend(Plot):
         return kw
 
     def _process_series(self, series):
-        np = import_module('numpy', catch=(RuntimeError,))
-        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        np = import_module('numpy')
+        mergedeep = import_module('mergedeep')
         merge = mergedeep.merge
         self._init_cyclers()
         # clear figure. Must clear both the renderers as well as the
@@ -537,7 +535,7 @@ class BokehBackend(Plot):
                     cb.color_mapper.update(low=min(us), high=max(us))
 
     def _get_img(self, img):
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
         new_img = np.zeros(img.shape[:2], dtype=np.uint32)
         pixel = new_img.view(dtype=np.uint8).reshape((*img.shape[:2], 4))
         for i in range(img.shape[1]):
@@ -557,7 +555,7 @@ class BokehBackend(Plot):
         return xs, ys, us
 
     def _create_gradient_line(self, x, y, u, colormap, name, line_kw):
-        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        mergedeep = import_module('mergedeep')
         merge = mergedeep.merge
         xs, ys, us = self._get_segments(x, y, u)
         color_mapper = bokeh.models.LinearColorMapper(
@@ -674,7 +672,7 @@ class BokehBackend(Plot):
         .. [#fn5] https://docs.bokeh.org/en/latest/docs/reference/io.html#module-bokeh.io.export
 
         """
-        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        mergedeep = import_module('mergedeep')
         merge = mergedeep.merge
 
         ext = os.path.splitext(path)[1]
@@ -750,7 +748,7 @@ class BokehBackend(Plot):
                 A dictionary containing keywords to customize the appearance
                 of Bokeh's Segment glyph
         """
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
         scale = quiver_kw.pop("scale", 1.0)
         pivot = quiver_kw.pop("pivot", "mid")
         arrow_heads = quiver_kw.pop("arrow_heads", True)

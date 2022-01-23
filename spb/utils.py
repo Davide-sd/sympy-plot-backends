@@ -302,7 +302,7 @@ def get_vertices_indices(x, y, z):
         x, y, z : np.array
             2D arrays
     """
-    np = import_module('numpy', catch=(RuntimeError,))
+    np = import_module('numpy')
 
     rows, cols = x.shape
     x = x.flatten()

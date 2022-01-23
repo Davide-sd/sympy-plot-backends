@@ -317,7 +317,7 @@ class Plot:
         argument is not fully covering the range [-pi, pi]. In such occurences,
         the use of a cyclic colormap would create a misleading plot.
         """
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
 
         eps = 0.1
         use_cyclic_cm = False

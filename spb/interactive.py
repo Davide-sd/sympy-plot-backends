@@ -12,12 +12,10 @@ import warnings
 
 param = import_module(
     'param',
-    min_module_version='1.11.0',
-    catch=(RuntimeError,))
+    min_module_version='1.11.0')
 pn = import_module(
     'panel',
-    min_module_version='0.12.0',
-    catch=(RuntimeError,))
+    min_module_version='0.12.0')
 
 pn.extension("plotly")
 
@@ -74,7 +72,7 @@ class DynamicParam(param.Parameterized):
                 Discretization spacing. Can be "linear" or "log".
                 Default to "linear".
         """
-        np = import_module('numpy', catch=(RuntimeError,))
+        np = import_module('numpy')
 
         if len(v) >= 5:
             # remove tick_format, as it won't be used for the creation of the
@@ -127,8 +125,7 @@ class DynamicParam(param.Parameterized):
         bokeh = import_module(
             'bokeh',
             import_kwargs={'fromlist': ['models']},
-            min_module_version='2.3.0',
-            catch=(RuntimeError,))
+            min_module_version='2.3.0')
         TickFormatter = bokeh.models.formatters.TickFormatter
 
         # remove the previous class attributes added by the previous instances
@@ -422,7 +419,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         of `self` with the one of `other`.
         """
         from spb.backends.base_backend import Plot
-        mergedeep = import_module('mergedeep', catch=(RuntimeError,))
+        mergedeep = import_module('mergedeep')
         merge = mergedeep.merge
 
         if not isinstance(other, (Plot, InteractivePlot)):
