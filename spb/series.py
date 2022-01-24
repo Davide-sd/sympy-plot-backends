@@ -1393,6 +1393,7 @@ class InteractiveSeries(BaseSeries):
                 "Incompatible expression and parameters.\n"
                 + "Expression: {}\n".format(
                     (exprs, ranges, label) if ranges is not None else (exprs, label))
+                + "params: {}\n".format(params)
                 + "Specify what these symbols represent: {}\n".format(fs)
                 + "Are they ranges or parameters?"
             )

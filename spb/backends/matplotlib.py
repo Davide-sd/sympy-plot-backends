@@ -14,7 +14,6 @@ cm = matplotlib.cm
 LineCollection = matplotlib.collections.LineCollection
 ListedColormap = matplotlib.colors.ListedColormap
 Normalize = matplotlib.colors.Normalize
-plt.ioff()
 
 
 # Global variable
@@ -921,7 +920,8 @@ class MatplotlibBackend(Plot):
 
     def show(self):
         """Display the current plot."""
-        if self._fig is None:
+        n = len(self.ax.lines) + len(self.ax.collections)
+        if (self._fig is None) or (n != len(self.series)):
             self.process_series()
         if _show:
             self._fig.tight_layout()

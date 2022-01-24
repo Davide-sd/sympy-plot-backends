@@ -277,11 +277,17 @@ class K3DBackend(Plot):
                     vec_colors[2 * i] = c
                     vec_colors[2 * i + 1] = c
                 vec_colors = vec_colors.astype(np.uint32)
-                vec = k3d.vectors(
-                    origins=origins - vectors / 2,
-                    vectors=vectors,
-                    colors=vec_colors,
-                )
+
+                vec_kw = qkw.copy()
+                kw_to_remove = ["scale", "color"]
+                for k in kw_to_remove:
+                    if k in vec_kw.keys():
+                        vec_kw.pop(k)
+                vec_kw["origins"] = origins - vectors / 2
+                vec_kw["vectors"] = vectors
+                vec_kw["colors"] = vec_colors
+                
+                vec = k3d.vectors(**vec_kw)
                 self._fig += vec
 
             elif s.is_complex and s.is_3Dsurface:

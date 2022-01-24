@@ -701,7 +701,8 @@ class BokehBackend(Plot):
 
     def show(self):
         """Visualize the plot on the screen."""
-        self._process_series(self._series)
+        if len(self._fig.renderers) != len(self.series):
+            self._process_series(self._series)
         if self._run_in_notebook and self._update_event:
             # TODO: the current way we are launching the server only works
             # within Jupyter Notebook. Is there another way of launching

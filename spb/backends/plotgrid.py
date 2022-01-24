@@ -8,7 +8,6 @@ matplotlib = import_module(
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 plt = matplotlib.pyplot
-plt.ioff()
 GridSpec = matplotlib.gridspec.GridSpec
 
 
