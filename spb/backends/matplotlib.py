@@ -410,13 +410,16 @@ class MatplotlibBackend(Plot):
                     # an inequality or equality.
                     xarray, yarray, zarray, plot_type = points
                     color = next(self._cl)
-                    colormap = ListedColormap([color, color])
-                    ckw = dict(cmap=colormap)
-                    kw = merge({}, ckw, s.rendering_kw)
                     if plot_type == "contour":
+                        colormap = ListedColormap([color, color])
+                        ckw = dict(cmap=colormap)
+                        kw = merge({}, ckw, s.rendering_kw)
                         c = self.ax.contour(xarray, yarray, zarray, [0.0],
                             **kw)
                     else:
+                        colormap = ListedColormap(["white", color])
+                        ckw = dict(cmap=colormap)
+                        kw = merge({}, ckw, s.rendering_kw)
                         c = self.ax.contourf(xarray, yarray, zarray, **kw)
                     self._add_handle(i, c, kw)
 
@@ -570,7 +573,7 @@ class MatplotlibBackend(Plot):
             elif s.is_geometry:
                 x, y = s.get_data()
                 color = next(self._cl)
-                fkw = dict(facecolor=color, fill=s.fill, edgecolor=color)
+                fkw = dict(facecolor=color, fill=s.is_filled, edgecolor=color)
                 kw = merge({}, fkw, s.rendering_kw)
                 c = self.ax.fill(x, y, **kw)
                 self._add_handle(i, c, kw)
