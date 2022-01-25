@@ -934,7 +934,7 @@ def test_plot_implicit_adaptive_true():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 0
-    # TODO: where does matplotlib stores fills???
+    assert len(ax.patches) == 1
     p.close()
 
     # PlotlyBackend doesn't support 2D plots
@@ -1322,14 +1322,14 @@ def test_plot_piecewise_multiple_series():
     raises(NotImplementedError, lambda: _plot_piecewise(KBchild1))
 
 
-def test_plot_geometry():
+def test_plot_geometry_1():
     # verify that the backends produce the expected results when
     # `plot_geometry()` is called
     from sympy.geometry import Line as SymPyLine
 
     _plot_geometry = lambda B: plot_geometry(
         SymPyLine((1, 2), (5, 4)), Circle((0, 0), 4), Polygon((2, 2), 3, n=6),
-        backend=B, show=False, fill=False)
+        backend=B, show=False, is_filled=False)
 
     p = _plot_geometry(MB)
     assert len(p.series) == 3
@@ -1361,6 +1361,47 @@ def test_plot_geometry():
     # K3D doesn't support 2D plots
     raises(NotImplementedError, lambda: _plot_geometry(KBchild1))
 
+def test_plot_geometry_2():
+    # verify that is_filled works correctly
+    from sympy.geometry import (
+        Line as SymPyLine, Ellipse, Curve, Point2D, Segment, Polygon
+    )
+    from sympy import Rational
+
+    x = symbols("x")
+
+    _plot_geometry = lambda B, is_filled: plot_geometry(
+        Circle(Point2D(0, 0), 5),
+        Ellipse(Point2D(-3, 2), hradius=3, eccentricity=Rational(4, 5)),
+        Polygon((4, 0), 4, n=5),
+        Curve((cos(x), sin(x)), (x, 0, 2 * pi)),
+        Segment((-4, -6), (6, 6)),
+        Point2D(0, 0), is_filled=is_filled, backend=B, show=False)
+    
+    p = _plot_geometry(MB, False)
+    assert len(p.fig.axes[0].lines) == 5
+    assert len(p.fig.axes[0].collections) == 1
+    assert len(p.fig.axes[0].patches) == 0
+    p = _plot_geometry(MB, True)
+    assert len(p.fig.axes[0].lines) == 2
+    assert len(p.fig.axes[0].collections) == 1
+    assert len(p.fig.axes[0].patches) == 3
+
+    p = _plot_geometry(PB, False)
+    assert len([t["fill"] for t in p.fig.data if t["fill"] is not None]) == 0
+    p = _plot_geometry(PB, True)
+    assert len([t["fill"] for t in p.fig.data if t["fill"] is not None]) == 3
+
+    p = _plot_geometry(BB, False)
+    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Line)]) == 4
+    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)]) == 1
+    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Circle)]) == 1
+    p = _plot_geometry(BB, True)
+    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Line)]) == 1
+    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Patch)]) == 3
+    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)]) == 1
+    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Circle)]) == 1
+    
 
 def test_save():
     # Verify that:

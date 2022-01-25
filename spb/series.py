@@ -2446,7 +2446,7 @@ class GeometrySeries(BaseSeries):
         self._range = _range
         self.label = label
         self._params = params
-        self.fill = kwargs.get("fill", True)
+        self.is_filled = kwargs.get("is_filled", True)
         self.n = kwargs.get("n", 200)
         if isinstance(expr, (LinearEntity3D, Point3D)):
             self.is_3Dline = True
@@ -2456,7 +2456,7 @@ class GeometrySeries(BaseSeries):
                 self.is_point = True
             self._rendering_kw = kwargs.get("line_kw", dict())
         elif isinstance(expr, LinearEntity2D) or (
-            isinstance(expr, (Polygon, Circle, Ellipse)) and (not self.fill)
+            isinstance(expr, (Polygon, Circle, Ellipse)) and (not self.is_filled)
         ):
             self.is_2Dline = True
             self._rendering_kw = kwargs.get("line_kw", dict())
