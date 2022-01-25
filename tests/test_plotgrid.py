@@ -4,7 +4,7 @@ from spb.backends.matplotlib import MB
 from spb.backends.plotly import PB
 from spb.backends.bokeh import BB
 from spb.backends.k3d import KB
-from spb.backends.plotgrid import plotgrid, _nrows_ncols
+from spb.plotgrid import plotgrid, _nrows_ncols
 from spb.functions import plot, plot3d, plot_contour
 from spb.vectors import plot_vector
 from pytest import raises
@@ -92,6 +92,11 @@ def test_plotgrid_mode_1():
     assert len(p.axes[2].get_lines()) == 1
     assert p.axes[2].get_lines()[0].get_label() == "tan(x)"
 
+    # no errors are raised when the number of plots is less than the number
+    # of grid-cells
+    p = plotgrid(p1, p2, p3, nr=2, nc=2)
+
+    # everything works fine when including 3d plots
     p1 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
         backend=MB, n1=20, n2=20, show=False)
     p2 = plot(sin(x), cos(x), (x, -7, 7), adaptive=False, n=100,

@@ -2,14 +2,6 @@ from sympy.external import import_module
 from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import MB
 
-matplotlib = import_module(
-    'matplotlib',
-    import_kwargs={'fromlist': ['pyplot', 'gridspec']},
-    min_module_version='1.1.0',
-    catch=(RuntimeError,))
-plt = matplotlib.pyplot
-GridSpec = matplotlib.gridspec.GridSpec
-
 
 def _nrows_ncols(nr, nc, nplots):
     """Define the correct number of rows and/or columns based on the number
@@ -31,6 +23,13 @@ def _nrows_ncols(nr, nc, nplots):
 
 
 def _create_mpl_figure(mapping):
+    matplotlib = import_module(
+        'matplotlib',
+        import_kwargs={'fromlist': ['pyplot', 'gridspec']},
+        min_module_version='1.1.0',
+        catch=(RuntimeError,))
+    plt = matplotlib.pyplot
+    
     fig = plt.figure()
     for spec, p in mapping.items():
         kw = {"projection": "3d"} if (len(p.series) > 0 and
@@ -162,6 +161,14 @@ def plotgrid(*args, **kwargs):
     .. [#fn1] `adaptive module <https://panel.holoviz.org/reference/layouts/GridSpec.html`_.
 
     """
+    matplotlib = import_module(
+        'matplotlib',
+        import_kwargs={'fromlist': ['pyplot', 'gridspec']},
+        min_module_version='1.1.0',
+        catch=(RuntimeError,))
+    plt = matplotlib.pyplot
+    GridSpec = matplotlib.gridspec.GridSpec
+
     show = kwargs.get("show", True)
     gs = kwargs.get("gs", None)
     panel_kw = kwargs.get("panel_kw", dict(sizing_mode="stretch_width"))
@@ -181,7 +188,8 @@ def plotgrid(*args, **kwargs):
         c = 0
         for i in range(nr):
             for j in range(nc):
-                mapping[gs[i, j]] = args[c]
+                if c < len(args):
+                    mapping[gs[i, j]] = args[c]
                 c += 1
 
         if all(isinstance(a, MB) for a in args):
@@ -194,7 +202,7 @@ def plotgrid(*args, **kwargs):
         if not isinstance(gs, dict):
             raise TypeError("`gs` must be a dictionary.")
 
-        from matplotlib.gridspec import SubplotSpec
+        SubplotSpec = matplotlib.gridspec.SubplotSpec
         if not isinstance(list(gs.keys())[0], SubplotSpec):
             raise ValueError(
                 "Keys of `gs` must be of elements of type "
