@@ -26,7 +26,7 @@ from spb.backends.base_backend import Plot
 from spb.utils import _unpack_args, _plot_sympify, _check_arguments
 from spb.vectors import _split_vector
 from spb.ccomplex.complex import _build_series as _build_complex_series
-
+import warnings
 
 def _deal_with_complex_series(exprs, ranges, interactive, kwargs, pt):
     """ Look for complex-related keyword arguments. If found, build and return
@@ -483,6 +483,11 @@ def smart_plot(*args, show=True, **kwargs):
     get_plot_data
 
     """
+    warnings.simplefilter('always', DeprecationWarning)
+    warnings.warn(
+        "`smart_plot` is deprecated. Please, do not use it "
+        "as it is no longer maintained. It will be removed "
+        "in a future release.", DeprecationWarning)
 
     args = _plot_sympify(args)
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
