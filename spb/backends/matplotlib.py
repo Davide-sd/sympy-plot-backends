@@ -14,7 +14,7 @@ cm = matplotlib.cm
 LineCollection = matplotlib.collections.LineCollection
 ListedColormap = matplotlib.colors.ListedColormap
 Normalize = matplotlib.colors.Normalize
-
+plt.ioff()
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
