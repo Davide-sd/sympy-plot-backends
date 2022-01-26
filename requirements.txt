@@ -16,4 +16,4 @@ PyQt5
 k3d
 vtk
 msgpack
-adaptive
+adaptive>=0.13.1

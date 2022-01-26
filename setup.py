@@ -53,6 +53,6 @@ setup(
         "k3d==2.9.7",
         "vtk",  # needed for streamlines in k3d
         "msgpack==1.0.2", # in order to export K3D to html
-        "adaptive==0.13.0"
+        "adaptive==0.13.1"
     ],
 )
