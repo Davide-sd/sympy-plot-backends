@@ -408,20 +408,11 @@ def plot(*args, show=True, **kwargs):
        Plot object containing:
        [0]: cartesian line: x**2 for x over (-10.0, 10.0)
 
-    Polar plot:
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-        >>> plot(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
-        ...     polar=True, aspect="equal")
 
     References
     ==========
 
-    .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
+    .. [#fn1] https://github.com/python-adaptive/adaptive
 
     See Also
     ========
@@ -500,7 +491,7 @@ def plot_parametric(*args, show=True, **kwargs):
 
     adaptive : bool, optional
         The default value is set to `True`, which uses the adaptive algorithm
-        implemented in [#fn1]_ to create smooth plots. Use `adaptive_goal`
+        implemented in [#fn2]_ to create smooth plots. Use `adaptive_goal`
         and `loss_fn` to further customize the output.
 
         Set adaptive to `False` and specify `n` if uniform sampling is
@@ -515,7 +506,7 @@ def plot_parametric(*args, show=True, **kwargs):
           evaluation points. This number will be used in the following goal:
           `lambda l: l.loss() < number`
         * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn1]_ for more information.
+          must return a float number. Refer to [#fn2]_ for more information.
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
@@ -527,7 +518,7 @@ def plot_parametric(*args, show=True, **kwargs):
 
         * `None` (default): it will use the `default_loss` from the
           `adaptive` module.
-        * callable : Refer to [#fn1]_ for more information. Specifically,
+        * callable : Refer to [#fn2]_ for more information. Specifically,
           look at `adaptive.learner.learner1D` to find more loss functions.
 
     n : int, optional
@@ -579,7 +570,7 @@ def plot_parametric(*args, show=True, **kwargs):
 
        >>> from sympy import symbols, cos, sin, pi
        >>> from spb.functions import plot_parametric
-       >>> u = symbols('u')
+       >>> u, v = symbols('u, v')
 
     A parametric plot with a single expression:
 
@@ -627,8 +618,8 @@ def plot_parametric(*args, show=True, **kwargs):
        :include-source: True
 
        >>> plot_parametric(
-       ...      (3 * cos(u), 3 * sin(u), (u, 0, 2 * pi), "a"),
-       ...      (3 * cos(2 * u), 5 * sin(4 * u), (u, 0, pi), "b"),
+       ...      (3 * cos(u), 3 * sin(u), (u, 0, 2 * pi), "u"),
+       ...      (3 * cos(2 * v), 5 * sin(4 * v), (v, 0, pi), "v"),
        ...      aspect="equal")
        Plot object containing:
        [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
@@ -637,7 +628,7 @@ def plot_parametric(*args, show=True, **kwargs):
     References
     ==========
 
-    .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
+    .. [#fn2] https://github.com/python-adaptive/adaptive
 
     See Also
     ========
@@ -701,7 +692,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
 
     adaptive : bool, optional
         The default value is set to `True`, which uses the adaptive algorithm
-        implemented in [#fn1]_ to create smooth plots. Use `adaptive_goal`
+        implemented in [#fn3]_ to create smooth plots. Use `adaptive_goal`
         and `loss_fn` to further customize the output.
 
         Set adaptive to `False` and specify `n` if uniform sampling is
@@ -716,7 +707,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
           evaluation points. This number will be used in the following goal:
           `lambda l: l.loss() < number`
         * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn1]_ for more information.
+          must return a float number. Refer to [#fn3]_ for more information.
 
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
@@ -724,7 +715,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
 
         * `None` (default): it will use the `default_loss` from the
           `adaptive` module.
-        * callable : Refer to [#fn1]_ for more information. Specifically,
+        * callable : Refer to [#fn3]_ for more information. Specifically,
           look at `adaptive.learner.learner1D` to find more loss functions.
 
     n : int, optional
@@ -777,7 +768,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
 
        >>> from sympy import symbols, cos, sin
        >>> from spb.functions import plot3d_parametric_line
-       >>> u = symbols('u')
+       >>> u, v = symbols('u, v')
 
     Single plot.
 
@@ -798,8 +789,8 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot3d_parametric_line((cos(u), sin(u), u, (u, -5, 5), "a"),
-       ...     (sin(u), u**2, u, (u, -3, 3), "b"), legend=True)
+       >>> plot3d_parametric_line((cos(u), sin(u), u, (u, -5, 5), "u"),
+       ...     (sin(v), v**2, v, (v, -3, 3), "v"), legend=True)
        Plot object containing:
        [0]: 3D parametric cartesian line: (cos(u), sin(u), u) for u over (-5.0, 5.0)
        [1]: 3D parametric cartesian line: (sin(u), u**2, u) for u over (-3.0, 3.0)
@@ -807,7 +798,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     References
     ==========
 
-    .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
+    .. [#fn3] https://github.com/python-adaptive/adaptive
 
     See Also
     ========
@@ -876,7 +867,7 @@ def plot3d(*args, show=True, **kwargs):
         x and y directions, respectively.
 
         Set adaptive to `True` to use the adaptive algorithm implemented in
-        [#fn1]_ to create smooth plots. Use `adaptive_goal` and `loss_fn`
+        [#fn4]_ to create smooth plots. Use `adaptive_goal` and `loss_fn`
         to further customize the output.
 
     adaptive_goal : callable, int, float or None
@@ -888,7 +879,7 @@ def plot3d(*args, show=True, **kwargs):
           evaluation points. This number will be used in the following goal:
           `lambda l: l.loss() < number`
         * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn1]_ for more information.
+          must return a float number. Refer to [#fn4]_ for more information.
 
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
@@ -896,7 +887,7 @@ def plot3d(*args, show=True, **kwargs):
 
         * `None` (default): it will use the `default_loss` from the
           `adaptive` module.
-        * callable : Refer to [#fn1]_ for more information. Specifically,
+        * callable : Refer to [#fn4]_ for more information. Specifically,
           look at `adaptive.learner.learnerND` to find more loss functions.
 
     n1 : int, optional
@@ -998,7 +989,7 @@ def plot3d(*args, show=True, **kwargs):
     References
     ==========
 
-    .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
+    .. [#fn4] https://github.com/python-adaptive/adaptive
 
     See Also
     ========
@@ -1457,14 +1448,16 @@ def plot_geometry(*args, show=True, **kwargs):
     Parameters
     ==========
 
-    geom : GeometryEntity
-        Represent the geometric entity to be plotted.
+    args :
+        geom : GeometryEntity
+            Represent the geometric entity to be plotted.
 
-    label : str, optional
-        The name of the complex function to be eventually shown on the legend.
-        If not provided, the string representation of `geom` will be used.
+        label : str, optional
+            The name of the geometry entity to be eventually shown on the
+            legend. If not provided, the string representation of `geom`
+            will be used.
 
-    fill : boolean
+    is_filled : boolean
         Default to True. Fill the polygon/circle/ellipse.
 
     params : dict
@@ -1721,7 +1714,7 @@ def plot_list(*args, show=True, **kwargs):
        :include-source: True
 
        >>> from sympy import symbols, sin, cos
-       >>> from spb import plot
+       >>> from spb import plot_list
        >>> x = symbols('x')
 
     Plot the coordinates of a single function:
@@ -1807,7 +1800,7 @@ def plot_piecewise(*args, **kwargs):
 
     adaptive : bool, optional
         The default value is set to `True`, which uses the adaptive algorithm
-        implemented in [#fn1]_ to create smooth plots. Use `adaptive_goal`
+        implemented in [#fn5]_ to create smooth plots. Use `adaptive_goal`
         and `loss_fn` to further customize the output.
 
         Set adaptive to `False` and specify `n` if uniform sampling is
@@ -1822,7 +1815,7 @@ def plot_piecewise(*args, **kwargs):
           evaluation points. This number will be used in the following goal:
           `lambda l: l.loss() < number`
         * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn1]_ for more information.
+          must return a float number. Refer to [#fn5]_ for more information.
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
@@ -1844,7 +1837,7 @@ def plot_piecewise(*args, **kwargs):
 
         * `None` (default): it will use the `default_loss` from the
           `adaptive` module.
-        * callable : Refer to [#fn1]_ for more information. Specifically,
+        * callable : Refer to [#fn5]_ for more information. Specifically,
           look at `adaptive.learner.learner1D` to find more loss functions.
 
     n : int, optional
@@ -1895,7 +1888,7 @@ def plot_piecewise(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos, pi, Heaviside
+       >>> from sympy import symbols, cos, pi, Heaviside, Piecewise
        >>> from spb import plot_piecewise
        >>> x = symbols('x')
 
@@ -1939,6 +1932,12 @@ def plot_piecewise(*args, **kwargs):
        [8]: cartesian line: 1/x for x over (-5.0, 5.0)
        [9]: list plot
        [10]: list plot
+    
+
+    References
+    ==========
+
+    .. [#fn5] https://github.com/python-adaptive/adaptive
 
 
     See Also

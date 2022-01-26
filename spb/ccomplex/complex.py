@@ -334,7 +334,7 @@ def plot_real_imag(*args, **kwargs):
        :include-source: True
 
        >>> from sympy import I, symbols, exp, sqrt, cos, sin, pi, gamma
-       >>> from spb import plot_complex
+       >>> from spb import plot_real_imag
        >>> x, y, z = symbols('x, y, z')
 
 
@@ -434,15 +434,15 @@ def plot_complex(*args, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a single expression with a single range.
-        `plot_real_imag(expr, range, **kwargs)`
+        `plot_complex(expr, range, **kwargs)`
     - Plotting a single expression with the default range (-10, 10).
-        `plot_real_imag(expr, **kwargs)`
+        `plot_complex(expr, **kwargs)`
     - Plotting multiple expressions with a single range.
-        `plot_real_imag(expr1, expr2, ..., range, **kwargs)`
+        `plot_complex(expr1, expr2, ..., range, **kwargs)`
     - Plotting multiple expressions with multiple ranges.
-        `plot_real_imag((expr1, range1), (expr2, range2), ..., **kwargs)`
+        `plot_complex((expr1, range1), (expr2, range2), ..., **kwargs)`
     - Plotting multiple expressions with multiple ranges and custom labels.
-        `plot_real_imag((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)`
+        `plot_complex((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)`
 
     Parameters
     ==========
@@ -610,11 +610,11 @@ def plot_complex_list(*args, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a single list of complex numbers.
-        `plot_real_imag(l1, **kwargs)`
+        `plot_complex_list(l1, **kwargs)`
     - Plotting multiple lists of complex numbers.
-        `plot_real_imag(l1, l2, **kwargs)`
+        `plot_complex_list(l1, l2, **kwargs)`
     - Plotting multiple lists of complex numbers each one with a custom label.
-        `plot_real_imag((l1, label1), (l2, label2), **kwargs)`
+        `plot_complex_list((l1, label1), (l2, label2), **kwargs)`
 
 
     Parameters
@@ -698,13 +698,13 @@ def plot_complex_vector(*args, **kwargs):
 
       .. code-block::
 
-         plot(expr, range, **kwargs)
+         plot_complex_vector(expr, range, **kwargs)
 
     - Plotting multiple vector fields with different ranges and custom labels.
 
       .. code-block::
 
-         plot((expr1, range1, label1 [optional]),
+         plot_complex_vector((expr1, range1, label1 [optional]),
             (expr2, range2, label2 [optional]), **kwargs)
 
     Parameters
