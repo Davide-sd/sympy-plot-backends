@@ -586,9 +586,6 @@ class MatplotlibBackend(Plot):
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
                 )
 
-            if self.update_rendering_kw and (kw is not None):
-                s.rendering_kw = kw
-
         Axes3D = mpl_toolkits.mplot3d.Axes3D
 
         # Set global options.

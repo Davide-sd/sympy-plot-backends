@@ -1968,7 +1968,6 @@ def plot_piecewise(*args, **kwargs):
     x = free.pop() if free else Symbol("x")
     kwargs.setdefault("xlabel", x.name)
     kwargs.setdefault("ylabel", "f(%s)" % x.name)
-    kwargs.setdefault("update_rendering_kw", True)
     kwargs.setdefault("legend", False)
     kwargs["process_piecewise"] = True
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)

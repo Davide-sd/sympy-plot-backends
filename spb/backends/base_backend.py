@@ -187,10 +187,6 @@ class Plot:
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
-        # NOTE: the following attributes is strictly related to
-        # `plot_piecewise`. If it's True, it means the backend was
-        # instantiated by that function.
-        self.update_rendering_kw = kwargs.get("update_rendering_kw", False)
         # NOTE: it would be nice to have detect_poles=True by default.
         # However, the correct detection also depends on the number of points
         # and the value of `eps`. Getting the detection right is likely to
@@ -228,7 +224,7 @@ class Plot:
             ):
                 # don't show the legend if `plot_piecewise` created this
                 # backend
-                if not self.update_rendering_kw:
+                if not ("process_piecewise" in kwargs.keys()):
                     self.legend = True
 
         # Objects used to render/display the plots, which depends on the
@@ -273,7 +269,6 @@ class Plot:
             xscale=self.xscale,
             yscale=self.yscale,
             zscale=self.zscale,
-            update_rendering_kw=self.update_rendering_kw,
             detect_poles=self.detect_poles,
             use_cm=self._use_cm,
             legend=self.legend,

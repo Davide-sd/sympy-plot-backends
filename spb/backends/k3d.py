@@ -335,9 +335,6 @@ class K3DBackend(Plot):
                     + "K3D-Jupyter only supports 3D plots."
                 )
 
-            if self.update_rendering_kw and (kw is not None):
-                s.rendering_kw = kw
-
         xl = self.xlabel if self.xlabel else "x"
         yl = self.ylabel if self.ylabel else "y"
         zl = self.zlabel if self.zlabel else "z"

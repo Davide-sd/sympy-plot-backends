@@ -512,9 +512,6 @@ class BokehBackend(Plot):
                     + "Bokeh only supports 2D plots."
                 )
 
-            if self.update_rendering_kw and (kw is not None):
-                s.rendering_kw = kw
-
         if len(self._fig.legend) > 0:
             self._fig.legend.visible = self.legend
             # interactive legend

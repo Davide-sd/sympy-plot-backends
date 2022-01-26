@@ -544,9 +544,6 @@ class PlotlyBackend(Plot):
                     "{} is not supported by {}".format(type(s), type(self).__name__)
                 )
 
-            if self.update_rendering_kw and (kw is not None):
-                s.rendering_kw = kw
-
     def _update_interactive(self, params):
         np = import_module('numpy')
         plotly = import_module(
