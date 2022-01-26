@@ -14,7 +14,6 @@ cm = matplotlib.cm
 LineCollection = matplotlib.collections.LineCollection
 ListedColormap = matplotlib.colors.ListedColormap
 Normalize = matplotlib.colors.Normalize
-plt.ioff()
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
@@ -146,6 +145,7 @@ class MatplotlibBackend(Plot):
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
+        self._init_cyclers()
         super().__init__(*args, **kwargs)
 
         # plotgrid() can provide its figure and axes to be populated with
@@ -164,7 +164,10 @@ class MatplotlibBackend(Plot):
         self._show_minor_grid = kwargs.get("show_minor_grid", cfg["matplotlib"]["show_minor_grid"])
 
         self._handles = dict()
-        self.process_series()
+    
+    def _set_piecewise_color(self, s, color):
+        """Set the color to the given series"""
+        s.rendering_kw["color"] = color
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
@@ -923,12 +926,10 @@ class MatplotlibBackend(Plot):
 
     def show(self):
         """Display the current plot."""
-        n = len(self.ax.lines) + len(self.ax.collections)
-        if (self._fig is None) or (n != len(self.series)):
-            self.process_series()
+        self.process_series()
         if _show:
             self._fig.tight_layout()
-            self._fig.show()
+            plt.show()
         else:
             self.close()
 

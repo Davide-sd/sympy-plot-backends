@@ -77,6 +77,7 @@ class K3DBackend(Plot):
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
+        self._init_cyclers()
         super().__init__(*args, **kwargs)
         if self._get_mode() != 0:
             raise ValueError(
@@ -103,6 +104,10 @@ class K3DBackend(Plot):
             )
         self.plot_shown = False
         self._process_series(self._series)
+    
+    def _set_piecewise_color(self, s, color):
+        """Set the color to the given series"""
+        raise NotImplementedError
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):

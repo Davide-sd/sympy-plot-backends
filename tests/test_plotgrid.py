@@ -65,7 +65,7 @@ def test_nrows_ncols():
 
 
 def test_empty_plotgrid():
-    p = plotgrid()
+    p = plotgrid(show=False)
     assert isinstance(p, plt.Figure)
 
 
@@ -79,7 +79,7 @@ def test_plotgrid_mode_1():
         backend=MB, show=False, ylabel="b")
     p3 = plot(tan(x), (x, -10, 10), adaptive=False, n=100,
         backend=MB, show=False, ylabel="c")
-    p = plotgrid(p1, p2, p3)
+    p = plotgrid(p1, p2, p3, show=False)
     assert isinstance(p, plt.Figure)
     assert len(p.axes) == 3
     assert p.axes[0].get_xlabel() == "x" and p.axes[0].get_ylabel() == "a"
@@ -94,14 +94,14 @@ def test_plotgrid_mode_1():
 
     # no errors are raised when the number of plots is less than the number
     # of grid-cells
-    p = plotgrid(p1, p2, p3, nr=2, nc=2)
+    p = plotgrid(p1, p2, p3, nr=2, nc=2, show=False)
 
     # everything works fine when including 3d plots
     p1 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
         backend=MB, n1=20, n2=20, show=False)
     p2 = plot(sin(x), cos(x), (x, -7, 7), adaptive=False, n=100,
         backend=MB, show=False)
-    p = plotgrid(p1, p2, nc=2)
+    p = plotgrid(p1, p2, nc=2, show=False)
     assert isinstance(p, plt.Figure)
     assert len(p.axes) == 2
     assert isinstance(p.axes[0], mpl_toolkits.mplot3d.Axes3D)
@@ -152,10 +152,10 @@ def test_plotgrid_mode_2():
         backend=MB, n1=20, n2=20, show=False)
 
     # gs is not a dictionary
-    raises(TypeError, lambda: plotgrid(p1, p2, p3, p4, p5, gs=1))
+    raises(TypeError, lambda: plotgrid(p1, p2, p3, p4, p5, gs=1, show=False))
     # wrong type of the keys
     gs = {1: p1, 2: p2}
-    raises(ValueError, lambda: plotgrid(p1, p2, p3, p4, p5, gs=gs))
+    raises(ValueError, lambda: plotgrid(p1, p2, p3, p4, p5, gs=gs, show=False))
 
     gs = GridSpec(3, 3)
     mapping = {
@@ -165,7 +165,7 @@ def test_plotgrid_mode_2():
         gs[2:, 1:]: p4,
         gs[0:2, 1:]: p5,
     }
-    p = plotgrid(gs=mapping)
+    p = plotgrid(gs=mapping, show=False)
 
     assert isinstance(p, plt.Figure)
     assert len(p.axes) == 5

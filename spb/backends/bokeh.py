@@ -282,6 +282,7 @@ class BokehBackend(Plot):
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
+        self._init_cyclers()
         super().__init__(*args, **kwargs)
         self._theme = kwargs.get("theme", cfg["bokeh"]["theme"])
         self._update_event = kwargs.get("update_event",
@@ -340,6 +341,12 @@ class BokehBackend(Plot):
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
         self._fig.on_event(bokeh.events.PanEnd, self._pan_update)
         self._process_series(self._series)
+    
+    def _set_piecewise_color(self, s, color):
+        """Set the color to the given series"""
+        s.rendering_kw["color"] = color
+        if s.is_point and (not s.is_filled):
+            s.rendering_kw["fill_color"] = "white"
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):

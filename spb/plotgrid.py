@@ -41,6 +41,7 @@ def _create_mpl_figure(mapping):
         cpa["fig"] = fig
         cpa["ax"] = cur_ax
         p = Plot(*p.series, **cpa)
+        p.process_series()
     return fig
 
 
@@ -217,5 +218,5 @@ def plotgrid(*args, **kwargs):
     if isinstance(fig, plt.Figure):
         fig.tight_layout()
         if show:
-            fig.show()
+            plt.show()
     return fig

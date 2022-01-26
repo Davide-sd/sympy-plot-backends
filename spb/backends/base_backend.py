@@ -201,6 +201,17 @@ class Plot:
         # enough to iterate over this list.
         self._series = []
         self._series.extend(args)
+        if "process_piecewise" in kwargs.keys():
+            # if the backend was called by plot_piecewise, each piecewise
+            # function must use the same color. Here we preprocess each
+            # series to add the correct color
+            series = []
+            for idx, _series in kwargs["process_piecewise"].items():
+                color = next(self._cl)
+                for s in _series:
+                    self._set_piecewise_color(s, color)
+                series.extend(_series)
+            self._series = series
 
         # The user can choose to use the standard color map loop, or
         # set/provide a solid color loop (for the surface color).

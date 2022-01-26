@@ -71,6 +71,14 @@ unset_show()
 # test_build_series.
 #
 
+# NOTE
+# While BB, PB, KB creates the figure and populate it with numerical data at
+# instantiation, MB does not. With MB, the figure is created and numerical
+# data is added only when `show` or `fig` are called. 
+# Therefore, in the following tests, when a plot `p` is created with MB and
+# show=False, we either call `p.fig` or `p.process_series`
+#
+
 class UnsupportedSeries(BaseSeries):
     pass
 
@@ -125,7 +133,7 @@ def test_instance_plot():
 def test_unsupported_series():
     # verify that an error is raised when an unsupported series is given in
     series = [UnsupportedSeries()]
-    raises(NotImplementedError, lambda: Plot(*series, backend=MB))
+    raises(NotImplementedError, lambda: Plot(*series, backend=MB).process_series())
     raises(NotImplementedError, lambda: Plot(*series, backend=PB))
     raises(NotImplementedError, lambda: Plot(*series, backend=PB))
     raises(NotImplementedError, lambda: Plot(*series, backend=KBchild2))
@@ -250,7 +258,7 @@ def test_MatplotlibBackend():
     # `_handle` is needed in order to correctly update the data with iplot
     x, y = symbols("x, y")
     p = plot3d(cos(x**2 + y**2), backend=MB, show=False, n1=10, n2=10)
-    print(type(p._handles))
+    p.process_series()
     assert hasattr(p, "_handles") and isinstance(p._handles, dict)
     assert len(p._handles) == 1
     assert isinstance(p._handles[0], (tuple, list))
@@ -351,10 +359,11 @@ def test_plot_sum():
     assert isinstance(p3, MB)
 
     # summing plots with different backends: fail when backend-specific
-    # keyword arguments are used
+    # keyword arguments are used.
+    # NOTE: the output plot is of type MB
     p1 = plot(sin(x), backend=MB, line_kw=dict(linestyle=":"), show=False)
     p2 = plot(cos(x), backend=PB, line_kw=dict(line_dash="dash"), show=False)
-    raises(AttributeError, lambda: p1 + p2)
+    raises(AttributeError, lambda: (p1 + p2).process_series())
 
 
 def test_plot():
@@ -1585,7 +1594,7 @@ def test_aspect_ratio_3d():
     # matplotlib's Axes3D currently only supports the aspect argument 'auto'
     raises(NotImplementedError,
         lambda: plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-            n1=20, n2=20, backend=MB, show=False, aspect=(1, 1)))
+            n1=20, n2=20, backend=MB, show=False, aspect=(1, 1)).process_series())
 
     p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
         n1=20, n2=20, backend=PB, show=False)

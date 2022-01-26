@@ -118,6 +118,8 @@ class PlotlyBackend(Plot):
             import_kwargs={'fromlist': ['graph_objects', 'figure_factory']},
             min_module_version='5.0.0')
         go = plotly.graph_objects
+
+        self._init_cyclers()
         super().__init__(*args, **kwargs)
         self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
 
@@ -138,6 +140,14 @@ class PlotlyBackend(Plot):
         # show=False
         self._process_series(self._series)
         self._update_layout()
+    
+    def _set_piecewise_color(self, s, color):
+        """Set the color to the given series"""
+        s.rendering_kw["line_color"] = color
+        if not s.is_filled:
+            s.rendering_kw["marker"] = dict(
+                color="#E5ECF6",
+                line=dict(color=color))
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):

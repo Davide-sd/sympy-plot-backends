@@ -1951,11 +1951,6 @@ def plot_piecewise(*args, **kwargs):
     from spb.defaults import TWO_D_B
     Backend = kwargs.pop("backend", TWO_D_B)
 
-    def create_one_color_backend(i):
-        class One_Color_Backend(Backend):
-            colorloop = [Backend.colorloop[i]]
-        return One_Color_Backend
-
     args = _plot_sympify(args)
     free = set()
     for a in args:
@@ -1968,7 +1963,6 @@ def plot_piecewise(*args, **kwargs):
                 )
 
     show = kwargs.get("show", True)
-    kwargs["process_piecewise"] = True
     kwargs["show"] = False
 
     x = free.pop() if free else Symbol("x")
@@ -1976,24 +1970,21 @@ def plot_piecewise(*args, **kwargs):
     kwargs.setdefault("ylabel", "f(%s)" % x.name)
     kwargs.setdefault("update_rendering_kw", True)
     kwargs.setdefault("legend", False)
+    kwargs["process_piecewise"] = True
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
     series = []
 
     plots = []
     plot_expr = _check_arguments(args, 1, 1)
+    color_series_dict = dict()
     for i, a in enumerate(plot_expr):
         series = _build_line_series(a, **kwargs)
-        B = create_one_color_backend(i)
-        p = B(*series, **kwargs)
-        plots.append(p)
+        color_series_dict[i] = series
 
-    p = plots[0]
-    # reapply original color loop
-    p.colorloop = Backend.colorloop
-    p._init_cyclers()
-    for i in range(1, len(plots)):
-        p = p + plots[i]
-    p.legend = False
+    # NOTE: let's overwrite this keyword argument
+    kwargs["process_piecewise"] = color_series_dict
+    p = Backend(**kwargs)
+
     if show:
         p.show()
     return p
