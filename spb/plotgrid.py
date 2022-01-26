@@ -29,7 +29,7 @@ def _create_mpl_figure(mapping):
         min_module_version='1.1.0',
         catch=(RuntimeError,))
     plt = matplotlib.pyplot
-    
+
     fig = plt.figure()
     for spec, p in mapping.items():
         kw = {"projection": "3d"} if (len(p.series) > 0 and

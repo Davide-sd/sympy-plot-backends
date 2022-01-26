@@ -74,7 +74,7 @@ unset_show()
 # NOTE
 # While BB, PB, KB creates the figure and populate it with numerical data at
 # instantiation, MB does not. With MB, the figure is created and numerical
-# data is added only when `show` or `fig` are called. 
+# data is added only when `show` or `fig` are called.
 # Therefore, in the following tests, when a plot `p` is created with MB and
 # show=False, we either call `p.fig` or `p.process_series`
 #
@@ -1386,7 +1386,7 @@ def test_plot_geometry_2():
         Curve((cos(x), sin(x)), (x, 0, 2 * pi)),
         Segment((-4, -6), (6, 6)),
         Point2D(0, 0), is_filled=is_filled, backend=B, show=False)
-    
+
     p = _plot_geometry(MB, False)
     assert len(p.fig.axes[0].lines) == 5
     assert len(p.fig.axes[0].collections) == 1
@@ -1410,7 +1410,7 @@ def test_plot_geometry_2():
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Patch)]) == 3
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)]) == 1
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Circle)]) == 1
-    
+
 
 def test_save():
     # Verify that:

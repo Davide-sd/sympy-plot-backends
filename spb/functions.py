@@ -1932,7 +1932,7 @@ def plot_piecewise(*args, **kwargs):
        [8]: cartesian line: 1/x for x over (-5.0, 5.0)
        [9]: list plot
        [10]: list plot
-    
+
 
     References
     ==========

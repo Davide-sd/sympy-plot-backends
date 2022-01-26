@@ -164,7 +164,7 @@ class MatplotlibBackend(Plot):
         self._show_minor_grid = kwargs.get("show_minor_grid", cfg["matplotlib"]["show_minor_grid"])
 
         self._handles = dict()
-    
+
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
         s.rendering_kw["color"] = color

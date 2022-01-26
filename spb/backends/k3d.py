@@ -104,7 +104,7 @@ class K3DBackend(Plot):
             )
         self.plot_shown = False
         self._process_series(self._series)
-    
+
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
         raise NotImplementedError
@@ -291,7 +291,7 @@ class K3DBackend(Plot):
                 vec_kw["origins"] = origins - vectors / 2
                 vec_kw["vectors"] = vectors
                 vec_kw["colors"] = vec_colors
-                
+
                 vec = k3d.vectors(**vec_kw)
                 self._fig += vec
 

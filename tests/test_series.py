@@ -943,7 +943,7 @@ def test_is_point_is_filled():
 def test_geometry_is_filled():
     # verify that GeometrySeries exposes the is_filled attribute
     x = symbols("x")
-    
+
     s = GeometrySeries(Circle(Point(0, 0), 5), is_filled=False)
     assert not s.is_filled
 

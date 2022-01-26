@@ -341,7 +341,7 @@ class BokehBackend(Plot):
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
         self._fig.on_event(bokeh.events.PanEnd, self._pan_update)
         self._process_series(self._series)
-    
+
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
         s.rendering_kw["color"] = color

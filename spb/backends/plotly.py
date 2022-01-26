@@ -140,7 +140,7 @@ class PlotlyBackend(Plot):
         # show=False
         self._process_series(self._series)
         self._update_layout()
-    
+
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
         s.rendering_kw["line_color"] = color
