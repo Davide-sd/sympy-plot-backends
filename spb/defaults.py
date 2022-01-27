@@ -20,15 +20,15 @@ def _hardcoded_defaults():
     return dict(
         # Find more Plotly themes at the following page:
         # https://plotly.com/python/templates/
-        plotly={"theme": "plotly_dark"},
+        plotly={"theme": "seaborn"},
         # Find more Bokeh themes at the following page:
         # https://docs.bokeh.org/en/latest/docs/reference/themes.html
         bokeh={
-            "theme": "dark_minimal",
+            "theme": "caliber",
             "sizing_mode": "stretch_width",
             "update_event": True,
             "show_minor_grid": True,
-            "minor_grid_line_alpha": 0.2,
+            "minor_grid_line_alpha": 0.6,
             "minor_grid_line_dash": [2, 2],
         },
         k3d={
