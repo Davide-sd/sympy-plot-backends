@@ -40,6 +40,7 @@ setup(
         "numpy==1.21.1",
         "scipy==1.7.1",  # helps when lambdifying expressions
         "sympy==1.8",
+        "Cython",       # for Read The Docs
         "matplotlib==3.4.2",
         "mergedeep==1.3.4",
         "ipympl==0.7.0",
