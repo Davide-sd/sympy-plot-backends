@@ -116,15 +116,6 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = [
     '_static',
-    '_static/tut-1',
-    '_static/tut-2',
-    '_static/tut-3',
-    '_static/tut-4',
-    '_static/tut-5',
-    '_static/tut-6',
-    '_static/tut-7',
-    '_static/tut-8',
-    '_static/tut-9',
 ]
 
 # html_js_files = [
