@@ -255,17 +255,10 @@ def plot_vector(*args, show=True, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a vector field with a single range.
-
-      .. code-block::
-
-         plot(expr, range1, range2, range3 [optional], **kwargs)
+        `plot(expr, range1, range2, range3 [optional], **kwargs)`
 
     - Plotting multiple vector fields with different ranges and custom labels.
-
-      .. code-block::
-
-         plot((expr1, range1, range2, range3 [optional], label1),
-            (expr2, range4, range5, range6 [optional], label2), **kwargs)
+        `plot((expr1, range1, range2, range3 [optional], label1), (expr2, range4, range5, range6 [optional], label2), **kwargs)`
 
     Parameters
     ==========
@@ -288,7 +281,11 @@ def plot_vector(*args, show=True, **kwargs):
             If none is provided, the string representation of the vector will
             be used.
 
-    contours_kw : dict
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
+    contour_kw : dict
         A dictionary of keywords/values which is passed to the backend
         contour function to customize the appearance. Refer to the plotting
         library (backend) manual for more informations.
@@ -374,54 +371,55 @@ def plot_vector(*args, show=True, **kwargs):
     ========
 
     .. plot::
-        :context: reset
-        :format: doctest
-        :include-source: True
+       :context: reset
+       :format: doctest
+       :include-source: True
 
-        >>> from sympy import symbols, sin, cos, Plane, Matrix, sqrt
-        >>> from spb.vectors import plot_vector
-        >>> x, y, z = symbols('x, y, z')
+       >>> from sympy import symbols, sin, cos, Plane, Matrix, sqrt
+       >>> from spb.vectors import plot_vector
+       >>> x, y, z = symbols('x, y, z')
 
     Quivers plot of a 2D vector field with a contour plot in background
     representing the vector's magnitude (a scalar field).
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3))
-        Plot object containing:
-        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
-        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
+       >>> plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
+       ...     quiver_kw=dict(color="black"), grid=False)
+       Plot object containing:
+       [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [1]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
     Streamlines plot of a 2D vector field with no background scalar field.
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
-        ...     streamlines=True, scalar=None)
-        Plot object containing:
-        [0]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
+       >>> plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
+       ...     streamlines=True, scalar=None)
+       Plot object containing:
+       [0]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
 
     Plot multiple 2D vectors fields, setting a background scalar field to be
     the magnitude of the first vector.
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_vector([-sin(y), cos(x)], [y, x], (x, -5, 5), (y, -3, 3), n=20,
-        ...     scalar=sqrt((-sin(y))**2 + cos(x)**2), legend=True)
-        Plot object containing:
-        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)
-        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -5.0, 5.0), (y, -3.0, 3.0)
-        [2]: 2D vector series: [y, x] over (x, -5.0, 5.0), (y, -3.0, 3.0)
+       >>> plot_vector([-sin(y), cos(x)], [y, x], (x, -5, 5), (y, -3, 3), n=20,
+       ...     scalar=sqrt((-sin(y))**2 + cos(x)**2), legend=True, grid=False)
+       Plot object containing:
+       [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)
+       [1]: 2D vector series: [-sin(y), cos(x)] over (x, -5.0, 5.0), (y, -3.0, 3.0)
+       [2]: 2D vector series: [y, x] over (x, -5.0, 5.0), (y, -3.0, 3.0)
 
     3D vector field.
 

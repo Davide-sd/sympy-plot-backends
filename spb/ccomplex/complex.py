@@ -269,10 +269,35 @@ def plot_real_imag(*args, **kwargs):
     abs : boolean, optional
         If True, plot the modulus of the complex function. Default to True.
 
-    adaptive : boolean, optional
+    adaptive : bool, optional
         Attempt to create line plots by using an adaptive algorithm.
-        Surface and contour plots do not use an adaptive algorithm.
+        Image and surface plots do not use an adaptive algorithm.
         Default to True.
+        Use `adaptive_goal` and `loss_fn` to further customize the output.
+
+    adaptive_goal : callable, int, float or None
+        Controls the "smoothness" of the evaluation. Possible values:
+
+        * `None` (default):  it will use the following goal:
+          `lambda l: l.loss() < 0.01`
+        * number (int or float). The lower the number, the more
+          evaluation points. This number will be used in the following goal:
+          `lambda l: l.loss() < number`
+        * callable: a function requiring one input element, the learner. It
+          must return a float number. Refer to [#fn0]_ for more information.
+
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
+    loss_fn : callable or None
+        The loss function to be used by the `adaptive` learner.
+        Possible values:
+
+        * `None` (default): it will use the `default_loss` from the
+          `adaptive` module.
+        * callable : Refer to [#fn0]_ for more information. Specifically,
+          look at `adaptive.learner.learner1D` to find more loss functions.
 
     arg : boolean, optional
         If True, plot the argument of the complex function. Default to True.
@@ -291,6 +316,10 @@ def plot_real_imag(*args, **kwargs):
     imag : boolean, optional
         If True, plot the imaginary part of the complex function.
         Default to True.
+
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
+        plotting library (backend) manual for more informations.
 
     modules : str, optional
         Specify the modules to be used for the numerical evaluation. Refer to
@@ -391,7 +420,7 @@ def plot_real_imag(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), threed=True)
+       >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), n=100, threed=True)
        Plot object containing:
        [0]: cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
        [1]: cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
@@ -403,9 +432,20 @@ def plot_real_imag(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), threed=True)
+       >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j),
+       ...     n=100, real=False, imag=False, abs=True, threed=True)
        Plot object containing:
        [0]: complex cartesian surface: sqrt(sqrt(re(x)**2 + im(x)**2)*sin(atan2(im(x), re(x))/2)**2 + sqrt(re(x)**2 + im(x)**2)*cos(atan2(im(x), re(x))/2)**2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
+
+    References
+    ==========
+
+    .. [#fn0] https://github.com/python-adaptive/adaptive
+
+    See Also
+    ========
+
+    plot_complex, plot_complex_list, plot_complex_vector
 
     """
     kwargs["absarg"] = False
@@ -468,10 +508,35 @@ def plot_complex(*args, **kwargs):
             legend. If none is provided, the string representation of the
             function will be used.
 
-    adaptive : boolean, optional
+    adaptive : bool, optional
         Attempt to create line plots by using an adaptive algorithm.
         Image and surface plots do not use an adaptive algorithm.
         Default to True.
+        Use `adaptive_goal` and `loss_fn` to further customize the output.
+
+    adaptive_goal : callable, int, float or None
+        Controls the "smoothness" of the evaluation. Possible values:
+
+        * `None` (default):  it will use the following goal:
+          `lambda l: l.loss() < 0.01`
+        * number (int or float). The lower the number, the more
+          evaluation points. This number will be used in the following goal:
+          `lambda l: l.loss() < number`
+        * callable: a function requiring one input element, the learner. It
+          must return a float number. Refer to [#fn2]_ for more information.
+
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
+    loss_fn : callable or None
+        The loss function to be used by the `adaptive` learner.
+        Possible values:
+
+        * `None` (default): it will use the `default_loss` from the
+          `adaptive` module.
+        * callable : Refer to [#fn2]_ for more information. Specifically,
+          look at `adaptive.learner.learner1D` to find more loss functions.
 
     modules : str, optional
         Specify the modules to be used for the numerical evaluation. Refer to
@@ -570,7 +635,8 @@ def plot_complex(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), coloring="b", n=500)
+       >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I),
+       ...     coloring="b", n=500, grid=False)
        Plot object containing:
        [0]: domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
@@ -594,6 +660,14 @@ def plot_complex(*args, **kwargs):
     .. [#fn1] Domain Coloring is based on Elias Wegert's book
        `"Visual Complex Functions" <https://www.springer.com/de/book/9783034801799>`_.
        The book provides the background to better understand the images.
+
+    .. [#fn2] https://github.com/python-adaptive/adaptive
+
+    See Also
+    ========
+
+    plot_real_imag, plot_complex_list, plot_complex_vector
+
     """
     kwargs["absarg"] = True
     kwargs["real"] = False
@@ -626,6 +700,10 @@ def plot_complex_list(*args, **kwargs):
         label : str
             The name associated to the list of the complex numbers to be
             eventually shown on the legend. Default to empty string.
+
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
 
     is_point : boolean
         If True, a scatter plot will be produced. Otherwise a line plot will
@@ -677,6 +755,11 @@ def plot_complex_list(*args, **kwargs):
        [0]: complex points (0.0, 0.0666666666666667*exp(0.133333333333333*I*pi), 0.133333333333333*exp(0.266666666666667*I*pi), 0.2*exp(0.4*I*pi), 0.266666666666667*exp(0.533333333333333*I*pi), 0.333333333333333*exp(0.666666666666667*I*pi), 0.4*exp(0.8*I*pi), 0.466666666666667*exp(0.933333333333333*I*pi), 0.533333333333333*exp(1.06666666666667*I*pi), 0.6*exp(1.2*I*pi), 0.666666666666667*exp(1.33333333333333*I*pi), 0.733333333333333*exp(1.46666666666667*I*pi), 0.8*exp(1.6*I*pi), 0.866666666666667*exp(1.73333333333333*I*pi), 0.933333333333333*exp(1.86666666666667*I*pi))
        [1]: complex points (0, 0.133333333333333*exp(0.133333333333333*I*pi), 0.266666666666667*exp(0.266666666666667*I*pi), 0.4*exp(0.4*I*pi), 0.533333333333333*exp(0.533333333333333*I*pi), 0.666666666666667*exp(0.666666666666667*I*pi), 0.8*exp(0.8*I*pi), 0.933333333333333*exp(0.933333333333333*I*pi), 1.06666666666667*exp(1.06666666666667*I*pi), 1.2*exp(1.2*I*pi), 1.33333333333333*exp(1.33333333333333*I*pi), 1.46666666666667*exp(1.46666666666667*I*pi), 1.6*exp(1.6*I*pi), 1.73333333333333*exp(1.73333333333333*I*pi), 1.86666666666667*exp(1.86666666666667*I*pi))
 
+    See Also
+    ========
+
+    plot_real_imag, plot_complex, plot_complex_vector
+
     """
     kwargs["absarg"] = False
     kwargs["abs"] = False
@@ -695,17 +778,10 @@ def plot_complex_vector(*args, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting a vector field of a complex function.
-
-      .. code-block::
-
-         plot_complex_vector(expr, range, **kwargs)
+        `plot_complex_vector(expr, range, **kwargs)`
 
     - Plotting multiple vector fields with different ranges and custom labels.
-
-      .. code-block::
-
-         plot_complex_vector((expr1, range1, label1 [optional]),
-            (expr2, range2, label2 [optional]), **kwargs)
+        `plot_complex_vector((expr1, range1, label1 [optional]), (expr2, range2, label2 [optional]), **kwargs)`
 
     Parameters
     ==========
@@ -724,6 +800,10 @@ def plot_complex_vector(*args, **kwargs):
             The name of the complex expression to be eventually shown on the
             legend. If none is provided, the string representation of the
             expression will be used.
+
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
 
     contours_kw : dict
         A dictionary of keywords/values which is passed to the backend
@@ -776,7 +856,7 @@ def plot_complex_vector(*args, **kwargs):
     stream_kw : dict
         A dictionary of keywords/values which is passed to the backend
         streamlines-plotting function to customize the appearance. Refer to
-        the Notes section to learn more.
+        the plotting library (backend) manual for more informations.
 
 
     Examples
@@ -799,7 +879,8 @@ def plot_complex_vector(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_complex_vector(z**2, (z, -5 - 5j, 5 + 5j))
+       >>> plot_complex_vector(z**2, (z, -5 - 5j, 5 + 5j),
+       ...     quiver_kw=dict(color="orange"), grid=False)
        Plot object containing:
        [0]: contour: sqrt(((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2)**2 + 4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2) for _x over (-5.0, 5.0) and _y over (-5.0, 5.0)
        [1]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
@@ -837,6 +918,11 @@ def plot_complex_vector(*args, **kwargs):
        Plot object containing:
        [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 0.0)
        [1]: 2D vector series: [(re(_x) - im(_y))**3 - 3*(re(_x) - im(_y))*(re(_y) + im(_x))**2, 3*(re(_x) - im(_y))**2*(re(_y) + im(_x)) - (re(_y) + im(_x))**3] over (_x, -5.0, 5.0), (_y, 0.0, 5.0)
+
+    See Also
+    ========
+
+    plot_real_imag, plot_complex, plot_complex_list
 
     """
     # for each argument, generate two series: one for the real part and

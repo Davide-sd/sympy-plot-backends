@@ -263,6 +263,10 @@ def plot(*args, show=True, **kwargs):
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with `MatplotlibBackend`.
 
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
     detect_poles : boolean
         Chose whether to detect and correctly plot poles.
         Defaulto to `False`. To improve detection, increase the number of
@@ -281,6 +285,10 @@ def plot(*args, show=True, **kwargs):
         Default to True, which will render empty circular markers. It only
         works if `is_point=True`.
         If False, filled circular markers will be rendered.
+
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
+        plotting library (backend) manual for more informations.
 
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
@@ -512,6 +520,14 @@ def plot_parametric(*args, show=True, **kwargs):
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with `MatplotlibBackend`.
 
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
+        plotting library (backend) manual for more informations.
+
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -709,6 +725,14 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn3]_ for more information.
 
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
+        plotting library (backend) manual for more informations.
+
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -881,6 +905,10 @@ def plot3d(*args, show=True, **kwargs):
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn4]_ for more information.
 
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -912,6 +940,10 @@ def plot3d(*args, show=True, **kwargs):
         A tuple in the form (width, height) to specify the size of
         the overall figure. The default value is set to `None`, meaning
         the size will be set by the backend.
+
+    surface_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of surfaces. Refer to the
+        plotting library (backend) manual for more informations.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -1057,6 +1089,10 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
             The label to be shown in the legend.  If not provided, the string
             representation of the expression will be used.
 
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
     n1 : int, optional
         The u range is sampled uniformly at `n1` of points. Default value
         is 100.
@@ -1079,6 +1115,10 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         A tuple in the form (width, height) to specify the size of
         the overall figure. The default value is set to `None`, meaning
         the size will be set by the backend.
+
+    surface_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of surfaces. Refer to the
+        plotting library (backend) manual for more informations.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -1165,6 +1205,12 @@ def plot_contour(*args, show=True, **kwargs):
     This function signature is identical to `plot3d`: refer to its
     documentation for a list of available argument and keyword arguments.
 
+    Parameters
+    ==========
+
+    contour_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of contours. Refer to the
+        plotting library (backend) manual for more informations.
 
     Examples
     ========
@@ -1228,6 +1274,8 @@ def plot_implicit(*args, show=True, **kwargs):
 
     Parameters
     ==========
+
+    args :
         expr : Expr, Relational, BooleanFunction
             The equation / inequality that is to be plotted.
 
@@ -1241,43 +1289,47 @@ def plot_implicit(*args, show=True, **kwargs):
             The name of the expression to be eventually shown on the legend.
             If not provided, the string representation of `expr` will be used.
 
-        adaptive : Boolean
-            The default value is set to False, meaning that the internal
-            algorithm uses a mesh grid approach. In such case, Boolean
-            combinations of expressions cannot be plotted.
-            If set to True, the internal algorithm uses interval arithmetic.
-            It switches to the meshgrid approach if the expression cannot be
-            plotted using interval arithmetic.
+    adaptive : Boolean
+        The default value is set to False, meaning that the internal
+        algorithm uses a mesh grid approach. In such case, Boolean
+        combinations of expressions cannot be plotted.
+        If set to True, the internal algorithm uses interval arithmetic.
+        It switches to the meshgrid approach if the expression cannot be
+        plotted using interval arithmetic.
 
-        depth : integer
-            The depth of recursion for adaptive mesh grid. Default value is 0.
-            Takes value in the range (0, 4).
-            Think of the resulting plot as a picture composed by pixels. By
-            increasing `depth` we are increasing the number of pixels, thus
-            obtaining a more accurate plot.
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
 
-        n1, n2 : int
-            Number of discretization points in the horizontal and vertical
-            directions when `adaptive=False`. Default to 1000.
+    depth : integer
+        The depth of recursion for adaptive mesh grid. Default value is 0.
+        Takes value in the range (0, 4).
+        Think of the resulting plot as a picture composed by pixels. By
+        increasing `depth` we are increasing the number of pixels, thus
+        obtaining a more accurate plot.
 
-        n : integer
-            Set the number of discretization points when `adaptive=False` in
-            both direction simultaneously. Default value is 1000.
-            The greater the value the more accurate the plot, but the more
-            memory will be used.
+    n1, n2 : int
+        Number of discretization points in the horizontal and vertical
+        directions when `adaptive=False`. Default to 1000.
 
-        show : Boolean
-            Default value is True. If set to False, the plot will not be shown.
-            See `Plot` for further information.
+    n : integer
+        Set the number of discretization points when `adaptive=False` in
+        both direction simultaneously. Default value is 1000.
+        The greater the value the more accurate the plot, but the more
+        memory will be used.
 
-        title : string
-            The title for the plot.
+    show : Boolean
+        Default value is True. If set to False, the plot will not be shown.
+        See `Plot` for further information.
 
-        xlabel : string
-            The label for the x-axis
+    title : string
+        The title for the plot.
 
-        ylabel : string
-            The label for the y-axis
+    xlabel : string
+        The label for the x-axis
+
+    ylabel : string
+        The label for the y-axis
 
     Examples
     ========
@@ -1457,6 +1509,10 @@ def plot_geometry(*args, show=True, **kwargs):
             legend. If not provided, the string representation of `geom`
             will be used.
 
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
     is_filled : boolean
         Default to True. Fill the polygon/circle/ellipse.
 
@@ -1468,6 +1524,15 @@ def plot_geometry(*args, show=True, **kwargs):
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with MatplotlibBackend.
+
+    fill_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's fill
+        function to customize the appearance of fills. Refer to the
+        plotting library (backend) manual for more informations.
+
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -1555,7 +1620,7 @@ def plot_geometry(*args, show=True, **kwargs):
        ...      Polygon((4, 0), 4, n=5),
        ...      Curve((cos(x), sin(x)), (x, 0, 2 * pi)),
        ...      Segment((-4, -6), (6, 6)),
-       ...      Point2D(0, 0), fill=False)
+       ...      Point2D(0, 0), is_filled=False)
        Plot object containing:
        [0]: geometry entity: Circle(Point2D(0, 0), 5)
        [1]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
@@ -1662,6 +1727,10 @@ def plot_list(*args, show=True, **kwargs):
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with MatplotlibBackend.
 
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
     is_point : boolean, optional
         Default to False, which will render a line connecting all the points.
         If True, a scatter plot will be generated.
@@ -1670,6 +1739,10 @@ def plot_list(*args, show=True, **kwargs):
         Default to True, which will render empty circular markers. It only
         works if `is_point=True`.
         If False, filled circular markers will be rendered.
+
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -1720,17 +1793,30 @@ def plot_list(*args, show=True, **kwargs):
     Plot the coordinates of a single function:
 
     .. plot::
-       xx = [t / 100 * 6 - 3 for t in list(range(101))]
-       yy = [cos(x).evalf(subs={x: t}) for t in xx]
-       plot_list(xx, yy)
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> xx = [t / 100 * 6 - 3 for t in list(range(101))]
+       >>> yy = [cos(x).evalf(subs={x: t}) for t in xx]
+       >>> plot_list(xx, yy)
+       Plot object containing:
+       [0]: list plot
 
     Scatter plot of the coordinates of multiple functions:
 
     .. plot::
-       xx = [t / 100 * 6 - 3 for t in list(range(101))]
-       yy1 = [cos(x).evalf(subs={x: t}) for t in xx]
-       yy2 = [sin(x).evalf(subs={x: t}) for t in xx]
-       plot_list((xx, yy1, "cos"), (xx, yy2, "sin"), is_point=True)
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> xx = [t / 100 * 6 - 3 for t in list(range(101))]
+       >>> yy1 = [cos(x).evalf(subs={x: t}) for t in xx]
+       >>> yy2 = [sin(x).evalf(subs={x: t}) for t in xx]
+       >>> plot_list((xx, yy1, "cos"), (xx, yy2, "sin"), is_point=True)Plot object containing:
+       [0]: list plot
+       [1]: list plot
+
     """
     from spb.defaults import TWO_D_B
 
@@ -1821,6 +1907,10 @@ def plot_piecewise(*args, **kwargs):
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with `MatplotlibBackend`.
 
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
     detect_poles : boolean
         Chose whether to detect and correctly plot poles.
         Defaulto to `False`. To improve detection, increase the number of
@@ -1830,6 +1920,10 @@ def plot_piecewise(*args, **kwargs):
         An arbitrary small value used by the `detect_poles` algorithm.
         Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
+
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
 
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
