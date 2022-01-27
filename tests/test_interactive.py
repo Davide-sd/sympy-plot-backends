@@ -6,6 +6,7 @@ from spb.interactive import (
 )
 from spb.functions import plot
 from spb.series import InteractiveSeries
+from spb.backends.bokeh import BB
 from spb.backends.plotly import PB
 from spb.backends.matplotlib import MB
 from pytest import raises
@@ -506,3 +507,39 @@ def test_iplot_sum_2():
     )
     p = p1 + p2
     raises(KeyError, lambda: p.show())
+
+def test_iplot_sum_3():
+    # verify that the resulting iplot's backend is of the same type as the
+    # original
+
+    x, u = symbols("x, u")
+
+    def func(B):
+        params = {
+            u: (1, 0, 2)
+        }
+        p1 = iplot(
+            (cos(u * x), (x, -5, 5)),
+            params = params,
+            backend = B,
+            xlabel = "x1",
+            ylabel = "y1",
+            title = "title 1",
+            legend=True,
+            show = False
+        )
+        p2 = iplot(
+            (sin(u * x), (x, -5, 5)),
+            params = params,
+            backend = B,
+            xlabel = "x2",
+            ylabel = "y2",
+            title = "title 2",
+            show = False
+        )
+        p = p1 + p2
+        assert isinstance(p.backend, B)
+    
+    func(MB)
+    func(BB)
+    func(PB)

@@ -436,6 +436,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
 
         backend_kw = self._backend._copy_kwargs()
         panel_kw = {
+            "backend": type(self._backend),
             "layout": self._layout,
             "ncols": self._ncols,
             "throttled": self._throttled,
@@ -603,11 +604,12 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
-       >>> from sympy import (symbols, sqrt, cos, exp, sin, pi,
-       ...     Matrix, Plane, Polygon, I, log)
-       >>> from spb.interactive import iplot
-       >>> from spb.backends.matplotlib import MB
-       >>> x, y, z = symbols("x, y, z")
+       from sympy import (symbols, sqrt, cos, exp, sin, pi,
+           Matrix, Plane, Polygon, I, log)
+       from spb.interactive import iplot
+       from spb.backends.matplotlib import MB
+       from spb.backends.bokeh import BB
+       x, y, z = symbols("x, y, z")
 
     Surface plot between -10 <= x, y <= 10 with a damping parameter varying
     from 0 to 1, with a default value of 0.15, discretized with 100 points
@@ -616,19 +618,19 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
-       >>> r = sqrt(x**2 + y**2)
-       >>> d = symbols('d')
-       >>> expr = 10 * cos(r) * exp(-r * d)
-       >>> iplot(
-       ...     (expr, (x, -10, 10), (y, -10, 10)),
-       ...     params = { d: (0.15, 0, 1) },
-       ...     title = "My Title",
-       ...     xlabel = "x axis",
-       ...     ylabel = "y axis",
-       ...     zlabel = "z axis",
-       ...     backend = MB,
-       ...     n = 100,
-       ...     threed = True)
+       r = sqrt(x**2 + y**2)
+       d = symbols('d')
+       expr = 10 * cos(r) * exp(-r * d)
+       iplot(
+           (expr, (x, -10, 10), (y, -10, 10)),
+           params = { d: (0.15, 0, 1) },
+           title = "My Title",
+           xlabel = "x axis",
+           ylabel = "y axis",
+           zlabel = "z axis",
+           backend = MB,
+           n = 100,
+           threed = True)
 
     A line plot illustrating the use of multiple expressions and:
 
@@ -641,52 +643,52 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
-       >>> from bokeh.models.formatters import PrintfTickFormatter
-       >>> formatter = PrintfTickFormatter(format="%.3f")
-       >>> A1, A2, k = symbols("A1, A2, k")
-       >>> iplot(
-       ...     (log(x) + A1 * sin(k * x), (x, 1e-05, 20), "f1"),
-       ...     (exp(-(x - 2)) + A2 * cos(x), (x, 0, 20), "f2"),
-       ...     (10 + 5 * cos(k * x), A2 * 25 * sin(x), (x, 0, pi)),
-       ...     params = {
-       ...         k: (1, 0, 5),
-       ...         A1: (0.05, 0, 1, 20, None, "Ampl 1"),
-       ...         A2: (0.2, 0, 1, 200, formatter, "Ampl 2"),
-       ...     },
-       ...     backend = MB,
-       ...     ylim = (-4, 10))
+       from bokeh.models.formatters import PrintfTickFormatter
+       formatter = PrintfTickFormatter(format="%.3f")
+       A1, A2, k = symbols("A1, A2, k")
+       iplot(
+           (log(x) + A1 * sin(k * x), (x, 1e-05, 20), "f1"),
+           (exp(-(x - 2)) + A2 * cos(x), (x, 0, 20), "f2"),
+           (10 + 5 * cos(k * x), A2 * 25 * sin(x), (x, 0, pi)),
+           params = {
+               k: (1, 0, 5),
+               A1: (0.05, 0, 1, 20, None, "Ampl 1"),
+               A2: (0.2, 0, 1, 200, formatter, "Ampl 2"),
+           },
+           backend = BB,
+           ylim = (-4, 10))
 
     A 3D slice-vector plot. Note: whenever we want to create parametric vector
     plots, we should set `is_vector=True`.
 
     .. jupyter-execute::
 
-       >>> a, b = symbols("a, b")
-       >>> iplot(
-       ...     (Matrix([z * a, y * b, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5)),
-       ...     params = {
-       ...         a: (1, 0, 5),
-       ...         b: (1, 0, 5)
-       ...     },
-       ...     backend = MB,
-       ...     n = 10,
-       ...     is_vector = True,
-       ...     quiver_kw = {"length": 0.15},
-       ...     slice = Plane((0, 0, 0), (0, 1, 0)))
+       a, b = symbols("a, b")
+       iplot(
+           (Matrix([z * a, y * b, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5)),
+           params = {
+               a: (1, 0, 5),
+               b: (1, 0, 5)
+           },
+           backend = MB,
+           n = 10,
+           is_vector = True,
+           quiver_kw = {"length": 0.15},
+           slice = Plane((0, 0, 0), (0, 1, 0)))
 
     A parametric complex domain coloring plot. Note: whenever we want to create
     parametric complex plots, we must set `is_complex=True`.
 
     .. jupyter-execute::
 
-        >>> iplot(
-        ...     ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
-        ...     params = {
-        ...         x: (1, -2, 2)
-        ...     },
-        ...     backend = MB,
-        ...     is_complex = True,
-        ...     coloring = "b")
+        iplot(
+            ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
+            params = {
+                x: (1, -2, 2)
+            },
+            backend = MB,
+            is_complex = True,
+            coloring = "b")
 
 
     A parametric plot of a symbolic polygon. Note the use of `param` to create
@@ -694,20 +696,20 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
-       >>> import param
-       >>> a, b, c, d = symbols('a:d')
-       >>> iplot(
-       ...     (Polygon((a, b), c, n=d), ),
-       ...     params = {
-       ...         a: (0, -2, 2),
-       ...         b: (0, -2, 2),
-       ...         c: (1, 0, 5),
-       ...         d: param.Integer(3, softbounds=(3, 10), label="n"),
-       ...     },
-       ...     backend = MB,
-       ...     fill = False,
-       ...     aspect = "equal",
-       ...     use_latex = False)
+       import param
+       a, b, c, d = symbols('a:d')
+       iplot(
+           (Polygon((a, b), c, n=d), ),
+           params = {
+               a: (0, -2, 2),
+               b: (0, -2, 2),
+               c: (1, 0, 5),
+               d: param.Integer(3, softbounds=(3, 10), label="n"),
+           },
+           backend = MB,
+           fill = False,
+           aspect = "equal",
+           use_latex = False)
 
     Combine together `InteractivePlot` and `Plot` instances. The same
     parameters dictionary must be used for every `iplot` command. Note that:
@@ -883,15 +885,17 @@ def create_widgets(params, **kwargs):
     Examples
     ========
 
-    >>> from sympy.abc import x, y, z
-    >>> from spb.interactive import create_widgets
-    >>> from bokeh.models.formatters import PrintfTickFormatter
-    >>> formatter = PrintfTickFormatter(format="%.4f")
-    >>> r = create_widgets({
-    ...     x: (0.035, -0.035, 0.035, 100, formatter),
-    ...     y: (200, 1, 1000, 10, None, "test", "log"),
-    ...     z: param.Integer(3, softbounds=(3, 10), label="n")
-    ... })
+    .. jupyter-execute::
+
+       from sympy.abc import x, y, z
+       from spb.interactive import create_widgets
+       from bokeh.models.formatters import PrintfTickFormatter
+       formatter = PrintfTickFormatter(format="%.4f")
+       r = create_widgets({
+           x: (0.035, -0.035, 0.035, 100, formatter),
+           y: (200, 1, 1000, 10, None, "test", "log"),
+           z: param.Integer(3, softbounds=(3, 10), label="n")
+       })
 
 
     References
