@@ -5,5 +5,3 @@ Plot Data
 
 .. autofunction:: get_plot_data
 
-.. autofunction:: smart_plot
-

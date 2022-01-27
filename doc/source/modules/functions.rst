@@ -20,3 +20,7 @@ Functions
 .. autofunction:: plot_polar
 
 .. autofunction:: plot_geometry
+
+.. autofunction:: plot_list
+
+.. autofunction:: plot_piecewise

@@ -18,7 +18,7 @@ plots, parametric plots, vector plots, complex plots, geometric plots.
 
    overview.rst
    install.rst
-   tutorials/index.rst
+   tutorials.rst
    modules/index.rst
 
 
