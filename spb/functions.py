@@ -1813,7 +1813,8 @@ def plot_list(*args, show=True, **kwargs):
        >>> xx = [t / 100 * 6 - 3 for t in list(range(101))]
        >>> yy1 = [cos(x).evalf(subs={x: t}) for t in xx]
        >>> yy2 = [sin(x).evalf(subs={x: t}) for t in xx]
-       >>> plot_list((xx, yy1, "cos"), (xx, yy2, "sin"), is_point=True)Plot object containing:
+       >>> plot_list((xx, yy1, "cos"), (xx, yy2, "sin"), is_point=True)
+       Plot object containing:
        [0]: list plot
        [1]: list plot
 

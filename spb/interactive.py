@@ -547,7 +547,7 @@ def iplot(*args, show=True, **kwargs):
         representation will be used instead.
 
     detect_poles : boolean
-        Chose whether to detect and correctly plot poles.
+        Chose whether to detect and correctly plot poles in line plots.
         Defaulto to `False`. To improve detection, increase the number of
         discretization points `n` and/or change the value of `eps`.
 
@@ -566,7 +566,7 @@ def iplot(*args, show=True, **kwargs):
 
     nc : int, optional
         Number of discretization points for the contour plot when
-        `is_complex=True`.
+        `is_vector=True`.
 
     polar : boolean, optional
         Default to False. If True, generate a polar plot of a curve with
@@ -577,8 +577,7 @@ def iplot(*args, show=True, **kwargs):
         on sliders. If False, every slider tick will force a recompute.
 
     title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
+        Title of the plot.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -604,11 +603,12 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
-       from sympy import (symbols, sqrt, cos, exp, sin, pi,
+       from sympy import (symbols, sqrt, cos, exp, sin, pi, re, im,
            Matrix, Plane, Polygon, I, log)
        from spb.interactive import iplot
        from spb.backends.matplotlib import MB
        from spb.backends.bokeh import BB
+       from spb.backends.plotly import PB
        x, y, z = symbols("x, y, z")
 
     Surface plot between -10 <= x, y <= 10 with a damping parameter varying
@@ -628,11 +628,13 @@ def iplot(*args, show=True, **kwargs):
            xlabel = "x axis",
            ylabel = "y axis",
            zlabel = "z axis",
-           backend = MB,
-           n = 100,
-           threed = True)
+           backend = PB,
+           n = 50,
+           threed = True
+       )
 
-    A line plot illustrating the use of multiple expressions and:
+    A line plot of the magnitude of a transfer function, illustrating the use
+    of multiple expressions and:
 
     1. some expression may not use all the parameters.
     2. custom labeling of the expressions.
@@ -645,18 +647,25 @@ def iplot(*args, show=True, **kwargs):
 
        from bokeh.models.formatters import PrintfTickFormatter
        formatter = PrintfTickFormatter(format="%.3f")
-       A1, A2, k = symbols("A1, A2, k")
+       kp, t, z, o = symbols("k_P, tau, zeta, omega")
+       G = kp / (I**2 * t**2 * o**2 + 2 * z * t * o * I + 1)
+       mod = lambda x: 20 * log(sqrt(re(x)**2 + im(x)**2), 10)
        iplot(
-           (log(x) + A1 * sin(k * x), (x, 1e-05, 20), "f1"),
-           (exp(-(x - 2)) + A2 * cos(x), (x, 0, 20), "f2"),
-           (10 + 5 * cos(k * x), A2 * 25 * sin(x), (x, 0, pi)),
+           (mod(G.subs(z, 0)), (o, 0.1, 100), "G(z=0)"),
+           (mod(G.subs(z, 1)), (o, 0.1, 100), "G(z=1)"),
+           (mod(G), (o, 0.1, 100), "G"),
            params = {
-               k: (1, 0, 5),
-               A1: (0.05, 0, 1, 20, None, "Ampl 1"),
-               A2: (0.2, 0, 1, 200, formatter, "Ampl 2"),
+               kp: (1, 0, 3),
+               t: (1, 0, 3),
+               z: (0.2, 0, 1, 200, formatter, "z")
            },
            backend = BB,
-           ylim = (-4, 10))
+           n = 2000,
+           xscale = "log",
+           xlabel = "Frequency, omega, [rad/s]",
+           ylabel = "Magnitude [dB]",
+           use_latex = False
+       )
 
     A 3D slice-vector plot. Note: whenever we want to create parametric vector
     plots, we should set `is_vector=True`.
@@ -670,25 +679,30 @@ def iplot(*args, show=True, **kwargs):
                a: (1, 0, 5),
                b: (1, 0, 5)
            },
-           backend = MB,
-           n = 10,
+           backend = PB,
            is_vector = True,
-           quiver_kw = {"length": 0.15},
-           slice = Plane((0, 0, 0), (0, 1, 0)))
+           n = 10,
+           slice = Plane((0, 0, 0), (0, 1, 0)),
+           quiver_kw = {"sizeref": 8},
+           use_latex = False
+       )
 
     A parametric complex domain coloring plot. Note: whenever we want to create
     parametric complex plots, we must set `is_complex=True`.
 
     .. jupyter-execute::
 
-        iplot(
-            ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
-            params = {
-                x: (1, -2, 2)
-            },
-            backend = MB,
-            is_complex = True,
-            coloring = "b")
+       iplot(
+           ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
+           params = {
+               x: (1, -2, 2)
+           },
+           backend = MB,
+           is_complex = True,
+           coloring = "b",
+           grid = False,
+           use_latex = False
+       )
 
 
     A parametric plot of a symbolic polygon. Note the use of `param` to create
@@ -706,18 +720,21 @@ def iplot(*args, show=True, **kwargs):
                c: (1, 0, 5),
                d: param.Integer(3, softbounds=(3, 10), label="n"),
            },
-           backend = MB,
-           fill = False,
+           backend = BB,
+           is_filled = False,
            aspect = "equal",
-           use_latex = False)
+           use_latex = False
+       )
 
-    Combine together `InteractivePlot` and `Plot` instances. The same
-    parameters dictionary must be used for every `iplot` command. Note that:
+    Combine together `InteractivePlot` and ``Plot`` instances. The same
+    parameters dictionary must be used for every ``iplot`` command. Note:
 
     1. the first plot dictates the labels, title and wheter to show the legend
        or not.
-    2. Instances of `Plot` class must be place on the right side of the `+`
+    2. Instances of ``Plot`` class must be place on the right side of the `+`
        sign.
+    3. `show=False` has been set in order for ``iplot`` to return an instance
+       of ``InteractivePlot``, which supports addition.
 
     .. code-block:: python
 
@@ -752,9 +769,13 @@ def iplot(*args, show=True, **kwargs):
        p = p1 + p2 + p3
        p.show()
 
-    Serves the interactive plot on a separate browser window. Note: only
-    `BokehBackend` and `PlotlyBackend` are supported for this operation
-    mode.
+    Serves the interactive plot on a separate browser window. Note:
+    
+    1. only ``BokehBackend`` and ``PlotlyBackend`` are supported for this
+       operation mode.
+    2. the output of ``iplot`` is captures into a variable.
+    3. `show=True` has been set in order for ``iplot`` to return a `panel`
+       object.
 
     .. code-block:: python
 
