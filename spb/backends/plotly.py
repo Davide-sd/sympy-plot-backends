@@ -136,6 +136,19 @@ class PlotlyBackend(Plot):
             ]
 
         self._fig = go.Figure()
+
+    @property
+    def fig(self):
+        """Returns the figure."""
+        if len(self.series) != len(self._fig.data):
+            # if the backend was created without showing it
+            self.process_series()
+        return self._fig
+
+    def process_series(self):
+        """ Loop over data series, generates numerical data and add it to the
+        figure.
+        """
         # this is necessary in order for the series to be added even if
         # show=False
         self._process_series(self._series)

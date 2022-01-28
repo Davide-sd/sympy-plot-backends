@@ -72,12 +72,14 @@ unset_show()
 #
 
 # NOTE
-# While BB, PB, KB creates the figure and populate it with numerical data at
-# instantiation, MB does not. With MB, the figure is created and numerical
-# data is added only when `show` or `fig` are called.
-# Therefore, in the following tests, when a plot `p` is created with MB and
-# show=False, we either call `p.fig` or `p.process_series`
-#
+# While BB, PB, KB creates the figure at instantiation, MB creates the figure
+# once the `show()` method is called. All backends do not populate the figure
+# at instantiation. Numerical data is added only when `show()` or `fig` is
+# called.
+# In the following tests, we will use `show=False`, hence the `show()` method
+# won't be executed. To add numerical data to the plots we either call `fig`
+# or `process_series()`.
+
 
 class UnsupportedSeries(BaseSeries):
     pass
@@ -133,10 +135,18 @@ def test_instance_plot():
 def test_unsupported_series():
     # verify that an error is raised when an unsupported series is given in
     series = [UnsupportedSeries()]
-    raises(NotImplementedError, lambda: Plot(*series, backend=MB).process_series())
-    raises(NotImplementedError, lambda: Plot(*series, backend=PB))
-    raises(NotImplementedError, lambda: Plot(*series, backend=PB))
-    raises(NotImplementedError, lambda: Plot(*series, backend=KBchild2))
+    raises(
+        NotImplementedError,
+        lambda: Plot(*series, backend=MB).process_series())
+    raises(
+        NotImplementedError,
+        lambda: Plot(*series, backend=PB).process_series())
+    raises(
+        NotImplementedError,
+        lambda: Plot(*series, backend=BB).process_series())
+    raises(
+        NotImplementedError,
+        lambda: Plot(*series, backend=KBchild2).process_series())
 
 
 def test_colorloop_colormaps():
@@ -412,7 +422,10 @@ def test_plot():
     assert f.legend[0].visible is True
 
     # K3D doesn't support 2D plots
-    raises(NotImplementedError, lambda: _plot(KBchild1, line_kw=dict(line_color="red")))
+    raises(
+        NotImplementedError,
+        lambda: _plot(KBchild1,
+            line_kw=dict(line_color="red")).process_series())
 
 
 def test_plot_parametric():
@@ -458,8 +471,10 @@ def test_plot_parametric():
     assert f.right[0].title == "(cos(x), sin(x))"
     assert f.toolbar.tools[-2].tooltips == [('x', '$x'), ('y', '$y'), ("u", "@us")]
 
-    raises(NotImplementedError, lambda: _plot_parametric(KBchild1,
-        line_kw=dict(line_color="red")))
+    raises(
+        NotImplementedError,
+        lambda: _plot_parametric(KBchild1,
+            line_kw=dict(line_color="red")).process_series())
 
 
 def test_plot3d_parametric_line():
@@ -495,7 +510,7 @@ def test_plot3d_parametric_line():
 
     # Bokeh doesn't support 3D plots
     raises(NotImplementedError, lambda: _plot3d_parametric_line(BB,
-        line_kw=dict(line_color="red")))
+        line_kw=dict(line_color="red")).process_series())
 
     p = _plot3d_parametric_line(KBchild1, line_kw=dict(color=16711680))
     assert len(p.series) == 1
@@ -551,7 +566,7 @@ def test_plot3d():
     raises(
         NotImplementedError,
         lambda: _plot3d(BB, surface_kw=dict(
-            colorscale=[[0, "cyan"], [1, "cyan"]])))
+            colorscale=[[0, "cyan"], [1, "cyan"]])).process_series())
 
     p = _plot3d(KBchild1, surface_kw=dict(color=16711680))
     assert len(p.series) == 1
@@ -607,8 +622,10 @@ def test_plot_contour():
     assert f.right[0].title == str(cos(x ** 2 + y ** 2))
 
     # K3D doesn't support 2D plots
-    raises(NotImplementedError, lambda: _plot_contour(KBchild1,
-        contour_kw=dict()))
+    raises(
+        NotImplementedError,
+        lambda: _plot_contour(KBchild1,
+            contour_kw=dict()).process_series())
 
 
 def test_plot_vector_2d_quivers():
@@ -666,7 +683,8 @@ def test_plot_vector_2d_quivers():
     # K3D doesn't support 2D plots
     raises(
         NotImplementedError,
-        lambda: _plot_vector(KBchild1, quiver_kw=dict(), contour_kw=dict()))
+        lambda: _plot_vector(KBchild1, quiver_kw=dict(),
+            contour_kw=dict()).process_series())
 
 
 def test_plot_vector_2d_streamlines_custom_scalar_field():
@@ -724,8 +742,8 @@ def test_plot_vector_2d_streamlines_custom_scalar_field():
     # K3D doesn't support 2D plots
     raises(
         NotImplementedError,
-        lambda: _plot_vector(KBchild1, stream_kw=dict(), contour_kw=dict())
-    )
+        lambda: _plot_vector(KBchild1, stream_kw=dict(),
+            contour_kw=dict()).process_series())
 
 
 def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
@@ -770,7 +788,8 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
     # K3D doesn't support 2D plots
     raises(
         NotImplementedError,
-        lambda: _plot_vector(KBchild1, stream_kw=dict(), contour_kw=dict()))
+        lambda: _plot_vector(KBchild1, stream_kw=dict(),
+            contour_kw=dict()).process_series())
 
 
 def test_plot_vector_3d_quivers():
@@ -827,7 +846,7 @@ def test_plot_vector_3d_quivers():
 
     # Bokeh doesn't support 3D plots
     raises(NotImplementedError,
-        lambda: _plot_vector(BB, quiver_kw=dict(sizeref=5)))
+        lambda: _plot_vector(BB, quiver_kw=dict(sizeref=5)).process_series())
 
     p = _plot_vector(KBchild1, quiver_kw=dict(scale=0.5, color=16711680))
     assert len(p.series) == 1
@@ -906,7 +925,7 @@ def test_plot_vector_3d_streamlines():
     raises(
         NotImplementedError,
         lambda: _plot_vector(BB, stream_kw=dict(
-            colorscale=[[0, "red"], [1, "red"]])))
+            colorscale=[[0, "red"], [1, "red"]])).process_series())
 
     p = _plot_vector(KBchild1, stream_kw=dict(color=16711680))
     assert len(p.series) == 1
@@ -948,15 +967,15 @@ def test_plot_implicit_adaptive_true():
 
     # PlotlyBackend doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_implicit(PB, contour_kw=dict()))
+        lambda: _plot_implicit(PB, contour_kw=dict()).process_series())
 
     # BokehBackend doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_implicit(BB, contour_kw=dict()))
+        lambda: _plot_implicit(BB, contour_kw=dict()).process_series())
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_implicit(KBchild1, contour_kw=dict()))
+        lambda: _plot_implicit(KBchild1, contour_kw=dict()).process_series())
 
 
 def test_plot_implicit_adaptive_false():
@@ -987,15 +1006,15 @@ def test_plot_implicit_adaptive_false():
 
     # PlotlyBackend doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_implicit(PB, contour_kw=dict()))
+        lambda: _plot_implicit(PB, contour_kw=dict()).process_series())
 
     # BokehBackend doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_implicit(BB, contour_kw=dict()))
+        lambda: _plot_implicit(BB, contour_kw=dict()).process_series())
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_implicit(KBchild1, contour_kw=dict()))
+        lambda: _plot_implicit(KBchild1, contour_kw=dict()).process_series())
 
 
 def test_plot_real_imag():
@@ -1046,7 +1065,7 @@ def test_plot_real_imag():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_real_imag(KBchild1, line_kw=dict()))
+        lambda: _plot_real_imag(KBchild1, line_kw=dict()).process_series())
 
 
 def test_plot_complex_1d():
@@ -1091,7 +1110,7 @@ def test_plot_complex_1d():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_complex(KBchild1, line_kw=dict()))
+        lambda: _plot_complex(KBchild1, line_kw=dict()).process_series())
 
 
 def test_plot_complex_2d():
@@ -1144,7 +1163,7 @@ def test_plot_complex_2d():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_complex(KBchild1, image_kw=dict()))
+        lambda: _plot_complex(KBchild1, image_kw=dict()).process_series())
 
 
 def test_plot_complex_3d():
@@ -1185,7 +1204,9 @@ def test_plot_complex_3d():
     assert f.data[0]["colorbar"]["title"]["text"] == "Argument"
 
     # Bokeh doesn't support 3D plots
-    raises(NotImplementedError, lambda: _plot_complex(BB, surface_kw=dict()))
+    raises(
+        NotImplementedError,
+        lambda: _plot_complex(BB, surface_kw=dict()).process_series())
 
     p = _plot_complex(KBchild1, surface_kw=dict())
     assert len(p.series) == 1
@@ -1221,7 +1242,9 @@ def test_plot_list_is_filled_false():
     assert f.renderers[0].glyph.line_color != f.renderers[0].glyph.fill_color
 
     # K3D doesn't support 2D plots
-    raises(NotImplementedError, lambda: _plot_list(KBchild1))
+    raises(
+        NotImplementedError,
+        lambda: _plot_list(KBchild1).process_series())
 
 
 def test_plot_list_is_filled_true():
@@ -1250,7 +1273,9 @@ def test_plot_list_is_filled_true():
     assert f.renderers[0].glyph.line_color == f.renderers[0].glyph.fill_color
 
     # K3D doesn't support 2D plots
-    raises(NotImplementedError, lambda: _plot_list(KBchild1))
+    raises(
+        NotImplementedError,
+        lambda: _plot_list(KBchild1).process_series())
 
 
 def test_plot_piecewise_single_series():
@@ -1368,7 +1393,9 @@ def test_plot_geometry_1():
     assert f.legend[0].items[2].label["value"] == str(Polygon((2, 2), 3, n=6))
 
     # K3D doesn't support 2D plots
-    raises(NotImplementedError, lambda: _plot_geometry(KBchild1))
+    raises(
+        NotImplementedError,
+        lambda: _plot_geometry(KBchild1).process_series())
 
 def test_plot_geometry_2():
     # verify that is_filled works correctly

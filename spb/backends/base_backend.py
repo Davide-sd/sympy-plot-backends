@@ -114,21 +114,6 @@ class Plot:
         >>> p3 = p1 + p2
         >>> p3.show()
 
-    Combine multiple plots together to extend an existing plot:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> from sympy import *
-        >>> from spb import *
-        >>> x = symbols("x")
-        >>> p1 = plot(sin(x), cos(x), show=False)
-        >>> p2 = plot(sin(x) * cos(x), log(x), show=False)
-        >>> p1.extend(p2)
-        >>> p1.show()
-
     Use the index notation to access the data series. Let's generate the
     numerical data associated to the first series:
 

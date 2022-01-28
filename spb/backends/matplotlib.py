@@ -912,7 +912,7 @@ class MatplotlibBackend(Plot):
         self._set_lims(xlims, ylims, zlims)
 
     def process_series(self):
-        """ Lool over data series, generates numerical data and add it to the
+        """ Loop over data series, generates numerical data and add it to the
         figure.
         """
         # create the figure from scratch every time, otherwise if the plot was

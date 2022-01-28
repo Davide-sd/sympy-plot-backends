@@ -340,6 +340,19 @@ class BokehBackend(Plot):
             self._fig.grid.minor_grid_line_color = self._fig.grid.grid_line_color[0]
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
         self._fig.on_event(bokeh.events.PanEnd, self._pan_update)
+
+    @property
+    def fig(self):
+        """Returns the figure."""
+        if len(self.series) != len(self._fig.renderers):
+            # if the backend was created without showing it
+            self.process_series()
+        return self._fig
+
+    def process_series(self):
+        """ Loop over data series, generates numerical data and add it to the
+        figure.
+        """
         self._process_series(self._series)
 
     def _set_piecewise_color(self, s, color):
@@ -579,6 +592,8 @@ class BokehBackend(Plot):
 
     def _update_interactive(self, params):
         rend = self.fig.renderers
+        if len(rend) != len(self.series):
+            self._process_series(self.series)
 
         for i, s in enumerate(self.series):
             if s.is_interactive:

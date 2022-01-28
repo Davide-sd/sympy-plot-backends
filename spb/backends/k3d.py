@@ -8,7 +8,7 @@ import os
 
 k3d = import_module(
     'k3d',
-    import_kwargs={'fromlist': ['helpers']},
+    import_kwargs={'fromlist': ['helpers', 'objects']},
     min_module_version='2.9.7')
 cc = import_module(
     'colorcet',
@@ -103,6 +103,25 @@ class K3DBackend(Plot):
                 + "continue with linear scales."
             )
         self.plot_shown = False
+
+    @property
+    def fig(self):
+        """Returns the figure."""
+        # K3D title is an object in the figure
+        n = len(self._fig.objects)
+        if self.title is not None:
+            n -= 1
+        if len(self.series) != n:
+            # if the backend was created without showing it
+            self.process_series()
+        return self._fig
+
+    def process_series(self):
+        """ Loop over data series, generates numerical data and add it to the
+        figure.
+        """
+        # this is necessary in order for the series to be added even if
+        # show=False
         self._process_series(self._series)
 
     def _set_piecewise_color(self, s, color):
@@ -369,6 +388,13 @@ class K3DBackend(Plot):
 
     def _update_interactive(self, params):
         np = import_module('numpy')
+
+        # K3D title is an object in the figure
+        n = len(self._fig.objects)
+        if self.title is not None:
+            n -= 1
+        if len(self.series) != n:
+            self._process_series(self.series)
 
         # self._fig.auto_rendering = False
         for i, s in enumerate(self.series):
