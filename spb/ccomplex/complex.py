@@ -286,6 +286,11 @@ def plot_real_imag(*args, **kwargs):
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn0]_ for more information.
 
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
+
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
@@ -525,6 +530,11 @@ def plot_complex(*args, **kwargs):
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn2]_ for more information.
 
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
+
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
@@ -701,6 +711,11 @@ def plot_complex_list(*args, **kwargs):
             The name associated to the list of the complex numbers to be
             eventually shown on the legend. Default to empty string.
 
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
+
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
@@ -800,6 +815,11 @@ def plot_complex_vector(*args, **kwargs):
             The name of the complex expression to be eventually shown on the
             legend. If none is provided, the string representation of the
             expression will be used.
+
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
 
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.

@@ -258,18 +258,18 @@ def get_plot_data(*args, **kwargs):
         value is `None`, indicating the function will use automatic
         detection. Possible values are:
 
-        - `"p"`: to specify a line plot.
-        - `"pp"`: to specify a 2d parametric line plot.
-        - `"p3dl"`: to specify a 3d parametric line plot.
-        - `"p3d"`: to specify a 3d plot.
-        - `"p3ds"`: to specify a 3d parametric surface plot.
-        - `"pc"`: to specify a contour plot.
-        - `"pi"`: to specify an implificit plot.
-        - `"pinter"`: to specify an interactive plot. In such a case, the
+        - ``"p"``: to specify a line plot.
+        - ``"pp"``: to specify a 2d parametric line plot.
+        - ``"p3dl"``: to specify a 3d parametric line plot.
+        - ``"p3d"``: to specify a 3d plot.
+        - ``"p3ds"``: to specify a 3d parametric surface plot.
+        - ``"pc"``: to specify a contour plot.
+        - ``"pi"``: to specify an implificit plot.
+        - ``"pinter"``: to specify an interactive plot. In such a case, the
           user will also have to provide a `param` dictionary mapping the
           parameters to their values.
-        - `"v2d"`: to specify a 2D vector plot.
-        - `"v3d"`: to specify a 3D vector plot.
+        - ``"v2d"``: to specify a 2D vector plot.
+        - ``"v3d"``: to specify a 3D vector plot.
 
     get_series : boolean, optional
         If False, it returns the numerical data associated to the provided

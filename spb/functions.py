@@ -259,6 +259,11 @@ def plot(*args, show=True, **kwargs):
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn1]_ for more information.
 
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
+
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with `MatplotlibBackend`.
@@ -515,6 +520,11 @@ def plot_parametric(*args, show=True, **kwargs):
           `lambda l: l.loss() < number`
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn2]_ for more information.
+
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
@@ -1208,6 +1218,11 @@ def plot_contour(*args, show=True, **kwargs):
     Parameters
     ==========
 
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
+
     contour_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's function to customize the appearance of contours. Refer to the
         plotting library (backend) manual for more informations.
@@ -1296,6 +1311,11 @@ def plot_implicit(*args, show=True, **kwargs):
         If set to True, the internal algorithm uses interval arithmetic.
         It switches to the meshgrid approach if the expression cannot be
         plotted using interval arithmetic.
+
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
 
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
@@ -1508,6 +1528,11 @@ def plot_geometry(*args, show=True, **kwargs):
             The name of the geometry entity to be eventually shown on the
             legend. If not provided, the string representation of `geom`
             will be used.
+
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
 
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
@@ -1723,6 +1748,11 @@ def plot_list(*args, show=True, **kwargs):
         label : str, optional
             The label to be shown in the legend.
 
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
+
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with MatplotlibBackend.
@@ -1903,6 +1933,11 @@ def plot_piecewise(*args, **kwargs):
           `lambda l: l.loss() < number`
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn5]_ for more information.
+
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or

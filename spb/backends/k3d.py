@@ -16,12 +16,12 @@ class K3DBackend(Plot):
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to K3D's line
         functions to customize the appearance. Default to:
-        `line_kw = dict(width=0.1, shader="mesh")`
+        ``line_kw = dict(width=0.1, shader="mesh")``.
         Set `use_cm=False` to switch to a solid color.
 
     quiver_kw : dict, optional
         A dictionary to customize the apppearance of quivers. Default to:
-        `quiver_kw = dict(scale = 1)`.
+        ``quiver_kw = dict(scale = 1)``.
         Set `use_cm=False` to switch to a solid color.
 
     show_label : boolean, optional
@@ -31,7 +31,7 @@ class K3DBackend(Plot):
     stream_kw : dict, optional
         A dictionary to customize the apppearance of streamlines.
         Default to:
-        `stream_kw = dict( width=0.1, shader='mesh' )`
+        ``stream_kw = dict( width=0.1, shader='mesh' )``.
         Refer to k3d.line for more options.
         Set `use_cm=False` to switch to a solid color.
 

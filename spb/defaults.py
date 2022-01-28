@@ -51,7 +51,16 @@ def _hardcoded_defaults():
 
 
 def get_default_settings():
-    """Return the default setting dictionary for inspection."""
+    """Return the default setting dictionary for inspection.
+
+    Examples
+    ========
+
+    Visualize the default settings.
+
+        >>> from spb.defaults import get_default_settings
+        >>> print(get_default_settings)
+    """
     return _hardcoded_defaults()
 
 

@@ -15,11 +15,11 @@ class PlotlyBackend(Plot):
     ==========
 
     aspect : str, optional
-        Set the aspect ratio of the plot. Default to `"auto"`.
+        Set the aspect ratio of the plot. Default to ``"auto"``.
         Possible values:
 
-        - `"equal"`: sets equal spacing on the axis of a 2D plot.
-        - `"cube"`, `"auto"` for 3D plots.
+        - ``"equal"``: sets equal spacing on the axis of a 2D plot.
+        - ``"cube"``, ``"auto"`` for 3D plots.
 
     contour_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's contour
@@ -35,9 +35,10 @@ class PlotlyBackend(Plot):
         A dictionary of keywords/values which is passed to Plotly's quivers
         function to customize the appearance.
 
-        - For 2D vector fields, default to: `dict( scale = 0.075 )`
+        - For 2D vector fields, default to: ``dict( scale = 0.075 )``.
           Refer to [#fn5]_ for more options.
-        - For 3D vector fields, default to: `dict( sizemode = "absolute", sizeref = 40 )`
+        - For 3D vector fields, default to:
+          ``dict( sizemode = "absolute", sizeref = 40 )``.
           Refer [#fn6]_ for more options.
 
     surface_kw : dict, optional
@@ -49,13 +50,13 @@ class PlotlyBackend(Plot):
         A dictionary of keywords/values which is passed to Plotly's
         streamlines function to customize the appearance.
 
-        - For 2D vector fields, defaul to: `dict( arrow_scale = 0.15 )`
+        - For 2D vector fields, defaul to: ``dict( arrow_scale = 0.15 )``.
           Refer to [#fn8]_ for more options.
-        - For 3D vector fields, default to: `dict( sizeref = 0.3 )`
+        - For 3D vector fields, default to: ``dict( sizeref = 0.3 )``.
           Refer to [#fn9]_ for more options.
 
     theme : str, optional
-        Set the theme. Default to `"plotly_dark"`. Find more Plotly themes at
+        Set the theme. Default to ``"plotly_dark"``. Find more Plotly themes at
         [#fn10]_ .
 
     use_cm : boolean, optional

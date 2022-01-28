@@ -183,6 +183,10 @@ class BokehBackend(Plot):
     Parameters
     ==========
 
+    aspect : str
+        Set the aspect ratio of a 2D plot. Default to ``None``. Set it to
+        ``"equal"`` to sets equal spacing on the axis.
+
     contour_kw : dict, optional
         A dictionary with keyword arguments to customize the contour.
         This might be useful to change the `palette` to a custom value.
@@ -190,7 +194,7 @@ class BokehBackend(Plot):
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's scatter
         functions to customize the appearance. Default to:
-        `line_kw = dict(line_width = 2)`
+        ``line_kw = dict(line_width = 2)``.
         Refer to [#fn1]_ to learn more about customization.
 
     quiver_kw : dict, optional
@@ -208,10 +212,10 @@ class BokehBackend(Plot):
 
     stream_kw : dict, optional
         A dictionary with keyword arguments to customize the streamlines.
-        Default to: `dict(line_width=2, line_alpha=0.8)`
+        Default to: ``dict(line_width=2, line_alpha=0.8)``
 
     theme : str, optional
-        Set the theme. Default to `"dark_minimal"`. Find more Bokeh themes
+        Set the theme. Default to ``"dark_minimal"``. Find more Bokeh themes
         at [#fn2]_ .
 
     update_event : bool, optional

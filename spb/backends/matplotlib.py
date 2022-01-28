@@ -51,8 +51,8 @@ class MatplotlibBackend(Plot):
     aspect : (float, float) or str, optional
         Set the aspect ratio of a 2D plot. Possible values:
 
-        * `'auto'`: Matplotlib will fit the plot in the vibile area.
-        * `"equal"`: sets equal spacing on the axis of a 2D plot.
+        * ``'auto'``: Matplotlib will fit the plot in the vibile area.
+        * ``"equal"``: sets equal spacing on the axis of a 2D plot.
         * tuple containing 2 float numbers, from which the aspect ratio is
           computed.
 
@@ -60,12 +60,12 @@ class MatplotlibBackend(Plot):
         Set the location of the intersection between the horizontal and
         vertical axis in a 2D plot. It can be:
 
-        * `None`: traditional layout, with the horizontal axis fixed on the
+        * ``None``: traditional layout, with the horizontal axis fixed on the
           bottom and the vertical axis fixed on the left. This is the default
           value.
-        * a tuple `(x, y)` specifying the exact intersection point.
-        * `'center'`: center of the current plot area.
-        * `'auto'`: the intersection point is automatically computed.
+        * a tuple ``(x, y)`` specifying the exact intersection point.
+        * ``'center'``: center of the current plot area.
+        * ``'auto'``: the intersection point is automatically computed.
 
     contour_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's

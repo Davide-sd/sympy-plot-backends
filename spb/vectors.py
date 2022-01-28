@@ -281,6 +281,11 @@ def plot_vector(*args, show=True, **kwargs):
             If none is provided, the string representation of the vector will
             be used.
 
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
+
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.

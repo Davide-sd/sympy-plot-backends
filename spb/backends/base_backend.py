@@ -41,15 +41,17 @@ class Plot:
     In order to be used by SymPy plotting functions, a backend must implement
     the following methods and attributes:
 
-    * `show(self)`: used to loop over the data series, generate the numerical
-      data, plot it and set the axis labels, title, ...
-    * `save(self, path, **kwargs)`: used to save the current plot to the
+    * ``show(self)``: used to loop over the data series, generate the
+      numerical data, plot it and set the axis labels, title, ...
+    * ``save(self, path, **kwargs)``: used to save the current plot to the
       specified file path.
-    * `self._fig`: an instance attribute to store the backend-specific plot
+    * ``self._fig``: an instance attribute to store the backend-specific plot
       object, which can be retrieved with the `Plot.fig` attribute. This
       object can then be used to further customize the resulting plot, using
       backend-specific commands.
-    * `_update_interactive(self, params)`: this
+    * ``_update_interactive(self, params)``: this method receives a dictionary
+      mapping parameters to their values from the ``iplot`` function, which
+      are going to be used to update the objects of the figure.
 
     Parameters
     ==========
@@ -96,26 +98,28 @@ class Plot:
     Combine multiple plots together to create a new plot:
 
     .. plot::
-        :context: reset
-        :format: doctest
-        :include-source: True
+       :context: reset
+       :format: doctest
+       :include-source: True
 
-        >>> from sympy import *
-        >>> from spb import *
-        >>> x = symbols("x")
-        >>> p1 = plot(sin(x), cos(x), show=False)
-        >>> p2 = plot(sin(x) * cos(x), log(x), show=False)
-        >>> p3 = p1 + p2
-        >>> p3.show()
+       >>> from sympy import symbols, sin, cos, log
+       >>> from spb import plot
+       >>> x = symbols("x")
+       >>> p1 = plot(sin(x), cos(x), show=False)
+       >>> p2 = plot(sin(x) * cos(x), log(x), show=False)
+       >>> p3 = p1 + p2
+       >>> p3.show()
 
     Use the index notation to access the data series. Let's generate the
     numerical data associated to the first series:
 
-        >>> from sympy import *
-        >>> from spb import *
-        >>> x = symbols("x")
-        >>> p1 = plot(sin(x), cos(x), show=False)
-        >>> xx, yy = p1[0].get_data()
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> p1 = plot(sin(x), cos(x), show=False)
+       >>> xx, yy = p1[0].get_data()
 
 
     See also

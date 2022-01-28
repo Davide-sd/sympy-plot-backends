@@ -502,6 +502,11 @@ def iplot(*args, show=True, **kwargs):
         Note that the parameters cannot be linked together (ie, one parameter
         cannot depend on another one).
 
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
+
     backend : Plot, optional
         The backend to be used to generate the plot. It must be a subclass of
         `spb.backends.base_backend.Plot`. If not provided, the module will
