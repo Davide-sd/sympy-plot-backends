@@ -343,6 +343,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         is_3D = all([s.is_3D for s in series])
         # create the plot
         Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
+        kwargs["is_iplot"] = True
         self._backend = Backend(*series, **kwargs)
 
     def _create_series(self, *args, **kwargs):
@@ -770,7 +771,7 @@ def iplot(*args, show=True, **kwargs):
        p.show()
 
     Serves the interactive plot on a separate browser window. Note:
-    
+
     1. only ``BokehBackend`` and ``PlotlyBackend`` are supported for this
        operation mode.
     2. the output of ``iplot`` is captures into a variable.
@@ -812,33 +813,65 @@ def iplot(*args, show=True, **kwargs):
 
     1. This function is specifically designed to work within Jupyter Notebook.
        However, it is also possible to use it from a regular Python,
-       interpreter but only with `BokehBackend` and `PlotlyBackend`.
-       In such cases, it must be called with `iplot(..., backend=BB).show()`, which will create a server process loading the interactive plot on
+       interpreter but only with ``BokehBackend`` and ``PlotlyBackend``.
+       In such cases, it must be called with ``iplot(..., backend=BB).show()``, which will create a server process loading the interactive plot on
        the browser.
 
-    2. Some examples use an instance of `PrintfTickFormatter` to format the
+    2. Some examples use an instance of ``PrintfTickFormatter`` to format the
        value shown by a slider. This class is exposed by Bokeh, but can be
-       used by `iplot` with any backend. Refer to [#fn1]_ for more
+       used by ``iplot`` with any backend. Refer to [#fn1]_ for more
        information about tick formatting.
 
-    3. The duality of the keyword argument `show`:
+    3. The duality of the keyword argument ``show``:
 
        * If True, the function returns a `panel` object that will be rendered
          on the output cell of a Jupyter Notebook.
        * If False, it returns an instance of `InteractivePlot`.
 
-       Let's focus on the syntax `t = iplot(..., show=True, backend=BB)`, as
+       Let's focus on the syntax ``t = iplot(..., show=True, backend=BB)``, as
        shown in the last example.
        Here, the variable `t` captures the `panel` object, thus nothing
        will be rendered on the output cell. We can use this variable to serve
        the interactive plot through a server process on a separate browser
-       window, by calling `t.show()`. In doing so, the overall interactive
+       window, by calling ``t.show()``. In doing so, the overall interactive
        plot is not subjected to the width limitation of a classical Jupyter
        Notebook. It is possible to play with the following keyword arguments
        to further customize the look and take advantage of the full page:
        `size, ncols, layout`.
-       As stated before, only `BokehBackend` and `PlotlyBackend` are
+       As stated before, only ``BokehBackend`` and ``PlotlyBackend`` are
        supported in this mode of operation.
+
+    4. Say we are creating two different interactive plots and capturing
+       their output on two variables, using ``show=False``. For example,
+       ``p1 = iplot(..., show=False)`` and ``p2 = iplot(..., show=False)``.
+       Then, running ``p1.show()`` on the screen will result in an error.
+       This is standard behaviour that can't be changed, as `panel's`
+       parameters are class attributes that gets deleted each time a new
+       instance is created.
+
+    5. ``MatplotlibBackend`` can be used, but the resulting figure is just a
+       PNG image without any interactive frame. Thus, data exploration is not
+       great. Therefore, the use of ``PlotlyBackend`` or ``BokehBackend`` is
+       encouraged.
+
+    6. Once this module has been loaded, there could be problems with all
+       other plotting functions when using ``BokehBackend``, namely the
+       figure won't show up in the output cell. If that is the case, we need
+       to turn off  automatic updates on panning by setting
+       ``update_event=False`` in the function call.
+
+    7. Once this module has been loaded and ``iplot`` has been executed, if
+       the kernel of the notebook needs to be restarted, the safest procedure
+       is the following:
+
+       * save the current notebook.
+       * close the notebook and Jupyter server.
+       * restart Jupyter server and open the notebook.
+       * reload the cells.
+
+       Failing to follow this procedure might results in the notebook to
+       become  unresponsive once the module has been reloaded, with several
+       errors appearing on the output cell.
 
 
     References
@@ -910,6 +943,7 @@ def create_widgets(params, **kwargs):
 
        from sympy.abc import x, y, z
        from spb.interactive import create_widgets
+       import param
        from bokeh.models.formatters import PrintfTickFormatter
        formatter = PrintfTickFormatter(format="%.4f")
        r = create_widgets({
