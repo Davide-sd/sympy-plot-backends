@@ -175,6 +175,11 @@ class Plot:
         # and the value of `eps`. Getting the detection right is likely to
         # be a trial-by-error procedure. Hence, keep this parameter to False.
         self.detect_poles = kwargs.get("detect_poles", False)
+        # NOTE: matplotlib is not designed to be interactive, therefore it
+        # needs a way to detect where its figure is going to be displayed.
+        # For regular plots, plt.figure can be used. For interactive-parametric
+        # plots matplotlib.figure.Figure must be used.
+        self.is_iplot = kwargs.get("is_iplot", False)
 
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.
@@ -258,7 +263,8 @@ class Plot:
             xlim=self.xlim,
             ylim=self.ylim,
             zlim=self.zlim,
-            size=self.size
+            size=self.size,
+            is_iplot=self.is_iplot
         )
 
     def _init_cyclers(self):

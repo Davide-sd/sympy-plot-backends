@@ -131,16 +131,16 @@ class MatplotlibBackend(Plot):
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
-        matplotlib = import_module(
+        self.matplotlib = import_module(
             'matplotlib',
             import_kwargs={'fromlist': ['pyplot', 'cm', 'collections', 'colors']},
             min_module_version='1.1.0',
             catch=(RuntimeError,))
-        self.plt = matplotlib.pyplot
-        self.cm = cm = matplotlib.cm
-        self.LineCollection = matplotlib.collections.LineCollection
-        self.ListedColormap = matplotlib.colors.ListedColormap
-        self.Normalize = matplotlib.colors.Normalize
+        self.plt = self.matplotlib.pyplot
+        self.cm = cm = self.matplotlib.cm
+        self.LineCollection = self.matplotlib.collections.LineCollection
+        self.ListedColormap = self.matplotlib.colors.ListedColormap
+        self.Normalize = self.matplotlib.colors.Normalize
 
         # set default colors
         self.colormaps = [
@@ -217,7 +217,11 @@ class MatplotlibBackend(Plot):
             self._fig = self._plotgrid_fig
             self.ax = self._plotgrid_ax
         else:
-            self._fig = self.plt.figure(figsize=self.size)
+            if not self.is_iplot:
+                self._fig = self.plt.figure(figsize=self.size)
+            else:
+                self._fig = self.matplotlib.figure.Figure(figsize=self.size)
+
             is_3D = [s.is_3D for s in self.series]
             if any(is_3D) and (not all(is_3D)):
                 raise ValueError(
