@@ -4,17 +4,6 @@ from spb.backends.utils import compute_streamtubes
 from sympy.external import import_module
 import itertools
 
-matplotlib = import_module(
-    'matplotlib',
-    import_kwargs={'fromlist': ['pyplot', 'cm', 'collections', 'colors']},
-    min_module_version='1.1.0',
-    catch=(RuntimeError,))
-plt = matplotlib.pyplot
-cm = matplotlib.cm
-LineCollection = matplotlib.collections.LineCollection
-ListedColormap = matplotlib.colors.ListedColormap
-Normalize = matplotlib.colors.Normalize
-
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
 _show = True
@@ -135,29 +124,44 @@ class MatplotlibBackend(Plot):
 
     _library = "matplotlib"
 
-    colormaps = [
-        cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
-        cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer]
-
-    cyclic_colormaps = [cm.twilight, cm.hsv]
+    colormaps = []
+    cyclic_colormaps = []
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
+        matplotlib = import_module(
+            'matplotlib',
+            import_kwargs={'fromlist': ['pyplot', 'cm', 'collections', 'colors']},
+            min_module_version='1.1.0',
+            catch=(RuntimeError,))
+        self.plt = matplotlib.pyplot
+        self.cm = cm = matplotlib.cm
+        self.LineCollection = matplotlib.collections.LineCollection
+        self.ListedColormap = matplotlib.colors.ListedColormap
+        self.Normalize = matplotlib.colors.Normalize
+
+        # set default colors
+        self.colormaps = [
+            cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
+            cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer]
+        self.cyclic_colormaps = [cm.twilight, cm.hsv]
+        self.colorloop = cm.tab10.colors
+
         self._init_cyclers()
         super().__init__(*args, **kwargs)
+
+        if ((len([s for s in self._series if s.is_2Dline]) > 10) and
+            (not type(self).colorloop) and
+            not ("process_piecewise" in kwargs.keys())):
+            # add colors if needed
+            self.colorloop = cm.tab20.colors
 
         # plotgrid() can provide its figure and axes to be populated with
         # the data from the series.
         self._plotgrid_fig = kwargs.pop("fig", None)
         self._plotgrid_ax = kwargs.pop("ax", None)
-
-        # add colors if needed
-        if (len([s for s in self._series if s.is_2Dline]) > 10) and (
-            self.colorloop == cm.tab10
-        ):
-            self.colorloop = cm.tab20
 
         if self.axis_center is None:
             self.axis_center = cfg["matplotlib"]["axis_center"]
@@ -184,7 +188,7 @@ class MatplotlibBackend(Plot):
             cm = []
             for i in range(len(colormaps)):
                 c = next(it)
-                cm.append(c if not isinstance(c, np.ndarray) else ListedColormap(c))
+                cm.append(c if not isinstance(c, np.ndarray) else self.ListedColormap(c))
             return itertools.cycle(cm)
 
         self._cm = process_iterator(self._cm, self.colormaps)
@@ -213,7 +217,7 @@ class MatplotlibBackend(Plot):
             self._fig = self._plotgrid_fig
             self.ax = self._plotgrid_ax
         else:
-            self._fig = plt.figure(figsize=self.size)
+            self._fig = self.plt.figure(figsize=self.size)
             is_3D = [s.is_3D for s in self.series]
             if any(is_3D) and (not all(is_3D)):
                 raise ValueError(
@@ -301,13 +305,12 @@ class MatplotlibBackend(Plot):
 
     def _process_series(self, series):
         np = import_module('numpy')
-        mergedeep = import_module('mergedeep')
-        merge = mergedeep.merge
         mpl_toolkits = import_module(
             'mpl_toolkits', # noqa
             import_kwargs={'fromlist': ['mplot3d']},
             catch=(RuntimeError,))
         Line3DCollection = mpl_toolkits.mplot3d.art3d.Line3DCollection
+        merge = self.merge
 
         # XXX Workaround for matplotlib issue
         # https://github.com/matplotlib/matplotlib/issues/17130
@@ -330,7 +333,7 @@ class MatplotlibBackend(Plot):
                     lkw = dict(array=param, cmap=colormap)
                     kw = merge({}, lkw, s.rendering_kw)
                     segments = self.get_segments(x, y)
-                    c = LineCollection(segments, **kw)
+                    c = self.LineCollection(segments, **kw)
                     self.ax.add_collection(c)
                     is_cb_added = self._add_colorbar(c, s.label)
                     self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
@@ -414,13 +417,13 @@ class MatplotlibBackend(Plot):
                     xarray, yarray, zarray, plot_type = points
                     color = next(self._cl)
                     if plot_type == "contour":
-                        colormap = ListedColormap([color, color])
+                        colormap = self.ListedColormap([color, color])
                         ckw = dict(cmap=colormap)
                         kw = merge({}, ckw, s.rendering_kw)
                         c = self.ax.contour(xarray, yarray, zarray, [0.0],
                             **kw)
                     else:
-                        colormap = ListedColormap(["white", color])
+                        colormap = self.ListedColormap(["white", color])
                         ckw = dict(cmap=colormap)
                         kw = merge({}, ckw, s.rendering_kw)
                         c = self.ax.contourf(xarray, yarray, zarray, **kw)
@@ -525,10 +528,10 @@ class MatplotlibBackend(Plot):
                     if colors is not None:
                         colors = colors / 255.0
 
-                        colormap = ListedColormap(colors)
-                        norm = Normalize(vmin=-np.pi, vmax=np.pi)
+                        colormap = self.ListedColormap(colors)
+                        norm = self.Normalize(vmin=-np.pi, vmax=np.pi)
                         cb2 = self._fig.colorbar(
-                            cm.ScalarMappable(norm=norm, cmap=colormap),
+                            self.cm.ScalarMappable(norm=norm, cmap=colormap),
                             orientation="vertical",
                             label="Argument",
                             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
@@ -554,9 +557,9 @@ class MatplotlibBackend(Plot):
 
                         # this colorbar is essential to understand the plot.
                         # Always show it, except when use_cm=False
-                        norm = Normalize(vmin=-np.pi, vmax=np.pi)
-                        mappable = cm.ScalarMappable(
-                            cmap=ListedColormap(colorscale), norm=norm
+                        norm = self.Normalize(vmin=-np.pi, vmax=np.pi)
+                        mappable = self.cm.ScalarMappable(
+                            cmap=self.ListedColormap(colorscale), norm=norm
                         )
                         cb = self._fig.colorbar(
                             mappable,
@@ -736,8 +739,8 @@ class MatplotlibBackend(Plot):
         """
         np = import_module('numpy')
         cax.clear()
-        norm = Normalize(vmin=np.amin(param), vmax=np.amax(param))
-        mappable = cm.ScalarMappable(cmap=kw["cmap"], norm=norm)
+        norm = self.Normalize(vmin=np.amin(param), vmax=np.amax(param))
+        mappable = self.cm.ScalarMappable(cmap=kw["cmap"], norm=norm)
         self._fig.colorbar(mappable, orientation="vertical", label=label, cax=cax)
 
     def _update_interactive(self, params):
@@ -926,7 +929,7 @@ class MatplotlibBackend(Plot):
         self.process_series()
         if _show:
             self._fig.tight_layout()
-            plt.show()
+            self.plt.show()
         else:
             self.close()
 
@@ -945,7 +948,7 @@ class MatplotlibBackend(Plot):
 
     def close(self):
         """Close the current plot."""
-        plt.close(self._fig)
+        self.plt.close(self._fig)
 
 
 MB = MatplotlibBackend

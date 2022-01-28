@@ -4,12 +4,6 @@ from sympy.external import import_module
 from itertools import cycle
 from spb.series import BaseSeries
 from spb.backends.utils import convert_colormap
-matplotlib = import_module(
-    'matplotlib',
-    import_kwargs={'fromlist': ['pyplot', 'cm', 'collections', 'colors']},
-    min_module_version='1.1.0',
-    catch=(RuntimeError,))
-cm = matplotlib.cm
 
 
 class Plot:
@@ -138,7 +132,7 @@ class Plot:
     # As a class attribute it must be a list/tuple in order for
     # `plot_piecewise` to work correctly. As an instance attribute it can
     # also be an instance of matplotlib's ListedColormap.
-    colorloop = cm.tab10.colors
+    colorloop = []
 
     # child backends should provide a list of color maps to render surfaces.
     colormaps = []
@@ -159,6 +153,10 @@ class Plot:
         return backend
 
     def __init__(self, *args, **kwargs):
+        # the merge function is used by all backends
+        self._mergedeep = import_module('mergedeep')
+        self.merge = self._mergedeep.merge
+
         # Options for the graph as a whole.
         # The possible values for each option are described in the docstring
         # of Plot. They are based purely on convention, no checking is done.
@@ -266,15 +264,20 @@ class Plot:
     def _init_cyclers(self):
         """Create infinite loop iterators over the provided color maps."""
 
-        if not isinstance(self.colorloop, (list, tuple)):
-            # assume it is a matplotlib's ListedColormap
-            self.colorloop = self.colorloop.colors
-        self._cl = cycle(self.colorloop)
+        tb = type(self)
+        colorloop = self.colorloop if not tb.colorloop else tb.colorloop
+        colormaps = self.colormaps if not tb.colormaps else tb.colormaps
+        cyclic_colormaps = self.cyclic_colormaps if not tb.cyclic_colormaps else tb.cyclic_colormaps
 
-        colormaps = [convert_colormap(cm, self._library) for cm in self.colormaps]
+        if not isinstance(colorloop, (list, tuple)):
+            # assume it is a matplotlib's ListedColormap
+            self.colorloop = colorloop.colors
+        self._cl = cycle(colorloop)
+
+        colormaps = [convert_colormap(cm, self._library) for cm in colormaps]
         self._cm = cycle(colormaps)
         cyclic_colormaps = [
-            convert_colormap(cm, self._library) for cm in self.cyclic_colormaps
+            convert_colormap(cm, self._library) for cm in cyclic_colormaps
         ]
         self._cyccm = cycle(cyclic_colormaps)
 

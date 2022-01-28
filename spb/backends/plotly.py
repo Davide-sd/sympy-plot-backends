@@ -84,25 +84,10 @@ class PlotlyBackend(Plot):
 
     _library = "plotly"
 
-    # The following colors corresponds to the discret color map
-    # px.colors.qualitative.Plotly.
-    colorloop = [
-        "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
-        "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"]
-    # a selection of color maps to be used in 3D surfaces, contour plots.
-    colormaps = [
-        "aggrnyl", "plotly3", "reds_r", "ice", "inferno",
-        "deep_r", "turbid_r", "gnbu_r", "geyser_r", "oranges_r"]
-    # to be used in complex-parametric plots
-    cyclic_colormaps = ["phase", "twilight", "hsv", "icefire"]
-
-    # TODO: here I selected black and white, but they are not visible with dark
-    # or light theme respectively... Need a better selection of colors.
-    # Although, they are placed in the middle of the loop, so they are unlikely
-    # going to be used.
-    quivers_colors = [
-        "magenta", "crimson", "darkorange", "dodgerblue", "wheat",
-        "slategrey", "white", "black", "darkred", "indigo"]
+    colorloop = []
+    colormaps = []
+    cyclic_colormaps = []
+    quivers_colors = []
 
     # color bar spacing
     _cbs = 0.15
@@ -119,13 +104,30 @@ class PlotlyBackend(Plot):
             min_module_version='5.0.0')
         go = plotly.graph_objects
 
+        # The following colors corresponds to the discret color map
+        # px.colors.qualitative.Plotly.
+        self.colorloop = [
+            "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
+            "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"]
+        self.colormaps = [
+            "aggrnyl", "plotly3", "reds_r", "ice", "inferno",
+            "deep_r", "turbid_r", "gnbu_r", "geyser_r", "oranges_r"]
+        self.cyclic_colormaps = ["phase", "twilight", "hsv", "icefire"]
+        # TODO: here I selected black and white, but they are not visible
+        # with dark or light theme respectively... Need a better selection
+        # of colors. Although, they are placed in the middle of the loop,
+        # so they are unlikely going to be used.
+        self.quivers_colors = [
+            "magenta", "crimson", "darkorange", "dodgerblue", "wheat",
+            "slategrey", "white", "black", "darkred", "indigo"]
+
         self._init_cyclers()
         super().__init__(*args, **kwargs)
-        self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
 
-        # add colors if needed
         if ((len([s for s in self._series if s.is_2Dline]) > 10) and
-            (len(self.colorloop) <= 10)):
+            (not type(self).colorloop) and
+            not ("process_piecewise" in kwargs.keys())):
+            # add colors if needed
             # this corresponds to px.colors.qualitative.Light24
             self.colorloop = [
                 "#FD3216", "#00FE35", "#6A76FC", "#FED4C4", "#FE00CE",
@@ -135,6 +137,7 @@ class PlotlyBackend(Plot):
                 "#BC7196", "#7E7DCD", "#FC6955", "#E48F72"
             ]
 
+        self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
         self._fig = go.Figure()
 
     @property
@@ -170,7 +173,9 @@ class PlotlyBackend(Plot):
 
     def _init_cyclers(self):
         super()._init_cyclers()
-        self._qc = itertools.cycle(self.quivers_colors)
+        tb = type(self)
+        quivers_colors = self.quivers_colors if not tb.quivers_colors else tb.quivers_colors
+        self._qc = itertools.cycle(quivers_colors)
 
     def _create_colorbar(self, k, label, sc=False):
         """This method reduces code repetition.
@@ -209,8 +214,7 @@ class PlotlyBackend(Plot):
         go = plotly.graph_objects
         create_quiver = plotly.figure_factory.create_quiver
         create_streamline = plotly.figure_factory.create_streamline
-        mergedeep = import_module('mergedeep')
-        merge = mergedeep.merge
+        merge = self.merge
         self._init_cyclers()
 
         # if legend=True and both 3d lines and surfaces are shown, then hide the
@@ -564,8 +568,7 @@ class PlotlyBackend(Plot):
             import_kwargs={'fromlist': ['graph_objects', 'figure_factory']},
             min_module_version='5.0.0')
         create_quiver = plotly.figure_factory.create_quiver
-        mergedeep = import_module('mergedeep')
-        merge = mergedeep.merge
+        merge = self.merge
 
         for i, s in enumerate(self.series):
             if s.is_interactive:

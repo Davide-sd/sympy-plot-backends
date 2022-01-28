@@ -6,19 +6,6 @@ from spb.utils import get_vertices_indices
 import warnings
 import os
 
-k3d = import_module(
-    'k3d',
-    import_kwargs={'fromlist': ['helpers', 'objects']},
-    min_module_version='2.9.7')
-cc = import_module(
-    'colorcet',
-    min_module_version='3.0.0')
-matplotlib = import_module(
-    'matplotlib',
-    import_kwargs={'fromlist': ['tri']},
-    min_module_version='1.1.0',
-    catch=(RuntimeError,))
-
 
 class K3DBackend(Plot):
     """A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
@@ -61,22 +48,40 @@ class K3DBackend(Plot):
 
     _library = "k3d"
 
-    colormaps = [
-        k3d.basic_color_maps.CoolWarm,
-        k3d.matplotlib_color_maps.Plasma,
-        k3d.matplotlib_color_maps.Winter,
-        k3d.matplotlib_color_maps.Viridis,
-        k3d.paraview_color_maps.Haze,
-        k3d.matplotlib_color_maps.Summer,
-        k3d.paraview_color_maps.Blue_to_Yellow,
-    ]
-
-    cyclic_colormaps = [cc.colorwheel, k3d.paraview_color_maps.Erdc_iceFire_H]
+    colormaps = []
+    cyclic_colormaps = []
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
+        self.k3d = k3d = import_module(
+            'k3d',
+            import_kwargs={'fromlist': ['helpers', 'objects']},
+            min_module_version='2.9.7')
+        cc = import_module(
+            'colorcet',
+            min_module_version='3.0.0')
+        self.matplotlib = import_module(
+            'matplotlib',
+            import_kwargs={'fromlist': ['tri', 'cm']},
+            min_module_version='1.1.0',
+            catch=(RuntimeError,))
+        cm = self.matplotlib.cm
+
+        self.colorloop = cm.tab10.colors
+        self.colormaps = [
+            k3d.basic_color_maps.CoolWarm,
+            k3d.matplotlib_color_maps.Plasma,
+            k3d.matplotlib_color_maps.Winter,
+            k3d.matplotlib_color_maps.Viridis,
+            k3d.paraview_color_maps.Haze,
+            k3d.matplotlib_color_maps.Summer,
+            k3d.paraview_color_maps.Blue_to_Yellow,
+        ]
+        self.cyclic_colormaps = [
+            cc.colorwheel, k3d.paraview_color_maps.Erdc_iceFire_H]
+
         self._init_cyclers()
         super().__init__(*args, **kwargs)
         if self._get_mode() != 0:
@@ -87,8 +92,6 @@ class K3DBackend(Plot):
         self._bounds = []
         self._clipping = []
         self._handles = dict()
-
-        self._init_cyclers()
 
         self._fig = k3d.plot(
             grid_visible=self.grid,
@@ -165,9 +168,8 @@ class K3DBackend(Plot):
 
     def _process_series(self, series):
         np = import_module('numpy')
-        mergedeep = import_module('mergedeep')
-        merge = mergedeep.merge
-        Triangulation = matplotlib.tri.Triangulation
+        merge = self.merge
+        Triangulation = self.matplotlib.tri.Triangulation
         self._init_cyclers()
         self._fig.auto_rendering = False
         # clear data
@@ -180,7 +182,7 @@ class K3DBackend(Plot):
                 positions = np.vstack([x, y, z]).T.astype(np.float32)
                 a = dict(point_size=0.2, color=self._convert_to_int(next(self._cl)))
                 kw = merge({}, a, s.rendering_kw)
-                plt_points = k3d.points(positions=positions, **kw)
+                plt_points = self.k3d.points(positions=positions, **kw)
                 plt_points.shader = "mesh"
                 self._fig += plt_points
 
@@ -204,7 +206,7 @@ class K3DBackend(Plot):
                     a["color_map"] = next(self._cm)
                     a["color_range"] = [s.start, s.end]
                 kw = merge({}, a, s.rendering_kw)
-                line = k3d.line(vertices, **kw)
+                line = self.k3d.line(vertices, **kw)
                 self._fig += line
 
             elif (s.is_3Dsurface and not s.is_domain_coloring):
@@ -239,7 +241,7 @@ class K3DBackend(Plot):
                     a["color_map"] = next(self._cm)
                     a["attribute"] = z.astype(np.float32)
                 kw = merge({}, a, s.rendering_kw)
-                surf = k3d.mesh(vertices, indices, **kw)
+                surf = self.k3d.mesh(vertices, indices, **kw)
 
                 self._fig += surf
 
@@ -266,7 +268,7 @@ class K3DBackend(Plot):
                     stream_kw["color"] = col
 
                 kw = merge({}, skw, stream_kw)
-                self._fig += k3d.line(
+                self._fig += self.k3d.line(
                     vertices.astype(np.float32), **kw)
 
             elif s.is_3Dvector:
@@ -288,7 +290,8 @@ class K3DBackend(Plot):
                 quiver_kw = s.rendering_kw
                 if self._use_cm and ("color" not in quiver_kw.keys()):
                     colormap = next(self._cm)
-                    colors = k3d.helpers.map_colors(magnitude, colormap, [])
+                    colors = self.k3d.helpers.map_colors(
+                        magnitude, colormap, [])
                     self._handles[ii] = [qkw, colormap]
                 else:
                     col = quiver_kw.get("color", next(self._cl))
@@ -311,7 +314,7 @@ class K3DBackend(Plot):
                 vec_kw["vectors"] = vectors
                 vec_kw["colors"] = vec_colors
 
-                vec = k3d.vectors(**vec_kw)
+                vec = self.k3d.vectors(**vec_kw)
                 self._fig += vec
 
             elif s.is_complex and s.is_3Dsurface:
@@ -344,7 +347,7 @@ class K3DBackend(Plot):
                     a["color_map"] = r
                     a["color_range"] = [-np.pi, np.pi]
                 kw = merge({}, a, s.rendering_kw)
-                surf = k3d.mesh(vertices, indices, **kw)
+                surf = self.k3d.mesh(vertices, indices, **kw)
 
                 self._fig += surf
 
@@ -360,7 +363,7 @@ class K3DBackend(Plot):
         self._fig.axes = [xl, yl, zl]
 
         if self.title:
-            self._fig += k3d.text2d(
+            self._fig += self.k3d.text2d(
                 self.title, position=[0.025, 0.015], color=0, size=1, label_box=False
             )
         self._fig.auto_rendering = True
@@ -430,7 +433,8 @@ class K3DBackend(Plot):
                     magnitude = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
                     qkw, colormap = self._handles[i]
                     if colormap is not None:
-                        colors = k3d.helpers.map_colors(magnitude, colormap, [])
+                        colors = self.k3d.helpers.map_colors(
+                            magnitude, colormap, [])
                         vec_colors = np.zeros(2 * len(colors))
                         for j, c in enumerate(colors):
                             vec_colors[2 * j] = c
