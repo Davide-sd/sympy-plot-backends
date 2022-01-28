@@ -32,9 +32,9 @@ def _hardcoded_defaults():
             "minor_grid_line_dash": [2, 2],
         },
         k3d={
-            "bg_color": 3620427,
-            "grid_color": 0x888888,
-            "label_color": 0xDDDDDD
+            "bg_color": 0xFFFFFF,       # 3620427
+            "grid_color": 0xE6E6E6,     # 0x888888
+            "label_color": 0x444444     # 0xDDDDDD
         },
         matplotlib={
             "axis_center": None,  # "auto", "center"
