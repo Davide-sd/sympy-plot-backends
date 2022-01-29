@@ -14,9 +14,15 @@ from spb import (
     plot_vector, plot_complex, plot_geometry, plot_real_imag,
     plot_list, plot_piecewise
 )
-from sympy import (
-    symbols, cos, sin, Matrix, pi, sqrt, I, Heaviside, Piecewise, Eq, log
-)
+from sympy.core.symbol import symbols
+from sympy.core.relational import Eq
+from sympy.matrices.dense import Matrix
+from sympy.core.numbers import pi, I
+from sympy.functions.elementary.trigonometric import sin, cos
+from sympy.functions.elementary.miscellaneous import sqrt
+from sympy.functions.elementary.exponential import log
+from sympy.functions.special.delta_functions import Heaviside
+from sympy.functions.elementary.piecewise import Piecewise
 from sympy.geometry import Line, Circle, Polygon
 from sympy.external import import_module
 from tempfile import TemporaryDirectory

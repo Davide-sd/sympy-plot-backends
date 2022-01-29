@@ -16,12 +16,14 @@ Simplicity of code takes much greater importance than performance. Don't use
 it if you care at all about performance.
 """
 
-
-from sympy import (
-    Expr, Tuple, Symbol, oo, Wild, Sum, sign,
-    Piecewise, piecewise_fold,
-    EmptySet, FiniteSet, Interval, Union,
-)
+from sympy.core.containers import Tuple
+from sympy.core.expr import Expr
+from sympy.core.symbol import Symbol, Wild
+from sympy.core.numbers import oo
+from sympy.concrete.summations import Sum
+from sympy.functions.elementary.complexes import sign
+from sympy.functions.elementary.piecewise import Piecewise, piecewise_fold
+from sympy.sets.sets import EmptySet, FiniteSet, Interval, Union
 from spb.backends.base_backend import Plot
 from spb.utils import _plot_sympify, _check_arguments, _unpack_args
 from spb.series import (
@@ -116,7 +118,7 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
         elif isinstance(_set, Union):
             for _s in _set.args:
                 c = func(expr, _s, c, from_union=True)
-        elif isinstance(_set, EmptySet.func):
+        elif isinstance(_set, EmptySet):
             # in this case, some pieces are outside of the provided range.
             # don't add any series, but increase the counter nonetheless so that
             # there is one-to-one correspondance between the expression and

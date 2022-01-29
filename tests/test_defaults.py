@@ -1,8 +1,9 @@
+from sympy.core.symbol import symbols
+from sympy.functions.elementary.trigonometric import sin
 from spb.defaults import cfg, set_defaults, reset
 from spb.backends.bokeh import BB
 from spb.backends.matplotlib import MB
 from spb.functions import plot, plot3d
-from sympy import symbols, sin
 from pytest import raises
 
 

@@ -1,6 +1,8 @@
-from sympy import (
-    sympify, Tuple, symbols, solve, Expr
-)
+from sympy.core.containers import Tuple
+from sympy.core.symbol import symbols
+from sympy.core.sympify import sympify
+from sympy.solvers.solvers import solve
+from sympy.core.expr import Expr
 from sympy.geometry import (
     Plane, Polygon, Circle, Ellipse, Segment, Ray,
     Curve, Point2D, Point3D,

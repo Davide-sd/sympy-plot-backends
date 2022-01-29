@@ -1,4 +1,7 @@
-from sympy import symbols, cos, sin, Tuple, Plane
+from sympy.core.symbol import symbols
+from sympy.core.containers import Tuple
+from sympy.functions.elementary.trigonometric import sin, cos
+from sympy.geometry.plane import Plane
 from sympy.external import import_module
 from spb.interactive import (
     iplot, DynamicParam, MyList,
@@ -539,7 +542,7 @@ def test_iplot_sum_3():
         )
         p = p1 + p2
         assert isinstance(p.backend, B)
-    
+
     func(MB)
     func(BB)
     func(PB)

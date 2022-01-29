@@ -1,4 +1,9 @@
-from sympy import Tuple, re, im, sqrt, arg, Expr, Dummy, I, symbols
+from sympy.core.containers import Tuple
+from sympy.functions.elementary.miscellaneous import sqrt
+from sympy.functions.elementary.complexes import re, im, arg
+from sympy.core.expr import Expr
+from sympy.core.symbol import Dummy, symbols
+from sympy.core.numbers import I
 from spb.defaults import cfg
 import warnings
 

@@ -111,7 +111,7 @@ def plotgrid(*args, **kwargs):
     First mode of operation with instances of `MatplotlibBackend`:
 
     .. code-block:: python
-       from sympy import *
+       from sympy import symbols, sin, cos, tan, exp, sqrt, Matrix, gamma
        from spb.backends.matplotlib import MB
        from spb import *
 
@@ -142,9 +142,9 @@ def plotgrid(*args, **kwargs):
 
        p1 = plot(sin(x), cos(x), show=False, backend=MB)
        p2 = plot_contour(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), show=False, backend=BB)
-       p3 = complex_plot(sqrt(x), show=False, backend=PB)
+       p3 = plot_complex(sqrt(x), show=False, backend=PB)
        p4 = plot_vector(Matrix([-y, x]), (x, -5, 5), (y, -5, 5), show=False, backend=MB)
-       p5 = complex_plot(gamma(z), (z, -3-3*I, 3+3*I), show=False, backend=MB)
+       p5 = plot_complex(gamma(z), (z, -3-3*I, 3+3*I), show=False, backend=MB)
 
        gs = GridSpec(3, 3)
        mapping = {

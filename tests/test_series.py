@@ -1,8 +1,14 @@
-from sympy import (
-    symbols, cos, sin, tan, log, sqrt, re, arg, Sum,
-    Tuple, pi, Plane, S, I, im, frac,
-    Circle, Point
-)
+from sympy.core.symbol import symbols
+from sympy.core.containers import Tuple
+from sympy.core.numbers import I, pi
+from sympy.functions.elementary.trigonometric import sin, cos, tan
+from sympy.functions.elementary.exponential import log
+from sympy.functions.elementary.miscellaneous import sqrt
+from sympy.functions.elementary.complexes import re, im, arg
+from sympy.functions.elementary.integers import frac
+from sympy.geometry import Plane, Circle, Point
+from sympy.concrete.summations import Sum
+from sympy.core.singleton import S
 from sympy.external import import_module
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,

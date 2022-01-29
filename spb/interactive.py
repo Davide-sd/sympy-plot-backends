@@ -1,4 +1,5 @@
-from sympy import latex, Tuple
+from sympy.printing.latex import latex
+from sympy.core.containers import Tuple
 from sympy.external import import_module
 from spb.series import (
     InteractiveSeries,

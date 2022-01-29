@@ -1,4 +1,7 @@
-from sympy import Tuple, S, I, Plane
+from sympy.core.containers import Tuple
+from sympy.geometry.plane import Plane
+from sympy.core.singleton import S
+from sympy.core.numbers import I
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import Boolean
 from sympy.matrices.dense import DenseMatrix

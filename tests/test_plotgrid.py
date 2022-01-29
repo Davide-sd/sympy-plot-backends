@@ -1,4 +1,6 @@
-from sympy import symbols, sin, cos, tan, exp
+from sympy.core.symbol import symbols
+from sympy.functions.elementary.trigonometric import sin, cos, tan
+from sympy.functions.elementary.exponential import exp
 from sympy.external import import_module
 from spb.backends.matplotlib import MB
 from spb.backends.plotly import PB

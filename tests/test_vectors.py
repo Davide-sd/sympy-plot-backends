@@ -1,8 +1,11 @@
-from sympy import symbols, Matrix, Tuple, cos, sqrt
+from sympy.core.symbol import symbols
+from sympy.matrices.dense import Matrix
+from sympy.core.containers import Tuple
+from sympy.functions.elementary.trigonometric import cos
+from sympy.functions.elementary.miscellaneous import sqrt
 from sympy.geometry import Plane
 from sympy.vector import CoordSys3D
 from sympy.external import import_module
-
 from spb.vectors import _preprocess, _series, plot_vector
 from spb.utils import _plot_sympify, _split_vector
 from spb.series import (

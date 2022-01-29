@@ -1,11 +1,21 @@
 import os
 from tempfile import TemporaryDirectory, NamedTemporaryFile, mkdtemp
-from sympy import (
-    symbols, Piecewise, And, Eq, Interval, cos, sin, Abs,
-    Sum, oo, S, Heaviside, real_root, log, I, LambertW,
-    exp, sympify, pi, Ne, meijerg, sqrt, exp_polar, Integral,
-    tan, Or, re
-)
+from sympy.core.symbol import symbols
+from sympy.functions.elementary.piecewise import Piecewise
+from sympy.functions.elementary.trigonometric import sin, cos, tan
+from sympy.functions.elementary.complexes import re, Abs
+from sympy.functions.elementary.miscellaneous import sqrt, real_root
+from sympy.functions.special.delta_functions import Heaviside
+from sympy.functions.elementary.exponential import exp, log, LambertW, exp_polar
+from sympy.functions.special.hyper import meijerg
+from sympy.logic.boolalg import And, Or
+from sympy.core.relational import Eq, Ne
+from sympy.sets.sets import Interval
+from sympy.concrete.summations import Sum
+from sympy.core.numbers import oo, I, pi
+from sympy.core.singleton import S
+from sympy.core.sympify import sympify
+from sympy.integrals.integrals import Integral
 from sympy.testing.pytest import skip, warns
 from sympy.external import import_module
 from sympy.testing.tmpfiles import TmpFileManager

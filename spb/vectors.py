@@ -8,7 +8,10 @@ from spb.series import (
     InteractiveSeries
 )
 from spb.utils import _plot_sympify, _unpack_args, _split_vector, _is_range
-from sympy import S, sqrt, Expr, Tuple
+from sympy.core.containers import Tuple
+from sympy.functions.elementary.miscellaneous import sqrt
+from sympy.core.expr import Expr
+from sympy.core.singleton import S
 from sympy.geometry import Plane
 
 

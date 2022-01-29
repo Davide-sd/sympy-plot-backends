@@ -1,4 +1,8 @@
-from sympy import symbols, cos, sin, Eq, re, im, arg, sqrt
+from sympy.core.symbol import symbols
+from sympy.core.relational import Eq
+from sympy.functions.elementary.trigonometric import sin, cos
+from sympy.functions.elementary.complexes import re, im, arg
+from sympy.functions.elementary.miscellaneous import sqrt
 from sympy.geometry import (
     Plane, Polygon, Circle, Ellipse, Line, Segment,
     Ray, Line3D, Point2D, Point3D,
