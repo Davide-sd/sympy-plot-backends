@@ -792,6 +792,58 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
             contour_kw=dict()).process_series())
 
 
+def test_plot_vector_2d_matplotlib():
+    # verify that when scalar=False, quivers/streamlines comes together with
+    # a colorbar
+
+    x, y = symbols("x, y")
+    _plot_vector_1 = lambda scalar, streamlines, use_cm=True: plot_vector(
+        Matrix([x, y]),
+        (x, -5, 5),
+        (y, -4, 4),
+        backend=MB,
+        scalar=scalar,
+        streamlines=streamlines,
+        use_cm=use_cm,
+        show=False)
+
+    # contours + quivers: 1 colorbar for the contours
+    p = _plot_vector_1(True, False)
+    assert len(p.series) == 2
+    assert len(p.fig.axes) == 2
+    assert len(p.fig.axes[0].collections) > 1
+
+    # contours + streamlines: 1 colorbar for the contours
+    p = _plot_vector_1(True, True)
+    assert len(p.series) == 2
+    assert len(p.fig.axes) == 2
+    assert len(p.fig.axes[0].collections) > 1
+
+    # only quivers: 1 colorbar for the quivers
+    p = _plot_vector_1(False, False)
+    assert len(p.series) == 1
+    assert len(p.fig.axes) == 2
+    assert len(p.fig.axes[0].collections) == 1
+
+    # only streamlines: 1 colorbar for the streamlines
+    p = _plot_vector_1(False, False)
+    assert len(p.series) == 1
+    assert len(p.fig.axes) == 2
+    assert len(p.fig.axes[0].collections) == 1
+
+    # only quivers with solid color
+    p = _plot_vector_1(False, False, False)
+    assert len(p.series) == 1
+    assert len(p.fig.axes) == 1
+    assert len(p.fig.axes[0].collections) == 1
+
+    # only streamlines with solid color
+    p = _plot_vector_1(False, False, False)
+    assert len(p.series) == 1
+    assert len(p.fig.axes) == 1
+    assert len(p.fig.axes[0].collections) == 1
+
+
 def test_plot_vector_3d_quivers():
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `quiver_kw` overrides the

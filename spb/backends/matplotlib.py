@@ -439,14 +439,19 @@ class MatplotlibBackend(Plot):
                     magn = np.sqrt(uu ** 2 + vv ** 2)
                     if s.is_streamlines:
                         skw = dict()
-                        if self._use_cm:
+                        if (not s.use_quiver_solid_color) and self._use_cm:
                             skw["cmap"] = next(self._cm)
                             skw["color"] = magn
+                            kw = merge({}, skw, s.rendering_kw)
+                            sp = self.ax.streamplot(xx, yy, uu, vv, **kw)
+                            is_cb_added = self._add_colorbar(sp.lines, s.label)
                         else:
                             skw["color"] = next(self._cl)
-                        kw = merge({}, skw, s.rendering_kw)
-                        s = self.ax.streamplot(xx, yy, uu, vv, **kw)
-                        self._add_handle(i, s, kw)
+                            kw = merge({}, skw, s.rendering_kw)
+                            sp = self.ax.streamplot(xx, yy, uu, vv, **kw)
+                            is_cb_added = False
+                        self._add_handle(i, sp, kw, is_cb_added,
+                            self._fig.axes[-1])
                     else:
                         qkw = dict()
                         if (not s.use_quiver_solid_color) and self._use_cm:
