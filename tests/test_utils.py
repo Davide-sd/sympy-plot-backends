@@ -78,10 +78,10 @@ def test_create_ranges():
     raises(ValueError, lambda: _create_ranges({x, y}, [(x, 0, 5), (y, 0, 1)], 1))
 
 
-def test_check_arguments():
-    x, y = symbols("x, y")
-
+def test_check_arguments_plot():
     ### Test arguments for plot()
+
+    x, y = symbols("x, y")
 
     # single expressions
     args = _plot_sympify((x + 1,))
@@ -122,13 +122,17 @@ def test_check_arguments():
     assert r[0] == (x + 1, (x, 0, 5), "x + 1")
     assert r[1] == (x ** 2, (x, -2, 2), "test")
 
+
+def test_check_arguments_plot_parametric():
     ### Test arguments for plot_parametric()
+
+    x, y = symbols("x, y")
 
     # single parametric expression
     args = _plot_sympify((x + 1, x))
     r = _check_arguments(args, 2, 1)
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
-    assert r[0] == (x + 1, x, (x, -10, 10), "(x + 1, x)")
+    assert r[0] == (x + 1, x, (x, -10, 10), "x")
 
     # single parametric expression with custom range and label
     args = _plot_sympify((x + 1, x, (x, -2, 2), "test"))
@@ -141,34 +145,45 @@ def test_check_arguments():
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
     assert r[0] == (x + 1, x, (x, -2, 2), "test")
 
-    # multiple parametric expressions
+    # multiple parametric expressions same symbol
     args = _plot_sympify([(x + 1, x), (x ** 2, x + 1)])
     r = _check_arguments(args, 2, 1)
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
-    assert r[0] == (x + 1, x, (x, -10, 10), "(x + 1, x)")
-    assert r[1] == (x ** 2, x + 1, (x, -10, 10), "(x**2, x + 1)")
+    assert r[0] == (x + 1, x, (x, -10, 10), "x")
+    assert r[1] == (x ** 2, x + 1, (x, -10, 10), "x")
+
+    # multiple parametric expressions different symbols
+    args = _plot_sympify([(x + 1, x), (y ** 2, y + 1)])
+    r = _check_arguments(args, 2, 1)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
+    assert r[0] == (x + 1, x, (x, -10, 10), "x")
+    assert r[1] == (y ** 2, y + 1, (y, -10, 10), "y")
 
     # multiple parametric expressions same range
     args = _plot_sympify([(x + 1, x), (x ** 2, x + 1), (x, -2, 2)])
     r = _check_arguments(args, 2, 1)
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
-    assert r[0] == (x + 1, x, (x, -2, 2), "(x + 1, x)")
-    assert r[1] == (x ** 2, x + 1, (x, -2, 2), "(x**2, x + 1)")
+    assert r[0] == (x + 1, x, (x, -2, 2), "x")
+    assert r[1] == (x ** 2, x + 1, (x, -2, 2), "x")
 
     # multiple parametric expressions, custom ranges and labels
     args = _plot_sympify([(x + 1, x, (x, -2, 2)), (x ** 2, x + 1, (x, -3, 3), "test")])
     r = _check_arguments(args, 2, 1)
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
-    assert r[0] == (x + 1, x, (x, -2, 2), "(x + 1, x)")
+    assert r[0] == (x + 1, x, (x, -2, 2), "x")
     assert r[1] == (x ** 2, x + 1, (x, -3, 3), "test")
 
+
+def test_check_arguments_plot3d_parametric_line():
     ### Test arguments for plot3d_parametric_line()
+
+    x, y = symbols("x, y")
 
     # single parametric expression
     args = _plot_sympify((x + 1, x, sin(x)))
     r = _check_arguments(args, 3, 1)
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
-    assert r[0] == (x + 1, x, sin(x), (x, -10, 10), "(x + 1, x, sin(x))")
+    assert r[0] == (x + 1, x, sin(x), (x, -10, 10), "x")
 
     # single parametric expression with custom range and label
     args = _plot_sympify((x + 1, x, sin(x), (x, -2, 2), "test"))
@@ -181,21 +196,32 @@ def test_check_arguments():
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
     assert r[0] == (x + 1, x, sin(x), (x, -2, 2), "test")
 
-    # multiple parametric expression
+    # multiple parametric expression same symbol
     args = _plot_sympify([(x + 1, x, sin(x)), (x ** 2, 1, cos(x))])
     r = _check_arguments(args, 3, 1)
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
-    assert r[0] == (x + 1, x, sin(x), (x, -10, 10), "(x + 1, x, sin(x))")
-    assert r[1] == (x ** 2, Integer(1), cos(x), (x, -10, 10), "(x**2, 1, cos(x))")
+    assert r[0] == (x + 1, x, sin(x), (x, -10, 10), "x")
+    assert r[1] == (x ** 2, Integer(1), cos(x), (x, -10, 10), "x")
+
+    # multiple parametric expression different symbols
+    args = _plot_sympify([(x + 1, x, sin(x)), (y ** 2, 1, cos(y))])
+    r = _check_arguments(args, 3, 1)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
+    assert r[0] == (x + 1, x, sin(x), (x, -10, 10), "x")
+    assert r[1] == (y ** 2, Integer(1), cos(y), (y, -10, 10), "y")
 
     # multiple parametric expression, custom ranges and labels
     args = _plot_sympify([(x + 1, x, sin(x)), (x ** 2, 1, cos(x), (x, -2, 2), "test")])
     r = _check_arguments(args, 3, 1)
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
-    assert r[0] == (x + 1, x, sin(x), (x, -10, 10), "(x + 1, x, sin(x))")
+    assert r[0] == (x + 1, x, sin(x), (x, -10, 10), "x")
     assert r[1] == (x ** 2, Integer(1), cos(x), (x, -2, 2), "test")
 
+
+def test_check_arguments_plot3d_plot_contour():
     ### Test arguments for plot3d() and plot_contour()
+
+    x, y = symbols("x, y")
 
     # single expression
     args = _plot_sympify((x + y,))
@@ -257,7 +283,11 @@ def test_check_arguments():
     assert r[0] == (x + y, (x, -2, 2), (y, -4, 4), "x + y")
     assert r[1] == (x * y, (x, -3, 3), (y, -6, 6), "test")
 
+
+def test_check_arguments_plot3d_parametric_surface():
     ### Test arguments for plot3d_parametric_surface()
+
+    x, y = symbols("x, y")
 
     # single parametric expression
     args = _plot_sympify((x + y, cos(x + y), sin(x + y)))
@@ -322,7 +352,11 @@ def test_check_arguments():
     assert r[0][5] == "test"
     assert r[1] == (x - y, cos(x - y), sin(x - y), (x, -3, 3), (y, -4, 4), "test2")
 
+
+def test_check_arguments_plot_implicit():
     ### Test arguments for plot_implicit
+
+    x, y = symbols("x, y")
 
     # single expression with both ranges
     args = _plot_sympify((x > 0, (x, -2, 2), (y, -3, 3)))

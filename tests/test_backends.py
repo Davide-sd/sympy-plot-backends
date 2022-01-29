@@ -447,7 +447,7 @@ def test_plot_parametric():
     # parametric plot with use_cm=True -> LineCollection
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], matplotlib.collections.LineCollection)
-    assert f.axes[1].get_ylabel() == "(cos(x), sin(x))"
+    assert f.axes[1].get_ylabel() == "x"
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
 
@@ -456,9 +456,9 @@ def test_plot_parametric():
     f = p.fig
     assert len(f.data) == 1
     assert isinstance(f.data[0], go.Scatter)
-    assert f.data[0]["name"] == "(cos(x), sin(x))"
+    assert f.data[0]["name"] == "x"
     assert f.data[0]["line"]["color"] == "red"
-    assert f.data[0]["marker"]["colorbar"]["title"]["text"] == "(cos(x), sin(x))"
+    assert f.data[0]["marker"]["colorbar"]["title"]["text"] == "x"
 
     p = _plot_parametric(BB, line_kw=dict(line_color="red"))
     assert len(p.series) == 1
@@ -468,7 +468,7 @@ def test_plot_parametric():
     assert f.renderers[0].glyph.line_color == "red"
     # 1 colorbar
     assert len(f.right) == 1
-    assert f.right[0].title == "(cos(x), sin(x))"
+    assert f.right[0].title == "x"
     assert f.toolbar.tools[-2].tooltips == [('x', '$x'), ('y', '$y'), ("u", "@us")]
 
     raises(
@@ -495,7 +495,7 @@ def test_plot3d_parametric_line():
     ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Line3DCollection)
-    assert f.axes[1].get_ylabel() == "(cos(x), sin(x), x)"
+    assert f.axes[1].get_ylabel() == "x"
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
 
@@ -505,8 +505,8 @@ def test_plot3d_parametric_line():
     assert len(f.data) == 1
     assert isinstance(f.data[0], go.Scatter3d)
     assert f.data[0]["line"]["color"] == "red"
-    assert f.data[0]["name"] == "(cos(x), sin(x), x)"
-    assert f.data[0]["line"]["colorbar"]["title"]["text"] == "(cos(x), sin(x), x)"
+    assert f.data[0]["name"] == "x"
+    assert f.data[0]["line"]["colorbar"]["title"]["text"] == "x"
 
     # Bokeh doesn't support 3D plots
     raises(NotImplementedError, lambda: _plot3d_parametric_line(BB,

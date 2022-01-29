@@ -157,6 +157,11 @@ def _check_arguments(args, nexpr, npar):
                     else str(e)
                 )
             )
+            if ((not label) and (current_label != label) and
+                (nexpr in [2, 3]) and (npar == 1)):
+                # in case of parametric 2d/3d line plots, use the parameter
+                # as the label
+                current_label = str(ranges[0][0])
             output.append((*e, *ranges, current_label))
 
     else:
@@ -189,7 +194,15 @@ def _check_arguments(args, nexpr, npar):
             free_symbols = set().union(*[a.free_symbols for a in arg])
             if len(r) != npar:
                 r = _create_ranges(free_symbols, r, npar)
-            label = (str(arg[0]) if nexpr == 1 else str(arg)) if not l else l[0]
+            label = ""
+            if not l:
+                label = str(arg[0]) if nexpr == 1 else str(arg)
+                if (nexpr in [2, 3]) and (npar == 1):
+                    # in case of parametric 2d/3d line plots, use the
+                    # parameter as the label
+                    label = str(r[0][0])
+            else:
+                label = l[0]
             output.append((*arg, *r, label))
     return output
 
