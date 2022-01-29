@@ -510,9 +510,7 @@ def iplot(*args, show=True, **kwargs):
     backend : Plot, optional
         The backend to be used to generate the plot. It must be a subclass of
         `spb.backends.base_backend.Plot`. If not provided, the module will
-        use the default backend. If `MatplotlibBackend` is used,
-        the command `%matplotlib widget` must be executed at the start of the
-        notebook, otherwise the plot will not update.
+        use the default backend.
 
     layout : str, optional
         The layout for the controls/plot. Possible values:
