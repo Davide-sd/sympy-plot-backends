@@ -1297,8 +1297,10 @@ def plot_implicit(*args, show=True, **kwargs):
         ranges : tuples
             Two tuple denoting the discretization domain, for example:
             `(x, -10, 10), (y, -10, 10)`
-            If no range is given, then the free symbols in the expression will
-            be assigned in the order they are sorted.
+            To get a correct plot, at least the horizontal range must be
+            provided. If no range is given, then the free symbols in the
+            expression will be assigned in the order they are sorted, which
+            could 'invert' the axis.
 
         label : str, optional
             The name of the expression to be eventually shown on the legend.
@@ -1428,7 +1430,7 @@ def plot_implicit(*args, show=True, **kwargs):
         :format: doctest
         :include-source: True
 
-        >>> p6 = plot_implicit(y > x**2)
+        >>> p6 = plot_implicit(y > x**2, (x, -5, 5))
 
     See Also
     ========
@@ -1443,12 +1445,13 @@ def plot_implicit(*args, show=True, **kwargs):
     args = _check_arguments(args, 1, 2)
     kwargs = _set_discretization_points(kwargs, ImplicitSeries)
 
-    series_kw = dict()
-    series_kw["n1"] = kwargs.pop("n1", 1000)
-    series_kw["n2"] = kwargs.pop("n2", 1000)
-    series_kw["depth"] = kwargs.pop("depth", 0)
-    series_kw["adaptive"] = kwargs.pop("adaptive", False)
-    series_kw["contour_kw"] = kwargs.pop("contour_kw", dict())
+    series_kw = dict(
+        n1=kwargs.pop("n1", 1000),
+        n2=kwargs.pop("n2", 1000),
+        depth=kwargs.pop("depth", 0),
+        adaptive=kwargs.pop("adaptive", False),
+        contour_kw=kwargs.pop("contour_kw", dict())
+    )
 
     series = []
     xmin, xmax, ymin, ymax = oo, -oo, oo, -oo
