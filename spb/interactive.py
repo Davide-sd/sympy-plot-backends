@@ -7,7 +7,7 @@ from spb.series import (
 from spb.ccomplex.complex import _build_series as _build_complex_series
 from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify, _unpack_args
-from spb.defaults import TWO_D_B, THREE_D_B
+from spb.defaults import TWO_D_B, THREE_D_B, cfg
 import warnings
 
 param = import_module(
@@ -332,7 +332,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         layout = kwargs.pop("layout", "tb")
         ncols = kwargs.pop("ncols", 2)
         throttled = kwargs.pop("throttled", False)
-        use_latex = kwargs.pop("use_latex", True)
+        use_latex = kwargs.pop("use_latex", cfg["interactive"]["use_latex"])
 
         args = list(map(_plot_sympify, args))
         super().__init__(*args, name=name, params=params, use_latex=use_latex)

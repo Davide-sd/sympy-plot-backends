@@ -9,7 +9,7 @@ from pytest import raises
 def test_cfg_keys():
     assert isinstance(cfg, dict)
     must_have_keys = ["backend_2D", "backend_3D", "matplotlib", "plotly",
-        "k3d", "bokeh", "complex"]
+        "k3d", "bokeh", "complex", "interactive"]
     for k in must_have_keys:
         assert k in cfg.keys()
 
@@ -44,6 +44,11 @@ def test_cfg_k3d_keys():
     for k in k3d_keys:
         assert k in cfg["k3d"].keys()
         assert isinstance(cfg["k3d"][k], int)
+
+
+def test_cfg_interactive_keys():
+    assert "use_latex" in cfg["interactive"]
+    assert isinstance(cfg["interactive"]["use_latex"], bool)
 
 
 def test_set_defaults():

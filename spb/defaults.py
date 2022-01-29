@@ -46,6 +46,9 @@ def _hardcoded_defaults():
         complex={
             "modules": None,     # "mpmath"
             "coloring": "a"
+        },
+        interactive={
+            "use_latex": True
         }
     )
 
