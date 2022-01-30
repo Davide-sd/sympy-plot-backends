@@ -23,15 +23,3 @@ from spb.plotgrid import plotgrid
 # NOTE: it would be nice to have `iplot` readily available, however loading
 # `panel` is a slow operation.
 # from spb.interactive import iplot
-
-# aliases
-parametric_plot = plot_parametric
-contour_plot = plot_contour
-p3d = plot3d
-p3dpl = plot3d_parametric_line
-p3dps = plot3d_parametric_surface
-implicit_plot = plot_implicit
-polar_plot = plot_polar
-geometry_plot = plot_geometry
-complex_plot = plot_complex
-vector_plot = plot_vector
