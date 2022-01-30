@@ -88,6 +88,7 @@ v1.0.0
 
     * improved support for addition between instances of `Plot`.
     * improved instantiation of child classes in `__new__` method.
+    * removed `_kwargs` instance attribute.
 
   * `MatplotlibBackend`:
 
@@ -96,7 +97,6 @@ v1.0.0
     * Dropped support for `jupyterthemes`.
     * Fix bug in which the figure would show up twice on Jupyter Notebook.
     * Added colorbar when plotting only 2D streamlines.
-
 
   * `PlotlyBackend`:
 
@@ -142,5 +142,6 @@ v1.0.0
 * Documentation:
 
   * Improved examples in docstring of plotting functions.
-  * Removed `Tutorials` section from documentation.
+  * Removed tutorials from the `Tutorials` section as they slowed down the
+    pages.
   * Improved organization.
