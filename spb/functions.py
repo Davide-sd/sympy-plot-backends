@@ -198,7 +198,7 @@ def _build_line_series(*args, **kwargs):
     """
     series = []
     pp = kwargs.get("process_piecewise", False)
-    sum_bound = kwargs.get("sum_bound", 1000)
+    sum_bound = int(kwargs.get("sum_bound", 1000))
     for arg in args:
         expr, r, label = arg
         if expr.has(Piecewise) and pp:
@@ -315,7 +315,8 @@ def plot(*args, show=True, **kwargs):
     only_integers : boolean, optional
         Default to `False`. If `True`, discretize the domain with integer
         numbers, which can be useful to plot sums. It only works when
-        `adaptive=False`.
+        `adaptive=False`. When `only_integers=True`, the number of
+        discretization points is choosen by the algorithm.
 
     polar : boolean
         Default to `False`. If `True`, generate a polar plot of a curve
@@ -338,8 +339,9 @@ def plot(*args, show=True, **kwargs):
 
     sum_bound : int, optional
         When plotting sums, the expression will be pre-processed in order
-        to replace lower/upper bounds set to +/- infinity with a numerical
-        value. Default value to 1000.
+        to replace lower/upper bounds set to +/- infinity with this +/-
+        numerical value. Default value to 1000. Note: the higher this number,
+        the slower the evaluation.
 
     title : str, optional
         Title of the plot.
@@ -373,7 +375,7 @@ def plot(*args, show=True, **kwargs):
 
        >>> from sympy import symbols, sin, pi
        >>> from spb import plot
-       >>> x = symbols('x')
+       >>> x, y = symbols('x, y')
 
     Single Plot
 
@@ -422,6 +424,32 @@ def plot(*args, show=True, **kwargs):
        >>> plot(x**2, adaptive=False, n=400)
        Plot object containing:
        [0]: cartesian line: x**2 for x over (-10.0, 10.0)
+
+    Plotting a summation in which the free symbols of the expression is not
+    used in the lower/upper bounds:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot(Sum(1 / x ** y, (x, 1, oo)), (y, 2, 10), sum_bound=1e03)
+       Plot object containing:
+       [0]: cartesian line: Sum(x**(-y), (x, 1, 1000)) for y over (2.0, 10.0)
+
+    Plotting a summation in which the free symbols of the expression is
+    used in the lower/upper bounds. Here, the discretization variable must
+    assume integer values:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot(Sum(1 / x, (x, 1, y)), (y, 2, 10), adaptive=False,
+       ...     only_integers=True)
+       Plot object containing:
+       [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
 
 
     References
