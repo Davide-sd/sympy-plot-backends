@@ -30,6 +30,7 @@ It also provide an interactive plotting function, ``iplot``, which automatically
    install.rst
    tutorials.rst
    modules/index.rst
+   changelog.rst
 
 
 Indices and tables
