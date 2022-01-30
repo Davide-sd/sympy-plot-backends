@@ -24,16 +24,15 @@ class Plot:
        title, etc.). Among the keyword arguments, there must be `backend`,
        a subclass of `Plot` which specify the backend to be used.
     4. The backend will render the numerical data to a plot and (eventually)
-       show it on the screen.
-
-    It is important to realize that the backend-specific figure object is
-    created at instantion of the backend. Thus, all parameters necessary to
-    render the plot must be provided at instantion. After instantion, the
-    backend is unable to modify the figure.
+       show it on the screen. The figure is populated with numerical data once
+       the `show()` method or the `fig` attribute are called.
 
     The backend should check if it supports the data series that it's given.
     Please, explore the `MatplotlibBackend` source code to understand how a
     backend should be coded.
+
+    Also note that setting attributes to plot objects or to data series after they have been instantiated is strongly unrecommended, as it is not
+    guaranteed that the figure will be updated.
 
     Notes
     =====
@@ -102,7 +101,7 @@ class Plot:
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, sin, cos, log
+       >>> from sympy import symbols, sin, cos, log, S
        >>> from spb import plot
        >>> x = symbols("x")
        >>> p1 = plot(sin(x), cos(x), show=False)
@@ -121,6 +120,18 @@ class Plot:
        >>> p1 = plot(sin(x), cos(x), show=False)
        >>> xx, yy = p1[0].get_data()
 
+    Creating a new backend with a custom colorloop:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> from spb.backends.matplotlib import MB
+       >>> class MBchild(MB):
+       ...     colorloop = ["r", "g", "b"]
+       >>> plot(sin(x) / 3, sin(x) * S(2) / 3, sin(x), backend=MBchild)
+
 
     See also
     ========
@@ -132,18 +143,16 @@ class Plot:
     # order to convert any colormap to the specified plotting library.
     _library = ""
 
-    # list of colors to be used in line plots or solid color surfaces.
-    # As a class attribute it must be a list/tuple in order for
-    # `plot_piecewise` to work correctly. As an instance attribute it can
-    # also be an instance of matplotlib's ListedColormap.
     colorloop = []
+    """List of colors to be used in line plots or solid color surfaces."""
 
-    # child backends should provide a list of color maps to render surfaces.
     colormaps = []
+    """List of color maps to render surfaces."""
 
-    # child backends should provide a list of cyclic color maps to render
-    # complex series (the phase/argument ranges over [-pi, pi]).
     cyclic_colormaps = []
+    """List of cyclic color maps to render complex series (the phase/argument
+    ranges over [-pi, pi]).
+    """
 
     def __new__(cls, *args, **kwargs):
         backend = cls._get_backend(kwargs)
