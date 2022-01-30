@@ -74,7 +74,10 @@ While the backends implemented in this module might resemble the ones from the
 into a grid-like layout. This module replaces that class with the ``plotgrid``
 function. Again, they are not interchangeable.
 
-The ``plot_implicit`` function has different signature.
+The ``plot_implicit`` function has different signature. Moreover, it uses
+mesh grid algorithm (in contrast to adaptive algorithm) and contour plots by
+default. It is going to automatically switch to an adaptive algorithm if
+Boolean expressions are found.
 
 The adaptive algorithm is also different: this module relies on
 `adaptive <https://github.com/python-adaptive/adaptive/>`_, which allows more
@@ -88,6 +91,12 @@ In terms of performance:
   at the cost of performance.
 
 In terms of usability:
+
+* `sympy.plotting` exposed the `label` keyword argument. It has been removed
+  in this module.
+
+* `sympy.plotting` exposed the `nb_of_points_*` keyword arguments. These have
+  been replaced with `n` or `n1, n2`.
 
 * With `sympy.plotting`, plots are created once the `show()` method is called.
   This allows to create a plot with ``show=False``, then index a

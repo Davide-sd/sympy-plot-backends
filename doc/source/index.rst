@@ -14,6 +14,13 @@ plots, parametric plots, vector plots, complex plots, geometric plots.
 
 It also provide an interactive plotting function, ``iplot``, which automatically generates widgets (sliders, buttons, ...) starting from symbolic expressions. It allows to better understand the influence of each parameters in a particular expression, without the knowledge of complicated widget libraries.
 
+.. image:: _static/iplot_bokeh.png
+  :width: 300
+  :alt: iplot with bokeh
+
+.. image:: _static/bokeh_domain_coloring.png
+  :width: 300
+  :alt: iplot with bokeh
 
 .. toctree::
    :maxdepth: 2

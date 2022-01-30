@@ -15,4 +15,5 @@ become excessively slow.
 Hence, you can visit the aforementioned repository and:
 
 * download and run them locally.
-* or you can launch Binder and try them online.
+* or you can launch Binder and try them online (note that Binder is really
+  slow).
