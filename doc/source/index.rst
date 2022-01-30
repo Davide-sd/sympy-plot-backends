@@ -12,6 +12,9 @@ library: it provides the necessary functionalities to quickly and easily plot
 the most common types of symbolic expressions, such as line plots, surface
 plots, parametric plots, vector plots, complex plots, geometric plots.
 
+It also provide an interactive plotting function, ``iplot``, which automatically generates widgets (sliders, buttons, ...) starting from symbolic expressions. It allows to better understand the influence of each parameters in a particular expression, without the knowledge of complicated widget libraries.
+
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

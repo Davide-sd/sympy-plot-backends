@@ -1,4 +1,4 @@
- 
+
 .. _installation:
 
 Installation
@@ -38,4 +38,4 @@ Or::
     >>> plot_complex(sin(x), (x, -3-3j, 3+3j), backend=MB)
 
 For a starter guide on using the plotting backends effectively, refer to the
-:ref:`tutorial`.
+:ref:`tutorials`.
