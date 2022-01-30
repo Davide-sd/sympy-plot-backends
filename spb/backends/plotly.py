@@ -75,7 +75,19 @@ class PlotlyBackend(Plot):
     .. [#fn8] https://plotly.com/python/streamline-plots/
     .. [#fn9] https://plotly.com/python/streamtube-plot/
     .. [#fn10] https://plotly.com/python/templates/
+    .. [#fn11] https://github.com/plotly/plotly.js/issues/5003
 
+
+    Notes
+    =====
+
+    A few bugs related to Plotly might prevent the correct visualization:
+
+    * with 2D domain coloring, the vertical axis is reversed, with negative
+      values on the top and positive values on the bottom.
+    * with 3D complex plots: when hovering a point, the tooltip will display
+      wrong information for the argument and the phase. Hopefully, this bug
+      [#fn11]_ will be fixed upstream.
 
     See also
     ========

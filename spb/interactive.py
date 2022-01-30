@@ -864,7 +864,13 @@ def iplot(*args, show=True, **kwargs):
        to turn off  automatic updates on panning by setting
        ``update_event=False`` in the function call.
 
-    7. Once this module has been loaded and ``iplot`` has been executed, if
+    7. When ``BokehBackend`` is used:
+
+       * the user-defined theme won't be applied.
+       * rendering of gradient lines is slow.
+       * color bars might not update their ranges.
+
+    8. Once this module has been loaded and ``iplot`` has been executed, if
        the kernel of the notebook needs to be restarted, the safest procedure
        is the following:
 
