@@ -425,7 +425,7 @@ def plot(*args, show=True, **kwargs):
        Plot object containing:
        [0]: cartesian line: x**2 for x over (-10.0, 10.0)
 
-    Plotting a summation in which the free symbols of the expression is not
+    Plotting a summation in which the free symbol of the expression is not
     used in the lower/upper bounds:
 
     .. plot::
@@ -433,11 +433,12 @@ def plot(*args, show=True, **kwargs):
        :format: doctest
        :include-source: True
 
+       >>> from sympy import Sum, oo
        >>> plot(Sum(1 / x ** y, (x, 1, oo)), (y, 2, 10), sum_bound=1e03)
        Plot object containing:
        [0]: cartesian line: Sum(x**(-y), (x, 1, 1000)) for y over (2.0, 10.0)
 
-    Plotting a summation in which the free symbols of the expression is
+    Plotting a summation in which the free symbol of the expression is
     used in the lower/upper bounds. Here, the discretization variable must
     assume integer values:
 
