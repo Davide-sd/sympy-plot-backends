@@ -40,10 +40,29 @@ class K3DBackend(Plot):
         colors will be used instead. Default to True.
 
 
+    Notes
+    =====
+
+    After the installation of this plotting module, try one of the examples
+    of ``plot3d`` with this backend. If no figure is visible in the output
+    cell, follow this procedure:
+
+    1. Save the Notebook.
+    2. Close Jupyter server.
+    3. Run the following commands, which are going to install the Jupyter
+       extension for K3D:
+
+       * jupyter nbextension install --user --py k3d
+       * jupyter nbextension enable --user --py k3d
+
+    4. Restart `jupyter notebook`
+    5. Open the previous notebook and execute the plot command.
+
+
     See also
     ========
 
-    Plot, MatplotlibBackend, PlotlyBackend, BokehBackend
+    Plot, MatplotlibBackend, PlotlyBackend, BokehBackend, plot3d
     """
 
     _library = "k3d"
@@ -494,15 +513,20 @@ class K3DBackend(Plot):
 
         1. '.png' pictures: refer to [#fn1]_ to visualize the available
            keyword arguments.
-        2. '.html' files: when exporting a fully portable html file, by
-           default the required Javascript libraries will be loaded with a
-           CDN. Set `include_js=True` to include all the javascript code in
-           the html file: this will create a bigger file size, but can be
+        2. '.html' files: this requires the ``msgpack`` [#fn2]_ python module
+           to be installed.
+
+           When exporting a fully portable html file, by default the required
+           Javascript libraries will be loaded with a CDN. Set
+           ``include_js=True`` to include all the javascript code in the html
+           file: this will create a bigger file size, but can be
            run without internet connection.
 
         References
         ==========
         .. [#fn1] https://k3d-jupyter.org/k3d.html#k3d.plot.Plot.fetch_screenshot
+
+        .. [#fn2] https://github.com/msgpack/msgpack-python
 
         """
         if not self.plot_shown:

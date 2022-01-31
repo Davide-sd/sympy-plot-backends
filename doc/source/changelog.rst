@@ -6,6 +6,7 @@ v1.0.1
 ======
 
 * Exiting development status Beta
+* Updated `K3DBackend` documentation.
 * Updated tutorial
 
 v1.0.0

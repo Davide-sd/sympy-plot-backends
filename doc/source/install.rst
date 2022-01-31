@@ -33,9 +33,36 @@ From here, execute some simple statements like the ones below::
     >>> x = Symbol('x')
     >>> plot(sin(x), cos(x), backend=BB)
 
-Or::
+Or:
 
     >>> plot_complex(sin(x), (x, -3-3j, 3+3j), backend=MB)
 
-For a starter guide on using the plotting backends effectively, refer to the
-:ref:`tutorials`.
+
+It is also the perfect time to verify that K3D-Jupyter is working:
+
+1. launch `jupyter notebook`.
+2. open a notebook.
+3. run the following code:
+
+   .. code-block:: python
+
+      from sympy import *
+      from spb import *
+      from spb.backends.k3d import KB
+      var("x, y")
+      plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=KB)
+
+   If no figure is visible in the output cell, follow this procedure:
+
+   1. Save the Notebook.
+   2. Close Jupyter server.
+   3. Run the following commands, which are going to install the Jupyter
+      extension for K3D:
+
+       * jupyter nbextension install --user --py k3d
+       * jupyter nbextension enable --user --py k3d
+
+   4. Restart `jupyter notebook`
+   5. Open the previous notebook and execute the plot command.
+
+Refer to the :ref:`tutorials` for a starter guide on using the plotting backends.
