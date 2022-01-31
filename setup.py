@@ -22,10 +22,12 @@ setup(
     long_description=readme(),
     long_description_content_type="text/markdown",
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: BSD License",
         "Programming Language :: Python :: 3.9",
+        "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Mathematics",
+        "Topic :: Scientific/Engineering :: Physics"
     ],
     keywords="sympy plot plotting backend plotly bokeh mayavi k3d panel",
     url="https://github.com/Davide-sd/sympy-plot-backends",
