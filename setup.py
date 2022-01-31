@@ -48,10 +48,8 @@ setup(
         "plotly>=4.14.3",
         "colorcet",
         "panel>=0.12.0", # this includes param and bokeh
-        "ipyevents>=2.0.1",
         "k3d>=2.9.7",
         "vtk",  # needed for streamlines in k3d
-        "msgpack>=1.0.2", # in order to export K3D to html
         "adaptive>=0.13.1"
     ],
 )
