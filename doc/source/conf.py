@@ -59,8 +59,6 @@ extensions = [
     'sphinx.ext.viewcode',
     'matplotlib.sphinxext.plot_directive',
     'jupyter_sphinx',   # used to run interactive.py docstring examples
-    'nbsphinx',
-    'nbsphinx_link',
     'sphinx_rtd_theme',
     # 'sphinx_rtd_dark_mode',
 ]
