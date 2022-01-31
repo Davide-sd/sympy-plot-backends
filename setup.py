@@ -47,9 +47,7 @@ setup(
         "ipympl>=0.7.0",
         "plotly>=4.14.3",
         "colorcet",
-        "param>=1.11.1",
-        "panel>=0.12.0",
-        "bokeh>=2.3.3",
+        "panel>=0.12.0", # this includes param and bokeh
         "ipyevents>=2.0.1",
         "k3d>=2.9.7",
         "vtk",  # needed for streamlines in k3d
