@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v1.0.1
+======
+
+* Exiting development status Beta
+* Updated tutorial
+
 v1.0.0
 ======
 
