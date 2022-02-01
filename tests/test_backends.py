@@ -414,6 +414,10 @@ def test_plot():
     assert f.data[1]["name"] == "cos(x)"
     assert f.data[1]["line"]["color"] == "red"
     assert f.layout["showlegend"] is True
+    # PB separates the data generation from the layout creation. Make sure
+    # the layout has been processed
+    assert f.layout["xaxis"]["title"]["text"] == "x"
+    assert f.layout["yaxis"]["title"]["text"] == "f(x)"
 
     p = _plot(BB, line_kw=dict(line_color="red"))
     assert len(p.series) == 2

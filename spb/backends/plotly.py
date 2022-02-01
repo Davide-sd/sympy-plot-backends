@@ -738,7 +738,7 @@ class PlotlyBackend(Plot):
     def show(self):
         """Visualize the plot on the screen."""
         if len(self._fig.data) != len(self.series):
-            self._process_series(self.series)
+            self.process_series()
         self._fig.show()
 
     def save(self, path, **kwargs):
@@ -759,8 +759,7 @@ class PlotlyBackend(Plot):
 
         """
         if (len(self.series) > 0) and (len(self.fig.data) == 0):
-            self._process_series(self._series)
-            self._update_layout()
+            self.process_series()
 
         ext = os.path.splitext(path)[1]
         if ext.lower() in [".html", ".html"]:
