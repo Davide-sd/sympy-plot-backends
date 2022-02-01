@@ -1,9 +1,10 @@
+import os
+import json
 from sympy.core.symbol import symbols
-from sympy.functions.elementary.trigonometric import sin
+from sympy.external import import_module
 from spb.defaults import cfg, set_defaults, reset
 from spb.backends.bokeh import BB
 from spb.backends.matplotlib import MB
-from spb.functions import plot, plot3d
 from pytest import raises
 
 
@@ -53,29 +54,39 @@ def test_cfg_interactive_keys():
 
 
 def test_set_defaults():
+    appdirs = import_module(
+        'appdirs',
+        min_module_version='1.4.4')
+
+    # NOTE: sadly, it's impossible to run plot commands to test if
+    # the changes has been applied, as that requires the kernel to
+    # restart. Here, we just check that the configuration file has
+    # been updated.
+
+    def get_current_setting():
+        appname = "spb"
+        cfg_file = "config.json"
+        cfg_dir = appdirs.user_data_dir(appname)
+        file_path = os.path.join(cfg_dir, cfg_file)
+
+        loaded_cfg = dict()
+        if os.path.exists(file_path):
+            with open(file_path) as f:
+                loaded_cfg = json.load(f)
+        return loaded_cfg
+
     x, y = symbols("x, y")
 
     # changing backends should be a smooth operation
     cfg["backend_2D"] = "bokeh"
     cfg["backend_3D"] = "matplotlib"
     set_defaults(cfg)
-    p = plot(sin(x), show=False)
-    assert isinstance(p, BB)
-    p = plot3d(sin(x ** 2 + y ** 2), show=False)
-    assert isinstance(p, MB)
+    loaded_cfg = get_current_setting()
+    assert loaded_cfg["backend_2D"] == "bokeh"
+    assert loaded_cfg["backend_3D"] == "matplotlib"
 
     # wrong backends settings -> reset to default settings
     cfg["backend_2D"] = "k3d"
     raises(ValueError, lambda: set_defaults(cfg))
-    p = plot(sin(x), show=False)
-    assert isinstance(p, MB)
-
-    # reset original settings
-    cfg["backend_2D"] = "bokeh"
-    cfg["backend_3D"] = "matplotlib"
-    set_defaults(cfg)
-    reset()
-    from spb.defaults import cfg as cfg2
-
-    assert cfg2["backend_2D"] == "matplotlib"
-    assert cfg2["backend_3D"] == "matplotlib"
+    loaded_cfg = get_current_setting()
+    assert loaded_cfg["backend_2D"] == "matplotlib"

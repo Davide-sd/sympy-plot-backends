@@ -19,7 +19,6 @@ from spb.series import (
 )
 from spb.vectors import plot_vector
 from spb.utils import _plot_sympify, _check_arguments, _is_range
-from spb.backends.base_backend import Plot
 from spb.defaults import TWO_D_B, THREE_D_B
 
 # NOTE:
@@ -177,10 +176,10 @@ def _plot_complex(*args, show=True, **kwargs):
     if len(series) == 0:
         warnings.warn("No series found. Check your keyword arguments.")
 
-    if "backend" not in kwargs:
-        kwargs["backend"] = TWO_D_B
-        if any(s.is_3Dsurface for s in series):
-            kwargs["backend"] = THREE_D_B
+    if any(s.is_3Dsurface for s in series):
+        Backend = kwargs.pop("backend", THREE_D_B)
+    else:
+        Backend = kwargs.pop("backend", TWO_D_B)
 
     if all(
         isinstance(s, (SurfaceOver2DRangeSeries, InteractiveSeries)) for s in series
@@ -215,7 +214,7 @@ def _plot_complex(*args, show=True, **kwargs):
         # set aspect equal for 2D domain coloring or complex points
         kwargs.setdefault("aspect", "equal")
 
-    p = Plot(*series, **kwargs)
+    p = Backend(*series, **kwargs)
     if show:
         p.show()
     return p

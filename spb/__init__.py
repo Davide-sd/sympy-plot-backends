@@ -23,3 +23,8 @@ from spb.plotgrid import plotgrid
 # NOTE: it would be nice to have `iplot` readily available, however loading
 # `panel` is a slow operation.
 # from spb.interactive import iplot
+
+from spb.backends.matplotlib import MB
+from spb.backends.bokeh import BB
+from spb.backends.plotly import PB
+from spb.backends.k3d import KB

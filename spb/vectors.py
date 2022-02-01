@@ -1,4 +1,4 @@
-from spb.backends.base_backend import Plot
+from spb.defaults import TWO_D_B, THREE_D_B
 from spb.series import (
     Vector2DSeries,
     Vector3DSeries,
@@ -487,17 +487,13 @@ def plot_vector(*args, show=True, **kwargs):
 
     series = _build_series(*args, **kwargs)
     if all([isinstance(s, (Vector2DSeries, ContourSeries)) for s in series]):
-        from spb.defaults import TWO_D_B
-
-        backend = kwargs.pop("backend", TWO_D_B)
+        Backend = kwargs.pop("backend", TWO_D_B)
     elif all([isinstance(s, Vector3DSeries) for s in series]):
-        from spb.defaults import THREE_D_B
-
-        backend = kwargs.pop("backend", THREE_D_B)
+        Backend = kwargs.pop("backend", THREE_D_B)
     else:
         raise ValueError("Mixing 2D vectors with 3D vectors is not allowed.")
 
-    p = Plot(*series, backend=backend, **kwargs)
+    p = Backend(*series, **kwargs)
     if show:
         p.show()
     return p

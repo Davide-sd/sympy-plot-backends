@@ -24,7 +24,7 @@ from sympy.concrete.summations import Sum
 from sympy.functions.elementary.complexes import sign
 from sympy.functions.elementary.piecewise import Piecewise, piecewise_fold
 from sympy.sets.sets import EmptySet, FiniteSet, Interval, Union
-from spb.backends.base_backend import Plot
+from spb.defaults import TWO_D_B, THREE_D_B
 from spb.utils import _plot_sympify, _check_arguments, _unpack_args
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
@@ -477,8 +477,6 @@ def plot(*args, show=True, **kwargs):
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
 
     """
-    from spb.defaults import TWO_D_B
-
     args = _plot_sympify(args)
     free = set()
     for a in args:
@@ -490,15 +488,15 @@ def plot(*args, show=True, **kwargs):
                     "univariate expressions being plotted."
                 )
     x = free.pop() if free else Symbol("x")
-    kwargs.setdefault("backend", TWO_D_B)
+
     kwargs.setdefault("xlabel", x.name)
     kwargs.setdefault("ylabel", "f(%s)" % x.name)
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 1)
     series = _build_line_series(*plot_expr, **kwargs)
-
-    plots = Plot(*series, **kwargs)
+    Backend = kwargs.pop("backend", TWO_D_B)
+    plots = Backend(*series, **kwargs)
     if show:
         plots.show()
     return plots
@@ -710,15 +708,13 @@ def plot_parametric(*args, show=True, **kwargs):
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
 
     """
-    from spb.defaults import TWO_D_B
-
     args = _plot_sympify(args)
     series = []
-    kwargs.setdefault("backend", TWO_D_B)
     kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
     plot_expr = _check_arguments(args, 2, 1)
     series = [Parametric2DLineSeries(*arg, **kwargs) for arg in plot_expr]
-    plots = Plot(*series, **kwargs)
+    Backend = kwargs.pop("backend", TWO_D_B)
+    plots = Backend(*series, **kwargs)
     if show:
         plots.show()
     return plots
@@ -892,10 +888,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     plot_implicit, plot_geometry, plot_parametric, plot_piecewise
 
     """
-    from spb.defaults import THREE_D_B
-
     args = _plot_sympify(args)
-    kwargs.setdefault("backend", THREE_D_B)
     kwargs = _set_discretization_points(kwargs, Parametric3DLineSeries)
     series = []
     plot_expr = _check_arguments(args, 3, 1)
@@ -903,7 +896,8 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
-    plots = Plot(*series, **kwargs)
+    Backend = kwargs.pop("backend", THREE_D_B)
+    plots = Backend(*series, **kwargs)
     if show:
         plots.show()
     return plots
@@ -1095,10 +1089,7 @@ def plot3d(*args, show=True, **kwargs):
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
 
     """
-    from spb.defaults import THREE_D_B
-
     args = _plot_sympify(args)
-    kwargs.setdefault("backend", THREE_D_B)
     kwargs = _set_discretization_points(kwargs, SurfaceOver2DRangeSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 2)
@@ -1108,7 +1099,8 @@ def plot3d(*args, show=True, **kwargs):
     kwargs.setdefault("xlabel", xlabel)
     kwargs.setdefault("ylabel", ylabel)
     kwargs.setdefault("zlabel", "f(%s, %s)" % (xlabel, ylabel))
-    plots = Plot(*series, **kwargs)
+    Backend = kwargs.pop("backend", THREE_D_B)
+    plots = Backend(*series, **kwargs)
     if show:
         plots.show()
     return plots
@@ -1251,17 +1243,15 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     plot3d_parametric_line, plot_implicit, plot_geometry, plot_piecewise
 
     """
-    from spb.defaults import THREE_D_B
-
     args = _plot_sympify(args)
-    kwargs.setdefault("backend", THREE_D_B)
     kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
     plot_expr = _check_arguments(args, 3, 2)
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
     series = [ParametricSurfaceSeries(*arg, **kwargs) for arg in plot_expr]
-    plots = Plot(*series, **kwargs)
+    Backend = kwargs.pop("backend", THREE_D_B)
+    plots = Backend(*series, **kwargs)
     if show:
         plots.show()
     return plots
@@ -1318,10 +1308,7 @@ def plot_contour(*args, show=True, **kwargs):
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
 
     """
-    from spb.defaults import TWO_D_B
-
     args = _plot_sympify(args)
-    kwargs.setdefault("backend", TWO_D_B)
     kwargs = _set_discretization_points(kwargs, ContourSeries)
     plot_expr = _check_arguments(args, 1, 2)
     series = [ContourSeries(*arg, **kwargs) for arg in plot_expr]
@@ -1329,7 +1316,8 @@ def plot_contour(*args, show=True, **kwargs):
     ylabel = series[0].var_y.name
     kwargs.setdefault("xlabel", xlabel)
     kwargs.setdefault("ylabel", ylabel)
-    plot_contours = Plot(*series, **kwargs)
+    Backend = kwargs.pop("backend", TWO_D_B)
+    plot_contours = Backend(*series, **kwargs)
     if show:
         plot_contours.show()
     return plot_contours
@@ -1500,8 +1488,6 @@ def plot_implicit(*args, show=True, **kwargs):
     plot3d_parametric_surface, plot_geometry
 
     """
-    from spb.defaults import TWO_D_B
-
     # if the user is plotting a single expression, then he can pass in one
     # or two symbols to sort the axis. Ranges will then be automatically
     # created.
@@ -1539,12 +1525,13 @@ def plot_implicit(*args, show=True, **kwargs):
             ymax = s.end_y
         series.append(s)
 
-    kwargs.setdefault("backend", TWO_D_B)
+    # kwargs.setdefault("backend", TWO_D_B)
     kwargs.setdefault("xlim", (xmin, xmax))
     kwargs.setdefault("ylim", (ymin, ymax))
     kwargs.setdefault("xlabel", series[-1].var_x.name)
     kwargs.setdefault("ylabel", series[-1].var_y.name)
-    p = Plot(*series, **kwargs)
+    Backend = kwargs.pop("backend", TWO_D_B)
+    p = Backend(*series, **kwargs)
     if show:
         p.show()
     return p
@@ -1765,8 +1752,6 @@ def plot_geometry(*args, show=True, **kwargs):
        [1]: geometry entity: Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4))
        [2]: plane series over (x, -5, 5), (y, -4, 4), (z, -10, 10)
     """
-    from spb.defaults import TWO_D_B, THREE_D_B
-
     args = _plot_sympify(args)
 
     series = []
@@ -1788,12 +1773,8 @@ def plot_geometry(*args, show=True, **kwargs):
     if ("aspect" not in kwargs) and (not any_3D):
         kwargs["aspect"] = "equal"
 
-    if any_3D:
-        kwargs.setdefault("backend", THREE_D_B)
-    else:
-        kwargs.setdefault("backend", TWO_D_B)
-
-    p = Plot(*series, **kwargs)
+    Backend = kwargs.pop("backend", THREE_D_B if any_3D else TWO_D_B)
+    p = Backend(*series, **kwargs)
     if show:
         p.show()
     return p
@@ -1924,8 +1905,6 @@ def plot_list(*args, show=True, **kwargs):
        [1]: list plot
 
     """
-    from spb.defaults import TWO_D_B
-
     series = []
 
     if (
@@ -1950,8 +1929,8 @@ def plot_list(*args, show=True, **kwargs):
                 )
             series.append(List2DSeries(*a, **kwargs))
 
-    kwargs.setdefault("backend", TWO_D_B)
-    p = Plot(*series, **kwargs)
+    Backend = kwargs.pop("backend", TWO_D_B)
+    p = Backend(*series, **kwargs)
     if show:
         p.show()
     return p
@@ -2153,7 +2132,6 @@ def plot_piecewise(*args, **kwargs):
     plot_implicit, plot_geometry, plot_list
 
     """
-    from spb.defaults import TWO_D_B
     Backend = kwargs.pop("backend", TWO_D_B)
 
     args = _plot_sympify(args)
