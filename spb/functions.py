@@ -452,6 +452,18 @@ def plot(*args, show=True, **kwargs):
        Plot object containing:
        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
 
+    Singularity detection:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot(tan(x), (x, -10, 10), backend=MB, adaptive_goal=0.001,
+       ...     detect_poles=True, ylim=(-7, 7))
+       Plot object containing:
+       [0]: cartesian line: tan(x) for x over (-10.0, 10.0)
+
 
     References
     ==========
@@ -598,6 +610,10 @@ def plot_parametric(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+    
+    use_cm : boolean, optional
+        If True, apply a color map to the parametric lines.
+        If False, solid colors will be used instead. Default to True.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -803,6 +819,10 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+    
+    use_cm : boolean, optional
+        If True, apply a color map to the parametric lines.
+        If False, solid colors will be used instead. Default to True.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -989,6 +1009,10 @@ def plot3d(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+    
+    use_cm : boolean, optional
+        If True, apply a color map to the surface.
+        If False, solid colors will be used instead. Default to True.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -1164,6 +1188,10 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+    
+    use_cm : boolean, optional
+        If True, apply a color map to the surface.
+        If False, solid colors will be used instead. Default to True.
 
     xlabel : str, optional
         Label for the x-axis.

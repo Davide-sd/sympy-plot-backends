@@ -245,6 +245,15 @@ def get_plot_data(*args, **kwargs):
     Only one expression at a time can be processed by this function.
     The shape of the numerical data depends on the provided expression.
 
+    Notes
+    =====
+    This is an experimental function. Support might be dropped in future
+    release. Do not use this function in library code.
+
+    Instead, plot functions should be used to create a plot object, then index
+    it to retrieve a series and extract the numerical data with the `get_data`
+    method. For example, `p[0].get_data()`.
+
     Parameters
     ==========
 
