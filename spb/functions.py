@@ -610,7 +610,7 @@ def plot_parametric(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
-    
+
     use_cm : boolean, optional
         If True, apply a color map to the parametric lines.
         If False, solid colors will be used instead. Default to True.
@@ -819,7 +819,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
-    
+
     use_cm : boolean, optional
         If True, apply a color map to the parametric lines.
         If False, solid colors will be used instead. Default to True.
@@ -1009,7 +1009,7 @@ def plot3d(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
-    
+
     use_cm : boolean, optional
         If True, apply a color map to the surface.
         If False, solid colors will be used instead. Default to True.
@@ -1188,7 +1188,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
-    
+
     use_cm : boolean, optional
         If True, apply a color map to the surface.
         If False, solid colors will be used instead. Default to True.
