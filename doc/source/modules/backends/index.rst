@@ -1,7 +1,6 @@
 Backends
 --------
 
-This module allows the user to chose between 4 different backends.
 
 .. toctree::
    :maxdepth: 2
@@ -12,8 +11,8 @@ This module allows the user to chose between 4 different backends.
    plotly.rst
    k3d.rst
 
-
-The following table summarize the use case for the backends.
+This module allows the user to chose between 4 different backends.
+The use case is summarized in the following table.
 
 +------------------------+-----------+-------+--------+------+
 |                        | Matplolib | Bokeh | Plotly |  K3D |
