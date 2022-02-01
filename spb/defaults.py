@@ -20,13 +20,17 @@ def _hardcoded_defaults():
     return dict(
         # Find more Plotly themes at the following page:
         # https://plotly.com/python/templates/
-        plotly={"theme": "seaborn"},
+        plotly={
+            "theme": "seaborn",
+            "grid": True
+        },
         # Find more Bokeh themes at the following page:
         # https://docs.bokeh.org/en/latest/docs/reference/themes.html
         bokeh={
             "theme": "caliber",
             "sizing_mode": "stretch_width",
             "update_event": True,
+            "grid": True,
             "show_minor_grid": True,
             "minor_grid_line_alpha": 0.6,
             "minor_grid_line_dash": [2, 2],
@@ -34,7 +38,8 @@ def _hardcoded_defaults():
         k3d={
             "bg_color": 0xFFFFFF,       # 3620427
             "grid_color": 0xE6E6E6,     # 0x888888
-            "label_color": 0x444444     # 0xDDDDDD
+            "label_color": 0x444444,    # 0xDDDDDD
+            "grid": True
         },
         matplotlib={
             "axis_center": None,  # "auto", "center"
@@ -48,7 +53,8 @@ def _hardcoded_defaults():
             "coloring": "a"
         },
         interactive={
-            "use_latex": True
+            "use_latex": True,
+            "throttled": False
         }
     )
 

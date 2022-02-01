@@ -151,6 +151,7 @@ class PlotlyBackend(Plot):
             ]
 
         self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
+        self.grid = kwargs.get("grid", cfg["plotly"]["grid"])
         self._fig = go.Figure()
 
     @property

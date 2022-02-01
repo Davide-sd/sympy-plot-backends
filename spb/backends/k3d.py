@@ -111,6 +111,7 @@ class K3DBackend(Plot):
         self._bounds = []
         self._clipping = []
         self._handles = dict()
+        self.grid = kwargs.get("grid", cfg["k3d"]["grid"])
 
         self._fig = k3d.plot(
             grid_visible=self.grid,

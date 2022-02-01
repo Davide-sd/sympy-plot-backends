@@ -332,7 +332,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
 
         layout = kwargs.pop("layout", "tb")
         ncols = kwargs.pop("ncols", 2)
-        throttled = kwargs.pop("throttled", False)
+        throttled = kwargs.pop("throttled", cfg["interactive"]["throttled"])
         use_latex = kwargs.pop("use_latex", cfg["interactive"]["use_latex"])
 
         args = list(map(_plot_sympify, args))

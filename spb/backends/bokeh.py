@@ -316,6 +316,7 @@ class BokehBackend(Plot):
             tooltips=TOOLTIPS,
             match_aspect=True if self.aspect == "equal" else False,
         )
+        self.grid = kwargs.get("grid", cfg["bokeh"]["grid"])
         self._fig.grid.visible = self.grid
         if cfg["bokeh"]["show_minor_grid"]:
             self._fig.grid.minor_grid_line_alpha = cfg["bokeh"]["minor_grid_line_alpha"]

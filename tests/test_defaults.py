@@ -25,17 +25,21 @@ def test_cfg_matplotlib_keys():
 
 
 def test_cfg_plotly_keys():
-    assert "theme" in cfg["plotly"].keys()
+    must_have_keys = ["theme", "grid"]
+    for k in must_have_keys:
+        assert k in cfg["plotly"].keys()
     assert isinstance(cfg["plotly"]["theme"], str)
+    assert isinstance(cfg["plotly"]["grid"], bool)
 
 
 def test_cfg_bokeh_keys():
     bokeh_keys = ["theme", "sizing_mode", "update_event", "show_minor_grid",
-        "minor_grid_line_alpha", "minor_grid_line_dash"]
+        "minor_grid_line_alpha", "minor_grid_line_dash", "grid"]
     for k in bokeh_keys:
         assert k in cfg["bokeh"].keys()
     assert isinstance(cfg["bokeh"]["sizing_mode"], str)
     assert isinstance(cfg["bokeh"]["update_event"], bool)
+    assert isinstance(cfg["bokeh"]["grid"], bool)
     assert isinstance(cfg["bokeh"]["show_minor_grid"], bool)
     assert isinstance(cfg["bokeh"]["minor_grid_line_alpha"], (float, int))
     assert isinstance(cfg["bokeh"]["minor_grid_line_dash"], (list, tuple))
@@ -47,10 +51,15 @@ def test_cfg_k3d_keys():
         assert k in cfg["k3d"].keys()
         assert isinstance(cfg["k3d"][k], int)
 
+    assert "grid" in cfg["k3d"].keys()
+    assert isinstance(cfg["k3d"]["grid"], bool)
+
 
 def test_cfg_interactive_keys():
-    assert "use_latex" in cfg["interactive"]
-    assert isinstance(cfg["interactive"]["use_latex"], bool)
+    must_have_keys = ["use_latex", "throttled"]
+    for k in must_have_keys:
+        assert k in cfg["interactive"].keys()
+        assert isinstance(cfg["interactive"][k], bool)
 
 
 def test_set_defaults():

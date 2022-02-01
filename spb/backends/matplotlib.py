@@ -165,6 +165,7 @@ class MatplotlibBackend(Plot):
 
         if self.axis_center is None:
             self.axis_center = cfg["matplotlib"]["axis_center"]
+        self.grid = kwargs.get("grid", cfg["matplotlib"]["grid"])
         self._show_minor_grid = kwargs.get("show_minor_grid", cfg["matplotlib"]["show_minor_grid"])
 
         self._handles = dict()
