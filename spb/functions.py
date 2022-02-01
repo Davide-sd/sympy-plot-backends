@@ -373,7 +373,7 @@ def plot(*args, show=True, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, sin, pi
+       >>> from sympy import symbols, sin, pi, tan
        >>> from spb import plot
        >>> x, y = symbols('x, y')
 
@@ -459,7 +459,7 @@ def plot(*args, show=True, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot(tan(x), (x, -10, 10), backend=MB, adaptive_goal=0.001,
+       >>> plot(tan(x), (x, -10, 10), adaptive_goal=0.001,
        ...     detect_poles=True, ylim=(-7, 7))
        Plot object containing:
        [0]: cartesian line: tan(x) for x over (-10.0, 10.0)
@@ -1353,13 +1353,17 @@ def plot_implicit(*args, show=True, **kwargs):
         expr : Expr, Relational, BooleanFunction
             The equation / inequality that is to be plotted.
 
-        ranges : tuples
+        ranges : tuples or Symbol
             Two tuple denoting the discretization domain, for example:
             `(x, -10, 10), (y, -10, 10)`
             To get a correct plot, at least the horizontal range must be
             provided. If no range is given, then the free symbols in the
             expression will be assigned in the order they are sorted, which
             could 'invert' the axis.
+
+            Alternatively, a single Symbol corresponding to the horizontal
+            axis must be provided, which will be internally converted to a
+            range `(sym, -10, 10)`.
 
         label : str, optional
             The name of the expression to be eventually shown on the legend.
@@ -1426,37 +1430,35 @@ def plot_implicit(*args, show=True, **kwargs):
         >>> from spb.functions import plot_implicit
         >>> x, y = symbols('x y')
 
-    Without any ranges for the symbols in the expression:
+    Providing only the symbol for the horizontal axis:
 
     .. plot::
         :context: close-figs
         :format: doctest
         :include-source: True
 
-        >>> p1 = plot_implicit(Eq(x**2 + y**2, 5))
+        >>> plot_implicit(x - 1, x)
 
-    With the range for the symbols:
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> p2 = plot_implicit(
-        ...     Eq(x**2 + y**2, 3), (x, -3, 3), (y, -3, 3))
-
-    Using mesh grid without adaptive meshing with number of points
-    specified:
+    With the range for both symbols:
 
     .. plot::
         :context: close-figs
         :format: doctest
         :include-source: True
 
-        >>> p3 = plot_implicit(
+        >>> plot_implicit(Eq(x**2 + y**2, 3), (x, -3, 3), (y, -3, 3))
+
+    Specify the number of discretization points for the contour algorithm:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_implicit(
         ...     (x**2 + y**2 - 1)**3 - x**2 * y**3,
         ...     (x, -1.5, 1.5), (y, -1.5, 1.5),
-        ...     n = 1000)
+        ...     n = 500)
 
     Using adaptive meshing and Boolean expressions:
 
@@ -1465,7 +1467,7 @@ def plot_implicit(*args, show=True, **kwargs):
         :format: doctest
         :include-source: True
 
-        >>> p4 = plot_implicit(
+        >>> plot_implicit(
         ...     Eq(y, sin(x)) & (y > 0),
         ...     Eq(y, sin(x)) & (y < 0),
         ...     (x, -2 * pi, 2 * pi), (y, -4, 4),
@@ -1478,9 +1480,9 @@ def plot_implicit(*args, show=True, **kwargs):
         :format: doctest
         :include-source: True
 
-        >>> p5 = plot_implicit(
+        >>> plot_implicit(
         ...     Eq(x**2 + y**2, 5), (x, -4, 4), (y, -4, 4),
-        ...     adaptive=True, depth = 2)
+        ...     adaptive=True, depth=2)
 
     Plotting regions:
 
@@ -1489,7 +1491,7 @@ def plot_implicit(*args, show=True, **kwargs):
         :format: doctest
         :include-source: True
 
-        >>> p6 = plot_implicit(y > x**2, (x, -5, 5))
+        >>> plot_implicit(y > x**2, (x, -5, 5))
 
     See Also
     ========
@@ -1499,6 +1501,16 @@ def plot_implicit(*args, show=True, **kwargs):
 
     """
     from spb.defaults import TWO_D_B
+
+    # if the user is plotting a single expression, then he can pass in one
+    # or two symbols to sort the axis. Ranges will then be automatically
+    # created.
+    args = list(args)
+    if (len(args) == 2) and isinstance(args[1], Symbol):
+        args[1] = Tuple(args[1], -10, 10)
+    if (len(args) == 3) and isinstance(args[1], Symbol) and isinstance(args[2], Symbol):
+        args[1] = Tuple(args[1], -10, 10)
+        args[2] = Tuple(args[2], -10, 10)
 
     args = _plot_sympify(args)
     args = _check_arguments(args, 1, 2)
@@ -1513,6 +1525,7 @@ def plot_implicit(*args, show=True, **kwargs):
     )
 
     series = []
+    # compute the area that should be visible on the plot
     xmin, xmax, ymin, ymax = oo, -oo, oo, -oo
     for a in args:
         s = ImplicitSeries(*a, **series_kw)
@@ -1874,7 +1887,7 @@ def plot_list(*args, show=True, **kwargs):
     ========
 
     .. plot::
-       :context: close-figs
+       :context: reset
        :format: doctest
        :include-source: True
 
@@ -2076,11 +2089,11 @@ def plot_piecewise(*args, **kwargs):
     ========
 
     .. plot::
-       :context: close-figs
+       :context: reset
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos, pi, Heaviside, Piecewise
+       >>> from sympy import symbols, sin, cos, pi, Heaviside, Piecewise
        >>> from spb import plot_piecewise
        >>> x = symbols('x')
 
@@ -2098,7 +2111,7 @@ def plot_piecewise(*args, **kwargs):
        [2]: list plot
        [3]: list plot
 
-    Multiple plots with different ranges and custom labels.
+    Plot multiple expressions.
 
     .. plot::
        :context: close-figs
