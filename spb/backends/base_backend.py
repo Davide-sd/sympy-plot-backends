@@ -102,8 +102,8 @@ class Plot:
        :include-source: True
 
        >>> from sympy import symbols, sin, cos, log, S
-       >>> from spb import plot
-       >>> x = symbols("x")
+       >>> from spb import plot, plot3d
+       >>> x, y = symbols("x, y")
        >>> p1 = plot(sin(x), cos(x), show=False)
        >>> p2 = plot(sin(x) * cos(x), log(x), show=False)
        >>> p3 = p1 + p2
@@ -120,7 +120,7 @@ class Plot:
        >>> p1 = plot(sin(x), cos(x), show=False)
        >>> xx, yy = p1[0].get_data()
 
-    Creating a new backend with a custom colorloop:
+    Create a new backend with a custom colorloop:
 
     .. plot::
        :context: close-figs
@@ -131,6 +131,23 @@ class Plot:
        >>> class MBchild(MB):
        ...     colorloop = ["r", "g", "b"]
        >>> plot(sin(x) / 3, sin(x) * S(2) / 3, sin(x), backend=MBchild)
+
+    Create a new backend with custom color maps for 3D plots. Note that
+    it's possible to use Plotly/Colorcet/Matplotlib colormaps interchangeably.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> from spb.backends.matplotlib import MB
+       >>> import colorcet as cc
+       >>> class MBchild(MB):
+       ...     colormaps = ["plotly3", cc.bmy]
+       >>> plot3d(
+       ...     (cos(x**2 + y**2), (x, -2, 0), (y, -2, 2)),
+       ...     (cos(x**2 + y**2), (x, 0, 2), (y, -2, 2)),
+       ...     backend=MBchild, n1=25, n2=50)
 
 
     See also
