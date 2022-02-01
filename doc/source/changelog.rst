@@ -2,12 +2,24 @@
  Changelog
 ==========
 
+v1.0.2
+======
+
+* Added backend's aliases into `__init__.py`.
+* Added example to the `plot` function.
+* Improved docstring and examples of `plot_implicit`.
+* Fixed bug with `PlotlyBackend` in which axis labels were not visible.
+* Added `throttled` to default settings of interactive.
+* Added `grid` to defaults settings of all backends.
+
+
 v1.0.1
 ======
 
 * Exiting development status Beta
 * Updated `K3DBackend` documentation.
 * Updated tutorial
+
 
 v1.0.0
 ======
