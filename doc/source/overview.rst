@@ -67,53 +67,60 @@ More information about the backends can be found at:
 Differences with sympy.plotting
 ===============================
 
-While the backends implemented in this module might resemble the ones from the
-`sympy.plotting` module, they are not interchangeable.
+* While the backends implemented in this module might resemble the ones from
+  the `sympy.plotting` module, they are not interchangeable.
 
-`sympy.plotting` also provides a ``Plotgrid`` class to combine multiple plots
-into a grid-like layout. This module replaces that class with the ``plotgrid``
-function. Again, they are not interchangeable.
+* `sympy.plotting` also provides a ``Plotgrid`` class to combine multiple plots
+  into a grid-like layout. This module replaces that class with the
+  ``plotgrid`` function. Again, they are not interchangeable.
 
-The ``plot_implicit`` function has different signature. Moreover, it uses
-mesh grid algorithm (in contrast to adaptive algorithm) and contour plots by
-default. It is going to automatically switch to an adaptive algorithm if
-Boolean expressions are found.
+* The ``plot_implicit`` function has different signature. Moreover, by default
+  it uses a mesh grid algorithm and contour plots (in contrast to the adaptive
+  algorithm). It is going to automatically switch to an adaptive algorithm if
+  Boolean expressions are found. This ensures a better visualization for
+  non-Boolean implicit expressions.
 
-The adaptive algorithm is also different: this module relies on
-`adaptive <https://github.com/python-adaptive/adaptive/>`_, which allows more
-flexibility. The adaptive algorithm has been implemented to 3D line and
-surface plots.
+* ``experimental_lambdify``, used by `sympy.plotting`, has been almost
+  completely removed. It is only used by the plot implicit algorithm. All other
+  plot functions use ``lambdify``.
 
-In terms of performance:
+* `sympy.plotting` is unable to visualize summations containing infinity in
+  their lower/upper bounds. The new module introduces the ``sum_bound`` keyword
+  argument into the ``plot`` function: it substitutes infinity with a large
+  integer number. As such, it is possible to visualize summations.
 
-* Backends might be slower as they require more dependencies.
-* For line plots, the adaptive module allows to generate smoother plots,
-  at the cost of performance.
+* The adaptive algorithm is also different: this module relies on
+  `adaptive <https://github.com/python-adaptive/adaptive/>`_, which allows more
+  flexibility.
 
-In terms of usability:
+  * The ``depth`` keyword argument has been removed, while ``adaptive_goal``
+    and ``loss_fn`` have been introduced to control the new module.
+  * It has also been implemented to 3D lines and surfaces.
+  * It allows to generate smoother line plots, at the cost of performance.
 
-* `sympy.plotting` exposed the `label` keyword argument. It has been removed
-  in this module.
+* `sympy.plotting` exposed the ``nb_of_points_*`` keyword arguments. These have
+  been replaced with ``n`` or ``n1, n2``.
 
-* `sympy.plotting` exposed the `nb_of_points_*` keyword arguments. These have
-  been replaced with `n` or `n1, n2`.
+* `sympy.plotting` exposed the ``label``, ``line_color`` and ``surface_color``
+  keyword argument. These have been removed in this module.
 
-* With `sympy.plotting`, plots are created once the `show()` method is called.
-  This allows to create a plot with ``show=False``, then index a
-  specific data series in order to change attributes, and finally shows
-  the plot. For example:
+  The following example compares how to customize a plot created with
+  `sympy.plotting` and one created with this module.
+
+  With `sympy.plotting`:
 
   .. code-block:: python
 
+     from sympy.plotting import plot
+     from sympy import symbols, sin, cos
+     x = symbols("x")
      p = plot(sin(x), cos(x), show=False)
      p[0].label = "a"
      p[0].line_color = "red"
      p[1].label = "b"
      p.show()
 
-* With this plotting module, the figure is also created  once the `show()`
-  method is called. However, data series no longer have rendering-specific attributes like ``line_color``. Instead, to further customize the overall
-  look a different strategy has been implemented, where:
+  With this module:
 
   * it is possible to set a custom label directly from any plot function.
   * by setting specific dictionaries, the full potential of each backend can be
@@ -127,6 +134,7 @@ In terms of usability:
      p3.show()
 
   Therefore, setting attributes to plot objects or to data series after they
-  have been instantiated is strongly unrecommended.
+  have been instantiated is strongly unrecommended. Read the documentation
+  to learn how to further customize the appearance of figures.
 
 Take a look at :doc:`Modules </modules/index>` for more examples about the output of this module.
