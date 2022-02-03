@@ -16,10 +16,7 @@ from sympy.core.relational import (
 from sympy.logic.boolalg import BooleanFunction
 from sympy.utilities.iterables import ordered
 from sympy.utilities.lambdify import lambdify
-from sympy.plotting.experimental_lambdify import (
-    vectorized_lambdify,
-    experimental_lambdify,
-)
+from sympy.plotting.experimental_lambdify import experimental_lambdify
 from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
 import warnings
@@ -1159,7 +1156,7 @@ class ImplicitSeries(BaseSeries):
         xarray = self._discretize(self.start_x, self.end_x, self.n1, self.xscale)
         yarray = self._discretize(self.start_y, self.end_y, self.n2, self.yscale)
         x_grid, y_grid = np.meshgrid(xarray, yarray)
-        func = vectorized_lambdify((self.var_x, self.var_y), expr)
+        func = lambdify((self.var_x, self.var_y), expr)
         z_grid = func(x_grid, y_grid)
         z_grid = self._correct_size(z_grid, x_grid)
         z_grid[np.ma.where(z_grid < 0)] = -1
