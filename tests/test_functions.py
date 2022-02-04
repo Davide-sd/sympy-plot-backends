@@ -604,77 +604,54 @@ def tmp_file(dir=None, name=""):
     return NamedTemporaryFile(suffix=".png", dir=dir, delete=False).name
 
 
-def plot_and_save(expr, *args, name="", dir=None, **kwargs):
-    p = plot_implicit(expr, *args, **kwargs)
-    p.save(tmp_file(dir=dir, name=name))
-    # Close the plot to avoid a warning from matplotlib
-    p.close()
+def test_plot_implicit_adaptive_true():
+    # verify that plot_implicit with `adaptive=True` produces correct results.
+    # NOTE: how to test that the algorithm is producing correct results when
+    # adaptive=True? Easiest approach is to compare the plots with vouched
+    # ones. However, the following plots may slightly change
+    # every time tests are run, hence we need a relatively large tolerance.
 
-
-def plot_implicit_tests(name):
-    temp_dir = mkdtemp()
-    TmpFileManager.tmp_folder(temp_dir)
-    x, y = symbols("x, y")
-    # implicit plot tests
-    plot_and_save(Eq(y, cos(x)), (x, -5, 5), (y, -2, 2),
-        name=name, dir=temp_dir, adaptive=False, n=50)
-    plot_and_save(
-        Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -4, 4),
-        name=name, dir=temp_dir, adaptive=False, n=50)
-    plot_and_save(y > 1 / x, (x, -5, 5), (y, -2, 2),
-        name=name, dir=temp_dir, adaptive=False, n=50)
-    plot_and_save(y < 1 / tan(x), (x, -5, 5), (y, -2, 2),
-        name=name, dir=temp_dir, adaptive=False, n=50)
-    plot_and_save(
-        y >= 2 * sin(x) * cos(x), (x, -5, 5), (y, -2, 2),
-        name=name, dir=temp_dir, adaptive=False, n=50)
-    plot_and_save(y <= x ** 2, (x, -3, 3), (y, -1, 5),
-        name=name, dir=temp_dir, adaptive=False, n=50)
-
-    # Test all input args for plot_implicit
-    plot_and_save(Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -5, 5),
-        dir=temp_dir, adaptive=False, n=50)
-    plot_and_save(Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -5, 5),
-        adaptive=False, n=50, dir=temp_dir)
-    plot_and_save(Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -5, 5),
-        adaptive=True, dir=temp_dir)
-    plot_and_save(y > x, (x, -5, 5), (y, -5, 5),
-        dir=temp_dir, adaptive=False, n=50)
-    plot_and_save(And(y > exp(x), y > x + 2), (x, -5, 5), (y, -5, 5),
-        dir=temp_dir, adaptive=True)
-    plot_and_save(Or(y > x, y > -x), (x, -5, 5), (y, -5, 5), dir=temp_dir)
-    plot_and_save(x ** 2 - 1, (x, -5, 5), (y, -5, 5), dir=temp_dir)
-    plot_and_save(x ** 2 - 1, (x, -5, 5), (y, -5, 5), dir=temp_dir)
-    plot_and_save(y > x, (x, -5, 5), (y, -5, 5),
-        adaptive=True, depth=-5, dir=temp_dir)
-    plot_and_save(y > x, (x, -5, 5), (y, -5, 5),
-        adaptive=True, depth=5, dir=temp_dir)
-    plot_and_save(y > cos(x), (x, -5, 5), (y, -5, 5), adaptive=False, dir=temp_dir)
-    plot_and_save(y < cos(x), (x, -5, 5), (y, -5, 5), adaptive=False, dir=temp_dir)
-    plot_and_save(And(y > cos(x), Or(y > x, Eq(y, x))), (x, -5, 5), (y, -5, 5),
-        dir=temp_dir, adaptive=True)
-    plot_and_save(y - cos(pi / x), (x, -5, 5), (y, -5, 5), dir=temp_dir)
-
-    # Test plots which cannot be rendered using the adaptive algorithm
-    with warns(UserWarning, match="Adaptive meshing could not be applied"):
-        plot_and_save(
-            Eq(y, re(cos(x) + I * sin(x))), adaptive=True, name=name, dir=temp_dir
-        )
-
-    plot_and_save(x ** 2 - 1, title="An implicit plot", dir=temp_dir)
-
-
-def test_plot_implicit_matplotlib():
     matplotlib = import_module(
         "matplotlib", min_module_version="1.1.0", catch=(RuntimeError,)
     )
-    if matplotlib:
-        try:
-            plot_implicit_tests("test")
-        finally:
-            TmpFileManager.cleanup()
-    else:
+    if not matplotlib:
         skip("Matplotlib not the default backend")
+
+    from matplotlib.testing.compare import compare_images
+    test_directory = os.path.dirname(os.path.abspath(__file__))
+
+    temp_dir = mkdtemp()
+    TmpFileManager.tmp_folder(temp_dir)
+
+    def do_test(expr, range_x, range_y, filename, tol=1):
+        test_filename = tmp_file(dir=temp_dir, name="test_" + filename)
+        cmp_filename = os.path.join(test_directory, "imgs", filename)
+        p = plot_implicit(expr, range_x, range_y,
+            size=(5, 4), adaptive=True, grid=False, show=False)
+        p.save(test_filename)
+        assert compare_images(cmp_filename, test_filename, tol) is None
+
+    x, y = symbols("x y")
+
+    try:
+        do_test(Eq(y, cos(x)), (x, -5, 5), (y, -5, 5), "pi_01.png", 1)
+        do_test(Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -5, 5), "pi_02.png", 1)
+        do_test(y > 1 / x, (x, -5, 5), (y, -5, 5), "pi_03.png", 5)
+        do_test(y < 1 / tan(x), (x, -5, 5), (y, -5, 5), "pi_04.png", 8)
+        do_test(y >= 2 * sin(x) * cos(x), (x, -5, 5), (y, -5, 5), "pi_05.png", 0.1)
+        do_test(y <= x ** 2, (x, -5, 5), (y, -5, 5), "pi_06.png", 1)
+        do_test(y > x, (x, -5, 5), (y, -5, 5), "pi_07.png", 5)
+        do_test(And(y > exp(x), y > x + 2), (x, -5, 5), (y, -5, 5), "pi_08.png", 1)
+        do_test(Or(y > x, y > -x), (x, -5, 5), (y, -5, 5), "pi_09.png", 5)
+        do_test(x ** 2 - 1, (x, -5, 5), (y, -5, 5), "pi_10.png", 1)
+        do_test(y > cos(x), (x, -5, 5), (y, -5, 5), "pi_11.png", 1)
+        do_test(y < cos(x), (x, -5, 5), (y, -5, 5), "pi_12.png", 1)
+        do_test(And(y > cos(x), Or(y > x, Eq(y, x))), (x, -5, 5), (y, -5, 5), "pi_13.png", 1)
+        do_test(y - cos(pi / x), (x, -5, 5), (y, -5, 5), "pi_14.png", 1)
+        # NOTE: this should fallback to adaptive=False
+        do_test(Eq(y, re(cos(x) + I * sin(x))), (x, -5, 5), (y, -5, 5), "pi_15.png", 1)
+    finally:
+        TmpFileManager.cleanup()
 
 
 def test_plot_implicit_region_and():
@@ -685,40 +662,27 @@ def test_plot_implicit_region_and():
         skip("Matplotlib not the default backend")
 
     from matplotlib.testing.compare import compare_images
-
     test_directory = os.path.dirname(os.path.abspath(__file__))
 
+    temp_dir = mkdtemp()
+    TmpFileManager.tmp_folder(temp_dir)
+
+    def do_test(expr, range_x, range_y, filename, tol=1):
+        test_filename = tmp_file(dir=temp_dir, name="test_" + filename)
+        cmp_filename = os.path.join(test_directory, "imgs", filename)
+        p = plot_implicit(expr, range_x, range_y,
+            size=(8, 6), adaptive=True, grid=False, show=False)
+        p.save(test_filename)
+        assert compare_images(cmp_filename, test_filename, tol) is None
+
+    x, y = symbols("x y")
+    r1 = (x - 1) ** 2 + y ** 2 < 2
+    r2 = (x + 1) ** 2 + y ** 2 < 2
+
     try:
-        temp_dir = mkdtemp()
-        TmpFileManager.tmp_folder(temp_dir)
-
-        x, y = symbols("x y")
-
-        r1 = (x - 1) ** 2 + y ** 2 < 2
-        r2 = (x + 1) ** 2 + y ** 2 < 2
-
-        test_filename = tmp_file(dir=temp_dir, name="test_region_and")
-        cmp_filename = os.path.join(test_directory, "test_region_and.png")
-        p = plot_implicit(r1 & r2, (x, -5, 5), (y, -5, 5))
-        p.save(test_filename)
-        compare_images(cmp_filename, test_filename, 0.005)
-
-        test_filename = tmp_file(dir=temp_dir, name="test_region_or")
-        cmp_filename = os.path.join(test_directory, "test_region_or.png")
-        p = plot_implicit(r1 | r2, (x, -5, 5), (y, -5, 5))
-        p.save(test_filename)
-        compare_images(cmp_filename, test_filename, 0.005)
-
-        test_filename = tmp_file(dir=temp_dir, name="test_region_not")
-        cmp_filename = os.path.join(test_directory, "test_region_not.png")
-        p = plot_implicit(~r1, (x, -5, 5), (y, -5, 5))
-        p.save(test_filename)
-        compare_images(cmp_filename, test_filename, 0.005)
-
-        test_filename = tmp_file(dir=temp_dir, name="test_region_xor")
-        cmp_filename = os.path.join(test_directory, "test_region_xor.png")
-        p = plot_implicit(r1 ^ r2, (x, -5, 5), (y, -5, 5))
-        p.save(test_filename)
-        compare_images(cmp_filename, test_filename, 0.005)
+        do_test(r1 & r2, (x, -5, 5), (y, -5, 5), "test_region_and.png", 0.005)
+        do_test(r1 | r2, (x, -5, 5), (y, -5, 5), "test_region_or.png", 0.005)
+        do_test(~r1, (x, -5, 5), (y, -5, 5), "test_region_not.png", 0.05)
+        do_test(r1 ^ r2, (x, -5, 5), (y, -5, 5), "test_region_xor.png", 0.005)
     finally:
         TmpFileManager.cleanup()

@@ -16,7 +16,6 @@ from sympy.core.relational import (
 from sympy.logic.boolalg import BooleanFunction
 from sympy.utilities.iterables import ordered
 from sympy.utilities.lambdify import lambdify
-from sympy.plotting.experimental_lambdify import experimental_lambdify
 from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
 import warnings
@@ -987,7 +986,7 @@ class ImplicitSeries(BaseSeries):
         self.yscale = kwargs.get("yscale", "linear")
         self._rendering_kw = kwargs.get("contour_kw", dict())
 
-        if isinstance(expr, BooleanFunction):
+        if isinstance(expr, BooleanFunction) and (not self.adaptive):
             self.adaptive = True
             warnings.warn(
                 "The provided expression contains Boolean functions. "
@@ -1040,28 +1039,44 @@ class ImplicitSeries(BaseSeries):
         )
 
     def get_data(self):
-        func = experimental_lambdify(
-            (self.var_x, self.var_y), self.expr, use_interval=True
-        )
-        xinterval = interval(self.start_x, self.end_x)
-        yinterval = interval(self.start_y, self.end_y)
-        try:
-            func(xinterval, yinterval)
-        except AttributeError:
-            # XXX: AttributeError("'list' object has no attribute 'is_real'")
-            # That needs fixing somehow - we shouldn't be catching
-            # AttributeError here.
-            if self.adaptive:
+        if self.adaptive:
+            import sympy.plotting.intervalmath.lib_interval as li
+
+            # HACK: this is necessary for sympy.plotting.intervalmath to
+            # work properly
+            from sympy.printing.pycode import PythonCodePrinter, SymPyPrinter
+            new_operators = {'and': '&', 'or': '|', 'not': 'not'}
+            tmp_operators_1 = PythonCodePrinter._operators
+            tmp_operators_2 = SymPyPrinter._operators
+            PythonCodePrinter._operators = new_operators
+            SymPyPrinter._operators = new_operators
+
+            keys = [t for t in dir(li) if ("__" not in t) and (t not in ["import_module", "interval"])]
+            vals = [getattr(li, k) for k in keys]
+            d = {k: v for k, v in zip(keys, vals)}
+            func = lambdify((self.var_x, self.var_y), self.expr, modules=[d, "math", "sympy"])
+
+            try:
+                data = self._get_raster_interval(func)
+            except (AttributeError, TypeError):
+                # XXX: AttributeError("'list' object has no attribute 'is_real'")
+                # That needs fixing somehow - we shouldn't be catching
+                # AttributeError here.
                 warnings.warn(
                     "Adaptive meshing could not be applied to the"
-                    " expression. Using uniform meshing."
-                )
-            self.adaptive = False
+                    " expression. Using uniform meshing.")
+                self.adaptive = False
+            finally:
+                # HACK: restore the original class attribute so that
+                # further calls to lambdify works as expected
+                PythonCodePrinter._operators = tmp_operators_1
+                SymPyPrinter._operators = tmp_operators_2
 
-        if self.adaptive:
-            return self._get_raster_interval(func)
-        else:
-            return self._get_meshes_grid()
+            if self.adaptive:
+                return data
+
+        # if adaptive=False
+        return self._get_meshes_grid()
 
     def _get_raster_interval(self, func):
         """Uses interval math to adaptively mesh and obtain the plot"""
