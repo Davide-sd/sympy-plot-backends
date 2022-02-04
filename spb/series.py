@@ -14,7 +14,6 @@ from sympy.core.relational import (
     Relational, StrictLessThan, StrictGreaterThan,
 )
 from sympy.logic.boolalg import BooleanFunction
-from sympy.utilities.iterables import ordered
 from sympy.utilities.lambdify import lambdify
 from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
@@ -1299,7 +1298,7 @@ class InteractiveSeries(BaseSeries):
 
         # NOTE: the expressions must have been sympified earlier.
         self.expr = exprs[0] if len(exprs) == 1 else Tuple(*exprs, sympify=False)
-        self.signature = list(ordered(self.expr.free_symbols))
+        self.signature = sorted(self.expr.free_symbols, key=lambda t: t.name)
 
         # Generate a list of lambda functions, two for each expression:
         # 1. the default one.
@@ -1951,7 +1950,7 @@ class ComplexInteractiveBaseSeries(InteractiveSeries, ComplexSurfaceBaseSeries):
         self._init_attributes(expr, r, label, **kwargs)
         self._check_fs([expr], [r], label, self._params)
 
-        self.signature = list(ordered(self.expr.free_symbols))
+        self.signature = sorted(self.expr.free_symbols, key=lambda t: t.name)
         # Two lambda functions:
         # 1. the default one.
         # 2. the backup one, in case of failures with the default one.
