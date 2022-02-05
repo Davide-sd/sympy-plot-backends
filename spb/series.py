@@ -476,9 +476,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             try:
                 w = complex(f(x + 1j * imag))
                 return w.real, w.imag
-            except TypeError:
-                w = complex(f(x))
-                return w.real, w.imag
             except (ZeroDivisionError, OverflowError):
                 return np.nan, np.nan
 
