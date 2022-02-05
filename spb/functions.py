@@ -482,11 +482,11 @@ def plot(*args, show=True, **kwargs):
     for a in args:
         if isinstance(a, Expr):
             free |= a.free_symbols
-            if len(free) > 1:
-                raise ValueError(
-                    "The same variable should be used in all "
-                    "univariate expressions being plotted."
-                )
+            # if len(free) > 1:
+            #     raise ValueError(
+            #         "The same variable should be used in all "
+            #         "univariate expressions being plotted."
+            #     )
     x = free.pop() if free else Symbol("x")
 
     kwargs.setdefault("xlabel", x.name)
