@@ -12,6 +12,19 @@ Or::
 
     conda install sympy_plot_backends
 
+
+About Matplotlib
+================
+
+This module will install Matplotlib v3.4.2. If you want to use a newer version,
+just upgrade it with::
+
+    pip install -U matplotlib
+
+Note: if you are doing development work on this module, v3.4.2 is required for
+tests to pass!
+
+
 Verify the installation
 =======================
 

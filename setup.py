@@ -42,7 +42,7 @@ setup(
         "numpy>=1.21.1",
         "scipy>=1.7.1",  # helps when lambdifying expressions
         "sympy>=1.8",
-        "matplotlib>=3.4.2",
+        "matplotlib==3.4.2",    # v3.4.2 is required for tests to pass
         "mergedeep>=1.3.4",
         "ipympl>=0.7.0",
         "plotly>=4.14.3",
