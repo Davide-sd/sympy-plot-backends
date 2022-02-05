@@ -28,7 +28,7 @@ It also provide an interactive plotting function, ``iplot``, which automatically
 
    overview.rst
    install.rst
-   tutorials.rst
+   tutorials/index.rst
    modules/index.rst
    changelog.rst
 

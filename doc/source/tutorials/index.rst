@@ -14,6 +14,18 @@ become excessively slow.
 
 Hence, you can visit the aforementioned repository and:
 
-* download and run them locally.
+* download and run them locally (preferred option).
 * or you can launch Binder and try them online (note that Binder is really
   slow).
+
+If you are in a hurry, the following quickstart should provide a good
+starting point.
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Quickstart
+
+   tut-1.rst
+   tut-2.rst
+   tut-3.rst
+   tut-4.rst

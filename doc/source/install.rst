@@ -12,8 +12,8 @@ Or::
 
     conda install sympy_plot_backends
 
-Run
-===
+Verify the installation
+=======================
 
 After installation, it is best to verify that the freshly-installed SymPy
 Plotting Backends work. To do this, start up Python and import the necessary
@@ -23,10 +23,6 @@ of the module has been set to `spb`::
     $ python
     >>> from sympy import *
     >>> from spb import *
-    >>> from spb.backends.matplotlib import MB
-    >>> from spb.backends.k3d import KB
-    >>> from spb.backends.plotly import PB
-    >>> from spb.backends.bokeh import BB
 
 From here, execute some simple statements like the ones below::
 
@@ -48,7 +44,6 @@ It is also the perfect time to verify that K3D-Jupyter is working:
 
       from sympy import *
       from spb import *
-      from spb.backends.k3d import KB
       var("x, y")
       plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=KB)
 
