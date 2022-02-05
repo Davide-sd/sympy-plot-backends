@@ -2,7 +2,7 @@ appdirs
 numpy
 scipy
 sympy
-matplotlib
+matplotlib==3.4.2
 mergedeep
 ipympl
 plotly>=4.14.3
