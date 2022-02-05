@@ -118,6 +118,7 @@ html_static_path = [
     '_static/tut-2',
     '_static/tut-3',
     '_static/tut-4',
+    '_static/tut-5',
 ]
 
 # html_js_files = [

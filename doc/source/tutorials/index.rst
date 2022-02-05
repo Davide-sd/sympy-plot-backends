@@ -5,7 +5,7 @@
 ==========
 
 Several Jupyter Notebook tutorials are available in the
-`Github repository <https://github.com/Davide-sd/sympy-plot-backends>`_.
+`Github repository <https://github.com/Davide-sd/sympy-plot-backends/tree/master/tutorials>`_.
 They are designed to illustrate the differences between the backends.
 
 Sadly, given the high number of JS-based figures, it would be unwise to
@@ -29,3 +29,4 @@ starting point.
    tut-2.rst
    tut-3.rst
    tut-4.rst
+   tut-5.rst
