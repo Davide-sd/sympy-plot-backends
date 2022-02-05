@@ -143,12 +143,13 @@ def _load_settings():
 
 
 def set_defaults(cfg):
-    """Set the default options for the plotting backends.
+    """Set the default options for the plotting backends and save them to
+    a file.
 
     Parameters
     ==========
-        cfg : dict
-            Dictionary containing the new values
+    cfg : dict
+        Dictionary containing the new values
 
     Examples
     ========
@@ -160,6 +161,20 @@ def set_defaults(cfg):
         >>> # print(cfg)
         >>> cfg["backend_2D"] = "matplotlib"
         >>> set_defaults(cfg)
+
+    Notes
+    =====
+
+    This plotting module uses the `appdir` module [#fn1]_ to determine the
+    best location where to save the settings. It will save a human readable
+    `config.json` file, which SHOULD NOT be modified directly with a text
+    editor.
+    Use the ``set_defaults`` function to modify the configuration settings!
+
+    References
+    ==========
+
+    .. [#fn1] https://github.com/ActiveState/appdirs
 
     """
     with open(file_path, "w", encoding="utf-8") as f:
