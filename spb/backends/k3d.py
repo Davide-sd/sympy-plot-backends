@@ -221,7 +221,7 @@ class K3DBackend(Plot):
                     color=self._convert_to_int(next(self._cl)),
                     shader="mesh",
                 )
-                if self._use_cm:
+                if s.use_cm:
                     a["attribute"] = (param.astype(np.float32),)
                     a["color_map"] = next(self._cm)
                     a["color_range"] = [s.start, s.end]
@@ -257,7 +257,7 @@ class K3DBackend(Plot):
                     wireframe=False,
                     color=self._convert_to_int(next(self._cl)),
                 )
-                if self._use_cm:
+                if s.use_cm:
                     a["color_map"] = next(self._cm)
                     a["attribute"] = z.astype(np.float32)
                 kw = merge({}, a, s.rendering_kw)
@@ -277,7 +277,7 @@ class K3DBackend(Plot):
 
                 stream_kw = s.rendering_kw.copy()
                 skw = dict(width=0.1, shader="mesh")
-                if self._use_cm and ("color" not in stream_kw.keys()):
+                if s.use_cm and ("color" not in stream_kw.keys()):
                     skw["color_map"] = next(self._cm)
                     skw["color_range"] = [np.nanmin(magn), np.nanmax(magn)]
                     skw["attribute"] = magn
@@ -308,7 +308,7 @@ class K3DBackend(Plot):
                 vectors = np.array((uu, vv, ww)).T * scale
                 origins = np.array((xx, yy, zz)).T
                 quiver_kw = s.rendering_kw
-                if self._use_cm and ("color" not in quiver_kw.keys()):
+                if s.use_cm and ("color" not in quiver_kw.keys()):
                     colormap = next(self._cm)
                     colors = self.k3d.helpers.map_colors(
                         magnitude, colormap, [])
@@ -353,7 +353,7 @@ class K3DBackend(Plot):
                     color=self._convert_to_int(next(self._cl)),
                     color_range=[-np.pi, np.pi],
                 )
-                if self._use_cm:
+                if s.use_cm:
                     colors = colors.reshape((-1, 3))
                     a["colors"] = [self._rgb_to_int(c) for c in colors]
 
@@ -471,7 +471,7 @@ class K3DBackend(Plot):
                     x, y, z = [t.flatten().astype(np.float32) for t in [x, y, mag]]
                     vertices = np.vstack([x, y, z]).astype(np.float32)
                     self._fig.objects[i].vertices = vertices.T
-                    if self._use_cm:
+                    if s.use_cm:
                         colors = colors.reshape((-1, 3))
                         colors = [self._rgb_to_int(c) for c in colors]
                         self._fig.objects[i].colors = colors

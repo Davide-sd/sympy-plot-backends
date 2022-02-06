@@ -227,10 +227,6 @@ class Plot:
                 series.extend(_series)
             self._series = series
 
-        # The user can choose to use the standard color map loop, or
-        # set/provide a solid color loop (for the surface color).
-        self._use_cm = kwargs.get("use_cm", True)
-
         # auto-legend: if more than 1 data series has been provided and the
         # user has not set legend=False, then show the legend for better
         # clarity.
@@ -238,8 +234,7 @@ class Plot:
         if not self.legend:
             self.legend = False
             if (len(self._series) > 1) or (
-                any(s.is_parametric for s in self.series) and self._use_cm
-            ):
+                any(s.is_parametric and s.use_cm for s in self.series)):
                 # don't show the legend if `plot_piecewise` created this
                 # backend
                 if not ("process_piecewise" in kwargs.keys()):
@@ -288,7 +283,6 @@ class Plot:
             yscale=self.yscale,
             zscale=self.zscale,
             detect_poles=self.detect_poles,
-            use_cm=self._use_cm,
             legend=self.legend,
             xlim=self.xlim,
             ylim=self.ylim,

@@ -268,7 +268,7 @@ class MatplotlibBackend(Plot):
         points = np.ma.array(points).T.reshape(-1, 1, dim)
         return np.ma.concatenate([points[:-1], points[1:]], axis=1)
 
-    def _add_colorbar(self, c, label, override=False):
+    def _add_colorbar(self, c, label, use_cm, override=False):
         """Add a colorbar for the specificied collection
 
         Parameters
@@ -289,7 +289,7 @@ class MatplotlibBackend(Plot):
         # would require to work with proxy artists and custom
         # classes in order to create a gradient line), just show a
         # colorbar with the name of the expression on the side.
-        if (self.legend and self._use_cm) or override:
+        if (self.legend and use_cm) or override:
             cb = self._fig.colorbar(c, ax=self.ax)
             cb.set_label(label, rotation=90)
             return True
@@ -328,7 +328,7 @@ class MatplotlibBackend(Plot):
             kw = None
 
             if s.is_2Dline:
-                if s.is_parametric and self._use_cm:
+                if s.is_parametric and s.use_cm:
                     x, y, param = s.get_data()
                     colormap = (
                         next(self._cyccm)
@@ -340,7 +340,7 @@ class MatplotlibBackend(Plot):
                     segments = self.get_segments(x, y)
                     c = self.LineCollection(segments, **kw)
                     self.ax.add_collection(c)
-                    is_cb_added = self._add_colorbar(c, s.label)
+                    is_cb_added = self._add_colorbar(c, s.label, s.use_cm)
                     self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 else:
                     if s.is_parametric:
@@ -362,7 +362,7 @@ class MatplotlibBackend(Plot):
                 ckw = dict(cmap=next(self._cm))
                 kw = merge({}, ckw, s.rendering_kw)
                 c = self.ax.contourf(x, y, z, **kw)
-                self._add_colorbar(c, s.label, True)
+                self._add_colorbar(c, s.label, s.use_cm, True)
                 self._add_handle(i, c, kw, self._fig.axes[-1])
 
             elif s.is_3Dline:
@@ -370,14 +370,14 @@ class MatplotlibBackend(Plot):
                 lkw = dict()
 
                 if len(x) > 1:
-                    if self._use_cm:
+                    if s.use_cm:
                         segments = self.get_segments(x, y, z)
                         lkw["cmap"] = next(self._cm)
                         lkw["array"] = param
                         kw = merge({}, lkw, s.rendering_kw)
                         c = Line3DCollection(segments, **kw)
                         self.ax.add_collection(c)
-                        self._add_colorbar(c, s.label)
+                        self._add_colorbar(c, s.label, s.use_cm)
                         self._add_handle(i, c)
                     else:
                         lkw["label"] = s.label
@@ -398,11 +398,11 @@ class MatplotlibBackend(Plot):
             elif (s.is_3Dsurface and not s.is_domain_coloring):
                 x, y, z = s.get_data()
                 skw = dict(rstride=1, cstride=1, linewidth=0.1)
-                if self._use_cm:
+                if s.use_cm:
                     skw["cmap"] = next(self._cm)
                 kw = merge({}, skw, s.rendering_kw)
                 c = self.ax.plot_surface(x, y, z, **kw)
-                is_cb_added = self._add_colorbar(c, s.label)
+                is_cb_added = self._add_colorbar(c, s.label, s.use_cm)
                 self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
@@ -440,12 +440,13 @@ class MatplotlibBackend(Plot):
                     magn = np.sqrt(uu ** 2 + vv ** 2)
                     if s.is_streamlines:
                         skw = dict()
-                        if (not s.use_quiver_solid_color) and self._use_cm:
+                        if (not s.use_quiver_solid_color) and s.use_cm:
                             skw["cmap"] = next(self._cm)
                             skw["color"] = magn
                             kw = merge({}, skw, s.rendering_kw)
                             sp = self.ax.streamplot(xx, yy, uu, vv, **kw)
-                            is_cb_added = self._add_colorbar(sp.lines, s.label)
+                            is_cb_added = self._add_colorbar(
+                                sp.lines, s.label, s.use_cm)
                         else:
                             skw["color"] = next(self._cl)
                             kw = merge({}, skw, s.rendering_kw)
@@ -455,13 +456,14 @@ class MatplotlibBackend(Plot):
                             self._fig.axes[-1])
                     else:
                         qkw = dict()
-                        if (not s.use_quiver_solid_color) and self._use_cm:
+                        if (not s.use_quiver_solid_color) and s.use_cm:
                             # don't use color map if a scalar field is
                             # visible or if use_cm=False
                             qkw["cmap"] = next(self._cm)
                             kw = merge({}, qkw, s.rendering_kw)
                             q = self.ax.quiver(xx, yy, uu, vv, magn, **kw)
-                            is_cb_added = self._add_colorbar(q, s.label)
+                            is_cb_added = self._add_colorbar(
+                                q, s.label, s.use_cm)
                         else:
                             is_cb_added = False
                             qkw["color"] = next(self._cl)
@@ -484,7 +486,7 @@ class MatplotlibBackend(Plot):
                             if k in stream_kw.keys():
                                 stream_kw.pop(k)
 
-                        if self._use_cm:
+                        if s.use_cm:
                             segments = self.get_segments(
                                 vertices[:, 0], vertices[:, 1], vertices[:, 2])
                             lkw["cmap"] = next(self._cm)
@@ -492,7 +494,7 @@ class MatplotlibBackend(Plot):
                             kw = merge({}, lkw, stream_kw)
                             c = Line3DCollection(segments, **kw)
                             self.ax.add_collection(c)
-                            self._add_colorbar(c, s.label)
+                            self._add_colorbar(c, s.label, s.use_cm)
                             self._add_handle(i, c)
                         else:
                             lkw["label"] = s.label
@@ -506,12 +508,13 @@ class MatplotlibBackend(Plot):
                         zlims.append((np.amin(zz), np.amax(zz)))
                     else:
                         qkw = dict()
-                        if self._use_cm:
+                        if s.use_cm:
                             qkw["cmap"] = next(self._cm)
                             qkw["array"] = magn.flatten()
                             kw = merge({}, qkw, s.rendering_kw)
                             q = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
-                            is_cb_added = self._add_colorbar(q, s.label)
+                            is_cb_added = self._add_colorbar(
+                                q, s.label, s.use_cm)
                         else:
                             qkw["color"] = next(self._cl)
                             kw = merge({}, qkw, s.rendering_kw)
@@ -554,12 +557,12 @@ class MatplotlibBackend(Plot):
                     x, y, mag, arg, facecolors, colorscale = s.get_data()
 
                     skw = dict(rstride=1, cstride=1, linewidth=0.1)
-                    if self._use_cm:
+                    if s.use_cm:
                         skw["facecolors"] = facecolors / 255
                     kw = merge({}, skw, s.rendering_kw)
                     c = self.ax.plot_surface(x, y, mag, **kw)
 
-                    if self._use_cm and (colorscale is not None):
+                    if s.use_cm and (colorscale is not None):
                         if len(colorscale.shape) == 3:
                             colorscale = colorscale.reshape((-1, 3))
                         else:
@@ -772,7 +775,7 @@ class MatplotlibBackend(Plot):
             if s.is_interactive:
                 self.series[i].params = params
                 if s.is_2Dline:
-                    if s.is_parametric and self._use_cm:
+                    if s.is_parametric and s.use_cm:
                         x, y, param = self.series[i].get_data()
                         segments = self.get_segments(x, y)
                         self._handles[i][0].set_segments(segments)
@@ -898,7 +901,7 @@ class MatplotlibBackend(Plot):
                         x, y, mag, arg, facecolors, colorscale = s.get_data()
                         self._handles[i][0].remove()
                         kw = self._handles[i][1]
-                        if self._use_cm:
+                        if s.use_cm:
                             kw["facecolors"] = facecolors / 255
                         self._handles[i][0] = self.ax.plot_surface(x, y, mag, **kw)
                         xlims.append((np.amin(x), np.amax(x)))

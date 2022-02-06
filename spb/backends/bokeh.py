@@ -363,7 +363,7 @@ class BokehBackend(Plot):
             kw = None
 
             if s.is_2Dline:
-                if s.is_parametric and self._use_cm:
+                if s.is_parametric and s.use_cm:
                     x, y, param = s.get_data()
                     colormap = (
                         next(self._cyccm)
@@ -445,7 +445,7 @@ class BokehBackend(Plot):
                     # use_cm=False
                     line_color = (
                         {"field": "magnitude", "transform": color_mapper}
-                        if ((not s.use_quiver_solid_color) and self._use_cm)
+                        if ((not s.use_quiver_solid_color) and s.use_cm)
                         else next(self._cl)
                     )
                     source = self.bokeh.models.ColumnDataSource(data=data)
@@ -522,7 +522,7 @@ class BokehBackend(Plot):
                 x, y = s.get_data()
                 source = {"xs": x, "ys": y}
                 rend[i].data_source.data.update(source)
-            elif s.is_complex and s.is_2Dline and s.is_parametric and self._use_cm:
+            elif s.is_complex and s.is_2Dline and s.is_parametric and s.use_cm:
                 # this is when absarg=True
                 s.start = complex(self._fig.x_range.start)
                 s.end = complex(self._fig.x_range.end)
@@ -581,7 +581,7 @@ class BokehBackend(Plot):
             if s.is_interactive:
                 self.series[i].params = params
 
-                if s.is_2Dline and s.is_parametric and self._use_cm:
+                if s.is_2Dline and s.is_parametric and s.use_cm:
                     x, y, param = self.series[i].get_data()
                     xs, ys, us = self._get_segments(x, y, param)
                     rend[i].data_source.data.update({"xs": xs, "ys": ys, "us": us})

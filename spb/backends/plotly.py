@@ -215,7 +215,7 @@ class PlotlyBackend(Plot):
         )
 
     def _solid_colorscale(self):
-        # create a solid color to be used when self._use_cm=False
+        # create a solid color to be used when s.use_cm=False
         col = next(self._cl)
         return [[0, col], [1, col]]
 
@@ -252,9 +252,9 @@ class PlotlyBackend(Plot):
             if s.is_2Dline:
                 if s.is_parametric:
                     x, y, param = s.get_data()
-                    # hides/show the colormap depending on self._use_cm
+                    # hides/show the colormap depending on s.use_cm
                     mode = "lines+markers" if not s.is_point else "markers"
-                    if (not s.is_point) and (not self._use_cm):
+                    if (not s.is_point) and (not s.use_cm):
                         mode = "lines"
                     lkw = dict(
                         name=s.label,
@@ -268,7 +268,7 @@ class PlotlyBackend(Plot):
                                 else next(self._cm)
                             ),
                             size=6,
-                            showscale=self.legend and self._use_cm,
+                            showscale=self.legend and s.use_cm,
                             colorbar=self._create_colorbar(ii, s.label, True),
                         ),
                         customdata=param,
@@ -316,11 +316,11 @@ class PlotlyBackend(Plot):
                             width=4,
                             colorscale=(
                                 next(self._cm)
-                                if self._use_cm
+                                if s.use_cm
                                 else self._solid_colorscale()
                             ),
                             color=param,
-                            showscale=self.legend and self._use_cm,
+                            showscale=self.legend and s.use_cm,
                             colorbar=self._create_colorbar(ii, s.label, True),
                         ),
                     )
@@ -335,7 +335,7 @@ class PlotlyBackend(Plot):
             elif (s.is_3Dsurface and not s.is_domain_coloring):
                 xx, yy, zz = s.get_data()
 
-                # create a solid color to be used when self._use_cm=False
+                # create a solid color to be used when s.use_cm=False
                 col = next(self._cl)
                 colorscale = [[0, col], [1, col]]
                 colormap = next(self._cm)
@@ -343,7 +343,7 @@ class PlotlyBackend(Plot):
                     name=s.label,
                     showscale=self.legend and show_3D_colorscales,
                     colorbar=self._create_colorbar(ii, s.label),
-                    colorscale=colormap if self._use_cm else colorscale,
+                    colorscale=colormap if s.use_cm else colorscale,
                 )
 
                 kw = merge({}, skw, s.rendering_kw)
@@ -396,11 +396,11 @@ class PlotlyBackend(Plot):
                         skw = dict(
                             colorscale=(
                                 next(self._cm)
-                                if self._use_cm
+                                if s.use_cm
                                 else self._solid_colorscale()
                             ),
                             sizeref=0.3,
-                            showscale=self.legend and self._use_cm,
+                            showscale=self.legend and s.use_cm,
                             colorbar=self._create_colorbar(ii, s.label),
                             starts=dict(
                                 x=seeds_points[:, 0],
@@ -514,9 +514,9 @@ class PlotlyBackend(Plot):
                             + "over surfaces. The surface color will show the "
                             + "argument of the complex function."
                         )
-                    # create a solid color to be used when self._use_cm=False
+                    # create a solid color to be used when s.use_cm=False
                     col = next(self._cl)
-                    if self._use_cm:
+                    if s.use_cm:
                         tmp = []
                         locations = list(range(0, len(colorscale)))
                         locations = [t / (len(colorscale) - 1) for t in locations]

@@ -266,7 +266,11 @@ class BaseSeries:
     is_geometry = False
     # If True, it represents an object of the sympy.geometry module
 
-    def __init__(self):
+    use_cm = True
+    # Some series might use a colormap as default coloring. Setting this
+    # attribute to False will inform the backends to use solid color.
+
+    def __init__(self, *args, **kwargs):
         super().__init__()
 
     @property
@@ -367,6 +371,7 @@ class Line2DBaseSeries(BaseSeries):
         self.adaptive_goal = kwargs.get("adaptive_goal", 0.01)
         self.loss_fn = kwargs.get("loss_fn", None)
         self._rendering_kw = kwargs.get("line_kw", dict())
+        self.use_cm = kwargs.get("use_cm", True)
 
     def get_data(self):
         """Return coordinates for plotting the line.
@@ -765,6 +770,7 @@ class SurfaceBaseSeries(BaseSeries):
         self.loss_fn = kwargs.get("loss_fn", None)
         self.modules = kwargs.get("modules", None)
         self._rendering_kw = kwargs.get("surface_kw", dict())
+        self.use_cm = kwargs.get("use_cm", True)
 
     def _discretize(self, s1, e1, s2, e2):
         np = import_module('numpy')
@@ -870,6 +876,7 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.start_v = float(var_start_end_v[1])
         self.end_v = float(var_start_end_v[2])
         self.label = label
+        self.use_cm = kwargs.get("use_cm", True)
 
         if self.adaptive:
             # NOTE: turns out that it is difficult to interpolate over 3
@@ -1282,6 +1289,7 @@ class InteractiveSeries(BaseSeries):
         self.only_integers = kwargs.get("only_integers", False)
         self.is_point = kwargs.get("is_point", False)
         self.is_filled = kwargs.get("is_filled", False)
+        self.use_cm = kwargs.get("use_cm", True)
 
         nexpr, npar = len(exprs), len(ranges)
 
@@ -1767,6 +1775,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         self.yscale = kwargs.get("yscale", "linear")
         self.modules = kwargs.get("modules", None)
         self.only_integers = kwargs.get("only_integers", False)
+        self.use_cm = kwargs.get("use_cm", True)
 
         # domain coloring mode
         self.coloring = kwargs.get("coloring", "a")
@@ -2127,6 +2136,7 @@ class VectorBase(BaseSeries):
         self.is_streamlines = kwargs.get("streamlines", False)
         self.modules = kwargs.get("modules", None)
         self.only_integers = kwargs.get("only_integers", False)
+        self.use_cm = kwargs.get("use_cm", True)
         if self.is_streamlines:
             self._rendering_kw = kwargs.get("stream_kw", dict())
         else:
@@ -2331,6 +2341,7 @@ class PlaneSeries(SurfaceBaseSeries):
         self.zscale = kwargs.get("zscale", "linear")
         self._params = params
         self._rendering_kw = kwargs.get("line_kw", dict())
+        self.use_cm = kwargs.get("use_cm", True)
 
     def __str__(self):
         return "plane series: %s over %s, %s, %s" % (
@@ -2458,6 +2469,7 @@ class GeometrySeries(BaseSeries):
         self._params = params
         self.is_filled = kwargs.get("is_filled", True)
         self.n = kwargs.get("n", 200)
+        self.use_cm = kwargs.get("use_cm", True)
         if isinstance(expr, (LinearEntity3D, Point3D)):
             self.is_3Dline = True
             self.start = 0
