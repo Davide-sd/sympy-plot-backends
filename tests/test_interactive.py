@@ -1,3 +1,4 @@
+from sympy import sqrt
 from sympy.core.symbol import symbols
 from sympy.core.containers import Tuple
 from sympy.functions.elementary.trigonometric import sin, cos
@@ -5,10 +6,19 @@ from sympy.geometry.plane import Plane
 from sympy.external import import_module
 from spb.interactive import (
     iplot, DynamicParam, MyList,
-    InteractivePlot, create_widgets
+    InteractivePlot, create_widgets, create_series
 )
 from spb.functions import plot
-from spb.series import InteractiveSeries
+from spb.series import (
+    InteractiveSeries, LineInteractiveSeries, AbsArgLineInteractiveSeries,
+    Parametric2DLineInteractiveSeries, Parametric3DLineInteractiveSeries,
+    ParametricSurfaceInteractiveSeries,
+    SurfaceInteractiveSeries, ContourInteractiveSeries,
+    ComplexPointInteractiveSeries, ComplexSurfaceInteractiveSeries,
+    ComplexDomainColoringInteractiveSeries, GeometryInteractiveSeries,
+    Vector2DInteractiveSeries, Vector3DInteractiveSeries,
+    SliceVector3DInteractiveSeries, PlaneInteractiveSeries
+)
 from spb.backends.bokeh import BB
 from spb.backends.plotly import PB
 from spb.backends.matplotlib import MB
@@ -281,8 +291,165 @@ def test_create_widgets():
     assert isinstance(w[y].format, bokeh.models.formatters.PrintfTickFormatter)
 
 
+
+def test_create_series():
+    # verify that create_series is able to produce the expected number and
+    # types of series
+
+    x, y, z, u = symbols("x, y, z, u")
+
+    s = create_series((u * sqrt(x), (x, -5, 5)), params={u: 1})
+    assert len(s) == 1
+    assert isinstance(s[0], LineInteractiveSeries)
+
+    s = create_series((u * cos(x), u * sin(x), (x, -5, 5)), params={u: 1})
+    assert len(s) == 1
+    assert isinstance(s[0], Parametric2DLineInteractiveSeries)
+
+    s = create_series((u * cos(x), u * sin(x), u * x, (x, -5, 5)),
+        params={u: 1})
+    assert len(s) == 1
+    assert isinstance(s[0], Parametric3DLineInteractiveSeries)
+
+    s = create_series((cos(x**2 + u * y**2), (x, -5, 5), (y, -5, 5)),
+        params={u: 1}, threed=False)
+    assert len(s) == 1
+    assert isinstance(s[0], ContourInteractiveSeries)
+
+    s = create_series((cos(x**2 + u * y**2), (x, -5, 5), (y, -5, 5)),
+        params={u: 1}, threed=True)
+    assert len(s) == 1
+    assert isinstance(s[0], SurfaceInteractiveSeries)
+
+    s = create_series(
+        (u * cos(x + y), u * sin(x - y), u * x + y, (x, -5, 5), (y, -3, 3)), params={u: 1})
+    assert len(s) == 1
+    assert isinstance(s[0], ParametricSurfaceInteractiveSeries)
+
+    # complex-related series
+    s = create_series((u * sqrt(x), (x, -5, 5)), params={u: 1},
+        is_complex=True)
+    assert len(s) == 1
+    assert isinstance(s[0], AbsArgLineInteractiveSeries)
+
+    s = create_series((u * sqrt(x), (x, -5, 5)), params={u: 1},
+        is_complex=True, real=True, imag=True, abs=True, arg=True)
+    assert len(s) == 5
+    assert isinstance(s[0], AbsArgLineInteractiveSeries)
+    assert all(isinstance(t, LineInteractiveSeries) for t in s)
+
+    s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
+        is_complex=True, threed=False)
+    assert len(s) == 1
+    assert isinstance(s[0], ComplexDomainColoringInteractiveSeries)
+
+    s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
+        is_complex=True, threed=True)
+    assert len(s) == 1
+    assert isinstance(s[0], ComplexDomainColoringInteractiveSeries)
+
+    s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
+        is_complex=True, threed=False, absarg=False, real=True)
+    assert len(s) == 1
+    assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
+    assert (not s[0].is_3Dsurface) and s[0].is_contour
+
+    s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
+        is_complex=True, threed=True, absarg=False, real=True)
+    assert len(s) == 1
+    assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
+    assert s[0].is_3Dsurface and (not s[0].is_contour)
+
+    s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
+        is_complex=True, threed=True, absarg=False, real=True, imag=True)
+    assert len(s) == 2
+    assert all(isinstance(t, ComplexSurfaceInteractiveSeries) for t in s)
+    assert all(t.is_3Dsurface for t in s)
+
+    # vector related series
+    from sympy.vector import CoordSys3D
+    N = CoordSys3D("N")
+    i, j, k = N.base_vectors()
+    x, y, z = N.base_scalars()
+    a, b, c = symbols("a:c")
+    v1 = -a * sin(y) * i + b * cos(x) * j
+    m1 = v1.to_matrix(N)
+    m1 = m1[:-1]
+    l1 = list(m1)
+    v2 = -a * sin(y) * i + b * cos(x) * j + c * cos(z) * k
+    m2 = v2.to_matrix(N)
+    l2 = list(m2)
+
+    # 2D vectors
+    params = {
+        a: 2,
+        b: 3,
+    }
+    ranges = (x, -5, 5), (y, -4, 4)
+
+    s = create_series((v1, *ranges), params=params, is_vector=False)
+    assert (len(s) == 1) and isinstance(s[0], Vector2DInteractiveSeries)
+
+    s = create_series((v1, *ranges), params=params, is_vector=True)
+    assert (len(s) == 2)
+    assert isinstance(s[0], ContourInteractiveSeries)
+    assert isinstance(s[1], Vector2DInteractiveSeries)
+
+    s = create_series((m1, *ranges), params=params, is_vector=False)
+    assert (len(s) == 1) and isinstance(s[0], Vector2DInteractiveSeries)
+
+    s = create_series((m1, *ranges), params=params, is_vector=True)
+    assert (len(s) == 2)
+    assert isinstance(s[0], ContourInteractiveSeries)
+    assert isinstance(s[1], Vector2DInteractiveSeries)
+
+    s = create_series((l1, *ranges), params=params, is_vector=False)
+    assert (len(s) == 1) and isinstance(s[0], Vector2DInteractiveSeries)
+
+    s = create_series((l1, *ranges), params=params, is_vector=True)
+    assert (len(s) == 2)
+    assert isinstance(s[0], ContourInteractiveSeries)
+    assert isinstance(s[1], Vector2DInteractiveSeries)
+
+
+    # 3D vectors
+    params = {
+        a: 2,
+        b: 3,
+        c: 4,
+    }
+    ranges = (x, -5, 5), (y, -4, 4), (z, -6, 6)
+
+    s = create_series((v2, *ranges), params=params, is_vector=False)
+    assert (len(s) == 1) and isinstance(s[0], Vector3DInteractiveSeries)
+
+    s = create_series((v2, *ranges), params=params, is_vector=True)
+    assert (len(s) == 1) and isinstance(s[0], Vector3DInteractiveSeries)
+
+    s = create_series((l2, *ranges), params=params)
+    assert (len(s) == 1) and isinstance(s[0], Vector3DInteractiveSeries)
+
+    s = create_series((m2, *ranges), params=params, is_vector=False)
+    assert (len(s) == 1) and isinstance(s[0], Vector3DInteractiveSeries)
+
+
+    # Sliced 3D vectors: single slice
+    v3 = a * z * i + b * y * j + c * x * k
+    s = create_series((v3, *ranges), params=params,
+        slice=Plane((1, 2, 3), (1, 0, 0)))
+    assert (len(s) == 1) and isinstance(s[0], SliceVector3DInteractiveSeries)
+
+    s = create_series((v3, *ranges), params=params,
+        slice=[
+            Plane((1, 2, 3), (1, 0, 0)),
+            Plane((1, 2, 3), (0, 1, 0)),
+            Plane((1, 2, 3), (0, 0, 1)),
+        ])
+    assert (len(s) == 3) and all(isinstance(t, SliceVector3DInteractiveSeries) for t in s)
+
+
 def test_interactiveseries():
-    # test for the instantiation of InteractiveSeries
+    # verify for the instantiation of InteractiveSeries inside InteractivePlot
     from sympy.vector import CoordSys3D
 
     N = CoordSys3D("N")
