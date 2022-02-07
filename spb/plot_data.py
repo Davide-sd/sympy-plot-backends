@@ -247,12 +247,14 @@ def get_plot_data(*args, **kwargs):
 
     Notes
     =====
-    This is an experimental function. Support might be dropped in future
-    release. Do not use this function in library code.
+    This function is deprecated. Do not use this function in library code.
 
     Instead, plot functions should be used to create a plot object, then index
     it to retrieve a series and extract the numerical data with the `get_data`
     method. For example, `p[0].get_data()`.
+
+    For creating interactive series, use ``spb.interactive.create_series()``
+    and then call the ``get_data()`` method on each series.
 
     Parameters
     ==========
@@ -383,6 +385,11 @@ def get_plot_data(*args, **kwargs):
     smart_plot
 
     """
+    warnings.simplefilter('always', DeprecationWarning)
+    warnings.warn(
+        "`get_plot_data` is deprecated. Please, do not use it "
+        "as it is no longer maintained. It will be removed "
+        "in a future release.", DeprecationWarning)
     get_series = kwargs.pop("get_series", False)
     s = _build_series(*args, **kwargs)
     if get_series:
