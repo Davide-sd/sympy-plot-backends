@@ -643,18 +643,8 @@ def plot_parametric(*args, show=True, **kwargs):
        >>> from spb.functions import plot_parametric
        >>> u, v = symbols('u, v')
 
-    A parametric plot with a single expression:
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-       >>> plot_parametric((cos(u), sin(u)), (u, -5, 5))
-       Plot object containing:
-       [0]: parametric cartesian line: (cos(u), sin(u)) for u over (-5.0, 5.0)
-
-    A parametric plot of a Hypotrochoid using an equal aspect ratio:
+    A parametric plot of a single expression (a Hypotrochoid using an equal
+    aspect ratio):
 
     .. plot::
        :context: close-figs
