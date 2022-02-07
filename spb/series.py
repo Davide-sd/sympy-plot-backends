@@ -345,9 +345,11 @@ class BaseSeries:
         return a
 
     def get_data(self):
-        """All child series should implement this method to return the
-        numerical data (of type float) which can be used by a plotting
-        library.
+        """Compute and returns the numerical data.
+
+        The number of parameters returned by this method depends on the
+        specific instance. If ``s`` is the series, make sure to read
+        ``help(s.get_data)`` to understand what it returns.
         """
         raise NotImplementedError
 
@@ -1218,18 +1220,19 @@ class ImplicitSeries(BaseSeries):
 
 class InteractiveSeries(BaseSeries):
     """Base class for interactive series, in which the expressions can be
-    either a line or a surface (parametric or not). On top of the usual
-    ranges (x, y or u, v, which must be provided), the expressions can use
-    any number of parameters. The following class, together with the
-    interactive.py module, makes it possible to easily plot symbolic
-    expressions with interactive widgets.
+    either a line, a surface (parametric or not), a vector field, ...
+    On top of the usual ranges (x, y or u, v, which must be provided), the
+    expressions can use any number of parameters.
 
-    Once new parameters are available, execute the update_data(params)
-    method, passing in a dictionary with all the necessary parameters. Then,
-    get_data() can be called.
+    The following class, together with the `interactive.py` module, makes it
+    possible to easily plot symbolic expressions with interactive widgets.
+
+    Once new parameters are available, update them by setting the ``params``
+    attribute with a dictionary with all the necessary parameters. Then,
+    ``get_data()`` can be called.
 
     Differently from non-interactive series, only uniform sampling is
-    implemented.
+    implemented here.
     """
     is_interactive = True
 
@@ -1368,12 +1371,7 @@ class InteractiveSeries(BaseSeries):
 
     @property
     def params(self):
-        """Return the current parameters' dictionary."""
-        return self._params
-
-    @params.setter
-    def params(self, p):
-        """Update the data based on the values of the parameters.
+        """Get or set the current parameters dictionary.
 
         Parameters
         ==========
@@ -1382,6 +1380,10 @@ class InteractiveSeries(BaseSeries):
             key: symbol associated to the parameter
             val: the value
         """
+        return self._params
+
+    @params.setter
+    def params(self, p):
         self._params = p
 
     def _str(self, series_type):
