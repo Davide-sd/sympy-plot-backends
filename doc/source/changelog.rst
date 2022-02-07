@@ -2,6 +2,17 @@
  Changelog
 ==========
 
+v1.0.3
+======
+
+* Deprecated `get_plot_data` function.
+* Exposed `create_series` function from the `spb.interactive` module.
+* Removed dependency on `sympy.plotting.experimental_lambdify`. Now this
+  plotting module relies only on lambdify.
+* Improved testing of `plot_implicit`.
+* Added quickstart tutorials to ReadTheDocs.
+
+
 v1.0.2
 ======
 

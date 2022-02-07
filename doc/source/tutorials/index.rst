@@ -19,7 +19,8 @@ Hence, you can visit the aforementioned repository and:
   slow).
 
 If you are in a hurry, the following quickstart should provide a good
-starting point.
+starting point. However, ``iplot``-related tutorials are only
+available at the aforementioned repository.
 
 .. toctree::
    :maxdepth: 2
