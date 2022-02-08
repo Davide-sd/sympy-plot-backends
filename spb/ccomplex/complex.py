@@ -290,6 +290,9 @@ def plot_real_imag(*args, **kwargs):
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn0]_ for more information.
 
+    arg : boolean, optional
+        If True, plot the argument of the complex function. Default to True.
+
     aspect : (float, float) or str, optional
         Set the aspect ratio of the plot. The value depends on the backend
         being used. Read that backend's documentation to find out the
@@ -298,18 +301,6 @@ def plot_real_imag(*args, **kwargs):
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
-
-    loss_fn : callable or None
-        The loss function to be used by the `adaptive` learner.
-        Possible values:
-
-        * `None` (default): it will use the `default_loss` from the
-          `adaptive` module.
-        * callable : Refer to [#fn0]_ for more information. Specifically,
-          look at `adaptive.learner.learner1D` to find more loss functions.
-
-    arg : boolean, optional
-        If True, plot the argument of the complex function. Default to True.
 
     detect_poles : boolean, optional
         Chose whether to detect and correctly plot poles. Defaulto to False.
@@ -329,6 +320,15 @@ def plot_real_imag(*args, **kwargs):
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
         plotting library (backend) manual for more informations.
+
+    loss_fn : callable or None
+        The loss function to be used by the `adaptive` learner.
+        Possible values:
+
+        * `None` (default): it will use the `default_loss` from the
+          `adaptive` module.
+        * callable : Refer to [#fn0]_ for more information. Specifically,
+          look at `adaptive.learner.learner1D` to find more loss functions.
 
     modules : str, optional
         Specify the modules to be used for the numerical evaluation. Refer to
@@ -352,6 +352,15 @@ def plot_real_imag(*args, **kwargs):
     show : boolean, optional
         Default to True, in which case the plot will be shown on the screen.
 
+    size : (float, float), optional
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
+
+    surface_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of surfaces. Refer to the
+        plotting library (backend) manual for more informations.
+
     threed : boolean, optional
         It only applies to a complex function over a complex range. If False,
         contour plots will be shown. If True, 3D surfaces will be shown.
@@ -361,6 +370,34 @@ def plot_real_imag(*args, **kwargs):
         If False, surfaces will be rendered with a solid color.
         If True, a color map highlighting the elevation will be used.
         Default to True.
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    xlabel : str, optional
+        Label for the x-axis.
+
+    ylabel : str, optional
+        Label for the y-axis.
+
+    zlabel : str, optional
+        Label for the z-axis. Only available for 3D plots.
+
+    xscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis. Default to 'linear'.
+
+    yscale : 'linear' or 'log', optional
+        Sets the scaling of the y-axis. Default to 'linear'.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, `(min, max)`.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, `(min, max)`.
+
+    zlim : (float, float), optional
+        Denotes the z-axis limits, `(min, max)`. Only available for 3D plots.
 
 
     Examples
@@ -543,6 +580,10 @@ def plot_complex(*args, **kwargs):
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
 
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -570,6 +611,11 @@ def plot_complex(*args, **kwargs):
 
     show : boolean, optional
         Default to True, in which case the plot will be shown on the screen.
+
+    size : (float, float), optional
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
 
     threed : boolean, optional
         It only applies to a complex function over a complex range. If False,
@@ -615,6 +661,34 @@ def plot_complex(*args, **kwargs):
     phaseres : int
         Default value to 20. It controls the number of iso-phase and/or
         iso-modulus lines in domain coloring plots.
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    xlabel : str, optional
+        Label for the x-axis.
+
+    ylabel : str, optional
+        Label for the y-axis.
+
+    zlabel : str, optional
+        Label for the z-axis. Only available for 3D plots.
+
+    xscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis. Default to 'linear'.
+
+    yscale : 'linear' or 'log', optional
+        Sets the scaling of the y-axis. Default to 'linear'.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, `(min, max)`.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, `(min, max)`.
+
+    zlim : (float, float), optional
+        Denotes the z-axis limits, `(min, max)`. Only available for 3D plots.
 
 
     Examples
@@ -728,8 +802,44 @@ def plot_complex_list(*args, **kwargs):
         If True, a scatter plot will be produced. Otherwise a line plot will
         be created. Default to True.
 
+    is_filled : boolean, optional
+        Default to True, which will render empty circular markers. It only
+        works if `is_point=True`.
+        If False, filled circular markers will be rendered.
+
+    line_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+
     show : boolean
         Default to True, in which case the plot will be shown on the screen.
+
+    size : (float, float), optional
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    xlabel : str, optional
+        Label for the x-axis.
+
+    ylabel : str, optional
+        Label for the y-axis.
+
+    xscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis. Default to 'linear'.
+
+    yscale : 'linear' or 'log', optional
+        Sets the scaling of the y-axis. Default to 'linear'.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, `(min, max)`.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, `(min, max)`.
 
 
     Examples
@@ -873,6 +983,11 @@ def plot_complex_vector(*args, **kwargs):
         the `Plot` class can then be used to save or display the plot
         by calling the `save()` and `show()` methods respectively.
 
+    size : (float, float), optional
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
+
     streamlines : boolean
         Whether to plot the vector field using streamlines (True) or quivers
         (False). Default to False.
@@ -881,6 +996,28 @@ def plot_complex_vector(*args, **kwargs):
         A dictionary of keywords/values which is passed to the backend
         streamlines-plotting function to customize the appearance. Refer to
         the plotting library (backend) manual for more informations.
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    xlabel : str, optional
+        Label for the x-axis.
+
+    ylabel : str, optional
+        Label for the y-axis.
+
+    xscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis. Default to 'linear'.
+
+    yscale : 'linear' or 'log', optional
+        Sets the scaling of the y-axis. Default to 'linear'.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, `(min, max)`.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, `(min, max)`.
 
 
     Examples

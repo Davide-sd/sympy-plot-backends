@@ -335,6 +335,11 @@ def plot_vector(*args, show=True, **kwargs):
         the `Plot` class can then be used to save or display the plot
         by calling the `save()` and `show()` methods respectively.
 
+    size : (float, float), optional
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
+
     slice : Plane, list, Expr
         Plot the 3D vector field over the provided slice. It can be:
 
@@ -373,6 +378,28 @@ def plot_vector(*args, show=True, **kwargs):
 
         If 3D streamlines appears to be cut short inside the specified domain,
         try to increase `max_prop` (default value to 5000).
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    xlabel : str, optional
+        Label for the x-axis.
+
+    ylabel : str, optional
+        Label for the y-axis.
+
+    zlabel : str, optional
+        Label for the z-axis. Only available for 3D plots.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, `(min, max)`.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, `(min, max)`.
+
+    zlim : (float, float), optional
+        Denotes the z-axis limits, `(min, max)`. Only available for 3D plots.
 
 
     Examples

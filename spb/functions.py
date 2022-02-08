@@ -353,10 +353,10 @@ def plot(*args, show=True, **kwargs):
         Label for the y-axis.
 
     xscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis.
+        Sets the scaling of the x-axis. Default to 'linear'.
 
     yscale : 'linear' or 'log', optional
-        Sets the scaling of the y-axis.
+        Sets the scaling of the y-axis. Default to 'linear'.
 
     xlim : (float, float), optional
         Denotes the x-axis limits, `(min, max)`.
@@ -620,10 +620,10 @@ def plot_parametric(*args, show=True, **kwargs):
         Label for the y-axis.
 
     xscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis.
+        Sets the scaling of the x-axis. Default to 'linear'.
 
     yscale : 'linear' or 'log', optional
-        Sets the scaling of the y-axis.
+        Sets the scaling of the y-axis. Default to 'linear'.
 
     xlim : (float, float), optional
         Denotes the x-axis limits, `(min, max)`.
@@ -1842,10 +1842,10 @@ def plot_list(*args, show=True, **kwargs):
         Label for the y-axis.
 
     xscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis.
+        Sets the scaling of the x-axis. Default to 'linear'.
 
     yscale : 'linear' or 'log', optional
-        Sets the scaling of the y-axis.
+        Sets the scaling of the y-axis. Default to 'linear'.
 
     xlim : (float, float), optional
         Denotes the x-axis limits, `(min, max)`.
@@ -2042,10 +2042,10 @@ def plot_piecewise(*args, **kwargs):
         Label for the y-axis.
 
     xscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis.
+        Sets the scaling of the x-axis. Default to 'linear'.
 
     yscale : 'linear' or 'log', optional
-        Sets the scaling of the y-axis.
+        Sets the scaling of the y-axis. Default to 'linear'.
 
     xlim : (float, float), optional
         Denotes the x-axis limits, `(min, max)`.
