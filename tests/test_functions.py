@@ -646,7 +646,7 @@ def test_plot_implicit_adaptive_true():
         do_test(Eq(y ** 2, x ** 3 - x), (x, -5, 5), (y, -5, 5), "pi_02.png", 1)
         do_test(y > 1 / x, (x, -5, 5), (y, -5, 5), "pi_03.png", 5)
         do_test(y < 1 / tan(x), (x, -5, 5), (y, -5, 5), "pi_04.png", 8)
-        do_test(y >= 2 * sin(x) * cos(x), (x, -5, 5), (y, -5, 5), "pi_05.png", 0.1)
+        do_test(y >= 2 * sin(x) * cos(x), (x, -5, 5), (y, -5, 5), "pi_05.png", 1)
         do_test(y <= x ** 2, (x, -5, 5), (y, -5, 5), "pi_06.png", 1)
         do_test(y > x, (x, -5, 5), (y, -5, 5), "pi_07.png", 5)
         do_test(And(y > exp(x), y > x + 2), (x, -5, 5), (y, -5, 5), "pi_08.png", 1)
