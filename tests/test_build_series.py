@@ -1,5 +1,6 @@
+from sympy import exp
 from sympy.core.symbol import symbols
-from sympy.core.numbers import I
+from sympy.core.numbers import I, pi
 from sympy.functions.elementary.trigonometric import sin, cos, asin
 from sympy.functions.elementary.miscellaneous import sqrt
 from sympy.functions.elementary.complexes import re, im, arg
@@ -342,6 +343,15 @@ def test_build_complex_surface_series():
     assert all(isinstance(s[i], ComplexSurfaceInteractiveSeries) for i in range(1, len(s)))
     assert all(t.is_3Dsurface for t in s)
 
+
+def test_issue_6():
+    phi = symbols('phi', real=True)
+    vec = cos(phi) + cos(phi - 2 * pi / 3) * exp(I * 2 * pi / 3) + cos(phi - 4 * pi / 3) * exp(I * 4 * pi / 3)
+    s = bcs(vec, (phi, 0, 2 * pi), absarg=False, real=True, imag=True)
+    assert len(s) == 2
+    assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
+    assert s[0].expr == re(vec)
+    assert s[1].expr == im(vec)
 
 
 def test_build_vector_series():

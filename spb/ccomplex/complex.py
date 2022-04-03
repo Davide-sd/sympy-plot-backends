@@ -101,6 +101,8 @@ def _build_series(*args, interactive=False, **kwargs):
             # plotting a single expression
             add_series(args)
 
+
+        params = kwargs.get("params", dict())
         for a in new_args:
             expr, ranges, label = a[0], a[1:-1], a[-1]
 
@@ -110,7 +112,12 @@ def _build_series(*args, interactive=False, **kwargs):
             for i, r in enumerate(ranges):
                 ranges[i] = (r[0], complex(r[1]), complex(r[2]))
 
-            if expr.is_complex:
+            # there are expressions that are complex, but they do not represent
+            # complex points, for example `exp(I * phi)`. If it is a complex
+            # point, it won't have any free symbols.
+            fs = expr.free_symbols
+            fs = fs.difference(set(params.keys()))
+            if expr.is_complex and (len(fs) == 0):
                 # complex number with its own label
                 cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
                 series.append(cls([expr], label, **kwargs))
