@@ -49,7 +49,7 @@ Or:
 
 It is also the perfect time to verify that K3D-Jupyter is working:
 
-1. launch `jupyter notebook`.
+1. launch ``jupyter notebook``.
 2. open a notebook.
 3. run the following code:
 
@@ -70,7 +70,7 @@ It is also the perfect time to verify that K3D-Jupyter is working:
        * ``jupyter nbextension install --user --py k3d``
        * ``jupyter nbextension enable --user --py k3d``
 
-   4. Restart `jupyter notebook`
+   4. Restart ``jupyter notebook``
    5. Open the previous notebook and execute the plot command.
 
 Refer to the :ref:`tutorials` for a starter guide on using the plotting backends.

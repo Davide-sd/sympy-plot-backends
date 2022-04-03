@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v1.0.4
+======
+
+* Bug fix for plotting real/imag of complex functions.
+
+
 v1.0.3
 ======
 
