@@ -67,8 +67,8 @@ It is also the perfect time to verify that K3D-Jupyter is working:
    3. Run the following commands, which are going to install the Jupyter
       extension for K3D:
 
-       * jupyter nbextension install --user --py k3d
-       * jupyter nbextension enable --user --py k3d
+       * ``jupyter nbextension install --user --py k3d``
+       * ``jupyter nbextension enable --user --py k3d``
 
    4. Restart `jupyter notebook`
    5. Open the previous notebook and execute the plot command.
