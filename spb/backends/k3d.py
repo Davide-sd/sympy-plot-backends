@@ -439,8 +439,9 @@ class K3DBackend(Plot):
                     x, y, z = [t.flatten().astype(np.float32) for t in [x, y, z]]
                     vertices = np.vstack([x, y, z]).astype(np.float32)
                     self._fig.objects[i].vertices = vertices.T
-                    self._fig.objects[i].attribute = z
-                    self._fig.objects[i].color_range = [z.min(), z.max()]
+                    if s.use_cm:
+                        self._fig.objects[i].attribute = z
+                        self._fig.objects[i].color_range = [z.min(), z.max()]
 
                 elif s.is_vector and s.is_3D:
                     if s.is_streamlines:
