@@ -1,4 +1,4 @@
-from sympy import sqrt
+from sympy import sqrt, Integer, Float, Rational, pi
 from sympy.core.symbol import symbols
 from sympy.core.containers import Tuple
 from sympy.functions.elementary.trigonometric import sin, cos
@@ -158,6 +158,36 @@ def test_DynamicParam():
         },
         use_latex=True,
     ))
+
+
+def test_DynamicParam_symbolic_parameters():
+    # verify that we can pass symbolic numbers, which will then be converted
+    # to float numbers
+
+    a, b, c = symbols("a, b, c")
+
+    # test _tuple_to_dict
+    t = DynamicParam(
+        params={
+            a: (Integer(1), 0, 5),
+            b: (2, Float(1.5), 4.5, Integer(20)),
+            c: (3 * pi / 2, Rational(2, 3), Float(5), 30, None, "test1")
+        },
+        use_latex=False,
+    )
+    p1 = getattr(t.param, "dyn_param_0")
+    p2 = getattr(t.param, "dyn_param_1")
+    p3 = getattr(t.param, "dyn_param_2")
+
+    def test_number(p, d, sb):
+        assert isinstance(p, param.Number)
+        assert np.isclose(p.default, d) and isinstance(p.default, float)
+        assert (p.softbounds == sb) and all(isinstance(t, float) for t in p.softbounds)
+        assert isinstance(p.step, float)
+
+    test_number(p1, 1, (0, 5))
+    test_number(p2, 2, (1.5, 4.5))
+    test_number(p3, 1.5 * np.pi, (2 / 3, 5))
 
 
 def test_iplot():

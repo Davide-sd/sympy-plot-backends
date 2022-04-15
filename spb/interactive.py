@@ -94,9 +94,9 @@ class DynamicParam(param.Parameterized):
         values = defaults_values.copy()
         values[: len(v)] = v
         # set the step increment for the slider
-        _min, _max = values[1], values[2]
+        _min, _max = float(values[1]), float(values[2])
         if values[3] > 0:
-            N = values[3]
+            N = int(values[3])
             values[3] = (_max - _min) / N
         else:
             values[3] = 1
@@ -116,8 +116,8 @@ class DynamicParam(param.Parameterized):
 
         # combine _min, _max into softbounds tuple
         values = [
-            values[0],
-            (values[1], values[2]),
+            float(values[0]),
+            (_min, _max),
             *values[3:]
         ]
         return {k: v for k, v in zip(defaults_keys, values)}
