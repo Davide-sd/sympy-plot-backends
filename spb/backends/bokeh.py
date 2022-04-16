@@ -267,6 +267,9 @@ class BokehBackend(Plot):
         self._init_cyclers()
         super().__init__(*args, **kwargs)
 
+        # set labels
+        self._set_labels(cfg["bokeh"]["use_latex"])
+
         self._theme = kwargs.get("theme", cfg["bokeh"]["theme"])
         self._update_event = kwargs.get("update_event",
             cfg["bokeh"]["update_event"])

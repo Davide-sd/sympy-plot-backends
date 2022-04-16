@@ -16,6 +16,7 @@ Simplicity of code takes much greater importance than performance. Don't use
 it if you care at all about performance.
 """
 
+from sympy import latex
 from sympy.core.containers import Tuple
 from sympy.core.expr import Expr
 from sympy.core.symbol import Symbol, Wild
@@ -482,15 +483,11 @@ def plot(*args, show=True, **kwargs):
     for a in args:
         if isinstance(a, Expr):
             free |= a.free_symbols
-            # if len(free) > 1:
-            #     raise ValueError(
-            #         "The same variable should be used in all "
-            #         "univariate expressions being plotted."
-            #     )
     x = free.pop() if free else Symbol("x")
 
-    kwargs.setdefault("xlabel", x.name)
-    kwargs.setdefault("ylabel", "f(%s)" % x.name)
+    kwargs.setdefault("xlabel", lambda use_latex: x.name if not use_latex else latex(x))
+    kwargs.setdefault("ylabel", lambda use_latex: "f(%s)" % x.name if not use_latex else r"f\left(%s\right)" % latex(x))
+
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 1)
@@ -1084,11 +1081,10 @@ def plot3d(*args, show=True, **kwargs):
     series = []
     plot_expr = _check_arguments(args, 1, 2)
     series = [SurfaceOver2DRangeSeries(*arg, **kwargs) for arg in plot_expr]
-    xlabel = series[0].var_x.name
-    ylabel = series[0].var_y.name
-    kwargs.setdefault("xlabel", xlabel)
-    kwargs.setdefault("ylabel", ylabel)
-    kwargs.setdefault("zlabel", "f(%s, %s)" % (xlabel, ylabel))
+    kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
+    kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
+    kwargs.setdefault("zlabel", lambda use_latex: "f(%s, %s)" % (series[0].var_x.name, series[0].var_y.name) if not use_latex else r"f\left(%s, %s\right)" % (latex(series[0].var_x), latex(series[0].var_y)))
+
     Backend = kwargs.pop("backend", THREE_D_B)
     plots = Backend(*series, **kwargs)
     if show:
@@ -1304,8 +1300,8 @@ def plot_contour(*args, show=True, **kwargs):
     series = [ContourSeries(*arg, **kwargs) for arg in plot_expr]
     xlabel = series[0].var_x.name
     ylabel = series[0].var_y.name
-    kwargs.setdefault("xlabel", xlabel)
-    kwargs.setdefault("ylabel", ylabel)
+    kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
+    kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
     Backend = kwargs.pop("backend", TWO_D_B)
     plot_contours = Backend(*series, **kwargs)
     if show:
@@ -1518,8 +1514,8 @@ def plot_implicit(*args, show=True, **kwargs):
     # kwargs.setdefault("backend", TWO_D_B)
     kwargs.setdefault("xlim", (xmin, xmax))
     kwargs.setdefault("ylim", (ymin, ymax))
-    kwargs.setdefault("xlabel", series[-1].var_x.name)
-    kwargs.setdefault("ylabel", series[-1].var_y.name)
+    kwargs.setdefault("xlabel", lambda use_latex: series[-1].var_x.name if not use_latex else latex(series[0].var_x))
+    kwargs.setdefault("ylabel", lambda use_latex: series[-1].var_y.name if not use_latex else latex(series[0].var_y))
     Backend = kwargs.pop("backend", TWO_D_B)
     p = Backend(*series, **kwargs)
     if show:
@@ -2139,8 +2135,8 @@ def plot_piecewise(*args, **kwargs):
     kwargs["show"] = False
 
     x = free.pop() if free else Symbol("x")
-    kwargs.setdefault("xlabel", x.name)
-    kwargs.setdefault("ylabel", "f(%s)" % x.name)
+    kwargs.setdefault("xlabel", lambda use_latex: x.name if not use_latex else latex(x))
+    kwargs.setdefault("ylabel", lambda use_latex: "f(%s)" % x.name if not use_latex else r"f\left(%s\right)" % latex(x))
     kwargs.setdefault("legend", False)
     kwargs["process_piecewise"] = True
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)

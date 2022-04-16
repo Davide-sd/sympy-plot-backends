@@ -182,6 +182,27 @@ class Plot:
             raise TypeError("backend must be a subclass of Plot")
         return backend
 
+    def _set_labels(self, use_latex, wrapper="$%s$"):
+        """Set the correct labels.
+
+        Parameters
+        ==========
+        use_latex : boolean
+            Wheter the backend is customized to show latex labels.
+        wrapper : str
+            Wrapper string for the latex labels. Default to '$%s$'.
+        """
+        if not use_latex:
+            wrapper = "%s"
+
+        if callable(self.xlabel):
+            self.xlabel = wrapper % self.xlabel(use_latex)
+        if callable(self.ylabel):
+            self.ylabel = wrapper % self.ylabel(use_latex)
+        if callable(self.zlabel):
+            self.zlabel = wrapper % self.zlabel(use_latex)
+
+
     def __init__(self, *args, **kwargs):
         # the merge function is used by all backends
         self._mergedeep = import_module('mergedeep')

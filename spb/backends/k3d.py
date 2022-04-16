@@ -106,6 +106,7 @@ class K3DBackend(Plot):
         if self._get_mode() != 0:
             raise ValueError(
                 "Sorry, K3D backend only works within Jupyter Notebook")
+        self._set_labels(cfg["k3d"]["use_latex"], "%s")
 
         self._show_label = kwargs.get("show_label", False)
         self._bounds = []

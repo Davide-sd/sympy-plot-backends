@@ -152,6 +152,9 @@ class MatplotlibBackend(Plot):
         self._init_cyclers()
         super().__init__(*args, **kwargs)
 
+        # set labels
+        self._set_labels(cfg["matplotlib"]["use_latex"])
+
         if ((len([s for s in self._series if s.is_2Dline]) > 10) and
             (not type(self).colorloop) and
             not ("process_piecewise" in kwargs.keys())):

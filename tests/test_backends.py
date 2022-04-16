@@ -416,8 +416,8 @@ def test_plot():
     assert f.layout["showlegend"] is True
     # PB separates the data generation from the layout creation. Make sure
     # the layout has been processed
-    assert f.layout["xaxis"]["title"]["text"] == "x"
-    assert f.layout["yaxis"]["title"]["text"] == "f(x)"
+    assert f.layout["xaxis"]["title"]["text"] == "$x$"
+    assert f.layout["yaxis"]["title"]["text"] == "$f\\left(x\\right)$"
 
     p = _plot(BB, line_kw=dict(line_color="red"))
     assert len(p.series) == 2
@@ -1772,3 +1772,37 @@ def test_plot_scale_lin_log():
     p = plot(log(x), backend=BB, xscale="linear", yscale="log", show=False)
     assert isinstance(p.fig.x_scale, bokeh.models.scales.LinearScale)
     assert isinstance(p.fig.y_scale, bokeh.models.scales.LogScale)
+
+
+def test_latex_labels():
+    x1, x2 = symbols("x_1^2, x_2")
+    p = plot(cos(x1), (x1, -1, 1), backend=MB, show=False)
+    assert p.xlabel == '$x^{2}_{1}$'
+    assert p.ylabel == '$f\\left(x^{2}_{1}\\right)$'
+
+    p = plot(cos(x1), (x1, -1, 1), backend=PB, show=False)
+    assert p.xlabel == '$x^{2}_{1}$'
+    assert p.ylabel == '$f\\left(x^{2}_{1}\\right)$'
+
+    # Since Bokeh doesn't currently support Latex, it's default behaviour is
+    # to use string representation
+    p = plot(cos(x1), (x1, -1, 1), backend=BB, show=False)
+    assert p.xlabel == 'x_1^2'
+    assert p.ylabel == 'f(x_1^2)'
+
+    p = plot3d(cos(x1**2 + x2**2), (x1, -1, 1), (x2, -1, 1), backend=MB, show=False)
+    assert p.xlabel == '$x^{2}_{1}$'
+    assert p.ylabel == '$x_{2}$'
+    assert p.zlabel == '$f\\left(x^{2}_{1}, x_{2}\\right)$'
+
+    # Plotly currently doesn't support latex on 3D plots, hence it will fall
+    # back to string representation.
+    p = plot3d(cos(x1**2 + x2**2), (x1, -1, 1), (x2, -1, 1), backend=PB, show=False)
+    assert p.xlabel == 'x_1^2'
+    assert p.ylabel == 'x_2'
+    assert p.zlabel == 'f(x_1^2, x_2)'
+
+    p = plot3d(cos(x1**2 + x2**2), (x1, -1, 1), (x2, -1, 1), backend=KBchild1, show=False)
+    assert p.xlabel == 'x^{2}_{1}'
+    assert p.ylabel == 'x_{2}'
+    assert p.zlabel == 'f\\left(x^{2}_{1}, x_{2}\\right)'

@@ -137,6 +137,13 @@ class PlotlyBackend(Plot):
         self._init_cyclers()
         super().__init__(*args, **kwargs)
 
+        # set labels: Plotly 3D currently doesn't support latex labels
+        # https://github.com/plotly/plotly.js/issues/608
+        use_latex = cfg["plotly"]["use_latex"]
+        if any(s.is_3D for s in self._series):
+            use_latex = False
+        self._set_labels(use_latex)
+
         if ((len([s for s in self._series if s.is_2Dline]) > 10) and
             (not type(self).colorloop) and
             not ("process_piecewise" in kwargs.keys())):

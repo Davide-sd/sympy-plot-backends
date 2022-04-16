@@ -22,7 +22,8 @@ def _hardcoded_defaults():
         # https://plotly.com/python/templates/
         plotly={
             "theme": "seaborn",
-            "grid": True
+            "grid": True,
+            "use_latex": True,
         },
         # Find more Bokeh themes at the following page:
         # https://docs.bokeh.org/en/latest/docs/reference/themes.html
@@ -34,17 +35,20 @@ def _hardcoded_defaults():
             "show_minor_grid": True,
             "minor_grid_line_alpha": 0.6,
             "minor_grid_line_dash": [2, 2],
+            "use_latex": False,
         },
         k3d={
             "bg_color": 0xFFFFFF,       # 3620427
             "grid_color": 0xE6E6E6,     # 0x888888
             "label_color": 0x444444,    # 0xDDDDDD
-            "grid": True
+            "grid": True,
+            "use_latex": True,
         },
         matplotlib={
             "axis_center": None,  # "auto", "center"
             "grid": True,
             "show_minor_grid": True,
+            "use_latex": True,
         },
         backend_2D="matplotlib",
         backend_3D="matplotlib",
