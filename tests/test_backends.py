@@ -273,7 +273,7 @@ def test_MatplotlibBackend():
 
     # `_handle` is needed in order to correctly update the data with iplot
     x, y = symbols("x, y")
-    p = plot3d(cos(x**2 + y**2), backend=MB, show=False, n1=10, n2=10)
+    p = plot3d(cos(x**2 + y**2), backend=MB, show=False, n1=10, n2=10, use_cm=True)
     p.process_series()
     assert hasattr(p, "_handles") and isinstance(p._handles, dict)
     assert len(p._handles) == 1
@@ -1806,3 +1806,26 @@ def test_latex_labels():
     assert p.xlabel == 'x^{2}_{1}'
     assert p.ylabel == 'x_{2}'
     assert p.zlabel == 'f\\left(x^{2}_{1}, x_{2}\\right)'
+
+
+def test_plot3d_use_cm():
+    # verify that use_cm produces the expected results on plot3d
+    x, y = symbols("x, y")
+    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MB, show=False, use_cm=True, n=10)
+    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MB, show=False, use_cm=False, n=10)
+    p1.process_series()
+    p2.process_series()
+    assert "cmap" in p1._handles[0][1].keys()
+    assert "cmap" not in p2._handles[0][1].keys()
+
+    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=PB, show=False, use_cm=True, n=10)
+    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=PB, show=False, use_cm=False, n=10)
+    assert len(p1.fig.data[0]["colorscale"]) > 2
+    assert len(p2.fig.data[0]["colorscale"]) == 2
+
+    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=KBchild1, show=False, use_cm=True, n=10)
+    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=KBchild1, show=False, use_cm=False, n=10)
+    n1 = len(p1.fig.objects[0].color_map)
+    n2 = len(p2.fig.objects[0].color_map)
+    if n1 == n2:
+        assert not np.allclose(p1.fig.objects[0].color_map, p2.fig.objects[0].color_map)

@@ -59,6 +59,9 @@ def _hardcoded_defaults():
         interactive={
             "use_latex": True,
             "throttled": False
+        },
+        plot3d={
+            "use_cm": False
         }
     )
 

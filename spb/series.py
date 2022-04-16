@@ -1,3 +1,4 @@
+from spb.defaults import cfg
 from sympy.core.containers import Tuple
 from sympy.core.symbol import symbols
 from sympy.core.sympify import sympify
@@ -772,7 +773,7 @@ class SurfaceBaseSeries(BaseSeries):
         self.loss_fn = kwargs.get("loss_fn", None)
         self.modules = kwargs.get("modules", None)
         self._rendering_kw = kwargs.get("surface_kw", dict())
-        self.use_cm = kwargs.get("use_cm", True)
+        self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
 
     def _discretize(self, s1, e1, s2, e2):
         np = import_module('numpy')
