@@ -347,6 +347,12 @@ def plot(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot.
 
+    tx : callable, optional
+        Apply a numerical function to the discretized x-direction.
+
+    ty : callable, optional
+        Apply a numerical function to the output of the numerical evaluation, the y-direction.
+
     xlabel : str, optional
         Label for the x-axis.
 
@@ -453,15 +459,18 @@ def plot(*args, show=True, **kwargs):
        Plot object containing:
        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
 
-    Singularity detection:
+    Detect singularities and apply a transformation function to the discretized
+    domain in order to convert radians to degrees:
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot(tan(x), (x, -10, 10), adaptive_goal=0.001,
-       ...     detect_poles=True, ylim=(-7, 7))
+       >>> import numpy as np
+       >>> plot(tan(x), (x, -1.5*pi, 1.5*pi), adaptive_goal=0.001,
+       ...      detect_poles=True, tx=np.rad2deg, ylim=(-7, 7),
+       ...      xlabel="x [deg]")
        Plot object containing:
        [0]: cartesian line: tan(x) for x over (-10.0, 10.0)
 
@@ -606,6 +615,9 @@ def plot_parametric(*args, show=True, **kwargs):
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
 
+    tz : callable, optional
+        Apply a numerical function to the discretized range.
+
     use_cm : boolean, optional
         If True, apply a color map to the parametric lines.
         If False, solid colors will be used instead. Default to True.
@@ -667,18 +679,20 @@ def plot_parametric(*args, show=True, **kwargs):
        [0]: parametric cartesian line: (cos(u), sin(u)) for u over (-3.0, 3.0)
        [1]: parametric cartesian line: (u, cos(u)) for u over (-3.0, 3.0)
 
-    A parametric plot with multiple expressions with different ranges and
-    custom labels for each curve:
+    A parametric plot with multiple expressions with different ranges,
+    custom labels and a transformation function applied to the
+    discretized ranges to convert radians to degrees:
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
+       >>> import numpy as np
        >>> plot_parametric(
-       ...      (3 * cos(u), 3 * sin(u), (u, 0, 2 * pi), "u"),
-       ...      (3 * cos(2 * v), 5 * sin(4 * v), (v, 0, pi), "v"),
-       ...      aspect="equal")
+       ...      (3 * cos(u), 3 * sin(u), (u, 0, 2 * pi), "u [deg]"),
+       ...      (3 * cos(2 * v), 5 * sin(4 * v), (v, 0, pi), "v [deg]"),
+       ...      aspect="equal", tz=np.rad2deg)
        Plot object containing:
        [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
        [1]: parametric cartesian line: (3*cos(2*u), 5*sin(4*u)) for u over (0.0, 3.141592653589793)
@@ -802,6 +816,9 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+
+    tz : callable, optional
+        Apply a numerical function to the discretized parameter.
 
     use_cm : boolean, optional
         If True, apply a color map to the parametric lines.
@@ -991,6 +1008,17 @@ def plot3d(*args, show=True, **kwargs):
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
 
+    tx : callable, optional
+        Apply a numerical function to the discretized domain in the
+        x-direction.
+
+    ty : callable, optional
+        Apply a numerical function to the discretized domain in the
+        y-direction.
+
+    tz : callable, optional
+        Apply a numerical function to the results of the numerical evaluation.
+
     use_cm : boolean, optional
         If True, apply a color map to the surface.
         If False, solid colors will be used instead. Default to True.
@@ -1022,7 +1050,7 @@ def plot3d(*args, show=True, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos
+       >>> from sympy import symbols, cos, sin, pi
        >>> from spb.functions import plot3d
        >>> x, y = symbols('x y')
 
@@ -1038,14 +1066,15 @@ def plot3d(*args, show=True, **kwargs):
        [0]: cartesian surface: cos(x**2 + y**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
 
 
-    Multiple plots with same range
+    Multiple plots with same range. Set ``use_cm=True`` to distinguish the
+    expressions:
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot3d(x*y, -x*y, (x, -5, 5), (y, -5, 5))
+       >>> plot3d(x*y, -x*y, (x, -5, 5), (y, -5, 5), use_cm=True)
        Plot object containing:
        [0]: cartesian surface: x*y for x over (-5.0, 5.0) and y over (-5.0, 5.0)
        [1]: cartesian surface: -x*y for x over (-5.0, 5.0) and y over (-5.0, 5.0)
@@ -1063,6 +1092,19 @@ def plot3d(*args, show=True, **kwargs):
        Plot object containing:
        [0]: cartesian surface: x**2 + y**2 for x over (-5.0, 5.0) and y over (-5.0, 5.0)
        [1]: cartesian surface: x*y for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+
+    Apply a transformation to the discretized ranged in order to convert
+    radians to degrees:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> expr = (cos(x) + sin(x) * sin(y) - sin(x) * cos(y))**2
+       ... plot3d(expr, (x, 0, pi), (y, 0, 2 * pi),
+       ...     tx=np.rad2deg, ty=np.rad2deg, use_cm=True,
+       ...     xlabel="x [deg]", ylabel="y [deg]")
 
     References
     ==========
@@ -2030,6 +2072,12 @@ def plot_piecewise(*args, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+
+    tx : callable, optional
+        Apply a numerical function to the discretized x-direction.
+
+    ty : callable, optional
+        Apply a numerical function to the output of the numerical evaluation, the y-direction.
 
     xlabel : str, optional
         Label for the x-axis.

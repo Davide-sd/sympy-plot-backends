@@ -274,6 +274,13 @@ class BaseSeries:
     def __init__(self, *args, **kwargs):
         super().__init__()
 
+    def _init_transforms(self, **kwargs):
+        self._tx = kwargs.get("tx", None)
+        self._ty = kwargs.get("ty", None)
+        self._tz = kwargs.get("tz", None)
+        if not all(callable(t) or (t is None) for t in [self._tx, self._ty, self._tz]):
+            raise TypeError("`tx`, `ty`, `tz` must be functions.")
+
     @property
     def is_3D(self):
         flags3D = [self.is_3Dline, self.is_3Dsurface, self.is_3Dvector]
@@ -354,6 +361,47 @@ class BaseSeries:
         """
         raise NotImplementedError
 
+    def _apply_transform(self, *args):
+        """Apply transformations to the results of numerical evaluation.
+
+        Parameters
+        ==========
+        args : tuple
+            Results of numerical evaluation.
+
+        Returns
+        =======
+        transformed_args : tuple
+            Tuple containing the transformed results.
+        """
+        t = lambda x, transform: x if transform is None else transform(x)
+        x, y, z = None, None, None
+        if len(args) == 2:
+            x, y = args
+            return t(x, self._tx), t(y, self._ty)
+        elif (len(args) == 3) and isinstance(self, (Parametric2DLineSeries, Parametric2DLineInteractiveSeries)):
+            x, y, u = args
+            return (x, y, t(u, self._tz))
+        elif len(args) == 3:
+            x, y, z = args
+            return t(x, self._tx), t(y, self._ty), t(z, self._tz)
+        elif (len(args) == 4) and isinstance(self, (Parametric3DLineSeries, Parametric3DLineInteractiveSeries)):
+            x, y, z, u = args
+            return (x, y, z, t(u, self._tz))
+        elif len(args) == 4: # 2D vector plot
+            x, y, u, v = args
+            return (
+                t(x, self._tx), t(y, self._ty),
+                t(u, self._tx), t(v, self._ty)
+            )
+        elif len(args) == 6: # 3D vector plot
+            x, y, z, u, v, w = args
+            return (
+                t(x, self._tx), t(y, self._ty), t(z, self._tz),
+                t(u, self._tx), t(v, self._ty), t(w, self._tz)
+            )
+        return args
+
 
 class Line2DBaseSeries(BaseSeries):
     """A base class for 2D lines."""
@@ -375,6 +423,8 @@ class Line2DBaseSeries(BaseSeries):
         self.loss_fn = kwargs.get("loss_fn", None)
         self._rendering_kw = kwargs.get("line_kw", dict())
         self.use_cm = kwargs.get("use_cm", True)
+        self._init_transforms(**kwargs)
+
 
     def get_data(self):
         """Return coordinates for plotting the line.
@@ -400,6 +450,8 @@ class Line2DBaseSeries(BaseSeries):
         np = import_module('numpy')
 
         points = self.get_points()
+        points = self._apply_transform(*points)
+
         if self.steps is True:
             if self.is_2Dline:
                 x, y = points[0], points[1]
@@ -439,7 +491,7 @@ class List2DSeries(Line2DBaseSeries):
         return "list plot"
 
     def get_points(self):
-        return (self.list_x, self.list_y)
+        return self.list_x, self.list_y
 
 
 class LineOver1DRangeSeries(Line2DBaseSeries):
@@ -774,6 +826,7 @@ class SurfaceBaseSeries(BaseSeries):
         self.modules = kwargs.get("modules", None)
         self._rendering_kw = kwargs.get("surface_kw", dict())
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
+        self._init_transforms(**kwargs)
 
     def _discretize(self, s1, e1, s2, e2):
         np = import_module('numpy')
@@ -855,8 +908,10 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
             Results of the evaluation.
         """
         if self.adaptive:
-            return self._adaptive_sampling()
-        return self._uniform_sampling()
+            res = self._adaptive_sampling()
+        else:
+            res = self._uniform_sampling()
+        return self._apply_transform(*res)
 
 
 class ParametricSurfaceSeries(SurfaceBaseSeries):
@@ -1294,6 +1349,11 @@ class InteractiveSeries(BaseSeries):
         self.is_point = kwargs.get("is_point", False)
         self.is_filled = kwargs.get("is_filled", False)
         self.use_cm = kwargs.get("use_cm", True)
+        self._tx = kwargs.get("tx", None)
+        self._ty = kwargs.get("ty", None)
+        self._tz = kwargs.get("tz", None)
+        if not all(callable(t) or (t is None) for t in [self._tx, self._ty, self._tz]):
+            raise TypeError("`tx`, `ty`, `tz` must be functions.")
 
         nexpr, npar = len(exprs), len(ranges)
 
@@ -1612,7 +1672,7 @@ class SurfaceInteractiveSeries(InteractiveSeries):
         _re, _im = np.real(results), np.imag(results)
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
         discr = [np.real(t) for t in self.ranges.values()]
-        return [*discr, _re]
+        return self._apply_transform(*discr, _re)
 
     def __str__(self):
         return self._str("cartesian surface")
@@ -1682,6 +1742,7 @@ class ComplexPointSeries(Line2DBaseSeries):
         self.steps = kwargs.get("steps", False)
         self.label = label
         self._rendering_kw = kwargs.get("line_kw", dict())
+        self._init_transforms(**kwargs)
 
     @staticmethod
     def _evaluate(points):
@@ -2144,6 +2205,7 @@ class VectorBase(BaseSeries):
             self._rendering_kw = kwargs.get("stream_kw", dict())
         else:
             self._rendering_kw = kwargs.get("quiver_kw", dict())
+        self._init_transforms(**kwargs)
 
     def _discretize(self):
         np = import_module('numpy')
@@ -2194,7 +2256,7 @@ class VectorBase(BaseSeries):
         results = []
         for e in self.exprs:
             results.append(self._eval_component(meshes, free_symbols, e))
-        return [*meshes, *results]
+        return self._apply_transform(*meshes, *results)
 
 
 class Vector2DSeries(VectorBase):
@@ -2266,7 +2328,7 @@ class VectorInteractiveBaseSeries(InteractiveSeries):
             re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
             results[i] = re_v
 
-        return [*discr, *results]
+        return self._apply_transform(*discr, *results)
 
     def __str__(self):
         prefix = "2D" if self.is_2Dvector else "3D"
