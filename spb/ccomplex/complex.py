@@ -744,7 +744,7 @@ def plot_complex(*args, **kwargs):
        :include-source: True
 
        >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
-        ...     zlim=(-1, 6))
+       ...     zlim=(-1, 6))
        Plot object containing:
        [0]: cartesian surface: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
