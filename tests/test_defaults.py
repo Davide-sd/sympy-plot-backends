@@ -11,13 +11,22 @@ from pytest import raises
 def test_cfg_keys():
     assert isinstance(cfg, dict)
     must_have_keys = ["backend_2D", "backend_3D", "matplotlib", "plotly",
-        "k3d", "bokeh", "complex", "interactive"]
+        "k3d", "bokeh", "complex", "interactive", "plot3d", "adaptive"]
     for k in must_have_keys:
         assert k in cfg.keys()
 
 
+def test_plot3d_keys():
+    assert ("use_cm" in cfg["plot3d"].keys()) and (cfg["plot3d"]["use_cm"] is False)
+
+
+def test_adaptive_keys():
+    assert "goal" in cfg["adaptive"].keys()
+    assert cfg["adaptive"]["goal"] == 0.01
+
+
 def test_cfg_matplotlib_keys():
-    matplotlib_keys = ["axis_center", "grid", "show_minor_grid"]
+    matplotlib_keys = ["axis_center", "grid", "show_minor_grid", "use_latex"]
     for k in matplotlib_keys:
         assert k in cfg["matplotlib"].keys()
     assert isinstance(cfg["matplotlib"]["grid"], bool)
@@ -25,7 +34,7 @@ def test_cfg_matplotlib_keys():
 
 
 def test_cfg_plotly_keys():
-    must_have_keys = ["theme", "grid"]
+    must_have_keys = ["theme", "grid", "use_latex"]
     for k in must_have_keys:
         assert k in cfg["plotly"].keys()
     assert isinstance(cfg["plotly"]["theme"], str)
@@ -34,7 +43,7 @@ def test_cfg_plotly_keys():
 
 def test_cfg_bokeh_keys():
     bokeh_keys = ["theme", "sizing_mode", "update_event", "show_minor_grid",
-        "minor_grid_line_alpha", "minor_grid_line_dash", "grid"]
+        "minor_grid_line_alpha", "minor_grid_line_dash", "grid", "use_latex"]
     for k in bokeh_keys:
         assert k in cfg["bokeh"].keys()
     assert isinstance(cfg["bokeh"]["sizing_mode"], str)
@@ -46,7 +55,7 @@ def test_cfg_bokeh_keys():
 
 
 def test_cfg_k3d_keys():
-    k3d_keys = ["bg_color", "grid_color", "label_color"]
+    k3d_keys = ["bg_color", "grid_color", "label_color", "use_latex"]
     for k in k3d_keys:
         assert k in cfg["k3d"].keys()
         assert isinstance(cfg["k3d"][k], int)

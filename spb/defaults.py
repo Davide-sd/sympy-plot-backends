@@ -62,6 +62,9 @@ def _hardcoded_defaults():
         },
         plot3d={
             "use_cm": False
+        },
+        adaptive={
+            "goal": 0.01
         }
     )
 
