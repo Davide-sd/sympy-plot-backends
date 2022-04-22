@@ -76,17 +76,17 @@ def test_plotgrid_mode_1():
 
     # all plots with MatplotlibBackend: combine them into a matplotlib figure
     p1 = plot(cos(x), (x, -5, 5), adaptive=False, n=100,
-        backend=MB, show=False, ylabel="a")
+        backend=MB, show=False, ylabel="a", use_latex=True)
     p2 = plot(sin(x), (x, -7, 7), adaptive=False, n=100,
-        backend=MB, show=False, ylabel="b")
+        backend=MB, show=False, ylabel="b", use_latex=False)
     p3 = plot(tan(x), (x, -10, 10), adaptive=False, n=100,
-        backend=MB, show=False, ylabel="c")
+        backend=MB, show=False, ylabel="c", use_latex=False)
     p = plotgrid(p1, p2, p3, show=False)
     assert isinstance(p, plt.Figure)
     assert len(p.axes) == 3
-    assert p.axes[0].get_xlabel() == "x" and p.axes[0].get_ylabel() == "a"
+    assert p.axes[0].get_xlabel() == "$x$" and p.axes[0].get_ylabel() == "a"
     assert len(p.axes[0].get_lines()) == 1
-    assert p.axes[0].get_lines()[0].get_label() == "cos(x)"
+    assert p.axes[0].get_lines()[0].get_label() == "$\\cos{\\left(x \\right)}$"
     assert p.axes[1].get_xlabel() == "x" and p.axes[1].get_ylabel() == "b"
     assert len(p.axes[1].get_lines()) == 1
     assert p.axes[1].get_lines()[0].get_label() == "sin(x)"
@@ -100,9 +100,9 @@ def test_plotgrid_mode_1():
 
     # everything works fine when including 3d plots
     p1 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        backend=MB, n1=20, n2=20, show=False)
+        backend=MB, n1=20, n2=20, show=False, use_latex=False)
     p2 = plot(sin(x), cos(x), (x, -7, 7), adaptive=False, n=100,
-        backend=MB, show=False)
+        backend=MB, show=False, use_latex=False)
     p = plotgrid(p1, p2, nc=2, show=False)
     assert isinstance(p, plt.Figure)
     assert len(p.axes) == 2
@@ -145,13 +145,16 @@ def test_plotgrid_mode_2():
         assert len(ax.collections) == 1
 
     # all plots are instances of MatplotlibBackend
-    p1 = plot(exp(x), adaptive=False, n=100, backend=MB, show=False)
-    p2 = plot(sin(x), adaptive=False, n=100, backend=MB, show=False)
+    p1 = plot(exp(x), adaptive=False, n=100, backend=MB,
+        show=False, use_latex=False)
+    p2 = plot(sin(x), adaptive=False, n=100, backend=MB,
+        show=False, use_latex=False)
     p3 = plot(tan(x), backend=MB, show=False, adaptive=False,
-        detect_poles=True, eps=0.1, ylim=(-5, 5))
-    p4 = plot(cos(x), adaptive=False, n=100, backend=MB, show=False)
+        detect_poles=True, eps=0.1, ylim=(-5, 5), use_latex=False)
+    p4 = plot(cos(x), adaptive=False, n=100, backend=MB,
+        show=False, use_latex=False)
     p5 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        backend=MB, n1=20, n2=20, show=False)
+        backend=MB, n1=20, n2=20, show=False, use_latex=False)
 
     # gs is not a dictionary
     raises(TypeError, lambda: plotgrid(p1, p2, p3, p4, p5, gs=1, show=False))
@@ -179,13 +182,16 @@ def test_plotgrid_mode_2():
     test_3d_axes(p.axes[4])
 
     # Mixture of different backends
-    p1 = plot(exp(x), adaptive=False, n=100, backend=MB, show=False)
-    p2 = plot(sin(x), adaptive=False, n=100, backend=PB, show=False)
+    p1 = plot(exp(x), adaptive=False, n=100, backend=MB,
+        show=False, use_latex=False)
+    p2 = plot(sin(x), adaptive=False, n=100, backend=PB,
+        show=False, use_latex=False)
     p3 = plot(tan(x), backend=MB, show=False, adaptive=False,
-        detect_poles=True, eps=0.1, ylim=(-5, 5))
-    p4 = plot(cos(x), adaptive=False, n=100, backend=BB, show=False)
+        detect_poles=True, eps=0.1, ylim=(-5, 5), use_latex=False)
+    p4 = plot(cos(x), adaptive=False, n=100, backend=BB,
+        show=False, use_latex=False)
     p5 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        backend=KBchild1, n1=20, n2=20, show=False)
+        backend=KBchild1, n1=20, n2=20, show=False, use_latex=False)
 
     gs = GridSpec(3, 3)
     mapping = {

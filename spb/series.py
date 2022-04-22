@@ -1,4 +1,5 @@
 from spb.defaults import cfg
+from sympy import latex
 from sympy.core.containers import Tuple
 from sympy.core.symbol import symbols
 from sympy.core.sympify import sympify
@@ -361,6 +362,38 @@ class BaseSeries:
         """
         raise NotImplementedError
 
+    def _get_wrapped_label(self, label, wrapper):
+        """Given a latex representation of an expression, label, wrap it inside
+        some characters. Matplotlib needs $%s%, K3D-Jupyter needs "%s".
+        """
+        return wrapper % label
+
+    def get_expr(self):
+        """Return the expression (or expressions) of the series."""
+        return self.expr
+
+    def get_label(self, use_latex=False, wrapper="$%s$"):
+        """Return the label to be used to display the expression.
+
+        Parameters
+        ==========
+        use_latex : bool
+            If False, the string representation of the expression is returned.
+            If True, the latex representation is returned.
+        wrapper : str
+            The backend might need the latex representation to be wrapped by
+            some characters. Default to ``"$%s$"``.
+
+        Returns
+        =======
+        label : str
+        """
+        if use_latex is False:
+            return self.label
+        if self.label == str(self.get_expr()):
+            return self._get_wrapped_label(self._latex_label, wrapper)
+        return self._latex_label
+
     def _apply_transform(self, *args):
         """Apply transformations to the results of numerical evaluation.
 
@@ -425,7 +458,6 @@ class Line2DBaseSeries(BaseSeries):
         self.use_cm = kwargs.get("use_cm", True)
         self._init_transforms(**kwargs)
 
-
     def get_data(self):
         """Return coordinates for plotting the line.
 
@@ -486,6 +518,10 @@ class List2DSeries(Line2DBaseSeries):
                 "and len(list_y) = {}".format(len(self.list_y))
             )
         self.label = label
+        self._latex_label = label
+
+    def get_expr(self):
+        return self.list_x, self.list_y
 
     def __str__(self):
         return "list plot"
@@ -507,6 +543,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         super().__init__(**kwargs)
         self.expr = sympify(expr)
         self.label = label
+        self._latex_label = label if str(expr) != label else latex(expr)
         self.var = sympify(var_start_end[0])
         # NOTE: even though this class represents a line over a real range,
         # this class serves as a base class for AbsArgLineSeries, which is
@@ -677,6 +714,22 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
 class ParametricLineBaseSeries(Line2DBaseSeries):
     is_parametric = True
 
+    def _set_parametric_line_label(self, label):
+        """Logic to set the correct label to be shown on the plot.
+        If `use_cm=True` there will be a colorbar, so we show the parameter.
+        If `use_cm=False`, there might be a legend, so we show the expressions.
+
+        Parameters
+        ==========
+        label : str
+            label passed in by the pre-processor or the user
+        """
+        self.label = label
+        self._latex_label = label if str(self.var) != label else latex(self.var)
+        if (self.use_cm is False) and (label == str(self.var)):
+            self.label = str(self.get_expr())
+            self._latex_label = latex(self.get_expr())
+
     def _eval_component(self, expr, param):
         """Evaluate the specified expression over a predefined
         param-discretization.
@@ -716,6 +769,25 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
             return data[:, 1], data[:, 2], data[:, 0]
         return data[:, 1], data[:, 2], data[:, 3], data[:, 0]
 
+    def get_expr(self):
+        if self.is_2Dline:
+            return (self.expr_x, self.expr_y)
+        return (self.expr_x, self.expr_y, self.expr_z)
+
+    def get_label(self, use_latex=False, wrapper="$%s$"):
+        # parametric lines returns the representation of the parameter to be
+        # shown on the colorbar if `use_cm=True`, otherwise it returns the
+        # representation of the expression to be placed on the legend.
+        if self.use_cm:
+            if use_latex:
+                return self._get_wrapped_label(latex(self.var), wrapper)
+            return str(self.var)
+        if use_latex:
+            if self.label != str(self.get_expr()):
+                return self._latex_label
+            return self._get_wrapped_label(self._latex_label, wrapper)
+        return self.label
+
     def get_points(self):
         """Return coordinates for plotting. Depending on the `adaptive`
         option, this function will either use an adaptive algorithm
@@ -751,10 +823,10 @@ class Parametric2DLineSeries(ParametricLineBaseSeries):
         super().__init__(**kwargs)
         self.expr_x = sympify(expr_x)
         self.expr_y = sympify(expr_y)
-        self.label = label
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
+        self._set_parametric_line_label(label)
 
     def __str__(self):
         return "parametric cartesian line: (%s, %s) for %s over %s" % (
@@ -784,10 +856,10 @@ class Parametric3DLineSeries(ParametricLineBaseSeries):
         self.expr_x = sympify(expr_x)
         self.expr_y = sympify(expr_y)
         self.expr_z = sympify(expr_z)
-        self.label = label
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
+        self._set_parametric_line_label(label)
 
     def __str__(self):
         return "3D parametric cartesian line: (%s, %s, %s) for %s over %s" % (
@@ -814,7 +886,6 @@ class SurfaceBaseSeries(BaseSeries):
 
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.label = None
         self.only_integers = kwargs.get("only_integers", False)
         self.n1 = kwargs.get("n1", 100)
         self.n2 = kwargs.get("n2", 100)
@@ -827,6 +898,10 @@ class SurfaceBaseSeries(BaseSeries):
         self._rendering_kw = kwargs.get("surface_kw", dict())
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self._init_transforms(**kwargs)
+
+    def _set_surface_label(self, label):
+        self.label = label
+        self._latex_label = label if str(self.get_expr()) != label else latex(self.get_expr())
 
     def _discretize(self, s1, e1, s2, e2):
         np = import_module('numpy')
@@ -851,7 +926,7 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         self.var_y = sympify(var_start_end_y[0])
         self.start_y = float(var_start_end_y[1])
         self.end_y = float(var_start_end_y[2])
-        self.label = label
+        self._set_surface_label(label)
 
     def __str__(self):
         return ("cartesian surface: %s for" " %s over %s and %s over %s") % (
@@ -933,8 +1008,8 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.var_v = sympify(var_start_end_v[0])
         self.start_v = float(var_start_end_v[1])
         self.end_v = float(var_start_end_v[2])
-        self.label = label
         self.use_cm = kwargs.get("use_cm", True)
+        self._set_surface_label(label)
 
         if self.adaptive:
             # NOTE: turns out that it is difficult to interpolate over 3
@@ -945,6 +1020,9 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
                 "ParametricSurfaceSeries does not support adaptive algorithm. "
                 "Automatically switching to a uniform spacing algorithm.")
             self.adaptive = False
+
+    def get_expr(self):
+        return (self.expr_x, self.expr_y, self.expr_z)
 
     def __str__(self):
         return (
@@ -1042,6 +1120,7 @@ class ImplicitSeries(BaseSeries):
         self.n1 = kwargs.get("n1", 1000)
         self.n2 = kwargs.get("n2", 1000)
         self.label = label
+        self._latex_label = label if str(expr) != label else latex(expr)
         self.adaptive = kwargs.get("adaptive", False)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
@@ -1344,11 +1423,11 @@ class InteractiveSeries(BaseSeries):
         self.polar = kwargs.get("polar", False)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
-        self.label = label
         self.only_integers = kwargs.get("only_integers", False)
         self.is_point = kwargs.get("is_point", False)
         self.is_filled = kwargs.get("is_filled", False)
         self.use_cm = kwargs.get("use_cm", True)
+        self.var = None # might be set later on
         self._tx = kwargs.get("tx", None)
         self._ty = kwargs.get("ty", None)
         self._tz = kwargs.get("tz", None)
@@ -1367,6 +1446,8 @@ class InteractiveSeries(BaseSeries):
 
         # NOTE: the expressions must have been sympified earlier.
         self.expr = exprs[0] if len(exprs) == 1 else Tuple(*exprs, sympify=False)
+        self.label = label
+        self._latex_label = label if str(self.expr) != label else latex(self.expr)
         self.signature = sorted(self.expr.free_symbols, key=lambda t: t.name)
 
         # Generate a list of lambda functions, two for each expression:
@@ -1603,6 +1684,11 @@ class Parametric2DLineInteractiveSeries(InteractiveSeries, Line2DBaseSeries):
         super().__init__(*args, **kwargs)
         self.steps = kwargs.get("steps", False)
         self._rendering_kw = kwargs.get("line_kw", dict())
+        self.var = list(self.ranges.keys())[0]
+        ParametricLineBaseSeries._set_parametric_line_label(self, self.label)
+
+    def get_label(self, use_latex=False, wrapper="$%s$"):
+        return ParametricLineBaseSeries.get_label(self, use_latex, wrapper)
 
     def get_points(self):
         """Return coordinates for plotting the line.
@@ -1741,6 +1827,7 @@ class ComplexPointSeries(Line2DBaseSeries):
         self.is_filled = kwargs.get("is_filled", True)
         self.steps = kwargs.get("steps", False)
         self.label = label
+        self._latex_label = label
         self._rendering_kw = kwargs.get("line_kw", dict())
         self._init_transforms(**kwargs)
 
@@ -1833,6 +1920,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
 
         self.expr = expr
         self.label = label
+        self._latex_label = label if str(expr) != label else latex(expr)
         self.n1 = kwargs.get("n1", 300)
         self.n2 = kwargs.get("n2", 300)
         self.xscale = kwargs.get("xscale", "linear")
@@ -2189,6 +2277,7 @@ class VectorBase(BaseSeries):
         self.exprs = exprs
         self.ranges = new_ranges
         self.label = label
+        self._latex_label = label if str(exprs) != label else latex(exprs)
         self.n1 = kwargs.get("n1", 10)
         self.n2 = kwargs.get("n2", 10)
         self.n3 = kwargs.get("n3", 10)
@@ -2207,6 +2296,9 @@ class VectorBase(BaseSeries):
             self._rendering_kw = kwargs.get("quiver_kw", dict())
         self._init_transforms(**kwargs)
 
+    def get_expr(self):
+        return self.exprs
+
     def _discretize(self):
         np = import_module('numpy')
 
@@ -2224,6 +2316,19 @@ class VectorBase(BaseSeries):
         im_v = self._correct_size(im_v, meshes[0])
         re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
         return re_v
+
+    def get_expr(self):
+        return self.exprs
+
+    def get_label(self, use_latex=False, wrapper="$%s$"):
+        if use_latex:
+            expr = self.get_expr()
+            if self.is_slice and self.is_interactive:
+                expr = expr[1:]
+            if self.label != str(expr):
+                return self._latex_label
+            return self._get_wrapped_label(self._latex_label, wrapper)
+        return self.label
 
     def get_data(self):
         """Return arrays of coordinates for plotting. Depending on the
@@ -2317,6 +2422,12 @@ class VectorInteractiveBaseSeries(InteractiveSeries):
         else:
             self._rendering_kw = kwargs.get("quiver_kw", dict())
 
+    def get_expr(self):
+        return self.expr
+
+    def get_label(self, use_latex=False, wrapper="$%s$"):
+        return VectorBase.get_label(self, use_latex, wrapper)
+
     def get_data(self):
         np = import_module('numpy')
 
@@ -2378,6 +2489,8 @@ class SliceVector3DInteractiveSeries(VectorInteractiveBaseSeries, SliceVector3DS
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.plane = kwargs.get("slice", None)
+        expr = self.expr
+        self._latex_label = self.label if str(expr[1:]) != self.label else latex(expr[1:])
 
     def __str__(self):
         return "sliced " + super().__str__() + " over: " + str(self.plane)
@@ -2397,7 +2510,6 @@ class PlaneSeries(SurfaceBaseSeries):
         self.x_range = sympify(x_range)
         self.y_range = sympify(y_range)
         self.z_range = sympify(z_range)
-        self.label = label
         self.n1 = kwargs.get("n1", 20)
         self.n2 = kwargs.get("n2", 20)
         self.n3 = kwargs.get("n3", 20)
@@ -2407,11 +2519,15 @@ class PlaneSeries(SurfaceBaseSeries):
         self._params = params
         self._rendering_kw = kwargs.get("line_kw", dict())
         self.use_cm = kwargs.get("use_cm", True)
+        self._set_surface_label(label)
 
     def __str__(self):
         return "plane series: %s over %s, %s, %s" % (
             self.plane, self.x_range, self.y_range, self.z_range
         )
+
+    def get_expr(self):
+        return self.plane
 
     def get_data(self):
         np = import_module('numpy')
@@ -2531,6 +2647,7 @@ class GeometrySeries(BaseSeries):
         self.expr = expr
         self._range = _range
         self.label = label
+        self._latex_label = label if label != str(expr) else latex(expr)
         self._params = params
         self.is_filled = kwargs.get("is_filled", True)
         self.n = kwargs.get("n", 200)

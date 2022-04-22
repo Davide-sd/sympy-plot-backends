@@ -1,3 +1,4 @@
+from sympy import latex
 from sympy.core.symbol import symbols
 from sympy.core.containers import Tuple
 from sympy.core.numbers import I, pi
@@ -1796,3 +1797,302 @@ def test_apply_transforms():
     assert np.allclose(u1, np.deg2rad(u2))
     assert np.allclose(v1, v2 / 2)
     assert np.allclose(w1, w2 / 3)
+
+
+def test_series_labels():
+    # verify that series return the correct label, depending on the plot
+    # type and input arguments. If the user set custom label on a data series,
+    # it should returned un-modified.
+
+    x, y, z, u, v = symbols("x, y, z, u, v")
+    wrapper = "$%s$"
+
+    expr = cos(x)
+    s1 = LineOver1DRangeSeries(expr, (x, -2, 2), str(expr))
+    s2 = LineOver1DRangeSeries(expr, (x, -2, 2), "test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = (cos(x), sin(x))
+    s1 = Parametric2DLineSeries(*expr, (x, -2, 2), str(x), use_cm=True)
+    s2 = Parametric2DLineSeries(*expr, (x, -2, 2), "test", use_cm=True)
+    s3 = Parametric2DLineSeries(*expr, (x, -2, 2), str(x), use_cm=False)
+    s4 = Parametric2DLineSeries(*expr, (x, -2, 2), "test", use_cm=False)
+    assert s1.get_label(False) == "x"
+    assert s1.get_label(True) == wrapper % "x"
+    assert s2.get_label(False) == "x"
+    assert s2.get_label(True) == wrapper % "x"
+    assert s3.get_label(False) == str(expr)
+    assert s3.get_label(True) == wrapper % latex(expr)
+    assert s4.get_label(False) == "test"
+    assert s4.get_label(True) == "test"
+
+    expr = (cos(x), sin(x), x)
+    s1 = Parametric3DLineSeries(*expr, (x, -2, 2), str(x), use_cm=True)
+    s2 = Parametric3DLineSeries(*expr, (x, -2, 2), "test", use_cm=True)
+    s3 = Parametric3DLineSeries(*expr, (x, -2, 2), str(x), use_cm=False)
+    s4 = Parametric3DLineSeries(*expr, (x, -2, 2), "test", use_cm=False)
+    assert s1.get_label(False) == "x"
+    assert s1.get_label(True) == wrapper % "x"
+    assert s2.get_label(False) == "x"
+    assert s2.get_label(True) == wrapper % "x"
+    assert s3.get_label(False) == str(expr)
+    assert s3.get_label(True) == wrapper % latex(expr)
+    assert s4.get_label(False) == "test"
+    assert s4.get_label(True) == "test"
+
+    expr = cos(x**2 + y**2)
+    s1 = SurfaceOver2DRangeSeries(expr, (x, -2, 2), (y, -2, 2), str(expr))
+    s2 = SurfaceOver2DRangeSeries(expr, (x, -2, 2), (y, -2, 2), "test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = (cos(x - y), sin(x + y), x - y)
+    s1 = ParametricSurfaceSeries(*expr, (x, -2, 2), (y, -2, 2), str(expr))
+    s2 = ParametricSurfaceSeries(*expr, (x, -2, 2), (y, -2, 2), "test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    # NOTE: don't really care about ImplicitSeries, as it doesn't currently
+    # show any label on the chart
+
+    expr = (-sin(y), cos(x))
+    s1 = Vector2DSeries(*expr, (x, -2, 2), (y, -2, 2), str(expr))
+    s2 = Vector2DSeries(*expr, (x, -2, 2), (y, -2, 2), "test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = (-sin(y), cos(x), cos(z))
+    s1 = Vector3DSeries(*expr, (x, -2, 2), (y, -2, 2), (z, -2, 2), str(expr))
+    s2 = Vector3DSeries(*expr, (x, -2, 2), (y, -2, 2), (z, -2, 2), "test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    s1 = SliceVector3DSeries(Plane((-1, 0, 0), (1, 0, 0)), *expr,
+        (x, -2, 2), (y, -2, 2), (z, -2, 2), str(expr))
+    s2 = SliceVector3DSeries(Plane((-1, 0, 0), (1, 0, 0)), *expr,
+        (x, -2, 2), (y, -2, 2), (z, -2, 2), "test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    plane = Plane((-1, 0, 0), (1, 1, 0))
+    s1 = PlaneSeries(plane, (x, -2, 2), (y, -2, 2), (z, -2, 2), str(plane))
+    s2 = PlaneSeries(plane, (x, -2, 2), (y, -2, 2), (z, -2, 2), "test")
+    assert s1.get_label(False) == str(plane)
+    assert s1.get_label(True) == wrapper % latex(plane)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = Circle(Point(0, 0), 5)
+    s1 = GeometrySeries(expr, label=str(expr))
+    s2 = GeometrySeries(expr, label="test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    s1 = List2DSeries([0, 1, 2, 3], [0, 1, 2, 3], "test")
+    assert s1.get_label(False) == "test"
+    assert s1.get_label(True) == "test"
+
+    s1 = ComplexPointSeries([1 + 2 * I, 3 + 4 * I], "test")
+    assert s1.get_label(False) == "test"
+    assert s1.get_label(True) == "test"
+
+    expr = cos(x)
+    s1 = AbsArgLineSeries(expr, (x, 1e-05, 1e05), str(expr))
+    s2 = AbsArgLineSeries(expr, (x, 1e-05, 1e05), "test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = sqrt(x)
+    s1 = ComplexSurfaceSeries(expr, (x, -3.5 - 2.5j, 3.5 + 2.5j), str(expr))
+    s2 = ComplexSurfaceSeries(expr, (x, -3.5 - 2.5j, 3.5 + 2.5j), "test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = sqrt(x)
+    s1 = ComplexDomainColoringSeries(expr, (x, -3.5 - 2.5j, 3.5 + 2.5j),
+        str(expr))
+    s2 = ComplexDomainColoringSeries(expr, (x, -3.5 - 2.5j, 3.5 + 2.5j),
+        "test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+
+def test_interactive_series_labels():
+    # verify that interactive series return the correct label, depending on
+    # the plot type and input arguments. If the user set custom label on a
+    # data series, it should returned un-modified.
+
+    x, y, z, u, v = symbols("x, y, z, u, v")
+    wrapper = "$%s$"
+
+    expr = u * cos(x)
+    s1 = LineInteractiveSeries([expr], [(x, -2, 2)], str(expr), params={u: 1})
+    s2 = LineInteractiveSeries([expr], [(x, -2, 2)], "test", params={u: 1})
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = (u * cos(x), u * sin(x))
+    s1 = Parametric2DLineInteractiveSeries(expr, [(x, -2, 2)], str(x),
+        params={u: 1}, use_cm=True)
+    s2 = Parametric2DLineInteractiveSeries(expr, [(x, -2, 2)], "test",
+        params={u: 1}, use_cm=True)
+    s3 = Parametric2DLineInteractiveSeries(expr, [(x, -2, 2)], str(x),
+        params={u: 1}, use_cm=False)
+    s4 = Parametric2DLineInteractiveSeries(expr, [(x, -2, 2)], "test",
+        params={u: 1}, use_cm=False)
+    assert s1.get_label(False) == "x"
+    assert s1.get_label(True) == wrapper % "x"
+    assert s2.get_label(False) == "x"
+    assert s2.get_label(True) == wrapper % "x"
+    assert s3.get_label(False) == str(expr)
+    assert s3.get_label(True) == wrapper % latex(expr)
+    assert s4.get_label(False) == "test"
+    assert s4.get_label(True) == "test"
+
+    expr = (u * cos(x), u * sin(x), u * x)
+    s1 = Parametric3DLineInteractiveSeries(expr, [(x, -2, 2)], str(x),
+        params={u: 1}, use_cm=True)
+    s2 = Parametric3DLineInteractiveSeries(expr, [(x, -2, 2)], "test",
+        params={u: 1}, use_cm=True)
+    s3 = Parametric3DLineInteractiveSeries(expr, [(x, -2, 2)], str(x),
+        params={u: 1}, use_cm=False)
+    s4 = Parametric3DLineInteractiveSeries(expr, [(x, -2, 2)], "test",
+        params={u: 1}, use_cm=False)
+    assert s1.get_label(False) == "x"
+    assert s1.get_label(True) == wrapper % "x"
+    assert s2.get_label(False) == "x"
+    assert s2.get_label(True) == wrapper % "x"
+    assert s3.get_label(False) == str(expr)
+    assert s3.get_label(True) == wrapper % latex(expr)
+    assert s4.get_label(False) == "test"
+    assert s4.get_label(True) == "test"
+
+    expr = cos(u * x**2 + y**2)
+    s1 = SurfaceInteractiveSeries([expr], [(x, -2, 2), (y, -2, 2)], str(expr),
+        params={u: 1})
+    s2 = SurfaceInteractiveSeries([expr], [(x, -2, 2), (y, -2, 2)], "test",
+        params={u: 1})
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = (u * cos(x - y), u * sin(x + y), u * x - y)
+    s1 = ParametricSurfaceInteractiveSeries(expr, [(x, -2, 2), (y, -2, 2)],
+        str(expr), params={u: 1})
+    s2 = ParametricSurfaceInteractiveSeries(expr, [(x, -2, 2), (y, -2, 2)],
+        "test", params={u: 1})
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    # # NOTE: don't really care about ImplicitSeries, as it doesn't currently
+    # # show any label on the chart
+
+    expr = (-u * sin(y), u * cos(x))
+    s1 = Vector2DInteractiveSeries(expr, [(x, -2, 2), (y, -2, 2)], str(expr),
+        params={u: 1})
+    s2 = Vector2DInteractiveSeries(expr, [(x, -2, 2), (y, -2, 2)], "test",
+        params={u: 1})
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = (-u * sin(y), u * cos(x), u * cos(z))
+    s1 = Vector3DInteractiveSeries(expr, [(x, -2, 2), (y, -2, 2), (z, -2, 2)],
+        str(expr), params={u: 1})
+    s2 = Vector3DInteractiveSeries(expr, [(x, -2, 2), (y, -2, 2), (z, -2, 2)],
+        "test", params={u: 1})
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    s1 = SliceVector3DInteractiveSeries([Plane((-1, 0, 0), (1, 0, 0)), *expr],
+        [(x, -2, 2), (y, -2, 2), (z, -2, 2)], str(expr), params={u: 1})
+    s2 = SliceVector3DInteractiveSeries([Plane((-1, 0, 0), (1, 0, 0)), *expr],
+        [(x, -2, 2), (y, -2, 2), (z, -2, 2)], "test", params={u: 1})
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    plane = Plane((-1, 0, 0), (u * 1, u * 1, 0))
+    s1 = PlaneInteractiveSeries([plane], [(x, -2, 2), (y, -2, 2), (z, -2, 2)],
+        str(plane), params={u: 1})
+    s2 = PlaneInteractiveSeries([plane], [(x, -2, 2), (y, -2, 2), (z, -2, 2)],
+        "test", params={u: 1})
+    assert s1.get_label(False) == str(plane)
+    assert s1.get_label(True) == wrapper % latex(plane)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = Circle(Point(0, 0), 5 * u)
+    s1 = GeometryInteractiveSeries([expr], [], params={u: 1}, label=str(expr))
+    s2 = GeometryInteractiveSeries([expr], [], params={u: 1}, label="test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    # s1 = List2DSeries([0, 1, 2, 3], [0, 1, 2, 3], "test")
+    # assert s1.get_label(False) == "test"
+    # assert s1.get_label(True) == "test"
+
+    s1 = ComplexPointInteractiveSeries([1 + u * 2 * I, 3 + 4 * I], "test",
+        params={u: 1})
+    assert s1.get_label(False) == "test"
+    assert s1.get_label(True) == "test"
+
+    expr = u * cos(x)
+    s1 = AbsArgLineInteractiveSeries([expr], [(x, 1e-05, 1e05)], str(expr), params={u: 1})
+    s2 = AbsArgLineInteractiveSeries([expr], [(x, 1e-05, 1e05)], "test", params={u: 1})
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = u * sqrt(x)
+    s1 = ComplexSurfaceInteractiveSeries(expr, (x, -3.5 - 2.5j, 3.5 + 2.5j),
+        str(expr), params={u: 1})
+    s2 = ComplexSurfaceInteractiveSeries(expr, (x, -3.5 - 2.5j, 3.5 + 2.5j),
+        "test", params={u: 1})
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = u * sqrt(x)
+    s1 = ComplexDomainColoringInteractiveSeries(expr,
+        (x, -3.5 - 2.5j, 3.5 + 2.5j), str(expr), params={u: 1})
+    s2 = ComplexDomainColoringInteractiveSeries(expr,
+        (x, -3.5 - 2.5j, 3.5 + 2.5j), "test", params={u: 1})
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"

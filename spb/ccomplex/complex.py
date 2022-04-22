@@ -33,6 +33,13 @@ def _build_series(*args, interactive=False, **kwargs):
     # apply the user-specified function to the expression
     #   keys: the user specified keyword arguments
     #   values: [function, label]
+    # NOTE: the label is going to wrap the string representation of the
+    # expression. This design choice precludes the ability of setting latex
+    # labels, but this is not a problem as the user has the ability to set
+    # a custom alias for the function to be plotted. The main motivation for
+    # this choice is that whenever re() or im() is applied to an expression, it
+    # might gets evaluated, resulting in a different expression (something
+    # that the user might not recognize). This design prevents that.
     mapping = {
         "real": [lambda t: re(t), "Re(%s)"],
         "imag": [lambda t: im(t), "Im(%s)"],
@@ -325,7 +332,8 @@ def plot_real_imag(*args, **kwargs):
         Default to True.
 
     line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of the lines. Refer to the
         plotting library (backend) manual for more informations.
 
     loss_fn : callable or None
@@ -365,7 +373,8 @@ def plot_real_imag(*args, **kwargs):
         the size will be set by the backend.
 
     surface_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of surfaces. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of surfaces. Refer to the
         plotting library (backend) manual for more informations.
 
     threed : boolean, optional
@@ -377,6 +386,10 @@ def plot_real_imag(*args, **kwargs):
         If False, surfaces will be rendered with a solid color.
         If True, a color map highlighting the elevation will be used.
         Default to True.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -588,7 +601,8 @@ def plot_complex(*args, **kwargs):
         Default to `MatplotlibBackend`.
 
     line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
 
     loss_fn : callable or None
@@ -672,6 +686,10 @@ def plot_complex(*args, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -815,7 +833,8 @@ def plot_complex_list(*args, **kwargs):
         If False, filled circular markers will be rendered.
 
     line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
 
     show : boolean
@@ -829,6 +848,10 @@ def plot_complex_list(*args, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -1007,6 +1030,10 @@ def plot_complex_vector(*args, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
 
     xlabel : str, optional
         Label for the x-axis.

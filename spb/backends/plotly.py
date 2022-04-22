@@ -137,12 +137,10 @@ class PlotlyBackend(Plot):
         self._init_cyclers()
         super().__init__(*args, **kwargs)
 
-        # set labels: Plotly 3D currently doesn't support latex labels
+        # NOTE: Plotly 3D currently doesn't support latex labels
         # https://github.com/plotly/plotly.js/issues/608
-        use_latex = cfg["plotly"]["use_latex"]
-        if any(s.is_3D for s in self._series):
-            use_latex = False
-        self._set_labels(use_latex)
+        self._use_latex = kwargs.get("use_latex", cfg["plotly"]["use_latex"])
+        self._set_labels()
 
         if ((len([s for s in self._series if s.is_2Dline]) > 10) and
             (not type(self).colorloop) and
@@ -264,7 +262,7 @@ class PlotlyBackend(Plot):
                     if (not s.is_point) and (not s.use_cm):
                         mode = "lines"
                     lkw = dict(
-                        name=s.label,
+                        name=s.get_label(self._use_latex),
                         line_color=next(self._cl),
                         mode=mode,
                         marker=dict(
@@ -276,7 +274,7 @@ class PlotlyBackend(Plot):
                             ),
                             size=6,
                             showscale=self.legend and s.use_cm,
-                            colorbar=self._create_colorbar(ii, s.label, True),
+                            colorbar=self._create_colorbar(ii, s.get_label(self._use_latex), True),
                         ),
                         customdata=param,
                         hovertemplate=(
@@ -291,7 +289,7 @@ class PlotlyBackend(Plot):
                     x, y = s.get_data()
                     color = next(self._cl)
                     lkw = dict(
-                        name=s.label,
+                        name=s.get_label(self._use_latex),
                         mode="lines" if not s.is_point else "markers",
                         line_color=color
                     )
@@ -317,7 +315,7 @@ class PlotlyBackend(Plot):
                 x, y, z, param = s.get_data()
                 if not s.is_point:
                     lkw = dict(
-                        name=s.label,
+                        name=s.get_label(self._use_latex),
                         mode="lines",
                         line=dict(
                             width=4,
@@ -328,12 +326,12 @@ class PlotlyBackend(Plot):
                             ),
                             color=param,
                             showscale=self.legend and s.use_cm,
-                            colorbar=self._create_colorbar(ii, s.label, True),
+                            colorbar=self._create_colorbar(ii, s.get_label(self._use_latex), True),
                         ),
                     )
                 else:
                     lkw = dict(
-                        name=s.label,
+                        name=s.get_label(self._use_latex),
                         mode="markers",
                         line_color=next(self._cl))
                 kw = merge({}, lkw, s.rendering_kw)
@@ -347,9 +345,9 @@ class PlotlyBackend(Plot):
                 colorscale = [[0, col], [1, col]]
                 colormap = next(self._cm)
                 skw = dict(
-                    name=s.label,
+                    name=s.get_label(self._use_latex),
                     showscale=self.legend and show_3D_colorscales,
-                    colorbar=self._create_colorbar(ii, s.label),
+                    colorbar=self._create_colorbar(ii, s.get_label(self._use_latex)),
                     colorscale=colormap if s.use_cm else colorscale,
                 )
 
@@ -368,7 +366,7 @@ class PlotlyBackend(Plot):
                         showlabels=False,
                     ),
                     colorscale=next(self._cm),
-                    colorbar=self._create_colorbar(ii, s.label, show_2D_vectors),
+                    colorbar=self._create_colorbar(ii, s.get_label(self._use_latex), show_2D_vectors),
                 )
                 kw = merge({}, ckw, s.rendering_kw)
                 self._fig.add_trace(go.Contour(x=xx, y=yy, z=zz, **kw))
@@ -382,14 +380,14 @@ class PlotlyBackend(Plot):
                     # https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
                     if s.is_streamlines:
                         skw = dict(
-                            line_color=next(self._qc), arrow_scale=0.15, name=s.label
+                            line_color=next(self._qc), arrow_scale=0.15, name=s.get_label(self._use_latex)
                         )
                         kw = merge({}, skw, s.rendering_kw)
                         stream = create_streamline(
                             xx[0, :], yy[:, 0], uu, vv, **kw)
                         self._fig.add_trace(stream.data[0])
                     else:
-                        qkw = dict(line_color=next(self._qc), scale=0.075, name=s.label)
+                        qkw = dict(line_color=next(self._qc), scale=0.075, name=s.get_label(self._use_latex))
                         kw = merge({}, qkw, s.rendering_kw)
                         quiver = create_quiver(xx, yy, uu, vv, **kw)
                         self._fig.add_trace(quiver.data[0])
@@ -408,7 +406,7 @@ class PlotlyBackend(Plot):
                             ),
                             sizeref=0.3,
                             showscale=self.legend and s.use_cm,
-                            colorbar=self._create_colorbar(ii, s.label),
+                            colorbar=self._create_colorbar(ii, s.get_label(self._use_latex)),
                             starts=dict(
                                 x=seeds_points[:, 0],
                                 y=seeds_points[:, 1],
@@ -438,7 +436,7 @@ class PlotlyBackend(Plot):
                             colorscale=next(self._cm),
                             sizemode="absolute",
                             sizeref=40,
-                            colorbar=self._create_colorbar(ii, s.label),
+                            colorbar=self._create_colorbar(ii, s.get_label(self._use_latex)),
                         )
                         kw = merge({}, qkw, s.rendering_kw)
                         self._fig.add_trace(
@@ -465,7 +463,7 @@ class PlotlyBackend(Plot):
                             dx=(xmax - xmin) / s.n1,
                             dy=(ymax - ymin) / s.n2,
                             z=img,
-                            name=s.label,
+                            name=s.get_label(self._use_latex),
                             customdata=np.dstack([mag, angle]),
                             hovertemplate=(
                                 "x: %{x}<br />y: %{y}<br />RGB: %{z}"
@@ -530,12 +528,11 @@ class PlotlyBackend(Plot):
                         for loc, c in zip(locations, colorscale):
                             tmp.append([loc, "rgb" + str(tuple(c))])
                         colorscale = tmp
-                        # print(colorscale)
                     else:
                         colorscale = [[0, col], [1, col]]
                     colormap = next(self._cyccm)
                     skw = dict(
-                        name=s.label,
+                        name=s.get_label(self._use_latex),
                         showscale=True,
                         colorbar=dict(
                             x=1 + 0.1 * count,
@@ -572,7 +569,7 @@ class PlotlyBackend(Plot):
             elif s.is_geometry:
                 x, y = s.get_data()
                 lkw = dict(
-                    name=s.label, mode="lines", fill="toself", line_color=next(self._cl)
+                    name=s.get_label(self._use_latex), mode="lines", fill="toself", line_color=next(self._cl)
                 )
                 kw = merge({}, lkw, s.rendering_kw)
                 self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
@@ -643,7 +640,7 @@ class PlotlyBackend(Plot):
                         raise NotImplementedError
                     else:
                         qkw = dict(
-                            line_color=self.quivers_colors[i], scale=0.075, name=s.label
+                            line_color=self.quivers_colors[i], scale=0.075, name=s.get_label(self._use_latex)
                         )
                         kw = merge({}, qkw, s.rendering_kw)
                         quivers = create_quiver(x, y, u, v, **kw)

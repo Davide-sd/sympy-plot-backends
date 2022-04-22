@@ -106,7 +106,8 @@ class K3DBackend(Plot):
         if self._get_mode() != 0:
             raise ValueError(
                 "Sorry, K3D backend only works within Jupyter Notebook")
-        self._set_labels(cfg["k3d"]["use_latex"], "%s")
+        self._use_latex = kwargs.get("use_latex", cfg["k3d"]["use_latex"])
+        self._set_labels("%s")
 
         self._show_label = kwargs.get("show_label", False)
         self._bounds = []
@@ -218,7 +219,7 @@ class K3DBackend(Plot):
                 # keyword arguments for the line object
                 a = dict(
                     width=0.1,
-                    name=s.label if self._show_label else None,
+                    name=self._get_series_label(s, "%s") if self._show_label else None,
                     color=self._convert_to_int(next(self._cl)),
                     shader="mesh",
                 )
@@ -252,7 +253,7 @@ class K3DBackend(Plot):
 
                 self._high_aspect_ratio(x, y, z)
                 a = dict(
-                    name=s.label if self._show_label else None,
+                    name=s.get_label(self._use_latex, "%s") if self._show_label else None,
                     side="double",
                     flat_shading=False,
                     wireframe=False,
@@ -347,7 +348,7 @@ class K3DBackend(Plot):
                 self._high_aspect_ratio(x, y, z)
 
                 a = dict(
-                    name=s.label if self._show_label else None,
+                    name=s.get_label(self._use_latex, "%s") if self._show_label else None,
                     side="double",
                     flat_shading=False,
                     wireframe=False,

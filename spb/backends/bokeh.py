@@ -268,7 +268,8 @@ class BokehBackend(Plot):
         super().__init__(*args, **kwargs)
 
         # set labels
-        self._set_labels(cfg["bokeh"]["use_latex"])
+        self._use_latex = kwargs.get("use_latex", cfg["bokeh"]["use_latex"])
+        self._set_labels()
 
         self._theme = kwargs.get("theme", cfg["bokeh"]["theme"])
         self._update_event = kwargs.get("update_event",
@@ -374,7 +375,7 @@ class BokehBackend(Plot):
                         else next(self._cm)
                     )
                     ds, line, cb, kw = self._create_gradient_line(
-                        x, y, param, colormap, s.label, s.rendering_kw)
+                        x, y, param, colormap, s.get_label(self._use_latex), s.rendering_kw)
                     self._fig.add_glyph(ds, line)
                     if self.legend:
                         self._handles[i] = cb
@@ -387,7 +388,8 @@ class BokehBackend(Plot):
                         x, y = s.get_data()
                         source = {"xs": x, "ys": y}
 
-                    lkw = dict(line_width=2, legend_label=s.label,
+                    lkw = dict(line_width=2,
+                        legend_label=s.get_label(self._use_latex),
                         color=next(self._cl))
                     if not s.is_point:
                         kw = merge({}, lkw, s.rendering_kw)
@@ -420,7 +422,7 @@ class BokehBackend(Plot):
 
                 colormapper = self.bokeh.models.LinearColorMapper(
                     palette=cm, low=minz, high=maxz)
-                cbkw = dict(width=8, title=s.label)
+                cbkw = dict(width=8, title=s.get_label(self._use_latex))
                 colorbar = self.bokeh.models.ColorBar(
                     color_mapper=colormapper, **cbkw)
                 self._fig.add_layout(colorbar, "right")
@@ -452,14 +454,14 @@ class BokehBackend(Plot):
                         else next(self._cl)
                     )
                     source = self.bokeh.models.ColumnDataSource(data=data)
-                    qkw = dict(line_color=line_color, line_width=1, name=s.label)
+                    qkw = dict(line_color=line_color, line_width=1, name=s.get_label(self._use_latex))
                     kw = merge({}, qkw, quiver_kw)
                     glyph = self.bokeh.models.Segment(
                         x0="x0", y0="y0", x1="x1", y1="y1", **kw)
                     self._fig.add_glyph(source, glyph)
                     if isinstance(line_color, dict):
                         colorbar = self.bokeh.models.ColorBar(
-                            color_mapper=color_mapper, width=8, title=s.label)
+                            color_mapper=color_mapper, width=8, title=s.get_label(self._use_latex))
                         self._fig.add_layout(colorbar, "right")
                         self._handles[i] = colorbar
 

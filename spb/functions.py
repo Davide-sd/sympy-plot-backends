@@ -353,6 +353,10 @@ def plot(*args, show=True, **kwargs):
     ty : callable, optional
         Apply a numerical function to the output of the numerical evaluation, the y-direction.
 
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
+
     xlabel : str, optional
         Label for the x-axis.
 
@@ -622,6 +626,10 @@ def plot_parametric(*args, show=True, **kwargs):
         If True, apply a color map to the parametric lines.
         If False, solid colors will be used instead. Default to True.
 
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
+
     xlabel : str, optional
         Label for the x-axis.
 
@@ -824,6 +832,10 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
         If True, apply a color map to the parametric lines.
         If False, solid colors will be used instead. Default to True.
 
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
+
     xlabel : str, optional
         Label for the x-axis.
 
@@ -1001,7 +1013,8 @@ def plot3d(*args, show=True, **kwargs):
         the size will be set by the backend.
 
     surface_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of surfaces. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of surfaces. Refer to the
         plotting library (backend) manual for more informations.
 
     title : str, optional
@@ -1022,6 +1035,10 @@ def plot3d(*args, show=True, **kwargs):
     use_cm : boolean, optional
         If True, apply a color map to the surface.
         If False, solid colors will be used instead. Default to True.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -1202,7 +1219,8 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         the size will be set by the backend.
 
     surface_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of surfaces. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of surfaces. Refer to the
         plotting library (backend) manual for more informations.
 
     title : str, optional
@@ -1212,6 +1230,10 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     use_cm : boolean, optional
         If True, apply a color map to the surface.
         If False, solid colors will be used instead. Default to True.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
 
     xlabel : str, optional
         Label for the x-axis.
@@ -1425,6 +1447,10 @@ def plot_implicit(*args, show=True, **kwargs):
 
     title : string
         The title for the plot.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
 
     xlabel : string
         The label for the x-axis
@@ -1664,6 +1690,10 @@ def plot_geometry(*args, show=True, **kwargs):
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
 
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
+
     xlabel : str, optional
         Label for the x-axis.
 
@@ -1873,6 +1903,10 @@ def plot_list(*args, show=True, **kwargs):
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
 
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
+
     xlabel : str, optional
         Label for the x-axis.
 
@@ -2078,6 +2112,10 @@ def plot_piecewise(*args, **kwargs):
 
     ty : callable, optional
         Apply a numerical function to the output of the numerical evaluation, the y-direction.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
 
     xlabel : str, optional
         Label for the x-axis.

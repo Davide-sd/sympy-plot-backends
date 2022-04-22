@@ -7,6 +7,7 @@ from spb.series import (
     _set_discretization_points,
     InteractiveSeries
 )
+from sympy import MutableDenseMatrix, ImmutableDenseMatrix
 from spb.utils import _plot_sympify, _unpack_args, _split_vector, _is_range
 from sympy.core.containers import Tuple
 from sympy.functions.elementary.miscellaneous import sqrt
@@ -108,6 +109,10 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
     fs = fs.difference(params.keys())
 
     if split_expr[2] is S.Zero:  # 2D case
+        if isinstance(expr, (MutableDenseMatrix, ImmutableDenseMatrix)) and (label == str(expr)):
+            # in case a Matrix has been provided, but no label
+            # rewrite the label so that it doesn't contain Matrix
+            label = str(split_expr[:-1])
         kwargs = _set_discretization_points(kwargs.copy(), Vector2DSeries)
         if len(fs) > 2:
             raise ValueError(
@@ -146,6 +151,11 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
             InteractiveSeries(split_expr[:2], ranges, label, **kwargs),
         )
     else:  # 3D case
+        if isinstance(expr, (MutableDenseMatrix, ImmutableDenseMatrix)) and (label == str(expr)):
+            # in case a Matrix has been provided, but no label
+            # rewrite the label so that it doesn't contain Matrix
+            label = str(split_expr)
+
         kwargs = _set_discretization_points(kwargs.copy(), Vector3DSeries)
         if len(fs) > 3:
             raise ValueError(
@@ -382,6 +392,10 @@ def plot_vector(*args, show=True, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
 
     xlabel : str, optional
         Label for the x-axis.

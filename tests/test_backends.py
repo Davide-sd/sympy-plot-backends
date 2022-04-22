@@ -14,6 +14,7 @@ from spb import (
     plot_vector, plot_complex, plot_geometry, plot_real_imag,
     plot_list, plot_piecewise
 )
+from sympy import latex, gamma
 from sympy.core.symbol import symbols
 from sympy.core.relational import Eq
 from sympy.matrices.dense import Matrix
@@ -388,8 +389,9 @@ def test_plot():
 
     x = symbols("x")
 
-    _plot = lambda B, line_kw: plot(
-        sin(x), cos(x), line_kw=line_kw, backend=B, show=False, legend=True)
+    _plot = lambda B, line_kw, use_latex=False: plot(
+        sin(x), cos(x), line_kw=line_kw, backend=B, show=False, legend=True,
+        use_latex=use_latex)
 
     p = _plot(MB, line_kw=dict(color="red"))
     assert len(p.series) == 2
@@ -401,7 +403,16 @@ def test_plot():
     assert ax.get_lines()[0].get_color() == "red"
     assert ax.get_lines()[1].get_label() == "cos(x)"
     assert ax.get_lines()[1].get_color() == "red"
+    assert ax.get_xlabel() == "x"
+    assert ax.get_ylabel() == "f(x)"
     p.close()
+
+    p = _plot(MB, line_kw=dict(color="red"), use_latex=True)
+    f = p.fig
+    ax = f.axes[0]
+    assert ax.get_lines()[0].get_label() == "$\\sin{\\left(x \\right)}$"
+    assert ax.get_xlabel() == "$x$"
+    assert ax.get_ylabel() == "$f\\left(x\\right)$"
 
     p = _plot(PB, line_kw=dict(line_color="red"))
     assert len(p.series) == 2
@@ -416,6 +427,12 @@ def test_plot():
     assert f.layout["showlegend"] is True
     # PB separates the data generation from the layout creation. Make sure
     # the layout has been processed
+    assert f.layout["xaxis"]["title"]["text"] == "x"
+    assert f.layout["yaxis"]["title"]["text"] == "f(x)"
+
+    p = _plot(PB, line_kw=dict(line_color="red"), use_latex=True)
+    f = p.fig
+    assert f.data[0]["name"] == "$\\sin{\\left(x \\right)}$"
     assert f.layout["xaxis"]["title"]["text"] == "$x$"
     assert f.layout["yaxis"]["title"]["text"] == "$f\\left(x\\right)$"
 
@@ -430,6 +447,10 @@ def test_plot():
     assert f.legend[0].items[1].label["value"] == "cos(x)"
     assert f.renderers[1].glyph.line_color == "red"
     assert f.legend[0].visible is True
+
+    p = _plot(BB, line_kw=dict(line_color="red"), use_latex=True)
+    f = p.fig
+    assert f.legend[0].items[0].label["value"] == "$\\sin{\\left(x \\right)}$"
 
     # K3D doesn't support 2D plots
     raises(
@@ -447,7 +468,7 @@ def test_plot_parametric():
 
     _plot_parametric = lambda B, line_kw: plot_parametric(
         cos(x), sin(x), (x, 0, 1.5 * pi), backend=B,
-        show=False, line_kw=line_kw
+        show=False, line_kw=line_kw, use_latex=False
     )
 
     p = _plot_parametric(MB, line_kw=dict(color="red"))
@@ -496,7 +517,7 @@ def test_plot3d_parametric_line():
 
     _plot3d_parametric_line = lambda B, line_kw: plot3d_parametric_line(
         cos(x), sin(x), x, (x, -pi, pi), backend=B,
-        show=False, line_kw=line_kw
+        show=False, line_kw=line_kw, use_latex=False
     )
 
     p = _plot3d_parametric_line(MB, line_kw=dict(color="red"))
@@ -538,7 +559,7 @@ def test_plot3d():
 
     x, y = symbols("x, y")
 
-    _plot3d = lambda B, surface_kw: plot3d(
+    _plot3d = lambda B, surface_kw, use_latex=False: plot3d(
         cos(x ** 2 + y ** 2),
         (x, -3, 3),
         (y, -3, 3),
@@ -547,6 +568,7 @@ def test_plot3d():
         backend=B,
         show=False,
         surface_kw=surface_kw,
+        use_latex=use_latex
     )
 
     # use_cm=False will force to apply a default solid color to the mesh.
@@ -586,6 +608,62 @@ def test_plot3d():
     assert f.objects[0].color == 16711680
     assert f.objects[0].name is None
 
+def test_plot3d_2():
+    # verify that the backends uses string labels when `plot3d()` is called
+    # with `use_latex=False` and `use_cm=True`
+
+    x, y = symbols("x, y")
+
+    _plot3d = lambda B: plot3d(
+        cos(x ** 2 + y ** 2),
+        sin(x ** 2 + y ** 2),
+        (x, -3, 3),
+        (y, -3, 3),
+        n=10,
+        use_cm=True,
+        backend=B,
+        show=False,
+        use_latex=False
+    )
+
+    p = _plot3d(MB)
+    assert len(p.series) == 2
+    f = p.fig
+    ax = f.axes[0]
+    assert len(ax.collections) == 2
+    assert ax.get_xlabel() == "x"
+    assert ax.get_ylabel() == "y"
+    assert ax.get_zlabel() == "f(x, y)"
+    assert len(f.axes) == 3
+    assert f.axes[1].get_ylabel() == str(cos(x ** 2 + y ** 2))
+    assert f.axes[2].get_ylabel() == str(sin(x ** 2 + y ** 2))
+    p.close()
+
+    p = _plot3d(PB)
+    assert len(p.series) == 2
+    f = p.fig
+    assert len(f.data) == 2
+    assert p.fig.layout.scene.xaxis.title.text == "x"
+    assert p.fig.layout.scene.yaxis.title.text == "y"
+    assert p.fig.layout.scene.zaxis.title.text == "f(x, y)"
+    assert f.data[0].colorbar.title.text == str(cos(x ** 2 + y ** 2))
+    assert f.data[1].colorbar.title.text == str(sin(x ** 2 + y ** 2))
+    assert f.data[0].name == str(cos(x ** 2 + y ** 2))
+    assert f.data[1].name == str(sin(x ** 2 + y ** 2))
+    assert f.data[0]["showscale"]
+    assert f.layout["showlegend"]
+
+    # Bokeh doesn't support 3D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot3d(BB).process_series())
+
+    p = _plot3d(KBchild1)
+    assert len(p.series) == 2
+    f = p.fig
+    assert len(f.objects) == 2
+    assert p.fig.axes == ["x", "y", "f(x, y)"]
+
 
 def test_plot_contour():
     # verify that the backends produce the expected results when
@@ -602,6 +680,7 @@ def test_plot_contour():
         backend=B,
         show=False,
         contour_kw=contour_kw,
+        use_latex=False
     )
 
     p = _plot_contour(MB, contour_kw=dict(cmap="jet"))
@@ -653,6 +732,7 @@ def test_plot_vector_2d_quivers():
         show=False,
         quiver_kw=quiver_kw,
         contour_kw=contour_kw,
+        use_latex=False
     )
 
     p = _plot_vector(MB, quiver_kw=dict(color="red"),
@@ -714,6 +794,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field():
         show=False,
         stream_kw=stream_kw,
         contour_kw=contour_kw,
+        use_latex=False
     )
 
     p = _plot_vector(MB, stream_kw=dict(color="red"),
@@ -773,6 +854,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
         show=False,
         stream_kw=stream_kw,
         contour_kw=contour_kw,
+        use_latex=False
     )
 
     p = _plot_vector(MB, stream_kw=dict(color="red"),
@@ -815,31 +897,36 @@ def test_plot_vector_2d_matplotlib():
         scalar=scalar,
         streamlines=streamlines,
         use_cm=use_cm,
-        show=False)
+        show=False,
+        use_latex=False)
 
     # contours + quivers: 1 colorbar for the contours
     p = _plot_vector_1(True, False)
     assert len(p.series) == 2
     assert len(p.fig.axes) == 2
     assert len(p.fig.axes[0].collections) > 1
+    assert p.fig.axes[1].get_ylabel() == "Magnitude"
 
     # contours + streamlines: 1 colorbar for the contours
     p = _plot_vector_1(True, True)
     assert len(p.series) == 2
     assert len(p.fig.axes) == 2
     assert len(p.fig.axes[0].collections) > 1
+    assert p.fig.axes[1].get_ylabel() == "Magnitude"
 
     # only quivers: 1 colorbar for the quivers
     p = _plot_vector_1(False, False)
     assert len(p.series) == 1
     assert len(p.fig.axes) == 2
     assert len(p.fig.axes[0].collections) == 1
+    assert p.fig.axes[1].get_ylabel() == "(x, y)"
 
     # only streamlines: 1 colorbar for the streamlines
     p = _plot_vector_1(False, False)
     assert len(p.series) == 1
     assert len(p.fig.axes) == 2
     assert len(p.fig.axes[0].collections) == 1
+    assert p.fig.axes[1].get_ylabel() == "(x, y)"
 
     # only quivers with solid color
     p = _plot_vector_1(False, False, False)
@@ -870,6 +957,7 @@ def test_plot_vector_3d_quivers():
         n=10,
         quiver_kw=quiver_kw,
         show=False,
+        use_latex=False,
         **kwargs
     )
 
@@ -880,6 +968,7 @@ def test_plot_vector_3d_quivers():
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Line3DCollection)
     assert ax.collections[0].cmap.name == "jet"
+    assert f.axes[1].get_ylabel() == str((z, y, x))
     p.close()
 
     p = _plot_vector(MB, quiver_kw=dict(cmap=None, color="red"), use_cm=False)
@@ -897,7 +986,7 @@ def test_plot_vector_3d_quivers():
     assert len(f.data) == 1
     assert isinstance(f.data[0], go.Cone)
     assert f.data[0]["sizeref"] == 5
-    assert f.data[0]["colorbar"]["title"]["text"] == str(Matrix([z, y, x]))
+    assert f.data[0]["colorbar"]["title"]["text"] == str((z, y, x))
 
     cs1 = f.data[0]["colorscale"]
 
@@ -935,6 +1024,7 @@ def test_plot_vector_3d_streamlines():
         streamlines=True,
         show=False,
         stream_kw=stream_kw,
+        use_latex=False,
         **kwargs
     )
 
@@ -944,7 +1034,7 @@ def test_plot_vector_3d_streamlines():
     ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Line3DCollection)
-    assert f.axes[1].get_ylabel() == "Matrix([[z], [y], [x]])"
+    assert f.axes[1].get_ylabel() == str((z, y, x))
     p.close()
 
     # test different combinations for streamlines: it should not raise errors
@@ -970,7 +1060,7 @@ def test_plot_vector_3d_streamlines():
     assert len(f.data) == 1
     assert isinstance(f.data[0], go.Streamtube)
     assert f.data[0]["colorscale"] == ((0, "red"), (1, "red"))
-    assert f.data[0]["colorbar"]["title"]["text"] == str(Matrix([z, y, x]))
+    assert f.data[0]["colorbar"]["title"]["text"] == str((z, y, x))
 
     # test different combinations for streamlines: it should not raise errors
     p = _plot_vector(PB, stream_kw=dict(starts=True))
@@ -981,7 +1071,7 @@ def test_plot_vector_3d_streamlines():
     }))
 
     # other keywords: it should not raise errors
-    p = _plot_vector(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
+    p = _plot_vector(PB, stream_kw=dict(), kwargs=dict(use_cm=False))
 
     # Bokeh doesn't support 3D plots
     raises(
@@ -1005,7 +1095,7 @@ def test_plot_vector_3d_streamlines():
     }))
 
     # other keywords: it should not raise errors
-    p = _plot_vector(MB, stream_kw=dict(), kwargs=dict(use_cm=False))
+    p = _plot_vector(KBchild1, stream_kw=dict(), kwargs=dict(use_cm=False))
 
 
 def test_plot_implicit_adaptive_true():
@@ -1016,7 +1106,7 @@ def test_plot_implicit_adaptive_true():
 
     _plot_implicit = lambda B, contour_kw: plot_implicit(
         x > y, (x, -5, 5), (y, -4, 4), backend=B, show=False,
-        adaptive=True, contour_kw=contour_kw
+        adaptive=True, contour_kw=contour_kw, use_latex=False
     )
 
     p = _plot_implicit(MB, contour_kw=dict(cmap="jet"))
@@ -1056,6 +1146,7 @@ def test_plot_implicit_adaptive_false():
         adaptive=False,
         show=False,
         contour_kw=contour_kw,
+        use_latex=False,
     )
 
     p = _plot_implicit(MB, contour_kw=dict(cmap="jet"))
@@ -1087,7 +1178,8 @@ def test_plot_real_imag():
     x = symbols("x")
 
     _plot_real_imag = lambda B, line_kw: plot_real_imag(
-        sqrt(x), (x, -5, 5), backend=B, line_kw=line_kw, show=False
+        sqrt(x), (x, -5, 5), backend=B, line_kw=line_kw, show=False,
+        use_latex=False
     )
 
     p = _plot_real_imag(MB, line_kw=dict(color="red"))
@@ -1283,7 +1375,7 @@ def test_plot_list_is_filled_false():
     # `plot_list()` is called with `is_filled=False`
 
     _plot_list = lambda B: plot_list([1, 2, 3], [1, 2, 3],
-        backend=B, is_point=True, is_filled=False, show=False)
+        backend=B, is_point=True, is_filled=False, show=False, use_latex=False)
 
     p = _plot_list(MB)
     f = p.fig
@@ -1314,7 +1406,7 @@ def test_plot_list_is_filled_true():
     # `plot_list()` is called with `is_filled=True`
 
     _plot_list = lambda B: plot_list([1, 2, 3], [1, 2, 3],
-        backend=B, is_point=True, is_filled=True, show=False)
+        backend=B, is_point=True, is_filled=True, show=False, use_latex=False)
 
     p = _plot_list(MB)
     f = p.fig
@@ -1348,7 +1440,7 @@ def test_plot_piecewise_single_series():
 
     _plot_piecewise = lambda B: plot_piecewise(
         Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10),
-        backend=B, show=False)
+        backend=B, show=False, use_latex=False)
 
     p = _plot_piecewise(MB)
     f = p.fig
@@ -1389,7 +1481,7 @@ def test_plot_piecewise_multiple_series():
     _plot_piecewise = lambda B: plot_piecewise(
         (Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10)),
         (Piecewise((sin(x), x < 0), (2, Eq(x, 0)), (cos(x), x > 0)), (x, -6, 4)),
-        backend=B, show=False)
+        backend=B, show=False, use_latex=False)
 
     p = _plot_piecewise(MB)
     f = p.fig
@@ -1425,7 +1517,7 @@ def test_plot_geometry_1():
 
     _plot_geometry = lambda B: plot_geometry(
         SymPyLine((1, 2), (5, 4)), Circle((0, 0), 4), Polygon((2, 2), 3, n=6),
-        backend=B, show=False, is_filled=False)
+        backend=B, show=False, is_filled=False, use_latex=False)
 
     p = _plot_geometry(MB)
     assert len(p.series) == 3
@@ -1474,7 +1566,7 @@ def test_plot_geometry_2():
         Polygon((4, 0), 4, n=5),
         Curve((cos(x), sin(x)), (x, 0, 2 * pi)),
         Segment((-4, -6), (6, 6)),
-        Point2D(0, 0), is_filled=is_filled, backend=B, show=False)
+        Point2D(0, 0), is_filled=is_filled, backend=B, show=False, use_latex=False)
 
     p = _plot_geometry(MB, False)
     assert len(p.fig.axes[0].lines) == 5
@@ -1774,38 +1866,566 @@ def test_plot_scale_lin_log():
     assert isinstance(p.fig.y_scale, bokeh.models.scales.LogScale)
 
 
-def test_latex_labels():
+###############################################################################
+############################ BACKEND CAN USE LATEX ############################
+###############################################################################
+
+
+def test_backend_latex_labels():
+    # verify that backends are going to set axis latex-labels in the
+    # 2D and 3D case
     x1, x2 = symbols("x_1^2, x_2")
-    p = plot(cos(x1), (x1, -1, 1), backend=MB, show=False)
-    assert p.xlabel == '$x^{2}_{1}$'
-    assert p.ylabel == '$f\\left(x^{2}_{1}\\right)$'
+    p = lambda B, use_latex: plot(cos(x1), (x1, -1, 1), backend=B,
+        show=False, use_latex=use_latex, adaptive=False, n=10)
 
-    p = plot(cos(x1), (x1, -1, 1), backend=PB, show=False)
-    assert p.xlabel == '$x^{2}_{1}$'
-    assert p.ylabel == '$f\\left(x^{2}_{1}\\right)$'
+    p1 = p(MB, True)
+    p2 = p(MB, False)
+    assert p1.xlabel == p1.fig.axes[0].get_xlabel() == '$x^{2}_{1}$'
+    assert p2.xlabel == p2.fig.axes[0].get_xlabel() == 'x_1^2'
+    assert p1.ylabel == p1.fig.axes[0].get_ylabel() == '$f\\left(x^{2}_{1}\\right)$'
+    assert p2.ylabel == p2.fig.axes[0].get_ylabel() == 'f(x_1^2)'
 
-    # Since Bokeh doesn't currently support Latex, it's default behaviour is
-    # to use string representation
-    p = plot(cos(x1), (x1, -1, 1), backend=BB, show=False)
-    assert p.xlabel == 'x_1^2'
-    assert p.ylabel == 'f(x_1^2)'
+    p1 = p(PB, True)
+    p2 = p(PB, False)
+    assert p1.xlabel == p1.fig.layout.xaxis.title.text == '$x^{2}_{1}$'
+    assert p2.xlabel == p2.fig.layout.xaxis.title.text == 'x_1^2'
+    assert p1.ylabel == p1.fig.layout.yaxis.title.text == '$f\\left(x^{2}_{1}\\right)$'
+    assert p2.ylabel == p2.fig.layout.yaxis.title.text == 'f(x_1^2)'
 
-    p = plot3d(cos(x1**2 + x2**2), (x1, -1, 1), (x2, -1, 1), backend=MB, show=False)
-    assert p.xlabel == '$x^{2}_{1}$'
-    assert p.ylabel == '$x_{2}$'
-    assert p.zlabel == '$f\\left(x^{2}_{1}, x_{2}\\right)$'
+    p1 = p(BB, True)
+    p2 = p(BB, False)
+    assert p1.xlabel == p1.fig.xaxis.axis_label == '$x^{2}_{1}$'
+    assert p2.xlabel == p2.fig.xaxis.axis_label == 'x_1^2'
+    assert p1.ylabel == p1.fig.yaxis.axis_label == '$f\\left(x^{2}_{1}\\right)$'
+    assert p2.ylabel == p2.fig.yaxis.axis_label == 'f(x_1^2)'
+
+    p = lambda B, use_latex: plot3d(
+        cos(x1**2 + x2**2), (x1, -1, 1), (x2, -1, 1), backend=B,
+        show=False, use_latex=use_latex, adaptive=False, n=10)
+
+    p1 = p(MB, True)
+    p2 = p(MB, False)
+    assert p1.xlabel == p1.fig.axes[0].get_xlabel() == '$x^{2}_{1}$'
+    assert p1.ylabel == p1.fig.axes[0].get_ylabel() == '$x_{2}$'
+    assert p1.zlabel == p1.fig.axes[0].get_zlabel() == '$f\\left(x^{2}_{1}, x_{2}\\right)$'
+    assert p2.xlabel == p2.fig.axes[0].get_xlabel() == 'x_1^2'
+    assert p2.ylabel == p2.fig.axes[0].get_ylabel() == 'x_2'
+    assert p2.zlabel == p2.fig.axes[0].get_zlabel() == 'f(x_1^2, x_2)'
 
     # Plotly currently doesn't support latex on 3D plots, hence it will fall
     # back to string representation.
-    p = plot3d(cos(x1**2 + x2**2), (x1, -1, 1), (x2, -1, 1), backend=PB, show=False)
-    assert p.xlabel == 'x_1^2'
-    assert p.ylabel == 'x_2'
-    assert p.zlabel == 'f(x_1^2, x_2)'
+    p1 = p(PB, True)
+    p2 = p(PB, False)
+    assert p1.xlabel == p1.fig.layout.scene.xaxis.title.text == '$x^{2}_{1}$'
+    assert p1.ylabel == p1.fig.layout.scene.yaxis.title.text == '$x_{2}$'
+    assert p1.zlabel == p1.fig.layout.scene.zaxis.title.text == '$f\\left(x^{2}_{1}, x_{2}\\right)$'
+    assert p2.xlabel == p2.fig.layout.scene.xaxis.title.text == 'x_1^2'
+    assert p2.ylabel == p2.fig.layout.scene.yaxis.title.text == 'x_2'
+    assert p2.zlabel == p2.fig.layout.scene.zaxis.title.text == 'f(x_1^2, x_2)'
 
-    p = plot3d(cos(x1**2 + x2**2), (x1, -1, 1), (x2, -1, 1), backend=KBchild1, show=False)
-    assert p.xlabel == 'x^{2}_{1}'
-    assert p.ylabel == 'x_{2}'
-    assert p.zlabel == 'f\\left(x^{2}_{1}, x_{2}\\right)'
+    p1 = p(KBchild1, True)
+    p2 = p(KBchild1, False)
+    assert p1.xlabel == p1.fig.axes[0] == 'x^{2}_{1}'
+    assert p1.ylabel == p1.fig.axes[1] == 'x_{2}'
+    assert p1.zlabel == p1.fig.axes[2] == 'f\\left(x^{2}_{1}, x_{2}\\right)'
+    assert p2.xlabel == p2.fig.axes[0] == 'x_1^2'
+    assert p2.ylabel == p2.fig.axes[1] == 'x_2'
+    assert p2.zlabel == p2.fig.axes[2] == 'f(x_1^2, x_2)'
+
+
+def test_plot_use_latex():
+    # verify that the backends produce the expected results when `plot()`
+    # is called and `line_kw` overrides the default line settings
+
+    x = symbols("x")
+
+    _plot = lambda B: plot(
+        sin(x), cos(x), backend=B, show=False, legend=True,
+        use_latex=True, adaptive=False, n=10)
+
+    p = _plot(MB)
+    f = p.fig
+    ax = f.axes[0]
+    assert ax.get_lines()[0].get_label() == "$\\sin{\\left(x \\right)}$"
+    assert ax.get_lines()[1].get_label() == "$\\cos{\\left(x \\right)}$"
+    p.close()
+
+    p = _plot(PB)
+    f = p.fig
+    assert f.data[0]["name"] == "$\\sin{\\left(x \\right)}$"
+    assert f.data[1]["name"] == "$\\cos{\\left(x \\right)}$"
+    assert f.layout["showlegend"] is True
+
+    p = _plot(BB)
+    f = p.fig
+    assert f.legend[0].items[0].label["value"] == "$\\sin{\\left(x \\right)}$"
+    assert f.legend[0].items[1].label["value"] == "$\\cos{\\left(x \\right)}$"
+    assert f.legend[0].visible is True
+
+    # K3D doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot(KBchild1).process_series())
+
+
+def test_plot_parametric_use_latex():
+    # verify that the colorbar uses latex label
+
+    x = symbols("x")
+
+    _plot_parametric = lambda B: plot_parametric(
+        cos(x), sin(x), (x, 0, 1.5 * pi), backend=B,
+        show=False, use_latex=True, adaptive=False, n=10
+    )
+
+    p = _plot_parametric(MB)
+    assert len(p.series) == 1
+    f = p.fig
+    assert f.axes[1].get_ylabel() == "$x$"
+    p.close()
+
+    p = _plot_parametric(PB)
+    f = p.fig
+    assert f.data[0]["name"] == "$x$"
+    assert f.data[0]["marker"]["colorbar"]["title"]["text"] == "$x$"
+
+    p = _plot_parametric(BB)
+    f = p.fig
+    # 1 colorbar
+    assert len(f.right) == 1
+    assert f.right[0].title == "$x$"
+
+    raises(
+        NotImplementedError,
+        lambda: _plot_parametric(KBchild1).process_series())
+
+
+def test_plot_contour_use_latex():
+    # verify that the colorbar uses latex label
+    x, y = symbols("x, y")
+
+    _plot_contour = lambda B: plot_contour(
+        cos(x ** 2 + y ** 2),
+        (x, -3, 3),
+        (y, -3, 3),
+        n=10,
+        backend=B,
+        show=False,
+        use_latex=True
+    )
+
+    p = _plot_contour(MB)
+    assert len(p.series) == 1
+    f = p.fig
+    assert f.axes[1].get_ylabel() == "$%s$" % latex(cos(x ** 2 + y ** 2))
+
+    p = _plot_contour(PB)
+    f = p.fig
+    assert f.data[0]["colorbar"]["title"]["text"] == "$%s$" % latex(cos(x ** 2 + y ** 2))
+
+    p = _plot_contour(BB)
+    f = p.fig
+    assert f.right[0].title == "$%s$" % latex(cos(x ** 2 + y ** 2))
+
+
+def test_plot3d_parametric_line_use_latex():
+    # verify that the colorbar uses latex label
+
+    x = symbols("x")
+
+    _plot3d_parametric_line = lambda B: plot3d_parametric_line(
+        cos(x), sin(x), x, (x, -pi, pi), backend=B,
+        show=False, use_latex=True, adaptive=False, n=10
+    )
+
+    p = _plot3d_parametric_line(MB)
+    assert len(p.series) == 1
+    f = p.fig
+    assert f.axes[1].get_ylabel() == "$x$"
+    p.close()
+
+    p = _plot3d_parametric_line(PB)
+    f = p.fig
+    assert f.data[0]["name"] == "$x$"
+    assert f.data[0]["line"]["colorbar"]["title"]["text"] == "$x$"
+
+    # Bokeh doesn't support 3D plots
+    raises(NotImplementedError, lambda: _plot3d_parametric_line(BB).process_series())
+
+    # NOTE: K3D doesn't show a label to colorbar
+    p = _plot3d_parametric_line(KBchild1)
+
+
+def test_plot3d_use_latex():
+    # verify that the colorbar uses latex label
+
+    x, y = symbols("x, y")
+
+    _plot3d = lambda B: plot3d(
+        cos(x ** 2 + y ** 2),
+        sin(x ** 2 + y ** 2),
+        (x, -3, 3),
+        (y, -3, 3),
+        n=10,
+        use_cm=True,
+        backend=B,
+        show=False,
+        use_latex=True
+    )
+
+    p = _plot3d(MB)
+    f = p.fig
+    ax = f.axes[0]
+    assert len(f.axes) == 3
+    assert f.axes[1].get_ylabel() == "$%s$" % latex(cos(x ** 2 + y ** 2))
+    assert f.axes[2].get_ylabel() == "$%s$" % latex(sin(x ** 2 + y ** 2))
+    p.close()
+
+    p = _plot3d(PB)
+    f = p.fig
+    assert f.data[0].colorbar.title.text == "$%s$" % latex(cos(x ** 2 + y ** 2))
+    assert f.data[1].colorbar.title.text == "$%s$" % latex(sin(x ** 2 + y ** 2))
+    assert f.data[0].name == "$%s$" % latex(cos(x ** 2 + y ** 2))
+    assert f.data[1].name == "$%s$" % latex(sin(x ** 2 + y ** 2))
+    assert f.data[0]["showscale"]
+    assert f.layout["showlegend"]
+
+    # Bokeh doesn't support 3D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot3d(BB).process_series())
+
+    p = _plot3d(KBchild1)
+    f = p.fig
+    assert p.fig.axes == ["x", "y", "f\\left(x, y\\right)"]
+
+
+def test_plot_vector_2d_quivers_use_latex():
+    # verify that the colorbar uses latex label
+
+    x, y = symbols("x, y")
+
+    _plot_vector = lambda B: plot_vector(
+        Matrix([x, y]),
+        (x, -5, 5),
+        (y, -4, 4),
+        backend=B,
+        show=False,
+        n=5
+    )
+
+    p = _plot_vector(MB)
+    f = p.fig
+    assert f.axes[1].get_ylabel() == "Magnitude"
+    p.close()
+
+    p = _plot_vector(PB)
+    f = p.fig
+    assert f.data[0]["colorbar"]["title"]["text"] == "Magnitude"
+
+    p = _plot_vector(BB)
+    f = p.fig
+    assert f.right[0].title == "Magnitude"
+
+    # K3D doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_vector(KBchild1).process_series())
+
+
+def test_plot_vector_2d_streamlines_custom_scalar_field_use_latex():
+    # verify that the colorbar uses latex label
+
+    x, y = symbols("x, y")
+
+    _plot_vector = lambda B: plot_vector(
+        Matrix([x, y]),
+        (x, -5, 5),
+        (y, -4, 4),
+        backend=B,
+        scalar=(x + y),
+        streamlines=True,
+        show=False,
+        use_latex=True,
+        n=5
+    )
+
+    p = _plot_vector(MB)
+    f = p.fig
+    assert f.axes[1].get_ylabel() == "$x + y$"
+    p.close()
+
+    p = _plot_vector(PB)
+    f = p.fig
+    assert f.data[0]["colorbar"]["title"]["text"] == "$x + y$"
+
+    p = _plot_vector(BB)
+    f = p.fig
+    assert f.right[0].title == "$x + y$"
+
+    # K3D doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_vector(KBchild1).process_series())
+
+
+def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex():
+    # verify that the colorbar uses latex label
+
+    x, y = symbols("x, y")
+
+    _plot_vector = lambda B: plot_vector(
+        Matrix([x, y]),
+        (x, -5, 5),
+        (y, -4, 4),
+        backend=B,
+        scalar=[(x + y), "test"],
+        streamlines=True,
+        show=False,
+        use_latex=True,
+        n=5
+    )
+
+    p = _plot_vector(MB)
+    f = p.fig
+    assert f.axes[1].get_ylabel() == "test"
+
+    p = _plot_vector(PB)
+    f = p.fig
+    assert f.data[0]["colorbar"]["title"]["text"] == "test"
+
+    p = _plot_vector(BB)
+    f = p.fig
+    assert f.right[0].title == "test"
+
+    # K3D doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_vector(KBchild1).process_series())
+
+
+def test_plot_vector_2d_matplotlib_use_latex():
+    # verify that the colorbar uses latex label
+
+    x, y = symbols("x, y")
+    _plot_vector_1 = lambda B, scalar, streamlines: plot_vector(
+        Matrix([x, y]),
+        (x, -5, 5),
+        (y, -4, 4),
+        backend=B,
+        scalar=scalar,
+        streamlines=streamlines,
+        use_cm=True,
+        show=False,
+        use_latex=True,
+        n=5)
+
+    # contours + quivers: 1 colorbar for the contours
+    p = _plot_vector_1(MB, True, False)
+    assert p.fig.axes[1].get_ylabel() == "Magnitude"
+    p.close()
+
+    p = _plot_vector_1(PB, True, False)
+    assert p.fig.data[0]["colorbar"]["title"]["text"] == "Magnitude"
+
+    p = _plot_vector_1(BB, True, False)
+    assert p.fig.right[0].title == "Magnitude"
+
+    # contours + streamlines: 1 colorbar for the contours
+    p = _plot_vector_1(MB, True, True)
+    assert p.fig.axes[1].get_ylabel() == "Magnitude"
+    p.close()
+
+    p = _plot_vector_1(PB, True, True)
+    assert p.fig.data[0]["colorbar"]["title"]["text"] == "Magnitude"
+
+    p = _plot_vector_1(BB, True, True)
+    assert p.fig.right[0].title == "Magnitude"
+
+    # only quivers: 1 colorbar for the quivers
+    p = _plot_vector_1(MB, False, False)
+    assert p.fig.axes[1].get_ylabel() == "$\\left( x, \\  y\\right)$"
+    p.close()
+
+    p = _plot_vector_1(PB, False, False)
+    assert p.fig.data[0]["name"] == "$\\left( x, \\  y\\right)$"
+
+    p = _plot_vector_1(BB, False, False)
+    assert p.fig.right[0].title == "$\\left( x, \\  y\\right)$"
+
+    # only streamlines: 1 colorbar for the streamlines
+    p = _plot_vector_1(MB, False, True)
+    assert p.fig.axes[1].get_ylabel() == "$\\left( x, \\  y\\right)$"
+    p.close()
+
+    p = _plot_vector_1(PB, False, True)
+    assert p.fig.data[0]["name"] == "$\\left( x, \\  y\\right)$"
+
+    # Bokeh doesn't support gradient streamlines, hence no colorbar
+    p = _plot_vector_1(BB, False, True)
+
+
+def test_plot_vector_3d_quivers_use_latex():
+    # verify that the colorbar uses latex label
+
+    x, y, z = symbols("x, y, z")
+
+    _plot_vector = lambda B: plot_vector(
+    Matrix([z, y, x]),
+        (x, -5, 5),
+        (y, -4, 4),
+        (z, -3, 3),
+        backend=B,
+        show=False,
+        use_cm=True,
+        use_latex=True,
+        n=5
+    )
+
+    p = _plot_vector(MB)
+    assert len(p.fig.axes) == 2
+    assert p.fig.axes[1].get_ylabel() == '$\\left( z, \\  y, \\  x\\right)$'
+    p.close()
+
+    p = _plot_vector(PB)
+    assert p.fig.data[0]["colorbar"]["title"]["text"] == '$\\left( z, \\  y, \\  x\\right)$'
+
+    # Bokeh doesn't support 3D plots
+    raises(NotImplementedError,
+        lambda: _plot_vector(BB).process_series())
+
+    # K3D doesn't show label on colorbar
+    p = _plot_vector(KBchild1)
+    assert len(p.series) == 1
+
+
+def test_plot_vector_3d_streamlines_use_latex():
+    # verify that the colorbar uses latex label
+
+    x, y, z = symbols("x, y, z")
+
+    _plot_vector = lambda B: plot_vector(
+        Matrix([z, y, x]),
+        (x, -5, 5),
+        (y, -4, 4),
+        (z, -3, 3),
+        backend=B,
+        streamlines=True,
+        show=False,
+        use_latex=True,
+        n=5
+    )
+
+    p = _plot_vector(MB)
+    assert p.fig.axes[1].get_ylabel() == '$\\left( z, \\  y, \\  x\\right)$'
+    p.close()
+
+    p = _plot_vector(PB)
+    assert p.fig.data[0]["colorbar"]["title"]["text"] == '$\\left( z, \\  y, \\  x\\right)$'
+
+    # Bokeh doesn't support 3D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_vector(BB).process_series())
+
+    # K3D doesn't show labels on colorbar
+    p = _plot_vector(KBchild1)
+    assert len(p.series) == 1
+
+
+def test_plot_complex_use_latex():
+    # complex plot function should return the same result (for axis labels)
+    # wheter use_latex is True or False
+
+    x, y, z = symbols("x, y, z")
+
+    _plot_complex = lambda B: plot_complex(
+        cos(x) + sin(I * x), (x, -2, 2), show=False, adaptive=False, n=10,
+        use_latex=True, backend=B)
+
+    p = _plot_complex(MB)
+    assert p.fig.axes[0].get_xlabel() == "Real"
+    assert p.fig.axes[0].get_ylabel() == "Abs"
+    assert p.fig.axes[1].get_ylabel() == 'Arg(cos(x) + I*sinh(x))'
+    p.close()
+
+    p = _plot_complex(PB)
+    assert p.fig.layout.xaxis.title.text == 'Real'
+    assert p.fig.layout.yaxis.title.text == 'Abs'
+    assert p.fig.data[0].name == "Arg(cos(x) + I*sinh(x))"
+    assert p.fig.data[0]["marker"]["colorbar"]["title"]["text"] == 'Arg(cos(x) + I*sinh(x))'
+
+    p = _plot_complex(BB)
+    assert p.fig.right[0].title == 'Arg(cos(x) + I*sinh(x))'
+    assert p.fig.xaxis.axis_label == "Real"
+    assert p.fig.yaxis.axis_label == "Abs"
+
+    raises(
+        NotImplementedError,
+        lambda: _plot_complex(KBchild1).process_series())
+
+    _plot_complex_2 = lambda B: plot_complex(
+        gamma(z), (z, -3 - 3*I, 3 + 3*I), show=False, adaptive=False, n=10,
+        use_latex=True, backend=B)
+
+    p = _plot_complex_2(MB)
+    assert p.fig.axes[0].get_xlabel() == "Re"
+    assert p.fig.axes[0].get_ylabel() == "Im"
+    assert p.fig.axes[1].get_ylabel() == 'Argument'
+    p.close()
+
+    p = _plot_complex_2(PB)
+    assert p.fig.layout.xaxis.title.text == 'Re'
+    assert p.fig.layout.yaxis.title.text == 'Im'
+    assert p.fig.data[0].name == "$\\Gamma\\left(z\\right)$"
+    assert p.fig.data[1]["marker"]["colorbar"]["title"]["text"] == "Argument"
+
+    p = _plot_complex_2(BB)
+    assert p.fig.right[0].title == 'Argument'
+    assert p.fig.xaxis.axis_label == "Re"
+    assert p.fig.yaxis.axis_label == "Im"
+
+    raises(
+        NotImplementedError,
+        lambda: _plot_complex_2(KBchild1).process_series())
+
+
+def test_plot_real_imag_use_latex():
+    # real/imag plot function should return the same result (for axis labels)
+    # wheter use_latex is True or False
+
+    x, y, z = symbols("x, y, z")
+
+    _plot_real_imag = lambda B: plot_real_imag(sqrt(x), (x, -3, 3),
+        backend=B, use_latex=True, show=False, adaptive=False, n=10)
+
+    p = _plot_real_imag(MB)
+    assert p.fig.axes[0].get_xlabel() == "Re"
+    assert p.fig.axes[0].get_ylabel() == "Im"
+    assert p.fig.axes[0].lines[0].get_label() == 'Re(sqrt(x))'
+    assert p.fig.axes[0].lines[1].get_label() == 'Im(sqrt(x))'
+    p.close()
+
+    p = _plot_real_imag(PB)
+    assert p.fig.layout.xaxis.title.text == 'Re'
+    assert p.fig.layout.yaxis.title.text == 'Im'
+    assert p.fig.data[0]["name"] == 'Re(sqrt(x))'
+    assert p.fig.data[1]["name"] == 'Im(sqrt(x))'
+
+    p = _plot_real_imag(BB)
+    assert p.fig.xaxis.axis_label == "Re"
+    assert p.fig.yaxis.axis_label == "Im"
+    assert p.fig.legend[0].items[0].label["value"] == 'Re(sqrt(x))'
+    assert p.fig.legend[0].items[1].label["value"] == 'Im(sqrt(x))'
+
+    raises(
+        NotImplementedError,
+        lambda: _plot_real_imag(KBchild1).process_series())
+
+
+###############################################################################
+###############################################################################
+###############################################################################
 
 
 def test_plot3d_use_cm():

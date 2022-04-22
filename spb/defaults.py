@@ -23,7 +23,7 @@ def _hardcoded_defaults():
         plotly={
             "theme": "seaborn",
             "grid": True,
-            "use_latex": True,
+            "use_latex": False,
         },
         # Find more Bokeh themes at the following page:
         # https://docs.bokeh.org/en/latest/docs/reference/themes.html

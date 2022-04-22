@@ -1,6 +1,7 @@
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import compute_streamtubes
+from sympy import latex
 from sympy.external import import_module
 import itertools
 
@@ -153,7 +154,8 @@ class MatplotlibBackend(Plot):
         super().__init__(*args, **kwargs)
 
         # set labels
-        self._set_labels(cfg["matplotlib"]["use_latex"])
+        self._use_latex = kwargs.get("use_latex", cfg["matplotlib"]["use_latex"])
+        self._set_labels()
 
         if ((len([s for s in self._series if s.is_2Dline]) > 10) and
             (not type(self).colorloop) and
@@ -343,14 +345,14 @@ class MatplotlibBackend(Plot):
                     segments = self.get_segments(x, y)
                     c = self.LineCollection(segments, **kw)
                     self.ax.add_collection(c)
-                    is_cb_added = self._add_colorbar(c, s.label, s.use_cm)
+                    is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
                     self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 else:
                     if s.is_parametric:
                         x, y, param = s.get_data()
                     else:
                         x, y = s.get_data()
-                    lkw = dict(label=s.label, color=next(self._cl))
+                    lkw = dict(label=s.get_label(self._use_latex), color=next(self._cl))
                     if s.is_point:
                         lkw["marker"] = "o"
                         lkw["linestyle"] = "None"
@@ -365,7 +367,7 @@ class MatplotlibBackend(Plot):
                 ckw = dict(cmap=next(self._cm))
                 kw = merge({}, ckw, s.rendering_kw)
                 c = self.ax.contourf(x, y, z, **kw)
-                self._add_colorbar(c, s.label, s.use_cm, True)
+                self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm, True)
                 self._add_handle(i, c, kw, self._fig.axes[-1])
 
             elif s.is_3Dline:
@@ -380,16 +382,16 @@ class MatplotlibBackend(Plot):
                         kw = merge({}, lkw, s.rendering_kw)
                         c = Line3DCollection(segments, **kw)
                         self.ax.add_collection(c)
-                        self._add_colorbar(c, s.label, s.use_cm)
+                        self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
                         self._add_handle(i, c)
                     else:
-                        lkw["label"] = s.label
+                        lkw["label"] = s.get_label(self._use_latex)
                         kw = merge({}, lkw, s.rendering_kw)
                         l = self.ax.plot(x, y, z, **kw)
                         self._add_handle(i, l)
                 else:
                     # 3D points
-                    lkw["label"] = s.label
+                    lkw["label"] = s.get_label(self._use_latex)
                     lkw["color"] = next(self._cl)
                     kw = merge({}, lkw, s.rendering_kw)
                     l = self.ax.scatter(x, y, z, **kw)
@@ -405,7 +407,7 @@ class MatplotlibBackend(Plot):
                     skw["cmap"] = next(self._cm)
                 kw = merge({}, skw, s.rendering_kw)
                 c = self.ax.plot_surface(x, y, z, **kw)
-                is_cb_added = self._add_colorbar(c, s.label, s.use_cm)
+                is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
                 self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
@@ -449,7 +451,7 @@ class MatplotlibBackend(Plot):
                             kw = merge({}, skw, s.rendering_kw)
                             sp = self.ax.streamplot(xx, yy, uu, vv, **kw)
                             is_cb_added = self._add_colorbar(
-                                sp.lines, s.label, s.use_cm)
+                                sp.lines, s.get_label(self._use_latex), s.use_cm)
                         else:
                             skw["color"] = next(self._cl)
                             kw = merge({}, skw, s.rendering_kw)
@@ -466,7 +468,7 @@ class MatplotlibBackend(Plot):
                             kw = merge({}, qkw, s.rendering_kw)
                             q = self.ax.quiver(xx, yy, uu, vv, magn, **kw)
                             is_cb_added = self._add_colorbar(
-                                q, s.label, s.use_cm)
+                                q, s.get_label(self._use_latex), s.use_cm)
                         else:
                             is_cb_added = False
                             qkw["color"] = next(self._cl)
@@ -497,10 +499,10 @@ class MatplotlibBackend(Plot):
                             kw = merge({}, lkw, stream_kw)
                             c = Line3DCollection(segments, **kw)
                             self.ax.add_collection(c)
-                            self._add_colorbar(c, s.label, s.use_cm)
+                            self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
                             self._add_handle(i, c)
                         else:
-                            lkw["label"] = s.label
+                            lkw["label"] = s.get_label(self._use_latex)
                             kw = merge({}, lkw, stream_kw)
                             l = self.ax.plot(vertices[:, 0], vertices[:, 1],
                                 vertices[:, 2], **kw)
@@ -517,7 +519,7 @@ class MatplotlibBackend(Plot):
                             kw = merge({}, qkw, s.rendering_kw)
                             q = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
                             is_cb_added = self._add_colorbar(
-                                q, s.label, s.use_cm)
+                                q, s.get_label(self._use_latex), s.use_cm)
                         else:
                             qkw["color"] = next(self._cl)
                             kw = merge({}, qkw, s.rendering_kw)
@@ -785,7 +787,7 @@ class MatplotlibBackend(Plot):
                         self._handles[i][0].set_array(param)
                         kw, is_cb_added, cax = self._handles[i][1:]
                         if is_cb_added:
-                            self._update_colorbar(cax, param, kw, s.label)
+                            self._update_colorbar(cax, param, kw, self._get_series_label(s))
                         xlims.append((np.amin(x), np.amax(x)))
                         ylims.append((np.amin(y), np.amax(y)))
                     else:
@@ -818,7 +820,7 @@ class MatplotlibBackend(Plot):
                     for c in self._handles[i][0].collections:
                         c.remove()
                     self._handles[i][0] = self.ax.contourf(x, y, z, **kw)
-                    self._update_colorbar(cax, z, kw, s.label)
+                    self._update_colorbar(cax, z, kw, self._get_series_label(s))
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
 
@@ -832,7 +834,7 @@ class MatplotlibBackend(Plot):
                         x, y, z, **kw)
 
                     if is_cb_added:
-                        self._update_colorbar(cax, z, kw, s.label)
+                        self._update_colorbar(cax, z, kw, self._get_series_label(s))
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(z), np.amax(z)))
@@ -866,7 +868,7 @@ class MatplotlibBackend(Plot):
 
                     if is_cb_added:
                         magn = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
-                        self._update_colorbar(cax, magn, kw, s.label)
+                        self._update_colorbar(cax, magn, kw, self._get_series_label(s))
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
                     zlims.append((np.nanmin(zz), np.nanmax(zz)))
@@ -889,7 +891,7 @@ class MatplotlibBackend(Plot):
 
                         if is_cb_added:
                             self._handles[i][0].set_UVC(uu, vv, magn)
-                            self._update_colorbar(cax, magn, kw, s.label)
+                            self._update_colorbar(cax, magn, kw, self._get_series_label(s))
                         else:
                             self._handles[i][0].set_UVC(uu, vv)
                     xlims.append((np.amin(xx), np.amax(xx)))

@@ -182,7 +182,7 @@ class Plot:
             raise TypeError("backend must be a subclass of Plot")
         return backend
 
-    def _set_labels(self, use_latex, wrapper="$%s$"):
+    def _set_labels(self, wrapper="$%s$"):
         """Set the correct labels.
 
         Parameters
@@ -192,16 +192,15 @@ class Plot:
         wrapper : str
             Wrapper string for the latex labels. Default to '$%s$'.
         """
-        if not use_latex:
+        if not self._use_latex:
             wrapper = "%s"
 
         if callable(self.xlabel):
-            self.xlabel = wrapper % self.xlabel(use_latex)
+            self.xlabel = wrapper % self.xlabel(self._use_latex)
         if callable(self.ylabel):
-            self.ylabel = wrapper % self.ylabel(use_latex)
+            self.ylabel = wrapper % self.ylabel(self._use_latex)
         if callable(self.zlabel):
-            self.zlabel = wrapper % self.zlabel(use_latex)
-
+            self.zlabel = wrapper % self.zlabel(self._use_latex)
 
     def __init__(self, *args, **kwargs):
         # the merge function is used by all backends
@@ -309,7 +308,8 @@ class Plot:
             ylim=self.ylim,
             zlim=self.zlim,
             size=self.size,
-            is_iplot=self.is_iplot
+            is_iplot=self.is_iplot,
+            use_latex=self._use_latex
         )
 
     def _init_cyclers(self):
