@@ -1012,7 +1012,7 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.var_v = sympify(var_start_end_v[0])
         self.start_v = float(var_start_end_v[1])
         self.end_v = float(var_start_end_v[2])
-        self.use_cm = kwargs.get("use_cm", True)
+        self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self._set_surface_label(label)
 
         if self.adaptive:

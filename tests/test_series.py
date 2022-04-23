@@ -2158,26 +2158,43 @@ def test_interactive_series_labels():
 
 
 def test_surface_use_cm():
-    # verify that SurfaceOver2DRangeSeries and SurfaceInteractiveSeries get
+    # verify that SurfaceOver2DRangeSeries/SurfaceInteractiveSeries and
+    # ParametricSurfaceSeries, ParametricSurfaceInteractiveSeries get
     # the same value for use_cm
 
-    x, y, u = symbols("x, y, u")
+    x, y, u, v = symbols("x, y, u, v")
 
     # they read the same value from default settings
     s1 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2))
-    s2 = SurfaceInteractiveSeries([cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)])
-    assert s1.use_cm == s2.use_cm
+    s2 = SurfaceInteractiveSeries(
+        [cos(u * x**2 + y**2)], [(x, -2, 2), (y, -2, 2)],
+        params={u: 1})
+    s3 = ParametricSurfaceSeries(u * cos(v), u * sin(v), u,
+        (u, 0, 1), (v, 0 , 2*pi))
+    s4 = SurfaceInteractiveSeries([x * u * cos(v), u * sin(v), u],
+        [(u, 0, 1), (v, 0 , 2*pi)], params={x: 1})
+    assert s1.use_cm == s2.use_cm == s3.use_cm == s4.use_cm
 
     # they get the same value
     s1 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
         use_cm=False)
-    s2 = SurfaceInteractiveSeries([cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)],
-        use_cm=False)
-    assert (s1.use_cm is False) and (s2.use_cm is False)
+    s2 = SurfaceInteractiveSeries(
+        [cos(u * x**2 + y**2)], [(x, -2, 2), (y, -2, 2)],
+        params={u: 1}, use_cm=False)
+    s3 = ParametricSurfaceSeries(u * cos(v), u * sin(v), u,
+        (u, 0, 1), (v, 0 , 2*pi), use_cm=False)
+    s4 = SurfaceInteractiveSeries([x * u * cos(v), u * sin(v), u],
+        [(u, 0, 1), (v, 0 , 2*pi)], params={x: 1}, use_cm=False)
+    assert s1.use_cm == s2.use_cm == s3.use_cm == s4.use_cm == False
 
     # they get the same value
     s1 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
         use_cm=True)
-    s2 = SurfaceInteractiveSeries([cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)],
-        use_cm=True)
-    assert (s1.use_cm is True) and (s2.use_cm is True)
+    s2 = SurfaceInteractiveSeries(
+        [cos(u * x**2 + y**2)], [(x, -2, 2), (y, -2, 2)],
+        params={u: 1}, use_cm=True)
+    s3 = ParametricSurfaceSeries(u * cos(v), u * sin(v), u,
+        (u, 0, 1), (v, 0 , 2*pi), use_cm=True)
+    s4 = SurfaceInteractiveSeries([x * u * cos(v), u * sin(v), u],
+        [(u, 0, 1), (v, 0 , 2*pi)], params={x: 1}, use_cm=True)
+    assert s1.use_cm == s2.use_cm == s3.use_cm == s4.use_cm == True
