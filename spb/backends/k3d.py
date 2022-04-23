@@ -21,8 +21,17 @@ class K3DBackend(Plot):
 
     quiver_kw : dict, optional
         A dictionary to customize the apppearance of quivers. Default to:
-        ``quiver_kw = dict(scale = 1)``.
-        Set `use_cm=False` to switch to a solid color.
+        ``quiver_kw = dict(scale = 1, pivot = "mid")``. The keys to this
+        dictionary are:
+
+        * ``scale``: a float number acting as a scale multiplier.
+        * ``pivot``: indicates the part of the arrow that is anchored to the
+          X, Y, Z grid. It can be ``"tail", "mid", "middle", "head"``.
+        * ``color``: set a solid color by specifying an integer color. If this
+          key is not provided, a default color or colormap is used, depenging
+          on the value of ``use_cm``.
+
+        Set ``use_cm=False`` to switch to a default solid color.
 
     show_label : boolean, optional
         Show/hide labels of the expressions. Default to False (labels not
@@ -69,6 +78,9 @@ class K3DBackend(Plot):
 
     colormaps = []
     cyclic_colormaps = []
+
+    # quivers-pivot offsets
+    _qp_offset = {"tail": 0, "mid": 0.5, "middle": 0.5, "tip": 1}
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
@@ -327,12 +339,18 @@ class K3DBackend(Plot):
                     vec_colors[2 * i + 1] = c
                 vec_colors = vec_colors.astype(np.uint32)
 
+                pivot = quiver_kw.get("pivot", "mid")
+                if pivot not in self._qp_offset.keys():
+                    raise ValueError(
+                        "`pivot` must be one of the following values: "
+                        "{}".format(list(self._qp_offset.keys())))
+
                 vec_kw = qkw.copy()
-                kw_to_remove = ["scale", "color"]
+                kw_to_remove = ["scale", "color", "pivot"]
                 for k in kw_to_remove:
                     if k in vec_kw.keys():
                         vec_kw.pop(k)
-                vec_kw["origins"] = origins - vectors / 2
+                vec_kw["origins"] = origins - vectors * self._qp_offset[pivot]
                 vec_kw["vectors"] = vectors
                 vec_kw["colors"] = vec_colors
 

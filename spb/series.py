@@ -1506,7 +1506,7 @@ class InteractiveSeries(BaseSeries):
                 # the plane or the surface
                 kwargs2 = kwargs.copy()
                 kwargs2 = _set_discretization_points(kwargs2, SliceVector3DSeries)
-                slice_surf = _build_plane_series(_slice, ranges, **kwargs2)
+                slice_surf = _build_slice_series(_slice, ranges, **kwargs2)
                 self.ranges = {
                     k: v for k, v in zip(discr_symbols, slice_surf.get_data())
                 }
@@ -2463,11 +2463,15 @@ class Vector3DInteractiveSeries(VectorInteractiveBaseSeries, Vector3DSeries):
     pass
 
 
-def _build_plane_series(plane, ranges, **kwargs):
+def _build_slice_series(plane, ranges, **kwargs):
     if isinstance(plane, Plane):
         return PlaneSeries(sympify(plane), *ranges, **kwargs)
-    else:
-        return SurfaceOver2DRangeSeries(plane, *ranges, **kwargs)
+    elif isinstance(plane, BaseSeries):
+        if plane.is_3Dsurface:
+            return plane
+        raise TypeError("Only 3D surface-related series are supported.")
+    return SurfaceOver2DRangeSeries(plane, *ranges, **kwargs)
+
 
 class SliceVector3DSeries(Vector3DSeries):
     """Represents a 3D vector field plotted over a slice. The slice can be
@@ -2476,7 +2480,7 @@ class SliceVector3DSeries(Vector3DSeries):
     is_slice = True
 
     def __init__(self, plane, u, v, w, range_x, range_y, range_z, label="", **kwargs):
-        self.plane = _build_plane_series(plane, [range_x, range_y, range_z], **kwargs)
+        self.plane = _build_slice_series(plane, [range_x, range_y, range_z], **kwargs)
         super().__init__(u, v, w, range_x, range_y, range_z, label, **kwargs)
 
     def _discretize(self):

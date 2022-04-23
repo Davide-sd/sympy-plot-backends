@@ -1,5 +1,6 @@
 from spb.defaults import TWO_D_B, THREE_D_B
 from spb.series import (
+    BaseSeries,
     Vector2DSeries,
     Vector3DSeries,
     ContourSeries,
@@ -199,7 +200,7 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
 
         # verify that the slices are of the correct type
         def _check_slice(s):
-            if not isinstance(s, (Expr, Plane)):
+            if not isinstance(s, (Expr, Plane, BaseSeries)):
                 raise ValueError(
                     "A slice must be of type Plane or Expr.\n"
                     + "Received: {}, {}".format(type(s), s)
@@ -355,6 +356,8 @@ def plot_vector(*args, show=True, **kwargs):
 
         - a Plane object from sympy.geometry module.
         - a list of planes.
+        - an instance of ``SurfaceOver2DRangeSeries`` or
+          ``ParametricSurfaceSeries``.
         - a symbolic expression representing a surface of two variables.
 
         The number of discretization points will be `n1`, `n2`, `n3`.
@@ -363,6 +366,8 @@ def plot_vector(*args, show=True, **kwargs):
         - only quivers plots are supported with slices. Streamlines plots
           are unaffected.
         - `n3` will only be used with planes parallel to xz or yz.
+        - `n1`, `n2`, `n3` doesn't affect the slice if it is an instance of
+          ``SurfaceOver2DRangeSeries`` or ``ParametricSurfaceSeries``.
 
     streamlines : boolean
         Whether to plot the vector field using streamlines (True) or quivers

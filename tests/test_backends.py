@@ -2494,3 +2494,27 @@ def test_plot3d_update_interactive():
     kw, _, _ = p._handles[0][1:]
     c2 = kw["cmap"]
     assert c1 == c2
+
+
+def test_k3d_vector_pivot():
+    # verify that K3DBackend accepts quiver_kw={"pivot": "something"} and
+    # produces different results
+    x, y, z = symbols("x, y, z")
+
+    _plot_vector = lambda pivot: plot_vector(
+        Matrix([z, y, x]),
+        (x, -5, 5),
+        (y, -4, 4),
+        (z, -3, 3),
+        n1=5, n2=5, n3=5,
+        quiver_kw={"pivot": pivot},
+        backend=KBchild1,
+        show=False
+    )
+
+    p1 = _plot_vector("tail")
+    p2 = _plot_vector("mid")
+    p3 = _plot_vector("tip")
+    assert not np.allclose(p1.fig.objects[0].origins, p2.fig.objects[0].origins, equal_nan=True)
+    assert not np.allclose(p1.fig.objects[0].origins, p3.fig.objects[0].origins, equal_nan=True)
+    assert not np.allclose(p2.fig.objects[0].origins, p3.fig.objects[0].origins, equal_nan=True)
