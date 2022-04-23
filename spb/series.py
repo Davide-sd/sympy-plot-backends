@@ -427,12 +427,16 @@ class BaseSeries:
                 t(x, self._tx), t(y, self._ty),
                 t(u, self._tx), t(v, self._ty)
             )
-        elif len(args) == 6: # 3D vector plot
+        elif (len(args) == 6) and (not self.is_complex): # 3D vector plot
             x, y, z, u, v, w = args
             return (
                 t(x, self._tx), t(y, self._ty), t(z, self._tz),
                 t(u, self._tx), t(v, self._ty), t(w, self._tz)
             )
+        elif len(args) == 6: # complex plot
+            x, y, _abs, _arg, img, colors = args
+            return (
+                x, y, t(_abs, self._tz), _arg, img, colors)
         return args
 
 
@@ -1938,6 +1942,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
             raise TypeError(
                 "`coloring` must be a character from 'a' to 'j' or a callable.")
         self.phaseres = kwargs.get("phaseres", 20)
+        self._init_transforms(**kwargs)
 
     def __str__(self):
         if self.is_domain_coloring:
@@ -2057,7 +2062,7 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
     def _correct_output(self, domain, z):
         np = import_module('numpy')
 
-        return (
+        return self._apply_transform(
             np.real(domain), np.imag(domain),
             np.absolute(z), np.angle(z),
             *self._domain_coloring(z),
@@ -2220,7 +2225,7 @@ class ComplexDomainColoringInteractiveSeries(ComplexInteractiveBaseSeries, Compl
 
         domain = list(self.ranges.values())[0]
         results = self._evaluate()[0]
-        return (
+        return self._apply_transform(
             np.real(domain), np.imag(domain),
             np.absolute(results), np.angle(results),
             *self._domain_coloring(results),

@@ -1784,6 +1784,19 @@ def test_apply_transforms():
     assert np.allclose(u1, np.deg2rad(u2))
     assert np.allclose(v1, v2 / 2)
 
+    s1 = Vector2DInteractiveSeries(
+        [u * sin(y), cos(u * x)], [(x, -pi, pi), (y, -pi, pi)], n1=5, n2=5,
+        params={u: 1})
+    s2 = Vector2DInteractiveSeries(
+        [u * sin(y), cos(u * x)], [(x, -pi, pi), (y, -pi, pi)], n1=5, n2=5,
+        tx=np.rad2deg, ty=lambda x: 2*x, params={u: 1})
+    x1, y1, u1, v1 = s1.get_data()
+    x2, y2, u2, v2 = s2.get_data()
+    assert np.allclose(x1, np.deg2rad(x2))
+    assert np.allclose(y1, y2 / 2)
+    assert np.allclose(u1, np.deg2rad(u2))
+    assert np.allclose(v1, v2 / 2)
+
     s1 = Vector3DSeries(
         x, y, z, (x, -1, 1), (y, -1, 1), (z, -1, 1), n1=5, n2=5, n3=5)
     s2 = Vector3DSeries(
@@ -1797,6 +1810,52 @@ def test_apply_transforms():
     assert np.allclose(u1, np.deg2rad(u2))
     assert np.allclose(v1, v2 / 2)
     assert np.allclose(w1, w2 / 3)
+
+    s1 = Vector3DInteractiveSeries(
+        [u * x, u * y, u * z], [(x, -1, 1), (y, -1, 1), (z, -1, 1)],
+        n1=5, n2=5, n3=5, params={u: 1})
+    s2 = Vector3DInteractiveSeries(
+        [u * x, u * y, u * z], [(x, -1, 1), (y, -1, 1), (z, -1, 1)],
+        n1=5, n2=5, n3=5, params={u: 1},
+        tx=np.rad2deg, ty=lambda x: 2*x, tz=lambda x: 3*x)
+    x1, y1, z1, u1, v1, w1 = s1.get_data()
+    x2, y2, z2, u2, v2, w2 = s2.get_data()
+    assert np.allclose(x1, np.deg2rad(x2))
+    assert np.allclose(y1, y2 / 2)
+    assert np.allclose(z1, z2 / 3)
+    assert np.allclose(u1, np.deg2rad(u2))
+    assert np.allclose(v1, v2 / 2)
+    assert np.allclose(w1, w2 / 3)
+
+    s1 = ComplexDomainColoringSeries(
+        (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I),
+        n1=10, n2=10, n3=10)
+    s2 = ComplexDomainColoringSeries(
+        (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I),
+        n1=10, n2=10, n3=10, tz=lambda t: t/10)
+    x1, y1, z1, a1, b1, c1 = s1.get_data()
+    x2, y2, z2, a2, b2, c2 = s2.get_data()
+    assert np.allclose(x1, x2)
+    assert np.allclose(y1, y2)
+    assert np.allclose(z1, z2 * 10)
+    assert np.allclose(a1, a2)
+    assert np.allclose(b1, b2)
+    assert np.allclose(c1, c2)
+
+    s1 = ComplexDomainColoringInteractiveSeries(
+        (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I),
+        n1=10, n2=10, n3=10)
+    s2 = ComplexDomainColoringInteractiveSeries(
+        (z ** 2 + 1) / (z ** 2 - 1), (z, -3 - 4 * I, 3 + 4 * I),
+        n1=10, n2=10, n3=10, tz=lambda t: t/10)
+    x1, y1, z1, a1, b1, c1 = s1.get_data()
+    x2, y2, z2, a2, b2, c2 = s2.get_data()
+    assert np.allclose(x1, x2)
+    assert np.allclose(y1, y2)
+    assert np.allclose(z1, z2 * 10)
+    assert np.allclose(a1, a2)
+    assert np.allclose(b1, b2)
+    assert np.allclose(c1, c2)
 
 
 def test_series_labels():
