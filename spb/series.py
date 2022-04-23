@@ -1736,6 +1736,7 @@ class SurfaceInteractiveSeries(InteractiveSeries):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._rendering_kw = kwargs.get("surface_kw", dict())
+        self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
 
     def get_data(self):
         """Return arrays of coordinates for plotting.

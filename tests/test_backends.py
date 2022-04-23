@@ -2449,3 +2449,48 @@ def test_plot3d_use_cm():
     n2 = len(p2.fig.objects[0].color_map)
     if n1 == n2:
         assert not np.allclose(p1.fig.objects[0].color_map, p2.fig.objects[0].color_map)
+
+
+def test_plot3d_update_interactive():
+    # verify that MB._update_interactive applies the original color/colormap
+    # each time it gets called
+    # Since matplotlib doesn't apply color/colormaps until the figure is shown,
+    # verify that the correct keyword arguments are into _handles.
+
+    x, y, u = symbols("x, y, u")
+
+    s = InteractiveSeries(
+        [u * cos(x**2 + y**2)],
+        [(x, -5, 5), (y, -5, 5)],
+        "test",
+        threed = True,
+        use_cm = False,
+        params = {u: 1},
+        n1=5, n2=5, n3=5
+    )
+    p = MB(s, show=False)
+    p.process_series()
+    kw, _, _ = p._handles[0][1:]
+    c1 = kw["color"]
+    p._update_interactive({u: 2})
+    kw, _, _ = p._handles[0][1:]
+    c2 = kw["color"]
+    assert c1 == c2
+
+    s = InteractiveSeries(
+        [u * cos(x**2 + y**2)],
+        [(x, -5, 5), (y, -5, 5)],
+        "test",
+        threed = True,
+        use_cm = True,
+        params = {u: 1},
+        n1=5, n2=5, n3=5
+    )
+    p = MB(s, show=False)
+    p.process_series()
+    kw, _, _ = p._handles[0][1:]
+    c1 = kw["cmap"]
+    p._update_interactive({u: 2})
+    kw, _, _ = p._handles[0][1:]
+    c2 = kw["cmap"]
+    assert c1 == c2

@@ -405,6 +405,8 @@ class MatplotlibBackend(Plot):
                 skw = dict(rstride=1, cstride=1, linewidth=0.1)
                 if s.use_cm:
                     skw["cmap"] = next(self._cm)
+                else:
+                    skw["color"] = next(self._cl)
                 kw = merge({}, skw, s.rendering_kw)
                 c = self.ax.plot_surface(x, y, z, **kw)
                 is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
@@ -787,7 +789,7 @@ class MatplotlibBackend(Plot):
                         self._handles[i][0].set_array(param)
                         kw, is_cb_added, cax = self._handles[i][1:]
                         if is_cb_added:
-                            self._update_colorbar(cax, param, kw, self._get_series_label(s))
+                            self._update_colorbar(cax, param, kw, s.get_label(self._use_latex))
                         xlims.append((np.amin(x), np.amax(x)))
                         ylims.append((np.amin(y), np.amax(y)))
                     else:
@@ -820,7 +822,7 @@ class MatplotlibBackend(Plot):
                     for c in self._handles[i][0].collections:
                         c.remove()
                     self._handles[i][0] = self.ax.contourf(x, y, z, **kw)
-                    self._update_colorbar(cax, z, kw, self._get_series_label(s))
+                    self._update_colorbar(cax, z, kw, s.get_label(self._use_latex))
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
 
@@ -834,7 +836,7 @@ class MatplotlibBackend(Plot):
                         x, y, z, **kw)
 
                     if is_cb_added:
-                        self._update_colorbar(cax, z, kw, self._get_series_label(s))
+                        self._update_colorbar(cax, z, kw, s.get_label(self._use_latex))
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(z), np.amax(z)))
@@ -868,7 +870,7 @@ class MatplotlibBackend(Plot):
 
                     if is_cb_added:
                         magn = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
-                        self._update_colorbar(cax, magn, kw, self._get_series_label(s))
+                        self._update_colorbar(cax, magn, kw, s.get_label(self._use_latex))
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
                     zlims.append((np.nanmin(zz), np.nanmax(zz)))
@@ -891,7 +893,7 @@ class MatplotlibBackend(Plot):
 
                         if is_cb_added:
                             self._handles[i][0].set_UVC(uu, vv, magn)
-                            self._update_colorbar(cax, magn, kw, self._get_series_label(s))
+                            self._update_colorbar(cax, magn, kw, s.get_label(self._use_latex))
                         else:
                             self._handles[i][0].set_UVC(uu, vv)
                     xlims.append((np.amin(xx), np.amax(xx)))

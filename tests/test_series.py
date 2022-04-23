@@ -2096,3 +2096,29 @@ def test_interactive_series_labels():
     assert s1.get_label(True) == wrapper % latex(expr)
     assert s2.get_label(False) == "test"
     assert s2.get_label(True) == "test"
+
+
+def test_surface_use_cm():
+    # verify that SurfaceOver2DRangeSeries and SurfaceInteractiveSeries get
+    # the same value for use_cm
+
+    x, y, u = symbols("x, y, u")
+
+    # they read the same value from default settings
+    s1 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2))
+    s2 = SurfaceInteractiveSeries([cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)])
+    assert s1.use_cm == s2.use_cm
+
+    # they get the same value
+    s1 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        use_cm=False)
+    s2 = SurfaceInteractiveSeries([cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)],
+        use_cm=False)
+    assert (s1.use_cm is False) and (s2.use_cm is False)
+
+    # they get the same value
+    s1 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        use_cm=True)
+    s2 = SurfaceInteractiveSeries([cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)],
+        use_cm=True)
+    assert (s1.use_cm is True) and (s2.use_cm is True)
