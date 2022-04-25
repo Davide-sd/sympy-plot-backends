@@ -13,18 +13,6 @@ Or::
     conda install sympy_plot_backends
 
 
-About Matplotlib
-================
-
-This module will install Matplotlib v3.4.2. If you want to use a newer version,
-just upgrade it with::
-
-    pip install -U matplotlib
-
-Note: if you are doing development work on this module, v3.4.2 is required for
-tests to pass!
-
-
 Verify the installation
 =======================
 
@@ -74,3 +62,10 @@ It is also the perfect time to verify that K3D-Jupyter is working:
    5. Open the previous notebook and execute the plot command.
 
 Refer to the :ref:`tutorials` for a starter guide on using the plotting backends.
+
+
+About Matplotlib
+================
+
+If you are doing development work on this module, Matplotlib 3.4.2 is required
+for tests to pass!
