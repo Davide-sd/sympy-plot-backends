@@ -1496,20 +1496,21 @@ class InteractiveSeries(BaseSeries):
 
             discretizations.append(d)
 
-        # TODO: this is better to move into a dedicated method. Then, subclasses
-        # override this method.
-        if len(ranges) == 1:
-            # 2D or 3D lines
-            self.ranges = {k: v for k, v in zip(discr_symbols, discretizations)}
-        else:
-            if hasattr(self, "slice_surf_series") and self.slice_surf_series is not None:
-                self.ranges = {
-                    k: v for k, v in zip(discr_symbols, self.slice_surf_series.get_data())
-                }
-            else:
-                # surfaces: needs mesh grids
-                meshes = np.meshgrid(*discretizations)
-                self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
+        self._set_discretization_ranges(discr_symbols, discretizations)
+
+    def _set_discretization_ranges(self, discr_symbols, discretizations):
+        """Set the discretized ranges that will be used in the numerical
+        evaluation.
+
+        This method implements discretizations suitable for contour/surface/
+        vector plots. Subclasses should override this method in order to
+        implement a different behaviour.
+        """
+        np = import_module('numpy')
+
+        meshes = np.meshgrid(*discretizations)
+        self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
+
 
     @property
     def params(self):
@@ -1585,7 +1586,15 @@ class InteractiveSeries(BaseSeries):
         return results
 
 
-class LineInteractiveSeries(InteractiveSeries, Line2DBaseSeries):
+class LineInteractiveBaseSeries(InteractiveSeries):
+    def _set_discretization_ranges(self, discr_symbols, discretizations):
+        """Set the discretized ranges that will be used in the numerical
+        evaluation.
+        """
+        self.ranges = {k: v for k, v in zip(discr_symbols, discretizations)}
+
+
+class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
     """Representation for an interactive line consisting of a SymPy
     expression over a real range."""
 
@@ -1672,7 +1681,7 @@ class AbsArgLineInteractiveSeries(LineInteractiveSeries):
     def __str__(self):
         return self._str("cartesian abs-arg line")
 
-class Parametric2DLineInteractiveSeries(InteractiveSeries, Line2DBaseSeries):
+class Parametric2DLineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
     """Representation for an interactive line consisting of two
     parametric sympy expressions over a range."""
     is_parametric = True
@@ -1856,7 +1865,7 @@ class ComplexPointSeries(Line2DBaseSeries):
         return "complex points: %s" % self.expr
 
 
-class ComplexPointInteractiveSeries(InteractiveSeries, ComplexPointSeries):
+class ComplexPointInteractiveSeries(LineInteractiveBaseSeries, ComplexPointSeries):
     """Representation for an interactive line in the complex plane
     consisting of list of points."""
 
@@ -2521,6 +2530,14 @@ class SliceVector3DInteractiveSeries(VectorInteractiveBaseSeries, SliceVector3DS
             self.ranges = {
                 k: v for k, v in zip(discr_symbols, self.slice_surf_series.get_data())
             }
+
+    def _set_discretization_ranges(self, discr_symbols, discretizations):
+        """Set the discretized ranges that will be used in the numerical
+        evaluation.
+        """
+        self.ranges = {
+            k: v for k, v in zip(discr_symbols, self.slice_surf_series.get_data())
+        }
 
     def __str__(self):
         return "sliced " + super().__str__() + " at {}".format(
