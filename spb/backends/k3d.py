@@ -222,11 +222,6 @@ class K3DBackend(Plot):
 
             elif s.is_3Dline:
                 x, y, z, param = s.get_data()
-                # K3D doesn't like masked arrays, so filled them with NaN
-                x, y, z = [
-                    np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) else t
-                    for t in [x, y, z]
-                ]
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 # keyword arguments for the line object
                 a = dict(
@@ -245,11 +240,6 @@ class K3DBackend(Plot):
 
             elif (s.is_3Dsurface and not s.is_domain_coloring):
                 x, y, z = s.get_data()
-                # K3D doesn't like masked arrays, so filled them with NaN
-                x, y, z = [
-                    np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) else t
-                    for t in [x, y, z]
-                ]
 
                 # TODO:
                 # Can I use get_vertices_indices also for non parametric surfaces?
@@ -281,11 +271,6 @@ class K3DBackend(Plot):
 
             elif s.is_3Dvector and s.is_streamlines:
                 xx, yy, zz, uu, vv, ww = s.get_data()
-                # K3D doesn't like masked arrays, so filled them with NaN
-                xx, yy, zz, uu, vv, ww = [
-                    np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray)
-                    else t for t in [xx, yy, zz, uu, vv, ww]]
-
                 vertices, magn = compute_streamtubes(
                     xx, yy, zz, uu, vv, ww, s.rendering_kw)
 
@@ -307,37 +292,25 @@ class K3DBackend(Plot):
 
             elif s.is_3Dvector:
                 xx, yy, zz, uu, vv, ww = s.get_data()
-                # K3D doesn't like masked arrays, so filled them with NaN
-                xx, yy, zz, uu, vv, ww = [
-                    np.ma.filled(t) if isinstance(t, np.ma.core.MaskedArray) else t
-                    for t in [xx, yy, zz, uu, vv, ww]
-                ]
-                xx, yy, zz, uu, vv, ww = [
-                    t.flatten().astype(np.float32) for t in [xx, yy, zz, uu, vv, ww]
-                ]
                 qkw = dict(scale=1)
                 qkw = merge(qkw, s.rendering_kw)
-                scale = qkw["scale"]
-                magnitude = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
-                vectors = np.array((uu, vv, ww)).T * scale
-                origins = np.array((xx, yy, zz)).T
                 quiver_kw = s.rendering_kw
                 if s.use_cm and ("color" not in quiver_kw.keys()):
                     colormap = next(self._cm)
-                    colors = self.k3d.helpers.map_colors(
-                        magnitude, colormap, [])
+                    # store useful info for interactive vector plots
                     self._handles[ii] = [qkw, colormap]
                 else:
+                    colormap = None
                     col = quiver_kw.get("color", next(self._cl))
                     if not isinstance(col, int):
                         col = self._convert_to_int(col)
-                    colors = col * np.ones(len(magnitude))
-                    self._handles[ii] = [qkw, None]
-                vec_colors = np.zeros(2 * len(colors))
-                for i, c in enumerate(colors):
-                    vec_colors[2 * i] = c
-                    vec_colors[2 * i + 1] = c
-                vec_colors = vec_colors.astype(np.uint32)
+                    solid_color = col * np.ones(xx.size)
+                    self._handles[ii] = [qkw, colormap]
+
+                origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap)
+                if colors is None:
+                    colors = solid_color
+                vec_colors = self._create_vector_colors(colors)
 
                 pivot = quiver_kw.get("pivot", "mid")
                 if pivot not in self._qp_offset.keys():
@@ -408,6 +381,39 @@ class K3DBackend(Plot):
             )
         self._fig.auto_rendering = True
 
+    def _build_k3d_vector_data(self, xx, yy, zz, uu, vv, ww, qkw, colormap):
+        """Assemble the origins, vectors and colors (if possible) matrices.
+        """
+        np = import_module('numpy')
+
+        xx, yy, zz, uu, vv, ww = [
+            t.flatten().astype(np.float32) for t in [xx, yy, zz, uu, vv, ww]
+        ]
+        scale = qkw["scale"]
+        magnitude = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
+        vectors = np.array((uu, vv, ww)).T * scale
+        origins = np.array((xx, yy, zz)).T
+
+        colors = None
+        if colormap is not None:
+            colors = self.k3d.helpers.map_colors(
+                magnitude, colormap, [])
+
+        return origins, vectors, colors
+
+    def _create_vector_colors(self, colors):
+        """Create a color matrix. Each vector requires one color for the tail
+        and one for the head.
+        """
+        np = import_module('numpy')
+
+        vec_colors = np.zeros(2 * len(colors))
+        for i, c in enumerate(colors):
+            vec_colors[2 * i] = c
+            vec_colors[2 * i + 1] = c
+        vec_colors = vec_colors.astype(np.uint32)
+        return vec_colors
+
     def _high_aspect_ratio(self, x, y, z):
         """Look for high aspect ratio meshes, where (dz >> dx, dy) and
         eventually set the bounds around the mid point of the mesh in order
@@ -468,23 +474,14 @@ class K3DBackend(Plot):
                         raise NotImplementedError
 
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()
-                    xx, yy, zz, uu, vv, ww = [
-                        t.flatten().astype(np.float32) for t in [xx, yy, zz, uu, vv, ww]
-                    ]
-                    magnitude = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
                     qkw, colormap = self._handles[i]
-                    if colormap is not None:
-                        colors = self.k3d.helpers.map_colors(
-                            magnitude, colormap, [])
-                        vec_colors = np.zeros(2 * len(colors))
-                        for j, c in enumerate(colors):
-                            vec_colors[2 * j] = c
-                            vec_colors[2 * j + 1] = c
-                        vec_colors = vec_colors.astype(np.uint32)
+                    origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap)
+                    if colors is not None:
+                        vec_colors = self._create_vector_colors(colors)
                         self.fig.objects[i].colors = vec_colors
 
-                    scale = qkw["scale"]
-                    vectors = np.array((uu, vv, ww)).T * scale
+                    pivot = s.rendering_kw.get("pivot", "mid")
+                    self.fig.objects[i].origins = origins - vectors * self._qp_offset[pivot]
                     self.fig.objects[i].vectors = vectors
 
                 elif s.is_complex and s.is_3Dsurface:

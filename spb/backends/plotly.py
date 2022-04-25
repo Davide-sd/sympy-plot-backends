@@ -628,7 +628,10 @@ class PlotlyBackend(Plot):
                 elif s.is_vector and s.is_3D:
                     if s.is_streamlines:
                         raise NotImplementedError
-                    _, _, _, u, v, w = self.series[i].get_data()
+                    x, y, z, u, v, w = self.series[i].get_data()
+                    self.fig.data[i]["x"] = x.flatten()
+                    self.fig.data[i]["y"] = y.flatten()
+                    self.fig.data[i]["z"] = z.flatten()
                     self.fig.data[i]["u"] = u.flatten()
                     self.fig.data[i]["v"] = v.flatten()
                     self.fig.data[i]["w"] = w.flatten()
