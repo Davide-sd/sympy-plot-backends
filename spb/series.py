@@ -1496,19 +1496,15 @@ class InteractiveSeries(BaseSeries):
 
             discretizations.append(d)
 
+        # TODO: this is better to move into a dedicated method. Then, subclasses
+        # override this method.
         if len(ranges) == 1:
             # 2D or 3D lines
             self.ranges = {k: v for k, v in zip(discr_symbols, discretizations)}
         else:
-            _slice = kwargs.get("slice", None)
-            if _slice is not None:
-                # sliced 3D vector fields: the discretizations are provided by
-                # the plane or the surface
-                kwargs2 = kwargs.copy()
-                kwargs2 = _set_discretization_points(kwargs2, SliceVector3DSeries)
-                slice_surf = _build_slice_series(_slice, ranges, **kwargs2)
+            if hasattr(self, "slice_surf_series") and self.slice_surf_series is not None:
                 self.ranges = {
-                    k: v for k, v in zip(discr_symbols, slice_surf.get_data())
+                    k: v for k, v in zip(discr_symbols, self.slice_surf_series.get_data())
                 }
             else:
                 # surfaces: needs mesh grids
@@ -2329,8 +2325,6 @@ class VectorBase(BaseSeries):
     def get_label(self, use_latex=False, wrapper="$%s$"):
         if use_latex:
             expr = self.get_expr()
-            if self.is_slice and self.is_interactive:
-                expr = expr[1:]
             if self.label != str(expr):
                 return self._latex_label
             return self._get_wrapped_label(self._latex_label, wrapper)
@@ -2479,17 +2473,16 @@ class SliceVector3DSeries(Vector3DSeries):
     """
     is_slice = True
 
-    def __init__(self, plane, u, v, w, range_x, range_y, range_z, label="", **kwargs):
-        self.plane = _build_slice_series(plane, [range_x, range_y, range_z], **kwargs)
+    def __init__(self, slice_surf, u, v, w, range_x, range_y, range_z, label="", **kwargs):
+        self.slice_surf_series = _build_slice_series(slice_surf, [range_x, range_y, range_z], **kwargs)
         super().__init__(u, v, w, range_x, range_y, range_z, label, **kwargs)
 
     def _discretize(self):
-        return self.plane.get_data()
+        return self.slice_surf_series.get_data()
 
     def __str__(self):
-        s = "sliced " + super().__str__() + " at {}".format(
-            self.plane)
-        return s
+        return "sliced " + super().__str__() + " at {}".format(
+            self.slice_surf_series)
 
 
 class SliceVector3DInteractiveSeries(VectorInteractiveBaseSeries, SliceVector3DSeries):
@@ -2497,13 +2490,41 @@ class SliceVector3DInteractiveSeries(VectorInteractiveBaseSeries, SliceVector3DS
     The slice can be a Plane or a surface.
     """
     def __init__(self, *args, **kwargs):
+        slice_surf = kwargs.get("slice", None)
+        ranges = args[1]
+        kwargs2 = kwargs.copy()
+        kwargs2 = _set_discretization_points(kwargs2, SliceVector3DSeries)
+        res = _build_slice_series(slice_surf, ranges, **kwargs2)
+        self.slice_surf_series = res
         super().__init__(*args, **kwargs)
-        self.plane = kwargs.get("slice", None)
-        expr = self.expr
-        self._latex_label = self.label if str(expr[1:]) != self.label else latex(expr[1:])
+
+    @property
+    def params(self):
+        """Get or set the current parameters dictionary.
+
+        Parameters
+        ==========
+
+        p : dict
+            key: symbol associated to the parameter
+            val: the value
+        """
+        return self._params
+
+    @params.setter
+    def params(self, p):
+        self._params = p
+        if self.slice_surf_series.is_interactive:
+            # update both parameters and discretization ranges
+            self.slice_surf_series.params = p
+            discr_symbols = self.ranges.keys()
+            self.ranges = {
+                k: v for k, v in zip(discr_symbols, self.slice_surf_series.get_data())
+            }
 
     def __str__(self):
-        return "sliced " + super().__str__() + " over: " + str(self.plane)
+        return "sliced " + super().__str__() + " at {}".format(
+            self.slice_surf_series)
 
 
 class PlaneSeries(SurfaceBaseSeries):

@@ -11,6 +11,8 @@ from sympy.geometry import Plane, Circle, Point
 from sympy.concrete.summations import Sum
 from sympy.core.singleton import S
 from sympy.external import import_module
+from sympy.vector import CoordSys3D, gradient
+
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
@@ -1367,7 +1369,7 @@ def test_str():
         [u * z, u * y, x],
         [(x, -5, 4), (y, -3, 2), (z, -6, 7)], "test",
         slice=Plane((0, 0, 0), (1, 0, 0)), params={u: 1})
-    assert str(s) == "sliced interactive 3D vector series: (u*z, u*y, x) with ranges (x, 0.0, 0.0), (y, -3.0, 2.0), (z, -6.0, 7.0) and parameters (u,) over: Plane(Point3D(0, 0, 0), (1, 0, 0))"
+    assert str(s) == "sliced interactive 3D vector series: (u*z, u*y, x) with ranges (x, 0.0, 0.0), (y, -3.0, 2.0), (z, -6.0, 7.0) and parameters (u,) at plane series: Plane(Point3D(0, 0, 0), (1, 0, 0)) over (x, -5, 4), (y, -3, 2), (z, -6, 7)"
 
     s = PlaneSeries(Plane((0, 0, 0), (1, 1, 1)),
         (x, -5, 4), (y, -3, 2), (z, -6, 7), "test")
@@ -2092,10 +2094,12 @@ def test_interactive_series_labels():
     assert s2.get_label(False) == "test"
     assert s2.get_label(True) == "test"
 
-    s1 = SliceVector3DInteractiveSeries([Plane((-1, 0, 0), (1, 0, 0)), *expr],
-        [(x, -2, 2), (y, -2, 2), (z, -2, 2)], str(expr), params={u: 1})
-    s2 = SliceVector3DInteractiveSeries([Plane((-1, 0, 0), (1, 0, 0)), *expr],
-        [(x, -2, 2), (y, -2, 2), (z, -2, 2)], "test", params={u: 1})
+    s1 = SliceVector3DInteractiveSeries(expr,
+        [(x, -2, 2), (y, -2, 2), (z, -2, 2)], str(expr),
+        slice=Plane((-1, 0, 0), (1, 0, 0)), params={u: 1})
+    s2 = SliceVector3DInteractiveSeries(expr,
+        [(x, -2, 2), (y, -2, 2), (z, -2, 2)], "test",
+        slice=Plane((-1, 0, 0), (1, 0, 0)), params={u: 1})
     assert s1.get_label(False) == str(expr)
     assert s1.get_label(True) == wrapper % latex(expr)
     assert s2.get_label(False) == "test"
@@ -2198,3 +2202,46 @@ def test_surface_use_cm():
     s4 = SurfaceInteractiveSeries([x * u * cos(v), u * sin(v), u],
         [(u, 0, 1), (v, 0 , 2*pi)], params={x: 1}, use_cm=True)
     assert s1.use_cm == s2.use_cm == s3.use_cm == s4.use_cm == True
+
+
+def test_sliced_vector_interactive_series():
+    # verify that SliceVector3DInteractiveSeries using an instance of
+    # SurfaceInteractiveSeries as a slice, produced the correct results,
+    # ie both the vector series and the slice series updates their parameters.
+    x, y, z, u, v, t = symbols("x, y, z, u, v, t")
+
+    N = CoordSys3D("N")
+    i, j, k = N.base_vectors()
+    xn, yn, zn = N.base_scalars()
+    expr = -xn**2 * tan(t)**2 + yn**2 + zn**2
+    g = gradient(expr)
+    m = g.magnitude()
+
+    slice_series = ParametricSurfaceInteractiveSeries(
+        [u / tan(t), u * cos(v), u * sin(v)],
+        [(u, 0.0, 1.0), (v, 0.0, 2 * pi)], label="slice",
+        params={t: 0.5},  n1=5, n2=5)
+    slice_copy = ParametricSurfaceInteractiveSeries(
+        [u / tan(t), u * cos(v), u * sin(v)],
+        [(u, 0.0, 1.0), (v, 0.0, 2 * pi)], label="slice_copy",
+        params={t: 0.5},  n1=5, n2=5)
+    s = SliceVector3DInteractiveSeries(
+        (g / m).to_matrix(N),
+        [(xn, -5, 5), (yn, -5, 5), (zn, -5, 5)], label="vector",
+        params={t: 0.5}, slice=slice_series)
+
+    x1, y1, z1 = slice_copy.get_data()
+    x3, y3, z3 = slice_series.get_data()
+    x2, y2, z2, _, _, _ = s.get_data()
+    assert np.allclose(x1, x2) and np.allclose(y1, y2) and np.allclose(z1, z2)
+    assert np.allclose(x1, x3) and np.allclose(y1, y3) and np.allclose(z1, z3)
+
+    # now update the parameter: slice shoud produce the same data as slice_copy
+    v = 0.25
+    slice_copy.params = {t: v}
+    s.params = {t: v}
+    x1, y1, z1 = slice_copy.get_data()
+    x3, y3, z3 = slice_series.get_data()
+    x2, y2, z2, _, _, _ = s.get_data()
+    assert np.allclose(x1, x2) and np.allclose(y1, y2) and np.allclose(z1, z2)
+    assert np.allclose(x1, x3) and np.allclose(y1, y3) and np.allclose(z1, z3)
