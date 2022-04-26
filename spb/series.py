@@ -2473,6 +2473,7 @@ def _build_slice_series(slice_surf, ranges, **kwargs):
         if slice_surf.is_3Dsurface:
             return slice_surf
         raise TypeError("Only 3D surface-related series are supported.")
+
     # If the vector field is V(x, y, z), the slice expression can be f(x, y)
     # or f(y, z) or f(x, z). Extract the correct ranges.
     fs = slice_surf.free_symbols
@@ -2484,6 +2485,10 @@ def _build_slice_series(slice_surf, ranges, **kwargs):
     kwargs2 = kwargs.copy()
     kwargs2["n1"] = n[idx[0]]
     kwargs2["n2"] = n[idx[1]]
+
+    if ("params" in kwargs2.keys() and
+    any(s in kwargs2["params"].keys() for s in slice_surf.free_symbols)):
+        return SurfaceInteractiveSeries([slice_surf], new_ranges, **kwargs2)
     return SurfaceOver2DRangeSeries(slice_surf, *new_ranges, **kwargs2)
 
 

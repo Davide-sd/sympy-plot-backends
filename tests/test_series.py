@@ -2252,7 +2252,7 @@ def test_sliced_vector_series_slice_exprs():
     # the slice expression can be f(x, y) or f(y, z) or f(x, z) and the series
     # would return correct data.
 
-    x, y, z, u, v, t = symbols("x, y, z, u, v, t")
+    x, y, z = symbols("x, y, z")
 
     _slice_xy = cos(sqrt(x**2 + y**2))
     s = SliceVector3DSeries(
@@ -2280,3 +2280,21 @@ def test_sliced_vector_series_slice_exprs():
     assert all(d.shape == (12, 4) for d in data)
     assert np.allclose(data[0][0, :], np.linspace(-10, 10, 4))
     assert np.allclose(data[2][:, 0], np.linspace(-3, 3, 12))
+
+
+def test_sliced_vector_series_slice_instantiation():
+    # verify that the sliced surface is instantiated correctly.
+
+    x, y, z, t = symbols("x, y, z, t")
+
+    _slice_xy = cos(sqrt(x**2 + y**2))
+    s = SliceVector3DSeries(
+        _slice_xy, z, y, x, (x, -10, 10), (y, -5, 5), (z, -3, 3),
+        n1=4, n2=8, n3=12)
+    assert isinstance(s.slice_surf_series, SurfaceOver2DRangeSeries)
+
+    _slice_xy = cos(sqrt(x**2 + y**2)) * t
+    s = SliceVector3DSeries(
+        _slice_xy, z, y, x, (x, -10, 10), (y, -5, 5), (z, -3, 3),
+        n1=4, n2=8, n3=12, params={t: 1})
+    assert isinstance(s.slice_surf_series, SurfaceInteractiveSeries)
