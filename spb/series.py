@@ -2466,14 +2466,25 @@ class Vector3DInteractiveSeries(VectorInteractiveBaseSeries, Vector3DSeries):
     pass
 
 
-def _build_slice_series(plane, ranges, **kwargs):
-    if isinstance(plane, Plane):
-        return PlaneSeries(sympify(plane), *ranges, **kwargs)
-    elif isinstance(plane, BaseSeries):
-        if plane.is_3Dsurface:
-            return plane
+def _build_slice_series(slice_surf, ranges, **kwargs):
+    if isinstance(slice_surf, Plane):
+        return PlaneSeries(sympify(slice_surf), *ranges, **kwargs)
+    elif isinstance(slice_surf, BaseSeries):
+        if slice_surf.is_3Dsurface:
+            return slice_surf
         raise TypeError("Only 3D surface-related series are supported.")
-    return SurfaceOver2DRangeSeries(plane, *ranges, **kwargs)
+    # If the vector field is V(x, y, z), the slice expression can be f(x, y)
+    # or f(y, z) or f(x, z). Extract the correct ranges.
+    fs = slice_surf.free_symbols
+    new_ranges = [r for r in ranges if r[0] in fs]
+    # apply the correct discretization number
+    n = [kwargs.get("n1", 10), kwargs.get("n2", 10), kwargs.get("n3", 10)]
+    discr_symbols = [r[0] for r in ranges]
+    idx = [discr_symbols.index(s) for s in [r[0] for r in new_ranges]]
+    kwargs2 = kwargs.copy()
+    kwargs2["n1"] = n[idx[0]]
+    kwargs2["n2"] = n[idx[1]]
+    return SurfaceOver2DRangeSeries(slice_surf, *new_ranges, **kwargs2)
 
 
 class SliceVector3DSeries(Vector3DSeries):
@@ -2487,7 +2498,29 @@ class SliceVector3DSeries(Vector3DSeries):
         super().__init__(u, v, w, range_x, range_y, range_z, label, **kwargs)
 
     def _discretize(self):
-        return self.slice_surf_series.get_data()
+        data = self.slice_surf_series.get_data()
+        if (isinstance(self.slice_surf_series, PlaneSeries) or
+        self.slice_surf_series.is_parametric):
+            return data
+
+        # NOTE: let's say the vector field is discretized along x, y, z (in
+        # this order), and the slice surface is f(y, z). Then, data will be
+        # [yy, zz, f(yy, zz)], which has not the correct order expected by
+        # the vector field's discretization. Here we are going to fix that.
+
+        # symbols used by this vector's discretization
+        discr_symbols = [r[0] for r in self.ranges]
+        # slice surface free symbols
+        # don't use self.slice_surf_series.free_symbols as this expression
+        # might not use both its discretization symbols
+        ssfs = [self.slice_surf_series.var_x, self.slice_surf_series.var_y]
+        # given f(y, z), we already have y, z (ssfs), now find x
+        missing_symbol = list(set(discr_symbols).difference(ssfs))
+        # ordered symbols in the returned data
+        returned_symbols = ssfs + missing_symbol
+        # output order
+        order = [returned_symbols.index(s) for s in discr_symbols]
+        return [data[k] for k in order]
 
     def __str__(self):
         return "sliced " + super().__str__() + " at {}".format(

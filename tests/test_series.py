@@ -2245,3 +2245,38 @@ def test_sliced_vector_interactive_series():
     x2, y2, z2, _, _, _ = s.get_data()
     assert np.allclose(x1, x2) and np.allclose(y1, y2) and np.allclose(z1, z2)
     assert np.allclose(x1, x3) and np.allclose(y1, y3) and np.allclose(z1, z3)
+
+
+def test_sliced_vector_series_slice_exprs():
+    # given a vector field discretized in some domain, for example x,y,z,
+    # the slice expression can be f(x, y) or f(y, z) or f(x, z) and the series
+    # would return correct data.
+
+    x, y, z, u, v, t = symbols("x, y, z, u, v, t")
+
+    _slice_xy = cos(sqrt(x**2 + y**2))
+    s = SliceVector3DSeries(
+        _slice_xy, z, y, x, (x, -10, 10), (y, -5, 5), (z, -3, 3),
+        n1=4, n2=8, n3=12)
+    data = s.get_data()
+    assert all(d.shape == (8, 4) for d in data)
+    assert np.allclose(data[0][0, :], np.linspace(-10, 10, 4))
+    assert np.allclose(data[1][:, 0], np.linspace(-5, 5, 8))
+
+    _slice_yz = cos(sqrt(y**2 + z**2))
+    s = SliceVector3DSeries(
+        _slice_yz, z, y, x, (x, -10, 10), (y, -5, 5), (z, -3, 3),
+        n1=4, n2=8, n3=12)
+    data = s.get_data()
+    assert all(d.shape == (12, 8) for d in data)
+    assert np.allclose(data[1][0, :], np.linspace(-5, 5, 8))
+    assert np.allclose(data[2][:, 0], np.linspace(-3, 3, 12))
+
+    _slice_xz = cos(sqrt(x**2 + z**2))
+    s = SliceVector3DSeries(
+        _slice_xz, z, y, x, (x, -10, 10), (y, -5, 5), (z, -3, 3),
+        n1=4, n2=8, n3=12)
+    data = s.get_data()
+    assert all(d.shape == (12, 4) for d in data)
+    assert np.allclose(data[0][0, :], np.linspace(-10, 10, 4))
+    assert np.allclose(data[2][:, 0], np.linspace(-3, 3, 12))

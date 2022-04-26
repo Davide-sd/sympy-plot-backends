@@ -202,7 +202,7 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
         def _check_slice(s):
             if not isinstance(s, (Expr, Plane, BaseSeries)):
                 raise ValueError(
-                    "A slice must be of type Plane or Expr.\n"
+                    "A slice must be of type Plane or Expr or BaseSeries.\n"
                     + "Received: {}, {}".format(type(s), s)
                 )
 
