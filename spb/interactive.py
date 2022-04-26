@@ -75,6 +75,10 @@ class DynamicParam(param.Parameterized):
         """
         np = import_module('numpy')
 
+        if not hasattr(v, "__iter__"):
+            raise TypeError(
+                "Provide a tuple or list for the parameter {}".format(k))
+
         if len(v) >= 5:
             # remove tick_format, as it won't be used for the creation of the
             # parameter. Its value has already been stored.
