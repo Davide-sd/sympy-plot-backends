@@ -221,9 +221,8 @@ Differences with sympy.plotting
   Boolean expressions are found. This ensures a better visualization for
   non-Boolean implicit expressions.
 
-* ``experimental_lambdify``, used by `sympy.plotting`, has been almost
-  completely removed. It is only used by the plot implicit algorithm. All other
-  plot functions use ``lambdify``.
+* ``experimental_lambdify``, used by `sympy.plotting`, has been completely
+  removed.
 
 * `sympy.plotting` is unable to visualize summations containing infinity in
   their lower/upper bounds. The new module introduces the ``sum_bound`` keyword
