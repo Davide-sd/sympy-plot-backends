@@ -904,6 +904,7 @@ class SurfaceBaseSeries(BaseSeries):
         self.modules = kwargs.get("modules", None)
         self._rendering_kw = kwargs.get("surface_kw", dict())
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
+        self.is_polar = kwargs.get("is_polar", False)
         self._init_transforms(**kwargs)
 
     def _set_surface_label(self, label):
@@ -989,11 +990,20 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         z : np.ndarray [n2 x n1]
             Results of the evaluation.
         """
+        np = import_module('numpy')
+
         if self.adaptive:
             res = self._adaptive_sampling()
         else:
             res = self._uniform_sampling()
-        return self._apply_transform(*res)
+
+        x, y, z = res
+        r = x.copy()
+        if self.is_polar:
+            x = r * np.cos(y)
+            y = r * np.sin(y)
+
+        return self._apply_transform(x, y, z)
 
 
 class ParametricSurfaceSeries(SurfaceBaseSeries):
@@ -1768,8 +1778,13 @@ class SurfaceInteractiveSeries(InteractiveSeries):
         results = self._evaluate()[0]
         _re, _im = np.real(results), np.imag(results)
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
-        discr = [np.real(t) for t in self.ranges.values()]
-        return self._apply_transform(*discr, _re)
+        x, y = [np.real(t) for t in self.ranges.values()]
+
+        r = x.copy()
+        if self.is_polar:
+            x = r * np.cos(y)
+            y = r * np.sin(y)
+        return self._apply_transform(x, y, _re)
 
     def __str__(self):
         return self._str("cartesian surface")
@@ -1939,6 +1954,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         self.modules = kwargs.get("modules", None)
         self.only_integers = kwargs.get("only_integers", False)
         self.use_cm = kwargs.get("use_cm", True)
+        self.is_polar = kwargs.get("is_polar", False)
 
         # domain coloring mode
         self.coloring = kwargs.get("coloring", "a")

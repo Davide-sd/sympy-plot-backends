@@ -320,7 +320,8 @@ def plot(*args, show=True, **kwargs):
         discretization points is choosen by the algorithm.
 
     is_polar : boolean, optional
-        Default to False. If True, request the backend to use a 2D polar chart.
+        Default to False. If True, requests the backend to use a 2D polar
+        chart.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -979,6 +980,11 @@ def plot3d(*args, show=True, **kwargs):
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
 
+    is_polar : boolean, optional
+        Default to False. If True, requests a polar discretization. In this
+        case, ``range_x`` represents the radius, ``range_y`` represents the
+        angle.
+
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -1082,6 +1088,19 @@ def plot3d(*args, show=True, **kwargs):
        [0]: cartesian surface: cos(x**2 + y**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
 
 
+    Single plot with a polar discretization:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> r, theta = symbols("r, theta")
+       >>> plot3d(cos(r**2), (r, 0, 3.25), (theta, 0, 2 * pi), is_polar=True)
+       Plot object containing:
+       [0]: cartesian surface: cos(r**2) for r over (0.0, 3.25) and theta over (0.0, 6.283185307179586)
+
+
     Multiple plots with same range. Set ``use_cm=True`` to distinguish the
     expressions:
 
@@ -1142,6 +1161,14 @@ def plot3d(*args, show=True, **kwargs):
     kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
     kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
     kwargs.setdefault("zlabel", lambda use_latex: "f(%s, %s)" % (series[0].var_x.name, series[0].var_y.name) if not use_latex else r"f\left(%s, %s\right)" % (latex(series[0].var_x), latex(series[0].var_y)))
+
+    # if a polar discretization is requested and automatic labelling has ben
+    # applied, hide the labels on the x-y axis.
+    if kwargs.get("is_polar", False):
+        if callable(kwargs["xlabel"]):
+            kwargs["xlabel"] = ""
+        if callable(kwargs["ylabel"]):
+            kwargs["ylabel"] = ""
 
     Backend = kwargs.pop("backend", THREE_D_B)
     plots = Backend(*series, **kwargs)
@@ -1365,6 +1392,15 @@ def plot_contour(*args, show=True, **kwargs):
     ylabel = series[0].var_y.name
     kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
     kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
+
+    # if a polar discretization is requested and automatic labelling has ben
+    # applied, hide the labels on the x-y axis.
+    if kwargs.get("is_polar", False):
+        if callable(kwargs["xlabel"]):
+            kwargs["xlabel"] = ""
+        if callable(kwargs["ylabel"]):
+            kwargs["ylabel"] = ""
+
     Backend = kwargs.pop("backend", TWO_D_B)
     plot_contours = Backend(*series, **kwargs)
     if show:

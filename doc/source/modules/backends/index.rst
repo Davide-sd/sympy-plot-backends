@@ -60,13 +60,6 @@ In particular:
   scale the visualization. What you see is the object as you would see it in
   reality.
 
-It is interesting to note that when in comes to 3D plots, Plotly and K3D are
-able to deal with NaN values, whereas Matplolib is not. For example:
-
-* ``plot3d(sqrt(x * y), (x, -3, 3), (y, -3, 3), backend=MB, n=50)`` don't work
-* ``plot3d(sqrt(x * y), (x, -3, 3), (y, -3, 3), backend=PB, n=50)`` works fine
-* ``plot3d(sqrt(x * y), (x, -3, 3), (y, -3, 3), backend=KB, n=50)`` works fine
-
 We can choose the appropriate backend for our use case at runtime by setting the keyword argument ``backend=`` in the function call. We can also
 set the default backends for 2D and 3D plots in a configuration file by using
 the :doc:`Defaults module <../defaults>` .

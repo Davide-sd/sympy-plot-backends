@@ -367,7 +367,12 @@ def create_series(*args, **kwargs):
         one for the real part, one for the imaginary part, ...).
 
     is_polar : boolean, optional
-        Default to False. If True, request the backend to use a 2D polar chart.
+        Default to False. If True:
+
+        * for a 2D line plot requests the backend to use a polar chart.
+        * for a 3D surface (or contour) requests a polar discretization.
+          In this case, the first range represents the radius, the second one
+          represents the angle.
 
     is_vector : boolean, optional
         Default to False. If True, it directs the internal algorithm to
