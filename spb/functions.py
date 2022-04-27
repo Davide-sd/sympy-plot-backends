@@ -319,9 +319,8 @@ def plot(*args, show=True, **kwargs):
         `adaptive=False`. When `only_integers=True`, the number of
         discretization points is choosen by the algorithm.
 
-    polar : boolean
-        Default to `False`. If `True`, generate a polar plot of a curve
-        with radius `expr` as a function of the range.
+    is_polar : boolean, optional
+        Default to False. If True, request the backend to use a 2D polar chart.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -1615,8 +1614,7 @@ def plot_polar(*args, **kwargs):
         :format: doctest
         :include-source: True
 
-        >>> plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
-        ...     polar=True, aspect="equal")
+        >>> plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi), aspect="equal")
 
     See Also
     ========
@@ -1625,8 +1623,10 @@ def plot_polar(*args, **kwargs):
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
 
     """
-    kwargs["polar"] = True
+    kwargs["is_polar"] = True
     kwargs.setdefault("axis", "equal")
+    kwargs.setdefault("xlabel", "")
+    kwargs.setdefault("ylabel", "")
     return plot(*args, **kwargs)
 
 

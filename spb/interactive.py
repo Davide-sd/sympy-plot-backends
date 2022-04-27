@@ -366,6 +366,9 @@ def create_series(*args, **kwargs):
         create all the necessary series to create a complex plot (for example,
         one for the real part, one for the imaginary part, ...).
 
+    is_polar : boolean, optional
+        Default to False. If True, request the backend to use a 2D polar chart.
+
     is_vector : boolean, optional
         Default to False. If True, it directs the internal algorithm to
         create all the necessary series to create a vector plot (for example,
@@ -767,10 +770,6 @@ def iplot(*args, show=True, **kwargs):
         Number of discretization points for the contour plot when
         `is_vector=True`.
 
-    polar : boolean, optional
-        Default to False. If True, generate a polar plot of a curve with
-        radius `expr` as a function of the range
-
     throttled : boolean, optional
         Default to False. If True the recompute will be done at mouse-up event
         on sliders. If False, every slider tick will force a recompute.
@@ -999,7 +998,7 @@ def iplot(*args, show=True, **kwargs):
                r: (2, 2, 5, 3),
                c: (3, 1, 5, 4)
            },
-           polar = True,
+           is_polar = True,
            use_latex = False,
            backend = BB,
            aspect = "equal",

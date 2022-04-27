@@ -386,7 +386,10 @@ class BokehBackend(Plot):
                         source = {"xs": x, "ys": y, "us": param}
                     else:
                         x, y = s.get_data()
-                        source = {"xs": x, "ys": y}
+                        source = {
+                            "xs": x if not s.is_polar else y * np.cos(x),
+                            "ys": x if not s.is_polar else y * np.sin(x)
+                        }
 
                     lkw = dict(line_width=2,
                         legend_label=s.get_label(self._use_latex),
@@ -578,6 +581,8 @@ class BokehBackend(Plot):
         return data_source, glyph, colorbar, kw
 
     def _update_interactive(self, params):
+        np = import_module('numpy')
+
         rend = self.fig.renderers
         if len(rend) != len(self.series):
             self._process_series(self.series)
@@ -600,7 +605,10 @@ class BokehBackend(Plot):
                         source = {"xs": x, "ys": y, "us": param}
                     else:
                         x, y = self.series[i].get_data()
-                        source = {"xs": x, "ys": y}
+                        source = {
+                            "xs": x if not s.is_polar else y * np.cos(x),
+                            "ys": x if not s.is_polar else y * np.sin(x)
+                        }
                     rend[i].data_source.data.update(source)
 
                 elif s.is_contour and (not s.is_complex):

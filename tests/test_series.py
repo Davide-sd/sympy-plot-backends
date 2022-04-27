@@ -371,27 +371,6 @@ def test_lin_log_scale():
         zz[0, 0, :][1] - zz[0, 0, :][0], zz[0, 0, :][-1] - zz[0, 0, :][-2]
     )
 
-def test_polar():
-    # test that polar=True produces a different result than polar=False
-    x, u = symbols("x, u")
-
-    s1 = LineOver1DRangeSeries(1 + sin(10 * x) / 10, (x, 0, 2 * pi), "",
-        polar=False)
-    xx1, yy1 = s1.get_data()
-    s2 = LineOver1DRangeSeries(1 + sin(10 * x) / 10, (x, 0, 2 * pi), "",
-        polar=True)
-    xx2, yy2 = s2.get_data()
-    assert not np.allclose(xx1, xx2)
-    assert not np.allclose(yy1, yy2)
-
-    s1 = LineInteractiveSeries([1 + sin(u * x) / 10], [(x, 0, 2 * pi)], "",
-        params={u: 10}, polar=False)
-    xx1, yy1 = s1.get_data()
-    s2 = LineInteractiveSeries([1 + sin(u * x) / 10], [(x, 0, 2 * pi)], "",
-        params={u: 10}, polar=True)
-    xx2, yy2 = s2.get_data()
-    assert not np.allclose(xx1, xx2)
-    assert not np.allclose(yy1, yy2)
 
 def test_rendering_kw():
     # verify that each series exposes the `rendering_kw` attribute

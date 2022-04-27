@@ -12,7 +12,7 @@ from spb import (
     plot, plot3d, plot_contour, plot_implicit,
     plot_parametric, plot3d_parametric_line,
     plot_vector, plot_complex, plot_geometry, plot_real_imag,
-    plot_list, plot_piecewise
+    plot_list, plot_piecewise, plot_polar
 )
 from sympy import latex, gamma
 from sympy.core.symbol import symbols
@@ -32,7 +32,7 @@ import os
 np = import_module('numpy', catch=(RuntimeError,))
 matplotlib = import_module(
     'matplotlib',
-    import_kwargs={'fromlist':['pyplot', 'axes', 'cm', 'collections', 'colors', 'quiver']},
+    import_kwargs={'fromlist':['pyplot', 'axes', 'cm', 'collections', 'colors', 'quiver', 'projections']},
     min_module_version='1.1.0',
     catch=(RuntimeError,))
 plt = matplotlib.pyplot
@@ -2518,3 +2518,25 @@ def test_k3d_vector_pivot():
     assert not np.allclose(p1.fig.objects[0].origins, p2.fig.objects[0].origins, equal_nan=True)
     assert not np.allclose(p1.fig.objects[0].origins, p3.fig.objects[0].origins, equal_nan=True)
     assert not np.allclose(p2.fig.objects[0].origins, p3.fig.objects[0].origins, equal_nan=True)
+
+
+def test_plot_polar():
+    # verify that 2D polar plot uses polar projection
+    x = symbols("x")
+    _plot_polar = lambda B: plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
+        backend=B, aspect="equal", show=False)
+
+    p = _plot_polar(MB)
+    fig = p.fig
+    assert isinstance(fig.axes[0], matplotlib.projections.polar.PolarAxes)
+
+    p1 = _plot_polar(PB)
+    assert isinstance(p1.fig.data[0], go.Scatterpolar)
+
+    # Bokeh doesn't have polar projection. Here we check that the backend
+    # transforms the data.
+    p2 = _plot_polar(BB)
+    plotly_data = p1[0].get_data()
+    bokeh_data = p2.fig.renderers[0].data_source.data
+    assert not np.allclose(plotly_data[0], bokeh_data["xs"])
+    assert not np.allclose(plotly_data[1], bokeh_data["ys"])

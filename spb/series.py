@@ -268,6 +268,10 @@ class BaseSeries:
     is_geometry = False
     # If True, it represents an object of the sympy.geometry module
 
+    is_polar = False
+    # If True, the backend will attempt to render it on a polar-projection
+    # axis. Only 2D lines support such functionality.
+
     use_cm = True
     # Some series might use a colormap as default coloring. Setting this
     # attribute to False will inform the backends to use solid color.
@@ -521,6 +525,7 @@ class List2DSeries(Line2DBaseSeries):
                 "Received: len(list_x) = {} ".format(len(self.list_x)) +
                 "and len(list_y) = {}".format(len(self.list_y))
             )
+        self.is_polar = kwargs.get("is_polar", False)
         self.label = label
         self._latex_label = label
 
@@ -559,7 +564,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                 "%s requires the imaginary " % self.__class__.__name__ +
                 "part of the start and end values of the range "
                 "to be the same.")
-        self.polar = kwargs.get("polar", False)
+        self.is_polar = kwargs.get("is_polar", False)
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
 
@@ -663,8 +668,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         # to NaN where there are non-zero imaginary elements
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
 
-        if self.polar:
-            return _re * np.cos(x), _re * np.sin(x)
         if self.detect_poles:
             return self._detect_poles(x, _re, self.eps)
         return x, _re
@@ -1424,7 +1427,7 @@ class InteractiveSeries(BaseSeries):
         self.n3 = kwargs.get("n3", 250)
         n = [self.n1, self.n2, self.n3]
         self.modules = kwargs.get("modules", None)
-        self.polar = kwargs.get("polar", False)
+        self.is_polar = kwargs.get("is_polar", False)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.only_integers = kwargs.get("only_integers", False)
@@ -1630,8 +1633,6 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
         discr = np.real(list(self.ranges.values())[0])
 
-        if self.polar:
-            return _re * np.cos(discr), _re * np.sin(discr)
         if self.detect_poles:
             return LineOver1DRangeSeries._detect_poles(discr, _re, self.eps)
 

@@ -236,6 +236,8 @@ class MatplotlibBackend(Plot):
             kwargs = dict(aspect=aspect)
             if all(is_3D):
                 kwargs["projection"] = "3d"
+            elif any(s.is_polar for s in self.series):
+                kwargs["projection"] = "polar"
             self.ax = self._fig.add_subplot(1, 1, 1, **kwargs)
 
     @property

@@ -305,7 +305,11 @@ class PlotlyBackend(Plot):
                                 )
                             )
                     kw = merge({}, lkw, s.rendering_kw)
-                    self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
+                    if s.is_polar:
+                        kw.setdefault("thetaunit", "radians")
+                        self._fig.add_trace(go.Scatterpolar(r=y, theta=x, **kw))
+                    else:
+                        self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
             elif s.is_3Dline:
                 # NOTE: As a design choice, I decided to show the legend entry
                 # as well as the colorbar (if use_cm=True). Even though the
@@ -600,9 +604,13 @@ class PlotlyBackend(Plot):
 
                 elif s.is_2Dline:
                     x, y = self.series[i].get_data()
-                    if s.is_geometry:
-                        self.fig.data[i]["x"] = x
-                    self.fig.data[i]["y"] = y
+                    if not s.is_polar:
+                        if s.is_geometry:
+                            self.fig.data[i]["x"] = x
+                        self.fig.data[i]["y"] = y
+                    else:
+                        self.fig.data[i]["r"] = y
+                        self.fig.data[i]["theta"] = x
 
                 elif s.is_3Dline:
                     x, y, z, param = s.get_data()
@@ -707,6 +715,11 @@ class PlotlyBackend(Plot):
                 showgrid=self.grid,  # thin lines in the background
                 zeroline=self.grid,  # thick line at x=0
                 scaleanchor="x" if self.aspect == "equal" else None,
+            ),
+            polar=dict(
+                angularaxis={'direction': 'counterclockwise', 'rotation': 0},
+                radialaxis={'range': None if not self.ylim else self.ylim},
+                sector=None if not self.xlim else self.xlim
             ),
             margin=dict(
                 t=50,
