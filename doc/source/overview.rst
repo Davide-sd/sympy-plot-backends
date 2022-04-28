@@ -72,7 +72,22 @@ this module. Please, try them on a Jupyter Notebook to explore the interactive
 figures.
 
 
-Simple 3D plot with K3D-Jupyter:
+Polar plot with Matplotlib:
+
+.. code-block:: python
+
+   from sympy import symbols, sin, cos, pi, latex
+   from spb import plot_polar
+   x = symbols("x")
+   expr = sin(2 * x) * cos(5 * x) + pi / 2
+   plot_polar(expr, (x, 0, 2 * pi), ylim=(0, 3), title="$%s$" % latex(expr))
+
+.. image:: _static/polar_matplotlib.png
+  :width: 600
+  :alt: polar plot with matplotlib
+
+
+3D plot with K3D-Jupyter and cartesian discretization:
 
 .. code-block:: python
 
@@ -88,7 +103,28 @@ Simple 3D plot with K3D-Jupyter:
 
 .. image:: _static/k3d-2.png
   :width: 600
-  :alt: iplot with bokeh
+  :alt: surface plot with k3d
+
+
+3D plot with K3D-Jupyter and polar discretization. Two identical expressions
+are going to be plotted, one will display the mesh with a solid color, the
+other will display the wireframe. Customization on the colors, solid/wireframe
+can easily be done after the plot is created:
+
+.. code-block:: python
+
+   from sympy import symbols, cos, sin, pi, latex
+   from spb import plot3d, KB
+   r, theta = symbols("r, theta")
+   expr = cos(r) * cos(sin(4 * theta))
+   plot3d(
+       expr, expr, (r, 0, 2), (theta, 0, 2 * pi),
+       n1=50, n2=200, is_polar=True, grid=False,
+       title=r"f\left(r, \theta\right) = " + latex(expr), backend=KB)
+
+.. image:: _static/k3d-3.png
+  :width: 600
+  :alt: surface plot with k3d
 
 
 Visualizing a 2D vector field:
@@ -109,7 +145,7 @@ Visualizing a 2D vector field:
 
 .. image:: _static/plotly-vectors.png
   :width: 600
-  :alt: iplot with bokeh
+  :alt: 2D vector plot with plotly
 
 
 Visualizing a 3D vector field with a random number of streamtubes:
@@ -129,7 +165,7 @@ Visualizing a 3D vector field with a random number of streamtubes:
 
 .. image:: _static/k3d_streamtubes.png
   :width: 600
-  :alt: iplot with bokeh
+  :alt: 3D vector plot with K3D
 
 
 Domain coloring plot of a complex function:
@@ -148,7 +184,7 @@ Domain coloring plot of a complex function:
 
 .. image:: _static/bokeh_domain_coloring.png
   :width: 600
-  :alt: iplot with bokeh
+  :alt: domain coloring plot with bokeh
 
 
 3D coloring plot of a complex function:
@@ -167,7 +203,7 @@ Domain coloring plot of a complex function:
 
 .. image:: _static/k3d_domain_coloring.png
   :width: 600
-  :alt: iplot with bokeh
+  :alt: 3D domain coloring plot with K3D
 
 
 Interactive-Parametric 2D plot of the magnitude of a second order transfer
