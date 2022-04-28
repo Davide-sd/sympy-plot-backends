@@ -870,6 +870,25 @@ def iplot(*args, show=True, **kwargs):
            use_latex = False
        )
 
+    A line plot with a parameters representing an angle in radians, but
+    showing the value in the label in degrees:
+
+    .. jupyter-execute::
+
+       from bokeh.models.formatters import FuncTickFormatter
+       # Javascript code is passed to `code=`
+       formatter = FuncTickFormatter(code="return (180./3.1415926 * tick).toFixed(2)")
+
+       iplot(
+           (1 + x * sin(t), (x, -5, 5)),
+           params = {
+               t: (0, -2 * pi, 2 * pi, 100, formatter, "theta [deg]")
+           },
+           backend = BB,
+           ylim = (-3, 4),
+           use_latex = False
+       )
+
     A 3D slice-vector plot. Note: whenever we want to create parametric vector
     plots, we should set `is_vector=True`.
 
@@ -1020,7 +1039,8 @@ def iplot(*args, show=True, **kwargs):
     1. This function is specifically designed to work within Jupyter Notebook.
        However, it is also possible to use it from a regular Python,
        interpreter but only with ``BokehBackend`` and ``PlotlyBackend``.
-       In such cases, it must be called with ``iplot(..., backend=BB).show()``, which will create a server process loading the interactive plot on
+       In such cases, it must be called with ``iplot(..., backend=BB).show()``,
+       which will create a server process loading the interactive plot on
        the browser.
 
     2. Some examples use an instance of ``PrintfTickFormatter`` to format the
