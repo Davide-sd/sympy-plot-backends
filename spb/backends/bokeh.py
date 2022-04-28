@@ -607,7 +607,7 @@ class BokehBackend(Plot):
                         x, y = self.series[i].get_data()
                         source = {
                             "xs": x if not s.is_polar else y * np.cos(x),
-                            "ys": x if not s.is_polar else y * np.sin(x)
+                            "ys": y if not s.is_polar else y * np.sin(x)
                         }
                     rend[i].data_source.data.update(source)
 
