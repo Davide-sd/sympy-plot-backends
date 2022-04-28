@@ -634,7 +634,8 @@ def test_plot_implicit_adaptive_true():
         test_filename = tmp_file(dir=temp_dir)
         cmp_filename = os.path.join(test_directory, "imgs", filename)
         p = plot_implicit(expr, range_x, range_y,
-            size=(5, 4), adaptive=True, grid=False, show=False)
+            size=(5, 4), adaptive=True, grid=False, show=False,
+            use_latex=False)
         p.save(test_filename)
         p.close()
         assert compare_images(cmp_filename, test_filename, tol) is None
@@ -683,7 +684,8 @@ def test_plot_implicit_region_and():
         test_filename = filename
         cmp_filename = os.path.join(test_directory, "imgs", filename)
         p = plot_implicit(expr, range_x, range_y,
-            size=(8, 6), adaptive=True, grid=False, show=False)
+            size=(8, 6), adaptive=True, grid=False, show=False,
+            use_latex=False)
         p.save(test_filename)
         p.close()
         assert compare_images(cmp_filename, test_filename, tol) is None
