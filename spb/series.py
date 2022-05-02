@@ -21,6 +21,25 @@ from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
 import warnings
 
+from sympy.printing.pycode import PythonCodePrinter
+from sympy.printing.precedence import precedence
+from sympy.core.sorting import default_sort_key
+
+class IntervalMathPrinter(PythonCodePrinter):
+    """A printer to be used inside `plot_implicit` when `adaptive=True`,
+    in which case the interval arithmetic module is going to be used, which
+    requires the following edits.
+    """
+    def _print_And(self, expr):
+        PREC = precedence(expr)
+        return " & ".join(self.parenthesize(a, PREC)
+                for a in sorted(expr.args, key=default_sort_key))
+
+    def _print_Or(self, expr):
+        PREC = precedence(expr)
+        return " | ".join(self.parenthesize(a, PREC)
+                for a in sorted(expr.args, key=default_sort_key))
+
 
 def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
         modules=None, adaptive_goal=None, loss_fn=None):
@@ -1199,22 +1218,28 @@ class ImplicitSeries(BaseSeries):
         if self.adaptive:
             import sympy.plotting.intervalmath.lib_interval as li
 
-            # HACK: this is necessary for sympy.plotting.intervalmath to
-            # work properly
-            from sympy.printing.pycode import PythonCodePrinter, SymPyPrinter
-            new_operators = {'and': '&', 'or': '|', 'not': 'not'}
-            tmp_operators_1 = PythonCodePrinter._operators
-            tmp_operators_2 = SymPyPrinter._operators
-            PythonCodePrinter._operators = new_operators
-            SymPyPrinter._operators = new_operators
+            user_functions = {}
+            printer = IntervalMathPrinter({
+                'fully_qualified_modules': False, 'inline': True,
+                'allow_unknown_functions': True,
+                'user_functions': user_functions})
 
             keys = [t for t in dir(li) if ("__" not in t) and (t not in ["import_module", "interval"])]
             vals = [getattr(li, k) for k in keys]
             d = {k: v for k, v in zip(keys, vals)}
-            func = lambdify((self.var_x, self.var_y), self.expr, modules=[d, "math", "sympy"])
+            func = lambdify((self.var_x, self.var_y), self.expr, modules=[d], printer=printer)
 
             try:
                 data = self._get_raster_interval(func)
+            except NameError as err:
+                warnings.warn(
+                    "Adaptive meshing could not be applied to the"
+                    " expression, as some functions are not yet implemented"
+                    " in the interval math module:\n\n"
+                    "NameError: %s\n\n" % err +
+                    "Proceeding with uniform meshing."
+                    )
+                self.adaptive = False
             except (AttributeError, TypeError):
                 # XXX: AttributeError("'list' object has no attribute 'is_real'")
                 # That needs fixing somehow - we shouldn't be catching
@@ -1223,16 +1248,10 @@ class ImplicitSeries(BaseSeries):
                     "Adaptive meshing could not be applied to the"
                     " expression. Using uniform meshing.")
                 self.adaptive = False
-            finally:
-                # HACK: restore the original class attribute so that
-                # further calls to lambdify works as expected
-                PythonCodePrinter._operators = tmp_operators_1
-                SymPyPrinter._operators = tmp_operators_2
 
             if self.adaptive:
                 return data
 
-        # if adaptive=False
         return self._get_meshes_grid()
 
     def _get_raster_interval(self, func):
