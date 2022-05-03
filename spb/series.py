@@ -1389,6 +1389,77 @@ class ImplicitSeries(BaseSeries):
         return expr, equality
 
 
+class Implicit3DSeries(SurfaceBaseSeries):
+    is_implicit = True
+
+    def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
+        super().__init__(**kwargs)
+        self.expr = expr
+        self.var_x = sympify(range_x[0])
+        self.start_x = float(range_x[1])
+        self.end_x = float(range_x[2])
+        self.var_y = sympify(range_y[0])
+        self.start_y = float(range_y[1])
+        self.end_y = float(range_y[2])
+        self.var_z = sympify(range_z[0])
+        self.start_z = float(range_z[1])
+        self.end_z = float(range_z[2])
+        # keep number of discretization points low as some backend might be
+        # slow at processing/rendering
+        self.n1 = kwargs.get("n1", 60)
+        self.n2 = kwargs.get("n2", 60)
+        self.n3 = kwargs.get("n3", 60)
+        self.zscale = kwargs.get("zscale", "linear")
+        self._set_surface_label(label)
+
+    def __str__(self):
+        return ("implicit surface series: %s for %s over %s and %s over %s"
+            " and %s over %s") % (
+                str(self.expr),
+                str(self.var_x), str((self.start_x, self.end_x)),
+                str(self.var_y), str((self.start_y, self.end_y)),
+                str(self.var_z), str((self.start_z, self.end_z))
+            )
+
+    def _discretize(self, s1, e1, s2, e2, s3, e3):
+        np = import_module('numpy')
+
+        mesh_x = BaseSeries._discretize(s1, e1, self.n1,
+            self.xscale, self.only_integers)
+        mesh_y = BaseSeries._discretize(s2, e2, self.n2,
+            self.yscale, self.only_integers)
+        mesh_z = BaseSeries._discretize(s3, e3, self.n3,
+            self.zscale, self.only_integers)
+        return np.meshgrid(mesh_x, mesh_y, mesh_z, indexing='ij')
+
+    def get_data(self):
+        """Evaluate the expression over the provided domain. The backend will
+        then try to compute and visualize the final result, if it support this
+        data series.
+
+        Returns
+        =======
+        mesh_x : np.ndarray [n1 x n2 x n3]
+        mesh_y : np.ndarray [n1 x n2 x n3]
+        mesh_z : np.ndarray [n1 x n2 x n3]
+        f : np.ndarray [n1 x n2 x n3]
+        """
+        np = import_module('numpy')
+
+        mesh_x, mesh_y, mesh_z = self._discretize(
+            self.start_x, self.end_x,
+            self.start_y, self.end_y,
+            self.start_z, self.end_z)
+        v = uniform_eval([self.var_x, self.var_y, self.var_z], self.expr,
+            mesh_x, mesh_y, mesh_z, modules=self.modules)
+        re_v, im_v = np.real(v), np.imag(v)
+        re_v = self._correct_size(re_v, mesh_x)
+        im_v = self._correct_size(im_v, mesh_x)
+        re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
+        return mesh_x, mesh_y, mesh_z, re_v
+
+
+
 class InteractiveSeries(BaseSeries):
     """Base class for interactive series, in which the expressions can be
     either a line, a surface (parametric or not), a vector field, ...
@@ -2302,7 +2373,9 @@ def _set_discretization_points(kwargs, pt):
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]
-    elif pt in [Vector3DSeries, SliceVector3DSeries, InteractiveSeries]:
+    elif pt in [Vector3DSeries, SliceVector3DSeries, InteractiveSeries,
+        Implicit3DSeries
+    ]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             kwargs["n2"] = kwargs["n"]

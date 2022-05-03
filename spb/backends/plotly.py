@@ -42,9 +42,13 @@ class PlotlyBackend(Plot):
           Refer [#fn6]_ for more options.
 
     surface_kw : dict, optional
-        A dictionary of keywords/values which is passed to Plotly's
-        Surface function to customize the appearance.
-        Refer to [#fn7]_ for more options.
+        A dictionary of keywords/values to to customize the appearance which
+        is passed to:
+
+        - Plotly's Surface function for 3D surface and parametric surface
+          plots. Refer to [#fn7]_ for more options.
+        - Plotly's Isosurface function for 3D implicit plots. Refer to [#fn14]_
+          for more options.
 
     stream_kw : dict, optional
         A dictionary of keywords/values which is passed to Plotly's
@@ -76,6 +80,7 @@ class PlotlyBackend(Plot):
     .. [#fn9] https://plotly.com/python/streamtube-plot/
     .. [#fn10] https://plotly.com/python/templates/
     .. [#fn13] https://github.com/plotly/plotly.js/issues/5003
+    .. [#fn14] https://plotly.com/python/3d-isosurface-plots/
 
 
     Notes
@@ -341,7 +346,7 @@ class PlotlyBackend(Plot):
                 kw = merge({}, lkw, s.rendering_kw)
                 self._fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **kw))
 
-            elif (s.is_3Dsurface and not s.is_domain_coloring):
+            elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
                 xx, yy, zz = s.get_data()
 
                 # create a solid color to be used when s.use_cm=False
@@ -359,6 +364,27 @@ class PlotlyBackend(Plot):
                 self._fig.add_trace(go.Surface(x=xx, y=yy, z=zz, **kw))
 
                 count += 1
+
+            elif s.is_3Dsurface and s.is_implicit:
+                xx, yy, zz, rr = s.get_data()
+                # create a solid color
+                col = next(self._cl)
+                colorscale = [[0, col], [1, col]]
+                skw = dict(
+                    isomin=0,
+                    isomax=0,
+                    showscale=False,
+                    colorscale=colorscale
+                )
+                kw = merge({}, skw, s.rendering_kw)
+                self._fig.add_trace(go.Isosurface(
+                    x=xx.flatten(),
+                    y=yy.flatten(),
+                    z=zz.flatten(),
+                    value=rr.flatten(), **kw
+                ))
+                count += 1
+
 
             elif s.is_contour and (not s.is_complex):
                 xx, yy, zz = s.get_data()
@@ -625,7 +651,7 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["z"] = z
 
-                elif s.is_3Dsurface and (not s.is_domain_coloring):
+                elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
                     x, y, z = self.series[i].get_data()
                     self.fig.data[i]["z"] = z
 

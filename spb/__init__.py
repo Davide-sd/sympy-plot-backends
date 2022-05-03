@@ -6,6 +6,7 @@ from spb.functions import (
     plot3d,
     plot3d_parametric_line,
     plot3d_parametric_surface,
+    plot3d_implicit,
     plot_implicit,
     plot_polar,
     plot_geometry,

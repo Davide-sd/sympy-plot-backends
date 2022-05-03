@@ -12,7 +12,7 @@ from spb import (
     plot, plot3d, plot_contour, plot_implicit,
     plot_parametric, plot3d_parametric_line,
     plot_vector, plot_complex, plot_geometry, plot_real_imag,
-    plot_list, plot_piecewise, plot_polar
+    plot_list, plot_piecewise, plot_polar, plot3d_implicit
 )
 from sympy import latex, gamma
 from sympy.core.symbol import symbols
@@ -2540,3 +2540,21 @@ def test_plot_polar():
     bokeh_data = p2.fig.renderers[0].data_source.data
     assert not np.allclose(plotly_data[0], bokeh_data["xs"])
     assert not np.allclose(plotly_data[1], bokeh_data["ys"])
+
+
+def test_plot3d_implicit():
+    x, y, z = symbols("x:z")
+
+    _plot3d_implicit = lambda B: plot3d_implicit(
+        x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        backend=B, n1=10, n2=10, n3=10, show=False)
+
+    raises(NotImplementedError, lambda : _plot3d_implicit(MB).process_series())
+
+    raises(NotImplementedError, lambda : _plot3d_implicit(BB).process_series())
+
+    p = _plot3d_implicit(PB)
+    assert isinstance(p.fig.data[0], go.Isosurface)
+
+    p = _plot3d_implicit(KBchild1)
+    assert isinstance(p.fig.objects[0], k3d.objects.MarchingCubes)

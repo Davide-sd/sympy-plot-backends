@@ -17,7 +17,7 @@ from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
     InteractiveSeries,
-    ImplicitSeries,
+    ImplicitSeries, Implicit3DSeries,
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
     ComplexSurfaceSeries, ComplexDomainColoringSeries,
     ComplexInteractiveBaseSeries,
@@ -394,6 +394,10 @@ def test_rendering_kw():
     s = SurfaceOver2DRangeSeries(x + y, (x, -2, 2), (y, -3, 3))
     assert isinstance(s.rendering_kw, dict)
 
+    s = Implicit3DSeries(
+        x**2 + y**3 - z**2, (x, -2, 2), (y, -3, 3), (z, -4, 4))
+    assert isinstance(s.rendering_kw, dict)
+
     s = ContourSeries(x + y, (x, -2, 2), (y, -3, 3))
     assert isinstance(s.rendering_kw, dict)
 
@@ -571,6 +575,12 @@ def test_data_shape():
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
+
+    s = Implicit3DSeries(x**2 + y**3 - z**2,
+        (x, -2, 2), (y, -3, 3), (z, -4, 4),
+        n1=5, n2=8, n3=10)
+    xx, yy, zz, f = s.get_data()
+    assert f.shape == xx.shape == yy.shape == zz.shape == (5, 8, 10)
 
     s = ParametricSurfaceSeries(1, x, y, (x, 0, 1), (y, 0, 1))
     xx, yy, zz = s.get_data()
@@ -1364,6 +1374,9 @@ def test_str():
     s = GeometryInteractiveSeries([Circle(Point(x, 0), 5)], [], params={x: 1})
     assert str(s) == "interactive geometry entity: Circle(Point2D(x, 0), 5) with parameters (x,)"
 
+    s = Implicit3DSeries(x**2 + y**3 - z**2, (x, -2, 2), (y, -3, 3), (z, -4, 4))
+    assert str(s) == "implicit surface series: x**2 + y**3 - z**2 for x over (-2.0, 2.0) and y over (-3.0, 3.0) and z over (-4.0, 4.0)"
+
 
 def test_use_cm():
     # verify that series who are supposed to expose `use_cm`, actually
@@ -1971,6 +1984,16 @@ def test_series_labels():
     s1 = ComplexDomainColoringSeries(expr, (x, -3.5 - 2.5j, 3.5 + 2.5j),
         str(expr))
     s2 = ComplexDomainColoringSeries(expr, (x, -3.5 - 2.5j, 3.5 + 2.5j),
+        "test")
+    assert s1.get_label(False) == str(expr)
+    assert s1.get_label(True) == wrapper % latex(expr)
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    expr = x**2 + y**3 - z**2
+    s1 = Implicit3DSeries(expr, (x, -2, 2), (y, -3, 3), (z, -4, 4),
+        str(expr))
+    s2 = Implicit3DSeries(expr, (x, -2, 2), (y, -3, 3), (z, -4, 4),
         "test")
     assert s1.get_label(False) == str(expr)
     assert s1.get_label(True) == wrapper % latex(expr)

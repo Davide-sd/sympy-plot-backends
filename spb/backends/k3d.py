@@ -44,6 +44,15 @@ class K3DBackend(Plot):
         Refer to k3d.line for more options.
         Set `use_cm=False` to switch to a solid color.
 
+    surface_kw : dict, optional
+        A dictionary of keywords/values to to customize the appearance which
+        is passed to:
+
+        - k3d.mesh function for 3D surface and parametric surface plots.
+          Refer to k3d.meshfor more options.
+        - k3d.marching_cubes function for 3D implicit plots. Refer to
+          k3d.marching_cubes for more options.
+
     use_cm : boolean, optional
         If True, apply a color map to the meshes/surface. If False, solid
         colors will be used instead. Default to True.
@@ -238,7 +247,7 @@ class K3DBackend(Plot):
                 line = self.k3d.line(vertices, **kw)
                 self._fig += line
 
-            elif (s.is_3Dsurface and not s.is_domain_coloring):
+            elif (s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit)):
                 x, y, z = s.get_data()
 
                 # TODO:
@@ -268,6 +277,24 @@ class K3DBackend(Plot):
                 surf = self.k3d.mesh(vertices, indices, **kw)
 
                 self._fig += surf
+
+            elif s.is_implicit and s.is_3Dsurface:
+                _, _, _, r = s.get_data()
+                xmin, xmax = s.start_x, s.end_x
+                ymin, ymax = s.start_y, s.end_y
+                zmin, zmax = s.start_z, s.end_z
+                a = dict(
+                    xmin=xmin, xmax=xmax,
+                    ymin=ymin, ymax=ymax,
+                    zmin=zmin, zmax=zmax,
+                    compression_level=9,
+                    level=0.0, flat_shading=True,
+                    color=self._convert_to_int(next(self._cl))
+                )
+                kw = merge({}, a, s.rendering_kw)
+                plt_iso = self.k3d.marching_cubes(r.astype(np.float32), **kw)
+
+                self._fig += plt_iso
 
             elif s.is_3Dvector and s.is_streamlines:
                 xx, yy, zz, uu, vv, ww = s.get_data()
@@ -460,7 +487,7 @@ class K3DBackend(Plot):
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     self._fig.objects[i].vertices = vertices
 
-                elif s.is_3Dsurface and (not s.is_domain_coloring):
+                elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
                     x, y, z = self.series[i].get_data()
                     x, y, z = [t.flatten().astype(np.float32) for t in [x, y, z]]
                     vertices = np.vstack([x, y, z]).astype(np.float32)

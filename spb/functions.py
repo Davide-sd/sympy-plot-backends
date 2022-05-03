@@ -31,7 +31,7 @@ from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
     ImplicitSeries, _set_discretization_points,
-    List2DSeries, GeometrySeries
+    List2DSeries, GeometrySeries, Implicit3DSeries
 )
 
 # N.B.
@@ -488,7 +488,8 @@ def plot(*args, show=True, **kwargs):
     ========
 
     plot_polar, plot_parametric, plot_contour, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
+    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
+    plot3d_implicit
 
     """
     args = _plot_sympify(args)
@@ -714,7 +715,8 @@ def plot_parametric(*args, show=True, **kwargs):
     ========
 
     plot, plot_polar, plot_contour, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
+    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
+    plot3d_implicit
 
     """
     args = _plot_sympify(args)
@@ -901,7 +903,8 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     ========
 
     plot, plot_polar, plot3d, plot_contour, plot3d_parametric_surface,
-    plot_implicit, plot_geometry, plot_parametric, plot_piecewise
+    plot_implicit, plot_geometry, plot_parametric, plot_piecewise,
+    plot3d_implicit
 
     """
     args = _plot_sympify(args)
@@ -1150,7 +1153,8 @@ def plot3d(*args, show=True, **kwargs):
     ========
 
     plot, plot_polar, plot_contour, plot_parametric, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
+    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
+    plot3d_implicit
 
     """
     args = _plot_sympify(args)
@@ -1316,7 +1320,8 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     ========
 
     plot, plot_polar, plot_parametric, plot3d, plot_contour,
-    plot3d_parametric_line, plot_implicit, plot_geometry, plot_piecewise
+    plot3d_parametric_line, plot_implicit, plot_geometry, plot_piecewise,
+    plot3d_implicit
 
     """
     args = _plot_sympify(args)
@@ -1326,6 +1331,165 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
     series = [ParametricSurfaceSeries(*arg, **kwargs) for arg in plot_expr]
+    Backend = kwargs.pop("backend", THREE_D_B)
+    plots = Backend(*series, **kwargs)
+    if show:
+        plots.show()
+    return plots
+
+
+def plot3d_implicit(*args, show=True, **kwargs):
+    """
+    Plots an isosurface of a function.
+
+    Typical usage examples are in the followings:
+
+    - `plot3d_parametric_surface(expr, range_x, range_y, range_z, **kwargs)`
+
+    Note that:
+
+    1. it is important to specify the ranges, as they will determine the
+       orientation of the surface.
+    2. the number of discretization points is crucial as the algorithm will
+       discretize a volume. A high number of discretization points creates a
+       smoother mesh, at the cost of a much higher memory consumption and
+       slower computation.
+    3. To plot ``f(x, y, z) = c`` either write ``expr = f(x, y, z) - c`` or
+       pass the appropriate keyword to ``surface_kw``. Read the backends
+       documentation to find out the available options.
+
+
+    Parameters
+    ==========
+
+    args :
+        expr: Expr
+            Implicit expression.
+
+        range_x: (symbol, min, max)
+            A 3-tuple denoting the range of the `x` variable.
+
+        range_y: (symbol, min, max)
+            A 3-tuple denoting the range of the `y` variable.
+
+        range_z: (symbol, min, max)
+            A 3-tuple denoting the range of the `z` variable.
+
+        label : str, optional
+            The label to be shown in the legend.  If not provided, the string
+            representation of the expression will be used.
+
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Only PlotlyBackend and K3DBackend support 3D implicit plotting.
+
+    n1 : int, optional
+        The x range is sampled uniformly at `n1` of points. Default value
+        is 60.
+
+    n2 : int, optional
+        The y range is sampled uniformly at `n2` of points. Default value
+        is 60.
+
+    n3 : int, optional
+        The z range is sampled uniformly at `n3` of points. Default value
+        is 60.
+
+    n : int, optional
+        The u and v ranges are sampled uniformly at `n` of points.
+        It overrides `n1` and `n2`.
+
+    show : bool, optional
+        The default value is set to `True`. Set show to `False` and
+        the function will not display the plot. The returned instance of
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
+
+    size : (float, float), optional
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
+
+    surface_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of surfaces. Refer to the
+        plotting library (backend) manual for more informations.
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
+
+    xlabel : str, optional
+        Label for the x-axis.
+
+    ylabel : str, optional
+        Label for the y-axis.
+
+    zlabel : str, optional
+        Label for the z-axis.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, `(min, max)`.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, `(min, max)`.
+
+    zlim : (float, float), optional
+        Denotes the z-axis limits, `(min, max)`.
+
+
+    Examples
+    ========
+
+    .. jupyter-execute::
+
+       from sympy import symbols
+       from spb import plot3d_implicit, PB, KB
+       x, y, z = symbols('x, y, z')
+       plot3d_implicit(
+           x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2), backend=PB)
+
+    .. jupyter-execute::
+
+       p = plot3d_implicit(
+           x**4 + y**4 + z**4 - (x**2 + y**2 + z**2 - 0.3),
+           (x, -2, 2), (y, -2, 2), (z, -2, 2), backend=PB)
+
+    Visualize the isocontours from `isomin=0` to `isomax=2`:
+
+    .. jupyter-execute::
+
+       plot3d_implicit(
+           1/x**2 - 1/y**2 + 1/z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+           backend=PB,
+           surface_kw={
+               "isomin": 0, "isomax": 2,
+               "colorscale":"aggrnyl", "showscale":True
+           }
+       )
+
+    See Also
+    ========
+
+    plot, plot_polar, plot_parametric, plot3d, plot_contour,
+    plot3d_parametric_line, plot_implicit, plot_geometry, plot_piecewise,
+    plot3d_parametric_surface
+
+    """
+    args = _plot_sympify(args)
+    kwargs = _set_discretization_points(kwargs, Implicit3DSeries)
+    series = []
+    plot_expr = _check_arguments(args, 1, 3)
+    series = [Implicit3DSeries(*arg, **kwargs) for arg in plot_expr]
+
+    kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
+    kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
+    kwargs.setdefault("zlabel", lambda use_latex: "f(%s, %s)" % (series[0].var_x.name, series[0].var_y.name) if not use_latex else r"f\left(%s, %s\right)" % (latex(series[0].var_x), latex(series[0].var_y)))
+
     Backend = kwargs.pop("backend", THREE_D_B)
     plots = Backend(*series, **kwargs)
     if show:
@@ -1381,7 +1545,8 @@ def plot_contour(*args, show=True, **kwargs):
     ========
 
     plot, plot_polar, plot_parametric, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
+    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
+    plot3d_implicit
 
     """
     args = _plot_sympify(args)
@@ -1574,7 +1739,7 @@ def plot_implicit(*args, show=True, **kwargs):
     ========
 
     plot, plot_polar, plot3d, plot_contour, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_geometry
+    plot3d_parametric_surface, plot_geometry, plot3d_implicit
 
     """
     # if the user is plotting a single expression, then he can pass in one
@@ -1656,7 +1821,8 @@ def plot_polar(*args, **kwargs):
     ========
 
     plot, plot_parametric, plot3d, plot_contour, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise
+    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
+    plot3d_implicit
 
     """
     kwargs["is_polar"] = True
@@ -2237,7 +2403,7 @@ def plot_piecewise(*args, **kwargs):
 
     plot, plot_polar, plot_parametric, plot_contour, plot3d,
     plot3d_parametric_line, plot3d_parametric_surface,
-    plot_implicit, plot_geometry, plot_list
+    plot_implicit, plot_geometry, plot_list, plot3d_implicit
 
     """
     Backend = kwargs.pop("backend", TWO_D_B)
