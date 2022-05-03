@@ -1,3 +1,4 @@
+from spb.defaults import cfg
 from sympy.core.containers import Tuple
 from sympy.core.sympify import sympify
 from sympy.core.expr import Expr
@@ -32,7 +33,7 @@ def _create_ranges(free_symbols, ranges, npar):
 
     """
 
-    get_default_range = lambda symbol: Tuple(symbol, -10, 10)
+    get_default_range = lambda symbol: Tuple(symbol, cfg["plot_range"]["min"], cfg["plot_range"]["max"])
 
     if len(free_symbols) > npar:
         raise ValueError(
@@ -378,7 +379,7 @@ def _split_vector(expr, ranges, fill_ranges=True):
             fs_ranges = set().union([r[0] for r in ranges])
             for s in fs:
                 if s not in fs_ranges:
-                    ranges.append(Tuple(s, -10, 10))
+                    ranges.append(Tuple(s, cfg["plot_range"]["min"], cfg["plot_range"]["max"]))
 
     if len(expr) == 2:
         xexpr, yexpr = expr

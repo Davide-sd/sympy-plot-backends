@@ -139,6 +139,16 @@ Let's now discuss a few customization options:
    # (value True)
    cfg["interactive"]["throttled"] = False
 
+   # Set the "smoothness" goal for the adaptive algorithm.
+   # Lower values create smoother lines, at the cost of
+   # performance.
+   cfg["adaptive"]["goal"] = 0.01
+
+   # Set the overall plot range to be used when the plotting
+   # variable is not specified.
+   cfg["plot_range"]["min"] = -10
+   cfg["plot_range"]["max"] = 10
+
 Let's consider ``MatplotlibBackend``. Let's suppose we would like to use
 the old plotting module style:
 

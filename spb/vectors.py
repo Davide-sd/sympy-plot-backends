@@ -1,4 +1,4 @@
-from spb.defaults import TWO_D_B, THREE_D_B
+from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.series import (
     BaseSeries,
     Vector2DSeries,
@@ -8,8 +8,8 @@ from spb.series import (
     _set_discretization_points,
     InteractiveSeries
 )
-from sympy import MutableDenseMatrix, ImmutableDenseMatrix
 from spb.utils import _plot_sympify, _unpack_args, _split_vector, _is_range
+from sympy import MutableDenseMatrix, ImmutableDenseMatrix
 from sympy.core.containers import Tuple
 from sympy.functions.elementary.miscellaneous import sqrt
 from sympy.core.expr import Expr
@@ -136,7 +136,7 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
                 )
             ranges = list(ranges)
             for m in missing:
-                ranges.append(Tuple(m, -10, 10))
+                ranges.append(Tuple(m, cfg["plot_range"]["min"], cfg["plot_range"]["max"]))
 
         if len(ranges) > 2:
             raise ValueError("Too many ranges for 2D vector plot.")
@@ -179,7 +179,7 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
                 )
             ranges = list(ranges)
             for m in missing:
-                ranges.append(Tuple(m, -10, 10))
+                ranges.append(Tuple(m, cfg["plot_range"]["min"], cfg["plot_range"]["max"]))
 
         if len(ranges) > 3:
             raise ValueError("Too many ranges for 3D vector plot.")

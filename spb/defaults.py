@@ -65,6 +65,10 @@ def _hardcoded_defaults():
         },
         adaptive={
             "goal": 0.01
+        },
+        plot_range={
+            "min": -10,
+            "max": 10
         }
     )
 

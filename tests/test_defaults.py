@@ -11,9 +11,14 @@ from pytest import raises
 def test_cfg_keys():
     assert isinstance(cfg, dict)
     must_have_keys = ["backend_2D", "backend_3D", "matplotlib", "plotly",
-        "k3d", "bokeh", "complex", "interactive", "plot3d", "adaptive"]
+        "k3d", "bokeh", "complex", "interactive", "plot3d", "adaptive",
+        "plot_range"]
     for k in must_have_keys:
         assert k in cfg.keys()
+
+
+def test_plot_range_keys():
+    assert ("min" in cfg["plot_range"].keys()) and ("max" in cfg["plot_range"].keys())
 
 
 def test_plot3d_keys():
