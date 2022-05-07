@@ -583,18 +583,18 @@ def test_data_shape():
     assert f.shape == xx.shape == yy.shape == zz.shape == (5, 8, 10)
 
     s = ParametricSurfaceSeries(1, x, y, (x, 0, 1), (y, 0, 1))
-    xx, yy, zz = s.get_data()
-    assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
+    xx, yy, zz, uu, vv = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == uu.shape == vv.shape
     assert np.all(xx == 1)
 
     s = ParametricSurfaceSeries(1, 1, y, (x, 0, 1), (y, 0, 1))
-    xx, yy, zz = s.get_data()
-    assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
+    xx, yy, zz, uu, vv = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == uu.shape == vv.shape
     assert np.all(yy == 1)
 
     s = ParametricSurfaceSeries(x, 1, 1, (x, 0, 1), (y, 0, 1))
-    xx, yy, zz = s.get_data()
-    assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
+    xx, yy, zz, uu, vv = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == uu.shape == vv.shape
     assert np.all(zz == 1)
 
     s = AbsArgLineSeries(1, (x, -5, 5), modules=None)
@@ -680,20 +680,20 @@ def test_data_shape():
     # Corresponds to ParametricSurfaceSeries
     s = InteractiveSeries([S.One, x, y], [(x, 0, 1), (y, 0, 1)])
     s.params = dict()
-    xx, yy, zz = s.get_data()
-    assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
+    xx, yy, zz, uu, vv = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == uu.shape == vv.shape
     assert np.all(xx == 1)
 
     s = InteractiveSeries([x, S.One, y], [(x, 0, 1), (y, 0, 1)])
     s.params = dict()
-    xx, yy, zz = s.get_data()
-    assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
+    xx, yy, zz, uu, vv = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == uu.shape == vv.shape
     assert np.all(yy == 1)
 
     s = InteractiveSeries([x, y, S.One], [(x, 0, 1), (y, 0, 1)])
     s.params = dict()
-    xx, yy, zz = s.get_data()
-    assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
+    xx, yy, zz, uu, vv = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == uu.shape == vv.shape
     assert np.all(zz == 1)
 
     s = ComplexSurfaceInteractiveSeries(S.One, (x, -5-2j, 5+2j), modules=None)
@@ -747,8 +747,8 @@ def test_only_integers():
     )
     s = ParametricSurfaceSeries(*expr, (u, 0, 2 * pi), (v, 0, pi), "",
         adaptive=False, only_integers=True)
-    xx, yy, zz = s.get_data()
-    assert xx.shape == yy.shape == zz.shape == (4, 7)
+    xx, yy, zz, uu, vv = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == uu.shape == vv.shape == (4, 7)
 
     s = ComplexSurfaceSeries(sqrt(x), (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
         adaptive=False, only_integers=True)
@@ -794,8 +794,8 @@ def test_only_integers():
     )
     s = ParametricSurfaceSeries(*expr, (u, 0, 2 * pi), (v, 0, pi), "",
         adaptive=False, only_integers=True)
-    xx, yy, zz = s.get_data()
-    assert xx.shape == yy.shape == zz.shape == (4, 7)
+    xx, yy, zz, uu, vv = s.get_data()
+    assert xx.shape == yy.shape == zz.shape == uu.shape == vv.shape == (4, 7)
 
     s = ComplexSurfaceSeries(1, (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
         adaptive=False, only_integers=True)
@@ -2232,8 +2232,8 @@ def test_sliced_vector_interactive_series():
         [(xn, -5, 5), (yn, -5, 5), (zn, -5, 5)], label="vector",
         params={t: 0.5}, slice=slice_series)
 
-    x1, y1, z1 = slice_copy.get_data()
-    x3, y3, z3 = slice_series.get_data()
+    x1, y1, z1, _, _ = slice_copy.get_data()
+    x3, y3, z3, _, _ = slice_series.get_data()
     x2, y2, z2, _, _, _ = s.get_data()
     assert np.allclose(x1, x2) and np.allclose(y1, y2) and np.allclose(z1, z2)
     assert np.allclose(x1, x3) and np.allclose(y1, y3) and np.allclose(z1, z3)
@@ -2242,8 +2242,8 @@ def test_sliced_vector_interactive_series():
     v = 0.25
     slice_copy.params = {t: v}
     s.params = {t: v}
-    x1, y1, z1 = slice_copy.get_data()
-    x3, y3, z3 = slice_series.get_data()
+    x1, y1, z1, _, _ = slice_copy.get_data()
+    x3, y3, z3, _, _ = slice_series.get_data()
     x2, y2, z2, _, _, _ = s.get_data()
     assert np.allclose(x1, x2) and np.allclose(y1, y2) and np.allclose(z1, z2)
     assert np.allclose(x1, x3) and np.allclose(y1, y3) and np.allclose(z1, z3)

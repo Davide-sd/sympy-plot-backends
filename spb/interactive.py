@@ -715,6 +715,20 @@ def iplot(*args, show=True, **kwargs):
         `spb.backends.base_backend.Plot`. If not provided, the module will
         use the default backend.
 
+    color_func : callable, optional
+        A numerical function which defines the 2D line color or the surface
+        color:
+
+        - For 2D plots, a function of two variables is needed: x, y (the
+          points computed by the internal algorithm).
+        - For 3D surfaces, a function of three variables is needed: x, y, z
+          (the points computed by the internal algorithm).
+        - For 3D parametric surfaces, a function of five variables is needed:
+          x, y, z, u, v (the points computed by the internal algorithm and the
+          parameters).
+
+        For surface plots, the coloring is applied only if ``use_cm=True``.
+
     layout : str, optional
         The layout for the controls/plot. Possible values:
 

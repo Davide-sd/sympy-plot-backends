@@ -275,7 +275,7 @@ class MatplotlibBackend(Plot):
         points = np.ma.array(points).T.reshape(-1, 1, dim)
         return np.ma.concatenate([points[:-1], points[1:]], axis=1)
 
-    def _add_colorbar(self, c, label, use_cm, override=False):
+    def _add_colorbar(self, c, label, use_cm, override=False, norm=None, cmap=None):
         """Add a colorbar for the specificied collection
 
         Parameters
@@ -292,12 +292,18 @@ class MatplotlibBackend(Plot):
             Hence, to show it we set override=True.
             Default to False.
         """
+        np = import_module('numpy')
+
         # design choice: instead of showing a legend entry (which
         # would require to work with proxy artists and custom
         # classes in order to create a gradient line), just show a
         # colorbar with the name of the expression on the side.
         if (self.legend and use_cm) or override:
-            cb = self._fig.colorbar(c, ax=self.ax)
+            if norm is None:
+                cb = self._fig.colorbar(c, ax=self.ax)
+            else:
+                mappable = self.cm.ScalarMappable(cmap=cmap, norm=norm)
+                cb = self._fig.colorbar(mappable)
             cb.set_label(label, rotation=90)
             return True
         return False
@@ -403,15 +409,29 @@ class MatplotlibBackend(Plot):
                 zlims.append((np.amin(z), np.amax(z)))
 
             elif (s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit)):
-                x, y, z = s.get_data()
+                if not s.is_parametric:
+                    x, y, z = self.series[i].get_data()
+                    facecolors = s.color_func(x, y, z)
+                else:
+                    x, y, z, u, v = self.series[i].get_data()
+                    facecolors = s.color_func(x, y, z, u, v)
                 skw = dict(rstride=1, cstride=1, linewidth=0.1)
+                norm, cmap = None, None
                 if s.use_cm:
-                    skw["cmap"] = next(self._cm)
+                    norm = self.Normalize(vmin=np.amin(facecolors), vmax=np.amax(facecolors))
+                    cmap = next(self._cm)
+                    skw["cmap"] = cmap
                 else:
                     skw["color"] = next(self._cl)
+
                 kw = merge({}, skw, s.rendering_kw)
+                if s.use_cm:
+                    # facecolors must be computed here because s.rendering_kw
+                    # might have its own cmap
+                    cmap = kw["cmap"]
+                    kw["facecolors"] = cmap(norm(facecolors))
                 c = self.ax.plot_surface(x, y, z, **kw)
-                is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
+                is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm, norm=norm, cmap=cmap)
                 self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
@@ -754,15 +774,16 @@ class MatplotlibBackend(Plot):
         if self.zlim:
             self.ax.set_zlim(self.zlim)
 
-    def _update_colorbar(self, cax, param, kw, label):
+    def _update_colorbar(self, cax, cmap, label, param=None, norm=None):
         """This method reduces code repetition.
         The name is misleading: here we create a new colorbar which will be
         placed on the same colorbar axis as the original.
         """
         np = import_module('numpy')
         cax.clear()
-        norm = self.Normalize(vmin=np.amin(param), vmax=np.amax(param))
-        mappable = self.cm.ScalarMappable(cmap=kw["cmap"], norm=norm)
+        if norm is None:
+            norm = self.Normalize(vmin=np.amin(param), vmax=np.amax(param))
+        mappable = self.cm.ScalarMappable(cmap=cmap, norm=norm)
         self._fig.colorbar(mappable, orientation="vertical", label=label, cax=cax)
 
     def _update_interactive(self, params):
@@ -791,7 +812,8 @@ class MatplotlibBackend(Plot):
                         self._handles[i][0].set_array(param)
                         kw, is_cb_added, cax = self._handles[i][1:]
                         if is_cb_added:
-                            self._update_colorbar(cax, param, kw, s.get_label(self._use_latex))
+                            norm = self.Normalize(vmin=np.amin(param), vmax=np.amax(param))
+                            self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), norm=norm)
                         xlims.append((np.amin(x), np.amax(x)))
                         ylims.append((np.amin(y), np.amax(y)))
                     else:
@@ -824,21 +846,30 @@ class MatplotlibBackend(Plot):
                     for c in self._handles[i][0].collections:
                         c.remove()
                     self._handles[i][0] = self.ax.contourf(x, y, z, **kw)
-                    self._update_colorbar(cax, z, kw, s.get_label(self._use_latex))
+                    self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), param=z)
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
 
                 elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
-                    x, y, z = self.series[i].get_data()
+                    if not s.is_parametric:
+                        x, y, z = self.series[i].get_data()
+                        facecolors = s.color_func(x, y, z)
+                    else:
+                        x, y, z, u, v = self.series[i].get_data()
+                        facecolors = s.color_func(x, y, z, u, v)
                     # TODO: by setting the keyword arguments, somehow the
                     # update becomes really really slow.
                     kw, is_cb_added, cax = self._handles[i][1:]
+
+                    if is_cb_added:
+                        norm = self.Normalize(vmin=np.amin(facecolors), vmax=np.amax(facecolors))
+                        kw["facecolors"] = kw["cmap"](norm(facecolors))
                     self._handles[i][0].remove()
                     self._handles[i][0] = self.ax.plot_surface(
                         x, y, z, **kw)
 
                     if is_cb_added:
-                        self._update_colorbar(cax, z, kw, s.get_label(self._use_latex))
+                        self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), norm=norm)
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(z), np.amax(z)))
@@ -872,7 +903,7 @@ class MatplotlibBackend(Plot):
 
                     if is_cb_added:
                         magn = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
-                        self._update_colorbar(cax, magn, kw, s.get_label(self._use_latex))
+                        self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), param=magn)
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
                     zlims.append((np.nanmin(zz), np.nanmax(zz)))
@@ -895,7 +926,7 @@ class MatplotlibBackend(Plot):
 
                         if is_cb_added:
                             self._handles[i][0].set_UVC(uu, vv, magn)
-                            self._update_colorbar(cax, magn, kw, s.get_label(self._use_latex))
+                            self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), magn)
                         else:
                             self._handles[i][0].set_UVC(uu, vv)
                     xlims.append((np.amin(xx), np.amax(xx)))

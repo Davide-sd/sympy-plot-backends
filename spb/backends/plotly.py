@@ -347,7 +347,12 @@ class PlotlyBackend(Plot):
                 self._fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **kw))
 
             elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
-                xx, yy, zz = s.get_data()
+                if not s.is_parametric:
+                    xx, yy, zz = s.get_data()
+                    surfacecolor = s.color_func(xx, yy, zz)
+                else:
+                    xx, yy, zz, uu, vv = s.get_data()
+                    surfacecolor = s.color_func(xx, yy, zz, uu, vv)
 
                 # create a solid color to be used when s.use_cm=False
                 col = next(self._cl)
@@ -358,6 +363,9 @@ class PlotlyBackend(Plot):
                     showscale=self.legend and show_3D_colorscales,
                     colorbar=self._create_colorbar(ii, s.get_label(self._use_latex)),
                     colorscale=colormap if s.use_cm else colorscale,
+                    surfacecolor=surfacecolor,
+                    cmin=surfacecolor.min(),
+                    cmax=surfacecolor.max()
                 )
 
                 kw = merge({}, skw, s.rendering_kw)
@@ -645,15 +653,21 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["z"] = z
                     self.fig.data[i]["line"]["color"] = param
 
-                elif s.is_3Dsurface and s.is_parametric:
-                    x, y, z = self.series[i].get_data()
-                    self.fig.data[i]["x"] = x
-                    self.fig.data[i]["y"] = y
-                    self.fig.data[i]["z"] = z
-
                 elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
-                    x, y, z = self.series[i].get_data()
+                    if not s.is_parametric:
+                        x, y, z = s.get_data()
+                        surfacecolor = s.color_func(x, y, z)
+                    else:
+                        x, y, z, u, v = s.get_data()
+                        surfacecolor = s.color_func(x, y, z, u, v)
+                        self.fig.data[i]["x"] = x
+                        self.fig.data[i]["y"] = y
+
+                    _min, _max = surfacecolor.min(), surfacecolor.max()
                     self.fig.data[i]["z"] = z
+                    self.fig.data[i]["surfacecolor"] = surfacecolor
+                    self.fig.data[i]["cmin"] = _min
+                    self.fig.data[i]["cmax"] = _max
 
                 elif s.is_contour and (not s.is_complex):
                     _, _, zz = s.get_data()

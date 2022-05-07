@@ -12,7 +12,8 @@ from spb import (
     plot, plot3d, plot_contour, plot_implicit,
     plot_parametric, plot3d_parametric_line,
     plot_vector, plot_complex, plot_geometry, plot_real_imag,
-    plot_list, plot_piecewise, plot_polar, plot3d_implicit
+    plot_list, plot_piecewise, plot_polar, plot3d_implicit,
+    plot3d_parametric_surface
 )
 from sympy import latex, gamma
 from sympy.core.symbol import symbols
@@ -2558,3 +2559,140 @@ def test_plot3d_implicit():
 
     p = _plot3d_implicit(KBchild1)
     assert isinstance(p.fig.objects[0], k3d.objects.MarchingCubes)
+
+
+def test_surface_color_func():
+    # After the addition of `color_func`, `SurfaceOver2DRangeSeries` and
+    # `ParametricSurfaceSeries` returns different elements.
+    # Verify that backends do not raise errors when plotting surfaces and that
+    # the color function is applied.
+
+    x, y, z, u, v = symbols("x:z, u, v")
+    p3d = lambda B, col: plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
+        backend=B, n=5, color_func=col, show=False, use_cm=True)
+
+    p1 = p3d(MB, lambda x, y, z: z).process_series()
+    p2 = p3d(MB, lambda x, y, z: np.sqrt(x**2 + y**2)).process_series()
+
+    p1 = p3d(PB, lambda x, y, z: z)
+    p2 = p3d(PB, lambda x, y, z: np.sqrt(x**2 + y**2))
+    assert not np.allclose(p1.fig.data[0]["surfacecolor"], p2.fig.data[0]["surfacecolor"])
+
+    p1 = p3d(KBchild1, lambda x, y, z: z)
+    p2 = p3d(KBchild1, lambda x, y, z: np.sqrt(x**2 + y**2))
+    assert not np.allclose(p1.fig.objects[0].attribute, p2.fig.objects[0].attribute)
+
+    r = 2 + sin(7 * u + 5 * v)
+    expr = (r * cos(u) * sin(v), r * sin(u) * sin(v), r * cos(v))
+    p3dps = lambda B, col: plot3d_parametric_surface(
+        *expr, (u, 0, 2 * pi), (v, 0, pi), show=False, use_cm=True, n=5,
+        backend=B, color_func=col)
+
+    p1 = p3dps(MB, lambda x, y, z, u, v: z).process_series()
+    p2 = p3dps(MB, lambda x, y, z, u, v: np.sqrt(x**2 + y**2)).process_series()
+
+    p1 = p3dps(PB, lambda x, y, z, u, v: z)
+    p2 = p3dps(PB, lambda x, y, z, u, v: np.sqrt(x**2 + y**2))
+    assert not np.allclose(p1.fig.data[0]["surfacecolor"], p2.fig.data[0]["surfacecolor"])
+
+    p1 = p3dps(KBchild1, lambda x, y, z, u, v: z)
+    p2 = p3dps(KBchild1, lambda x, y, z, u, v: np.sqrt(x**2 + y**2))
+    assert not np.allclose(p1.fig.objects[0].attribute, p2.fig.objects[0].attribute)
+
+
+def test_surface_interactive_color_func():
+    # After the addition of `color_func`, `SurfaceInteractiveSeries` and
+    # `ParametricSurfaceInteractiveSeries` returns different elements.
+    # Verify that backends do not raise errors when updating surfaces and a
+    # color function is applied.
+
+    x, y, z, t, u, v = symbols("x:z, u, v, t")
+
+    expr1 = t * cos(x**2 + y**2)
+    r = 2 + sin(7 * u + 5 * v)
+    expr2 = (t * r * cos(u) * sin(v), r * sin(u) * sin(v), r * cos(v))
+
+    s1 = InteractiveSeries([expr1], [(x, -5, 5), (y, -5, 5)],
+        n1=5, n2=5, params={t: 1}, use_cm=True,
+        color_func=lambda x, y, z: z, threed=True)
+    s2 = InteractiveSeries([expr1], [(x, -5, 5), (y, -5, 5)],
+        n1=5, n2=5, params={t: 1}, use_cm=True,
+        color_func=lambda x, y, z: np.sqrt(x**2 + y**2), threed=True)
+    s3 = InteractiveSeries([*expr2], [(u, -5, 5), (v, -5, 5)],
+        n1=5, n2=5, params={t: 1}, use_cm=True,
+        color_func=lambda x, y, z, u, v: z)
+    s4 = InteractiveSeries([*expr2], [(u, -5, 5), (v, -5, 5)],
+        n1=5, n2=5, params={t: 1}, use_cm=True,
+        color_func=lambda x, y, z, u, v: np.sqrt(x**2 + y**2))
+
+    p = MB(s1, s2, s3, s4)
+    p.process_series()
+    p._update_interactive({t: 2})
+
+    p = PB(s1, s2, s3, s4)
+    p._update_interactive({t: 2})
+    assert not np.allclose(p.fig.data[0]["surfacecolor"], p.fig.data[1]["surfacecolor"])
+    assert not np.allclose(p.fig.data[2]["surfacecolor"], p.fig.data[3]["surfacecolor"])
+
+    p = KBchild1(s1, s2, s3, s4)
+    p._update_interactive({t: 2})
+    assert not np.allclose(p.fig.objects[0].attribute, p.fig.objects[1].attribute)
+    assert not np.allclose(p.fig.objects[2].attribute, p.fig.objects[3].attribute)
+
+
+def test_line_color_func():
+    # Verify that backends do not raise errors when plotting lines and that
+    # the color function is applied.
+
+    x, u = symbols("x, u")
+    pl = lambda B, col: plot(cos(x), (x, -3, 3),
+        backend=B, adaptive=False, n=5, color_func=col, show=False, legend=True)
+
+    p1 = pl(MB, None)
+    p1.process_series()
+    p2 = pl(MB, lambda x, y: np.cos(x))
+    p2.process_series()
+    assert len(p1.fig.axes[0].lines) == 1
+    assert isinstance(p2.fig.axes[0].collections[0], matplotlib.collections.LineCollection)
+    assert np.allclose(p2.fig.axes[0].collections[0].get_array(), np.cos(np.linspace(-3, 3, 5)))
+
+
+    p1 = pl(PB, None)
+    p2 = pl(PB, lambda x, y: np.cos(x))
+    assert p1.fig.data[0].marker.color is None
+    assert np.allclose(p2.fig.data[0].marker.color, np.cos(np.linspace(-3, 3, 5)))
+
+    p1 = pl(BB, None)
+    p2 = pl(BB, lambda x, y: np.cos(x))
+    assert isinstance(p1.fig.renderers[0].glyph, bokeh.models.glyphs.Line)
+    assert isinstance(p2.fig.renderers[0].glyph, bokeh.models.glyphs.MultiLine)
+
+
+def test_line_interactive_color_func():
+    # Verify that backends do not raise errors when updating lines and a
+    # color function is applied.
+
+    x, t = symbols("x, t")
+
+    expr = t * cos(x * t)
+    s1 = InteractiveSeries([expr], [(x, -3, 3)],
+        n1=5, params={t: 1}, color_func=None)
+    s2 = InteractiveSeries([expr], [(x, -3, 3)],
+        n1=5, params={t: 1}, color_func=lambda x, y: np.cos(x))
+
+    p = MB(s1, s2)
+    p.process_series()
+    p._update_interactive({t: 2})
+    assert len(p.fig.axes[0].lines) == 1
+    assert isinstance(p.fig.axes[0].collections[0], matplotlib.collections.LineCollection)
+    assert np.allclose(p.fig.axes[0].collections[0].get_array(), np.cos(np.linspace(-3, 3, 5)))
+
+    p = PB(s1, s2)
+    p._update_interactive({t: 2})
+    assert p.fig.data[0].marker.color is None
+    assert np.allclose(p.fig.data[1].marker.color, np.cos(np.linspace(-3, 3, 5)))
+
+    p = BB(s1, s2)
+    p._update_interactive({t: 2})
+    assert isinstance(p.fig.renderers[0].glyph, bokeh.models.glyphs.Line)
+    assert isinstance(p.fig.renderers[1].glyph, bokeh.models.glyphs.MultiLine)

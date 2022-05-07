@@ -275,6 +275,10 @@ def plot(*args, show=True, **kwargs):
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
 
+    color_func : callable, optional
+        A function of 2 variables, x, y (the points computed by the internal
+        algorithm) which defines the line color. Default to None.
+
     detect_poles : boolean
         Chose whether to detect and correctly plot poles.
         Defaulto to `False`. To improve detection, increase the number of
@@ -384,7 +388,7 @@ def plot(*args, show=True, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, sin, pi, tan
+       >>> from sympy import symbols, sin, pi, tan, exp
        >>> from spb import plot
        >>> x, y = symbols('x, y')
 
@@ -477,6 +481,18 @@ def plot(*args, show=True, **kwargs):
        ...      xlabel="x [deg]")
        Plot object containing:
        [0]: cartesian line: tan(x) for x over (-10.0, 10.0)
+
+    Applying a colormap with a color function:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot(cos(exp(-x)), (x, -pi, 0), "frequency",
+       ...      adaptive=False, color_func=lambda x, y: np.exp(-x))
+       Plot object containing:
+       [0]: cartesian line: cos(exp(-x)) for x over (-3.141592653589793, 0.0)
 
 
     References
@@ -983,6 +999,11 @@ def plot3d(*args, show=True, **kwargs):
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
 
+    color_func : callable, optional
+        A function of 3 variables, x, y, z (the points computed by the
+        internal algorithm) which defines the surface color when
+        ``use_cm=True``. Default to None.
+
     is_polar : boolean, optional
         Default to False. If True, requests a polar discretization. In this
         case, ``range_x`` represents the radius, ``range_y`` represents the
@@ -1075,7 +1096,7 @@ def plot3d(*args, show=True, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos, sin, pi
+       >>> from sympy import symbols, cos, sin, pi, exp
        >>> from spb.functions import plot3d
        >>> x, y = symbols('x y')
 
@@ -1091,17 +1112,23 @@ def plot3d(*args, show=True, **kwargs):
        [0]: cartesian surface: cos(x**2 + y**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
 
 
-    Single plot with a polar discretization:
+    Single plot with a polar discretization and a color function mapping a
+    colormap to the radius:
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
+       >>> import matplotlib.cm as cm
        >>> r, theta = symbols("r, theta")
-       >>> plot3d(cos(r**2), (r, 0, 3.25), (theta, 0, 2 * pi), is_polar=True)
+       >>> p = plot3d(
+       ...     (cos(r**2) * exp(-r / 3), (r, 0, 3.25), (theta, 0, 2 * pi), "r"),
+       ...     is_polar=True, use_cm=True, legend=True,
+       ...     color_func=lambda x, y, z: (x**2 + y**2)**0.5,
+       ...     surface_kw={"cmap": cm.winter})
        Plot object containing:
-       [0]: cartesian surface: cos(r**2) for r over (0.0, 3.25) and theta over (0.0, 6.283185307179586)
+       [0]: cartesian surface: exp(-r/3)*cos(r**2) for r over (0.0, 3.25) and theta over (0.0, 6.283185307179586)
 
 
     Multiple plots with same range. Set ``use_cm=True`` to distinguish the
@@ -1224,6 +1251,11 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
+
+    color_func : callable, optional
+        A function of 5 variables, x, y, z, u, v (the points computed by the
+        internal algorithm and the parameters) which defines the surface color
+        when ``use_cm=True``. Default to None.
 
     n1 : int, optional
         The u range is sampled uniformly at `n1` of points. Default value

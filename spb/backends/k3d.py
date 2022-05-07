@@ -248,19 +248,19 @@ class K3DBackend(Plot):
                 self._fig += line
 
             elif (s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit)):
-                x, y, z = s.get_data()
-
-                # TODO:
-                # Can I use get_vertices_indices also for non parametric surfaces?
                 if s.is_parametric:
+                    x, y, z, u, v = s.get_data()
                     vertices, indices = get_vertices_indices(x, y, z)
                     vertices = vertices.astype(np.float32)
+                    attribute = s.color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2], u.flatten().astype(np.float32), v.flatten().astype(np.float32))
                 else:
+                    x, y, z = s.get_data()
                     x = x.flatten()
                     y = y.flatten()
                     z = z.flatten()
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     indices = Triangulation(x, y).triangles.astype(np.uint32)
+                    attribute = s.color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2])
 
                 self._high_aspect_ratio(x, y, z)
                 a = dict(
@@ -272,7 +272,9 @@ class K3DBackend(Plot):
                 )
                 if s.use_cm:
                     a["color_map"] = next(self._cm)
-                    a["attribute"] = z.astype(np.float32)
+                    a["attribute"] = attribute
+                    a["color_range"] = [attribute.min(), attribute.max()]
+
                 kw = merge({}, a, s.rendering_kw)
                 surf = self.k3d.mesh(vertices, indices, **kw)
 
@@ -488,13 +490,20 @@ class K3DBackend(Plot):
                     self._fig.objects[i].vertices = vertices
 
                 elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
-                    x, y, z = self.series[i].get_data()
-                    x, y, z = [t.flatten().astype(np.float32) for t in [x, y, z]]
+                    if s.is_parametric:
+                        x, y, z, u, v = s.get_data()
+                        x, y, z, u, v = [t.flatten().astype(np.float32) for t in [x, y, z, u, v]]
+                        attribute = s.color_func(x, y, z, u, v)
+                    else:
+                        x, y, z = s.get_data()
+                        x, y, z = [t.flatten().astype(np.float32) for t in [x, y, z]]
+                        attribute = s.color_func(x, y, z)
+
                     vertices = np.vstack([x, y, z]).astype(np.float32)
                     self._fig.objects[i].vertices = vertices.T
                     if s.use_cm:
-                        self._fig.objects[i].attribute = z
-                        self._fig.objects[i].color_range = [z.min(), z.max()]
+                        self._fig.objects[i].attribute = attribute
+                        self._fig.objects[i].color_range = [attribute.min(), attribute.max()]
 
                 elif s.is_vector and s.is_3D:
                     if s.is_streamlines:

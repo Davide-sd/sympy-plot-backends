@@ -483,6 +483,7 @@ class Line2DBaseSeries(BaseSeries):
         self.loss_fn = kwargs.get("loss_fn", None)
         self._rendering_kw = kwargs.get("line_kw", dict())
         self.use_cm = kwargs.get("use_cm", True)
+        self.color_func = kwargs.get("color_func", None)
         self._init_transforms(**kwargs)
 
     def get_data(self):
@@ -565,6 +566,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
             return super().__new__(AbsArgLineSeries)
+        if callable(kwargs.get("color_func", None)):
+            return super().__new__(ColoredLineOver1DRangeSeries)
         return object.__new__(cls)
 
     def __init__(self, expr, var_start_end, label="", **kwargs):
@@ -690,6 +693,32 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         if self.detect_poles:
             return self._detect_poles(x, _re, self.eps)
         return x, _re
+
+
+class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
+    """Represents a 2D line series in which `color_func` is a callable.
+    """
+    is_parametric = True
+
+    def get_points(self):
+        """Return coordinates for plotting. Depending on the `adaptive`
+        option, this function will either use an adaptive algorithm
+        or it will uniformly sample the expression over the provided range.
+
+        Returns
+        =======
+
+        x : np.ndarray
+            Real Discretized domain.
+
+        y : np.ndarray
+            Numerical evaluation result.
+
+        col : np.ndarray
+            Color associated to each point.
+        """
+        x, y = super().get_points()
+        return x, y, self.color_func(x, y)
 
 
 class AbsArgLineSeries(LineOver1DRangeSeries):
@@ -924,6 +953,7 @@ class SurfaceBaseSeries(BaseSeries):
         self._rendering_kw = kwargs.get("surface_kw", dict())
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self.is_polar = kwargs.get("is_polar", False)
+        self.color_func = kwargs.get("color_func", lambda x, y, z: z)
         self._init_transforms(**kwargs)
 
     def _set_surface_label(self, label):
@@ -1045,6 +1075,7 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.start_v = float(var_start_end_v[1])
         self.end_v = float(var_start_end_v[2])
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
+        self.color_func = kwargs.get("color_func", lambda x, y, z, u, v: z)
         self._set_surface_label(label)
 
         if self.adaptive:
@@ -1094,19 +1125,21 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
 
         x : np.ndarray [n2 x n1]
             x-coordinates.
-
         y : np.ndarray [n2 x n1]
             y-coordinates.
-
         z : np.ndarray [n2 x n1]
             z-coordinates.
+        mesh_u : np.ndarray [n2 x n1]
+            Discretized u range.
+        mesh_v : np.ndarray [n2 x n1]
+            Discretized v range.
         """
         mesh_u, mesh_v = self._discretize(self.start_u, self.end_u,
             self.start_v, self.end_v)
         x = self._eval_component(self.expr_x, mesh_u, mesh_v)
         y = self._eval_component(self.expr_y, mesh_u, mesh_v)
         z = self._eval_component(self.expr_z, mesh_u, mesh_v)
-        return x, y, z
+        return x, y, z, mesh_u, mesh_v
 
 
 class ContourSeries(SurfaceOver2DRangeSeries):
@@ -1497,6 +1530,8 @@ class InteractiveSeries(BaseSeries):
         if (nexpr == 1) and (npar == 1):
             absarg = kwargs.get("absarg", False)
             if not absarg:
+                if callable(kwargs.get("color_func", None)):
+                    return super().__new__(ColoredLineInteractiveSeries)
                 return super().__new__(LineInteractiveSeries)
             return super().__new__(AbsArgLineInteractiveSeries)
         elif (nexpr == 2) and (npar == 1):
@@ -1702,6 +1737,8 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
     expression over a real range."""
 
     def __new__(cls, *args, **kwargs):
+        if callable(kwargs.get("color_func", None)):
+            return super().__new__(ColoredLineInteractiveSeries)
         return object.__new__(cls)
 
     def __init__(self, exprs, ranges, label="", **kwargs):
@@ -1713,6 +1750,7 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
         self._rendering_kw = kwargs.get("line_kw", dict())
+        self.color_func = kwargs.get("color_func", None)
 
     def get_points(self):
         """Return coordinates for plotting the line.
@@ -1740,6 +1778,33 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
 
     def __str__(self):
         return self._str("cartesian line")
+
+
+class ColoredLineInteractiveSeries(LineInteractiveSeries):
+    """Represents a 2D line interactive series in which `color_func` is a
+    callable.
+    """
+    is_parametric = True
+
+    def get_points(self):
+        """Return coordinates for plotting. Depending on the `adaptive`
+        option, this function will either use an adaptive algorithm
+        or it will uniformly sample the expression over the provided range.
+
+        Returns
+        =======
+
+        x : np.ndarray
+            Real Discretized domain.
+
+        y : np.ndarray
+            Numerical evaluation result.
+
+        col : np.ndarray
+            Color associated to each point.
+        """
+        x, y = super().get_points()
+        return x, y, self.color_func(x, y)
 
 
 class AbsArgLineInteractiveSeries(LineInteractiveSeries):
@@ -1847,6 +1912,7 @@ class SurfaceInteractiveSeries(InteractiveSeries):
         super().__init__(*args, **kwargs)
         self._rendering_kw = kwargs.get("surface_kw", dict())
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
+        self.color_func = kwargs.get("color_func", lambda x, y, z: z)
 
     def get_data(self):
         """Return arrays of coordinates for plotting.
@@ -1896,6 +1962,10 @@ class ParametricSurfaceInteractiveSeries(SurfaceInteractiveSeries):
     parametric sympy expressions and a range."""
     is_parametric = True
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color_func = kwargs.get("color_func", lambda x, y, z, u, v: z)
+
     def get_data(self):
         """Return arrays of coordinates for plotting.
 
@@ -1918,7 +1988,9 @@ class ParametricSurfaceInteractiveSeries(SurfaceInteractiveSeries):
             _re, _im = np.real(results[i]), np.imag(results[i])
             _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
             results[i] = _re
-        return results
+
+        discr = [np.real(t) for t in self.ranges.values()]
+        return [*results, *discr]
 
     def __str__(self):
         return self._str("parametric cartesian surface")
@@ -2113,6 +2185,7 @@ class ComplexSurfaceSeries(ComplexSurfaceBaseSeries):
         self._init_rendering_kw(**kwargs)
 
     def _init_rendering_kw(self, **kwargs):
+        self.color_func = kwargs.get("color_func", lambda x, y, z: z)
         if self.is_3Dsurface:
             self._rendering_kw = kwargs.get("surface_kw", dict())
         else:
@@ -2715,6 +2788,7 @@ class PlaneSeries(SurfaceBaseSeries):
         self._rendering_kw = kwargs.get("line_kw", dict())
         self.use_cm = kwargs.get("use_cm", True)
         self._set_surface_label(label)
+        self.color_func = kwargs.get("color_func", lambda x, y, z: z)
 
     def __str__(self):
         return "plane series: %s over %s, %s, %s" % (
@@ -2847,6 +2921,7 @@ class GeometrySeries(BaseSeries):
         self.is_filled = kwargs.get("is_filled", True)
         self.n = kwargs.get("n", 200)
         self.use_cm = kwargs.get("use_cm", True)
+        self.color_func = kwargs.get("color_func", None)
         if isinstance(expr, (LinearEntity3D, Point3D)):
             self.is_3Dline = True
             self.start = 0
