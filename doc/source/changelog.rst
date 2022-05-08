@@ -2,6 +2,24 @@
  Changelog
 ==========
 
+v1.1.1
+======
+
+* Added ``color_func`` keyword argument to:
+
+  * `plot` to apply custom coloring to lines.
+  * `plot3d` and `plot3d_parametric_surface` to apply custom coloring to 3D
+     surfaces.
+  * to accomodate ``color_func``, ``ParametricSurfaceSeries.get_data()`` now
+    returns 5 elements instead of 3.
+
+* Added plot range to default settings.
+* Implemented a custom printer for interval math to be used inside
+  ``ImplicitSeries``.
+* Added ``plot3d_implicit`` to visualize implicit surfaces.
+* ``MatplotlibBackend`` now uses default colorloop from ``plt.rcParams['axes.prop_cycle']``.
+
+
 v1.1.0
 ======
 
