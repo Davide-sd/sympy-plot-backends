@@ -148,7 +148,9 @@ class MatplotlibBackend(Plot):
             cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
             cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer]
         self.cyclic_colormaps = [cm.twilight, cm.hsv]
-        self.colorloop = cm.tab10.colors
+        # load default colorloop
+        self.colorloop = self.plt.rcParams['axes.prop_cycle'].by_key()["color"]
+
 
         self._init_cyclers()
         super().__init__(*args, **kwargs)

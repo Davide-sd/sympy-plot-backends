@@ -354,6 +354,7 @@ def test_plot_sum():
     # original visualization. In particular, if no `line_kw` is given to `p2`
     # then the backend will use automatic coloring to differentiate the
     # series.
+    hex2rgb = lambda h: tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
     p1 = plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
         backend=MB, scalar=True, show=False)
     p2 = plot(sin(x), (x, -3, 3), backend=MB, show=False)
@@ -364,10 +365,16 @@ def test_plot_sum():
     assert isinstance(p3.fig.axes[0].collections[-1], matplotlib.quiver.Quiver)
     quiver_col = p3.fig.axes[0].collections[-1].get_facecolors().flatten()[:-1]
     first_col = np.array(p3.colorloop[0])
-    assert np.allclose(quiver_col, first_col)
+    if quiver_col.dtype == first_col.dtype:
+        assert np.allclose(quiver_col, first_col)
+    else:
+        assert np.allclose(quiver_col, hex2rgb(str(first_col)[1:]))
     line_col = np.array(p3.fig.axes[0].lines[0].get_color())
     second_col = np.array(p3.colorloop[1])
-    assert np.allclose(line_col, second_col)
+    if line_col.dtype == second_col.dtype == "<U7":
+        assert str(line_col) == str(second_col)
+    else:
+        assert np.allclose(line_col, hex2rgb(str(second_col)[1:]))
 
     # summing plots with different backends: the first backend will be used in
     # the result
