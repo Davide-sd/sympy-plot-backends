@@ -388,7 +388,7 @@ class BokehBackend(Plot):
                         x, y = s.get_data()
                         source = {
                             "xs": x if not s.is_polar else y * np.cos(x),
-                            "ys": x if not s.is_polar else y * np.sin(x)
+                            "ys": y if not s.is_polar else y * np.sin(x)
                         }
 
                     lkw = dict(line_width=2,
