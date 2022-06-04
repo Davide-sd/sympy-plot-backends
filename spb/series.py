@@ -476,7 +476,7 @@ class Line2DBaseSeries(BaseSeries):
         self.is_point = kwargs.get("is_point", False)
         self.is_filled = kwargs.get("is_filled", False)
         self.scale = kwargs.get("xscale", "linear")
-        self.n = kwargs.get("n", 1000)
+        self.n = int(kwargs.get("n", 1000))
         self.modules = kwargs.get("modules", None)
         self.adaptive = kwargs.get("adaptive", True)
         self.adaptive_goal = kwargs.get("adaptive_goal", cfg["adaptive"]["goal"])
@@ -942,8 +942,8 @@ class SurfaceBaseSeries(BaseSeries):
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.only_integers = kwargs.get("only_integers", False)
-        self.n1 = kwargs.get("n1", 100)
-        self.n2 = kwargs.get("n2", 100)
+        self.n1 = int(kwargs.get("n1", 100))
+        self.n2 = int(kwargs.get("n2", 100))
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.adaptive = kwargs.get("adaptive", False)
@@ -1186,8 +1186,8 @@ class ImplicitSeries(BaseSeries):
         self.start_y = float(var_start_end_y[1])
         self.end_y = float(var_start_end_y[2])
         self.has_equality = has_equality
-        self.n1 = kwargs.get("n1", 1000)
-        self.n2 = kwargs.get("n2", 1000)
+        self.n1 = int(kwargs.get("n1", 1000))
+        self.n2 = int(kwargs.get("n2", 1000))
         self.label = label
         self._latex_label = label if str(expr) != label else latex(expr)
         self.adaptive = kwargs.get("adaptive", False)
@@ -1439,9 +1439,9 @@ class Implicit3DSeries(SurfaceBaseSeries):
         self.end_z = float(range_z[2])
         # keep number of discretization points low as some backend might be
         # slow at processing/rendering
-        self.n1 = kwargs.get("n1", 60)
-        self.n2 = kwargs.get("n2", 60)
-        self.n3 = kwargs.get("n3", 60)
+        self.n1 = int(kwargs.get("n1", 60))
+        self.n2 = int(kwargs.get("n2", 60))
+        self.n3 = int(kwargs.get("n3", 60))
         self.zscale = kwargs.get("zscale", "linear")
         self._set_surface_label(label)
 
@@ -1557,9 +1557,9 @@ class InteractiveSeries(BaseSeries):
         # free symbols of the parameters
         self._params = kwargs.get("params", dict())
         # number of discretization points
-        self.n1 = kwargs.get("n1", 250)
-        self.n2 = kwargs.get("n2", 250)
-        self.n3 = kwargs.get("n3", 250)
+        self.n1 = int(kwargs.get("n1", 250))
+        self.n2 = int(kwargs.get("n2", 250))
+        self.n3 = int(kwargs.get("n3", 250))
         n = [self.n1, self.n2, self.n3]
         self.modules = kwargs.get("modules", None)
         self.is_polar = kwargs.get("is_polar", False)
@@ -2109,8 +2109,8 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         self.expr = expr
         self.label = label
         self._latex_label = label if str(expr) != label else latex(expr)
-        self.n1 = kwargs.get("n1", 300)
-        self.n2 = kwargs.get("n2", 300)
+        self.n1 = int(kwargs.get("n1", 300))
+        self.n2 = int(kwargs.get("n2", 300))
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.modules = kwargs.get("modules", None)
@@ -2435,8 +2435,11 @@ def _set_discretization_points(kwargs, pt):
 
     kwargs : dict
     """
-    if pt in [LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries]:
-        if "n1" in kwargs.keys() and ("n" not in kwargs.keys()):
+    if pt in [LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries, LineInteractiveSeries]:
+        if "n" in kwargs.keys():
+            if hasattr(kwargs["n"], "__iter__") and (len(kwargs["n"]) > 0):
+                kwargs["n"] = kwargs["n"][0]
+        elif "n1" in kwargs.keys():
             kwargs["n"] = kwargs["n1"]
     elif pt in [
         SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
@@ -2444,15 +2447,21 @@ def _set_discretization_points(kwargs, pt):
         Vector2DSeries, ImplicitSeries,
     ]:
         if "n" in kwargs.keys():
-            kwargs["n1"] = kwargs["n"]
-            kwargs["n2"] = kwargs["n"]
+            if hasattr(kwargs["n"], "__iter__") and (len(kwargs["n"]) > 1):
+                kwargs["n1"] = kwargs["n"][0]
+                kwargs["n2"] = kwargs["n"][1]
+            else:
+                kwargs["n1"] = kwargs["n2"] = kwargs["n"]
     elif pt in [Vector3DSeries, SliceVector3DSeries, InteractiveSeries,
         Implicit3DSeries
     ]:
         if "n" in kwargs.keys():
-            kwargs["n1"] = kwargs["n"]
-            kwargs["n2"] = kwargs["n"]
-            kwargs["n3"] = kwargs["n"]
+            if hasattr(kwargs["n"], "__iter__") and (len(kwargs["n"]) > 2):
+                kwargs["n1"] = kwargs["n"][0]
+                kwargs["n2"] = kwargs["n"][1]
+                kwargs["n3"] = kwargs["n"][2]
+            else:
+                kwargs["n1"] = kwargs["n2"] = kwargs["n3"] = kwargs["n"]
     return kwargs
 
 
@@ -2471,9 +2480,9 @@ class VectorBase(BaseSeries):
         self.ranges = new_ranges
         self.label = label
         self._latex_label = label if str(exprs) != label else latex(exprs)
-        self.n1 = kwargs.get("n1", 10)
-        self.n2 = kwargs.get("n2", 10)
-        self.n3 = kwargs.get("n3", 10)
+        self.n1 = int(kwargs.get("n1", 10))
+        self.n2 = int(kwargs.get("n2", 10))
+        self.n3 = int(kwargs.get("n3", 10))
         self.n = [self.n1, self.n2, self.n3]
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
@@ -2661,7 +2670,10 @@ def _build_slice_series(slice_surf, ranges, **kwargs):
     fs = slice_surf.free_symbols
     new_ranges = [r for r in ranges if r[0] in fs]
     # apply the correct discretization number
-    n = [kwargs.get("n1", 10), kwargs.get("n2", 10), kwargs.get("n3", 10)]
+    n = [
+        int(kwargs.get("n1", 10)),
+        int(kwargs.get("n2", 10)),
+        int(kwargs.get("n3", 10))]
     discr_symbols = [r[0] for r in ranges]
     idx = [discr_symbols.index(s) for s in [r[0] for r in new_ranges]]
     kwargs2 = kwargs.copy()
@@ -2778,9 +2790,9 @@ class PlaneSeries(SurfaceBaseSeries):
         self.x_range = sympify(x_range)
         self.y_range = sympify(y_range)
         self.z_range = sympify(z_range)
-        self.n1 = kwargs.get("n1", 20)
-        self.n2 = kwargs.get("n2", 20)
-        self.n3 = kwargs.get("n3", 20)
+        self.n1 = int(kwargs.get("n1", 20))
+        self.n2 = int(kwargs.get("n2", 20))
+        self.n3 = int(kwargs.get("n3", 20))
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
@@ -2919,7 +2931,7 @@ class GeometrySeries(BaseSeries):
         self._latex_label = label if label != str(expr) else latex(expr)
         self._params = params
         self.is_filled = kwargs.get("is_filled", True)
-        self.n = kwargs.get("n", 200)
+        self.n = int(kwargs.get("n", 200))
         self.use_cm = kwargs.get("use_cm", True)
         self.color_func = kwargs.get("color_func", None)
         if isinstance(expr, (LinearEntity3D, Point3D)):

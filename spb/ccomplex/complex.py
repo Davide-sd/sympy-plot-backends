@@ -357,9 +357,10 @@ def plot_real_imag(*args, **kwargs):
         respectively, when `adaptive=False`. For line plots, default to 1000.
         For surface/contour plots (2D and 3D), default to 300.
 
-    n : int, optional
-        Set the same number of discretization points in all directions to be
-        used when `adaptive=False`.
+    n : int or two-elements tuple (n1, n2), optional
+        If an integer is provided, set the same number of discretization
+        points in all directions. If a tuple is provided, it overrides
+        `n1` and `n2`. It only works when `adaptive=False`.
 
     real : boolean, optional
         If True, plot the real part of the complex function. Default to True.
@@ -626,9 +627,10 @@ def plot_complex(*args, **kwargs):
         respectively, when `adaptive=False`. For line plots, default to 1000.
         For surface/contour plots (2D and 3D), default to 300.
 
-    n : int, optional
-        Set the same number of discretization points in all directions to be
-        used when `adaptive=False`.
+    n : int or two-elements tuple (n1, n2), optional
+        If an integer is provided, set the same number of discretization
+        points in all directions. If a tuple is provided, it overrides
+        `n1` and `n2`. It only works when `adaptive=False`.
 
     show : boolean, optional
         Default to True, in which case the plot will be shown on the screen.
@@ -978,10 +980,11 @@ def plot_complex_vector(*args, **kwargs):
         Number of discretization points for the quivers or streamlines in the
         x/y-direction, respectively. Default to 25.
 
-    n : int
-        Set the same number of discretization points in all directions for
-        the quivers or streamlines. It overrides `n1`, `n2`.
-        Default to 25.
+    n : int or two-elements tuple (n1, n2), optional
+        If an integer is provided, set the same number of discretization
+        points in all directions for quivers or streamlines. If a tuple is
+        provided, it overrides `n1` and `n2`. It only works when
+        `adaptive=False`. Default to 25.
 
     nc : int
         Number of discretization points for the scalar contour plot.

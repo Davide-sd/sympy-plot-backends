@@ -313,10 +313,10 @@ def plot_vector(*args, show=True, **kwargs):
         Number of discretization points for the quivers or streamlines in the
         x/y/z-direction, respectively. Default to 25.
 
-    n : int
-        Set the same number of discretization points in all directions for
-        the quivers or streamlines. It overrides `n1`, `n2`, `n3`.
-        Default to 25.
+    n : int or three-elements tuple (n1, n2, n3), optional
+        If an integer is provided, the ranges are sampled uniformly
+        at `n` number of points. If a tuple is provided, it overrides
+        `n1`, `n2` and `n3`. Default to 25.
 
     nc : int
         Number of discretization points for the scalar contour plot.

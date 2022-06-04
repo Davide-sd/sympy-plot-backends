@@ -1026,9 +1026,9 @@ def plot3d(*args, show=True, **kwargs):
         The y range is sampled uniformly at `n2` of points. Default value
         is 100.
 
-    n : int, optional
-        The x and y ranges are sampled uniformly at `n` of points.
-        It overrides `n1` and `n2`.
+    n : int or two-elements tuple (n1, n2), optional
+        If an integer is provided, the x and y ranges are sampled uniformly
+        at `n` of points. If a tuple is provided, it overrides `n1` and `n2`.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -1265,9 +1265,9 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         The v range is sampled uniformly at `n2` of points. Default value
         is 100.
 
-    n : int, optional
-        The u and v ranges are sampled uniformly at `n` of points.
-        It overrides `n1` and `n2`.
+    n : int or two-elements tuple (n1, n2), optional
+        If an integer is provided, the u and v ranges are sampled uniformly
+        at `n` of points. If a tuple is provided, it overrides `n1` and `n2`.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -1427,9 +1427,10 @@ def plot3d_implicit(*args, show=True, **kwargs):
         The z range is sampled uniformly at `n3` of points. Default value
         is 60.
 
-    n : int, optional
-        The u and v ranges are sampled uniformly at `n` of points.
-        It overrides `n1` and `n2`.
+    n : int or three-elements tuple (n1, n2, n3), optional
+        If an integer is provided, the x, y and z ranges are sampled uniformly
+        at `n` of points. If a tuple is provided, it overrides `n1`, `n2` and
+        `n3`.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -1667,11 +1668,9 @@ def plot_implicit(*args, show=True, **kwargs):
         Number of discretization points in the horizontal and vertical
         directions when `adaptive=False`. Default to 1000.
 
-    n : integer
-        Set the number of discretization points when `adaptive=False` in
-        both direction simultaneously. Default value is 1000.
-        The greater the value the more accurate the plot, but the more
-        memory will be used.
+    n : int or two-elements tuple (n1, n2), optional
+        If an integer is provided, the x and y ranges are sampled uniformly
+        at `n` of points. If a tuple is provided, it overrides `n1` and `n2`.
 
     show : Boolean
         Default value is True. If set to False, the plot will not be shown.

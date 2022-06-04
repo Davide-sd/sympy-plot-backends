@@ -20,7 +20,7 @@ from spb.series import (
     ImplicitSeries, Implicit3DSeries,
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
     ComplexSurfaceSeries, ComplexDomainColoringSeries,
-    ComplexInteractiveBaseSeries,
+    ComplexInteractiveBaseSeries, ComplexSurfaceBaseSeries,
     ComplexSurfaceInteractiveSeries, ComplexDomainColoringInteractiveSeries,
     ComplexPointSeries, ComplexPointInteractiveSeries,
     GeometrySeries, GeometryInteractiveSeries,
@@ -30,7 +30,8 @@ from spb.series import (
     Parametric2DLineInteractiveSeries, Parametric3DLineInteractiveSeries,
     ParametricSurfaceInteractiveSeries, SurfaceInteractiveSeries,
     Vector2DInteractiveSeries, Vector3DInteractiveSeries,
-    SliceVector3DInteractiveSeries, ContourInteractiveSeries
+    SliceVector3DInteractiveSeries, ContourInteractiveSeries,
+    _set_discretization_points
 )
 from pytest import raises
 np = import_module('numpy', catch=(RuntimeError,))
@@ -175,6 +176,41 @@ def test_detect_poles():
     assert not np.any(np.isnan(yy1))
     assert not np.any(np.isnan(yy3))
     assert np.any(np.isnan(yy2))
+
+
+def test_number_discretization_points():
+    # verify that the different ways to set the number of discretization
+    # points are consistent with each other.
+    x, y, z = symbols("x:z")
+
+    for pt in [LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries, LineInteractiveSeries]:
+        kw1 = _set_discretization_points({"n": 10}, pt)
+        kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+        kw3 = _set_discretization_points({"n1": 10}, pt)
+        assert all(("n" in kw) and kw["n"] == 10 for kw in [kw1, kw2, kw3])
+
+    for pt in [SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
+        ComplexSurfaceBaseSeries, ComplexInteractiveBaseSeries,
+        Vector2DSeries, ImplicitSeries]:
+        kw1 = _set_discretization_points({"n": 10}, pt)
+        kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+        kw3 = _set_discretization_points({"n1": 10, "n2": 20}, pt)
+        assert kw1["n1"] == kw1["n2"] == 10
+        assert all((kw["n1"] == 10) and (kw["n2"] == 20) for kw in [kw2, kw3])
+
+    for pt in [Vector3DSeries, SliceVector3DSeries, InteractiveSeries,
+        Implicit3DSeries]:
+        kw1 = _set_discretization_points({"n": 10}, pt)
+        kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+        kw3 = _set_discretization_points({"n1": 10, "n2": 20, "n3": 30}, pt)
+        assert kw1["n1"] == kw1["n2"] == kw1["n3"] == 10
+        assert all(((kw["n1"] == 10) and (kw["n2"] == 20)
+            and (kw["n3"] == 30)) for kw in [kw2, kw3])
+
+
+    # verify that line-related series can deal with large float number
+    LineOver1DRangeSeries(cos(x), (x, -5, 5), adaptive=False, n=1e04).get_data()
+    AbsArgLineSeries(sqrt(x), (x, -5, 5), adaptive=False, n=1e04).get_data()
 
 
 def test_list2dseries():
