@@ -28,6 +28,20 @@ from spb.defaults import TWO_D_B, THREE_D_B
 #   create "domain coloring" plots.
 
 
+def _get_labels(args, kwargs):
+    # implement the label keyword argument
+    # NOTE: this function is a workaround until a better integration is
+    # achieved between iplot and all other plotting functions.
+    labels = kwargs.pop("label", [])
+    if (len(labels) > 0) and (len(labels) != len(args)):
+        raise ValueError("The number of labels must be equals to the "
+            "number of expressions being plotted.\nReceived "
+            "{} expressions and {} labels".format(len(args), len(labels)))
+    if len(labels) == 0:
+        labels = [None] * len(args)
+    return labels
+
+
 def _build_series(*args, interactive=False, **kwargs):
     series = []
     # apply the user-specified function to the expression
@@ -56,9 +70,11 @@ def _build_series(*args, interactive=False, **kwargs):
     if all([hasattr(a, "is_complex") and a.is_complex for a in args]):
         # args is a list of complex numbers
         cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
-        for a in args:
-            # series.append(cls([a], None, str(a), **kwargs))
-            series.append(cls([a], str(a), **kwargs))
+        labels = _get_labels(args, kwargs)
+        for a, lbl in zip(args, labels):
+            if lbl is None:
+                lbl = str(a)
+            series.append(cls([a], lbl, **kwargs))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
@@ -68,8 +84,11 @@ def _build_series(*args, interactive=False, **kwargs):
         # args is a list of tuples of the form (list, label) where list
         # contains complex points
         cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
-        for a in args:
-            series.append(cls(a[0], a[-1], **kwargs))
+        labels = _get_labels(args, kwargs)
+        for a, lbl in zip(args, labels):
+            if lbl is None:
+                lbl = a[-1]
+            series.append(cls(a[0], lbl, **kwargs))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
@@ -77,8 +96,11 @@ def _build_series(*args, interactive=False, **kwargs):
     ):
         # args is a list of lists
         cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
-        for a in args:
-            series.append(cls(a, "", **kwargs))
+        labels = _get_labels(args, kwargs)
+        for a, lbl in zip(args, labels):
+            if lbl is None:
+                lbl = ""
+            series.append(cls(a, lbl, **kwargs))
     else:
         new_args = []
 
@@ -105,13 +127,25 @@ def _build_series(*args, interactive=False, **kwargs):
             for a in tmp:
                 add_series(a)
         else:
-            # plotting a single expression
-            add_series(args)
+            if len([t for t in args if isinstance(t, Expr)]) > 1:
+                # multiple expressions with the same range
+                args = list(args)
+                r = None
+                if _is_range(args[-1]):
+                    r = args.pop()
+                for a in args:
+                    a = [a, ] if r is None else [a, r]
+                    add_series(a)
+            else:
+                # plotting a single expression
+                add_series(args)
 
-
+        labels = _get_labels(new_args, kwargs)
         params = kwargs.get("params", dict())
-        for a in new_args:
+        for a, lbl in zip(new_args, labels):
             expr, ranges, label = a[0], a[1:-1], a[-1]
+            if lbl is not None:
+                label = lbl
 
             # From now on we are dealing with a function of one variable.
             # ranges need to contain complex numbers
@@ -601,6 +635,11 @@ def plot_complex(*args, **kwargs):
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
 
+    label : str or list/tuple, optional
+        The label to be shown in the legend or colorbar in case of a line plot.
+        If not provided, the string representation of `expr` will be used.
+        The number of labels must be  equal to the number of expressions.
+
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
@@ -738,7 +777,7 @@ def plot_complex(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_complex((cos(x) + sin(I * x), "f"), (x, -2, 2))
+       >>> plot_complex(cos(x) + sin(I * x), "f", (x, -2, 2))
        Plot object containing:
        [0]: absolute-argument line: cos(x) + I*sinh(x) for x over ((-2+0j), (2+0j))
 
@@ -833,6 +872,11 @@ def plot_complex_list(*args, **kwargs):
         Default to True, which will render empty circular markers. It only
         works if `is_point=True`.
         If False, filled circular markers will be rendered.
+
+    label : str or list/tuple, optional
+        The name associated to the list of the complex numbers to be
+        eventually shown on the legend. The number of labels must be equal to
+        the number of lists.
 
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's

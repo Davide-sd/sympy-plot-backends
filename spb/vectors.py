@@ -1,4 +1,5 @@
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
+from spb.functions import _set_labels
 from spb.series import (
     BaseSeries,
     Vector2DSeries,
@@ -309,6 +310,10 @@ def plot_vector(*args, show=True, **kwargs):
         contour function to customize the appearance. Refer to the plotting
         library (backend) manual for more informations.
 
+    label : str or list/tuple, optional
+        The label to be shown in the colorbar if ``scalar=None``.
+        If not provided, the string representation of `expr` will be used.
+
     n1, n2, n3 : int
         Number of discretization points for the quivers or streamlines in the
         x/y/z-direction, respectively. Default to 25.
@@ -447,15 +452,18 @@ def plot_vector(*args, show=True, **kwargs):
        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
-    Streamlines plot of a 2D vector field with no background scalar field.
+    Streamlines plot of a 2D vector field with no background scalar field and
+    custom label:
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
-       ...     streamlines=True, scalar=None)
+       >>> expr = [-sin(y), cos(x)]
+       >>> plot_vector(expr, (x, -3, 3), (y, -3, 3),
+       ...     streamlines=True, scalar=None,
+       ...     label="Magnitude of %s" % str(expr))
        Plot object containing:
        [0]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
@@ -527,6 +535,7 @@ def plot_vector(*args, show=True, **kwargs):
     args = _plot_sympify(args)
     args = _preprocess(*args)
 
+    labels = kwargs.pop("label", [])
     kwargs = _set_discretization_points(kwargs, Vector3DSeries)
     kwargs.setdefault("aspect", "equal")
     kwargs.setdefault("legend", True)
@@ -539,6 +548,7 @@ def plot_vector(*args, show=True, **kwargs):
     else:
         raise ValueError("Mixing 2D vectors with 3D vectors is not allowed.")
 
+    _set_labels(series, labels)
     p = Backend(*series, **kwargs)
     if show:
         p.show()

@@ -210,6 +210,23 @@ def _build_line_series(*args, **kwargs):
     return series
 
 
+def _set_labels(series, labels):
+    """Apply the label keyword argument to the series.
+    """
+    # NOTE: this function is a workaround until a better integration is
+    # achieved between iplot and all other plotting functions.
+    if not isinstance(labels, (list, tuple)):
+        labels = [labels]
+    if len(labels) > 0:
+        print(len(series), len(labels))
+        if len(series) != len(labels):
+            raise ValueError("The number of labels must be equals to the "
+                "number of expressions being plotted.\nReceived "
+                "{} expressions and {} labels".format(len(series), len(labels)))
+        for s, l in zip(series, labels):
+            s.set_label(l)
+
+
 def plot(*args, show=True, **kwargs):
     """Plots a function of a single variable as a curve.
 
@@ -297,6 +314,11 @@ def plot(*args, show=True, **kwargs):
         Default to True, which will render empty circular markers. It only
         works if `is_point=True`.
         If False, filled circular markers will be rendered.
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of `expr` will be used. The number of labels must be
+        equal to the number of expressions.
 
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
@@ -517,11 +539,12 @@ def plot(*args, show=True, **kwargs):
 
     kwargs.setdefault("xlabel", lambda use_latex: x.name if not use_latex else latex(x))
     kwargs.setdefault("ylabel", lambda use_latex: "f(%s)" % x.name if not use_latex else r"f\left(%s\right)" % latex(x))
+    labels = kwargs.pop("label", [])
 
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
-    series = []
     plot_expr = _check_arguments(args, 1, 1)
     series = _build_line_series(*plot_expr, **kwargs)
+    _set_labels(series, labels)
     Backend = kwargs.pop("backend", TWO_D_B)
     plots = Backend(*series, **kwargs)
     if show:
@@ -601,6 +624,11 @@ def plot_parametric(*args, show=True, **kwargs):
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend or in the colorbar. If not
+        provided, the string representation of `expr` will be used. The number
+        of labels must be equal to the number of expressions.
 
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
@@ -736,10 +764,11 @@ def plot_parametric(*args, show=True, **kwargs):
 
     """
     args = _plot_sympify(args)
-    series = []
+    labels = kwargs.pop("label", [])
     kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
     plot_expr = _check_arguments(args, 2, 1)
     series = [Parametric2DLineSeries(*arg, **kwargs) for arg in plot_expr]
+    _set_labels(series, labels)
     Backend = kwargs.pop("backend", TWO_D_B)
     plots = Backend(*series, **kwargs)
     if show:
@@ -808,6 +837,11 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend or in the colorbar. If not
+        provided, the string representation of `expr` will be used. The number
+        of labels must be equal to the number of expressions.
 
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
@@ -925,9 +959,10 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, Parametric3DLineSeries)
-    series = []
+    labels = kwargs.pop("label", [])
     plot_expr = _check_arguments(args, 3, 1)
     series = [Parametric3DLineSeries(*arg, **kwargs) for arg in plot_expr]
+    _set_labels(series, labels)
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
@@ -972,7 +1007,7 @@ def plot3d(*args, show=True, **kwargs):
             `min=-10` and `max=10`.
 
         label : str, optional
-            The label to be shown in the legend.  If not provided, the string
+            The label to be shown in the colorbar.  If not provided, the string
             representation of `expr` will be used.
 
     adaptive : bool, optional
@@ -1008,6 +1043,11 @@ def plot3d(*args, show=True, **kwargs):
         Default to False. If True, requests a polar discretization. In this
         case, ``range_x`` represents the radius, ``range_y`` represents the
         angle.
+
+    label : str or list/tuple, optional
+        The label to be shown in the colorbar. If not provided, the string
+        representation of `expr` will be used. The number of labels must be
+        equal to the number of expressions.
 
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
@@ -1186,9 +1226,10 @@ def plot3d(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, SurfaceOver2DRangeSeries)
-    series = []
+    labels = kwargs.pop("label", [])
     plot_expr = _check_arguments(args, 1, 2)
     series = [SurfaceOver2DRangeSeries(*arg, **kwargs) for arg in plot_expr]
+    _set_labels(series, labels)
     kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
     kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
     kwargs.setdefault("zlabel", lambda use_latex: "f(%s, %s)" % (series[0].var_x.name, series[0].var_y.name) if not use_latex else r"f\left(%s, %s\right)" % (latex(series[0].var_x), latex(series[0].var_y)))
@@ -1245,7 +1286,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
             A 3-tuple denoting the range of the `v` variable.
 
         label : str, optional
-            The label to be shown in the legend.  If not provided, the string
+            The label to be shown in the colorbar.  If not provided, the string
             representation of the expression will be used.
 
     backend : Plot, optional
@@ -1256,6 +1297,11 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         A function of 5 variables, x, y, z, u, v (the points computed by the
         internal algorithm and the parameters) which defines the surface color
         when ``use_cm=True``. Default to None.
+
+    label : str or list/tuple, optional
+        The label to be shown in the colorbar. If not provided, the string
+        representation will be used. The number of labels must be
+        equal to the number of expressions.
 
     n1 : int, optional
         The u range is sampled uniformly at `n1` of points. Default value
@@ -1328,8 +1374,8 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
        >>> from spb.functions import plot3d_parametric_surface
        >>> u, v = symbols('u v')
 
-    Single plot with u/v directions discretized with 200 points and a custom
-    label.
+    Single plot with u/v directions discretized with 200 points, showing a
+    custom label and using a coloring function.
 
     .. plot::
        :context: close-figs
@@ -1342,8 +1388,8 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
        ...          r * sin(u) * sin(v),
        ...          r * cos(v)
        ... )
-       >>> plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "f",
-       ...      n=200)
+       >>> plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "u",
+       ...      n=200, use_cm=True, color_func=lambda x, y, z, u, v: u)
        Plot object containing:
        [0]: parametric cartesian surface: ((sin(7*u + 5*v) + 2)*sin(v)*cos(u), (sin(7*u + 5*v) + 2)*sin(u)*sin(v), (sin(7*u + 5*v) + 2)*cos(v)) for u over (0.0, 6.283185307179586) and v over (0.0, 3.141592653589793)
 
@@ -1359,10 +1405,12 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
     plot_expr = _check_arguments(args, 3, 2)
+    labels = kwargs.pop("label", [])
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
     series = [ParametricSurfaceSeries(*arg, **kwargs) for arg in plot_expr]
+    _set_labels(series, labels)
     Backend = kwargs.pop("backend", THREE_D_B)
     plots = Backend(*series, **kwargs)
     if show:
@@ -1406,10 +1454,6 @@ def plot3d_implicit(*args, show=True, **kwargs):
 
         range_z: (symbol, min, max)
             A 3-tuple denoting the range of the `z` variable.
-
-        label : str, optional
-            The label to be shown in the legend.  If not provided, the string
-            representation of the expression will be used.
 
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
@@ -1584,8 +1628,10 @@ def plot_contour(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ContourSeries)
+    labels = kwargs.pop("label", [])
     plot_expr = _check_arguments(args, 1, 2)
     series = [ContourSeries(*arg, **kwargs) for arg in plot_expr]
+    _set_labels(series, labels)
     xlabel = series[0].var_x.name
     ylabel = series[0].var_y.name
     kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
@@ -1635,10 +1681,6 @@ def plot_implicit(*args, show=True, **kwargs):
             Alternatively, a single Symbol corresponding to the horizontal
             axis must be provided, which will be internally converted to a
             range `(sym, -10, 10)`.
-
-        label : str, optional
-            The name of the expression to be eventually shown on the legend.
-            If not provided, the string representation of `expr` will be used.
 
     adaptive : Boolean
         The default value is set to False, meaning that the internal
@@ -1890,6 +1932,11 @@ def plot_geometry(*args, show=True, **kwargs):
     is_filled : boolean
         Default to True. Fill the polygon/circle/ellipse.
 
+    label : str or list/tuple, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of `geom` will be used. The number of labels must be
+        equal to the number of geometric entities.
+
     params : dict
         Substitution dictionary to properly evaluate symbolic geometric
         entities. The keys represents symbols, the values represents the
@@ -1905,7 +1952,8 @@ def plot_geometry(*args, show=True, **kwargs):
         plotting library (backend) manual for more informations.
 
     line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
 
     show : bool, optional
@@ -2044,6 +2092,7 @@ def plot_geometry(*args, show=True, **kwargs):
        [2]: plane series over (x, -5, 5), (y, -4, 4), (z, -10, 10)
     """
     args = _plot_sympify(args)
+    labels = kwargs.pop("label", [])
 
     series = []
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
@@ -2059,6 +2108,8 @@ def plot_geometry(*args, show=True, **kwargs):
             # we use the same ranges for each expression
             for e in exprs:
                 series.append(GeometrySeries(e, *r, str(e), **kwargs))
+
+    _set_labels(series, labels)
 
     any_3D = any(s.is_3D for s in series)
     if ("aspect" not in kwargs) and (not any_3D):
@@ -2116,6 +2167,10 @@ def plot_list(*args, show=True, **kwargs):
         Default to True, which will render empty circular markers. It only
         works if `is_point=True`.
         If False, filled circular markers will be rendered.
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. The number of labels must be
+        equal to the number of expressions.
 
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
@@ -2200,6 +2255,7 @@ def plot_list(*args, show=True, **kwargs):
        [1]: list plot
 
     """
+    labels = kwargs.pop("label", [])
     series = []
 
     if (
@@ -2223,6 +2279,8 @@ def plot_list(*args, show=True, **kwargs):
                     "Received: {}".format(type(a[-1]))
                 )
             series.append(List2DSeries(*a, **kwargs))
+
+    _set_labels(series, labels)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     p = Backend(*series, **kwargs)
@@ -2305,6 +2363,11 @@ def plot_piecewise(*args, **kwargs):
         An arbitrary small value used by the `detect_poles` algorithm.
         Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of `expr` will be used. The number of labels must be
+        equal to the number of expressions.
 
     line_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
@@ -2452,6 +2515,7 @@ def plot_piecewise(*args, **kwargs):
 
     show = kwargs.get("show", True)
     kwargs["show"] = False
+    labels = kwargs.pop("label", [])
 
     x = free.pop() if free else Symbol("x")
     kwargs.setdefault("xlabel", lambda use_latex: x.name if not use_latex else latex(x))
@@ -2466,6 +2530,8 @@ def plot_piecewise(*args, **kwargs):
     color_series_dict = dict()
     for i, a in enumerate(plot_expr):
         series = _build_line_series(a, **kwargs)
+        if i < len(labels):
+            _set_labels(series, [labels[i]] * len(series))
         color_series_dict[i] = series
 
     # NOTE: let's overwrite this keyword argument

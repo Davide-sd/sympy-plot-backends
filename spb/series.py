@@ -417,6 +417,11 @@ class BaseSeries:
             return self._get_wrapped_label(self._latex_label, wrapper)
         return self._latex_label
 
+    def set_label(self, val):
+        """Set the labels associated to this series.
+        """
+        self.label = self._latex_label = val
+
     def _apply_transform(self, *args):
         """Apply transformations to the results of numerical evaluation.
 
@@ -834,9 +839,12 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         # shown on the colorbar if `use_cm=True`, otherwise it returns the
         # representation of the expression to be placed on the legend.
         if self.use_cm:
-            if use_latex:
-                return self._get_wrapped_label(latex(self.var), wrapper)
-            return str(self.var)
+            if str(self.var) == self.label:
+                if use_latex:
+                    return self._get_wrapped_label(latex(self.var), wrapper)
+                return str(self.var)
+            # here the user has provided a custom label
+            return self.label
         if use_latex:
             if self.label != str(self.get_expr()):
                 return self._latex_label

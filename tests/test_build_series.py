@@ -169,6 +169,22 @@ def test_build_complex_line_series():
     assert isinstance(s[0], AbsArgLineInteractiveSeries)
     assert all(t.is_2Dline for t in s)
 
+    # multiple expressions with a common range
+    s = bcs(sqrt(x), asin(x), (x, -8, 8), real=True, imag=True, abs=False,
+            arg=False, absarg=False, interactive=False)
+    assert len(s) == 4
+    assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
+    assert all(t.is_2Dline for t in s)
+    assert all((ss.start == -8) and (ss.end == 8) for ss in s)
+
+    # multiple expressions with a common unspecified range
+    s = bcs(sqrt(x), asin(x), real=True, imag=True, abs=False,
+            arg=False, absarg=False, interactive=False)
+    assert len(s) == 4
+    assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
+    assert all(t.is_2Dline for t in s)
+    assert all((ss.start == -10) and (ss.end == 10) for ss in s)
+
     # multiple expressions each one with its label and range
     s = bcs((sqrt(x), (x, -5, 5), "f"), (asin(x), (x, -8, 8), "g"),
                 interactive=False)

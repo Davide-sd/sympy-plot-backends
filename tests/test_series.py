@@ -1911,8 +1911,8 @@ def test_series_labels():
     s4 = Parametric2DLineSeries(*expr, (x, -2, 2), "test", use_cm=False)
     assert s1.get_label(False) == "x"
     assert s1.get_label(True) == wrapper % "x"
-    assert s2.get_label(False) == "x"
-    assert s2.get_label(True) == wrapper % "x"
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
     assert s3.get_label(False) == str(expr)
     assert s3.get_label(True) == wrapper % latex(expr)
     assert s4.get_label(False) == "test"
@@ -1925,8 +1925,8 @@ def test_series_labels():
     s4 = Parametric3DLineSeries(*expr, (x, -2, 2), "test", use_cm=False)
     assert s1.get_label(False) == "x"
     assert s1.get_label(True) == wrapper % "x"
-    assert s2.get_label(False) == "x"
-    assert s2.get_label(True) == wrapper % "x"
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
     assert s3.get_label(False) == str(expr)
     assert s3.get_label(True) == wrapper % latex(expr)
     assert s4.get_label(False) == "test"
@@ -2064,8 +2064,8 @@ def test_interactive_series_labels():
         params={u: 1}, use_cm=False)
     assert s1.get_label(False) == "x"
     assert s1.get_label(True) == wrapper % "x"
-    assert s2.get_label(False) == "x"
-    assert s2.get_label(True) == wrapper % "x"
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
     assert s3.get_label(False) == str(expr)
     assert s3.get_label(True) == wrapper % latex(expr)
     assert s4.get_label(False) == "test"
@@ -2082,8 +2082,8 @@ def test_interactive_series_labels():
         params={u: 1}, use_cm=False)
     assert s1.get_label(False) == "x"
     assert s1.get_label(True) == wrapper % "x"
-    assert s2.get_label(False) == "x"
-    assert s2.get_label(True) == wrapper % "x"
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
     assert s3.get_label(False) == str(expr)
     assert s3.get_label(True) == wrapper % latex(expr)
     assert s4.get_label(False) == "test"
