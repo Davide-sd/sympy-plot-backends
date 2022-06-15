@@ -70,10 +70,13 @@ def test_cfg_k3d_keys():
 
 
 def test_cfg_interactive_keys():
-    must_have_keys = ["use_latex", "throttled"]
+    must_have_keys = ["use_latex", "throttled", "servable", "theme"]
     for k in must_have_keys:
         assert k in cfg["interactive"].keys()
-        assert isinstance(cfg["interactive"][k], bool)
+    assert isinstance(cfg["interactive"]["use_latex"], bool)
+    assert isinstance(cfg["interactive"]["throttled"], bool)
+    assert isinstance(cfg["interactive"]["servable"], bool)
+    assert isinstance(cfg["interactive"]["theme"], str)
 
 
 def test_set_defaults():

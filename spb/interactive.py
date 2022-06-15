@@ -18,7 +18,7 @@ pn = import_module(
     'panel',
     min_module_version='0.12.0')
 
-pn.extension("plotly")
+pn.extension("plotly", sizing_mode="stretch_width")
 
 
 class MyList(param.ObjectSelector):
@@ -33,6 +33,23 @@ class MyList(param.ObjectSelector):
 pn.Param._mapping[MyList] = pn.widgets.DiscreteSlider
 
 
+# Define a few CSS rules that are going to overwrite the template's ones.
+# They are only going to be used when the interactive application will be
+# served to a new browser window.
+_CUSTOM_CSS = """
+#header {padding: 0}
+.title {
+    font-size: 1em;
+    font-weight: bold;
+    padding-left: 10px;
+}
+"""
+
+_CUSTOM_CSS_NO_HEADER = """
+#header {display: none}
+"""
+
+
 class DynamicParam(param.Parameterized):
     """Dynamically add parameters based on the user-provided dictionary.
     Also, generate the lambda functions to be evaluated at a later stage.
@@ -44,6 +61,11 @@ class DynamicParam(param.Parameterized):
     # create an InteractivePlotGUI class targeting a specific GUI.
     # At this moment, InteractivePlot is built on top of 'panel', so it only
     # works inside a Jupyter Notebook. Maybe it's possible to use PyQt or Tk.
+
+    # Each one of the dynamically added parameters (widgets) will execute a
+    # function that modify this parameter, which in turns will trigger an
+    # overall update.
+    check_val = param.Integer(default=0)
 
     def _tuple_to_dict(self, k, v):
         """The user can provide a variable length tuple/list containing:
@@ -133,15 +155,15 @@ class DynamicParam(param.Parameterized):
             min_module_version='2.3.0')
         TickFormatter = bokeh.models.formatters.TickFormatter
 
+        # use latex on control labels and legends
+        self._use_latex = kwargs.pop("use_latex", True)
+        self._name = name
+
         # remove the previous class attributes added by the previous instances
         cls_name = type(self).__name__
-        setattr(type(self), "_" + cls_name + "__params", dict())
         prev_params = [k for k in type(self).__dict__.keys() if "dyn_param_" in k]
         for p in prev_params:
             delattr(type(self), p)
-
-        # use latex on control labels and legends
-        self._use_latex = kwargs.pop("use_latex", True)
 
         # this must be present in order to assure correct behaviour
         super().__init__(name=name, **kwargs)
@@ -185,15 +207,27 @@ class DynamicParam(param.Parameterized):
                     v.pop("type", None)
                     v = param.Number(**v)
 
+            param_name = "dyn_param_{}".format(i)
             # TODO: using a private method: not the smartest thing to do
-            self.param._add_parameter("dyn_param_{}".format(i), v)
-            self.mapping[k] = "dyn_param_{}".format(i)
+            self.param._add_parameter(param_name, v)
+            self.param.watch(self._increment_val, param_name)
+            self.mapping[k] = param_name
+
+    def _increment_val(self, *depends):
+        self.check_val += 1
 
     def read_parameters(self):
+        # TODO: check if param is still available, otherwise raise error
         readout = dict()
         for k, v in self.mapping.items():
             readout[k] = getattr(self, v)
         return readout
+
+    @param.depends("check_val", watch=True)
+    def update(self):
+        params = self.read_parameters()
+        self._backend._update_interactive(params)
+        self._action_post_update()
 
 
 def _new_class(cls, **kwargs):
@@ -206,7 +240,7 @@ class PanelLayout:
     the library panel.
     """
 
-    def __init__(self, layout, ncols, throttled=False):
+    def __init__(self, layout, ncols, throttled=False, servable=False, custom_css="", pane_kw=None):
         """
         Parameters
         ==========
@@ -225,6 +259,18 @@ class PanelLayout:
                 Default to False. If True the recompute will be done at
                 mouse-up event on sliders. If False, every slider tick will
                 force a recompute.
+
+            servable : boolean, optional
+                Default to False. If True the application will be served on
+                a new browser window and a template will be applied to it.
+
+            custom_css : str, optional
+                This functionality is not yet fully implemented, please don't
+                use it.
+
+            pane_kw : str, optional
+                This functionality is not yet fully implemented, please don't
+                use it.
         """
         # NOTE: More often than not, the numerical evaluation is going to be
         # resource-intensive. By default, panel's sliders will force a
@@ -245,6 +291,9 @@ class PanelLayout:
         self._layout = layout
         self._ncols = ncols
         self._throttled = throttled
+        self._servable = servable
+        self._custom_css = custom_css
+        self._pane_kw = pane_kw
 
         # NOTE: here I create a temporary panel.Param object in order to
         # reuse the code from the pn.Param.widget method, which returns the
@@ -268,43 +317,86 @@ class PanelLayout:
 
         self.controls = pn.Param(
             self,
+            parameters=list(self.mapping.values()),
             widgets=widgets,
             default_layout=_new_class(pn.GridBox, ncols=ncols),
             show_name=False,
             sizing_mode="stretch_width",
         )
 
+    def _init_pane(self):
+        """Here we wrap the figure exposed by the backend with a Pane, which
+        allows to set useful properties.
+        """
+        # NOTE: If the following import statement was located at the
+        # beginning of the file, there would be a circular import.
+        from spb import KB, MB
+
+        default_kw = dict()
+        if isinstance(self._backend, KB):
+            # TODO: for some reason, panel is going to set width=0
+            # if K3D-Jupyter is used.
+            # Temporary workaround: create a Pane with a default width.
+            # Long term solution: create a PR on panel to create a K3DPane
+            # so that panel will automatically deal with K3D, in the same
+            # way it does with Bokeh, Plotly, Matplotlib, ...
+            default_kw["width"] = 800
+        elif isinstance(self._backend, MB):
+            # since we are using Jupyter and interactivity, it is useful to
+            # activate ipympl interactive frame, as well as setting a lower
+            # dpi resolution of the matplotlib image
+            default_kw["dpi"] = 96
+            default_kw["interactive"] = True
+
+        merge = self._backend.merge
+        kw = merge({}, default_kw, self._pane_kw)
+        self.pane = pn.pane.Pane(self.fig, **kw)
+
     def layout_controls(self):
         return self.controls
 
-    @pn.depends("controls")
-    def view(self):
-        params = self.read_parameters()
-        self._backend._update_interactive(params)
-        # TODO:
-        # 1. for some reason, panel is going to set width=0 if K3D-Jupyter.
-        # Temporary workaround: create a Pane with a default width.
-        # Long term solution: create a PR on panel to create a K3DPane so that
-        # panel will automatically deal with K3D, in the same way it does with
-        # Bokeh, Plotly, Matplotlib, ...
-        # 2. If the following import statement was located at the beginning of
-        # the file, there would be a circular import.
-        from spb.backends.k3d import KB
+    def _action_post_update(self):
+        # NOTE: If the following import statement was located at the
+        # beginning of the file, there would be a circular import.
+        from spb import KB
 
-        if isinstance(self._backend, KB):
-            return pn.pane.Pane(self._backend.fig, width=800)
-        else:
-            return self.fig
+        if not isinstance(self._backend, KB):
+            # KB exhibits a strange behavior when executing the following
+            # lines. For the moment, do not execute them with KB
+            self.pane.param.trigger("object")
+            self.pane.object = self.fig
 
     def show(self):
+        self._init_pane()
+
         if self._layout == "tb":
-            return pn.Column(self.layout_controls, self.view)
+            content = pn.Column(self.layout_controls, self.pane)
         elif self._layout == "bb":
-            return pn.Column(self.view, self.layout_controls)
+            content = pn.Column(self.pane, self.layout_controls)
         elif self._layout == "sbl":
-            return pn.Row(self.layout_controls, self.view)
+            content = pn.Row(pn.Column(self.layout_controls, css_classes=["iplot-controls"], width=250, sizing_mode="fixed"), pn.Column(self.pane), width_policy="max")
         elif self._layout == "sbr":
-            return pn.Row(self.view, self.layout_controls)
+            content = pn.Row(pn.Column(self.pane), pn.Column(self.layout_controls, css_classes=["iplot-controls"]))
+
+        if not self._servable:
+            return content
+
+        css = _CUSTOM_CSS + self._custom_css
+        if len(self._name.strip()) == 0:
+            css = _CUSTOM_CSS_NO_HEADER + self._custom_css
+
+
+        # theme = pn.template.vanilla.VanillaDarkTheme if cfg["interactive"]["theme"] == "dark" else pn.template.vanilla.VanillaDefaultTheme
+        # vanilla = pn.template.VanillaTemplate(title=self._name, theme=theme)
+        # vanilla.main.append(content)
+        # vanilla.config.raw_css.append(css)
+
+        theme = pn.template.bootstrap.BootstrapDarkTheme if cfg["interactive"]["theme"] == "dark" else pn.template.bootstrap.BootstrapDefaultTheme
+        vanilla = pn.template.BootstrapTemplate(title=self._name, theme=theme)
+        vanilla.main.append(content)
+        vanilla.config.raw_css.append(css)
+
+        return vanilla.servable().show()
 
 
 def create_series(*args, **kwargs):
@@ -568,7 +660,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
             args : tuple
                 The usual plot arguments
             name : str
-                Unused parameter
+                Name of the interactive application
             params : dict
                 In the keys there will be the symbols, in the values there
                 will be parameters to create the slider associated to
@@ -580,10 +672,16 @@ class InteractivePlot(DynamicParam, PanelLayout):
         layout = kwargs.pop("layout", "tb")
         ncols = kwargs.pop("ncols", 2)
         throttled = kwargs.pop("throttled", cfg["interactive"]["throttled"])
+        servable = kwargs.pop("servable", cfg["interactive"]["servable"])
         use_latex = kwargs.pop("use_latex", cfg["interactive"]["use_latex"])
+        # NOTE: do not document these arguments yet, they might change in the
+        # future.
+        custom_css = kwargs.pop("custom_css", "")
+        pane_kw = kwargs.pop("pane_kw", dict())
 
-        super().__init__(*args, name=name, params=params, use_latex=use_latex)
-        PanelLayout.__init__(self, layout, ncols, throttled)
+        self._name = name
+        super().__init__(*args, name=self._name, params=params, use_latex=use_latex)
+        PanelLayout.__init__(self, layout, ncols, throttled, servable, custom_css, pane_kw)
 
         # create the series
         series = create_series(*args, iplot=self, **kwargs)
@@ -637,6 +735,16 @@ class InteractivePlot(DynamicParam, PanelLayout):
             series.extend(other.series)
         else:
             series.extend(other._backend.series)
+
+        # check that the interactive series uses the same parameters
+        symbols = []
+        for s in series:
+            if s.is_interactive:
+                symbols.append(list(s.params.keys()))
+        if not all(t == symbols[0] for t in symbols):
+            raise ValueError(
+                "The same parameters must be used when summing up multiple "
+                "interactive plots.")
 
         backend_kw = self._backend._copy_kwargs()
         panel_kw = {
@@ -738,8 +846,7 @@ def iplot(*args, show=True, **kwargs):
         - `'sbr'`: controls in the right side bar.
 
         Default layout to `'tb'`. Note that side bar layouts may not
-        work well with some backends, and with `MatplotlibBackend` the widgets
-        are always going to be displayed below the figure.
+        work well with some backends.
 
     ncols : int, optional
         Number of columns to lay out the widgets. Default to 2.
@@ -753,6 +860,16 @@ def iplot(*args, show=True, **kwargs):
         Default to False. If True, it directs the internal algorithm to
         create all the necessary series to create a vector plot (for example,
         plotting the magnitude of the vector field as a contour plot).
+
+    name : str, optional
+        The name to be shown on top of the interactive application, when
+        served on a new browser window. Refer to ``servable`` to learn more.
+        Default to an empty string.
+
+    servable : bool, optional
+        Default to False, which will show the interactive application on the
+        output cell of a Jupyter Notebook. If True, the application will be
+        served on a new browser window.
 
     show : bool, optional
         Default to True.
@@ -1009,13 +1126,8 @@ def iplot(*args, show=True, **kwargs):
        p = p1 + p2 + p3
        p.show()
 
-    Serves the interactive plot on a separate browser window. Note:
-
-    1. only ``BokehBackend`` and ``PlotlyBackend`` are supported for this
-       operation mode.
-    2. the output of ``iplot`` is captures into a variable.
-    3. `show=True` has been set in order for ``iplot`` to return a `panel`
-       object.
+    Serves the interactive plot to a separate browser window. Note that
+    ``K3DBackend`` is not supported for this operation mode.
 
     .. code-block:: python
 
@@ -1028,12 +1140,12 @@ def iplot(*args, show=True, **kwargs):
        phip = phi.diff(t)
        r1 = phip / (1 + phip)
 
-       t = iplot(
+       iplot(
            (r1, (t, 0, 2*pi)),
            params = {
                p1: (0.035, -0.035, 0.035, 50, formatter),
                p2: (0.005, -0.02, 0.02, 50, formatter),
-               r: (2, 2, 5, 3),
+               r: (2, 2, 5, 3),  # another way to create an integer slider
                c: (3, 1, 5, 4)
            },
            is_polar = True,
@@ -1043,43 +1155,29 @@ def iplot(*args, show=True, **kwargs):
            n = 5000,
            layout = "sbl",
            ncols = 1,
-           show = True
+           servable = True,
+           name = "Non Circular Planetary Drive - Ring Profile"
        )
-       t.show()
 
     Notes
     =====
 
     1. This function is specifically designed to work within Jupyter Notebook.
-       However, it is also possible to use it from a regular Python,
-       interpreter but only with ``BokehBackend`` and ``PlotlyBackend``.
-       In such cases, it must be called with ``iplot(..., backend=BB).show()``,
+       However, it is also possible to use it from a regular Python, by
+       executing: ``iplot(..., servable=True)``,
        which will create a server process loading the interactive plot on
-       the browser.
+       the browser. However, ``K3DBackend`` is not supported in this mode of
+       operation.
 
     2. Some examples use an instance of ``PrintfTickFormatter`` to format the
        value shown by a slider. This class is exposed by Bokeh, but can be
        used by ``iplot`` with any backend. Refer to [#fn1]_ for more
        information about tick formatting.
 
-    3. The duality of the keyword argument ``show``:
-
-       * If True, the function returns a `panel` object that will be rendered
-         on the output cell of a Jupyter Notebook.
-       * If False, it returns an instance of `InteractivePlot`.
-
-       Let's focus on the syntax ``t = iplot(..., show=True, backend=BB)``, as
-       shown in the last example.
-       Here, the variable `t` captures the `panel` object, thus nothing
-       will be rendered on the output cell. We can use this variable to serve
-       the interactive plot through a server process on a separate browser
-       window, by calling ``t.show()``. In doing so, the overall interactive
-       plot is not subjected to the width limitation of a classical Jupyter
-       Notebook. It is possible to play with the following keyword arguments
-       to further customize the look and take advantage of the full page:
-       `size, ncols, layout`.
-       As stated before, only ``BokehBackend`` and ``PlotlyBackend`` are
-       supported in this mode of operation.
+    3. It has been observed that Dark Reader (or other night-mode-enabling
+       browser extensions) might interfere with the correct behaviour of
+       the output of  ``iplot``. Please, consider adding ``localhost`` to the
+       exclusion list of such browser extensions.
 
     4. Say we are creating two different interactive plots and capturing
        their output on two variables, using ``show=False``. For example,

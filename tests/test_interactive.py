@@ -705,8 +705,7 @@ def test_iplot_sum_2():
         title = "title 2",
         show = False
     )
-    p = p1 + p2
-    raises(KeyError, lambda: p.show())
+    raises(ValueError, lambda: p1 + p2)
 
 def test_iplot_sum_3():
     # verify that the resulting iplot's backend is of the same type as the
