@@ -30,7 +30,7 @@ class MyList(param.ObjectSelector):
 
 # explicitely ask panel to use DiscreteSlider when it encounters a
 # MyList object
-pn.Param._mapping[MyList] = pn.widgets.DiscreteSlider
+pn.Param.mapping[MyList] = pn.widgets.DiscreteSlider
 
 
 # Define a few CSS rules that are going to overwrite the template's ones.
