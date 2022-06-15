@@ -11,6 +11,7 @@ param
 panel
 holoviews
 bokeh
+ipywidgets_bokeh
 ipyevents
 PyQt5
 k3d

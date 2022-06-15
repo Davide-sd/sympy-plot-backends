@@ -48,6 +48,7 @@ setup(
         "plotly>=4.14.3",
         "colorcet",
         "panel>=0.13.0", # this includes param and bokeh
+        "ipywidgets_bokeh", # starting from panel v0.13.0, it is not part of panel anymore
         "k3d>=2.9.7",
         "vtk",  # needed for streamlines in k3d
         "adaptive>=0.13.1"
