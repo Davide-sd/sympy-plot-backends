@@ -289,7 +289,7 @@ class BaseSeries:
 
     is_polar = False
     # If True, the backend will attempt to render it on a polar-projection
-    # axis. Only 2D lines support such functionality.
+    # axis.
 
     use_cm = True
     # Some series might use a colormap as default coloring. Setting this

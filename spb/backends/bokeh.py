@@ -405,6 +405,8 @@ class BokehBackend(Plot):
                         self._fig.circle("xs", "ys", source=source, **kw)
 
             elif s.is_contour and (not s.is_complex):
+                if s.is_polar:
+                    raise NotImplementedError()
                 x, y, z = s.get_data()
                 x, y, zz = [t.flatten() for t in [x, y, z]]
                 minx, miny, minz = min(x), min(y), min(zz)

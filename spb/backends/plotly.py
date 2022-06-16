@@ -395,6 +395,8 @@ class PlotlyBackend(Plot):
 
 
             elif s.is_contour and (not s.is_complex):
+                if s.is_polar:
+                    raise NotImplementedError()
                 xx, yy, zz = s.get_data()
                 xx = xx[0, :]
                 yy = yy[:, 0]
