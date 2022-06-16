@@ -2,6 +2,30 @@
  Changelog
 ==========
 
+v1.1.2
+======
+
+* `iplot`:
+
+  * Added ``servable`` keyword argument: ``servable=True`` will serves the
+    application to a new browser windows,
+  * Added ``name`` keyword argument: if used with ``servable=True`` it will
+    add a title to the interactive application.
+
+* Default settings:
+
+  * Added ``servable`` and ``theme`` to ``interactive`` section.
+
+* Fixed a bug when plotting lines with ``BokehBackend``.
+* Improved the way of setting the number of discretization points: ``n``
+  can now be a two (or three) elements tuple, which will override ``n1`` and
+  ``n2``.
+* It is now possible to pass a float number of discretization points, for
+  example ``n=1e04``.
+* added ``label`` keyword argument to plot functions.
+  
+
+
 v1.1.1
 ======
 
