@@ -24,7 +24,6 @@ requirements:
     - mergedeep
     - numpy
     - panel
-    - ipywidgets_bokeh
     - param
     - pip
     - plotly >=4.14.3
@@ -46,7 +45,6 @@ requirements:
     - mergedeep
     - numpy
     - panel
-    - ipywidgets_bokeh
     - param
     - plotly >=4.14.3
     - python
