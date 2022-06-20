@@ -321,7 +321,8 @@ def plot(*args, show=True, **kwargs):
         equal to the number of expressions.
 
     line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of the lines. Refer to the
         plotting library (backend) manual for more informations.
 
     loss_fn : callable or None
@@ -377,7 +378,8 @@ def plot(*args, show=True, **kwargs):
         Apply a numerical function to the discretized x-direction.
 
     ty : callable, optional
-        Apply a numerical function to the output of the numerical evaluation, the y-direction.
+        Apply a numerical function to the output of the numerical evaluation,
+        the y-direction.
 
     use_latex : boolean, optional
         Turn on/off the rendering of latex labels. If the backend doesn't
@@ -624,6 +626,10 @@ def plot_parametric(*args, show=True, **kwargs):
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
+    
+    color_func : callable, optional
+        A function of 3 variables, x, y, parameter (the points computed by
+        the internal algorithm) which defines the line color. Default to None.
 
     label : str or list/tuple, optional
         The label to be shown in the legend or in the colorbar. If not
@@ -631,7 +637,8 @@ def plot_parametric(*args, show=True, **kwargs):
         of labels must be equal to the number of expressions.
 
     line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of the lines. Refer to the
         plotting library (backend) manual for more informations.
 
     loss_fn : callable or None
@@ -837,6 +844,10 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
+    
+    color_func : callable, optional
+        A function of 4 variables, x, y, z, parameter (the points computed by
+        the internal algorithm) which defines the line color. Default to None.
 
     label : str or list/tuple, optional
         The label to be shown in the legend or in the colorbar. If not
@@ -844,7 +855,8 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
         of labels must be equal to the number of expressions.
 
     line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of the lines. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of the lines. Refer to the
         plotting library (backend) manual for more informations.
 
     loss_fn : callable or None
@@ -1590,7 +1602,8 @@ def plot_contour(*args, show=True, **kwargs):
         possible values.
 
     contour_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of contours. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of contours. Refer to the
         plotting library (backend) manual for more informations.
 
     Examples
@@ -2173,7 +2186,8 @@ def plot_list(*args, show=True, **kwargs):
         equal to the number of expressions.
 
     line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
 
     show : bool, optional
@@ -2370,7 +2384,8 @@ def plot_piecewise(*args, **kwargs):
         equal to the number of expressions.
 
     line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's function to customize the appearance of lines. Refer to the
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
 
     loss_fn : callable or None
@@ -2407,7 +2422,8 @@ def plot_piecewise(*args, **kwargs):
         Apply a numerical function to the discretized x-direction.
 
     ty : callable, optional
-        Apply a numerical function to the output of the numerical evaluation, the y-direction.
+        Apply a numerical function to the output of the numerical evaluation,
+        the y-direction.
 
     use_latex : boolean, optional
         Turn on/off the rendering of latex labels. If the backend doesn't
