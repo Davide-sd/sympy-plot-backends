@@ -872,8 +872,14 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
             parameter.
         """
         if self.adaptive:
-            return self._adaptive_sampling()
-        return self._uniform_sampling()
+            coords = self._adaptive_sampling()
+        else:
+            coords = self._uniform_sampling()
+
+        if callable(self.color_func):
+            coords = list(coords)
+            coords[-1] = self.color_func(*coords)
+        return coords
 
 
 class Parametric2DLineSeries(ParametricLineBaseSeries):
