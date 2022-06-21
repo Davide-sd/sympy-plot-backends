@@ -16,7 +16,7 @@ jobs:
         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
         python-version: ["3.9"]
     env:
-      conda-directory: ${{ github.workspace }}/.conda
+      conda-directory: ${{ github.workspace }}/conda
     steps:
       - uses: conda-incubator/setup-miniconda@v2
         with:
