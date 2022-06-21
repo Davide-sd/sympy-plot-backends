@@ -25,3 +25,7 @@ jobs:
       - name: Conda info
         shell: bash -l {0}
         run: conda info
+      - name: Build conda package
+        run: |
+          conda build --no-anaconda-upload --no-test --override-channels -c conda-forge recipe
+        working-directory: ${{env.conda-directory}}
