@@ -1,0 +1,73 @@
+# this is used by conda-package.yml
+
+{% set data = load_setup_py_data() %}
+
+package:
+  name: "sympy_plot_backends"
+  version: {{ data['version'] }}
+
+source:
+  path: ../..
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - appdirs
+    - bokeh
+    - colorcet
+    - holoviews
+    - ipyevents
+    - ipympl
+    - k3d
+    - matplotlib
+    - mergedeep
+    - numpy
+    - panel
+    - param
+    - pip
+    - plotly >=4.14.3
+    - python
+    - scipy
+    - sympy
+    - vtk
+    - msgpack-python
+    - adaptive
+  run:
+    - appdirs
+    - bokeh
+    - colorcet
+    - holoviews
+    - ipyevents
+    - ipympl
+    - k3d
+    - matplotlib
+    - mergedeep
+    - numpy
+    - panel
+    - param
+    - plotly >=4.14.3
+    - python
+    - scipy
+    - sympy
+    - vtk
+    - msgpack-python
+    - adaptive
+
+test:
+  imports:
+    - spb
+    - spb.backends
+    - spb.ccomplex
+
+about:
+  home: {{ data['url'] }}
+  license: {{ data['license'] }}
+  license_family: BSD
+  license_file: 
+  summary: {{ data['description'] }}
+  doc_url: 
+  dev_url: 
+
