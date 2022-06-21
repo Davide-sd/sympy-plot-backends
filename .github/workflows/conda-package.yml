@@ -31,5 +31,5 @@ jobs:
           echo "CONDA=$CONDA" >> $GITHUB_ENV
       - name: Build conda package
         run: |
-          conda build --no-anaconda-upload --no-test recipe
+          conda build --no-anaconda-upload --no-test recipe -c conda-forge -c defaults
         working-directory: ${{env.conda-directory}}
