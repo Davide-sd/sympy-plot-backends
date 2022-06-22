@@ -31,7 +31,7 @@ jobs:
           echo "CONDA=$CONDA" >> $GITHUB_ENV
       - name: Build conda package
         run: |
-          conda build --no-anaconda-upload --no-test recipe -c conda-forge -c defaults
+          conda build --no-anaconda-upload --no-test --override-channels -c conda-forge -c defaults recipe
         working-directory: ${{env.conda-directory}}
       - uses: actions/upload-artifact@v3
         with:
