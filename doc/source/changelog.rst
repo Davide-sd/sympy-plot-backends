@@ -2,6 +2,14 @@
  Changelog
 ==========
 
+
+v1.1.3
+======
+
+* Added ``color_func`` support to parametric line series.
+* Improved docstring.
+
+
 v1.1.2
 ======
 
