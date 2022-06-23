@@ -26,65 +26,80 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           conda-build-version: "*"
-      - name: Store CONDA variable
+      - shell: bash -l {0}
         run: |
-          echo "CONDA=$CONDA" >> $GITHUB_ENV
-      - name: Build conda package
-        run: |
-          conda build --no-anaconda-upload --no-test --override-channels -c conda-forge -c defaults recipe
-        working-directory: ${{env.conda-directory}}
-      - uses: actions/upload-artifact@v3
-        with:
-          name: conda-package
-          path: ${{env.CONDA}}/conda-bld/noarch/sympy-plot-backends-*.tar.bz2
-          if-no-files-found: error
-  test:
-    name: Conda Package Test
-    needs: build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-        python-version: ['3.9', '3.10']
-    defaults:
-      run:
+          conda info
+          conda list
+      - name: Lint
         shell: bash -l {0}
-    env:
-      conda-directory: ${{ github.workspace }}/conda
-    steps:
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-          conda-build-version: "*"
-      - uses: actions/download-artifact@v3
-        with:
-          name: conda-package
-      - name: Get package and channel name
         run: |
-          pattern="sympy-plot-backends-*.tar.bz2"
-          files=( $pattern )
-          echo "CONDA_PKG=${files[0]}" >> $GITHUB_ENV
-          echo CONDA_CHANNEL='${{ runner.temp }}/channel' >> $GITHUB_ENV
-      - name: Setup local channel
+            conda install flake8
+            python -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+            python -m flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Run pytest
+        shell: bash -l {0}
         run: |
-          mkdir -p $CONDA_CHANNEL/noarch
-          cp $CONDA_PKG $CONDA_CHANNEL/noarch
-          conda index $CONDA_CHANNEL
-      - name: Install package
-        run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            conda install --override-channels -c file://$CONDA_CHANNEL -c conda-forge sympy-plot-backends
-          elif [ "$RUNNER_OS" == "Windows" ]; then
-            conda install --override-channels -c $CONDA_CHANNEL -c conda-forge sympy-plot-backends
-          else
-               echo "$RUNNER_OS not supported"
-               exit 1
-          fi
-      - name: Extract test files
-        run: |
-          conda install --override-channels -c conda-forge conda-package-handling
-          cph extract $CONDA_PKG --dest src
-      - name: Test package
-        run: |
-          conda install --override-channels -c conda-forge pytest pytest-mock
-          pytest
+            conda install pytest
+            pytest
+  #     - name: Store CONDA variable
+  #       run: |
+  #         echo "CONDA=$CONDA" >> $GITHUB_ENV
+  #     - name: Build conda package
+  #       run: |
+  #         conda build --no-anaconda-upload --no-test --override-channels -c conda-forge -c defaults recipe
+  #       working-directory: ${{env.conda-directory}}
+  #     - uses: actions/upload-artifact@v3
+  #       with:
+  #         name: conda-package
+  #         path: ${{env.CONDA}}/conda-bld/noarch/sympy-plot-backends-*.tar.bz2
+  #         if-no-files-found: error
+  # test:
+  #   name: Conda Package Test
+  #   needs: build
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [windows-latest, ubuntu-latest]
+  #       python-version: ['3.9', '3.10']
+  #   defaults:
+  #     run:
+  #       shell: bash -l {0}
+  #   env:
+  #     conda-directory: ${{ github.workspace }}/conda
+  #   steps:
+  #     - uses: conda-incubator/setup-miniconda@v2
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #         conda-build-version: "*"
+  #     - uses: actions/download-artifact@v3
+  #       with:
+  #         name: conda-package
+  #     - name: Get package and channel name
+  #       run: |
+  #         pattern="sympy-plot-backends-*.tar.bz2"
+  #         files=( $pattern )
+  #         echo "CONDA_PKG=${files[0]}" >> $GITHUB_ENV
+  #         echo CONDA_CHANNEL='${{ runner.temp }}/channel' >> $GITHUB_ENV
+  #     - name: Setup local channel
+  #       run: |
+  #         mkdir -p $CONDA_CHANNEL/noarch
+  #         cp $CONDA_PKG $CONDA_CHANNEL/noarch
+  #         conda index $CONDA_CHANNEL
+  #     - name: Install package
+  #       run: |
+  #         if [ "$RUNNER_OS" == "Linux" ]; then
+  #           conda install --override-channels -c file://$CONDA_CHANNEL -c conda-forge sympy-plot-backends
+  #         elif [ "$RUNNER_OS" == "Windows" ]; then
+  #           conda install --override-channels -c $CONDA_CHANNEL -c conda-forge sympy-plot-backends
+  #         else
+  #              echo "$RUNNER_OS not supported"
+  #              exit 1
+  #         fi
+  #     - name: Extract test files
+  #       run: |
+  #         conda install --override-channels -c conda-forge conda-package-handling
+  #         cph extract $CONDA_PKG --dest src
+  #     - name: Test package
+  #       run: |
+  #         conda install --override-channels -c conda-forge pytest pytest-mock
+  #         pytest
