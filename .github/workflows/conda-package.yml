@@ -41,7 +41,7 @@ jobs:
         run: |
           conda config --set channel_priority false
           conda create --name myenv
-          conda activate myenv
+          $CONDA/bin/activate myenv
           conda install --use-local sympy_plot_backends
       - name: Lint
         shell: bash -l {0}
