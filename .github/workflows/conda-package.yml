@@ -30,6 +30,16 @@ jobs:
         run: |
           conda info
           conda list
+      - name: Store CONDA variable
+        run: |
+          echo "CONDA=$CONDA" >> $GITHUB_ENV
+      - name: Build conda package
+        run: |
+          conda build --no-anaconda-upload --no-test --override-channels -c conda-forge -c defaults recipe
+        working-directory: ${{env.conda-directory}}
+      - name: Install sympy_plot_backends
+        run: |
+          conda install --use-local sympy_plot_backends
       - name: Lint
         shell: bash -l {0}
         run: |
@@ -41,13 +51,7 @@ jobs:
         run: |
             conda install pytest
             pytest
-  #     - name: Store CONDA variable
-  #       run: |
-  #         echo "CONDA=$CONDA" >> $GITHUB_ENV
-  #     - name: Build conda package
-  #       run: |
-  #         conda build --no-anaconda-upload --no-test --override-channels -c conda-forge -c defaults recipe
-  #       working-directory: ${{env.conda-directory}}
+
   #     - uses: actions/upload-artifact@v3
   #       with:
   #         name: conda-package
