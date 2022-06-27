@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v1.1.4
+======
+
+* ``color_func`` is back-compatible with ``sympy.plotting``'s
+  ``line_color`` and ``surface_color``.
+
 
 v1.1.3
 ======
