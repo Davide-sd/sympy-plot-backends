@@ -1,6 +1,7 @@
 from spb.defaults import cfg
 from sympy import latex
 from sympy.core.containers import Tuple
+from sympy.core.function import arity
 from sympy.core.symbol import symbols
 from sympy.core.sympify import sympify
 from sympy.solvers.solvers import solve
@@ -376,6 +377,43 @@ class BaseSeries:
                 a = a.reshape(b.shape)
         return a
 
+    def eval_color_func(self, *args):
+        """Evaluate the color function.
+
+        Parameters
+        ==========
+
+        args : tuple
+            Arguments to be passed to the coloring function. Can be coordinates
+            or parameters or both.
+
+        Notes
+        =====
+
+        The backend will request the data series to generate the numerical
+        data. Depending on the data series, either the data series itself or
+        the backend will eventually execute this function to generate the
+        appropriate coloring value.
+        """
+        nargs = arity(self.color_func)
+        if nargs == 1:
+            if self.is_2Dline and self.is_parametric:
+                if len(args) == 2:
+                    # ColoredLineOver1DRangeSeries
+                    return self.color_func(args[0])
+                # Parametric2DLineSeries
+                return self.color_func(args[2])
+            elif self.is_3Dline and self.is_parametric:
+                return self.color_func(args[3])
+            elif self.is_3Dsurface and self.is_parametric:
+                return self.color_func(args[3])
+            return self.color_func(args[0])
+        elif nargs == 2:
+            if self.is_3Dsurface and self.is_parametric:
+                return self.color_func(*args[3:])
+            return self.color_func(*args[:2])
+        return self.color_func(*args[:nargs])
+
     def get_data(self):
         """Compute and returns the numerical data.
 
@@ -723,7 +761,7 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
             Color associated to each point.
         """
         x, y = super().get_points()
-        return x, y, self.color_func(x, y)
+        return x, y, self.eval_color_func(x, y)
 
 
 class AbsArgLineSeries(LineOver1DRangeSeries):
@@ -878,7 +916,7 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
 
         if callable(self.color_func):
             coords = list(coords)
-            coords[-1] = self.color_func(*coords)
+            coords[-1] = self.eval_color_func(*coords)
         return coords
 
 
@@ -1818,7 +1856,7 @@ class ColoredLineInteractiveSeries(LineInteractiveSeries):
             Color associated to each point.
         """
         x, y = super().get_points()
-        return x, y, self.color_func(x, y)
+        return x, y, self.eval_color_func(x, y)
 
 
 class AbsArgLineInteractiveSeries(LineInteractiveSeries):

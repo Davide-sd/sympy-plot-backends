@@ -626,10 +626,16 @@ def plot_parametric(*args, show=True, **kwargs):
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
-    
+
     color_func : callable, optional
-        A function of 3 variables, x, y, parameter (the points computed by
-        the internal algorithm) which defines the line color. Default to None.
+        A function defining the line color. The arity can be:
+
+        * 1 argument: ``f(t)``, where ``t`` is the parameter.
+        * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of the
+          points.
+        * 3 arguments: ``f(x, y, t)``.
+
+        Default to None.
 
     label : str or list/tuple, optional
         The label to be shown in the legend or in the colorbar. If not
@@ -844,10 +850,16 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
-    
+
     color_func : callable, optional
-        A function of 4 variables, x, y, z, parameter (the points computed by
-        the internal algorithm) which defines the line color. Default to None.
+        A function defining the line color. The arity can be:
+
+        * 1 argument: ``f(t)``, where ``t`` is the parameter.
+        * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates of
+          the points.
+        * 4 arguments: ``f(x, y, z, t)``.
+
+        Default to None.
 
     label : str or list/tuple, optional
         The label to be shown in the legend or in the colorbar. If not
@@ -1306,9 +1318,16 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         Default to `MatplotlibBackend`.
 
     color_func : callable, optional
-        A function of 5 variables, x, y, z, u, v (the points computed by the
-        internal algorithm and the parameters) which defines the surface color
-        when ``use_cm=True``. Default to None.
+        A function defining the surface color when ``use_cm=True``. The arity
+        can be:
+
+        * 1 argument: ``f(u)``, where ``u`` is the first parameter.
+        * 2 arguments: ``f(u, v)`` where ``u, v`` are the parameters.
+        * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates of
+          the points.
+        * 5 arguments: ``f(x, y, z, u, v)``.
+
+        Default to None.
 
     label : str or list/tuple, optional
         The label to be shown in the colorbar. If not provided, the string
@@ -1401,7 +1420,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
        ...          r * cos(v)
        ... )
        >>> plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "u",
-       ...      n=200, use_cm=True, color_func=lambda x, y, z, u, v: u)
+       ...      n=200, use_cm=True, color_func=lambda u, v: u)
        Plot object containing:
        [0]: parametric cartesian surface: ((sin(7*u + 5*v) + 2)*sin(v)*cos(u), (sin(7*u + 5*v) + 2)*sin(u)*sin(v), (sin(7*u + 5*v) + 2)*cos(v)) for u over (0.0, 6.283185307179586) and v over (0.0, 3.141592653589793)
 

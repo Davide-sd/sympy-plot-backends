@@ -252,7 +252,7 @@ class K3DBackend(Plot):
                     x, y, z, u, v = s.get_data()
                     vertices, indices = get_vertices_indices(x, y, z)
                     vertices = vertices.astype(np.float32)
-                    attribute = s.color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2], u.flatten().astype(np.float32), v.flatten().astype(np.float32))
+                    attribute = s.eval_color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2], u.flatten().astype(np.float32), v.flatten().astype(np.float32))
                 else:
                     x, y, z = s.get_data()
                     x = x.flatten()
@@ -260,7 +260,7 @@ class K3DBackend(Plot):
                     z = z.flatten()
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     indices = Triangulation(x, y).triangles.astype(np.uint32)
-                    attribute = s.color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2])
+                    attribute = s.eval_color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2])
 
                 self._high_aspect_ratio(x, y, z)
                 a = dict(
@@ -493,11 +493,11 @@ class K3DBackend(Plot):
                     if s.is_parametric:
                         x, y, z, u, v = s.get_data()
                         x, y, z, u, v = [t.flatten().astype(np.float32) for t in [x, y, z, u, v]]
-                        attribute = s.color_func(x, y, z, u, v)
+                        attribute = s.eval_color_func(x, y, z, u, v)
                     else:
                         x, y, z = s.get_data()
                         x, y, z = [t.flatten().astype(np.float32) for t in [x, y, z]]
-                        attribute = s.color_func(x, y, z)
+                        attribute = s.eval_color_func(x, y, z)
 
                     vertices = np.vstack([x, y, z]).astype(np.float32)
                     self._fig.objects[i].vertices = vertices.T

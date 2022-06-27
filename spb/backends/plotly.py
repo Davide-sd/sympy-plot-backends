@@ -349,10 +349,10 @@ class PlotlyBackend(Plot):
             elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
                 if not s.is_parametric:
                     xx, yy, zz = s.get_data()
-                    surfacecolor = s.color_func(xx, yy, zz)
+                    surfacecolor = s.eval_color_func(xx, yy, zz)
                 else:
                     xx, yy, zz, uu, vv = s.get_data()
-                    surfacecolor = s.color_func(xx, yy, zz, uu, vv)
+                    surfacecolor = s.eval_color_func(xx, yy, zz, uu, vv)
 
                 # create a solid color to be used when s.use_cm=False
                 col = next(self._cl)
@@ -658,10 +658,10 @@ class PlotlyBackend(Plot):
                 elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
                     if not s.is_parametric:
                         x, y, z = s.get_data()
-                        surfacecolor = s.color_func(x, y, z)
+                        surfacecolor = s.eval_color_func(x, y, z)
                     else:
                         x, y, z, u, v = s.get_data()
-                        surfacecolor = s.color_func(x, y, z, u, v)
+                        surfacecolor = s.eval_color_func(x, y, z, u, v)
                         self.fig.data[i]["x"] = x
                         self.fig.data[i]["y"] = y
 

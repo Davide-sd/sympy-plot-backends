@@ -413,10 +413,10 @@ class MatplotlibBackend(Plot):
             elif (s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit)):
                 if not s.is_parametric:
                     x, y, z = self.series[i].get_data()
-                    facecolors = s.color_func(x, y, z)
+                    facecolors = s.eval_color_func(x, y, z)
                 else:
                     x, y, z, u, v = self.series[i].get_data()
-                    facecolors = s.color_func(x, y, z, u, v)
+                    facecolors = s.eval_color_func(x, y, z, u, v)
                 skw = dict(rstride=1, cstride=1, linewidth=0.1)
                 norm, cmap = None, None
                 if s.use_cm:
@@ -855,10 +855,10 @@ class MatplotlibBackend(Plot):
                 elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
                     if not s.is_parametric:
                         x, y, z = self.series[i].get_data()
-                        facecolors = s.color_func(x, y, z)
+                        facecolors = s.eval_color_func(x, y, z)
                     else:
                         x, y, z, u, v = self.series[i].get_data()
-                        facecolors = s.color_func(x, y, z, u, v)
+                        facecolors = s.eval_color_func(x, y, z, u, v)
                     # TODO: by setting the keyword arguments, somehow the
                     # update becomes really really slow.
                     kw, is_cb_added, cax = self._handles[i][1:]
