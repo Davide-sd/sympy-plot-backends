@@ -224,9 +224,11 @@ class PlotlyBackend(Plot):
             y=0,
         )
 
-    def _solid_colorscale(self):
+    def _solid_colorscale(self, s):
         # create a solid color to be used when s.use_cm=False
-        col = next(self._cl)
+        col = s.line_color
+        if col is None:
+            col = next(self._cl)
         return [[0, col], [1, col]]
 
     def _process_series(self, series):
@@ -266,9 +268,10 @@ class PlotlyBackend(Plot):
                     mode = "lines+markers" if not s.is_point else "markers"
                     if (not s.is_point) and (not s.use_cm):
                         mode = "lines"
+                    color = next(self._cl) if s.line_color is None else s.line_color
                     lkw = dict(
                         name=s.get_label(self._use_latex),
-                        line_color=next(self._cl),
+                        line_color=color,
                         mode=mode,
                         marker=dict(
                             color=param,
@@ -292,7 +295,7 @@ class PlotlyBackend(Plot):
                     self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
                 else:
                     x, y = s.get_data()
-                    color = next(self._cl)
+                    color = next(self._cl) if s.line_color is None else s.line_color
                     lkw = dict(
                         name=s.get_label(self._use_latex),
                         mode="lines" if not s.is_point else "markers",
@@ -331,7 +334,7 @@ class PlotlyBackend(Plot):
                             colorscale=(
                                 next(self._cm)
                                 if s.use_cm
-                                else self._solid_colorscale()
+                                else self._solid_colorscale(s)
                             ),
                             color=param,
                             showscale=self.legend and s.use_cm,
@@ -342,7 +345,7 @@ class PlotlyBackend(Plot):
                     lkw = dict(
                         name=s.get_label(self._use_latex),
                         mode="markers",
-                        line_color=next(self._cl))
+                        line_color=next(self._cl) if s.line_color is None else s.line_color)
                 kw = merge({}, lkw, s.rendering_kw)
                 self._fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **kw))
 
@@ -355,7 +358,7 @@ class PlotlyBackend(Plot):
                     surfacecolor = s.eval_color_func(xx, yy, zz, uu, vv)
 
                 # create a solid color to be used when s.use_cm=False
-                col = next(self._cl)
+                col = next(self._cl) if s.surface_color is None else s.surface_color
                 colorscale = [[0, col], [1, col]]
                 colormap = next(self._cm)
                 skw = dict(
@@ -442,7 +445,7 @@ class PlotlyBackend(Plot):
                             colorscale=(
                                 next(self._cm)
                                 if s.use_cm
-                                else self._solid_colorscale()
+                                else self._solid_colorscale(s)
                             ),
                             sizeref=0.3,
                             showscale=self.legend and s.use_cm,

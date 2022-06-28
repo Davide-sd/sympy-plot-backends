@@ -391,9 +391,10 @@ class BokehBackend(Plot):
                             "ys": y if not s.is_polar else y * np.sin(x)
                         }
 
+                    color = next(self._cl) if s.line_color is None else s.line_color
                     lkw = dict(line_width=2,
                         legend_label=s.get_label(self._use_latex),
-                        color=next(self._cl))
+                        color=color)
                     if not s.is_point:
                         kw = merge({}, lkw, s.rendering_kw)
                         self._fig.line("xs", "ys", source=source, **kw)

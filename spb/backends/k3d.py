@@ -236,13 +236,13 @@ class K3DBackend(Plot):
                 a = dict(
                     width=0.1,
                     name=self._get_series_label(s, "%s") if self._show_label else None,
-                    color=self._convert_to_int(next(self._cl)),
+                    color=self._convert_to_int(next(self._cl)) if s.line_color is None else s.line_color,
                     shader="mesh",
                 )
                 if s.use_cm:
                     a["attribute"] = (param.astype(np.float32),)
                     a["color_map"] = next(self._cm)
-                    a["color_range"] = [s.start, s.end]
+                    a["color_range"] = [param.min(), param.max()]
                 kw = merge({}, a, s.rendering_kw)
                 line = self.k3d.line(vertices, **kw)
                 self._fig += line
@@ -268,7 +268,7 @@ class K3DBackend(Plot):
                     side="double",
                     flat_shading=False,
                     wireframe=False,
-                    color=self._convert_to_int(next(self._cl)),
+                    color=self._convert_to_int(next(self._cl)) if s.surface_color is None else s.surface_color,
                 )
                 if s.use_cm:
                     a["color_map"] = next(self._cm)

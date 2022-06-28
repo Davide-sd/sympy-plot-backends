@@ -2443,3 +2443,123 @@ def test_color_func():
     xx, yy, zz, uu, vv = s.get_data()
     col = s.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(xx * yy * zz * uu * vv, col)
+
+    # Interactive Series
+    s = LineInteractiveSeries([sin(y * x)], [(x, -5, 5)], n1=10,
+        color_func=lambda x: x, params={y: 1})
+    xx, yy, col = s.get_data()
+    assert np.allclose(col, xx)
+    s = LineInteractiveSeries([sin(y * x)], [(x, -5, 5)], n1=10,
+        color_func=lambda x, y: y, params={y: 1})
+    xx, yy, col = s.get_data()
+    assert np.allclose(col, yy)
+
+    s = Parametric2DLineInteractiveSeries([cos(y * x), sin(x)], [(x, 0, 2*pi)],
+        n1=10, color_func=lambda t: t, params={y: 1})
+    xx, yy, col = s.get_data()
+    assert (not np.allclose(xx, col)) and (not np.allclose(yy, col))
+    s = Parametric2DLineInteractiveSeries([cos(y * x), sin(x)], [(x, 0, 2*pi)],
+        n1=10, color_func=lambda x, y: x * y, params={y: 1})
+    xx, yy, col = s.get_data()
+    assert np.allclose(col, xx * yy)
+    s = Parametric2DLineInteractiveSeries([cos(y * x), sin(x)], [(x, 0, 2*pi)],
+        n1=10, color_func=lambda x, y, t: x * y * t, params={y: 1})
+    xx, yy, col = s.get_data()
+    assert np.allclose(col, xx * yy * np.linspace(0, 2*np.pi, 10))
+
+    s = Parametric3DLineInteractiveSeries(
+        [cos(y * x), sin(x), x], [(x, 0, 2*pi)],
+        n1=10, color_func=lambda t: t, params={y: 1})
+    xx, yy, zz, col = s.get_data()
+    assert (not np.allclose(xx, col)) and (not np.allclose(yy, col))
+    s = Parametric3DLineInteractiveSeries(
+        [cos(y * x), sin(x), x], [(x, 0, 2*pi)],
+        n1=10, color_func=lambda x, y, z: x * y * z, params={y: 1})
+    xx, yy, zz, col = s.get_data()
+    assert np.allclose(col, xx * yy * zz)
+    s = Parametric3DLineInteractiveSeries(
+        [cos(y * x), sin(x), x], [(x, 0, 2*pi)],
+        n1=10, color_func=lambda x, y, z, t: x * y * z * t, params={y: 1})
+    xx, yy, zz, col = s.get_data()
+    assert np.allclose(col, xx * yy * zz * np.linspace(0, 2*np.pi, 10))
+
+    s = SurfaceInteractiveSeries(
+        [z * cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)],
+        params={z: 1},
+        n1=10, n2=10, color_func=lambda x: x)
+    xx, yy, zz = s.get_data()
+    col = s.eval_color_func(xx, yy, zz)
+    assert np.allclose(xx, col)
+    s = SurfaceInteractiveSeries(
+        [z * cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)],
+        params={z: 1},
+        n1=10, n2=10, color_func=lambda x, y: x * y)
+    xx, yy, zz = s.get_data()
+    col = s.eval_color_func(xx, yy, zz)
+    assert np.allclose(xx * yy, col)
+    s = SurfaceInteractiveSeries(
+        [z * cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)],
+        params={z: 1},
+        n1=10, n2=10, color_func=lambda x, y, z: x * y * z)
+    xx, yy, zz = s.get_data()
+    col = s.eval_color_func(xx, yy, zz)
+    assert np.allclose(xx * yy * zz, col)
+
+    s = ParametricSurfaceInteractiveSeries(
+        [S(1), x, y * z], [(x, 0, 1), (y, 0, 1)], params={z: 1},
+        n1=10, n2=10, color_func=lambda u:u)
+    xx, yy, zz, uu, vv = s.get_data()
+    col = s.eval_color_func(xx, yy, zz, uu, vv)
+    assert np.allclose(uu, col)
+    s = ParametricSurfaceInteractiveSeries(
+        [S(1), x, y * z], [(x, 0, 1), (y, 0, 1)], params={z: 1},
+        n1=10, n2=10, color_func=lambda u, v: u * v)
+    xx, yy, zz, uu, vv = s.get_data()
+    col = s.eval_color_func(xx, yy, zz, uu, vv)
+    assert np.allclose(uu * vv, col)
+    s = ParametricSurfaceInteractiveSeries(
+        [S(1), x, y * z], [(x, 0, 1), (y, 0, 1)], params={z: 1},
+        n1=10, n2=10, color_func=lambda x, y, z: x * y * z)
+    xx, yy, zz, uu, vv = s.get_data()
+    col = s.eval_color_func(xx, yy, zz, uu, vv)
+    assert np.allclose(xx * yy * zz, col)
+    s = ParametricSurfaceInteractiveSeries(
+        [S(1), x, y * z], [(x, 0, 1), (y, 0, 1)], params={z: 1},
+        n1=10, n2=10, color_func=lambda x, y, z, u, v: x * y * z * u * v)
+    xx, yy, zz, uu, vv = s.get_data()
+    col = s.eval_color_func(xx, yy, zz, uu, vv)
+    assert np.allclose(xx * yy * zz * uu * vv, col)
+
+
+def test_line_surface_color():
+    # verify the back-compatibility with the old sympy.plotting module.
+    # By setting line_color or surface_color to be a callable, it will set
+    # the color_func attribute.
+
+    x, y, z = symbols("x, y, z")
+
+    s = LineOver1DRangeSeries(sin(x), (x, -5, 5), adaptive=False, n=10,
+        line_color=lambda x: x)
+    assert (s.line_color is None) and callable(s.color_func)
+
+    s = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 2*pi),
+        adaptive=False, n=10, line_color=lambda t: t)
+    assert (s.line_color is None) and callable(s.color_func)
+
+    s = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        n1=10, n2=10, surface_color=lambda x: x)
+    assert (s.surface_color is None) and callable(s.color_func)
+
+    s = LineInteractiveSeries([sin(x * y)], [(x, -5, 5)], n=10,
+        line_color=lambda x: x, params={y: 1})
+    assert (s.line_color is None) and callable(s.color_func)
+
+    s = Parametric2DLineInteractiveSeries(
+        [cos(x * y), sin(x * y)], [(x, -5, 5)], n=10,
+        line_color=lambda x: x, params={y: 1})
+    assert (s.line_color is None) and callable(s.color_func)
+
+    s = SurfaceInteractiveSeries(
+        [z * cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)], params={z: 1},
+        n1=10, n2=10, surface_color=lambda x: x)
+    assert (s.surface_color is None) and callable(s.color_func)

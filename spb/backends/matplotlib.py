@@ -362,7 +362,8 @@ class MatplotlibBackend(Plot):
                         x, y, param = s.get_data()
                     else:
                         x, y = s.get_data()
-                    lkw = dict(label=s.get_label(self._use_latex), color=next(self._cl))
+                    color = next(self._cl) if s.line_color is None else s.line_color
+                    lkw = dict(label=s.get_label(self._use_latex), color=color)
                     if s.is_point:
                         lkw["marker"] = "o"
                         lkw["linestyle"] = "None"
@@ -396,13 +397,13 @@ class MatplotlibBackend(Plot):
                         self._add_handle(i, c)
                     else:
                         lkw["label"] = s.get_label(self._use_latex)
-                        kw = merge({}, lkw, s.rendering_kw)
+                        kw = merge({}, lkw, s.rendering_kw, {} if s.line_color is None else {"color": s.line_color})
                         l = self.ax.plot(x, y, z, **kw)
                         self._add_handle(i, l)
                 else:
                     # 3D points
                     lkw["label"] = s.get_label(self._use_latex)
-                    lkw["color"] = next(self._cl)
+                    lkw["color"] = next(self._cl) if s.line_color is None else s.line_color
                     kw = merge({}, lkw, s.rendering_kw)
                     l = self.ax.scatter(x, y, z, **kw)
                     self._add_handle(i, l)
@@ -424,7 +425,7 @@ class MatplotlibBackend(Plot):
                     cmap = next(self._cm)
                     skw["cmap"] = cmap
                 else:
-                    skw["color"] = next(self._cl)
+                    skw["color"] = next(self._cl) if s.surface_color is None else s.surface_color
 
                 kw = merge({}, skw, s.rendering_kw)
                 if s.use_cm:

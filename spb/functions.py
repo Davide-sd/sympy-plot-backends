@@ -218,7 +218,6 @@ def _set_labels(series, labels):
     if not isinstance(labels, (list, tuple)):
         labels = [labels]
     if len(labels) > 0:
-        print(len(series), len(labels))
         if len(series) != len(labels):
             raise ValueError("The number of labels must be equals to the "
                 "number of expressions being plotted.\nReceived "

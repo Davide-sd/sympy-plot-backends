@@ -316,6 +316,34 @@ class BaseSeries:
         flagslines = [self.is_2Dline, self.is_3Dline]
         return any(flagslines)
 
+
+    def _line_surface_color(self, prop, val):
+        # This setter enables back-compatibility with sympy.plotting.
+        # If line_color/surface_color is not a callable, it will override
+        # the color_func option (if set)
+        setattr(self, prop, val)
+        if callable(val):
+            self.color_func = val
+            setattr(self, prop, None)
+        elif val is not None:
+            self.color_func = None
+
+    @property
+    def line_color(self):
+        return self._line_color
+
+    @line_color.setter
+    def line_color(self, val):
+        self._line_surface_color("_line_color", val)
+
+    @property
+    def surface_color(self):
+        return self._surface_color
+
+    @surface_color.setter
+    def surface_color(self, val):
+        self._line_surface_color("_surface_color", val)
+
     @property
     def rendering_kw(self):
         return self._rendering_kw
@@ -395,6 +423,24 @@ class BaseSeries:
         the backend will eventually execute this function to generate the
         appropriate coloring value.
         """
+        if self.color_func is None:
+            # NOTE: with the line_color and surface_color attributes
+            # (back-compatibility with the old sympy.plotting module) it is
+            # possible to create a plot with a callable line_color (or
+            # surface_color). For example:
+            # p = plot(sin(x), line_color=lambda x, y: -y)
+            # This will create a ColoredLineOver1DRangeSeries, which
+            # efffectively is a parametric series. Later we could change
+            # it to a string value:
+            # p[0].line_color = "red"
+            # However, this won't apply the red color, because we can't ask
+            # a parametric series to be non-parametric!
+            np = import_module('numpy')
+            warnings.warn("This is likely not the result you were "
+                "looking for. Please, re-execute the plot command, this time "
+                "with the appropriate line_color or surface_color")
+            return np.ones_like(args[0])
+
         nargs = arity(self.color_func)
         if nargs == 1:
             if self.is_2Dline and self.is_parametric:
@@ -527,6 +573,7 @@ class Line2DBaseSeries(BaseSeries):
         self._rendering_kw = kwargs.get("line_kw", dict())
         self.use_cm = kwargs.get("use_cm", True)
         self.color_func = kwargs.get("color_func", None)
+        self.line_color = kwargs.get("line_color", None)
         self._init_transforms(**kwargs)
 
     def get_data(self):
@@ -609,7 +656,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
             return super().__new__(AbsArgLineSeries)
-        if callable(kwargs.get("color_func", None)):
+        if callable(kwargs.get("color_func", None)) or callable(kwargs.get("line_color", None)):
             return super().__new__(ColoredLineOver1DRangeSeries)
         return object.__new__(cls)
 
@@ -1005,7 +1052,11 @@ class SurfaceBaseSeries(BaseSeries):
         self._rendering_kw = kwargs.get("surface_kw", dict())
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self.is_polar = kwargs.get("is_polar", False)
+        self.surface_color = kwargs.get("surface_color", None)
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)
+        if callable(self.surface_color):
+            self.color_func = self.surface_color
+            self.surface_color = None
         self._init_transforms(**kwargs)
 
     def _set_surface_label(self, label):
@@ -1582,7 +1633,7 @@ class InteractiveSeries(BaseSeries):
         if (nexpr == 1) and (npar == 1):
             absarg = kwargs.get("absarg", False)
             if not absarg:
-                if callable(kwargs.get("color_func", None)):
+                if callable(kwargs.get("color_func", None)) or callable(kwargs.get("line_color", None)):
                     return super().__new__(ColoredLineInteractiveSeries)
                 return super().__new__(LineInteractiveSeries)
             return super().__new__(AbsArgLineInteractiveSeries)
@@ -1777,6 +1828,9 @@ class InteractiveSeries(BaseSeries):
 
 
 class LineInteractiveBaseSeries(InteractiveSeries):
+    def __new__(cls, *args, **kwargs):
+        return object.__new__(cls)
+
     def _set_discretization_ranges(self, discr_symbols, discretizations):
         """Set the discretized ranges that will be used in the numerical
         evaluation.
@@ -1789,7 +1843,7 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
     expression over a real range."""
 
     def __new__(cls, *args, **kwargs):
-        if callable(kwargs.get("color_func", None)):
+        if any(callable(kwargs.get(t, None)) for t in ["color_func", "line_color"]):
             return super().__new__(ColoredLineInteractiveSeries)
         return object.__new__(cls)
 
@@ -1803,6 +1857,7 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
         self.eps = kwargs.get("eps", 0.01)
         self._rendering_kw = kwargs.get("line_kw", dict())
         self.color_func = kwargs.get("color_func", None)
+        self.line_color = kwargs.get("line_color", None)
 
     def get_points(self):
         """Return coordinates for plotting the line.
@@ -1912,6 +1967,8 @@ class Parametric2DLineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSer
         self.steps = kwargs.get("steps", False)
         self._rendering_kw = kwargs.get("line_kw", dict())
         self.var = list(self.ranges.keys())[0]
+        self.color_func = kwargs.get("color_func", None)
+        self.line_color = kwargs.get("line_color", None)
         ParametricLineBaseSeries._set_parametric_line_label(self, self.label)
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
@@ -1938,6 +1995,8 @@ class Parametric2DLineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSer
         _re, _im = np.real(results), np.imag(results)
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
         discr = [np.real(t) for t in self.ranges.values()]
+        if callable(self.color_func):
+            discr = [self.eval_color_func(*_re, *discr)]
         return [*_re, *discr]
 
     def __str__(self):
@@ -1965,6 +2024,7 @@ class SurfaceInteractiveSeries(InteractiveSeries):
         self._rendering_kw = kwargs.get("surface_kw", dict())
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)
+        self.surface_color = kwargs.get("surface_color", None)
 
     def get_data(self):
         """Return arrays of coordinates for plotting.
@@ -2986,6 +3046,7 @@ class GeometrySeries(BaseSeries):
         self.n = int(kwargs.get("n", 200))
         self.use_cm = kwargs.get("use_cm", True)
         self.color_func = kwargs.get("color_func", None)
+        self.line_color = kwargs.get("line_color", None)
         if isinstance(expr, (LinearEntity3D, Point3D)):
             self.is_3Dline = True
             self.start = 0

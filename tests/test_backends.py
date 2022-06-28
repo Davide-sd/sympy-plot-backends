@@ -2703,3 +2703,87 @@ def test_line_interactive_color_func():
     p._update_interactive({t: 2})
     assert isinstance(p.fig.renderers[0].glyph, bokeh.models.glyphs.Line)
     assert isinstance(p.fig.renderers[1].glyph, bokeh.models.glyphs.MultiLine)
+
+
+def test_line_color_plot():
+    # verify back-compatibility with old sympy.plotting module when using
+    # line_color
+
+    x, y = symbols("x, y")
+
+    _plot = lambda B, lc: plot(sin(x), adaptive=False, n=10,
+        line_color=lc, backend=B, show=False)
+
+    p = _plot(MB, "red")
+    f = p.fig
+    ax = f.axes[0]
+    assert ax.get_lines()[0].get_color() == "red"
+    p = _plot(MB, lambda x: -x)
+    f = p.fig
+    assert len(p.fig.axes) == 2 # there is a colorbar
+
+    p = _plot(PB, "red")
+    assert p.fig.data[0]["line"]["color"] == "red"
+    p = _plot(PB, lambda x: -x)
+    assert p.fig.data[0].marker.showscale
+
+    p = _plot(BB, "red")
+    assert p.fig.renderers[0].glyph.line_color == "red"
+    p = _plot(BB, lambda x: -x)
+    assert len(p.fig.right) == 1
+    assert p.fig.right[0].title == "sin(x)"
+
+
+def test_line_color_plot3d_parametric_line():
+    # verify back-compatibility with old sympy.plotting module when using
+    # line_color
+
+    x, y = symbols("x, y")
+
+    _plot = lambda B, lc, use_cm: plot3d_parametric_line(
+        cos(x), sin(x), x, (x, 0, 2*pi), adaptive=False, n=10,
+        line_color=lc, backend=B, show=False, use_cm=use_cm)
+
+    p = _plot(MB, "red", False)
+    f = p.fig
+    ax = f.axes[0]
+    assert ax.get_lines()[0].get_color() == "red"
+    p = _plot(MB, lambda x: -x, True)
+    f = p.fig
+    assert len(p.fig.axes) == 2 # there is a colorbar
+
+    p = _plot(PB, "red", False)
+    assert p.fig.data[0].line.colorscale == ((0, 'red'), (1, 'red'))
+    assert p.fig.data[0].line.showscale is False
+    p = _plot(PB, lambda x: -x, True)
+    assert p.fig.data[0].line.showscale
+
+    p = _plot(KBchild1, 0xff0000, False)
+    assert p.fig.objects[0].color == 16711680
+    p = _plot(KBchild1, lambda x: -x, True)
+    assert len(p.fig.objects[0].attribute) > 0
+
+
+def test_surface_color_plot3d():
+    # verify back-compatibility with old sympy.plotting module when using
+    # surface_color
+
+    x, y = symbols("x, y")
+    _plot = lambda B, sc, use_cm: plot3d(
+        cos(x**2 + y**2), (x, 0, 2), (y, 0, 2), adaptive=False, n=10,
+        surface_color=sc, backend=B, show=False, use_cm=use_cm, legend=True)
+
+    p = _plot(MB, "red", False)
+    assert len(p.fig.axes) == 1
+    p = _plot(MB, lambda x, y, z: -x, True)
+    assert len(p.fig.axes) == 2
+
+    p = _plot(PB, "red", False)
+    assert p.fig.data[0].colorscale == ((0, 'red'), (1, 'red'))
+    p = _plot(PB, lambda x, y, z: -x, True)
+    assert len(p.fig.data[0].colorscale) > 2
+
+    p = _plot(KBchild1, 0xff0000, False)
+    assert p.fig.objects[0].color == 16711680
+    p = _plot(KBchild1, lambda x, y, z: -x, True)
+    assert len(p.fig.objects[0].attribute) > 0
