@@ -2,6 +2,13 @@
  Changelog
 ==========
 
+v1.1.5
+======
+
+* Implemented ``line_color`` and ``surface_color``: this plotting module should
+  now be back-compatible with the current ``sympy.plotting``.
+
+
 v1.1.4
 ======
 
