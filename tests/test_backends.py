@@ -2787,3 +2787,15 @@ def test_surface_color_plot3d():
     assert p.fig.objects[0].color == 16711680
     p = _plot(KBchild1, lambda x, y, z: -x, True)
     assert len(p.fig.objects[0].attribute) > 0
+
+
+def test_label_after_plot_instantiation():
+    # verify that it is possible to set a label after a plot has been created
+    x = symbols("x")
+
+    p = plot(sin(x), cos(x), show=False, backend=MB)
+    p[0].label = "a"
+    p[1].label = "$b^{2}$"
+    f = p.fig
+    assert f.axes[0].lines[0].get_label() == "a"
+    assert f.axes[0].lines[1].get_label() == "$b^{2}$"

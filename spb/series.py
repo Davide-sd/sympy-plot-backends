@@ -496,15 +496,20 @@ class BaseSeries:
         label : str
         """
         if use_latex is False:
-            return self.label
-        if self.label == str(self.get_expr()):
+            return self._label
+        if self._label == str(self.get_expr()):
             return self._get_wrapped_label(self._latex_label, wrapper)
         return self._latex_label
 
-    def set_label(self, val):
+    @property
+    def label(self):
+        return self.get_label()
+
+    @label.setter
+    def label(self, val):
         """Set the labels associated to this series.
         """
-        self.label = self._latex_label = val
+        self._label = self._latex_label = val
 
     def _apply_transform(self, *args):
         """Apply transformations to the results of numerical evaluation.
@@ -924,17 +929,17 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         # shown on the colorbar if `use_cm=True`, otherwise it returns the
         # representation of the expression to be placed on the legend.
         if self.use_cm:
-            if str(self.var) == self.label:
+            if str(self.var) == self._label:
                 if use_latex:
                     return self._get_wrapped_label(latex(self.var), wrapper)
                 return str(self.var)
             # here the user has provided a custom label
-            return self.label
+            return self._label
         if use_latex:
-            if self.label != str(self.get_expr()):
+            if self._label != str(self.get_expr()):
                 return self._latex_label
             return self._get_wrapped_label(self._latex_label, wrapper)
-        return self.label
+        return self._label
 
     def get_points(self):
         """Return coordinates for plotting. Depending on the `adaptive`
@@ -2637,10 +2642,10 @@ class VectorBase(BaseSeries):
     def get_label(self, use_latex=False, wrapper="$%s$"):
         if use_latex:
             expr = self.get_expr()
-            if self.label != str(expr):
+            if self._label != str(expr):
                 return self._latex_label
             return self._get_wrapped_label(self._latex_label, wrapper)
-        return self.label
+        return self._label
 
     def get_data(self):
         """Return arrays of coordinates for plotting. Depending on the

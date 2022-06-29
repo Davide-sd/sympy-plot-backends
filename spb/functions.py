@@ -223,7 +223,7 @@ def _set_labels(series, labels):
                 "number of expressions being plotted.\nReceived "
                 "{} expressions and {} labels".format(len(series), len(labels)))
         for s, l in zip(series, labels):
-            s.set_label(l)
+            s.label = l
 
 
 def plot(*args, show=True, **kwargs):
