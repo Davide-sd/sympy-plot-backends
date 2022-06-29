@@ -2,6 +2,14 @@
  Changelog
 ==========
 
+v1.1.6
+======
+
+* Fixed bug with ``label`` keyword argument.
+* Added error message to ``plot3d``.
+* Updated documentation.
+
+
 v1.1.5
 ======
 
