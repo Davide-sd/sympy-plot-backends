@@ -24,6 +24,7 @@ from sympy.core.numbers import oo
 from sympy.concrete.summations import Sum
 from sympy.functions.elementary.complexes import sign
 from sympy.functions.elementary.piecewise import Piecewise, piecewise_fold
+from sympy.geometry import Plane
 from sympy.sets.sets import EmptySet, FiniteSet, Interval, Union
 from spb.defaults import TWO_D_B, THREE_D_B
 from spb.utils import _plot_sympify, _check_arguments, _unpack_args
@@ -1251,6 +1252,10 @@ def plot3d(*args, show=True, **kwargs):
     kwargs = _set_discretization_points(kwargs, SurfaceOver2DRangeSeries)
     labels = kwargs.pop("label", [])
     plot_expr = _check_arguments(args, 1, 2)
+    for p in plot_expr:
+        if isinstance(p[0], Plane):
+            raise ValueError("Please, use ``plot_geometry`` to visualize "
+                "a plane.")
     series = [SurfaceOver2DRangeSeries(*arg, **kwargs) for arg in plot_expr]
     _set_labels(series, labels)
     kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
