@@ -251,9 +251,9 @@ Differences with sympy.plotting
   into a grid-like layout. This module replaces that class with the
   ``plotgrid`` function. Again, they are not interchangeable.
 
-* The ``plot_implicit`` function has different signature. Moreover, by default
-  it uses a mesh grid algorithm and contour plots (in contrast to the adaptive
-  algorithm). It is going to automatically switch to an adaptive algorithm if
+* The ``plot_implicit`` function uses a mesh grid algorithm and contour plots
+  by default (in contrast to the adaptive algorithm used by `sympy.plotting`).
+  It is going to automatically switch to an adaptive algorithm if
   Boolean expressions are found. This ensures a better visualization for
   non-Boolean implicit expressions.
 
@@ -277,13 +277,10 @@ Differences with sympy.plotting
 * `sympy.plotting` exposed the ``nb_of_points_*`` keyword arguments. These have
   been replaced with ``n`` or ``n1, n2``.
 
-* `sympy.plotting` exposed the ``label``, ``line_color`` and ``surface_color``
-  keyword argument. These have been removed in this module.
-
   The following example compares how to customize a plot created with
   `sympy.plotting` and one created with this module.
 
-  With `sympy.plotting`:
+  This is pretty much all we can do with `sympy.plotting`:
 
   .. code-block:: python
 
@@ -296,7 +293,8 @@ Differences with sympy.plotting
      p[1].label = "b"
      p.show()
 
-  With this module:
+  The above command works perfectly fine also with this new module. However,
+  we can customize the plot even further. In particular:
 
   * it is possible to set a custom label directly from any plot function.
   * by setting specific dictionaries, the full potential of each backend can be
@@ -307,13 +305,15 @@ Differences with sympy.plotting
      from spb import plot
      from sympy import symbols, sin, cos
      x = symbols("x")
+     # pass customization options directly to matplotlib (or other backends)
      p1 = plot(sin(x), "a", backend=MB, show=False, line_kw=dict(color="k", linestyle=":"))
+     # only set a custom label and let the backend take care of the rest
      p2 = plot(cos(x), "b", backend=MB, show=False)
+     # combine the plots
      p3 = (p1 + p2)
      p3.show()
 
-  Therefore, setting attributes to plot objects or to data series after they
-  have been instantiated is strongly unrecommended. Read the documentation
-  to learn how to further customize the appearance of figures.
+  Read the documentation to learn how to further customize the appearance of
+  figures.
 
 Take a look at :doc:`Modules </modules/index>` for more examples about the output of this module.
