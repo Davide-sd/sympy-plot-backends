@@ -23,7 +23,7 @@ starting point. However, ``iplot``-related tutorials are only
 available at the aforementioned repository.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Quickstart
 
    tut-1.rst
@@ -31,3 +31,4 @@ available at the aforementioned repository.
    tut-3.rst
    tut-4.rst
    tut-5.rst
+   tut-6.rst
