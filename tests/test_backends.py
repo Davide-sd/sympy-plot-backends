@@ -13,7 +13,7 @@ from spb import (
     plot_parametric, plot3d_parametric_line,
     plot_vector, plot_complex, plot_geometry, plot_real_imag,
     plot_list, plot_piecewise, plot_polar, plot3d_implicit,
-    plot3d_parametric_surface
+    plot3d_parametric_surface, plot_complex_list
 )
 from sympy import latex, gamma
 from sympy.core.symbol import symbols
@@ -1376,6 +1376,12 @@ def test_plot_complex_3d():
     assert len(f.objects) == 1
     assert isinstance(f.objects[0], k3d.objects.Mesh)
     assert f.objects[0].name is None
+
+
+def test_plot_complex_list():
+    # verify that no errors are raise when plotting lists of complex points
+    p = plot_complex_list(3 + 2 * I, 4 * I, 2, backend=MB, show=False)
+    f = p.fig
 
 
 def test_plot_list_is_filled_false():

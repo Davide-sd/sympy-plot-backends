@@ -2134,6 +2134,8 @@ class ComplexPointSeries(Line2DBaseSeries):
         self.label = label
         self._latex_label = label
         self._rendering_kw = kwargs.get("line_kw", dict())
+        self.color_func = kwargs.get("color_func", None)
+        self.line_color = kwargs.get("line_color", None)
         self._init_transforms(**kwargs)
 
     @staticmethod
