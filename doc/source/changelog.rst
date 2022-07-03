@@ -2,6 +2,13 @@
  Changelog
 ==========
 
+v1.1.7
+======
+
+* Fixed bug with ``plot_complex_list``.
+* Added new tutorial about singularity-dections.
+
+
 v1.1.6
 ======
 
