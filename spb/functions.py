@@ -202,12 +202,14 @@ def _build_line_series(*args, **kwargs):
     pp = kwargs.get("process_piecewise", False)
     sum_bound = int(kwargs.get("sum_bound", 1000))
     for arg in args:
-        expr, r, label = arg
+        expr, r, label, rendering_kw = arg
+        kw = kwargs.copy()
+        kw["line_kw"] = rendering_kw
         if expr.has(Piecewise) and pp:
-            series += _process_piecewise(expr, r, label, **kwargs)
+            series += _process_piecewise(expr, r, label, **kw)
         else:
             arg = _process_summations(sum_bound, *arg)
-            series.append(LineOver1DRangeSeries(*arg, **kwargs))
+            series.append(LineOver1DRangeSeries(*arg[:-1], **kw))
     return series
 
 

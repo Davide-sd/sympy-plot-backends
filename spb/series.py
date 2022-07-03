@@ -350,7 +350,10 @@ class BaseSeries:
 
     @rendering_kw.setter
     def rendering_kw(self, kwargs):
-        self._rendering_kw = kwargs
+        if kwargs is not None:
+            self._rendering_kw = kwargs
+        else:
+            self._rendering_kw = dict()
 
     @staticmethod
     def _discretize(start, end, N, scale="linear", only_integers=False):
@@ -575,7 +578,7 @@ class Line2DBaseSeries(BaseSeries):
         self.adaptive = kwargs.get("adaptive", True)
         self.adaptive_goal = kwargs.get("adaptive_goal", cfg["adaptive"]["goal"])
         self.loss_fn = kwargs.get("loss_fn", None)
-        self._rendering_kw = kwargs.get("line_kw", dict())
+        self.rendering_kw = kwargs.get("line_kw", dict())
         self.use_cm = kwargs.get("use_cm", True)
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
