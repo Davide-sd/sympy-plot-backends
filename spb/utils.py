@@ -121,43 +121,15 @@ def _check_arguments(args, nexpr, npar, **kwargs):
         return []
     output = []
 
-    print("_check_arguments")
-    print("\targs", args, nexpr, npar)
-    print("\tkwargs", kwargs)
-
     if all([isinstance(a, (Expr, Relational, BooleanFunction)) for a in args[:nexpr]]):
         # In this case, with a single plot command, we are plotting either:
         #   1. one expression
         #   2. multiple expressions over the same range
 
-        print("case 1")
-
-        res = [not (_is_range(a) or isinstance(a, (str, dict))) for a in args]
-        exprs = [a for a, b in zip(args, res) if b]
-        ranges = [r for r in args[nexpr:] if _is_range(r)]
-        # label = args[-1] if isinstance(args[-1], str) else ""
-        label = [a for a in args if isinstance(a, str)]
-        label = "" if len(label) == 0 else label[0]
-        rendering_kw = [a for a in args if isinstance(a, dict)]
-        rendering_kw = None if len(rendering_kw) == 0 else rendering_kw[0]
-
-        print("\texprs", exprs)
-        print("\tranges", ranges)
-        print("\tlabel", label)
-        print("\trendering_kw", rendering_kw)
-
-        # # TODO: do I need this?
-        # if not all([_is_range(r) for r in ranges]):
-        #     raise ValueError(
-        #         "Expressions must be followed by ranges. Received:\n"
-        #         "Expressions: %s\n"
-        #         "Others: %s" % (exprs, ranges)
-        #     )
-
+        exprs, ranges, label, rendering_kw = _unpack_args(*args)
         free_symbols = set().union(*[e.free_symbols for e in exprs])
         ranges = _create_ranges(free_symbols, ranges, npar)
 
-        print("\tlen(exprs)", len(exprs))
         if nexpr > 1:
             # in case of plot_parametric or plot3d_parametric_line, there will
             # be 2 or 3 expressions defining a curve. Group them together.
@@ -183,17 +155,14 @@ def _check_arguments(args, nexpr, npar, **kwargs):
         # range. Each "expression" to be plotted has the following form:
         # (expr, range, label) where label is optional
 
-        print("case 2")
+        _, ranges, labels, rendering_kw = _unpack_args(*args)
+        labels = [labels] if labels else []
 
-        # look for "global" range and label
-        labels = [a for a in args if isinstance(a, str)]
-        ranges = [a for a in args if _is_range(a)]
-        n = len(ranges) + len(labels)
+        # number of expressions
+        n = (len(ranges) + len(labels) +
+            (len(rendering_kw) if rendering_kw is not None else 0))
+        # rendering_kw = None if len(rendering_kw) == 0 else rendering_kw[0]
         new_args = args[:-n] if n > 0 else args
-        print("\tlabels", labels)
-        print("\tranges", ranges)
-        print("\tn", n)
-        print("\tnew_args", new_args)
 
         # at this point, new_args might just be [expr]. But I need it to be
         # [[expr]] in order to be able to loop over [expr, range [opt], label [opt]]
@@ -210,8 +179,8 @@ def _check_arguments(args, nexpr, npar, **kwargs):
             r = [a for a in arg if _is_range(a)]
             if not r:
                 r = ranges.copy()
-            rendering_kw = [a for a in arg if isinstance(a, dict)]
-            rendering_kw = None if len(rendering_kw) == 0 else rendering_kw[0]
+            rend_kw = [a for a in arg if isinstance(a, dict)]
+            rend_kw = rendering_kw if len(rend_kw) == 0 else rend_kw[0]
 
             arg = arg[:nexpr]
             free_symbols = set().union(*[a.free_symbols for a in arg])
@@ -226,7 +195,7 @@ def _check_arguments(args, nexpr, npar, **kwargs):
                     label = str(r[0][0])
             else:
                 label = l[0]
-            output.append((*arg, *r, label, rendering_kw))
+            output.append((*arg, *r, label, rend_kw))
     return output
 
 
@@ -265,21 +234,10 @@ def _is_range(r):
     )
 
 
-def _unpack_args(*args, matrices=False, fill_ranges=True):
+def _unpack_args(*args):
     """Given a list/tuple of arguments previously processed by _plot_sympify(),
-    separates and returns its components: expressions, ranges, label.
-
-    Parameters
-    ==========
-        matrices : boolean
-            Default to False. If True, when a single DenseMatrix is given as
-            the expression, it will be converted to a list. This is useful in
-            order to deal with vectors (written in form of matrices) for
-            iplot.
-
-        fill_ranges : boolean
-            Default to True. If not enough ranges are provided, the algorithm
-            will try to create the missing ones.
+    separates and returns its components: expressions, ranges, label and
+    rendering keywords.
 
     Examples
     ========
@@ -304,8 +262,41 @@ def _unpack_args(*args, matrices=False, fill_ranges=True):
     ranges = [t for t in args if _is_range(t)]
     labels = [t for t in args if isinstance(t, str)]
     label = "" if not labels else labels[0]
-    results = [not (_is_range(a) or isinstance(a, str)) for a in args]
+    rendering_kw = [t for t in args if isinstance(t, dict)]
+    rendering_kw = None if not rendering_kw else rendering_kw[0]
+    results = [not (_is_range(a) or isinstance(a, (str, dict))) for a in args]
     exprs = [a for a, b in zip(args, results) if b]
+    return exprs, ranges, label, rendering_kw
+
+
+def _unpack_args_extended(*args, matrices=False, fill_ranges=True):
+    """Extendend _unpack_args to deal with vectors expressed as matrices.
+
+    Parameters
+    ==========
+    matrices : boolean
+        Default to False. If True, when a single DenseMatrix is given as
+        the expression, it will be converted to a list. This is useful in
+        order to deal with vectors (written in form of matrices) for
+        iplot.
+
+    fill_ranges : boolean
+        Default to True. If not enough ranges are provided, the algorithm
+        will try to create the missing ones.
+    
+    See also
+    ========
+    _unpack_args
+    """
+    # ranges = [t for t in args if _is_range(t)]
+    # labels = [t for t in args if isinstance(t, str)]
+    # label = "" if not labels else labels[0]
+    # rendering_kw = [t for t in args if isinstance(t, dict)]
+    # rendering_kw = None if not rendering_kw else rendering_kw[0]
+    # results = [not (_is_range(a) or isinstance(a, (str, dict))) for a in args]
+    # exprs = [a for a, b in zip(args, results) if b]
+
+    exprs, ranges, label, rendering_kw = _unpack_args(*args)
 
     if label == "":
         if len(exprs) == 1:
@@ -320,7 +311,7 @@ def _unpack_args(*args, matrices=False, fill_ranges=True):
             exprs, ranges = _split_vector(exprs[0], ranges, fill_ranges)
             if exprs[-1] is S.Zero:
                 exprs = exprs[:-1]
-    return exprs, ranges, label
+    return exprs, ranges, label, rendering_kw
 
 
 def ij2k(cols, i, j):

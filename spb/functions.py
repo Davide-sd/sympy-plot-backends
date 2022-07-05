@@ -204,7 +204,8 @@ def _build_line_series(*args, **kwargs):
     for arg in args:
         expr, r, label, rendering_kw = arg
         kw = kwargs.copy()
-        kw["line_kw"] = rendering_kw
+        if rendering_kw is not None:
+            kw["line_kw"] = rendering_kw
         if expr.has(Piecewise) and pp:
             series += _process_piecewise(expr, r, label, **kw)
         else:
@@ -236,14 +237,18 @@ def plot(*args, show=True, **kwargs):
 
     - Plotting a single expression with a single range.
         `plot(expr, range, **kwargs)`
+    - Plotting a single expression with a single range and custom rendering
+      options.
+        `plot(expr, range, rendering_kw, **kwargs)`
     - Plotting a single expression with the default range (-10, 10).
         `plot(expr, **kwargs)`
     - Plotting multiple expressions with a single range.
         `plot(expr1, expr2, ..., range, **kwargs)`
     - Plotting multiple expressions with multiple ranges.
         `plot((expr1, range1), (expr2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with multiple ranges and custom labels.
-        `plot((expr1, range1, label1), (expr2, range2, label2), ..., legend=True, **kwargs)`
+    - Plotting multiple expressions with multiple ranges, custom labels and
+      custom rendering options.
+        `plot((expr1, range1, label1, rendering_kw1), (expr2, range2, label2, rendering_kw2), ..., **kwargs)`
 
 
     Parameters
@@ -261,6 +266,11 @@ def plot(*args, show=True, **kwargs):
         label : str, optional
             The label to be shown in the legend. If not provided, the string
             representation of `expr` will be used.
+        
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of the lines. Refer to the
+            plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
         The default value is set to `True`, which uses the adaptive algorithm
@@ -442,14 +452,16 @@ def plot(*args, show=True, **kwargs):
        [1]: cartesian line: x**2 for x over (-5.0, 5.0)
        [2]: cartesian line: x**3 for x over (-5.0, 5.0)
 
-    Multiple plots with different ranges and custom labels.
+    Multiple plots with different ranges, custom labels and custom rendering:
+    the first expression will have a dashed line style when plotted with
+    ``MatplotlibBackend``.
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot((x**2, (x, -6, 6), "$f_{1}$"),
+       >>> plot((x**2, (x, -6, 6), "$f_{1}$", {"linestyle": "--"}),
        ...      (x, (x, -5, 5), "f2"))
        Plot object containing:
        [0]: cartesian line: x**2 for x over (-6.0, 6.0)
@@ -596,6 +608,11 @@ def plot_parametric(*args, show=True, **kwargs):
         `label` : str, optional
             The label to be shown in the legend. If not provided, the string
             representation of `expr_x` and `expr_y` will be used.
+        
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of the lines. Refer to the
+            plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
         The default value is set to `True`, which uses the adaptive algorithm
@@ -748,8 +765,8 @@ def plot_parametric(*args, show=True, **kwargs):
        [1]: parametric cartesian line: (u, cos(u)) for u over (-3.0, 3.0)
 
     A parametric plot with multiple expressions with different ranges,
-    custom labels and a transformation function applied to the
-    discretized ranges to convert radians to degrees:
+    custom labels, custom rendering options and a transformation function
+    applied to the discretized ranges to convert radians to degrees:
 
     .. plot::
        :context: close-figs
@@ -758,7 +775,7 @@ def plot_parametric(*args, show=True, **kwargs):
 
        >>> import numpy as np
        >>> plot_parametric(
-       ...      (3 * cos(u), 3 * sin(u), (u, 0, 2 * pi), "u [deg]"),
+       ...      (3 * cos(u), 3 * sin(u), (u, 0, 2 * pi), "u [deg]", {"lw": 3}),
        ...      (3 * cos(2 * v), 5 * sin(4 * v), (v, 0, pi), "v [deg]"),
        ...      aspect="equal", tz=np.rad2deg)
        Plot object containing:
@@ -782,7 +799,7 @@ def plot_parametric(*args, show=True, **kwargs):
     labels = kwargs.pop("label", [])
     kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
     plot_expr = _check_arguments(args, 2, 1)
-    series = [Parametric2DLineSeries(*arg, **kwargs) for arg in plot_expr]
+    series = _create_series(Parametric2DLineSeries, plot_expr, "line_kw", **kwargs)
     _set_labels(series, labels)
     Backend = kwargs.pop("backend", TWO_D_B)
     plots = Backend(*series, **kwargs)
@@ -799,14 +816,16 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
 
     - Plotting a single expression.
         `plot3d_parametric_line(expr_x, expr_y, expr_z, range, **kwargs)`
-    - Plotting a single expression with a custom label.
-        `plot3d_parametric_line(expr_x, expr_y, expr_z, range, label, **kwargs)`
+    - Plotting a single expression with a custom label and custom rendering
+      options.
+        `plot3d_parametric_line(expr_x, expr_y, expr_z, range, label, rendering_kw, **kwargs)`
     - Plotting multiple expressions with the same ranges.
         `plot3d_parametric_line((expr_x1, expr_y1, expr_z1), (expr_x2, expr_y2, expr_z2), ..., range, **kwargs)`
     - Plotting multiple expressions with different ranges.
         `plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1), (expr_x2, expr_y2, expr_z2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with different ranges and custom labels.
-        `plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1, label1), (expr_x2, expr_y2, expr_z2, range2, label1), ..., **kwargs)`
+    - Plotting multiple expressions with different ranges, custom labels and
+      custom rendering options.
+        `plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1, label1, rendering_kw1), (expr_x2, expr_y2, expr_z2, range2, label1, rendering_kw2), ..., **kwargs)`
 
 
     Parameters
@@ -829,6 +848,11 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
             An optional string denoting the label of the expression
             to be visualized on the legend. If not provided, the string
             representation of the expression will be used.
+        
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of the lines. Refer to the
+            plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
         The default value is set to `True`, which uses the adaptive algorithm
@@ -957,7 +981,8 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
        [0]: 3D parametric cartesian line: (cos(u), sin(u), u) for u over (-5.0, 5.0)
 
 
-    Multiple plots with different ranges and custom labels.
+    Multiple plots with different ranges, custom labels and custom rendering
+    options.
 
     .. plot::
        :context: close-figs
@@ -965,7 +990,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
        :include-source: True
 
        >>> plot3d_parametric_line((cos(u), sin(u), u, (u, -5, 5), "u"),
-       ...     (sin(v), v**2, v, (v, -3, 3), "v"), legend=True)
+       ...     (sin(v), v**2, v, (v, -3, 3), "v", {"lw": 3, "cmap": "hsv"}))
        Plot object containing:
        [0]: 3D parametric cartesian line: (cos(u), sin(u), u) for u over (-5.0, 5.0)
        [1]: 3D parametric cartesian line: (sin(u), u**2, u) for u over (-3.0, 3.0)
@@ -987,7 +1012,7 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     kwargs = _set_discretization_points(kwargs, Parametric3DLineSeries)
     labels = kwargs.pop("label", [])
     plot_expr = _check_arguments(args, 3, 1)
-    series = [Parametric3DLineSeries(*arg, **kwargs) for arg in plot_expr]
+    series = _create_series(Parametric3DLineSeries, plot_expr, "line_kw", **kwargs)
     _set_labels(series, labels)
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
@@ -1011,8 +1036,9 @@ def plot3d(*args, show=True, **kwargs):
         `plot3d(expr1, expr2, range_x, range_y, **kwargs)`
     - Plotting multiple expressions with different ranges.
         `plot3d((expr1, range_x1, range_y1), (expr2, range_x2, range_y2), ..., **kwargs)`
-    - Plotting multiple expressions with different ranges and custom labels.
-        `plot3d((expr1, range_x1, range_y1, label1), (expr2, range_x2, range_y2, label2), ..., **kwargs)`
+    - Plotting multiple expressions with different ranges, custom labels and
+      custom rendering options.
+        `plot3d((expr1, range_x1, range_y1, label1, rendering_kw1), (expr2, range_x2, range_y2, label2, rendering_kw2), ..., **kwargs)`
 
     Note that it is important to specify at least the `range_x`, otherwise the
     function might create a rotated plot.
@@ -1035,6 +1061,11 @@ def plot3d(*args, show=True, **kwargs):
         label : str, optional
             The label to be shown in the colorbar.  If not provided, the string
             representation of `expr` will be used.
+        
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of surfaces. Refer to the
+            plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
         The default value is set to `False`, which uses a uniform sampling
@@ -1189,10 +1220,10 @@ def plot3d(*args, show=True, **kwargs):
        >>> import matplotlib.cm as cm
        >>> r, theta = symbols("r, theta")
        >>> p = plot3d(
-       ...     (cos(r**2) * exp(-r / 3), (r, 0, 3.25), (theta, 0, 2 * pi), "r"),
+       ...     (cos(r**2) * exp(-r / 3), (r, 0, 3.25),
+       ...         (theta, 0, 2 * pi), "r", {"cmap": cm.winter}),
        ...     is_polar=True, use_cm=True, legend=True,
-       ...     color_func=lambda x, y, z: (x**2 + y**2)**0.5,
-       ...     surface_kw={"cmap": cm.winter})
+       ...     color_func=lambda x, y, z: (x**2 + y**2)**0.5)
        Plot object containing:
        [0]: cartesian surface: exp(-r/3)*cos(r**2) for r over (0.0, 3.25) and theta over (0.0, 6.283185307179586)
 
@@ -1258,7 +1289,8 @@ def plot3d(*args, show=True, **kwargs):
         if isinstance(p[0], Plane):
             raise ValueError("Please, use ``plot_geometry`` to visualize "
                 "a plane.")
-    series = [SurfaceOver2DRangeSeries(*arg, **kwargs) for arg in plot_expr]
+
+    series = _create_series(SurfaceOver2DRangeSeries, plot_expr, "surface_kw", **kwargs)
     _set_labels(series, labels)
     kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
     kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
@@ -1279,6 +1311,16 @@ def plot3d(*args, show=True, **kwargs):
     return plots
 
 
+def _create_series(series_type, plot_expr, rendering_key, **kwargs):
+    series = []
+    for args in plot_expr:
+        kw = kwargs.copy()
+        if args[-1] is not None:
+            kw[rendering_key] = args[-1]
+        series.append(series_type(*args[:-1], **kw))
+    return series
+
+
 def plot3d_parametric_surface(*args, show=True, **kwargs):
     """
     Plots a 3D parametric surface plot.
@@ -1291,8 +1333,9 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1), (expr_x2, expr_y2, expr_z2), range_u, range_v, **kwargs)`
     - Plotting multiple expressions with different ranges.
         `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2), **kwargs)`
-    - Plotting multiple expressions with different ranges and custom labels.
-        `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1, label1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2, label2), **kwargs)`
+    - Plotting multiple expressions with different ranges, custom labels and
+      custom rendering options.
+        `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1, label1, rendering_kw1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2, label2, rendering_kw2), **kwargs)`
 
     Note that it is important to specify both the ranges.
 
@@ -1318,6 +1361,11 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         label : str, optional
             The label to be shown in the colorbar.  If not provided, the string
             representation of the expression will be used.
+        
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of surfaces. Refer to the
+            plotting library (backend) manual for more informations.
 
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
@@ -1446,7 +1494,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
-    series = [ParametricSurfaceSeries(*arg, **kwargs) for arg in plot_expr]
+    series = _create_series(ParametricSurfaceSeries, plot_expr, "surface_kw", **kwargs)
     _set_labels(series, labels)
     Backend = kwargs.pop("backend", THREE_D_B)
     plots = Backend(*series, **kwargs)
@@ -1461,7 +1509,7 @@ def plot3d_implicit(*args, show=True, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - `plot3d_parametric_surface(expr, range_x, range_y, range_z, **kwargs)`
+    - `plot3d_parametric_surface(expr, range_x, range_y, range_z, rendering_kw [optional], **kwargs)`
 
     Note that:
 
@@ -1472,7 +1520,7 @@ def plot3d_implicit(*args, show=True, **kwargs):
        smoother mesh, at the cost of a much higher memory consumption and
        slower computation.
     3. To plot ``f(x, y, z) = c`` either write ``expr = f(x, y, z) - c`` or
-       pass the appropriate keyword to ``surface_kw``. Read the backends
+       pass the appropriate keyword to ``rendering_kw``. Read the backends
        documentation to find out the available options.
 
 
@@ -1491,6 +1539,11 @@ def plot3d_implicit(*args, show=True, **kwargs):
 
         range_z: (symbol, min, max)
             A 3-tuple denoting the range of the `z` variable.
+        
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of surfaces. Refer to the
+            plotting library (backend) manual for more informations.
 
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
@@ -1579,11 +1632,11 @@ def plot3d_implicit(*args, show=True, **kwargs):
 
        plot3d_implicit(
            1/x**2 - 1/y**2 + 1/z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
-           backend=PB,
-           surface_kw={
+           {
                "isomin": 0, "isomax": 2,
                "colorscale":"aggrnyl", "showscale":True
-           }
+           },
+           backend=PB
        )
 
     See Also
@@ -1598,7 +1651,7 @@ def plot3d_implicit(*args, show=True, **kwargs):
     kwargs = _set_discretization_points(kwargs, Implicit3DSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 3)
-    series = [Implicit3DSeries(*arg, **kwargs) for arg in plot_expr]
+    series = _create_series(Implicit3DSeries, plot_expr, "surface_kw", **kwargs)
 
     kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
     kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
@@ -1668,7 +1721,7 @@ def plot_contour(*args, show=True, **kwargs):
     kwargs = _set_discretization_points(kwargs, ContourSeries)
     labels = kwargs.pop("label", [])
     plot_expr = _check_arguments(args, 1, 2)
-    series = [ContourSeries(*arg, **kwargs) for arg in plot_expr]
+    series = _create_series(ContourSeries, plot_expr, "contour_kw", **kwargs)
     _set_labels(series, labels)
     xlabel = series[0].var_x.name
     ylabel = series[0].var_y.name
@@ -1719,6 +1772,11 @@ def plot_implicit(*args, show=True, **kwargs):
             Alternatively, a single Symbol corresponding to the horizontal
             axis must be provided, which will be internally converted to a
             range `(sym, -10, 10)`.
+        
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of contours. Refer to the
+            plotting library (backend) manual for more informations.
 
     adaptive : Boolean
         The default value is set to False, meaning that the internal
@@ -1878,8 +1936,11 @@ def plot_implicit(*args, show=True, **kwargs):
     series = []
     # compute the area that should be visible on the plot
     xmin, xmax, ymin, ymax = oo, -oo, oo, -oo
-    for a in args:
-        s = ImplicitSeries(*a, **series_kw)
+    for (expr, r1, r2, label, rendering_kw) in args:
+        skw = series_kw.copy()
+        if rendering_kw is not None:
+            skw["contour_kw"] = rendering_kw
+        s = ImplicitSeries(expr, r1, r2, label, **skw)
         if s.start_x < xmin:
             xmin = s.start_x
         if s.end_x > xmax:
@@ -1957,6 +2018,11 @@ def plot_geometry(*args, show=True, **kwargs):
             The name of the geometry entity to be eventually shown on the
             legend. If not provided, the string representation of `geom`
             will be used.
+        
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of lines or fills. Refer to
+            the plotting library (backend) manual for more informations.
 
     aspect : (float, float) or str, optional
         Set the aspect ratio of the plot. The value depends on the backend
@@ -2137,16 +2203,20 @@ def plot_geometry(*args, show=True, **kwargs):
         args = [args]
 
     for a in args:
-        exprs, ranges, label = _unpack_args(*a)
+        exprs, ranges, label, rendering_kw = _unpack_args(*a)
+        kw = kwargs.copy()
+        if rendering_kw is not None:
+            kw["rendering_kw"] = rendering_kw
         r = ranges if len(ranges) > 0 else [None]
         if len(exprs) == 1:
-            series.append(GeometrySeries(exprs[0], *r, label, **kwargs))
+            series.append(GeometrySeries(exprs[0], *r, label, **kw))
         else:
             # this is the case where the user provided: v1, v2, ..., range
             # we use the same ranges for each expression
             for e in exprs:
-                series.append(GeometrySeries(e, *r, str(e), **kwargs))
+                series.append(GeometrySeries(e, *r, str(e), **kw))
 
+    # TODO: apply line_kw and fill_kw
     _set_labels(series, labels)
 
     any_3D = any(s.is_3D for s in series)
@@ -2183,6 +2253,11 @@ def plot_list(*args, show=True, **kwargs):
 
         label : str, optional
             The label to be shown in the legend.
+        
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of the lines. Refer to the
+            plotting library (backend) manual for more informations.
 
     aspect : (float, float) or str, optional
         Set the aspect ratio of the plot. The value depends on the backend
@@ -2297,27 +2372,37 @@ def plot_list(*args, show=True, **kwargs):
     labels = kwargs.pop("label", [])
     series = []
 
-    if (
-        ((len(args) == 2) and (not hasattr(args[0][1], "__iter__"))) or
-        ((len(args) == 3) and isinstance(args[-1], str))
-    ):
-        series.append(List2DSeries(*args, **kwargs))
-    else:
-        for a in args:
-            if not isinstance(a, (list, tuple)):
-                raise TypeError(
-                    "Each argument must be a list or tuple.\n"
-                    "Received type(a) = {}".format(type(a)))
-            if (len(a) < 2) or (len(a) > 3):
-                raise ValueError(
-                    "Each argument must contain 2 or 3 elements.\n"
-                    "Received {} elements.".format(len(a)))
-            if (len(a) == 3) and (not isinstance(a[-1], str)):
-                raise TypeError(
-                    "The label must be of type string.\n"
-                    "Received: {}".format(type(a[-1]))
-                )
-            series.append(List2DSeries(*a, **kwargs))
+    def is_tuple(t):
+        # verify that t is a tuple of the form (x, y, label [opt], 
+        # rendering_kw [opt])
+        if hasattr(t, "__iter__"):
+            if isinstance(t, (str, dict)):
+                return False
+            if (len(t) >= 2) and all(hasattr(t[i], "__iter__") for i in [0, 1]):
+                return True
+        return False
+
+    if not any(is_tuple(e) for e in args):
+        # in case we are plotting a single line
+        args = [args]
+
+    for a in args:
+        if not isinstance(a, (list, tuple)):
+            raise TypeError(
+                "Each argument must be a list or tuple.\n"
+                "Received type(a) = {}".format(type(a)))
+        if (len(a) < 2) or (len(a) > 4):
+            raise ValueError(
+                "Each argument must contain from 2 to 3 elements.\n"
+                "Received {} elements.".format(len(a)))
+        label = [b for b in a if isinstance(b, str)]
+        label = "" if not label else label[0]
+        rendering_kw = [b for b in a if isinstance(b, dict)]
+        rendering_kw = None if not rendering_kw else rendering_kw[0]
+
+        kw = kwargs.copy()
+        kw["line_kw"] = rendering_kw
+        series.append(List2DSeries(*a[:2], label, **kw))
 
     _set_labels(series, labels)
 
@@ -2342,7 +2427,7 @@ def plot_piecewise(*args, **kwargs):
     - Plotting multiple expressions with multiple ranges.
         `plot_piecewise((expr1, range1), (expr2, range2), ..., **kwargs)`
     - Plotting multiple expressions with multiple ranges and custom labels.
-        `plot_piecewise((expr1, range1, label1), (expr2, range2, label2), ..., legend=True, **kwargs)`
+        `plot_piecewise((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)`
 
 
     Parameters

@@ -3063,16 +3063,14 @@ class GeometrySeries(BaseSeries):
             self.end = 0
             if isinstance(expr, Point3D):
                 self.is_point = True
-            self._rendering_kw = kwargs.get("line_kw", dict())
         elif isinstance(expr, LinearEntity2D) or (
             isinstance(expr, (Polygon, Circle, Ellipse)) and (not self.is_filled)
         ):
             self.is_2Dline = True
-            self._rendering_kw = kwargs.get("line_kw", dict())
         elif isinstance(expr, Point2D):
             self.is_point = True
             self.is_2Dline = True
-        self._rendering_kw = kwargs.get("fill_kw", dict())
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
 
     def get_data(self):
         np = import_module('numpy')
