@@ -9,7 +9,7 @@ from spb.series import (
     _set_discretization_points,
     InteractiveSeries
 )
-from spb.utils import _plot_sympify, _unpack_args, _split_vector, _is_range
+from spb.utils import _plot_sympify, _unpack_args_extended, _split_vector, _is_range
 from sympy import MutableDenseMatrix, ImmutableDenseMatrix
 from sympy.core.containers import Tuple
 from sympy.functions.elementary.miscellaneous import sqrt
@@ -233,7 +233,8 @@ def _preprocess(*args, matrices=False, fill_ranges=True):
     following form: [expr, *ranges, label].
     `expr` can be a vector, a matrix or a list/tuple/Tuple.
 
-    `matrices` and `fill_ranges` are going to be passed to `_unpack_args`.
+    `matrices` and `fill_ranges` are going to be passed to
+    `_unpack_args_extended`.
     """
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
         # In this case we received arguments in one of the following forms.
@@ -248,7 +249,7 @@ def _preprocess(*args, matrices=False, fill_ranges=True):
 
     new_args = []
     for a in args:
-        exprs, ranges, label = _unpack_args(
+        exprs, ranges, label, rendering_kw = _unpack_args_extended(
             *a, matrices=matrices, fill_ranges=fill_ranges
         )
         if len(exprs) == 1:
@@ -548,7 +549,7 @@ def plot_vector(*args, show=True, **kwargs):
     else:
         raise ValueError("Mixing 2D vectors with 3D vectors is not allowed.")
 
-    _set_labels(series, labels)
+    _set_labels(series, labels, None)
     p = Backend(*series, **kwargs)
     if show:
         p.show()

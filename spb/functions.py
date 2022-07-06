@@ -214,20 +214,35 @@ def _build_line_series(*args, **kwargs):
     return series
 
 
-def _set_labels(series, labels):
+def _set_labels(series, labels, rendering_kw):
     """Apply the label keyword argument to the series.
     """
     # NOTE: this function is a workaround until a better integration is
     # achieved between iplot and all other plotting functions.
     if not isinstance(labels, (list, tuple)):
         labels = [labels]
+    print("labels", labels)
+    print("rendering_kw", rendering_kw)
     if len(labels) > 0:
         if len(series) != len(labels):
-            raise ValueError("The number of labels must be equals to the "
+            raise ValueError("The number of labels must be equal to the "
                 "number of expressions being plotted.\nReceived "
                 "{} expressions and {} labels".format(len(series), len(labels)))
+        
         for s, l in zip(series, labels):
             s.label = l
+    
+    if rendering_kw is not None:
+        if isinstance(rendering_kw, dict):
+            rendering_kw = [rendering_kw]
+        if len(rendering_kw) == 1:
+            rendering_kw *= len(series)
+        elif len(series) != len(rendering_kw):
+            raise ValueError("The number of rendering dictionaries must be "
+                "equal to the number of expressions being plotted.\nReceived "
+                "{} expressions and {} labels".format(len(series), len(rendering_kw)))
+        for s, r in zip(series, rendering_kw):
+            s.rendering_kw = r
 
 
 def plot(*args, show=True, **kwargs):
@@ -556,11 +571,12 @@ def plot(*args, show=True, **kwargs):
     kwargs.setdefault("xlabel", lambda use_latex: x.name if not use_latex else latex(x))
     kwargs.setdefault("ylabel", lambda use_latex: "f(%s)" % x.name if not use_latex else r"f\left(%s\right)" % latex(x))
     labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
 
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
     plot_expr = _check_arguments(args, 1, 1)
     series = _build_line_series(*plot_expr, **kwargs)
-    _set_labels(series, labels)
+    _set_labels(series, labels, rendering_kw)
     Backend = kwargs.pop("backend", TWO_D_B)
     plots = Backend(*series, **kwargs)
     if show:
@@ -797,10 +813,11 @@ def plot_parametric(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
     kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
     plot_expr = _check_arguments(args, 2, 1)
-    series = _create_series(Parametric2DLineSeries, plot_expr, "line_kw", **kwargs)
-    _set_labels(series, labels)
+    series = _create_series(Parametric2DLineSeries, plot_expr, **kwargs)
+    _set_labels(series, labels, rendering_kw)
     Backend = kwargs.pop("backend", TWO_D_B)
     plots = Backend(*series, **kwargs)
     if show:
@@ -1011,9 +1028,10 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, Parametric3DLineSeries)
     labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
     plot_expr = _check_arguments(args, 3, 1)
-    series = _create_series(Parametric3DLineSeries, plot_expr, "line_kw", **kwargs)
-    _set_labels(series, labels)
+    series = _create_series(Parametric3DLineSeries, plot_expr, **kwargs)
+    _set_labels(series, labels, rendering_kw)
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
@@ -1284,14 +1302,15 @@ def plot3d(*args, show=True, **kwargs):
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, SurfaceOver2DRangeSeries)
     labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
     plot_expr = _check_arguments(args, 1, 2)
     for p in plot_expr:
         if isinstance(p[0], Plane):
             raise ValueError("Please, use ``plot_geometry`` to visualize "
                 "a plane.")
 
-    series = _create_series(SurfaceOver2DRangeSeries, plot_expr, "surface_kw", **kwargs)
-    _set_labels(series, labels)
+    series = _create_series(SurfaceOver2DRangeSeries, plot_expr, **kwargs)
+    _set_labels(series, labels, rendering_kw)
     kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
     kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
     kwargs.setdefault("zlabel", lambda use_latex: "f(%s, %s)" % (series[0].var_x.name, series[0].var_y.name) if not use_latex else r"f\left(%s, %s\right)" % (latex(series[0].var_x), latex(series[0].var_y)))
@@ -1311,12 +1330,12 @@ def plot3d(*args, show=True, **kwargs):
     return plots
 
 
-def _create_series(series_type, plot_expr, rendering_key, **kwargs):
+def _create_series(series_type, plot_expr, **kwargs):
     series = []
     for args in plot_expr:
         kw = kwargs.copy()
         if args[-1] is not None:
-            kw[rendering_key] = args[-1]
+            kw["rendering_kw"] = args[-1]
         series.append(series_type(*args[:-1], **kw))
     return series
 
@@ -1491,11 +1510,12 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
     plot_expr = _check_arguments(args, 3, 2)
     labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
-    series = _create_series(ParametricSurfaceSeries, plot_expr, "surface_kw", **kwargs)
-    _set_labels(series, labels)
+    series = _create_series(ParametricSurfaceSeries, plot_expr, **kwargs)
+    _set_labels(series, labels, rendering_kw)
     Backend = kwargs.pop("backend", THREE_D_B)
     plots = Backend(*series, **kwargs)
     if show:
@@ -1651,7 +1671,10 @@ def plot3d_implicit(*args, show=True, **kwargs):
     kwargs = _set_discretization_points(kwargs, Implicit3DSeries)
     series = []
     plot_expr = _check_arguments(args, 1, 3)
-    series = _create_series(Implicit3DSeries, plot_expr, "surface_kw", **kwargs)
+    labels = kwargs.pop("labels", dict())
+    rendering_kw = kwargs.pop("rendering_kw", None)
+    series = _create_series(Implicit3DSeries, plot_expr, **kwargs)
+    _set_labels(series, labels, rendering_kw)
 
     kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
     kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
@@ -1720,9 +1743,10 @@ def plot_contour(*args, show=True, **kwargs):
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ContourSeries)
     labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
     plot_expr = _check_arguments(args, 1, 2)
-    series = _create_series(ContourSeries, plot_expr, "contour_kw", **kwargs)
-    _set_labels(series, labels)
+    series = _create_series(ContourSeries, plot_expr, **kwargs)
+    _set_labels(series, labels, rendering_kw)
     xlabel = series[0].var_x.name
     ylabel = series[0].var_y.name
     kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
@@ -2197,6 +2221,7 @@ def plot_geometry(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
 
     series = []
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
@@ -2217,7 +2242,7 @@ def plot_geometry(*args, show=True, **kwargs):
                 series.append(GeometrySeries(e, *r, str(e), **kw))
 
     # TODO: apply line_kw and fill_kw
-    _set_labels(series, labels)
+    _set_labels(series, labels, rendering_kw)
 
     any_3D = any(s.is_3D for s in series)
     if ("aspect" not in kwargs) and (not any_3D):
@@ -2370,6 +2395,7 @@ def plot_list(*args, show=True, **kwargs):
 
     """
     labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
     series = []
 
     def is_tuple(t):
@@ -2404,7 +2430,7 @@ def plot_list(*args, show=True, **kwargs):
         kw["line_kw"] = rendering_kw
         series.append(List2DSeries(*a[:2], label, **kw))
 
-    _set_labels(series, labels)
+    _set_labels(series, labels, rendering_kw)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     p = Backend(*series, **kwargs)
@@ -2642,6 +2668,7 @@ def plot_piecewise(*args, **kwargs):
     show = kwargs.get("show", True)
     kwargs["show"] = False
     labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
 
     x = free.pop() if free else Symbol("x")
     kwargs.setdefault("xlabel", lambda use_latex: x.name if not use_latex else latex(x))
