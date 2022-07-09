@@ -179,7 +179,9 @@ class MatplotlibBackend(Plot):
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
-        s.rendering_kw["color"] = color
+        if "color" not in s.rendering_kw:
+            # only set the color if the user didn't do that already
+            s.rendering_kw["color"] = color
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):

@@ -344,9 +344,11 @@ class BokehBackend(Plot):
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
-        s.rendering_kw["color"] = color
-        if s.is_point and (not s.is_filled):
-            s.rendering_kw["fill_color"] = "white"
+        if "color" not in s.rendering_kw:
+            # only set the color if the user didn't do that already
+            s.rendering_kw["color"] = color
+            if s.is_point and (not s.is_filled):
+                s.rendering_kw["fill_color"] = "white"
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
