@@ -100,13 +100,13 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
                 correct_list = series if _set.left_open else filled_series
                 correct_list.append(
                     List2DSeries([xx[0]], [yy[0]], is_point=True,
-                        is_filled=not _set.left_open)
+                        is_filled=not _set.left_open, **kwargs)
                 )
             if xx[-1] != _range[2]:
                 correct_list = series if _set.right_open else filled_series
                 correct_list.append(
                     List2DSeries([xx[-1]], [yy[-1]], is_point=True,
-                        is_filled=not _set.right_open)
+                        is_filled=not _set.right_open, **kwargs)
                 )
         elif isinstance(_set, FiniteSet):
             loc, val = [], []
@@ -114,7 +114,7 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
                 loc.append(float(_loc))
                 val.append(float(expr.evalf(subs={_range[0]: _loc})))
             filled_series.append(List2DSeries(loc, val, is_point=True,
-                is_filled=True))
+                is_filled=True, **kwargs))
             if not from_union:
                 c += 1
         elif isinstance(_set, Union):
@@ -205,7 +205,7 @@ def _build_line_series(*args, **kwargs):
         expr, r, label, rendering_kw = arg
         kw = kwargs.copy()
         if rendering_kw is not None:
-            kw["line_kw"] = rendering_kw
+            kw["rendering_kw"] = rendering_kw
         if expr.has(Piecewise) and pp:
             series += _process_piecewise(expr, r, label, **kw)
         else:
@@ -221,17 +221,15 @@ def _set_labels(series, labels, rendering_kw):
     # achieved between iplot and all other plotting functions.
     if not isinstance(labels, (list, tuple)):
         labels = [labels]
-    print("labels", labels)
-    print("rendering_kw", rendering_kw)
     if len(labels) > 0:
         if len(series) != len(labels):
             raise ValueError("The number of labels must be equal to the "
                 "number of expressions being plotted.\nReceived "
                 "{} expressions and {} labels".format(len(series), len(labels)))
-        
+
         for s, l in zip(series, labels):
             s.label = l
-    
+
     if rendering_kw is not None:
         if isinstance(rendering_kw, dict):
             rendering_kw = [rendering_kw]
@@ -245,6 +243,16 @@ def _set_labels(series, labels, rendering_kw):
             s.rendering_kw = r
 
 
+def _create_series(series_type, plot_expr, **kwargs):
+    series = []
+    for args in plot_expr:
+        kw = kwargs.copy()
+        if args[-1] is not None:
+            kw["rendering_kw"] = args[-1]
+        series.append(series_type(*args[:-1], **kw))
+    return series
+
+
 def plot(*args, show=True, **kwargs):
     """Plots a function of a single variable as a curve.
 
@@ -252,8 +260,7 @@ def plot(*args, show=True, **kwargs):
 
     - Plotting a single expression with a single range.
         `plot(expr, range, **kwargs)`
-    - Plotting a single expression with a single range and custom rendering
-      options.
+    - Plotting a single expression with custom rendering options.
         `plot(expr, range, rendering_kw, **kwargs)`
     - Plotting a single expression with the default range (-10, 10).
         `plot(expr, **kwargs)`
@@ -261,8 +268,7 @@ def plot(*args, show=True, **kwargs):
         `plot(expr1, expr2, ..., range, **kwargs)`
     - Plotting multiple expressions with multiple ranges.
         `plot((expr1, range1), (expr2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with multiple ranges, custom labels and
-      custom rendering options.
+    - Plotting multiple expressions with custom labels and rendering options.
         `plot((expr1, range1, label1, rendering_kw1), (expr2, range2, label2, rendering_kw2), ..., **kwargs)`
 
 
@@ -281,10 +287,10 @@ def plot(*args, show=True, **kwargs):
         label : str, optional
             The label to be shown in the legend. If not provided, the string
             representation of `expr` will be used.
-        
+
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of the lines. Refer to the
+            function to customize the appearance of lines. Refer to the
             plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
@@ -347,11 +353,6 @@ def plot(*args, show=True, **kwargs):
         representation of `expr` will be used. The number of labels must be
         equal to the number of expressions.
 
-    line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of the lines. Refer to the
-        plotting library (backend) manual for more informations.
-
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -372,6 +373,13 @@ def plot(*args, show=True, **kwargs):
         numbers, which can be useful to plot sums. It only works when
         `adaptive=False`. When `only_integers=True`, the number of
         discretization points is choosen by the algorithm.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of expressions.
 
     is_polar : boolean, optional
         Default to False. If True, requests the backend to use a 2D polar
@@ -624,10 +632,10 @@ def plot_parametric(*args, show=True, **kwargs):
         `label` : str, optional
             The label to be shown in the legend. If not provided, the string
             representation of `expr_x` and `expr_y` will be used.
-        
+
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of the lines. Refer to the
+            function to customize the appearance of lines. Refer to the
             plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
@@ -677,11 +685,6 @@ def plot_parametric(*args, show=True, **kwargs):
         provided, the string representation of `expr` will be used. The number
         of labels must be equal to the number of expressions.
 
-    line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of the lines. Refer to the
-        plotting library (backend) manual for more informations.
-
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -696,6 +699,13 @@ def plot_parametric(*args, show=True, **kwargs):
         sampled at `n` number of points. Default value to 1000.
         If the `adaptive` flag is set to `True`, this parameter will be
         ignored.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of expressions.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -833,15 +843,13 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
 
     - Plotting a single expression.
         `plot3d_parametric_line(expr_x, expr_y, expr_z, range, **kwargs)`
-    - Plotting a single expression with a custom label and custom rendering
-      options.
+    - Plotting a single expression with a custom label and rendering options.
         `plot3d_parametric_line(expr_x, expr_y, expr_z, range, label, rendering_kw, **kwargs)`
     - Plotting multiple expressions with the same ranges.
         `plot3d_parametric_line((expr_x1, expr_y1, expr_z1), (expr_x2, expr_y2, expr_z2), ..., range, **kwargs)`
     - Plotting multiple expressions with different ranges.
         `plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1), (expr_x2, expr_y2, expr_z2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with different ranges, custom labels and
-      custom rendering options.
+    - Plotting multiple expressions with custom labels and rendering options.
         `plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1, label1, rendering_kw1), (expr_x2, expr_y2, expr_z2, range2, label1, rendering_kw2), ..., **kwargs)`
 
 
@@ -865,10 +873,10 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
             An optional string denoting the label of the expression
             to be visualized on the legend. If not provided, the string
             representation of the expression will be used.
-        
+
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of the lines. Refer to the
+            function to customize the appearance of lines. Refer to the
             plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
@@ -909,11 +917,6 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
         provided, the string representation of `expr` will be used. The number
         of labels must be equal to the number of expressions.
 
-    line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of the lines. Refer to the
-        plotting library (backend) manual for more informations.
-
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -928,6 +931,13 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
         sampled at `n` number of points. Default value to 1000.
         If the `adaptive` flag is set to `True`, this parameter will be
         ignored.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of expressions.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -1054,8 +1064,7 @@ def plot3d(*args, show=True, **kwargs):
         `plot3d(expr1, expr2, range_x, range_y, **kwargs)`
     - Plotting multiple expressions with different ranges.
         `plot3d((expr1, range_x1, range_y1), (expr2, range_x2, range_y2), ..., **kwargs)`
-    - Plotting multiple expressions with different ranges, custom labels and
-      custom rendering options.
+    - Plotting multiple expressions with custom labels and rendering options.
         `plot3d((expr1, range_x1, range_y1, label1, rendering_kw1), (expr2, range_x2, range_y2, label2, rendering_kw2), ..., **kwargs)`
 
     Note that it is important to specify at least the `range_x`, otherwise the
@@ -1079,7 +1088,7 @@ def plot3d(*args, show=True, **kwargs):
         label : str, optional
             The label to be shown in the colorbar.  If not provided, the string
             representation of `expr` will be used.
-        
+
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
             function to customize the appearance of surfaces. Refer to the
@@ -1145,6 +1154,13 @@ def plot3d(*args, show=True, **kwargs):
         If an integer is provided, the x and y ranges are sampled uniformly
         at `n` of points. If a tuple is provided, it overrides `n1` and `n2`.
 
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of surfaces. Refer to the
+        plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of expressions.
+
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
@@ -1155,11 +1171,6 @@ def plot3d(*args, show=True, **kwargs):
         A tuple in the form (width, height) to specify the size of
         the overall figure. The default value is set to `None`, meaning
         the size will be set by the backend.
-
-    surface_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -1330,16 +1341,6 @@ def plot3d(*args, show=True, **kwargs):
     return plots
 
 
-def _create_series(series_type, plot_expr, **kwargs):
-    series = []
-    for args in plot_expr:
-        kw = kwargs.copy()
-        if args[-1] is not None:
-            kw["rendering_kw"] = args[-1]
-        series.append(series_type(*args[:-1], **kw))
-    return series
-
-
 def plot3d_parametric_surface(*args, show=True, **kwargs):
     """
     Plots a 3D parametric surface plot.
@@ -1352,8 +1353,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1), (expr_x2, expr_y2, expr_z2), range_u, range_v, **kwargs)`
     - Plotting multiple expressions with different ranges.
         `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2), **kwargs)`
-    - Plotting multiple expressions with different ranges, custom labels and
-      custom rendering options.
+    - Plotting multiple expressions with different ranges and rendering option.
         `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1, label1, rendering_kw1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2, label2, rendering_kw2), **kwargs)`
 
     Note that it is important to specify both the ranges.
@@ -1380,7 +1380,7 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         label : str, optional
             The label to be shown in the colorbar.  If not provided, the string
             representation of the expression will be used.
-        
+
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
             function to customize the appearance of surfaces. Refer to the
@@ -1419,6 +1419,13 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         If an integer is provided, the u and v ranges are sampled uniformly
         at `n` of points. If a tuple is provided, it overrides `n1` and `n2`.
 
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of surfaces. Refer to the
+        plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of expressions.
+
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
@@ -1429,11 +1436,6 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
         A tuple in the form (width, height) to specify the size of
         the overall figure. The default value is set to `None`, meaning
         the size will be set by the backend.
-
-    surface_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -1559,7 +1561,7 @@ def plot3d_implicit(*args, show=True, **kwargs):
 
         range_z: (symbol, min, max)
             A 3-tuple denoting the range of the `z` variable.
-        
+
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
             function to customize the appearance of surfaces. Refer to the
@@ -1586,6 +1588,13 @@ def plot3d_implicit(*args, show=True, **kwargs):
         at `n` of points. If a tuple is provided, it overrides `n1`, `n2` and
         `n3`.
 
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of surfaces. Refer to the
+        plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of expressions.
+
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
@@ -1596,11 +1605,6 @@ def plot3d_implicit(*args, show=True, **kwargs):
         A tuple in the form (width, height) to specify the size of
         the overall figure. The default value is set to `None`, meaning
         the size will be set by the backend.
-
-    surface_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -1646,7 +1650,8 @@ def plot3d_implicit(*args, show=True, **kwargs):
            x**4 + y**4 + z**4 - (x**2 + y**2 + z**2 - 0.3),
            (x, -2, 2), (y, -2, 2), (z, -2, 2), backend=PB)
 
-    Visualize the isocontours from `isomin=0` to `isomax=2`:
+    Visualize the isocontours from `isomin=0` to `isomax=2` by providing a
+    ``rendering_kw`` dictionary:
 
     .. jupyter-execute::
 
@@ -1701,11 +1706,6 @@ def plot_contour(*args, show=True, **kwargs):
         Set the aspect ratio of the plot. The value depends on the backend
         being used. Read that backend's documentation to find out the
         possible values.
-
-    contour_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of contours. Refer to the
-        plotting library (backend) manual for more informations.
 
     Examples
     ========
@@ -1796,7 +1796,7 @@ def plot_implicit(*args, show=True, **kwargs):
             Alternatively, a single Symbol corresponding to the horizontal
             axis must be provided, which will be internally converted to a
             range `(sym, -10, 10)`.
-        
+
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
             function to customize the appearance of contours. Refer to the
@@ -1963,7 +1963,7 @@ def plot_implicit(*args, show=True, **kwargs):
     for (expr, r1, r2, label, rendering_kw) in args:
         skw = series_kw.copy()
         if rendering_kw is not None:
-            skw["contour_kw"] = rendering_kw
+            skw["rendering_kw"] = rendering_kw
         s = ImplicitSeries(expr, r1, r2, label, **skw)
         if s.start_x < xmin:
             xmin = s.start_x
@@ -2011,7 +2011,7 @@ def plot_polar(*args, **kwargs):
         :format: doctest
         :include-source: True
 
-        >>> plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi), aspect="equal")
+        >>> plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi))
 
     See Also
     ========
@@ -2042,7 +2042,7 @@ def plot_geometry(*args, show=True, **kwargs):
             The name of the geometry entity to be eventually shown on the
             legend. If not provided, the string representation of `geom`
             will be used.
-        
+
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
             function to customize the appearance of lines or fills. Refer to
@@ -2074,15 +2074,12 @@ def plot_geometry(*args, show=True, **kwargs):
         Tuple of two floats denoting the coordinates of the center or
         {'center', 'auto'}. Only available with MatplotlibBackend.
 
-    fill_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's fill
-        function to customize the appearance of fills. Refer to the
-        plotting library (backend) manual for more informations.
-
-    line_kw : dict, optional
+    rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        functions to customize the appearance of lines and/or fills. Refer to
+        the plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of expressions.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -2278,10 +2275,10 @@ def plot_list(*args, show=True, **kwargs):
 
         label : str, optional
             The label to be shown in the legend.
-        
+
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of the lines. Refer to the
+            function to customize the appearance of lines. Refer to the
             plotting library (backend) manual for more informations.
 
     aspect : (float, float) or str, optional
@@ -2310,10 +2307,12 @@ def plot_list(*args, show=True, **kwargs):
         The label to be shown in the legend. The number of labels must be
         equal to the number of expressions.
 
-    line_kw : dict, optional
+    rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of expressions.
 
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
@@ -2399,7 +2398,7 @@ def plot_list(*args, show=True, **kwargs):
     series = []
 
     def is_tuple(t):
-        # verify that t is a tuple of the form (x, y, label [opt], 
+        # verify that t is a tuple of the form (x, y, label [opt],
         # rendering_kw [opt])
         if hasattr(t, "__iter__"):
             if isinstance(t, (str, dict)):
@@ -2472,6 +2471,11 @@ def plot_piecewise(*args, **kwargs):
             The label to be shown in the legend. If not provided, the string
             representation of `expr` will be used.
 
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of lines. Refer to the
+            plotting library (backend) manual for more informations.
+
     adaptive : bool, optional
         The default value is set to `True`, which uses the adaptive algorithm
         implemented in [#fn5]_ to create smooth plots. Use `adaptive_goal`
@@ -2518,11 +2522,6 @@ def plot_piecewise(*args, **kwargs):
         The label to be shown in the legend. If not provided, the string
         representation of `expr` will be used. The number of labels must be
         equal to the number of expressions.
-
-    line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
 
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
@@ -2610,7 +2609,8 @@ def plot_piecewise(*args, **kwargs):
        [2]: list plot
        [3]: list plot
 
-    Plot multiple expressions.
+    Plot multiple expressions in which the second piecewise expression has
+    a dotted line style.
 
     .. plot::
        :context: close-figs
@@ -2622,7 +2622,7 @@ def plot_piecewise(*args, **kwargs):
        ...   (Piecewise(
        ...      (sin(x), x < -5),
        ...      (cos(x), x > 5),
-       ...      (1 / x, True)), (x, -8, 8)),
+       ...      (1 / x, True)), (x, -8, 8), {"linestyle": ":"}),
        ...   ylim=(-2, 2))
        Plot object containing:
        [0]: cartesian line: 0 for x over (-10.0, 0.0)

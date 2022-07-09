@@ -350,10 +350,16 @@ class BaseSeries:
 
     @rendering_kw.setter
     def rendering_kw(self, kwargs):
-        if kwargs is not None:
+        if isinstance(kwargs, dict):
             self._rendering_kw = kwargs
         else:
             self._rendering_kw = dict()
+            if kwargs is not None:
+                warnings.warn(
+                    "`rendering_kw` must be a dictionary, instead an "
+                    "object of type %s was received. " % type(kwargs) +
+                    "Automatically setting `rendering_kw` to an empty "
+                    "dictionary")
 
     @staticmethod
     def _discretize(start, end, N, scale="linear", only_integers=False):
@@ -1057,7 +1063,7 @@ class SurfaceBaseSeries(BaseSeries):
         self.adaptive_goal = kwargs.get("adaptive_goal", cfg["adaptive"]["goal"])
         self.loss_fn = kwargs.get("loss_fn", None)
         self.modules = kwargs.get("modules", None)
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self.is_polar = kwargs.get("is_polar", False)
         self.surface_color = kwargs.get("surface_color", None)
@@ -1258,7 +1264,12 @@ class ContourSeries(SurfaceOver2DRangeSeries):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+
+        # NOTE: contour plots are used by plot_contour, plot_vector and
+        # plot_complex_vector. By implementing contour_kw we are able to
+        # quickly target the contour plot.
+        self.rendering_kw = kwargs.get("contour_kw",
+            kwargs.get("rendering_kw", dict()))
 
     is_3Dsurface = False
     is_contour = True
@@ -1304,7 +1315,7 @@ class ImplicitSeries(BaseSeries):
         self.adaptive = kwargs.get("adaptive", False)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
 
         if isinstance(expr, BooleanFunction) and (not self.adaptive):
             self.adaptive = True
@@ -1863,7 +1874,7 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
         self.steps = kwargs.get("steps", False)
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
 
@@ -1973,7 +1984,7 @@ class Parametric2DLineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSer
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.steps = kwargs.get("steps", False)
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
         self.var = list(self.ranges.keys())[0]
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
@@ -2029,7 +2040,7 @@ class SurfaceInteractiveSeries(InteractiveSeries):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)
         self.surface_color = kwargs.get("surface_color", None)
@@ -2072,7 +2083,12 @@ class ContourInteractiveSeries(SurfaceInteractiveSeries):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+
+        # NOTE: contour plots are used by plot_contour, plot_vector and
+        # plot_complex_vector. By implementing contour_kw we are able to
+        # quickly target the contour plot.
+        self.rendering_kw = kwargs.get("contour_kw",
+            kwargs.get("rendering_kw", dict()))
 
     def __str__(self):
         return self._str("contour")
@@ -2136,7 +2152,7 @@ class ComplexPointSeries(Line2DBaseSeries):
         self.steps = kwargs.get("steps", False)
         self.label = label
         self._latex_label = label
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
         self._init_transforms(**kwargs)
@@ -2308,7 +2324,7 @@ class ComplexSurfaceSeries(ComplexSurfaceBaseSeries):
 
     def _init_rendering_kw(self, **kwargs):
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
 
     def _correct_output(self, domain, z):
         np = import_module('numpy')
@@ -2351,7 +2367,7 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
         self._init_rendering_kw(**kwargs)
 
     def _init_rendering_kw(self, **kwargs):
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
 
     def _domain_coloring(self, w):
         if isinstance(self.coloring, str):
@@ -2608,10 +2624,19 @@ class VectorBase(BaseSeries):
         self.modules = kwargs.get("modules", None)
         self.only_integers = kwargs.get("only_integers", False)
         self.use_cm = kwargs.get("use_cm", True)
+
+        # NOTE: when plotting vector fields it might be useful to repeat the
+        # plot command switching between quivers and streamlines.
+        # Usually, plotting libraries expose different functions for quivers
+        # and streamlines, accepting different keyword arguments.
+        # The choice to implement separates stream_kw and quiver_kw allows
+        # this quick switch.
         if self.is_streamlines:
-            self._rendering_kw = kwargs.get("stream_kw", dict())
+            self.rendering_kw = kwargs.get("stream_kw",
+                kwargs.get("rendering_kw", dict()))
         else:
-            self._rendering_kw = kwargs.get("quiver_kw", dict())
+            self.rendering_kw = kwargs.get("quiver_kw",
+                kwargs.get("rendering_kw", dict()))
         self._init_transforms(**kwargs)
 
     def get_expr(self):
@@ -2734,9 +2759,9 @@ class VectorInteractiveBaseSeries(InteractiveSeries):
         super().__init__(*args, **kwargs)
         self.is_streamlines = kwargs.get("streamlines", False)
         if self.is_streamlines:
-            self._rendering_kw = kwargs.get("stream_kw", dict())
+            self.rendering_kw = kwargs.get("stream_kw", dict())
         else:
-            self._rendering_kw = kwargs.get("quiver_kw", dict())
+            self.rendering_kw = kwargs.get("quiver_kw", dict())
 
     def get_expr(self):
         return self.expr
@@ -2913,7 +2938,7 @@ class PlaneSeries(SurfaceBaseSeries):
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
         self._params = params
-        self._rendering_kw = kwargs.get("rendering_kw", dict())
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
         self.use_cm = kwargs.get("use_cm", True)
         self._set_surface_label(label)
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)

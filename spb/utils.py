@@ -283,19 +283,11 @@ def _unpack_args_extended(*args, matrices=False, fill_ranges=True):
     fill_ranges : boolean
         Default to True. If not enough ranges are provided, the algorithm
         will try to create the missing ones.
-    
+
     See also
     ========
     _unpack_args
     """
-    # ranges = [t for t in args if _is_range(t)]
-    # labels = [t for t in args if isinstance(t, str)]
-    # label = "" if not labels else labels[0]
-    # rendering_kw = [t for t in args if isinstance(t, dict)]
-    # rendering_kw = None if not rendering_kw else rendering_kw[0]
-    # results = [not (_is_range(a) or isinstance(a, (str, dict))) for a in args]
-    # exprs = [a for a, b in zip(args, results) if b]
-
     exprs, ranges, label, rendering_kw = _unpack_args(*args)
 
     if label == "":

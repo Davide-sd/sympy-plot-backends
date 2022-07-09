@@ -5,6 +5,8 @@ from sympy.core.expr import Expr
 from sympy.core.symbol import Dummy, symbols
 from sympy.core.numbers import I
 from spb.defaults import cfg
+from spb.functions import _set_labels
+from spb.utils import _unpack_args
 import warnings
 
 from spb.series import (
@@ -27,22 +29,10 @@ from spb.defaults import TWO_D_B, THREE_D_B
 # * `absarg` refers to the absolute value and argument, which will be used to
 #   create "domain coloring" plots.
 
-
-def _get_labels(args, kwargs):
-    # implement the label keyword argument
-    # NOTE: this function is a workaround until a better integration is
-    # achieved between iplot and all other plotting functions.
-    labels = kwargs.pop("label", [])
-    if (len(labels) > 0) and (len(labels) != len(args)):
-        raise ValueError("The number of labels must be equals to the "
-            "number of expressions being plotted.\nReceived "
-            "{} expressions and {} labels".format(len(args), len(labels)))
-    if len(labels) == 0:
-        labels = [None] * len(args)
-    return labels
-
-
 def _build_series(*args, interactive=False, **kwargs):
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+
     series = []
     # apply the user-specified function to the expression
     #   keys: the user specified keyword arguments
@@ -70,25 +60,26 @@ def _build_series(*args, interactive=False, **kwargs):
     if all([hasattr(a, "is_complex") and a.is_complex for a in args]):
         # args is a list of complex numbers
         cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
-        labels = _get_labels(args, kwargs)
-        for a, lbl in zip(args, labels):
-            if lbl is None:
-                lbl = str(a)
-            series.append(cls([a], lbl, **kwargs))
+        for a in args:
+            series.append(cls([a], "", **kwargs))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
         and all([len(a) > 0 for a in args])
         and all([isinstance(a[0], (list, tuple, Tuple)) for a in args])
     ):
-        # args is a list of tuples of the form (list, label) where list
-        # contains complex points
+        # args is a list of tuples of the form (list, label, rendering_kw)
+        # where list contains complex points
         cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
-        labels = _get_labels(args, kwargs)
-        for a, lbl in zip(args, labels):
-            if lbl is None:
-                lbl = a[-1]
-            series.append(cls(a[0], lbl, **kwargs))
+        for a in args:
+            expr, ranges, label, rkw = _unpack_args(*a)
+            # Complex points do not require ranges. However, if 3 complex
+            # points are given inside a list, _unpack_args will see them as a
+            # range.
+            expr = expr or ranges
+            kw = kwargs.copy()
+            kw["rendering_kw"] = rkw
+            series.append(cls(expr[0], label, **kw))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
@@ -96,11 +87,8 @@ def _build_series(*args, interactive=False, **kwargs):
     ):
         # args is a list of lists
         cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
-        labels = _get_labels(args, kwargs)
-        for a, lbl in zip(args, labels):
-            if lbl is None:
-                lbl = ""
-            series.append(cls(a, lbl, **kwargs))
+        for a in args:
+            series.append(cls(a, "", **kwargs))
     else:
         new_args = []
 
@@ -140,12 +128,12 @@ def _build_series(*args, interactive=False, **kwargs):
                 # plotting a single expression
                 add_series(args)
 
-        labels = _get_labels(new_args, kwargs)
         params = kwargs.get("params", dict())
-        for a, lbl in zip(new_args, labels):
-            expr, ranges, label = a[0], a[1:-1], a[-1]
-            if lbl is not None:
-                label = lbl
+        for a in new_args:
+            expr, ranges, label, rend_kw = a[0], a[1:-2], a[-2], a[-1]
+
+            kw = kwargs.copy()
+            kw["rendering_kw"] = rend_kw
 
             # From now on we are dealing with a function of one variable.
             # ranges need to contain complex numbers
@@ -161,7 +149,7 @@ def _build_series(*args, interactive=False, **kwargs):
             if expr.is_complex and (len(fs) == 0):
                 # complex number with its own label
                 cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
-                series.append(cls([expr], label, **kwargs))
+                series.append(cls([expr], label, **kw))
 
             else:
                 # NOTE: as a design choice, a complex function will create one
@@ -173,7 +161,6 @@ def _build_series(*args, interactive=False, **kwargs):
                 # and backend.data, making it easier to work with iplot
                 # (backend._update_interactive).
 
-                kw = kwargs.copy()
                 absarg = kw.pop("absarg", True)
                 real = kw.pop("real", False)
                 imag = kw.pop("imag", False)
@@ -196,7 +183,6 @@ def _build_series(*args, interactive=False, **kwargs):
                     # 2D domain coloring or 3D plots
                     cls = ComplexSurfaceBaseSeries if not interactive else ComplexInteractiveBaseSeries
                     kw.setdefault("coloring", cfg["complex"]["coloring"])
-
                     def add_series(flag, key):
                         if flag:
                             kw2 = kw.copy()
@@ -212,6 +198,7 @@ def _build_series(*args, interactive=False, **kwargs):
                 add_series(_abs, "abs")
                 add_series(_arg, "arg")
 
+    _set_labels(series, global_labels, global_rendering_kw)
     return series
 
 
@@ -291,8 +278,8 @@ def plot_real_imag(*args, **kwargs):
         `plot_real_imag(expr1, expr2, ..., range, **kwargs)`
     - Plotting multiple expressions with multiple ranges.
         `plot_real_imag((expr1, range1), (expr2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with multiple ranges and custom labels.
-        `plot_real_imag((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)`
+    - Plotting multiple expressions with custom labels and rendering options.
+        `plot_real_imag((expr1, range1, label1, rendering_kw1), (expr2, range2, label2, rendering_kw2), ..., **kwargs)`
 
     Parameters
     ==========
@@ -317,6 +304,13 @@ def plot_real_imag(*args, **kwargs):
             The name of the complex function to be eventually shown on the
             legend. If none is provided, the string representation of the
             function will be used.
+
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of lines. Refer to the
+            plotting library (backend) manual for more informations. Note that
+            the same options will be applied to all series generated for the
+            specified expression.
 
     abs : boolean, optional
         If True, plot the modulus of the complex function. Default to True.
@@ -365,11 +359,6 @@ def plot_real_imag(*args, **kwargs):
         If True, plot the imaginary part of the complex function.
         Default to True.
 
-    line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of the lines. Refer to the
-        plotting library (backend) manual for more informations.
-
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -395,6 +384,13 @@ def plot_real_imag(*args, **kwargs):
         If an integer is provided, set the same number of discretization
         points in all directions. If a tuple is provided, it overrides
         `n1` and `n2`. It only works when `adaptive=False`.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of the lines. Refer to the
+        plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of series generated by the plotting function.
 
     real : boolean, optional
         If True, plot the real part of the complex function. Default to True.
@@ -582,8 +578,8 @@ def plot_complex(*args, **kwargs):
         `plot_complex(expr1, expr2, ..., range, **kwargs)`
     - Plotting multiple expressions with multiple ranges.
         `plot_complex((expr1, range1), (expr2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with multiple ranges and custom labels.
-        `plot_complex((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)`
+    - Plotting multiple expressions with custom labels and rendering options.
+        `plot_complex((expr1, range1, label1, rendering_kw1), (expr2, range2, label2, rendering_kw2), ..., **kwargs)`
 
     Parameters
     ==========
@@ -608,6 +604,12 @@ def plot_complex(*args, **kwargs):
             The name of the complex function to be eventually shown on the
             legend. If none is provided, the string representation of the
             function will be used.
+
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of lines, surfaces or images.
+            Refer to the plotting library (backend) manual for more
+            informations.
 
     adaptive : bool, optional
         Attempt to create line plots by using an adaptive algorithm.
@@ -640,11 +642,6 @@ def plot_complex(*args, **kwargs):
         If not provided, the string representation of `expr` will be used.
         The number of labels must be  equal to the number of expressions.
 
-    line_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
         Possible values:
@@ -670,6 +667,13 @@ def plot_complex(*args, **kwargs):
         If an integer is provided, set the same number of discretization
         points in all directions. If a tuple is provided, it overrides
         `n1` and `n2`. It only works when `adaptive=False`.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of the lines, surfaces or images.
+        Refer to the plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of series generated by the plotting function.
 
     show : boolean, optional
         Default to True, in which case the plot will be shown on the screen.
@@ -854,6 +858,13 @@ def plot_complex_list(*args, **kwargs):
         label : str
             The name associated to the list of the complex numbers to be
             eventually shown on the legend. Default to empty string.
+
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of lines. Refer to the
+            plotting library (backend) manual for more informations. Note that
+            the same options will be applied to all series generated for the
+            specified expression.
 
     aspect : (float, float) or str, optional
         Set the aspect ratio of the plot. The value depends on the backend
@@ -1175,6 +1186,7 @@ def plot_complex_vector(*args, **kwargs):
     kwargs["real"] = True
     kwargs["imag"] = True
     kwargs["threed"] = False
+    global_labels = kwargs.pop("labels", [])
 
     args = _plot_sympify(args)
     series = _build_series(*args, **kwargs)
@@ -1215,6 +1227,7 @@ def plot_complex_vector(*args, **kwargs):
             scalar[0] = scalar[0].subs({fs: x + I * y})
         kwargs["scalar"] = scalar
 
+    kwargs["labels"] = global_labels
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     return plot_vector(*new_args, **kwargs)
