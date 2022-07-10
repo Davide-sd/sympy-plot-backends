@@ -2,6 +2,42 @@
  Changelog
 ==========
 
+v1.2.0
+======
+
+* Replaced the ``line_kw``, ``surface_kw``, ``image_kw``, ``fill_kw`` keyword
+  arguments with ``rendering_kw``. This simplifies the usage between different
+  plotting functions.
+
+* Plot functions now accepts a new argument: ``rendering_kw``, a dictionary
+  of options that will be passed directly to the backend to customize the
+  appearance. In particular:
+
+  * Possibility to plot and customize multiple expressions with a single
+    function call. For example, for line plots:
+    
+    .. code-block:: python
+
+       plot(
+         (expr1, range1 [opt], label1 [opt], rendering_kw1 [opt]),
+         (expr2, range2 [opt], label2 [opt], rendering_kw2 [opt]),
+         **kwargs
+       )
+
+  * Possibility to achieve the same result using the ``label`` and
+    ``rendering_kw`` keyword arguments by providing lists of elements (one
+    element for each expression). For example, for line plots:
+
+    .. code-block:: python
+
+       plot(expr1, expr2, range [opt],
+           label=["label1", "label2"],
+           rendering_kw=[dict(), dict()],
+           **kwargs
+       )
+
+* Updated tutorials and documentation.
+
 v1.1.7
 ======
 
