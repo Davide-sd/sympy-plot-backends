@@ -7,7 +7,7 @@ from spb.series import (
 )
 from spb.ccomplex.complex import _build_series as _build_complex_series
 from spb.vectors import _preprocess, _build_series as _build_vector_series
-from spb.utils import _plot_sympify, _unpack_args
+from spb.utils import _plot_sympify, _unpack_args_extended
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
 import warnings
 
@@ -615,7 +615,7 @@ def create_series(*args, **kwargs):
     if is_complex:
         new_args = []
         for a in args:
-            exprs, ranges, label = _unpack_args(
+            exprs, ranges, label, rkw = _unpack_args_extended(
                 *a, matrices=False, fill_ranges=False
             )
             new_args.append(Tuple(exprs[0], *ranges, label, sympify=False))
@@ -630,7 +630,7 @@ def create_series(*args, **kwargs):
             # fill_ranges=False in order to not fill ranges, otherwise
             # ranges will be created also for parameters. This means
             # the user must provided all the necessary ranges.
-            exprs, ranges, label = _unpack_args(
+            exprs, ranges, label, rkw = _unpack_args_extended(
                 *a, matrices=True, fill_ranges=False
             )
             if isinstance(_slice, (tuple, list)):
@@ -1119,10 +1119,9 @@ def iplot(*args, show=True, **kwargs):
            title = "title 2",
            show = False
        )
-       p3 = plot(sin(x)*cos(x), (x, -5, 5), backend=MB,
+       p3 = plot(sin(x)*cos(x), (x, -5, 5), dict(marker="^"), backend=MB,
            adaptive=False, n=50,
-           is_point=True, is_filled=True,
-           line_kw=dict(marker="^"), show=False)
+           is_point=True, is_filled=True, show=False)
        p = p1 + p2 + p3
        p.show()
 

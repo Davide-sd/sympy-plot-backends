@@ -323,13 +323,14 @@ def test_common_keywords():
 def test_plot_sum():
     x, y = symbols("x, y")
 
-    # the choice of the backend dictates the keyword arguments inside line_kw
-    p1 = plot(sin(x), backend=PB, line_kw=dict(line_color='black'),
+    # the choice of the backend dictates the keyword arguments
+    # inside rendering_kw
+    p1 = plot(sin(x), backend=PB, rendering_kw=dict(line_color='black'),
         xlabel="x1", ylabel="y1", show=False)
-    p2 = plot(cos(x), backend=PB, line_kw=dict(line_dash='dash'),
+    p2 = plot(cos(x), backend=PB, rendering_kw=dict(line_dash='dash'),
         xlabel="x2", ylabel="y2", show=False)
     p3 = plot(sin(x) * cos(x), backend=PB,
-        line_kw=dict(line_dash='dot'), show=False)
+        rendering_kw=dict(line_dash='dot'), show=False)
     p4 = p1 + p2 + p3
     assert isinstance(p4, PB)
     assert len(p4.series) == 3
@@ -351,9 +352,9 @@ def test_plot_sum():
     assert p4.xlabel == "x2" and p4.ylabel == "y2"
 
     # summing different types of plots: the result is consistent with the
-    # original visualization. In particular, if no `line_kw` is given to `p2`
-    # then the backend will use automatic coloring to differentiate the
-    # series.
+    # original visualization. In particular, if no `rendering_kw` is given
+    # to `p2` then the backend will use automatic coloring to differentiate
+    # the series.
     hex2rgb = lambda h: tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
     p1 = plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
         backend=MB, scalar=True, show=False)
@@ -386,22 +387,22 @@ def test_plot_sum():
     # summing plots with different backends: fail when backend-specific
     # keyword arguments are used.
     # NOTE: the output plot is of type MB
-    p1 = plot(sin(x), backend=MB, line_kw=dict(linestyle=":"), show=False)
-    p2 = plot(cos(x), backend=PB, line_kw=dict(line_dash="dash"), show=False)
+    p1 = plot(sin(x), backend=MB, rendering_kw=dict(linestyle=":"), show=False)
+    p2 = plot(cos(x), backend=PB, rendering_kw=dict(line_dash="dash"), show=False)
     raises(AttributeError, lambda: (p1 + p2).process_series())
 
 
 def test_plot():
     # verify that the backends produce the expected results when `plot()`
-    # is called and `line_kw` overrides the default line settings
+    # is called and `rendering_kw` overrides the default line settings
 
     x = symbols("x")
 
-    _plot = lambda B, line_kw, use_latex=False: plot(
-        sin(x), cos(x), line_kw=line_kw, backend=B, show=False, legend=True,
-        use_latex=use_latex)
+    _plot = lambda B, rendering_kw, use_latex=False: plot(
+        sin(x), cos(x), rendering_kw=rendering_kw, backend=B,
+        show=False, legend=True, use_latex=use_latex)
 
-    p = _plot(MB, line_kw=dict(color="red"))
+    p = _plot(MB, rendering_kw=dict(color="red"))
     assert len(p.series) == 2
     f = p.fig
     ax = f.axes[0]
@@ -415,14 +416,14 @@ def test_plot():
     assert ax.get_ylabel() == "f(x)"
     p.close()
 
-    p = _plot(MB, line_kw=dict(color="red"), use_latex=True)
+    p = _plot(MB, rendering_kw=dict(color="red"), use_latex=True)
     f = p.fig
     ax = f.axes[0]
     assert ax.get_lines()[0].get_label() == "$\\sin{\\left(x \\right)}$"
     assert ax.get_xlabel() == "$x$"
     assert ax.get_ylabel() == "$f\\left(x\\right)$"
 
-    p = _plot(PB, line_kw=dict(line_color="red"))
+    p = _plot(PB, rendering_kw=dict(line_color="red"))
     assert len(p.series) == 2
     f = p.fig
     assert len(f.data) == 2
@@ -438,13 +439,13 @@ def test_plot():
     assert f.layout["xaxis"]["title"]["text"] == "x"
     assert f.layout["yaxis"]["title"]["text"] == "f(x)"
 
-    p = _plot(PB, line_kw=dict(line_color="red"), use_latex=True)
+    p = _plot(PB, rendering_kw=dict(line_color="red"), use_latex=True)
     f = p.fig
     assert f.data[0]["name"] == "$\\sin{\\left(x \\right)}$"
     assert f.layout["xaxis"]["title"]["text"] == "$x$"
     assert f.layout["yaxis"]["title"]["text"] == "$f\\left(x\\right)$"
 
-    p = _plot(BB, line_kw=dict(line_color="red"))
+    p = _plot(BB, rendering_kw=dict(line_color="red"))
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
@@ -456,7 +457,7 @@ def test_plot():
     assert f.renderers[1].glyph.line_color == "red"
     assert f.legend[0].visible is True
 
-    p = _plot(BB, line_kw=dict(line_color="red"), use_latex=True)
+    p = _plot(BB, rendering_kw=dict(line_color="red"), use_latex=True)
     f = p.fig
     assert f.legend[0].items[0].label["value"] == "$\\sin{\\left(x \\right)}$"
 
@@ -464,22 +465,22 @@ def test_plot():
     raises(
         NotImplementedError,
         lambda: _plot(KBchild1,
-            line_kw=dict(line_color="red")).process_series())
+            rendering_kw=dict(line_color="red")).process_series())
 
 
 def test_plot_parametric():
     # verify that the backends produce the expected results when
-    # `plot_parametric()` is called and `line_kw` overrides the default
+    # `plot_parametric()` is called and `rendering_kw` overrides the default
     # line settings
 
     x = symbols("x")
 
-    _plot_parametric = lambda B, line_kw: plot_parametric(
+    _plot_parametric = lambda B, rendering_kw: plot_parametric(
         cos(x), sin(x), (x, 0, 1.5 * pi), backend=B,
-        show=False, line_kw=line_kw, use_latex=False
+        show=False, rendering_kw=rendering_kw, use_latex=False
     )
 
-    p = _plot_parametric(MB, line_kw=dict(color="red"))
+    p = _plot_parametric(MB, rendering_kw=dict(color="red"))
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
@@ -490,7 +491,7 @@ def test_plot_parametric():
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
 
-    p = _plot_parametric(PB, line_kw=dict(line_color="red"))
+    p = _plot_parametric(PB, rendering_kw=dict(line_color="red"))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -499,7 +500,7 @@ def test_plot_parametric():
     assert f.data[0]["line"]["color"] == "red"
     assert f.data[0]["marker"]["colorbar"]["title"]["text"] == "x"
 
-    p = _plot_parametric(BB, line_kw=dict(line_color="red"))
+    p = _plot_parametric(BB, rendering_kw=dict(line_color="red"))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
@@ -513,22 +514,22 @@ def test_plot_parametric():
     raises(
         NotImplementedError,
         lambda: _plot_parametric(KBchild1,
-            line_kw=dict(line_color="red")).process_series())
+            rendering_kw=dict(line_color="red")).process_series())
 
 
 def test_plot3d_parametric_line():
     # verify that the backends produce the expected results when
-    # `plot3d_parametric_line()` is called and `line_kw` overrides the
+    # `plot3d_parametric_line()` is called and `rendering_kw` overrides the
     # default line settings
 
     x = symbols("x")
 
-    _plot3d_parametric_line = lambda B, line_kw: plot3d_parametric_line(
+    _plot3d_parametric_line = lambda B, rendering_kw: plot3d_parametric_line(
         cos(x), sin(x), x, (x, -pi, pi), backend=B,
-        show=False, line_kw=line_kw, use_latex=False
+        show=False, rendering_kw=rendering_kw, use_latex=False
     )
 
-    p = _plot3d_parametric_line(MB, line_kw=dict(color="red"))
+    p = _plot3d_parametric_line(MB, rendering_kw=dict(color="red"))
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
@@ -538,7 +539,7 @@ def test_plot3d_parametric_line():
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
 
-    p = _plot3d_parametric_line(PB, line_kw=dict(line_color="red"))
+    p = _plot3d_parametric_line(PB, rendering_kw=dict(line_color="red"))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -549,9 +550,9 @@ def test_plot3d_parametric_line():
 
     # Bokeh doesn't support 3D plots
     raises(NotImplementedError, lambda: _plot3d_parametric_line(BB,
-        line_kw=dict(line_color="red")).process_series())
+        rendering_kw=dict(line_color="red")).process_series())
 
-    p = _plot3d_parametric_line(KBchild1, line_kw=dict(color=16711680))
+    p = _plot3d_parametric_line(KBchild1, rendering_kw=dict(color=16711680))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
@@ -562,12 +563,12 @@ def test_plot3d_parametric_line():
 
 def test_plot3d():
     # verify that the backends produce the expected results when
-    # `plot3d()` is called and `surface_kw` overrides the default surface
+    # `plot3d()` is called and `rendering_kw` overrides the default surface
     # settings
 
     x, y = symbols("x, y")
 
-    _plot3d = lambda B, surface_kw, use_latex=False: plot3d(
+    _plot3d = lambda B, rendering_kw, use_latex=False: plot3d(
         cos(x ** 2 + y ** 2),
         (x, -3, 3),
         (y, -3, 3),
@@ -575,13 +576,13 @@ def test_plot3d():
         use_cm=False,
         backend=B,
         show=False,
-        surface_kw=surface_kw,
+        rendering_kw=rendering_kw,
         use_latex=use_latex
     )
 
     # use_cm=False will force to apply a default solid color to the mesh.
     # Here, I override that solid color with a custom color.
-    p = _plot3d(MB, surface_kw=dict(color="red"))
+    p = _plot3d(MB, rendering_kw=dict(color="red"))
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
@@ -591,7 +592,7 @@ def test_plot3d():
     # to a Poly3DCollection...
     p.close()
 
-    p = _plot3d(PB, surface_kw=dict(colorscale=[[0, "cyan"], [1, "cyan"]]))
+    p = _plot3d(PB, rendering_kw=dict(colorscale=[[0, "cyan"], [1, "cyan"]]))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -605,10 +606,10 @@ def test_plot3d():
     # Bokeh doesn't support 3D plots
     raises(
         NotImplementedError,
-        lambda: _plot3d(BB, surface_kw=dict(
+        lambda: _plot3d(BB, rendering_kw=dict(
             colorscale=[[0, "cyan"], [1, "cyan"]])).process_series())
 
-    p = _plot3d(KBchild1, surface_kw=dict(color=16711680))
+    p = _plot3d(KBchild1, rendering_kw=dict(color=16711680))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
@@ -675,23 +676,23 @@ def test_plot3d_2():
 
 def test_plot_contour():
     # verify that the backends produce the expected results when
-    # `plot_contour()` is called and `contour_kw` overrides the default
+    # `plot_contour()` is called and `rendering_kw` overrides the default
     # surface settings
 
     x, y = symbols("x, y")
 
-    _plot_contour = lambda B, contour_kw: plot_contour(
+    _plot_contour = lambda B, rendering_kw: plot_contour(
         cos(x ** 2 + y ** 2),
         (x, -3, 3),
         (y, -3, 3),
         n=20,
         backend=B,
         show=False,
-        contour_kw=contour_kw,
+        rendering_kw=rendering_kw,
         use_latex=False
     )
 
-    p = _plot_contour(MB, contour_kw=dict(cmap="jet"))
+    p = _plot_contour(MB, rendering_kw=dict(cmap="jet"))
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
@@ -700,7 +701,7 @@ def test_plot_contour():
     # TODO: how to retrieve the colormap from a contour series?????
     p.close()
 
-    p = _plot_contour(PB, contour_kw=dict(contours=dict(coloring="lines")))
+    p = _plot_contour(PB, rendering_kw=dict(contours=dict(coloring="lines")))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -708,8 +709,8 @@ def test_plot_contour():
     assert f.data[0]["contours"]["coloring"] == "lines"
     assert f.data[0]["colorbar"]["title"]["text"] == str(cos(x ** 2 + y ** 2))
 
-    # Bokeh doesn't use contour_kw dictionary. Nothing to customize yet.
-    p = _plot_contour(BB, contour_kw=dict())
+    # Bokeh doesn't use rendering_kw dictionary. Nothing to customize yet.
+    p = _plot_contour(BB, rendering_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
@@ -722,7 +723,7 @@ def test_plot_contour():
     raises(
         NotImplementedError,
         lambda: _plot_contour(KBchild1,
-            contour_kw=dict()).process_series())
+            rendering_kw=dict()).process_series())
 
 
 def test_plot_vector_2d_quivers():
@@ -1180,17 +1181,17 @@ def test_plot_implicit_adaptive_false():
 
 def test_plot_real_imag():
     # verify that the backends produce the expected results when
-    # `plot_real_imag()` is called and `line_kw` overrides the default
+    # `plot_real_imag()` is called and `rendering_kw` overrides the default
     # settings
 
     x = symbols("x")
 
-    _plot_real_imag = lambda B, line_kw: plot_real_imag(
-        sqrt(x), (x, -5, 5), backend=B, line_kw=line_kw, show=False,
+    _plot_real_imag = lambda B, rendering_kw: plot_real_imag(
+        sqrt(x), (x, -5, 5), backend=B, rendering_kw=rendering_kw, show=False,
         use_latex=False
     )
 
-    p = _plot_real_imag(MB, line_kw=dict(color="red"))
+    p = _plot_real_imag(MB, rendering_kw=dict(color="red"))
     assert len(p.series) == 2
     f = p.fig
     ax = f.axes[0]
@@ -1201,7 +1202,7 @@ def test_plot_real_imag():
     assert ax.get_lines()[1].get_color() == "red"
     p.close()
 
-    p = _plot_real_imag(PB, line_kw=dict(line_color="red"))
+    p = _plot_real_imag(PB, rendering_kw=dict(line_color="red"))
     assert len(p.series) == 2
     f = p.fig
     assert len(f.data) == 2
@@ -1213,7 +1214,7 @@ def test_plot_real_imag():
     assert f.data[1]["line"]["color"] == "red"
     assert f.layout["showlegend"] is True
 
-    p = _plot_real_imag(BB, line_kw=dict(line_color="red"))
+    p = _plot_real_imag(BB, rendering_kw=dict(line_color="red"))
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
@@ -1227,21 +1228,21 @@ def test_plot_real_imag():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_real_imag(KBchild1, line_kw=dict()).process_series())
+        lambda: _plot_real_imag(KBchild1, rendering_kw=dict()).process_series())
 
 
 def test_plot_complex_1d():
     # verify that the backends produce the expected results when
-    # `plot_complex()` is called and `line_kw` overrides the default
+    # `plot_complex()` is called and `rendering_kw` overrides the default
     # settings
 
     x = symbols("x")
 
-    _plot_complex = lambda B, line_kw: plot_complex(
-        sqrt(x), (x, -5, 5), backend=B, line_kw=line_kw, show=False
+    _plot_complex = lambda B, rendering_kw: plot_complex(
+        sqrt(x), (x, -5, 5), backend=B, rendering_kw=rendering_kw, show=False
     )
 
-    p = _plot_complex(MB, line_kw=dict(color="red"))
+    p = _plot_complex(MB, rendering_kw=dict(color="red"))
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
@@ -1251,7 +1252,7 @@ def test_plot_complex_1d():
     assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
     p.close()
 
-    p = _plot_complex(PB, line_kw=dict(line_color="red"))
+    p = _plot_complex(PB, rendering_kw=dict(line_color="red"))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -1260,7 +1261,7 @@ def test_plot_complex_1d():
     assert f.data[0]["line"]["color"] == "red"
     assert p.fig.data[0]["marker"]["colorbar"]["title"]["text"] == "Arg(sqrt(x))"
 
-    p = _plot_complex(BB, line_kw=dict(line_color="red"))
+    p = _plot_complex(BB, rendering_kw=dict(line_color="red"))
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
@@ -1272,22 +1273,22 @@ def test_plot_complex_1d():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_complex(KBchild1, line_kw=dict()).process_series())
+        lambda: _plot_complex(KBchild1, rendering_kw=dict()).process_series())
 
 
 def test_plot_complex_2d():
     # verify that the backends produce the expected results when
-    # `plot_complex()` is called and `image_kw` overrides the default
+    # `plot_complex()` is called and `rendering_kw` overrides the default
     # settings
 
     x = symbols("x")
 
-    _plot_complex = lambda B, image_kw: plot_complex(
+    _plot_complex = lambda B, rendering_kw: plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, coloring="a",
-        image_kw=image_kw, show=False
+        rendering_kw=rendering_kw, show=False
     )
 
-    p = _plot_complex(MB, image_kw=dict())
+    p = _plot_complex(MB, rendering_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
@@ -1296,7 +1297,7 @@ def test_plot_complex_2d():
     assert ax.images[0].get_extent() == [-5.0, 5.0, -5.0, 5.0]
     p.close()
 
-    p = _plot_complex(MB, image_kw=dict(extent=[-6, 6, -7, 7]))
+    p = _plot_complex(MB, rendering_kw=dict(extent=[-6, 6, -7, 7]))
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
@@ -1305,7 +1306,7 @@ def test_plot_complex_2d():
     assert ax.images[0].get_extent() == [-6, 6, -7, 7]
     p.close()
 
-    p = _plot_complex(PB, image_kw=dict())
+    p = _plot_complex(PB, rendering_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 2
@@ -1314,7 +1315,7 @@ def test_plot_complex_2d():
     assert isinstance(f.data[1], go.Scatter)
     assert f.data[1]["marker"]["colorbar"]["title"]["text"] == "Argument"
 
-    p = _plot_complex(BB, image_kw=dict())
+    p = _plot_complex(BB, rendering_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
@@ -1325,27 +1326,27 @@ def test_plot_complex_2d():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: _plot_complex(KBchild1, image_kw=dict()).process_series())
+        lambda: _plot_complex(KBchild1, rendering_kw=dict()).process_series())
 
 
 def test_plot_complex_3d():
     # verify that the backends produce the expected results when
-    # `plot_complex()` is called and `surface_kw` overrides the default
+    # `plot_complex()` is called and `rendering_kw` overrides the default
     # settings
 
     x = symbols("x")
 
-    _plot_complex = lambda B, surface_kw: plot_complex(
+    _plot_complex = lambda B, rendering_kw: plot_complex(
         sqrt(x),
         (x, -5 - 5 * I, 5 + 5 * I),
         backend=B,
         threed=True,
-        surface_kw=surface_kw,
+        rendering_kw=rendering_kw,
         show=False,
         n=10
     )
 
-    p = _plot_complex(MB, surface_kw=dict(color="red"))
+    p = _plot_complex(MB, rendering_kw=dict(color="red"))
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
@@ -1356,7 +1357,7 @@ def test_plot_complex_3d():
     # to a Poly3DCollection...
     p.close()
 
-    p = _plot_complex(PB, surface_kw=dict())
+    p = _plot_complex(PB, rendering_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.data) == 1
@@ -1368,9 +1369,9 @@ def test_plot_complex_3d():
     # Bokeh doesn't support 3D plots
     raises(
         NotImplementedError,
-        lambda: _plot_complex(BB, surface_kw=dict()).process_series())
+        lambda: _plot_complex(BB, rendering_kw=dict()).process_series())
 
-    p = _plot_complex(KBchild1, surface_kw=dict())
+    p = _plot_complex(KBchild1, rendering_kw=dict())
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
@@ -1949,7 +1950,7 @@ def test_backend_latex_labels():
 
 def test_plot_use_latex():
     # verify that the backends produce the expected results when `plot()`
-    # is called and `line_kw` overrides the default line settings
+    # is called and `rendering_kw` overrides the default line settings
 
     x = symbols("x")
 

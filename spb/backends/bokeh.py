@@ -187,21 +187,18 @@ class BokehBackend(Plot):
         Set the aspect ratio of a 2D plot. Default to ``None``. Set it to
         ``"equal"`` to sets equal spacing on the axis.
 
-    contour_kw : dict, optional
-        A dictionary with keyword arguments to customize the contour.
-        This might be useful to change the `palette` to a custom value.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to Matplotlib's plot
+        functions to customize the appearance of lines, surfaces, images,
+        contours, quivers, streamlines...
+        To learn more about customization:
 
-    line_kw : dict, optional
-        A dictionary of keywords/values which is passed to Plotly's scatter
-        functions to customize the appearance. Default to:
-        ``line_kw = dict(line_width = 2)``.
-        Refer to [#fn1]_ to learn more about customization.
+        * Refer to [#fn1]_ to customize lines plots. Default to:
+          ``dict(line_width = 2)``.
 
-    quiver_kw : dict, optional
-        A dictionary with keyword arguments to customize the quivers.
-        Default to
+        * Default options for quiver plots:
 
-        .. code-block:: python
+          .. code-block:: python
 
            dict(
                scale = 1,
@@ -210,9 +207,8 @@ class BokehBackend(Plot):
                line_width = 1
            )
 
-    stream_kw : dict, optional
-        A dictionary with keyword arguments to customize the streamlines.
-        Default to: ``dict(line_width=2, line_alpha=0.8)``
+        * Default options for streamline plots:
+          ``dict(line_width=2, line_alpha=0.8)``
 
     theme : str, optional
         Set the theme. Default to ``"dark_minimal"``. Find more Bokeh themes
@@ -344,9 +340,11 @@ class BokehBackend(Plot):
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
-        s.rendering_kw["color"] = color
-        if s.is_point and (not s.is_filled):
-            s.rendering_kw["fill_color"] = "white"
+        if "color" not in s.rendering_kw:
+            # only set the color if the user didn't do that already
+            s.rendering_kw["color"] = color
+            if s.is_point and (not s.is_filled):
+                s.rendering_kw["fill_color"] = "white"
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):

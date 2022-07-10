@@ -13,45 +13,42 @@ class K3DBackend(Plot):
     Parameters
     ==========
 
-    line_kw : dict, optional
-        A dictionary of keywords/values which is passed to K3D's line
-        functions to customize the appearance. Default to:
-        ``line_kw = dict(width=0.1, shader="mesh")``.
-        Set `use_cm=False` to switch to a solid color.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to Matplotlib's plot
+        functions to customize the appearance of lines, surfaces, images,
+        contours, quivers, streamlines...
+        To learn more about customization:
 
-    quiver_kw : dict, optional
-        A dictionary to customize the apppearance of quivers. Default to:
-        ``quiver_kw = dict(scale = 1, pivot = "mid")``. The keys to this
-        dictionary are:
+        * Default options for line plots:
+          ``dict(width=0.1, shader="mesh")``.
+          Set ``use_cm=False`` to switch to a solid color.
 
-        * ``scale``: a float number acting as a scale multiplier.
-        * ``pivot``: indicates the part of the arrow that is anchored to the
-          X, Y, Z grid. It can be ``"tail", "mid", "middle", "head"``.
-        * ``color``: set a solid color by specifying an integer color. If this
-          key is not provided, a default color or colormap is used, depenging
-          on the value of ``use_cm``.
+        * Default options for quiver plots:
+          ``dict(scale = 1, pivot = "mid")``. The keys to this
+          dictionary are:
 
-        Set ``use_cm=False`` to switch to a default solid color.
+          - ``scale``: a float number acting as a scale multiplier.
+          - ``pivot``: indicates the part of the arrow that is anchored to the
+            X, Y, Z grid. It can be ``"tail", "mid", "middle", "head"``.
+          - ``color``: set a solid color by specifying an integer color. If this
+            key is not provided, a default color or colormap is used, depenging
+            on the value of ``use_cm``.
+
+          Set ``use_cm=False`` to switch to a default solid color.
+
+        * Default options for streamline plots:
+          ``dict( width=0.1, shader='mesh' )``.
+          Refer to k3d.line for more options.
+          Set ``use_cm=False`` to switch to a solid color.
+
+        * To customize surface plots, refers to:
+
+          - k3d.mesh function for 3D surface and parametric surface plots.
+          - k3d.marching_cubes function for 3D implicit plots.
 
     show_label : boolean, optional
         Show/hide labels of the expressions. Default to False (labels not
         visible).
-
-    stream_kw : dict, optional
-        A dictionary to customize the apppearance of streamlines.
-        Default to:
-        ``stream_kw = dict( width=0.1, shader='mesh' )``.
-        Refer to k3d.line for more options.
-        Set `use_cm=False` to switch to a solid color.
-
-    surface_kw : dict, optional
-        A dictionary of keywords/values to to customize the appearance which
-        is passed to:
-
-        - k3d.mesh function for 3D surface and parametric surface plots.
-          Refer to k3d.meshfor more options.
-        - k3d.marching_cubes function for 3D implicit plots. Refer to
-          k3d.marching_cubes for more options.
 
     use_cm : boolean, optional
         If True, apply a color map to the meshes/surface. If False, solid

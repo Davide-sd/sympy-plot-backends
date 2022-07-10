@@ -21,43 +21,24 @@ class PlotlyBackend(Plot):
         - ``"equal"``: sets equal spacing on the axis of a 2D plot.
         - ``"cube"``, ``"auto"`` for 3D plots.
 
-    contour_kw : dict, optional
-        A dictionary of keywords/values which is passed to Plotly's contour
-        function to customize the appearance.
-        Refer to [#fn1]_ and [#fn2]_  to learn more about customization.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to Matplotlib's plot
+        functions to customize the appearance of lines, surfaces, images,
+        contours, quivers, streamlines...
+        To learn more about customization:
 
-    line_kw : dict, optional
-        A dictionary of keywords/values which is passed to Plotly's scatter
-        functions to customize the appearance.
-        Refer to [#fn3]_ and [#fn4]_ to learn more about customization.
-
-    quiver_kw : dict, optional
-        A dictionary of keywords/values which is passed to Plotly's quivers
-        function to customize the appearance.
-
-        - For 2D vector fields, default to: ``dict( scale = 0.075 )``.
-          Refer to [#fn5]_ for more options.
-        - For 3D vector fields, default to:
+        * Refer to [#fn1]_ and [#fn2]_ to customize contour plots.
+        * Refer to [#fn3]_ and [#fn4]_ to customize line plots.
+        * Refer to [#fn7]_ to customize surface plots.
+        * Refer to [#fn14]_ to customize implicit surface plots.
+        * Refer to [#fn5]_ to customize 2D quiver plots. Default to:
+          ``dict( scale = 0.075 )``.
+        * Refer to [#fn6]_ to customize 2D cone plots. Default to:
           ``dict( sizemode = "absolute", sizeref = 40 )``.
-          Refer [#fn6]_ for more options.
-
-    surface_kw : dict, optional
-        A dictionary of keywords/values to to customize the appearance which
-        is passed to:
-
-        - Plotly's Surface function for 3D surface and parametric surface
-          plots. Refer to [#fn7]_ for more options.
-        - Plotly's Isosurface function for 3D implicit plots. Refer to [#fn14]_
-          for more options.
-
-    stream_kw : dict, optional
-        A dictionary of keywords/values which is passed to Plotly's
-        streamlines function to customize the appearance.
-
-        - For 2D vector fields, defaul to: ``dict( arrow_scale = 0.15 )``.
-          Refer to [#fn8]_ for more options.
-        - For 3D vector fields, default to: ``dict( sizeref = 0.3 )``.
-          Refer to [#fn9]_ for more options.
+        * Refer to [#fn8]_ to customize 2D streamlines plots. Defaul to:
+          ``dict( arrow_scale = 0.15 )``.
+        * Refer to [#fn9]_ to customize 3D streamlines plots. Defaul to:
+          ``dict( sizeref = 0.3 )``.
 
     theme : str, optional
         Set the theme. Default to ``"plotly_dark"``. Find more Plotly themes at
@@ -183,11 +164,13 @@ class PlotlyBackend(Plot):
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
-        s.rendering_kw["line_color"] = color
-        if not s.is_filled:
-            s.rendering_kw["marker"] = dict(
-                color="#E5ECF6",
-                line=dict(color=color))
+        if "line_color" not in s.rendering_kw:
+            # only set the color if the user didn't do that already
+            s.rendering_kw["line_color"] = color
+            if not s.is_filled:
+                s.rendering_kw["marker"] = dict(
+                    color="#E5ECF6",
+                    line=dict(color=color))
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):

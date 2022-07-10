@@ -306,12 +306,13 @@ Differences with sympy.plotting
      from sympy import symbols, sin, cos
      x = symbols("x")
      # pass customization options directly to matplotlib (or other backends)
-     p1 = plot(sin(x), "a", backend=MB, show=False, line_kw=dict(color="k", linestyle=":"))
-     # only set a custom label and let the backend take care of the rest
-     p2 = plot(cos(x), "b", backend=MB, show=False)
-     # combine the plots
-     p3 = (p1 + p2)
-     p3.show()
+     plot(
+         (sin(x), "a", dict(color="k", linestyle=":")),
+         (cos(x), "b"),
+         backend=MB)
+     # alternatively, set the label and rendering_kw keyword arguments
+     # to lists: each element target an expression
+     # plot(sin(x), cos(x), label=["a", "b"], rendering_kw=[dict(color="k", linestyle=":"), None])
 
   Read the documentation to learn how to further customize the appearance of
   figures.

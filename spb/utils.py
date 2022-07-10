@@ -76,7 +76,7 @@ def _create_ranges(free_symbols, ranges, npar):
     return ranges
 
 
-def _check_arguments(args, nexpr, npar):
+def _check_arguments(args, nexpr, npar, **kwargs):
     """Checks the arguments and converts into tuples of the
     form (exprs, ranges, name_expr).
 
@@ -126,17 +126,7 @@ def _check_arguments(args, nexpr, npar):
         #   1. one expression
         #   2. multiple expressions over the same range
 
-        res = [not (_is_range(a) or isinstance(a, str)) for a in args]
-        exprs = [a for a, b in zip(args, res) if b]
-        ranges = [r for r in args[nexpr:] if _is_range(r)]
-        label = args[-1] if isinstance(args[-1], str) else ""
-
-        if not all([_is_range(r) for r in ranges]):
-            raise ValueError(
-                "Expressions must be followed by ranges. Received:\n"
-                "Expressions: %s\n"
-                "Others: %s" % (exprs, ranges)
-            )
+        exprs, ranges, label, rendering_kw = _unpack_args(*args)
         free_symbols = set().union(*[e.free_symbols for e in exprs])
         ranges = _create_ranges(free_symbols, ranges, npar)
 
@@ -148,44 +138,39 @@ def _check_arguments(args, nexpr, npar):
         for expr in exprs:
             # need this if-else to deal with both plot/plot3d and
             # plot_parametric/plot3d_parametric_line
-            e = (
-                (expr,)
-                if isinstance(expr, (Expr, Relational, BooleanFunction))
-                else expr
-            )
+            is_expr = isinstance(expr, (Expr, Relational, BooleanFunction))
+            e = (expr,) if is_expr else expr
             current_label = (
-                label
-                if label
-                else (
-                    str(expr)
-                    if isinstance(expr, (Expr, Relational, BooleanFunction))
-                    else str(e)
-                )
+                label if label else str(expr) if is_expr else str(e)
             )
             if ((not label) and (current_label != label) and
                 (nexpr in [2, 3]) and (npar == 1)):
                 # in case of parametric 2d/3d line plots, use the parameter
                 # as the label
                 current_label = str(ranges[0][0])
-            output.append((*e, *ranges, current_label))
+            output.append((*e, *ranges, current_label, rendering_kw))
 
     else:
         # In this case, we are plotting multiple expressions, each one with its
         # range. Each "expression" to be plotted has the following form:
         # (expr, range, label) where label is optional
 
-        # look for "global" range and label
-        labels = [a for a in args if isinstance(a, str)]
-        ranges = [a for a in args if _is_range(a)]
-        n = len(ranges) + len(labels)
+        _, ranges, labels, rendering_kw = _unpack_args(*args)
+        labels = [labels] if labels else []
+
+        # number of expressions
+        n = (len(ranges) + len(labels) +
+            (len(rendering_kw) if rendering_kw is not None else 0))
+        # rendering_kw = None if len(rendering_kw) == 0 else rendering_kw[0]
         new_args = args[:-n] if n > 0 else args
+
         # at this point, new_args might just be [expr]. But I need it to be
         # [[expr]] in order to be able to loop over [expr, range [opt], label [opt]]
         if not isinstance(new_args[0], (list, tuple, Tuple)):
             new_args = [new_args]
 
         # Each arg has the form (expr1, expr2, ..., range1 [optional], ...,
-        #   label [optional])
+        #   label [optional], rendering_kw [optional])
         for arg in new_args:
             # look for "local" range and label. If there is not, use "global".
             l = [a for a in arg if isinstance(a, str)]
@@ -194,6 +179,8 @@ def _check_arguments(args, nexpr, npar):
             r = [a for a in arg if _is_range(a)]
             if not r:
                 r = ranges.copy()
+            rend_kw = [a for a in arg if isinstance(a, dict)]
+            rend_kw = rendering_kw if len(rend_kw) == 0 else rend_kw[0]
 
             arg = arg[:nexpr]
             free_symbols = set().union(*[a.free_symbols for a in arg])
@@ -208,7 +195,7 @@ def _check_arguments(args, nexpr, npar):
                     label = str(r[0][0])
             else:
                 label = l[0]
-            output.append((*arg, *r, label))
+            output.append((*arg, *r, label, rend_kw))
     return output
 
 
@@ -227,10 +214,11 @@ def _plot_sympify(args):
     for i, a in enumerate(args):
         if isinstance(a, (list, tuple)):
             args[i] = Tuple(*_plot_sympify(a), sympify=False)
-        elif not isinstance(a, str):
+        elif not isinstance(a, (str, dict)):
             args[i] = sympify(a)
-    if isinstance(args, tuple):
-        return Tuple(*args, sympify=False)
+    # # TODO: is this necessary? isn't args of type list?
+    # if isinstance(args, tuple):
+    #     return Tuple(*args, sympify=False)
     return args
 
 
@@ -241,26 +229,15 @@ def _is_range(r):
     return (
         isinstance(r, Tuple)
         and (len(r) == 3)
-        and r.args[1].is_number
-        and r.args[2].is_number
+        and (not isinstance(r.args[1], str)) and r.args[1].is_number
+        and (not isinstance(r.args[2], str)) and r.args[2].is_number
     )
 
 
-def _unpack_args(*args, matrices=False, fill_ranges=True):
+def _unpack_args(*args):
     """Given a list/tuple of arguments previously processed by _plot_sympify(),
-    separates and returns its components: expressions, ranges, label.
-
-    Parameters
-    ==========
-        matrices : boolean
-            Default to False. If True, when a single DenseMatrix is given as
-            the expression, it will be converted to a list. This is useful in
-            order to deal with vectors (written in form of matrices) for
-            iplot.
-
-        fill_ranges : boolean
-            Default to True. If not enough ranges are provided, the algorithm
-            will try to create the missing ones.
+    separates and returns its components: expressions, ranges, label and
+    rendering keywords.
 
     Examples
     ========
@@ -285,8 +262,33 @@ def _unpack_args(*args, matrices=False, fill_ranges=True):
     ranges = [t for t in args if _is_range(t)]
     labels = [t for t in args if isinstance(t, str)]
     label = "" if not labels else labels[0]
-    results = [not (_is_range(a) or isinstance(a, str)) for a in args]
+    rendering_kw = [t for t in args if isinstance(t, dict)]
+    rendering_kw = None if not rendering_kw else rendering_kw[0]
+    results = [not (_is_range(a) or isinstance(a, (str, dict))) for a in args]
     exprs = [a for a, b in zip(args, results) if b]
+    return exprs, ranges, label, rendering_kw
+
+
+def _unpack_args_extended(*args, matrices=False, fill_ranges=True):
+    """Extendend _unpack_args to deal with vectors expressed as matrices.
+
+    Parameters
+    ==========
+    matrices : boolean
+        Default to False. If True, when a single DenseMatrix is given as
+        the expression, it will be converted to a list. This is useful in
+        order to deal with vectors (written in form of matrices) for
+        iplot.
+
+    fill_ranges : boolean
+        Default to True. If not enough ranges are provided, the algorithm
+        will try to create the missing ones.
+
+    See also
+    ========
+    _unpack_args
+    """
+    exprs, ranges, label, rendering_kw = _unpack_args(*args)
 
     if label == "":
         if len(exprs) == 1:
@@ -301,7 +303,7 @@ def _unpack_args(*args, matrices=False, fill_ranges=True):
             exprs, ranges = _split_vector(exprs[0], ranges, fill_ranges)
             if exprs[-1] is S.Zero:
                 exprs = exprs[:-1]
-    return exprs, ranges, label
+    return exprs, ranges, label, rendering_kw
 
 
 def ij2k(cols, i, j):

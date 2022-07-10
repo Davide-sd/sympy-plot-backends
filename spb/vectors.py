@@ -9,7 +9,7 @@ from spb.series import (
     _set_discretization_points,
     InteractiveSeries
 )
-from spb.utils import _plot_sympify, _unpack_args, _split_vector, _is_range
+from spb.utils import _plot_sympify, _unpack_args_extended, _split_vector, _is_range
 from sympy import MutableDenseMatrix, ImmutableDenseMatrix
 from sympy.core.containers import Tuple
 from sympy.functions.elementary.miscellaneous import sqrt
@@ -233,7 +233,8 @@ def _preprocess(*args, matrices=False, fill_ranges=True):
     following form: [expr, *ranges, label].
     `expr` can be a vector, a matrix or a list/tuple/Tuple.
 
-    `matrices` and `fill_ranges` are going to be passed to `_unpack_args`.
+    `matrices` and `fill_ranges` are going to be passed to
+    `_unpack_args_extended`.
     """
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
         # In this case we received arguments in one of the following forms.
@@ -248,7 +249,7 @@ def _preprocess(*args, matrices=False, fill_ranges=True):
 
     new_args = []
     for a in args:
-        exprs, ranges, label = _unpack_args(
+        exprs, ranges, label, rendering_kw = _unpack_args_extended(
             *a, matrices=matrices, fill_ranges=fill_ranges
         )
         if len(exprs) == 1:
@@ -273,7 +274,7 @@ def plot_vector(*args, show=True, **kwargs):
         `plot(expr, range1, range2, range3 [optional], **kwargs)`
 
     - Plotting multiple vector fields with different ranges and custom labels.
-        `plot((expr1, range1, range2, range3 [optional], label1), (expr2, range4, range5, range6 [optional], label2), **kwargs)`
+        `plot((expr1, range1, range2, range3 [optional], label1 [optional]), (expr2, range4, range5, range6 [optional], label2 [optional]), **kwargs)`
 
     Parameters
     ==========
@@ -292,9 +293,9 @@ def plot_vector(*args, show=True, **kwargs):
             ranges are needed.
 
         label : str, optional
-            The name of the vector field to be eventually shown on the legend.
-            If none is provided, the string representation of the vector will
-            be used.
+            The name of the vector field to be eventually shown on the legend
+            or colorbar. If none is provided, the string representation of
+            the vector will be used.
 
     aspect : (float, float) or str, optional
         Set the aspect ratio of the plot. The value depends on the backend
@@ -536,6 +537,7 @@ def plot_vector(*args, show=True, **kwargs):
     args = _preprocess(*args)
 
     labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
     kwargs = _set_discretization_points(kwargs, Vector3DSeries)
     kwargs.setdefault("aspect", "equal")
     kwargs.setdefault("legend", True)
@@ -548,7 +550,7 @@ def plot_vector(*args, show=True, **kwargs):
     else:
         raise ValueError("Mixing 2D vectors with 3D vectors is not allowed.")
 
-    _set_labels(series, labels)
+    _set_labels(series, labels, rendering_kw)
     p = Backend(*series, **kwargs)
     if show:
         p.show()

@@ -27,52 +27,65 @@ apply a colorloop so that each expression gets a unique color.
    :alt: matplotlib
 
 We can modify the styling of the lines by providing backend-specific commands
-through the ``line_kw`` argument, which will be passed directly to the
-backend-specific function responsible to draw lines.
+through the ``rendering_kw`` argument (or keyword argument), which will be
+passed directly to the backend-specific function responsible to draw lines.
 
-Each plotting function exposes a different option, for example ``plot3d()``
-exposes ``surface_kw``, ``plot_contour()`` exposes ``contour_kw``, etc.
-This design choice allowed to create plotting functions that combine several elements, for example ``plot_vector()`` can combine a contour plot with
-quivers or streamlines, thus it exposes ``contour_kw``, ``quiver_kw``,
+Some plot functions might create multiple data series about the same symbolic
+expression, so it exposes different rendering-related keyword arguments.
+For example, ``plot_vector`` combines a contour plot with a quiver (or
+streamline) plot, hence it exposes ``contour_kw``, ``quiver_kw`` and
 ``stream_kw``.
 
 Let's try to apply a dashed line style:
 
 .. code-block:: python
 
-   plot(sin(x), cos(x), line_kw=dict(linestyle="--"))
+   # provide the rendering_kw argument
+   plot(sin(x), cos(x), dict(linestyle="--"))
+   # alternatively, we can set the rendering_kw keyword argument
+   # plot(sin(x), cos(x), rendering_kw=dict(linestyle="--"))
 
 .. image:: ../_static/tut-5/fig_2.png
    :width: 600
    :alt: matplotlib
 
 As we can see, the same style has been applied to every series. What if we
-would like to apply different styles to different series? We can create
-different plots and combine them together:
+would like to apply different styles to different series? We can create a tuple
+of the form ``(expr, label [optional], rendering_kw [optional])`` for each
+expression, or we can provide a list of dictionaries to the ``rendering_kw``
+keyword argument, where the number of dictionaries must be equal to the number
+of expressions being plotted. For example:
 
 .. code-block:: python
 
-   p1 = plot(sin(x), show=False, line_kw=dict(color="red"))
-   p2 = plot(cos(x), show=False, line_kw=dict(linestyle="--"))
-   p3 = p1 + p2
-   p3.show()
+   plot((sin(x), dict(color="red")), (cos(x), dict(linestyle="--")))
+   # alternatively, set rendering_kw to a list of dictionaries
+   # plot(sin(x), cos(x), rendering_kw=[dict(color="red"), dict(linestyle="--")])
 
 .. image:: ../_static/tut-5/fig_3.png
    :width: 600
    :alt: matplotlib
 
-Note that the second series, `cos(x)`, is using the automatic color provided
-by the backend.
 
-Now, let's try to do the same with Plotly. Note that the ``line_kw`` options
-are different!
+Alternatively, we can create different plots and combine them together:
 
 .. code-block:: python
 
-   p1 = plot(sin(x), show=False, line_kw=dict(line_color="green"), backend=PB)
-   p2 = plot(cos(x), show=False, line_kw=dict(line_dash="dash"), backend=PB)
+   p1 = plot(sin(x), dict(color="red"), show=False)
+   p2 = plot(cos(x), dict(linestyle="--"), show=False)
    p3 = p1 + p2
    p3.show()
+
+
+Note that the second series, `cos(x)`, is using the automatic color provided
+by the backend.
+
+Now, let's try to do the same with Plotly. Note that the rendering
+options are different!
+
+.. code-block:: python
+
+   plot((sin(x), dict(line_color="green")), (cos(x), dict(line_dash="dash")), backend=PB)
 
 .. raw:: html
 
@@ -82,7 +95,7 @@ Let's now use same concepts with a 3D plot. This is the default look:
 
 .. code-block:: python
 
-   plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2))
+   plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), use_cm=True)
 
 .. image:: ../_static/tut-5/fig_4.png
    :width: 600
@@ -93,8 +106,7 @@ Now, let's change the colormap:
 .. code-block:: python
 
    import matplotlib.cm as cm
-   plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-       surface_kw=dict(cmap=cm.coolwarm))
+   plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), dict(cmap=cm.coolwarm), use_cm=True)
 
 .. image:: ../_static/tut-5/fig_5.png
    :width: 600
@@ -148,7 +160,7 @@ Let's try a 3D plot with default colormaps:
        (expr, (x, 0, 2), (y, -2, 0)),
        (expr, (x, -2, 0), (y, 0, 2)),
        (expr, (x, 0, 2), (y, 0, 2)),
-       n = 20, backend=PB
+       n = 20, backend=PB, use_cm=True
    )
 
 .. raw:: html
@@ -167,7 +179,7 @@ Now, let's change the colormaps:
        (expr, (x, 0, 2), (y, -2, 0)),
        (expr, (x, -2, 0), (y, 0, 2)),
        (expr, (x, 0, 2), (y, 0, 2)),
-       n = 20, backend=PB
+       n = 20, backend=PB, use_cm=True
    )
 
 .. raw:: html
