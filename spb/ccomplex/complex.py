@@ -889,7 +889,7 @@ def plot_complex_list(*args, **kwargs):
         eventually shown on the legend. The number of labels must be equal to
         the number of lists.
 
-    line_kw : dict, optional
+    rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.

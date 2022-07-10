@@ -68,38 +68,19 @@ class MatplotlibBackend(Plot):
         * ``'center'``: center of the current plot area.
         * ``'auto'``: the intersection point is automatically computed.
 
-    contour_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's
-        contour/contourf function to customize the appearance.
-        Refer to [#fn1]_ to learn more about customization.
-
-    image_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's
-        imshow function to customize the appearance.
-        Refer to [#fn2]_ to learn more about customization.
-
-    line_kw : dict, optional
+    rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's plot
-        functions to customize the appearance of the lines.
+        functions to customize the appearance of lines, surfaces, images,
+        contours, quivers, streamlines...
         To learn more about customization:
 
-        * Refer to [#fn3]_ if the plot is using solid colors.
-        * Refer to [#fn4]_ if the plot is using color maps.
-
-    quiver_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's quivers
-        function to customize the appearance.
-        Refer to [#fn5]_ to learn more about customization.
-
-    surface_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's
-        surface function to customize the appearance.
-        Refer to [#fn6]_ to learn more about customization.
-
-    stream_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's
-        streamplot function to customize the appearance.
-        Refer to [#fn7]_ to learn more about customization.
+        * Refer to [#fn1]_ to customize contour plots.
+        * Refer to [#fn2]_ to customize image plots.
+        * Refer to [#fn3]_ to customize solid line plots.
+        * Refer to [#fn4]_ to customize colormap-based line plots.
+        * Refer to [#fn5]_ to customize quiver plots.
+        * Refer to [#fn6]_ to customize surface plots.
+        * Refer to [#fn7]_ to customize stramline plots.
 
     use_cm : boolean, optional
         If True, apply a color map to the mesh/surface or parametric lines.

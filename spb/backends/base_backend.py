@@ -147,7 +147,7 @@ class Plot:
        >>> plot3d(
        ...     (cos(x**2 + y**2), (x, -2, 0), (y, -2, 2)),
        ...     (cos(x**2 + y**2), (x, 0, 2), (y, -2, 2)),
-       ...     backend=MBchild, n1=25, n2=50)
+       ...     backend=MBchild, n1=25, n2=50, use_cm=True)
 
 
     See also

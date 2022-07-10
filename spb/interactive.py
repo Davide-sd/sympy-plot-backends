@@ -1119,10 +1119,9 @@ def iplot(*args, show=True, **kwargs):
            title = "title 2",
            show = False
        )
-       p3 = plot(sin(x)*cos(x), (x, -5, 5), backend=MB,
+       p3 = plot(sin(x)*cos(x), (x, -5, 5), dict(marker="^"), backend=MB,
            adaptive=False, n=50,
-           is_point=True, is_filled=True,
-           line_kw=dict(marker="^"), show=False)
+           is_point=True, is_filled=True, show=False)
        p = p1 + p2 + p3
        p.show()
 
