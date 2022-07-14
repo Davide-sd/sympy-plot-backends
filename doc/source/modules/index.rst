@@ -13,6 +13,7 @@ This document is automatically generated using spb's docstrings.
    functions.rst
    vectors.rst
    ccomplex.rst
+   plotgrid.rst
    series.rst
    interactive.rst
    defaults.rst

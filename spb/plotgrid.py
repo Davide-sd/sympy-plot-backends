@@ -111,6 +111,7 @@ def plotgrid(*args, **kwargs):
     First mode of operation with instances of `MatplotlibBackend`:
 
     .. code-block:: python
+
        from sympy import symbols, sin, cos, tan, exp, sqrt, Matrix, gamma
        from spb.backends.matplotlib import MB
        from spb import *
@@ -123,21 +124,24 @@ def plotgrid(*args, **kwargs):
 
     First mode of operation with different backends. Try this on a Jupyter
     Notebook. Note:
+
     1. the output of `plotgrid` is not captured into a variable. It is
        captured and rendered by Jupyter Notebook.
     2. Matplotlib has been integrated as a picture, thus it loses its
        interactivity.
 
     .. code-block:: python
+
        p1 = plot(sin(x), backend=MB, show=False)
        p2 = plot(tan(x), backend=MB, detect_poles=True, show=False)
        p3 = plot(exp(-x), backend=MB, show=False)
        plotgrid(p1, p2, p3, nr=1, nc=3,
             panel_kw=dict(sizing_mode="stretch_width", height=250))
 
-    Second mode of operation: using Matplotlib GridSpec:
+    Second mode of operation, using Matplotlib GridSpec:
 
     .. code-block:: python
+
        from matplotlib.gridspec import GridSpec
 
        p1 = plot(sin(x), cos(x), show=False, backend=MB)
@@ -159,7 +163,7 @@ def plotgrid(*args, **kwargs):
     References
     ==========
 
-    .. [#fn1] `adaptive module <https://panel.holoviz.org/reference/layouts/GridSpec.html`_.
+    .. [#fn1] https://panel.holoviz.org/reference/layouts/GridSpec.html
 
     """
     matplotlib = import_module(
