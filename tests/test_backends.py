@@ -15,6 +15,7 @@ from spb import (
     plot_list, plot_piecewise, plot_polar, plot3d_implicit,
     plot3d_parametric_surface, plot_complex_list
 )
+from spb.interactive import InteractivePlot
 from sympy import latex, gamma
 from sympy.core.symbol import symbols
 from sympy.core.relational import Eq
@@ -2806,3 +2807,56 @@ def test_label_after_plot_instantiation():
     f = p.fig
     assert f.axes[0].lines[0].get_label() == "a"
     assert f.axes[0].lines[1].get_label() == "$b^{2}$"
+
+
+def test_functions_iplot_integration():
+    # verify the integration between most important plot functions and iplot
+
+    x, y, z, u, v = symbols("x, y, z, u, v")
+    p = plot(cos(u * x), params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot_parametric(cos(u * x), sin(x), params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot3d_parametric_line(cos(u * x), sin(x), u * x,
+        params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot3d(cos(u * x**2 + y**2), params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot_contour(cos(u * x**2 + y**2), params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    r = 2 + sin(7 * u + 5 * v)
+    expr = (
+        r * cos(x * u) * sin(v),
+        r * sin(x * u) * sin(v),
+        r * cos(v)
+        )
+    p = plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi),
+        params={x: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = lambda: plot3d_implicit(
+        u * x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        params={u: (1, 0, 2)}, show=False)
+    raises(NotImplementedError, p)
+
+    p = lambda: plot_implicit(Eq(u * x**2 + y**2, 3), (x, -3, 3), (y, -3, 3),
+        params={u: (1, 0, 2)}, show=False)
+    raises(NotImplementedError, p)
+
+    p = plot_geometry(Circle((u, 0), 4),
+        params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = lambda: plot_list([1, 2, 3], [4, 5, 6],
+        params={u: (1, 0, 2)}, show=False)
+    raises(NotImplementedError, p)
+
+    p = lambda: plot_piecewise(
+        u * Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10),
+        params={u: (1, 0, 2)}, show=False)
+    raises(NotImplementedError, p)

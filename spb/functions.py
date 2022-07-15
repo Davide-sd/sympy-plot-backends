@@ -32,7 +32,8 @@ from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
     ImplicitSeries, _set_discretization_points,
-    List2DSeries, GeometrySeries, Implicit3DSeries
+    List2DSeries, GeometrySeries, Implicit3DSeries,
+    InteractiveSeries
 )
 
 # N.B.
@@ -201,6 +202,7 @@ def _build_line_series(*args, **kwargs):
     series = []
     pp = kwargs.get("process_piecewise", False)
     sum_bound = int(kwargs.get("sum_bound", 1000))
+    # params = kwargs.get("params", None)
     for arg in args:
         expr, r, label, rendering_kw = arg
         kw = kwargs.copy()
@@ -211,6 +213,10 @@ def _build_line_series(*args, **kwargs):
         else:
             arg = _process_summations(sum_bound, *arg)
             series.append(LineOver1DRangeSeries(*arg[:-1], **kw))
+            # if params is None:
+            #     series.append(LineOver1DRangeSeries(*arg[:-1], **kw))
+            # else:
+            #     series.append(InteractiveSeries([expr], [r], label, **kw))
     return series
 
 
@@ -253,7 +259,14 @@ def _create_series(series_type, plot_expr, **kwargs):
     return series
 
 
-def plot(*args, show=True, **kwargs):
+def _create_interactive_plot(*plot_expr, **kwargs):
+    # NOTE: the iplot module is really slow to load, so let's load it only when
+    # it is necessary
+    from spb.interactive import iplot
+    return iplot(*plot_expr, **kwargs)
+
+
+def plot(*args, **kwargs):
     """Plots a function of a single variable as a curve.
 
     Typical usage examples are in the followings:
@@ -373,6 +386,12 @@ def plot(*args, show=True, **kwargs):
         numbers, which can be useful to plot sums. It only works when
         `adaptive=False`. When `only_integers=True`, the number of
         discretization points is choosen by the algorithm.
+
+    params : dict
+        A dictionary mapping symbols to parameters. This keyword argument
+        enables the interactive-widgets plot, which doesn't support the
+        adaptive algorithm (meaning it will use ``adaptive=False``).
+        Learn more by reading the documentation of ``iplot``.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -555,6 +574,24 @@ def plot(*args, show=True, **kwargs):
        Plot object containing:
        [0]: cartesian line: cos(exp(-x)) for x over (-3.141592653589793, 0.0)
 
+    Interactive-widget plot of an oscillator. Refer to ``iplot`` documentation
+    to learn more about the ``params`` dictionary.
+
+    .. code-block:: python
+
+       x, a, b, c = symbols("x, a, b, c")
+       plot(
+           (cos(a * x + b) * exp(-c * x), "oscillator"),
+           (exp(-c * x), "upper limit", {"linestyle": ":"}),
+           (-exp(-c * x), "lower limit", {"linestyle": ":"}),
+           (x, 0, 2 * pi),
+           params={
+               a: (1, 0, 10),     # frequency
+               b: (0, 0, 2 * pi), # phase
+               c: (0.25, 0, 1)    # damping
+           },
+           ylim=(-1.25, 1.25)
+       )
 
     References
     ==========
@@ -570,29 +607,38 @@ def plot(*args, show=True, **kwargs):
 
     """
     args = _plot_sympify(args)
+    plot_expr = _check_arguments(args, 1, 1, **kwargs)
+    params = kwargs.get("params", None)
     free = set()
-    for a in args:
-        if isinstance(a, Expr):
-            free |= a.free_symbols
+    for p in plot_expr:
+        free |= p[0].free_symbols
+    if params:
+        free = free.difference(params.keys())
     x = free.pop() if free else Symbol("x")
 
-    kwargs.setdefault("xlabel", lambda use_latex: x.name if not use_latex else latex(x))
-    kwargs.setdefault("ylabel", lambda use_latex: "f(%s)" % x.name if not use_latex else r"f\left(%s\right)" % latex(x))
+    fx = lambda use_latex: x.name if not use_latex else latex(x)
+    wrap = lambda use_latex: "f(%s)" if not use_latex else r"f\left(%s\right)"
+    fy = lambda use_latex: wrap(use_latex) % fx(use_latex)
+    kwargs.setdefault("xlabel", fx)
+    kwargs.setdefault("ylabel", fy)
+    kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
+
+    if params:
+        return _create_interactive_plot(*plot_expr, **kwargs)
+
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
-
-    kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
-    plot_expr = _check_arguments(args, 1, 1)
     series = _build_line_series(*plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
+
     Backend = kwargs.pop("backend", TWO_D_B)
     plots = Backend(*series, **kwargs)
-    if show:
+    if kwargs.get("show", True):
         plots.show()
     return plots
 
 
-def plot_parametric(*args, show=True, **kwargs):
+def plot_parametric(*args, **kwargs):
     """
     Plots a 2D parametric curve.
 
@@ -700,6 +746,12 @@ def plot_parametric(*args, show=True, **kwargs):
         If the `adaptive` flag is set to `True`, this parameter will be
         ignored.
 
+    params : dict
+        A dictionary mapping symbols to parameters. This keyword argument
+        enables the interactive-widgets plot, which doesn't support the
+        adaptive algorithm (meaning it will use ``adaptive=False``).
+        Learn more by reading the documentation of ``iplot``.
+
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
@@ -778,14 +830,16 @@ def plot_parametric(*args, show=True, **kwargs):
        Plot object containing:
        [0]: parametric cartesian line: (5*cos(2*u/3) + 2*cos(u), -5*sin(2*u/3) + 2*sin(u)) for u over (0.0, 18.84955592153876)
 
-    A parametric plot with multiple expressions with the same range:
+    A parametric plot with multiple expressions with the same range with solid
+    line colors:
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot_parametric((cos(u), sin(u)), (u, cos(u)), (u, -3, 3))
+       >>> plot_parametric((cos(u), sin(u)), (u, cos(u)), (u, -3, 3),
+       ...      use_cm=False)
        Plot object containing:
        [0]: parametric cartesian line: (cos(u), sin(u)) for u over (-3.0, 3.0)
        [1]: parametric cartesian line: (u, cos(u)) for u over (-3.0, 3.0)
@@ -808,6 +862,18 @@ def plot_parametric(*args, show=True, **kwargs):
        [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
        [1]: parametric cartesian line: (3*cos(2*u), 5*sin(4*u)) for u over (0.0, 3.141592653589793)
 
+    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
+    about the ``params`` dictionary.
+
+    .. code-block:: python
+
+       x, a = symbols("x a")
+       plot_parametric(
+           cos(a * x), sin(x), (x, 0, 2*pi),
+           params={a: (1, 0, 2)},
+           aspect="equal", xlim=(-1.25, 1.25), ylim=(-1.25, 1.25)
+       )
+
     References
     ==========
 
@@ -822,20 +888,25 @@ def plot_parametric(*args, show=True, **kwargs):
 
     """
     args = _plot_sympify(args)
+    kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
+    plot_expr = _check_arguments(args, 2, 1, **kwargs)
+
+    if kwargs.get("params", None):
+        return _create_interactive_plot(*plot_expr, **kwargs)
+
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
-    kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
-    plot_expr = _check_arguments(args, 2, 1)
     series = _create_series(Parametric2DLineSeries, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
+
     Backend = kwargs.pop("backend", TWO_D_B)
     plots = Backend(*series, **kwargs)
-    if show:
+    if kwargs.get("show", True):
         plots.show()
     return plots
 
 
-def plot3d_parametric_line(*args, show=True, **kwargs):
+def plot3d_parametric_line(*args, **kwargs):
     """
     Plots a 3D parametric line plot.
 
@@ -932,6 +1003,12 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
         If the `adaptive` flag is set to `True`, this parameter will be
         ignored.
 
+    params : dict
+        A dictionary mapping symbols to parameters. This keyword argument
+        enables the interactive-widgets plot, which doesn't support the
+        adaptive algorithm (meaning it will use ``adaptive=False``).
+        Learn more by reading the documentation of ``iplot``.
+
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
@@ -1022,6 +1099,18 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
        [0]: 3D parametric cartesian line: (cos(u), sin(u), u) for u over (-5.0, 5.0)
        [1]: 3D parametric cartesian line: (sin(u), u**2, u) for u over (-3.0, 3.0)
 
+    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
+    about the ``params`` dictionary.
+
+    .. code-block:: python
+
+       x, a = symbols("x a")
+       plot3d_parametric_line(
+           cos(a * x), sin(x), a * x, (x, 0, 2*pi),
+           params={a: (1, 0, 2)},
+           xlim=(-1.25, 1.25), ylim=(-1.25, 1.25)
+       )
+
     References
     ==========
 
@@ -1037,22 +1126,27 @@ def plot3d_parametric_line(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, Parametric3DLineSeries)
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    plot_expr = _check_arguments(args, 3, 1)
-    series = _create_series(Parametric3DLineSeries, plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
+    plot_expr = _check_arguments(args, 3, 1, **kwargs)
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
+
+    if kwargs.get("params", None):
+        return _create_interactive_plot(*plot_expr, **kwargs)
+
+    labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
+    series = _create_series(Parametric3DLineSeries, plot_expr, **kwargs)
+    _set_labels(series, labels, rendering_kw)
+
     Backend = kwargs.pop("backend", THREE_D_B)
     plots = Backend(*series, **kwargs)
-    if show:
+    if kwargs.get("show", True):
         plots.show()
     return plots
 
 
-def plot3d(*args, show=True, **kwargs):
+def plot3d(*args, **kwargs):
     """
     Plots a 3D surface plot.
 
@@ -1153,6 +1247,12 @@ def plot3d(*args, show=True, **kwargs):
     n : int or two-elements tuple (n1, n2), optional
         If an integer is provided, the x and y ranges are sampled uniformly
         at `n` of points. If a tuple is provided, it overrides `n1` and `n2`.
+
+    params : dict
+        A dictionary mapping symbols to parameters. This keyword argument
+        enables the interactive-widgets plot, which doesn't support the
+        adaptive algorithm (meaning it will use ``adaptive=False``).
+        Learn more by reading the documentation of ``iplot``.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -1297,6 +1397,16 @@ def plot3d(*args, show=True, **kwargs):
        ...     tx=np.rad2deg, ty=np.rad2deg, use_cm=True,
        ...     xlabel="x [deg]", ylabel="y [deg]")
 
+    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
+    about the ``params`` dictionary.
+
+    .. code-block:: python
+
+       x, d = symbols("x d")
+       plot3d(
+           cos(x**2 + y**2) * exp(-(x**2 + y**2) * d), (x, -2, 2), (y, -2, 2),
+           params={d: (0.25, 0, 1)}, n=50, zlim=(-1.25, 1.25))
+
     References
     ==========
 
@@ -1312,19 +1422,27 @@ def plot3d(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, SurfaceOver2DRangeSeries)
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    plot_expr = _check_arguments(args, 1, 2)
+    plot_expr = _check_arguments(args, 1, 2, **kwargs)
+
     for p in plot_expr:
         if isinstance(p[0], Plane):
             raise ValueError("Please, use ``plot_geometry`` to visualize "
                 "a plane.")
 
-    series = _create_series(SurfaceOver2DRangeSeries, plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
-    kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
-    kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
-    kwargs.setdefault("zlabel", lambda use_latex: "f(%s, %s)" % (series[0].var_x.name, series[0].var_y.name) if not use_latex else r"f\left(%s, %s\right)" % (latex(series[0].var_x), latex(series[0].var_y)))
+    free_x = set()
+    free_y = set()
+    for p in plot_expr:
+        free_x |= {p[1][0]}
+        free_y |= {p[2][0]}
+    x = free_x.pop() if free_x else Symbol("x")
+    y = free_y.pop() if free_y else Symbol("y")
+    fx = lambda use_latex: x.name if not use_latex else latex(x)
+    fy = lambda use_latex: y.name if not use_latex else latex(y)
+    wrap = lambda use_latex: "f(%s, %s)" if not use_latex else r"f\left(%s, %s\right)"
+    fz = lambda use_latex: wrap(use_latex) % (fx(use_latex), fy(use_latex))
+    kwargs.setdefault("xlabel", fx)
+    kwargs.setdefault("ylabel", fy)
+    kwargs.setdefault("zlabel", fz)
 
     # if a polar discretization is requested and automatic labelling has ben
     # applied, hide the labels on the x-y axis.
@@ -1334,14 +1452,23 @@ def plot3d(*args, show=True, **kwargs):
         if callable(kwargs["ylabel"]):
             kwargs["ylabel"] = ""
 
+    if kwargs.get("params", None):
+        kwargs["threed"] = True
+        return _create_interactive_plot(*plot_expr, **kwargs)
+
+    labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
+    series = _create_series(SurfaceOver2DRangeSeries, plot_expr, **kwargs)
+    _set_labels(series, labels, rendering_kw)
+
     Backend = kwargs.pop("backend", THREE_D_B)
     plots = Backend(*series, **kwargs)
-    if show:
+    if kwargs.get("show", True):
         plots.show()
     return plots
 
 
-def plot3d_parametric_surface(*args, show=True, **kwargs):
+def plot3d_parametric_surface(*args, **kwargs):
     """
     Plots a 3D parametric surface plot.
 
@@ -1418,6 +1545,11 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     n : int or two-elements tuple (n1, n2), optional
         If an integer is provided, the u and v ranges are sampled uniformly
         at `n` of points. If a tuple is provided, it overrides `n1` and `n2`.
+
+    params : dict
+        A dictionary mapping symbols to parameters. This keyword argument
+        enables the interactive-widgets plot. Learn more by reading the
+        documentation of ``iplot``.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -1510,22 +1642,26 @@ def plot3d_parametric_surface(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
-    plot_expr = _check_arguments(args, 3, 2)
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
+    plot_expr = _check_arguments(args, 3, 2, **kwargs)
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
+
+    if kwargs.get("params", None):
+        return _create_interactive_plot(*plot_expr, **kwargs)
+
+    labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
     series = _create_series(ParametricSurfaceSeries, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
     Backend = kwargs.pop("backend", THREE_D_B)
     plots = Backend(*series, **kwargs)
-    if show:
+    if kwargs.get("show", True):
         plots.show()
     return plots
 
 
-def plot3d_implicit(*args, show=True, **kwargs):
+def plot3d_implicit(*args, **kwargs):
     """
     Plots an isosurface of a function.
 
@@ -1672,27 +1808,35 @@ def plot3d_implicit(*args, show=True, **kwargs):
     plot3d_parametric_surface
 
     """
+    if kwargs.pop("params", None) is not None:
+        raise NotImplementedError(
+            "plot3d_implicit doesn't support interactive widgets.")
+
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, Implicit3DSeries)
-    series = []
     plot_expr = _check_arguments(args, 1, 3)
+
     labels = kwargs.pop("labels", dict())
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _create_series(Implicit3DSeries, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
 
-    kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
-    kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
-    kwargs.setdefault("zlabel", lambda use_latex: "f(%s, %s)" % (series[0].var_x.name, series[0].var_y.name) if not use_latex else r"f\left(%s, %s\right)" % (latex(series[0].var_x), latex(series[0].var_y)))
+    fx = lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x)
+    fy = lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y)
+    wrap = lambda use_latex: "f(%s, %s)" if not use_latex else r"f\left(%s, %s\right)"
+    fz = lambda use_latex: wrap(use_latex) % (fx(use_latex), fy(use_latex))
+    kwargs.setdefault("xlabel", fx)
+    kwargs.setdefault("ylabel", fy)
+    kwargs.setdefault("zlabel", fz)
 
     Backend = kwargs.pop("backend", THREE_D_B)
     plots = Backend(*series, **kwargs)
-    if show:
+    if kwargs.get("show", True):
         plots.show()
     return plots
 
 
-def plot_contour(*args, show=True, **kwargs):
+def plot_contour(*args, **kwargs):
     """
     Draws contour plot of a function of two variables.
 
@@ -1731,6 +1875,15 @@ def plot_contour(*args, show=True, **kwargs):
        Plot object containing:
        [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
 
+    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
+    about the ``params`` dictionary.
+
+    .. code-block:: python
+
+       x, y, a = symbols("x y a")
+       plot_contour(
+           cos(a * x**2 + y**2), (x, -2, 2), (y, -2, 2),
+           params={a: (1, 0, 2)}, grid=False)
 
     See Also
     ========
@@ -1742,15 +1895,19 @@ def plot_contour(*args, show=True, **kwargs):
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ContourSeries)
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    plot_expr = _check_arguments(args, 1, 2)
-    series = _create_series(ContourSeries, plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
-    xlabel = series[0].var_x.name
-    ylabel = series[0].var_y.name
-    kwargs.setdefault("xlabel", lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x))
-    kwargs.setdefault("ylabel", lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y))
+    plot_expr = _check_arguments(args, 1, 2, **kwargs)
+
+    free_x = set()
+    free_y = set()
+    for p in plot_expr:
+        free_x |= {p[1][0]}
+        free_y |= {p[2][0]}
+    x = free_x.pop() if free_x else Symbol("x")
+    y = free_y.pop() if free_y else Symbol("y")
+    fx = lambda use_latex: x.name if not use_latex else latex(x)
+    fy = lambda use_latex: y.name if not use_latex else latex(y)
+    kwargs.setdefault("xlabel", fx)
+    kwargs.setdefault("ylabel", fy)
 
     # if a polar discretization is requested and automatic labelling has ben
     # applied, hide the labels on the x-y axis.
@@ -1760,14 +1917,23 @@ def plot_contour(*args, show=True, **kwargs):
         if callable(kwargs["ylabel"]):
             kwargs["ylabel"] = ""
 
+    if kwargs.get("params", None):
+        kwargs["threed"] = False
+        return _create_interactive_plot(*plot_expr, **kwargs)
+
+    labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
+    series = _create_series(ContourSeries, plot_expr, **kwargs)
+    _set_labels(series, labels, rendering_kw)
+
     Backend = kwargs.pop("backend", TWO_D_B)
-    plot_contours = Backend(*series, **kwargs)
-    if show:
-        plot_contours.show()
-    return plot_contours
+    plots = Backend(*series, **kwargs)
+    if kwargs.get("show", True):
+        plots.show()
+    return plots
 
 
-def plot_implicit(*args, show=True, **kwargs):
+def plot_implicit(*args, **kwargs):
     """Plot implicit equations / inequalities.
 
     plot_implicit, by default, generates a contour using a mesh grid of fixed
@@ -1935,6 +2101,10 @@ def plot_implicit(*args, show=True, **kwargs):
     plot3d_parametric_surface, plot_geometry, plot3d_implicit
 
     """
+    if kwargs.pop("params", None) is not None:
+        raise NotImplementedError(
+            "plot_implicit doesn't support interactive widgets.")
+
     # if the user is plotting a single expression, then he can pass in one
     # or two symbols to sort the axis. Ranges will then be automatically
     # created.
@@ -1982,7 +2152,7 @@ def plot_implicit(*args, show=True, **kwargs):
     kwargs.setdefault("ylabel", lambda use_latex: series[-1].var_y.name if not use_latex else latex(series[0].var_y))
     Backend = kwargs.pop("backend", TWO_D_B)
     p = Backend(*series, **kwargs)
-    if show:
+    if kwargs.get("show", True):
         p.show()
     return p
 
@@ -2028,7 +2198,7 @@ def plot_polar(*args, **kwargs):
     return plot(*args, **kwargs)
 
 
-def plot_geometry(*args, show=True, **kwargs):
+def plot_geometry(*args, **kwargs):
     """Plot entities from the sympy.geometry module.
 
     Parameters
@@ -2066,9 +2236,16 @@ def plot_geometry(*args, show=True, **kwargs):
         equal to the number of geometric entities.
 
     params : dict
-        Substitution dictionary to properly evaluate symbolic geometric
-        entities. The keys represents symbols, the values represents the
-        numeric number associated to the symbol.
+        A dictionary in which the keys are symbols, enabling two different
+        modes of operation:
+
+        1. If the values are numbers, the dictionary acts like a substitution
+           dictionary for the provided geometric entities.
+
+        2. If the values are tuples representing parameters, the dictionary
+           enables the interactive-widgets plot, which doesn't support the
+           adaptive algorithm (meaning it will use ``adaptive=False``).
+           Learn more by reading the documentation of ``iplot``.
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
@@ -2215,30 +2392,62 @@ def plot_geometry(*args, show=True, **kwargs):
        [0]: geometry entity: Point3D(5, 5, 5)
        [1]: geometry entity: Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4))
        [2]: plane series over (x, -5, 5), (y, -4, 4), (z, -10, 10)
+
+    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
+    about the ``params`` dictionary.
+
+    .. code-block:: python
+
+       from sympy import *
+       import param
+       a, b, c, d = symbols("a, b, c, d")
+       plot_geometry(
+           (Polygon((a, b), c, n=d), "a"),
+           (Polygon((a + 2, b + 3), c, n=d + 1), "b"),
+           params = {
+               a: (0, -1, 1),
+               b: (1, -1, 1),
+               c: (2, 1, 2),
+               d: param.Integer(3, softbounds=(3, 8), label="n")
+           },
+           aspect="equal", is_filled=False,
+           xlim=(-2.5, 5.5), ylim=(-3, 6.5))
+
     """
     args = _plot_sympify(args)
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
 
     series = []
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
         args = [args]
 
+    params = kwargs.get("params", None)
+    is_interactive = False if params is None else any(hasattr(t, "__iter__") for t in params.values())
+    plot_expr = []
+
     for a in args:
         exprs, ranges, label, rendering_kw = _unpack_args(*a)
-        kw = kwargs.copy()
-        if rendering_kw is not None:
-            kw["rendering_kw"] = rendering_kw
-        r = ranges if len(ranges) > 0 else [None]
-        if len(exprs) == 1:
-            series.append(GeometrySeries(exprs[0], *r, label, **kw))
+
+        if not is_interactive:
+            kw = kwargs.copy()
+            if rendering_kw is not None:
+                kw["rendering_kw"] = rendering_kw
+            r = ranges if len(ranges) > 0 else [None]
+            if len(exprs) == 1:
+                series.append(GeometrySeries(exprs[0], *r, label, **kw))
+            else:
+                # this is the case where the user provided: v1, v2, ..., range
+                # we use the same ranges for each expression
+                for e in exprs:
+                    series.append(GeometrySeries(e, *r, str(e), **kw))
         else:
-            # this is the case where the user provided: v1, v2, ..., range
-            # we use the same ranges for each expression
-            for e in exprs:
-                series.append(GeometrySeries(e, *r, str(e), **kw))
+            plot_expr.append([*exprs, *ranges, label, rendering_kw])
+
+    if is_interactive:
+        return _create_interactive_plot(*plot_expr, **kwargs)
 
     # TODO: apply line_kw and fill_kw
+    labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
     _set_labels(series, labels, rendering_kw)
 
     any_3D = any(s.is_3D for s in series)
@@ -2247,12 +2456,12 @@ def plot_geometry(*args, show=True, **kwargs):
 
     Backend = kwargs.pop("backend", THREE_D_B if any_3D else TWO_D_B)
     p = Backend(*series, **kwargs)
-    if show:
+    if kwargs.get("show", True):
         p.show()
     return p
 
 
-def plot_list(*args, show=True, **kwargs):
+def plot_list(*args, **kwargs):
     """Plots lists of coordinates (ie, lists of numbers).
 
     Typical usage examples are in the followings:
@@ -2393,6 +2602,10 @@ def plot_list(*args, show=True, **kwargs):
        [1]: list plot
 
     """
+    if kwargs.pop("params", None) is not None:
+        raise NotImplementedError(
+            "plot_list doesn't support interactive widgets.")
+
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = []
@@ -2433,7 +2646,7 @@ def plot_list(*args, show=True, **kwargs):
 
     Backend = kwargs.pop("backend", TWO_D_B)
     p = Backend(*series, **kwargs)
-    if show:
+    if kwargs.get("show", True):
         p.show()
     return p
 
@@ -2520,8 +2733,8 @@ def plot_piecewise(*args, **kwargs):
 
     label : str or list/tuple, optional
         The label to be shown in the legend. If not provided, the string
-        representation of `expr` will be used. The number of labels must be
-        equal to the number of expressions.
+        representation of `expr` will be used. If a list/tuple is provided, the
+        number of labels must be equal to the number of expressions.
 
     loss_fn : callable or None
         The loss function to be used by the `adaptive` learner.
@@ -2652,45 +2865,49 @@ def plot_piecewise(*args, **kwargs):
     plot_implicit, plot_geometry, plot_list, plot3d_implicit
 
     """
+    if kwargs.pop("params", None) is not None:
+        raise NotImplementedError(
+            "plot_piecewise doesn't support interactive widgets.")
+
     Backend = kwargs.pop("backend", TWO_D_B)
-
     args = _plot_sympify(args)
-    free = set()
-    for a in args:
-        if isinstance(a, Expr):
-            free |= a.free_symbols
-            if len(free) > 1:
-                raise ValueError(
-                    "The same variable should be used in all "
-                    "univariate expressions being plotted."
-                )
-
+    plot_expr = _check_arguments(args, 1, 1)
     show = kwargs.get("show", True)
-    kwargs["show"] = False
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-
+    free = set()
+    for p in plot_expr:
+        free |= p[0].free_symbols
     x = free.pop() if free else Symbol("x")
-    kwargs.setdefault("xlabel", lambda use_latex: x.name if not use_latex else latex(x))
-    kwargs.setdefault("ylabel", lambda use_latex: "f(%s)" % x.name if not use_latex else r"f\left(%s\right)" % latex(x))
+
+    fx = lambda use_latex: x.name if not use_latex else latex(x)
+    wrap = lambda use_latex: "f(%s)" if not use_latex else r"f\left(%s\right)"
+    fy = lambda use_latex: wrap(use_latex) % fx(use_latex)
+    kwargs.setdefault("xlabel", fx)
+    kwargs.setdefault("ylabel", fy)
+    kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
     kwargs.setdefault("legend", False)
     kwargs["process_piecewise"] = True
-    kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
-    series = []
 
-    plots = []
-    plot_expr = _check_arguments(args, 1, 1)
+    labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
+    if isinstance(labels, str):
+        labels = [labels] * len(plot_expr)
+
+    # NOTE: rendering_kw keyword argument is not implemented in this function
+    # because it would override the optimal settings chosen by the backend.
+    # If a user want to set custom rendering keywords, just use the notation
+    # (expr, range, label [optional], rendering_kw [optional])
     color_series_dict = dict()
     for i, a in enumerate(plot_expr):
         series = _build_line_series(a, **kwargs)
         if i < len(labels):
-            _set_labels(series, [labels[i]] * len(series))
+            _set_labels(series, [labels[i]] * len(series), None)
         color_series_dict[i] = series
 
-    # NOTE: let's overwrite this keyword argument
+    # NOTE: let's overwrite this keyword argument: the dictionary will be used
+    # by the backend to assign the proper colors to the pieces
     kwargs["process_piecewise"] = color_series_dict
-    p = Backend(**kwargs)
 
+    p = Backend(**kwargs)
     if show:
         p.show()
     return p
