@@ -9,7 +9,10 @@ from spb.series import (
     _set_discretization_points,
     InteractiveSeries
 )
-from spb.utils import _plot_sympify, _unpack_args_extended, _split_vector, _is_range
+from spb.utils import (
+    _plot_sympify, _unpack_args_extended, _split_vector, _is_range,
+    _instantiate_backend
+)
 from sympy import MutableDenseMatrix, ImmutableDenseMatrix
 from sympy.core.containers import Tuple
 from sympy.functions.elementary.miscellaneous import sqrt
@@ -591,7 +594,4 @@ def plot_vector(*args, **kwargs):
         raise ValueError("Mixing 2D vectors with 3D vectors is not allowed.")
 
     _set_labels(series, labels, rendering_kw)
-    p = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        p.show()
-    return p
+    return _instantiate_backend(Backend, *series, **kwargs)

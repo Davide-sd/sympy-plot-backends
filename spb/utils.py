@@ -421,3 +421,10 @@ def _split_vector(expr, ranges, fill_ranges=True):
         xexpr, yexpr, zexpr = expr
     split_expr = xexpr, yexpr, zexpr
     return split_expr, ranges
+
+
+def _instantiate_backend(Backend, *series, **kwargs):
+    p = Backend(*series, **kwargs)
+    if kwargs.get("show", True):
+        p.show()
+    return p

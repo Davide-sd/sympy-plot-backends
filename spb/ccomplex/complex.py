@@ -7,7 +7,7 @@ from sympy.core.symbol import Dummy, symbols
 from sympy.core.numbers import I
 from spb.defaults import cfg
 from spb.functions import _set_labels
-from spb.utils import _unpack_args
+from spb.utils import _unpack_args, _instantiate_backend
 import warnings
 
 from spb.series import (
@@ -228,10 +228,7 @@ def _plot_complex(*args, **kwargs):
 
     _set_axis_labels(series, kwargs)
 
-    p = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        p.show()
-    return p
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def _set_axis_labels(series, kwargs):

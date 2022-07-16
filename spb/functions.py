@@ -27,7 +27,9 @@ from sympy.functions.elementary.piecewise import Piecewise, piecewise_fold
 from sympy.geometry import Plane
 from sympy.sets.sets import EmptySet, FiniteSet, Interval, Union
 from spb.defaults import TWO_D_B, THREE_D_B
-from spb.utils import _plot_sympify, _check_arguments, _unpack_args
+from spb.utils import (
+    _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend
+)
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
@@ -628,10 +630,7 @@ def plot(*args, **kwargs):
     _set_labels(series, labels, rendering_kw)
 
     Backend = kwargs.pop("backend", TWO_D_B)
-    plots = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        plots.show()
-    return plots
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot_parametric(*args, **kwargs):
@@ -898,10 +897,7 @@ def plot_parametric(*args, **kwargs):
     _set_labels(series, labels, rendering_kw)
 
     Backend = kwargs.pop("backend", TWO_D_B)
-    plots = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        plots.show()
-    return plots
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot3d_parametric_line(*args, **kwargs):
@@ -1140,10 +1136,7 @@ def plot3d_parametric_line(*args, **kwargs):
     _set_labels(series, labels, rendering_kw)
 
     Backend = kwargs.pop("backend", THREE_D_B)
-    plots = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        plots.show()
-    return plots
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot3d(*args, **kwargs):
@@ -1464,10 +1457,7 @@ def plot3d(*args, **kwargs):
     _set_labels(series, labels, rendering_kw)
 
     Backend = kwargs.pop("backend", THREE_D_B)
-    plots = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        plots.show()
-    return plots
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot3d_parametric_surface(*args, **kwargs):
@@ -1657,10 +1647,7 @@ def plot3d_parametric_surface(*args, **kwargs):
     series = _create_series(ParametricSurfaceSeries, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
     Backend = kwargs.pop("backend", THREE_D_B)
-    plots = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        plots.show()
-    return plots
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot3d_implicit(*args, **kwargs):
@@ -1832,10 +1819,7 @@ def plot3d_implicit(*args, **kwargs):
     kwargs.setdefault("zlabel", fz)
 
     Backend = kwargs.pop("backend", THREE_D_B)
-    plots = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        plots.show()
-    return plots
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot_contour(*args, **kwargs):
@@ -1931,10 +1915,7 @@ def plot_contour(*args, **kwargs):
     _set_labels(series, labels, rendering_kw)
 
     Backend = kwargs.pop("backend", TWO_D_B)
-    plots = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        plots.show()
-    return plots
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot_implicit(*args, **kwargs):
@@ -2155,10 +2136,7 @@ def plot_implicit(*args, **kwargs):
     kwargs.setdefault("xlabel", lambda use_latex: series[-1].var_x.name if not use_latex else latex(series[0].var_x))
     kwargs.setdefault("ylabel", lambda use_latex: series[-1].var_y.name if not use_latex else latex(series[0].var_y))
     Backend = kwargs.pop("backend", TWO_D_B)
-    p = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        p.show()
-    return p
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot_polar(*args, **kwargs):
@@ -2465,10 +2443,7 @@ def plot_geometry(*args, **kwargs):
         kwargs["aspect"] = "equal"
 
     Backend = kwargs.pop("backend", THREE_D_B if any_3D else TWO_D_B)
-    p = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        p.show()
-    return p
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot_list(*args, **kwargs):
@@ -2655,10 +2630,7 @@ def plot_list(*args, **kwargs):
     _set_labels(series, labels, rendering_kw)
 
     Backend = kwargs.pop("backend", TWO_D_B)
-    p = Backend(*series, **kwargs)
-    if kwargs.get("show", True):
-        p.show()
-    return p
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot_piecewise(*args, **kwargs):
@@ -2917,7 +2889,4 @@ def plot_piecewise(*args, **kwargs):
     # by the backend to assign the proper colors to the pieces
     kwargs["process_piecewise"] = color_series_dict
 
-    p = Backend(**kwargs)
-    if show:
-        p.show()
-    return p
+    return _instantiate_backend(Backend, **kwargs)
