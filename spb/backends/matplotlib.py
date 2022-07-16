@@ -415,6 +415,8 @@ class MatplotlibBackend(Plot):
                     # facecolors must be computed here because s.rendering_kw
                     # might have its own cmap
                     cmap = kw["cmap"]
+                    if isinstance(cmap, str):
+                        cmap = self.cm.get_cmap(cmap)
                     kw["facecolors"] = cmap(norm(facecolors))
                 c = self.ax.plot_surface(x, y, z, **kw)
                 is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm, norm=norm, cmap=cmap)
@@ -849,7 +851,10 @@ class MatplotlibBackend(Plot):
 
                     if is_cb_added:
                         norm = self.Normalize(vmin=np.amin(facecolors), vmax=np.amax(facecolors))
-                        kw["facecolors"] = kw["cmap"](norm(facecolors))
+                        cmap = kw["cmap"]
+                        if isinstance(cmap, str):
+                            cmap = self.cm.get_cmap(cmap)
+                        kw["facecolors"] = cmap(norm(facecolors))
                     self._handles[i][0].remove()
                     self._handles[i][0] = self.ax.plot_surface(
                         x, y, z, **kw)
