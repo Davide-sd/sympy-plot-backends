@@ -352,6 +352,11 @@ def test_plot_sum():
     p4 = p2 + p1 + p3
     assert p4.xlabel == "x2" and p4.ylabel == "y2"
 
+    # plots can be added together with sum()
+    p5 = sum([p1, p2, p3])
+    assert isinstance(p5, PB)
+    assert len(p5.series) == 3
+
     # summing different types of plots: the result is consistent with the
     # original visualization. In particular, if no `rendering_kw` is given
     # to `p2` then the backend will use automatic coloring to differentiate

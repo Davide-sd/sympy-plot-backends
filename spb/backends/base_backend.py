@@ -424,6 +424,8 @@ class Plot:
         return self._do_sum(other)
 
     def __radd__(self, other):
+        if other == 0:
+            return self
         return other._do_sum(self)
 
     def _do_sum(self, other):
