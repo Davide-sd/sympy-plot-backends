@@ -637,15 +637,24 @@ class BokehBackend(Plot):
                         data, quiver_kw = self._get_quivers_data(
                             x, y, u, v, **quiver_kw
                         )
-                        mag = data["magnitude"]
-                        color_mapper = self.bokeh.models.LinearColorMapper(
-                            palette=next(self._cm), low=min(mag), high=max(mag))
-                        line_color = quiver_kw.get(
-                            "line_color",
-                            {"field": "magnitude", "transform": color_mapper},
-                        )
                         rend[i].data_source.data.update(data)
-                        rend[i].glyph.line_color = line_color
+
+                        line_color = rend[i].glyph.line_color
+                        if (not s.use_quiver_solid_color) and s.use_cm:
+                            # update the colorbar
+                            cmap = line_color["transform"].palette
+                            mag = data["magnitude"]
+                            color_mapper = self.bokeh.models.LinearColorMapper(
+                                palette=cmap, low=min(mag),
+                                high=max(mag))
+                            line_color = quiver_kw.get(
+                                "line_color",
+                                {
+                                    "field": "magnitude",
+                                    "transform": color_mapper
+                                },
+                            )
+                            rend[i].glyph.line_color = line_color
 
                 elif s.is_complex and s.is_domain_coloring and not s.is_3Dsurface:
                     # TODO: for some unkown reason, domain_coloring and
