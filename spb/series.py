@@ -683,6 +683,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         # NOTE: even though this class represents a line over a real range,
         # this class serves as a base class for AbsArgLineSeries, which is
         # capable of plotting a line over a complex range.
+        if "is_complex" in kwargs.keys():
+            self.is_complex = kwargs["is_complex"]
         self.start = complex(var_start_end[1])
         self.end = complex(var_start_end[2])
         if self.start.imag != self.end.imag:
@@ -1867,6 +1869,8 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
         return object.__new__(cls)
 
     def __init__(self, exprs, ranges, label="", **kwargs):
+        if "is_complex" in kwargs.keys():
+            self.is_complex = kwargs["is_complex"]
         super().__init__(exprs, ranges, label, **kwargs)
         self.var = sympify(ranges[0][0])
         self.start = complex(ranges[0][1])
@@ -2255,6 +2259,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         self.only_integers = kwargs.get("only_integers", False)
         self.use_cm = kwargs.get("use_cm", True)
         self.is_polar = kwargs.get("is_polar", False)
+        self.surface_color = kwargs.get("surface_color", None)
 
         # domain coloring mode
         self.coloring = kwargs.get("coloring", "a")

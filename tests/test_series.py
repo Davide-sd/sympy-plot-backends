@@ -1,4 +1,4 @@
-from sympy import latex
+from sympy import latex, exp
 from sympy.core.symbol import symbols
 from sympy.core.containers import Tuple
 from sympy.core.numbers import I, pi
@@ -2563,3 +2563,34 @@ def test_line_surface_color():
         [z * cos(x**2 + y**2)], [(x, -2, 2), (y, -2, 2)], params={z: 1},
         n1=10, n2=10, surface_color=lambda x: x)
     assert (s.surface_color is None) and callable(s.color_func)
+
+
+def test_complex_adaptive_false():
+    # verify that complex-related series with adaptive=False produces
+    # the correct result.
+
+    x, u = symbols("x u")
+
+    def do_test(data1, data2):
+        assert len(data1) == len(data2)
+        for d1, d2 in zip(data1, data2):
+            assert np.allclose(d1, d2)
+
+    s1 = LineOver1DRangeSeries(im(sqrt(x) * exp(-x**2)), (x, -5, 5), "",
+        adaptive=False, n=10, is_complex=False)
+    s2 = LineOver1DRangeSeries(im(sqrt(x) * exp(-x**2)), (x, -5, 5), "",
+        adaptive=False, n=10, is_complex=True)
+    s3 = LineInteractiveSeries([im(sqrt(u * x) * exp(-x**2))], [(x, -5, 5)], "",
+        adaptive=False, n1=10, params={u: 1}, is_complex=False)
+    s4 = LineInteractiveSeries([im(sqrt(u * x) * exp(-x**2))], [(x, -5, 5)], "",
+        adaptive=False, n1=10, params={u: 1}, is_complex=True)
+    data1 = s1.get_data()
+    data2 = s2.get_data()
+    data3 = s3.get_data()
+    data4 = s4.get_data()
+
+    do_test(data1, data3)
+    assert np.allclose(data1[1], 0) and np.allclose(data3[1], 0)
+    do_test(data2, data4)
+    assert (not np.allclose(data2[1], 0)) and (not np.allclose(data4[1], 0))
+    
