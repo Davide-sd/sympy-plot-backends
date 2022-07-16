@@ -263,7 +263,7 @@ def _preprocess(*args, matrices=False, fill_ranges=True):
     return new_args
 
 
-def plot_vector(*args, show=True, **kwargs):
+def plot_vector(*args, **kwargs):
     """
     Plot a 2D or 3D vector field. By default, the aspect ratio of the plot
     is set to `aspect="equal"`.
@@ -311,9 +311,11 @@ def plot_vector(*args, show=True, **kwargs):
         contour function to customize the appearance. Refer to the plotting
         library (backend) manual for more informations.
 
-    label : str or list/tuple, optional
+    label : list/tuple, optional
         The label to be shown in the colorbar if ``scalar=None``.
         If not provided, the string representation of `expr` will be used.
+        The number of labels must be equal to the number of series generated
+        by the plotting function.
 
     n1, n2, n3 : int
         Number of discretization points for the quivers or streamlines in the
@@ -327,6 +329,12 @@ def plot_vector(*args, show=True, **kwargs):
     nc : int
         Number of discretization points for the scalar contour plot.
         Default to 100.
+
+    params : dict
+        A dictionary mapping symbols to parameters. This keyword argument
+        enables the interactive-widgets plot, which doesn't support the
+        adaptive algorithm (meaning it will use ``adaptive=False``).
+        Learn more by reading the documentation of ``iplot``.
 
     quiver_kw : dict
         A dictionary of keywords/values which is passed to the backend quivers-
@@ -448,7 +456,9 @@ def plot_vector(*args, show=True, **kwargs):
        :include-source: True
 
        >>> plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
-       ...     quiver_kw=dict(color="black"), grid=False)
+       ...     quiver_kw=dict(color="black"),
+       ...     contour_kw={"cmap": "Blues_r", "levels": 20},
+       ...     grid=False)
        Plot object containing:
        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
@@ -483,6 +493,22 @@ def plot_vector(*args, show=True, **kwargs):
        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)
        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -5.0, 5.0), (y, -3.0, 3.0)
        [2]: 2D vector series: [y, x] over (x, -5.0, 5.0), (y, -3.0, 3.0)
+
+    Interactive-widget 2D vector plot. Refer to ``iplot`` documentation to
+    learn more about the ``params`` dictionary.
+
+    .. code-block:: python
+
+       from sympy import *
+       from spb import *
+       x, y, u = symbols("x y u")
+       plot_vector(
+           [-sin(u * y), cos(x)], (x, -3, 3), (y, -3, 3),
+           params={u: (1, 0, 2)},
+           n=20,
+           quiver_kw=dict(color="black"),
+           contour_kw={"cmap": "Blues_r", "levels": 20},
+           grid=False)
 
     3D vector field.
 
@@ -532,6 +558,12 @@ def plot_vector(*args, show=True, **kwargs):
        ...     xlabel="x", ylabel="y", zlabel="z")
        Plot object containing:
        [0]: 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0)
+
+    See Also
+    ========
+
+    iplot
+
     """
     args = _plot_sympify(args)
     args = _preprocess(*args)
@@ -541,6 +573,14 @@ def plot_vector(*args, show=True, **kwargs):
     kwargs = _set_discretization_points(kwargs, Vector3DSeries)
     kwargs.setdefault("aspect", "equal")
     kwargs.setdefault("legend", True)
+
+    params = kwargs.get("params", None)
+    is_interactive = False if params is None else True
+    kwargs["is_interactive"] = is_interactive
+    if is_interactive:
+        from spb.interactive import iplot
+        kwargs["is_vector"] = True
+        return iplot(*args, **kwargs)
 
     series = _build_series(*args, **kwargs)
     if all([isinstance(s, (Vector2DSeries, ContourSeries)) for s in series]):
@@ -552,6 +592,6 @@ def plot_vector(*args, show=True, **kwargs):
 
     _set_labels(series, labels, rendering_kw)
     p = Backend(*series, **kwargs)
-    if show:
+    if kwargs.get("show", True):
         p.show()
     return p

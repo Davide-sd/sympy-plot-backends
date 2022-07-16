@@ -9,6 +9,7 @@ from spb.ccomplex.complex import _build_series as _build_complex_series
 from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify, _unpack_args_extended
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
+from spb.functions import _set_labels
 import warnings
 
 param = import_module(
@@ -618,7 +619,7 @@ def create_series(*args, **kwargs):
             exprs, ranges, label, rkw = _unpack_args_extended(
                 *a, matrices=False, fill_ranges=False
             )
-            new_args.append(Tuple(exprs[0], *ranges, label, sympify=False))
+            new_args.append(Tuple(exprs[0], *ranges, label, rkw, sympify=False))
         series = _build_complex_series(*new_args, interactive=True, **kwargs)
     elif is_vector:
         args = _preprocess(*args, matrices=False, fill_ranges=False)
@@ -633,6 +634,7 @@ def create_series(*args, **kwargs):
             exprs, ranges, label, rkw = _unpack_args_extended(
                 *a, matrices=True, fill_ranges=False
             )
+            kwargs["rendering_kw"] = rkw
             if isinstance(_slice, (tuple, list)):
                 # Sliced 3D vector field: each slice creates a
                 # unique series
@@ -683,8 +685,15 @@ class InteractivePlot(DynamicParam, PanelLayout):
         super().__init__(*args, name=self._name, params=params, use_latex=use_latex)
         PanelLayout.__init__(self, layout, ncols, throttled, servable, custom_css, pane_kw)
 
-        # create the series
+        # create the series and apply the global labels and rendering keywords
+        labels = kwargs.pop("label", [])
+        rendering_kw = kwargs.pop("rendering_kw", None)
         series = create_series(*args, iplot=self, **kwargs)
+        _set_labels(series, labels, rendering_kw)
+
+        if kwargs.get("is_complex", False):
+            from spb.ccomplex.complex import _set_axis_labels
+            _set_axis_labels(series, kwargs)
         is_3D = all([s.is_3D for s in series])
         # create the plot
         Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
@@ -763,8 +772,14 @@ class InteractivePlot(DynamicParam, PanelLayout):
 
 
 def iplot(*args, show=True, **kwargs):
-    """
-    Create interactive plots of symbolic expressions.
+    """Create interactive-widget plots of symbolic expressions.
+
+    Note that this function is already integrated with many of the usual
+    plotting functions. It is recommended to use those plotting functions
+    instead of ``iplot`` because their documentation is much more specific.
+
+    However, the following documentation explains in details the main features
+    exposed by the interactive module.
 
     Parameters
     ==========
@@ -972,10 +987,11 @@ def iplot(*args, show=True, **kwargs):
 
     1. some expression may not use all the parameters.
     2. custom labeling of the expressions.
-    3. custom number of steps in the slider.
-    4. custom format of the value shown on the slider. This might be useful to
+    3. custom rendering of the expressions.
+    4. custom number of steps in the slider.
+    5. custom format of the value shown on the slider. This might be useful to
        correctly visualize very small or very big numbers.
-    5. custom labeling of the parameter-sliders.
+    6. custom labeling of the parameter-sliders.
 
     .. jupyter-execute::
 
@@ -985,8 +1001,8 @@ def iplot(*args, show=True, **kwargs):
        G = kp / (I**2 * t**2 * o**2 + 2 * z * t * o * I + 1)
        mod = lambda x: 20 * log(sqrt(re(x)**2 + im(x)**2), 10)
        iplot(
-           (mod(G.subs(z, 0)), (o, 0.1, 100), "G(z=0)"),
-           (mod(G.subs(z, 1)), (o, 0.1, 100), "G(z=1)"),
+           (mod(G.subs(z, 0)), (o, 0.1, 100), "G(z=0)", {"line_dash": "dotted"}),
+           (mod(G.subs(z, 1)), (o, 0.1, 100), "G(z=1)", {"line_dash": "dotted"}),
            (mod(G), (o, 0.1, 100), "G"),
            params = {
                kp: (1, 0, 3),
@@ -1001,8 +1017,8 @@ def iplot(*args, show=True, **kwargs):
            use_latex = False
        )
 
-    A line plot with a parameters representing an angle in radians, but
-    showing the value in the label in degrees:
+    A line plot with a parameter representing an angle in radians, but
+    showing the value in degrees on its label:
 
     .. jupyter-execute::
 
@@ -1056,7 +1072,6 @@ def iplot(*args, show=True, **kwargs):
            grid = False,
            use_latex = False
        )
-
 
     A parametric plot of a symbolic polygon. Note the use of `param` to create
     an integer slider.
@@ -1162,11 +1177,10 @@ def iplot(*args, show=True, **kwargs):
     =====
 
     1. This function is specifically designed to work within Jupyter Notebook.
-       However, it is also possible to use it from a regular Python, by
-       executing: ``iplot(..., servable=True)``,
-       which will create a server process loading the interactive plot on
-       the browser. However, ``K3DBackend`` is not supported in this mode of
-       operation.
+       However, it is also possible to use it from a regular Python console,
+       by executing: ``iplot(..., servable=True)``, which will create a server
+       process loading the interactive plot on the browser.
+       However, ``K3DBackend`` is not supported in this mode of operation.
 
     2. Some examples use an instance of ``PrintfTickFormatter`` to format the
        value shown by a slider. This class is exposed by Bokeh, but can be

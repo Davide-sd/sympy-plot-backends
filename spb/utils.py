@@ -12,7 +12,7 @@ from sympy.logic.boolalg import BooleanFunction
 from sympy.external import import_module
 
 
-def _create_ranges(free_symbols, ranges, npar):
+def _create_ranges(exprs, ranges, npar, label="", params=None):
     """This function does two things:
     1. Check if the number of free symbols is in agreement with the type of
        plot chosen. For example, plot() requires 1 free symbol;
@@ -20,20 +20,30 @@ def _create_ranges(free_symbols, ranges, npar):
     2. Sometime users create plots without providing ranges for the variables.
        Here we create the necessary ranges.
 
-    free_symbols
-        The free symbols contained in the expressions to be plotted
+    Parameters
+    ==========
 
-    ranges
+    exprs : iterable
+        The expressions from which to extract the free symbols
+
+    ranges : iterable
         The limiting ranges provided by the user
 
-    npar
+    npar : int
         The number of free symbols required by the plot functions.
         For example,
         npar=1 for plot, npar=2 for plot3d, ...
 
+    params : dict
+        A dictionary mapping symbols to parameters for iplot.
+
     """
 
     get_default_range = lambda symbol: Tuple(symbol, cfg["plot_range"]["min"], cfg["plot_range"]["max"])
+    free_symbols = set().union(*[e.free_symbols for e in exprs])
+
+    if params is not None:
+        free_symbols = free_symbols.difference(params.keys())
 
     if len(free_symbols) > npar:
         raise ValueError(
@@ -74,6 +84,28 @@ def _create_ranges(free_symbols, ranges, npar):
                 + "Free symbols in the ranges: {}".format(rfs)
             )
     return ranges
+
+
+def _check_interactive_fs(exprs, ranges, label, params):
+    """ Checks if there are enogh parameters and free symbols in order to
+    build the interactive series.
+    """
+    # from the expression's free symbols, remove the ones used in
+    # the parameters and the ranges
+    fs = set().union(*[e.free_symbols for e in exprs])
+    fs = fs.difference(params.keys())
+    if ranges is not None:
+        fs = fs.difference([r[0] for r in ranges])
+
+    if len(fs) > 0:
+        raise ValueError(
+            "Incompatible expression and parameters.\n"
+            + "Expression: {}\n".format(
+                (exprs, ranges, label) if ranges is not None else (exprs, label))
+            + "params: {}\n".format(params)
+            + "Specify what these symbols represent: {}\n".format(fs)
+            + "Are they ranges or parameters?"
+        )
 
 
 def _check_arguments(args, nexpr, npar, **kwargs):
@@ -120,6 +152,7 @@ def _check_arguments(args, nexpr, npar, **kwargs):
     if not args:
         return []
     output = []
+    params = kwargs.get("params", None)
 
     if all([isinstance(a, (Expr, Relational, BooleanFunction)) for a in args[:nexpr]]):
         # In this case, with a single plot command, we are plotting either:
@@ -128,7 +161,7 @@ def _check_arguments(args, nexpr, npar, **kwargs):
 
         exprs, ranges, label, rendering_kw = _unpack_args(*args)
         free_symbols = set().union(*[e.free_symbols for e in exprs])
-        ranges = _create_ranges(free_symbols, ranges, npar)
+        ranges = _create_ranges(exprs, ranges, npar, label, params)
 
         if nexpr > 1:
             # in case of plot_parametric or plot3d_parametric_line, there will
@@ -161,7 +194,6 @@ def _check_arguments(args, nexpr, npar, **kwargs):
         # number of expressions
         n = (len(ranges) + len(labels) +
             (len(rendering_kw) if rendering_kw is not None else 0))
-        # rendering_kw = None if len(rendering_kw) == 0 else rendering_kw[0]
         new_args = args[:-n] if n > 0 else args
 
         # at this point, new_args might just be [expr]. But I need it to be
@@ -185,7 +217,7 @@ def _check_arguments(args, nexpr, npar, **kwargs):
             arg = arg[:nexpr]
             free_symbols = set().union(*[a.free_symbols for a in arg])
             if len(r) != npar:
-                r = _create_ranges(free_symbols, r, npar)
+                r = _create_ranges(arg, r, npar, "", params)
             label = ""
             if not l:
                 label = str(arg[0]) if nexpr == 1 else str(arg)
@@ -216,9 +248,6 @@ def _plot_sympify(args):
             args[i] = Tuple(*_plot_sympify(a), sympify=False)
         elif not isinstance(a, (str, dict)):
             args[i] = sympify(a)
-    # # TODO: is this necessary? isn't args of type list?
-    # if isinstance(args, tuple):
-    #     return Tuple(*args, sympify=False)
     return args
 
 
@@ -235,9 +264,9 @@ def _is_range(r):
 
 
 def _unpack_args(*args):
-    """Given a list/tuple of arguments previously processed by _plot_sympify(),
-    separates and returns its components: expressions, ranges, label and
-    rendering keywords.
+    """Given a list/tuple of arguments previously processed by _plot_sympify()
+    and/or _check_arguments(), separates and returns its components:
+    expressions, ranges, label and rendering keywords.
 
     Examples
     ========
@@ -264,7 +293,9 @@ def _unpack_args(*args):
     label = "" if not labels else labels[0]
     rendering_kw = [t for t in args if isinstance(t, dict)]
     rendering_kw = None if not rendering_kw else rendering_kw[0]
-    results = [not (_is_range(a) or isinstance(a, (str, dict))) for a in args]
+    # NOTE: why None? because args might have been preprocessed by
+    # _check_arguments, so None might represent the rendering_kw
+    results = [not (_is_range(a) or isinstance(a, (str, dict)) or (a is None)) for a in args]
     exprs = [a for a, b in zip(args, results) if b]
     return exprs, ranges, label, rendering_kw
 

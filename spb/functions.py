@@ -202,7 +202,6 @@ def _build_line_series(*args, **kwargs):
     series = []
     pp = kwargs.get("process_piecewise", False)
     sum_bound = int(kwargs.get("sum_bound", 1000))
-    # params = kwargs.get("params", None)
     for arg in args:
         expr, r, label, rendering_kw = arg
         kw = kwargs.copy()
@@ -213,10 +212,6 @@ def _build_line_series(*args, **kwargs):
         else:
             arg = _process_summations(sum_bound, *arg)
             series.append(LineOver1DRangeSeries(*arg[:-1], **kw))
-            # if params is None:
-            #     series.append(LineOver1DRangeSeries(*arg[:-1], **kw))
-            # else:
-            #     series.append(InteractiveSeries([expr], [r], label, **kw))
     return series
 
 
@@ -283,7 +278,6 @@ def plot(*args, **kwargs):
         `plot((expr1, range1), (expr2, range2), ..., **kwargs)`
     - Plotting multiple expressions with custom labels and rendering options.
         `plot((expr1, range1, label1, rendering_kw1), (expr2, range2, label2, rendering_kw2), ..., **kwargs)`
-
 
     Parameters
     ==========
@@ -579,6 +573,8 @@ def plot(*args, **kwargs):
 
     .. code-block:: python
 
+       from sympy import *
+       from spb import *
        x, a, b, c = symbols("x, a, b, c")
        plot(
            (cos(a * x + b) * exp(-c * x), "oscillator"),
@@ -603,7 +599,7 @@ def plot(*args, **kwargs):
 
     plot_polar, plot_parametric, plot_contour, plot3d, plot3d_parametric_line,
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit
+    plot3d_implicit, iplot
 
     """
     args = _plot_sympify(args)
@@ -867,6 +863,8 @@ def plot_parametric(*args, **kwargs):
 
     .. code-block:: python
 
+       from sympy import *
+       from spb import *
        x, a = symbols("x a")
        plot_parametric(
            cos(a * x), sin(x), (x, 0, 2*pi),
@@ -884,7 +882,7 @@ def plot_parametric(*args, **kwargs):
 
     plot, plot_polar, plot_contour, plot3d, plot3d_parametric_line,
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit
+    plot3d_implicit, iplot
 
     """
     args = _plot_sympify(args)
@@ -1104,6 +1102,8 @@ def plot3d_parametric_line(*args, **kwargs):
 
     .. code-block:: python
 
+       from sympy import *
+       from spb import *
        x, a = symbols("x a")
        plot3d_parametric_line(
            cos(a * x), sin(x), a * x, (x, 0, 2*pi),
@@ -1121,7 +1121,7 @@ def plot3d_parametric_line(*args, **kwargs):
 
     plot, plot_polar, plot3d, plot_contour, plot3d_parametric_surface,
     plot_implicit, plot_geometry, plot_parametric, plot_piecewise,
-    plot3d_implicit
+    plot3d_implicit, iplot
 
     """
     args = _plot_sympify(args)
@@ -1402,6 +1402,8 @@ def plot3d(*args, **kwargs):
 
     .. code-block:: python
 
+       from sympy import *
+       from spb import *
        x, d = symbols("x d")
        plot3d(
            cos(x**2 + y**2) * exp(-(x**2 + y**2) * d), (x, -2, 2), (y, -2, 2),
@@ -1417,7 +1419,7 @@ def plot3d(*args, **kwargs):
 
     plot, plot_polar, plot_contour, plot_parametric, plot3d_parametric_line,
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit
+    plot3d_implicit, iplot
 
     """
     args = _plot_sympify(args)
@@ -1637,7 +1639,7 @@ def plot3d_parametric_surface(*args, **kwargs):
 
     plot, plot_polar, plot_parametric, plot3d, plot_contour,
     plot3d_parametric_line, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit
+    plot3d_implicit, iplot
 
     """
     args = _plot_sympify(args)
@@ -1880,6 +1882,8 @@ def plot_contour(*args, **kwargs):
 
     .. code-block:: python
 
+       from sympy import *
+       from spb import *
        x, y, a = symbols("x y a")
        plot_contour(
            cos(a * x**2 + y**2), (x, -2, 2), (y, -2, 2),
@@ -1890,7 +1894,7 @@ def plot_contour(*args, **kwargs):
 
     plot, plot_polar, plot_parametric, plot3d, plot3d_parametric_line,
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit
+    plot3d_implicit, iplot
 
     """
     args = _plot_sympify(args)
@@ -2188,7 +2192,7 @@ def plot_polar(*args, **kwargs):
 
     plot, plot_parametric, plot3d, plot_contour, plot3d_parametric_line,
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit
+    plot3d_implicit, iplot
 
     """
     kwargs["is_polar"] = True
@@ -2399,6 +2403,7 @@ def plot_geometry(*args, **kwargs):
     .. code-block:: python
 
        from sympy import *
+       from spb import *
        import param
        a, b, c, d = symbols("a, b, c, d")
        plot_geometry(
@@ -2412,6 +2417,11 @@ def plot_geometry(*args, **kwargs):
            },
            aspect="equal", is_filled=False,
            xlim=(-2.5, 5.5), ylim=(-3, 6.5))
+
+    See Also
+    ========
+
+    plot, plot_piecewise, plot_polar, iplot
 
     """
     args = _plot_sympify(args)

@@ -13,10 +13,10 @@ from spb import (
     plot_parametric, plot3d_parametric_line,
     plot_vector, plot_complex, plot_geometry, plot_real_imag,
     plot_list, plot_piecewise, plot_polar, plot3d_implicit,
-    plot3d_parametric_surface, plot_complex_list
+    plot3d_parametric_surface, plot_complex_list, plot_complex_vector
 )
 from spb.interactive import InteractivePlot
-from sympy import latex, gamma
+from sympy import latex, gamma, exp
 from sympy.core.symbol import symbols
 from sympy.core.relational import Eq
 from sympy.matrices.dense import Matrix
@@ -2416,21 +2416,21 @@ def test_plot_real_imag_use_latex():
         backend=B, use_latex=True, show=False, adaptive=False, n=10)
 
     p = _plot_real_imag(MB)
-    assert p.fig.axes[0].get_xlabel() == "Re"
-    assert p.fig.axes[0].get_ylabel() == "Im"
+    assert p.fig.axes[0].get_xlabel() == "$x$"
+    assert p.fig.axes[0].get_ylabel() == r"$f\left(x\right)$"
     assert p.fig.axes[0].lines[0].get_label() == 'Re(sqrt(x))'
     assert p.fig.axes[0].lines[1].get_label() == 'Im(sqrt(x))'
     p.close()
 
     p = _plot_real_imag(PB)
-    assert p.fig.layout.xaxis.title.text == 'Re'
-    assert p.fig.layout.yaxis.title.text == 'Im'
+    assert p.fig.layout.xaxis.title.text == "$x$"
+    assert p.fig.layout.yaxis.title.text == r"$f\left(x\right)$"
     assert p.fig.data[0]["name"] == 'Re(sqrt(x))'
     assert p.fig.data[1]["name"] == 'Im(sqrt(x))'
 
     p = _plot_real_imag(BB)
-    assert p.fig.xaxis.axis_label == "Re"
-    assert p.fig.yaxis.axis_label == "Im"
+    assert p.fig.xaxis.axis_label == "$x$"
+    assert p.fig.yaxis.axis_label == r"$f\left(x\right)$"
     assert p.fig.legend[0].items[0].label["value"] == 'Re(sqrt(x))'
     assert p.fig.legend[0].items[1].label["value"] == 'Im(sqrt(x))'
 
@@ -2860,3 +2860,32 @@ def test_functions_iplot_integration():
         u * Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10),
         params={u: (1, 0, 2)}, show=False)
     raises(NotImplementedError, p)
+
+    p = plot_real_imag(sqrt(x) * exp(-u * x**2), (x, -3, 3),
+        params={u: (1, 0, 2)}, ylim=(-0.25, 2), show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot_complex(
+        exp(I * x) * I * sin(u * x), "f", (x, -5, 5),
+        params={u: (1, 0, 2)}, ylim=(-0.2, 1.2), show=False)
+    assert isinstance(p, InteractivePlot)
+
+    expr1 = z * exp(2 * pi * I * z)
+    expr2 = u * expr1
+    n = 15
+    l1 = [expr1.subs(z, t / n) for t in range(n)]
+    l2 = [expr2.subs(z, t / n) for t in range(n)]
+    p = plot_complex_list((l1, "f1"), (l2, "f2"),
+        params={u: (0.5, 0, 2)}, xlim=(-1.5, 2), ylim=(-2, 1), show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot_complex_vector(
+        log(gamma(u * z)), (z, -5 - 5j, 5 + 5j),
+        params={u: (1, 0, 2)}, n=20,
+        quiver_kw=dict(color="orange"), grid=False, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot_vector(
+        [-sin(u * y), cos(x)], (x, -3, 3), (y, -3, 3),
+        params={u: (1, 0, 2)}, n=20, show=False)
+    assert isinstance(p, InteractivePlot)
