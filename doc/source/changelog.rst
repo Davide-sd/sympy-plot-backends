@@ -32,11 +32,44 @@ v1.2.0
 
        plot(expr1, expr2, range [opt],
            label=["label1", "label2"],
-           rendering_kw=[dict(), dict()],
+           rendering_kw=[dict(...), dict(...)],
            **kwargs
        )
 
+* Interactive submodule:
+
+  * Fixed bug with ``spb.interactive.create_widgets``.
+
+  * Integration of the interactive-widget plot ``iplot`` into the most
+    important plotting functions. To activate the interactive-widget plot
+    users need to provide the ``params`` dictionary to the plotting function.
+    For example, to create a line interactive-widget plot:
+
+    .. code-block:: python
+
+         plot(cos(u * x), (x, -5, 5), params={u: (1, 0, 2)})
+
+* Series:
+
+  * Fixed a bug with line series when plotting complex-related function
+    with ``adaptive=False``.
+  
+  * Fixed bug with ``lambdify`` and ``modules="sympy"``.
+
+  * Fixed bug with the number of discretization points of vector series.
+
+  * Enabled support for Python's built-in ``sum()`` function, which can now
+    be used to combine multiple plots.
+
+* Backends:
+
+  * Fixed a bug with ``MatplotlibBackend`` and string-valued color maps.
+
+  * Fixed a bug with ``BokehBackend`` about the update of quivers color when
+    using ``iplot``.
+
 * Updated tutorials and documentation.
+
 
 v1.1.7
 ======
