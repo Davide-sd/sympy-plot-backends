@@ -476,7 +476,7 @@ def test_create_series():
 
 
 def test_interactiveseries():
-    # verify for the instantiation of InteractiveSeries inside InteractivePlot
+    # verify the instantiation of InteractiveSeries inside InteractivePlot
     from sympy.vector import CoordSys3D
 
     N = CoordSys3D("N")
@@ -739,3 +739,24 @@ def test_iplot_sum_3():
     func(MB)
     func(BB)
     func(PB)
+
+def test_label_rendering_kw():
+    # verify that label and rendering_kw keyword arguments gets applied
+    u, x, y = symbols("u, x, y")
+
+    t = iplot(
+        (sin(u * x), (x, -5, 5)),
+        (cos(u * x), (x, -5, 5)),
+        params={
+            u: (2, 1, 3, 5),
+        },
+        show=False,
+        label=["a", "b"],
+        rendering_kw=[{"color": "r"}, {"linestyle": ":"}],
+        backend=MB
+    )
+    assert isinstance(t, InteractivePlot)
+    assert len(t.backend.series) == 2 and all(s.is_2Dline for s in t.backend.series)
+    assert [s.label for s in t.backend.series] == ["a", "b"]
+    assert t.backend.series[0].rendering_kw == {"color": "r"}
+    assert t.backend.series[1].rendering_kw == {"linestyle": ":"}
