@@ -29,7 +29,7 @@ requirements:
     - plotly >=4.14.3
     - python
     - scipy
-    - sympy
+    - sympy >=1.10.1
     - vtk
     - msgpack-python
     - adaptive
@@ -49,7 +49,7 @@ requirements:
     - plotly >=4.14.3
     - python
     - scipy
-    - sympy
+    - sympy >=1.10.1
     - vtk
     - msgpack-python
     - adaptive
