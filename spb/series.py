@@ -1709,7 +1709,7 @@ class InteractiveSeries(BaseSeries):
         for e in exprs:
             self.functions.append([
                 lambdify(self.signature, e, modules=self.modules),
-                lambdify(self.signature, e, modules="sympy"),
+                lambdify(self.signature, e, modules="sympy", dummify=True),
             ])
 
         # Discretize the ranges. In the dictionary self.ranges:
