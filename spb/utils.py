@@ -1,9 +1,5 @@
 from spb.defaults import cfg
-from sympy.core.containers import Tuple
-from sympy.core.sympify import sympify
-from sympy.core.expr import Expr
-from sympy.core.symbol import Dummy
-from sympy.core.singleton import S
+from sympy import Tuple, sympify, Expr, Dummy, S
 from sympy.matrices.dense import DenseMatrix
 from sympy.vector import Vector
 from sympy.vector.operators import _get_coord_systems

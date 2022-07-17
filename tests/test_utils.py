@@ -1,10 +1,6 @@
-from sympy.core.symbol import symbols
-from sympy.core.expr import Expr
-from sympy.core.containers import Tuple
-from sympy.core.numbers import Integer
-from sympy.functions.elementary.trigonometric import sin, cos
-from spb.utils import _check_arguments, _create_ranges, _plot_sympify
 from pytest import raises
+from spb.utils import _check_arguments, _create_ranges, _plot_sympify
+from sympy import symbols, Expr, Tuple, Integer, sin, cos
 
 
 def test_plot_sympify():

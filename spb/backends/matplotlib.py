@@ -1,9 +1,9 @@
+import itertools
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import compute_streamtubes
 from sympy import latex
 from sympy.external import import_module
-import itertools
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.

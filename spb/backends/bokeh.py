@@ -1,7 +1,7 @@
-from sympy.external import import_module
+import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-import os
+from sympy.external import import_module
 
 
 def compute_streamlines(x, y, u, v, density=1.0):

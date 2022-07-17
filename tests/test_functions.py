@@ -1,24 +1,6 @@
 import os
-from tempfile import TemporaryDirectory, NamedTemporaryFile, mkdtemp
-from sympy.core.symbol import symbols
-from sympy.functions.elementary.piecewise import Piecewise
-from sympy.functions.elementary.trigonometric import sin, cos, tan
-from sympy.functions.elementary.complexes import re, Abs
-from sympy.functions.elementary.miscellaneous import sqrt, real_root
-from sympy.functions.special.delta_functions import Heaviside
-from sympy.functions.elementary.exponential import exp, log, LambertW, exp_polar
-from sympy.functions.special.hyper import meijerg
-from sympy.logic.boolalg import And, Or
-from sympy.core.relational import Eq, Ne
-from sympy.sets.sets import Interval
-from sympy.concrete.summations import Sum
-from sympy.core.numbers import oo, I, pi
-from sympy.core.singleton import S
-from sympy.core.sympify import sympify
-from sympy.integrals.integrals import Integral
-from sympy.testing.pytest import skip, warns
-from sympy.external import import_module
-from sympy.testing.tmpfiles import TmpFileManager
+from pytest import raises
+from spb.defaults import set_defaults, cfg
 from spb.functions import (
     plot_piecewise, plot, plot_list, plot3d_parametric_line,
     plot_parametric, plot3d, plot_contour, plot3d_parametric_surface,
@@ -26,10 +8,18 @@ from spb.functions import (
 )
 from spb.series import LineOver1DRangeSeries, List2DSeries
 from spb.backends.matplotlib import MB, unset_show
-from pytest import raises
+from sympy import (
+    symbols, Piecewise, sin, cos, tan, re, Abs, sqrt, real_root,
+    Heaviside, exp, log, LambertW, exp_polar, meijerg,
+    And, Or, Eq, Ne, Interval, Sum, oo, I, pi, S,
+    sympify, Integral
+)
+from sympy.testing.pytest import skip, warns
+from sympy.external import import_module
+from sympy.testing.tmpfiles import TmpFileManager
+from tempfile import TemporaryDirectory, NamedTemporaryFile, mkdtemp
 
 # use MatplotlibBackend for the tests whenever the backend is not specified
-from spb.defaults import set_defaults, cfg
 cfg["backend_2D"] = "matplotlib"
 cfg["backend_3D"] = "matplotlib"
 set_defaults(cfg)

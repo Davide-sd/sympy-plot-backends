@@ -1,35 +1,27 @@
+import os
 from pytest import raises
-from spb.backends.base_backend import Plot
-from spb.backends.matplotlib import MB, unset_show
-from spb.backends.bokeh import BB
-from spb.backends.plotly import PB
-from spb.backends.k3d import KB
-from spb.series import (
-    BaseSeries, InteractiveSeries, LineOver1DRangeSeries,
-    SurfaceOver2DRangeSeries
-)
 from spb import (
+    BB, PB, KB, MB,
     plot, plot3d, plot_contour, plot_implicit,
     plot_parametric, plot3d_parametric_line,
     plot_vector, plot_complex, plot_geometry, plot_real_imag,
     plot_list, plot_piecewise, plot_polar, plot3d_implicit,
     plot3d_parametric_surface, plot_complex_list, plot_complex_vector
 )
+from spb.backends.base_backend import Plot
+from spb.backends.matplotlib import unset_show
 from spb.interactive import InteractivePlot
-from sympy import latex, gamma, exp
-from sympy.core.symbol import symbols
-from sympy.core.relational import Eq
-from sympy.matrices.dense import Matrix
-from sympy.core.numbers import pi, I
-from sympy.functions.elementary.trigonometric import sin, cos
-from sympy.functions.elementary.miscellaneous import sqrt
-from sympy.functions.elementary.exponential import log
-from sympy.functions.special.delta_functions import Heaviside
-from sympy.functions.elementary.piecewise import Piecewise
-from sympy.geometry import Line, Circle, Polygon
+from spb.series import (
+    BaseSeries, InteractiveSeries, LineOver1DRangeSeries,
+    SurfaceOver2DRangeSeries
+)
+from sympy import (
+    latex, gamma, exp, symbols, Eq, Matrix, pi, I, sin, cos,
+    sqrt, log, Heaviside, Piecewise, Line, Circle, Polygon
+)
 from sympy.external import import_module
 from tempfile import TemporaryDirectory
-import os
+
 
 np = import_module('numpy', catch=(RuntimeError,))
 matplotlib = import_module(

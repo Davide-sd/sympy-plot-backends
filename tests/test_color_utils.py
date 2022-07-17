@@ -1,5 +1,5 @@
-from sympy.external import import_module
 from spb.backends.utils import convert_colormap
+from sympy.external import import_module
 
 # NOTE:
 #

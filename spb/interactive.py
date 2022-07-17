@@ -1,15 +1,11 @@
-from sympy.printing.latex import latex
-from sympy.core.containers import Tuple
-from sympy.external import import_module
-from spb.series import (
-    InteractiveSeries,
-    _set_discretization_points,
-)
+from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.ccomplex.complex import _build_series as _build_complex_series
+from spb.functions import _set_labels
+from spb.series import InteractiveSeries, _set_discretization_points
 from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify, _unpack_args_extended
-from spb.defaults import TWO_D_B, THREE_D_B, cfg
-from spb.functions import _set_labels
+from sympy import latex, Tuple
+from sympy.external import import_module
 import warnings
 
 param = import_module(

@@ -1,11 +1,11 @@
-import os
+
 import json
-from sympy.core.symbol import symbols
-from sympy.external import import_module
-from spb.defaults import cfg, set_defaults, reset
-from spb.backends.bokeh import BB
-from spb.backends.matplotlib import MB
+import os
 from pytest import raises
+from spb.defaults import cfg, set_defaults, reset
+from spb import BB, MB
+from sympy import symbols
+from sympy.external import import_module
 
 
 def test_cfg_keys():

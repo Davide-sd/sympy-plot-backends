@@ -1,5 +1,5 @@
-from sympy.external import import_module
 from PIL import ImageColor
+from sympy.external import import_module
 
 
 def convert_colormap(cm, to, n=256):

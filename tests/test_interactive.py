@@ -1,14 +1,9 @@
-from sympy import sqrt, Integer, Float, Rational, pi
-from sympy.core.symbol import symbols
-from sympy.core.containers import Tuple
-from sympy.functions.elementary.trigonometric import sin, cos
-from sympy.geometry.plane import Plane
-from sympy.external import import_module
+from pytest import raises
+from spb import plot, BB, PB, MB
 from spb.interactive import (
     iplot, DynamicParam, MyList,
     InteractivePlot, create_widgets, create_series
 )
-from spb.functions import plot
 from spb.series import (
     InteractiveSeries, LineInteractiveSeries, AbsArgLineInteractiveSeries,
     Parametric2DLineInteractiveSeries, Parametric3DLineInteractiveSeries,
@@ -19,10 +14,12 @@ from spb.series import (
     Vector2DInteractiveSeries, Vector3DInteractiveSeries,
     SliceVector3DInteractiveSeries, PlaneInteractiveSeries
 )
-from spb.backends.bokeh import BB
-from spb.backends.plotly import PB
-from spb.backends.matplotlib import MB
-from pytest import raises
+from sympy import (
+    sqrt, Integer, Float, Rational, pi, symbols, Tuple,
+    sin, cos, Plane
+)
+from sympy.external import import_module
+
 
 np = import_module('numpy', catch=(RuntimeError,))
 param = import_module(

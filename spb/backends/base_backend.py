@@ -1,9 +1,8 @@
-
-from sympy.utilities.iterables import is_sequence
-from sympy.external import import_module
 from itertools import cycle
 from spb.series import BaseSeries
 from spb.backends.utils import convert_colormap
+from sympy.utilities.iterables import is_sequence
+from sympy.external import import_module
 
 
 class Plot:

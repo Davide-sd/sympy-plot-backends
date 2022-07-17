@@ -1,10 +1,10 @@
+import itertools
+import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import get_seeds_points
 from sympy.external import import_module
-import itertools
 import warnings
-import os
 
 
 class PlotlyBackend(Plot):

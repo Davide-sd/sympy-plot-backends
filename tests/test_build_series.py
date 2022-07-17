@@ -1,10 +1,3 @@
-from sympy import exp
-from sympy.core.symbol import symbols
-from sympy.core.numbers import I, pi
-from sympy.functions.elementary.trigonometric import sin, cos, asin
-from sympy.functions.elementary.miscellaneous import sqrt
-from sympy.functions.elementary.complexes import re, im, arg
-from sympy.geometry.plane import Plane
 from spb.ccomplex.complex import _build_series as _build_complex_series
 from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify
@@ -18,6 +11,11 @@ from spb.series import (
     AbsArgLineSeries,
     LineInteractiveSeries, AbsArgLineInteractiveSeries
 )
+from sympy import (
+    exp, symbols, I, pi, sin, cos, asin, sqrt,
+    re, im, arg, Plane
+)
+
 
 # NOTE:
 #

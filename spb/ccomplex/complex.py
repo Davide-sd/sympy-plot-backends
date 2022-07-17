@@ -1,28 +1,19 @@
-from sympy import latex
-from sympy.core.containers import Tuple
-from sympy.functions.elementary.miscellaneous import sqrt
-from sympy.functions.elementary.complexes import re, im, arg
-from sympy.core.expr import Expr
-from sympy.core.symbol import Dummy, symbols
-from sympy.core.numbers import I
-from spb.defaults import cfg
+from spb.defaults import cfg, TWO_D_B, THREE_D_B
 from spb.functions import _set_labels
-from spb.utils import _unpack_args, _instantiate_backend
-import warnings
-
 from spb.series import (
-    LineOver1DRangeSeries,
-    ComplexSurfaceBaseSeries,
-    ComplexInteractiveBaseSeries,
-    ComplexPointSeries,
-    ComplexPointInteractiveSeries,
-    _set_discretization_points,
-    SurfaceOver2DRangeSeries,
-    InteractiveSeries
+    LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
+    ComplexInteractiveBaseSeries, ComplexPointSeries,
+    ComplexPointInteractiveSeries, SurfaceOver2DRangeSeries,
+    InteractiveSeries, _set_discretization_points
+)
+from spb.utils import (
+    _unpack_args, _instantiate_backend, _plot_sympify, _check_arguments,
+    _is_range
 )
 from spb.vectors import plot_vector
-from spb.utils import _plot_sympify, _check_arguments, _is_range
-from spb.defaults import TWO_D_B, THREE_D_B
+from sympy import latex, Tuple, sqrt, re, im, arg, Expr, Dummy, symbols, I
+import warnings
+
 
 # NOTE:
 # * `abs` refers to the absolute value;

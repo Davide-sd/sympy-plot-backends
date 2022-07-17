@@ -1,18 +1,4 @@
-from sympy import latex, exp
-from sympy.core.symbol import symbols
-from sympy.core.containers import Tuple
-from sympy.core.numbers import I, pi
-from sympy.functions.elementary.trigonometric import sin, cos, tan
-from sympy.functions.elementary.exponential import log
-from sympy.functions.elementary.miscellaneous import sqrt
-from sympy.functions.elementary.complexes import re, im, arg
-from sympy.functions.elementary.integers import frac
-from sympy.geometry import Plane, Circle, Point
-from sympy.concrete.summations import Sum
-from sympy.core.singleton import S
-from sympy.external import import_module
-from sympy.vector import CoordSys3D, gradient
-
+from pytest import raises
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
@@ -33,7 +19,14 @@ from spb.series import (
     SliceVector3DInteractiveSeries, ContourInteractiveSeries,
     _set_discretization_points
 )
-from pytest import raises
+from sympy import (
+    latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
+    re, im, arg, frac, Plane, Circle, Point, Sum, S
+)
+from sympy.external import import_module
+from sympy.vector import CoordSys3D, gradient
+
+
 np = import_module('numpy', catch=(RuntimeError,))
 
 # NOTE:
@@ -2593,4 +2586,3 @@ def test_complex_adaptive_false():
     assert np.allclose(data1[1], 0) and np.allclose(data3[1], 0)
     do_test(data2, data4)
     assert (not np.allclose(data2[1], 0)) and (not np.allclose(data4[1], 0))
-    

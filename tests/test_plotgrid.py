@@ -1,15 +1,11 @@
-from sympy.core.symbol import symbols
-from sympy.functions.elementary.trigonometric import sin, cos, tan
-from sympy.functions.elementary.exponential import exp
-from sympy.external import import_module
-from spb.backends.matplotlib import MB
-from spb.backends.plotly import PB
-from spb.backends.bokeh import BB
-from spb.backends.k3d import KB
-from spb.plotgrid import plotgrid, _nrows_ncols
-from spb.functions import plot, plot3d, plot_contour
-from spb.vectors import plot_vector
 from pytest import raises
+from spb import (
+    MB, PB, BB, KB, plotgrid, plot, plot3d, plot_contour, plot_vector
+)
+from spb.plotgrid import _nrows_ncols
+from sympy import symbols, sin, cos, tan, exp
+from sympy.external import import_module
+
 
 matplotlib = import_module(
     'matplotlib',

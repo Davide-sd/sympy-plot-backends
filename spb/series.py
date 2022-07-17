@@ -1,30 +1,19 @@
 from spb.defaults import cfg
-from sympy import latex
-from sympy.core.containers import Tuple
-from sympy.core.function import arity
-from sympy.core.symbol import symbols
-from sympy.core.sympify import sympify
-from sympy.solvers.solvers import solve
-from sympy.core.expr import Expr
-from sympy.geometry import (
-    Plane, Polygon, Circle, Ellipse, Segment, Ray,
-    Curve, Point2D, Point3D,
+from sympy import (
+    latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
+    Equality, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
+    Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
 )
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
-from sympy.core.relational import (
-    Equality, GreaterThan, LessThan,
-    Relational, StrictLessThan, StrictGreaterThan,
-)
+from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
-from sympy.utilities.lambdify import lambdify
 from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
-import warnings
-
 from sympy.printing.pycode import PythonCodePrinter
 from sympy.printing.precedence import precedence
 from sympy.core.sorting import default_sort_key
+import warnings
 
 class IntervalMathPrinter(PythonCodePrinter):
     """A printer to be used inside `plot_implicit` when `adaptive=True`,

@@ -16,20 +16,7 @@ Simplicity of code takes much greater importance than performance. Don't use
 it if you care at all about performance.
 """
 
-from sympy import latex
-from sympy.core.containers import Tuple
-from sympy.core.expr import Expr
-from sympy.core.symbol import Symbol, Wild
-from sympy.core.numbers import oo
-from sympy.concrete.summations import Sum
-from sympy.functions.elementary.complexes import sign
-from sympy.functions.elementary.piecewise import Piecewise, piecewise_fold
-from sympy.geometry import Plane
-from sympy.sets.sets import EmptySet, FiniteSet, Interval, Union
 from spb.defaults import TWO_D_B, THREE_D_B
-from spb.utils import (
-    _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend
-)
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
@@ -37,6 +24,16 @@ from spb.series import (
     List2DSeries, GeometrySeries, Implicit3DSeries,
     InteractiveSeries
 )
+from spb.utils import (
+    _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend
+)
+from sympy import (
+    latex, Tuple, Expr, Symbol, Wild, oo, Sum, sign, Piecewise, piecewise_fold,
+    Plane, FiniteSet, Interval, Union
+)
+# NOTE: from sympy import EmptySet is a different thing!!!
+from sympy.sets.sets import EmptySet
+
 
 # N.B.
 # When changing the minimum module version for matplotlib, please change

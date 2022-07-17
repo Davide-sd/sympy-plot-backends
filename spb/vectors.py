@@ -1,24 +1,16 @@
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.functions import _set_labels
 from spb.series import (
-    BaseSeries,
-    Vector2DSeries,
-    Vector3DSeries,
-    ContourSeries,
-    SliceVector3DSeries,
-    _set_discretization_points,
-    InteractiveSeries
+    BaseSeries, Vector2DSeries, Vector3DSeries, ContourSeries,
+    SliceVector3DSeries, InteractiveSeries, _set_discretization_points
 )
 from spb.utils import (
     _plot_sympify, _unpack_args_extended, _split_vector, _is_range,
     _instantiate_backend
 )
-from sympy import MutableDenseMatrix, ImmutableDenseMatrix
-from sympy.core.containers import Tuple
-from sympy.functions.elementary.miscellaneous import sqrt
-from sympy.core.expr import Expr
-from sympy.core.singleton import S
-from sympy.geometry import Plane
+from sympy import (
+    MutableDenseMatrix, ImmutableDenseMatrix, Tuple, sqrt, Expr, S, Plane
+)
 
 
 def _build_series(*args, interactive=False, **kwargs):

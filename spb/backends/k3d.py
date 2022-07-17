@@ -1,10 +1,10 @@
-from sympy.external import import_module
+import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import compute_streamtubes
 from spb.utils import get_vertices_indices
+from sympy.external import import_module
 import warnings
-import os
 
 
 class K3DBackend(Plot):
