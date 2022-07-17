@@ -223,8 +223,11 @@ class DynamicParam(param.Parameterized):
     @param.depends("check_val", watch=True)
     def update(self):
         params = self.read_parameters()
-        self._backend._update_interactive(params)
-        self._action_post_update()
+        # NOTE: in case _backend is not an attribute, it means that this
+        # class has been instantiated by create_widgets
+        if hasattr(self, "_backend"):
+            self._backend._update_interactive(params)
+            self._action_post_update()
 
 
 def _new_class(cls, **kwargs):
