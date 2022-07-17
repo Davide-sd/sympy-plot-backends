@@ -1680,10 +1680,7 @@ class InteractiveSeries(BaseSeries):
 
         # free symbols of the parameters
         self._params = kwargs.get("params", dict())
-        # number of discretization points
-        self.n1 = int(kwargs.get("n1", 250))
-        self.n2 = int(kwargs.get("n2", 250))
-        self.n3 = int(kwargs.get("n3", 250))
+        self._init_num_discretization_points(**kwargs)
         n = [self.n1, self.n2, self.n3]
         self.modules = kwargs.get("modules", None)
         self.is_polar = kwargs.get("is_polar", False)
@@ -1759,6 +1756,12 @@ class InteractiveSeries(BaseSeries):
             discretizations.append(d)
 
         self._set_discretization_ranges(discr_symbols, discretizations)
+
+    def _init_num_discretization_points(self, **kwargs):
+        """Subclasses should override this method to provide dirrent values."""
+        self.n1 = int(kwargs.get("n1", 250))
+        self.n2 = int(kwargs.get("n2", 250))
+        self.n3 = int(kwargs.get("n3", 250))
 
     def _set_discretization_ranges(self, discr_symbols, discretizations):
         """Set the discretized ranges that will be used in the numerical
@@ -2609,6 +2612,12 @@ class VectorBase(BaseSeries):
     is_slice = False
     is_streamlines = False
 
+    def _init_num_discretization_points(self, **kwargs):
+        """Subclasses should override this method to provide dirrent values."""
+        self.n1 = int(kwargs.get("n1", self._n))
+        self.n2 = int(kwargs.get("n2", self._n))
+        self.n3 = int(kwargs.get("n3", self._n))
+
     def __init__(self, exprs, ranges, label, **kwargs):
         new_ranges = []
         for r in ranges:
@@ -2617,9 +2626,7 @@ class VectorBase(BaseSeries):
         self.ranges = new_ranges
         self.label = label
         self._latex_label = label if str(exprs) != label else latex(exprs)
-        self.n1 = int(kwargs.get("n1", 10))
-        self.n2 = int(kwargs.get("n2", 10))
-        self.n3 = int(kwargs.get("n3", 10))
+        self._init_num_discretization_points(**kwargs)
         self.n = [self.n1, self.n2, self.n3]
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
@@ -2714,10 +2721,10 @@ class Vector2DSeries(VectorBase):
     """Represents a 2D vector field."""
 
     is_2Dvector = True
+    # default number of discretization points
+    _n = 25
 
     def __init__(self, u, v, range1, range2, label="", **kwargs):
-        kwargs.setdefault("n1", 25)
-        kwargs.setdefault("n2", 25)
         super().__init__((u, v), (range1, range2), label, **kwargs)
         self._set_use_quiver_solid_color(**kwargs)
 
@@ -2746,6 +2753,8 @@ class Vector3DSeries(VectorBase):
 
     is_3D = True
     is_3Dvector = True
+    # default number of discretization points
+    _n = 10
 
     def __init__(self, u, v, z, range1, range2, range3, label="", **kwargs):
         super().__init__((u, v, z), (range1, range2, range3), label, **kwargs)
@@ -2759,6 +2768,9 @@ class VectorInteractiveBaseSeries(InteractiveSeries):
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
+
+    def _init_num_discretization_points(self, **kwargs):
+        return VectorBase._init_num_discretization_points(self, **kwargs)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2817,9 +2829,9 @@ def _build_slice_series(slice_surf, ranges, **kwargs):
     new_ranges = [r for r in ranges if r[0] in fs]
     # apply the correct discretization number
     n = [
-        int(kwargs.get("n1", 10)),
-        int(kwargs.get("n2", 10)),
-        int(kwargs.get("n3", 10))]
+        int(kwargs.get("n1", Vector3DSeries._n)),
+        int(kwargs.get("n2", Vector3DSeries._n)),
+        int(kwargs.get("n3", Vector3DSeries._n))]
     discr_symbols = [r[0] for r in ranges]
     idx = [discr_symbols.index(s) for s in [r[0] for r in new_ranges]]
     kwargs2 = kwargs.copy()
