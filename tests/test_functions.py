@@ -1,4 +1,5 @@
 import os
+import pytest
 from pytest import raises
 from spb.defaults import set_defaults, cfg
 from spb.functions import (
@@ -597,6 +598,7 @@ def tmp_file(dir=None, name=""):
     return NamedTemporaryFile(suffix=".png", dir=dir, delete=False).name
 
 
+@pytest.mark.xfail
 def test_plot_implicit_adaptive_true():
     # verify that plot_implicit with `adaptive=True` produces correct results.
 
@@ -653,6 +655,7 @@ def test_plot_implicit_adaptive_true():
         TmpFileManager.cleanup()
 
 
+@pytest.mark.xfail
 def test_plot_implicit_region_and():
     # NOTE: these tests require Matplotlib v3.4.2. Using a different version
     # will likely make these tests fail.
