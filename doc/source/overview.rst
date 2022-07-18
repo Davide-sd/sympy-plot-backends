@@ -37,7 +37,8 @@ The following functions are exposed by this module:
 * ``plotgrid``: combine multiple plots into a grid-like layout. It works with
   Matplotlib, Bokeh and Plotly.
 * ``iplot``: create parametric-interactive plots using widgets (sliders,
-  buttons, etc.)
+  buttons, etc.). Note that this function has been integrated with many of the
+  aforementioned functions.
 
 It is also possible to combine different plots together.
 
