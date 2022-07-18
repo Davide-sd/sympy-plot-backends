@@ -774,11 +774,12 @@ def iplot(*args, show=True, **kwargs):
     """Create interactive-widget plots of symbolic expressions.
 
     Note that this function is already integrated with many of the usual
-    plotting functions. It is recommended to use those plotting functions
-    instead of ``iplot`` because their documentation is much more specific.
+    plotting functions, hence it is recommended to use those instead of
+    ``iplot`` because their documentation is more specific.
 
     However, the following documentation explains in details the main features
-    exposed by the interactive module.
+    exposed by the interactive module, which might not be included on the
+    documentation of those other functions.
 
     Parameters
     ==========
