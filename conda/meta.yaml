@@ -22,7 +22,7 @@ requirements:
     - k3d
     - matplotlib
     - mergedeep
-    - numpy
+    - numpy >=1.23.1
     - panel
     - param
     - pip
@@ -43,7 +43,7 @@ requirements:
     - k3d
     - matplotlib
     - mergedeep
-    - numpy
+    - numpy >=1.23.1
     - panel
     - param
     - plotly >=4.14.3
