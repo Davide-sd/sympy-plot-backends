@@ -54,11 +54,11 @@ requirements:
     - msgpack-python
     - adaptive
 
-# test:
-#   imports:
-#     - spb
-#     - spb.backends
-#     - spb.ccomplex
+test:
+  imports:
+    - spb
+    - spb.backends
+    - spb.ccomplex
 
 about:
   home: {{ data['url'] }}
