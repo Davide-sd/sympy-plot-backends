@@ -31,10 +31,13 @@ class IntervalMathPrinter(PythonCodePrinter):
                 for a in sorted(expr.args, key=default_sort_key))
 
 
-def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
+def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
         modules=None, adaptive_goal=None, loss_fn=None):
     """Numerical evaluation of a symbolic expression with an adaptive
     algorithm [#fn1]_.
+
+    Note: this is an experimental function, as such it is prone to changes.
+    Please, do not use it in your code.
 
     Parameters
     ==========
@@ -169,9 +172,12 @@ def adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     return xs, ys, np.rot90(z)
 
 
-def uniform_eval(free_symbols, expr, *args, modules=None):
+def _uniform_eval(free_symbols, expr, *args, modules=None):
     """Convert the expression to a lambda function using the specified
     module. Perform the evaluation and return the results.
+
+    Note: this is an experimental function, as such it is prone to changes.
+    Please, do not use it in your code.
 
     Parameters
     ==========
@@ -203,10 +209,14 @@ def uniform_eval(free_symbols, expr, *args, modules=None):
     # of failures with the default one.
     f1 = lambdify(free_symbols, expr, modules=modules)
     f2 = lambdify(free_symbols, expr, modules="sympy")
-    return _uniform_eval(f1, f2, *args, modules=modules)
+    return _uniform_eval_helper(f1, f2, *args, modules=modules)
 
 
-def _uniform_eval(f1, f2, *args, modules=None):
+def _uniform_eval_helper(f1, f2, *args, modules=None):
+    """
+    Note: this is an experimental function, as such it is prone to changes.
+    Please, do not use it in your code.
+    """
     np = import_module('numpy')
 
     def wrapper_func(func, *args):
@@ -373,7 +383,7 @@ class BaseSeries:
         return np.geomspace(start, end, N)
 
     @staticmethod
-    def _correct_size(a, b):
+    def _correct_shape(a, b):
         """Convert ``a`` to a np.ndarray of the same shape of ``b``.
 
         Parameters
@@ -702,7 +712,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             except (ZeroDivisionError, OverflowError):
                 return np.nan, np.nan
 
-        data = adaptive_eval(
+        data = _adaptive_eval(
             func, [self.var], self.expr,
             [self.start.real, self.end.real],
             self.start.imag,
@@ -729,13 +739,13 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             # as expected.
             xx = xx.astype(object)
 
-        data = uniform_eval([self.var], self.expr, xx, modules=self.modules)
+        data = _uniform_eval([self.var], self.expr, xx, modules=self.modules)
         _re, _im = np.real(data), np.imag(data)
 
         # with uniform sampling, if self.expr is a constant then only one
         # value will be returned, no matter the shape of x.
-        _re = self._correct_size(_re, x)
-        _im = self._correct_size(_im, x)
+        _re = self._correct_shape(_re, x)
+        _im = self._correct_shape(_im, x)
         return x, _re, _im
 
     def _get_real_imag(self):
@@ -886,10 +896,10 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         """
         np = import_module('numpy')
 
-        v = uniform_eval([self.var], expr, param, modules=self.modules)
+        v = _uniform_eval([self.var], expr, param, modules=self.modules)
         re_v, im_v = np.real(v), np.imag(v)
-        re_v = self._correct_size(re_v, param)
-        im_v = self._correct_size(im_v, param)
+        re_v = self._correct_shape(re_v, param)
+        im_v = self._correct_shape(im_v, param)
         re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
         return re_v
 
@@ -907,7 +917,7 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         if not self.is_2Dline:
             expr = Tuple(self.expr_x, self.expr_y, self.expr_z)
 
-        data = adaptive_eval(
+        data = _adaptive_eval(
             func, [self.var], expr,
             [self.start, self.end],
             self.is_2Dline,
@@ -1109,7 +1119,7 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
             except (ZeroDivisionError, OverflowError):
                 return np.nan
 
-        return adaptive_eval(
+        return _adaptive_eval(
             func, [self.var_x, self.var_y], self.expr,
             [(self.start_x, self.end_x), (self.start_y, self.end_y)],
             modules=self.modules,
@@ -1122,11 +1132,11 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         mesh_x, mesh_y = self._discretize(self.start_x, self.end_x,
             self.start_y, self.end_y)
 
-        v = uniform_eval([self.var_x, self.var_y], self.expr,
+        v = _uniform_eval([self.var_x, self.var_y], self.expr,
             mesh_x, mesh_y, modules=self.modules)
         re_v, im_v = np.real(v), np.imag(v)
-        re_v = self._correct_size(re_v, mesh_x)
-        im_v = self._correct_size(im_v, mesh_x)
+        re_v = self._correct_shape(re_v, mesh_x)
+        im_v = self._correct_shape(im_v, mesh_x)
         re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
         return mesh_x, mesh_y, re_v
 
@@ -1215,11 +1225,11 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         """
         np = import_module('numpy')
 
-        v = uniform_eval([self.var_u, self.var_v], expr, *args,
+        v = _uniform_eval([self.var_u, self.var_v], expr, *args,
             modules=self.modules)
         re_v, im_v = np.real(v), np.imag(v)
-        re_v = self._correct_size(re_v, args[0])
-        im_v = self._correct_size(im_v, args[0])
+        re_v = self._correct_shape(re_v, args[0])
+        im_v = self._correct_shape(im_v, args[0])
         re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
         return re_v
 
@@ -1495,7 +1505,7 @@ class ImplicitSeries(BaseSeries):
         x_grid, y_grid = np.meshgrid(xarray, yarray)
         func = lambdify((self.var_x, self.var_y), expr)
         z_grid = func(x_grid, y_grid)
-        z_grid = self._correct_size(z_grid, x_grid)
+        z_grid = self._correct_shape(z_grid, x_grid)
         z_grid[np.ma.where(z_grid < 0)] = -1
         z_grid[np.ma.where(z_grid > 0)] = 1
         if equality:
@@ -1596,11 +1606,11 @@ class Implicit3DSeries(SurfaceBaseSeries):
             self.start_x, self.end_x,
             self.start_y, self.end_y,
             self.start_z, self.end_z)
-        v = uniform_eval([self.var_x, self.var_y, self.var_z], self.expr,
+        v = _uniform_eval([self.var_x, self.var_y, self.var_z], self.expr,
             mesh_x, mesh_y, mesh_z, modules=self.modules)
         re_v, im_v = np.real(v), np.imag(v)
-        re_v = self._correct_size(re_v, mesh_x)
-        im_v = self._correct_size(im_v, mesh_x)
+        re_v = self._correct_shape(re_v, mesh_x)
+        im_v = self._correct_shape(im_v, mesh_x)
         re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
         return mesh_x, mesh_y, mesh_z, re_v
 
@@ -1832,9 +1842,9 @@ class InteractiveSeries(BaseSeries):
 
         results = []
         for f in self.functions:
-            r = _uniform_eval(*f, *args)
+            r = _uniform_eval_helper(*f, *args)
             # the evaluation might produce an int/float. Need this correction.
-            r = self._correct_size(np.array(r), discr)
+            r = self._correct_shape(np.array(r), discr)
             results.append(r)
 
         return results
@@ -2294,9 +2304,9 @@ class ComplexSurfaceBaseSeries(BaseSeries):
             self.yscale, self.only_integers)
         xx, yy = np.meshgrid(x, y)
         domain = xx + 1j * yy
-        zz = uniform_eval(self.var, self.expr, domain,
+        zz = _uniform_eval(self.var, self.expr, domain,
             modules=self.modules)
-        zz = self._correct_size(np.array(zz), domain)
+        zz = self._correct_shape(np.array(zz), domain)
         return domain, zz
 
 
@@ -2654,10 +2664,10 @@ class VectorBase(BaseSeries):
     def _eval_component(self, meshes, fs, expr):
         np = import_module('numpy')
 
-        v = uniform_eval(fs, expr, *meshes, modules=self.modules)
+        v = _uniform_eval(fs, expr, *meshes, modules=self.modules)
         re_v, im_v = np.real(v), np.imag(v)
-        re_v = self._correct_size(re_v, meshes[0])
-        im_v = self._correct_size(im_v, meshes[0])
+        re_v = self._correct_shape(re_v, meshes[0])
+        im_v = self._correct_shape(im_v, meshes[0])
         re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
         return re_v
 
