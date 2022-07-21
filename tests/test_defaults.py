@@ -26,7 +26,10 @@ def test_plot3d_keys():
 
 
 def test_adaptive_keys():
-    assert "goal" in cfg["adaptive"].keys()
+    must_have_keys = ["goal", "used_by_default"]
+    for k in must_have_keys:
+        assert k in cfg["adaptive"].keys()
+    assert cfg["adaptive"]["used_by_default"] is True
     assert cfg["adaptive"]["goal"] == 0.01
 
 

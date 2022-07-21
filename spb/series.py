@@ -580,7 +580,7 @@ class Line2DBaseSeries(BaseSeries):
         self.scale = kwargs.get("xscale", "linear")
         self.n = int(kwargs.get("n", 1000))
         self.modules = kwargs.get("modules", None)
-        self.adaptive = kwargs.get("adaptive", True)
+        self.adaptive = kwargs.get("adaptive", cfg["adaptive"]["used_by_default"])
         self.adaptive_goal = kwargs.get("adaptive_goal", cfg["adaptive"]["goal"])
         self.loss_fn = kwargs.get("loss_fn", None)
         self.rendering_kw = kwargs.get("rendering_kw", dict())

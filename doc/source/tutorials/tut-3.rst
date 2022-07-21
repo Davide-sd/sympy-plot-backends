@@ -139,6 +139,10 @@ Let's now discuss a few customization options:
    # (value True)
    cfg["interactive"]["throttled"] = False
 
+   # Set the default evaluation algorithm for line plots:
+   # True: use adaptive algorithm
+   # False: use uniform mesh algorithm
+   cfg["adaptive"]["used_by_default"] = True
    # Set the "smoothness" goal for the adaptive algorithm.
    # Lower values create smoother lines, at the cost of
    # performance.
