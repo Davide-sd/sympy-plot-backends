@@ -119,21 +119,33 @@ algorithm might produce warning messages. For example:
 
    >>> plot(floor(x))
 
+
+.. code-block:: text
+
+   UserWarning: The evaluation with NumPy/SciPy failed.
+   TypeError: ufunc 'floor' not supported for the input types, and the inputs
+   could not be safely coerced to any supported types according to the casting
+   rule ''safe''
+   Trying to evaluate the expression with Sympy, but it might be a slow
+   operation.
+
 What does that warning message means? For reasons too long to explain, the
 numerical arguments passed to the lambdified-function are of type ``complex``.
 There are some Numpy/Scipy functions that are not designed for this numerical
 data type, for example the ``floor`` and ``ceil`` functions. For example:
 
-.. plot::
-   :context: close-figs
-   :format: doctest
-   :include-source: True
+>>> import numpy as np
+>>> try:
+>>>     np.floor(5+0j)
+>>> except TypeError as err:
+>>>     print(err)
 
-   >>> import numpy as np
-   >>> try:
-   >>>     np.floor(5+0j)
-   >>> except TypeError as err:
-   >>>     print(err)
+
+.. code-block:: text
+
+   ufunc 'floor' not supported for the input types, and the inputs could not
+   be safely coerced to any supported types according to the casting rule
+   ''safe''
 
 The plotting algorithm catches that exception and changes the evaluation module
 to SymPy. The evaluation succeds, but it is going to be much much slower!
@@ -208,7 +220,7 @@ adaptive algorithm is trying to resolve this situation, but it's going to take
 a very long time. We have two options:
 
 1. increase the value of ``adaptive_goal``, thus reducing the smoothness of the
-function and potentially loosing important information.
+   function and potentially loosing important information.
 2. use the uniform meshing algorithm.
 
 Let's try the second approach:
