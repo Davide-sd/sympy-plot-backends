@@ -2390,7 +2390,7 @@ def test_plot_complex_use_latex():
     p = _plot_complex_2(PB)
     assert p.fig.layout.xaxis.title.text == 'Re'
     assert p.fig.layout.yaxis.title.text == 'Im'
-    assert p.fig.data[0].name == "$\\Gamma\\left(z\\right)$"
+    assert p.fig.data[0].name == "$gamma(z)$"
     assert p.fig.data[1]["marker"]["colorbar"]["title"]["text"] == "Argument"
 
     p = _plot_complex_2(BB)

@@ -106,10 +106,6 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
     fs = fs.difference(params.keys())
 
     if split_expr[2] is S.Zero:  # 2D case
-        if isinstance(expr, (MutableDenseMatrix, ImmutableDenseMatrix)) and (label == str(expr)):
-            # in case a Matrix has been provided, but no label
-            # rewrite the label so that it doesn't contain Matrix
-            label = str(split_expr[:-1])
         kwargs = _set_discretization_points(kwargs.copy(), Vector2DSeries)
         if len(fs) > 2:
             raise ValueError(
@@ -148,11 +144,6 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
             InteractiveSeries(split_expr[:2], ranges, label, **kwargs),
         )
     else:  # 3D case
-        if isinstance(expr, (MutableDenseMatrix, ImmutableDenseMatrix)) and (label == str(expr)):
-            # in case a Matrix has been provided, but no label
-            # rewrite the label so that it doesn't contain Matrix
-            label = str(split_expr)
-
         kwargs = _set_discretization_points(kwargs.copy(), Vector3DSeries)
         if len(fs) > 3:
             raise ValueError(
@@ -253,7 +244,7 @@ def _preprocess(*args, matrices=False, fill_ranges=True):
             # this is the case where the user provided: v1, v2, ..., range
             # we use the same ranges for each expression
             for e in exprs:
-                new_args.append([e, *ranges, str(e)])
+                new_args.append([e, *ranges, None])
 
     return new_args
 
@@ -513,7 +504,7 @@ def plot_vector(*args, **kwargs):
        :include-source: True
 
        >>> plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
-       ...      n=8, quiver_kw={"length": 0.1},
+       ...      label="Magnitude", n=8, quiver_kw={"length": 0.1},
        ...      xlabel="x", ylabel="y", zlabel="z")
        Plot object containing:
        [0]: 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0)
@@ -531,7 +522,7 @@ def plot_vector(*args, **kwargs):
        ...          Plane((-10, 0, 0), (1, 0, 0)),
        ...          Plane((0, 10, 0), (0, 2, 0)),
        ...          Plane((0, 0, -10), (0, 0, 1))],
-       ...      xlabel="x", ylabel="y", zlabel="z")
+       ...      label=["Magnitude"] * 3, xlabel="x", ylabel="y", zlabel="z")
        Plot object containing:
        [0]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) at Plane(Point3D(-10, 0, 0), (1, 0, 0))
        [1]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) at Plane(Point3D(0, 10, 0), (0, 2, 0))
@@ -550,7 +541,7 @@ def plot_vector(*args, **kwargs):
        ...         starts=True,
        ...         npoints=1000
        ...     ),
-       ...     xlabel="x", ylabel="y", zlabel="z")
+       ...     label="Magnitude", xlabel="x", ylabel="y", zlabel="z")
        Plot object containing:
        [0]: 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0)
 

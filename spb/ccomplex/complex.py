@@ -123,6 +123,8 @@ def _build_series(*args, interactive=False, **kwargs):
         params = kwargs.get("params", dict())
         for a in new_args:
             expr, ranges, label, rend_kw = a[0], a[1:-2], a[-2], a[-1]
+            if label is None:
+                label = str(expr)
 
             kw = kwargs.copy()
             kw["rendering_kw"] = rend_kw
@@ -158,6 +160,8 @@ def _build_series(*args, interactive=False, **kwargs):
                 imag = kw.pop("imag", False)
                 _abs = kw.pop("abs", False)
                 _arg = kw.pop("arg", False)
+
+
 
                 if ranges[0][1].imag == ranges[0][2].imag:
                     # dealing with lines
@@ -1233,7 +1237,8 @@ def plot_complex_vector(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_complex_vector(z**2, (z, -5 - 5j, 5 + 5j),
+       >>> expr = z**2
+       >>> plot_complex_vector(expr, (z, -5 - 5j, 5 + 5j),
        ...     quiver_kw=dict(color="orange"), grid=False)
        Plot object containing:
        [0]: contour: sqrt(((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2)**2 + 4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2) for _x over (-5.0, 5.0) and _y over (-5.0, 5.0)
@@ -1246,7 +1251,8 @@ def plot_complex_vector(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_complex_vector(z**2, (z, -5 - 5j, 5 + 5j), scalar=False)
+       >>> plot_complex_vector(expr, (z, -5 - 5j, 5 + 5j)
+       ...     "Magnitude of %s" % str(expr), scalar=False)
        Plot object containing:
        [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
 
@@ -1257,7 +1263,8 @@ def plot_complex_vector(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_complex_vector(z**2, (z, -5 - 5j, 5 + 5j), scalar=False, streamlines=True)
+       >>> plot_complex_vector(expr, (z, -5 - 5j, 5 + 5j),
+       ...     "Magnitude of %s" % str(expr), scalar=False, streamlines=True)
        Plot object containing:
        [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
 
@@ -1300,6 +1307,8 @@ def plot_complex_vector(*args, **kwargs):
     kwargs["real"] = True
     kwargs["imag"] = True
     kwargs["threed"] = False
+    kwargs.setdefault("xlabel", "Re")
+    kwargs.setdefault("ylabel", "Im")
     global_labels = kwargs.pop("labels", [])
 
     args = _plot_sympify(args)
@@ -1314,8 +1323,6 @@ def plot_complex_vector(*args, **kwargs):
                 return t
         return str(args[i][0] if multiple_expr else args[0])
 
-    for s in series:
-        print(s)
     # create new arguments to be used by plot_vector
     new_args = []
     x, y = symbols("x, y", cls=Dummy)

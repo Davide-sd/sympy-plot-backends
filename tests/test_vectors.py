@@ -38,7 +38,7 @@ def test_preprocess():
     # passing in vectors
     r = pw(v1)[0]
     assert r[0] == v1
-    assert r[1] == str(v1)
+    assert r[1] == None
 
     r = pw(v1, (x, -5, 5), "test")[0]
     assert r == [v1, Tuple(x, -5, 5), "test"]
@@ -48,19 +48,19 @@ def test_preprocess():
 
     r = pw((v1, (x, -5, 5), "v1"), (v2, (x, -5, 5), (y, -2, 2)))
     assert r[0] == [v1, Tuple(x, -5, 5), "v1"]
-    assert r[1] == [v2, Tuple(x, -5, 5), Tuple(y, -2, 2), str(v2)]
+    assert r[1] == [v2, Tuple(x, -5, 5), Tuple(y, -2, 2), None]
 
     r = pw(v1, v2, (x, -5, 5), (y, -2, 2), (z, -3, 3))
-    assert r[0] == [v1, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), str(v1)]
-    assert r[1] == [v2, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), str(v2)]
+    assert r[0] == [v1, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), None]
+    assert r[1] == [v2, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), None]
 
     # passing in matrices
     r = pw(m1, (x, -5, 5), "test")[0]
     assert r == [m1, Tuple(x, -5, 5), "test"]
 
     r = pw(m1, m2, (x, -5, 5), (y, -2, 2), (z, -3, 3))
-    assert r[0] == [m1, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), str(m1)]
-    assert r[1] == [m2, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), str(m2)]
+    assert r[0] == [m1, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), None]
+    assert r[1] == [m2, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), None]
 
     # passing in lists
     r = pw(l1, (x, -5, 5), "test")[0]
@@ -72,14 +72,14 @@ def test_preprocess():
         Tuple(x, -5, 5),
         Tuple(y, -2, 2),
         Tuple(z, -3, 3),
-        str(tuple(l1)),
+        None,
     ]
     assert r[1] == [
         tuple(l2),
         Tuple(x, -5, 5),
         Tuple(y, -2, 2),
         Tuple(z, -3, 3),
-        str(tuple(l2)),
+        None,
     ]
 
 

@@ -169,15 +169,7 @@ def _check_arguments(args, nexpr, npar, **kwargs):
             # plot_parametric/plot3d_parametric_line
             is_expr = isinstance(expr, (Expr, Relational, BooleanFunction))
             e = (expr,) if is_expr else expr
-            current_label = (
-                label if label else str(expr) if is_expr else str(e)
-            )
-            if ((not label) and (current_label != label) and
-                (nexpr in [2, 3]) and (npar == 1)):
-                # in case of parametric 2d/3d line plots, use the parameter
-                # as the label
-                current_label = str(ranges[0][0])
-            output.append((*e, *ranges, current_label, rendering_kw))
+            output.append((*e, *ranges, label, rendering_kw))
 
     else:
         # In this case, we are plotting multiple expressions, each one with its
@@ -193,7 +185,8 @@ def _check_arguments(args, nexpr, npar, **kwargs):
         new_args = args[:-n] if n > 0 else args
 
         # at this point, new_args might just be [expr]. But I need it to be
-        # [[expr]] in order to be able to loop over [expr, range [opt], label [opt]]
+        # [[expr]] in order to be able to loop over
+        # [expr, range [opt], label [opt]]
         if not isinstance(new_args[0], (list, tuple, Tuple)):
             new_args = [new_args]
 
@@ -214,15 +207,8 @@ def _check_arguments(args, nexpr, npar, **kwargs):
             free_symbols = set().union(*[a.free_symbols for a in arg])
             if len(r) != npar:
                 r = _create_ranges(arg, r, npar, "", params)
-            label = ""
-            if not l:
-                label = str(arg[0]) if nexpr == 1 else str(arg)
-                if (nexpr in [2, 3]) and (npar == 1):
-                    # in case of parametric 2d/3d line plots, use the
-                    # parameter as the label
-                    label = str(r[0][0])
-            else:
-                label = l[0]
+
+            label = None if not l else l[0]
             output.append((*arg, *r, label, rend_kw))
     return output
 
@@ -286,7 +272,7 @@ def _unpack_args(*args):
     """
     ranges = [t for t in args if _is_range(t)]
     labels = [t for t in args if isinstance(t, str)]
-    label = "" if not labels else labels[0]
+    label = None if not labels else labels[0]
     rendering_kw = [t for t in args if isinstance(t, dict)]
     rendering_kw = None if not rendering_kw else rendering_kw[0]
     # NOTE: why None? because args might have been preprocessed by
@@ -330,6 +316,7 @@ def _unpack_args_extended(*args, matrices=False, fill_ranges=True):
             exprs, ranges = _split_vector(exprs[0], ranges, fill_ranges)
             if exprs[-1] is S.Zero:
                 exprs = exprs[:-1]
+
     return exprs, ranges, label, rendering_kw
 
 

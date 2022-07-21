@@ -90,9 +90,8 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
             if _set.right_open:
                 end -= offset
 
-            current_label = str(expr) if "Piecewise(" in label else label
             main_series = LineOver1DRangeSeries(
-                expr, (_range[0], start, end), current_label, **kwargs)
+                expr, (_range[0], start, end), label, **kwargs)
             series.append(main_series)
             xx, yy = main_series.get_data()
 

@@ -519,8 +519,8 @@ def test_interactiveseries():
     }
     ranges = (x, -5, 5), (y, -4, 4)
     test_vector(
-        v1, ranges, params, Tuple(-a * sin(N.y), b * cos(N.x)), str(v1),
-        N.x, (10, 10)
+        v1, ranges, params, Tuple(-a * sin(N.y), b * cos(N.x)),
+        str(Tuple(-a * sin(N.y), b * cos(N.x))), N.x, (10, 10)
     )
     test_vector(
         m1, ranges, params, Tuple(-a * sin(y), b * cos(x)), str(tuple(m1)),
@@ -543,7 +543,7 @@ def test_interactiveseries():
         ranges,
         params,
         Tuple(-a * sin(N.y), b * cos(N.x), c * cos(N.z)),
-        str(v2),
+        str(Tuple(-a * sin(N.y), b * cos(N.x), c * cos(N.z))),
         N.x,
         (10, 10, 10),
     )
@@ -552,7 +552,7 @@ def test_interactiveseries():
         ranges,
         params,
         Tuple(-a * sin(y), b * cos(x), c * cos(z)),
-        str(m2),
+        str(Tuple(-a * sin(y), b * cos(x), c * cos(z))),
         x,
         (10, 10, 10),
     )
@@ -561,7 +561,7 @@ def test_interactiveseries():
         ranges,
         params,
         Tuple(-a * sin(y), b * cos(x), c * cos(z)),
-        str(tuple(l2)),
+        str(Tuple(-a * sin(y), b * cos(x), c * cos(z))),
         x,
         (10, 10, 10),
     )

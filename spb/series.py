@@ -289,7 +289,7 @@ class BaseSeries:
 
     is_polar = False
     # If True, the backend will attempt to render it on a polar-projection
-    # axis.
+    # axis, or using a polar discretization if a 3D plot is requested
 
     use_cm = True
     # Some series might use a colormap as default coloring. Setting this
@@ -314,7 +314,6 @@ class BaseSeries:
     def is_line(self):
         flagslines = [self.is_2Dline, self.is_3Dline]
         return any(flagslines)
-
 
     def _line_surface_color(self, prop, val):
         # This setter enables back-compatibility with sympy.plotting.
@@ -650,7 +649,6 @@ class List2DSeries(Line2DBaseSeries):
             )
         self.is_polar = kwargs.get("is_polar", False)
         self.label = label
-        self._latex_label = label
 
     def get_expr(self):
         return self.list_x, self.list_y
@@ -676,8 +674,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
     def __init__(self, expr, var_start_end, label="", **kwargs):
         super().__init__(**kwargs)
         self.expr = sympify(expr)
-        self.label = label
-        self._latex_label = label if str(expr) != label else latex(expr)
+        self._label = str(self.get_expr()) if label is None else label
+        self._latex_label = latex(self.get_expr()) if label is None else label
         self.var = sympify(var_start_end[0])
         # NOTE: even though this class represents a line over a real range,
         # this class serves as a base class for AbsArgLineSeries, which is
@@ -884,10 +882,10 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         label : str
             label passed in by the pre-processor or the user
         """
-        self.label = label
-        self._latex_label = label if str(self.var) != label else latex(self.var)
-        if (self.use_cm is False) and (label == str(self.var)):
-            self.label = str(self.get_expr())
+        self._label = str(self.var) if label is None else label
+        self._latex_label = latex(self.var) if label is None else label
+        if (self.use_cm is False) and (self._label == str(self.var)):
+            self._label = str(self.get_expr())
             self._latex_label = latex(self.get_expr())
 
     def _eval_component(self, expr, param):
@@ -1075,8 +1073,8 @@ class SurfaceBaseSeries(BaseSeries):
         self._init_transforms(**kwargs)
 
     def _set_surface_label(self, label):
-        self.label = label
-        self._latex_label = label if str(self.get_expr()) != label else latex(self.get_expr())
+        self._label = str(self.get_expr()) if label is None else label
+        self._latex_label = latex(self.get_expr()) if label is None else label
 
     def _discretize(self, s1, e1, s2, e2):
         np = import_module('numpy')
@@ -1311,8 +1309,8 @@ class ImplicitSeries(BaseSeries):
         self.has_equality = has_equality
         self.n1 = int(kwargs.get("n1", 1000))
         self.n2 = int(kwargs.get("n2", 1000))
-        self.label = label
-        self._latex_label = label if str(expr) != label else latex(expr)
+        self._label = str(expr) if label is None else label
+        self._latex_label = latex(expr) if label is None else label
         self.adaptive = kwargs.get("adaptive", False)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
@@ -1708,8 +1706,8 @@ class InteractiveSeries(BaseSeries):
 
         # NOTE: the expressions must have been sympified earlier.
         self.expr = exprs[0] if len(exprs) == 1 else Tuple(*exprs, sympify=False)
-        self.label = label
-        self._latex_label = label if str(self.expr) != label else latex(self.expr)
+        self._label = str(self.expr) if label is None else label
+        self._latex_label = latex(self.expr) if label is None else label
         self.signature = sorted(self.expr.free_symbols, key=lambda t: t.name)
 
         # Generate a list of lambda functions, two for each expression:
@@ -1784,8 +1782,9 @@ class InteractiveSeries(BaseSeries):
         ==========
 
         p : dict
-            key: symbol associated to the parameter
-            val: the value
+
+            * key: symbol associated to the parameter
+            * val: the value
         """
         return self._params
 
@@ -1994,7 +1993,7 @@ class Parametric2DLineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSer
         self.var = list(self.ranges.keys())[0]
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
-        ParametricLineBaseSeries._set_parametric_line_label(self, self.label)
+        ParametricLineBaseSeries._set_parametric_line_label(self, args[-1])
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
         return ParametricLineBaseSeries.get_label(self, use_latex, wrapper)
@@ -2251,8 +2250,8 @@ class ComplexSurfaceBaseSeries(BaseSeries):
             self.is_3Dsurface = True
 
         self.expr = expr
-        self.label = label
-        self._latex_label = label if str(expr) != label else latex(expr)
+        self._label = str(expr) if label is None else label
+        self._latex_label = latex(expr) if label is None else label
         self.n1 = int(kwargs.get("n1", 300))
         self.n2 = int(kwargs.get("n2", 300))
         self.xscale = kwargs.get("xscale", "linear")
@@ -2623,8 +2622,8 @@ class VectorBase(BaseSeries):
             new_ranges.append((sympify(r[0]), float(r[1]), float(r[2])))
         self.exprs = exprs
         self.ranges = new_ranges
-        self.label = label
-        self._latex_label = label if str(exprs) != label else latex(exprs)
+        self._label = str(exprs) if label is None else label
+        self._latex_label = latex(exprs) if label is None else label
         self._init_num_discretization_points(**kwargs)
         self.n = [self.n1, self.n2, self.n3]
         self.xscale = kwargs.get("xscale", "linear")
@@ -3084,8 +3083,8 @@ class GeometrySeries(BaseSeries):
 
         self.expr = expr
         self._range = _range
-        self.label = label
-        self._latex_label = label if label != str(expr) else latex(expr)
+        self._label = str(expr) if label is None else label
+        self._latex_label = latex(expr) if label is None else label
         self._params = params
         self.is_filled = kwargs.get("is_filled", True)
         self.n = int(kwargs.get("n", 200))
