@@ -1251,7 +1251,7 @@ def plot_complex_vector(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_complex_vector(expr, (z, -5 - 5j, 5 + 5j)
+       >>> plot_complex_vector(expr, (z, -5 - 5j, 5 + 5j),
        ...     "Magnitude of %s" % str(expr), scalar=False)
        Plot object containing:
        [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
