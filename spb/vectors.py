@@ -444,7 +444,7 @@ def plot_vector(*args, **kwargs):
        >>> plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
        ...     quiver_kw=dict(color="black"),
        ...     contour_kw={"cmap": "Blues_r", "levels": 20},
-       ...     grid=False)
+       ...     grid=False, xlabel="x", ylabel="y")
        Plot object containing:
        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
@@ -460,7 +460,7 @@ def plot_vector(*args, **kwargs):
        >>> expr = [-sin(y), cos(x)]
        >>> plot_vector(expr, (x, -3, 3), (y, -3, 3),
        ...     streamlines=True, scalar=None,
-       ...     label="Magnitude of %s" % str(expr))
+       ...     label="Magnitude of %s" % str(expr), xlabel="x", ylabel="y")
        Plot object containing:
        [0]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
@@ -474,7 +474,8 @@ def plot_vector(*args, **kwargs):
        :include-source: True
 
        >>> plot_vector([-sin(y), cos(x)], [y, x], (x, -5, 5), (y, -3, 3), n=20,
-       ...     scalar=sqrt((-sin(y))**2 + cos(x)**2), legend=True, grid=False)
+       ...     scalar=sqrt((-sin(y))**2 + cos(x)**2), legend=True, grid=False,
+       ...     xlabel="x", ylabel="y")
        Plot object containing:
        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)
        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -5.0, 5.0), (y, -3.0, 3.0)
@@ -494,7 +495,7 @@ def plot_vector(*args, **kwargs):
            n=20,
            quiver_kw=dict(color="black"),
            contour_kw={"cmap": "Blues_r", "levels": 20},
-           grid=False)
+           grid=False, xlabel="x", ylabel="y")
 
     3D vector field.
 
@@ -535,7 +536,8 @@ def plot_vector(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_vector(Matrix([z, y, x]), (x, -10, 10), (y, -10, 10), (z, -10, 10),
+       >>> plot_vector(
+       ...     Matrix([z, y, x]), (x, -10, 10), (y, -10, 10), (z, -10, 10),
        ...     streamlines=True,
        ...     stream_kw=dict(
        ...         starts=True,
