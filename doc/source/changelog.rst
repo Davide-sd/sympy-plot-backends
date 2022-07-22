@@ -2,6 +2,37 @@
  Changelog
 ==========
 
+v1.2.1
+======
+
+* Added ``used_by_default`` inside default options for adaptive
+  algorithm. This let the user decide wheter to use adaptive algorithm or
+  uniform meshing by default for line plots.
+
+* Fix the axis labels for the ``plot_complex_vector`` function.
+
+* Improved a few examples in the docstring of ``plot_vector`` and
+  ``plot_complex_vector``.
+
+* Fixed bug with interactive update of ``plot_vector`` inside
+  ``MatplotlibBackend``.
+
+* Improvements to the code in preparation for merging this module into Sympy:
+
+  * Small refactoring about the label generation: previously, the string and
+    latex representations were generated at different times and in different
+    functions. Now, they are generated simultaneously inside the ``__init__``
+    method of a data series.
+  
+  * Changes in names of functions that are meant to remain private:
+
+    * ``adaptive_eval`` -> ``_adaptive_eval``.
+    * ``_uniform_eval`` -> ``_uniform_eval_helper``
+    * ``uniform_eval`` -> ``_uniform_eval``
+    * ``_correct_size`` -> ``_correct_shape``
+    * ``get_points`` -> ``_get_points``
+
+
 v1.2.0
 ======
 
