@@ -359,6 +359,16 @@ class MatplotlibBackend(Plot):
             elif s.is_contour:
                 x, y, z = s.get_data()
                 ckw = dict(cmap=next(self._cm))
+                if any(s.is_vector and (not s.is_streamlines) for s in self.series):
+                    # NOTE:
+                    # When plotting and updating a vector plot containing both
+                    # a contour series and a quiver series, because it's not
+                    # possible to update contour objects (we can only remove
+                    # and recreating them), the quiver series which is usually
+                    # after the contour plot (in terms of rendering order) will
+                    # be moved on top, resulting in the contour to hide the
+                    # quivers. Setting zorder appears to fix the problem.
+                    ckw["zorder"] = 0
                 kw = merge({}, ckw, s.rendering_kw)
                 c = self.ax.contourf(x, y, z, **kw)
                 self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm, True)
@@ -473,6 +483,18 @@ class MatplotlibBackend(Plot):
                             self._fig.axes[-1])
                     else:
                         qkw = dict()
+                        if any(s.is_contour for s in self.series):
+                            # NOTE:
+                            # When plotting and updating a vector plot
+                            # containing both a contour series and a quiver
+                            # series, because it's not possible to update
+                            # contour objects (we can only remove and
+                            # recreating them), the quiver series which is
+                            # usually after the contour plot (in terms of
+                            # rendering order) will be moved on top, resulting
+                            # in the contour to hide the quivers. Setting
+                            # zorder appears to fix the problem.
+                            qkw["zorder"] = 1
                         if (not s.use_quiver_solid_color) and s.use_cm:
                             # don't use color map if a scalar field is
                             # visible or if use_cm=False
