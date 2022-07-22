@@ -316,9 +316,10 @@ class BaseSeries:
         return any(flagslines)
 
     def _line_surface_color(self, prop, val):
-        # This setter enables back-compatibility with sympy.plotting.
-        # If line_color/surface_color is not a callable, it will override
-        # the color_func option (if set)
+        """This setter enables back-compatibility with sympy.plotting"""
+        # NOTE: color_func is set inside the init method of the series.
+        # If line_color/surface_color is not a callable, then color_func will
+        # be set to None.
         setattr(self, prop, val)
         if callable(val):
             self.color_func = val
@@ -477,7 +478,7 @@ class BaseSeries:
         raise NotImplementedError
 
     def _get_wrapped_label(self, label, wrapper):
-        """Given a latex representation of an expression, label, wrap it inside
+        """Given a latex representation of an expression, wrap it inside
         some characters. Matplotlib needs $%s%, K3D-Jupyter needs "%s".
         """
         return wrapper % label
@@ -514,8 +515,12 @@ class BaseSeries:
 
     @label.setter
     def label(self, val):
-        """Set the labels associated to this series.
-        """
+        """Set the labels associated to this series."""
+        # NOTE: the init method of any series requires a label. If the user do
+        # not provide it, the preprocessing function will set label=None, which
+        # informs the series to initialize two attributes:
+        # _label contains the string representation of the expression.
+        # _latex_label contains the latex representation of the expression.
         self._label = self._latex_label = val
 
     def _apply_transform(self, *args):
@@ -611,7 +616,7 @@ class Line2DBaseSeries(BaseSeries):
         """
         np = import_module('numpy')
 
-        points = self.get_points()
+        points = self._get_points()
         points = self._apply_transform(*points)
 
         if self.steps is True:
@@ -656,7 +661,8 @@ class List2DSeries(Line2DBaseSeries):
     def __str__(self):
         return "list plot"
 
-    def get_points(self):
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed."""
         return self.list_x, self.list_y
 
 
@@ -772,19 +778,11 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                 yy[i + 1] = np.nan
         return x, yy
 
-    def get_points(self):
-        """Return coordinates for plotting. Depending on the `adaptive`
-        option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
-
-        Returns
-        =======
-
-        x : np.ndarray
-            Real Discretized domain.
-
-        y : np.ndarray
-            Numerical evaluation result.
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed.
+        Depending on the `adaptive` option, this function will either use an
+        adaptive algorithm or it will uniformly sample the expression over the
+        provided range.
         """
         np = import_module('numpy')
 
@@ -803,24 +801,13 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
     """
     is_parametric = True
 
-    def get_points(self):
-        """Return coordinates for plotting. Depending on the `adaptive`
-        option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
-
-        Returns
-        =======
-
-        x : np.ndarray
-            Real Discretized domain.
-
-        y : np.ndarray
-            Numerical evaluation result.
-
-        col : np.ndarray
-            Color associated to each point.
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed.
+        Depending on the `adaptive` option, this function will either use an
+        adaptive algorithm or it will uniformly sample the expression over the
+        provided range.
         """
-        x, y = super().get_points()
+        x, y = super()._get_points()
         return x, y, self.eval_color_func(x, y)
 
 
@@ -842,22 +829,11 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
             str((self.start, self.end)),
         )
 
-    def get_points(self):
-        """Return coordinates for plotting. Depending on the `adaptive`
-        option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
-
-        Returns
-        =======
-
-        x : np.ndarray
-            Real Discretized domain.
-
-        _abs : np.ndarray
-            Absolute value of the function.
-
-        _arg : np.ndarray
-            Argument of the function.
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed.
+        Depending on the `adaptive` option, this function will either use an
+        adaptive algorithm or it will uniformly sample the expression over the
+        provided range.
         """
         np = import_module('numpy')
 
@@ -949,25 +925,11 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
             return self._get_wrapped_label(self._latex_label, wrapper)
         return self._label
 
-    def get_points(self):
-        """Return coordinates for plotting. Depending on the `adaptive`
-        option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
-
-        Returns
-        =======
-
-        x : np.ndarray
-            x-coordinates.
-
-        y : np.ndarray
-            y-coordinates.
-
-        z : np.ndarray (optional)
-            z-coordinates in the case of Parametric3DLineSeries.
-
-        param : np.ndarray
-            parameter.
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed.
+        Depending on the `adaptive` option, this function will either use an
+        adaptive algorithm or it will uniformly sample the expression over the
+        provided range.
         """
         if self.adaptive:
             coords = self._adaptive_sampling()
@@ -1784,7 +1746,7 @@ class InteractiveSeries(BaseSeries):
         p : dict
 
             * key: symbol associated to the parameter
-            * val: the value
+            * val: the numeric value
         """
         return self._params
 
@@ -1883,18 +1845,8 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
 
-    def get_points(self):
-        """Return coordinates for plotting the line.
-
-        Returns
-        =======
-
-        x: np.ndarray
-            x-coordinates
-
-        y: np.ndarray
-            y-coordinates
-        """
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed."""
         np = import_module('numpy')
 
         results = self._evaluate()[0]
@@ -1917,24 +1869,13 @@ class ColoredLineInteractiveSeries(LineInteractiveSeries):
     """
     is_parametric = True
 
-    def get_points(self):
-        """Return coordinates for plotting. Depending on the `adaptive`
-        option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
-
-        Returns
-        =======
-
-        x : np.ndarray
-            Real Discretized domain.
-
-        y : np.ndarray
-            Numerical evaluation result.
-
-        col : np.ndarray
-            Color associated to each point.
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed.
+        Depending on the `adaptive` option, this function will either use an
+        adaptive algorithm or it will uniformly sample the expression over the
+        provided range.
         """
-        x, y = super().get_points()
+        x, y = super()._get_points()
         return x, y, self.eval_color_func(x, y)
 
 
@@ -1949,21 +1890,8 @@ class AbsArgLineInteractiveSeries(LineInteractiveSeries):
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
-    def get_points(self):
-        """Return coordinates for plotting the line.
-
-        Returns
-        =======
-
-        x: np.ndarray
-            x-coordinates
-
-        abs: np.ndarray
-            absolute value
-
-        arg: np.ndarray
-            argument
-        """
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed."""
         np = import_module('numpy')
 
         results = self._evaluate()[0]
@@ -1998,21 +1926,8 @@ class Parametric2DLineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSer
     def get_label(self, use_latex=False, wrapper="$%s$"):
         return ParametricLineBaseSeries.get_label(self, use_latex, wrapper)
 
-    def get_points(self):
-        """Return coordinates for plotting the line.
-
-        Returns
-        =======
-
-        x: np.ndarray
-            x-coordinates
-
-        y: np.ndarray
-            y-coordinates
-
-        z: np.ndarray (optional)
-            z-coordinates in case of Parametric3DLineInteractiveSeries
-        """
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed."""
         np = import_module('numpy')
 
         results = self._evaluate()
@@ -2168,18 +2083,8 @@ class ComplexPointSeries(Line2DBaseSeries):
         points = np.array([complex(p) for p in points])
         return np.real(points), np.imag(points)
 
-    def get_points(self):
-        """Return arrays of coordinates for plotting.
-
-        Returns
-        =======
-
-        x : np.ndarray
-            the real part.
-
-        y : np.ndarray
-            the imaginary part.
-        """
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed."""
         return self._evaluate(self.expr)
 
     def __str__(self):
@@ -2201,18 +2106,8 @@ class ComplexPointInteractiveSeries(LineInteractiveBaseSeries, ComplexPointSerie
     def update_data(self, params):
         self._params = params
 
-    def get_points(self):
-        """Return arrays of coordinates for plotting.
-
-        Returns
-        =======
-
-        x : np.ndarray
-            the real part.
-
-        y : np.ndarray
-            the imaginary part.
-        """
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed."""
         points = Tuple(*[p.evalf(subs=self._params) for p in self.expr])
         return ComplexPointSeries._evaluate(points)
 
