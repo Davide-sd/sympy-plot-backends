@@ -46,13 +46,14 @@ jobs:
       uses: tj-actions/coverage-badge-py@v1.8
 
     - name: Verify Changed files
+      if: matrix.python-version == '3.9'
       uses: tj-actions/verify-changed-files@v9
       id: changed_files
       with:
         files: coverage.svg
 
     - name: Commit files
-      if: steps.changed_files.outputs.files_changed == 'true'
+      if: (steps.changed_files.outputs.files_changed == 'true') && (matrix.python-version == '3.9')
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
@@ -60,7 +61,7 @@ jobs:
         git commit -m "Updated coverage.svg"
 
     - name: Push changes
-      if: steps.changed_files.outputs.files_changed == 'true'
+      if: (steps.changed_files.outputs.files_changed == 'true') && (matrix.python-version == '3.9')
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GH_TOKEN }}
