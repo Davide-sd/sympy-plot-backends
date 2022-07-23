@@ -3,6 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/sympy-plot-backends.svg)](https://badge.fury.io/py/sympy-plot-backends)
 [![Install with conda](https://anaconda.org/davide_sd/sympy_plot_backends/badges/installer/conda.svg)](https://anaconda.org/Davide_sd/sympy_plot_backends)
 [![Documentation Status](https://readthedocs.org/projects/sympy-plot-backends/badge/?version=latest)](http://sympy-plot-backends.readthedocs.io/)
+![Coverage](https://github.com/Davide-sd/sympy-plot-backends/blob/master/coverage.svg)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Davide-sd/sympy-plot-backends/HEAD)
 [![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A )](http://numfocus.org)
 
