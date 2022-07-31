@@ -3,8 +3,7 @@ from spb.backends.utils import get_seeds_points
 from spb.series import (
     Vector2DSeries,
     Vector3DSeries,
-    SliceVector3DSeries,
-    ContourSeries,
+    SliceVector3DSeries
 )
 from spb.utils import _plot_sympify, _split_vector
 from spb.vectors import _preprocess, _series, plot_vector
@@ -85,7 +84,8 @@ def test_preprocess():
 
 def test_split_vector():
     # verify that the correct components of a vector are retrieved, no matter
-    # the type of the input vector (list, matrix, symbolic vector)
+    # the type of the input vector (list, matrix, symbolic vector, lambda
+    # functions)
 
     x, y, z = symbols("x:z")
     N = CoordSys3D("N")
@@ -95,6 +95,9 @@ def test_split_vector():
     m2 = v2.to_matrix(N)
     l1 = list(m1)
     l2 = list(m2)
+    fx = lambda x, y, z: z
+    fy = lambda x, y, z: x
+    fz = lambda x, y, z: y
 
     ranges_in = [Tuple(x, -5, 5)]
     ranges_out = [Tuple(x, -5, 5), Tuple(y, -10, 10), Tuple(z, -10, 10)]
@@ -110,6 +113,7 @@ def test_split_vector():
     do_test(v2, (z, x, y))
     do_test(m2, (z, x, y))
     do_test(l2, (z, x, y))
+    do_test([fx, fy, fz], (fx, fy, fz))
 
     # too few or too many elements
     raises(ValueError, lambda: _split_vector([x], ranges_in))
@@ -126,6 +130,8 @@ def test_series():
     v2 = z * N.i + x * N.j + y * N.k
     m1 = v1.to_matrix(N)
     m2 = v2.to_matrix(N)
+    fx = lambda x, y, z: z
+    fy = lambda x, y, z: x
 
     # Tests for 2D vectors
     args = pw(v1, "test")[0]
@@ -152,6 +158,13 @@ def test_series():
     # too many free symbols in the 2D vector
     args = pw([x + y, z], (x, -5, 5), "test")[0]
     raises(ValueError, lambda: _series(args[0], *args[1:-1], label=args[-1]))
+
+    # vector is built with numerical lambda functions
+    args = pw([fx, fy], ("x", -5, 5), ("y", -6, 6), "test")[0]
+    _, _, s = _series(args[0], *args[1:-1], label=args[-1])
+    assert isinstance(s, Vector2DSeries)
+    assert (s.exprs[0], s.ranges[0][1], s.ranges[0][2]) == (fx, -5.0, 5.0)
+    assert (s.exprs[1], s.ranges[1][1], s.ranges[1][2]) == (fy, -6.0, 6.0)
 
     # Tests for 3D vectors
     args = pw(v2, "test")[0]
@@ -311,86 +324,6 @@ def test_series():
             slice="test",
         ),
     )
-
-
-def test_plot_vector():
-    # verify that `plot_vector()` generates the correct data series
-
-    x, y, z = symbols("x:z")
-    N = CoordSys3D("N")
-    v1 = x * N.i + y * N.j
-    v2 = z * N.i + x * N.j + y * N.k
-
-    # this will stop inside plot_vector, because we are mixing 2D and 3D vectors
-    raises(ValueError, lambda: plot_vector(v1, v2))
-    # this will stop inside _series, because 3 ranges have been provided
-    # for a 2D vector plot (v1)
-    raises(ValueError, lambda: plot_vector(v1, v2, (x, -5, 5), (y, -2, 2), (z, -3, 3)))
-
-    # scalar is not one of [None,True,False,Expr]
-    raises(ValueError, lambda: plot_vector(v1, scalar="s"))
-
-    # single 2D vector field with magnitude scalar field: contour series should
-    # have the same range as the vector series
-    p = plot_vector(v1, (x, -5, 5), (y, -2, 2), show=False)
-    assert len(p.series) == 2
-    assert isinstance(p.series[0], ContourSeries)
-    assert isinstance(p.series[1], Vector2DSeries)
-    assert p.series[0].start_x == -5
-    assert p.series[0].end_x == 5
-    assert p.series[0].start_y == -2
-    assert p.series[0].end_y == 2
-
-    # multiple 2D vector field with magnitude scalar field: contour series
-    # should cover the entire ranges of the vector fields
-    p = plot_vector(
-        (v1, (x, -5, -3), (y, -2, 2)),
-        (v1, (x, -1, 1), (y, -4, -3)),
-        (v1, (x, 2, 6), (y, 3, 5)),
-        scalar=sqrt(x ** 2 + y ** 2),
-        show=False,
-    )
-    assert len(p.series) == 4
-    assert isinstance(p.series[0], ContourSeries)
-    assert all([isinstance(s, Vector2DSeries) for s in p.series[1:]])
-    assert p.series[0].start_x == -5
-    assert p.series[0].end_x == 6
-    assert p.series[0].start_y == -4
-    assert p.series[0].end_y == 5
-
-
-def test_vector_data():
-    # verify that vector data series generates data with the correct shape
-
-    x, y, z = symbols("x:z")
-
-    s = Vector2DSeries(x, y, (x, -5, 5), (y, -3, 3), "test", n1=10, n2=15)
-    xx, yy, uu, vv = s.get_data()
-    assert xx.shape == uu.shape == (15, 10)
-    assert yy.shape == vv.shape == (15, 10)
-
-    # at least one vector component is a scalar
-    s = Vector2DSeries(1, y, (x, -5, 5), (y, -3, 3), "test", n1=10, n2=15)
-    xx, yy, uu, vv = s.get_data()
-    assert xx.shape == uu.shape == (15, 10)
-    assert yy.shape == vv.shape == (15, 10)
-
-    s = Vector3DSeries(
-        x, y, z, (x, -5, 5), (y, -3, 3), (z, -2, 2), "test", n1=10, n2=15, n3=20
-    )
-    xx, yy, zz, uu, vv, ww = s.get_data()
-    assert xx.shape == uu.shape == (15, 10, 20)
-    assert yy.shape == vv.shape == (15, 10, 20)
-    assert zz.shape == ww.shape == (15, 10, 20)
-
-    # at least one vector component is a scalar
-    s = Vector3DSeries(
-        x, 1, z, (x, -5, 5), (y, -3, 3), (z, -2, 2), "test", n1=10, n2=15, n3=20
-    )
-    xx, yy, zz, uu, vv, ww = s.get_data()
-    assert xx.shape == uu.shape == (15, 10, 20)
-    assert yy.shape == vv.shape == (15, 10, 20)
-    assert zz.shape == ww.shape == (15, 10, 20)
 
 
 def test_get_seeds_points():

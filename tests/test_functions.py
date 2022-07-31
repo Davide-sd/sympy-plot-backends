@@ -2,12 +2,16 @@ import os
 import pytest
 from pytest import raises
 from spb.defaults import set_defaults, cfg
-from spb.functions import (
+from spb import (
     plot_piecewise, plot, plot_list, plot3d_parametric_line,
     plot_parametric, plot3d, plot_contour, plot3d_parametric_surface,
-    plot_implicit
+    plot_implicit, plot_complex_list, plot_complex_vector, plot_real_imag,
+    plot_vector
 )
-from spb.series import LineOver1DRangeSeries, List2DSeries
+from spb.series import (
+    LineOver1DRangeSeries, List2DSeries, ContourSeries,
+    Vector2DSeries
+)
 from spb.backends.matplotlib import MB, unset_show
 from sympy import (
     symbols, Piecewise, sin, cos, tan, re, Abs, sqrt, real_root,
@@ -15,6 +19,7 @@ from sympy import (
     And, Or, Eq, Ne, Interval, Sum, oo, I, pi, S,
     sympify, Integral
 )
+from sympy.vector import CoordSys3D
 from sympy.testing.pytest import skip, warns
 from sympy.external import import_module
 from sympy.testing.tmpfiles import TmpFileManager
@@ -43,6 +48,76 @@ unset_show()
 # If your issue is related to a particular keyword affecting a backend
 # behaviour, consider adding tests to test_backends.py
 #
+
+
+def test_plot_vector():
+    # verify that `plot_vector()` generates the correct data series
+
+    x, y, z = symbols("x:z")
+    N = CoordSys3D("N")
+    v1 = x * N.i + y * N.j
+    v2 = z * N.i + x * N.j + y * N.k
+
+    # this will stop inside plot_vector, because we are mixing 2D and 3D vectors
+    raises(ValueError, lambda: plot_vector(v1, v2))
+    # this will stop inside _series, because 3 ranges have been provided
+    # for a 2D vector plot (v1)
+    raises(ValueError, lambda: plot_vector(v1, v2, (x, -5, 5), (y, -2, 2), (z, -3, 3)))
+
+    # scalar is not one of [None,True,False,Expr]
+    raises(ValueError, lambda: plot_vector(v1, scalar="s"))
+
+    # single 2D vector field with magnitude scalar field: contour series should
+    # have the same range as the vector series
+    p = plot_vector(v1, (x, -5, 5), (y, -2, 2), show=False)
+    assert len(p.series) == 2
+    assert isinstance(p.series[0], ContourSeries)
+    assert isinstance(p.series[1], Vector2DSeries)
+    assert p.series[0].start_x == -5
+    assert p.series[0].end_x == 5
+    assert p.series[0].start_y == -2
+    assert p.series[0].end_y == 2
+
+    # multiple 2D vector field with magnitude scalar field: contour series
+    # should cover the entire ranges of the vector fields
+    p = plot_vector(
+        (v1, (x, -5, -3), (y, -2, 2)),
+        (v1, (x, -1, 1), (y, -4, -3)),
+        (v1, (x, 2, 6), (y, 3, 5)),
+        scalar=sqrt(x ** 2 + y ** 2),
+        show=False,
+    )
+    assert len(p.series) == 4
+    assert isinstance(p.series[0], ContourSeries)
+    assert all([isinstance(s, Vector2DSeries) for s in p.series[1:]])
+    assert p.series[0].start_x == -5
+    assert p.series[0].end_x == 6
+    assert p.series[0].start_y == -4
+    assert p.series[0].end_y == 5
+
+    # verify that plotting symbolic expressions and lambda functions produces
+    # the same results
+    p1 = plot_vector(v1, (x, -5, 5), (y, -2, 2), show=False)
+    p2 = plot_vector(
+        [lambda x, y: x, lambda x, y: y],
+        ("x", -5, 5), ("y", -2, 2),
+        show=False)
+    assert len(p1.series) == len(p2.series) == 2
+    assert all(np.allclose(t1, t2) for t1, t2 in
+        zip(p1[0].get_data(), p2[0].get_data()))
+    assert all(np.allclose(t1, t2) for t1, t2 in
+        zip(p1[1].get_data(), p2[1].get_data()))
+
+    # verify the use of a lambda function scalar field
+    p3 = plot_vector(v1, (x, -5, 5), (y, -2, 2),
+        scalar=sqrt(x**2 + y**2), show=False)
+    p4 = plot_vector(
+        [lambda x, y: x, lambda x, y: y],
+        ("x", -5, 5), ("y", -2, 2),
+        scalar=lambda x, y: np.sqrt(x**2 + y**2),
+        show=False)
+    assert all(np.allclose(t1, t2) for t1, t2 in
+        zip(p3[0].get_data(), p4[0].get_data()))
 
 
 def test_plot_list():
@@ -694,3 +769,13 @@ def test_plot_implicit_region_and():
         do_test(r1 ^ r2, (x, -5, 5), (y, -5, 5), "test_region_xor.png", 0.005)
     finally:
         TmpFileManager.cleanup()
+
+
+def test_lambda_functions():
+    # verify that plotting functions raises errors if they do not support
+    # lambda functions.
+
+    raises(TypeError, lambda : plot_real_imag(lambda t: t))
+    raises(TypeError, lambda : plot_complex_list(lambda t: t))
+    raises(TypeError, lambda : plot_complex_vector(lambda t: t))
+    raises(TypeError, lambda : plot_piecewise(lambda t: t))

@@ -1,3 +1,4 @@
+from inspect import signature
 from spb.defaults import cfg
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
@@ -116,7 +117,12 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     default_loss_nd = adaptive.learner.learnerND.default_loss
     from functools import partial
 
-    one_d = hasattr(free_symbols, "__iter__") and (len(free_symbols) == 1)
+    if not callable(expr):
+        # expr is a single symbolic expressions or a tuple of symb expressions
+        one_d = hasattr(free_symbols, "__iter__") and (len(free_symbols) == 1)
+    else:
+        # expr is a user-provided lambda function
+        one_d = len(signature(expr).parameters) == 1
 
     # TODO:
     # As of adaptive 0.13.0, this warning will be raised if the function to
@@ -136,23 +142,30 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
         lf = loss_fn
     k = "loss_per_interval" if one_d else "loss_per_simplex"
     d = {k: lf}
-
     Learner = Learner1D if one_d else LearnerND
 
-    try:
-        f = lambdify(free_symbols, expr, modules=modules)
-        learner = Learner(partial(wrapper_func, f, *args), bounds=bounds, **d)
-        simple(learner, goal)
-    except Exception as err:
-        warnings.warn(
-            "The evaluation with %s failed.\n" % (
-                "NumPy/SciPy" if not modules else modules) +
-            "{}: {}\n".format(type(err).__name__, err) +
-            "Trying to evaluate the expression with Sympy, but it might "
-            "be a slow operation."
-        )
-        f = lambdify(free_symbols, expr, modules="sympy")
-        learner = Learner(partial(wrapper_func, f, *args), bounds=bounds, **d)
+    if not callable(expr):
+        # expr is a single symbolic expressions or a tuple of symb expressions
+        try:
+            f = lambdify(free_symbols, expr, modules=modules)
+            learner = Learner(partial(wrapper_func, f, *args),
+                bounds=bounds, **d)
+            simple(learner, goal)
+        except Exception as err:
+            warnings.warn(
+                "The evaluation with %s failed.\n" % (
+                    "NumPy/SciPy" if not modules else modules) +
+                "{}: {}\n".format(type(err).__name__, err) +
+                "Trying to evaluate the expression with Sympy, but it might "
+                "be a slow operation."
+            )
+            f = lambdify(free_symbols, expr, modules="sympy")
+            learner = Learner(partial(wrapper_func, f, *args),
+                bounds=bounds, **d)
+            simple(learner, goal)
+    else:
+        # expr is a user-provided lambda function
+        learner = Learner(partial(wrapper_func,expr, *args), bounds=bounds, **d)
         simple(learner, goal)
 
     if one_d:
@@ -205,6 +218,9 @@ def _uniform_eval(free_symbols, expr, *args, modules=None):
         No matter the evaluation ``modules``, the array type is going to be
         complex.
     """
+    if callable(expr):
+        return expr(*args)
+
     # generate two lambda functions: the default one, and the backup in case
     # of failures with the default one.
     f1 = lambdify(free_symbols, expr, modules=modules)
@@ -304,6 +320,11 @@ class BaseSeries:
         self._tz = kwargs.get("tz", None)
         if not all(callable(t) or (t is None) for t in [self._tx, self._ty, self._tz]):
             raise TypeError("`tx`, `ty`, `tz` must be functions.")
+
+    def _block_lambda_functions(self, *exprs):
+        if any(callable(e) for e in exprs):
+            raise TypeError(type(self).__name__ + " requires a symbolic "
+                "expression.")
 
     @property
     def is_3D(self):
@@ -642,7 +663,7 @@ class List2DSeries(Line2DBaseSeries):
     def __init__(self, list_x, list_y, label="", **kwargs):
         super().__init__(**kwargs)
         np = import_module('numpy')
-
+        self._block_lambda_functions(list_x, list_y)
         self.list_x = np.array(list_x, dtype=np.float64)
         self.list_y = np.array(list_y, dtype=np.float64)
         if len(list_x) != len(list_y):
@@ -679,7 +700,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
 
     def __init__(self, expr, var_start_end, label="", **kwargs):
         super().__init__(**kwargs)
-        self.expr = sympify(expr)
+        self.expr = expr if callable(expr) else sympify(expr)
         self._label = str(self.get_expr()) if label is None else label
         self._latex_label = latex(self.get_expr()) if label is None else label
         self.var = sympify(var_start_end[0])
@@ -698,6 +719,13 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.is_polar = kwargs.get("is_polar", False)
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
+
+        # if the expressions is a lambda function and no label has been
+        # provided, then its better to do the following to avoid suprises on
+        # the backend
+        if callable(self.expr):
+            if self._label == str(self.expr):
+                self.label = ""
 
     def __str__(self):
         return "cartesian line: %s for %s over %s" % (
@@ -863,6 +891,12 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         if (self.use_cm is False) and (self._label == str(self.var)):
             self._label = str(self.get_expr())
             self._latex_label = latex(self.get_expr())
+        # if the expressions is a lambda function and use_cm=False and no label
+        # has been provided, then its better to do the following to avoid
+        # suprises on the backend
+        if any(callable(e) for e in self.get_expr()) and (not self.use_cm):
+            if self._label == str(self.get_expr()):
+                self.label = ""
 
     def _eval_component(self, expr, param):
         """Evaluate the specified expression over a predefined
@@ -887,9 +921,15 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
             except (ZeroDivisionError, OverflowError):
                 return [np.nan for t in range(2 if is_2Dline else 3)]
 
-        expr = Tuple(self.expr_x, self.expr_y)
-        if not self.is_2Dline:
-            expr = Tuple(self.expr_x, self.expr_y, self.expr_z)
+        if all(not callable(e) for e in self.get_expr()):
+            expr = Tuple(self.expr_x, self.expr_y)
+            if not self.is_2Dline:
+                expr = Tuple(self.expr_x, self.expr_y, self.expr_z)
+        else:
+            # expr is user-provided lambda functions
+            expr = lambda x: (self.expr_x(x), self.expr_y(x))
+            if not self.is_2Dline:
+                expr = lambda x: (self.expr_x(x), self.expr_y(x), self.expr_z(x))
 
         data = _adaptive_eval(
             func, [self.var], expr,
@@ -950,8 +990,8 @@ class Parametric2DLineSeries(ParametricLineBaseSeries):
 
     def __init__(self, expr_x, expr_y, var_start_end, label="", **kwargs):
         super().__init__(**kwargs)
-        self.expr_x = sympify(expr_x)
-        self.expr_y = sympify(expr_y)
+        self.expr_x = expr_x if callable(expr_x) else sympify(expr_x)
+        self.expr_y = expr_y if callable(expr_y) else sympify(expr_y)
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
@@ -982,9 +1022,9 @@ class Parametric3DLineSeries(ParametricLineBaseSeries):
 
     def __init__(self, expr_x, expr_y, expr_z, var_start_end, label="", **kwargs):
         super().__init__(**kwargs)
-        self.expr_x = sympify(expr_x)
-        self.expr_y = sympify(expr_y)
-        self.expr_z = sympify(expr_z)
+        self.expr_x = expr_x if callable(expr_x) else sympify(expr_x)
+        self.expr_y = expr_y if callable(expr_y) else sympify(expr_y)
+        self.expr_z = expr_z if callable(expr_z) else sympify(expr_z)
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
@@ -1035,8 +1075,16 @@ class SurfaceBaseSeries(BaseSeries):
         self._init_transforms(**kwargs)
 
     def _set_surface_label(self, label):
-        self._label = str(self.get_expr()) if label is None else label
-        self._latex_label = latex(self.get_expr()) if label is None else label
+        exprs = self.get_expr()
+        self._label = str(exprs) if label is None else label
+        self._latex_label = latex(exprs) if label is None else label
+        # if the expressions is a lambda function and no label
+        # has been provided, then its better to do the following to avoid
+        # suprises on the backend
+        is_lambda = (callable(exprs) if not hasattr(exprs, "__iter__")
+            else any(callable(e) for e in exprs))
+        if is_lambda and (self._label == str(exprs)):
+                self.label = ""
 
     def _discretize(self, s1, e1, s2, e2):
         np = import_module('numpy')
@@ -1054,7 +1102,7 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         super().__init__(**kwargs)
-        self.expr = sympify(expr)
+        self.expr = expr if callable(expr) else sympify(expr)
         self.var_x = sympify(var_start_end_x[0])
         self.start_x = float(var_start_end_x[1])
         self.end_x = float(var_start_end_x[2])
@@ -1143,9 +1191,9 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         var_start_end_u, var_start_end_v, label="", **kwargs
     ):
         super().__init__(**kwargs)
-        self.expr_x = sympify(expr_x)
-        self.expr_y = sympify(expr_y)
-        self.expr_z = sympify(expr_z)
+        self.expr_x = expr_x if callable(expr_x) else sympify(expr_x)
+        self.expr_y = expr_y if callable(expr_y) else sympify(expr_y)
+        self.expr_z = expr_z if callable(expr_z) else sympify(expr_z)
         self.var_u = sympify(var_start_end_u[0])
         self.start_u = float(var_start_end_u[1])
         self.end_u = float(var_start_end_u[2])
@@ -1260,6 +1308,7 @@ class ImplicitSeries(BaseSeries):
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         super().__init__()
+        self._block_lambda_functions(expr)
         expr, has_equality = self._has_equality(sympify(expr))
         self.expr = expr
         self.var_x = sympify(var_start_end_x[0])
@@ -1510,7 +1559,7 @@ class Implicit3DSeries(SurfaceBaseSeries):
 
     def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
         super().__init__(**kwargs)
-        self.expr = expr
+        self.expr = expr if callable(expr) else sympify(expr)
         self.var_x = sympify(range_x[0])
         self.start_x = float(range_x[1])
         self.end_x = float(range_x[2])
@@ -1567,13 +1616,12 @@ class Implicit3DSeries(SurfaceBaseSeries):
             self.start_y, self.end_y,
             self.start_z, self.end_z)
         v = _uniform_eval([self.var_x, self.var_y, self.var_z], self.expr,
-            mesh_x, mesh_y, mesh_z, modules=self.modules)
+                mesh_x, mesh_y, mesh_z, modules=self.modules)
         re_v, im_v = np.real(v), np.imag(v)
         re_v = self._correct_shape(re_v, mesh_x)
         im_v = self._correct_shape(im_v, mesh_x)
         re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
         return mesh_x, mesh_y, mesh_z, re_v
-
 
 
 class InteractiveSeries(BaseSeries):
@@ -1636,6 +1684,10 @@ class InteractiveSeries(BaseSeries):
 
     def __init__(self, exprs, ranges, label="", **kwargs):
         np = import_module('numpy')
+        # NOTE: I believe it takes too much effort to adapt this code to work
+        # with lambda functions. Let it be done by someone who is actually
+        # interested in that feature.
+        self._block_lambda_functions(*exprs)
 
         # free symbols of the parameters
         self._params = kwargs.get("params", dict())
@@ -2066,6 +2118,7 @@ class ComplexPointSeries(Line2DBaseSeries):
             self.expr = Tuple(expr)
         else:
             self.expr = expr
+        self._block_lambda_functions(*self.expr)
 
         self.is_point = kwargs.get("is_point", True)
         self.is_filled = kwargs.get("is_filled", True)
@@ -2127,7 +2180,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         return super().__new__(ComplexSurfaceSeries)
 
     def __init__(self, expr, r, label="", **kwargs):
-        expr = sympify(expr)
+        expr = expr if callable(expr) else sympify(expr)
         self._init_attributes(expr, r, label, **kwargs)
 
     def _init_attributes(self, expr, r, label, **kwargs):
@@ -2144,6 +2197,8 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         if kwargs.get("threed", False):
             self.is_3Dsurface = True
 
+        if isinstance(self, ComplexSurfaceSeries):
+            self._block_lambda_functions(expr)
         self.expr = expr
         self._label = str(expr) if label is None else label
         self._latex_label = latex(expr) if label is None else label
@@ -2530,6 +2585,13 @@ class VectorBase(BaseSeries):
         self.only_integers = kwargs.get("only_integers", False)
         self.use_cm = kwargs.get("use_cm", True)
 
+        # if the expressions are lambda functions and no label has been
+        # provided, then its better to do the following to avoid suprises on
+        # the backend
+        if any(callable(e) for e in self.exprs):
+            if self._label == str(self.exprs):
+                self.label = "Magnitude"
+
         # NOTE: when plotting vector fields it might be useful to repeat the
         # plot command switching between quivers and streamlines.
         # Usually, plotting libraries expose different functions for quivers
@@ -2559,6 +2621,16 @@ class VectorBase(BaseSeries):
         np = import_module('numpy')
 
         v = _uniform_eval(fs, expr, *meshes, modules=self.modules)
+        re_v, im_v = np.real(v), np.imag(v)
+        re_v = self._correct_shape(re_v, meshes[0])
+        im_v = self._correct_shape(im_v, meshes[0])
+        re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
+        return re_v
+
+    def _eval_component2(self, meshes, f):
+        np = import_module('numpy')
+
+        v = f(*meshes)
         re_v, im_v = np.real(v), np.imag(v)
         re_v = self._correct_shape(re_v, meshes[0])
         im_v = self._correct_shape(im_v, meshes[0])
@@ -2605,8 +2677,12 @@ class VectorBase(BaseSeries):
         meshes = self._discretize()
         free_symbols = [r[0] for r in self.ranges]
         results = []
-        for e in self.exprs:
-            results.append(self._eval_component(meshes, free_symbols, e))
+        if any(callable(e) for e in self.exprs):
+            for e in self.exprs:
+                results.append(self._eval_component2(meshes, e))
+        else:
+            for e in self.exprs:
+                results.append(self._eval_component(meshes, free_symbols, e))
         return self._apply_transform(*meshes, *results)
 
 
@@ -2835,6 +2911,7 @@ class PlaneSeries(SurfaceBaseSeries):
     def __init__(
         self, plane, x_range, y_range, z_range=None, label="", params=dict(), **kwargs
     ):
+        self._block_lambda_functions(plane)
         self.plane = sympify(plane)
         if not isinstance(self.plane, Plane):
             raise TypeError("`plane` must be an instance of sympy.geometry.Plane")

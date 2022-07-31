@@ -36,7 +36,9 @@ def _create_ranges(exprs, ranges, npar, label="", params=None):
     """
 
     get_default_range = lambda symbol: Tuple(symbol, cfg["plot_range"]["min"], cfg["plot_range"]["max"])
-    free_symbols = set().union(*[e.free_symbols for e in exprs])
+    free_symbols = set()
+    if all(not callable(e) for e in exprs):
+        free_symbols = free_symbols.union(*[e.free_symbols for e in exprs])
 
     if params is not None:
         free_symbols = free_symbols.difference(params.keys())
@@ -80,28 +82,6 @@ def _create_ranges(exprs, ranges, npar, label="", params=None):
                 + "Free symbols in the ranges: {}".format(rfs)
             )
     return ranges
-
-
-def _check_interactive_fs(exprs, ranges, label, params):
-    """ Checks if there are enogh parameters and free symbols in order to
-    build the interactive series.
-    """
-    # from the expression's free symbols, remove the ones used in
-    # the parameters and the ranges
-    fs = set().union(*[e.free_symbols for e in exprs])
-    fs = fs.difference(params.keys())
-    if ranges is not None:
-        fs = fs.difference([r[0] for r in ranges])
-
-    if len(fs) > 0:
-        raise ValueError(
-            "Incompatible expression and parameters.\n"
-            + "Expression: {}\n".format(
-                (exprs, ranges, label) if ranges is not None else (exprs, label))
-            + "params: {}\n".format(params)
-            + "Specify what these symbols represent: {}\n".format(fs)
-            + "Are they ranges or parameters?"
-        )
 
 
 def _check_arguments(args, nexpr, npar, **kwargs):
@@ -204,7 +184,9 @@ def _check_arguments(args, nexpr, npar, **kwargs):
             rend_kw = rendering_kw if len(rend_kw) == 0 else rend_kw[0]
 
             arg = arg[:nexpr]
-            free_symbols = set().union(*[a.free_symbols for a in arg])
+            free_symbols = set()
+            if all(not callable(a) for a in arg):
+                free_symbols = free_symbols.union(*[a.free_symbols for a in arg])
             if len(r) != npar:
                 r = _create_ranges(arg, r, npar, "", params)
 
@@ -228,7 +210,7 @@ def _plot_sympify(args):
     for i, a in enumerate(args):
         if isinstance(a, (list, tuple)):
             args[i] = Tuple(*_plot_sympify(a), sympify=False)
-        elif not isinstance(a, (str, dict)):
+        elif not (isinstance(a, (str, dict)) or callable(a)):
             args[i] = sympify(a)
     return args
 
@@ -302,12 +284,6 @@ def _unpack_args_extended(*args, matrices=False, fill_ranges=True):
     _unpack_args
     """
     exprs, ranges, label, rendering_kw = _unpack_args(*args)
-
-    if label == "":
-        if len(exprs) == 1:
-            label = str(exprs[0])
-        else:
-            label = str(tuple(exprs))
 
     if matrices and (len(exprs) == 1):
         if isinstance(exprs[0], (list, tuple, Tuple, DenseMatrix)):
@@ -390,7 +366,9 @@ def _split_vector(expr, ranges, fill_ranges=True):
 
     if fill_ranges:
         ranges = list(ranges)
-        fs = set().union(*[e.free_symbols for e in expr])
+        fs = set()
+        if all(not callable(e) for e in expr):
+            fs = fs.union(*[e.free_symbols for e in expr])
         if len(ranges) < len(fs):
             fs_ranges = set().union([r[0] for r in ranges])
             for s in fs:

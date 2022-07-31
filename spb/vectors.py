@@ -11,14 +11,17 @@ from spb.utils import (
 from sympy import (
     MutableDenseMatrix, ImmutableDenseMatrix, Tuple, sqrt, Expr, S, Plane
 )
+from sympy.external import import_module
 
 
 def _build_series(*args, interactive=False, **kwargs):
     """Loop over args and create all the necessary series to display a vector
     plot.
     """
+    np = import_module('numpy')
     series = []
     all_ranges = []
+    is_vec_lambda_function = False
     for a in args:
         split_expr, ranges, s = _series(
             a[0], *a[1:-1], label=a[-1], interactive=interactive, **kwargs
@@ -28,15 +31,21 @@ def _build_series(*args, interactive=False, **kwargs):
             series += s
         else:
             series.append(s)
+        if any(callable(e) for e in split_expr):
+            is_vec_lambda_function = True
 
     # add a scalar series only on 2D plots
     if all([s.is_2Dvector for s in series]):
-        # don't pop this keyword: some backend needs it to decide the color
-        # for quivers (solid color if a scalar field is present, gradient
+        # NOTE: don't pop this keyword: some backend needs it to decide the
+        # color for quivers (solid color if a scalar field is present, gradient
         # color otherwise)
         scalar = kwargs.get("scalar", True)
         if (len(series) == 1) and (scalar is True):
-            scalar_field = sqrt(split_expr[0] ** 2 + split_expr[1] ** 2)
+            if not is_vec_lambda_function:
+                scalar_field = sqrt(split_expr[0] ** 2 + split_expr[1] ** 2)
+            else:
+                scalar_field = lambda x, y: (np.sqrt(
+                    split_expr[0](x, y) ** 2 + split_expr[1](x, y) ** 2))
             scalar_label = "Magnitude"
         elif scalar is True:
             scalar_field = None  # do nothing when
@@ -46,6 +55,9 @@ def _build_series(*args, interactive=False, **kwargs):
         elif isinstance(scalar, (list, tuple)):
             scalar_field = scalar[0]
             scalar_label = scalar[1]
+        elif callable(scalar):
+            scalar_field = scalar
+            scalar_label = "Magnitude"
         elif not scalar:
             scalar_field = None
         else:
@@ -55,7 +67,9 @@ def _build_series(*args, interactive=False, **kwargs):
                 + "will be plotted.\n"
                 + "2. a symbolic expression representing a scalar field.\n"
                 + "3. None/False: do not plot any scalar field.\n"
-                + "4. list/tuple of two elements, [scalar_expr, label]."
+                + "4. list/tuple of two elements, [scalar_expr, label].\n"
+                + "5. a numerical function of 2 variables supporting "
+                + "vectorization."
             )
 
         if scalar_field:
@@ -100,7 +114,9 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
     split_expr, ranges = _split_vector(expr, ranges, fill_ranges)
 
     # free symbols contained in the provided vector
-    fs = set().union(*[e.free_symbols for e in split_expr])
+    fs = set()
+    if not any(callable(e) for e in split_expr):
+        fs = fs.union(*[e.free_symbols for e in split_expr])
     # if we are building a parametric-interactive series, remove the
     # parameters
     fs = fs.difference(params.keys())
@@ -186,6 +202,9 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
             )
 
         # verify that the slices are of the correct type
+        # NOTE: currently, the slice cannot be a lambda function. To understand
+        # the reason, look at series.py -> _build_slice_series: we use
+        # symbolic manipulation!
         def _check_slice(s):
             if not isinstance(s, (Expr, Plane, BaseSeries)):
                 raise ValueError(
@@ -240,12 +259,12 @@ def _preprocess(*args, matrices=False, fill_ranges=True):
         )
         if len(exprs) == 1:
             new_args.append([*exprs, *ranges, label])
+
         else:
             # this is the case where the user provided: v1, v2, ..., range
             # we use the same ranges for each expression
             for e in exprs:
                 new_args.append([e, *ranges, None])
-
     return new_args
 
 
@@ -266,12 +285,18 @@ def plot_vector(*args, **kwargs):
     ==========
 
     args :
-        expr : Vector, or Matrix/list/tuple  with 2 or 3 elements
-            Represent the vector to be plotted.
-            Note: if a 3D vector is given with a list/tuple, it might happens
-            that the internal algorithm could think of it as a range. Therefore,
-            3D vectors should be given as a Matrix or as a Vector: this reduces
-            ambiguities.
+        expr : Vector, or Matrix/list/tuple with 2 or 3 elements
+            Represents the vector to be plotted. It can be a:
+
+            * Vector from the sympy.vector module.
+            * Matrix/list/tuple with 2 (or 3) symbolic elements.
+            * list/tuple with 2 (or 3) numerical functions of 2 (or 3)
+              variables.
+
+            Note: if a 3D symbolic vector is given with a list/tuple, it might
+            happens that the internal algorithm thinks of it as a range.
+            Therefore, 3D vectors should be given as a Matrix or as a Vector:
+            this reduces ambiguities.
 
         ranges : 3-element tuples
             Denotes the range of the variables. For example (x, -5, 5). For 2D
@@ -337,6 +362,7 @@ def plot_vector(*args, **kwargs):
         - `Expr`: a symbolic expression representing the scalar field.
         - `list`/`tuple`: [scalar_expr, label], where the label will be
           shown on the colorbar.
+        - a numerical function of 2 variables supporting vectorization.
 
         Default to True.
 
@@ -480,6 +506,21 @@ def plot_vector(*args, **kwargs):
        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)
        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -5.0, 5.0), (y, -3.0, 3.0)
        [2]: 2D vector series: [y, x] over (x, -5.0, 5.0), (y, -3.0, 3.0)
+
+    Plotting a the streamlines of a 2D vector field defined with numerical
+    functions instead of symbolic expressions:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> import numpy as np
+       >>> f = lambda x, y: np.sin(2 * x + 2 * y)
+       >>> fx = lambda x, y: np.cos(f(x, y))
+       >>> fy = lambda x, y: np.sin(f(x, y))
+       >>> plot_vector([fx, fy], ("x", -1, 1), ("y", -1, 1),
+       ...     streamlines=True, scalar=False)
 
     Interactive-widget 2D vector plot. Refer to ``iplot`` documentation to
     learn more about the ``params`` dictionary.

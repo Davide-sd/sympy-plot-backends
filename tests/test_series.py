@@ -884,6 +884,40 @@ def test_only_integers():
     assert yy[0, 0] == -4 and yy[-1, -1] == 4
 
 
+def test_vector_data():
+    # verify that vector data series generates data with the correct shape
+
+    x, y, z = symbols("x:z")
+
+    s = Vector2DSeries(x, y, (x, -5, 5), (y, -3, 3), "test", n1=10, n2=15)
+    xx, yy, uu, vv = s.get_data()
+    assert xx.shape == uu.shape == (15, 10)
+    assert yy.shape == vv.shape == (15, 10)
+
+    # at least one vector component is a scalar
+    s = Vector2DSeries(1, y, (x, -5, 5), (y, -3, 3), "test", n1=10, n2=15)
+    xx, yy, uu, vv = s.get_data()
+    assert xx.shape == uu.shape == (15, 10)
+    assert yy.shape == vv.shape == (15, 10)
+
+    s = Vector3DSeries(
+        x, y, z, (x, -5, 5), (y, -3, 3), (z, -2, 2), "test", n1=10, n2=15, n3=20
+    )
+    xx, yy, zz, uu, vv, ww = s.get_data()
+    assert xx.shape == uu.shape == (15, 10, 20)
+    assert yy.shape == vv.shape == (15, 10, 20)
+    assert zz.shape == ww.shape == (15, 10, 20)
+
+    # at least one vector component is a scalar
+    s = Vector3DSeries(
+        x, 1, z, (x, -5, 5), (y, -3, 3), (z, -2, 2), "test", n1=10, n2=15, n3=20
+    )
+    xx, yy, zz, uu, vv, ww = s.get_data()
+    assert xx.shape == uu.shape == (15, 10, 20)
+    assert yy.shape == vv.shape == (15, 10, 20)
+    assert zz.shape == ww.shape == (15, 10, 20)
+
+
 def test_is_point_is_filled():
     # verify that `is_point` and `is_filled` are attributes and that they
     # they receive the correct values
@@ -2586,3 +2620,75 @@ def test_complex_adaptive_false():
     assert np.allclose(data1[1], 0) and np.allclose(data3[1], 0)
     do_test(data2, data4)
     assert (not np.allclose(data2[1], 0)) and (not np.allclose(data4[1], 0))
+
+
+def test_expr_is_lambda_function():
+    # verify that when a numpy function is provided, the series will be able
+    # to evaluate it. Also, label should be empty in order to prevent some
+    # backend from crashing.
+
+    f = lambda x: np.cos(x)
+    s1 = LineOver1DRangeSeries(f, ("x", -5, 5),
+        adaptive=True, adaptive_goal=0.1)
+    d1 = s1.get_data()
+    s2 = LineOver1DRangeSeries(f, ("x", -5, 5),
+        adaptive=False, n=10)
+    d2 = s2.get_data()
+    assert s1.label == s2.label == ""
+
+    fx = lambda x: np.cos(x)
+    fy = lambda x: np.sin(x)
+    s1 = Parametric2DLineSeries(fx, fy, ("x", 0, 2*pi),
+        adaptive=True, adaptive_goal=0.1)
+    d1 = s1.get_data()
+    s2 = Parametric2DLineSeries(fx, fy, ("x", 0, 2*pi),
+        adaptive=False, n=10)
+    d2 = s2.get_data()
+    assert s1.label == s2.label == ""
+
+    fz = lambda x: x
+    s1 = Parametric3DLineSeries(fx, fy, fz, ("x", 0, 2*pi),
+        adaptive=True, adaptive_goal=0.1)
+    d1 = s1.get_data()
+    s2 = Parametric3DLineSeries(fx, fy, fz, ("x", 0, 2*pi),
+        adaptive=False, n=10)
+    d2 = s2.get_data()
+    assert s1.label == s2.label == ""
+
+    f = lambda x, y: np.cos(x**2 + y**2)
+    s1 = SurfaceOver2DRangeSeries(f, ("a", -2, 2), ("b", -3, 3),
+        adaptive=False, n1=10, n2=10)
+    d1 = s1.get_data()
+    s2 = ContourSeries(f, ("a", -2, 2), ("b", -3, 3),
+        adaptive=False, n1=10, n2=10)
+    d2 = s2.get_data()
+    assert s1.label == s2.label == ""
+
+    fx = lambda u, v: np.cos(u + v)
+    fy = lambda u, v: np.sin(u - v)
+    fz = lambda u, v: u * v
+    s1 = ParametricSurfaceSeries(fx, fy, fz, ("u", 0, pi), ("v", 0, 2*pi),
+        adaptive=False, n1=10, n2=10)
+    d1 = s1.get_data()
+    assert s1.label == ""
+
+    raises(TypeError, lambda : ImplicitSeries(lambda t: np.sin(t),
+        ("x", -5, 5), ("y", -6, 6)))
+
+    f = lambda x, y, z: x**2 + y**3 - z**2
+    s1 = Implicit3DSeries(f, ("x", -2, 2), ("y", -2, 2), ("z", -2, 2))
+    d1 = s1.get_data()
+    assert s1.label == ""
+
+    raises(TypeError, lambda: List2DSeries(lambda t: t, lambda t: t))
+    raises(TypeError, lambda: InteractiveSeries(
+        [lambda t: t], [("x", -5, 5)]))
+    raises(TypeError, lambda: ComplexPointSeries(lambda t: t, lambda t: t))
+    raises(TypeError, lambda: ComplexPointSeries(lambda t: t, lambda t: t))
+    raises(TypeError, lambda: ComplexSurfaceSeries(
+        lambda z: (z ** 2 + 1) / (z ** 2 - 1), ("z", -3 - 4 * I, 3 + 4 * I)))
+
+    s1 = ComplexDomainColoringSeries(
+        lambda z: (z ** 2 + 1) / (z ** 2 - 1), ("z", -3 - 4 * I, 3 + 4 * I))
+    d1 = s1.get_data()
+    assert s1.label == ""

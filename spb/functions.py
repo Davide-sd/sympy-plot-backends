@@ -205,10 +205,11 @@ def _build_line_series(*args, **kwargs):
         kw = kwargs.copy()
         if rendering_kw is not None:
             kw["rendering_kw"] = rendering_kw
-        if expr.has(Piecewise) and pp:
+        if not callable(expr) and expr.has(Piecewise) and pp:
             series += _process_piecewise(expr, r, label, **kw)
         else:
-            arg = _process_summations(sum_bound, *arg)
+            if not callable(expr):
+                arg = _process_summations(sum_bound, *arg)
             series.append(LineOver1DRangeSeries(*arg[:-1], **kw))
     return series
 
@@ -281,9 +282,14 @@ def plot(*args, **kwargs):
     ==========
 
     args :
-        expr : Expr
-            Expression representing the function of one variable to be
-            plotted.
+        expr : Expr or callable
+            It can either be a:
+
+            * Symbolic expression representing the function of one variable
+              to be plotted.
+            * Numerical function of one variable, supporting vectorization.
+              In this case the following keyword arguments are not supported:
+              ``params``, ``sum_bound``.
 
         range : (symbol, min, max)
             A 3-tuple denoting the range of the x variable. Default values:
@@ -566,6 +572,17 @@ def plot(*args, **kwargs):
        Plot object containing:
        [0]: cartesian line: cos(exp(-x)) for x over (-3.141592653589793, 0.0)
 
+    Plotting a numerical function instead of a symbolic expression:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> import numpy as np
+       >>> plot(lambda t: np.cos(np.exp(-t)), ("t", -pi, 0))
+
+
     Interactive-widget plot of an oscillator. Refer to ``iplot`` documentation
     to learn more about the ``params`` dictionary.
 
@@ -605,7 +622,10 @@ def plot(*args, **kwargs):
     params = kwargs.get("params", None)
     free = set()
     for p in plot_expr:
-        free |= p[0].free_symbols
+        if not isinstance(p[1][0], str):
+            free |= p[1][0].free_symbols
+        else:
+            free |= set([Symbol(p[1][0])])
     if params:
         free = free.difference(params.keys())
     x = free.pop() if free else Symbol("x")
@@ -650,12 +670,24 @@ def plot_parametric(*args, **kwargs):
 
     args :
         `expr_x` : Expr
-            The expression representing $x$ component of the parametric
-            function.
+            The expression representing x component of the parametric
+            function. It can be a:
+
+            * Symbolic expression representing the function of one variable
+              to be plotted.
+            * Numerical function of one variable, supporting vectorization.
+              In this case the following keyword arguments are not supported:
+              ``params``.
 
         `expr_y` : Expr
-            The expression representing $y$ component of the parametric
-            function.
+            The expression representing y component of the parametric
+            function. It can be a:
+
+            * Symbolic expression representing the function of one variable
+              to be plotted.
+            * Numerical function of one variable, supporting vectorization.
+              In this case the following keyword arguments are not supported:
+              ``params``.
 
         `range` : (symbol, min, max)
             A 3-tuple denoting the parameter symbol, start and stop. For
@@ -853,6 +885,19 @@ def plot_parametric(*args, **kwargs):
        [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
        [1]: parametric cartesian line: (3*cos(2*u), 5*sin(4*u)) for u over (0.0, 3.141592653589793)
 
+    Plotting a numerical function instead of a symbolic expression:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> import numpy as np
+       >>> fx = lambda t: np.sin(t) * (np.exp(np.cos(t)) - 2 * np.cos(4 * t) - np.sin(t / 12)**5)
+       >>> fy = lambda t: np.cos(t) * (np.exp(np.cos(t)) - 2 * np.cos(4 * t) - np.sin(t / 12)**5)
+       >>> plot_parametric(fx, fy, ("t", 0, 12 * pi), title="Butterfly Curve",
+       ...     use_cm=False)
+
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
@@ -919,13 +964,34 @@ def plot3d_parametric_line(*args, **kwargs):
 
     args :
         expr_x : Expr
-            Expression representing the function along x.
+            The expression representing x component of the parametric
+            function. It can be a:
+
+            * Symbolic expression representing the function of one variable
+              to be plotted.
+            * Numerical function of one variable, supporting vectorization.
+              In this case the following keyword arguments are not supported:
+              ``params``.
 
         expr_y : Expr
-            Expression representing the function along y.
+            The expression representing y component of the parametric
+            function. It can be a:
+
+            * Symbolic expression representing the function of one variable
+              to be plotted.
+            * Numerical function of one variable, supporting vectorization.
+              In this case the following keyword arguments are not supported:
+              ``params``.
 
         expr_z : Expr
-            Expression representing the function along z.
+            The expression representing z component of the parametric
+            function. It can be a:
+
+            * Symbolic expression representing the function of one variable
+              to be plotted.
+            * Numerical function of one variable, supporting vectorization.
+              In this case the following keyword arguments are not supported:
+              ``params``.
 
         range : (symbol, min, max)
             A 3-tuple denoting the range of the parameter variable.
@@ -1059,7 +1125,7 @@ def plot3d_parametric_line(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos, sin
+       >>> from sympy import symbols, cos, sin, pi
        >>> from spb.functions import plot3d_parametric_line
        >>> u, v = symbols('u, v')
 
@@ -1088,6 +1154,20 @@ def plot3d_parametric_line(*args, **kwargs):
        Plot object containing:
        [0]: 3D parametric cartesian line: (cos(u), sin(u), u) for u over (-5.0, 5.0)
        [1]: 3D parametric cartesian line: (sin(u), u**2, u) for u over (-3.0, 3.0)
+
+    Plotting a numerical function instead of a symbolic expression:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> import numpy as np
+       >>> fx = lambda t: (1 + 0.25 * np.cos(75 * t)) * np.cos(t)
+       >>> fy = lambda t: (1 + 0.25 * np.cos(75 * t)) * np.sin(t)
+       >>> fz = lambda t: t + 2 * np.sin(75 * t)
+       >>> plot3d_parametric_line(fx, fy, fz, ("t", 0, 6 * pi),
+       ...     title="Helical Toroid")
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -1135,6 +1215,54 @@ def plot3d_parametric_line(*args, **kwargs):
     return _instantiate_backend(Backend, *series, **kwargs)
 
 
+def _plot3d_plot_contour_helper(Series, is_threed, Backend, *args, **kwargs):
+    """plot3d and plot_contour are structurally identical. Let's reduce
+    code repetition.
+    """
+    args = _plot_sympify(args)
+    kwargs = _set_discretization_points(kwargs, SurfaceOver2DRangeSeries)
+    plot_expr = _check_arguments(args, 1, 2, **kwargs)
+
+    if is_threed:
+        if any(isinstance(p[0], Plane) for p in plot_expr):
+            raise ValueError("Please, use ``plot_geometry`` to visualize "
+                "a plane.")
+
+    free_x = set()
+    free_y = set()
+    for p in plot_expr:
+        free_x |= {p[1][0]} if isinstance(p[1][0], Symbol) else {Symbol(p[1][0])}
+        free_y |= {p[2][0]} if isinstance(p[2][0], Symbol) else {Symbol(p[2][0])}
+    x = free_x.pop() if free_x else Symbol("x")
+    y = free_y.pop() if free_y else Symbol("y")
+    fx = lambda use_latex: x.name if not use_latex else latex(x)
+    fy = lambda use_latex: y.name if not use_latex else latex(y)
+    wrap = lambda use_latex: "f(%s, %s)" if not use_latex else r"f\left(%s, %s\right)"
+    fz = lambda use_latex: wrap(use_latex) % (fx(use_latex), fy(use_latex))
+    kwargs.setdefault("xlabel", fx)
+    kwargs.setdefault("ylabel", fy)
+    kwargs.setdefault("zlabel", fz)
+
+    # if a polar discretization is requested and automatic labelling has ben
+    # applied, hide the labels on the x-y axis.
+    if kwargs.get("is_polar", False):
+        if callable(kwargs["xlabel"]):
+            kwargs["xlabel"] = ""
+        if callable(kwargs["ylabel"]):
+            kwargs["ylabel"] = ""
+
+    if kwargs.get("params", None):
+        kwargs["threed"] = is_threed
+        return _create_interactive_plot(*plot_expr, **kwargs)
+
+    labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
+    series = _create_series(Series, plot_expr, **kwargs)
+    _set_labels(series, labels, rendering_kw)
+
+    return _instantiate_backend(Backend, *series, **kwargs)
+
+
 def plot3d(*args, **kwargs):
     """
     Plots a 3D surface plot.
@@ -1159,6 +1287,13 @@ def plot3d(*args, **kwargs):
     args :
         expr : Expr
             Expression representing the function of two variables to be plotted.
+            The expression representing the function of two variables to be
+            plotted. It can be a:
+
+            * Symbolic expression.
+            * Numerical function of two variable, supporting vectorization.
+              In this case the following keyword arguments are not supported:
+              ``params``.
 
         range_x: (symbol, min, max)
             A 3-tuple denoting the range of the x variable. Default values:
@@ -1386,6 +1521,17 @@ def plot3d(*args, **kwargs):
        ...     tx=np.rad2deg, ty=np.rad2deg, use_cm=True,
        ...     xlabel="x [deg]", ylabel="y [deg]")
 
+    Plotting a numerical function instead of a symbolic expression:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> import numpy as np
+       >>> plot3d(lambda x, y: x * np.exp(-x**2 - y**2),
+       ...     ("x", -3, 3), ("y", -3, 3), use_cm=True)
+
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
@@ -1411,49 +1557,9 @@ def plot3d(*args, **kwargs):
     plot3d_implicit, iplot
 
     """
-    args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, SurfaceOver2DRangeSeries)
-    plot_expr = _check_arguments(args, 1, 2, **kwargs)
-
-    for p in plot_expr:
-        if isinstance(p[0], Plane):
-            raise ValueError("Please, use ``plot_geometry`` to visualize "
-                "a plane.")
-
-    free_x = set()
-    free_y = set()
-    for p in plot_expr:
-        free_x |= {p[1][0]}
-        free_y |= {p[2][0]}
-    x = free_x.pop() if free_x else Symbol("x")
-    y = free_y.pop() if free_y else Symbol("y")
-    fx = lambda use_latex: x.name if not use_latex else latex(x)
-    fy = lambda use_latex: y.name if not use_latex else latex(y)
-    wrap = lambda use_latex: "f(%s, %s)" if not use_latex else r"f\left(%s, %s\right)"
-    fz = lambda use_latex: wrap(use_latex) % (fx(use_latex), fy(use_latex))
-    kwargs.setdefault("xlabel", fx)
-    kwargs.setdefault("ylabel", fy)
-    kwargs.setdefault("zlabel", fz)
-
-    # if a polar discretization is requested and automatic labelling has ben
-    # applied, hide the labels on the x-y axis.
-    if kwargs.get("is_polar", False):
-        if callable(kwargs["xlabel"]):
-            kwargs["xlabel"] = ""
-        if callable(kwargs["ylabel"]):
-            kwargs["ylabel"] = ""
-
-    if kwargs.get("params", None):
-        kwargs["threed"] = True
-        return _create_interactive_plot(*plot_expr, **kwargs)
-
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    series = _create_series(SurfaceOver2DRangeSeries, plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
-
     Backend = kwargs.pop("backend", THREE_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+    return _plot3d_plot_contour_helper(
+        SurfaceOver2DRangeSeries, True, Backend, *args, **kwargs)
 
 
 def plot3d_parametric_surface(*args, **kwargs):
@@ -1478,13 +1584,28 @@ def plot3d_parametric_surface(*args, **kwargs):
 
     args :
         expr_x: Expr
-            Expression representing the function along `x`.
+            Expression representing the function along `x`. It can be a:
+
+            * Symbolic expression.
+            * Numerical function of two variable, f(u, v), supporting
+              vectorization. In this case the following keyword arguments are
+              not supported: ``params``.
 
         expr_y: Expr
-            Expression representing the function along `y`.
+            Expression representing the function along `y`. It can be a:
+
+            * Symbolic expression.
+            * Numerical function of two variable, f(u, v), supporting
+              vectorization. In this case the following keyword arguments are
+              not supported: ``params``.
 
         expr_z: Expr
-            Expression representing the function along `z`.
+            Expression representing the function along `z`. It can be a:
+
+            * Symbolic expression.
+            * Numerical function of two variable, f(u, v), supporting
+              vectorization. In this case the following keyword arguments are
+              not supported: ``params``.
 
         range_u: (symbol, min, max)
             A 3-tuple denoting the range of the `u` variable.
@@ -1619,6 +1740,20 @@ def plot3d_parametric_surface(*args, **kwargs):
        Plot object containing:
        [0]: parametric cartesian surface: ((sin(7*u + 5*v) + 2)*sin(v)*cos(u), (sin(7*u + 5*v) + 2)*sin(u)*sin(v), (sin(7*u + 5*v) + 2)*cos(v)) for u over (0.0, 6.283185307179586) and v over (0.0, 3.141592653589793)
 
+    Plotting a numerical function instead of a symbolic expression:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> import numpy as np
+       >>> fx = lambda u, v: (4 + np.cos(u)) * np.cos(v)
+       >>> fy = lambda u, v: (4 + np.cos(u)) * np.sin(v)
+       >>> fz = lambda u, v: np.sin(u)
+       >>> plot3d_parametric_surface(fx, fy, fz, ("u", 0, 2 * pi),
+       ...     ("v", 0, 2 * pi))
+
 
     See Also
     ========
@@ -1672,7 +1807,11 @@ def plot3d_implicit(*args, **kwargs):
 
     args :
         expr: Expr
-            Implicit expression.
+            Implicit expression.  It can be a:
+
+            * Symbolic expression.
+            * Numerical function of three variable, f(x, y, z), supporting
+              vectorization.
 
         range_x: (symbol, min, max)
             A 3-tuple denoting the range of the `x` variable.
@@ -1785,6 +1924,14 @@ def plot3d_implicit(*args, **kwargs):
            backend=PB
        )
 
+    Plotting a numerical function instead of a symbolic expression:
+
+    .. jupyter-execute::
+
+       import numpy as np
+       plot3d_implicit(lambda x, y, z: x**2 + y**2 - z**2,
+           ("x", -3, 3), ("y", -3, 3), ("z", 0, 3), backend=PB)
+
     See Also
     ========
 
@@ -1808,8 +1955,7 @@ def plot3d_implicit(*args, **kwargs):
 
     fx = lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x)
     fy = lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y)
-    wrap = lambda use_latex: "f(%s, %s)" if not use_latex else r"f\left(%s, %s\right)"
-    fz = lambda use_latex: wrap(use_latex) % (fx(use_latex), fy(use_latex))
+    fz = lambda use_latex: series[0].var_z.name if not use_latex else latex(series[0].var_z)
     kwargs.setdefault("xlabel", fx)
     kwargs.setdefault("ylabel", fy)
     kwargs.setdefault("zlabel", fz)
@@ -1877,41 +2023,9 @@ def plot_contour(*args, **kwargs):
     plot3d_implicit, iplot
 
     """
-    args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, ContourSeries)
-    plot_expr = _check_arguments(args, 1, 2, **kwargs)
-
-    free_x = set()
-    free_y = set()
-    for p in plot_expr:
-        free_x |= {p[1][0]}
-        free_y |= {p[2][0]}
-    x = free_x.pop() if free_x else Symbol("x")
-    y = free_y.pop() if free_y else Symbol("y")
-    fx = lambda use_latex: x.name if not use_latex else latex(x)
-    fy = lambda use_latex: y.name if not use_latex else latex(y)
-    kwargs.setdefault("xlabel", fx)
-    kwargs.setdefault("ylabel", fy)
-
-    # if a polar discretization is requested and automatic labelling has ben
-    # applied, hide the labels on the x-y axis.
-    if kwargs.get("is_polar", False):
-        if callable(kwargs["xlabel"]):
-            kwargs["xlabel"] = ""
-        if callable(kwargs["ylabel"]):
-            kwargs["ylabel"] = ""
-
-    if kwargs.get("params", None):
-        kwargs["threed"] = False
-        return _create_interactive_plot(*plot_expr, **kwargs)
-
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    series = _create_series(ContourSeries, plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
-
     Backend = kwargs.pop("backend", TWO_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+    return _plot3d_plot_contour_helper(
+        ContourSeries, False, Backend, *args, **kwargs)
 
 
 def plot_implicit(*args, **kwargs):
@@ -2850,6 +2964,8 @@ def plot_piecewise(*args, **kwargs):
     Backend = kwargs.pop("backend", TWO_D_B)
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 1, 1)
+    if any(callable(p[0]) for p in plot_expr):
+        raise TypeError("plot_piecewise requires symbolic expressions.")
     show = kwargs.get("show", True)
     free = set()
     for p in plot_expr:

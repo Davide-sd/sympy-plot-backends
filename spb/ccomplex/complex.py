@@ -21,7 +21,18 @@ import warnings
 # * `absarg` refers to the absolute value and argument, which will be used to
 #   create "domain coloring" plots.
 
-def _build_series(*args, interactive=False, **kwargs):
+def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
+    """
+    Parameters
+    ==========
+    interactive : boolean
+        If True, creates interactive series.
+    allow_lambda : boolean
+        If True, lambda functions are allowed to be used as expression. Not
+        all complex-relatex plotting function can support such feature, as
+        in many cases the following algorithm is going to apply symbolic
+        manipulation steps.
+    """
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
 
@@ -128,6 +139,8 @@ def _build_series(*args, interactive=False, **kwargs):
 
             kw = kwargs.copy()
             kw["rendering_kw"] = rend_kw
+            if (not allow_lambda) and callable(expr):
+                raise TypeError("expr must be a symbolic expression.")
 
             # From now on we are dealing with a function of one variable.
             # ranges need to contain complex numbers
@@ -138,9 +151,9 @@ def _build_series(*args, interactive=False, **kwargs):
             # there are expressions that are complex, but they do not represent
             # complex points, for example `exp(I * phi)`. If it is a complex
             # point, it won't have any free symbols.
-            fs = expr.free_symbols
+            fs = expr.free_symbols if isinstance(expr, Expr) else set()
             fs = fs.difference(set(params.keys()))
-            if expr.is_complex and (len(fs) == 0):
+            if isinstance(expr, Expr) and expr.is_complex and (len(fs) == 0):
                 # complex number with its own label
                 cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
                 series.append(cls([expr], label, **kw))
@@ -198,7 +211,7 @@ def _build_series(*args, interactive=False, **kwargs):
     return series
 
 
-def _plot_complex(*args, **kwargs):
+def _plot_complex(*args, allow_lambda=False, **kwargs):
     """Create the series and setup the backend."""
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ComplexSurfaceBaseSeries)
@@ -212,7 +225,7 @@ def _plot_complex(*args, **kwargs):
         args = _check_arguments(args, 1, 1, **kwargs)
         return iplot(*args, **kwargs)
 
-    series = _build_series(*args, **kwargs)
+    series = _build_series(*args, allow_lambda=allow_lambda, **kwargs)
     if len(series) == 0:
         warnings.warn("No series found. Check your keyword arguments.")
 
@@ -626,8 +639,13 @@ def plot_complex(*args, **kwargs):
     Parameters
     ==========
     args :
-        expr : Expr
-            Represent the complex function to be plotted.
+        expr : Expr or callable
+            Represent the complex function to be plotted. It can be a:
+
+            * Symbolic expression.
+            * Numerical function of one variable, supporting vectorization.
+              In this case the following keyword arguments are not supported:
+              ``params``.
 
         range : 3-element tuple
             Denotes the range of the variables. For example:
@@ -857,6 +875,17 @@ def plot_complex(*args, **kwargs):
        Plot object containing:
        [0]: domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
+    Plotting a numerical function instead of a symbolic expression:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> import numpy as np
+       >>> plot_complex(lambda z: z, ("z", -5-5j, 5+5j),
+       ...     coloring="b", n=1000, grid=False)
+
     Interactive-widget domain coloring plot. Refer to ``iplot`` documentation
     to learn more about the ``params`` dictionary. Note that a too large
     value of ``n`` will impact performance.
@@ -904,7 +933,7 @@ def plot_complex(*args, **kwargs):
     kwargs["imag"] = False
     kwargs["abs"] = False
     kwargs["arg"] = False
-    return _plot_complex(*args, **kwargs)
+    return _plot_complex(*args, allow_lambda=True, **kwargs)
 
 
 def plot_complex_list(*args, **kwargs):
@@ -1082,7 +1111,7 @@ def plot_complex_list(*args, **kwargs):
     kwargs["real"] = False
     kwargs["imag"] = False
     kwargs["threed"] = False
-    return _plot_complex(*args, **kwargs)
+    return _plot_complex(*args, allow_lambda=False, **kwargs)
 
 
 def plot_complex_vector(*args, **kwargs):
@@ -1313,7 +1342,7 @@ def plot_complex_vector(*args, **kwargs):
 
     args = _plot_sympify(args)
     params = kwargs.get("params", None)
-    series = _build_series(*args, **kwargs)
+    series = _build_series(*args, allow_lambda=False, **kwargs)
     multiple_expr = len(series) > 2
 
     def get_label(i):
