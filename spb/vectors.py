@@ -9,7 +9,7 @@ from spb.utils import (
     _instantiate_backend
 )
 from sympy import (
-    MutableDenseMatrix, ImmutableDenseMatrix, Tuple, sqrt, Expr, S, Plane
+    Tuple, sqrt, Expr, S, Plane
 )
 from sympy.external import import_module
 
@@ -288,7 +288,8 @@ def plot_vector(*args, **kwargs):
         expr : Vector, or Matrix/list/tuple with 2 or 3 elements
             Represents the vector to be plotted. It can be a:
 
-            * Vector from the sympy.vector module.
+            * Vector from the `sympy.vector` module or from the
+              `sympy.physics.mechanics` module.
             * Matrix/list/tuple with 2 (or 3) symbolic elements.
             * list/tuple with 2 (or 3) numerical functions of 2 (or 3)
               variables.

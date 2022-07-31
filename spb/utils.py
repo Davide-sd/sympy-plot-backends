@@ -1,6 +1,7 @@
 from spb.defaults import cfg
 from sympy import Tuple, sympify, Expr, Dummy, S
 from sympy.matrices.dense import DenseMatrix
+from sympy.physics.mechanics import Vector as MechVector
 from sympy.vector import Vector
 from sympy.vector.operators import _get_coord_systems
 from sympy.core.relational import Relational
@@ -210,7 +211,7 @@ def _plot_sympify(args):
     for i, a in enumerate(args):
         if isinstance(a, (list, tuple)):
             args[i] = Tuple(*_plot_sympify(a), sympify=False)
-        elif not (isinstance(a, (str, dict)) or callable(a)):
+        elif not (isinstance(a, (str, dict, MechVector)) or callable(a)):
             args[i] = sympify(a)
     return args
 
@@ -352,6 +353,8 @@ def _split_vector(expr, ranges, fill_ranges=True):
     if isinstance(expr, Vector):
         N = list(_get_coord_systems(expr))[0]
         expr = expr.to_matrix(N)
+    elif isinstance(expr, MechVector):
+        expr = expr.args[0][0]
     elif not isinstance(expr, (DenseMatrix, list, tuple, Tuple)):
         raise TypeError(
             "The provided expression must be a symbolic vector, or a "

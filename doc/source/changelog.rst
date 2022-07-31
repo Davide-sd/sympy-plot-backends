@@ -16,6 +16,10 @@ v1.2.2
        import numpy as np
        plot(lambda t: np.cos(x) * np.exp(-x / 5), ("t", 0, 10))
 
+* Added support for vector from the ``sympy.physics.mechanics`` module in the
+  ``plot_vector`` function.
+
+
 v1.2.1
 ======
 

@@ -7,7 +7,8 @@ from spb.series import (
 )
 from spb.utils import _plot_sympify, _split_vector
 from spb.vectors import _preprocess, _series, plot_vector
-from sympy import symbols, Matrix, Tuple, cos, sqrt, Plane
+from sympy import symbols, Matrix, Tuple, sin, cos, sqrt, Plane
+from sympy.physics.mechanics import Vector as MechVector, ReferenceFrame
 from sympy.vector import CoordSys3D
 from sympy.external import import_module
 
@@ -98,6 +99,10 @@ def test_split_vector():
     fx = lambda x, y, z: z
     fy = lambda x, y, z: x
     fz = lambda x, y, z: y
+    A = ReferenceFrame("A")
+    v3 = -sin(y) * A.x + cos(x) * A.y
+    v4 = -sin(y) * A.x + cos(x) * A.y + cos(z) * A.z
+
 
     ranges_in = [Tuple(x, -5, 5)]
     ranges_out = [Tuple(x, -5, 5), Tuple(y, -10, 10), Tuple(z, -10, 10)]
@@ -114,6 +119,8 @@ def test_split_vector():
     do_test(m2, (z, x, y))
     do_test(l2, (z, x, y))
     do_test([fx, fy, fz], (fx, fy, fz))
+    do_test(v3, (-sin(y), cos(x), 0))
+    do_test(v4, (-sin(y), cos(x), cos(z)))
 
     # too few or too many elements
     raises(ValueError, lambda: _split_vector([x], ranges_in))
