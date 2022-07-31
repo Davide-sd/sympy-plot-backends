@@ -68,6 +68,10 @@ More information about the backends can be found at:
 Examples
 ========
 
+Originally, the module has been developed with SymPy in mind, however it has
+evolved to the point where we lambda functions can be used instead of symbolic
+expressions.
+
 The following code blocks shows a few examples about the capabilities of
 this module. Please, try them on a Jupyter Notebook to explore the interactive
 figures.
@@ -86,6 +90,21 @@ Polar plot with Matplotlib:
 .. image:: _static/polar_matplotlib.png
   :width: 600
   :alt: polar plot with matplotlib
+
+
+2D parametric plot with Matplotlib, using Numpy and lambda functions:
+
+.. code-block:: python
+
+   import numpy as np
+   from spb import plot_parametric
+   plot_parametric(
+      lambda t: np.sin(3 * t + np.pi / 4), lambda t: np.sin(4 * t),
+      ("t", 0, 2 * pi), "t [rad]", xlabel="x", ylabel="y", aspect="equal")
+
+.. image:: _static/parametric_matplotlib.png
+  :width: 600
+  :alt: 2D parametric plot with matplotlib
 
 
 3D plot with K3D-Jupyter and cartesian discretization:
@@ -213,16 +232,15 @@ function:
 .. code-block:: python
 
    from sympy import symbols, log, sqrt, re, im, I
-   from spb.interactive import iplot
-   from spb import BB
+   from spb import plot, BB
    from bokeh.models.formatters import PrintfTickFormatter
    formatter = PrintfTickFormatter(format="%.3f")
    kp, t, z, o = symbols("k_P, tau, zeta, omega")
    G = kp / (I**2 * t**2 * o**2 + 2 * z * t * o * I + 1)
    mod = lambda x: 20 * log(sqrt(re(x)**2 + im(x)**2), 10)
-   iplot(
-       (mod(G.subs(z, 0)), (o, 0.1, 100), "G(z=0)"),
-       (mod(G.subs(z, 1)), (o, 0.1, 100), "G(z=1)"),
+   plot(
+       (mod(G.subs(z, 0)), (o, 0.1, 100), "G(z=0)", {"line_dash": "dotted"}),
+       (mod(G.subs(z, 1)), (o, 0.1, 100), "G(z=1)", {"line_dash": "dotted"}),
        (mod(G), (o, 0.1, 100), "G"),
        params = {
            kp: (1, 0, 3),
@@ -277,6 +295,9 @@ Differences with sympy.plotting
 
 * `sympy.plotting` exposed the ``nb_of_points_*`` keyword arguments. These have
   been replaced with ``n`` or ``n1, n2``.
+
+* `sympy.plotting` exposed the ``TextBackend`` class to create very basic
+  plots on a terminal window. This module removed it.
 
   The following example compares how to customize a plot created with
   `sympy.plotting` and one created with this module.

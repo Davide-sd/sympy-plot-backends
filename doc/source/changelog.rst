@@ -2,6 +2,20 @@
  Changelog
 ==========
 
+v1.2.2
+======
+
+* Added support for plotting numerical vectorized functions. Many of the
+  plotting functions exposed by this module are now able to deal with both
+  symbolic expressions as well as numerical functions. This extends the scope
+  of this module, as it is possible to use it directly with numpy and lambda
+  functions. For example, the following is now supported:
+
+  .. code-block:: python
+
+       import numpy as np
+       plot(lambda t: np.cos(x) * np.exp(-x / 5), ("t", 0, 10))
+
 v1.2.1
 ======
 
