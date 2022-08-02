@@ -7,7 +7,7 @@ from sympy.vector.operators import _get_coord_systems
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 from sympy.external import import_module
-
+import warnings
 
 def _create_ranges(exprs, ranges, npar, label="", params=None):
     """This function does two things:
@@ -389,6 +389,114 @@ def _split_vector(expr, ranges, fill_ranges=True):
 
 def _instantiate_backend(Backend, *series, **kwargs):
     p = Backend(*series, **kwargs)
+    _validate_kwargs(p, **kwargs)
+
     if kwargs.get("show", True):
         p.show()
     return p
+
+
+def _validate_kwargs(backend, **kwargs):
+    """Find the user-provided keywords arguments that might contain spelling
+    errors and informs the user of possible alternatives.
+
+    Parameters
+    ==========
+    backend : Plot
+        An instance of the Plot class
+
+    Notes
+    =====
+    To keep development "agile", I extensively used ``**kwargs`` everywhere.
+    The problem is that there are "multiple levels" of keyword arguments:
+
+    * some keyword arguments get intercepted at the plotting function level.
+      Think for example to ``scalar`` in ``plot_vector``, or ``sum_bounds`` in
+      ``plot``.
+    * some plotting function might insert useful keyword arguments, for example
+      ``real``, ``imag``, etc., on complex-related functions.
+    * many of the keyword arguments get passed down to the Series and to
+      the Backend classes.
+
+    There are many approaches to tackle keyword arguments validation:
+
+    1. Replace **kwargs everywhere with the actual expected keywords.
+       This is very time consuming and hard to maintain as the module gets
+       developed even further. Morover, Python will raise an error everytime
+       something get mispelled, which I think is annoying.
+    2. Perform "multiple levels" of keyword validation, at a plotting function
+       level (on each function), at a series level and at a backend level.
+       Again, time consuming.
+    3. The laziest and most simple approach I could think of: create the
+       ``_allowed_keys`` attribute on Series and Backend classes. Implement
+       this function to perform some validation. It is definitely not as good
+       as the previous approaches, in particular:
+
+       * the validation is actually done after the creation of Series and
+         Backend. This is not a problem as the validation is only meant to show
+         a warning message.
+       * needs to be careful when modifying Series and Backend, as the
+         ``_allowed_keys`` attribute must be update.
+       * function-level keyword arguments must be listed inside this function.
+         Again, not so great in terms of further development.
+
+       But it's a quick approach and surely better than nothing.
+    """
+    # find the user-provided keywords arguments that might contain
+    # spelling errors and inform the user of possible alternatives.
+    allowed_keys = set(backend._allowed_keys)
+    for s in backend.series:
+        allowed_keys = allowed_keys.union(s._allowed_keys)
+    # some functions injects the following keyword arguments that will be
+    # processed by other functions before instantion of Series and Backend.
+    allowed_keys = allowed_keys.union([
+        "is_interactive", "abs", "absarg", "arg", "real", "imag",
+        "is_complex", "is_vector", "slice", "threed", "sum_bound", "n",
+        "phaseres"
+    ])
+    # params is a keyword argument that is also checked before instantion of
+    # Series and Backend.
+    allowed_keys = allowed_keys.union(["params", "layout", "ncols",
+        "use_latex", "throttled", "servable", "custom_css", "pane_kw", "iplot"])
+    user_provided_keys = set(kwargs.keys())
+    unused_keys = user_provided_keys.difference(allowed_keys)
+    if len(unused_keys) > 0:
+        msg = "\nThe following keyword arguments are unused.\n"
+        for k in unused_keys:
+            possible_match = find_closest_string(k, allowed_keys)
+            msg += "* '%s'" % k
+            msg += ": did you mean '%s'?\n" % possible_match
+        warnings.warn(msg)
+        # this returns helps with tests
+        return msg
+
+
+# taken from
+# https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#Python
+def levenshtein(s1, s2):
+    if len(s1) < len(s2):
+        return levenshtein(s2, s1)  # len(s1) >= len(s2)
+    if len(s2) == 0:
+        return len(s1)
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            # j+1 instead of j since previous_row and current_row are one character longer
+            # than s2
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+    return previous_row[-1]
+
+
+# taken from plotly.py/packages/python/plotly/_plotly_utils/utils.py
+def find_closest_string(string, strings):
+    def _key(s):
+        # sort by levenshtein distance and lexographically to maintain a stable
+        # sort for different keys with the same levenshtein distance
+        return (levenshtein(s, string), s)
+
+    return sorted(strings, key=_key)[0]

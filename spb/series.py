@@ -311,6 +311,10 @@ class BaseSeries:
     # Some series might use a colormap as default coloring. Setting this
     # attribute to False will inform the backends to use solid color.
 
+    _allowed_keys = []
+    # contains a list of keyword arguments supported by the series. It will be
+    # used to validate the user-provided keyword arguments.
+
     def __init__(self, *args, **kwargs):
         super().__init__()
 
@@ -660,6 +664,11 @@ class Line2DBaseSeries(BaseSeries):
 class List2DSeries(Line2DBaseSeries):
     """Representation for a line consisting of list of points."""
 
+    _allowed_keys = ["adaptive", "adaptive_goal", "color_func", "is_filled",
+    "is_point", "is_polar", "line_color", "loss_fn", "modules", "n",
+    "only_integers", "rendering_kw", "steps", "use_cm", "xscale",
+    "tx", "ty", "tz"]
+
     def __init__(self, list_x, list_y, label="", **kwargs):
         super().__init__(**kwargs)
         np = import_module('numpy')
@@ -690,6 +699,11 @@ class List2DSeries(Line2DBaseSeries):
 class LineOver1DRangeSeries(Line2DBaseSeries):
     """Representation for a line consisting of a SymPy expression over a
     real range."""
+
+    _allowed_keys = ["absarg", "adaptive", "adaptive_goal", "color_func",
+    "detect_poles", "eps","is_complex", "is_filled", "is_point", "line_color",
+    "loss_fn", "modules", "n", "only_integers", "rendering_kw", "steps",
+    "use_cm", "xscale", "tx", "ty", "tz"]
 
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
@@ -875,6 +889,9 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
 
 class ParametricLineBaseSeries(Line2DBaseSeries):
     is_parametric = True
+    _allowed_keys = ["adaptive", "adaptive_goal", "color_func", "is_filled",
+    "is_point", "line_color", "loss_fn", "modules", "n", "only_integers",
+    "rendering_kw", "use_cm", "xscale", "tx", "ty", "tz"]
 
     def _set_parametric_line_label(self, label):
         """Logic to set the correct label to be shown on the plot.
@@ -1052,6 +1069,9 @@ class SurfaceBaseSeries(BaseSeries):
     """A base class for 3D surfaces."""
 
     is_3Dsurface = True
+    _allowed_keys = ["adaptive", "adaptive_goal", "color_func", "is_polar",
+    "loss_fn", "modules", "n1", "n2", "only_integers", "rendering_kw",
+    "surface_color", "use_cm", "xscale", "yscale", "tx", "ty", "tz"]
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -1273,6 +1293,7 @@ class ContourSeries(SurfaceOver2DRangeSeries):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._allowed_keys += ["contour_kw"]
 
         # NOTE: contour plots are used by plot_contour, plot_vector and
         # plot_complex_vector. By implementing contour_kw we are able to
@@ -1305,6 +1326,8 @@ class ImplicitSeries(BaseSeries):
     """
 
     is_implicit = True
+    _allowed_keys = ["adaptive", "depth", "n1", "n2", "rendering_kw",
+    "xscale", "yscale"]
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         super().__init__()
@@ -1576,6 +1599,7 @@ class Implicit3DSeries(SurfaceBaseSeries):
         self.n3 = int(kwargs.get("n3", 60))
         self.zscale = kwargs.get("zscale", "linear")
         self._set_surface_label(label)
+        self._allowed_keys += ["n3", "zscale"]
 
     def __str__(self):
         return ("implicit surface series: %s for %s over %s and %s over %s"
@@ -1864,6 +1888,11 @@ class InteractiveSeries(BaseSeries):
 
 
 class LineInteractiveBaseSeries(InteractiveSeries):
+    _allowed_keys = ["absarg", "color_func", "detect_poles", "eps",
+    "is_complex", "is_filled", "is_point", "line_color", "modules", "n",
+    "only_integers", "rendering_kw", "steps", "use_cm", "xscale",
+    "tx", "ty", "tz"]
+
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
@@ -2006,6 +2035,10 @@ class SurfaceInteractiveSeries(InteractiveSeries):
     """Representation for a 3D interactive surface consisting of a sympy
     expression and 2D range."""
     is_3Dsurface = True
+    _allowed_keys = ["color_func", "is_polar", "modules", "n1", "n2",
+    "only_integers", "rendering_kw", "surface_color", "use_cm",
+    "xscale", "yscale", "tx", "ty", "tz"]
+
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
@@ -2108,6 +2141,9 @@ class ComplexPointSeries(Line2DBaseSeries):
     """Representation for a line in the complex plane consisting of
     list of points."""
 
+    _allowed_keys = ["color_func", "is_filled", "is_point", "line_color",
+    "rendering_kw", "steps", "tx", "ty", "tz"]
+
     def __init__(self, expr, label="", **kwargs):
         self._init_attributes(expr, label, **kwargs)
 
@@ -2147,6 +2183,7 @@ class ComplexPointSeries(Line2DBaseSeries):
 class ComplexPointInteractiveSeries(LineInteractiveBaseSeries, ComplexPointSeries):
     """Representation for an interactive line in the complex plane
     consisting of list of points."""
+    _allowed_keys = ComplexPointSeries._allowed_keys
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
@@ -2172,6 +2209,9 @@ class ComplexPointInteractiveSeries(LineInteractiveBaseSeries, ComplexPointSerie
 class ComplexSurfaceBaseSeries(BaseSeries):
     """Represent a complex function."""
     is_complex = True
+    _allowed_keys = ["absarg", "coloring", "color_func", "modules", "phaseres",
+    "is_polar", "n1", "n2", "only_integers", "rendering_kw", "steps",
+    "surface_color","use_cm", "xscale", "yscale", "tx", "ty", "tz", "threed"]
 
     def __new__(cls, *args, **kwargs):
         domain_coloring = kwargs.get("absarg", False)
@@ -2372,6 +2412,7 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
 
 class ComplexInteractiveBaseSeries(InteractiveSeries, ComplexSurfaceBaseSeries):
     """Represent an interactive complex function."""
+    _allowed_keys = ComplexSurfaceBaseSeries._allowed_keys
 
     def __new__(cls, *args, **kwargs):
         domain_coloring = kwargs.get("absarg", False)
@@ -2559,6 +2600,7 @@ class VectorBase(BaseSeries):
     is_vector = True
     is_slice = False
     is_streamlines = False
+    _allowed_keys = ["n1", "n2", "n3", "modules", "only_integers", "streamlines", "use_cm", "xscale", "yscale", "zscale", "quiver_kw", "stream_kw", "rendering_kw", "tx", "ty", "tz"]
 
     def _init_num_discretization_points(self, **kwargs):
         """Subclasses should override this method to provide dirrent values."""
@@ -2695,6 +2737,7 @@ class Vector2DSeries(VectorBase):
 
     def __init__(self, u, v, range1, range2, label="", **kwargs):
         super().__init__((u, v), (range1, range2), label, **kwargs)
+        self._allowed_keys += ["scalar"]
         self._set_use_quiver_solid_color(**kwargs)
 
     def _set_use_quiver_solid_color(self, **kwargs):
@@ -3023,6 +3066,8 @@ class GeometrySeries(BaseSeries):
     """
 
     is_geometry = True
+    _allowed_keys = ["is_filled", "use_cm", "color_func", "line_color",
+    "rendering_kw"]
 
     def __new__(cls, *args, **kwargs):
         if isinstance(args[0], Plane):

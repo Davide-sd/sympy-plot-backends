@@ -1,6 +1,17 @@
 from pytest import raises
-from spb.utils import _check_arguments, _create_ranges, _plot_sympify
-from sympy import symbols, Expr, Tuple, Integer, sin, cos
+from spb import (
+    plot, plot3d, plot_implicit, plot_vector, plot_complex, plot_complex_list,
+    MB, plot_geometry
+)
+from spb.series import (
+    LineInteractiveSeries, SurfaceInteractiveSeries, Vector2DInteractiveSeries,
+    ComplexDomainColoringInteractiveSeries, ComplexPointInteractiveSeries,
+    GeometryInteractiveSeries
+)
+from spb.utils import (
+    _check_arguments, _create_ranges, _plot_sympify, _validate_kwargs
+)
+from sympy import symbols, Expr, Tuple, Integer, sin, cos, Matrix, I, Polygon
 
 
 def test_plot_sympify():
@@ -415,3 +426,106 @@ def test_check_arguments_plot_implicit():
     z = symbols("z")
     args = _plot_sympify((x * y > 0, (x, -2, 2), (z, -3, 3)))
     raises(ValueError, lambda: _check_arguments(args, 1, 2))
+
+
+def test_raise_warning_keyword_validation():
+    # verify that plotting functions raise warning when a mispelled keyword
+    # argument is provided.
+    # NOTE: there is pytest.warn, however I can't get it to work here. I don't
+    # understand its error message :|
+    # Hence, I'm going to do it my own way: execute the _validate_kwargs
+    # function and check that the warning message contains the expected
+    # misspelled keywords.
+
+    x, y, z = symbols("x:z")
+
+    def do_test(p, kw, keys):
+        msg = _validate_kwargs(p, **kw)
+        assert all(k in msg for k in keys)
+
+    # x_label should be xlabel: this is a Backend-related keyword
+    kw = dict(adaptive=False, x_label="a")
+    p = plot(sin(x), backend=MB, show=False, **kw)
+    do_test(p, kw, ["x_label", "xlabel"])
+
+    # adapt should be adaptive: this is a LineOver1DRangeSeries keyword
+    kw = dict(adapt=False)
+    p = plot(sin(x), backend=MB, show=False, **kw)
+    do_test(p, kw, ["adapt", "adaptive"])
+
+    # surface_colors should be surface_color: this is a SurfaceBaseSeries
+    # keyword
+    kw = dict(surface_colors="r")
+    p = plot3d(cos(x**2 + y**2), backend=MB, show=False, **kw)
+    do_test(p, kw, ["surface_colors", "surface_color"])
+
+    # deptt should be depth: this is a ImplicitSeries keyword
+    kw = dict(deptt=2)
+    p = plot_implicit(cos(x), backend=MB, show=False, **kw)
+    do_test(p, kw, ["deptt", "depth"])
+
+    # streamline should be streamlines: this is a VectorBase keyword
+    kw = dict(streamline=True)
+    p = plot_vector(Matrix([sin(y), cos(x)]), backend=MB, show=False, **kw)
+    do_test(p, kw, ["streamline", "streamlines"])
+
+    # phase_res should be phaseres
+    kw = dict(phase_res=3)
+    p = plot_complex(z, (z, -2-2j, 2+2j), backend=MB, show=False, **kw)
+    do_test(p, kw, ["phase_res", "phaseres"])
+
+    # render_kw should be rendering_kw
+    kw = dict(render_kw={"color": "r"})
+    p = plot_complex_list(3 + 2 * I, backend=MB, show=False, **kw)
+    do_test(p, kw, ["render_kw", "rendering_kw"])
+
+    # is_fille should be is_filled
+    kw = dict(is_fille=False)
+    p = plot_geometry(Polygon((4, 0), 4, n=5), backend=MB, show=False)
+    do_test(p, kw, ["is_fille", "is_filled"])
+
+
+    # test interactive: since the backend is ab attribute of InteractivePlot,
+    # it is easier to perform tests with the following procedure.
+    # This is not future proof, but it's a good start.
+
+    # is_points should be is_point
+    kw = dict(is_points=True)
+    s = LineInteractiveSeries([cos(x * y)], [(x, 0, 5)], params={y: 1}, **kw)
+    p = MB(s, **kw)
+    do_test(p, kw, ["is_points", "is_point"])
+
+    # surface_colors should be surface_color
+    kw = dict(surface_colors="r")
+    s = SurfaceInteractiveSeries(
+        [cos(z * x**2 + y**2)], [(x, -2, 2), (y, -2, 2)], params={z: 1}, **kw)
+    p = MB(s, **kw)
+    do_test(p, kw, ["surface_colors", "surface_color"])
+
+    # streamline should be streamlines: this is a VectorBase keyword
+    kw = dict(streamline=True)
+    s = Vector2DInteractiveSeries([y, x * z], [(x, -2, 2), (y, -2, 2)],
+        params={z: 1}, **kw)
+    p = MB(s, **kw)
+    do_test(p, kw, ["streamline", "streamlines"])
+
+    # phase_res should be phaseres
+    kw = dict(phase_res=3)
+    s = ComplexDomainColoringInteractiveSeries(
+        z*y, (z, -2-2j, 2+2j), params={y: 1}, **kw)
+    p = MB(s, **kw)
+    do_test(p, kw, ["phase_res", "phaseres"])
+
+    # render_kw should be rendering_kw
+    kw = dict(render_kw={"color": "r"})
+    s = ComplexPointInteractiveSeries([x * 3 + 2 * I], params={x: 1}, **kw)
+    p = MB(s, show=False, **kw)
+    do_test(p, kw, ["render_kw", "rendering_kw"])
+
+    # is_fille should be is_filled
+    kw = dict(is_fille=False)
+    s = GeometryInteractiveSeries([Polygon((4, 0), x, n=5)], [],
+        params={x: 1}, **kw)
+    p = MB(s, show=False, **kw)
+    do_test(p, kw, ["is_fille", "is_filled"])
+    

@@ -3,7 +3,7 @@ from spb.ccomplex.complex import _build_series as _build_complex_series
 from spb.functions import _set_labels
 from spb.series import InteractiveSeries, _set_discretization_points
 from spb.vectors import _preprocess, _build_series as _build_vector_series
-from spb.utils import _plot_sympify, _unpack_args_extended
+from spb.utils import _plot_sympify, _unpack_args_extended, _validate_kwargs
 from sympy import latex, Tuple
 from sympy.external import import_module
 import warnings
@@ -671,6 +671,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
             kwargs : dict
                 Usual keyword arguments to be used by the backends and series.
         """
+        original_kwargs = kwargs.copy()
 
         layout = kwargs.pop("layout", "tb")
         ncols = kwargs.pop("ncols", 2)
@@ -700,6 +701,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
         kwargs["is_iplot"] = True
         self._backend = Backend(*series, **kwargs)
+        _validate_kwargs(self._backend, **original_kwargs)
 
     @property
     def fig(self):

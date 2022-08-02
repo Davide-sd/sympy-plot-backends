@@ -2,7 +2,7 @@
  Changelog
 ==========
 
-v1.2.2
+v1.3.0
 ======
 
 * Added support for plotting numerical vectorized functions. Many of the
@@ -18,6 +18,9 @@ v1.2.2
 
 * Added support for vector from the ``sympy.physics.mechanics`` module in the
   ``plot_vector`` function.
+
+* Implemented keyword argument validator: if a user writes a misspelled keyword
+  arguments, a warning message will be raised showing one possible alternative.
 
 
 v1.2.1
