@@ -170,10 +170,10 @@ class Plot:
     ranges over [-pi, pi]).
     """
 
-    _allowed_keys = ["aspect", "axis_center", "backend", "detect_poles",
-    "grid", "legend", "show", "size", "title", "use_latex", "xlabel", "ylabel",
-    "zlabel", "xlim", "ylim", "zlim", "xscale", "yscale", "zscale",
-    "process_piecewise"]
+    _allowed_keys = ["aspect", "axis", "axis_center", "backend",
+    "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
+    "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim",
+    "xscale", "yscale", "zscale", "process_piecewise"]
     """contains a list of public keyword arguments supported by the series.
     It will be used to validate the user-provided keyword arguments.
     """

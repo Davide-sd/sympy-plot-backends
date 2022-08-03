@@ -396,13 +396,13 @@ def _instantiate_backend(Backend, *series, **kwargs):
     return p
 
 
-def _validate_kwargs(backend, **kwargs):
+def _validate_kwargs(backend_obj, **kwargs):
     """Find the user-provided keywords arguments that might contain spelling
     errors and informs the user of possible alternatives.
 
     Parameters
     ==========
-    backend : Plot
+    backend_obj : Plot
         An instance of the Plot class
 
     Notes
@@ -411,7 +411,7 @@ def _validate_kwargs(backend, **kwargs):
     The problem is that there are "multiple levels" of keyword arguments:
 
     * some keyword arguments get intercepted at the plotting function level.
-      Think for example to ``scalar`` in ``plot_vector``, or ``sum_bounds`` in
+      Think for example to ``scalar`` in ``plot_vector``, or ``sum_bound`` in
       ``plot``.
     * some plotting function might insert useful keyword arguments, for example
       ``real``, ``imag``, etc., on complex-related functions.
@@ -444,20 +444,21 @@ def _validate_kwargs(backend, **kwargs):
     """
     # find the user-provided keywords arguments that might contain
     # spelling errors and inform the user of possible alternatives.
-    allowed_keys = set(backend._allowed_keys)
-    for s in backend.series:
+    allowed_keys = set(backend_obj._allowed_keys)
+    for s in backend_obj.series:
         allowed_keys = allowed_keys.union(s._allowed_keys)
     # some functions injects the following keyword arguments that will be
     # processed by other functions before instantion of Series and Backend.
     allowed_keys = allowed_keys.union([
         "is_interactive", "abs", "absarg", "arg", "real", "imag",
         "is_complex", "is_vector", "slice", "threed", "sum_bound", "n",
-        "phaseres"
+        "phaseres", "is_polar", "label"
     ])
     # params is a keyword argument that is also checked before instantion of
     # Series and Backend.
     allowed_keys = allowed_keys.union(["params", "layout", "ncols",
-        "use_latex", "throttled", "servable", "custom_css", "pane_kw", "iplot"])
+        "use_latex", "throttled", "servable", "custom_css", "pane_kw",
+        "is_iplot"])
     user_provided_keys = set(kwargs.keys())
     unused_keys = user_provided_keys.difference(allowed_keys)
     if len(unused_keys) > 0:

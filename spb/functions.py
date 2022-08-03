@@ -1948,7 +1948,7 @@ def plot3d_implicit(*args, **kwargs):
     kwargs = _set_discretization_points(kwargs, Implicit3DSeries)
     plot_expr = _check_arguments(args, 1, 3)
 
-    labels = kwargs.pop("labels", dict())
+    labels = kwargs.pop("label", dict())
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _create_series(Implicit3DSeries, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)

@@ -678,10 +678,10 @@ class InteractivePlot(DynamicParam, PanelLayout):
         throttled = kwargs.pop("throttled", cfg["interactive"]["throttled"])
         servable = kwargs.pop("servable", cfg["interactive"]["servable"])
         use_latex = kwargs.pop("use_latex", cfg["interactive"]["use_latex"])
+        pane_kw = kwargs.pop("pane_kw", dict())
         # NOTE: do not document these arguments yet, they might change in the
         # future.
         custom_css = kwargs.pop("custom_css", "")
-        pane_kw = kwargs.pop("pane_kw", dict())
 
         self._name = name
         super().__init__(*args, name=self._name, params=params, use_latex=use_latex)

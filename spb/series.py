@@ -703,7 +703,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
     _allowed_keys = ["absarg", "adaptive", "adaptive_goal", "color_func",
     "detect_poles", "eps","is_complex", "is_filled", "is_point", "line_color",
     "loss_fn", "modules", "n", "only_integers", "rendering_kw", "steps",
-    "use_cm", "xscale", "tx", "ty", "tz"]
+    "use_cm", "xscale", "tx", "ty", "tz", "is_polar"]
 
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):

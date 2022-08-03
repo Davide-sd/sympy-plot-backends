@@ -1338,7 +1338,7 @@ def plot_complex_vector(*args, **kwargs):
     kwargs["threed"] = False
     kwargs.setdefault("xlabel", "Re")
     kwargs.setdefault("ylabel", "Im")
-    global_labels = kwargs.pop("labels", [])
+    global_labels = kwargs.pop("label", [])
 
     args = _plot_sympify(args)
     params = kwargs.get("params", None)
@@ -1383,7 +1383,7 @@ def plot_complex_vector(*args, **kwargs):
             scalar[0] = scalar[0].subs({fs: x + I * y})
         kwargs["scalar"] = scalar
 
-    kwargs["labels"] = global_labels
+    kwargs["label"] = global_labels
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     return plot_vector(*new_args, **kwargs)
