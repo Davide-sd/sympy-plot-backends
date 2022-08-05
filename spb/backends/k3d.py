@@ -2,6 +2,7 @@ import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import compute_streamtubes
+from spb.series import PlaneSeries
 from spb.utils import get_vertices_indices
 from sympy.external import import_module
 import warnings
@@ -252,11 +253,16 @@ class K3DBackend(Plot):
                     attribute = s.eval_color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2], u.flatten().astype(np.float32), v.flatten().astype(np.float32))
                 else:
                     x, y, z = s.get_data()
-                    x = x.flatten()
-                    y = y.flatten()
-                    z = z.flatten()
-                    vertices = np.vstack([x, y, z]).T.astype(np.float32)
-                    indices = Triangulation(x, y).triangles.astype(np.uint32)
+                    if isinstance(s, PlaneSeries):
+                        # avoid triangulation errors when plotting vertical
+                        # planes
+                        vertices, indices = get_vertices_indices(x, y, z)
+                    else:
+                        x = x.flatten()
+                        y = y.flatten()
+                        z = z.flatten()
+                        vertices = np.vstack([x, y, z]).T.astype(np.float32)
+                        indices = Triangulation(x, y).triangles.astype(np.uint32)
                     attribute = s.eval_color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2])
 
                 self._high_aspect_ratio(x, y, z)
