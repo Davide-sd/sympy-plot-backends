@@ -2248,7 +2248,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         self.yscale = kwargs.get("yscale", "linear")
         self.modules = kwargs.get("modules", None)
         self.only_integers = kwargs.get("only_integers", False)
-        self.use_cm = kwargs.get("use_cm", True)
+        self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self.is_polar = kwargs.get("is_polar", False)
         self.surface_color = kwargs.get("surface_color", None)
 
@@ -2969,8 +2969,9 @@ class PlaneSeries(SurfaceBaseSeries):
         self.zscale = kwargs.get("zscale", "linear")
         self._params = params
         self.rendering_kw = kwargs.get("rendering_kw", dict())
-        self.use_cm = kwargs.get("use_cm", True)
+        self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self._set_surface_label(label)
+        self.surface_color = kwargs.get("surface_color", None)
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)
 
     def __str__(self):
@@ -3002,7 +3003,7 @@ class PlaneSeries(SurfaceBaseSeries):
             )
             xx, yy, zz = s.get_data()
             xx, yy, zz = zz, yy, xx
-        elif fs == set([y]):
+        elif (fs == set([y])) or (fs == set([x, y])):
             # parallel to xz plane (normal vector (0, 1, 0))
             s = SurfaceOver2DRangeSeries(
                 plane.p1[1],
@@ -3016,8 +3017,24 @@ class PlaneSeries(SurfaceBaseSeries):
             )
             xx, yy, zz = s.get_data()
             xx, yy, zz = xx, zz, yy
+            if fs == set([x, y]):
+                # vertical plane oriented with some angle
+                def R(t):
+                    return np.array([
+                        [np.cos(t), -np.sin(t), 0],
+                        [np.sin(t), np.cos(t), 0],
+                        [0, 0, 1]
+                    ])
+                # convert the normal vector to unit normal vector
+                nv = [float(t) for t in plane.normal_vector]
+                m = np.sqrt(sum(c**2 for c in nv))
+                nv = [c / m for c in nv]
+                theta = np.arctan2(nv[1], nv[0])
+                coords = np.stack([t.flatten() for t in [xx, yy, np.ones_like(xx)]]).T
+                coords = np.matmul(coords, R(theta))
+                yy, xx = coords[:, 0].reshape(yy.shape), coords[:, 1].reshape(xx.shape)
         else:
-            # parallel to xy plane, or any other plane
+            # any other plane
             eq = plane.equation(x, y, z)
             if z in eq.free_symbols:
                 eq = solve(eq, z)[0]

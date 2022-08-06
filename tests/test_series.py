@@ -2692,3 +2692,34 @@ def test_expr_is_lambda_function():
         lambda z: (z ** 2 + 1) / (z ** 2 - 1), ("z", -3 - 4 * I, 3 + 4 * I))
     d1 = s1.get_data()
     assert s1.label == ""
+
+
+def test_plane_series():
+    # verify that PlaneSeries produces the expected results
+
+    x, y, z = symbols("x:z")
+
+    # plane parallel to YZ plane
+    s = PlaneSeries(Plane((0, 0, 0), (1, 0, 0)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    xx, yy, zz = s.get_data()
+    assert np.allclose(xx, 0) and (not np.allclose(yy, 0)) and (not np.allclose(zz, 0))
+
+    # plane parallel to XZ plane
+    s = PlaneSeries(Plane((0, 0, 0), (0, 1, 0)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    xx, yy, zz = s.get_data()
+    assert np.allclose(yy, 0) and (not np.allclose(xx, 0)) and (not np.allclose(zz, 0))
+
+    # plane parallel to XY plane
+    s = PlaneSeries(Plane((0, 0, 0), (0, 0, 1)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    xx, yy, zz = s.get_data()
+    assert np.allclose(zz, 0) and (not np.allclose(yy, 0)) and (not np.allclose(xx, 0))
+
+    # generic vertical plane
+    s = PlaneSeries(Plane((0, 0, 0), (1, 1, 0)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    xx, yy, zz = s.get_data()
+    assert all(not np.allclose(t, 0) for t in [xx, yy, zz])
+    assert all(np.allclose(zz[i, :], zz[i, 0]) for i in range(zz.shape[0]))
