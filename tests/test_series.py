@@ -376,10 +376,10 @@ def test_lin_log_scale():
     )
     xx, yy, zz, _, _, _ = s.get_data()
     assert np.isclose(
-        xx[0, :, 0][1] - xx[0, :, 0][0], xx[0, :, 0][-1] - xx[0, :, 0][-2]
+        xx[:, 0, 0][1] - xx[:, 0, 0][0], xx[:, 0, 0][-1] - xx[:, 0, 0][-2]
     )
     assert np.isclose(
-        yy[:, 0, 0][1] - yy[:, 0, 0][0], yy[:, 0, 0][-1] - yy[:, 0, 0][-2]
+        yy[0, :, 0][1] - yy[0, :, 0][0], yy[0, :, 0][-1] - yy[0, :, 0][-2]
     )
     assert np.isclose(
         zz[0, 0, :][1] - zz[0, 0, :][0], zz[0, 0, :][-1] - zz[0, 0, :][-2]
@@ -391,10 +391,10 @@ def test_lin_log_scale():
     )
     xx, yy, zz, _, _, _ = s.get_data()
     assert not np.isclose(
-        xx[0, :, 0][1] - xx[0, :, 0][0], xx[0, :, 0][-1] - xx[0, :, 0][-2]
+        xx[:, 0, 0][1] - xx[:, 0, 0][0], xx[:, 0, 0][-1] - xx[:, 0, 0][-2]
     )
     assert not np.isclose(
-        yy[:, 0, 0][1] - yy[:, 0, 0][0], yy[:, 0, 0][-1] - yy[:, 0, 0][-2]
+        yy[0, :, 0][1] - yy[0, :, 0][0], yy[0, :, 0][-1] - yy[0, :, 0][-2]
     )
     assert not np.isclose(
         zz[0, 0, :][1] - zz[0, 0, :][0], zz[0, 0, :][-1] - zz[0, 0, :][-2]
@@ -904,18 +904,18 @@ def test_vector_data():
         x, y, z, (x, -5, 5), (y, -3, 3), (z, -2, 2), "test", n1=10, n2=15, n3=20
     )
     xx, yy, zz, uu, vv, ww = s.get_data()
-    assert xx.shape == uu.shape == (15, 10, 20)
-    assert yy.shape == vv.shape == (15, 10, 20)
-    assert zz.shape == ww.shape == (15, 10, 20)
+    assert xx.shape == uu.shape == (10, 15, 20)
+    assert yy.shape == vv.shape == (10, 15, 20)
+    assert zz.shape == ww.shape == (10, 15, 20)
 
     # at least one vector component is a scalar
     s = Vector3DSeries(
         x, 1, z, (x, -5, 5), (y, -3, 3), (z, -2, 2), "test", n1=10, n2=15, n3=20
     )
     xx, yy, zz, uu, vv, ww = s.get_data()
-    assert xx.shape == uu.shape == (15, 10, 20)
-    assert yy.shape == vv.shape == (15, 10, 20)
-    assert zz.shape == ww.shape == (15, 10, 20)
+    assert xx.shape == uu.shape == (10, 15, 20)
+    assert yy.shape == vv.shape == (10, 15, 20)
+    assert zz.shape == ww.shape == (10, 15, 20)
 
 
 def test_is_point_is_filled():

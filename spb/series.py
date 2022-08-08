@@ -1808,7 +1808,8 @@ class InteractiveSeries(BaseSeries):
         """
         np = import_module('numpy')
 
-        meshes = np.meshgrid(*discretizations)
+        meshes = np.meshgrid(*discretizations,
+            indexing="xy" if not self.is_3Dvector else "ij")
         self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
 
 
@@ -2657,7 +2658,14 @@ class VectorBase(BaseSeries):
         one_d = []
         for r, n, s in zip(self.ranges, self.n, self.scales):
             one_d.append(super()._discretize(r[1], r[2], n, s, self.only_integers))
-        return np.meshgrid(*one_d)
+        # NOTE: why indexing='ij'? Because it produces consistent results with
+        # np.mgrid. This is important as Mayavi requires this indexing
+        # to correctly compute 3D streamlines. VTK is able to compute them,
+        # but it produces "strange" results with "voids" into the
+        # discretization volume. This indexing solves the problem.
+        # Also note that matplotlib 2D streamlines requires indexing='xy'.
+        return np.meshgrid(*one_d,
+            indexing="xy" if not self.is_3Dvector else "ij")
 
     def _eval_component(self, meshes, fs, expr):
         np = import_module('numpy')

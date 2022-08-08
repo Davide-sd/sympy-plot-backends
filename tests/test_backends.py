@@ -1341,6 +1341,7 @@ def test_plot_complex_3d():
         threed=True,
         rendering_kw=rendering_kw,
         show=False,
+        use_cm=False,
         n=10
     )
 
@@ -1350,7 +1351,6 @@ def test_plot_complex_3d():
     ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Poly3DCollection)
-    assert f.axes[1].get_ylabel() == "Argument"
     # TODO: apparently, without showing the plot, the colors are not applied
     # to a Poly3DCollection...
     p.close()
