@@ -168,10 +168,6 @@ class K3DBackend(Plot):
         # show=False
         self._process_series(self._series)
 
-    def _set_piecewise_color(self, s, color):
-        """Set the color to the given series"""
-        raise NotImplementedError
-
     @staticmethod
     def _do_sum_kwargs(p1, p2):
         kw = p1._copy_kwargs()

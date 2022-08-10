@@ -1,7 +1,8 @@
 import os
+from PIL import Image
 from pytest import raises
 from spb import (
-    BB, PB, KB, MB,
+    BB, PB, KB, MB, MAB,
     plot, plot3d, plot_contour, plot_implicit,
     plot_parametric, plot3d_parametric_line,
     plot_vector, plot_complex, plot_geometry, plot_real_imag,
@@ -10,7 +11,6 @@ from spb import (
 )
 from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import unset_show
-from spb.interactive import InteractivePlot
 from spb.series import (
     BaseSeries, InteractiveSeries, LineOver1DRangeSeries,
     SurfaceOver2DRangeSeries
@@ -50,6 +50,13 @@ bokeh = import_module(
     import_kwargs={'fromlist': ['models', 'resources', 'plotting']},
     min_module_version='2.3.0',
     catch=(RuntimeError,))
+mayavi = import_module(
+    'mayavi',
+    import_kwargs={'fromlist':['mlab', 'core']},
+    min_module_version='4.8.0',
+    catch=(RuntimeError,))
+# prevent Mayavi window from opening
+mayavi.mlab.options.offscreen = True
 unset_show()
 
 # NOTE
@@ -104,6 +111,10 @@ class KBchild2(KBchild1):
     colorloop = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
 
 
+class MABchild(MAB):
+    colorloop = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
+
+
 def test_instance_plot():
     # verify that instantiating the Plot base class creates the correct
     # backend
@@ -132,6 +143,11 @@ def test_instance_plot():
     assert isinstance(p, KBchild1)
     assert isinstance(p.fig, K3DPlot)
 
+    s = SurfaceOver2DRangeSeries(cos(x * y), (x, -5, 5), (y, -5, 5), "test")
+    p = Plot(s, backend=MAB, show=False)
+    assert isinstance(p, MAB)
+    assert isinstance(p.fig, mayavi.core.scene.Scene)
+
 
 def test_unsupported_series():
     # verify that an error is raised when an unsupported series is given in
@@ -148,6 +164,9 @@ def test_unsupported_series():
     raises(
         NotImplementedError,
         lambda: Plot(*series, backend=KBchild2).process_series())
+    raises(
+        NotImplementedError,
+        lambda: Plot(*series, backend=MAB).process_series())
 
 
 def test_colorloop_colormaps():
@@ -175,6 +194,11 @@ def test_colorloop_colormaps():
     assert isinstance(KB.colorloop, (list, tuple))
     assert hasattr(KB, "colormaps")
     assert isinstance(KB.colormaps, (list, tuple))
+
+    assert hasattr(MAB, "colorloop")
+    assert isinstance(MAB.colorloop, (list, tuple))
+    assert hasattr(MAB, "colormaps")
+    assert isinstance(MAB.colormaps, (list, tuple))
 
 
 def test_custom_colorloop():
@@ -223,7 +247,7 @@ def test_custom_colorloop():
     assert len(set([r.glyph.line_color for r in f1.renderers])) == 6
     assert len(set([r.glyph.line_color for r in f2.renderers])) == 3
 
-    _plot3d = lambda B: plot3d(
+    _plot3d = lambda B, show=False: plot3d(
         (cos(x ** 2 + y ** 2), (x, -3, -2), (y, -3, 3)),
         (cos(x ** 2 + y ** 2), (x, -2, -1), (y, -3, 3)),
         (cos(x ** 2 + y ** 2), (x, -1, 0), (y, -3, 3)),
@@ -233,7 +257,7 @@ def test_custom_colorloop():
         n1 = 5, n2 = 5,
         backend=B,
         use_cm=False,
-        show=False)
+        show=show)
 
     assert len(KBchild1.colorloop) != len(KBchild2.colorloop)
     _p1 = _plot3d(KBchild1)
@@ -246,6 +270,18 @@ def test_custom_colorloop():
     # there are 6 unique colors in _p1 and 3 unique colors in _p2
     assert len(set([o.color for o in f1.objects])) == 6
     assert len(set([o.color for o in f2.objects])) == 3
+
+    # NOTE: Mayavi applies colors only when the plot is shown. Luckily, we
+    # turned off the window from opening at the beginning of this module.
+    assert len(MAB.colorloop) != len(MABchild.colorloop)
+    _p1 = _plot3d(MAB, show=True)
+    _p2 = _plot3d(MABchild, show=True)
+    assert len(_p1.series) == len(_p2.series)
+    f1 = _p1.fig
+    f2 = _p2.fig
+    # there are 6 unique colors in _p1 and 3 unique colors in _p2
+    assert len(set([_p1._handles[k].actor.property.color for k in _p1._handles.keys()])) == 6
+    assert len(set([_p2._handles[k].actor.property.color for k in _p2._handles.keys()])) == 3
 
 
 def test_bokeh_tools():
@@ -465,6 +501,12 @@ def test_plot():
         lambda: _plot(KBchild1,
             rendering_kw=dict(line_color="red")).process_series())
 
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot(MAB,
+            rendering_kw=dict(color=(1, 0, 0))).process_series())
+
 
 def test_plot_parametric():
     # verify that the backends produce the expected results when
@@ -514,6 +556,11 @@ def test_plot_parametric():
         lambda: _plot_parametric(KBchild1,
             rendering_kw=dict(line_color="red")).process_series())
 
+    raises(
+        NotImplementedError,
+        lambda: _plot_parametric(MAB,
+            rendering_kw=dict(color=(1, 0, 0))).process_series())
+
 
 def test_plot3d_parametric_line():
     # verify that the backends produce the expected results when
@@ -522,10 +569,11 @@ def test_plot3d_parametric_line():
 
     x = symbols("x")
 
-    _plot3d_parametric_line = lambda B, rendering_kw: plot3d_parametric_line(
-        cos(x), sin(x), x, (x, -pi, pi), backend=B,
-        show=False, rendering_kw=rendering_kw, use_latex=False
-    )
+    def _plot3d_parametric_line(B, rendering_kw, show=False):
+        return plot3d_parametric_line(
+            cos(x), sin(x), x, (x, -pi, pi), backend=B,
+            show=show, rendering_kw=rendering_kw, use_latex=False
+        )
 
     p = _plot3d_parametric_line(MB, rendering_kw=dict(color="red"))
     assert len(p.series) == 1
@@ -558,6 +606,12 @@ def test_plot3d_parametric_line():
     assert f.objects[0].color == 16711680
     assert f.objects[0].name is None
 
+    p = _plot3d_parametric_line(MAB, rendering_kw=dict(color=(1, 0, 0)),
+        show=True)
+    assert len(p.series) == 1
+    f = p.fig
+    assert p._handles[0].actor.property.color == (1, 0, 0)
+
 
 def test_plot3d():
     # verify that the backends produce the expected results when
@@ -566,17 +620,18 @@ def test_plot3d():
 
     x, y = symbols("x, y")
 
-    _plot3d = lambda B, rendering_kw, use_latex=False: plot3d(
-        cos(x ** 2 + y ** 2),
-        (x, -3, 3),
-        (y, -3, 3),
-        n=20,
-        use_cm=False,
-        backend=B,
-        show=False,
-        rendering_kw=rendering_kw,
-        use_latex=use_latex
-    )
+    def _plot3d(B, rendering_kw, use_latex=False, show=False):
+        return plot3d(
+            cos(x ** 2 + y ** 2),
+            (x, -3, 3),
+            (y, -3, 3),
+            n=20,
+            use_cm=False,
+            backend=B,
+            show=show,
+            rendering_kw=rendering_kw,
+            use_latex=use_latex
+        )
 
     # use_cm=False will force to apply a default solid color to the mesh.
     # Here, I override that solid color with a custom color.
@@ -615,13 +670,18 @@ def test_plot3d():
     assert f.objects[0].color == 16711680
     assert f.objects[0].name is None
 
+    p = _plot3d(MAB, rendering_kw=dict(color=(1, 0, 0)), show=True)
+    assert len(p.series) == 1
+    f = p.fig
+    assert p._handles[0].actor.property.color == (1, 0, 0)
+
 def test_plot3d_2():
     # verify that the backends uses string labels when `plot3d()` is called
     # with `use_latex=False` and `use_cm=True`
 
     x, y = symbols("x, y")
 
-    _plot3d = lambda B: plot3d(
+    _plot3d = lambda B, show=False: plot3d(
         cos(x ** 2 + y ** 2),
         sin(x ** 2 + y ** 2),
         (x, -3, 3),
@@ -629,7 +689,7 @@ def test_plot3d_2():
         n=10,
         use_cm=True,
         backend=B,
-        show=False,
+        show=show,
         use_latex=False
     )
 
@@ -670,6 +730,16 @@ def test_plot3d_2():
     f = p.fig
     assert len(f.objects) == 2
     assert p.fig.axes == ["x", "y", "f(x, y)"]
+
+    p = _plot3d(MAB, show=True)
+    assert len(p.series) == 2
+    assert len(p._handles) == 2
+    # orientation axis
+    o = p.fig.children[1].children[0].children[0].children[3]
+    xlabel = o.axes.x_axis_label_text
+    ylabel = o.axes.y_axis_label_text
+    zlabel = o.axes.z_axis_label_text
+    assert [xlabel, ylabel, zlabel] == ["x", "y", "f(x, y)"]
 
 
 def test_plot_contour():
@@ -721,6 +791,11 @@ def test_plot_contour():
     raises(
         NotImplementedError,
         lambda: _plot_contour(KBchild1,
+            rendering_kw=dict()).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_contour(MAB,
             rendering_kw=dict()).process_series())
 
 
@@ -782,6 +857,11 @@ def test_plot_vector_2d_quivers():
         NotImplementedError,
         lambda: _plot_vector(KBchild1, quiver_kw=dict(),
             contour_kw=dict()).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_vector(MAB, quiver_kw=dict(),
+            contour_kw=dict()).process_series())
 
 
 def test_plot_vector_2d_streamlines_custom_scalar_field():
@@ -842,6 +922,11 @@ def test_plot_vector_2d_streamlines_custom_scalar_field():
         NotImplementedError,
         lambda: _plot_vector(KBchild1, stream_kw=dict(),
             contour_kw=dict()).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_vector(MAB, stream_kw=dict(),
+            contour_kw=dict()).process_series())
 
 
 def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
@@ -888,6 +973,11 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
     raises(
         NotImplementedError,
         lambda: _plot_vector(KBchild1, stream_kw=dict(),
+            contour_kw=dict()).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_vector(MAB, stream_kw=dict(),
             contour_kw=dict()).process_series())
 
 
@@ -955,7 +1045,7 @@ def test_plot_vector_3d_quivers():
 
     x, y, z = symbols("x, y, z")
 
-    _plot_vector = lambda B, quiver_kw, **kwargs: plot_vector(
+    _plot_vector = lambda B, quiver_kw, show=False, **kwargs: plot_vector(
     Matrix([z, y, x]),
         (x, -5, 5),
         (y, -4, 4),
@@ -963,7 +1053,7 @@ def test_plot_vector_3d_quivers():
         backend=B,
         n=10,
         quiver_kw=quiver_kw,
-        show=False,
+        show=show,
         use_latex=False,
         **kwargs
     )
@@ -1013,6 +1103,11 @@ def test_plot_vector_3d_quivers():
     assert isinstance(f.objects[0], k3d.objects.Vectors)
     assert all([c == 16711680 for c in f.objects[0].colors])
 
+    p = _plot_vector(MAB, quiver_kw=dict(color=(1, 0, 0)), show=True)
+    assert len(p.series) == 1
+    assert len(p.fig.children) == 1
+    assert p._handles[0].actor.property.color == (1, 0, 0)
+
 
 def test_plot_vector_3d_streamlines():
     # verify that the backends produce the expected results when
@@ -1021,7 +1116,7 @@ def test_plot_vector_3d_streamlines():
 
     x, y, z = symbols("x, y, z")
 
-    _plot_vector = lambda B, stream_kw, kwargs=dict(): plot_vector(
+    _plot_vector = lambda B, stream_kw, show=False, kwargs=dict(): plot_vector(
         Matrix([z, y, x]),
         (x, -5, 5),
         (y, -4, 4),
@@ -1029,7 +1124,7 @@ def test_plot_vector_3d_streamlines():
         backend=B,
         n=10,
         streamlines=True,
-        show=False,
+        show=show,
         stream_kw=stream_kw,
         use_latex=False,
         **kwargs
@@ -1104,6 +1199,11 @@ def test_plot_vector_3d_streamlines():
     # other keywords: it should not raise errors
     p = _plot_vector(KBchild1, stream_kw=dict(), kwargs=dict(use_cm=False))
 
+    p = _plot_vector(MAB, stream_kw=dict(color=(1, 0, 0)), show=True)
+    assert len(p.series) == 1
+    assert len(p.fig.children) == 1
+    assert p._handles[0].actor.property.color == (1, 0, 0)
+
 
 def test_plot_implicit_adaptive_true():
     # verify that the backends produce the expected results when
@@ -1135,6 +1235,9 @@ def test_plot_implicit_adaptive_true():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: _plot_implicit(KBchild1, contour_kw=dict()).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(NotImplementedError,
+        lambda: _plot_implicit(MAB, contour_kw=dict()).process_series())
 
 
 def test_plot_implicit_adaptive_false():
@@ -1175,6 +1278,9 @@ def test_plot_implicit_adaptive_false():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: _plot_implicit(KBchild1, contour_kw=dict()).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(NotImplementedError,
+        lambda: _plot_implicit(MAB, contour_kw=dict()).process_series())
 
 
 def test_plot_real_imag():
@@ -1227,6 +1333,9 @@ def test_plot_real_imag():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: _plot_real_imag(KBchild1, rendering_kw=dict()).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(NotImplementedError,
+        lambda: _plot_real_imag(MAB, rendering_kw=dict()).process_series())
 
 
 def test_plot_complex_1d():
@@ -1272,6 +1381,9 @@ def test_plot_complex_1d():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: _plot_complex(KBchild1, rendering_kw=dict()).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(NotImplementedError,
+        lambda: _plot_complex(MAB, rendering_kw=dict()).process_series())
 
 
 def test_plot_complex_2d():
@@ -1325,6 +1437,9 @@ def test_plot_complex_2d():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: _plot_complex(KBchild1, rendering_kw=dict()).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(NotImplementedError,
+        lambda: _plot_complex(MAB, rendering_kw=dict()).process_series())
 
 
 def test_plot_complex_3d():
@@ -1412,6 +1527,10 @@ def test_plot_list_is_filled_false():
     raises(
         NotImplementedError,
         lambda: _plot_list(KBchild1).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_list(MAB).process_series())
 
 
 def test_plot_list_is_filled_true():
@@ -1443,6 +1562,10 @@ def test_plot_list_is_filled_true():
     raises(
         NotImplementedError,
         lambda: _plot_list(KBchild1).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_list(MAB).process_series())
 
 
 def test_plot_piecewise_single_series():
@@ -1483,6 +1606,8 @@ def test_plot_piecewise_single_series():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError, lambda: _plot_piecewise(KBchild1))
+    # Mayavi doesn't support 2D plots
+    raises(NotImplementedError, lambda: _plot_piecewise(MAB))
 
 
 def test_plot_piecewise_multiple_series():
@@ -1521,6 +1646,8 @@ def test_plot_piecewise_multiple_series():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError, lambda: _plot_piecewise(KBchild1))
+    # Mayavi doesn't support 2D plots
+    raises(NotImplementedError, lambda: _plot_piecewise(MAB))
 
 
 def test_plot_geometry_1():
@@ -1563,6 +1690,8 @@ def test_plot_geometry_1():
     raises(
         NotImplementedError,
         lambda: _plot_geometry(KBchild1).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(NotImplementedError, lambda: _plot_geometry(MAB).process_series())
 
 def test_plot_geometry_2():
     # verify that is_filled works correctly
@@ -1705,6 +1834,10 @@ def test_save():
         raises(TypeError, lambda: p.save(os.path.join(tmpdir, filename),
             include_js=True, parameter=True))
 
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=MAB)
+        filename = "test_mab_save_1.png"
+        p.save(os.path.join(tmpdir, filename))
+
 
 def test_vectors_update_interactive():
     a, b, c, x, y, z = symbols("a:c, x:z")
@@ -1726,6 +1859,7 @@ def test_vectors_update_interactive():
         raises(NotImplementedError, lambda: p._update_interactive(params))
 
     func(KBchild1)
+    func(MAB) # Mayavi doesn't implement _update_interactive yet
     func(PB)
     func(MB)
 
@@ -1800,12 +1934,26 @@ def test_aspect_ratio_3d():
     assert p.aspect == "cube"
     assert p.fig.layout.scene.aspectmode == "cube"
 
+    p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        n1=20, n2=20, backend=MAB, show=True, aspect="equal")
+    assert p.aspect == "equal"
+    assert np.allclose(
+        p.fig.children[0].children[0].children[0].children[1].axes.bounds,
+        [-2, 2, -2, 2, -1, 1], rtol=1e-02)
+
+    p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        n1=20, n2=20, backend=MAB, show=True, aspect="auto")
+    assert p.aspect == "auto"
+    assert np.allclose(
+        p.fig.children[0].children[0].children[0].children[1].axes.bounds,
+        [0, 1, 0, 1, 0, 1], rtol=1e-02)
+
 
 def test_plot_size():
     # verify that the keyword `size` is doing it's job
     # NOTE: K3DBackend doesn't support custom size
 
-    x = symbols("x")
+    x, y = symbols("x, y")
 
     p = plot(sin(x), backend=MB, size=(8, 4), show=False)
     s = p.fig.get_size_inches()
@@ -1831,6 +1979,16 @@ def test_plot_size():
     p = plot(sin(x), backend=BB, size=(400, 200), show=False)
     assert p.fig.sizing_mode == "fixed"
     assert (p.fig.width == 400) and (p.fig.height == 200)
+
+    # NOTE: have no idea how to retrieve the size from a Mayavi scene.
+    # Let's measure the image dimensions
+    with TemporaryDirectory(prefix="sympy_") as tmpdir:
+        p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+            backend=MAB, size=(400, 200), show=True)
+        filename = "test_mab_save_1.png"
+        p.save(os.path.join(tmpdir, filename))
+        png_pil_img = Image.open(os.path.join(tmpdir, filename))
+        assert png_pil_img.size == p.size == (400, 200)
 
 
 def test_plot_scale_lin_log():
@@ -1912,9 +2070,9 @@ def test_backend_latex_labels():
     assert p1.ylabel == p1.fig.yaxis.axis_label == '$f\\left(x^{2}_{1}\\right)$'
     assert p2.ylabel == p2.fig.yaxis.axis_label == 'f(x_1^2)'
 
-    p = lambda B, use_latex: plot3d(
+    p = lambda B, use_latex, show=False: plot3d(
         cos(x1**2 + x2**2), (x1, -1, 1), (x2, -1, 1), backend=B,
-        show=False, use_latex=use_latex, adaptive=False, n=10)
+        show=show, use_latex=use_latex, adaptive=False, n=10)
 
     p1 = p(MB, True)
     p2 = p(MB, False)
@@ -1944,6 +2102,23 @@ def test_backend_latex_labels():
     assert p2.xlabel == p2.fig.axes[0] == 'x_1^2'
     assert p2.ylabel == p2.fig.axes[1] == 'x_2'
     assert p2.zlabel == p2.fig.axes[2] == 'f(x_1^2, x_2)'
+
+    p1 = p(MAB, True, show=True)
+    p2 = p(MAB, False, show=True)
+    o1 = p1.fig.children[0].children[0].children[0].children[3]
+    xlabel1 = o1.axes.x_axis_label_text
+    ylabel1 = o1.axes.y_axis_label_text
+    zlabel1 = o1.axes.z_axis_label_text
+    assert p1.xlabel == xlabel1 == '$x^{2}_{1}$'
+    assert p1.ylabel == ylabel1 == '$x_{2}$'
+    assert p1.zlabel == zlabel1 == '$f\\left(x^{2}_{1}, x_{2}\\right)$'
+    o2 = p2.fig.children[0].children[0].children[0].children[3]
+    xlabel2 = o2.axes.x_axis_label_text
+    ylabel2 = o2.axes.y_axis_label_text
+    zlabel2 = o2.axes.z_axis_label_text
+    assert p2.xlabel == xlabel2 == 'x_1^2'
+    assert p2.ylabel == ylabel2 == 'x_2'
+    assert p2.zlabel == zlabel2 == 'f(x_1^2, x_2)'
 
 
 def test_plot_use_latex():
@@ -1979,6 +2154,10 @@ def test_plot_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot(KBchild1).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot(MAB).process_series())
 
 
 def test_plot_parametric_use_latex():
@@ -2011,6 +2190,9 @@ def test_plot_parametric_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_parametric(KBchild1).process_series())
+    raises(
+        NotImplementedError,
+        lambda: _plot_parametric(MAB).process_series())
 
 
 def test_plot_contour_use_latex():
@@ -2046,9 +2228,9 @@ def test_plot3d_parametric_line_use_latex():
 
     x = symbols("x")
 
-    _plot3d_parametric_line = lambda B: plot3d_parametric_line(
+    _plot3d_parametric_line = lambda B, show=False: plot3d_parametric_line(
         cos(x), sin(x), x, (x, -pi, pi), backend=B,
-        show=False, use_latex=True, adaptive=False, n=10
+        show=show, use_latex=True, adaptive=False, n=10
     )
 
     p = _plot3d_parametric_line(MB)
@@ -2068,13 +2250,16 @@ def test_plot3d_parametric_line_use_latex():
     # NOTE: K3D doesn't show a label to colorbar
     p = _plot3d_parametric_line(KBchild1)
 
+    p = _plot3d_parametric_line(MAB, True)
+    assert p.fig.children[0].children[0].children[0].children[0].scalar_lut_manager.scalar_bar.title == "$x$"
+
 
 def test_plot3d_use_latex():
     # verify that the colorbar uses latex label
 
     x, y = symbols("x, y")
 
-    _plot3d = lambda B: plot3d(
+    _plot3d = lambda B, show=False: plot3d(
         cos(x ** 2 + y ** 2),
         sin(x ** 2 + y ** 2),
         (x, -3, 3),
@@ -2082,7 +2267,7 @@ def test_plot3d_use_latex():
         n=10,
         use_cm=True,
         backend=B,
-        show=False,
+        show=show,
         use_latex=True
     )
 
@@ -2111,6 +2296,10 @@ def test_plot3d_use_latex():
     p = _plot3d(KBchild1)
     f = p.fig
     assert p.fig.axes == ["x", "y", "f\\left(x, y\\right)"]
+
+    p = _plot3d(MAB, True)
+    assert p.fig.children[0].children[0].children[0].scalar_lut_manager.scalar_bar.title == "$%s$" % latex(cos(x ** 2 + y ** 2))
+    assert p.fig.children[1].children[0].children[0].scalar_lut_manager.scalar_bar.title == "$%s$" % latex(sin(x ** 2 + y ** 2))
 
 
 def test_plot_vector_2d_quivers_use_latex():
@@ -2144,6 +2333,10 @@ def test_plot_vector_2d_quivers_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_vector(KBchild1).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_vector(MAB).process_series())
 
 
 def test_plot_vector_2d_streamlines_custom_scalar_field_use_latex():
@@ -2180,6 +2373,10 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_vector(KBchild1).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_vector(MAB).process_series())
 
 
 def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex():
@@ -2215,6 +2412,10 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex()
     raises(
         NotImplementedError,
         lambda: _plot_vector(KBchild1).process_series())
+    # Mayavi doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_vector(MAB).process_series())
 
 
 def test_plot_vector_2d_matplotlib_use_latex():
@@ -2283,13 +2484,13 @@ def test_plot_vector_3d_quivers_use_latex():
 
     x, y, z = symbols("x, y, z")
 
-    _plot_vector = lambda B: plot_vector(
+    _plot_vector = lambda B, show=False: plot_vector(
     Matrix([z, y, x]),
         (x, -5, 5),
         (y, -4, 4),
         (z, -3, 3),
         backend=B,
-        show=False,
+        show=show,
         use_cm=True,
         use_latex=True,
         n=5
@@ -2311,20 +2512,24 @@ def test_plot_vector_3d_quivers_use_latex():
     p = _plot_vector(KBchild1)
     assert len(p.series) == 1
 
+    p = _plot_vector(MAB, True)
+    assert p.fig.children[0].children[0].vector_lut_manager.scalar_bar.title == '$\\left( z, \\  y, \\  x\\right)$'
+
+
 
 def test_plot_vector_3d_streamlines_use_latex():
     # verify that the colorbar uses latex label
 
     x, y, z = symbols("x, y, z")
 
-    _plot_vector = lambda B: plot_vector(
+    _plot_vector = lambda B, show=False: plot_vector(
         Matrix([z, y, x]),
         (x, -5, 5),
         (y, -4, 4),
         (z, -3, 3),
         backend=B,
         streamlines=True,
-        show=False,
+        show=show,
         use_latex=True,
         n=5
     )
@@ -2344,6 +2549,9 @@ def test_plot_vector_3d_streamlines_use_latex():
     # K3D doesn't show labels on colorbar
     p = _plot_vector(KBchild1)
     assert len(p.series) == 1
+
+    p = _plot_vector(MAB, True)
+    assert p.fig.children[0].children[0].children[0].scalar_lut_manager.scalar_bar.title == '$\\left( z, \\  y, \\  x\\right)$'
 
 
 def test_plot_complex_use_latex():
@@ -2376,6 +2584,9 @@ def test_plot_complex_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_complex(KBchild1).process_series())
+    raises(
+        NotImplementedError,
+        lambda: _plot_complex(MAB).process_series())
 
     _plot_complex_2 = lambda B: plot_complex(
         gamma(z), (z, -3 - 3*I, 3 + 3*I), show=False, adaptive=False, n=10,
@@ -2401,6 +2612,9 @@ def test_plot_complex_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_complex_2(KBchild1).process_series())
+    raises(
+        NotImplementedError,
+        lambda: _plot_complex_2(MAB).process_series())
 
 
 def test_plot_real_imag_use_latex():
@@ -2434,6 +2648,9 @@ def test_plot_real_imag_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_real_imag(KBchild1).process_series())
+    raises(
+        NotImplementedError,
+        lambda: _plot_real_imag(MAB).process_series())
 
 
 ###############################################################################
@@ -2443,6 +2660,7 @@ def test_plot_real_imag_use_latex():
 
 def test_plot3d_use_cm():
     # verify that use_cm produces the expected results on plot3d
+
     x, y = symbols("x, y")
     p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MB, show=False, use_cm=True, n=10)
     p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MB, show=False, use_cm=False, n=10)
@@ -2462,6 +2680,17 @@ def test_plot3d_use_cm():
     n2 = len(p2.fig.objects[0].color_map)
     if n1 == n2:
         assert not np.allclose(p1.fig.objects[0].color_map, p2.fig.objects[0].color_map)
+
+    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MAB, show=True, use_cm=True, n=10)
+    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MAB, show=True, use_cm=False, n=10)
+    assert np.allclose(
+        p1.fig.children[0].children[0].children[0].children[0].actor.property.color,
+        (1, 1, 1)
+    )
+    assert np.allclose(
+        p2.fig.children[0].children[0].children[0].children[0].actor.property.color,
+        (0.12156862745098039, 0.4666666666666667, 0.7058823529411765)
+    )
 
 
 def test_plot3d_update_interactive():
@@ -2558,9 +2787,9 @@ def test_plot_polar():
 def test_plot3d_implicit():
     x, y, z = symbols("x:z")
 
-    _plot3d_implicit = lambda B: plot3d_implicit(
+    _plot3d_implicit = lambda B, show=False: plot3d_implicit(
         x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
-        backend=B, n1=10, n2=10, n3=10, show=False)
+        backend=B, n1=10, n2=10, n3=10, show=show)
 
     raises(NotImplementedError, lambda : _plot3d_implicit(MB).process_series())
 
@@ -2571,6 +2800,8 @@ def test_plot3d_implicit():
 
     p = _plot3d_implicit(KBchild1)
     assert isinstance(p.fig.objects[0], k3d.objects.MarchingCubes)
+    p = _plot3d_implicit(MAB, True)
+    assert len(p.fig.children) > 0
 
 
 def test_surface_color_func():
@@ -2580,8 +2811,9 @@ def test_surface_color_func():
     # the color function is applied.
 
     x, y, z, u, v = symbols("x:z, u, v")
-    p3d = lambda B, col: plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
-        backend=B, n=5, color_func=col, show=False, use_cm=True)
+    p3d = lambda B, col, show=False: plot3d(
+        cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
+        backend=B, n=5, color_func=col, show=show, use_cm=True)
 
     p1 = p3d(MB, lambda x, y, z: z).process_series()
     p2 = p3d(MB, lambda x, y, z: np.sqrt(x**2 + y**2)).process_series()
@@ -2594,10 +2826,25 @@ def test_surface_color_func():
     p2 = p3d(KBchild1, lambda x, y, z: np.sqrt(x**2 + y**2))
     assert not np.allclose(p1.fig.objects[0].attribute, p2.fig.objects[0].attribute)
 
+    p1 = p3d(MAB, lambda x, y, z: z, show=True)
+    p2 = p3d(MAB, lambda x, y, z: np.sqrt(x**2 + y**2), show=True)
+    # NOTE: no idea where Mayavi stores the entire scalar field, just the min
+    # and max
+    assert np.allclose(
+        p1.fig.children[0].children[0].children[0].children[0].actor.mapper.scalar_range,
+        [-1,  1],
+        rtol=1e-01
+    )
+    assert np.allclose(
+        p2.fig.children[0].children[0].children[0].children[0].actor.mapper.scalar_range,
+        [0, 4.24264069],
+        rtol=1e-01
+    )
+
     r = 2 + sin(7 * u + 5 * v)
     expr = (r * cos(u) * sin(v), r * sin(u) * sin(v), r * cos(v))
-    p3dps = lambda B, col: plot3d_parametric_surface(
-        *expr, (u, 0, 2 * pi), (v, 0, pi), show=False, use_cm=True, n=5,
+    p3dps = lambda B, col, show=False: plot3d_parametric_surface(
+        *expr, (u, 0, 2 * pi), (v, 0, pi), show=show, use_cm=True, n=5,
         backend=B, color_func=col)
 
     p1 = p3dps(MB, lambda x, y, z, u, v: z).process_series()
@@ -2610,6 +2857,21 @@ def test_surface_color_func():
     p1 = p3dps(KBchild1, lambda x, y, z, u, v: z)
     p2 = p3dps(KBchild1, lambda x, y, z, u, v: np.sqrt(x**2 + y**2))
     assert not np.allclose(p1.fig.objects[0].attribute, p2.fig.objects[0].attribute)
+
+    p1 = p3dps(MAB, lambda x, y, z, u, v: z, show=True)
+    p2 = p3dps(MAB, lambda x, y, z, u, v: np.sqrt(x**2 + y**2), show=True)
+    # NOTE: no idea where Mayavi stores the entire scalar field, just the min
+    # and max
+    assert np.allclose(
+        p1.fig.children[0].children[0].children[0].children[0].actor.mapper.scalar_range,
+        [-3,  3],
+        rtol=1e-01
+    )
+    assert np.allclose(
+        p2.fig.children[0].children[0].children[0].children[0].actor.mapper.scalar_range,
+        [0, 3.],
+        rtol=1e-01
+    )
 
 
 def test_surface_interactive_color_func():
@@ -2745,9 +3007,9 @@ def test_line_color_plot3d_parametric_line():
 
     x, y = symbols("x, y")
 
-    _plot = lambda B, lc, use_cm: plot3d_parametric_line(
+    _plot = lambda B, lc, use_cm, show=False: plot3d_parametric_line(
         cos(x), sin(x), x, (x, 0, 2*pi), adaptive=False, n=10,
-        line_color=lc, backend=B, show=False, use_cm=use_cm)
+        line_color=lc, backend=B, show=show, use_cm=use_cm)
 
     p = _plot(MB, "red", False)
     f = p.fig
@@ -2768,15 +3030,24 @@ def test_line_color_plot3d_parametric_line():
     p = _plot(KBchild1, lambda x: -x, True)
     assert len(p.fig.objects[0].attribute) > 0
 
+    p = _plot(MAB, (1, 0, 0), False, True)
+    p._handles[0].actor.property.color == (1, 0, 0)
+    p = _plot(MAB, lambda x: -x, True, True)
+    assert np.allclose(
+        p.fig.children[0].children[0].children[0].children[0].children[0].actor.mapper.scalar_range,
+        [-2*np.pi, 0],
+        rtol=1e-02
+    )
+
 
 def test_surface_color_plot3d():
     # verify back-compatibility with old sympy.plotting module when using
     # surface_color
 
     x, y = symbols("x, y")
-    _plot = lambda B, sc, use_cm: plot3d(
+    _plot = lambda B, sc, use_cm, show=False: plot3d(
         cos(x**2 + y**2), (x, 0, 2), (y, 0, 2), adaptive=False, n=10,
-        surface_color=sc, backend=B, show=False, use_cm=use_cm, legend=True)
+        surface_color=sc, backend=B, show=show, use_cm=use_cm, legend=True)
 
     p = _plot(MB, "red", False)
     assert len(p.fig.axes) == 1
@@ -2793,6 +3064,15 @@ def test_surface_color_plot3d():
     p = _plot(KBchild1, lambda x, y, z: -x, True)
     assert len(p.fig.objects[0].attribute) > 0
 
+    p = _plot(MAB, (1, 0, 0), False, True)
+    p._handles[0].actor.property.color == (1, 0, 0)
+    p = _plot(MAB, lambda x: -x, True, True)
+    assert np.allclose(
+        p.fig.children[0].children[0].children[0].children[0].actor.mapper.scalar_range,
+        [-1, 1],
+        rtol=1e-02
+    )
+
 
 def test_label_after_plot_instantiation():
     # verify that it is possible to set a label after a plot has been created
@@ -2804,85 +3084,3 @@ def test_label_after_plot_instantiation():
     f = p.fig
     assert f.axes[0].lines[0].get_label() == "a"
     assert f.axes[0].lines[1].get_label() == "$b^{2}$"
-
-
-def test_functions_iplot_integration():
-    # verify the integration between most important plot functions and iplot
-
-    x, y, z, u, v = symbols("x, y, z, u, v")
-    p = plot(cos(u * x), params={u: (1, 0, 2)}, show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = plot_parametric(cos(u * x), sin(x), params={u: (1, 0, 2)}, show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = plot3d_parametric_line(cos(u * x), sin(x), u * x,
-        params={u: (1, 0, 2)}, show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = plot3d(cos(u * x**2 + y**2), params={u: (1, 0, 2)}, show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = plot_contour(cos(u * x**2 + y**2), params={u: (1, 0, 2)}, show=False)
-    assert isinstance(p, InteractivePlot)
-
-    r = 2 + sin(7 * u + 5 * v)
-    expr = (
-        r * cos(x * u) * sin(v),
-        r * sin(x * u) * sin(v),
-        r * cos(v)
-        )
-    p = plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi),
-        params={x: (1, 0, 2)}, show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = lambda: plot3d_implicit(
-        u * x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
-        params={u: (1, 0, 2)}, show=False)
-    raises(NotImplementedError, p)
-
-    p = lambda: plot_implicit(Eq(u * x**2 + y**2, 3), (x, -3, 3), (y, -3, 3),
-        params={u: (1, 0, 2)}, show=False)
-    raises(NotImplementedError, p)
-
-    p = plot_geometry(Circle((u, 0), 4),
-        params={u: (1, 0, 2)}, show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = lambda: plot_list([1, 2, 3], [4, 5, 6],
-        params={u: (1, 0, 2)}, show=False)
-    raises(NotImplementedError, p)
-
-    p = lambda: plot_piecewise(
-        u * Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10),
-        params={u: (1, 0, 2)}, show=False)
-    raises(NotImplementedError, p)
-
-    p = plot_real_imag(sqrt(x) * exp(-u * x**2), (x, -3, 3),
-        params={u: (1, 0, 2)}, ylim=(-0.25, 2), show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = plot_complex(
-        exp(I * x) * I * sin(u * x), "f", (x, -5, 5),
-        params={u: (1, 0, 2)}, ylim=(-0.2, 1.2), show=False)
-    assert isinstance(p, InteractivePlot)
-
-    expr1 = z * exp(2 * pi * I * z)
-    expr2 = u * expr1
-    n = 15
-    l1 = [expr1.subs(z, t / n) for t in range(n)]
-    l2 = [expr2.subs(z, t / n) for t in range(n)]
-    p = plot_complex_list((l1, "f1"), (l2, "f2"),
-        params={u: (0.5, 0, 2)}, xlim=(-1.5, 2), ylim=(-2, 1), show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = plot_complex_vector(
-        log(gamma(u * z)), (z, -5 - 5j, 5 + 5j),
-        params={u: (1, 0, 2)}, n=20,
-        quiver_kw=dict(color="orange"), grid=False, show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = plot_vector(
-        [-sin(u * y), cos(x)], (x, -3, 3), (y, -3, 3),
-        params={u: (1, 0, 2)}, n=20, show=False)
-    assert isinstance(p, InteractivePlot)

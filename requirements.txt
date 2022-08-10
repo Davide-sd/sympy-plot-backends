@@ -18,3 +18,5 @@ k3d
 vtk
 msgpack
 adaptive>=0.13.1
+mayavi>=4.8.0
+PyQt5>=5.15.7

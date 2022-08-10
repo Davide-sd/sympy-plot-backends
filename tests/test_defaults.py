@@ -12,7 +12,7 @@ def test_cfg_keys():
     assert isinstance(cfg, dict)
     must_have_keys = ["backend_2D", "backend_3D", "matplotlib", "plotly",
         "k3d", "bokeh", "complex", "interactive", "plot3d", "adaptive",
-        "plot_range"]
+        "plot_range", "mayavi"]
     for k in must_have_keys:
         assert k in cfg.keys()
 
@@ -69,6 +69,14 @@ def test_cfg_k3d_keys():
         assert isinstance(cfg["k3d"][k], int)
 
     assert "grid" in cfg["k3d"].keys()
+    assert isinstance(cfg["k3d"]["grid"], bool)
+
+
+def test_cfg_mayavi_keys():
+    k3d_keys = ["size", "bg_color", "fg_color", "use_latex", "grid"]
+    for k in k3d_keys:
+        assert k in cfg["mayavi"].keys()
+
     assert isinstance(cfg["k3d"]["grid"], bool)
 
 

@@ -28,3 +28,4 @@ from spb.backends.matplotlib import MB
 from spb.backends.bokeh import BB
 from spb.backends.plotly import PB
 from spb.backends.k3d import KB
+from spb.backends.mayavi import MAB

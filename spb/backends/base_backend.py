@@ -379,6 +379,10 @@ class Plot:
                 use_cyclic_cm = True
         return use_cyclic_cm
 
+    def _set_piecewise_color(self, s, color):
+        """Set the color to the given series of a piecewise function."""
+        raise NotImplementedError
+
     @property
     def fig(self):
         """Returns the figure used to render/display the plots."""

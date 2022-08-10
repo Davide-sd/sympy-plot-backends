@@ -71,6 +71,15 @@ def _hardcoded_defaults():
             # Render latex with Matplotlib
             "use_latex": True,
         },
+        mayavi={
+            "size": (800, 500),
+            "bg_color": None,
+            "fg_color": None,
+            # Show/hide main grid
+            "grid": True,
+            # Render latex with Mayavi
+            "use_latex": True,
+        },
         # Possible values: "matplotlib", "plotly", "bokeh"
         backend_2D="matplotlib",
         # Possible values: "matplotlib", "plotly", "k3d"

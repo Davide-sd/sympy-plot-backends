@@ -8,6 +8,7 @@ from spb import (
     plot_implicit, plot_complex_list, plot_complex_vector, plot_real_imag,
     plot_vector
 )
+from spb.interactive import InteractivePlot
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, ContourSeries,
     Vector2DSeries
@@ -779,3 +780,85 @@ def test_lambda_functions():
     raises(TypeError, lambda : plot_complex_list(lambda t: t))
     raises(TypeError, lambda : plot_complex_vector(lambda t: t))
     raises(TypeError, lambda : plot_piecewise(lambda t: t))
+
+
+def test_functions_iplot_integration():
+    # verify the integration between most important plot functions and iplot
+
+    x, y, z, u, v = symbols("x, y, z, u, v")
+    p = plot(cos(u * x), params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot_parametric(cos(u * x), sin(x), params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot3d_parametric_line(cos(u * x), sin(x), u * x,
+        params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot3d(cos(u * x**2 + y**2), params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot_contour(cos(u * x**2 + y**2), params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    r = 2 + sin(7 * u + 5 * v)
+    expr = (
+        r * cos(x * u) * sin(v),
+        r * sin(x * u) * sin(v),
+        r * cos(v)
+        )
+    p = plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi),
+        params={x: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = lambda: plot3d_implicit(
+        u * x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        params={u: (1, 0, 2)}, show=False)
+    raises(NotImplementedError, p)
+
+    p = lambda: plot_implicit(Eq(u * x**2 + y**2, 3), (x, -3, 3), (y, -3, 3),
+        params={u: (1, 0, 2)}, show=False)
+    raises(NotImplementedError, p)
+
+    p = plot_geometry(Circle((u, 0), 4),
+        params={u: (1, 0, 2)}, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = lambda: plot_list([1, 2, 3], [4, 5, 6],
+        params={u: (1, 0, 2)}, show=False)
+    raises(NotImplementedError, p)
+
+    p = lambda: plot_piecewise(
+        u * Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10),
+        params={u: (1, 0, 2)}, show=False)
+    raises(NotImplementedError, p)
+
+    p = plot_real_imag(sqrt(x) * exp(-u * x**2), (x, -3, 3),
+        params={u: (1, 0, 2)}, ylim=(-0.25, 2), show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot_complex(
+        exp(I * x) * I * sin(u * x), "f", (x, -5, 5),
+        params={u: (1, 0, 2)}, ylim=(-0.2, 1.2), show=False)
+    assert isinstance(p, InteractivePlot)
+
+    expr1 = z * exp(2 * pi * I * z)
+    expr2 = u * expr1
+    n = 15
+    l1 = [expr1.subs(z, t / n) for t in range(n)]
+    l2 = [expr2.subs(z, t / n) for t in range(n)]
+    p = plot_complex_list((l1, "f1"), (l2, "f2"),
+        params={u: (0.5, 0, 2)}, xlim=(-1.5, 2), ylim=(-2, 1), show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot_complex_vector(
+        log(gamma(u * z)), (z, -5 - 5j, 5 + 5j),
+        params={u: (1, 0, 2)}, n=20,
+        quiver_kw=dict(color="orange"), grid=False, show=False)
+    assert isinstance(p, InteractivePlot)
+
+    p = plot_vector(
+        [-sin(u * y), cos(x)], (x, -3, 3), (y, -3, 3),
+        params={u: (1, 0, 2)}, n=20, show=False)
+    assert isinstance(p, InteractivePlot)

@@ -2,6 +2,23 @@
  Changelog
 ==========
 
+v1.3.1
+======
+
+* Fixed bugs with ``PlaneSeries``:
+
+  * Data generation for vertical planes is now fixed.
+  * ``K3DBackend`` is now able to plot this series.
+  * Similar to other 3D surfaces, planes will be plotted with a solid color.
+
+* Fixed bug with ``Vector3DSeries``: the discretized volume is now created with
+  Numpy's ``meshgrid`` with ``indexing='ij'``. This improves the generation of
+  3D streamlines.
+
+* Reintroduced ``MayaviBackend`` to plot symbolic expressions with Mayavi.
+  Note that interactive widgets are still not supported by this backend.
+
+
 v1.3.0
 ======
 

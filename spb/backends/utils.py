@@ -37,7 +37,7 @@ def convert_colormap(cm, to, n=256):
 
     assert isinstance(to, str)
     to = to.lower()
-    assert to in ["matplotlib", "plotly", "k3d", "bokeh"]
+    assert to in ["matplotlib", "plotly", "k3d", "bokeh", "mayavi"]
     if not isinstance(cm, (str, list, tuple, np.ndarray, Colormap)):
         raise ValueError(
             "`cm` must be either:\n"
@@ -47,6 +47,16 @@ def convert_colormap(cm, to, n=256):
             + "3. an instance of matplotlib.colors.Colormap.\n"
             + "4. an array of colors extracted from a matplotlib.colors.Colormap."
         )
+
+    if to == "mayavi":
+        # NOTE: Mayavi colormaps are based on look up tables.
+        # It is possible to modify a colormap after an object (mesh) has been
+        # created (see this example):
+        # https://docs.enthought.com/mayavi/mayavi/auto/example_custom_colormap.html
+        # However, it is not possible to pass a look up table to the colormap
+        # keyword argument of a Mayavi function. Hence, we cannot implement
+        # intercompatibility with other plotting libraries.
+        return cm
 
     r = []
     if to == "k3d":
