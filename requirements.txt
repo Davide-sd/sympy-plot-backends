@@ -1,21 +1,18 @@
-appdirs
-numpy
-scipy
-sympy
+appdirs>=1.4.4
+numpy>=1.21.1
+scipy>=1.7.1
+sympyy>=1.10.1
 matplotlib==3.4.2
-mergedeep
-ipympl
+mergedeep>=1.3.4
+ipympl>=0.7.0
 plotly>=4.14.3
 colorcet
-param
-panel
-holoviews
-bokeh
+panel>=0.13.0
+# holoviews
 ipywidgets_bokeh
-ipyevents
-PyQt5>=5.15.7
-k3d
+# ipyevents
+k3d>=2.9.7
 vtk
-msgpack
 adaptive>=0.13.1
 mayavi>=4.8.0
+PyQt5>=5.15.7
