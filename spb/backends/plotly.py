@@ -811,7 +811,7 @@ class PlotlyBackend(Plot):
             self.process_series()
 
         ext = os.path.splitext(path)[1]
-        if ext.lower() in [".html", ".html"]:
+        if ext.lower() in [".htm", ".html"]:
             self.fig.write_html(path, **kwargs)
         else:
             self._fig.write_image(path, **kwargs)
