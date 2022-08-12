@@ -13,7 +13,7 @@ holoviews
 bokeh
 ipywidgets_bokeh
 ipyevents
-# PyQt5
+PyQt5>=5.15.7
 k3d
 vtk
 msgpack
