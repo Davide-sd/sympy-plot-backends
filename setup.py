@@ -51,9 +51,9 @@ setup(
         "ipywidgets_bokeh", # starting from panel v0.13.0, it is not part of panel anymore
         "k3d>=2.9.7",
         "vtk",  # needed for streamlines in k3d
-        "adaptive>=0.13.1"
+        "adaptive>=0.13.1",
         # mayavi-related
         "mayavi>=4.8.0",
-        "PyQt5>=5.15.7",
+        # "PyQt5>=5.15.7",
     ],
 )
