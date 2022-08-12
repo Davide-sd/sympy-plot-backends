@@ -50,11 +50,12 @@ bokeh = import_module(
     import_kwargs={'fromlist': ['models', 'resources', 'plotting']},
     min_module_version='2.3.0',
     catch=(RuntimeError,))
-mayavi = import_module(
-    'mayavi',
-    import_kwargs={'fromlist':['mlab', 'core']},
-    min_module_version='4.8.0',
-    catch=(RuntimeError,))
+import mayavi
+# mayavi = import_module(
+#     'mayavi',
+#     import_kwargs={'fromlist':['mlab', 'core']},
+#     min_module_version='4.8.0',
+#     catch=(RuntimeError,))
 # prevent Mayavi window from opening
 mayavi.mlab.options.offscreen = True
 unset_show()
