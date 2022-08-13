@@ -593,7 +593,7 @@ class K3DBackend(Plot):
         if not ext:
             path += ".png"
 
-        if ext in [".html", "htm"]:
+        if ext in [".html", ".htm"]:
             with open(path, 'w') as f:
                 include_js = kwargs.pop("include_js", False)
                 self.fig.snapshot_include_js = include_js

@@ -699,7 +699,7 @@ class BokehBackend(Plot):
         merge = self.merge
 
         ext = os.path.splitext(path)[1]
-        if ext.lower() in [".html", ".html"]:
+        if ext.lower() in [".htm", ".html"]:
             CDN = self.bokeh.resources.CDN
             file_html = self.bokeh.embed.file_html
             skw = dict(resources=CDN, title="Bokeh Plot")

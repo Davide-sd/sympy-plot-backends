@@ -304,13 +304,13 @@ class MayaviBackend(Plot):
             File path with extension.
 
         kwargs : dict
-            Optional backend-specific parameters. Refer to [#fn1]_ to find
+            Optional backend-specific parameters. Refer to [#fn8]_ to find
             more keyword arguments to control the output file.
 
         References
         ==========
 
-        .. [#fn1] https://docs.enthought.com/mayavi/mayavi/auto/mlab_figure.html#savefig
+        .. [#fn8] https://docs.enthought.com/mayavi/mayavi/auto/mlab_figure.html#savefig
 
         """
         self.mlab.savefig(path, figure=self._fig, **kwargs)
