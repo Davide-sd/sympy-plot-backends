@@ -93,6 +93,7 @@ class MayaviBackend(Plot):
             import_kwargs={'fromlist': ['core']},
             min_module_version='8.4.0',
             catch=(RuntimeError,))
+        self._display = None
         if IPython:
             # this if statement is required to pass tests with Python 3.7
             self._display = IPython.core.display.display
