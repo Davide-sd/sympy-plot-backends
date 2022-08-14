@@ -39,7 +39,9 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
   
     - name: Test with pytest
-      run: ETS_TOOLKIT=null pytest
+      uses: GabrielBB/xvfb-action@v1
+      with:
+        run: ETS_TOOLKIT=null coverage run -m pytest --pyv
   
     - name: Coverage Badge
       uses: tj-actions/coverage-badge-py@v1.8
