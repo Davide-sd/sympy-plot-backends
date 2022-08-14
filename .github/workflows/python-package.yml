@@ -20,7 +20,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Install Linux packages for Qt5 support
+    - name: Install Linux packages for Qt5 support # needed for Mayavi
       run: |
         sudo apt-get update
         sudo apt-get install qt5-default
@@ -50,7 +50,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
   
     - name: Test with pytest
-      uses: GabrielBB/xvfb-action@v1
+      uses: GabrielBB/xvfb-action@v1  # needed for Mayavi headless tests
       with:
         run: coverage run -m pytest
   
