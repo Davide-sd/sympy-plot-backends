@@ -294,7 +294,8 @@ class MayaviBackend(Plot):
 
     def show(self):
         self.process_series()
-        self._display(self._fig)
+        if self._display:
+            self._display(self._fig)
 
     def save(self, path, **kwargs):
         """Save the current plot.
