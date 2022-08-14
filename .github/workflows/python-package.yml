@@ -40,7 +40,7 @@ jobs:
   
     - name: Test with pytest
       run: |
-        ETS_TOOLKIT=null coverage run -m pytest
+        ETS_TOOLKIT=null coverage run -m pytest --pyargs mayavi
   
     - name: Coverage Badge
       uses: tj-actions/coverage-badge-py@v1.8
