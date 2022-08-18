@@ -1413,7 +1413,7 @@ def plot3d(*args, **kwargs):
 
     use_cm : boolean, optional
         If True, apply a color map to the surface.
-        If False, solid colors will be used instead. Default to True.
+        If False, solid colors will be used instead. Default to False.
 
     use_latex : boolean, optional
         Turn on/off the rendering of latex labels. If the backend doesn't
@@ -1684,7 +1684,7 @@ def plot3d_parametric_surface(*args, **kwargs):
 
     use_cm : boolean, optional
         If True, apply a color map to the surface.
-        If False, solid colors will be used instead. Default to True.
+        If False, solid colors will be used instead. Default to False.
 
     use_latex : boolean, optional
         Turn on/off the rendering of latex labels. If the backend doesn't

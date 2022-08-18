@@ -28,7 +28,7 @@ Now, let's visualize a plot created with Matplotlib:
        r * cos(v)
    )
    plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "expr",
-       backend=MB)
+       backend=MB, use_cm=True)
 
 .. image:: ../_static/tut-2/matplotlib-2.png
    :width: 600
@@ -53,7 +53,7 @@ of discretization points.
 
    n = 500
    plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "expr",
-       n=n, backend=KB)
+       n=n, backend=KB, use_cm=True)
 
 Note: in order to speed up the loading of this tutorial page, the following
 plot has been generated with ``n=150``.
@@ -97,7 +97,7 @@ Finally, let's look at the same plot with Plotly:
 
    n = 150
    plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "expr",
-       n=n, backend=PB)
+       n=n, backend=PB, use_cm=True)
 
 .. raw:: html
 

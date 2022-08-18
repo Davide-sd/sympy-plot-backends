@@ -15,6 +15,8 @@ v1.3.1
   Numpy's ``meshgrid`` with ``indexing='ij'``. This improves the generation of
   3D streamlines.
 
+* Fixed bug with ``K3DBackend`` and ``plot3d_implicit``.
+
 * Reintroduced ``MayaviBackend`` to plot symbolic expressions with Mayavi.
   Note that interactive widgets are still not supported by this backend.
 

@@ -10,23 +10,26 @@ Backends
    bokeh.rst
    plotly.rst
    k3d.rst
+   mayavi.rst
 
 This module allows the user to chose between 4 different backends.
 The use case is summarized in the following table.
 
-+------------------------+-----------+-------+--------+------+
-|                        | Matplolib | Bokeh | Plotly |  K3D |
-+========================+===========+=======+========+======+
-|           2D           |     Y     |   Y   |    Y   |   N  |
-+------------------------+-----------+-------+--------+------+
-|           3D           |     Y     |   N   |    Y   |   Y  |
-+------------------------+-----------+-------+--------+------+
-|      Latex Support     |     Y     |   N   |    Y   |   Y  |
-+------------------------+-----------+-------+--------+------+
-|       Jupyter NB       |     Y     |   Y   |    Y   |   Y  |
-+------------------------+-----------+-------+--------+------+
-|   Python Interpreter   |     Y     |   Y   |    Y   |   N  |
-+------------------------+-----------+-------+--------+------+
++------------------------+-----------+-------+--------+------+--------+
+|                        | Matplolib | Bokeh | Plotly |  K3D | Mayavi |
++========================+===========+=======+========+======+========+
+|           2D           |     Y     |   Y   |    Y   |   N  |    N   |
++------------------------+-----------+-------+--------+------+--------+
+|           3D           |     Y     |   N   |    Y   |   Y  |    Y   |
++------------------------+-----------+-------+--------+------+--------+
+|      Latex Support     |     Y     |   N   |    Y   |   Y  |    Y   |
++------------------------+-----------+-------+--------+------+--------+
+|       Jupyter NB       |     Y     |   Y   |    Y   |   Y  |    Y   |
++------------------------+-----------+-------+--------+------+--------+
+|   Python Interpreter   |     Y     |   Y   |    Y   |   N  |    Y   |
++------------------------+-----------+-------+--------+------+--------+
+|   Interactive Widgets  |     Y     |   Y   |    Y   |   Y  |    N   |
++------------------------+-----------+-------+--------+------+--------+
 
 In particular:
 
@@ -59,6 +62,10 @@ In particular:
   interpreter. This backends use an aspect ratio of 1 on all axis: it doedn't
   scale the visualization. What you see is the object as you would see it in
   reality.
+
+* Mayavi only support 3D plots. Differently from K3D, a custom aspect ratio
+  can be used. However, it offers much more customization options after the
+  plot as been created.
 
 We can choose the appropriate backend for our use case at runtime by setting the keyword argument ``backend=`` in the function call. We can also
 set the default backends for 2D and 3D plots in a configuration file by using
