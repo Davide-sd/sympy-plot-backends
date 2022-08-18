@@ -1516,6 +1516,7 @@ def plot3d(*args, **kwargs):
        :format: doctest
        :include-source: True
 
+       >>> import numpy as np
        >>> expr = (cos(x) + sin(x) * sin(y) - sin(x) * cos(y))**2
        ... plot3d(expr, (x, 0, pi), (y, 0, 2 * pi),
        ...     tx=np.rad2deg, ty=np.rad2deg, use_cm=True,
@@ -1528,7 +1529,6 @@ def plot3d(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> import numpy as np
        >>> plot3d(lambda x, y: x * np.exp(-x**2 - y**2),
        ...     ("x", -3, 3), ("y", -3, 3), use_cm=True)
 
