@@ -521,7 +521,7 @@ def plot_vector(*args, **kwargs):
        >>> fx = lambda x, y: np.cos(f(x, y))
        >>> fy = lambda x, y: np.sin(f(x, y))
        >>> plot_vector([fx, fy], ("x", -1, 1), ("y", -1, 1),
-       ...     streamlines=True, scalar=False)
+       ...     streamlines=True, scalar=False, use_cm=False)
 
     Interactive-widget 2D vector plot. Refer to ``iplot`` documentation to
     learn more about the ``params`` dictionary.

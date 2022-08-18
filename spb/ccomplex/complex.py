@@ -280,7 +280,7 @@ def plot_real_imag(*args, **kwargs):
     """Plot the real part, the imaginary parts, the absolute value and the
     argument of a complex function. By default, only the real and imaginary
     parts will be plotted. Use keyword argument to be more specific.
-    By default, the aspect ratio of the plot is set to `aspect="equal"`.
+    By default, the aspect ratio of the plot is set to ``aspect="equal"``.
 
     Depending on the provided expression, this function will produce different
     types of plots:
@@ -560,7 +560,8 @@ def plot_real_imag(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), n=100, threed=True)
+       >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), n=100, threed=True,
+       ...      use_cm=True)
        Plot object containing:
        [0]: cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
        [1]: cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
@@ -610,7 +611,7 @@ def plot_real_imag(*args, **kwargs):
 
 def plot_complex(*args, **kwargs):
     """Plot the absolute value of a complex function colored by its argument.
-    By default, the aspect ratio of the plot is set to `aspect="equal"`.
+    By default, the aspect ratio of the plot is set to ``aspect="equal"``.
 
     Depending on the provided range, this function will produce different
     types of plots:
@@ -908,7 +909,7 @@ def plot_complex(*args, **kwargs):
        :include-source: True
 
        >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
-       ...     zlim=(-1, 6))
+       ...     zlim=(-1, 6), use_cm=True)
        Plot object containing:
        [0]: cartesian surface: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
@@ -938,7 +939,7 @@ def plot_complex(*args, **kwargs):
 
 def plot_complex_list(*args, **kwargs):
     """Plot lists of complex points. By default, the aspect ratio of the plot
-    is set to `aspect="equal"`.
+    is set to ``aspect="equal"``.
 
     Typical usage examples are in the followings:
 
@@ -1117,7 +1118,7 @@ def plot_complex_list(*args, **kwargs):
 def plot_complex_vector(*args, **kwargs):
     """Plot the vector field `[re(f), im(f)]` for a complex function `f`
     over the specified complex domain. By default, the aspect ratio of the
-    plot is set to `aspect="equal"`.
+    plot is set to ``aspect="equal"``.
 
     Typical usage examples are in the followings:
 
