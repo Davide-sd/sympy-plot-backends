@@ -89,6 +89,8 @@ class K3DBackend(Plot):
     # quivers-pivot offsets
     _qp_offset = {"tail": 0, "mid": 0.5, "middle": 0.5, "tip": 1}
 
+    _allowed_keys = Plot._allowed_keys + ["show_label"]
+
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 

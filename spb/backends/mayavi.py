@@ -198,7 +198,10 @@ class MayaviBackend(Plot):
                         else s.surface_color),
                     colormap=next(self._cm),
                     contours=[0],
-                    extent=self._get_extent(x, y, z)
+                    # NOTE: can't use extent here, as the actual surface
+                    # dimension is computed by Mayavi and we can't access it
+                    # at this time
+                    # extent=self._get_extent(x, y, z)
                 )
                 kw = merge({}, a, s.rendering_kw)
                 self._add_figure_to_kwargs(kw)
