@@ -293,7 +293,7 @@ class K3DBackend(Plot):
                     color=self._convert_to_int(next(self._cl))
                 )
                 kw = merge({}, a, s.rendering_kw)
-                plt_iso = self.k3d.marching_cubes(r.astype(np.float32), **kw)
+                plt_iso = self.k3d.marching_cubes(r.T.astype(np.float32), **kw)
 
                 self._fig += plt_iso
 
