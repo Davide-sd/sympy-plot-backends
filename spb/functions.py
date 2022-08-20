@@ -1268,6 +1268,7 @@ def _plot3d_plot_contour_helper(Series, is_threed, Backend, *args, **kwargs):
 
     if kwargs.get("params", None):
         kwargs["threed"] = is_threed
+        kwargs["backend"] = Backend
         return _create_interactive_plot(*plot_expr, **kwargs)
 
     labels = kwargs.pop("label", [])
