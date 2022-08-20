@@ -22,7 +22,7 @@ from spb.series import (
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
     ImplicitSeries, _set_discretization_points,
     List2DSeries, GeometrySeries, Implicit3DSeries,
-    InteractiveSeries
+    InteractiveSeries, GenericDataSeries
 )
 from spb.utils import (
     _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend
@@ -258,6 +258,19 @@ def _create_interactive_plot(*plot_expr, **kwargs):
     # it is necessary
     from spb.interactive import iplot
     return iplot(*plot_expr, **kwargs)
+
+
+def _create_generic_data_series(**kwargs):
+    keywords = ["annotations", "markers", "fill", "rectangles"]
+    series = []
+    for kw in keywords:
+        dictionaries = kwargs.pop(kw, [])
+        if isinstance(dictionaries, dict):
+            dictionaries = [dictionaries]
+        for d in dictionaries:
+            args = d.pop("args", [])
+            series.append(GenericDataSeries(kw, *args, **d))
+    return series
 
 
 def plot(*args, **kwargs):
@@ -644,6 +657,7 @@ def plot(*args, **kwargs):
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _build_line_series(*plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
+    series += _create_generic_data_series(**kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -936,6 +950,7 @@ def plot_parametric(*args, **kwargs):
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _create_series(Parametric2DLineSeries, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
+    series += _create_generic_data_series(**kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -2240,7 +2255,7 @@ def plot_implicit(*args, **kwargs):
             ymax = s.end_y
         series.append(s)
 
-    # kwargs.setdefault("backend", TWO_D_B)
+    series += _create_generic_data_series(**kwargs)
     kwargs.setdefault("xlim", (xmin, xmax))
     kwargs.setdefault("ylim", (ymin, ymax))
     kwargs.setdefault("xlabel", lambda use_latex: series[-1].var_x.name if not use_latex else latex(series[0].var_x))

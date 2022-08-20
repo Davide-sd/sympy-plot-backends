@@ -311,6 +311,10 @@ class BaseSeries:
     # Some series might use a colormap as default coloring. Setting this
     # attribute to False will inform the backends to use solid color.
 
+    is_generic = False
+    # Implement back-compatibility with sympy.plotting <= 1.11
+    # Please, read NOTE section on GenericDataSeries
+
     _allowed_keys = []
     # contains a list of keyword arguments supported by the series. It will be
     # used to validate the user-provided keyword arguments.
@@ -3235,3 +3239,80 @@ class GeometryInteractiveSeries(GeometrySeries, InteractiveSeries):
     def __str__(self):
         s = super().__str__()
         return "interactive " + s + " with parameters " + str(tuple(self._params.keys()))
+
+
+class GenericDataSeries(BaseSeries):
+    """Represents generic numerical data.
+
+    NOTE:
+    This class implements back-compatibility with Sympy <=1.11: its plotting
+    module accepts the following keyword arguments:
+
+    annotations, markers, rectangles, fill
+
+    Sadly, the developers forgot to properly document them, as there are no
+    example whatsoever about their usage. This is actually a very good thing
+    for this new plotting module, which supports multiple backends.
+    Every backend exposes different functions:
+
+    1. For example, to create line plots Matplotlib exposes ``ax.plot``,
+       whereas Plotly exposes ``go.Scatter``, whereas Bokeh exposes
+       ``fig.line``, etc. But those different ways do not overlap completely:
+       with ``go.Scatter`` it's also possible to create filled regions,
+       whereas with ``ax.plot`` that's not possible.
+    2. Moreover, some plotting library exposes functionalities that are
+       unmatched by others. For example, Matplotlib's ``ax.fill_between`` is
+       substantially different from Plotly's filled area or whatever Bokeh
+       exposes. Similarly, Matplotlib's Rectangle is very specific, whereas
+       with Plotly we can add any shape (rectangle, line, ...) with the same
+       function call.
+
+    So, the problem is clear: if developers document a feature to do one
+    specific thing, users expect it to produce consistent results across
+    backends. This is clearly impossible to achieve.
+
+    There is also the problem of when "enough is enough"? Meaning, who is to
+    stop anyone from adding new keyword arguments that are just wrappers to
+    what a plotting library already can do? For example, I could add the
+    ``hex_tile`` keyword: it's beautiful for Bokeh, but very difficult
+    to implement on other backends. Or maybe I could add ``hlines`` or
+    ``vlines`` keyword arguments to add horizontal or vertical lines. If this
+    approach was to be followed, we will end up rewriting multiple plotting
+    libraries: for what?
+
+    Instead, the goal of this module is to facilitate the plotting of symbolic
+    expressions. If user needs to add numerical data to a plot, he/she can
+    easily retrieve the figure object and proceed with the usual commands
+    associated to a specific plotting library.
+    For example, for ``MatplotlibBackend``:
+
+    .. code-block:: python
+
+       from sympy import *
+       from spb import *
+       import numpy as np
+       var("x")
+
+       # plot symbolic expressions
+       p = plot(sin(x), cos(x), backend=MB)
+       # extract the axes object
+       ax = p.fig.axes[0]
+       # add numerical data
+       xx = np.linspace(-10, 10)
+       f = 1 / (1 + np.exp(-xx))
+       ax.plot(xx, f1, "k:", label="numerical data")
+       ax.legend()
+       p.fig
+
+    Hence, the decision to maintain this back-compatibility (for the moment)
+    but not to document those keyword arguments on the plotting functions.
+    """
+    is_generic = True
+
+    def __init__(self, tp, *args, **kwargs):
+        self.type = tp
+        self.args = args
+        self.rendering_kw = kwargs
+
+    def get_data(self):
+        return self.args

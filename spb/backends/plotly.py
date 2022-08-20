@@ -48,6 +48,35 @@ class PlotlyBackend(Plot):
         If True, apply a color map to the meshes/surface. If False, solid
         colors will be used instead. Default to True.
 
+    annotations : list, optional
+        A list of dictionaries specifying the type the markers required.
+        The keys in the dictionary should be equivalent to the arguments
+        of the Plotly's `graph_objects.Scatter` class. Refer to [#fn15]_
+        for more information.
+        This feature is experimental. It might get removed in the future.
+
+    markers : list, optional
+        A list of dictionaries specifying the type the markers required.
+        The keys in the dictionary should be equivalent to the arguments
+        of the Plotly's `graph_objects.Scatter` class. Refer to [#fn3]_
+        for more information.
+        This feature is experimental. It might get removed in the future.
+
+    rectangles : list, optional
+        A list of dictionaries specifying the dimensions of the
+        rectangles to be plotted. The keys in the dictionary should be
+        equivalent to the arguments of the Plotly's
+        `graph_objects.Figure.add_shape` function. Refer to [#fn16]_
+        for more information.
+        This feature is experimental. It might get removed in the future.
+
+    fill : dict, optional
+        A list of dictionaries specifying the type the markers required.
+        The keys in the dictionary should be equivalent to the arguments
+        of the Plotly's `graph_objects.Scatter` class. Refer to [#fn17]_
+        for more information.
+        This feature is experimental. It might get removed in the future.
+
     References
     ==========
     .. [#fn1] https://plotly.com/python/contour-plots/
@@ -62,6 +91,9 @@ class PlotlyBackend(Plot):
     .. [#fn10] https://plotly.com/python/templates/
     .. [#fn13] https://github.com/plotly/plotly.js/issues/5003
     .. [#fn14] https://plotly.com/python/3d-isosurface-plots/
+    .. [#fn15] https://plotly.com/python/text-and-annotations/
+    .. [#fn16] https://plotly.com/python/shapes/
+    .. [#fn17] https://plotly.com/python/filled-area-plots/
 
 
     Notes
@@ -82,6 +114,8 @@ class PlotlyBackend(Plot):
     """
 
     _library = "plotly"
+    _allowed_keys = Plot._allowed_keys + [
+        "markers", "annotations", "fill", "rectangles"]
 
     colorloop = []
     colormaps = []
@@ -599,6 +633,25 @@ class PlotlyBackend(Plot):
                 )
                 kw = merge({}, lkw, s.rendering_kw)
                 self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
+
+            elif s.is_generic:
+                if s.type == "markers":
+                    kw = merge({}, {"line_color": next(self._cl)}, s.rendering_kw)
+                    self._fig.add_trace(go.Scatter(*s.args, **kw))
+                elif s.type == "annotations":
+                    kw = merge({}, {
+                        "line_color": next(self._cl),
+                        "mode": "text",
+                        }, s.rendering_kw)
+                    self._fig.add_trace(go.Scatter(*s.args, **kw))
+                elif s.type == "fill":
+                    kw = merge({}, {
+                        "line_color": next(self._cl),
+                        "fill": "tozeroy"
+                        }, s.rendering_kw)
+                    self._fig.add_trace(go.Scatter(*s.args, **kw))
+                elif s.type == "rectangles":
+                    self._fig.add_shape(*s.args, **s.rendering_kw)
 
             else:
                 raise NotImplementedError(

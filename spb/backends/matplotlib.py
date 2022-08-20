@@ -86,6 +86,32 @@ class MatplotlibBackend(Plot):
         If True, apply a color map to the mesh/surface or parametric lines.
         If False, solid colors will be used instead. Default to True.
 
+    annotations : list, optional
+        A list of dictionaries specifying the type of annotation
+        required. The keys in the dictionary should be equivalent
+        to the arguments of the `matplotlib.axes.Axes.annotate` method.
+        This feature is experimental. It might get removed in the future.
+
+    markers : list, optional
+        A list of dictionaries specifying the type the markers required.
+        The keys in the dictionary should be equivalent to the arguments
+        of the `matplotlib.pyplot.plot()` function along with the marker
+        related keyworded arguments.
+        This feature is experimental. It might get removed in the future.
+
+    rectangles : list, optional
+        A list of dictionaries specifying the dimensions of the
+        rectangles to be plotted. The keys in the dictionary should be
+        equivalent to the arguments of the `matplotlib.patches.Rectangle`
+        class.
+        This feature is experimental. It might get removed in the future.
+
+    fill : dict, optional
+        A dictionary specifying the type of color filling required in
+        the plot. The keys in the dictionary should be equivalent to the
+        arguments of the `matplotlib.axes.Axes.fill_between` method.
+        This feature is experimental. It might get removed in the future.
+
 
     References
     ==========
@@ -105,6 +131,8 @@ class MatplotlibBackend(Plot):
     """
 
     _library = "matplotlib"
+    _allowed_keys = Plot._allowed_keys + [
+        "markers", "annotations", "fill", "rectangles"]
 
     colormaps = []
     cyclic_colormaps = []
@@ -636,6 +664,20 @@ class MatplotlibBackend(Plot):
                 c = self.ax.fill(x, y, **kw)
                 self._add_handle(i, c, kw)
 
+            elif s.is_generic:
+                if s.type == "markers":
+                    kw = merge({}, {"color": next(self._cl)}, s.rendering_kw)
+                    self.ax.plot(*s.args, **kw)
+                elif s.type == "annotations":
+                    self.ax.annotate(*s.args, **s.rendering_kw)
+                elif s.type == "fill":
+                    kw = merge({}, {"color": next(self._cl)}, s.rendering_kw)
+                    self.ax.fill_between(*s.args, **kw)
+                elif s.type == "rectangles":
+                    kw = merge({}, {"color": next(self._cl)}, s.rendering_kw)
+                    self.ax.add_patch(
+                        self.matplotlib.patches.Rectangle(*s.args, **kw))
+
             else:
                 raise NotImplementedError(
                     "{} is not supported by {}\n".format(type(s), type(self).__name__)
@@ -714,6 +756,17 @@ class MatplotlibBackend(Plot):
             self.ax.set_zlabel(self.zlabel, position=(0, 1))
 
         self._set_lims(xlims, ylims, zlims)
+
+    def _get_plotting_func_name(self, t):
+        if t == "markers":
+            return "scatter"
+        elif t == "annotations":
+            return "annotate"
+        elif t == "fills":
+            return "fill"
+        elif t == "rectangles":
+            return "rect"
+        raise ValueError("%s is not supported by MatplotlibBackend" % t)
 
     def _set_lims(self, xlims, ylims, zlims):
         np = import_module('numpy')

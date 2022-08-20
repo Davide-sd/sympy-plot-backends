@@ -218,6 +218,32 @@ class BokehBackend(Plot):
         If True, the backend will update the data series over the visibile
         range whenever a pan-event is triggered. Default to True.
 
+    annotations : list, optional
+        A list of dictionaries specifying the type of annotation
+        required. The keys in the dictionary should be equivalent
+        to the arguments of the `bokeh.models.LabelSet` class.
+        This feature is experimental. It might get removed in the future.
+
+    markers : list, optional
+        A list of dictionaries specifying the type the markers required.
+        The keys in the dictionary should be equivalent to the arguments
+        of the `bokeh.models.Scatter` class.
+        This feature is experimental. It might get removed in the future.
+
+    rectangles : list, optional
+        A list of dictionaries specifying the dimensions of the
+        rectangles to be plotted. The ``"args"`` key must contain the
+        `bokeh.models.ColumnDataSource` object containing the
+        data. All other keyword arguments will be passed to the
+        `bokeh.models.Rect` class.
+        This feature is experimental. It might get removed in the future.
+
+    fill : dict, optional
+        A dictionary specifying the type of color filling required in
+        the plot. The keys in the dictionary should be equivalent to the
+        arguments of the `bokeh.models.VArea` class.
+        This feature is experimental. It might get removed in the future.
+
 
     References
     ==========
@@ -232,6 +258,8 @@ class BokehBackend(Plot):
     """
 
     _library = "bokeh"
+    _allowed_keys = Plot._allowed_keys + [
+        "markers", "annotations", "fill", "rectangles"]
 
     colorloop = []
     colormaps = []
@@ -509,6 +537,21 @@ class BokehBackend(Plot):
                 pkw = dict(alpha=0.5, line_width=2, line_color=color, fill_color=color)
                 kw = merge({}, pkw, s.rendering_kw)
                 self._fig.patch(x, y, **kw)
+
+            elif s.is_generic:
+                if s.type == "markers":
+                    kw = merge({}, {"color": next(self._cl)}, s.rendering_kw)
+                    self._fig.scatter(*s.args, **kw)
+                elif s.type == "annotations":
+                    self._fig.add_layout(
+                        self.bokeh.models.LabelSet(*s.args, **s.rendering_kw))
+                elif s.type == "fill":
+                    kw = merge({}, {"fill_color": next(self._cl)}, s.rendering_kw)
+                    self._fig.varea(*s.args, **kw)
+                elif s.type == "rectangles":
+                    kw = merge({}, {"fill_color": next(self._cl)}, s.rendering_kw)
+                    glyph = self.bokeh.models.Rect(**kw)
+                    self._fig.add_glyph(*s.args, glyph)
 
             else:
                 raise NotImplementedError(
