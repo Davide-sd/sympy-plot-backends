@@ -1001,15 +1001,38 @@ def test_is_point_is_filled():
         is_point=True, is_filled=False)
     assert s.is_point and (not s.is_filled)
 
-def test_geometry_is_filled():
+
+def test_geometry_contour_is_filled():
     # verify that GeometrySeries exposes the is_filled attribute
-    x = symbols("x")
+    x, y = symbols("x, y")
+
+    expr = cos(x**2 + y**2)
+    ranges = (x, -2, 2), (y, -2, 2)
+
+    s = ContourSeries(expr, *ranges)
+    assert s.is_filled
+
+    s = ContourSeries(expr, *ranges, is_filled=True)
+    assert s.is_filled
+
+    s = ContourSeries(expr, *ranges, is_filled=False)
+    assert not s.is_filled
+
 
     s = GeometrySeries(Circle(Point(0, 0), 5), is_filled=False)
     assert not s.is_filled
 
     s = GeometrySeries(Circle(Point(0, 0), 5), is_filled=True)
     assert s.is_filled
+
+    s = ContourInteractiveSeries([expr], ranges)
+    assert s.is_filled
+
+    s = ContourInteractiveSeries([expr], ranges, is_filled=True)
+    assert s.is_filled
+
+    s = ContourInteractiveSeries([expr], ranges, is_filled=False)
+    assert not s.is_filled
 
     s = GeometryInteractiveSeries([Circle(Point(x, 0), 5)], [],
         params={x: 1}, is_filled=False)

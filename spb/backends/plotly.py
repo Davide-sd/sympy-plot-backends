@@ -422,11 +422,12 @@ class PlotlyBackend(Plot):
                 yy = yy[:, 0]
                 ckw = dict(
                     contours=dict(
-                        coloring=None,
-                        showlabels=False,
+                        coloring=None if s.is_filled else "lines",
+                        showlabels=False if s.is_filled else True,
                     ),
                     colorscale=next(self._cm),
                     colorbar=self._create_colorbar(ii, s.get_label(self._use_latex), show_2D_vectors),
+                    showscale=True if s.is_filled else False
                 )
                 kw = merge({}, ckw, s.rendering_kw)
                 self._fig.add_trace(go.Contour(x=xx, y=yy, z=zz, **kw))

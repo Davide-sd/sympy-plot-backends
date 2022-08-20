@@ -1295,18 +1295,19 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
 class ContourSeries(SurfaceOver2DRangeSeries):
     """Representation for a contour plot."""
 
+    is_3Dsurface = False
+    is_contour = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._allowed_keys += ["contour_kw"]
+        self._allowed_keys += ["contour_kw", "is_filled"]
+        self.is_filled = kwargs.get("is_filled", True)
 
         # NOTE: contour plots are used by plot_contour, plot_vector and
         # plot_complex_vector. By implementing contour_kw we are able to
         # quickly target the contour plot.
         self.rendering_kw = kwargs.get("contour_kw",
             kwargs.get("rendering_kw", dict()))
-
-    is_3Dsurface = False
-    is_contour = True
 
     def __str__(self):
         return ("contour: %s for " "%s over %s and %s over %s") % (
@@ -2088,11 +2089,13 @@ class SurfaceInteractiveSeries(InteractiveSeries):
 
 class ContourInteractiveSeries(SurfaceInteractiveSeries):
     """Representation for an interactive contour plot."""
+    _allowed_keys = SurfaceInteractiveSeries._allowed_keys + ["is_filled"]
     is_3Dsurface = False
     is_contour = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.is_filled = kwargs.get("is_filled", True)
 
         # NOTE: contour plots are used by plot_contour, plot_vector and
         # plot_complex_vector. By implementing contour_kw we are able to

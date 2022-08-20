@@ -801,6 +801,40 @@ def test_plot_contour():
             rendering_kw=dict()).process_series())
 
 
+def test_plot_contour_is_filled():
+    # verify that is_filled=True produces different results than
+    # is_filled=False
+    x, y = symbols("x, y")
+
+    _plot_contour = lambda B, is_filled: plot_contour(
+        cos(x ** 2 + y ** 2),
+        (x, -3, 3),
+        (y, -3, 3),
+        n=20,
+        backend=B,
+        show=False,
+        use_latex=False,
+        is_filled=is_filled
+    )
+
+    p1 = _plot_contour(MB, True)
+    p1.process_series()
+    p2 = _plot_contour(MB, False)
+    p2.process_series()
+    assert p1._handles[0][-1] is None
+    assert hasattr(p2._handles[0][-1], "__iter__")
+    assert len(p2._handles[0][-1]) > 0
+
+    p1 = _plot_contour(PB, True)
+    p2 = _plot_contour(PB, False)
+    assert p1.fig.data[0].showscale
+    assert p1.fig.data[0].contours.coloring is None
+    assert p1.fig.data[0].contours.showlabels is False
+    assert not p2.fig.data[0].showscale
+    assert p2.fig.data[0].contours.coloring == "lines"
+    assert p2.fig.data[0].contours.showlabels
+
+
 def test_plot_vector_2d_quivers():
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `contour_kw`/`quiver_kw` overrides the

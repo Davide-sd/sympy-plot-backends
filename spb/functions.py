@@ -1984,8 +1984,8 @@ def plot_contour(*args, **kwargs):
     """
     Draws contour plot of a function of two variables.
 
-    This function signature is identical to `plot3d`: refer to its
-    documentation for a list of available argument and keyword arguments.
+    This function signature is almost identical to `plot3d`: refer to its
+    documentation for a full list of available argument and keyword arguments.
 
     Parameters
     ==========
@@ -1995,6 +1995,10 @@ def plot_contour(*args, **kwargs):
         being used. Read that backend's documentation to find out the
         possible values.
 
+    is_filled : bool, optional
+        Choose between filled contours or line contours. Default to True
+        (filled contours).
+
     Examples
     ========
 
@@ -2003,11 +2007,11 @@ def plot_contour(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos, exp
+       >>> from sympy import symbols, cos, exp, sin, pi
        >>> from spb.functions import plot_contour
        >>> x, y = symbols('x, y')
 
-    Contour of a function of two variables.
+    Filled contours of a function of two variables.
 
     .. plot::
        :context: close-figs
@@ -2018,6 +2022,46 @@ def plot_contour(*args, **kwargs):
        ...      (x, -5, 5), (y, -5, 5))
        Plot object containing:
        [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+
+    Filled contours of a function of two variables with a custom label in the
+    colorbar.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> expr = 5 * (cos(x) - 0.2 * sin(y))**2 + 5 * (-0.2 * cos(x) + sin(y))**2
+       >>> plot_contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), "z")
+       Plot object containing:
+       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+
+    Line contours of a function of two variables.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> expr = 5 * (cos(x) - 0.2 * sin(y))**2 + 5 * (-0.2 * cos(x) + sin(y))**2
+       >>> plot_contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), is_filled=False)
+       Plot object containing:
+       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+
+    Combining together filled and line contours:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> expr = 5 * (cos(x) - 0.2 * sin(y))**2 + 5 * (-0.2 * cos(x) + sin(y))**2
+       >>> p1 = plot_contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), "z",
+       ...      {"cmap": "coolwarm"}, show=False, grid=False)
+       >>> p2 = plot_contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi),
+       ...      {"colors": "k", "cmap": None, "linewidths": 0.75},
+       ...      show=False, is_filled=False)
+       >>> (p1 + p2).show()
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.

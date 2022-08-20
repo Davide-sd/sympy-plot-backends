@@ -5,6 +5,15 @@
 v1.3.1
 ======
 
+* Reintroduced ``MayaviBackend`` to plot symbolic expressions with Mayavi.
+  Note that interactive widgets are still not supported by this backend.
+
+* ``plot_contour`` is now able to create filled contours or line contours on
+  backends that supports such distinction. Set the ``is_filled`` keyword
+  argument to choose the behaviour.
+
+* Implemented back-compatibility-related features with SymPy.
+
 * Fixed bugs with ``PlaneSeries``:
 
   * Data generation for vertical planes is now fixed.
@@ -15,10 +24,10 @@ v1.3.1
   Numpy's ``meshgrid`` with ``indexing='ij'``. This improves the generation of
   3D streamlines.
 
-* Fixed bug with ``K3DBackend`` and ``plot3d_implicit``.
+* Fixed bug with ``plot3d`` and ``plot_contour``: when ``params`` is provided
+  the specified backend will be instantiated.
 
-* Reintroduced ``MayaviBackend`` to plot symbolic expressions with Mayavi.
-  Note that interactive widgets are still not supported by this backend.
+* Fixed bug with ``K3DBackend`` and ``plot3d_implicit``.
 
 
 v1.3.0

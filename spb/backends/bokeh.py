@@ -2,7 +2,7 @@ import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from sympy.external import import_module
-
+import warnings
 
 def compute_streamlines(x, y, u, v, density=1.0):
     """Return streamlines of a vector flow.
@@ -442,6 +442,9 @@ class BokehBackend(Plot):
                 cm = next(self._cm)
                 ckw = dict(palette=cm)
                 kw = merge({}, ckw, s.rendering_kw)
+
+                if not s.is_filled:
+                    warnings.warn("Bokeh does not support line contours.")
 
                 self._fig.image(
                     image=[z],
