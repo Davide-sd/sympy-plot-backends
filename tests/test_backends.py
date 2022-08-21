@@ -1556,7 +1556,7 @@ def test_plot_list_is_filled_false():
     p = _plot_list(BB)
     assert len(p.series) == 1
     f = p.fig
-    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Circle)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Scatter)
     assert f.renderers[0].glyph.line_color != f.renderers[0].glyph.fill_color
 
     # K3D doesn't support 2D plots
@@ -1591,7 +1591,7 @@ def test_plot_list_is_filled_true():
     p = _plot_list(BB)
     assert len(p.series) == 1
     f = p.fig
-    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Circle)
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Scatter)
     assert f.renderers[0].glyph.line_color == f.renderers[0].glyph.fill_color
 
     # K3D doesn't support 2D plots
@@ -1763,12 +1763,12 @@ def test_plot_geometry_2():
     p = _plot_geometry(BB, False)
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Line)]) == 4
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)]) == 1
-    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Circle)]) == 1
+    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Scatter)]) == 1
     p = _plot_geometry(BB, True)
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Line)]) == 1
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Patch)]) == 3
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)]) == 1
-    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Circle)]) == 1
+    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Scatter)]) == 1
 
 
 def test_save():

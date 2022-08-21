@@ -193,8 +193,12 @@ class BokehBackend(Plot):
         contours, quivers, streamlines...
         To learn more about customization:
 
-        * Refer to [#fn1]_ to customize lines plots. Default to:
-          ``dict(line_width = 2)``.
+        * Refer to:
+
+          - [#fn1]_ to customize lines plots. Default to:
+            ``dict(line_width = 2)``.
+          - [#fn3]_ to customize scatter plots. Default to:
+            ``dict(marker = "circle")``.
 
         * Default options for quiver plots:
 
@@ -247,8 +251,9 @@ class BokehBackend(Plot):
 
     References
     ==========
-    .. [#fn1] https://docs.bokeh.org/en/latest/docs/reference/plotting.html?highlight=line#bokeh.plotting.Figure.line
+    .. [#fn1] https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
     .. [#fn2] https://docs.bokeh.org/en/latest/docs/reference/themes.html
+    .. [#fn3] https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
 
 
     See also
@@ -426,10 +431,11 @@ class BokehBackend(Plot):
                         self._fig.line("xs", "ys", source=source, **kw)
                     else:
                         lkw["size"] = 8
+                        lkw["marker"] = "circle"
                         if not s.is_filled:
                             lkw["fill_color"] = "white"
                         kw = merge({}, lkw, s.rendering_kw)
-                        self._fig.circle("xs", "ys", source=source, **kw)
+                        self._fig.scatter("xs", "ys", source=source, **kw)
 
             elif s.is_contour and (not s.is_complex):
                 if s.is_polar:
