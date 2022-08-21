@@ -5,3 +5,4 @@ jupyter-sphinx
 nbsphinx
 nbsphinx_link
 sphinx-rtd-theme
+vtk

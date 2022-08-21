@@ -849,7 +849,7 @@ def plot_parametric(*args, **kwargs):
        :include-source: True
 
        >>> from sympy import symbols, cos, sin, pi
-       >>> from spb.functions import plot_parametric
+       >>> from spb import plot_parametric
        >>> u, v = symbols('u, v')
 
     A parametric plot of a single expression (a Hypotrochoid using an equal
@@ -1141,7 +1141,7 @@ def plot3d_parametric_line(*args, **kwargs):
        :include-source: True
 
        >>> from sympy import symbols, cos, sin, pi
-       >>> from spb.functions import plot3d_parametric_line
+       >>> from spb import plot3d_parametric_line
        >>> u, v = symbols('u, v')
 
     Single plot.
@@ -1463,7 +1463,7 @@ def plot3d(*args, **kwargs):
        :include-source: True
 
        >>> from sympy import symbols, cos, sin, pi, exp
-       >>> from spb.functions import plot3d
+       >>> from spb import plot3d
        >>> x, y = symbols('x y')
 
     Single plot
@@ -1734,7 +1734,7 @@ def plot3d_parametric_surface(*args, **kwargs):
        :include-source: True
 
        >>> from sympy import symbols, cos, sin, pi
-       >>> from spb.functions import plot3d_parametric_surface
+       >>> from spb import plot3d_parametric_surface
        >>> u, v = symbols('u v')
 
     Single plot with u/v directions discretized with 200 points, showing a
@@ -2007,8 +2007,8 @@ def plot_contour(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos, exp, sin, pi
-       >>> from spb.functions import plot_contour
+       >>> from sympy import symbols, cos, exp, sin, pi, Eq, Add
+       >>> from spb import plot_contour
        >>> x, y = symbols('x, y')
 
     Filled contours of a function of two variables.
@@ -2023,19 +2023,6 @@ def plot_contour(*args, **kwargs):
        Plot object containing:
        [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
 
-    Filled contours of a function of two variables with a custom label in the
-    colorbar.
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-       >>> expr = 5 * (cos(x) - 0.2 * sin(y))**2 + 5 * (-0.2 * cos(x) + sin(y))**2
-       >>> plot_contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), "z")
-       Plot object containing:
-       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
-
     Line contours of a function of two variables.
 
     .. plot::
@@ -2048,7 +2035,8 @@ def plot_contour(*args, **kwargs):
        Plot object containing:
        [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
 
-    Combining together filled and line contours:
+    Combining together filled and line contours. Use a custom label on the
+    colorbar of the filled contour.
 
     .. plot::
        :context: close-figs
@@ -2062,6 +2050,19 @@ def plot_contour(*args, **kwargs):
        ...      {"colors": "k", "cmap": None, "linewidths": 0.75},
        ...      show=False, is_filled=False)
        >>> (p1 + p2).show()
+
+    Visually inspect the solutions of a system of 2 non-linear equations.
+    The intersections between the contour lines represent the solutions.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> eq1 = Eq((cos(x) - sin(y) / 2)**2 + 3 * (-sin(x) + cos(y) / 2)**2, 2)
+       >>> eq2 = Eq((cos(x) - 2 * sin(y))**2 - (sin(x) + 2 * cos(y))**2, 3)
+       >>> plot_contour(eq1.rewrite(Add), eq2.rewrite(Add), {"levels": [0]},
+       ...      (x, 0, 2 * pi), (y, 0, 2 * pi), is_filled=False)
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -2183,7 +2184,7 @@ def plot_implicit(*args, **kwargs):
         :include-source: True
 
         >>> from sympy import symbols, Eq, And, sin, pi
-        >>> from spb.functions import plot_implicit
+        >>> from spb import plot_implicit
         >>> x, y = symbols('x y')
 
     Providing only the symbol for the horizontal axis:
@@ -2324,7 +2325,7 @@ def plot_polar(*args, **kwargs):
         :include-source: True
 
         >>> from sympy import symbols, sin, pi
-        >>> from spb.functions import plot_polar
+        >>> from spb import plot_polar
         >>> x = symbols('x')
 
 
@@ -2459,7 +2460,7 @@ def plot_geometry(*args, **kwargs):
         >>> from sympy import (symbols, Circle, Ellipse, Polygon,
         ...      Curve, Segment, Point2D, Point3D, Line3D, Plane,
         ...      Rational, pi, Point, cos, sin)
-        >>> from spb.functions import plot_geometry
+        >>> from spb import plot_geometry
         >>> x, y, z = symbols('x, y, z')
 
     Plot several numeric geometric entitiesy. By default, circles, ellipses and

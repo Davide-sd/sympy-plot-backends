@@ -197,7 +197,7 @@ class BokehBackend(Plot):
 
           - [#fn1]_ to customize lines plots. Default to:
             ``dict(line_width = 2)``.
-          - [#fn3]_ to customize scatter plots. Default to:
+          - [#fn6]_ to customize scatter plots. Default to:
             ``dict(marker = "circle")``.
 
         * Default options for quiver plots:
@@ -253,7 +253,7 @@ class BokehBackend(Plot):
     ==========
     .. [#fn1] https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
     .. [#fn2] https://docs.bokeh.org/en/latest/docs/reference/themes.html
-    .. [#fn3] https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+    .. [#fn6] https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
 
 
     See also

@@ -529,7 +529,6 @@ def plot_vector(*args, **kwargs):
     .. code-block:: python
 
        from sympy import *
-       from spb import *
        x, y, u = symbols("x y u")
        plot_vector(
            [-sin(u * y), cos(x)], (x, -3, 3), (y, -3, 3),

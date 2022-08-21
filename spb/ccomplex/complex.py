@@ -548,7 +548,6 @@ def plot_real_imag(*args, **kwargs):
     .. code-block:: python
 
        from sympy import *
-       from spb import *
        x, u = symbols("x, u")
        plot_real_imag(sqrt(x) * exp(-u * x**2), (x, -3, 3),
            params={u: (1, 0, 2)}, ylim=(-0.25, 2))
@@ -584,7 +583,6 @@ def plot_real_imag(*args, **kwargs):
     .. code-block:: python
 
        from sympy import *
-       from spb import *
        x, u = symbols("x, u")
        plot_real_imag(
            sqrt(x) * exp(u * x), (x, -3-3j, 3+3j),
@@ -857,7 +855,6 @@ def plot_complex(*args, **kwargs):
     .. code-block:: python
 
        from sympy import *
-       from spb import *
        x, u = symbols("x, u")
        plot_complex(
            exp(I * x) * I * sin(u * x), "f", (x, -5, 5),
@@ -894,7 +891,6 @@ def plot_complex(*args, **kwargs):
     .. code-block:: python
 
        from sympy import *
-       from spb import *
        x, u = symbols("x, u")
        plot_complex(
            gamma(u * z), (z, -3 - 3*I, 3 + 3*I),
@@ -1087,7 +1083,6 @@ def plot_complex_list(*args, **kwargs):
     .. code-block:: python
 
        from sympy import *
-       from spb import *
        z, u = symbols("z u")
        expr1 = z * exp(2 * pi * I * z)
        expr2 = u * expr1
@@ -1316,7 +1311,6 @@ def plot_complex_vector(*args, **kwargs):
     .. code-block:: python
 
        from sympy import *
-       from spb import *
        z, u = symbols("z u")
        plot_complex_vector(
            log(gamma(u * z)), (z, -5 - 5j, 5 + 5j),
