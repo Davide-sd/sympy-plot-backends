@@ -6,3 +6,4 @@ nbsphinx
 nbsphinx_link
 sphinx-rtd-theme
 vtk
+ipywidgets<8,>=7.6.0
