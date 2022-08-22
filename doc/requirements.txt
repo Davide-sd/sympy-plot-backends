@@ -5,5 +5,7 @@ jupyter-sphinx
 nbsphinx
 nbsphinx_link
 sphinx-rtd-theme
+# to be able to install mayavi we need
 vtk
+# to satidfy ipympl requirements we need
 ipywidgets<8,>=7.6.0

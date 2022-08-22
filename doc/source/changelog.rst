@@ -5,12 +5,14 @@
 v1.3.1
 ======
 
-* Reintroduced ``MayaviBackend`` to plot symbolic expressions with Mayavi.
+* Reintroduced ``MayaviBackend`` to plot 3D symbolic expressions with Mayavi.
   Note that interactive widgets are still not supported by this backend.
 
 * ``plot_contour`` is now able to create filled contours or line contours on
   backends that supports such distinction. Set the ``is_filled`` keyword
   argument to choose the behaviour.
+
+* Implemented interactive widget support for ``plot_list``.
 
 * Implemented back-compatibility-related features with SymPy.
 

@@ -18,9 +18,12 @@ The following functions are exposed by this module:
   angle.
 * ``plot_list``: visualize numerical data.
 * ``plot_parametric``: visualize a 2D parametric curve.
+* ``plot_contour``: visualized filled or line contours of a function of two
+  variables.
 * ``plot3d``: visualize a function of two variables.
 * ``plot3d_parametric_line``: visualize a 3D parametric curve.
 * ``plot3d_parametric_surface``: visualize a 3D parametric surface.
+* ``plot3d_implicit``: visualize isosurfaces of a function.
 * ``plot_geometry``: visualize entities from the `sympy.geometry` module.
 * ``plot_implicit``: visualize implicit equations / inequalities.
 * ``plot_vector``: visualize 2D/3D vector fields with quivers or streamlines.
@@ -31,9 +34,6 @@ The following functions are exposed by this module:
 * ``plot_complex_list``: visualize list of complex numbers.
 * ``plot_complex``: visualize the absolute value of a complex function
   colored by its argument.
-* ``get_plot_data``: easily extract the numerical data from symbolic
-  expressions, which can later be used to create custom plots with any
-  plotting library.
 * ``plotgrid``: combine multiple plots into a grid-like layout. It works with
   Matplotlib, Bokeh and Plotly.
 * ``iplot``: create parametric-interactive plots using widgets (sliders,
@@ -46,11 +46,15 @@ It is also possible to combine different plots together.
 Backends
 ========
 
-This module allows the user to chose between 4 different backends (plotting
-libraries): `Matplotlib <https://matplotlib.org/>`_, `Plotly <https://plotly.com/>`_,
-`Bokeh <https://github.com/bokeh/bokeh>`_, `K3D-Jupyter <https://github.com/K3D-tools/K3D-jupyter>`_.
+This module allows the user to chose between 5 different backends (plotting
+libraries):
+`Matplotlib <https://matplotlib.org/>`_,
+`Plotly <https://plotly.com/>`_,
+`Bokeh <https://github.com/bokeh/bokeh>`_,
+`K3D-Jupyter <https://github.com/K3D-tools/K3D-jupyter>`_.
+`Mayavi <https://docs.enthought.com/mayavi/mayavi/>`_.
 
-The 2 most important reasons for using a different backend are:
+The 3 most important reasons for supporting multiple backends are:
 
 #. **Better interactive** experience (explored in the tutorial section), which
    translates to better data exploration and visualization (especially when
@@ -61,6 +65,11 @@ The 2 most important reasons for using a different backend are:
    use the figure object to add numerical (or experimental) results using the
    commands associated to the specific plotting library.
 
+#. **In the Python ecosystem there is no perfect plotting library**. Each one
+   is great at something and terrible at something else. Supporting multiple
+   backends allows the plotting module to have a greater capability of
+   visualizing different kinds of symbolic expressions.
+
 More information about the backends can be found at:
 :doc:`Backends </modules/backends/index>` .
 
@@ -69,7 +78,7 @@ Examples
 ========
 
 Originally, the module has been developed with SymPy in mind, however it has
-evolved to the point where we lambda functions can be used instead of symbolic
+evolved to the point where lambda functions can be used instead of symbolic
 expressions.
 
 The following code blocks shows a few examples about the capabilities of
@@ -128,8 +137,8 @@ Polar plot with Matplotlib:
 
 3D plot with K3D-Jupyter and polar discretization. Two identical expressions
 are going to be plotted, one will display the mesh with a solid color, the
-other will display the wireframe. Customization on the colors, solid/wireframe
-can easily be done after the plot is created:
+other will display the wireframe. Customization on the colors,
+surface/wireframe can easily be done after the plot is created:
 
 .. code-block:: python
 
@@ -319,8 +328,8 @@ Differences with sympy.plotting
   we can customize the plot even further. In particular:
 
   * it is possible to set a custom label directly from any plot function.
-  * by setting specific dictionaries, the full potential of each backend can be
-    used by providing backend-specific keyword arguments.
+  * the full potential of each backend can be accessed by providing
+    dictionaries containing backend-specific keyword arguments.
 
   .. code-block:: python
 

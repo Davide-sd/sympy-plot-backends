@@ -12,7 +12,7 @@ Backends
    k3d.rst
    mayavi.rst
 
-This module allows the user to chose between 4 different backends.
+This module allows the user to chose between 5 different backends.
 The use case is summarized in the following table.
 
 +------------------------+-----------+-------+--------+------+--------+
@@ -38,6 +38,7 @@ In particular:
   `ipympl <https://github.com/matplotlib/ipympl>`_, interactivity falls behind
   in comparison to other plotting libraries. More so, ipympl causes the
   rendering of 3D plots to be very slow.
+
 * Plotly is another general backend supporting many kinds of plots.
   Interactivity and data exploration are great, however it does have a few
   limitations:
@@ -46,6 +47,7 @@ In particular:
     the DOM of the notebook.
   * Lack of gradient lines.
   * Doesn't support ``plot_implicit``.
+  * Contour capabilities are limited in comparison to Matplotlib.
   * No wireframe support for 3D plots.
 
 * Bokeh: interactivity and data exploration are great. It supports auto-update
@@ -59,13 +61,13 @@ In particular:
   performance: we can increase significantly the number of discretization
   points obtaining smoother plots. It can only be used with Jupyter Notebook,
   whereas the other backends can also be used with IPython or a simple Python
-  interpreter. This backends use an aspect ratio of 1 on all axis: it doedn't
+  interpreter. This backends use an aspect ratio of 1 on all axis: it doesn't
   scale the visualization. What you see is the object as you would see it in
   reality.
 
 * Mayavi only support 3D plots. Differently from K3D, a custom aspect ratio
   can be used. However, it offers much more customization options after the
-  plot as been created.
+  plot has been created.
 
 We can choose the appropriate backend for our use case at runtime by setting the keyword argument ``backend=`` in the function call. We can also
 set the default backends for 2D and 3D plots in a configuration file by using
