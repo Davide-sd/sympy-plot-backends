@@ -2,7 +2,7 @@
  Changelog
 ==========
 
-v1.3.1
+v1.4.0
 ======
 
 * Reintroduced ``MayaviBackend`` to plot 3D symbolic expressions with Mayavi.
