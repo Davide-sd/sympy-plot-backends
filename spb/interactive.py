@@ -690,7 +690,13 @@ class InteractivePlot(DynamicParam, PanelLayout):
         # create the series and apply the global labels and rendering keywords
         labels = kwargs.pop("label", [])
         rendering_kw = kwargs.pop("rendering_kw", None)
-        series = create_series(*args, iplot=self, **kwargs)
+        # NOTE: plot_list and List2DSeries are different then the other series.
+        # There is no List2DInteractiveSeries (as a design choice, for
+        # simplicity). Hence, that function is going to create the necessary
+        # series.
+        series = kwargs.pop("series", None)
+        if series is None:
+            series = create_series(*args, iplot=self, **kwargs)
         _set_labels(series, labels, rendering_kw)
 
         if kwargs.get("is_complex", False):

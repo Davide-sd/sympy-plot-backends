@@ -825,9 +825,9 @@ def test_functions_iplot_integration():
         params={u: (1, 0, 2)}, show=False)
     assert isinstance(p, InteractivePlot)
 
-    p = lambda: plot_list([1, 2, 3], [4, 5, 6],
+    p = plot_list([1, 2, 3], [4, 5, 6],
         params={u: (1, 0, 2)}, show=False)
-    raises(NotImplementedError, p)
+    assert isinstance(p, InteractivePlot)
 
     p = lambda: plot_piecewise(
         u * Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10),

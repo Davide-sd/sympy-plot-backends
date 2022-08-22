@@ -627,7 +627,7 @@ def plot(*args, **kwargs):
 
     plot_polar, plot_parametric, plot_contour, plot3d, plot3d_parametric_line,
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, iplot
+    plot3d_implicit, plot_list, iplot
 
     """
     args = _plot_sympify(args)
@@ -936,7 +936,7 @@ def plot_parametric(*args, **kwargs):
 
     plot, plot_polar, plot_contour, plot3d, plot3d_parametric_line,
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, iplot
+    plot3d_implicit, plot_list, iplot
 
     """
     args = _plot_sympify(args)
@@ -1208,7 +1208,7 @@ def plot3d_parametric_line(*args, **kwargs):
 
     plot, plot_polar, plot3d, plot_contour, plot3d_parametric_surface,
     plot_implicit, plot_geometry, plot_parametric, plot_piecewise,
-    plot3d_implicit, iplot
+    plot3d_implicit, plot_list, iplot
 
     """
     args = _plot_sympify(args)
@@ -1570,7 +1570,7 @@ def plot3d(*args, **kwargs):
 
     plot, plot_polar, plot_contour, plot_parametric, plot3d_parametric_line,
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, iplot
+    plot3d_implicit, plot_list, iplot
 
     """
     Backend = kwargs.pop("backend", THREE_D_B)
@@ -1776,7 +1776,7 @@ def plot3d_parametric_surface(*args, **kwargs):
 
     plot, plot_polar, plot_parametric, plot3d, plot_contour,
     plot3d_parametric_line, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, iplot
+    plot3d_implicit, plot_list, iplot
 
     """
     args = _plot_sympify(args)
@@ -1953,7 +1953,7 @@ def plot3d_implicit(*args, **kwargs):
 
     plot, plot_polar, plot_parametric, plot3d, plot_contour,
     plot3d_parametric_line, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_parametric_surface
+    plot3d_parametric_surface, plot_list
 
     """
     if kwargs.pop("params", None) is not None:
@@ -2081,7 +2081,7 @@ def plot_contour(*args, **kwargs):
 
     plot, plot_polar, plot_parametric, plot3d, plot3d_parametric_line,
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, iplot
+    plot3d_implicit, plot_list, iplot
 
     """
     Backend = kwargs.pop("backend", TWO_D_B)
@@ -2254,7 +2254,7 @@ def plot_implicit(*args, **kwargs):
     ========
 
     plot, plot_polar, plot3d, plot_contour, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_geometry, plot3d_implicit
+    plot3d_parametric_surface, plot_geometry, plot3d_implicit, plot_list
 
     """
     if kwargs.pop("params", None) is not None:
@@ -2341,7 +2341,7 @@ def plot_polar(*args, **kwargs):
 
     plot, plot_parametric, plot3d, plot_contour, plot3d_parametric_line,
     plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, iplot
+    plot3d_implicit, plot_list, iplot
 
     """
     kwargs["is_polar"] = True
@@ -2570,7 +2570,7 @@ def plot_geometry(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_piecewise, plot_polar, iplot
+    plot, plot_piecewise, plot_polar, plot_list, iplot
 
     """
     args = _plot_sympify(args)
@@ -2604,7 +2604,6 @@ def plot_geometry(*args, **kwargs):
     if is_interactive:
         return _create_interactive_plot(*plot_expr, **kwargs)
 
-    # TODO: apply line_kw and fill_kw
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
     _set_labels(series, labels, rendering_kw)
@@ -2671,6 +2670,11 @@ def plot_list(*args, **kwargs):
     label : str or list/tuple, optional
         The label to be shown in the legend. The number of labels must be
         equal to the number of expressions.
+
+    params : dict
+        A dictionary mapping symbols to parameters. This keyword argument
+        enables the interactive-widgets plot. Learn more by reading the
+        documentation of ``iplot``.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -2742,28 +2746,64 @@ def plot_list(*args, **kwargs):
        Plot object containing:
        [0]: list plot
 
-    Scatter plot of the coordinates of multiple functions:
+    Plot individual points with custom labels:
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> xx = [t / 100 * 6 - 3 for t in list(range(101))]
+       >>> plot_list(([0], [0], "A"), ([1], [1], "B"), ([2], [0], "C"),
+       ...     is_point=True, is_filled=True)
+       Plot object containing:
+       [0]: list plot
+       [1]: list plot
+       [2]: list plot
+
+    Scatter plot of the coordinates of multiple functions, with custom
+    rendering keywords:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> xx = [t / 70 * 6 - 3 for t in list(range(71))]
        >>> yy1 = [cos(x).evalf(subs={x: t}) for t in xx]
        >>> yy2 = [sin(x).evalf(subs={x: t}) for t in xx]
-       >>> plot_list((xx, yy1, "cos"), (xx, yy2, "sin"), is_point=True)
+       >>> plot_list(
+       ...     (xx, yy1, "cos"),
+       ...     (xx, yy2, "sin", {"marker": "*", "markerfacecolor": None}),
+       ...     is_point=True)
        Plot object containing:
        [0]: list plot
        [1]: list plot
 
-    """
-    if kwargs.pop("params", None) is not None:
-        raise NotImplementedError(
-            "plot_list doesn't support interactive widgets.")
+    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
+    about the ``params`` dictionary.
 
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
+    .. code-block:: python
+
+       from sympy import *
+       from spb import *
+       x, t = symbols("x, t")
+       params = {t: (0, 0, 2*pi)}
+       # plot trajectories
+       p1 = plot_parametric(
+           (cos(x), sin(x), (x, 0, 2*pi), {"linestyle": ":"}),
+           (cos(2 * x) / 2, sin(2 * x) / 2, (x, 0, pi), {"linestyle": ":"}),
+           params=params, use_cm=False, aspect="equal", show=False)
+       # plot points
+       p2 = plot_list(
+           ([cos(t)], [sin(t)], "A"),
+           ([cos(2 * t) / 2], [sin(2 * t) / 2], "B"),
+           rendering_kw={"marker": "s", "markerfacecolor": None},
+           params=params, is_point=True, show=False)
+       (p1 + p2).show()
+
+    """
+    g_labels = kwargs.pop("label", [])
+    g_rendering_kw = kwargs.pop("rendering_kw", None)
     series = []
 
     def is_tuple(t):
@@ -2780,6 +2820,15 @@ def plot_list(*args, **kwargs):
         # in case we are plotting a single line
         args = [args]
 
+    params = kwargs.pop("params", None)
+    mod_params = None
+    if params:
+        # NOTE: it was easier to not implement a List2DInteractiveSeries.
+        # Hence, List2DSeries can be interactive (if params is provided)
+        # or not. If it is interactive, we must provide ``params`` with the
+        # correct form, meaning mapping symbols to values.
+        mod_params = {k: v[0] for k, v in params.items()}
+
     for a in args:
         if not isinstance(a, (list, tuple)):
             raise TypeError(
@@ -2795,10 +2844,15 @@ def plot_list(*args, **kwargs):
         rendering_kw = None if not rendering_kw else rendering_kw[0]
 
         kw = kwargs.copy()
-        kw["line_kw"] = rendering_kw
+        kw["rendering_kw"] = rendering_kw
+        kw["params"] = mod_params
         series.append(List2DSeries(*a[:2], label, **kw))
 
-    _set_labels(series, labels, rendering_kw)
+    _set_labels(series, g_labels, g_rendering_kw)
+    if params:
+        kwargs["series"] = series
+        kwargs["params"] = params
+        return _create_interactive_plot(**kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)

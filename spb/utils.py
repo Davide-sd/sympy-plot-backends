@@ -458,7 +458,7 @@ def _validate_kwargs(backend_obj, **kwargs):
     # Series and Backend.
     allowed_keys = allowed_keys.union(["params", "layout", "ncols",
         "use_latex", "throttled", "servable", "custom_css", "pane_kw",
-        "is_iplot"])
+        "is_iplot", "series"])
     user_provided_keys = set(kwargs.keys())
     unused_keys = user_provided_keys.difference(allowed_keys)
     if len(unused_keys) > 0:

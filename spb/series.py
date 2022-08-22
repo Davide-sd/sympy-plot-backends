@@ -598,6 +598,26 @@ class BaseSeries:
         return args
 
 
+class ParamsMixin:
+    @property
+    def params(self):
+        """Get or set the current parameters dictionary.
+
+        Parameters
+        ==========
+
+        p : dict
+
+            * key: symbol associated to the parameter
+            * val: the numeric value
+        """
+        return self._params
+
+    @params.setter
+    def params(self, p):
+        self._params = p
+
+
 class Line2DBaseSeries(BaseSeries):
     """A base class for 2D lines."""
 
@@ -665,7 +685,7 @@ class Line2DBaseSeries(BaseSeries):
         return points
 
 
-class List2DSeries(Line2DBaseSeries):
+class List2DSeries(Line2DBaseSeries, ParamsMixin):
     """Representation for a line consisting of list of points."""
 
     _allowed_keys = ["adaptive", "adaptive_goal", "color_func", "is_filled",
@@ -676,18 +696,33 @@ class List2DSeries(Line2DBaseSeries):
     def __init__(self, list_x, list_y, label="", **kwargs):
         super().__init__(**kwargs)
         np = import_module('numpy')
-        self._block_lambda_functions(list_x, list_y)
-        self.list_x = np.array(list_x, dtype=np.float64)
-        self.list_y = np.array(list_y, dtype=np.float64)
         if len(list_x) != len(list_y):
             raise ValueError(
                 "The two lists of coordinates must have the same "
                 "number of elements.\n"
-                "Received: len(list_x) = {} ".format(len(self.list_x)) +
-                "and len(list_y) = {}".format(len(self.list_y))
+                "Received: len(list_x) = {} ".format(len(list_x)) +
+                "and len(list_y) = {}".format(len(list_y))
             )
+        self._block_lambda_functions(list_x, list_y)
+        self._params = kwargs.get("params", None)
+        check = lambda l: [isinstance(t, Expr) and (not t.is_number) for t in l]
+        if any(check(list_x) + check(list_y)):
+            if not self.params:
+                raise TypeError("Some or all elements of the provided lists "
+                    "are symbolic expressions, but the ``params`` dictionary "
+                    "was not provided. This operation mode is not supported.")
+            self.list_x = [sympify(t) for t in list_x]
+            self.list_y = [sympify(t) for t in list_y]
+            self.is_interactive = True
+            InteractiveSeries._check_fs(self, self.list_x + self.list_y,
+                None, label, self._params)
+        else:
+            self.list_x = np.array(list_x, dtype=np.float64)
+            self.list_y = np.array(list_y, dtype=np.float64)
+
         self.is_polar = kwargs.get("is_polar", False)
         self.label = label
+        self.rendering_kw = kwargs.get("rendering_kw", dict())
 
     def get_expr(self):
         return self.list_x, self.list_y
@@ -697,7 +732,13 @@ class List2DSeries(Line2DBaseSeries):
 
     def _get_points(self):
         """Returns coordinates that needs to be postprocessed."""
-        return self.list_x, self.list_y
+        if not self.is_interactive:
+            return self.list_x, self.list_y
+
+        np = import_module('numpy')
+        lx = [t.evalf(subs=self.params) for t in self.list_x]
+        ly = [t.evalf(subs=self.params) for t in self.list_y]
+        return np.array(lx, dtype=float), np.array(ly, dtype=float)
 
 
 class LineOver1DRangeSeries(Line2DBaseSeries):
@@ -1653,7 +1694,7 @@ class Implicit3DSeries(SurfaceBaseSeries):
         return mesh_x, mesh_y, mesh_z, re_v
 
 
-class InteractiveSeries(BaseSeries):
+class InteractiveSeries(BaseSeries, ParamsMixin):
     """Base class for interactive series, in which the expressions can be
     either a line, a surface (parametric or not), a vector field, ...
     On top of the usual ranges (x, y or u, v, which must be provided), the
@@ -1816,25 +1857,6 @@ class InteractiveSeries(BaseSeries):
         meshes = np.meshgrid(*discretizations,
             indexing="xy" if not self.is_3Dvector else "ij")
         self.ranges = {k: v for k, v in zip(discr_symbols, meshes)}
-
-
-    @property
-    def params(self):
-        """Get or set the current parameters dictionary.
-
-        Parameters
-        ==========
-
-        p : dict
-
-            * key: symbol associated to the parameter
-            * val: the numeric value
-        """
-        return self._params
-
-    @params.setter
-    def params(self, p):
-        self._params = p
 
     def _str(self, series_type):
         np = import_module('numpy')

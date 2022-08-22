@@ -1270,6 +1270,26 @@ def test_interactive():
     do_test(s1.get_data(), s2.get_data())
 
 
+def test_list2dseries_interactive():
+    # As a design choice (for simplicity), there is no List2DInteractiveSeries.
+    # Instead, List2DSeries can be interactive if ``params`` is provided.
+
+    x, y, u = symbols("x, y, u")
+
+    s = List2DSeries([1, 2, 3], [1, 2, 3])
+    assert not s.is_interactive
+
+    # symbolic expressions as coordinates, but no ``params``
+    raises(TypeError, lambda: List2DSeries([cos(x)], [sin(x)]))
+
+    # too few parameters
+    raises(ValueError,
+        lambda: List2DSeries([cos(x), y], [sin(x), 2], params={u: 1}))
+
+    s = List2DSeries([cos(x)], [sin(x)], params={x: 1})
+    assert s.is_interactive
+
+
 def test_mpmath():
     # test that the argument of complex functions evaluated with mpmath
     # might be different than the one computed with Numpy (different
