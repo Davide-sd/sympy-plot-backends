@@ -51,6 +51,21 @@ unset_show()
 #
 
 
+def test_plot3d_plot_contour():
+    # verify that these functions are able to deal with base scalars
+
+    C = CoordSys3D("")
+    x, y, z = C.base_scalars()
+    plot_contour(cos(x * y), (x, -2, 2), (y, -2, 2),
+        use_latex=True, show=False)
+    plot_contour(cos(x * y), (x, -2, 2), (y, -2, 2),
+        use_latex=False, show=False)
+    plot3d(cos(x * y), (x, -2, 2), (y, -2, 2),
+        use_latex=True, show=False)
+    plot3d(cos(x * y), (x, -2, 2), (y, -2, 2),
+        use_latex=False, show=False)
+
+
 def test_plot_vector():
     # verify that `plot_vector()` generates the correct data series
 
