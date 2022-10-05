@@ -299,7 +299,6 @@ class PlotlyBackend(Plot):
                             ),
                             size=6,
                             showscale=self.legend and s.use_cm,
-                            colorbar=self._create_colorbar(ii, s.get_label(self._use_latex), True),
                         ),
                         customdata=param,
                         hovertemplate=(
@@ -308,6 +307,16 @@ class PlotlyBackend(Plot):
                             else "x: %{x}<br />y: %{y}<br />Arg: %{customdata}"
                         ),
                     )
+                    if lkw["marker"]["showscale"]:
+                        # only add a colorbar if required.
+
+                        # TODO: when plotting many (14 or more) parametric
+                        # expressions, each one requiring a colorbar, it might
+                        # happens that the horizontal space required by all
+                        # colorbars is greater than the available figure width.
+                        # That raises a strange error.
+                        lkw["marker"]["colorbar"] = self._create_colorbar(ii, s.get_label(self._use_latex), True)
+
                     kw = merge({}, lkw, s.rendering_kw)
                     self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
                 else:
@@ -355,15 +364,24 @@ class PlotlyBackend(Plot):
                             ),
                             color=param,
                             showscale=self.legend and s.use_cm,
-                            colorbar=self._create_colorbar(ii, s.get_label(self._use_latex), True),
                         ),
                     )
+                    if lkw["line"]["showscale"]:
+                        # only add a colorbar if required.
+                        
+                        # TODO: when plotting many (14 or more) parametric
+                        # expressions, each one requiring a colorbar, it might
+                        # happens that the horizontal space required by all
+                        # colorbars is greater than the available figure width.
+                        # That raises a strange error.
+                        lkw["line"]["colorbar"] = self._create_colorbar(ii, s.get_label(self._use_latex), True)
                 else:
                     lkw = dict(
                         name=s.get_label(self._use_latex),
                         mode="markers",
                         line_color=next(self._cl) if s.line_color is None else s.line_color)
                 kw = merge({}, lkw, s.rendering_kw)
+
                 self._fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **kw))
 
             elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
