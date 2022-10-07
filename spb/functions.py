@@ -22,18 +22,19 @@ from spb.series import (
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
     ImplicitSeries, _set_discretization_points,
     List2DSeries, GeometrySeries, Implicit3DSeries,
-    InteractiveSeries, GenericDataSeries
+    InteractiveSeries, GenericDataSeries, Parametric3DLineInteractiveSeries
 )
 from spb.utils import (
     _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend
 )
 from sympy import (
     latex, Tuple, Expr, Symbol, Wild, oo, Sum, sign, Piecewise, piecewise_fold,
-    Plane, FiniteSet, Interval, Union
+    Plane, FiniteSet, Interval, Union, cos, sin, sympify
 )
 # NOTE: from sympy import EmptySet is a different thing!!!
 from sympy.sets.sets import EmptySet
 from sympy.vector import BaseScalar
+from sympy.external import import_module
 
 # N.B.
 # When changing the minimum module version for matplotlib, please change
@@ -1275,8 +1276,131 @@ def _plot3d_plot_contour_helper(Series, is_threed, Backend, *args, **kwargs):
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _create_series(Series, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
+    if is_threed:
+        series += _plot3d_wireframe_helper(series, **kwargs)
 
     return _instantiate_backend(Backend, *series, **kwargs)
+
+
+def _plot3d_wireframe_helper(surfaces, **kwargs):
+    """Create data series representing wireframe lines.
+
+    Parameters
+    ==========
+
+    surfaces : list of BaseSeries
+
+    Returns
+    =======
+
+    line_series : list of Parametric3DLineSeries
+    """
+    if not kwargs.get("wireframe", False):
+        return []
+
+    np = import_module('numpy')
+    lines = []
+    wf_n1 = kwargs.get("wf_n1", 10)
+    wf_n2 = kwargs.get("wf_n2", 10)
+    npoints = kwargs.get("wf_npoints", None)
+    wf_rend_kw = kwargs.get("wf_rendering_kw", dict())
+
+    wf_kwargs = dict(
+        use_cm=False, show_in_legend=False,
+        # use uniform meshing to maximize performance
+        adaptive=False, n=npoints,
+        rendering_kw=wf_rend_kw
+    )
+
+    def create_series(expr, ranges, is_interactive, **kw):
+        expr = [e if callable(e) else sympify(e) for e in expr]
+        cls = Parametric3DLineSeries if not is_interactive else Parametric3DLineInteractiveSeries
+        if is_interactive:
+            return Parametric3DLineInteractiveSeries(expr, ranges, "", **kw)
+        return Parametric3DLineSeries(*expr, *ranges, "", **kw)
+
+    # f_asd =
+    for s in surfaces:
+        param_expr, ranges = [], []
+
+        if s.is_3Dsurface:
+            expr = s.get_expr()
+            (x, sx, ex), (y, sy, ey) = s._get_ranges()
+            kw = wf_kwargs.copy()
+            if s.is_interactive:
+                kw["params"] = s.params.copy()
+
+            if s.is_parametric:
+                is_callable = any(callable(e) for e in expr)
+
+                for uval in np.linspace(float(sx), float(ex), wf_n1):
+                    kw["n"] = s.n2 if npoints is None else npoints
+                    if is_callable:
+                        # NOTE: closure on lambda functions
+                        param_expr = [lambda t, uv=uval, e=e: e(uv, t) for e in expr]
+                        ranges = [(y, sy, ey)]
+                    else:
+                        param_expr = [e.subs(x, uval) for e in expr]
+                        ranges = [(y, sy, ey)]
+                    lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+                for vval in np.linspace(float(sy), float(ey), wf_n2):
+                    kw["n"] = s.n1 if npoints is None else npoints
+                    if is_callable:
+                        # NOTE: closure on lambda functions
+                        param_expr = [lambda t, vv=vval, e=e: e(t, vv) for e in expr]
+                        ranges = [(x, sx, ex)]
+                    else:
+                        param_expr = [e.subs(y, vval) for e in expr]
+                        ranges = [(x, sx, ex)]
+                    lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+            elif s.is_complex:
+                # TODO: not so easy to implement. Probably need a new
+                # 3d parametric line series class that is able to deal with
+                # complex numbers.
+                pass
+            else:
+                if not s.is_polar:
+                    for xval in np.linspace(float(sx), float(ex), wf_n1):
+                        kw["n"] = s.n2 if npoints is None else npoints
+                        if callable(expr):
+                            # NOTE: closure on lambda functions
+                            param_expr = [lambda t, xv=xval: xv, lambda t: t, lambda t, xv=xval: expr(xv, t)]
+                            ranges = [(y, sy, ey)]
+                        else:
+                            param_expr = [xval, y, expr.subs(x, xval)]
+                            ranges = [(y, sy, ey)]
+                        lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+                    for yval in np.linspace(float(sy), float(ey), wf_n2):
+                        kw["n"] = s.n1 if npoints is None else npoints
+                        if callable(expr):
+                            # NOTE: closure on lambda functions
+                            param_expr = [lambda t: t, lambda t, yv=yval: yv, lambda t, yv=yval: expr(t, yv)]
+                            ranges = [(x, sx, ex)]
+                        else:
+                            param_expr = [x, yval, expr.subs(y, yval)]
+                            ranges = [(x, sx, ex)]
+                        lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+                else:
+                    for rval in np.linspace(float(sx), float(ex), wf_n1):
+                        kw["n"] = s.n2 if npoints is None else npoints
+                        if callable(expr):
+                            param_expr = [lambda t, rv=rval: rv * np.cos(t), lambda t, rv=rval: rv * np.sin(t), lambda t, rv=rval: expr(rv, t)]
+                            ranges = [(y, sy, ey)]
+                        else:
+                            param_expr = [rval * cos(y), rval * sin(y), expr.subs(x, rval)]
+                            ranges = [(y, sy, ey)]
+                        lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+                    for tval in np.linspace(float(sy), float(ey), wf_n2):
+                        kw["n"] = s.n1 if npoints is None else npoints
+                        if callable(expr):
+                            param_expr = [lambda p, tv=tval: p * np.cos(tv), lambda p, tv=tval: p * np.sin(tv), lambda p, tv=tval: expr(p, tv)]
+                            ranges = [(x, sx, ex)]
+                        else:
+                            param_expr = [x * cos(tval), x * sin(tval), expr.subs(y, tval)]
+                            ranges = [(x, sx, ex)]
+                        lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+
+    return lines
 
 
 def plot3d(*args, **kwargs):
@@ -1435,6 +1559,26 @@ def plot3d(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
+    wireframe : boolean, optional
+        Enable or disable a wireframe over the surface. Depending on the number
+        of wireframe lines (see ``wf_n1`` and ``wf_n2``), activating this
+        option might add a considerable overhead during the plot's creation.
+        Default to False (disabled).
+
+    wf_n1, wf_n2 : int, optional
+        Number of wireframe lines along the x and y ranges, respectively.
+        Default to 10. Note that increasing this number might considerably
+        slow down the plot's creation.
+
+    wf_npoint : int or None, optional
+        Number of discretization points for the wireframe lines. Default to
+        None, meaning that each wireframe line will have ``n1`` or ``n2``
+        number of points, depending on the line direction.
+
+    wf_rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of wireframe lines.
+
     xlabel : str, optional
         Label for the x-axis.
 
@@ -1537,6 +1681,20 @@ def plot3d(*args, **kwargs):
        ... plot3d(expr, (x, 0, pi), (y, 0, 2 * pi),
        ...     tx=np.rad2deg, ty=np.rad2deg, use_cm=True,
        ...     xlabel="x [deg]", ylabel="y [deg]")
+
+    Activating and customizing a wireframe over a surface:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> r, theta = symbols("r, theta")
+       >>> expr = cos(r**2) * exp(-r / 3)
+       >>> plot3d(expr, (r, 0, 3.25), (theta, 3 * pi / 2, 2 * pi),
+       ...     {"alpha": 0.15}, is_polar=True, use_cm=False,
+       ...     wireframe=True, wf_n1=20, wf_n2=10,
+       ...     wf_rendering_kw={"lw": 0.75})
 
     Plotting a numerical function instead of a symbolic expression:
 
@@ -1706,6 +1864,26 @@ def plot3d_parametric_surface(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
+    wireframe : boolean, optional
+        Enable or disable a wireframe over the surface. Depending on the number
+        of wireframe lines (see ``wf_n1`` and ``wf_n2``), activating this
+        option might add a considerable overhead during the plot's creation.
+        Default to False (disabled).
+
+    wf_n1, wf_n2 : int, optional
+        Number of wireframe lines along the u and v ranges, respectively.
+        Default to 10. Note that increasing this number might considerably
+        slow down the plot's creation.
+
+    wf_npoint : int or None, optional
+        Number of discretization points for the wireframe lines. Default to
+        None, meaning that each wireframe line will have ``n1`` or ``n2``
+        number of points, depending on the line direction.
+
+    wf_rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of wireframe lines.
+
     xlabel : str, optional
         Label for the x-axis.
 
@@ -1756,6 +1934,20 @@ def plot3d_parametric_surface(*args, **kwargs):
        Plot object containing:
        [0]: parametric cartesian surface: ((sin(7*u + 5*v) + 2)*sin(v)*cos(u), (sin(7*u + 5*v) + 2)*sin(u)*sin(v), (sin(7*u + 5*v) + 2)*cos(v)) for u over (0.0, 6.283185307179586) and v over (0.0, 3.141592653589793)
 
+    Activating and customizing a wireframe over a surface:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> x = (1 + v / 2 * cos(u / 2)) * cos(u)
+       >>> y = (1 + v / 2 * cos(u / 2)) * sin(u)
+       >>> z = v / 2 * sin(u / 2)
+       >>> plot3d_parametric_surface(x, y, z, (u, 0, 2*pi), (v, -1, 1),
+       ...    "height", {"alpha": 0.75}, use_cm=True, title="Möbius strip",
+       ...    wireframe=True, wf_n1=20, wf_rendering_kw={"lw": 0.75})
+
     Plotting a numerical function instead of a symbolic expression:
 
     .. plot::
@@ -1770,6 +1962,31 @@ def plot3d_parametric_surface(*args, **kwargs):
        >>> plot3d_parametric_surface(fx, fy, fz, ("u", 0, 2 * pi),
        ...     ("v", 0, 2 * pi))
 
+    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
+    about the ``params`` dictionary. Note that the plot's creation might be
+    slow due to the wireframe lines.
+
+    .. code-block:: python
+
+       from sympy import *
+       from spb import *
+       import param
+       n, u, v = symbols("n, u, v")
+       x = v * cos(u)
+       y = v * sin(u)
+       z = sin(n * u)
+       plot3d_parametric_surface(
+           (x, y, z, (u, 0, 2*pi), (v, -1, 0)),
+           params = {
+               n: param.Integer(2)
+           },
+           backend=KB,
+           use_cm=True,
+           title=r"Plücker's \, conoid",
+           wireframe=True,
+           wf_rendering_kw={"width": 0.004},
+           wf_n1=75, wf_n2=6
+       )
 
     See Also
     ========
@@ -1793,6 +2010,7 @@ def plot3d_parametric_surface(*args, **kwargs):
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _create_series(ParametricSurfaceSeries, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
+    series += _plot3d_wireframe_helper(series, **kwargs)
     Backend = kwargs.pop("backend", THREE_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
 

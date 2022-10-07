@@ -319,6 +319,10 @@ class BaseSeries:
     # contains a list of keyword arguments supported by the series. It will be
     # used to validate the user-provided keyword arguments.
 
+    show_in_legend = True
+    # plot functions might create data series that might not be useful to show
+    # in the legend, for example wireframe lines on 3D plots.
+
     def __init__(self, *args, **kwargs):
         super().__init__()
 
@@ -640,6 +644,7 @@ class Line2DBaseSeries(BaseSeries):
         self.use_cm = kwargs.get("use_cm", True)
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
+        self.show_in_legend = kwargs.get("show_in_legend", True)
         self._init_transforms(**kwargs)
 
     def get_data(self):
@@ -1176,6 +1181,9 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         self.end_y = float(var_start_end_y[2])
         self._set_surface_label(label)
 
+    def _get_ranges(self):
+        return (self.var_x, self.start_x, self.end_x), (self.var_y, self.start_y, self.end_y)
+
     def __str__(self):
         return ("cartesian surface: %s for" " %s over %s and %s over %s") % (
             str(self.expr),
@@ -1281,6 +1289,9 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
 
     def get_expr(self):
         return (self.expr_x, self.expr_y, self.expr_z)
+
+    def _get_ranges(self):
+        return (self.var_u, self.start_u, self.end_u), (self.var_v, self.start_v, self.end_v)
 
     def __str__(self):
         return (
@@ -1770,6 +1781,7 @@ class InteractiveSeries(BaseSeries, ParamsMixin):
         self.only_integers = kwargs.get("only_integers", False)
         self.is_point = kwargs.get("is_point", False)
         self.is_filled = kwargs.get("is_filled", False)
+        self.show_in_legend = kwargs.get("show_in_legend", True)
         self.use_cm = kwargs.get("use_cm", True)
         self.var = None # might be set later on
         self._tx = kwargs.get("tx", None)
@@ -2078,6 +2090,10 @@ class SurfaceInteractiveSeries(InteractiveSeries):
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)
         self.surface_color = kwargs.get("surface_color", None)
 
+    def _get_ranges(self):
+        x, y = list(self.ranges.keys())
+        return (x, self.ranges[x][0, 0], self.ranges[x][0, -1]), (y, self.ranges[y][0, 0], self.ranges[y][-1, 0])
+
     def get_data(self):
         """Return arrays of coordinates for plotting.
 
@@ -2291,6 +2307,9 @@ class ComplexSurfaceBaseSeries(BaseSeries):
                 "`coloring` must be a character from 'a' to 'j' or a callable.")
         self.phaseres = kwargs.get("phaseres", 20)
         self._init_transforms(**kwargs)
+
+    def _get_ranges(self):
+        return ("r", self.start.real, self.end.real), ("i", self.start.imag, self.end.imag)
 
     def __str__(self):
         if self.is_domain_coloring:

@@ -121,6 +121,7 @@ class PlotlyBackend(Plot):
     colormaps = []
     cyclic_colormaps = []
     quivers_colors = []
+    wireframe_color = "#000000"
 
     # color bar spacing
     _cbs = 0.15
@@ -355,33 +356,41 @@ class PlotlyBackend(Plot):
                     lkw = dict(
                         name=s.get_label(self._use_latex),
                         mode="lines",
-                        line=dict(
-                            width=4,
-                            colorscale=(
-                                next(self._cm)
-                                if s.use_cm
-                                else self._solid_colorscale(s)
-                            ),
-                            color=param,
-                            showscale=self.legend and s.use_cm,
-                        ),
+                        showlegend=s.show_in_legend,
                     )
-                    if lkw["line"]["showscale"]:
+                    if self.legend and s.use_cm:
                         # only add a colorbar if required.
-                        
+
                         # TODO: when plotting many (14 or more) parametric
                         # expressions, each one requiring a colorbar, it might
                         # happens that the horizontal space required by all
                         # colorbars is greater than the available figure width.
                         # That raises a strange error.
-                        lkw["line"]["colorbar"] = self._create_colorbar(ii, s.get_label(self._use_latex), True)
+                        lkw["line"] = dict(
+                            width = 4,
+                            colorbar = self._create_colorbar(ii, s.get_label(self._use_latex), True),
+                            colorscale = (
+                                next(self._cm) if s.use_cm
+                                else self._solid_colorscale(s)
+                            ),
+                            color = param,
+                            showscale = True,
+                        )
+                    else:
+                        lkw["line"] = dict(
+                            width = 4,
+                            color = (
+                                (next(self._cl) if s.line_color is None
+                                else s.line_color) if s.show_in_legend
+                                else self.wireframe_color)
+                        )
                 else:
                     lkw = dict(
                         name=s.get_label(self._use_latex),
                         mode="markers",
                         line_color=next(self._cl) if s.line_color is None else s.line_color)
-                kw = merge({}, lkw, s.rendering_kw)
 
+                kw = merge({}, lkw, s.rendering_kw)
                 self._fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **kw))
 
             elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
@@ -711,7 +720,8 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["x"] = x
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["z"] = z
-                    self.fig.data[i]["line"]["color"] = param
+                    if s.use_cm:
+                        self.fig.data[i]["line"]["color"] = param
 
                 elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
                     if not s.is_parametric:

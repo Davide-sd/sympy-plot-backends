@@ -72,6 +72,7 @@ class MayaviBackend(Plot):
 
     _library = "mayavi"
     _allowed_keys = Plot._allowed_keys + ["window", "notebook_kw"]
+    wireframe_color = (0, 0, 0)
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
@@ -146,9 +147,10 @@ class MayaviBackend(Plot):
             if s.is_3Dline:
                 x, y, z, u = s.get_data()
                 a = dict(
-                    color=None if s.use_cm else (
-                        next(self._cl) if s.line_color is None
-                        else s.line_color),
+                    color=(None if s.use_cm else (
+                        (next(self._cl) if s.line_color is None
+                        else s.line_color)) if s.show_in_legend
+                        else self.wireframe_color),
                     colormap=next(self._cm),
                     extent=self._get_extent(x, y, z)
                 )
@@ -243,7 +245,7 @@ class MayaviBackend(Plot):
 
             self._handles[i] = obj
 
-            if self.grid:
+            if self.grid and s.show_in_legend:
                 mlab.axes(
                     xlabel="",
                     ylabel="",

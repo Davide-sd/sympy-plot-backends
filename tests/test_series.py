@@ -2766,3 +2766,48 @@ def test_plane_series():
     xx, yy, zz = s.get_data()
     assert all(not np.allclose(t, 0) for t in [xx, yy, zz])
     assert all(np.allclose(zz[i, :], zz[i, 0]) for i in range(zz.shape[0]))
+
+
+def test_show_in_legend_lines():
+    # verify that lines series correctly set the show_in_legend attribute
+    x, u = symbols("x, u")
+
+    s = LineOver1DRangeSeries(cos(x), (x, -2, 2), "test", show_in_legend=True)
+    assert s.show_in_legend
+    s = LineOver1DRangeSeries(cos(x), (x, -2, 2), "test", show_in_legend=False)
+    assert not s.show_in_legend
+
+    s = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 1), "test",
+        show_in_legend=True)
+    assert s.show_in_legend
+    s = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 1), "test",
+        show_in_legend=False)
+    assert not s.show_in_legend
+
+    s = Parametric3DLineSeries(cos(x), sin(x), x, (x, 0, 1), "test",
+        show_in_legend=True)
+    assert s.show_in_legend
+    s = Parametric3DLineSeries(cos(x), sin(x), x, (x, 0, 1), "test",
+        show_in_legend=False)
+    assert not s.show_in_legend
+
+    s = LineInteractiveSeries([cos(x)], [(x, -2, 2)], "test",
+        show_in_legend=True)
+    assert s.show_in_legend
+    s = LineInteractiveSeries([cos(x)], [(x, -2, 2)], "test",
+        show_in_legend=False)
+    assert not s.show_in_legend
+
+    s = Parametric2DLineInteractiveSeries([cos(x), sin(x)], [(x, 0, 1)],
+        "test", show_in_legend=True)
+    assert s.show_in_legend
+    s = Parametric2DLineInteractiveSeries([cos(x), sin(x)], [(x, 0, 1)],
+        "test", show_in_legend=False)
+    assert not s.show_in_legend
+
+    s = Parametric3DLineInteractiveSeries([cos(x), sin(x), x], [(x, 0, 1)],
+        "test", show_in_legend=True)
+    assert s.show_in_legend
+    s = Parametric3DLineInteractiveSeries([cos(x), sin(x), x], [(x, 0, 1)],
+        "test", show_in_legend=False)
+    assert not s.show_in_legend

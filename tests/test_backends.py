@@ -13,7 +13,7 @@ from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import unset_show
 from spb.series import (
     BaseSeries, InteractiveSeries, LineOver1DRangeSeries,
-    SurfaceOver2DRangeSeries
+    SurfaceOver2DRangeSeries, Parametric3DLineSeries, ParametricSurfaceSeries
 )
 from sympy import (
     latex, gamma, exp, symbols, Eq, Matrix, pi, I, sin, cos,
@@ -677,6 +677,7 @@ def test_plot3d():
     f = p.fig
     assert p._handles[0].actor.property.color == (1, 0, 0)
 
+
 def test_plot3d_2():
     # verify that the backends uses string labels when `plot3d()` is called
     # with `use_latex=False` and `use_cm=True`
@@ -742,6 +743,167 @@ def test_plot3d_2():
     ylabel = o.axes.y_axis_label_text
     zlabel = o.axes.z_axis_label_text
     assert [xlabel, ylabel, zlabel] == ["x", "y", "f(x, y)"]
+
+
+def test_plot3d_wireframe():
+    # verify that wireframe=True is going to add the expected number of line
+    # data series and that appropriate keyword arguments work as expected
+
+    x, y = symbols("x, y")
+    _plot3d1 = lambda B, wf=True: plot3d(
+        cos(x**2 + y**2), (x, -2, 2), (y, -3, 3), n1=10, n2=15,
+        use_cm=True, backend=B, wireframe=wf, show=False)
+
+    p0 = _plot3d1(PB, False)
+    assert len(p0.series) == 1
+
+    p1 = _plot3d1(PB)
+    assert len(p1.series) == 21
+    assert isinstance(p1[0], SurfaceOver2DRangeSeries)
+    assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
+    assert all((not s.adaptive) and (s.n == p1[0].n2) for s in p1.series[1:11])
+    assert all((not s.adaptive) and (s.n == p1[0].n1) for s in p1.series[11:])
+    assert all(p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
+    assert np.allclose(
+        [t.x[0] for t in p1.fig.data[1:11]], np.linspace(-2, 2, 10))
+    assert np.allclose(
+        [t.y[0] for t in p1.fig.data[11:]], np.linspace(-3, 3, 10))
+
+    p2 = _plot3d1(KBchild1)
+    assert all(p2.fig.objects[1].color == 0 for s in p2.series[1:])
+
+    p2b = _plot3d1(MAB)
+    assert all(h[0].actor.property.color == (1, 0, 0) for h in p2b._handles)
+
+    p2c = _plot3d1(MB)
+
+    _plot3d2 = lambda B, rk: plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        use_cm=True, backend=B, n1=10, n2=10,
+        wireframe=True, wf_n1=20, wf_n2=30,
+        wf_rendering_kw=rk, wf_npoints=12, show=False)
+    p3 = _plot3d2(PB, {"line_color": "#ff0000"})
+    assert len(p3.series) == 1 + 20 + 30
+    assert all(s.n == 12 for s in p3.series[1:])
+    assert all(t["line"]["color"] == "#ff0000" for t in p3.fig.data[1:])
+
+    p3 = _plot3d2(KBchild1, {"color": 0xff0000})
+    assert all(t.color == 0xff0000 for t in p3.fig.objects[1:])
+
+    r, theta = symbols("r, theta")
+    _plot3d3 = lambda B, wf: plot3d(
+        (cos(r**2) * exp(-r / 3), (r, 0, 3.25), (theta, 0, 2 * pi), "r"), backend=B, is_polar=True, use_cm=True, legend=True, n1=10, n2=15,
+        color_func=lambda x, y, z: (x**2 + y**2)**0.5,
+        wireframe=True, wf_n1=20, wf_n2=40, wf_rendering_kw=wf, show=False)
+    p4 = _plot3d3(PB, {"line_color": "red"})
+    assert len(p4.series) == 1 + 20 + 40
+    assert isinstance(p4[0], SurfaceOver2DRangeSeries)
+    assert all(isinstance(s, Parametric3DLineSeries) for s in p4.series[1:])
+    assert all((not s.adaptive) and (s.n == p4[0].n2) for s in p4.series[1:21])
+    assert all((not s.adaptive) and (s.n == p4[0].n1) for s in p4.series[21:])
+    assert all(t["line"]["color"] == "red" for t in p4.fig.data[1:])
+    assert np.allclose(
+        [t.x[0] for t in p4.fig.data[1:21]], np.linspace(0, 3.25, 20))
+    param = p4.series[1].get_data()[-1]
+    assert np.isclose(param.min(), 0) and np.isclose(param.max(), 2*np.pi)
+    param = p4.series[21].get_data()[-1]
+    assert np.isclose(param.min(), 0) and np.isclose(param.max(), 3.25)
+
+
+def test_plot3d_wireframe_lambda_function():
+    # verify that wireframe=True correctly works also when the expression is
+    # a lambda function
+
+    _plot3d1 = lambda B, wf=True: plot3d(
+        lambda x, y: np.cos(x**2 + y**2), ("x", -2, 2), ("y", -3, 3),
+        n1=10, n2=15,
+        use_cm=True, backend=B, wireframe=wf, show=False)
+
+    p0 = _plot3d1(PB, False)
+    assert len(p0.series) == 1
+
+    p1 = _plot3d1(PB)
+    assert len(p1.series) == 21
+    assert isinstance(p1[0], SurfaceOver2DRangeSeries)
+    assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
+    assert all((not s.adaptive) and (s.n == p1[0].n2) for s in p1.series[1:11])
+    assert all((not s.adaptive) and (s.n == p1[0].n1) for s in p1.series[11:])
+    assert all(p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
+    assert np.allclose(
+        [t.x[0] for t in p1.fig.data[1:11]], np.linspace(-2, 2, 10))
+    assert np.allclose(
+        [t.y[0] for t in p1.fig.data[11:]], np.linspace(-3, 3, 10))
+
+    _plot3d3 = lambda B, wf: plot3d(
+        lambda r, theta: np.cos(r**2) * np.exp(-r / 3),
+        ("r", 0, 3.25), ("theta", 0, 2 * np.pi), "r",
+        backend=B, is_polar=True, use_cm=True, legend=True, n1=10, n2=15,
+        color_func=lambda x, y, z: (x**2 + y**2)**0.5,
+        wireframe=True, wf_n1=20, wf_n2=40, wf_rendering_kw=wf, show=False)
+    p4 = _plot3d3(PB, {"line_color": "red"})
+    assert len(p4.series) == 1 + 20 + 40
+    assert isinstance(p4[0], SurfaceOver2DRangeSeries)
+    assert all(isinstance(s, Parametric3DLineSeries) for s in p4.series[1:])
+    assert all((not s.adaptive) and (s.n == p4[0].n2) for s in p4.series[1:21])
+    assert all((not s.adaptive) and (s.n == p4[0].n1) for s in p4.series[21:])
+    assert all(t["line"]["color"] == "red" for t in p4.fig.data[1:])
+    assert np.allclose(
+        [t.x[0] for t in p4.fig.data[1:21]], np.linspace(0, 3.25, 20))
+    param = p4.series[1].get_data()[-1]
+    assert np.isclose(param.min(), 0) and np.isclose(param.max(), 2*np.pi)
+    param = p4.series[21].get_data()[-1]
+    assert np.isclose(param.min(), 0) and np.isclose(param.max(), 3.25)
+
+
+def test_plot3d_parametric_surface_wireframe():
+    # verify that wireframe=True is going to add the expected number of line
+    # data series and that appropriate keyword arguments work as expected
+
+    u, v = symbols("u, v")
+    x = (1 + v / 2 * cos(u / 2)) * cos(u)
+    y = (1 + v / 2 * cos(u / 2)) * sin(u)
+    z = v / 2 * sin(u / 2)
+    p = plot3d_parametric_surface(x, y, z, (u, 0, 2*pi), (v, -1, 1),
+        backend=PB, use_cm=True, n1=10, n2=15,
+        wireframe=True, wf_n1=5, wf_n2=6,
+        wf_rendering_kw={"line_color": "red"}, show=False)
+    assert len(p.series) == 1 + 5 + 6
+    assert isinstance(p[0], ParametricSurfaceSeries)
+    assert all(isinstance(s, Parametric3DLineSeries) for s in p.series[1:])
+    assert all((not s.adaptive) and (s.n == p[0].n2) for s in p.series[1:6])
+    assert all((not s.adaptive) and (s.n == p[0].n1) for s in p.series[6:])
+    assert all(t["line"]["color"] == "red" for t in p.fig.data[1:])
+    assert all([np.isclose(k[0], -1) and np.isclose(k[-1], 1)
+        for k in [t.get_data()[-1] for t in p.series[1:6]]])
+    assert all([np.isclose(k[0], 0) and np.isclose(k[-1], 2*np.pi)
+        for k in [t.get_data()[-1] for t in p.series[6:]]])
+
+
+def test_plot3d_parametric_surface_wireframe_lambda_function():
+    # verify that wireframe=True correctly works also when the expression is
+    # a lambda function
+    x = lambda u, v: v * np.cos(u)
+    y = lambda u, v: v * np.sin(u)
+    z = lambda u, v: np.sin(4 * u)
+    _plot = lambda wf: plot3d_parametric_surface(
+        x, y, z, ("u", 0, 2*np.pi), ("v", -1, 0), n1=10, n2=10,
+        backend=PB, use_cm=True,
+        wireframe=wf, wf_n1=5, wf_n2=6,
+        show=False)
+
+    p0 = _plot(False)
+    assert len(p0.series) == 1
+
+    p1 = _plot(True)
+    assert len(p1.series) == 1 + 5 + 6
+    assert isinstance(p1[0], ParametricSurfaceSeries)
+    assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
+    assert all((not s.adaptive) and (s.n == p1[0].n2) for s in p1.series[1:11])
+    assert all((not s.adaptive) and (s.n == p1[0].n1) for s in p1.series[11:])
+    assert all(p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
+    assert all([np.isclose(k[0], -1) and np.isclose(k[-1], 0)
+        for k in [t.get_data()[-1] for t in p1.series[1:6]]])
+    assert all([np.isclose(k[0], 0) and np.isclose(k[-1], 2*np.pi)
+        for k in [t.get_data()[-1] for t in p1.series[6:]]])
 
 
 def test_plot_contour():
@@ -3056,8 +3218,7 @@ def test_line_color_plot3d_parametric_line():
     assert len(p.fig.axes) == 2 # there is a colorbar
 
     p = _plot(PB, "red", False)
-    assert p.fig.data[0].line.colorscale == ((0, 'red'), (1, 'red'))
-    assert p.fig.data[0].line.showscale is False
+    assert p.fig.data[0].line.color == "red"
     p = _plot(PB, lambda x: -x, True)
     assert p.fig.data[0].line.showscale
 

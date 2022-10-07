@@ -422,7 +422,7 @@ def _validate_kwargs(backend_obj, **kwargs):
 
     1. Replace **kwargs everywhere with the actual expected keywords.
        This is very time consuming and hard to maintain as the module gets
-       developed even further. Morover, Python will raise an error everytime
+       developed even further. Moreover, Python will raise an error everytime
        something get mispelled, which I think is annoying.
     2. Perform "multiple levels" of keyword validation, at a plotting function
        level (on each function), at a series level and at a backend level.
@@ -452,7 +452,8 @@ def _validate_kwargs(backend_obj, **kwargs):
     allowed_keys = allowed_keys.union([
         "is_interactive", "abs", "absarg", "arg", "real", "imag",
         "is_complex", "is_vector", "slice", "threed", "sum_bound", "n",
-        "phaseres", "is_polar", "label"
+        "phaseres", "is_polar", "label",
+        "wireframe", "wf_n1", "wf_n2", "wf_npoints", "wf_rendering_kw"
     ])
     # params is a keyword argument that is also checked before instantion of
     # Series and Backend.

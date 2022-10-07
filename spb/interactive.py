@@ -1,6 +1,6 @@
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.ccomplex.complex import _build_series as _build_complex_series
-from spb.functions import _set_labels
+from spb.functions import _set_labels, _plot3d_wireframe_helper
 from spb.series import InteractiveSeries, _set_discretization_points
 from spb.vectors import _preprocess, _build_series as _build_vector_series
 from spb.utils import _plot_sympify, _unpack_args_extended, _validate_kwargs
@@ -648,6 +648,7 @@ def create_series(*args, **kwargs):
                     )
             else:
                 series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
+
     return series
 
 
@@ -698,6 +699,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         if series is None:
             series = create_series(*args, iplot=self, **kwargs)
         _set_labels(series, labels, rendering_kw)
+        series += _plot3d_wireframe_helper(series, **kwargs)
 
         if kwargs.get("is_complex", False):
             from spb.ccomplex.complex import _set_axis_labels

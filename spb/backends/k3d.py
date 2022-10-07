@@ -83,6 +83,7 @@ class K3DBackend(Plot):
 
     _library = "k3d"
 
+    wireframe_color = 0x000000
     colormaps = []
     cyclic_colormaps = []
 
@@ -230,9 +231,11 @@ class K3DBackend(Plot):
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 # keyword arguments for the line object
                 a = dict(
-                    width=0.1,
+                    width=0.1 if s.show_in_legend else 0.001,
                     name=self._get_series_label(s, "%s") if self._show_label else None,
-                    color=self._convert_to_int(next(self._cl)) if s.line_color is None else s.line_color,
+                    color=(
+                        self.wireframe_color if not s.show_in_legend
+                        else (self._convert_to_int(next(self._cl)) if s.line_color is None else s.line_color)),
                     shader="mesh",
                 )
                 if s.use_cm:

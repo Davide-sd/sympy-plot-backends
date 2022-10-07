@@ -134,6 +134,7 @@ class MatplotlibBackend(Plot):
     _allowed_keys = Plot._allowed_keys + [
         "markers", "annotations", "fill", "rectangles"]
 
+    wireframe_color = "k"
     colormaps = []
     cyclic_colormaps = []
 
@@ -424,7 +425,10 @@ class MatplotlibBackend(Plot):
                         self._add_handle(i, c)
                     else:
                         lkw["label"] = s.get_label(self._use_latex)
-                        kw = merge({}, lkw, s.rendering_kw, {} if s.line_color is None else {"color": s.line_color})
+                        kw = merge({}, lkw, s.rendering_kw,
+                            ({} if s.line_color is None
+                            else {"color": s.line_color}) if s.show_in_legend
+                            else {"color": self.wireframe_color})
                         l = self.ax.plot(x, y, z, **kw)
                         self._add_handle(i, l)
                 else:

@@ -1,5 +1,5 @@
 from pytest import raises
-from spb import plot, BB, PB, MB
+from spb import plot, BB, PB, MB, plot3d
 from spb.interactive import (
     iplot, DynamicParam, MyList,
     InteractivePlot, create_widgets, create_series
@@ -316,7 +316,6 @@ def test_create_widgets():
 
     assert all(w[k].format is None for k in [x, z])
     assert isinstance(w[y].format, bokeh.models.formatters.PrintfTickFormatter)
-
 
 
 def test_create_series():
@@ -704,6 +703,7 @@ def test_iplot_sum_2():
     )
     raises(ValueError, lambda: p1 + p2)
 
+
 def test_iplot_sum_3():
     # verify that the resulting iplot's backend is of the same type as the
     # original
@@ -740,6 +740,7 @@ def test_iplot_sum_3():
     func(BB)
     func(PB)
 
+
 def test_label_rendering_kw():
     # verify that label and rendering_kw keyword arguments gets applied
     u, x, y = symbols("u, x, y")
@@ -760,3 +761,60 @@ def test_label_rendering_kw():
     assert [s.label for s in t.backend.series] == ["a", "b"]
     assert t.backend.series[0].rendering_kw == {"color": "r"}
     assert t.backend.series[1].rendering_kw == {"linestyle": ":"}
+
+
+def test_plot3d_wireframe():
+    # verify that wireframe=True produces the expected data series
+    x, y, u = symbols("x, y, u")
+
+    _plot3d = lambda wf: plot3d(
+        cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        params = {
+            u: (1, 0, 2)
+        },
+        n1=10, n2=10, backend=MB, wireframe=wf, show=False
+    )
+    t = _plot3d(False)
+    assert isinstance(t, InteractivePlot)
+    assert len(t.backend.series) == 1
+
+    t = _plot3d(True)
+    assert isinstance(t, InteractivePlot)
+    assert len(t.backend.series) == 1 + 10 + 10
+    assert isinstance(t.backend.series[0], SurfaceInteractiveSeries)
+    assert all(isinstance(s, Parametric3DLineInteractiveSeries) for s in t.backend.series[1:])
+
+
+def test_plot3d_wireframe_and_labels():
+    # verify that `wireframe=True` produces the expected data series even when
+    # `label` is set
+    x, y, u = symbols("x, y, u")
+
+    t = plot3d(
+        cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        params = {
+            u: (1, 0, 2)
+        },
+        n1=10, n2=10, backend=MB, wireframe=True, label="test", show=False
+    )
+    assert isinstance(t, InteractivePlot)
+    assert len(t.backend.series) == 1 + 10 + 10
+    assert isinstance(t.backend.series[0], SurfaceInteractiveSeries)
+    assert t.backend.series[0].get_label(False) == "test"
+    assert all(isinstance(s, Parametric3DLineInteractiveSeries) for s in t.backend.series[1:])
+
+    t = plot3d(
+        (cos(u * x**2 + y**2), (x, -2, 0), (y, -2, 2)),
+        (cos(u * x**2 + y**2), (x, 0, 2), (y, -2, 2)),
+        params = {
+            u: (1, 0, 2)
+        },
+        n1=10, n2=10, backend=MB, wireframe=True, label=["a", "b"], show=False
+    )
+    assert isinstance(t, InteractivePlot)
+    assert len(t.backend.series) == 2 + (10 + 10) * 2
+    assert isinstance(t.backend.series[0], SurfaceInteractiveSeries)
+    assert isinstance(t.backend.series[1], SurfaceInteractiveSeries)
+    assert t.backend.series[0].get_label(False) == "a"
+    assert t.backend.series[1].get_label(False) == "b"
+    assert all(isinstance(s, Parametric3DLineInteractiveSeries) for s in t.backend.series[2:])
