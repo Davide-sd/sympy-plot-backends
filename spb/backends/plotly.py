@@ -261,17 +261,13 @@ class PlotlyBackend(Plot):
         merge = self.merge
         self._init_cyclers()
 
-        # if legend=True and both 3d lines and surfaces are shown, then hide the
-        # surfaces color bars and only shows line labels in the legend.
-        # TODO: can I show both colorbars and legends by scaling down the color
-        # bars?
-        show_3D_colorscales = True
-        show_2D_vectors = False
-        for s in series:
-            if s.is_3Dline:
-                show_3D_colorscales = False
-            if s.is_2Dvector:
-                show_2D_vectors = True
+        mix_3Dsurfaces_3Dlines = (any(s.is_3Dsurface for s in series) and
+            any(s.is_3Dline and s.show_in_legend for s in series))
+        show_2D_vectors = any(s.is_2Dvector for s in series)
+        # show_2D_vectors = False
+        # for s in series:
+        #     if s.is_2Dvector:
+        #         show_2D_vectors = True
 
         self._fig.data = []
 
@@ -407,8 +403,8 @@ class PlotlyBackend(Plot):
                 colormap = next(self._cm)
                 skw = dict(
                     name=s.get_label(self._use_latex),
-                    showscale=self.legend and show_3D_colorscales,
-                    colorbar=self._create_colorbar(ii, s.get_label(self._use_latex)),
+                    showscale=self.legend,
+                    colorbar=self._create_colorbar(ii, s.get_label(self._use_latex), mix_3Dsurfaces_3Dlines),
                     colorscale=colormap if s.use_cm else colorscale,
                     surfacecolor=surfacecolor,
                     cmin=surfacecolor.min(),

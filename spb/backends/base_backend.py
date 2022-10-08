@@ -266,6 +266,8 @@ class Plot:
                 # backend
                 if not ("process_piecewise" in kwargs.keys()):
                     self.legend = True
+            if self.legend and (len([s for s in self._series if s.is_3Dsurface and not s.use_cm]) > 1):
+                self.legend = False
 
         # Objects used to render/display the plots, which depends on the
         # plotting library.
