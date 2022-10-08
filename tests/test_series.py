@@ -21,7 +21,7 @@ from spb.series import (
 )
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
-    re, im, arg, frac, Plane, Circle, Point, Sum, S
+    re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify
 )
 from sympy.external import import_module
 from sympy.vector import CoordSys3D, gradient
@@ -2811,3 +2811,33 @@ def test_show_in_legend_lines():
     s = Parametric3DLineInteractiveSeries([cos(x), sin(x), x], [(x, 0, 1)],
         "test", show_in_legend=False)
     assert not s.show_in_legend
+
+
+def test_particular_case_1():
+    # Verify that symbolic expressions and numerical lambda functions are
+    # evaluated with the same algorithm. In particular, uniform evaluation
+    # is going to use np.vectorize, which correctly evaluates the following
+    # mathematical function.
+    def do_test(a, b):
+        d1 = a.get_data()
+        d2 = b.get_data()
+        for t, v in zip(d1, d2):
+            assert np.allclose(t, v)
+
+    n = symbols("n")
+    a = S(2) / 3
+    epsilon = 0.01
+    xn = (n**3 + n**2)**(S(1)/3) - (n**3 - n**2)**(S(1)/3)
+    expr = Abs(xn - a) - epsilon
+    math_func = lambdify([n], expr)
+    s1 = LineOver1DRangeSeries(expr, (n, -10, 10), "",
+        adaptive=True, adaptive_goal=0.2)
+    s2 = LineOver1DRangeSeries(math_func, ("n", -10, 10), "",
+        adaptive=True, adaptive_goal=0.2)
+    do_test(s1, s2)
+
+    s3 = LineOver1DRangeSeries(expr, (n, -10, 10), "",
+        adaptive=False, n=10)
+    s4 = LineOver1DRangeSeries(math_func, ("n", -10, 10), "",
+        adaptive=False, n=10)
+    do_test(s3, s4)

@@ -218,14 +218,16 @@ def _uniform_eval(free_symbols, expr, *args, modules=None):
         No matter the evaluation ``modules``, the array type is going to be
         complex.
     """
-    if callable(expr):
-        return expr(*args)
+    if not callable(expr):
+        # generate two lambda functions: the default one, and the backup in
+        # case of failures with the default one.
+        f1 = lambdify(free_symbols, expr, modules=modules)
+        f2 = lambdify(free_symbols, expr, modules="sympy")
+        return _uniform_eval_helper(f1, f2, *args, modules=modules)
 
-    # generate two lambda functions: the default one, and the backup in case
-    # of failures with the default one.
-    f1 = lambdify(free_symbols, expr, modules=modules)
-    f2 = lambdify(free_symbols, expr, modules="sympy")
-    return _uniform_eval_helper(f1, f2, *args, modules=modules)
+    # NOTE: expr is a callable. It is important that it'll be evaluated by
+    # _uniform_eval_helper because it uses np.vectorize
+    return _uniform_eval_helper(expr, None, *args, modules=modules)
 
 
 def _uniform_eval_helper(f1, f2, *args, modules=None):
@@ -240,11 +242,14 @@ def _uniform_eval_helper(f1, f2, *args, modules=None):
             return complex(func(*args))
         except (ZeroDivisionError, OverflowError):
             return complex(np.nan, np.nan)
-    wrapper_func = np.vectorize(wrapper_func)
+    wrapper_func = np.vectorize(wrapper_func, otypes=[complex])
 
     try:
         return wrapper_func(f1, *args)
     except Exception as err:
+        if f2 is None:
+            raise RuntimeError(
+                "Impossible to evaluate the provided numerical function")
         warnings.warn(
             "The evaluation with %s failed.\n" % (
                 "NumPy/SciPy" if not modules else modules) +
@@ -803,7 +808,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
 
         def func(f, imag, x):
             try:
-                w = complex(f(x + 1j * imag))
+                w = complex(f(x + 1j * imag if self.is_complex else x))
                 return w.real, w.imag
             except (ZeroDivisionError, OverflowError):
                 return np.nan, np.nan
