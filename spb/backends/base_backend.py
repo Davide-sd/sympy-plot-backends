@@ -254,17 +254,18 @@ class Plot:
                 series.extend(_series)
             self._series = series
 
-        # auto-legend: if more than 1 data series has been provided and the
-        # user has not set legend=False, then show the legend for better
-        # clarity.
-        self.legend = kwargs.get("legend", None)
+        # Automatic legend: if more than 1 data series has been provided
+        # and the user has not set legend=False, then show the legend for
+        # better clarity.
+        self.legend = _legend = kwargs.get("legend", None)
         if not self.legend:
             self.legend = False
-            if (len(self._series) > 1) or (
-                any(s.is_parametric and s.use_cm for s in self.series)):
+            if (len([s for s in self._series if s.show_in_legend]) > 1) or (
+                any(s.is_parametric and s.use_cm for s in self._series)):
                 # don't show the legend if `plot_piecewise` created this
                 # backend
-                if not ("process_piecewise" in kwargs.keys()):
+                if ((not ("process_piecewise" in kwargs.keys())) and
+                    ((_legend is True) or (_legend is None))):
                     self.legend = True
             if self.legend and (len([s for s in self._series if s.is_3Dsurface and not s.use_cm]) > 1):
                 self.legend = False
@@ -455,6 +456,12 @@ class Plot:
         series.extend(self.series)
         series.extend(other.series)
         kwargs = self._do_sum_kwargs(self, other)
+        # If the first plot (`p1`) of the summation has been created without
+        # specifying `legend`, then `p1.legend` might be False, hence
+        # `kwargs["legend"]` might be False. But when adding multiple plots
+        # it is very likely that user expect a legend to be shown. Hence,
+        # reset legend and let the backend decide if it needs one or not.
+        kwargs["legend"] = None
         return type(self)(*series, **kwargs)
 
     def append(self, arg):
