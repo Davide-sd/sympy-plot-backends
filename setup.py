@@ -48,7 +48,7 @@ setup(
         "vtk",  # needed for streamlines in k3d
         "adaptive>=0.13.1",
         # mayavi-related
-        # "mayavi>=4.8.0",
+        "mayavi>=4.8.0",
         # "PyQt5>=5.15.7",
     ],
 )
