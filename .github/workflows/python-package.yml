@@ -36,7 +36,7 @@ jobs:
         sudo apt-get install libxcb-render-util0
         sudo apt-get install libxcb-xinerama0
     - name: Install Mayavi
-      run: sudo apt-get install mayavi
+      run: sudo apt-get install mayavi2
   
     - name: Install Python dependencies
       run: |
