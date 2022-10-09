@@ -137,8 +137,9 @@ Polar plot with Matplotlib:
 
 3D plot with K3D-Jupyter and polar discretization. Two identical expressions
 are going to be plotted, one will display the mesh with a solid color, the
-other will display the wireframe. Customization on the colors,
-surface/wireframe can easily be done after the plot is created:
+other will display the connectivity of the mesh (wireframe).
+Customization on the colors, surface/wireframe can easily be done after the
+plot is created:
 
 .. code-block:: python
 
@@ -154,6 +155,32 @@ surface/wireframe can easily be done after the plot is created:
 .. image:: _static/k3d-3.png
   :width: 600
   :alt: surface plot with k3d
+
+
+3D plot with Plotly of a parametric surface, colored according to the
+radius, with wireframe lines (also known as grid lines) highlighting the
+parameterization:
+
+.. code-block:: python
+
+   from sympy import symbols, cos, sin, pi
+   from spb import plot3d_parametric_surface, PB
+   import numpy as np
+   u, v = symbols("u, v")
+   def trefoil(u, v, r):
+       x = r * sin(3 * u) / (2 + cos(v))
+       y = r * (sin(u) + 2 * sin(2 * u)) / (2 + cos(v + pi * 2 / 3))
+       z = r / 2 * (cos(u) - 2 * cos(2 * u)) * (2 + cos(v)) * (2 + cos(v + pi * 2 / 3)) / 4
+       return x, y, z
+   plot3d_parametric_surface(
+      trefoil(u, v, 3), (u, -pi, 3*pi), (v, -pi, 3*pi), "radius",
+      grid=False, title="Trefoil Knot", backend=PB, use_cm=True,
+      color_func=lambda x, y, z: np.sqrt(x**2 + y**2 + z**2),
+      wireframe=True, wf_n1=100, wf_n2=30, n1=250)
+
+.. image:: _static/trefoil-knot-plotly.png
+  :width: 600
+  :alt: parametric surface plot with plotly showing wireframe lines
 
 
 Visualizing a 2D vector field:

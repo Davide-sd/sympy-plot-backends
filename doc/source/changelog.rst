@@ -6,10 +6,14 @@ v1.4.1
 ======
 
 * Implemented the ``wireframe`` option on ``plot3d`` and
-  ``plot3d_parametric_surface`` to add a "nice" wireframe over the surface.
+  ``plot3d_parametric_surface`` to add grid lines over the surface.
 
-* Fixed bug within ``PlotlyBackend``: it should now be able to plot more than
-  14 2d/3d parametric lines when ``use_cm=False``.
+* Fixed bugs within ``PlotlyBackend``:
+
+  * it should now be able to plot more than 14 2d/3d parametric lines when
+    ``use_cm=False``.
+  
+  * improved logic to show colorbars on 3D surface plots.
 
 * Fixed bug with ``plot3d`` and ``plot_contour`` when dealing with instances
   of ``BaseScalar``.

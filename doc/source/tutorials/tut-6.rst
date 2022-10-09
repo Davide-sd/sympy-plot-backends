@@ -109,8 +109,7 @@ create a nice smooth plot almost instantly:
 Example
 =======
 
-Depending on the function being plotted, the evaluation with the adaptive
-algorithm might produce warning messages. For example:
+Let's execute the following code:
 
 .. plot::
    :context: close-figs
@@ -119,41 +118,7 @@ algorithm might produce warning messages. For example:
 
    >>> plot(floor(x))
 
-
-.. code-block:: text
-
-   UserWarning: The evaluation with NumPy/SciPy failed.
-   TypeError: ufunc 'floor' not supported for the input types, and the inputs
-   could not be safely coerced to any supported types according to the casting
-   rule ''safe''
-   Trying to evaluate the expression with Sympy, but it might be a slow
-   operation.
-
-What does that warning message means? For reasons too long to explain, the
-numerical arguments passed to the lambdified-function are of type ``complex``.
-There are some Numpy/Scipy functions that are not designed for this numerical
-data type, for example the ``floor`` and ``ceil`` functions. For example:
-
->>> import numpy as np
->>> try:
->>>     np.floor(5+0j)
->>> except TypeError as err:
->>>     print(err)
-
-
-.. code-block:: text
-
-   ufunc 'floor' not supported for the input types, and the inputs could not
-   be safely coerced to any supported types according to the casting rule
-   ''safe''
-
-The plotting algorithm catches that exception and changes the evaluation module
-to SymPy. The evaluation succeds, but it is going to be much much slower!
-
-Here is another rule of thumb: if our symbolic expression contains function
-like ``floor`` or ``ceil`` it is better to use the uniform meshing algorithm, in
-which the arguments to the function are going to be of type `float`. Also,
-since we are dealing with a ``floor`` function, there are discontinuities
+Because we are dealing with a ``floor`` function, there are discontinuities
 between the horizontal segments. Let's activate the singularity-detection
 algorithm:
 
@@ -162,13 +127,15 @@ algorithm:
    :format: doctest
    :include-source: True
 
-   >>> plot(floor(x), adaptive=False, n=1e04, detect_poles=True)
+   >>> plot(floor(x), detect_poles=True)
 
 
 Example
 =======
 
-Let's try another example of a function containing the ``floor`` function:
+Let's try another example of a function containing the ``floor`` function.
+This is a case of mid-to-high frequencies in relation to the plotting range,
+so it is advisable to set ``adaptive=False``:
 
 .. plot::
    :context: close-figs
