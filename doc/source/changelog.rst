@@ -22,7 +22,11 @@ v1.4.1
 * Fixed bug with ``plot3d`` and ``plot_contour`` when dealing with instances
   of ``BaseScalar``.
 
-* Fixed bug with uniform evaluation while plotting numerical functions.
+* Series:
+
+  * Fixed bug with uniform evaluation while plotting numerical functions.
+
+  * Fixed bug with ``color_func``.
 
 
 v1.4.0

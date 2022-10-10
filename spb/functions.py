@@ -479,7 +479,7 @@ def plot(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, sin, pi, tan, exp
+       >>> from sympy import symbols, sin, pi, tan, exp, cos
        >>> from spb import plot
        >>> x, y = symbols('x, y')
 
@@ -677,8 +677,7 @@ def plot_parametric(*args, **kwargs):
         `plot_parametric((expr_x, expr_y), ..., range)`
     - Plotting multiple parametric curves with different ranges
         `plot_parametric((expr_x, expr_y, range), ...)`
-    - Plotting multiple parametric curves with different ranges and
-        custom labels
+    - Plotting multiple curves with different ranges and custom labels
         `plot_parametric((expr_x, expr_y, range, label), ...)`
 
     Parameters
@@ -2108,7 +2107,7 @@ def plot3d_spherical(*args, **kwargs):
        >>> plot3d_spherical(
        ...     abs(r), (theta, 0, pi), (phi, 0, 2 * pi), "radius",
        ...     use_cm=True, n2=200,
-       ...     color_func=lambda t, p: lambdify([theta, phi], r)(t, p))
+       ...     color_func=lambdify([theta, phi], r))
 
     Multiple surfaces with wireframe lines. Note that activating the wireframe
     option might add a considerable overhead during the plot's creation.

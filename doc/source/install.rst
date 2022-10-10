@@ -61,7 +61,19 @@ It is also the perfect time to verify that K3D-Jupyter is working:
    4. Restart ``jupyter notebook``
    5. Open the previous notebook and execute the plot command.
 
-Refer to the :ref:`tutorials` for a starter guide on using the plotting backends.
+Refer to the :ref:`tutorials` for a starter guide on using the plotting backends or to the :ref:`functions` to visualize the output of some of the
+plotting functions.
+
+
+Installing Mayavi
+=================
+
+This plotting module comes with ``MayaviBackend``. Mayavi is a 3D plotting
+library which can be used on any Python interpreter.
+However, it is not the easiest to install.
+
+If you are interested in using it, please follow
+`Mayavi's installation instruction <https://docs.enthought.com/mayavi/mayavi/installation.html>`_.
 
 
 About Matplotlib
