@@ -492,19 +492,19 @@ class BaseSeries:
             if self.is_2Dline and self.is_parametric:
                 if len(args) == 2:
                     # ColoredLineOver1DRangeSeries
-                    return self.color_func(args[0])
+                    return self._correct_shape(self.color_func(args[0]), args[0])
                 # Parametric2DLineSeries
-                return self.color_func(args[2])
+                return self._correct_shape(self.color_func(args[2]), args[2])
             elif self.is_3Dline and self.is_parametric:
-                return self.color_func(args[3])
+                return self._correct_shape(self.color_func(args[3]), args[3])
             elif self.is_3Dsurface and self.is_parametric:
-                return self.color_func(args[3])
-            return self.color_func(args[0])
+                return self._correct_shape(self.color_func(args[3]), args[3])
+            return self._correct_shape(self.color_func(args[0]), args[0])
         elif nargs == 2:
             if self.is_3Dsurface and self.is_parametric:
-                return self.color_func(*args[3:])
-            return self.color_func(*args[:2])
-        return self.color_func(*args[:nargs])
+                return self._correct_shape(self.color_func(*args[3:]), args[3])
+            return self._correct_shape(self.color_func(*args[:2]), args[0])
+        return self._correct_shape(self.color_func(*args[:nargs]), args[0])
 
     def get_data(self):
         """Compute and returns the numerical data.
