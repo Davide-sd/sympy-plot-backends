@@ -16,12 +16,16 @@ vector plots, complex plots, geometric plots.
 It also provide an interactive plotting function, ``iplot``, which automatically generates widgets (sliders, buttons, ...) starting from symbolic expressions. It allows to better understand the influence of each parameters in a particular expression, without the knowledge of complicated widget libraries.
 
 .. image:: _static/iplot_bokeh.png
-  :width: 300
+  :width: 220
   :alt: iplot with bokeh
 
 .. image:: _static/bokeh_domain_coloring.png
-  :width: 300
-  :alt: iplot with bokeh
+  :width: 220
+  :alt: domain coloring
+
+.. image:: _static/trefoil-knot-plotly.png
+  :width: 220
+  :alt: 3D surface
 
 .. toctree::
    :maxdepth: 2

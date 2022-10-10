@@ -6,12 +6,13 @@ from spb import (
     plot_piecewise, plot, plot_list, plot3d_parametric_line,
     plot_parametric, plot3d, plot_contour, plot3d_parametric_surface,
     plot_implicit, plot_complex_list, plot_complex_vector, plot_real_imag,
-    plot_vector, plot3d_implicit, plot_geometry, plot_complex
+    plot_vector, plot3d_implicit, plot_geometry, plot_complex,
+    plot3d_spherical
 )
 from spb.interactive import InteractivePlot
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, ContourSeries,
-    Vector2DSeries
+    Vector2DSeries, ParametricSurfaceSeries
 )
 from spb.backends.matplotlib import MB, unset_show
 from sympy import (
@@ -49,6 +50,25 @@ unset_show()
 # If your issue is related to a particular keyword affecting a backend
 # behaviour, consider adding tests to test_backends.py
 #
+
+
+def test_plot3d_spherical():
+    # plot3d_spherical is going to call plot3d_parametric surface: let's
+    # check that the data series are correct.
+
+    phi, theta = symbols("phi, theta")
+    p = plot3d_spherical(1, (theta, pi/4, 3*pi/4), (phi, pi/2, 3*pi/2),
+        show=False)
+    assert len(p.series) == 1
+    assert isinstance(p[0], ParametricSurfaceSeries)
+    # verify spherical to cartesian transformation
+    assert p[0].expr_x == sin(theta) * cos(phi)
+    assert p[0].expr_y == sin(theta) * sin(phi)
+    assert p[0].expr_z == cos(theta)
+    # verify ranges are set correctly
+    assert (p[0].var_u == theta) and (p[0].var_v == phi)
+    assert np.allclose([p[0].start_u, p[0].end_u], [float(pi/4), float(3*pi/4)])
+    assert np.allclose([p[0].start_v, p[0].end_v], [float(pi/2), float(3*pi/2)])
 
 
 def test_plot3d_plot_contour():

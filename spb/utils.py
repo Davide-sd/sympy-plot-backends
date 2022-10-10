@@ -1,5 +1,5 @@
 from spb.defaults import cfg
-from sympy import Tuple, sympify, Expr, Dummy, S
+from sympy import Tuple, sympify, Expr, Dummy, S, sin, cos
 from sympy.matrices.dense import DenseMatrix
 from sympy.physics.mechanics import Vector as MechVector
 from sympy.vector import Vector
@@ -184,7 +184,9 @@ def _check_arguments(args, nexpr, npar, **kwargs):
             rend_kw = [a for a in arg if isinstance(a, dict)]
             rend_kw = rendering_kw if len(rend_kw) == 0 else rend_kw[0]
 
-            arg = arg[:nexpr]
+            # NOTE: arg = arg[:nexpr] may raise an exception if lambda
+            # functions are used. Execute the following instead:
+            arg = [arg[i] for i in range(nexpr)]
             free_symbols = set()
             if all(not callable(a) for a in arg):
                 free_symbols = free_symbols.union(*[a.free_symbols for a in arg])
@@ -502,3 +504,32 @@ def find_closest_string(string, strings):
         return (levenshtein(s, string), s)
 
     return sorted(strings, key=_key)[0]
+
+
+def spherical_to_cartesian(r, theta, phi):
+    """Convert spherical coordinates to cartesian coordinates.
+
+    Parameters
+    ==========
+        r :
+            Radius.
+        theta :
+            Polar angle. Must be in [0, pi]. 0 is the north pole, pi/2 is the
+            equator, pi is the south pole.
+        phi :
+            Azimuthal angle. Must be in [0, 2*pi].
+
+    Returns
+    =======
+        x, y, z
+    """
+    if callable(r):
+        np = import_module('numpy')
+        x = lambda t, p: r(t, p) * np.sin(t) * np.cos(p)
+        y = lambda t, p: r(t, p) * np.sin(t) * np.sin(p)
+        z = lambda t, p: r (t, p)* np.cos(t)
+    else:
+        x = r * sin(theta) * cos(phi)
+        y = r * sin(theta) * sin(phi)
+        z = r * cos(theta)
+    return x, y, z

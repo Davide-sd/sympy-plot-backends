@@ -11,7 +11,9 @@ from spb.series import (
 from spb.utils import (
     _check_arguments, _create_ranges, _plot_sympify, _validate_kwargs
 )
-from sympy import symbols, Expr, Tuple, Integer, sin, cos, Matrix, I, Polygon
+from sympy import (
+    symbols, Expr, Tuple, Integer, sin, cos, Matrix, I, Polygon, Dummy, Symbol
+)
 
 
 def test_plot_sympify():
@@ -147,6 +149,21 @@ def test_check_arguments_plot():
     assert r[0] == (x + 1, (x, 0, 5), None, None)
     assert r[1] == (x ** 2, (x, -2, 2), "test", {0: 0, 1: 1})
 
+    # single argument: lambda function
+    f = lambda t: t
+    args = _plot_sympify((f, ))
+    r = _check_arguments(args, 1, 1)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert r[0][0] is f
+    assert isinstance(r[0][1][0], Dummy) and (r[0][1][1:] == (-10, 10))
+    assert all(t is None for t in r[0][2:])
+
+    # single argument: lambda function + custom range and label
+    args = _plot_sympify((f, ("t", -5, 6), "test"))
+    r = _check_arguments(args, 1, 1)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert r[0] == (f, ("t", -5, 6), "test", None)
+
 
 def test_check_arguments_plot_parametric():
     ### Test arguments for plot_parametric()
@@ -198,6 +215,22 @@ def test_check_arguments_plot_parametric():
     assert r[0] == (x + 1, x, (x, -2, 2), "test1", None)
     assert r[1] == (x ** 2, x + 1, (x, -3, 3), "test2", {0: 0, 1: 1})
 
+    # single argument: lambda function
+    fx = lambda t: t
+    fy = lambda t: 2 * t
+    args = _plot_sympify((fx, fy))
+    r = _check_arguments(args, 2, 1)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert (r[0][0] is fx) and (r[0][1] is fy)
+    assert isinstance(r[0][2][0], Dummy) and (r[0][2][1:] == (-10, 10))
+    assert all(t is None for t in r[0][3:])
+
+    # single argument: lambda function + custom range + label
+    args = _plot_sympify((fx, fy, ("t", 0, 2), "test"))
+    r = _check_arguments(args, 2, 1)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert r[0] == (fx, fy, ("t", 0, 2), "test", None)
+
 
 def test_check_arguments_plot3d_parametric_line():
     ### Test arguments for plot3d_parametric_line()
@@ -241,6 +274,23 @@ def test_check_arguments_plot3d_parametric_line():
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
     assert r[0] == (x + 1, x, sin(x), (x, -10, 10), None, None)
     assert r[1] == (x ** 2, Integer(1), cos(x), (x, -2, 2), "test", {0: 0, 1: 1})
+
+    # single argument: lambda function
+    fx = lambda t: t
+    fy = lambda t: 2 * t
+    fz = lambda t: 3 * t
+    args = _plot_sympify((fx, fy, fz))
+    r = _check_arguments(args, 3, 1)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert (r[0][0] is fx) and (r[0][1] is fy) and (r[0][2] is fz)
+    assert isinstance(r[0][3][0], Dummy) and (r[0][3][1:] == (-10, 10))
+    assert all(t is None for t in r[0][4:])
+
+    # single argument: lambda function + custom range + label
+    args = _plot_sympify((fx, fy, fz, ("t", 0, 2), "test"))
+    r = _check_arguments(args, 3, 1)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert r[0] == (fx, fy, fz, ("t", 0, 2), "test", None)
 
 
 def test_check_arguments_plot3d_plot_contour():
@@ -312,6 +362,22 @@ def test_check_arguments_plot3d_plot_contour():
     assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
     assert r[0] == (x + y, (x, -2, 2), (y, -4, 4), None, None)
     assert r[1] == (x * y, (x, -3, 3), (y, -6, 6), "test", {0: 0, 1: 1})
+
+    # single expression: lambda function
+    f = lambda x, y: x + y
+    args = _plot_sympify((f,))
+    r = _check_arguments(args, 1, 2)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert len(r[0]) == 5
+    assert r[0][0] is f
+    assert all(isinstance(t[0], Dummy) and (t[1:] == (-10, 10)) for t in r[0][1:3])
+    assert all(t is None for t in r[0][3:])
+
+    # single expression: lambda function + custom ranges + label
+    args = _plot_sympify((f, ("a", -5, 3), ("b", -2, 1), "test"))
+    r = _check_arguments(args, 1, 2)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert r[0] == (f, ("a", -5, 3), ("b", -2, 1), "test", None)
 
 
 def test_check_arguments_plot3d_parametric_surface():
@@ -385,6 +451,60 @@ def test_check_arguments_plot3d_parametric_surface():
     assert r[0][5] == "test"
     assert r[0][6] == None
     assert r[1] == (x - y, cos(x - y), sin(x - y), (x, -3, 3), (y, -4, 4), "test2", {0: 0, 1: 1})
+
+    # lambda functions instead of symbolic expressions for a single 3D
+    # parametric surface
+    args = _plot_sympify([
+        lambda u, v: u, lambda u, v: v, lambda u, v: u + v,
+        ("u", 0, 2), ("v", -3, 4)
+    ])
+    r = _check_arguments(args, 3, 2)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert len(r[0]) == 7
+    assert all(callable(e) for e in r[0][:3])
+    assert r[0][3] == ("u", 0, 2)
+    assert r[0][4] == ("v", -3, 4)
+    assert r[0][5] == None
+    assert r[0][6] == None
+
+    # lambda functions instead of symbolic expressions for multiple 3D
+    # parametric surfaces
+    args = _plot_sympify([
+        (lambda u, v: u, lambda u, v: v, lambda u, v: u + v,
+        ("u", 0, 2), ("v", -3, 4)),
+        (lambda u, v: v, lambda u, v: u, lambda u, v: u - v,
+        ("u", -2, 3), ("v", -4, 5), "test"),
+    ])
+    r = _check_arguments(args, 3, 2)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 2
+    assert all(len(t) == 7 for t in r)
+    assert all(callable(e) for e in r[0][:3])
+    assert r[0][3] == ("u", 0, 2)
+    assert r[0][4] == ("v", -3, 4)
+    assert r[0][5] == None
+    assert r[0][6] == None
+    assert all(callable(e) for e in r[1][:3])
+    assert r[1][3] == ("u", -2, 3)
+    assert r[1][4] == ("v", -4, 5)
+    assert r[1][5] == "test"
+    assert r[1][6] == None
+
+    # single expression: lambda functions
+    fx = lambda u, v: u
+    fy = lambda u, v: v
+    fz = lambda u, v: u + v
+    args = _plot_sympify((fx, fy, fz))
+    r = _check_arguments(args, 3, 2)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert r[0][:3] == (fx, fy, fz)
+    assert all(isinstance(t[0], Dummy) and (t[1:] == (-10, 10)) for t in r[0][3:5])
+    assert all(t is None for t in r[0][5:])
+
+    # single expression: lambda function + custom ranges + label
+    args = _plot_sympify((fx, fy, fz, ("u", -5, 3), ("v", -2, 1), "test"))
+    r = _check_arguments(args, 3, 2)
+    assert isinstance(r, (list, tuple, Tuple)) and len(r) == 1
+    assert r[0] == (fx, fy, fz, ("u", -5, 3), ("v", -2, 1), "test", None)
 
 
 def test_check_arguments_plot_implicit():
@@ -528,4 +648,3 @@ def test_raise_warning_keyword_validation():
         params={x: 1}, **kw)
     p = MB(s, show=False, **kw)
     do_test(p, kw, ["is_fille", "is_filled"])
-    

@@ -13,6 +13,8 @@ Functions
 
 .. autofunction:: plot3d_parametric_surface
 
+.. autofunction:: plot3d_spherical
+
 .. autofunction:: plot3d_implicit
 
 .. autofunction:: plot_contour

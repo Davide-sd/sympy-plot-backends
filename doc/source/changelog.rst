@@ -5,8 +5,12 @@
 v1.4.1
 ======
 
-* Implemented the ``wireframe`` option on ``plot3d`` and
-  ``plot3d_parametric_surface`` to add grid lines over the surface.
+* Implemented the ``plot3d_spherical`` function to plot functions in
+  spherical coordinates.
+
+* Implemented the ``wireframe`` option on ``plot3d``,
+  ``plot3d_parametric_surface`` and ``plot3d_spherical`` to add grid lines
+  over the surface.
 
 * Fixed bugs within ``PlotlyBackend``:
 
@@ -18,6 +22,7 @@ v1.4.1
 * Fixed bug with ``plot3d`` and ``plot_contour`` when dealing with instances
   of ``BaseScalar``.
 
+* Fixed bug with uniform evaluation while plotting numerical functions.
 
 
 v1.4.0

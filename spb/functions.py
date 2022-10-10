@@ -16,7 +16,7 @@ Simplicity of code takes much greater importance than performance. Don't use
 it if you care at all about performance.
 """
 
-from spb.defaults import TWO_D_B, THREE_D_B
+from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
@@ -25,11 +25,12 @@ from spb.series import (
     InteractiveSeries, GenericDataSeries, Parametric3DLineInteractiveSeries
 )
 from spb.utils import (
-    _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend
+    _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend,
+    spherical_to_cartesian
 )
 from sympy import (
     latex, Tuple, Expr, Symbol, Wild, oo, Sum, sign, Piecewise, piecewise_fold,
-    Plane, FiniteSet, Interval, Union, cos, sin, sympify
+    Plane, FiniteSet, Interval, Union, cos, sin, pi, sympify
 )
 # NOTE: from sympy import EmptySet is a different thing!!!
 from sympy.sets.sets import EmptySet
@@ -1418,7 +1419,7 @@ def plot3d(*args, **kwargs):
     - Plotting multiple expressions with custom labels and rendering options.
         `plot3d((expr1, range_x1, range_y1, label1, rendering_kw1), (expr2, range_x2, range_y2, label2, rendering_kw2), ..., **kwargs)`
 
-    Note that it is important to specify at least the `range_x`, otherwise the
+    Note: it is important to specify at least the `range_x`, otherwise the
     function might create a rotated plot.
 
     Parameters
@@ -1751,7 +1752,7 @@ def plot3d_parametric_surface(*args, **kwargs):
     - Plotting multiple expressions with different ranges and rendering option.
         `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1, label1, rendering_kw1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2, label2, rendering_kw2), **kwargs)`
 
-    Note that it is important to specify both the ranges.
+    Note: it is important to specify both the ranges.
 
     Parameters
     ==========
@@ -1978,7 +1979,7 @@ def plot3d_parametric_surface(*args, **kwargs):
        plot3d_parametric_surface(
            (x, y, z, (u, 0, 2*pi), (v, -1, 0)),
            params = {
-               n: param.Integer(2)
+               n: param.Integer(2, label="n")
            },
            backend=KB,
            use_cm=True,
@@ -2013,6 +2014,156 @@ def plot3d_parametric_surface(*args, **kwargs):
     series += _plot3d_wireframe_helper(series, **kwargs)
     Backend = kwargs.pop("backend", THREE_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
+
+
+def plot3d_spherical(*args, **kwargs):
+    """
+    Plots a radius as a function of the spherical coordinates theta and phi.
+
+    Typical usage examples are in the followings:
+
+    - Plotting a single expression.
+        `plot3d_spherical(r, range_theta, range_phi, **kwargs)`
+    - Plotting multiple expressions with the same ranges.
+        `plot3d_parametric_surface(r1, r2, range_theta, range_phi, **kwargs)`
+    - Plotting multiple expressions with different ranges.
+        `plot3d_parametric_surface((r1, range_theta1, range_phi1), (r2, range_theta2, range_phi2), **kwargs)`
+    - Plotting multiple expressions with different ranges and rendering option.
+        `plot3d_parametric_surface((r1, range_theta1, range_phi1, label1, rendering_kw1), (r2, range_theta2, range_phi2, label2, rendering_kw2), **kwargs)`
+
+    Note: it is important to specify both the ranges.
+
+    Parameters
+    ==========
+
+    args :
+        r: Expr
+            Expression representing the radius. It can be a:
+
+            * Symbolic expression.
+            * Numerical function of two variable, f(theta, phi), supporting
+              vectorization. In this case the following keyword arguments are
+              not supported: ``params``.
+
+        theta: (symbol, min, max)
+            A 3-tuple denoting the range of the polar angle, which is limited
+            in [0, pi]. Consider a sphere:
+
+            * ``theta=0`` indicates the north pole.
+            * ``theta=pi/2`` indicates the equator.
+            * ``theta=pi`` indicates the south pole.
+
+        range_v: (symbol, min, max)
+            A 3-tuple denoting the range of the azimuthal angle, which is
+            limited in [0, 2*pi].
+
+        label : str, optional
+            The label to be shown in the colorbar.  If not provided, the string
+            representation of the expression will be used.
+
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of surfaces. Refer to the
+            plotting library (backend) manual for more informations.
+
+    Keyword arguments are the same as ``plot3d_parametric_surface``. Refer to
+    its documentation for more information.
+
+    Examples
+    ========
+
+    Note: it is recommended to execute the following examples with a good
+    3D backed, such as PlotlyBackend, K3DBackend, MayaviBackend. This can
+    be achieved by using the ``backend`` keyword, for example:
+    ``backend=K3DBackend``.
+
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import symbols, cos, sin, pi, Ynm, re, lambdify
+       >>> from spb import plot3d_spherical
+       >>> theta, phi = symbols('theta phi')
+
+    Sphere cap:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot3d_spherical(1, (theta, 0, 0.7 * pi), (phi, 0, 1.8 * pi))
+
+    Plot real spherical harmonics, highlighting the regions in which the
+    real part is positive and negative:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> r = re(Ynm(3, 3, theta, phi).expand(func=True).rewrite(sin).expand())
+       >>> plot3d_spherical(
+       ...     abs(r), (theta, 0, pi), (phi, 0, 2 * pi), "radius",
+       ...     use_cm=True, n2=200,
+       ...     color_func=lambda t, p: lambdify([theta, phi], r)(t, p))
+
+    Multiple surfaces with wireframe lines. Note that activating the wireframe
+    option might add a considerable overhead during the plot's creation.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> r1 = 1
+       >>> r2 = 1.5 + sin(5 * phi) * sin(10 * theta) / 10
+       >>> plot3d_spherical(r1, r2, (theta, 0, pi / 2), (phi, 0, 1.85 * pi),
+       ...     wireframe=True, wf_n2=25)
+
+    Interactive-widget plot of spherical harmonics. Note that the plot's
+    creation and update might be slow and that it must be ``m < n`` at all
+    times. Refer to ``iplot`` documentation to learn more about the ``params``
+    dictionary.
+
+    .. code-block:: python
+
+       from sympy import *
+       from spb import *
+       import param
+       n, m = symbols("n, m")
+       phi, theta = symbols("phi, theta", real=True)
+       r = abs(re(Ynm(n, m, theta, phi).expand(func=True).rewrite(sin).expand()))
+       plot3d_spherical(
+           r, (theta, 0, pi), (phi, 0, 2*pi),
+           params = {
+               n: param.Integer(0, label="n"),
+               m: param.Integer(0, label="m"),
+           },
+           backend=KB
+        )
+
+    See Also
+    ========
+    plot3d_parametric_surface, plot3d, plot3d_parametric_line, plot3d_implicit
+    """
+    args = _plot_sympify(args)
+    kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
+    plot_expr = _check_arguments(args, 1, 2, **kwargs)
+
+    # enforce polar and azimuthal condition and convert spherical to cartesian
+    for i, pe in enumerate(plot_expr):
+        r, r1, r2 = pe[0], pe[1], pe[2]
+        theta, phi = r1[0], r2[0]
+        x, y, z = spherical_to_cartesian(r, theta, phi)
+        r1 = (theta, 0 if r1[1] < 0 else r1[1], pi if r1[2] > pi else r1[2])
+        # TODO: what if I want to plot a slice starting from 1.5*pi going to
+        # 3 * pi?
+        r2 = (phi, 0 if r2[1] < 0 else r2[1], 2 * pi if r2[2] > 2 * pi else r2[2])
+        plot_expr[i] = (x, y, z, r1, r2, *pe[3:])
+    return plot3d_parametric_surface(*plot_expr, **kwargs)
 
 
 def plot3d_implicit(*args, **kwargs):
