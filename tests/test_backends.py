@@ -2132,6 +2132,13 @@ def test_aspect_ratio_3d():
     assert p.aspect == "cube"
     assert p.fig.layout.scene.aspectmode == "cube"
 
+    d = dict(x=1, y=1, z=1)
+    p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        n1=20, n2=20, backend=PB, show=False, aspect=d)
+    assert p.aspect == d
+    assert p.fig.layout.scene.aspectmode == "manual"
+    assert all(p.fig.layout.scene.aspectratio[k] == d[k] for k in ["x", "y", "z"])
+
     p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
         n1=20, n2=20, backend=MAB, show=True, aspect="equal")
     assert p.aspect == "equal"

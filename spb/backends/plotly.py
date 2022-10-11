@@ -19,7 +19,16 @@ class PlotlyBackend(Plot):
         Possible values:
 
         - ``"equal"``: sets equal spacing on the axis of a 2D plot.
-        - ``"cube"``, ``"auto"`` for 3D plots.
+        - For 3D plots:
+
+          * ``"cube"``: fix the ratio to be a cube
+          * ``"data"``: draw axes in proportion to the proportion of their
+            ranges
+          * ``"auto"``: automatically produce something that is well
+            proportioned using 'data' as the default.
+          * manually set the aspect ratio by providing a dictionary.
+            For example: ``dict(x=1, y=1, z=2)`` forces the z-axis to appear
+            twice as big as the other two.
 
     rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's plot
@@ -858,7 +867,8 @@ class PlotlyBackend(Plot):
                     zeroline=self.grid,  # thick line at x=0
                     visible=self.grid,  # numbers below
                 ),
-                aspectmode=(self.aspect if self.aspect != "equal" else "auto"),
+                aspectmode=("manual" if isinstance(self.aspect, dict) else (self.aspect if self.aspect != "equal" else "auto")),
+                aspectratio=self.aspect if isinstance(self.aspect, dict) else None
             ),
         )
 
