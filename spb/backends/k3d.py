@@ -556,11 +556,23 @@ class K3DBackend(Plot):
             self._fig.camera = self._fig.get_auto_camera(1.5, 40, 60, bounds)
 
         self._fig.display()
+        clipping_planes = []
         if self.zlim:
-            self._fig.clipping_planes = [
-                [0, 0, 1, self.zlim[0]],
+            clipping_planes += [
+                [0, 0, 1, -self.zlim[0]],
                 [0, 0, -1, self.zlim[1]],
             ]
+        if self.xlim:
+            clipping_planes += [
+                [1, 0, 0, -self.xlim[0]],
+                [-1, 0, 0, self.xlim[1]],
+            ]
+        if self.ylim:
+            clipping_planes += [
+                [0, 1, 0, -self.ylim[0]],
+                [0, -1, 0, self.ylim[1]],
+            ]
+        self._fig.clipping_planes = clipping_planes
 
     def save(self, path, **kwargs):
         """Export the plot to a static picture or to an interactive html file.
