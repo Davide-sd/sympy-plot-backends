@@ -441,12 +441,9 @@ def plot(*args, **kwargs):
     title : str, optional
         Title of the plot.
 
-    tx : callable, optional
-        Apply a numerical function to the discretized x-direction.
-
-    ty : callable, optional
-        Apply a numerical function to the output of the numerical evaluation,
-        the y-direction.
+    tx, ty : callable, optional
+        Apply a numerical function to the discretized x-direction or to the
+        output of the numerical evaluation, the y-direction.
 
     use_latex : boolean, optional
         Turn on/off the rendering of latex labels. If the backend doesn't
@@ -812,8 +809,8 @@ def plot_parametric(*args, **kwargs):
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
 
-    tz : callable, optional
-        Apply a numerical function to the discretized range.
+    tx, ty, tp : callable, optional
+        Apply a numerical function to the x-direction, y-direction and parameter, respectively.
 
     use_cm : boolean, optional
         If True, apply a color map to the parametric lines.
@@ -895,7 +892,7 @@ def plot_parametric(*args, **kwargs):
        >>> plot_parametric(
        ...      (3 * cos(u), 3 * sin(u), (u, 0, 2 * pi), "u [deg]", {"lw": 3}),
        ...      (3 * cos(2 * v), 5 * sin(4 * v), (v, 0, pi), "v [deg]"),
-       ...      aspect="equal", tz=np.rad2deg)
+       ...      aspect="equal", tp=np.rad2deg)
        Plot object containing:
        [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
        [1]: parametric cartesian line: (3*cos(2*u), 5*sin(4*u)) for u over (0.0, 3.141592653589793)
@@ -1103,8 +1100,9 @@ def plot3d_parametric_line(*args, **kwargs):
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
 
-    tz : callable, optional
-        Apply a numerical function to the discretized parameter.
+    tx, ty, tz, tp : callable, optional
+        Apply a numerical function to the x, y, z directions and to the
+        discretized parameter.
 
     use_cm : boolean, optional
         If True, apply a color map to the parametric lines.
@@ -1312,14 +1310,18 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
         rendering_kw=wf_rend_kw
     )
 
-    def create_series(expr, ranges, is_interactive, **kw):
+    def create_series(expr, ranges, surface_series, **kw):
+        is_interactive = surface_series.is_interactive
         expr = [e if callable(e) else sympify(e) for e in expr]
         cls = Parametric3DLineSeries if not is_interactive else Parametric3DLineInteractiveSeries
+        kw["tx"] = surface_series._tx
+        kw["ty"] = surface_series._ty
+        kw["tz"] = surface_series._tz
+        kw["tp"] = surface_series._tp
         if is_interactive:
             return Parametric3DLineInteractiveSeries(expr, ranges, "", **kw)
         return Parametric3DLineSeries(*expr, *ranges, "", **kw)
 
-    # f_asd =
     for s in surfaces:
         param_expr, ranges = [], []
 
@@ -1342,7 +1344,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                     else:
                         param_expr = [e.subs(x, uval) for e in expr]
                         ranges = [(y, sy, ey)]
-                    lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+                    lines.append(create_series(param_expr, ranges, s, **kw))
                 for vval in np.linspace(float(sy), float(ey), wf_n2):
                     kw["n"] = s.n1 if npoints is None else npoints
                     if is_callable:
@@ -1352,7 +1354,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                     else:
                         param_expr = [e.subs(y, vval) for e in expr]
                         ranges = [(x, sx, ex)]
-                    lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+                    lines.append(create_series(param_expr, ranges, s, **kw))
             elif s.is_complex:
                 # TODO: not so easy to implement. Probably need a new
                 # 3d parametric line series class that is able to deal with
@@ -1369,7 +1371,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                         else:
                             param_expr = [xval, y, expr.subs(x, xval)]
                             ranges = [(y, sy, ey)]
-                        lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+                        lines.append(create_series(param_expr, ranges, s, **kw))
                     for yval in np.linspace(float(sy), float(ey), wf_n2):
                         kw["n"] = s.n1 if npoints is None else npoints
                         if callable(expr):
@@ -1379,7 +1381,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                         else:
                             param_expr = [x, yval, expr.subs(y, yval)]
                             ranges = [(x, sx, ex)]
-                        lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+                        lines.append(create_series(param_expr, ranges, s, **kw))
                 else:
                     for rval in np.linspace(float(sx), float(ex), wf_n1):
                         kw["n"] = s.n2 if npoints is None else npoints
@@ -1389,7 +1391,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                         else:
                             param_expr = [rval * cos(y), rval * sin(y), expr.subs(x, rval)]
                             ranges = [(y, sy, ey)]
-                        lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+                        lines.append(create_series(param_expr, ranges, s, **kw))
                     for tval in np.linspace(float(sy), float(ey), wf_n2):
                         kw["n"] = s.n1 if npoints is None else npoints
                         if callable(expr):
@@ -1398,7 +1400,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                         else:
                             param_expr = [x * cos(tval), x * sin(tval), expr.subs(y, tval)]
                             ranges = [(x, sx, ex)]
-                        lines.append(create_series(param_expr, ranges, s.is_interactive, **kw))
+                        lines.append(create_series(param_expr, ranges, s, **kw))
 
     return lines
 
@@ -1540,16 +1542,9 @@ def plot3d(*args, **kwargs):
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
 
-    tx : callable, optional
+    tx, ty, tz : callable, optional
         Apply a numerical function to the discretized domain in the
-        x-direction.
-
-    ty : callable, optional
-        Apply a numerical function to the discretized domain in the
-        y-direction.
-
-    tz : callable, optional
-        Apply a numerical function to the results of the numerical evaluation.
+        x, y and z direction, respectively.
 
     use_cm : boolean, optional
         If True, apply a color map to the surface.
@@ -1855,6 +1850,10 @@ def plot3d_parametric_surface(*args, **kwargs):
     title : str, optional
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
+
+    tx, ty, tz : callable, optional
+        Apply a numerical function to the discretized domain in the
+        x, y and z direction, respectively.
 
     use_cm : boolean, optional
         If True, apply a color map to the surface.
@@ -3341,12 +3340,9 @@ def plot_piecewise(*args, **kwargs):
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
 
-    tx : callable, optional
-        Apply a numerical function to the discretized x-direction.
-
-    ty : callable, optional
-        Apply a numerical function to the output of the numerical evaluation,
-        the y-direction.
+    tx, ty : callable, optional
+        Apply a numerical function to the discretized domain in the
+        x and y directions, respectively.
 
     use_latex : boolean, optional
         Turn on/off the rendering of latex labels. If the backend doesn't

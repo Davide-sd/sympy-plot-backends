@@ -335,8 +335,9 @@ class BaseSeries:
         self._tx = kwargs.get("tx", None)
         self._ty = kwargs.get("ty", None)
         self._tz = kwargs.get("tz", None)
-        if not all(callable(t) or (t is None) for t in [self._tx, self._ty, self._tz]):
-            raise TypeError("`tx`, `ty`, `tz` must be functions.")
+        self._tp = kwargs.get("tp", None)
+        if not all(callable(t) or (t is None) for t in [self._tx, self._ty, self._tz, self._tp]):
+            raise TypeError("`tx`, `ty`, `tz`, `tp` must be functions.")
 
     def _block_lambda_functions(self, *exprs):
         if any(callable(e) for e in exprs):
@@ -581,19 +582,22 @@ class BaseSeries:
             return t(x, self._tx), t(y, self._ty)
         elif (len(args) == 3) and isinstance(self, (Parametric2DLineSeries, Parametric2DLineInteractiveSeries)):
             x, y, u = args
-            return (x, y, t(u, self._tz))
+            return (t(x, self._tx), t(y, self._ty), t(u, self._tp))
         elif len(args) == 3:
             x, y, z = args
             return t(x, self._tx), t(y, self._ty), t(z, self._tz)
         elif (len(args) == 4) and isinstance(self, (Parametric3DLineSeries, Parametric3DLineInteractiveSeries)):
             x, y, z, u = args
-            return (x, y, z, t(u, self._tz))
+            return (t(x, self._tx), t(y, self._ty), t(z, self._tz), t(u, self._tp))
         elif len(args) == 4: # 2D vector plot
             x, y, u, v = args
             return (
                 t(x, self._tx), t(y, self._ty),
                 t(u, self._tx), t(v, self._ty)
             )
+        elif (len(args) == 5) and isinstance(self, (ParametricSurfaceSeries, ParametricSurfaceInteractiveSeries)):
+            x, y, z, u, v = args
+            return (t(x, self._tx), t(y, self._ty), t(z, self._tz), u, v)
         elif (len(args) == 6) and (not self.is_complex): # 3D vector plot
             x, y, z, u, v, w = args
             return (
@@ -946,7 +950,7 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
     is_parametric = True
     _allowed_keys = ["adaptive", "adaptive_goal", "color_func", "is_filled",
     "is_point", "line_color", "loss_fn", "modules", "n", "only_integers",
-    "rendering_kw", "use_cm", "xscale", "tx", "ty", "tz"]
+    "rendering_kw", "use_cm", "xscale", "tx", "ty", "tz", "tp"]
 
     def _set_parametric_line_label(self, label):
         """Logic to set the correct label to be shown on the plot.
@@ -1346,7 +1350,7 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         x = self._eval_component(self.expr_x, mesh_u, mesh_v)
         y = self._eval_component(self.expr_y, mesh_u, mesh_v)
         z = self._eval_component(self.expr_z, mesh_u, mesh_v)
-        return x, y, z, mesh_u, mesh_v
+        return self._apply_transform(x, y, z, mesh_u, mesh_v)
 
 
 class ContourSeries(SurfaceOver2DRangeSeries):
@@ -1792,8 +1796,9 @@ class InteractiveSeries(BaseSeries, ParamsMixin):
         self._tx = kwargs.get("tx", None)
         self._ty = kwargs.get("ty", None)
         self._tz = kwargs.get("tz", None)
-        if not all(callable(t) or (t is None) for t in [self._tx, self._ty, self._tz]):
-            raise TypeError("`tx`, `ty`, `tz` must be functions.")
+        self._tp = kwargs.get("tp", None)
+        if not all(callable(t) or (t is None) for t in [self._tx, self._ty, self._tz, self._tp]):
+            raise TypeError("`tx`, `ty`, `tz`, `tp` must be functions.")
 
         nexpr, npar = len(exprs), len(ranges)
 
@@ -2182,7 +2187,7 @@ class ParametricSurfaceInteractiveSeries(SurfaceInteractiveSeries):
             results[i] = _re
 
         discr = [np.real(t) for t in self.ranges.values()]
-        return [*results, *discr]
+        return self._apply_transform(*results, *discr)
 
     def __str__(self):
         return self._str("parametric cartesian surface")

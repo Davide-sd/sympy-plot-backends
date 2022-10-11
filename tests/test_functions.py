@@ -71,7 +71,23 @@ def test_plot3d_spherical():
     assert np.allclose([p[0].start_v, p[0].end_v], [float(pi/2), float(3*pi/2)])
 
 
-def test_plot3d_plot_contour():
+def test_plot3d_wireframe_transform_function():
+    # verify that when plot3d and wireframe=True are used together with
+    # transformation functions (tx, ty, tz), those are also applied to
+    # wireframe lines.
+
+    x, y = symbols("x, y")
+
+    fx = lambda t: t*2
+    fy = lambda t: t*3
+    fz = lambda t: t*4
+    p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), n1=10, n2=10,
+            wireframe=True, wf_n1=3, wf_n2=3, show=False,
+            tx=fx, ty=fy, tz=fz)
+    assert all((s._tx == fx) and (s._ty == fy) and (s._tz == fz) for s in p.series)
+
+
+def test_plot3d_plot_contour_base_scalars():
     # verify that these functions are able to deal with base scalars
 
     C = CoordSys3D("")

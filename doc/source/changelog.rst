@@ -28,6 +28,13 @@ v1.4.1
 
   * Fixed bug with ``color_func``.
 
+  * Added ``tx, ty, tz`` support to parametric series.
+
+* Breaks:
+
+  * Inside ``plot_parametric`` and ``plot3d_parametric_line``, the ``tz``
+    keyword argument has been renamed to ``tp``.
+
 
 v1.4.0
 ======

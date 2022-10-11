@@ -1786,17 +1786,17 @@ def test_apply_transforms():
         sin(x), cos(x), (x, -pi, pi), adaptive=False, n=10)
     s2 = Parametric2DLineSeries(
         sin(x), cos(x), (x, -pi, pi), adaptive=False, n=10,
-        tx=np.rad2deg, ty=np.rad2deg, tz=np.rad2deg)
+        tx=np.rad2deg, ty=np.rad2deg, tp=np.rad2deg)
     x1, y1, a1 = s1.get_data()
     x2, y2, a2 = s2.get_data()
-    assert np.allclose(x1, x2)
-    assert np.allclose(y1, y2)
+    assert np.allclose(x1, np.deg2rad(x2))
+    assert np.allclose(y1, np.deg2rad(y2))
     assert np.allclose(a1, np.deg2rad(a2))
 
     s1 =  Parametric3DLineSeries(
         sin(x), cos(x), x, (x, -pi, pi), adaptive=False, n=10)
     s2 = Parametric3DLineSeries(
-        sin(x), cos(x), x, (x, -pi, pi), adaptive=False, n=10, tz=np.rad2deg)
+        sin(x), cos(x), x, (x, -pi, pi), adaptive=False, n=10, tp=np.rad2deg)
     x1, y1, z1, a1 = s1.get_data()
     x2, y2, z2, a2 = s2.get_data()
     assert np.allclose(x1, x2)
@@ -1816,6 +1816,21 @@ def test_apply_transforms():
     assert np.allclose(x1, np.deg2rad(x2))
     assert np.allclose(y1, y2 / 2)
     assert np.allclose(z1, z2 / 3)
+
+    s1 = ParametricSurfaceSeries(
+        u + v, u - v, u * v, (u, 0, 2*pi), (v, 0, pi),
+        adaptive=False, n1=10, n2=10)
+    s2 = ParametricSurfaceSeries(
+        u + v, u - v, u * v, (u, 0, 2*pi), (v, 0, pi),
+        adaptive=False, n1=10, n2=10,
+        tx=np.rad2deg, ty=lambda x: 2*x, tz=lambda x: 3*x)
+    x1, y1, z1, u1, v1 = s1.get_data()
+    x2, y2, z2, u2, v2 = s2.get_data()
+    assert np.allclose(x1, np.deg2rad(x2))
+    assert np.allclose(y1, y2 / 2)
+    assert np.allclose(z1, z2 / 3)
+    assert np.allclose(u1, u2)
+    assert np.allclose(v1, v2)
 
     s1 = LineInteractiveSeries([y * cos(x)], [(x, -2*pi, 2*pi)],
         adaptive=False, n=10, params={y: 1})
@@ -1843,11 +1858,11 @@ def test_apply_transforms():
     s2 = Parametric2DLineInteractiveSeries(
         [y * sin(x), cos(x)], [(x, -pi, pi)], params={y: 1},
         adaptive=False, n=10,
-        tx=np.rad2deg, ty=np.rad2deg, tz=np.rad2deg)
+        tx=np.rad2deg, ty=np.rad2deg, tp=np.rad2deg)
     x1, y1, a1 = s1.get_data()
     x2, y2, a2 = s2.get_data()
-    assert np.allclose(x1, x2)
-    assert np.allclose(y1, y2)
+    assert np.allclose(x1, np.deg2rad(x2))
+    assert np.allclose(y1, np.deg2rad(y2))
     assert np.allclose(a1, np.deg2rad(a2))
 
     s1 = Parametric3DLineInteractiveSeries(
@@ -1855,12 +1870,12 @@ def test_apply_transforms():
         adaptive=False, n=10)
     s2 = Parametric3DLineInteractiveSeries(
         [sin(x), y * cos(x), x], [(x, -pi, pi)], params={y: 1},
-        adaptive=False, n=10, tz=np.rad2deg)
+        adaptive=False, n=10, tz=np.rad2deg, tp=np.rad2deg)
     x1, y1, z1, a1 = s1.get_data()
     x2, y2, z2, a2 = s2.get_data()
     assert np.allclose(x1, x2)
     assert np.allclose(y1, y2)
-    assert np.allclose(z1, z2)
+    assert np.allclose(z1, np.deg2rad(z2))
     assert np.allclose(a1, np.deg2rad(a2))
 
     s1 = SurfaceInteractiveSeries(
@@ -1873,6 +1888,21 @@ def test_apply_transforms():
     assert np.allclose(x1, np.deg2rad(x2))
     assert np.allclose(y1, y2 / 2)
     assert np.allclose(z1, z2 / 3)
+
+    s1 = ParametricSurfaceInteractiveSeries(
+        [x * u + v, u - v, u * v], [(u, 0, 2*pi), (v, 0, pi)], params={x: 1},
+        n1=10, n2=10)
+    s2 = ParametricSurfaceInteractiveSeries(
+        [x * u + v, u - v, u * v], [(u, 0, 2*pi), (v, 0, pi)], params={x: 1},
+        n1=10, n2=10,
+        tx=np.rad2deg, ty=lambda x: 2*x, tz=lambda x: 3*x)
+    x1, y1, z1, u1, v1 = s1.get_data()
+    x2, y2, z2, u2, v2 = s2.get_data()
+    assert np.allclose(x1, np.deg2rad(x2))
+    assert np.allclose(y1, y2 / 2)
+    assert np.allclose(z1, z2 / 3)
+    assert np.allclose(u1, u2)
+    assert np.allclose(v1, v2)
 
     s1 = Vector2DSeries(sin(y), cos(x), (x, -pi, pi), (y, -pi, pi), n1=5, n2=5)
     s2 = Vector2DSeries(sin(y), cos(x), (x, -pi, pi), (y, -pi, pi), n1=5, n2=5,
