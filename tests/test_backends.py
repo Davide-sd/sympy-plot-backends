@@ -211,7 +211,7 @@ def test_custom_colorloop():
 
     _plot = lambda B: plot(
         sin(x), cos(x), sin(x / 2), cos(x / 2), 2 * sin(x), 2 * cos(x),
-        backend=B, show=False)
+        backend=B, adaptive=False, n=5, show=False)
 
     assert len(MBchild.colorloop) != len(MB.colorloop)
     _p1 = _plot(MB)
@@ -306,7 +306,7 @@ def test_MatplotlibBackend():
 
     # `_handle` is needed in order to correctly update the data with iplot
     x, y = symbols("x, y")
-    p = plot3d(cos(x**2 + y**2), backend=MB, show=False, n1=10, n2=10, use_cm=True)
+    p = plot3d(cos(x**2 + y**2), backend=MB, show=False, n1=5, n2=5, use_cm=True)
     p.process_series()
     assert hasattr(p, "_handles") and isinstance(p._handles, dict)
     assert len(p._handles) == 1
@@ -357,11 +357,11 @@ def test_plot_sum():
     # the choice of the backend dictates the keyword arguments
     # inside rendering_kw
     p1 = plot(sin(x), backend=PB, rendering_kw=dict(line_color='black'),
-        xlabel="x1", ylabel="y1", show=False)
+        xlabel="x1", ylabel="y1", adaptive=False, n=5, show=False)
     p2 = plot(cos(x), backend=PB, rendering_kw=dict(line_dash='dash'),
-        xlabel="x2", ylabel="y2", show=False)
+        xlabel="x2", ylabel="y2", adaptive=False, n=5, show=False)
     p3 = plot(sin(x) * cos(x), backend=PB,
-        rendering_kw=dict(line_dash='dot'), show=False)
+        rendering_kw=dict(line_dash='dot'), adaptive=False, n=5, show=False)
     p4 = p1 + p2 + p3
     assert isinstance(p4, PB)
     assert len(p4.series) == 3
@@ -393,8 +393,8 @@ def test_plot_sum():
     # the series.
     hex2rgb = lambda h: tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
     p1 = plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
-        backend=MB, scalar=True, show=False)
-    p2 = plot(sin(x), (x, -3, 3), backend=MB, show=False)
+        backend=MB, scalar=True, adaptive=False, n1=5, n2=5, show=False)
+    p2 = plot(sin(x), (x, -3, 3), backend=MB, adaptive=False, n=5, show=False)
     p3 = p1 + p2
     assert isinstance(p3, MB)
     assert len(p3.series) == 3
@@ -415,8 +415,8 @@ def test_plot_sum():
 
     # summing plots with different backends: the first backend will be used in
     # the result
-    p1 = plot(sin(x), backend=MB, show=False)
-    p2 = plot(cos(x), backend=PB, show=False)
+    p1 = plot(sin(x), backend=MB, adaptive=False, n=5, show=False)
+    p2 = plot(cos(x), backend=PB, adaptive=False, n=5, show=False)
     p3 = p1 + p2
     assert isinstance(p3, MB)
 
@@ -436,7 +436,7 @@ def test_plot():
 
     _plot = lambda B, rendering_kw, use_latex=False: plot(
         sin(x), cos(x), rendering_kw=rendering_kw, backend=B,
-        show=False, legend=True, use_latex=use_latex)
+        show=False, legend=True, use_latex=use_latex, adaptive=False, n=5)
 
     p = _plot(MB, rendering_kw=dict(color="red"))
     assert len(p.series) == 2
@@ -519,7 +519,8 @@ def test_plot_parametric():
 
     _plot_parametric = lambda B, rendering_kw: plot_parametric(
         cos(x), sin(x), (x, 0, 1.5 * pi), backend=B,
-        show=False, rendering_kw=rendering_kw, use_latex=False
+        show=False, rendering_kw=rendering_kw, use_latex=False,
+        adaptive=False, n=5
     )
 
     p = _plot_parametric(MB, rendering_kw=dict(color="red"))
@@ -574,7 +575,8 @@ def test_plot3d_parametric_line():
     def _plot3d_parametric_line(B, rendering_kw, show=False):
         return plot3d_parametric_line(
             cos(x), sin(x), x, (x, -pi, pi), backend=B,
-            show=show, rendering_kw=rendering_kw, use_latex=False
+            show=show, rendering_kw=rendering_kw, use_latex=False,
+            adaptive=False, n=5
         )
 
     p = _plot3d_parametric_line(MB, rendering_kw=dict(color="red"))
@@ -627,7 +629,7 @@ def test_plot3d():
             cos(x ** 2 + y ** 2),
             (x, -3, 3),
             (y, -3, 3),
-            n=20,
+            n=5,
             use_cm=False,
             backend=B,
             show=show,
@@ -689,7 +691,7 @@ def test_plot3d_2():
         sin(x ** 2 + y ** 2),
         (x, -3, 3),
         (y, -3, 3),
-        n=10,
+        n=5,
         use_cm=True,
         backend=B,
         show=show,
@@ -751,7 +753,7 @@ def test_plot3d_wireframe():
 
     x, y = symbols("x, y")
     _plot3d1 = lambda B, wf=True: plot3d(
-        cos(x**2 + y**2), (x, -2, 2), (y, -3, 3), n1=10, n2=15,
+        cos(x**2 + y**2), (x, -2, 2), (y, -3, 3), n1=5, n2=8,
         use_cm=True, backend=B, wireframe=wf, show=False)
 
     p0 = _plot3d1(PB, False)
@@ -778,7 +780,7 @@ def test_plot3d_wireframe():
     p2c = _plot3d1(MB)
 
     _plot3d2 = lambda B, rk: plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        use_cm=True, backend=B, n1=10, n2=10,
+        use_cm=True, backend=B, n1=5, n2=8,
         wireframe=True, wf_n1=20, wf_n2=30,
         wf_rendering_kw=rk, wf_npoints=12, show=False)
     p3 = _plot3d2(PB, {"line_color": "#ff0000"})
@@ -791,7 +793,7 @@ def test_plot3d_wireframe():
 
     r, theta = symbols("r, theta")
     _plot3d3 = lambda B, wf: plot3d(
-        (cos(r**2) * exp(-r / 3), (r, 0, 3.25), (theta, 0, 2 * pi), "r"), backend=B, is_polar=True, use_cm=True, legend=True, n1=10, n2=15,
+        (cos(r**2) * exp(-r / 3), (r, 0, 3.25), (theta, 0, 2 * pi), "r"), backend=B, is_polar=True, use_cm=True, legend=True, n1=5, n2=8,
         color_func=lambda x, y, z: (x**2 + y**2)**0.5,
         wireframe=True, wf_n1=20, wf_n2=40, wf_rendering_kw=wf, show=False)
     p4 = _plot3d3(PB, {"line_color": "red"})
@@ -815,7 +817,7 @@ def test_plot3d_wireframe_lambda_function():
 
     _plot3d1 = lambda B, wf=True: plot3d(
         lambda x, y: np.cos(x**2 + y**2), ("x", -2, 2), ("y", -3, 3),
-        n1=10, n2=15,
+        n1=5, n2=8,
         use_cm=True, backend=B, wireframe=wf, show=False)
 
     p0 = _plot3d1(PB, False)
@@ -836,7 +838,7 @@ def test_plot3d_wireframe_lambda_function():
     _plot3d3 = lambda B, wf: plot3d(
         lambda r, theta: np.cos(r**2) * np.exp(-r / 3),
         ("r", 0, 3.25), ("theta", 0, 2 * np.pi), "r",
-        backend=B, is_polar=True, use_cm=True, legend=True, n1=10, n2=15,
+        backend=B, is_polar=True, use_cm=True, legend=True, n1=5, n2=8,
         color_func=lambda x, y, z: (x**2 + y**2)**0.5,
         wireframe=True, wf_n1=20, wf_n2=40, wf_rendering_kw=wf, show=False)
     p4 = _plot3d3(PB, {"line_color": "red"})
@@ -863,7 +865,7 @@ def test_plot3d_parametric_surface_wireframe():
     y = (1 + v / 2 * cos(u / 2)) * sin(u)
     z = v / 2 * sin(u / 2)
     p = plot3d_parametric_surface(x, y, z, (u, 0, 2*pi), (v, -1, 1),
-        backend=PB, use_cm=True, n1=10, n2=15,
+        backend=PB, use_cm=True, n1=5, n2=8,
         wireframe=True, wf_n1=5, wf_n2=6,
         wf_rendering_kw={"line_color": "red"}, show=False)
     assert len(p.series) == 1 + 5 + 6
@@ -885,7 +887,7 @@ def test_plot3d_parametric_surface_wireframe_lambda_function():
     y = lambda u, v: v * np.sin(u)
     z = lambda u, v: np.sin(4 * u)
     _plot = lambda wf: plot3d_parametric_surface(
-        x, y, z, ("u", 0, 2*np.pi), ("v", -1, 0), n1=10, n2=10,
+        x, y, z, ("u", 0, 2*np.pi), ("v", -1, 0), n1=5, n2=8,
         backend=PB, use_cm=True,
         wireframe=wf, wf_n1=5, wf_n2=6,
         show=False)
@@ -897,8 +899,8 @@ def test_plot3d_parametric_surface_wireframe_lambda_function():
     assert len(p1.series) == 1 + 5 + 6
     assert isinstance(p1[0], ParametricSurfaceSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
-    assert all((not s.adaptive) and (s.n == p1[0].n2) for s in p1.series[1:11])
-    assert all((not s.adaptive) and (s.n == p1[0].n1) for s in p1.series[11:])
+    assert all((not s.adaptive) and (s.n == p1[0].n2) for s in p1.series[1:6])
+    assert all((not s.adaptive) and (s.n == p1[0].n1) for s in p1.series[6:])
     assert all(p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
     assert all([np.isclose(k[0], -1) and np.isclose(k[-1], 0)
         for k in [t.get_data()[-1] for t in p1.series[1:6]]])
@@ -917,7 +919,7 @@ def test_plot_contour():
         cos(x ** 2 + y ** 2),
         (x, -3, 3),
         (y, -3, 3),
-        n=20,
+        n=5,
         backend=B,
         show=False,
         rendering_kw=rendering_kw,
@@ -972,7 +974,7 @@ def test_plot_contour_is_filled():
         cos(x ** 2 + y ** 2),
         (x, -3, 3),
         (y, -3, 3),
-        n=20,
+        n=5,
         backend=B,
         show=False,
         use_latex=False,
@@ -1012,7 +1014,8 @@ def test_plot_vector_2d_quivers():
         show=False,
         quiver_kw=quiver_kw,
         contour_kw=contour_kw,
-        use_latex=False
+        use_latex=False,
+        n1=5, n2=8
     )
 
     p = _plot_vector(MB, quiver_kw=dict(color="red"),
@@ -1079,7 +1082,8 @@ def test_plot_vector_2d_streamlines_custom_scalar_field():
         show=False,
         stream_kw=stream_kw,
         contour_kw=contour_kw,
-        use_latex=False
+        use_latex=False,
+        n1=5, n2=5
     )
 
     p = _plot_vector(MB, stream_kw=dict(color="red"),
@@ -1144,7 +1148,8 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
         show=False,
         stream_kw=stream_kw,
         contour_kw=contour_kw,
-        use_latex=False
+        use_latex=False,
+        n1=5, n2=5
     )
 
     p = _plot_vector(MB, stream_kw=dict(color="red"),
@@ -1193,7 +1198,8 @@ def test_plot_vector_2d_matplotlib():
         streamlines=streamlines,
         use_cm=use_cm,
         show=False,
-        use_latex=False)
+        use_latex=False,
+        n1=5, n2=8)
 
     # contours + quivers: 1 colorbar for the contours
     p = _plot_vector_1(True, False)
@@ -1249,7 +1255,7 @@ def test_plot_vector_3d_quivers():
         (y, -4, 4),
         (z, -3, 3),
         backend=B,
-        n=10,
+        n=5,
         quiver_kw=quiver_kw,
         show=show,
         use_latex=False,
@@ -1320,7 +1326,7 @@ def test_plot_vector_3d_streamlines():
         (y, -4, 4),
         (z, -3, 3),
         backend=B,
-        n=10,
+        n=5,
         streamlines=True,
         show=show,
         stream_kw=stream_kw,
@@ -1449,7 +1455,7 @@ def test_plot_implicit_adaptive_false():
         x > y,
         (x, -5, 5),
         (y, -4, 4),
-        n=20,
+        n=5,
         backend=B,
         adaptive=False,
         show=False,
@@ -1490,7 +1496,7 @@ def test_plot_real_imag():
 
     _plot_real_imag = lambda B, rendering_kw: plot_real_imag(
         sqrt(x), (x, -5, 5), backend=B, rendering_kw=rendering_kw, show=False,
-        use_latex=False
+        use_latex=False, adaptive=False, n=5
     )
 
     p = _plot_real_imag(MB, rendering_kw=dict(color="red"))
@@ -1544,7 +1550,8 @@ def test_plot_complex_1d():
     x = symbols("x")
 
     _plot_complex = lambda B, rendering_kw: plot_complex(
-        sqrt(x), (x, -5, 5), backend=B, rendering_kw=rendering_kw, show=False
+        sqrt(x), (x, -5, 5), backend=B, rendering_kw=rendering_kw, show=False,
+        adaptive=False, n=5
     )
 
     p = _plot_complex(MB, rendering_kw=dict(color="red"))
@@ -1593,7 +1600,7 @@ def test_plot_complex_2d():
 
     _plot_complex = lambda B, rendering_kw: plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, coloring="a",
-        rendering_kw=rendering_kw, show=False
+        rendering_kw=rendering_kw, show=False, adaptive=False, n=5
     )
 
     p = _plot_complex(MB, rendering_kw=dict())
@@ -1655,7 +1662,7 @@ def test_plot_complex_3d():
         rendering_kw=rendering_kw,
         show=False,
         use_cm=False,
-        n=10
+        n=5
     )
 
     p = _plot_complex(MB, rendering_kw=dict(color="red"))
@@ -1774,7 +1781,8 @@ def test_plot_piecewise_single_series():
 
     _plot_piecewise = lambda B: plot_piecewise(
         Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10),
-        backend=B, show=False, use_latex=False)
+        backend=B, show=False, use_latex=False,
+        adaptive=False, n=5)
 
     p = _plot_piecewise(MB)
     f = p.fig
@@ -1817,7 +1825,8 @@ def test_plot_piecewise_multiple_series():
     _plot_piecewise = lambda B: plot_piecewise(
         (Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10)),
         (Piecewise((sin(x), x < 0), (2, Eq(x, 0)), (cos(x), x > 0)), (x, -6, 4)),
-        backend=B, show=False, use_latex=False)
+        backend=B, show=False, use_latex=False,
+        adaptive=False, n=5)
 
     p = _plot_piecewise(MB)
     f = p.fig
@@ -1944,59 +1953,57 @@ def test_save():
     x, y, z = symbols("x:z")
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
-        p = plot(sin(x), cos(x), backend=MB)
+        p = plot(sin(x), cos(x), backend=MB, show=False, adaptive=False, n=5)
         filename = "test_mpl_save_1.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot(sin(x), cos(x), backend=MB)
+        p = plot(sin(x), cos(x), backend=MB, show=False, adaptive=False, n=5)
         filename = "test_mpl_save_2.pdf"
         p.save(os.path.join(tmpdir, filename), dpi=150)
         p.close()
 
-        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=MB)
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=MB,
+            show=False, adaptive=False, n1=5, n2=5)
         filename = "test_mpl_save_3.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=MB)
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=MB,
+            show=False, adaptive=False, n1=5, n2=5)
         filename = "test_mpl_save_4.pdf"
         p.save(os.path.join(tmpdir, filename), dpi=150)
         p.close()
 
         # Bokeh requires additional libraries to save static pictures.
         # Raise an error because their are not installed.
-        p = plot(sin(x), cos(x), backend=BB, show=False)
+        p = plot(sin(x), cos(x), backend=BB, show=False, adaptive=False, n=5)
         filename = "test_bokeh_save_1.png"
         raises(RuntimeError, lambda: p.save(os.path.join(tmpdir, filename)))
 
-        p = plot(sin(x), cos(x), backend=BB, show=False)
+        p = plot(sin(x), cos(x), backend=BB, show=False, adaptive=False, n=5)
         filename = "test_bokeh_save_2.svg"
         raises(RuntimeError, lambda: p.save(os.path.join(tmpdir, filename)))
 
-        p = plot(sin(x), cos(x), backend=BB, show=False)
+        p = plot(sin(x), cos(x), backend=BB, show=False, adaptive=False, n=5)
         filename = "test_bokeh_save_3.html"
         p.save(os.path.join(tmpdir, filename))
 
-        p = plot(sin(x), cos(x), backend=BB, show=False)
+        p = plot(sin(x), cos(x), backend=BB, show=False, adaptive=False, n=5)
         filename = "test_bokeh_save_4.html"
         p.save(os.path.join(tmpdir, filename), resources=bokeh.resources.INLINE)
 
         # Plotly requires additional libraries to save static pictures.
         # Raise an error because their are not installed.
-        p = plot(sin(x), cos(x), backend=PB, show=False)
+        p = plot(sin(x), cos(x), backend=PB, show=False, adaptive=False, n=5)
         filename = "test_plotly_save_1.png"
         raises(ValueError, lambda: p.save(os.path.join(tmpdir, filename)))
 
-        p = plot(sin(x), cos(x), backend=PB, show=False)
-        filename = "test_plotly_save_2.svg"
-        raises(ValueError, lambda: p.save(os.path.join(tmpdir, filename)))
-
-        p = plot(sin(x), cos(x), backend=PB, show=False)
+        p = plot(sin(x), cos(x), backend=PB, show=False, adaptive=False, n=5)
         filename = "test_plotly_save_3.html"
         p.save(os.path.join(tmpdir, filename))
 
-        p = plot(sin(x), cos(x), backend=PB, show=False)
+        p = plot(sin(x), cos(x), backend=PB, show=False, adaptive=False, n=5)
         filename = "test_plotly_save_4.html"
         p.save(os.path.join(tmpdir, filename), include_plotlyjs="cdn")
 
@@ -2005,34 +2012,41 @@ def test_save():
         # on the screen before saving them. Since it is not possible to show
         # them on the screen during tests, we are only going to test that it
         # proceeds smoothtly or it raises errors when wrong options are given
-        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1,
+            adaptive=False, n1=5, n2=5)
         filename = "test_k3d_save_1.png"
         p.save(os.path.join(tmpdir, filename))
 
-        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1,
+            adaptive=False, n1=5, n2=5)
         filename = "test_k3d_save_2.jpg"
         raises(ValueError, lambda: p.save(os.path.join(tmpdir, filename)))
 
         # unexpected keyword argument
-        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1,
+            adaptive=False, n1=5, n2=5)
         filename = "test_k3d_save_3.jpg"
         raises(ValueError, lambda: p.save(os.path.join(tmpdir, filename),
             parameter=True))
 
-        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1,
+            adaptive=False, n1=5, n2=5)
         filename = "test_k3d_save_4.html"
         p.save(os.path.join(tmpdir, filename))
 
-        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1,
+            adaptive=False, n1=5, n2=5)
         filename = "test_k3d_save_4.html"
         p.save(os.path.join(tmpdir, filename), include_js=True)
 
-        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1)
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=KBchild1,
+            adaptive=False, n1=5, n2=5)
         filename = "test_k3d_save_4.html"
         raises(TypeError, lambda: p.save(os.path.join(tmpdir, filename),
             include_js=True, parameter=True))
 
-        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=MAB)
+        p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), backend=MAB,
+            adaptive=False, n1=5, n2=5)
         filename = "test_mab_save_1.png"
         p.save(os.path.join(tmpdir, filename))
 
@@ -2051,7 +2065,7 @@ def test_vectors_update_interactive():
             "test",
             params = params,
             streamlines = True,
-            n1 = 10, n2 = 10, n3 = 10
+            n1 = 5, n2 = 5, n3 = 5
         )
         p = B(s)
         raises(NotImplementedError, lambda: p._update_interactive(params))
@@ -2068,40 +2082,40 @@ def test_aspect_ratio_2d_issue_11764():
     x = symbols("x")
 
     p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
-        show=False, backend=MB)
+        show=False, backend=MB, adaptive=False, n=5)
     assert p.aspect == "auto"
     assert p.fig.axes[0].get_aspect() == "auto"
     p.close()
 
     p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
-        aspect=(1, 1), show=False, backend=MB)
+        aspect=(1, 1), show=False, backend=MB, adaptive=False, n=5)
     assert p.aspect == (1, 1)
     assert p.fig.axes[0].get_aspect() == 1
     p.close()
 
     p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
-        aspect="equal", show=False, backend=MB)
+        aspect="equal", show=False, backend=MB, adaptive=False, n=5)
     assert p.aspect == "equal"
     assert p.fig.axes[0].get_aspect() == 1
     p.close()
 
     p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
-        show=False, backend=PB)
+        show=False, backend=PB, adaptive=False, n=5)
     assert p.aspect == "auto"
     assert p.fig.layout.yaxis.scaleanchor is None
 
     p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
-        aspect="equal", show=False, backend=PB)
+        aspect="equal", show=False, backend=PB, adaptive=False, n=5)
     assert p.aspect == "equal"
     assert p.fig.layout.yaxis.scaleanchor == "x"
 
     p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
-        show=False, backend=BB)
+        show=False, backend=BB, adaptive=False, n=5)
     assert p.aspect == "auto"
     assert not p.fig.match_aspect
 
     p = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi),
-        aspect="equal", show=False, backend=BB)
+        aspect="equal", show=False, backend=BB, adaptive=False, n=5)
     assert p.aspect == "equal"
     assert p.fig.match_aspect
 
@@ -2114,40 +2128,40 @@ def test_aspect_ratio_3d():
     x, y = symbols("x, y")
 
     p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        n1=20, n2=20, backend=MB, show=False)
+        n1=5, n2=5, backend=MB, show=False)
     assert p.aspect == "auto"
 
     # matplotlib's Axes3D currently only supports the aspect argument 'auto'
     raises(NotImplementedError,
         lambda: plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-            n1=20, n2=20, backend=MB, show=False, aspect=(1, 1)).process_series())
+            n1=5, n2=5, backend=MB, show=False, aspect=(1, 1)).process_series())
 
     p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        n1=20, n2=20, backend=PB, show=False)
+        n1=5, n2=5, backend=PB, show=False)
     assert p.aspect == "auto"
     assert p.fig.layout.scene.aspectmode == "auto"
 
     p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        n1=20, n2=20, backend=PB, show=False, aspect="cube")
+        n1=5, n2=5, backend=PB, show=False, aspect="cube")
     assert p.aspect == "cube"
     assert p.fig.layout.scene.aspectmode == "cube"
 
     d = dict(x=1, y=1, z=1)
     p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        n1=20, n2=20, backend=PB, show=False, aspect=d)
+        n1=5, n2=5, backend=PB, show=False, aspect=d)
     assert p.aspect == d
     assert p.fig.layout.scene.aspectmode == "manual"
     assert all(p.fig.layout.scene.aspectratio[k] == d[k] for k in ["x", "y", "z"])
 
     p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        n1=20, n2=20, backend=MAB, show=True, aspect="equal")
+        n1=15, n2=15, backend=MAB, show=True, aspect="equal")
     assert p.aspect == "equal"
     assert np.allclose(
         p.fig.children[0].children[0].children[0].children[1].axes.bounds,
         [-2, 2, -2, 2, -1, 1], rtol=1e-02)
 
     p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        n1=20, n2=20, backend=MAB, show=True, aspect="auto")
+        n1=5, n2=5, backend=MAB, show=True, aspect="auto")
     assert p.aspect == "auto"
     assert np.allclose(
         p.fig.children[0].children[0].children[0].children[1].axes.bounds,
@@ -2160,28 +2174,30 @@ def test_plot_size():
 
     x, y = symbols("x, y")
 
-    p = plot(sin(x), backend=MB, size=(8, 4), show=False)
+    p = plot(sin(x), backend=MB, size=(8, 4), show=False, adaptive=False, n=5)
     s = p.fig.get_size_inches()
     assert (s[0] == 8) and (s[1] == 4)
     p.close()
 
-    p = plot(sin(x), backend=MB, size=(10, 5), show=False)
+    p = plot(sin(x), backend=MB, size=(10, 5), show=False, adaptive=False, n=5)
     s = p.fig.get_size_inches()
     assert (s[0] == 10) and (s[1] == 5)
     p.close()
 
-    p = plot(sin(x), backend=PB, show=False)
+    p = plot(sin(x), backend=PB, show=False, adaptive=False, n=5)
     assert p.fig.layout.width is None
     assert p.fig.layout.height is None
 
-    p = plot(sin(x), backend=PB, size=(800, 400), show=False)
+    p = plot(sin(x), backend=PB, size=(800, 400), show=False,
+        adaptive=False, n=5)
     assert p.fig.layout.width == 800
     assert p.fig.layout.height == 400
 
-    p = plot(sin(x), backend=BB, show=False)
+    p = plot(sin(x), backend=BB, show=False, adaptive=False, n=5)
     assert p.fig.sizing_mode == "stretch_width"
 
-    p = plot(sin(x), backend=BB, size=(400, 200), show=False)
+    p = plot(sin(x), backend=BB, size=(400, 200), show=False,
+        adaptive=False, n=5)
     assert p.fig.sizing_mode == "fixed"
     assert (p.fig.width == 400) and (p.fig.height == 200)
 
@@ -2189,7 +2205,7 @@ def test_plot_size():
     # Let's measure the image dimensions
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         p = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-            backend=MAB, size=(400, 200), show=True)
+            backend=MAB, size=(400, 200), show=True, adaptive=False, n1=5, n2=5)
         filename = "test_mab_save_1.png"
         p.save(os.path.join(tmpdir, filename))
         png_pil_img = Image.open(os.path.join(tmpdir, filename))
@@ -2202,49 +2218,58 @@ def test_plot_scale_lin_log():
 
     x, y = symbols("x, y")
 
-    p = plot(log(x), backend=MB, xscale="linear", yscale="linear", show=False)
+    p = plot(log(x), backend=MB, xscale="linear", yscale="linear", show=False,
+        adaptive=False, n=5)
     assert p.fig.axes[0].get_xscale() == "linear"
     assert p.fig.axes[0].get_yscale() == "linear"
     p.close()
 
-    p = plot(log(x), backend=MB, xscale="log", yscale="linear", show=False)
+    p = plot(log(x), backend=MB, xscale="log", yscale="linear", show=False,
+        adaptive=False, n=5)
     assert p.fig.axes[0].get_xscale() == "log"
     assert p.fig.axes[0].get_yscale() == "linear"
     p.close()
 
-    p = plot(log(x), backend=MB, xscale="linear", yscale="log", show=False)
+    p = plot(log(x), backend=MB, xscale="linear", yscale="log", show=False,
+        adaptive=False, n=5)
     assert p.fig.axes[0].get_xscale() == "linear"
     assert p.fig.axes[0].get_yscale() == "log"
     p.close()
 
-    p = plot(log(x), backend=PB, xscale="linear", yscale="linear", show=False)
+    p = plot(log(x), backend=PB, xscale="linear", yscale="linear", show=False,
+        adaptive=False, n=5)
     assert p.fig.layout["xaxis"]["type"] == "linear"
     assert p.fig.layout["yaxis"]["type"] == "linear"
 
-    p = plot(log(x), backend=PB, xscale="log", yscale="linear", show=False)
+    p = plot(log(x), backend=PB, xscale="log", yscale="linear", show=False,
+        adaptive=False, n=5)
     assert p.fig.layout["xaxis"]["type"] == "log"
     assert p.fig.layout["yaxis"]["type"] == "linear"
 
-    p = plot(log(x), backend=PB, xscale="linear", yscale="log", show=False)
+    p = plot(log(x), backend=PB, xscale="linear", yscale="log", show=False,
+        adaptive=False, n=5)
     assert p.fig.layout["xaxis"]["type"] == "linear"
     assert p.fig.layout["yaxis"]["type"] == "log"
 
-    p = plot(log(x), backend=BB, xscale="linear", yscale="linear", show=False)
+    p = plot(log(x), backend=BB, xscale="linear", yscale="linear", show=False,
+        adaptive=False, n=5)
     assert isinstance(p.fig.x_scale, bokeh.models.scales.LinearScale)
     assert isinstance(p.fig.y_scale, bokeh.models.scales.LinearScale)
 
-    p = plot(log(x), backend=BB, xscale="log", yscale="linear", show=False)
+    p = plot(log(x), backend=BB, xscale="log", yscale="linear", show=False,
+        adaptive=False, n=5)
     assert isinstance(p.fig.x_scale, bokeh.models.scales.LogScale)
     assert isinstance(p.fig.y_scale, bokeh.models.scales.LinearScale)
 
-    p = plot(log(x), backend=BB, xscale="linear", yscale="log", show=False)
+    p = plot(log(x), backend=BB, xscale="linear", yscale="log", show=False,
+        adaptive=False, n=5)
     assert isinstance(p.fig.x_scale, bokeh.models.scales.LinearScale)
     assert isinstance(p.fig.y_scale, bokeh.models.scales.LogScale)
 
 
-###############################################################################
-############################ BACKEND CAN USE LATEX ############################
-###############################################################################
+##############################################################################
+########################### BACKEND CAN USE LATEX ############################
+##############################################################################
 
 
 def test_backend_latex_labels():
@@ -2252,7 +2277,7 @@ def test_backend_latex_labels():
     # 2D and 3D case
     x1, x2 = symbols("x_1^2, x_2")
     p = lambda B, use_latex: plot(cos(x1), (x1, -1, 1), backend=B,
-        show=False, use_latex=use_latex, adaptive=False, n=10)
+        show=False, use_latex=use_latex, adaptive=False, n=5)
 
     p1 = p(MB, True)
     p2 = p(MB, False)
@@ -2277,7 +2302,7 @@ def test_backend_latex_labels():
 
     p = lambda B, use_latex, show=False: plot3d(
         cos(x1**2 + x2**2), (x1, -1, 1), (x2, -1, 1), backend=B,
-        show=show, use_latex=use_latex, adaptive=False, n=10)
+        show=show, use_latex=use_latex, adaptive=False, n=5)
 
     p1 = p(MB, True)
     p2 = p(MB, False)
@@ -2334,7 +2359,7 @@ def test_plot_use_latex():
 
     _plot = lambda B: plot(
         sin(x), cos(x), backend=B, show=False, legend=True,
-        use_latex=True, adaptive=False, n=10)
+        use_latex=True, adaptive=False, n=5)
 
     p = _plot(MB)
     f = p.fig
@@ -2372,7 +2397,7 @@ def test_plot_parametric_use_latex():
 
     _plot_parametric = lambda B: plot_parametric(
         cos(x), sin(x), (x, 0, 1.5 * pi), backend=B,
-        show=False, use_latex=True, adaptive=False, n=10
+        show=False, use_latex=True, adaptive=False, n=5
     )
 
     p = _plot_parametric(MB)
@@ -2408,7 +2433,7 @@ def test_plot_contour_use_latex():
         cos(x ** 2 + y ** 2),
         (x, -3, 3),
         (y, -3, 3),
-        n=10,
+        n=5,
         backend=B,
         show=False,
         use_latex=True
@@ -2435,7 +2460,7 @@ def test_plot3d_parametric_line_use_latex():
 
     _plot3d_parametric_line = lambda B, show=False: plot3d_parametric_line(
         cos(x), sin(x), x, (x, -pi, pi), backend=B,
-        show=show, use_latex=True, adaptive=False, n=10
+        show=show, use_latex=True, adaptive=False, n=5
     )
 
     p = _plot3d_parametric_line(MB)
@@ -2469,7 +2494,7 @@ def test_plot3d_use_latex():
         sin(x ** 2 + y ** 2),
         (x, -3, 3),
         (y, -3, 3),
-        n=10,
+        n=5,
         use_cm=True,
         backend=B,
         show=show,
@@ -2721,7 +2746,6 @@ def test_plot_vector_3d_quivers_use_latex():
     assert p.fig.children[0].children[0].vector_lut_manager.scalar_bar.title == '$\\left( z, \\  y, \\  x\\right)$'
 
 
-
 def test_plot_vector_3d_streamlines_use_latex():
     # verify that the colorbar uses latex label
 
@@ -2766,7 +2790,7 @@ def test_plot_complex_use_latex():
     x, y, z = symbols("x, y, z")
 
     _plot_complex = lambda B: plot_complex(
-        cos(x) + sin(I * x), (x, -2, 2), show=False, adaptive=False, n=10,
+        cos(x) + sin(I * x), (x, -2, 2), show=False, adaptive=False, n=5,
         use_latex=True, backend=B)
 
     p = _plot_complex(MB)
@@ -2794,7 +2818,7 @@ def test_plot_complex_use_latex():
         lambda: _plot_complex(MAB).process_series())
 
     _plot_complex_2 = lambda B: plot_complex(
-        gamma(z), (z, -3 - 3*I, 3 + 3*I), show=False, adaptive=False, n=10,
+        gamma(z), (z, -3 - 3*I, 3 + 3*I), show=False, adaptive=False, n=5,
         use_latex=True, backend=B)
 
     p = _plot_complex_2(MB)
@@ -2829,7 +2853,7 @@ def test_plot_real_imag_use_latex():
     x, y, z = symbols("x, y, z")
 
     _plot_real_imag = lambda B: plot_real_imag(sqrt(x), (x, -3, 3),
-        backend=B, use_latex=True, show=False, adaptive=False, n=10)
+        backend=B, use_latex=True, show=False, adaptive=False, n=5)
 
     p = _plot_real_imag(MB)
     assert p.fig.axes[0].get_xlabel() == "$x$"
@@ -2858,36 +2882,36 @@ def test_plot_real_imag_use_latex():
         lambda: _plot_real_imag(MAB).process_series())
 
 
-###############################################################################
-###############################################################################
-###############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
 
 
 def test_plot3d_use_cm():
     # verify that use_cm produces the expected results on plot3d
 
     x, y = symbols("x, y")
-    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MB, show=False, use_cm=True, n=10)
-    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MB, show=False, use_cm=False, n=10)
+    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MB, show=False, use_cm=True, n=5)
+    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MB, show=False, use_cm=False, n=5)
     p1.process_series()
     p2.process_series()
     assert "cmap" in p1._handles[0][1].keys()
     assert "cmap" not in p2._handles[0][1].keys()
 
-    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=PB, show=False, use_cm=True, n=10)
-    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=PB, show=False, use_cm=False, n=10)
+    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=PB, show=False, use_cm=True, n=5)
+    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=PB, show=False, use_cm=False, n=5)
     assert len(p1.fig.data[0]["colorscale"]) > 2
     assert len(p2.fig.data[0]["colorscale"]) == 2
 
-    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=KBchild1, show=False, use_cm=True, n=10)
-    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=KBchild1, show=False, use_cm=False, n=10)
+    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=KBchild1, show=False, use_cm=True, n=5)
+    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=KBchild1, show=False, use_cm=False, n=5)
     n1 = len(p1.fig.objects[0].color_map)
     n2 = len(p2.fig.objects[0].color_map)
     if n1 == n2:
         assert not np.allclose(p1.fig.objects[0].color_map, p2.fig.objects[0].color_map)
 
-    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MAB, show=True, use_cm=True, n=10)
-    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MAB, show=True, use_cm=False, n=10)
+    p1 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MAB, show=True, use_cm=True, n=5)
+    p2 = plot3d(cos(x**2 + y**2), (x, -1, 1), (y, -1, 1), backend=MAB, show=True, use_cm=False, n=5)
     assert np.allclose(
         p1.fig.children[0].children[0].children[0].children[0].actor.property.color,
         (1, 1, 1)
@@ -2913,7 +2937,7 @@ def test_plot3d_update_interactive():
         threed = True,
         use_cm = False,
         params = {u: 1},
-        n1=5, n2=5, n3=5
+        n1=3, n2=3, n3=3
     )
     p = MB(s, show=False)
     p.process_series()
@@ -2931,7 +2955,7 @@ def test_plot3d_update_interactive():
         threed = True,
         use_cm = True,
         params = {u: 1},
-        n1=5, n2=5, n3=5
+        n1=3, n2=3, n3=3
     )
     p = MB(s, show=False)
     p.process_series()
@@ -2953,7 +2977,7 @@ def test_k3d_vector_pivot():
         (x, -5, 5),
         (y, -4, 4),
         (z, -3, 3),
-        n1=5, n2=5, n3=5,
+        n1=3, n2=3, n3=3,
         quiver_kw={"pivot": pivot},
         backend=KBchild1,
         show=False
@@ -2971,7 +2995,7 @@ def test_plot_polar():
     # verify that 2D polar plot uses polar projection
     x = symbols("x")
     _plot_polar = lambda B: plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
-        backend=B, aspect="equal", show=False)
+        backend=B, aspect="equal", show=False, adaptive=False, n=5)
 
     p = _plot_polar(MB)
     fig = p.fig
@@ -2994,7 +3018,7 @@ def test_plot3d_implicit():
 
     _plot3d_implicit = lambda B, show=False: plot3d_implicit(
         x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
-        backend=B, n1=10, n2=10, n3=10, show=show)
+        backend=B, n1=5, n2=5, n3=5, show=show)
 
     raises(NotImplementedError, lambda : _plot3d_implicit(MB).process_series())
 
@@ -3183,7 +3207,7 @@ def test_line_color_plot():
 
     x, y = symbols("x, y")
 
-    _plot = lambda B, lc: plot(sin(x), adaptive=False, n=10,
+    _plot = lambda B, lc: plot(sin(x), adaptive=False, n=5,
         line_color=lc, backend=B, show=False)
 
     p = _plot(MB, "red")
@@ -3213,7 +3237,7 @@ def test_line_color_plot3d_parametric_line():
     x, y = symbols("x, y")
 
     _plot = lambda B, lc, use_cm, show=False: plot3d_parametric_line(
-        cos(x), sin(x), x, (x, 0, 2*pi), adaptive=False, n=10,
+        cos(x), sin(x), x, (x, 0, 2*pi), adaptive=False, n=5,
         line_color=lc, backend=B, show=show, use_cm=use_cm)
 
     p = _plot(MB, "red", False)
@@ -3250,7 +3274,7 @@ def test_surface_color_plot3d():
 
     x, y = symbols("x, y")
     _plot = lambda B, sc, use_cm, show=False: plot3d(
-        cos(x**2 + y**2), (x, 0, 2), (y, 0, 2), adaptive=False, n=10,
+        cos(x**2 + y**2), (x, 0, 2), (y, 0, 2), adaptive=False, n=5,
         surface_color=sc, backend=B, show=show, use_cm=use_cm, legend=True)
 
     p = _plot(MB, "red", False)
@@ -3282,7 +3306,7 @@ def test_label_after_plot_instantiation():
     # verify that it is possible to set a label after a plot has been created
     x = symbols("x")
 
-    p = plot(sin(x), cos(x), show=False, backend=MB)
+    p = plot(sin(x), cos(x), show=False, backend=MB, adaptive=False, n=5)
     p[0].label = "a"
     p[1].label = "$b^{2}$"
     f = p.fig
