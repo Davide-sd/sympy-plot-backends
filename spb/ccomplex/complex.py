@@ -1,5 +1,5 @@
 from spb.defaults import cfg, TWO_D_B, THREE_D_B
-from spb.functions import _set_labels
+from spb.functions import _set_labels, _create_interactive_plot
 from spb.series import (
     LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
     ComplexInteractiveBaseSeries, ComplexPointSeries,
@@ -21,46 +21,26 @@ import warnings
 # * `absarg` refers to the absolute value and argument, which will be used to
 #   create "domain coloring" plots.
 
-def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
+def _build_complex_point_series(*args, interactive=False, allow_lambda=False, pc=False, **kwargs):
+    """The following types of arguments are supported by plot_complex_list:
+
+    * plot_complex_list(n1, n2, ...) where `n-ith` is a complex number
+    * plot_complex_list((n1, label1, rend_kw1), (n2, label2, rend_kw2), ...)
+      where `n-ith` is a complex number
+    * plot_complex_list(l1, l2, ...) where `l-ith` is a list of complex numbers
+    * plot_complex_list((l1, label1, rend_kw1), (l2, label2, rend_kw2), ...)
+      where `l-ith` is a list of complex numbers
+
+    This function implements the above logic.
+
+    NOTE: this logic needs to be separated from the logic behind plot_complex,
+    plot_real_imag, otherwise there will be ambiguities.
     """
-    Parameters
-    ==========
-    interactive : boolean
-        If True, creates interactive series.
-    allow_lambda : boolean
-        If True, lambda functions are allowed to be used as expression. Not
-        all complex-relatex plotting function can support such feature, as
-        in many cases the following algorithm is going to apply symbolic
-        manipulation steps.
-    """
+    series = []
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
 
-    series = []
-    # apply the user-specified function to the expression
-    #   keys: the user specified keyword arguments
-    #   values: [function, label]
-    # NOTE: the label is going to wrap the string representation of the
-    # expression. This design choice precludes the ability of setting latex
-    # labels, but this is not a problem as the user has the ability to set
-    # a custom alias for the function to be plotted. The main motivation for
-    # this choice is that whenever re() or im() is applied to an expression, it
-    # might gets evaluated, resulting in a different expression (something
-    # that the user might not recognize). This design prevents that.
-    mapping = {
-        "real": [lambda t: re(t), "Re(%s)"],
-        "imag": [lambda t: im(t), "Im(%s)"],
-        "abs": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
-        # NOTE: absarg is used to plot the absolute value colored by the
-        # argument. The colorbar indicates the argument, hence the following
-        # label is "Arg"
-        "absarg": [lambda t: t, "Arg(%s)"],
-        "arg": [lambda t: arg(t), "Arg(%s)"],
-    }
-    # option to be used with lambdify with complex functions
-    kwargs.setdefault("modules", cfg["complex"]["modules"])
-
-    if all([hasattr(a, "is_complex") and a.is_complex for a in args]):
+    if all([isinstance(a, Expr) for a in args]):
         # args is a list of complex numbers
         cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         for a in args:
@@ -92,132 +72,168 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
         cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         for a in args:
             series.append(cls(a, "", **kwargs))
-    else:
-        new_args = []
-
-        def add_series(argument):
-            nexpr, npar = 1, 1
-            if len([b for b in argument if _is_range(b)]) > 1:
-                # function of two variables
-                npar = 2
-            new_args.append(_check_arguments([argument], nexpr, npar)[0])
-
-        if all(isinstance(a, (list, tuple, Tuple)) for a in args):
-            # deals with the case:
-            # plot_complex((expr1, "name1"), (expr2, "name2"), range)
-            # Modify the tuples (expr, "name") to (expr, range, "name")
-            npar = len([b for b in args if _is_range(b)])
-            tmp = []
-            for i in range(len(args) - npar):
-                a = args[i]
-                tmp.append(a)
-                if len(a) == 2 and isinstance(a[-1], str):
-                    tmp[i] = (a[0], *args[len(args) - npar:], a[-1])
-
-            # plotting multiple expressions
-            for a in tmp:
-                add_series(a)
-        else:
-            if len([t for t in args if isinstance(t, Expr)]) > 1:
-                # multiple expressions with the same range
-                args = list(args)
-                r = None
-                if _is_range(args[-1]):
-                    r = args.pop()
-                for a in args:
-                    a = [a, ] if r is None else [a, r]
-                    add_series(a)
-            else:
-                # plotting a single expression
-                add_series(args)
-
-        params = kwargs.get("params", dict())
-        for a in new_args:
-            expr, ranges, label, rend_kw = a[0], a[1:-2], a[-2], a[-1]
-            if label is None:
-                label = str(expr)
-
+    elif (
+        (len(args) > 0)
+        and all([isinstance(a, (list, tuple, Tuple)) for a in args])
+        and all([len(a) > 0 for a in args])
+    ):
+        # args is a list of tuples of the form (number, label, rendering_kw)
+        # where list contains complex points
+        cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
+        for a in args:
+            expr, ranges, label, rkw = _unpack_args(*a)
+            # Complex points do not require ranges. However, if 3 complex
+            # points are given inside a list, _unpack_args will see them as a
+            # range.
+            expr = expr or ranges
             kw = kwargs.copy()
-            kw["rendering_kw"] = rend_kw
-            if (not allow_lambda) and callable(expr):
-                raise TypeError("expr must be a symbolic expression.")
+            kw["rendering_kw"] = rkw
+            series.append(cls([expr[0]], label, **kw))
 
-            # From now on we are dealing with a function of one variable.
-            # ranges need to contain complex numbers
-            ranges = list(ranges)
-            for i, r in enumerate(ranges):
-                ranges[i] = (r[0], complex(r[1]), complex(r[2]))
-
-            # there are expressions that are complex, but they do not represent
-            # complex points, for example `exp(I * phi)`. If it is a complex
-            # point, it won't have any free symbols.
-            fs = expr.free_symbols if isinstance(expr, Expr) else set()
-            fs = fs.difference(set(params.keys()))
-            if isinstance(expr, Expr) and expr.is_complex and (len(fs) == 0):
-                # complex number with its own label
-                cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
-                series.append(cls([expr], label, **kw))
-
-            else:
-                # NOTE: as a design choice, a complex function will create one
-                # or more data series, depending on the keyword arguments
-                # (one for the real part, one for the imaginary part, etc.).
-                # This is undoubtely inefficient as we must evaluate the same
-                # expression multiple times. On the other hand, it allows to
-                # maintain a one-to-one correspondance between Plot.series
-                # and backend.data, making it easier to work with iplot
-                # (backend._update_interactive).
-
-                absarg = kw.pop("absarg", True)
-                real = kw.pop("real", False)
-                imag = kw.pop("imag", False)
-                _abs = kw.pop("abs", False)
-                _arg = kw.pop("arg", False)
-
-
-
-                if ranges[0][1].imag == ranges[0][2].imag:
-                    # dealing with lines
-                    def add_series(flag, key):
-                        if flag:
-                            kw2 = kw.copy()
-                            kw2[key] = True
-                            f, lbl_wrapper = mapping[key]
-                            if not interactive:
-                                series.append(LineOver1DRangeSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
-                            else:
-                                series.append(InteractiveSeries([f(expr)], ranges, lbl_wrapper % label, **kw2))
-
-                else:
-                    # 2D domain coloring or 3D plots
-                    cls = ComplexSurfaceBaseSeries if not interactive else ComplexInteractiveBaseSeries
-                    kw.setdefault("coloring", cfg["complex"]["coloring"])
-                    def add_series(flag, key):
-                        if flag:
-                            kw2 = kw.copy()
-                            kw2[key] = True
-                            f, lbl_wrapper = mapping[key]
-                            if key == "absarg":
-                                lbl_wrapper = "%s"
-                            series.append(cls(f(expr), *ranges, lbl_wrapper % label, **kw2))
-
-                add_series(absarg, "absarg")
-                add_series(real, "real")
-                add_series(imag, "imag")
-                add_series(_abs, "abs")
-                add_series(_arg, "arg")
+    else:
+        expr, ranges, label, rkw = _unpack_args(*args)
+        if isinstance(expr, (list, tuple, Tuple)):
+            expr = expr[0]
+        cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
+        kw = kwargs.copy()
+        kw["rendering_kw"] = rkw
+        series.append(cls(expr, label, **kw))
 
     _set_labels(series, global_labels, global_rendering_kw)
     return series
 
 
-def _plot_complex(*args, allow_lambda=False, **kwargs):
+# def _build_series_3(*args, interactive=False, allow_lambda=False, **kwargs):
+def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
+    series = []
+    new_args = []
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+
+    # apply the user-specified function to the expression
+    #   keys: the user specified keyword arguments
+    #   values: [function, label]
+    # NOTE: the label is going to wrap the string representation of the
+    # expression. This design choice precludes the ability of setting latex
+    # labels, but this is not a problem as the user has the ability to set
+    # a custom alias for the function to be plotted. The main motivation for
+    # this choice is that whenever re() or im() is applied to an expression, it
+    # might gets evaluated, resulting in a different expression (something
+    # that the user might not recognize). This design prevents that.
+    mapping = {
+        "real": [lambda t: re(t), "Re(%s)"],
+        "imag": [lambda t: im(t), "Im(%s)"],
+        "abs": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
+        # NOTE: absarg is used to plot the absolute value colored by the
+        # argument. The colorbar indicates the argument, hence the following
+        # label is "Arg"
+        "absarg": [lambda t: t, "Arg(%s)"],
+        "arg": [lambda t: arg(t), "Arg(%s)"],
+    }
+    # option to be used with lambdify with complex functions
+    kwargs.setdefault("modules", cfg["complex"]["modules"])
+
+    def add_series(argument):
+        nexpr, npar = 1, 1
+        if len([b for b in argument if _is_range(b)]) > 1:
+            # function of two variables
+            npar = 2
+        new_args.append(_check_arguments([argument], nexpr, npar)[0])
+
+    if all(isinstance(a, (list, tuple, Tuple)) for a in args):
+        # deals with the case:
+        # plot_complex((expr1, "name1"), (expr2, "name2"), range)
+        # Modify the tuples (expr, "name") to (expr, range, "name")
+        npar = len([b for b in args if _is_range(b)])
+        tmp = []
+        for i in range(len(args) - npar):
+            a = args[i]
+            tmp.append(a)
+            if len(a) == 2 and isinstance(a[-1], str):
+                tmp[i] = (a[0], *args[len(args) - npar:], a[-1])
+
+        # plotting multiple expressions
+        for a in tmp:
+            add_series(a)
+    else:
+        exprs, r, label, rkw = _unpack_args(*args)
+        for e in exprs:
+            add_series([e, *r, label, rkw])
+
+    params = kwargs.get("params", dict())
+    for a in new_args:
+        expr, ranges, label, rend_kw = a[0], a[1:-2], a[-2], a[-1]
+        if label is None:
+            label = str(expr)
+
+        kw = kwargs.copy()
+        kw["rendering_kw"] = rend_kw
+        if (not allow_lambda) and callable(expr):
+            raise TypeError("expr must be a symbolic expression.")
+
+        # From now on we are dealing with a function of one variable.
+        # ranges need to contain complex numbers
+        ranges = list(ranges)
+        for i, r in enumerate(ranges):
+            ranges[i] = (r[0], complex(r[1]), complex(r[2]))
+
+        # NOTE: as a design choice, a complex function will create one
+        # or more data series, depending on the keyword arguments
+        # (one for the real part, one for the imaginary part, etc.).
+        # This is undoubtely inefficient as we must evaluate the same
+        # expression multiple times. On the other hand, it allows to
+        # maintain a one-to-one correspondance between Plot.series
+        # and backend.data, making it easier to work with iplot
+        # (backend._update_interactive).
+
+        absarg = kw.pop("absarg", True)
+        real = kw.pop("real", False)
+        imag = kw.pop("imag", False)
+        _abs = kw.pop("abs", False)
+        _arg = kw.pop("arg", False)
+
+        if ranges[0][1].imag == ranges[0][2].imag:
+            # dealing with lines
+            def add_series(flag, key):
+                if flag:
+                    kw2 = kw.copy()
+                    kw2[key] = True
+                    f, lbl_wrapper = mapping[key]
+                    if not interactive:
+                        series.append(LineOver1DRangeSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
+                    else:
+                        series.append(InteractiveSeries([f(expr)], ranges, lbl_wrapper % label, **kw2))
+
+        else:
+            # 2D domain coloring or 3D plots
+            cls = ComplexSurfaceBaseSeries if not interactive else ComplexInteractiveBaseSeries
+            kw.setdefault("coloring", cfg["complex"]["coloring"])
+            def add_series(flag, key):
+                if flag:
+                    kw2 = kw.copy()
+                    kw2[key] = True
+                    f, lbl_wrapper = mapping[key]
+                    if key == "absarg":
+                        lbl_wrapper = "%s"
+                    series.append(cls(f(expr), *ranges, lbl_wrapper % label, **kw2))
+
+        add_series(absarg, "absarg")
+        add_series(real, "real")
+        add_series(imag, "imag")
+        add_series(_abs, "abs")
+        add_series(_arg, "arg")
+
+    _set_labels(series, global_labels, global_rendering_kw)
+    return series
+
+
+def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
     """Create the series and setup the backend."""
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ComplexSurfaceBaseSeries)
     kwargs["is_complex"] = True
 
-    if kwargs.get("params", None):
+    if (not pcl) and kwargs.get("params", None):
         # NOTE: the iplot module is really slow to load, so let's load it
         # only when it is necessary
         from spb.interactive import iplot
@@ -225,16 +241,32 @@ def _plot_complex(*args, allow_lambda=False, **kwargs):
         args = _check_arguments(args, 1, 1, **kwargs)
         return iplot(*args, **kwargs)
 
-    series = _build_series(*args, allow_lambda=allow_lambda, **kwargs)
+    if not pcl:
+        series = _build_series(*args, allow_lambda=allow_lambda, **kwargs)
+    else:
+        params = kwargs.get("params", None)
+        if params:
+            kwargs["interactive"] = True
+            mod_params = None
+            # NOTE: it was easier to not implement a List2DInteractiveSeries.
+            # Hence, List2DSeries can be interactive (if params is provided)
+            # or not. If it is interactive, we must provide ``params`` with the
+            # correct form, meaning mapping symbols to values.
+            mod_params = {k: v[0] for k, v in params.items()}
+            kwargs["params"] = mod_params
+        series = _build_complex_point_series(*args, allow_lambda=allow_lambda, pcl=True, **kwargs)
     if len(series) == 0:
         warnings.warn("No series found. Check your keyword arguments.")
+
+    _set_axis_labels(series, kwargs)
+
+    if pcl:
+        return series
 
     if any(s.is_3Dsurface for s in series):
         Backend = kwargs.pop("backend", THREE_D_B)
     else:
         Backend = kwargs.pop("backend", TWO_D_B)
-
-    _set_axis_labels(series, kwargs)
 
     return _instantiate_backend(Backend, *series, **kwargs)
 
@@ -1107,7 +1139,13 @@ def plot_complex_list(*args, **kwargs):
     kwargs["real"] = False
     kwargs["imag"] = False
     kwargs["threed"] = False
-    return _plot_complex(*args, allow_lambda=False, **kwargs)
+    series = _plot_complex(*args, allow_lambda=False, pcl=True, **kwargs)
+    if "params" in kwargs.keys():
+        kwargs["series"] = series
+        return _create_interactive_plot(**kwargs)
+
+    Backend = kwargs.pop("backend", TWO_D_B)
+    return _instantiate_backend(Backend, *series, **kwargs)
 
 
 def plot_complex_vector(*args, **kwargs):

@@ -2137,7 +2137,7 @@ class SurfaceInteractiveSeries(InteractiveSeries):
 
 class ContourInteractiveSeries(SurfaceInteractiveSeries):
     """Representation for an interactive contour plot."""
-    _allowed_keys = SurfaceInteractiveSeries._allowed_keys + ["is_filled"]
+    _allowed_keys = SurfaceInteractiveSeries._allowed_keys + ["is_filled", "contour_kw"]
     is_3Dsurface = False
     is_contour = True
 
@@ -2307,6 +2307,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self.is_polar = kwargs.get("is_polar", False)
         self.surface_color = kwargs.get("surface_color", None)
+        self.is_filled = kwargs.get("is_filled", True)
 
         # domain coloring mode
         self.coloring = kwargs.get("coloring", "a")
@@ -2934,28 +2935,43 @@ class SliceVector3DSeries(Vector3DSeries):
 
     def _discretize(self):
         data = self.slice_surf_series.get_data()
-        if (isinstance(self.slice_surf_series, PlaneSeries) or
-        self.slice_surf_series.is_parametric):
+        if isinstance(self.slice_surf_series, PlaneSeries):
             return data
+        if self.slice_surf_series.is_parametric:
+            return data[:3]
 
+        # symbols used by this vector's discretization
+        discr_symbols = [r[0] for r in self.ranges]
+        # ordered symbols from slice_surf_series
+        order = self._discretize_helper(discr_symbols)
+        return [data[k] for k in order]
+
+    def _discretize_helper(self, vec_discr_symbols):
         # NOTE: let's say the vector field is discretized along x, y, z (in
         # this order), and the slice surface is f(y, z). Then, data will be
         # [yy, zz, f(yy, zz)], which has not the correct order expected by
         # the vector field's discretization. Here we are going to fix that.
 
-        # symbols used by this vector's discretization
-        discr_symbols = [r[0] for r in self.ranges]
+        if not isinstance(self.slice_surf_series, (SurfaceOver2DRangeSeries, SurfaceInteractiveSeries)):
+            raise TypeError("This helper function is meant to be used only "
+                "with non-parametric slicing surfaces of 2 variables. "
+                "type(self.slice_surf_series) = {}".format(
+                    type(self.slice_surf_series)))
+
         # slice surface free symbols
         # don't use self.slice_surf_series.free_symbols as this expression
         # might not use both its discretization symbols
-        ssfs = [self.slice_surf_series.var_x, self.slice_surf_series.var_y]
+        if not self.slice_surf_series.is_interactive:
+            ssfs = [self.slice_surf_series.var_x, self.slice_surf_series.var_y]
+        else:
+            ssfs = list(self.slice_surf_series.ranges.keys())
         # given f(y, z), we already have y, z (ssfs), now find x
-        missing_symbol = list(set(discr_symbols).difference(ssfs))
+        missing_symbol = list(set(vec_discr_symbols).difference(ssfs))
         # ordered symbols in the returned data
         returned_symbols = ssfs + missing_symbol
         # output order
-        order = [returned_symbols.index(s) for s in discr_symbols]
-        return [data[k] for k in order]
+        order = [returned_symbols.index(s) for s in vec_discr_symbols]
+        return order
 
     def __str__(self):
         return "sliced " + super().__str__() + " at {}".format(
@@ -2974,6 +2990,9 @@ class SliceVector3DInteractiveSeries(VectorInteractiveBaseSeries, SliceVector3DS
         res = _build_slice_series(slice_surf, ranges, **kwargs2)
         self.slice_surf_series = res
         super().__init__(*args, **kwargs)
+        # NOTE: the following must be executed for the proper discretization
+        # to take place
+        self.params = kwargs.get("params", dict())
 
     @property
     def params(self):
@@ -2994,7 +3013,17 @@ class SliceVector3DInteractiveSeries(VectorInteractiveBaseSeries, SliceVector3DS
         if self.slice_surf_series.is_interactive:
             # update both parameters and discretization ranges
             self.slice_surf_series.params = p
-            discr_symbols = self.ranges.keys()
+        # symbols used by this vector's discretization
+        discr_symbols = list(self.ranges.keys())
+
+        if isinstance(self.slice_surf_series, (SurfaceOver2DRangeSeries, SurfaceInteractiveSeries)) and (not self.slice_surf_series.is_parametric):
+            # ordered symbols from slice_surf_series
+            ordered_symbols = self._discretize_helper(discr_symbols)
+            data = self.slice_surf_series.get_data()
+            self.ranges = {
+                k: data[v] for k, v in zip(discr_symbols, ordered_symbols)
+            }
+        else:
             self.ranges = {
                 k: v for k, v in zip(discr_symbols, self.slice_surf_series.get_data())
             }

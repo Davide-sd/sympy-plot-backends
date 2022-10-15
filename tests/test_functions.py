@@ -5,8 +5,7 @@ from spb.defaults import set_defaults, cfg
 from spb import (
     plot_piecewise, plot, plot_list, plot3d_parametric_line,
     plot_parametric, plot3d, plot_contour, plot3d_parametric_surface,
-    plot_implicit, plot_complex_list, plot_complex_vector, plot_real_imag,
-    plot_vector, plot3d_implicit, plot_geometry, plot_complex,
+    plot_implicit, plot3d_implicit, plot_geometry, plot_complex,
     plot3d_spherical
 )
 from spb.interactive import InteractivePlot
@@ -100,76 +99,6 @@ def test_plot3d_plot_contour_base_scalars():
         use_latex=True, show=False)
     plot3d(cos(x * y), (x, -2, 2), (y, -2, 2),
         use_latex=False, show=False)
-
-
-def test_plot_vector():
-    # verify that `plot_vector()` generates the correct data series
-
-    x, y, z = symbols("x:z")
-    N = CoordSys3D("N")
-    v1 = x * N.i + y * N.j
-    v2 = z * N.i + x * N.j + y * N.k
-
-    # this will stop inside plot_vector, because we are mixing 2D and 3D vectors
-    raises(ValueError, lambda: plot_vector(v1, v2))
-    # this will stop inside _series, because 3 ranges have been provided
-    # for a 2D vector plot (v1)
-    raises(ValueError, lambda: plot_vector(v1, v2, (x, -5, 5), (y, -2, 2), (z, -3, 3)))
-
-    # scalar is not one of [None,True,False,Expr]
-    raises(ValueError, lambda: plot_vector(v1, scalar="s"))
-
-    # single 2D vector field with magnitude scalar field: contour series should
-    # have the same range as the vector series
-    p = plot_vector(v1, (x, -5, 5), (y, -2, 2), show=False)
-    assert len(p.series) == 2
-    assert isinstance(p.series[0], ContourSeries)
-    assert isinstance(p.series[1], Vector2DSeries)
-    assert p.series[0].start_x == -5
-    assert p.series[0].end_x == 5
-    assert p.series[0].start_y == -2
-    assert p.series[0].end_y == 2
-
-    # multiple 2D vector field with magnitude scalar field: contour series
-    # should cover the entire ranges of the vector fields
-    p = plot_vector(
-        (v1, (x, -5, -3), (y, -2, 2)),
-        (v1, (x, -1, 1), (y, -4, -3)),
-        (v1, (x, 2, 6), (y, 3, 5)),
-        scalar=sqrt(x ** 2 + y ** 2),
-        show=False,
-    )
-    assert len(p.series) == 4
-    assert isinstance(p.series[0], ContourSeries)
-    assert all([isinstance(s, Vector2DSeries) for s in p.series[1:]])
-    assert p.series[0].start_x == -5
-    assert p.series[0].end_x == 6
-    assert p.series[0].start_y == -4
-    assert p.series[0].end_y == 5
-
-    # verify that plotting symbolic expressions and lambda functions produces
-    # the same results
-    p1 = plot_vector(v1, (x, -5, 5), (y, -2, 2), show=False)
-    p2 = plot_vector(
-        [lambda x, y: x, lambda x, y: y],
-        ("x", -5, 5), ("y", -2, 2),
-        show=False)
-    assert len(p1.series) == len(p2.series) == 2
-    assert all(np.allclose(t1, t2) for t1, t2 in
-        zip(p1[0].get_data(), p2[0].get_data()))
-    assert all(np.allclose(t1, t2) for t1, t2 in
-        zip(p1[1].get_data(), p2[1].get_data()))
-
-    # verify the use of a lambda function scalar field
-    p3 = plot_vector(v1, (x, -5, 5), (y, -2, 2),
-        scalar=sqrt(x**2 + y**2), show=False)
-    p4 = plot_vector(
-        [lambda x, y: x, lambda x, y: y],
-        ("x", -5, 5), ("y", -2, 2),
-        scalar=lambda x, y: np.sqrt(x**2 + y**2),
-        show=False)
-    assert all(np.allclose(t1, t2) for t1, t2 in
-        zip(p3[0].get_data(), p4[0].get_data()))
 
 
 def test_plot_list():
@@ -827,9 +756,6 @@ def test_lambda_functions():
     # verify that plotting functions raises errors if they do not support
     # lambda functions.
 
-    raises(TypeError, lambda : plot_real_imag(lambda t: t))
-    raises(TypeError, lambda : plot_complex_list(lambda t: t))
-    raises(TypeError, lambda : plot_complex_vector(lambda t: t))
     raises(TypeError, lambda : plot_piecewise(lambda t: t))
 
 
@@ -884,32 +810,3 @@ def test_functions_iplot_integration():
         u * Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10),
         params={u: (1, 0, 2)}, show=False)
     raises(NotImplementedError, p)
-
-    p = plot_real_imag(sqrt(x) * exp(-u * x**2), (x, -3, 3),
-        params={u: (1, 0, 2)}, ylim=(-0.25, 2), show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = plot_complex(
-        exp(I * x) * I * sin(u * x), "f", (x, -5, 5),
-        params={u: (1, 0, 2)}, ylim=(-0.2, 1.2), show=False)
-    assert isinstance(p, InteractivePlot)
-
-    expr1 = z * exp(2 * pi * I * z)
-    expr2 = u * expr1
-    n = 15
-    l1 = [expr1.subs(z, t / n) for t in range(n)]
-    l2 = [expr2.subs(z, t / n) for t in range(n)]
-    p = plot_complex_list((l1, "f1"), (l2, "f2"),
-        params={u: (0.5, 0, 2)}, xlim=(-1.5, 2), ylim=(-2, 1), show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = plot_complex_vector(
-        log(gamma(u * z)), (z, -5 - 5j, 5 + 5j),
-        params={u: (1, 0, 2)}, n=20,
-        quiver_kw=dict(color="orange"), grid=False, show=False)
-    assert isinstance(p, InteractivePlot)
-
-    p = plot_vector(
-        [-sin(u * y), cos(x)], (x, -3, 3), (y, -3, 3),
-        params={u: (1, 0, 2)}, n=20, show=False)
-    assert isinstance(p, InteractivePlot)
