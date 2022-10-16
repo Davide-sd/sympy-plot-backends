@@ -1349,6 +1349,7 @@ def plot_complex_vector(*args, **kwargs):
        ...      n=26, grid=False, scalar=False, use_cm=False, normalize=True,
        ...      quiver_kw={"color": "k", "pivot": "tip"}, show=False)
        >>> (p1 + p2).show()
+       >>> (p1 + p2)
        Plot object containing:
        [0]: complex domain coloring: z*log(2*z) + 3 for re(z) over (-2.0, 2.0) and im(z) over (-2.0, 2.0)
        [1]: 2D vector series: [(re(_x) - im(_y))*log(Abs(2*_x + 2*_y*I)) - (re(_y) + im(_x))*arg(_x + _y*I) + 3, (re(_x) - im(_y))*arg(_x + _y*I) + (re(_y) + im(_x))*log(Abs(2*_x + 2*_y*I))] over (_x, -2.0, 2.0), (_y, -2.0, 2.0)
