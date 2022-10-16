@@ -1,9 +1,6 @@
 Complex
 -------
 
-Complex Functions
-=================
-
 .. module:: spb.ccomplex.complex
 
 .. autofunction:: plot_complex
