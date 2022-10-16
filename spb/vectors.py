@@ -350,6 +350,12 @@ def plot_vector(*args, **kwargs):
         Number of discretization points for the scalar contour plot.
         Default to 100.
 
+    normalize : bool
+        Default to False. If True, the vector field will be normalized,
+        resulting in quivers having the same length. If ``use_cm=True``, the
+        backend will color the quivers by the (pre-normalized) vector field's
+        magnitude. Note: only quivers will be affected by this option.
+
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot, which doesn't support the
@@ -494,7 +500,8 @@ def plot_vector(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
+       >>> v = [-sin(y), cos(x)]
+       >>> plot_vector(v, (x, -3, 3), (y, -3, 3),
        ...     quiver_kw=dict(color="black"),
        ...     contour_kw={"cmap": "Blues_r", "levels": 20},
        ...     grid=False, xlabel="x", ylabel="y")
@@ -502,8 +509,25 @@ def plot_vector(*args, **kwargs):
        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
-    Streamlines plot of a 2D vector field with no background scalar field and
-    custom label:
+    Quivers plot of a 2D vector field with no background scalar field,
+    a custom label and normalized quiver lengths:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_vector(
+       ...     v, (x, -3, 3), (y, -3, 3),
+       ...     label="Magnitude of $%s$" % latex([-sin(y), cos(x)]),
+       ...     scalar=False, normalize=True,
+       ...     grid=False, xlabel="x", ylabel="y")
+       Plot object containing:
+       [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [1]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
+
+    Streamlines plot of a 2D vector field with no background scalar field, and
+    a custom label:
 
     .. plot::
        :context: close-figs

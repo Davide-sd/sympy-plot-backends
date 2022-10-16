@@ -481,9 +481,13 @@ class BokehBackend(Plot):
                     self._fig.multi_line(xs, ys, **kw)
                 else:
                     x, y, u, v = s.get_data()
+                    mag = np.sqrt(u**2 + v**2)
+                    if s.normalize:
+                        u, v = [t / mag for t in [u, v]]
                     data, quiver_kw = self._get_quivers_data(x, y, u, v,
                         **s.rendering_kw.copy())
-                    mag = data["magnitude"]
+                    mag = np.tile(mag.flatten(), 3)
+                    data["magnitude"] = mag
 
                     color_mapper = self.bokeh.models.LinearColorMapper(
                         palette=next(self._cm), low=min(mag), high=max(mag))
@@ -686,9 +690,14 @@ class BokehBackend(Plot):
                         rend[i].data_source.data.update({"xs": xs, "ys": ys})
                     else:
                         quiver_kw = s.rendering_kw.copy()
+                        mag = np.sqrt(u**2 + v**2)
+                        if s.normalize:
+                            u, v = [t / mag for t in [u, v]]
                         data, quiver_kw = self._get_quivers_data(
                             x, y, u, v, **quiver_kw
                         )
+                        mag = np.tile(mag.flatten(), 3)
+                        data["magnitude"] = mag
                         rend[i].data_source.data.update(data)
 
                         line_color = rend[i].glyph.line_color

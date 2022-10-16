@@ -594,8 +594,8 @@ def plot_real_imag(*args, **kwargs):
        >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), n=100, threed=True,
        ...      use_cm=True)
        Plot object containing:
-       [0]: cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
-       [1]: cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
+       [0]: complex cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
+       [1]: complex cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
 
     3D plot of the absolute value of a function over a complex range:
 
@@ -649,10 +649,12 @@ def plot_complex(*args, **kwargs):
     1. Line plot over the reals.
     2. Image plot over the complex plane if `threed=False`. This is also
        known as Domain Coloring. Use the `coloring` keyword argument to
-       select a different color scheme.
+       select a different color scheme. At the moment, only HSV coloring is
+       supported.
     3. If `threed=True`, plot a 3D surface of the absolute value over the
        complex plane, colored by its argument. Use the `coloring` keyword
-       argument to select a different color scheme.
+       argument to select a different color scheme. At the moment, only HSV
+       coloring is supported.
 
     Typical usage examples are in the followings:
 
@@ -879,7 +881,7 @@ def plot_complex(*args, **kwargs):
 
        >>> plot_complex(cos(x) + sin(I * x), "f", (x, -2, 2))
        Plot object containing:
-       [0]: absolute-argument line: cos(x) + I*sinh(x) for x over ((-2+0j), (2+0j))
+       [0]: cartesian abs-arg line: cos(x) + I*sinh(x) for x over ((-2+0j), (2+0j))
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -903,7 +905,7 @@ def plot_complex(*args, **kwargs):
        >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I),
        ...     coloring="b", n=500, grid=False)
        Plot object containing:
-       [0]: domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
+       [0]: complex domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
     Plotting a numerical function instead of a symbolic expression:
 
@@ -939,7 +941,7 @@ def plot_complex(*args, **kwargs):
        >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
        ...     zlim=(-1, 6), use_cm=True)
        Plot object containing:
-       [0]: cartesian surface: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
+       [0]: complex 3D domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
 
     References
@@ -1088,9 +1090,9 @@ def plot_complex_list(*args, **kwargs):
 
        >>> plot_complex_list(3 + 2 * I, 4 * I, 2)
        Plot object containing:
-       [0]: complex point (3 + 2*I,)
-       [1]: complex point (4*I,)
-       [2]: complex point (2,)
+       [0]: complex points: (3 + 2*I,)
+       [1]: complex points: (4*I,)
+       [2]: complex points: (2,)
 
     Plot two lists of complex points and assign to them custom labels:
 
@@ -1106,8 +1108,8 @@ def plot_complex_list(*args, **kwargs):
        >>> l2 = [expr2.subs(z, t / n) for t in range(n)]
        >>> plot_complex_list((l1, "f1"), (l2, "f2"))
        Plot object containing:
-       [0]: complex points (0.0, 0.0666666666666667*exp(0.133333333333333*I*pi), 0.133333333333333*exp(0.266666666666667*I*pi), 0.2*exp(0.4*I*pi), 0.266666666666667*exp(0.533333333333333*I*pi), 0.333333333333333*exp(0.666666666666667*I*pi), 0.4*exp(0.8*I*pi), 0.466666666666667*exp(0.933333333333333*I*pi), 0.533333333333333*exp(1.06666666666667*I*pi), 0.6*exp(1.2*I*pi), 0.666666666666667*exp(1.33333333333333*I*pi), 0.733333333333333*exp(1.46666666666667*I*pi), 0.8*exp(1.6*I*pi), 0.866666666666667*exp(1.73333333333333*I*pi), 0.933333333333333*exp(1.86666666666667*I*pi))
-       [1]: complex points (0, 0.133333333333333*exp(0.133333333333333*I*pi), 0.266666666666667*exp(0.266666666666667*I*pi), 0.4*exp(0.4*I*pi), 0.533333333333333*exp(0.533333333333333*I*pi), 0.666666666666667*exp(0.666666666666667*I*pi), 0.8*exp(0.8*I*pi), 0.933333333333333*exp(0.933333333333333*I*pi), 1.06666666666667*exp(1.06666666666667*I*pi), 1.2*exp(1.2*I*pi), 1.33333333333333*exp(1.33333333333333*I*pi), 1.46666666666667*exp(1.46666666666667*I*pi), 1.6*exp(1.6*I*pi), 1.73333333333333*exp(1.73333333333333*I*pi), 1.86666666666667*exp(1.86666666666667*I*pi))
+       [0]: complex points: (0.0, 0.0666666666666667*exp(0.133333333333333*I*pi), 0.133333333333333*exp(0.266666666666667*I*pi), 0.2*exp(0.4*I*pi), 0.266666666666667*exp(0.533333333333333*I*pi), 0.333333333333333*exp(0.666666666666667*I*pi), 0.4*exp(0.8*I*pi), 0.466666666666667*exp(0.933333333333333*I*pi), 0.533333333333333*exp(1.06666666666667*I*pi), 0.6*exp(1.2*I*pi), 0.666666666666667*exp(1.33333333333333*I*pi), 0.733333333333333*exp(1.46666666666667*I*pi), 0.8*exp(1.6*I*pi), 0.866666666666667*exp(1.73333333333333*I*pi), 0.933333333333333*exp(1.86666666666667*I*pi))
+       [1]: complex points: (0, 0.133333333333333*exp(0.133333333333333*I*pi), 0.266666666666667*exp(0.266666666666667*I*pi), 0.4*exp(0.4*I*pi), 0.533333333333333*exp(0.533333333333333*I*pi), 0.666666666666667*exp(0.666666666666667*I*pi), 0.8*exp(0.8*I*pi), 0.933333333333333*exp(0.933333333333333*I*pi), 1.06666666666667*exp(1.06666666666667*I*pi), 1.2*exp(1.2*I*pi), 1.33333333333333*exp(1.33333333333333*I*pi), 1.46666666666667*exp(1.46666666666667*I*pi), 1.6*exp(1.6*I*pi), 1.73333333333333*exp(1.73333333333333*I*pi), 1.86666666666667*exp(1.86666666666667*I*pi))
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -1288,26 +1290,26 @@ def plot_complex_vector(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import I, symbols, exp, sqrt, cos, sin, pi, gamma
-       >>> from spb import plot_complex_vector
+       >>> from sympy import I, symbols, gamma, latex, log
+       >>> from spb import plot_complex_vector, plot_complex
        >>> z = symbols('z')
 
-    Quivers plot with a contour plot in background representing the
-    vector's magnitude (a scalar field).
+    Quivers plot with normalize lengths and a contour plot in background
+    representing the vector's magnitude (a scalar field).
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> expr = z**2
+       >>> expr = z**2 + 2
        >>> plot_complex_vector(expr, (z, -5 - 5j, 5 + 5j),
-       ...     quiver_kw=dict(color="orange"), grid=False)
+       ...     quiver_kw=dict(color="orange"), normalize=True, grid=False)
        Plot object containing:
-       [0]: contour: sqrt(((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2)**2 + 4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2) for _x over (-5.0, 5.0) and _y over (-5.0, 5.0)
-       [1]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
+       [0]: contour: sqrt(4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2 + ((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2)**2) for _x over (-5.0, 5.0) and _y over (-5.0, 5.0)
+       [1]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
 
-    Only quiver plot.
+    Only quiver plot with normalized lengths and solid color.
 
     .. plot::
        :context: close-figs
@@ -1315,9 +1317,9 @@ def plot_complex_vector(*args, **kwargs):
        :include-source: True
 
        >>> plot_complex_vector(expr, (z, -5 - 5j, 5 + 5j),
-       ...     "Magnitude of %s" % str(expr), scalar=False)
+       ...     scalar=False, use_cm=False, normalize=True)
        Plot object containing:
-       [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
+       [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
 
     Only streamlines plot.
 
@@ -1327,21 +1329,29 @@ def plot_complex_vector(*args, **kwargs):
        :include-source: True
 
        >>> plot_complex_vector(expr, (z, -5 - 5j, 5 + 5j),
-       ...     "Magnitude of %s" % str(expr), scalar=False, streamlines=True)
+       ...     "Magnitude of $%s$" % latex(expr),
+       ...     scalar=False, streamlines=True)
        Plot object containing:
-       [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
+       [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
 
-    Quivers plot for multiple complex expressions:
+    Overlay the quiver plot to a domain coloring plot. By setting ``n=26``
+    (even number) in the complex vector plot, the quivers won't to cross
+    the branch cut.
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot_complex_vector((z**2, (z, -5 - 5j, 5 + 0j)), (z**3, (z, -5 - 0j, 5 + 5j)))
+       >>> expr = z * log(2 * z) + 3
+       >>> p1 = plot_complex(expr, (z, -2-2j, 2+2j), grid=False, show=False)
+       >>> p2 = plot_complex_vector(expr, (z, -2-2j, 2+2j),
+       ...      n=26, grid=False, scalar=False, use_cm=False, normalize=True,
+       ...      quiver_kw={"color": "k", "pivot": "tip"}, show=False)
+       >>> (p1 + p2).show()
        Plot object containing:
-       [0]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 0.0)
-       [1]: 2D vector series: [(re(_x) - im(_y))**3 - 3*(re(_x) - im(_y))*(re(_y) + im(_x))**2, 3*(re(_x) - im(_y))**2*(re(_y) + im(_x)) - (re(_y) + im(_x))**3] over (_x, -5.0, 5.0), (_y, 0.0, 5.0)
+       [0]: complex domain coloring: z*log(2*z) + 3 for re(z) over (-2.0, 2.0) and im(z) over (-2.0, 2.0)
+       [1]: 2D vector series: [(re(_x) - im(_y))*log(Abs(2*_x + 2*_y*I)) - (re(_y) + im(_x))*arg(_x + _y*I) + 3, (re(_x) - im(_y))*arg(_x + _y*I) + (re(_y) + im(_x))*log(Abs(2*_x + 2*_y*I))] over (_x, -2.0, 2.0), (_y, -2.0, 2.0)
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.

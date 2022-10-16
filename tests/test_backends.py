@@ -1409,6 +1409,166 @@ def test_plot_vector_3d_streamlines():
     assert p._handles[0].actor.property.color == (1, 0, 0)
 
 
+def test_plot_vector_2d_normalize():
+    # verify that backends are capable of normalizing a vector field before
+    # plotting it. Since all backend are different from each other, let's test
+    # that data in the figures is different in the two cases normalize=True
+    # and normalize=False
+
+    x, y, u, v = symbols("x, y, u, v")
+
+    _pv = lambda B, norm=False: plot_vector(
+        [-sin(y), cos(x)], (x, -2, 2), (y, -2, 2),
+        backend=B, normalize=norm, n=5, scalar=False, use_cm=False, show=False)
+
+    p1 = _pv(MB, False)
+    p2 = _pv(MB, True)
+    uu1 = p1.fig.axes[0].collections[0].U
+    vv1 = p1.fig.axes[0].collections[0].V
+    uu2 = p2.fig.axes[0].collections[0].U
+    vv2 = p2.fig.axes[0].collections[0].V
+    assert not np.allclose(uu1, uu2)
+    assert not np.allclose(vv1, vv2)
+    assert not np.allclose(np.sqrt(uu1**2 + vv1**2), 1)
+    assert np.allclose(np.sqrt(uu2**2 + vv2**2), 1)
+
+    p1 = _pv(PB, False)
+    p2 = _pv(PB, True)
+    d1x = np.array(p1.fig.data[0].x).astype(float)
+    d1y = np.array(p1.fig.data[0].y).astype(float)
+    d2x = np.array(p2.fig.data[0].x).astype(float)
+    d2y = np.array(p2.fig.data[0].y).astype(float)
+    assert not np.allclose(d1x, d2x, equal_nan=True)
+    assert not np.allclose(d1y, d2y, equal_nan=True)
+
+    p1 = _pv(BB, False)
+    p2 = _pv(BB, True)
+    x01 = p1.fig.renderers[0].data_source.data["x0"]
+    x11 = p1.fig.renderers[0].data_source.data["x1"]
+    y01 = p1.fig.renderers[0].data_source.data["y0"]
+    y11 = p1.fig.renderers[0].data_source.data["y1"]
+    m1 = p1.fig.renderers[0].data_source.data["magnitude"]
+    x02 = p2.fig.renderers[0].data_source.data["x0"]
+    x12 = p2.fig.renderers[0].data_source.data["x1"]
+    y02 = p2.fig.renderers[0].data_source.data["y0"]
+    y12 = p2.fig.renderers[0].data_source.data["y1"]
+    m2 = p2.fig.renderers[0].data_source.data["magnitude"]
+    assert not np.allclose(x01, x02)
+    assert not np.allclose(x11, x12)
+    assert not np.allclose(y01, y02)
+    assert not np.allclose(y11, y12)
+    assert np.allclose(m1, m2)
+
+    # interactive plots
+    _pv2 = lambda B, norm=False: plot_vector(
+        [-u * sin(y), cos(x)], (x, -2, 2), (y, -2, 2),
+        backend=B, normalize=norm, n=5, scalar=False, use_cm=False, show=False,
+        params={u: (1, 0, 2)})
+
+    p1 = _pv2(MB, False)
+    p1.backend._update_interactive({u: 1.5})
+    p2 = _pv2(MB, True)
+    p2.backend._update_interactive({u: 1.5})
+    uu1 = p1.backend.fig.axes[0].collections[0].U
+    vv1 = p1.backend.fig.axes[0].collections[0].V
+    uu2 = p2.backend.fig.axes[0].collections[0].U
+    vv2 = p2.backend.fig.axes[0].collections[0].V
+    assert not np.allclose(uu1, uu2)
+    assert not np.allclose(vv1, vv2)
+    assert not np.allclose(np.sqrt(uu1**2 + vv1**2), 1)
+    assert np.allclose(np.sqrt(uu2**2 + vv2**2), 1)
+
+    p1 = _pv2(PB, False)
+    p1.backend._update_interactive({u: 1.5})
+    p2 = _pv2(PB, True)
+    p2.backend._update_interactive({u: 1.5})
+    d1x = np.array(p1.fig.data[0].x).astype(float)
+    d1y = np.array(p1.fig.data[0].y).astype(float)
+    d2x = np.array(p2.fig.data[0].x).astype(float)
+    d2y = np.array(p2.fig.data[0].y).astype(float)
+    assert not np.allclose(d1x, d2x, equal_nan=True)
+    assert not np.allclose(d1y, d2y, equal_nan=True)
+
+    p1 = _pv2(BB, False)
+    p1.backend._update_interactive({u: 1.5})
+    p2 = _pv2(BB, True)
+    p2.backend._update_interactive({u: 1.5})
+    x01 = p1.fig.renderers[0].data_source.data["x0"]
+    x11 = p1.fig.renderers[0].data_source.data["x1"]
+    y01 = p1.fig.renderers[0].data_source.data["y0"]
+    y11 = p1.fig.renderers[0].data_source.data["y1"]
+    m1 = p1.fig.renderers[0].data_source.data["magnitude"]
+    x02 = p2.fig.renderers[0].data_source.data["x0"]
+    x12 = p2.fig.renderers[0].data_source.data["x1"]
+    y02 = p2.fig.renderers[0].data_source.data["y0"]
+    y12 = p2.fig.renderers[0].data_source.data["y1"]
+    m2 = p2.fig.renderers[0].data_source.data["magnitude"]
+    assert not np.allclose(x01, x02)
+    assert not np.allclose(x11, x12)
+    assert not np.allclose(y01, y02)
+    assert not np.allclose(y11, y12)
+    assert np.allclose(m1, m2)
+
+
+def test_plot_vector_3d_normalize():
+    # verify that backends are capable of normalizing a vector field before
+    # plotting it. Since all backend are different from each other, let's test
+    # that data in the figures is different in the two cases normalize=True
+    # and normalize=False
+
+    x, y, z, u, v = symbols("x, y, z, u, v")
+
+    _pv = lambda B, norm=False: plot_vector(
+        [z, -x, y], (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        backend=B, normalize=norm, n=3, use_cm=False, show=False)
+
+    p1 = _pv(MB, False)
+    p2 = _pv(MB, True)
+    seg1 = np.array(p1.fig.axes[0].collections[0].get_segments())
+    seg2 = np.array(p2.fig.axes[0].collections[0].get_segments())
+    # TODO: how can I test that these two quivers are different?
+    # assert not np.allclose(seg1, seg2)
+
+    p1 = _pv(PB, False)
+    p2 = _pv(PB, True)
+    assert not np.allclose(p1.fig.data[0]["u"], p2.fig.data[0]["u"])
+    assert not np.allclose(p1.fig.data[0]["v"], p2.fig.data[0]["v"])
+    assert not np.allclose(p1.fig.data[0]["w"], p2.fig.data[0]["w"])
+
+    p1 = _pv(KBchild1, False)
+    p2 = _pv(KBchild1, True)
+    assert not np.allclose(p1.fig.objects[0].vectors, p2.fig.objects[0].vectors)
+
+    # interactive plots
+    _pv2 = lambda B, norm=False: plot_vector(
+        [u * z, -x, y], (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        backend=B, normalize=norm, n=3, use_cm=False, show=False,
+        params={u: (1, 0, 2)})
+
+    p1 = _pv2(MB, False)
+    p1.backend._update_interactive({u: 1.5})
+    p2 = _pv2(MB, True)
+    p2.backend._update_interactive({u: 1.5})
+    seg1 = np.array(p1.fig.axes[0].collections[0].get_segments())
+    seg2 = np.array(p2.fig.axes[0].collections[0].get_segments())
+    # TODO: how can I test that these two quivers are different?
+    # assert not np.allclose(seg1, seg2)
+
+    p1 = _pv2(PB, False)
+    p1.backend._update_interactive({u: 1.5})
+    p2 = _pv2(PB, True)
+    p2.backend._update_interactive({u: 1.5})
+    assert not np.allclose(p1.fig.data[0]["u"], p2.fig.data[0]["u"])
+    assert not np.allclose(p1.fig.data[0]["v"], p2.fig.data[0]["v"])
+    assert not np.allclose(p1.fig.data[0]["w"], p2.fig.data[0]["w"])
+
+    p1 = _pv2(KBchild1, False)
+    p1.backend._update_interactive({u: 1.5})
+    p2 = _pv2(KBchild1, True)
+    p2.backend._update_interactive({u: 1.5})
+    assert not np.allclose(p1.fig.objects[0].vectors, p2.fig.objects[0].vectors)
+
+
 def test_plot_implicit_adaptive_true():
     # verify that the backends produce the expected results when
     # `plot_implicit()` is called with `adaptive=True`

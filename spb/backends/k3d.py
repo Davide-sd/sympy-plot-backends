@@ -340,7 +340,7 @@ class K3DBackend(Plot):
                     solid_color = col * np.ones(xx.size)
                     self._handles[ii] = [qkw, colormap]
 
-                origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap)
+                origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize)
                 if colors is None:
                     colors = solid_color
                 vec_colors = self._create_vector_colors(colors)
@@ -414,7 +414,7 @@ class K3DBackend(Plot):
             )
         self._fig.auto_rendering = True
 
-    def _build_k3d_vector_data(self, xx, yy, zz, uu, vv, ww, qkw, colormap):
+    def _build_k3d_vector_data(self, xx, yy, zz, uu, vv, ww, qkw, colormap, normalize):
         """Assemble the origins, vectors and colors (if possible) matrices.
         """
         np = import_module('numpy')
@@ -424,6 +424,8 @@ class K3DBackend(Plot):
         ]
         scale = qkw["scale"]
         magnitude = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
+        if normalize:
+            uu, vv, ww = [t / magnitude for t in [uu, vv, ww]]
         vectors = np.array((uu, vv, ww)).T * scale
         origins = np.array((xx, yy, zz)).T
 
@@ -515,7 +517,7 @@ class K3DBackend(Plot):
 
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()
                     qkw, colormap = self._handles[i]
-                    origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap)
+                    origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize)
                     if colors is not None:
                         vec_colors = self._create_vector_colors(colors)
                         self.fig.objects[i].colors = vec_colors

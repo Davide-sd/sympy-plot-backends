@@ -2660,7 +2660,7 @@ class VectorBase(BaseSeries):
     is_vector = True
     is_slice = False
     is_streamlines = False
-    _allowed_keys = ["n1", "n2", "n3", "modules", "only_integers", "streamlines", "use_cm", "xscale", "yscale", "zscale", "quiver_kw", "stream_kw", "rendering_kw", "tx", "ty", "tz"]
+    _allowed_keys = ["n1", "n2", "n3", "modules", "only_integers", "streamlines", "use_cm", "xscale", "yscale", "zscale", "quiver_kw", "stream_kw", "rendering_kw", "tx", "ty", "tz", "normalize"]
 
     def _init_num_discretization_points(self, **kwargs):
         """Subclasses should override this method to provide dirrent values."""
@@ -2686,6 +2686,11 @@ class VectorBase(BaseSeries):
         self.modules = kwargs.get("modules", None)
         self.only_integers = kwargs.get("only_integers", False)
         self.use_cm = kwargs.get("use_cm", True)
+        # NOTE: normalization is achieved at the backend side: this allows to
+        # obtain same length arrows, but colored with the actual magnitude.
+        # If normalization is applied on the series get_data(), the coloring
+        # by magnitude would not be applicable at the backend.
+        self.normalize = kwargs.get("normalize", False)
 
         # if the expressions are lambda functions and no label has been
         # provided, then its better to do the following to avoid suprises on
@@ -2845,6 +2850,8 @@ class Vector3DSeries(VectorBase):
 class VectorInteractiveBaseSeries(InteractiveSeries):
     """Represent an interactive vector field."""
 
+    _allowed_keys = VectorBase._allowed_keys
+
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
@@ -2853,6 +2860,7 @@ class VectorInteractiveBaseSeries(InteractiveSeries):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.normalize = kwargs.get("normalize", False)
         self.is_streamlines = kwargs.get("streamlines", False)
         if self.is_streamlines:
             self.rendering_kw = kwargs.get("stream_kw", dict())
@@ -2887,6 +2895,7 @@ class Vector2DInteractiveSeries(VectorInteractiveBaseSeries, Vector2DSeries):
     """Represents an interactive 2D vector field."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._allowed_keys += ["scalar"]
         self._set_use_quiver_solid_color(**kwargs)
 
 class Vector3DInteractiveSeries(VectorInteractiveBaseSeries, Vector3DSeries):

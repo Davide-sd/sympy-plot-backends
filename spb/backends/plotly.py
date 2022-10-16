@@ -273,10 +273,6 @@ class PlotlyBackend(Plot):
         mix_3Dsurfaces_3Dlines = (any(s.is_3Dsurface for s in series) and
             any(s.is_3Dline and s.show_in_legend for s in series))
         show_2D_vectors = any(s.is_2Dvector for s in series)
-        # show_2D_vectors = False
-        # for s in series:
-        #     if s.is_2Dvector:
-        #         show_2D_vectors = True
 
         self._fig.data = []
 
@@ -468,6 +464,9 @@ class PlotlyBackend(Plot):
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
+                    if s.normalize:
+                        mag = np.sqrt(uu**2 + vv**2 )
+                        uu, vv = [t / mag for t in [uu, vv]]
                     # NOTE: currently, it is not possible to create
                     # quivers/streamlines with a color scale:
                     # https://community.plotly.com/t/how-to-make-python-quiver-with-colorscale/41028
@@ -524,12 +523,21 @@ class PlotlyBackend(Plot):
                                 w=ww.flatten(),
                                 **kw))
                     else:
+                        mag = np.sqrt(uu**2 + vv**2 + ww**2)
+                        if s.normalize:
+                            # NOTE/TODO: as of Plotly 5.9.0, it is impossible
+                            # to set the color of cones. Hence, by applying the
+                            # normalization, all cones will have the same
+                            # color.
+                            uu, vv, ww = [t / mag for t in [uu, vv, ww]]
                         qkw = dict(
                             showscale=(not s.is_slice) or self.legend,
                             colorscale=next(self._cm),
                             sizemode="absolute",
                             sizeref=40,
                             colorbar=self._create_colorbar(ii, s.get_label(self._use_latex)),
+                            cmin=mag.min(),
+                            cmax=mag.max(),
                         )
                         kw = merge({}, qkw, s.rendering_kw)
                         self._fig.add_trace(
@@ -752,6 +760,13 @@ class PlotlyBackend(Plot):
                     if s.is_streamlines:
                         raise NotImplementedError
                     x, y, z, u, v, w = self.series[i].get_data()
+                    if s.normalize:
+                            # NOTE/TODO: as of Plotly 5.9.0, it is impossible
+                            # to set the color of cones. Hence, by applying the
+                            # normalization, all cones will have the same
+                            # color.
+                            mag = np.sqrt(u**2 + v**2 + w**2)
+                            u, v, w = [t / mag for t in [u, v, w]]
                     self.fig.data[i]["x"] = x.flatten()
                     self.fig.data[i]["y"] = y.flatten()
                     self.fig.data[i]["z"] = z.flatten()
@@ -761,6 +776,9 @@ class PlotlyBackend(Plot):
 
                 elif s.is_vector:
                     x, y, u, v = self.series[i].get_data()
+                    if s.normalize:
+                        mag = np.sqrt(u**2 + v**2 )
+                        u, v = [t / mag for t in [u, v]]
                     if s.is_streamlines:
                         # TODO: iplot doesn't work with 2D streamlines.
                         raise NotImplementedError

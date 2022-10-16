@@ -12,6 +12,16 @@ v1.4.1
   ``plot3d_parametric_surface`` and ``plot3d_spherical`` to add grid lines
   over the surface.
 
+* Fixed bug with ``plot3d`` and ``plot_contour`` when dealing with instances
+  of ``BaseScalar``.
+
+* Added ``normalize`` keyword argument to ``plot_vector`` and 
+  ``plot_complex_vector`` to visualize quivers with unit length.
+
+* Improve documentation of ``plot_vector`` and ``plot_complex_vector``.
+
+* Improved test coverage on complex and vector plotting functions.
+
 * Improvements on ``PlotlyBackend``:
 
   * it should now be able to plot more than 14 2d/3d parametric lines when
@@ -22,11 +32,6 @@ v1.4.1
   * added support for custom aspect ratio on 3D plots.
 
 * Improved support for ``xlim``, ``ylim``, ``zlim`` on ``K3DBackend``.
-
-* Fixed bug with ``plot3d`` and ``plot_contour`` when dealing with instances
-  of ``BaseScalar``.
-
-* Improved test coverage on complex and vector plotting functions.
 
 * Series:
 

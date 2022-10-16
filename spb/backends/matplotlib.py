@@ -502,12 +502,14 @@ class MatplotlibBackend(Plot):
             elif s.is_vector:
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
-                    magn = np.sqrt(uu ** 2 + vv ** 2)
+                    mag = np.sqrt(uu ** 2 + vv ** 2)
+                    if s.normalize:
+                        uu, vv = [t / mag for t in [uu, vv]]
                     if s.is_streamlines:
                         skw = dict()
                         if (not s.use_quiver_solid_color) and s.use_cm:
                             skw["cmap"] = next(self._cm)
-                            skw["color"] = magn
+                            skw["color"] = mag
                             kw = merge({}, skw, s.rendering_kw)
                             sp = self.ax.streamplot(xx, yy, uu, vv, **kw)
                             is_cb_added = self._add_colorbar(
@@ -538,7 +540,7 @@ class MatplotlibBackend(Plot):
                             # visible or if use_cm=False
                             qkw["cmap"] = next(self._cm)
                             kw = merge({}, qkw, s.rendering_kw)
-                            q = self.ax.quiver(xx, yy, uu, vv, magn, **kw)
+                            q = self.ax.quiver(xx, yy, uu, vv, mag, **kw)
                             is_cb_added = self._add_colorbar(
                                 q, s.get_label(self._use_latex), s.use_cm)
                         else:
@@ -550,7 +552,9 @@ class MatplotlibBackend(Plot):
                             self._fig.axes[-1])
                 else:
                     xx, yy, zz, uu, vv, ww = s.get_data()
-                    magn = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
+                    mag = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
+                    if s.normalize:
+                        uu, vv, ww = [t / mag for t in [uu, vv, ww]]
 
                     if s.is_streamlines:
                         vertices, magn = compute_streamtubes(
@@ -587,7 +591,7 @@ class MatplotlibBackend(Plot):
                         qkw = dict()
                         if s.use_cm:
                             qkw["cmap"] = next(self._cm)
-                            qkw["array"] = magn.flatten()
+                            qkw["array"] = mag.flatten()
                             kw = merge({}, qkw, s.rendering_kw)
                             q = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
                             is_cb_added = self._add_colorbar(
@@ -982,19 +986,23 @@ class MatplotlibBackend(Plot):
 
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()
                     kw, is_cb_added, cax = self._handles[i][1:]
+                    mag = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
+                    if s.normalize:
+                        uu, vv, ww = [t / mag for t in [uu, vv, ww]]
                     self._handles[i][0].remove()
                     self._handles[i][0] = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
 
                     if is_cb_added:
-                        magn = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
-                        self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), param=magn)
+                        self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), param=mag)
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
                     zlims.append((np.nanmin(zz), np.nanmax(zz)))
 
                 elif s.is_vector:
                     xx, yy, uu, vv = self.series[i].get_data()
-                    magn = np.sqrt(uu ** 2 + vv ** 2)
+                    mag = np.sqrt(uu ** 2 + vv ** 2)
+                    if s.normalize:
+                        uu, vv = [t / mag for t in [uu, vv]]
                     if s.is_streamlines:
                         raise NotImplementedError
 
@@ -1009,8 +1017,8 @@ class MatplotlibBackend(Plot):
                         kw, is_cb_added, cax = self._handles[i][1:]
 
                         if is_cb_added:
-                            self._handles[i][0].set_UVC(uu, vv, magn)
-                            self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), magn)
+                            self._handles[i][0].set_UVC(uu, vv, mag)
+                            self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), mag)
                         else:
                             self._handles[i][0].set_UVC(uu, vv)
                     xlims.append((np.amin(xx), np.amax(xx)))

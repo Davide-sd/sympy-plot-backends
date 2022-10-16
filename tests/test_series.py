@@ -2904,3 +2904,70 @@ def test_particular_case_1():
     s4 = LineOver1DRangeSeries(math_func, ("n", -10, 10), "",
         adaptive=False, n=10)
     do_test(s3, s4)
+
+
+def test_vector_series_normalize():
+    # verify that vector series exposes the normalize attribute
+
+    x, y, z, u = symbols("x, y, z, u")
+
+    # default behaviour
+    s = Vector2DSeries(-sin(y), cos(x), (x, -2, 2), (y, -2, 2))
+    assert not s.normalize
+    s = Vector2DSeries(-sin(y), cos(x), (x, -2, 2), (y, -2, 2), normalize=False)
+    assert not s.normalize
+    s = Vector2DSeries(-sin(y), cos(x), (x, -2, 2), (y, -2, 2), normalize=True)
+    assert s.normalize
+
+    s = Vector3DSeries(-sin(y), cos(x), z, (x, -2, 2), (y, -2, 2), (z, -2, 2))
+    assert not s.normalize
+    s = Vector3DSeries(-sin(y), cos(x), z, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        normalize=False)
+    assert not s.normalize
+    s = Vector3DSeries(-sin(y), cos(x), z, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        normalize=True)
+    assert s.normalize
+
+    s = SliceVector3DSeries(Plane((-1, 0, 0), (1, 0, 0)),
+        z, -y, x, (x, -3, 3), (y, -2, 2), (z, -1, 1))
+    assert not s.normalize
+    s = SliceVector3DSeries(Plane((-1, 0, 0), (1, 0, 0)),
+        z, -y, x, (x, -3, 3), (y, -2, 2), (z, -1, 1), normalize=False)
+    assert not s.normalize
+    s = SliceVector3DSeries(Plane((-1, 0, 0), (1, 0, 0)),
+        z, -y, x, (x, -3, 3), (y, -2, 2), (z, -1, 1), normalize=True)
+    assert s.normalize
+
+    s = Vector2DInteractiveSeries([-sin(y), cos(x)], [(x, -2, 2), (y, -2, 2)])
+    assert not s.normalize
+    s = Vector2DInteractiveSeries([-sin(y), cos(x)], [(x, -2, 2), (y, -2, 2)],
+        normalize=False)
+    assert not s.normalize
+    s = Vector2DInteractiveSeries([-sin(y), cos(x)], [(x, -2, 2), (y, -2, 2)],
+        normalize=True)
+    assert s.normalize
+
+    s = Vector3DInteractiveSeries(
+        [-sin(y), cos(x), z], [(x, -2, 2), (y, -2, 2), (z, -2, 2)])
+    assert not s.normalize
+    s = Vector3DInteractiveSeries(
+        [-sin(y), cos(x), z], [(x, -2, 2), (y, -2, 2), (z, -2, 2)],
+        normalize=False)
+    assert not s.normalize
+    s = Vector3DInteractiveSeries(
+        [-sin(y), cos(x), z], [(x, -2, 2), (y, -2, 2), (z, -2, 2)],
+        normalize=True)
+    assert s.normalize
+
+    s = SliceVector3DInteractiveSeries([u * cos(y), u * sin(x), z],
+        [(x, -5, 5), (y, -5, 5), (z, -5, 5)], params={u: 1},
+        slice=Plane((0, 0, 0), (0, 1, 0)))
+    assert not s.normalize
+    s = SliceVector3DInteractiveSeries([u * cos(y), u * sin(x), z],
+        [(x, -5, 5), (y, -5, 5), (z, -5, 5)], params={u: 1},
+        slice=Plane((0, 0, 0), (0, 1, 0)), normalize=False)
+    assert not s.normalize
+    s = SliceVector3DInteractiveSeries([u * cos(y), u * sin(x), z],
+        [(x, -5, 5), (y, -5, 5), (z, -5, 5)], params={u: 1},
+        slice=Plane((0, 0, 0), (0, 1, 0)), normalize=True)
+    assert s.normalize
