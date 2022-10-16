@@ -2,13 +2,13 @@
  Changelog
 ==========
 
-v1.4.1
+v1.5.0
 ======
 
 * Implemented the ``plot3d_spherical`` function to plot functions in
   spherical coordinates.
 
-* Implemented the ``wireframe`` option on ``plot3d``,
+* Added the ``wireframe`` option to ``plot3d``,
   ``plot3d_parametric_surface`` and ``plot3d_spherical`` to add grid lines
   over the surface.
 
@@ -24,7 +24,7 @@ v1.4.1
 
 * Improvements on ``PlotlyBackend``:
 
-  * it should now be able to plot more than 14 2d/3d parametric lines when
+  * it is now be able to plot more than 14 2d/3d parametric lines when
     ``use_cm=False``.
   
   * improved logic to show colorbars on 3D surface plots.
@@ -39,7 +39,7 @@ v1.4.1
 
   * Fixed bug with ``color_func``.
 
-  * Added ``tx, ty, tz`` support to parametric series.
+  * Added transformation keyword arguments ``tx, ty, tz`` to parametric series.
 
 * Breaks:
 
@@ -48,7 +48,7 @@ v1.4.1
   
   * Removed Mayavi from setup dependencies. Mayavi is difficult to install:
     can't afford the time it requires for proper setup and testing.
-    ``MayaviBackend`` is still available, to be used "as is".
+    ``MayaviBackend`` is still available to be used "as is".
 
 
 v1.4.0

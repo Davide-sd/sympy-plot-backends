@@ -786,9 +786,9 @@ def iplot(*args, show=True, **kwargs):
     """Create an interactive application containing widgets and charts in order
     to study symbolic expressions.
 
-    Note that this function is already integrated with many of the usual
-    plotting functions, hence it is recommended to use those instead of
-    ``iplot`` because their documentation is more specific.
+    Note: this function is already integrated with many of the usual
+    plotting functions: since their documentation is more specific, it is
+    highly recommended to use those instead.
 
     However, the following documentation explains in details the main features
     exposed by the interactive module, which might not be included on the
