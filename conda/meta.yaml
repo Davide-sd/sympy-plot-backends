@@ -33,7 +33,7 @@ requirements:
     - vtk
     - msgpack-python
     - adaptive
-    - mayavi >=4.8.0
+    # - mayavi >=4.8.0
     # - PyQt5 >= 5.15.7
   run:
     - appdirs
@@ -55,7 +55,7 @@ requirements:
     - vtk
     - msgpack-python
     - adaptive
-    - mayavi >=4.8.0
+    # - mayavi >=4.8.0
     # - PyQt5 >= 5.15.7
 
 test:

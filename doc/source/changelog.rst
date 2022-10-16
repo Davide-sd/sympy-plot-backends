@@ -45,6 +45,10 @@ v1.4.1
 
   * Inside ``plot_parametric`` and ``plot3d_parametric_line``, the ``tz``
     keyword argument has been renamed to ``tp``.
+  
+  * Removed Mayavi from setup dependencies. Mayavi is difficult to install:
+    can't afford the time it requires for proper setup and testing.
+    ``MayaviBackend`` is still available, to be used "as is".
 
 
 v1.4.0

@@ -54,8 +54,11 @@ class MayaviBackend(Plot):
     Notes
     =====
 
-    Mayavi cannot use colormaps from other plotting libraries. Hence, only
-    use the colormap listed in [#fn7]_ .
+    1. Mayavi is difficult to install, hence that step is left to the end user.
+       There are no guarantees that this backend works on all systems, as it
+       has only been tested on an Ubuntu Machine with Python 3.10 with pip.
+    2. Mayavi cannot use colormaps from other plotting libraries. Hence, only
+       use the colormap listed in [#fn7]_ .
 
      References
     ==========
