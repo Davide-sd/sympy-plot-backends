@@ -1145,6 +1145,13 @@ class SurfaceBaseSeries(BaseSeries):
         self.modules = kwargs.get("modules", None)
         self.rendering_kw = kwargs.get("rendering_kw", dict())
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
+        # NOTE: why should SurfaceOver2DRangeSeries support is polar?
+        # After all, the same result can be achieve with
+        # ParametricSurfaceSeries. For example:
+        # sin(r) for (r, 0, 2 * pi) and (theta, 0, pi/2) can be parameterized
+        # as (r * cos(theta), r * sin(theta), sin(t)) for (r, 0, 2 * pi) and
+        # (theta, 0, pi/2).
+        # Because it is faster to evaluate (important for interactive plots).
         self.is_polar = kwargs.get("is_polar", False)
         self.surface_color = kwargs.get("surface_color", None)
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)

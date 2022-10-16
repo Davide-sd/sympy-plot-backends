@@ -1002,8 +1002,8 @@ def test_is_point_is_filled():
     assert s.is_point and (not s.is_filled)
 
 
-def test_geometry_contour_is_filled():
-    # verify that GeometrySeries exposes the is_filled attribute
+def test_is_filled_2d():
+    # verify that the is_filled attribute is exposed by the following series
     x, y = symbols("x, y")
 
     expr = cos(x**2 + y**2)
@@ -1011,35 +1011,51 @@ def test_geometry_contour_is_filled():
 
     s = ContourSeries(expr, *ranges)
     assert s.is_filled
-
     s = ContourSeries(expr, *ranges, is_filled=True)
     assert s.is_filled
-
     s = ContourSeries(expr, *ranges, is_filled=False)
     assert not s.is_filled
 
-
+    s = GeometrySeries(Circle(Point(0, 0), 5))
+    assert s.is_filled
     s = GeometrySeries(Circle(Point(0, 0), 5), is_filled=False)
     assert not s.is_filled
-
     s = GeometrySeries(Circle(Point(0, 0), 5), is_filled=True)
+    assert s.is_filled
+
+    # ComplexSurfaceSeries generates data for 3D surfaces or 2D contours
+    s = ComplexSurfaceSeries(sqrt(x), (x, -2-2j, 2+2j))
+    assert s.is_filled
+    s = ComplexSurfaceSeries(sqrt(x), (x, -2-2j, 2+2j), is_filled=False)
+    assert not s.is_filled
+    s = ComplexSurfaceSeries(sqrt(x), (x, -2-2j, 2+2j), is_filled=True)
     assert s.is_filled
 
     s = ContourInteractiveSeries([expr], ranges)
     assert s.is_filled
-
     s = ContourInteractiveSeries([expr], ranges, is_filled=True)
     assert s.is_filled
-
     s = ContourInteractiveSeries([expr], ranges, is_filled=False)
     assert not s.is_filled
 
     s = GeometryInteractiveSeries([Circle(Point(x, 0), 5)], [],
+        params={x: 1})
+    assert s.is_filled
+    s = GeometryInteractiveSeries([Circle(Point(x, 0), 5)], [],
         params={x: 1}, is_filled=False)
     assert not s.is_filled
-
     s = GeometryInteractiveSeries([Circle(Point(x, 0), 5)], [],
         params={x: 1}, is_filled=True)
+    assert s.is_filled
+
+    s = ComplexSurfaceInteractiveSeries(sqrt(y * x), (x, -2-2j, 2+2j),
+        params={y: 1})
+    assert s.is_filled
+    s = ComplexSurfaceInteractiveSeries(sqrt(y * x), (x, -2-2j, 2+2j),
+        params={y: 1}, is_filled=False)
+    assert not s.is_filled
+    s = ComplexSurfaceInteractiveSeries(sqrt(y * x), (x, -2-2j, 2+2j),
+        params={y: 1}, is_filled=True)
     assert s.is_filled
 
 
