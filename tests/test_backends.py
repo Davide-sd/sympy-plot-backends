@@ -1,14 +1,7 @@
 import os
 from PIL import Image
 from pytest import raises
-from spb import (
-    BB, PB, KB, MB, MAB,
-    plot, plot3d, plot_contour, plot_implicit,
-    plot_parametric, plot3d_parametric_line,
-    plot_vector, plot_complex, plot_geometry, plot_real_imag,
-    plot_list, plot_piecewise, plot_polar, plot3d_implicit,
-    plot3d_parametric_surface, plot_complex_list, plot_complex_vector
-)
+from spb import *
 from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import unset_show
 from spb.series import (
@@ -980,7 +973,7 @@ def test_plot_contour():
         NotImplementedError,
         lambda: _plot_contour(KBchild1,
             rendering_kw=dict()).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(
@@ -1082,7 +1075,7 @@ def test_plot_vector_2d_quivers():
         NotImplementedError,
         lambda: _plot_vector(KBchild1, quiver_kw=dict(),
             contour_kw=dict()).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(
@@ -1150,7 +1143,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field():
         NotImplementedError,
         lambda: _plot_vector(KBchild1, stream_kw=dict(),
             contour_kw=dict()).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(
@@ -1205,7 +1198,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
         NotImplementedError,
         lambda: _plot_vector(KBchild1, stream_kw=dict(),
             contour_kw=dict()).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(
@@ -1631,7 +1624,7 @@ def test_plot_implicit_adaptive_true():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: _plot_implicit(KBchild1, contour_kw=dict()).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(NotImplementedError,
@@ -1676,7 +1669,7 @@ def test_plot_implicit_adaptive_false():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: _plot_implicit(KBchild1, contour_kw=dict()).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(NotImplementedError,
@@ -1733,7 +1726,7 @@ def test_plot_real_imag():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: _plot_real_imag(KBchild1, rendering_kw=dict()).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(NotImplementedError,
@@ -1784,7 +1777,7 @@ def test_plot_complex_1d():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: _plot_complex(KBchild1, rendering_kw=dict()).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(NotImplementedError,
@@ -1842,7 +1835,7 @@ def test_plot_complex_2d():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: _plot_complex(KBchild1, rendering_kw=dict()).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(NotImplementedError,
@@ -1934,7 +1927,7 @@ def test_plot_list_is_filled_false():
     raises(
         NotImplementedError,
         lambda: _plot_list(KBchild1).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(
@@ -1971,7 +1964,7 @@ def test_plot_list_is_filled_true():
     raises(
         NotImplementedError,
         lambda: _plot_list(KBchild1).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(
@@ -2601,7 +2594,7 @@ def test_plot_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot(KBchild1).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(
@@ -2639,7 +2632,7 @@ def test_plot_parametric_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_parametric(KBchild1).process_series())
-    
+
     if mayavi:
         raises(
             NotImplementedError,
@@ -2786,7 +2779,7 @@ def test_plot_vector_2d_quivers_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_vector(KBchild1).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(
@@ -2828,7 +2821,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_vector(KBchild1).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(
@@ -2869,7 +2862,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex()
     raises(
         NotImplementedError,
         lambda: _plot_vector(KBchild1).process_series())
-    
+
     if mayavi:
         # Mayavi doesn't support 2D plots
         raises(
@@ -3044,7 +3037,7 @@ def test_plot_complex_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_complex(KBchild1).process_series())
-    
+
     if mayavi:
         raises(
             NotImplementedError,
@@ -3074,7 +3067,7 @@ def test_plot_complex_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_complex_2(KBchild1).process_series())
-    
+
     if mayavi:
         raises(
             NotImplementedError,
@@ -3112,7 +3105,7 @@ def test_plot_real_imag_use_latex():
     raises(
         NotImplementedError,
         lambda: _plot_real_imag(KBchild1).process_series())
-    
+
     if mayavi:
         raises(
             NotImplementedError,
@@ -3556,3 +3549,16 @@ def test_label_after_plot_instantiation():
     f = p.fig
     assert f.axes[0].lines[0].get_label() == "a"
     assert f.axes[0].lines[1].get_label() == "$b^{2}$"
+
+
+def test_plotly_3d_many_line_series():
+    # verify that plotly is capable of dealing with many 3D lines.
+
+    t = symbols("t")
+
+    # in this example there are 31 lines. 30 of them use solid colors, the
+    # last one uses a colormap. No errors should be raised.
+    p = plot3d_revolution(cos(t), (t, 0, pi), backend=PB, n=5, show=False,
+        wireframe=True, wf_n1=15, wf_n2=15,
+        show_curve=True, curve_kw={"use_cm": True})
+    f = p.fig

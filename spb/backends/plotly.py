@@ -188,6 +188,7 @@ class PlotlyBackend(Plot):
         self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
         self.grid = kwargs.get("grid", cfg["plotly"]["grid"])
         self._fig = go.Figure()
+        self._colorbar_counter = 0
 
     @property
     def fig(self):
@@ -228,19 +229,19 @@ class PlotlyBackend(Plot):
         quivers_colors = self.quivers_colors if not tb.quivers_colors else tb.quivers_colors
         self._qc = itertools.cycle(quivers_colors)
 
-    def _create_colorbar(self, k, label, sc=False):
+    def _create_colorbar(self, label, sc=False):
         """This method reduces code repetition.
 
         Parameters
         ==========
-            k : int
-                index of the current color bar
             label : str
                 Name to display besides the color bar
             sc : boolean
                 Scale Down the color bar to make room for the legend.
                 Default to False
         """
+        k = self._colorbar_counter
+        self._colorbar_counter += 1
         return dict(
             x=1 + self._cbs * k,
             title=label,
@@ -317,7 +318,7 @@ class PlotlyBackend(Plot):
                         # happens that the horizontal space required by all
                         # colorbars is greater than the available figure width.
                         # That raises a strange error.
-                        lkw["marker"]["colorbar"] = self._create_colorbar(ii, s.get_label(self._use_latex), True)
+                        lkw["marker"]["colorbar"] = self._create_colorbar(s.get_label(self._use_latex), True)
 
                     kw = merge({}, lkw, s.rendering_kw)
                     self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
@@ -369,7 +370,7 @@ class PlotlyBackend(Plot):
                         # That raises a strange error.
                         lkw["line"] = dict(
                             width = 4,
-                            colorbar = self._create_colorbar(ii, s.get_label(self._use_latex), True),
+                            colorbar = self._create_colorbar(s.get_label(self._use_latex), True),
                             colorscale = (
                                 next(self._cm) if s.use_cm
                                 else self._solid_colorscale(s)
@@ -409,7 +410,7 @@ class PlotlyBackend(Plot):
                 skw = dict(
                     name=s.get_label(self._use_latex),
                     showscale=self.legend,
-                    colorbar=self._create_colorbar(ii, s.get_label(self._use_latex), mix_3Dsurfaces_3Dlines),
+                    colorbar=self._create_colorbar(s.get_label(self._use_latex), mix_3Dsurfaces_3Dlines),
                     colorscale=colormap if s.use_cm else colorscale,
                     surfacecolor=surfacecolor,
                     cmin=surfacecolor.min(),
@@ -454,7 +455,7 @@ class PlotlyBackend(Plot):
                         showlabels=False if s.is_filled else True,
                     ),
                     colorscale=next(self._cm),
-                    colorbar=self._create_colorbar(ii, s.get_label(self._use_latex), show_2D_vectors),
+                    colorbar=self._create_colorbar(s.get_label(self._use_latex), show_2D_vectors),
                     showscale=True if s.is_filled else False
                 )
                 kw = merge({}, ckw, s.rendering_kw)
@@ -498,7 +499,7 @@ class PlotlyBackend(Plot):
                             ),
                             sizeref=0.3,
                             showscale=self.legend and s.use_cm,
-                            colorbar=self._create_colorbar(ii, s.get_label(self._use_latex)),
+                            colorbar=self._create_colorbar(s.get_label(self._use_latex)),
                             starts=dict(
                                 x=seeds_points[:, 0],
                                 y=seeds_points[:, 1],
@@ -535,7 +536,7 @@ class PlotlyBackend(Plot):
                             colorscale=next(self._cm),
                             sizemode="absolute",
                             sizeref=40,
-                            colorbar=self._create_colorbar(ii, s.get_label(self._use_latex)),
+                            colorbar=self._create_colorbar(s.get_label(self._use_latex)),
                             cmin=mag.min(),
                             cmax=mag.max(),
                         )
