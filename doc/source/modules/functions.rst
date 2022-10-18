@@ -17,6 +17,8 @@ Functions
 
 .. autofunction:: plot3d_spherical
 
+.. autofunction:: plot3d_revolution
+
 .. autofunction:: plot3d_implicit
 
 .. autofunction:: plot_contour

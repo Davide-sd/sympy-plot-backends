@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v1.5.1
+======
+
+* Implemented ``plot3d_revolution`` to create surface of revolution.
+
+
 v1.5.0
 ======
 

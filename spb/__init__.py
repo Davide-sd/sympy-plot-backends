@@ -8,6 +8,7 @@ from spb.functions import (
     plot3d_parametric_surface,
     plot3d_implicit,
     plot3d_spherical,
+    plot3d_revolution,
     plot_implicit,
     plot_polar,
     plot_geometry,

@@ -30,7 +30,7 @@ from spb.utils import (
 )
 from sympy import (
     latex, Tuple, Expr, Symbol, Wild, oo, Sum, sign, Piecewise, piecewise_fold,
-    Plane, FiniteSet, Interval, Union, cos, sin, pi, sympify
+    Plane, FiniteSet, Interval, Union, cos, sin, pi, sympify, atan2, sqrt
 )
 # NOTE: from sympy import EmptySet is a different thing!!!
 from sympy.sets.sets import EmptySet
@@ -1206,8 +1206,8 @@ def plot3d_parametric_line(*args, **kwargs):
     ========
 
     plot, plot_polar, plot3d, plot_contour, plot3d_parametric_surface,
-    plot_implicit, plot_geometry, plot_parametric, plot_piecewise,
-    plot3d_implicit, plot_list, iplot
+    plot3d_spherical, plot3d_revolution, plot_implicit, plot_geometry,
+    plot_parametric, plot_piecewise, plot3d_implicit, plot_list, iplot
 
     """
     args = _plot_sympify(args)
@@ -1991,8 +1991,9 @@ def plot3d_parametric_surface(*args, **kwargs):
     ========
 
     plot, plot_polar, plot_parametric, plot3d, plot_contour,
-    plot3d_parametric_line, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, plot_list, iplot
+    plot3d_parametric_line, plot3d_spherical, plot3d_revolution,
+    plot_implicit, plot_geometry, plot_piecewise, plot3d_implicit,
+    plot_list, iplot
 
     """
     args = _plot_sympify(args)
@@ -2454,6 +2455,240 @@ def plot_contour(*args, **kwargs):
     Backend = kwargs.pop("backend", TWO_D_B)
     return _plot3d_plot_contour_helper(
         ContourSeries, False, Backend, *args, **kwargs)
+
+
+def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis="z", show_curve=False, curve_kw=None, **kwargs):
+    """Generate a surface of revolution by rotating a curve around an axis of
+    rotation.
+
+    Parameters
+    ==========
+
+    curve : Expr, list/tuple of 2 or 3 elements
+        The curve to be revolved, which can be either:
+
+        * a symbolic expression
+        * a 2-tuple representing a parametric curve in 2D space
+        * a 3-tuple representing a parametric curve in 3D space
+
+    range_t : (symbol, min, max)
+        A 3-tuple denoting the range of the parameter of the curve.
+
+    range_phi : (symbol, min, max)
+        A 3-tuple denoting the range of the azimuthal angle where the curve
+        will be revolved. Default to `(phi, 0, 2*pi)`.
+
+    axis : (coord1, coord2)
+        A 2-tuple that specifies the position of the rotation axis.
+        Depending on the value of ``parallel_axis``:
+
+        * "x": the rotation axis intersects the YZ plane at (coord1, coord2).
+        * "y": the rotation axis intersects the XZ plane at (coord1, coord2).
+        * "z": the rotation axis intersects the XY plane at (coord1, coord2).
+
+        Default to ``(0, 0)``.
+
+    parallel_axis : str
+        Specify the axis parallel to the axis of rotation. Must be one of the
+        following options: "x", "y" or "z". Default to "z".
+
+    show_curve : bool
+        Add the initial curve to the plot. Default to False.
+
+    curve_kw : dict
+        A dictionary of options that will be passed to
+        ``plot3d_parametric_line`` if ``show_curve=True`` in order to customize
+        the appearance of the initial curve. Refer to its documentation for
+        more information.
+
+    **kwargs :
+        Keyword arguments are the same as ``plot3d_parametric_surface``.
+        Refer to its documentation for more information.
+
+    Examples
+    ========
+
+    Note: for documentation purposes, the following examples uses Matplotlib.
+    However, Matplotlib's 3D capabilities are rather limited. Consider running
+    these examples with a different backend (hence, modify the ``curve_kw``,
+    ``rendering_kw`` and ``wf_rendering_kw`` to pass the correct options to
+    the backend).
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import symbols, cos, sin, pi
+       >>> from spb import plot3d_revolution
+       >>> t, phi = symbols('t phi')
+
+    Revolve a function around the z axis:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot3d_revolution(
+       ...     cos(t), (t, 0, pi),
+       ...     # use a color map on the surface to indicate the azimuthal angle
+       ...     use_cm=True, color_func=lambda t, phi: phi,
+       ...     rendering_kw={"alpha": 0.6, "cmap": "twilight"},
+       ...     # indicates the azimuthal angle on the colorbar label
+       ...     label=r"$\phi$ [rad]",
+       ...     show_curve=True,
+       ...     # this dictionary will be passes to plot3d_parametric_line in
+       ...     # order to draw the initial curve
+       ...     curve_kw=dict(rendering_kw={"color": "r", "label": "cos(t)"}),
+       ...     # activate the wireframe to visualize the parameterization
+       ...     wireframe=True, wf_n1=15, wf_n2=15,
+       ...     wf_rendering_kw={"lw": 0.5, "alpha": 0.75})
+
+    Revolve a function around an axis parallel to the x axis:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot3d_revolution(
+       ...     cos(t), (t, 0, pi), parallel_axis="x", axis=(1, 0),
+       ...     use_cm=True, color_func=lambda t, phi: phi,
+       ...     rendering_kw={"alpha": 0.6, "cmap": "twilight"},
+       ...     label=r"$\phi$ [rad]",
+       ...     show_curve=True,
+       ...     curve_kw=dict(rendering_kw={"color": "r", "label": "cos(t)"}),
+       ...     wireframe=True, wf_n1=15, wf_n2=15,
+       ...     wf_rendering_kw={"lw": 0.5, "alpha": 0.75})
+
+    Revolve a 2D parametric circle around the z axis:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> circle = (3 + cos(t), sin(t))
+       >>> plot3d_revolution(
+       ...     circle, (t, 0, 2 * pi),
+       ...     rendering_kw={"alpha": 0.1},
+       ...     wireframe=True, wf_n1=15, wf_n2=15,
+       ...     wf_rendering_kw={"lw": 0.5, "alpha": 0.75},
+       ...     show_curve=True, zlim=(-2.5, 2.5))
+
+    Revolve a 3D parametric curve around the z axis for a given azimuthal
+    angle:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot3d_revolution(
+       ...     (cos(t), sin(t), t), (t, 0, 2*pi), (phi, 0, pi),
+       ...     show_curve=True, rendering_kw={"alpha": 0.3},
+       ...     wireframe=True, wf_n1=2, wf_n2=5, wf_rendering_kw={"lw": 0.5},
+       ...     curve_kw={"rendering_kw": {"color": "r", "label": ""}})
+
+    Interactive-widget plot of a goblet. Refer to ``iplot`` documentation to
+    learn more about the ``params`` dictionary.
+
+    .. code-block:: python
+
+       from sympy import *
+       from spb import *
+       t, u = symbols("t u")
+       plot3d_revolution(
+           (t, cos(u * t), t**2), (t, 0, 2), axis=(1, 0.2),
+           params={u: (2.5, 0, 6)}, n=50, backend=KB,
+           wireframe=True, wf_n1=15, wf_n2=15,
+           wf_rendering_kw={"width": 0.004},
+           show_curve=True, curve_kw={"rendering_kw": {"width": 0.025}})
+
+    See Also
+    ========
+
+    plot3d_parametric_surface, plot3d_parametric_line, plot3d_spherical
+    """
+    show = kwargs.pop("show", True)
+    kwargs["show"] = False
+
+    if curve_kw is None:
+        curve_kw = {}
+
+    if parallel_axis.lower() not in ["x", "y", "z"]:
+        raise ValueError("`parallel_axis` must be either 'x' 'y' or 'z'. "
+            "Received: %s " % parallel_axis)
+
+    # NOTE: a surface of revolution is a particular case of 3D parametric
+    # surface
+    if isinstance(curve, (tuple, list, Tuple)):
+        if len(curve) == 2:     # curve is a 2D parametric line
+            x, z = curve
+            y = 0
+        elif len(curve) == 3:   # curve is a 3D parametric line
+            x, y, z = curve
+    else: # curve is an expression
+        x = range_t[0]
+        y = 0
+        z = curve
+
+    phi = range_phi[0] if range_phi else Symbol("phi")
+    if range_phi is None:
+        range_phi = (phi, 0, 2*pi)
+
+    phase = 0
+    if parallel_axis == "x":
+        y0, z0 = axis
+        phase = atan2(z - z0, y - y0)
+        r = sqrt((y - y0)**2 + (z - z0)**2)
+        v = (x, r * cos(phi + phase) + y0, r * sin(phi + phase) + z0)
+    elif parallel_axis == "y":
+        x0, z0 = axis
+        phase = atan2(z - z0, x - x0)
+        r = sqrt((x - x0)**2 + (z - z0)**2)
+        v = (r * cos(phi + phase) + x0, y, r * sin(phi + phase) + z0)
+    else:
+        x0, y0 = axis
+        phase = atan2(y - y0, x - x0)
+        r = sqrt((x - x0)**2 + (y - y0)**2)
+        v = (r * cos(phi + phase) + x0, r * sin(phi + phase) + y0, z)
+
+    surface = plot3d_parametric_surface(*v, range_t, range_phi, **kwargs)
+
+    # TODO: need a better integration with interactive plot in order to
+    # simplify the following.
+    params = kwargs.get("params", None)
+    if show_curve:
+        if params is None:
+            backend = type(surface)
+            n = surface[0].n1
+        else:
+            n = surface.backend[0].n1
+            backend = type(surface.backend)
+            curve_kw["params"] = params
+
+        curve_kw["show"] = False
+        # uniform mesh evaluation is faster
+        curve_kw["adaptive"] = False
+        # link the number of discretization points between the two series
+        curve_kw["n"] = n
+        curve_kw.setdefault("use_cm", False)
+
+        line = plot3d_parametric_line(
+            x, y, z, range_t, backend=backend, **curve_kw)
+        result = surface + line
+    else:
+        result = surface
+
+    if show:
+        if params is None:
+            result.show()
+        else:
+            return result.show()
+
+    return result
 
 
 def plot_implicit(*args, **kwargs):

@@ -6,12 +6,13 @@ from spb import (
     plot_piecewise, plot, plot_list, plot3d_parametric_line,
     plot_parametric, plot3d, plot_contour, plot3d_parametric_surface,
     plot_implicit, plot3d_implicit, plot_geometry, plot_complex,
-    plot3d_spherical
+    plot3d_spherical, plot3d_revolution
 )
 from spb.interactive import InteractivePlot
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, ContourSeries,
-    Vector2DSeries, ParametricSurfaceSeries
+    Vector2DSeries, ParametricSurfaceSeries, Parametric3DLineSeries,
+    ParametricSurfaceInteractiveSeries, Parametric3DLineInteractiveSeries
 )
 from spb.backends.matplotlib import MB, unset_show
 from sympy import (
@@ -51,8 +52,142 @@ unset_show()
 #
 
 
+def test_plot3d_revolution():
+    # plot3d_revolution is going to call plot3d_parametric_surface and
+    # plot3d_parametric_line: let's check that the data series are correct.
+
+    t, phi = symbols("t, phi")
+
+    # test that azimuthal angle is set correctly
+    p = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5)
+    assert len(p.series) == 1
+    assert isinstance(p[0], ParametricSurfaceSeries)
+    assert (p[0].var_u, p[0].start_u, p[0].end_u) == (t, 0, float(pi))
+    assert (p[0].var_v, p[0].start_v, p[0].end_v) == (phi, 0, float(2*pi))
+
+    p = plot3d_revolution(cos(t), (t, 0, pi), (phi, 0, pi/2), show=False, n=5)
+    assert len(p.series) == 1
+    assert isinstance(p[0], ParametricSurfaceSeries)
+    assert (p[0].var_u, p[0].start_u, p[0].end_u) == (t, 0, float(pi))
+    assert (p[0].var_v, p[0].start_v, p[0].end_v) == (phi, 0, float(pi / 2))
+
+    # by setting parallel_axis it produces different expressions/data
+    p1 = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
+        show_curve=False, parallel_axis="z")
+    assert len(p1.series) == 1
+    assert isinstance(p1[0], ParametricSurfaceSeries)
+    xx1, yy1, zz1, tt1, pp1 = p1[0].get_data()
+    assert np.allclose([xx1.min(), xx1.max()], [-np.pi, np.pi])
+    assert np.allclose([yy1.min(), yy1.max()], [-np.pi, np.pi])
+    assert np.allclose([zz1.min(), zz1.max()], [-1, 1])
+    assert np.allclose([tt1.min(), tt1.max()], [0, np.pi])
+    assert np.allclose([pp1.min(), pp1.max()], [0, 2 * np.pi])
+
+    p2 = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
+        show_curve=False, parallel_axis="x")
+    xx2, yy2, zz2, tt2, pp2 = p2[0].get_data()
+    assert p2[0].get_expr() != p1[0].get_expr()
+
+    p3 = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
+        show_curve=False, parallel_axis="y")
+    xx3, yy3, zz3, tt3, pp3 = p3[0].get_data()
+    assert p3[0].get_expr() != p1[0].get_expr()
+    assert p3[0].get_expr() != p2[0].get_expr()
+
+    # by setting axis it produces different data
+    p4 = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
+        show_curve=False, parallel_axis="z", axis=(2, 1))
+    xx4, yy4, zz4, tt4, pp4 = p4[0].get_data()
+    assert not np.allclose(xx4, xx1)
+    assert not np.allclose(yy4, yy1)
+    assert np.allclose(zz4, zz1)
+    assert np.allclose(tt4, tt1)
+    assert np.allclose(pp4, pp1)
+
+    p5 = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
+        show_curve=False, parallel_axis="x", axis=(2, 1))
+    xx5, yy5, zz5, tt5, pp5 = p5[0].get_data()
+    assert np.allclose(xx5, xx2)
+    assert not np.allclose(yy5, yy2)
+    assert not np.allclose(zz5, zz2)
+    assert np.allclose(tt5, tt2)
+    assert np.allclose(pp5, pp2)
+
+    p6 = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
+        show_curve=False, parallel_axis="y", axis=(2, 1))
+    xx6, yy6, zz6, tt6, pp6 = p6[0].get_data()
+    assert not np.allclose(xx6, xx1)
+    assert not np.allclose(yy6, yy1)
+    assert not np.allclose(zz6, zz1)
+    assert np.allclose(tt6, tt1)
+    assert np.allclose(pp6, pp1)
+
+    # wrong parallel_axis
+    raises(ValueError, lambda : plot3d_revolution(
+        cos(t), (t, 0, pi), show=False, n=5, parallel_axis="a"))
+
+    # show_curve should add a Parametric3DLineSeries
+    # keyword arguments should gets redirected to plot3d_parametric_surface
+    # or plot3d_parametric_line
+    p = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
+        show_curve=True, rendering_kw={"color": "r"},
+        curve_kw={"rendering_kw": {"color": "g"}})
+    assert len(p.series) == 2
+    assert isinstance(p[0], ParametricSurfaceSeries)
+    assert isinstance(p[1], Parametric3DLineSeries)
+    assert p[1].get_expr() == (t, 0, cos(t))
+    assert p[0].rendering_kw == {"color": "r"}
+    assert p[1].rendering_kw == {"color": "g"}
+
+    # wireframe should add other series
+    p = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
+        show_curve=True, wireframe=True)
+    assert len(p.series) > 2
+    assert all(isinstance(t, Parametric3DLineSeries) for t in p.series[1:])
+
+    # interactive widget plot
+    k = symbols("k")
+    p1 = plot3d_revolution(cos(k * t), (t, 0, pi), show=False, n=5,
+        params={k: (1, 0, 2)}, parallel_axis="x", show_curve=False)
+    assert isinstance(p1, InteractivePlot)
+    assert len(p1.backend.series) == 1
+    assert isinstance(p1.backend[0], ParametricSurfaceInteractiveSeries)
+
+    p2 = plot3d_revolution(cos(k * t), (t, 0, pi), show=False, n=5,
+        params={k: (1, 0, 2)}, parallel_axis="y", show_curve=False)
+    assert isinstance(p2, InteractivePlot)
+    assert p2.backend[0].get_expr() != p1.backend[0].get_expr()
+
+    p3 = plot3d_revolution(cos(k * t), (t, 0, pi), show=False, n=5,
+        params={k: (1, 0, 2)}, parallel_axis="z", show_curve=False)
+    assert isinstance(p3, InteractivePlot)
+    assert p3.backend[0].get_expr() != p1.backend[0].get_expr()
+    assert p3.backend[0].get_expr() != p2.backend[0].get_expr()
+
+    # show_curve should add a Parametric3DLineInteractiveSeries
+    # keyword arguments should gets redirected to plot3d_parametric_surface
+    # or plot3d_parametric_line
+    p = plot3d_revolution(cos(k * t), (t, 0, pi), show=False, n=5,
+        params={k: (1, 0, 2)}, show_curve=True, rendering_kw={"color": "r"},
+        curve_kw={"rendering_kw": {"color": "g"}})
+    assert isinstance(p, InteractivePlot)
+    assert len(p.backend.series) == 2
+    assert isinstance(p.backend[0], ParametricSurfaceInteractiveSeries)
+    assert isinstance(p.backend[1], Parametric3DLineInteractiveSeries)
+    assert p.backend[1].get_expr() == (t, 0, cos(k * t))
+    assert p.backend[0].rendering_kw == {"color": "r"}
+    assert p.backend[1].rendering_kw == {"color": "g"}
+
+    # wireframe should add other series
+    p = plot3d_revolution(cos(k * t), (t, 0, pi), show=False, n=5,
+        params={k: (1, 0, 2)}, show_curve=True, wireframe=True)
+    assert isinstance(p, InteractivePlot)
+    assert len(p.backend.series) > 2
+    assert all(isinstance(t, Parametric3DLineInteractiveSeries) for t in p.backend.series[1:])
+
+
 def test_plot3d_spherical():
-    # plot3d_spherical is going to call plot3d_parametric surface: let's
+    # plot3d_spherical is going to call plot3d_parametric_surface: let's
     # check that the data series are correct.
 
     phi, theta = symbols("phi, theta")
