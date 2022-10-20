@@ -452,7 +452,9 @@ class MatplotlibBackend(Plot):
                 skw = dict(rstride=1, cstride=1, linewidth=0.1)
                 norm, cmap = None, None
                 if s.use_cm:
-                    norm = self.Normalize(vmin=np.amin(facecolors), vmax=np.amax(facecolors))
+                    vmin = s.rendering_kw.get("vmin", np.amin(facecolors))
+                    vmax = s.rendering_kw.get("vmax", np.amax(facecolors))
+                    norm = self.Normalize(vmin=vmin, vmax=vmax)
                     cmap = next(self._cm)
                     skw["cmap"] = cmap
                 else:
@@ -947,7 +949,12 @@ class MatplotlibBackend(Plot):
                     kw, is_cb_added, cax = self._handles[i][1:]
 
                     if is_cb_added:
-                        norm = self.Normalize(vmin=np.amin(facecolors), vmax=np.amax(facecolors))
+                        # TODO: if use_cm=True and a single 3D expression is
+                        # shown with legend=False, this won't get executed.
+                        # In widget plots, the surface will never change color.
+                        vmin = s.rendering_kw.get("vmin", np.amin(facecolors))
+                        vmax = s.rendering_kw.get("vmax", np.amax(facecolors))
+                        norm = self.Normalize(vmin=vmin, vmax=vmax)
                         cmap = kw["cmap"]
                         if isinstance(cmap, str):
                             cmap = self.cm.get_cmap(cmap)
