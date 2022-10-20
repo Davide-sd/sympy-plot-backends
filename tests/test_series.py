@@ -170,6 +170,32 @@ def test_detect_poles():
     assert not np.any(np.isnan(yy3))
     assert np.any(np.isnan(yy2))
 
+    u, v = symbols("u, v", real=True)
+    n = S(1) / 3
+    f = (u + I * v)**n
+    r, i = re(f), im(f)
+    s1 = Parametric2DLineSeries(r.subs(u, -2), i.subs(u, -2), (v, -2, 2),
+        adaptive=False, n=1000, detect_poles=False)
+    xx1, yy1, pp1 = s1.get_data()
+    assert not np.isnan(yy1).any()
+    s2 = Parametric2DLineSeries(r.subs(u, -2), i.subs(u, -2), (v, -2, 2),
+        adaptive=False, n=1000, detect_poles=True)
+    xx2, yy2, pp2 = s2.get_data()
+    assert np.isnan(yy2).any()
+
+    f = (x * u + x * I * v)**n
+    r, i = re(f), im(f)
+    s1 = Parametric2DLineInteractiveSeries([r.subs(u, -2), i.subs(u, -2)],
+        [(v, -2, 2)], params={x: 1},
+        adaptive=False, n1=1000, detect_poles=False)
+    xx1, yy1, pp1 = s1.get_data()
+    assert not np.isnan(yy1).any()
+    s2 = Parametric2DLineInteractiveSeries([r.subs(u, -2), i.subs(u, -2)],
+        [(v, -2, 2)], params={x: 1},
+        adaptive=False, n1=1000, detect_poles=True)
+    xx2, yy2, pp2 = s2.get_data()
+    assert np.isnan(yy2).any()
+
 
 def test_number_discretization_points():
     # verify that the different ways to set the number of discretization

@@ -7,6 +7,12 @@ v1.5.1
 
 * Implemented ``plot3d_revolution`` to create surface of revolution.
 
+* Fixed bug with ``MatplotlibBackend`` dealing with colormaps and normalization.
+
+* moved ``LineOver1DRangeSeries._detect_poles`` to ``_detect_poles_helper``.
+
+* ``Parametric2DLineSeries`` now support ``detect_poles``.
+
 
 v1.5.0
 ======

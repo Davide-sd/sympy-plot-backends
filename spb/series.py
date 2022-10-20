@@ -631,6 +631,23 @@ class ParamsMixin:
         self._params = p
 
 
+def _detect_poles_helper(x, y, eps=0.01):
+    """Compute the steepness of each segment. If it's greater than a
+    threshold, set the right-point y-value non NaN.
+    """
+    np = import_module('numpy')
+
+    yy = y.copy()
+    threshold = np.pi / 2 - eps
+    for i in range(len(x) - 1):
+        dx = x[i + 1] - x[i]
+        dy = abs(y[i + 1] - y[i])
+        angle = np.arctan(dy / dx)
+        if abs(angle) >= threshold:
+            yy[i + 1] = np.nan
+    return x, yy
+
+
 class Line2DBaseSeries(BaseSeries):
     """A base class for 2D lines."""
 
@@ -654,6 +671,8 @@ class Line2DBaseSeries(BaseSeries):
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
         self.show_in_legend = kwargs.get("show_in_legend", True)
+        self.detect_poles = kwargs.get("detect_poles", False)
+        self.eps = kwargs.get("eps", 0.01)
         self._init_transforms(**kwargs)
 
     def get_data(self):
@@ -790,8 +809,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                 "part of the start and end values of the range "
                 "to be the same.")
         self.is_polar = kwargs.get("is_polar", False)
-        self.detect_poles = kwargs.get("detect_poles", False)
-        self.eps = kwargs.get("eps", 0.01)
 
         # if the expressions is a lambda function and no label has been
         # provided, then its better to do the following to avoid suprises on
@@ -862,23 +879,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             return self._adaptive_sampling()
         return self._uniform_sampling()
 
-    @staticmethod
-    def _detect_poles(x, y, eps=0.01):
-        """Compute the steepness of each segment. If it's greater than a
-        threshold, set the right-point y-value non NaN.
-        """
-        np = import_module('numpy')
-
-        yy = y.copy()
-        threshold = np.pi / 2 - eps
-        for i in range(len(x) - 1):
-            dx = x[i + 1] - x[i]
-            dy = abs(y[i + 1] - y[i])
-            angle = np.arctan(dy / dx)
-            if angle >= threshold:
-                yy[i + 1] = np.nan
-        return x, yy
-
     def _get_points(self):
         """Returns coordinates that needs to be postprocessed.
         Depending on the `adaptive` option, this function will either use an
@@ -893,7 +893,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
 
         if self.detect_poles:
-            return self._detect_poles(x, _re, self.eps)
+            return _detect_poles_helper(x, _re, self.eps)
         return x, _re
 
 
@@ -942,7 +942,7 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
         _abs = np.sqrt(_re**2 + _im**2)
         _angle = np.arctan2(_im, _re)
         if self.detect_poles:
-            _, _abs = self._detect_poles(x, _abs, self.eps)
+            _, _abs = _detect_poles_helper(x, _abs, self.eps)
         return x, _abs, _angle
 
 
@@ -1055,6 +1055,11 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         if callable(self.color_func):
             coords = list(coords)
             coords[-1] = self.eval_color_func(*coords)
+
+        if self.is_2Dline and self.detect_poles:
+            x, y = _detect_poles_helper(*coords[:-1], self.eps)
+            return x, y, coords[-1]
+
         return coords
 
 
@@ -1993,7 +1998,7 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
         discr = np.real(list(self.ranges.values())[0])
 
         if self.detect_poles:
-            return LineOver1DRangeSeries._detect_poles(discr, _re, self.eps)
+            return _detect_poles_helper(discr, _re, self.eps)
 
         return discr, _re
 
@@ -2038,7 +2043,7 @@ class AbsArgLineInteractiveSeries(LineInteractiveSeries):
         _angle = np.arctan2(_im, _re)
         discr = np.real(list(self.ranges.values())[0])
         if self.detect_poles:
-            _, _abs = LineOver1DRangeSeries._detect_poles(discr, _abs, self.eps)
+            _, _abs = _detect_poles_helper(discr, _abs, self.eps)
         return discr, _abs, _angle
 
     def __str__(self):
@@ -2059,6 +2064,8 @@ class Parametric2DLineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSer
         self.var = list(self.ranges.keys())[0]
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
+        self.detect_poles = kwargs.get("detect_poles", False)
+        self.eps = kwargs.get("eps", 0.01)
         ParametricLineBaseSeries._set_parametric_line_label(self, args[-1])
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
@@ -2074,6 +2081,9 @@ class Parametric2DLineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSer
         discr = [np.real(t) for t in self.ranges.values()]
         if callable(self.color_func):
             discr = [self.eval_color_func(*_re, *discr)]
+        if self.is_2Dline and self.detect_poles:
+            x, y = _detect_poles_helper(*_re[:2], self.eps)
+            return x, y, discr[0]
         return [*_re, *discr]
 
     def __str__(self):
