@@ -389,15 +389,14 @@ def plot(*args, **kwargs):
           look at `adaptive.learner.learner1D` to find more loss functions.
 
     n : int, optional
-        Used when the `adaptive` is set to `False`. The function is uniformly
+        Used when the ``adaptive=False``: the function is uniformly
         sampled at `n` number of points. Default value to 1000.
-        If the `adaptive` flag is set to `True`, this parameter will be
-        ignored.
+        If the ``adaptive=True``, this parameter will be ignored.
 
     only_integers : boolean, optional
         Default to `False`. If `True`, discretize the domain with integer
         numbers, which can be useful to plot sums. It only works when
-        `adaptive=False`. When `only_integers=True`, the number of
+        ``adaptive=False``. When ``only_integers=True``, the number of
         discretization points is choosen by the algorithm.
 
     params : dict
@@ -462,10 +461,12 @@ def plot(*args, **kwargs):
         Sets the scaling of the y-axis. Default to 'linear'.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`.
+        Denotes the x-axis limits, `(min, max)`, visible in the chart.
+        Note that the function is still being evaluated over the specified
+        ``range``.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`.
+        Denotes the y-axis limits, `(min, max)`, visible in the chart.
 
 
     Examples
@@ -476,7 +477,7 @@ def plot(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, sin, pi, tan, exp, cos
+       >>> from sympy import symbols, sin, pi, tan, exp, cos, log
        >>> from spb import plot
        >>> x, y = symbols('x, y')
 
@@ -491,44 +492,19 @@ def plot(*args, **kwargs):
        Plot object containing:
        [0]: cartesian line: x**2 for x over (-5.0, 5.0)
 
-    Multiple plots with single range.
+    Multiple functions over the same range with custom rendering options:
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot(x, x**2, x**3, (x, -5, 5))
+       >>> plot(x, log(x), exp(x), (x, -3, 3), aspect="equal", ylim=(-3, 3),
+       ...    rendering_kw=[{}, {"linestyle": "--"}, {"linestyle": ":"}])
        Plot object containing:
-       [0]: cartesian line: x for x over (-5.0, 5.0)
-       [1]: cartesian line: x**2 for x over (-5.0, 5.0)
-       [2]: cartesian line: x**3 for x over (-5.0, 5.0)
-
-    Multiple plots with different ranges, custom labels and custom rendering:
-    the first expression will have a dashed line style when plotted with
-    ``MatplotlibBackend``.
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-       >>> plot((x**2, (x, -6, 6), "$f_{1}$", {"linestyle": "--"}),
-       ...      (x, (x, -5, 5), "f2"))
-       Plot object containing:
-       [0]: cartesian line: x**2 for x over (-6.0, 6.0)
-       [1]: cartesian line: x for x over (-5.0, 5.0)
-
-    No adaptive sampling.
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-       >>> plot(x**2, adaptive=False, n=400)
-       Plot object containing:
-       [0]: cartesian line: x**2 for x over (-10.0, 10.0)
+       [0]: cartesian line: x for x over (-3.0, 3.0)
+       [1]: cartesian line: log(x) for x over (-3.0, 3.0)
+       [2]: cartesian line: exp(x) for x over (-3.0, 3.0)
 
     Plotting a summation in which the free symbol of the expression is not
     used in the lower/upper bounds:
@@ -538,8 +514,9 @@ def plot(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import Sum, oo
-       >>> plot(Sum(1 / x ** y, (x, 1, oo)), (y, 2, 10), sum_bound=1e03)
+       >>> from sympy import Sum, oo, latex
+       >>> expr = Sum(1 / x ** y, (x, 1, oo))
+       >>> plot(expr, (y, 2, 10), sum_bound=1e03, title="$%s$" % latex(expr))
        Plot object containing:
        [0]: cartesian line: Sum(x**(-y), (x, 1, 1000)) for y over (2.0, 10.0)
 
@@ -552,8 +529,9 @@ def plot(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot(Sum(1 / x, (x, 1, y)), (y, 2, 10), adaptive=False,
-       ...     only_integers=True)
+       >>> expr = Sum(1 / x, (x, 1, y))
+       >>> plot(expr, (y, 2, 10), adaptive=False, only_integers=True,
+       ...     is_point=True, is_filled=True, title="$%s$" % latex(expr))
        Plot object containing:
        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
 
@@ -572,17 +550,46 @@ def plot(*args, **kwargs):
        Plot object containing:
        [0]: cartesian line: tan(x) for x over (-10.0, 10.0)
 
-    Applying a colormap with a color function:
+
+    Advanced example showing:
+
+    * detect singularities by setting ``adaptive=False`` (better performance),
+      increasing the number of discretization points (in order to have
+      'vertical' segments on the lines) and reducing the threshold for the
+      singularity-detection algorithm.
+    * application of color function.
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot(cos(exp(-x)), (x, -pi, 0), "frequency",
-       ...      adaptive=False, color_func=lambda x, y: np.exp(-x))
-       Plot object containing:
-       [0]: cartesian line: cos(exp(-x)) for x over (-3.141592653589793, 0.0)
+       >>> import numpy as np
+       >>> expr = 1 / cos(10 * x) + 5 * sin(x)
+       >>> def cf(x, y):
+       ...     # map a colormap to the distance from the origin
+       ...     d = np.sqrt(x**2 + y**2)
+       ...     # visibility of the plot is limited: ylim=(-10, 10). However,
+       ...     # some of the y-values computed by the function are much higher
+       ...     # (or lower). Filter them out in order to have the entire
+       ...     # colormap spectrum visible in the plot.
+       ...     offset = 12 # 12 > 10 (safety margin)
+       ...     d[(y > offset) | (y < -offset)] = 0
+       ...     return d
+       >>> p1 = plot(expr, (x, -5, 5),
+       ...         "distance from (0, 0)", {"cmap": "plasma"},
+       ...         ylim=(-10, 10), adaptive=False, detect_poles=True, n=3e04,
+       ...         eps=1e-04, color_func=cf, title="$%s$" % latex(expr))
+
+    Combining multiple plots together:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> p2 = plot(5 * sin(x), (x, -5, 5), {"linestyle": "--"}, show=False)
+       >>> (p1 + p2).show()
 
     Plotting a numerical function instead of a symbolic expression:
 
@@ -625,8 +632,7 @@ def plot(*args, **kwargs):
     ========
 
     plot_polar, plot_parametric, plot_contour, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, plot_list, iplot
+    plot_implicit, plot_geometry, plot_piecewise
 
     """
     args = _plot_sympify(args)
@@ -833,10 +839,10 @@ def plot_parametric(*args, **kwargs):
         Sets the scaling of the y-axis. Default to 'linear'.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`.
+        Denotes the x-axis limits, `(min, max)`, visible in the chart.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`.
+        Denotes the y-axis limits, `(min, max)`, visible in the chart.
 
     Examples
     ========
@@ -848,7 +854,7 @@ def plot_parametric(*args, **kwargs):
 
        >>> from sympy import symbols, cos, sin, pi
        >>> from spb import plot_parametric
-       >>> u, v = symbols('u, v')
+       >>> t, u, v = symbols('t, u, v')
 
     A parametric plot of a single expression (a Hypotrochoid using an equal
     aspect ratio):
@@ -873,15 +879,15 @@ def plot_parametric(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_parametric((cos(u), sin(u)), (u, cos(u)), (u, -3, 3),
-       ...      use_cm=False)
+       >>> plot_parametric((2 * cos(t), sin(t)), (cos(t), 2 * sin(t)),
+       ...    (t, 0, 2*pi), use_cm=False)
        Plot object containing:
-       [0]: parametric cartesian line: (cos(u), sin(u)) for u over (-3.0, 3.0)
-       [1]: parametric cartesian line: (u, cos(u)) for u over (-3.0, 3.0)
+       [0]: parametric cartesian line: (2*cos(t), sin(t)) for t over (0.0, 6.283185307179586)
+       [1]: parametric cartesian line: (cos(t), 2*sin(t)) for t over (0.0, 6.283185307179586)
 
     A parametric plot with multiple expressions with different ranges,
     custom labels, custom rendering options and a transformation function
-    applied to the discretized ranges to convert radians to degrees:
+    applied to the discretized parameter to convert radians to degrees:
 
     .. plot::
        :context: close-figs
@@ -932,9 +938,8 @@ def plot_parametric(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot_contour, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, plot_list, iplot
+    plot, plot_polar, plot3d, plot3d_parametric_line, plot_implicit,
+    plot_geometry, plot_piecewise, plot_list
 
     """
     args = _plot_sympify(args)
@@ -1122,26 +1127,31 @@ def plot3d_parametric_line(*args, **kwargs):
         Label for the z-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`.
+        Denotes the x-axis limits, `(min, max)`, visible in the chart.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`.
+        Denotes the y-axis limits, `(min, max)`, visible in the chart.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`.
+        Denotes the z-axis limits, `(min, max)`, visible in the chart.
 
 
     Examples
     ========
+
+    Note: for documentation purposes, the following examples uses Matplotlib.
+    However, Matplotlib's 3D capabilities are rather limited. Consider running
+    these examples with a different backend (hence, modify ``rendering_kw``
+    to pass the correct options to the backend).
 
     .. plot::
        :context: reset
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos, sin, pi
+       >>> from sympy import symbols, cos, sin, pi, root
        >>> from spb import plot3d_parametric_line
-       >>> u, v = symbols('u, v')
+       >>> t = symbols('t')
 
     Single plot.
 
@@ -1150,24 +1160,48 @@ def plot3d_parametric_line(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot3d_parametric_line(cos(u), sin(u), u, (u, -5, 5))
+       >>> plot3d_parametric_line(cos(t), sin(t), t, (t, -5, 5))
        Plot object containing:
-       [0]: 3D parametric cartesian line: (cos(u), sin(u), u) for u over (-5.0, 5.0)
+       [0]: 3D parametric cartesian line: (cos(t), sin(t), t) for t over (-5.0, 5.0)
 
-
-    Multiple plots with different ranges, custom labels and custom rendering
-    options.
+    Customize the appearance by setting a label to the colorbar, changing the
+    colormap and the line width. Note the use of `zlim` to force a near-equal aspect ratio with Matplotlib 3D plots.
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot3d_parametric_line((cos(u), sin(u), u, (u, -5, 5), "u"),
-       ...     (sin(v), v**2, v, (v, -3, 3), "v", {"lw": 3, "cmap": "hsv"}))
+       >>> plot3d_parametric_line(
+       ...     3 * sin(t) + 2 * sin(3 * t), cos(t) - 2 * cos(3 * t), cos(5 * t),
+       ...     (t, 0, 2 * pi), "t [rad]", {"cmap": "hsv", "lw": 1.5},
+       ...     zlim=(-3, 3))
        Plot object containing:
-       [0]: 3D parametric cartesian line: (cos(u), sin(u), u) for u over (-5.0, 5.0)
-       [1]: 3D parametric cartesian line: (sin(u), u**2, u) for u over (-3.0, 3.0)
+       [0]: 3D parametric cartesian line: (3*sin(t) + 2*sin(3*t), cos(t) - 2*cos(3*t), cos(5*t)) for t over (0.0, 6.283185307179586)
+
+    Plot multiple parametric 3D lines with different ranges:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> a, b, n = 2, 1, 4
+       >>> p, r, s = symbols("p r s")
+       >>> xp = a * cos(p) * cos(n * p)
+       >>> yp = a * sin(p) * cos(n * p)
+       >>> zp = b * cos(n * p)**2 + pi
+       >>> xr = root(r, 3) * cos(r)
+       >>> yr = root(r, 3) * sin(r)
+       >>> zr = 0
+       >>> plot3d_parametric_line(
+       ...     (xp, yp, zp, (p, 0, pi if n % 2 == 1 else 2 * pi), "petals"),
+       ...     (xr, yr, zr, (r, 0, 6*pi), "roots"),
+       ...     (-sin(s)/3, 0, s, (s, 0, pi), "stem"), use_cm=False)
+       Plot object containing:
+       [0]: 3D parametric cartesian line: (2*cos(p)*cos(4*p), 2*sin(p)*cos(4*p), cos(4*p)**2 + pi) for p over (0.0, 6.283185307179586)
+       [1]: 3D parametric cartesian line: (r**(1/3)*cos(r), r**(1/3)*sin(r), 0) for r over (0.0, 18.84955592153876)
+       [2]: 3D parametric cartesian line: (-sin(s)/3, 0, s) for s over (0.0, 3.141592653589793)
 
     Plotting a numerical function instead of a symbolic expression:
 
@@ -1183,19 +1217,30 @@ def plot3d_parametric_line(*args, **kwargs):
        >>> plot3d_parametric_line(fx, fy, fz, ("t", 0, 6 * pi),
        ...     title="Helical Toroid")
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot of the parametric line over a tennis ball.
+    Refer to ``iplot`` documentation to learn more about the ``params``
+    dictionary.
 
     .. code-block:: python
 
-       from sympy import *
-       from spb import *
-       x, a = symbols("x a")
-       plot3d_parametric_line(
-           cos(a * x), sin(x), a * x, (x, 0, 2*pi),
-           params={a: (1, 0, 2)},
-           xlim=(-1.25, 1.25), ylim=(-1.25, 1.25)
-       )
+       import k3d
+       a, b = symbols("a, b")
+       c = 2 * sqrt(a * b)
+       r = a + b
+       params = {a: (1.5, 0, 2), b: (1, 0, 2)}
+       sphere = plot3d_revolution(
+           (r * cos(t), r * sin(t)), (t, 0, pi),
+           params=params, n=50, parallel_axis="x",
+           backend=KB,
+           show_curve=False, show=False,
+           rendering_kw={"color":0x353535})
+       line = plot3d_parametric_line(
+           a * cos(t) + b * cos(3 * t),
+           a * sin(t) - b * sin(3 * t),
+           c * sin(2 * t), (t, 0, 2*pi),
+           {"color_map": k3d.matplotlib_color_maps.Summer}, params=params,
+           backend=KB, show=False)
+       (line + sphere).show()
 
     References
     ==========
@@ -1205,9 +1250,8 @@ def plot3d_parametric_line(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot3d, plot_contour, plot3d_parametric_surface,
-    plot3d_spherical, plot3d_revolution, plot_implicit, plot_geometry,
-    plot_parametric, plot_piecewise, plot3d_implicit, plot_list, iplot
+    plot, plot3d, plot_contour, plot3d_parametric_surface,
+    plot3d_spherical, plot3d_revolution, plot3d_implicit
 
     """
     args = _plot_sympify(args)
@@ -1328,6 +1372,9 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
         if s.is_3Dsurface:
             expr = s.get_expr()
             (x, sx, ex), (y, sy, ey) = s._get_ranges()
+
+            print("expr", expr)
+            print("ranges", (x, sx, ex), (y, sy, ey))
             kw = wf_kwargs.copy()
             if s.is_interactive:
                 kw["params"] = s.params.copy()
@@ -1502,13 +1549,9 @@ def plot3d(*args, **kwargs):
         * callable : Refer to [#fn4]_ for more information. Specifically,
           look at `adaptive.learner.learnerND` to find more loss functions.
 
-    n1 : int, optional
-        The x range is sampled uniformly at `n1` of points. Default value
-        is 100.
-
-    n2 : int, optional
-        The y range is sampled uniformly at `n2` of points. Default value
-        is 100.
+    n1, n2 : int, optional
+        ``n1`` and ``n2`` set the number of discretization points along the
+        x and y ranges, respectively. Default value to 100.
 
     n : int or two-elements tuple (n1, n2), optional
         If an integer is provided, the x and y ranges are sampled uniformly
@@ -1584,17 +1627,23 @@ def plot3d(*args, **kwargs):
         Label for the z-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`.
+        Denotes the x-axis limits, `(min, max)`, visible in the chart.
+        Note that the function is still being evaluate over ``range_x``.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`.
+        Denotes the y-axis limits, `(min, max)`, visible in the chart.
+        Note that the function is still being evaluate over ``range_y``.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`.
-
+        Denotes the z-axis limits, `(min, max)`, visible in the chart.
 
     Examples
     ========
+
+    Note: for documentation purposes, the following examples uses Matplotlib.
+    However, Matplotlib's 3D capabilities are rather limited. Consider running
+    these examples with a different backend (hence, modify the ``rendering_kw``
+    and ``wf_rendering_kw`` to pass the correct options to the backend).
 
     .. plot::
        :context: reset
@@ -1605,7 +1654,7 @@ def plot3d(*args, **kwargs):
        >>> from spb import plot3d
        >>> x, y = symbols('x y')
 
-    Single plot
+    Single plot:
 
     .. plot::
        :context: close-figs
@@ -1617,24 +1666,27 @@ def plot3d(*args, **kwargs):
        [0]: cartesian surface: cos(x**2 + y**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
 
 
-    Single plot with a polar discretization and a color function mapping a
-    colormap to the radius:
+    Single plot with:
+
+    * user-provided colormap mapping colors to the z coordinate.
+    * wireframe lines to better understand the discretization and curvature.
+    * transformation to the discretized ranges in order to convert radians to
+      degrees.
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> import matplotlib.cm as cm
-       >>> r, theta = symbols("r, theta")
-       >>> p = plot3d(
-       ...     (cos(r**2) * exp(-r / 3), (r, 0, 3.25),
-       ...         (theta, 0, 2 * pi), "r", {"cmap": cm.winter}),
-       ...     is_polar=True, use_cm=True, legend=True,
-       ...     color_func=lambda x, y, z: (x**2 + y**2)**0.5)
-       Plot object containing:
-       [0]: cartesian surface: exp(-r/3)*cos(r**2) for r over (0.0, 3.25) and theta over (0.0, 6.283185307179586)
-
+       >>> import numpy as np
+       >>> expr = (cos(x) + sin(x) * sin(y) - sin(x) * cos(y))**2
+       >>> plot3d(
+       ...     expr, (x, 0, pi), (y, 0, 2 * pi),
+       ...     {"cmap": "plasma", "alpha": 0.9}, use_cm=True,
+       ...     tx=np.rad2deg, ty=np.rad2deg,
+       ...     wireframe=True, wf_n1=20, wf_n2=20,
+       ...     wf_rendering_kw={"lw": 0.75},
+       ...     xlabel="x [deg]", ylabel="y [deg]")
 
     Multiple plots with same range. Set ``use_cm=True`` to distinguish the
     expressions:
@@ -1649,35 +1701,23 @@ def plot3d(*args, **kwargs):
        [0]: cartesian surface: x*y for x over (-5.0, 5.0) and y over (-5.0, 5.0)
        [1]: cartesian surface: -x*y for x over (-5.0, 5.0) and y over (-5.0, 5.0)
 
-
-    Multiple plots with different ranges.
+    Multiple plots with different ranges and solid colors.
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot3d((x**2 + y**2, (x, -5, 5), (y, -5, 5)),
-       ...     (x*y, (x, -3, 3), (y, -3, 3)))
+       >>> f = x**2 + y**2
+       >>> p = plot3d((f, (x, -3, 3), (y, -3, 3)),
+       ...     (-f, (x, -5, 5), (y, -5, 5)))
        Plot object containing:
-       [0]: cartesian surface: x**2 + y**2 for x over (-5.0, 5.0) and y over (-5.0, 5.0)
-       [1]: cartesian surface: x*y for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [0]: cartesian surface: x**2 + y**2 for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [1]: cartesian surface: -x**2 - y**2 for x over (-5.0, 5.0) and y over (-5.0, 5.0)
 
-    Apply a transformation to the discretized ranged in order to convert
-    radians to degrees:
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-       >>> import numpy as np
-       >>> expr = (cos(x) + sin(x) * sin(y) - sin(x) * cos(y))**2
-       ... plot3d(expr, (x, 0, pi), (y, 0, 2 * pi),
-       ...     tx=np.rad2deg, ty=np.rad2deg, use_cm=True,
-       ...     xlabel="x [deg]", ylabel="y [deg]")
-
-    Activating and customizing a wireframe over a surface:
+    Single plot with a polar discretization, a color function mapping a
+    colormap to the radius. Note that the same result can be achieved with
+    ``plot3d_revolution``.
 
     .. plot::
        :context: close-figs
@@ -1687,7 +1727,8 @@ def plot3d(*args, **kwargs):
        >>> r, theta = symbols("r, theta")
        >>> expr = cos(r**2) * exp(-r / 3)
        >>> plot3d(expr, (r, 0, 3.25), (theta, 3 * pi / 2, 2 * pi),
-       ...     {"alpha": 0.15}, is_polar=True, use_cm=False,
+       ...     "r", {"alpha": 0.4}, is_polar=True, legend=True,
+       ...     use_cm=True, color_func=lambda x, y, z: np.sqrt(x**2 + y**2),
        ...     wireframe=True, wf_n1=20, wf_n2=10,
        ...     wf_rendering_kw={"lw": 0.75})
 
@@ -1721,9 +1762,8 @@ def plot3d(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot_contour, plot_parametric, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, plot_list, iplot
+    plot, plot_contour, plot3d_parametric_line, plot3d_parametric_surface,
+    plot3d_implicit, plot3d_revolution, plot3d_spherical
 
     """
     Backend = kwargs.pop("backend", THREE_D_B)
@@ -1812,13 +1852,9 @@ def plot3d_parametric_surface(*args, **kwargs):
         representation will be used. The number of labels must be
         equal to the number of expressions.
 
-    n1 : int, optional
-        The u range is sampled uniformly at `n1` of points. Default value
-        is 100.
-
-    n2 : int, optional
-        The v range is sampled uniformly at `n2` of points. Default value
-        is 100.
+    n1, n2 : int, optional
+        ``n1`` and ``n2`` set the number of discretization points along the
+        u and v ranges, respectively. Default value to 100.
 
     n : int or two-elements tuple (n1, n2), optional
         If an integer is provided, the u and v ranges are sampled uniformly
@@ -1893,47 +1929,49 @@ def plot3d_parametric_surface(*args, **kwargs):
         Label for the z-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`.
+        Denotes the x-axis limits, `(min, max)`, visible in the chart.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`.
+        Denotes the y-axis limits, `(min, max)`, visible in the chart.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`.
+        Denotes the z-axis limits, `(min, max)`, visible in the chart.
 
 
     Examples
     ========
+
+    Note: for documentation purposes, the following examples uses Matplotlib.
+    However, Matplotlib's 3D capabilities are rather limited. Consider running
+    these examples with a different backend (hence, modify the ``rendering_kw``
+    and ``wf_rendering_kw`` to pass the correct options to the backend).
 
     .. plot::
        :context: reset
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos, sin, pi
+       >>> from sympy import symbols, cos, sin, pi, I, sqrt, atan2, re
        >>> from spb import plot3d_parametric_surface
        >>> u, v = symbols('u v')
 
-    Single plot with u/v directions discretized with 200 points, showing a
-    custom label and using a coloring function.
+    Plot a parametric surface:
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> r = 2 + sin(7 * u + 5 * v)
-       >>> expr = (
-       ...      r * cos(u) * sin(v),
-       ...          r * sin(u) * sin(v),
-       ...          r * cos(v)
-       ... )
-       >>> plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "u",
-       ...      n=200, use_cm=True, color_func=lambda u, v: u)
+       >>> plot3d_parametric_surface(
+       ...     u * cos(v), u * sin(v), u * cos(4 * v) / 2,
+       ...     (u, 0, pi), (v, 0, 2*pi),
+       ...     use_cm=False, title="Sinusoidal Cone")
        Plot object containing:
-       [0]: parametric cartesian surface: ((sin(7*u + 5*v) + 2)*sin(v)*cos(u), (sin(7*u + 5*v) + 2)*sin(u)*sin(v), (sin(7*u + 5*v) + 2)*cos(v)) for u over (0.0, 6.283185307179586) and v over (0.0, 3.141592653589793)
+       [0]: parametric cartesian surface: (u*cos(v), u*sin(v), u*cos(4*v)/2) for u over (0.0, 3.141592653589793) and v over (0.0, 6.283185307179586)
 
-    Activating and customizing a wireframe over a surface:
+    Customize the appearance of the surface by changing the colormap. Apply a
+    color function mapping the `v` values. Activate the wireframe to better
+    visualize the parameterization.
 
     .. plot::
        :context: close-figs
@@ -1943,11 +1981,35 @@ def plot3d_parametric_surface(*args, **kwargs):
        >>> x = (1 + v / 2 * cos(u / 2)) * cos(u)
        >>> y = (1 + v / 2 * cos(u / 2)) * sin(u)
        >>> z = v / 2 * sin(u / 2)
-       >>> plot3d_parametric_surface(x, y, z, (u, 0, 2*pi), (v, -1, 1),
-       ...    "height", {"alpha": 0.75}, use_cm=True, title="Möbius strip",
-       ...    wireframe=True, wf_n1=20, wf_rendering_kw={"lw": 0.75})
+       >>> plot3d_parametric_surface(
+       ...     x, y, z, (u, 0, 2*pi), (v, -1, 1),
+       ...     "v", {"alpha": 0.75, "cmap": "twilight"},
+       ...     use_cm=True, color_func=lambda u, v: u,
+       ...     title="Möbius strip",
+       ...     wireframe=True, wf_n1=20, wf_rendering_kw={"lw": 0.75})
 
-    Plotting a numerical function instead of a symbolic expression:
+    Plot multiple parametric Riemann surfaces of the real part of the
+    multiple-valued function `z**n`:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> r, theta, x, y = symbols("r, theta, x, y", real=True)
+       >>> mag = lambda z: sqrt(re(z)**2 + im(z)**2)
+       >>> phase = lambda z, k=0: atan2(im(z), re(z)) + 2 * k * pi
+       >>> n = 2 # exponent (integer)
+       >>> z = x + I * y # cartesian
+       >>> d = {x: r * cos(theta), y: r * sin(theta)} # cartesian to polar
+       >>> branches = [(mag(z)**(1 / n) * cos(phase(z, i) / n)).subs(d)
+       ...     for i in range(n)]
+       >>> exprs = [(r * cos(theta), r * sin(theta), rb) for rb in branches]
+       >>> plot3d_parametric_surface(*exprs, (r, 0, 3), (theta, -pi, pi),
+       ...     backend=PB, wireframe=True, wf_n2=20, zlabel="f(z)")
+
+    Plotting a numerical function instead of a symbolic expression. Note the
+    use of `zlim` to force a near-equal aspect ratio with Matplotlib 3D plots.
 
     .. plot::
        :context: close-figs
@@ -1959,7 +2021,33 @@ def plot3d_parametric_surface(*args, **kwargs):
        >>> fy = lambda u, v: (4 + np.cos(u)) * np.sin(v)
        >>> fz = lambda u, v: np.sin(u)
        >>> plot3d_parametric_surface(fx, fy, fz, ("u", 0, 2 * pi),
-       ...     ("v", 0, 2 * pi))
+       ...     ("v", 0, 2 * pi), zlim=(-2.5, 2.5), title="Torus")
+       Plot object containing:
+       [0]: parametric cartesian surface: (<function <lambda> at 0x7f466b8b2950>, <function <lambda> at 0x7f466b8b29e0>, <function <lambda> at 0x7f466b8b2a70>) for u over (0.0, 6.283185307179586) and v over (0.0, 6.283185307179586)
+
+    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
+    about the ``params`` dictionary.
+
+    .. code-block:: python
+
+       from sympy import *
+       from spb import *
+       import k3d
+       alpha, u, v = symbols("alpha u v")
+       plot3d_parametric_surface((
+              exp(u) * cos(v - alpha) / 2 + exp(-u) * cos(v + alpha) / 2,
+              exp(u) * sin(v - alpha) / 2 + exp(-u) * sin(v + alpha) / 2,
+              cos(alpha) * u + sin(alpha) * v
+          ),
+          (u, -1, 1), (v, 0, 2 * pi),
+          backend=KB,
+          use_cm=True,
+          color_func=lambda u, v: v,
+          rendering_kw={"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
+          wireframe=True, wf_n2=15, wf_rendering_kw={"width": 0.0025},
+          grid=False, n=50,
+          params={alpha: (0, 0, pi)},
+          title="Catenoid \, to \, Right \, Helicoid \, Transformation")
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary. Note that the plot's creation might be
@@ -1990,10 +2078,8 @@ def plot3d_parametric_surface(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot_parametric, plot3d, plot_contour,
-    plot3d_parametric_line, plot3d_spherical, plot3d_revolution,
-    plot_implicit, plot_geometry, plot_piecewise, plot3d_implicit,
-    plot_list, iplot
+    plot, plot3d, plot_contour, plot3d_parametric_line, plot3d_spherical,
+    plot3d_revolution, plot3d_implicit
 
     """
     args = _plot_sympify(args)
@@ -2071,10 +2157,10 @@ def plot3d_spherical(*args, **kwargs):
     Examples
     ========
 
-    Note: it is recommended to execute the following examples with a good
-    3D backed, such as PlotlyBackend, K3DBackend, MayaviBackend. This can
-    be achieved by using the ``backend`` keyword, for example:
-    ``backend=K3DBackend``.
+    Note: for documentation purposes, the following examples uses Matplotlib.
+    However, Matplotlib's 3D capabilities are rather limited. Consider running
+    these examples with a different backend (hence, modify the ``rendering_kw``
+    and ``wf_rendering_kw`` to pass the correct options to the backend).
 
 
     .. plot::
@@ -2094,6 +2180,8 @@ def plot3d_spherical(*args, **kwargs):
        :include-source: True
 
        >>> plot3d_spherical(1, (theta, 0, 0.7 * pi), (phi, 0, 1.8 * pi))
+       Plot object containing:
+       [0]: parametric cartesian surface: (sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta)) for theta over (0.0, 2.199114857512855) and phi over (0.0, 5.654866776461628)
 
     Plot real spherical harmonics, highlighting the regions in which the
     real part is positive and negative:
@@ -2106,8 +2194,10 @@ def plot3d_spherical(*args, **kwargs):
        >>> r = re(Ynm(3, 3, theta, phi).expand(func=True).rewrite(sin).expand())
        >>> plot3d_spherical(
        ...     abs(r), (theta, 0, pi), (phi, 0, 2 * pi), "radius",
-       ...     use_cm=True, n2=200,
+       ...     use_cm=True, n2=200, zlim=(-0.3, 0.3),
        ...     color_func=lambdify([theta, phi], r))
+       Plot object containing:
+       [0]: parametric cartesian surface: (sin(theta)*cos(phi)*Abs(sqrt(35)*re(sin(theta)**3*cos(3*phi))/(8*sqrt(pi)) - sqrt(35)*im(sin(3*phi)*sin(theta)**3)/(8*sqrt(pi))), sin(phi)*sin(theta)*Abs(sqrt(35)*re(sin(theta)**3*cos(3*phi))/(8*sqrt(pi)) - sqrt(35)*im(sin(3*phi)*sin(theta)**3)/(8*sqrt(pi))), cos(theta)*Abs(sqrt(35)*re(sin(theta)**3*cos(3*phi))/(8*sqrt(pi)) - sqrt(35)*im(sin(3*phi)*sin(theta)**3)/(8*sqrt(pi)))) for theta over (0.0, 3.141592653589793) and phi over (0.0, 6.283185307179586)
 
     Multiple surfaces with wireframe lines. Note that activating the wireframe
     option might add a considerable overhead during the plot's creation.
@@ -2146,7 +2236,10 @@ def plot3d_spherical(*args, **kwargs):
 
     See Also
     ========
-    plot3d_parametric_surface, plot3d, plot3d_parametric_line, plot3d_implicit
+
+    plot3d, plot3d_parametric_surface, plot3d_parametric_line, plot3d_implicit,
+    plot3d_revolution
+
     """
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
@@ -2215,17 +2308,9 @@ def plot3d_implicit(*args, **kwargs):
         A subclass of `Plot`, which will perform the rendering.
         Only PlotlyBackend and K3DBackend support 3D implicit plotting.
 
-    n1 : int, optional
-        The x range is sampled uniformly at `n1` of points. Default value
-        is 60.
-
-    n2 : int, optional
-        The y range is sampled uniformly at `n2` of points. Default value
-        is 60.
-
-    n3 : int, optional
-        The z range is sampled uniformly at `n3` of points. Default value
-        is 60.
+    n1, n2, n3 : int, optional
+        Set the number of discretization points along the x, y and z ranges,
+        respectively. Default value is 60.
 
     n : int or three-elements tuple (n1, n2, n3), optional
         If an integer is provided, the x, y and z ranges are sampled uniformly
@@ -2268,13 +2353,16 @@ def plot3d_implicit(*args, **kwargs):
         Label for the z-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`.
+        Denotes the x-axis limits, `(min, max)`, visible in the chart.
+        Note that the function is still being evaluated over the ``range_x``.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`.
+        Denotes the y-axis limits, `(min, max)`, visible in the chart.
+        Note that the function is still being evaluated over the ``range_y``.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`.
+        Denotes the z-axis limits, `(min, max)`, visible in the chart.
+        Note that the function is still being evaluated over the ``range_z``.
 
 
     Examples
@@ -2319,9 +2407,8 @@ def plot3d_implicit(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot_parametric, plot3d, plot_contour,
-    plot3d_parametric_line, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_parametric_surface, plot_list
+    plot, plot3d, plot_contour, plot3d_parametric_line,
+    plot3d_parametric_surface, plot3d_revolution, plot3d_spherical
 
     """
     if kwargs.pop("params", None) is not None:
@@ -2447,9 +2534,8 @@ def plot_contour(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot_parametric, plot3d, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, plot_list, iplot
+    plot, plot_polar, plot_parametric, plot3d, plot_implicit, plot_geometry,
+    plot_piecewise, plot_list
 
     """
     Backend = kwargs.pop("backend", TWO_D_B)
@@ -2609,7 +2695,9 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis
     See Also
     ========
 
-    plot3d_parametric_surface, plot3d_parametric_line, plot3d_spherical
+    plot3d, plot3d_parametric_surface, plot3d_parametric_line,
+    plot3d_spherical, plot_contour
+
     """
     show = kwargs.pop("show", True)
     kwargs["show"] = False
@@ -2941,9 +3029,8 @@ def plot_polar(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_parametric, plot3d, plot_contour, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_implicit, plot_geometry, plot_piecewise,
-    plot3d_implicit, plot_list, iplot
+    plot, plot_parametric, plot3d, plot_implicit, plot_geometry,
+    plot_piecewise, plot_list
 
     """
     kwargs["is_polar"] = True
@@ -3042,13 +3129,13 @@ def plot_geometry(*args, **kwargs):
         Label for the z-axis.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`.
+        Denotes the x-axis limits, `(min, max)`, visible in the chart.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`.
+        Denotes the y-axis limits, `(min, max)`, visible in the chart.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`.
+        Denotes the z-axis limits, `(min, max)`, visible in the chart.
 
 
     Examples
@@ -3172,7 +3259,7 @@ def plot_geometry(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_piecewise, plot_polar, plot_list, iplot
+    plot, plot_piecewise, plot_polar, plot_list
 
     """
     args = _plot_sympify(args)
@@ -3317,10 +3404,10 @@ def plot_list(*args, **kwargs):
         Sets the scaling of the y-axis. Default to 'linear'.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`.
+        Denotes the x-axis limits, `(min, max)`, visible in the chart.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`.
+        Denotes the y-axis limits, `(min, max)`, visible in the chart.
 
 
     Examples
@@ -3402,6 +3489,11 @@ def plot_list(*args, **kwargs):
            rendering_kw={"marker": "s", "markerfacecolor": None},
            params=params, is_point=True, show=False)
        (p1 + p2).show()
+
+    See Also
+    ========
+
+    plot, plot_parametric, plot3d, plot_piecewise
 
     """
     g_labels = kwargs.pop("label", [])
@@ -3596,10 +3688,12 @@ def plot_piecewise(*args, **kwargs):
         Sets the scaling of the y-axis. Default to 'linear'.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`.
+        Denotes the x-axis limits, `(min, max)`, visible in the chart.
+        Note that the function is still being evaluated over the specified
+        ``range``.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`.
+        Denotes the y-axis limits, `(min, max)`, visible in the chart.
 
 
     Examples
@@ -3666,9 +3760,8 @@ def plot_piecewise(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot_parametric, plot_contour, plot3d,
-    plot3d_parametric_line, plot3d_parametric_surface,
-    plot_implicit, plot_geometry, plot_list, plot3d_implicit
+    plot, plot_polar, plot_parametric, plot3d, plot_implicit, plot_geometry,
+    plot_list
 
     """
     if kwargs.pop("params", None) is not None:

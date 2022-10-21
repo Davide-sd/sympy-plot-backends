@@ -13,6 +13,8 @@ v1.5.1
 
 * ``Parametric2DLineSeries`` now support ``detect_poles``.
 
+* Improved examples in the documentation.
+
 
 v1.5.0
 ======

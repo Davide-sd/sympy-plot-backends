@@ -1,5 +1,7 @@
 from spb.defaults import cfg, TWO_D_B, THREE_D_B
-from spb.functions import _set_labels, _create_interactive_plot
+from spb.functions import (
+    _set_labels, _create_interactive_plot, _plot3d_wireframe_helper
+)
 from spb.series import (
     LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
     ComplexInteractiveBaseSeries, ComplexPointSeries,
@@ -103,7 +105,6 @@ def _build_complex_point_series(*args, interactive=False, allow_lambda=False, pc
     return series
 
 
-# def _build_series_3(*args, interactive=False, allow_lambda=False, **kwargs):
 def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
     series = []
     new_args = []
@@ -224,6 +225,7 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
         add_series(_arg, "arg")
 
     _set_labels(series, global_labels, global_rendering_kw)
+    series += _plot3d_wireframe_helper(series, **kwargs)
     return series
 
 
@@ -351,7 +353,8 @@ def plot_real_imag(*args, **kwargs):
               ranges by using standard Python complex numbers, for example
               `(z, -5+2j, 5+2j)`.
             * `(z, -5 - 3*I, 5 + 3*I)`: surface or contour plot of the
-              complex function over the specified domain.
+              complex function over the specified domain using a rectangular
+              discretization.
 
         label : str, optional
             The name of the complex function to be eventually shown on the
@@ -584,7 +587,12 @@ def plot_real_imag(*args, **kwargs):
        plot_real_imag(sqrt(x) * exp(-u * x**2), (x, -3, 3),
            params={u: (1, 0, 2)}, ylim=(-0.25, 2))
 
-    3D plot of the real and imaginary part of a function over a complex range:
+    3D plot of the real and imaginary part of the principal branch of a
+    function over a complex range. Note the jump in the imaginary part: that's
+    a branch cut. The rectangular discretization is unable to properly capture
+    it, hence the near vertical wall. Refer to ``plot3d_parametric_surface``
+    for an example about plotting Riemann surfaces and properly capture
+    the branch cuts.
 
     .. plot::
        :context: close-figs
@@ -608,6 +616,8 @@ def plot_real_imag(*args, **kwargs):
        ...     n=100, real=False, imag=False, abs=True, threed=True)
        Plot object containing:
        [0]: complex cartesian surface: sqrt(sqrt(re(x)**2 + im(x)**2)*sin(atan2(im(x), re(x))/2)**2 + sqrt(re(x)**2 + im(x)**2)*cos(atan2(im(x), re(x))/2)**2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
+
+    Riemann surface
 
     3D interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -894,15 +904,17 @@ def plot_complex(*args, **kwargs):
            exp(I * x) * I * sin(u * x), "f", (x, -5, 5),
            params={u: (1, 0, 2)}, ylim=(-0.2, 1.2))
 
-    Domain coloring plot. Note that it might be necessary to increase the
-    number of discretization points in order to get a smoother plot:
+    Domain coloring plot. To improve the smoothness of the results, increase
+    the number of discretization points and/or apply an interpolation (if the
+    backend supports it):
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I),
+       >>> plot_complex(gamma(z), (z, -3-3j, 3+3j),
+       ...     {"interpolation": "spline36"}, # passed to matplotlib's imshow
        ...     coloring="b", n=500, grid=False)
        Plot object containing:
        [0]: complex domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
@@ -916,7 +928,8 @@ def plot_complex(*args, **kwargs):
 
        >>> import numpy as np
        >>> plot_complex(lambda z: z, ("z", -5-5j, 5+5j),
-       ...     coloring="b", n=1000, grid=False)
+       ...     {"interpolation": "spline36"}, # passed to matplotlib's imshow
+       ...     coloring="b", n=600, grid=False)
 
     Interactive-widget domain coloring plot. Refer to ``iplot`` documentation
     to learn more about the ``params`` dictionary. Note that a too large
