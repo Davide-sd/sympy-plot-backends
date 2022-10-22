@@ -959,6 +959,185 @@ def plot_parametric(*args, **kwargs):
     return _instantiate_backend(Backend, *series, **kwargs)
 
 
+def plot_parametric_region(*args, **kwargs):
+    """
+    Plots a 2D parametric region.
+
+    NOTE: this is an experimental plotting function as it only draws lines
+    without fills. The resulting visualization might change when new features
+    will be implemented.
+
+    Typical usage examples are in the followings:
+
+    - Plotting a single parametric curve with a range
+        `plot_parametric(expr_x, expr_y, range_u, range_v)`
+    - Plotting multiple parametric curves with the same range
+        `plot_parametric((expr_x, expr_y), ..., range_u, range_v)`
+    - Plotting multiple parametric curves with different ranges
+        `plot_parametric((expr_x, expr_y, range_u, range_v), ...)`
+
+    Parameters
+    ==========
+
+    args :
+        `expr_x`, `expr_y` : Expr
+            The expression representing x and y component, respectively, of
+            the parametric function. It can be a:
+
+            * Symbolic expression representing the function of one variable
+              to be plotted.
+            * Numerical function of one variable, supporting vectorization.
+              In this case the following keyword arguments are not supported:
+              ``params``.
+
+        `range_u`, `range_v` : (symbol, min, max)
+            A 3-tuple denoting the parameter symbols, start and stop. For
+            example, `(u, 0, 5), (v, 0, 5)`. If the ranges are not specified,
+            then they default to (-10, 10).
+
+            However, if the arguments are specified as
+            `(expr_x, expr_y, range_u, range_v), ...`, you must specify the
+            ranges for each expressions manually.
+
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of lines. Refer to the
+            plotting library (backend) manual for more informations.
+
+    aspect : (float, float) or str, optional
+        Set the aspect ratio of the plot. The value depends on the backend
+        being used. Read that backend's documentation to find out the
+        possible values.
+
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
+    n : int, optional
+        Used when the `adaptive` is set to `False`. The function is uniformly
+        sampled at `n` number of points. Default value to 1000.
+        If the `adaptive` flag is set to `True`, this parameter will be
+        ignored.
+
+    n1, n2 : int, optional
+        Number of lines to create along each direction. Default to 10.
+        Note: the higher the number, the slower the rendering.
+
+    rkw_u, rkw_v : dict
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines along the u and v
+        directions, respectively. These overrides ``rendering_kw`` if provided.
+        Refer to the plotting library (backend) manual for more informations.
+
+    show : bool, optional
+        The default value is set to `True`. Set show to `False` and
+        the function will not display the plot. The returned instance of
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
+
+    size : (float, float), optional
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
+
+    xlabel, ylabel : str, optional
+        Label for the x-axis or y-axis, respectively.
+
+    xscale, yscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis or y-axis, respectively.
+        Default to 'linear'.
+
+    xlim, ylim : (float, float), optional
+        Denotes the x-axis or y-axis limits, `(min, max)`, visible in the
+        chart.
+
+    Examples
+    ========
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import symbols, cos, sin, pi, I, re, im, latex
+       >>> from spb import plot_parametric_region
+
+    Plot a slice of a ring, applying the same style to all lines:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> r, theta = symbols("r theta")
+       >>> plot_parametric_region(r * cos(theta), r * sin(theta),
+       ...     (r, 1, 2), (theta, 0, 2*pi/3),
+       ...     {"color": "k", "linewidth": 0.75},
+       ...     n1=5, n2=15, aspect="equal")
+
+    Complex mapping, applying to different line styles:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> x, y, z = symbols("x y z")
+       >>> f = 1 / z**2
+       >>> f_cart = f.subs(z, x + I * y)
+       >>> r, i = re(f_cart), im(f_cart)
+       >>> n1, n2 = 30, 30
+       >>> plot_parametric_region(r, i, (x, -2, 2), (y, -2, 2),
+       ...     rkw_u={"color": "r", "linewidth": 0.75},
+       ...     rkw_v={"color": "b", "linewidth": 0.75},
+       ...     n1=20, n2=20, aspect="equal", xlim=(-2, 2), ylim=(-2, 2),
+       ...     xlabel="Re", ylabel="Im", title="$f(z)=%s$" % latex(f))
+
+    """
+    np = import_module('numpy')
+    n1 = kwargs.pop("n1", 10)
+    n2 = kwargs.pop("n2", 10)
+    rkw_u = kwargs.pop("rkw_u", None)
+    rkw_v = kwargs.pop("rkw_v", None)
+    labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
+    args = _plot_sympify(args)
+    kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
+    kwargs["adaptive"] = False
+    kwargs["use_cm"] = False
+    kwargs["legend"] = False
+    plot_expr = _check_arguments(args, 2, 2, **kwargs)
+    series = []
+
+    if "params" in kwargs.keys():
+        raise NotImplementedError
+
+    for pe in plot_expr:
+        fx, fy, urange, vrange, lbl, rkw = pe
+        u, umin, umax = urange
+        v, vmin, vmax = vrange
+        new_pe = []
+        for uv in np.linspace(float(umin), float(umax), n1):
+            new_pe.append((fx.subs(u, uv), fy.subs(u, uv),
+                (v, vmin, vmax), lbl, rkw if rkw_u is None else rkw_u))
+        for vv in np.linspace(float(vmin), float(vmax), n2):
+            new_pe.append((fx.subs(v, vv), fy.subs(v, vv),
+                (u, umin, umax), rkw if rkw_v is None else rkw_v))
+
+        series += _create_series(Parametric2DLineSeries, new_pe, **kwargs)
+
+    Backend = kwargs.pop("backend", TWO_D_B)
+    return _instantiate_backend(Backend, *series, **kwargs)
+
+
 def plot3d_parametric_line(*args, **kwargs):
     """
     Plots a 3D parametric line plot.

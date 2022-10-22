@@ -2,6 +2,7 @@ from spb._version import __version__
 from spb.functions import (
     plot,
     plot_parametric,
+    plot_parametric_region,
     plot_contour,
     plot3d,
     plot3d_parametric_line,

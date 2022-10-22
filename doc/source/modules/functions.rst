@@ -9,6 +9,8 @@ Functions
 
 .. autofunction:: plot_parametric
 
+.. autofunction:: plot_parametric_region
+
 .. autofunction:: plot3d
 
 .. autofunction:: plot3d_parametric_line

@@ -2,17 +2,13 @@ import os
 import pytest
 from pytest import raises
 from spb.defaults import set_defaults, cfg
-from spb import (
-    plot_piecewise, plot, plot_list, plot3d_parametric_line,
-    plot_parametric, plot3d, plot_contour, plot3d_parametric_surface,
-    plot_implicit, plot3d_implicit, plot_geometry, plot_complex,
-    plot3d_spherical, plot3d_revolution
-)
+from spb import *
 from spb.interactive import InteractivePlot
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, ContourSeries,
     Vector2DSeries, ParametricSurfaceSeries, Parametric3DLineSeries,
-    ParametricSurfaceInteractiveSeries, Parametric3DLineInteractiveSeries
+    ParametricSurfaceInteractiveSeries, Parametric3DLineInteractiveSeries,
+    Parametric2DLineSeries
 )
 from spb.backends.matplotlib import MB, unset_show
 from sympy import (
@@ -50,6 +46,58 @@ unset_show()
 # If your issue is related to a particular keyword affecting a backend
 # behaviour, consider adding tests to test_backends.py
 #
+
+
+def test_plot_parametric_region():
+    # verify that plot_parametric_region creates the correct data series
+
+    u, v, x, y = symbols("u, v, x, y")
+
+    # single parametric region
+    p = plot_parametric_region(u * cos(v), u * sin(v),
+        (u, 1, 2), (v, 0, 2*pi/3), {"color": "k"}, show=False,
+        n1=3, n2=5, n=10)
+    assert len(p.series) == 8
+    assert all(isinstance(s, Parametric2DLineSeries) for s in p.series)
+    assert all((s.var, s.start, s.end) == (v, 0, float(2*pi/3)) for s in p.series[:3])
+    assert all((s.var, s.start, s.end) == (u, 1, 2) for s in p.series[3:])
+    assert all(s.n == 10 for s in p.series)
+    assert all(s.rendering_kw == {"color": "k"} for s in p.series)
+
+    p = plot_parametric_region(u * cos(v), u * sin(v),
+        (u, 1, 2), (v, 0, 2*pi/3), {"color": "k"},
+        rkw_u={"color": "r"}, rkw_v={"color": "b"},
+        show=False, n1=3, n2=5, n=10)
+    assert all(s.rendering_kw == {"color": "r"} for s in p.series[:3])
+    assert all(s.rendering_kw == {"color": "b"} for s in p.series[3:])
+
+    # multiple parametric regions with the same ranges
+    p = plot_parametric_region(
+        (u * cos(v), u * sin(v)),
+        (2 * u * cos(v), 2 * u * sin(v)),
+        (u, 1, 2), (v, 0, 2*pi/3), {"color": "k"}, show=False,
+        n1=3, n2=5, n=10)
+    assert len(p.series) == 16
+    assert sum((s.var, s.start, s.end) == (u, 1, 2) for s in p.series) == 10
+    assert sum((s.var, s.start, s.end) == (v, 0, float(2*pi/3)) for s in p.series) == 6
+
+    # multiple parametric regions each one with its own ranges
+    p = plot_parametric_region(
+        (u * cos(v), u * sin(v), (u, 1, 2), (v, 0, 2*pi/3)),
+        (2 * x * cos(y), 2 * x * sin(y), (x, 0, 1), (y, 0, pi)),
+        show=False, n1=3, n2=5, n=10)
+    assert len(p.series) == 16
+    assert sum((s.var, s.start, s.end) == (u, 1, 2) for s in p.series) == 5
+    assert sum((s.var, s.start, s.end) == (v, 0, float(2*pi/3)) for s in p.series) == 3
+    assert sum((s.var, s.start, s.end) == (x, 0, 1) for s in p.series) == 5
+    assert sum((s.var, s.start, s.end) == (y, 0, float(pi)) for s in p.series) == 3
+
+    # parametric interactive plot
+    p = lambda: plot_parametric_region(u * cos(x * v), u * sin(v),
+        (u, 1, 2), (v, 0, 2*pi/3), show=False, n1=3, n2=5, n=10,
+        params={x: (1, 0, 2)})
+    raises(NotImplementedError, p)
+
 
 
 def test_plot3d_revolution():

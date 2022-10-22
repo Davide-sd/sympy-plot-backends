@@ -5,7 +5,11 @@
 v1.5.1
 ======
 
-* Implemented ``plot3d_revolution`` to create surface of revolution.
+* Added new plotting functions:
+
+  * ``plot3d_revolution`` to create surface of revolution.
+
+  * ``plot_parametric_region``, still in development.
 
 * Fixed bug with ``MatplotlibBackend`` dealing with colormaps and normalization.
 
