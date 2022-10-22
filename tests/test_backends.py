@@ -1972,6 +1972,44 @@ def test_plot_list_is_filled_true():
             lambda: _plot_list(MAB).process_series())
 
 
+def test_plot_list_color_func():
+    # verify that the backends produce the expected results when
+    # `plot_list()` is called with `color_func`
+
+    _plot_list = lambda B: plot_list([1, 2, 3], [1, 2, 3],
+        backend=B, color_func=lambda x, y: np.arange(len(x)), show=False, use_latex=False, is_point=True)
+
+    p = _plot_list(MB)
+    f = p.fig
+    ax = f.axes[0]
+    # TODO:  matplotlib applie colormap color only after being shown :|
+    # assert p.ax.collections[0].get_facecolors().shape == (3, 4)
+    p.close()
+
+    p = _plot_list(PB)
+    f = p.fig
+    assert f.data[0]["mode"] == "markers"
+    assert np.allclose(f.data[0]["marker"]["color"], [0, 1, 2])
+
+
+    p = _plot_list(BB)
+    assert len(p.series) == 1
+    f = p.fig
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Scatter)
+    assert np.allclose(f.renderers[0].data_source.data["us"], [0, 1, 2])
+
+    # K3D doesn't support 2D plots
+    raises(
+        NotImplementedError,
+        lambda: _plot_list(KBchild1).process_series())
+
+    if mayavi:
+        # Mayavi doesn't support 2D plots
+        raises(
+            NotImplementedError,
+            lambda: _plot_list(MAB).process_series())
+
+
 def test_plot_piecewise_single_series():
     # verify that plot_piecewise plotting 1 piecewise composed of N
     # sub-expressions uses only 1 color

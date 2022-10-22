@@ -233,6 +233,7 @@ def test_number_discretization_points():
 
 
 def test_list2dseries():
+    x = symbols("x")
     xx = np.linspace(-3, 3, 10)
     yy1 = np.cos(xx)
     yy2 = np.linspace(-3, 3, 20)
@@ -241,6 +242,32 @@ def test_list2dseries():
     s = List2DSeries(xx, yy1)
     # different number of elements: error
     raises(ValueError, lambda: List2DSeries(xx, yy2))
+
+    # no color func: returns only x, y components and s in not parametric
+    s = List2DSeries(xx, yy1)
+    xxs, yys = s.get_data()
+    assert np.allclose(xx, xxs)
+    assert np.allclose(yy1, yys)
+    assert not s.is_parametric
+
+
+def test_complexpointseries():
+    # verify that ComplexPointSeries returns the correct data depending on
+    # the provided keyword arguments
+
+    x = symbols("x")
+
+    s = ComplexPointSeries([1 + 2 * I, 3 + 4 * I])
+    xx, yy = s.get_data()
+    assert s.is_point and (not s.is_parametric) and (not s.color_func)
+    assert np.allclose(xx, [1, 3])
+    assert np.allclose(yy, [2, 4])
+
+    s = ComplexPointInteractiveSeries([1 + x * I, 1 + x + 4 * I], params={x: 2})
+    xx, yy = s.get_data()
+    assert s.is_point and (not s.is_parametric) and (not s.color_func)
+    assert np.allclose(xx, [1, 3])
+    assert np.allclose(yy, [2, 4])
 
 
 def test_interactive_instance():
@@ -1331,6 +1358,12 @@ def test_list2dseries_interactive():
     s = List2DSeries([cos(x)], [sin(x)], params={x: 1})
     assert s.is_interactive
 
+    s = List2DSeries([x, 2, 3, 4], [4, 3, 2, x], params={x: 3})
+    xx, yy = s.get_data()
+    assert np.allclose(xx, [3, 2, 3, 4])
+    assert np.allclose(yy, [4, 3, 2, 3])
+    assert not s.is_parametric
+
 
 def test_mpmath():
     # test that the argument of complex functions evaluated with mpmath
@@ -1531,6 +1564,11 @@ def test_use_cm():
     # produces the correct result.
 
     u, x, y, z = symbols("u, x:z")
+
+    s = List2DSeries([1, 2, 3, 4], [5, 6, 7, 8], "test", use_cm=True)
+    assert s.use_cm
+    s = List2DSeries([1, 2, 3, 4], [5, 6, 7, 8], "test", use_cm=False)
+    assert not s.use_cm
 
     s = AbsArgLineSeries(sqrt(x), (x, -5 + 2j, 5 + 2j), "test", use_cm=True)
     assert s.use_cm
@@ -2514,6 +2552,31 @@ def test_color_func():
 
     x, y, z, u, v = symbols("x, y, z, u, v")
 
+    # color func: returns x, y, color and s is parametric
+    xx = np.linspace(-3, 3, 10)
+    yy1 = np.cos(xx)
+    s = List2DSeries(xx, yy1, color_func=lambda x, y: 2 * x, use_cm=True)
+    xxs, yys, col = s.get_data()
+    assert np.allclose(xx, xxs)
+    assert np.allclose(yy1, yys)
+    assert np.allclose(2 * xx, col)
+    assert s.is_parametric
+
+    s = List2DSeries(xx, yy1, color_func=lambda x, y: 2 * x, use_cm=False)
+    assert len(s.get_data()) == 2
+
+    s = ComplexPointSeries([1 + 2 * I, 3 + 4 * I],
+        color_func=lambda x, y: x * y, use_cm=True)
+    xx, yy, col = s.get_data()
+    assert s.is_parametric
+    assert np.allclose(xx, [1, 3])
+    assert np.allclose(yy, [2, 4])
+    assert np.allclose(col, [2, 12])
+
+    s = ComplexPointSeries([1 + 2 * I, 3 + 4 * I],
+        color_func=lambda x, y: x * y, use_cm=False)
+    assert len(s.get_data()) == 2
+
     s = LineOver1DRangeSeries(sin(x), (x, -5, 5), adaptive=False, n=10,
         color_func=lambda x: x)
     xx, yy, col = s.get_data()
@@ -2587,6 +2650,22 @@ def test_color_func():
     assert np.allclose(xx * yy * zz * uu * vv, col)
 
     # Interactive Series
+    s = List2DSeries([0, 1, 2, x], [x, 2, 3, 4],
+        color_func=lambda x, y: 2 * x, params={x: 1})
+    xx, yy, col = s.get_data()
+    assert np.allclose(xx, [0, 1, 2, 1])
+    assert np.allclose(yy, [1, 2, 3, 4])
+    assert np.allclose(2 * xx, col)
+    assert s.is_parametric and s.use_cm
+
+    s = ComplexPointInteractiveSeries([1 + x * I, 1 + x + 4 * I],
+        color_func=lambda x, y: x * y, params={x: 2})
+    xx, yy, col = s.get_data()
+    assert s.is_parametric and s.use_cm
+    assert np.allclose(xx, [1, 3])
+    assert np.allclose(yy, [2, 4])
+    assert np.allclose(col, [2, 12])
+
     s = LineInteractiveSeries([sin(y * x)], [(x, -5, 5)], n1=10,
         color_func=lambda x: x, params={y: 1})
     xx, yy, col = s.get_data()

@@ -756,6 +756,8 @@ class List2DSeries(Line2DBaseSeries, ParamsMixin):
         self.is_polar = kwargs.get("is_polar", False)
         self.label = label
         self.rendering_kw = kwargs.get("rendering_kw", dict())
+        if self.color_func:
+            self.is_parametric = True
 
     def get_expr(self):
         return self.list_x, self.list_y
@@ -765,13 +767,19 @@ class List2DSeries(Line2DBaseSeries, ParamsMixin):
 
     def _get_points(self):
         """Returns coordinates that needs to be postprocessed."""
+        lx, ly = self.list_x, self.list_y
+
         if not self.is_interactive:
-            return self.list_x, self.list_y
+            if self.use_cm and callable(self.color_func):
+                return lx, ly, self.eval_color_func(lx, ly)
+            return lx, ly
 
         np = import_module('numpy')
-        lx = [t.evalf(subs=self.params) for t in self.list_x]
-        ly = [t.evalf(subs=self.params) for t in self.list_y]
-        return np.array(lx, dtype=float), np.array(ly, dtype=float)
+        lx = np.array([t.evalf(subs=self.params) for t in lx], dtype=float)
+        ly = np.array([t.evalf(subs=self.params) for t in ly], dtype=float)
+        if self.use_cm and callable(self.color_func):
+            return lx, ly, self.eval_color_func(lx, ly)
+        return lx, ly
 
 
 class LineOver1DRangeSeries(Line2DBaseSeries):
@@ -2235,7 +2243,10 @@ class ComplexPointSeries(Line2DBaseSeries):
         self.label = label
         self._latex_label = label
         self.rendering_kw = kwargs.get("rendering_kw", dict())
+        self.use_cm = kwargs.get("use_cm", True)
         self.color_func = kwargs.get("color_func", None)
+        if self.color_func:
+            self.is_parametric = True
         self.line_color = kwargs.get("line_color", None)
         self._init_transforms(**kwargs)
 
@@ -2245,9 +2256,13 @@ class ComplexPointSeries(Line2DBaseSeries):
         points = np.array([complex(p) for p in points])
         return np.real(points), np.imag(points)
 
+
     def _get_points(self):
         """Returns coordinates that needs to be postprocessed."""
-        return self._evaluate(self.expr)
+        r, i = self._evaluate(self.expr)
+        if self.use_cm and callable(self.color_func):
+            return r, i, self.eval_color_func(r, i)
+        return r, i
 
     def __str__(self):
         return "complex points: %s" % self.expr
@@ -2272,7 +2287,10 @@ class ComplexPointInteractiveSeries(LineInteractiveBaseSeries, ComplexPointSerie
     def _get_points(self):
         """Returns coordinates that needs to be postprocessed."""
         points = Tuple(*[p.evalf(subs=self._params) for p in self.expr])
-        return ComplexPointSeries._evaluate(points)
+        r, i = ComplexPointSeries._evaluate(points)
+        if self.use_cm and callable(self.color_func):
+            return r, i, self.eval_color_func(r, i)
+        return r, i
 
     def __str__(self):
         return "interactive complex points: %s with parameters %s" % (

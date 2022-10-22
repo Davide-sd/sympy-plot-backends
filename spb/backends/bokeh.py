@@ -406,7 +406,8 @@ class BokehBackend(Plot):
                         else next(self._cm)
                     )
                     ds, line, cb, kw = self._create_gradient_line(
-                        x, y, param, colormap, s.get_label(self._use_latex), s.rendering_kw)
+                        x, y, param, colormap, s.get_label(self._use_latex),
+                        s.rendering_kw, s.is_point)
                     self._fig.add_glyph(ds, line)
                     if self.legend:
                         self._handles[i] = cb
@@ -618,9 +619,12 @@ class BokehBackend(Plot):
         us = u[:-1]
         return xs, ys, us
 
-    def _create_gradient_line(self, x, y, u, colormap, name, line_kw):
+    def _create_gradient_line(self, x, y, u, colormap, name, line_kw, is_point=False):
         merge = self.merge
-        xs, ys, us = self._get_segments(x, y, u)
+        if not is_point:
+            xs, ys, us = self._get_segments(x, y, u)
+        else:
+            xs, ys, us = x, y, u
         color_mapper = self.bokeh.models.LinearColorMapper(
             palette=colormap, low=min(us), high=max(us))
         data_source = self.bokeh.models.ColumnDataSource(
@@ -632,7 +636,10 @@ class BokehBackend(Plot):
             line_color={"field": "us", "transform": color_mapper},
         )
         kw = merge({}, lkw, line_kw)
-        glyph = self.bokeh.models.MultiLine(xs="xs", ys="ys", **kw)
+        if not is_point:
+            glyph = self.bokeh.models.MultiLine(xs="xs", ys="ys", **kw)
+        else:
+            glyph = self.bokeh.models.Scatter(x="xs", y="ys", **kw)
         colorbar = self.bokeh.models.ColorBar(
             color_mapper=color_mapper, title=name, width=8)
         return data_source, glyph, colorbar, kw
@@ -650,7 +657,10 @@ class BokehBackend(Plot):
 
                 if s.is_2Dline and s.is_parametric and s.use_cm:
                     x, y, param = self.series[i].get_data()
-                    xs, ys, us = self._get_segments(x, y, param)
+                    if not s.is_point:
+                        xs, ys, us = self._get_segments(x, y, param)
+                    else:
+                        xs, ys, us = x, y, param
                     rend[i].data_source.data.update({"xs": xs, "ys": ys, "us": us})
                     if i in self._handles.keys():
                         cb = self._handles[i]

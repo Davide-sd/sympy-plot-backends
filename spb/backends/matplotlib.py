@@ -362,11 +362,17 @@ class MatplotlibBackend(Plot):
                         if self._use_cyclic_cm(param, s.is_complex)
                         else next(self._cm)
                     )
-                    lkw = dict(array=param, cmap=colormap)
-                    kw = merge({}, lkw, s.rendering_kw)
-                    segments = self.get_segments(x, y)
-                    c = self.LineCollection(segments, **kw)
-                    self.ax.add_collection(c)
+                    if not s.is_point:
+                        lkw = dict(array=param, cmap=colormap)
+                        kw = merge({}, lkw, s.rendering_kw)
+                        segments = self.get_segments(x, y)
+                        c = self.LineCollection(segments, **kw)
+                        self.ax.add_collection(c)
+                    else:
+                        lkw = dict(c=param, cmap=colormap)
+                        kw = merge({}, lkw, s.rendering_kw)
+                        c = self.ax.scatter(x, y, **kw)
+
                     is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
                     self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 else:
@@ -886,10 +892,18 @@ class MatplotlibBackend(Plot):
                 if s.is_2Dline:
                     if s.is_parametric and s.use_cm:
                         x, y, param = self.series[i].get_data()
-                        segments = self.get_segments(x, y)
-                        self._handles[i][0].set_segments(segments)
-                        self._handles[i][0].set_array(param)
                         kw, is_cb_added, cax = self._handles[i][1:]
+
+                        if not s.is_point:
+                            segments = self.get_segments(x, y)
+                            self._handles[i][0].set_segments(segments)
+                            self._handles[i][0].set_array(param)
+                        else:
+                            self._handles[i][0].set_offsets(np.c_[x,y])
+                            self._handles[i][0].set_array(param)
+                            self._handles[i][0].set_clim(
+                                vmin=min(param), vmax=max(param))
+
                         if is_cb_added:
                             norm = self.Normalize(vmin=np.amin(param), vmax=np.amax(param))
                             self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), norm=norm)
