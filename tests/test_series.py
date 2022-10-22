@@ -240,6 +240,7 @@ def test_list2dseries():
 
     # same number of elements: everything is fine
     s = List2DSeries(xx, yy1)
+    assert not s.is_parametric
     # different number of elements: error
     raises(ValueError, lambda: List2DSeries(xx, yy2))
 
@@ -2564,6 +2565,7 @@ def test_color_func():
 
     s = List2DSeries(xx, yy1, color_func=lambda x, y: 2 * x, use_cm=False)
     assert len(s.get_data()) == 2
+    assert not s.is_parametric
 
     s = ComplexPointSeries([1 + 2 * I, 3 + 4 * I],
         color_func=lambda x, y: x * y, use_cm=True)
@@ -2576,6 +2578,7 @@ def test_color_func():
     s = ComplexPointSeries([1 + 2 * I, 3 + 4 * I],
         color_func=lambda x, y: x * y, use_cm=False)
     assert len(s.get_data()) == 2
+    assert not s.is_parametric
 
     s = LineOver1DRangeSeries(sin(x), (x, -5, 5), adaptive=False, n=10,
         color_func=lambda x: x)
@@ -2651,20 +2654,30 @@ def test_color_func():
 
     # Interactive Series
     s = List2DSeries([0, 1, 2, x], [x, 2, 3, 4],
-        color_func=lambda x, y: 2 * x, params={x: 1})
+        color_func=lambda x, y: 2 * x, params={x: 1}, use_cm=True)
     xx, yy, col = s.get_data()
     assert np.allclose(xx, [0, 1, 2, 1])
     assert np.allclose(yy, [1, 2, 3, 4])
     assert np.allclose(2 * xx, col)
     assert s.is_parametric and s.use_cm
 
+    s = List2DSeries([0, 1, 2, x], [x, 2, 3, 4],
+        color_func=lambda x, y: 2 * x, params={x: 1}, use_cm=False)
+    assert len(s.get_data()) == 2
+    assert not s.is_parametric
+
     s = ComplexPointInteractiveSeries([1 + x * I, 1 + x + 4 * I],
-        color_func=lambda x, y: x * y, params={x: 2})
+        color_func=lambda x, y: x * y, params={x: 2}, use_cm=True)
     xx, yy, col = s.get_data()
     assert s.is_parametric and s.use_cm
     assert np.allclose(xx, [1, 3])
     assert np.allclose(yy, [2, 4])
     assert np.allclose(col, [2, 12])
+
+    s = ComplexPointInteractiveSeries([1 + x * I, 1 + x + 4 * I],
+        color_func=lambda x, y: x * y, params={x: 2}, use_cm=False)
+    assert len(s.get_data()) == 2
+    assert not s.is_parametric
 
     s = LineInteractiveSeries([sin(y * x)], [(x, -5, 5)], n1=10,
         color_func=lambda x: x, params={y: 1})

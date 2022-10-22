@@ -724,7 +724,7 @@ class List2DSeries(Line2DBaseSeries, ParamsMixin):
     _allowed_keys = ["adaptive", "adaptive_goal", "color_func", "is_filled",
     "is_point", "is_polar", "line_color", "loss_fn", "modules", "n",
     "only_integers", "rendering_kw", "steps", "use_cm", "xscale",
-    "tx", "ty", "tz"]
+    "tx", "ty", "tz", "use_cm"]
 
     def __init__(self, list_x, list_y, label="", **kwargs):
         super().__init__(**kwargs)
@@ -756,7 +756,7 @@ class List2DSeries(Line2DBaseSeries, ParamsMixin):
         self.is_polar = kwargs.get("is_polar", False)
         self.label = label
         self.rendering_kw = kwargs.get("rendering_kw", dict())
-        if self.color_func:
+        if self.use_cm and self.color_func:
             self.is_parametric = True
 
     def get_expr(self):
@@ -2223,7 +2223,7 @@ class ComplexPointSeries(Line2DBaseSeries):
     list of points."""
 
     _allowed_keys = ["color_func", "is_filled", "is_point", "line_color",
-    "rendering_kw", "steps", "tx", "ty", "tz"]
+    "rendering_kw", "steps", "tx", "ty", "tz", "use_cm"]
 
     def __init__(self, expr, label="", **kwargs):
         self._init_attributes(expr, label, **kwargs)
@@ -2245,7 +2245,7 @@ class ComplexPointSeries(Line2DBaseSeries):
         self.rendering_kw = kwargs.get("rendering_kw", dict())
         self.use_cm = kwargs.get("use_cm", True)
         self.color_func = kwargs.get("color_func", None)
-        if self.color_func:
+        if self.use_cm and self.color_func:
             self.is_parametric = True
         self.line_color = kwargs.get("line_color", None)
         self._init_transforms(**kwargs)
