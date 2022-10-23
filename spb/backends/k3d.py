@@ -30,7 +30,7 @@ class K3DBackend(Plot):
 
           - ``scale``: a float number acting as a scale multiplier.
           - ``pivot``: indicates the part of the arrow that is anchored to the
-            X, Y, Z grid. It can be ``"tail", "mid", "middle", "head"``.
+            X, Y, Z grid. It can be ``"tail", "mid", "middle", "tip"``.
           - ``color``: set a solid color by specifying an integer color. If this
             key is not provided, a default color or colormap is used, depenging
             on the value of ``use_cm``.
