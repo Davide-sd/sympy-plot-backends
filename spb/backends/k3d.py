@@ -412,6 +412,9 @@ class K3DBackend(Plot):
             self._fig += self.k3d.text2d(
                 self.title, position=[0.025, 0.015], color=0, size=1, label_box=False
             )
+
+        self._new_camera_position()
+        self._add_clipping_planes()
         self._fig.auto_rendering = True
 
     def _build_k3d_vector_data(self, xx, yy, zz, uu, vv, ww, qkw, colormap, normalize):
@@ -472,6 +475,7 @@ class K3DBackend(Plot):
 
     def _update_interactive(self, params):
         np = import_module('numpy')
+        self._bounds = []
 
         # K3D title is an object in the figure
         n = len(self._fig.objects)
@@ -510,6 +514,7 @@ class K3DBackend(Plot):
                     if s.use_cm:
                         self._fig.objects[i].attribute = attribute
                         self._fig.objects[i].color_range = [attribute.min(), attribute.max()]
+                    self._high_aspect_ratio(x, y, z)
 
                 elif s.is_vector and s.is_3D:
                     if s.is_streamlines:
@@ -535,17 +540,14 @@ class K3DBackend(Plot):
                         colors = colors.reshape((-1, 3))
                         colors = [self._rgb_to_int(c) for c in colors]
                         self._fig.objects[i].colors = colors
+                    self._high_aspect_ratio(x, y, z)
 
+        self._new_camera_position()
+        self._add_clipping_planes()
         # self._fig.auto_rendering = True
 
-    def show(self):
-        """Visualize the plot on the screen."""
+    def _new_camera_position(self):
         np = import_module('numpy')
-
-        if len(self._fig.objects) != len(self.series):
-            self._process_series(self._series)
-        self.plot_shown = True
-
         if len(self._bounds) > 0:
             # when there are very high aspect ratio meshes, or when zlim has
             # been set, we compute a new camera position to improve user
@@ -557,24 +559,32 @@ class K3DBackend(Plot):
             ).flatten()
             self._fig.camera = self._fig.get_auto_camera(1.5, 40, 60, bounds)
 
+    def show(self):
+        """Visualize the plot on the screen."""
+        if len(self._fig.objects) != len(self.series):
+            self._process_series(self._series)
+        self.plot_shown = True
         self._fig.display()
-        clipping_planes = []
-        if self.zlim:
-            clipping_planes += [
-                [0, 0, 1, -self.zlim[0]],
-                [0, 0, -1, self.zlim[1]],
-            ]
-        if self.xlim:
-            clipping_planes += [
-                [1, 0, 0, -self.xlim[0]],
-                [-1, 0, 0, self.xlim[1]],
-            ]
-        if self.ylim:
-            clipping_planes += [
-                [0, 1, 0, -self.ylim[0]],
-                [0, -1, 0, self.ylim[1]],
-            ]
-        self._fig.clipping_planes = clipping_planes
+
+    def _add_clipping_planes(self):
+        if len(self._fig.clipping_planes) == 0:
+            clipping_planes = []
+            if self.zlim:
+                clipping_planes += [
+                    [0, 0, 1, -self.zlim[0]],
+                    [0, 0, -1, self.zlim[1]],
+                ]
+            if self.xlim:
+                clipping_planes += [
+                    [1, 0, 0, -self.xlim[0]],
+                    [-1, 0, 0, self.xlim[1]],
+                ]
+            if self.ylim:
+                clipping_planes += [
+                    [0, 1, 0, -self.ylim[0]],
+                    [0, -1, 0, self.ylim[1]],
+                ]
+            self._fig.clipping_planes = clipping_planes
 
     def save(self, path, **kwargs):
         """Export the plot to a static picture or to an interactive html file.
