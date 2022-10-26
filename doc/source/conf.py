@@ -17,6 +17,7 @@ import inspect
 import os
 import sys
 import sphinx_rtd_theme
+import ast
 
 sys.path.insert(0, os.path.abspath('../../'))
 
@@ -60,6 +61,8 @@ extensions = [
     'matplotlib.sphinxext.plot_directive',
     'jupyter_sphinx',   # used to run interactive.py docstring examples
     'sphinx_rtd_theme',
+    'sphinx_plotly_directive',
+    # 'sphinx_gallery.gen_gallery',
     # 'sphinx_rtd_dark_mode',
 ]
 
@@ -220,3 +223,88 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 
 def linkcode_resolve(domain, info):
     return None
+
+
+# -- Options for sphinx_plotly_directive --------------------------------------
+
+plotly_include_source = True
+plotly_include_directive_source = False
+plotly_iframe_height = "375px"
+plotly_formats = ["png", "html", "pdf"]
+
+def _modify_plot_expr(expr):
+    expr = expr.value
+    if not isinstance(expr.func, ast.Name):
+        # for example: (p1 + p2).show()
+        return
+
+    func_name = expr.func.id
+    # look for function calls starting with "plot"
+    if (len(func_name) >= 4) and (func_name[:4] == "plot"):
+        found_show = False
+        # loop over kwargs, if "show" is already present, set its
+        # value to False
+        for kw in expr.keywords:
+            if (kw.arg == "show") and (kw.value.value is True):
+                found_show = True
+                kw.value.value = False
+                break
+        # if "show" is not present, then add it
+        if not found_show:
+            expr.keywords.append(ast.keyword(arg='show', value=ast.Constant(value=False)))
+
+def _modify_code(code):
+    """In the docstrings, the last command of each example is either:
+    1. plot_something(...) # plot command can span multiple rows
+    2. (p1 + p2 + ...).show()
+
+    Either way, the ``.. plotly`` directive is unable to extract the Plotly
+    figure from the `Plot` object. This function parses the `code` and apply
+    a few modifications. In particular:
+
+    1. plot_something(...) will be transformed to:
+       myplot = plot_something(..., show=False)
+       myplot.fig
+    2. (p1 + p2 + ...).show() will be transformed to:
+       myplot = p1 + p2 + ...
+       myplot.fig
+
+    So, the last command will actually be the Plotly figure. Therefore, the
+    sphix_plotly_directive extension will work as expected.
+
+    Parameters
+    ==========
+    code : str
+        The current code block being processed.
+
+    Returns
+    =======
+    modified_code : str
+    """
+    tree = ast.parse(code)
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
+            # example: p1 = plot(...)
+            _modify_plot_expr(node)
+        elif isinstance(node, ast.Expr):
+            # example: plot(...)
+            _modify_plot_expr(node)
+
+    # last node
+    ln = tree.body[-1]
+    if isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call):
+        if isinstance(ln.value.func, ast.Attribute) and (ln.value.func.attr == "show"):
+            tree.body[-1] = ast.Assign(targets=[ast.Name(id="myplot")],
+                value=ln.value.func.value, lineno=ln.lineno)
+        else:
+            # if the last command is a plot function call (for example,
+            # plot(...), modify it to be an assignment: myplot = plot(...)
+            tree.body[-1] = ast.Assign(targets=[ast.Name(id="myplot")],
+                value=ln.value, lineno=ln.lineno)
+
+    # finally, append myplot.fig to the ast
+    tree.body.append(ast.Expr(value=ast.Attribute(
+        value=ast.Name(id="myplot"), attr="fig")))
+    return ast.unparse(tree)
+
+plotly_intercept_code = _modify_code

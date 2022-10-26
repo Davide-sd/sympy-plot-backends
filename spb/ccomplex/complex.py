@@ -944,17 +944,18 @@ def plot_complex(*args, **kwargs):
            coloring="b", n=250, grid=False, params={u: (1, 0, 2)})
 
     3D plot of the absolute value of a complex function colored by its
-    argument:
+    argument, using Plotly:
 
-    .. plot::
-       :context: close-figs
+    .. plotly::
+       :context: reset
        :format: doctest
        :include-source: True
 
-       >>> plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
-       ...     zlim=(-1, 6), use_cm=True)
-       Plot object containing:
-       [0]: complex 3D domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
+       from sympy import symbols, gamma
+       from spb import plot_complex
+       z = symbols('z')
+       plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
+           backend=PB, zlim=(-1, 6), use_cm=True)
 
 
     References

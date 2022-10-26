@@ -488,9 +488,7 @@ def plot(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot(x**2, (x, -5, 5))
-       Plot object containing:
-       [0]: cartesian line: x**2 for x over (-5.0, 5.0)
+       plot(x**2, (x, -5, 5))
 
     Multiple functions over the same range with custom rendering options:
 
@@ -1382,19 +1380,19 @@ def plot3d_parametric_line(*args, **kwargs):
        [1]: 3D parametric cartesian line: (r**(1/3)*cos(r), r**(1/3)*sin(r), 0) for r over (0.0, 18.84955592153876)
        [2]: 3D parametric cartesian line: (-sin(s)/3, 0, s) for s over (0.0, 3.141592653589793)
 
-    Plotting a numerical function instead of a symbolic expression:
+    Plotting a numerical function instead of a symbolic expression, using
+    Plotly:
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. plotly::
 
-       >>> import numpy as np
-       >>> fx = lambda t: (1 + 0.25 * np.cos(75 * t)) * np.cos(t)
-       >>> fy = lambda t: (1 + 0.25 * np.cos(75 * t)) * np.sin(t)
-       >>> fz = lambda t: t + 2 * np.sin(75 * t)
-       >>> plot3d_parametric_line(fx, fy, fz, ("t", 0, 6 * pi),
-       ...     title="Helical Toroid")
+       from spb import plot3d_parametric_line, PB
+       import numpy as np
+       fx = lambda t: (1 + 0.25 * np.cos(75 * t)) * np.cos(t)
+       fy = lambda t: (1 + 0.25 * np.cos(75 * t)) * np.sin(t)
+       fz = lambda t: t + 2 * np.sin(75 * t)
+       plot3d_parametric_line(fx, fy, fz, ("t", 0, 6 * np.pi),
+           {"line": {"colorscale": "bluered"}},
+           title="Helical Toroid", backend=PB, adaptive=False, n=1e04)
 
     Interactive-widget plot of the parametric line over a tennis ball.
     Refer to ``iplot`` documentation to learn more about the ``params``
@@ -1552,8 +1550,6 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
             expr = s.get_expr()
             (x, sx, ex), (y, sy, ey) = s._get_ranges()
 
-            print("expr", expr)
-            print("ranges", (x, sx, ex), (y, sy, ey))
             kw = wf_kwargs.copy()
             if s.is_interactive:
                 kw["params"] = s.params.copy()
@@ -1833,7 +1829,7 @@ def plot3d(*args, **kwargs):
        >>> from spb import plot3d
        >>> x, y = symbols('x y')
 
-    Single plot:
+    Single plot with Matplotlib:
 
     .. plot::
        :context: close-figs
@@ -1845,27 +1841,27 @@ def plot3d(*args, **kwargs):
        [0]: cartesian surface: cos(x**2 + y**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
 
 
-    Single plot with:
+    Single plot with Plotly, illustrating how to apply:
 
-    * user-provided colormap mapping colors to the z coordinate.
+    * a color map: by default, it will map colors to the z values.
     * wireframe lines to better understand the discretization and curvature.
     * transformation to the discretized ranges in order to convert radians to
       degrees.
+    * custom aspect ratio with Plotly.
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. plotly::
+       :context: reset
 
-       >>> import numpy as np
-       >>> expr = (cos(x) + sin(x) * sin(y) - sin(x) * cos(y))**2
-       >>> plot3d(
-       ...     expr, (x, 0, pi), (y, 0, 2 * pi),
-       ...     {"cmap": "plasma", "alpha": 0.9}, use_cm=True,
-       ...     tx=np.rad2deg, ty=np.rad2deg,
-       ...     wireframe=True, wf_n1=20, wf_n2=20,
-       ...     wf_rendering_kw={"lw": 0.75},
-       ...     xlabel="x [deg]", ylabel="y [deg]")
+       from sympy import symbols, sin, cos, pi
+       from spb import plot3d, PB
+       import numpy as np
+       x, y = symbols("x, y")
+       expr = (cos(x) + sin(x) * sin(y) - sin(x) * cos(y))**2
+       plot3d(
+           expr, (x, 0, pi), (y, 0, 2 * pi), backend=PB, use_cm=True,
+           tx=np.rad2deg, ty=np.rad2deg, wireframe=True, wf_n1=20, wf_n2=20,
+           xlabel="x [deg]", ylabel="y [deg]",
+           aspect=dict(x=1.5, y=1.5, z=0.5))
 
     Multiple plots with same range. Set ``use_cm=True`` to distinguish the
     expressions:
@@ -2130,7 +2126,7 @@ def plot3d_parametric_surface(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos, sin, pi, I, sqrt, atan2, re
+       >>> from sympy import symbols, cos, sin, pi, I, sqrt, atan2, re, im
        >>> from spb import plot3d_parametric_surface
        >>> u, v = symbols('u v')
 
@@ -2168,24 +2164,24 @@ def plot3d_parametric_surface(*args, **kwargs):
        ...     wireframe=True, wf_n1=20, wf_rendering_kw={"lw": 0.75})
 
     Plot multiple parametric Riemann surfaces of the real part of the
-    multiple-valued function `z**n`:
+    multiple-valued function `z**n` using Plotly:
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. plotly::
+       :context: reset
 
-       >>> r, theta, x, y = symbols("r, theta, x, y", real=True)
-       >>> mag = lambda z: sqrt(re(z)**2 + im(z)**2)
-       >>> phase = lambda z, k=0: atan2(im(z), re(z)) + 2 * k * pi
-       >>> n = 2 # exponent (integer)
-       >>> z = x + I * y # cartesian
-       >>> d = {x: r * cos(theta), y: r * sin(theta)} # cartesian to polar
-       >>> branches = [(mag(z)**(1 / n) * cos(phase(z, i) / n)).subs(d)
-       ...     for i in range(n)]
-       >>> exprs = [(r * cos(theta), r * sin(theta), rb) for rb in branches]
-       >>> plot3d_parametric_surface(*exprs, (r, 0, 3), (theta, -pi, pi),
-       ...     backend=PB, wireframe=True, wf_n2=20, zlabel="f(z)")
+       from sympy import symbols, sqrt, re, im, pi, atan2, sin, cos, I
+       from spb import plot3d_parametric_surface, PB
+       r, theta, x, y = symbols("r, theta, x, y", real=True)
+       mag = lambda z: sqrt(re(z)**2 + im(z)**2)
+       phase = lambda z, k=0: atan2(im(z), re(z)) + 2 * k * pi
+       n = 2 # exponent (integer)
+       z = x + I * y # cartesian
+       d = {x: r * cos(theta), y: r * sin(theta)} # cartesian to polar
+       branches = [(mag(z)**(1 / n) * cos(phase(z, i) / n)).subs(d)
+           for i in range(n)]
+       exprs = [(r * cos(theta), r * sin(theta), rb) for rb in branches]
+       plot3d_parametric_surface(*exprs, (r, 0, 3), (theta, -pi, pi),
+           backend=PB, wireframe=True, wf_n2=20, zlabel="f(z)")
 
     Plotting a numerical function instead of a symbolic expression. Note the
     use of `zlim` to force a near-equal aspect ratio with Matplotlib 3D plots.
@@ -2363,33 +2359,33 @@ def plot3d_spherical(*args, **kwargs):
        [0]: parametric cartesian surface: (sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta)) for theta over (0.0, 2.199114857512855) and phi over (0.0, 5.654866776461628)
 
     Plot real spherical harmonics, highlighting the regions in which the
-    real part is positive and negative:
+    real part is positive and negative, using Plotly:
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. plotly::
+       :context: reset
 
-       >>> r = re(Ynm(3, 3, theta, phi).expand(func=True).rewrite(sin).expand())
-       >>> plot3d_spherical(
-       ...     abs(r), (theta, 0, pi), (phi, 0, 2 * pi), "radius",
-       ...     use_cm=True, n2=200, zlim=(-0.3, 0.3),
-       ...     color_func=lambdify([theta, phi], r))
-       Plot object containing:
-       [0]: parametric cartesian surface: (sin(theta)*cos(phi)*Abs(sqrt(35)*re(sin(theta)**3*cos(3*phi))/(8*sqrt(pi)) - sqrt(35)*im(sin(3*phi)*sin(theta)**3)/(8*sqrt(pi))), sin(phi)*sin(theta)*Abs(sqrt(35)*re(sin(theta)**3*cos(3*phi))/(8*sqrt(pi)) - sqrt(35)*im(sin(3*phi)*sin(theta)**3)/(8*sqrt(pi))), cos(theta)*Abs(sqrt(35)*re(sin(theta)**3*cos(3*phi))/(8*sqrt(pi)) - sqrt(35)*im(sin(3*phi)*sin(theta)**3)/(8*sqrt(pi)))) for theta over (0.0, 3.141592653589793) and phi over (0.0, 6.283185307179586)
+       from sympy import symbols, sin, pi, Ynm, re, lambdify
+       from spb import plot3d_spherical, PB
+       theta, phi = symbols('theta phi')
+       r = re(Ynm(3, 3, theta, phi).expand(func=True).rewrite(sin).expand())
+       plot3d_spherical(
+           abs(r), (theta, 0, pi), (phi, 0, 2 * pi), "radius",
+           use_cm=True, n2=200, backend=PB,
+           color_func=lambdify([theta, phi], r))
 
-    Multiple surfaces with wireframe lines. Note that activating the wireframe
-    option might add a considerable overhead during the plot's creation.
+    Multiple surfaces with wireframe lines, using Plotly. Note that activating
+    the wireframe option might add a considerable overhead during the plot's
+    creation.
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. plotly::
 
-       >>> r1 = 1
-       >>> r2 = 1.5 + sin(5 * phi) * sin(10 * theta) / 10
-       >>> plot3d_spherical(r1, r2, (theta, 0, pi / 2), (phi, 0, 1.85 * pi),
-       ...     wireframe=True, wf_n2=25)
+       from sympy import symbols, sin, pi
+       from spb import plot3d_spherical, PB
+       theta, phi = symbols('theta phi')
+       r1 = 1
+       r2 = 1.5 + sin(5 * phi) * sin(10 * theta) / 10
+       plot3d_spherical(r1, r2, (theta, 0, pi / 2), (phi, 0.35 * pi, 2 * pi),
+           wireframe=True, wf_n2=25, backend=PB)
 
     Interactive-widget plot of spherical harmonics. Note that the plot's
     creation and update might be slow and that it must be ``m < n`` at all
@@ -2456,6 +2452,7 @@ def plot3d_implicit(*args, **kwargs):
     3. To plot ``f(x, y, z) = c`` either write ``expr = f(x, y, z) - c`` or
        pass the appropriate keyword to ``rendering_kw``. Read the backends
        documentation to find out the available options.
+    4. Only ``PlotlyBackend`` and ``K3DBackend`` support 3D implicit plotting.
 
 
     Parameters
@@ -2485,7 +2482,6 @@ def plot3d_implicit(*args, **kwargs):
 
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
-        Only PlotlyBackend and K3DBackend support 3D implicit plotting.
 
     n1, n2, n3 : int, optional
         Set the number of discretization points along the x, y and z ranges,
@@ -2547,7 +2543,8 @@ def plot3d_implicit(*args, **kwargs):
     Examples
     ========
 
-    .. jupyter-execute::
+    .. plotly::
+       :context: reset
 
        from sympy import symbols
        from spb import plot3d_implicit, PB, KB
@@ -2555,16 +2552,18 @@ def plot3d_implicit(*args, **kwargs):
        plot3d_implicit(
            x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2), backend=PB)
 
-    .. jupyter-execute::
+    .. plotly::
+       :context: close-figs
 
-       p = plot3d_implicit(
+       plot3d_implicit(
            x**4 + y**4 + z**4 - (x**2 + y**2 + z**2 - 0.3),
            (x, -2, 2), (y, -2, 2), (z, -2, 2), backend=PB)
 
     Visualize the isocontours from `isomin=0` to `isomax=2` by providing a
     ``rendering_kw`` dictionary:
 
-    .. jupyter-execute::
+    .. plotly::
+       :context: close-figs
 
        plot3d_implicit(
            1/x**2 - 1/y**2 + 1/z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
@@ -2577,7 +2576,8 @@ def plot3d_implicit(*args, **kwargs):
 
     Plotting a numerical function instead of a symbolic expression:
 
-    .. jupyter-execute::
+    .. plotly::
+       :context: close-figs
 
        import numpy as np
        plot3d_implicit(lambda x, y, z: x**2 + y**2 - z**2,
@@ -2810,22 +2810,25 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis
        ...     wireframe=True, wf_n1=15, wf_n2=15,
        ...     wf_rendering_kw={"lw": 0.5, "alpha": 0.75})
 
-    Revolve a function around an axis parallel to the x axis:
+    Revolve the same function around an axis parallel to the x axis, using
+    Plotly:
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. plotly::
+       :context: reset
 
-       >>> plot3d_revolution(
-       ...     cos(t), (t, 0, pi), parallel_axis="x", axis=(1, 0),
-       ...     use_cm=True, color_func=lambda t, phi: phi,
-       ...     rendering_kw={"alpha": 0.6, "cmap": "twilight"},
-       ...     label=r"$\phi$ [rad]",
-       ...     show_curve=True,
-       ...     curve_kw=dict(rendering_kw={"color": "r", "label": "cos(t)"}),
-       ...     wireframe=True, wf_n1=15, wf_n2=15,
-       ...     wf_rendering_kw={"lw": 0.5, "alpha": 0.75})
+       from sympy import symbols, cos, sin, pi
+       from spb import plot3d_revolution, PB
+       t, phi = symbols('t phi')
+       plot3d_revolution(
+           cos(t), (t, 0, pi), parallel_axis="x", axis=(1, 0),
+           backend=PB, use_cm=True, color_func=lambda t, phi: phi,
+           rendering_kw={"colorscale": "twilight"},
+           label="phi [rad]",
+           show_curve=True,
+           curve_kw=dict(rendering_kw={"line": {"color": "red", "width": 8},
+               "name": "cos(t)"}),
+           wireframe=True, wf_n1=15, wf_n2=15,
+           wf_rendering_kw={"line_width": 1})
 
     Revolve a 2D parametric circle around the z axis:
 
@@ -2843,18 +2846,16 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis
        ...     show_curve=True, zlim=(-2.5, 2.5))
 
     Revolve a 3D parametric curve around the z axis for a given azimuthal
-    angle:
+    angle, using Plotly:
 
-    .. plot::
+    .. plotly::
        :context: close-figs
-       :format: doctest
-       :include-source: True
 
-       >>> plot3d_revolution(
-       ...     (cos(t), sin(t), t), (t, 0, 2*pi), (phi, 0, pi),
-       ...     show_curve=True, rendering_kw={"alpha": 0.3},
-       ...     wireframe=True, wf_n1=2, wf_n2=5, wf_rendering_kw={"lw": 0.5},
-       ...     curve_kw={"rendering_kw": {"color": "r", "label": ""}})
+       plot3d_revolution(
+           (cos(t), sin(t), t), (t, 0, 2*pi), (phi, 0, pi),
+           use_cm=True, color_func=lambda t, phi: t, label="t [rad]",
+           show_curve=True, backend=PB, aspect="cube",
+           wireframe=True, wf_n1=2, wf_n2=5)
 
     Interactive-widget plot of a goblet. Refer to ``iplot`` documentation to
     learn more about the ``params`` dictionary.

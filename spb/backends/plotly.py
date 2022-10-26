@@ -42,7 +42,7 @@ class PlotlyBackend(Plot):
         * Refer to [#fn14]_ to customize implicit surface plots.
         * Refer to [#fn5]_ to customize 2D quiver plots. Default to:
           ``dict( scale = 0.075 )``.
-        * Refer to [#fn6]_ to customize 2D cone plots. Default to:
+        * Refer to [#fn6]_ to customize 3D cone plots. Default to:
           ``dict( sizemode = "absolute", sizeref = 40 )``.
         * Refer to [#fn8]_ to customize 2D streamlines plots. Defaul to:
           ``dict( arrow_scale = 0.15 )``.
