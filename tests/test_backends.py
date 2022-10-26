@@ -436,6 +436,18 @@ def test_plot_sum():
     p2 = plot(cos(x), backend=PB, rendering_kw=dict(line_dash="dash"), show=False)
     raises(AttributeError, lambda: (p1 + p2).process_series())
 
+    # verify that summing up bokeh plots doesn't raise errors
+    p1 = plot(sin(x), (x, -pi, pi), backend=BB, show=False, adaptive=False, n=5)
+    p2 = plot(cos(x), (x, -pi, pi), backend=BB, show=False, adaptive=False, n=5)
+    p3 = p1 + p2
+
+    # verify that summing up K3D plots doesn't raise errors
+    p1 = plot3d(sin(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), backend=KBchild1,
+        show=False, adaptive=False, n=5)
+    p2 = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), backend=KBchild1,
+        show=False, adaptive=False, n=5)
+    p3 = p1 + p2
+
 
 def test_plot():
     # verify that the backends produce the expected results when `plot()`
@@ -3600,3 +3612,391 @@ def test_plotly_3d_many_line_series():
         wireframe=True, wf_n1=15, wf_n2=15,
         show_curve=True, curve_kw={"use_cm": True})
     f = p.fig
+
+
+def test_k3d_high_aspect_ratio_meshes():
+    # K3D is not great at dealing with high aspect ratio meshes. So, users
+    # should set zlim and the backend should add clipping planes and modify
+    # the camera position.
+
+    z = symbols("z")
+    p1 = plot_complex(1 / sin(pi + z**3), (z, -2-2j, 2+2j),
+        grid=False, threed=True, use_cm=True, backend=KBchild1, coloring="a",
+        n=5, show=False)
+    p1.process_series()
+    p2 = plot_complex(1 / sin(pi + z**3), (z, -2-2j, 2+2j),
+        grid=False, threed=True, use_cm=True, backend=KBchild1, coloring="a",
+        n=5, zlim=(0, 6), show=False)
+    p2.process_series()
+
+    assert p1._bounds != p2._bounds
+    assert p1.fig.camera != p2.fig.camera
+    assert len(p1.fig.clipping_planes) == 0
+    assert p1.fig.clipping_planes != p2.fig.clipping_planes
+
+
+def test_k3d_update_interactive():
+    # quick round down of test to verify that _update_interactive doesn't
+    # raise errors
+
+    u, v, x, y, z = symbols("u, v, x:z")
+
+    # points
+    p = plot3d_parametric_line(
+        cos(u * x), sin(x), x, (x, -pi, pi), backend=KBchild1, is_point=True,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    # line
+    p = plot3d_parametric_line(
+        cos(u * x), sin(x), x, (x, -pi, pi), backend=KBchild1, is_point=False,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot3d(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=KBchild1,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    u, v = symbols("u, v")
+    fx = (1 + v / 2 * cos(u / 2)) * cos(x * u)
+    fy = (1 + v / 2 * cos(u / 2)) * sin(x * u)
+    fz = v / 2 * sin(u / 2)
+    p = plot3d_parametric_surface(fx, fy, fz, (u, 0, 2*pi), (v, -1, 1),
+        backend=KBchild1, use_cm=True, n1=5, n2=5, show=False,
+        params={x: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({x: 2})
+
+    p = plot_vector(Matrix([u * z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
+        backend=KBchild1, n=4, show=False, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
+        backend=KBchild1, threed=True, use_cm=True, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+
+def test_plotly_update_interactive():
+    # quick round down of test to verify that _update_interactive doesn't
+    # raise errors
+
+    u, v, x, y, z = symbols("u, v, x:z")
+
+    p = plot(sin(u * x), (x, -pi, pi), adaptive=False, n=5,
+        backend=PB, show=False, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_polar(1 + sin(10 * u * x) / 10, (x, 0, 2 * pi),
+        adaptive=False, n=5, backend=PB, show=False, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
+        n=5, backend=PB, show=False, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    # points
+    p = plot3d_parametric_line(
+        cos(u * x), sin(x), x, (x, -pi, pi), backend=PB, is_point=True,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    # line
+    p = plot3d_parametric_line(
+        cos(u * x), sin(x), x, (x, -pi, pi), backend=PB, is_point=False,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=False)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot3d_parametric_line(
+        cos(u * x), sin(x), x, (x, -pi, pi), backend=PB, is_point=False,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=True)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot3d(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=PB,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=PB,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    u, v = symbols("u, v")
+    fx = (1 + v / 2 * cos(u / 2)) * cos(x * u)
+    fy = (1 + v / 2 * cos(u / 2)) * sin(x * u)
+    fz = v / 2 * sin(u / 2)
+    p = plot3d_parametric_surface(fx, fy, fz, (u, 0, 2*pi), (v, -1, 1),
+        backend=PB, use_cm=True, n1=5, n2=5, show=False,
+        params={x: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({x: 2})
+
+    p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
+        backend=PB, n=4, show=False, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_vector(Matrix([u * z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
+        backend=PB, n=4, show=False, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
+        backend=PB, threed=True, use_cm=True, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    from sympy.geometry import Line as SymPyLine
+    p = plot_geometry(
+        SymPyLine((u, 2), (5, 4)), Circle((0, 0), u), Polygon((2, u), 3, n=6),
+        backend=PB, show=False, is_filled=False, use_latex=False,
+        params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_geometry(
+        SymPyLine((u, 2), (5, 4)), Circle((0, 0), u), Polygon((2, u), 3, n=6),
+        backend=PB, show=False, is_filled=True, use_latex=False,
+        params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+
+def test_matpotlib_update_interactive():
+    # quick round down of test to verify that _update_interactive doesn't
+    # raise errors
+
+    u, v, x, y, z = symbols("u, v, x:z")
+
+    p = plot(sin(u * x), (x, -pi, pi), adaptive=False, n=5,
+        backend=MB, show=False, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
+        n=5, backend=MB, show=False, params={u: (1, 0, 2)},
+        use_cm=True, is_point=False)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
+        n=5, backend=MB, show=False, params={u: (1, 0, 2)},
+        use_cm=True, is_point=True)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
+        n=5, backend=MB, show=False, params={u: (1, 0, 2)}, use_cm=False)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_implicit(x**2 + y**2 - 4, (x, -5, 5), (y, -5, 5), adaptive=False,
+        n=5, show=False, backend=MB)
+
+    # points
+    p = plot3d_parametric_line(
+        cos(u * x), sin(x), x, (x, -pi, pi), backend=MB, is_point=True,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    # line with colormap
+    p = plot3d_parametric_line(
+        cos(u * x), sin(x), x, (x, -pi, pi), backend=MB, is_point=False,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=True)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    # line with solid color
+    p = plot3d_parametric_line(
+        cos(u * x), sin(x), x, (x, -pi, pi), backend=MB, is_point=False,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=False)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot3d_parametric_line(
+        cos(u * x), sin(x), x, (x, -pi, pi), backend=MB, is_point=False,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=True)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot3d(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=MB,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=MB,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, is_filled=False)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=MB,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, is_filled=True)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    u, v = symbols("u, v")
+    fx = (1 + v / 2 * cos(u / 2)) * cos(x * u)
+    fy = (1 + v / 2 * cos(u / 2)) * sin(x * u)
+    fz = v / 2 * sin(u / 2)
+    p = plot3d_parametric_surface(fx, fy, fz, (u, 0, 2*pi), (v, -1, 1),
+        backend=MB, use_cm=True, n1=5, n2=5, show=False,
+        params={x: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({x: 2})
+
+    p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
+        backend=MB, n=4, show=False, params={u: (1, 0, 2)}, scalar=True)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
+        backend=MB, n=4, show=False, params={u: (1, 0, 2)}, scalar=False)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_vector(Matrix([u * z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
+        backend=MB, n=4, show=False, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
+        backend=MB, threed=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
+        backend=MB, threed=True, use_cm=True, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    from sympy.geometry import Line as SymPyLine
+    p = plot_geometry(
+        SymPyLine((u, 2), (5, 4)), Circle((0, 0), u), Polygon((2, u), 3, n=6),
+        backend=MB, show=False, is_filled=False, use_latex=False,
+        params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_geometry(
+        SymPyLine((u, 2), (5, 4)), Circle((0, 0), u), Polygon((2, u), 3, n=6),
+        backend=MB, show=False, is_filled=True, use_latex=False,
+        params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+
+def test_bokeh_update_interactive():
+    # quick round down of test to verify that _update_interactive doesn't
+    # raise errors
+
+    u, v, x, y, z = symbols("u, v, x:z")
+
+    p = plot(sin(u * x), (x, -pi, pi), adaptive=False, n=5,
+        backend=BB, show=False, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
+        n=5, backend=BB, show=False, params={u: (1, 0, 2)},
+        use_cm=True, is_point=False)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
+        n=5, backend=BB, show=False, params={u: (1, 0, 2)},
+        use_cm=True, is_point=True)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
+        n=5, backend=BB, show=False, params={u: (1, 0, 2)}, use_cm=False)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=BB,
+        show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
+        backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=True)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
+        backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=False,
+        scalar=True)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
+        backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=False,
+        scalar=False)
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
+        backend=BB, threed=False, n=5, params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+    from sympy.geometry import Line as SymPyLine
+    p = plot_geometry(
+        Polygon((2, u), 3, n=6),
+        backend=BB, show=False, is_filled=True, use_latex=False,
+        params={u: (1, 0, 2)})
+    p.backend.process_series()
+    p.backend._update_interactive({u: 2})
+
+
+def test_generic_data_series():
+    # verify that backends do not raise errors when generic data series
+    # are used
+
+    x = symbols("x")
+    p = plot(x, backend=MB, show=False, adaptive=False, n=5,
+        markers=[{"args":[[0, 1], [0, 1]], "marker": "*", "linestyle": "none"}],
+        annotations=[{"text": "test", "xy": (0, 0)}],
+        fill=[{"x": [0, 1, 2, 3], "y1": [0, 1, 2, 3]}],
+        rectangles=[{"xy": (0, 0), "width": 5, "height": 1}])
+    p.process_series()
+
+    from bokeh.models import ColumnDataSource
+    source = ColumnDataSource(data=dict(x=[0], y=[0], text=["test"]))
+    p = plot(x, backend=BB, show=False, adaptive=False, n=5,
+        markers=[{"x": [0, 1], "y": [0, 1], "marker": "square"}],
+        annotations=[{"x": "x", "y": "y", "source": source}],
+        fill=[{"x": [0, 1, 2, 3], "y1": [0, 1, 2, 3], "y2": [0, 0, 0, 0]}],
+        rectangles=[{"x": 0, "y": -3, "width": 5, "height": 2}])
+    p.process_series()
+
+    p = plot(x, backend=PB, show=False, adaptive=False, n=5,
+        markers=[{"x": [0, 1], "y": [0, 1], "mode": "markers"}],
+        annotations=[{"x": [0, 1], "y": [0, 1], "text": ["a", "b"]}],
+        fill=[{"x": [0, 1, 2, 3], "y": [0, 1, 2, 3], "fill": "tozeroy"}],
+        rectangles=[{"type": "rect", "x0": 1, "y0": 1, "x1": 2, "y1": 3}])
+    p.process_series()
+
+
+def test_matplotlib_axis_center():
+    # verify that axis_center doesn't raise any errors
+    x = symbols("x")
+
+    _plot = lambda ac: plot(sin(x), adaptive=False, n=5, backend=MB,
+        show=False, axis_center=ac)
+
+    _plot("center").process_series()
+    _plot("auto").process_series()
+    _plot((0, 0)).process_series()
