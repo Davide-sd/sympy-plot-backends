@@ -13,6 +13,8 @@ v1.5.1
 
 * Fixed bug with ``MatplotlibBackend`` dealing with colormaps and normalization.
 
+* Improved ``zlim`` support on ``K3DBackend`` for interactive widget plots.
+
 * Moved ``LineOver1DRangeSeries._detect_poles`` to ``_detect_poles_helper``.
 
 * ``Parametric2DLineSeries`` now support ``detect_poles``.
@@ -20,7 +22,11 @@ v1.5.1
 * Implemented support for ``color_func`` keyword argument on ``plot_list``
   and ``plot_complex_list``.
 
-* Improved examples in the documentation.
+* Documentation:
+
+  * Improved examples.
+
+  * Added examples with ``PlotlyBackend``.
 
 
 v1.5.0

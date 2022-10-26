@@ -5,7 +5,8 @@ jupyter-sphinx
 nbsphinx
 nbsphinx_link
 sphinx-rtd-theme
-sphinx_plotly_directive
+# sphinx_plotly_directive
+git+github.com/Davide-sd/sphinx-plotly-directive@combine
 # # to be able to install mayavi we need:
 # vtk
 # to satidfy ipympl requirements we need
