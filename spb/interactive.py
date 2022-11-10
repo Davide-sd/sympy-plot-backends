@@ -352,7 +352,23 @@ class PanelLayout:
 
         merge = self._backend.merge
         kw = merge({}, default_kw, self._pane_kw)
-        self.pane = pn.pane.Pane(self.fig, **kw)
+        # NOTE: If the following import statement was located at the
+        # beginning of the file, there would be a circular import.
+        from spb import PB
+        if isinstance(self._backend, PB):
+            # NOTE: while pn.pane.Plotly can receive an instance of go.Figure,
+            # the update will be extremely slow, because after each trace
+            # is updated it will trigger an update event on the javascript
+            # side. Instead, by providing the following dictionary, first the
+            # traces are updated, then the pane creates the figure which will
+            # only be at last.
+            # TODO: can the backend be modified by adding data and layout
+            # attributes, avoiding the creation of the figure? The figure could
+            # be created inside the fig getter.
+            d = dict(data=list(self.fig.data), layout=self.fig.layout)
+            self.pane = pn.pane.Plotly(d, **kw)
+        else:
+            self.pane = pn.pane.Pane(self.fig, **kw)
 
     def layout_controls(self):
         return self.controls
@@ -360,13 +376,22 @@ class PanelLayout:
     def _action_post_update(self):
         # NOTE: If the following import statement was located at the
         # beginning of the file, there would be a circular import.
-        from spb import KB
+        from spb import KB, PB
 
         if not isinstance(self._backend, KB):
             # KB exhibits a strange behavior when executing the following
             # lines. For the moment, do not execute them with KB
             self.pane.param.trigger("object")
-            self.pane.object = self.fig
+            # self.pane.object = self.fig
+            if not isinstance(self._backend, PB):
+                self.pane.object = self.fig
+            else:
+                # NOTE: sadly, there is a bug with Panel and Plotly: if the
+                # user modifies the layout of the chart (for example zoom or
+                # rotate the view), the next update will reset them.
+                # https://github.com/holoviz/panel/issues/1801
+                d = dict(data=list(self.fig.data), layout=self.fig.layout)
+                self.pane.object = d
 
     def show(self):
         self._init_pane()

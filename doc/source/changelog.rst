@@ -19,6 +19,9 @@ v1.5.1
 
 * Improved ``zlim`` support on ``K3DBackend`` for interactive widget plots.
 
+* Fixed bug with parametric interactive widget plots and ``PlotlyBackend``: the
+  update speed is now decent.
+
 * Moved ``LineOver1DRangeSeries._detect_poles`` to ``_detect_poles_helper``.
 
 * ``Parametric2DLineSeries`` now support ``detect_poles``.
