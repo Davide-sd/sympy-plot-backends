@@ -1048,8 +1048,7 @@ class MatplotlibBackend(Plot):
                 elif s.is_complex:
                     if not s.is_3Dsurface:
                         x, y, _, _, img, colors = s.get_data()
-                        self._handles[i][0].remove()
-                        self._handles[i][0] = self.ax.imshow(img, **self._handles[i][1])
+                        self._handles[i][0].set_data(img)
                     else:
                         x, y, mag, arg, facecolors, colorscale = s.get_data()
                         self._handles[i][0].remove()

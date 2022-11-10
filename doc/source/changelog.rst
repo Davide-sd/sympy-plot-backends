@@ -11,7 +11,11 @@ v1.5.1
 
   * ``plot_parametric_region``, still in development.
 
-* Fixed bug with ``MatplotlibBackend`` dealing with colormaps and normalization.
+* ``MatplotlibBackend``:
+
+  * Fixed bug with dealing with colormaps and normalization.
+
+  * Improved update speed when dealing with parametric domain coloring plots.
 
 * Improved ``zlim`` support on ``K3DBackend`` for interactive widget plots.
 
