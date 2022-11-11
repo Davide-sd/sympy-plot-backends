@@ -22,7 +22,12 @@ v1.5.1
 * Fixed bug with parametric interactive widget plots and ``PlotlyBackend``: the
   update speed is now decent.
 
-* Moved ``LineOver1DRangeSeries._detect_poles`` to ``_detect_poles_helper``.
+* Series:
+
+  * Moved ``LineOver1DRangeSeries._detect_poles`` to ``_detect_poles_helper``.
+
+  * ``lambdify`` now uses ``cse=True`` in order to improve evaluation
+    performance.
 
 * ``Parametric2DLineSeries`` now support ``detect_poles``.
 

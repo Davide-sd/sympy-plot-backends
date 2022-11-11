@@ -147,7 +147,7 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     if not callable(expr):
         # expr is a single symbolic expressions or a tuple of symb expressions
         try:
-            f = lambdify(free_symbols, expr, modules=modules)
+            f = lambdify(free_symbols, expr, modules=modules, cse=True)
             learner = Learner(partial(wrapper_func, f, *args),
                 bounds=bounds, **d)
             simple(learner, goal)
@@ -159,7 +159,7 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
                 "Trying to evaluate the expression with Sympy, but it might "
                 "be a slow operation."
             )
-            f = lambdify(free_symbols, expr, modules="sympy")
+            f = lambdify(free_symbols, expr, modules="sympy", cse=True)
             learner = Learner(partial(wrapper_func, f, *args),
                 bounds=bounds, **d)
             simple(learner, goal)
@@ -221,8 +221,8 @@ def _uniform_eval(free_symbols, expr, *args, modules=None):
     if not callable(expr):
         # generate two lambda functions: the default one, and the backup in
         # case of failures with the default one.
-        f1 = lambdify(free_symbols, expr, modules=modules)
-        f2 = lambdify(free_symbols, expr, modules="sympy")
+        f1 = lambdify(free_symbols, expr, modules=modules, cse=True)
+        f2 = lambdify(free_symbols, expr, modules="sympy", cse=True)
         return _uniform_eval_helper(f1, f2, *args, modules=modules)
 
     # NOTE: expr is a callable. It is important that it'll be evaluated by
