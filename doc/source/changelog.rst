@@ -26,8 +26,10 @@ v1.5.1
 
   * Moved ``LineOver1DRangeSeries._detect_poles`` to ``_detect_poles_helper``.
 
-  * ``lambdify`` now uses ``cse=True`` in order to improve evaluation
-    performance.
+  * ``plot_complex`` and ``plot_real_imag``: the input expression is no longer
+    wrapped by symbolic ``re()`` or ``im()``. Instead, the necessary processing
+    is done on the series after the complex function has been evaluated. This
+    improves performance.
 
 * ``Parametric2DLineSeries`` now support ``detect_poles``.
 

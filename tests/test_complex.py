@@ -16,10 +16,11 @@ from spb import (
 )
 from sympy import (
     exp, symbols, I, pi, sin, cos, asin, sqrt, log,
-    re, im, arg, Float
+    re, im, arg, Float, Dummy
 )
 from sympy.external import import_module
 from pytest import raises
+import numpy as np
 
 # NOTE:
 #
@@ -107,13 +108,17 @@ def test_plot_real_imag_1d():
     ###########################################################################
 
     # plot the real and imaginary part
-    p = plot_real_imag(sqrt(x), backend=MB, show=False)
+    p = plot_real_imag(sqrt(x), backend=MB, show=False, adaptive=False, n=5)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 2
     assert isinstance(s[0], LineOver1DRangeSeries)
     assert (s[0].var, s[0].start, s[0].end) == (x, xmin, xmax)
     assert s[0].get_label(False) == "Re(sqrt(x))"
+    assert s[1].get_label(False) == "Im(sqrt(x))"
+    _, _re = s[0].get_data()
+    _, _im = s[1].get_data()
+    assert not np.allclose(_re, _im)
 
     p = plot_real_imag(sqrt(x)**y, params={y: (1, 0, 2)},
         backend=MB, show=False, n=5)
@@ -146,13 +151,14 @@ def test_plot_real_imag_1d():
     assert all(ss.rendering_kw == {"color": "k"} for ss in s)
 
     # real part of the function
-    p = plot_real_imag(sqrt(x), real=True, imag=False, backend=MB, show=False)
+    p = plot_real_imag(sqrt(x), real=True, imag=False, backend=MB, show=False,
+        adaptive=False, n=5)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 1
     assert isinstance(s[0], LineOver1DRangeSeries)
-    assert s[0].expr == re(sqrt(x))
     assert (s[0].var, s[0].start, s[0].end) == (x, xmin, xmax)
+    _, _re = s[0].get_data()
 
     p = plot_real_imag(sqrt(x)**y, real=True, imag=False,
         params={y: (1, 0, 2)}, backend=MB, show=False, n=5)
@@ -160,17 +166,17 @@ def test_plot_real_imag_1d():
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
     assert isinstance(s[0], LineInteractiveSeries)
-    assert s[0].expr == re(sqrt(x)**y)
+    _, _rep = s[0].get_data()
 
     # imaginary part of the function
     p = plot_real_imag(sqrt(x), real=False, imag=True,
-        backend=MB, show=False)
+        backend=MB, show=False, adaptive=False, n=5)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 1
     assert isinstance(s[0], LineOver1DRangeSeries)
-    assert s[0].expr == im(sqrt(x))
     assert (s[0].var, s[0].start, s[0].end) == (x, xmin, xmax)
+    _, _im = s[0].get_data()
 
     p = plot_real_imag(sqrt(x)**y, real=False, imag=True,
         params={y: (1, 0, 2)}, backend=MB, show=False, n=5)
@@ -178,17 +184,17 @@ def test_plot_real_imag_1d():
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
     assert isinstance(s[0], LineInteractiveSeries)
-    assert s[0].expr == im(sqrt(x)**y)
+    _, _imp = s[0].get_data()
 
     # absolute value of the function
     p = plot_real_imag(sqrt(x), real=False, imag=False, abs=True,
-        backend=MB, show=False)
+        backend=MB, show=False, adaptive=False, n=5)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 1
     assert isinstance(s[0], LineOver1DRangeSeries)
-    assert s[0].expr == sqrt(re(sqrt(x))**2 + im(sqrt(x))**2)
     assert (s[0].var, s[0].start, s[0].end) == (x, xmin, xmax)
+    _, _abs = s[0].get_data()
 
     p = plot_real_imag(sqrt(x)**y, real=False, imag=False,
         abs=True, params={y: (1, 0, 2)}, backend=MB, show=False, n=5)
@@ -196,17 +202,23 @@ def test_plot_real_imag_1d():
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
     assert isinstance(s[0], LineInteractiveSeries)
-    assert s[0].expr == sqrt(re(sqrt(x)**y)**2 + im(sqrt(x)**y)**2)
+    _, _absp = s[0].get_data()
 
     # argument of the function
     p = plot_real_imag(sqrt(x), real=False, imag=False,
-        abs=False, arg=True, backend=MB, show=False)
+        abs=False, arg=True, backend=MB, show=False, adaptive=False, n=5)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 1
     assert isinstance(s[0], LineOver1DRangeSeries)
-    assert s[0].expr == arg(sqrt(x))
     assert (s[0].var, s[0].start, s[0].end) == (x, xmin, xmax)
+    _, _arg = s[0].get_data()
+
+    xx = np.linspace(-10, 10, 5) + 0j
+    assert np.allclose(_re, np.real(np.sqrt(xx)))
+    assert np.allclose(_im, np.imag(np.sqrt(xx)))
+    assert np.allclose(_abs, np.absolute(np.sqrt(xx)))
+    assert np.allclose(_arg, np.angle(np.sqrt(xx)))
 
     p = plot_real_imag(sqrt(x)**y, real=False, imag=False,
         abs=False, arg=True, params={y: (1, 0, 2)}, backend=MB, show=False, n=5)
@@ -214,7 +226,12 @@ def test_plot_real_imag_1d():
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
     assert isinstance(s[0], LineInteractiveSeries)
-    assert s[0].expr == arg(sqrt(x)**y)
+    _, _argp = s[0].get_data()
+
+    assert np.allclose(_rep, np.real(np.sqrt(xx)))
+    assert np.allclose(_imp, np.imag(np.sqrt(xx)))
+    assert np.allclose(_absp, np.absolute(np.sqrt(xx)))
+    assert np.allclose(_argp, np.angle(np.sqrt(xx)))
 
     # multiple line series over a 1D real range
     p = plot_real_imag(sqrt(x), real=True, imag=True, abs=True, arg=True,
@@ -223,12 +240,6 @@ def test_plot_real_imag_1d():
     assert isinstance(p, MB)
     assert len(s) == 4
     assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
-    correct_exprs = set([
-        re(sqrt(x)), im(sqrt(x)), sqrt(re(sqrt(x))**2 + im(sqrt(x))**2), arg(sqrt(x))
-    ])
-    for ser in s:
-        correct_exprs = correct_exprs.difference([ser.get_expr()])
-    assert len(correct_exprs) == 0
     assert all((ser.var, ser.start, ser.end) == (x, xmin, xmax) for ser in s)
 
     p = plot_real_imag(sqrt(x)**y, real=True, imag=True, abs=True, arg=True,
@@ -444,8 +455,8 @@ def test_plot_real_imag_2d_3d():
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert s[0].expr == re(sin(z))
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    _, _, _re = s[0].get_data()
 
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=True, imag=False,
         params={y: (1, 0, 2)}, backend=MB, show=False, n=5)
@@ -454,8 +465,8 @@ def test_plot_real_imag_2d_3d():
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert s[0].expr == re(sin(z))
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    _, _, _rep = s[0].get_data()
 
     # imaginary part of the function
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=False, imag=True,
@@ -465,8 +476,8 @@ def test_plot_real_imag_2d_3d():
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert s[0].expr == im(sin(z))
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    _, _, _im = s[0].get_data()
 
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=False, imag=True,
         params={y: (1, 0, 2)}, backend=MB, show=False, n=5)
@@ -475,8 +486,8 @@ def test_plot_real_imag_2d_3d():
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert s[0].expr == im(sin(z))
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    _, _, _imp = s[0].get_data()
 
     # absolute value of the function
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=False, imag=False,
@@ -486,8 +497,8 @@ def test_plot_real_imag_2d_3d():
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert s[0].expr == sqrt(re(sin(z))**2 + im(sin(z))**2)
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    _, _, _abs = s[0].get_data()
 
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=False, imag=False,
         abs=True, params={y: (1, 0, 2)}, backend=MB, show=False, n=5)
@@ -496,8 +507,8 @@ def test_plot_real_imag_2d_3d():
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert s[0].expr == sqrt(re(sin(z))**2 + im(sin(z))**2)
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    _, _, _absp = s[0].get_data()
 
     # argument of the function
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=False, imag=False,
@@ -507,8 +518,8 @@ def test_plot_real_imag_2d_3d():
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert s[0].expr == arg(sin(z))
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    _, _, _arg = s[0].get_data()
 
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=False, imag=False,
         abs=False, arg=True, params={y: (1, 0, 2)},
@@ -518,8 +529,21 @@ def test_plot_real_imag_2d_3d():
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert s[0].expr == arg(sin(z))
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    _, _, _argp = s[0].get_data()
+
+    xx = yy = np.linspace(-5, 5, 5)
+    xx, yy = np.meshgrid(xx, yy)
+    d = xx + 1j * yy
+    assert np.allclose(_re, np.real(np.sin(d)))
+    assert np.allclose(_im, np.imag(np.sin(d)))
+    assert np.allclose(_abs, np.absolute(np.sin(d)))
+    assert np.allclose(_arg, np.angle(np.sin(d)))
+
+    assert np.allclose(_rep, np.real(np.sin(d)))
+    assert np.allclose(_imp, np.imag(np.sin(d)))
+    assert np.allclose(_absp, np.absolute(np.sin(d)))
+    assert np.allclose(_argp, np.angle(np.sin(d)))
 
     # multiple 2D plots (contours) of a complex function over a complex range
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=True, imag=True,
@@ -917,12 +941,14 @@ def test_plot_complex_vector():
     # series according to the documented modes of operation
 
     x, z = symbols("x, z")
+    xd, yd = symbols("x, y", cls=Dummy)
 
     ###########################################################################
     ########## plot_complex_vector(expr, range [opt], label [opt]) ############
     ###########################################################################
 
-    p = plot_complex_vector(z**2, (z, -5 - 2j, 4 + 3j), backend=MB, show=False)
+    expr = z**2
+    p = plot_complex_vector(expr, (z, -5 - 2j, 4 + 3j), backend=MB, show=False)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 2
@@ -933,6 +959,9 @@ def test_plot_complex_vector():
     assert isinstance(s[1], Vector2DSeries)
     assert s[1].ranges[0][1:] == (-5, 4)
     assert s[1].ranges[1][1:] == (-2, 3)
+    assert str(s[0].get_expr()) == 'sqrt(((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2)**2 + 4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2)'
+    assert str(s[1].get_expr()[0]) == '(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2'
+    assert str(s[1].get_expr()[1]) == '2*(re(_x) - im(_y))*(re(_y) + im(_x))'
 
     p = plot_complex_vector(z**x, (z, -5 - 2j, 4 + 3j), params={x: (1, 0, 2)},
         backend=MB, show=False, n=5)
@@ -949,7 +978,7 @@ def test_plot_complex_vector():
     assert (xx.min(), xx.max()) == (-5, 4)
     assert (yy.min(), yy.max()) == (-2, 3)
 
-    p = plot_complex_vector(z**2, (z, -5 - 2j, 4 + 3j), "test", scalar=False,
+    p = plot_complex_vector(expr, (z, -5 - 2j, 4 + 3j), "test", scalar=False,
         backend=MB, show=False)
     s = p.series
     assert isinstance(p, MB)
@@ -1017,8 +1046,9 @@ def test_issue_6():
     s = p.series
     assert len(s) == 2
     assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
-    assert s[0].expr == re(vec)
-    assert s[1].expr == im(vec)
+    _, _re = s[0].get_data()
+    _, _im = s[1].get_data()
+    assert not np.allclose(_re, _im)
 
 
 def test_lambda_functions():
@@ -1063,10 +1093,10 @@ def test_plot_real_imag_expression_order():
         imag=True, real=True, arg=True, abs=True,
         backend=MB, show=False, n=5)
     assert len(p.series) == 4
-    assert p[0].get_expr() == re(sqrt(x))
-    assert p[1].get_expr() == im(sqrt(x))
-    assert p[2].get_expr() == sqrt(re(sqrt(x))**2 + im(sqrt(x))**2)
-    assert p[3].get_expr() == arg(sqrt(x))
+    assert p[0].get_label(False) == "Re(sqrt(x))"
+    assert p[1].get_label(False) == "Im(sqrt(x))"
+    assert p[2].get_label(False) == "Abs(sqrt(x))"
+    assert p[3].get_label(False) == "Arg(sqrt(x))"
 
 
 def test_plot_real_imag_1d_label_kw():
@@ -1352,7 +1382,7 @@ def test_plot_complex_list_label_kw():
     assert s[1].get_label(False) == "g"
 
 
-def plot_complex_vector_label_kw():
+def test_plot_complex_vector_label_kw():
     # verify that the label keyword argument works, if the correct
     # number of labels is provided.
 

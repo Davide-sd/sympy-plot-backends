@@ -147,7 +147,12 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     if not callable(expr):
         # expr is a single symbolic expressions or a tuple of symb expressions
         try:
-            f = lambdify(free_symbols, expr, modules=modules, cse=True)
+            # TODO: set cse=True once this issue is solved:
+            # https://github.com/sympy/sympy/issues/24246
+            f = lambdify(free_symbols, expr, modules=modules, cse=False)
+
+            import inspect
+            print(inspect.getsource(f))
             learner = Learner(partial(wrapper_func, f, *args),
                 bounds=bounds, **d)
             simple(learner, goal)
@@ -159,7 +164,7 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
                 "Trying to evaluate the expression with Sympy, but it might "
                 "be a slow operation."
             )
-            f = lambdify(free_symbols, expr, modules="sympy", cse=True)
+            f = lambdify(free_symbols, expr, modules="sympy", cse=False)
             learner = Learner(partial(wrapper_func, f, *args),
                 bounds=bounds, **d)
             simple(learner, goal)
@@ -221,8 +226,8 @@ def _uniform_eval(free_symbols, expr, *args, modules=None):
     if not callable(expr):
         # generate two lambda functions: the default one, and the backup in
         # case of failures with the default one.
-        f1 = lambdify(free_symbols, expr, modules=modules, cse=True)
-        f2 = lambdify(free_symbols, expr, modules="sympy", cse=True)
+        f1 = lambdify(free_symbols, expr, modules=modules, cse=False)
+        f2 = lambdify(free_symbols, expr, modules="sympy", cse=False)
         return _uniform_eval_helper(f1, f2, *args, modules=modules)
 
     # NOTE: expr is a callable. It is important that it'll be evaluated by
@@ -816,6 +821,9 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                 "%s requires the imaginary " % self.__class__.__name__ +
                 "part of the start and end values of the range "
                 "to be the same.")
+        # for complex-related data series, this determines what data to return
+        # on the y-axis
+        self._return = kwargs.get("return", None)
         self.is_polar = kwargs.get("is_polar", False)
 
         # if the expressions is a lambda function and no label has been
@@ -896,9 +904,21 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         np = import_module('numpy')
 
         x, _re, _im = self._get_real_imag()
-        # The evaluation could produce complex numbers. Set real elements
-        # to NaN where there are non-zero imaginary elements
-        _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
+
+        if self._return is None:
+            # The evaluation could produce complex numbers. Set real elements
+            # to NaN where there are non-zero imaginary elements
+            _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
+        elif self._return == "real":
+            pass
+        elif self._return == "imag":
+            _re = _im
+        elif self._return == "abs":
+            _re = np.sqrt(_re**2 + _im**2)
+        elif self._return == "arg":
+            _re = np.arctan2(_im, _re)
+        else:
+            raise ValueError("`_return` not recognized. Received: %s" % self._return)
 
         if self.detect_poles:
             return _detect_poles_helper(x, _re, self.eps)
@@ -1995,6 +2015,9 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
         self.rendering_kw = kwargs.get("rendering_kw", dict())
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
+        # for complex-related data series, this determines what data to return
+        # on the y-axis
+        self._return = kwargs.get("return", None)
 
     def _get_points(self):
         """Returns coordinates that needs to be postprocessed."""
@@ -2002,9 +2025,20 @@ class LineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSeries):
 
         results = self._evaluate()[0]
         _re, _im = np.real(results), np.imag(results)
-        _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
-        discr = np.real(list(self.ranges.values())[0])
+        if self._return is None:
+            _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
+        elif self._return == "real":
+            pass
+        elif self._return == "imag":
+            _re = _im
+        elif self._return == "abs":
+            _re = np.sqrt(_re**2 + _im**2)
+        elif self._return == "arg":
+            _re = np.arctan2(_im, _re)
+        else:
+            raise ValueError("`_return` not recognized. Received: %s" % self._return)
 
+        discr = np.real(list(self.ranges.values())[0])
         if self.detect_poles:
             return _detect_poles_helper(discr, _re, self.eps)
 
@@ -2343,6 +2377,8 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         self.is_polar = kwargs.get("is_polar", False)
         self.surface_color = kwargs.get("surface_color", None)
         self.is_filled = kwargs.get("is_filled", True)
+        # determines what data to return on the z-axis
+        self._return = kwargs.get("return", None)
 
         # domain coloring mode
         self.coloring = kwargs.get("coloring", "a")
@@ -2420,7 +2456,20 @@ class ComplexSurfaceSeries(ComplexSurfaceBaseSeries):
     def _correct_output(self, domain, z):
         np = import_module('numpy')
 
-        return np.real(domain), np.imag(domain), np.real(z)
+        if self._return is None:
+            pass
+        elif self._return == "real":
+            z = np.real(z)
+        elif self._return == "imag":
+            z = np.imag(z)
+        elif self._return == "abs":
+            z = np.absolute(z)
+        elif self._return == "arg":
+            z = np.angle(z)
+        else:
+            raise ValueError("`_return` not recognized. Received: %s" % self._return)
+
+        return np.real(domain), np.imag(domain), z
 
     def get_data(self):
         """Return arrays of coordinates for plotting.

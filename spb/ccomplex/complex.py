@@ -111,25 +111,20 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
 
-    # apply the user-specified function to the expression
-    #   keys: the user specified keyword arguments
-    #   values: [function, label]
+    # apply the proper label.
     # NOTE: the label is going to wrap the string representation of the
     # expression. This design choice precludes the ability of setting latex
     # labels, but this is not a problem as the user has the ability to set
-    # a custom alias for the function to be plotted. The main motivation for
-    # this choice is that whenever re() or im() is applied to an expression, it
-    # might gets evaluated, resulting in a different expression (something
-    # that the user might not recognize). This design prevents that.
+    # a custom alias for the function to be plotted.
     mapping = {
-        "real": [lambda t: re(t), "Re(%s)"],
-        "imag": [lambda t: im(t), "Im(%s)"],
-        "abs": [lambda t: sqrt(re(t)**2 + im(t)**2), "Abs(%s)"],
+        "real": "Re(%s)",
+        "imag": "Im(%s)",
+        "abs": "Abs(%s)",
         # NOTE: absarg is used to plot the absolute value colored by the
         # argument. The colorbar indicates the argument, hence the following
         # label is "Arg"
-        "absarg": [lambda t: t, "Arg(%s)"],
-        "arg": [lambda t: arg(t), "Arg(%s)"],
+        "absarg": "Arg(%s)",
+        "arg": "Arg(%s)",
     }
     # option to be used with lambdify with complex functions
     kwargs.setdefault("modules", cfg["complex"]["modules"])
@@ -178,14 +173,26 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
         for i, r in enumerate(ranges):
             ranges[i] = (r[0], complex(r[1]), complex(r[2]))
 
-        # NOTE: as a design choice, a complex function will create one
-        # or more data series, depending on the keyword arguments
-        # (one for the real part, one for the imaginary part, etc.).
-        # This is undoubtely inefficient as we must evaluate the same
-        # expression multiple times. On the other hand, it allows to
-        # maintain a one-to-one correspondance between Plot.series
-        # and backend.data, making it easier to work with iplot
-        # (backend._update_interactive).
+        # NOTE:
+        # 1. as a design choice, a complex function will create one
+        #    or more data series, depending on the keyword arguments
+        #    (one for the real part, one for the imaginary part, etc.).
+        #    This is undoubtely inefficient as we must evaluate the same
+        #    expression multiple times. On the other hand, it allows to
+        #    maintain a one-to-one correspondance between Plot.series
+        #    and backend.data, making it easier to work with iplot
+        #    (backend._update_interactive).
+        # 2. The expression used on each data series is the same one
+        #    provided by the user. Each data series will receive the `return`
+        #    keyword argument, which specify what data must be returned.
+        #    So, if return="real", the series will return the real part
+        #    of the function, and so on.
+        #    Why not applying SymPy's re(), im(), arg(), ..., to the original
+        #    expression and get rid of `return`? Because `re()` and `im()`
+        #    evaluate the expression, usually creating new expressions
+        #    containing many more terms, hence much slower evaluation. Instead,
+        #    the series are going to evaluate the complex function and then
+        #    extract the required data.
 
         absarg = kw.pop("absarg", True)
         real = kw.pop("real", False)
@@ -199,11 +206,12 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
                 if flag:
                     kw2 = kw.copy()
                     kw2[key] = True
-                    f, lbl_wrapper = mapping[key]
+                    kw2["return"] = key
+                    lbl_wrapper = mapping[key]
                     if not interactive:
-                        series.append(LineOver1DRangeSeries(f(expr), *ranges, lbl_wrapper % label, **kw2))
+                        series.append(LineOver1DRangeSeries(expr, *ranges, lbl_wrapper % label, **kw2))
                     else:
-                        series.append(InteractiveSeries([f(expr)], ranges, lbl_wrapper % label, **kw2))
+                        series.append(InteractiveSeries([expr], ranges, lbl_wrapper % label, **kw2))
 
         else:
             # 2D domain coloring or 3D plots
@@ -213,10 +221,11 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
                 if flag:
                     kw2 = kw.copy()
                     kw2[key] = True
-                    f, lbl_wrapper = mapping[key]
+                    kw2["return"] = key
+                    lbl_wrapper = mapping[key]
                     if key == "absarg":
                         lbl_wrapper = "%s"
-                    series.append(cls(f(expr), *ranges, lbl_wrapper % label, **kw2))
+                    series.append(cls(expr, *ranges, lbl_wrapper % label, **kw2))
 
         add_series(absarg, "absarg")
         add_series(real, "real")
@@ -948,11 +957,9 @@ def plot_complex(*args, **kwargs):
 
     .. plotly::
        :context: reset
-       :format: doctest
-       :include-source: True
 
-       from sympy import symbols, gamma
-       from spb import plot_complex
+       from sympy import symbols, gamma, I
+       from spb import plot_complex, PB
        z = symbols('z')
        plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
            backend=PB, zlim=(-1, 6), use_cm=True)
@@ -1386,13 +1393,13 @@ def plot_complex_vector(*args, **kwargs):
     plot_real_imag, plot_complex, plot_complex_list, plot_vector, iplot
 
     """
-    # for each argument, generate two series: one for the real part and
-    # another for the imaginary part
+    # for each argument, generate one series. Those series will be used to
+    # generate the proper input arguments for plot_vector
     kwargs["absarg"] = False
     kwargs["abs"] = False
     kwargs["arg"] = False
     kwargs["real"] = True
-    kwargs["imag"] = True
+    kwargs["imag"] = False
     kwargs["threed"] = False
     kwargs.setdefault("xlabel", "Re")
     kwargs.setdefault("ylabel", "Im")
@@ -1401,7 +1408,7 @@ def plot_complex_vector(*args, **kwargs):
     args = _plot_sympify(args)
     params = kwargs.get("params", None)
     series = _build_series(*args, allow_lambda=False, **kwargs)
-    multiple_expr = len(series) > 2
+    multiple_expr = len(series) > 1
 
     def get_label(i):
         _iterable = args[i] if multiple_expr else args
@@ -1413,12 +1420,11 @@ def plot_complex_vector(*args, **kwargs):
     # create new arguments to be used by plot_vector
     new_args = []
     x, y = symbols("x, y", cls=Dummy)
-    for i in range(int(len(series) / 2)):
-        s1 = series[2 * i]
-        s2 = series[2 * i + 1]
-        expr1 = s1.expr
-        expr2 = s2.expr
-        free_symbols = expr1.free_symbols
+    for i in range(len(series)):
+        s1 = series[i]
+        expr1 = re(s1.get_expr())
+        expr2 = im(s1.get_expr())
+        free_symbols = s1.get_expr().free_symbols
         if params is not None:
             free_symbols = free_symbols.difference(params.keys())
         free_symbols = list(free_symbols)
