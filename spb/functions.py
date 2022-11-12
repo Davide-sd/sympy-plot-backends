@@ -2163,8 +2163,8 @@ def plot3d_parametric_surface(*args, **kwargs):
        ...     title="Möbius strip",
        ...     wireframe=True, wf_n1=20, wf_rendering_kw={"lw": 0.75})
 
-    Plot multiple parametric Riemann surfaces of the real part of the
-    multiple-valued function `z**n` using Plotly:
+    Riemann surfaces of the real part of the multivalued function `z**n`,
+    using Plotly:
 
     .. plotly::
        :context: reset
