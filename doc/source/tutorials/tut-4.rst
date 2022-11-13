@@ -9,8 +9,8 @@ accomplish our visualization objectives. If that's the case, we can either:
    However, this process is manually intensive.
 2. If the expressions can be plotted by the common plotting functions
    (``plot``, ``plot3d``, ``plot_parametric``, ...), we can easily extract
-   the numerical data thanks to the ``get_data`` method of the series being
-   plotted. Remember, the plot object can be indexed in order to access the
+   the numerical data by calling the ``get_data`` method of the interested
+   series. Remember, the plot object can be indexed in order to access the
    series.
 
 Once we have the numerical data, we can use our preferred plotting library.

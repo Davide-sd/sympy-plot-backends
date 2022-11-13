@@ -130,7 +130,7 @@ which are empty lists:
    []
    []
 
-We can fill these list with our preferred colors or colormaps.
+We can fill these lists with our preferred colors or colormaps.
 For example:
 
 .. code-block:: python
