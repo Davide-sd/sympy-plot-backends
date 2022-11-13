@@ -32,3 +32,7 @@ from spb.backends.bokeh import BB
 from spb.backends.plotly import PB
 from spb.backends.k3d import KB
 from spb.backends.mayavi import MAB
+
+# remove modules
+del defaults, functions, plotgrid, series, utils, vectors
+del _version, ccomplex, backends
