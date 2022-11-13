@@ -1019,7 +1019,7 @@ def iplot(*args, show=True, **kwargs):
     on both directions. Note the use of `threed=True` to specify a 3D plot.
     If `threed=False`, a contour plot will be generated.
 
-    .. jupyter-execute::
+    .. code-block:: python
 
        from sympy import (symbols, sqrt, cos, exp, sin, pi, re, im,
            Matrix, Plane, Polygon, I, log)
@@ -1056,7 +1056,7 @@ def iplot(*args, show=True, **kwargs):
        correctly visualize very small or very big numbers.
     6. custom labeling of the parameter-sliders.
 
-    .. jupyter-execute::
+    .. code-block:: python
 
        from sympy import (symbols, sqrt, cos, exp, sin, pi, re, im,
            Matrix, Plane, Polygon, I, log)
@@ -1087,7 +1087,7 @@ def iplot(*args, show=True, **kwargs):
     A line plot with a parameter representing an angle in radians, but
     showing the value in degrees on its label:
 
-    .. jupyter-execute::
+    .. code-block:: python
 
        from sympy import sin, pi, symbols
        from spb import MB
@@ -1121,7 +1121,7 @@ def iplot(*args, show=True, **kwargs):
        with ``p.backend``. Then, we can use the ``p.backend.fig`` attribute
        to retrieve the figure, or ``p.backend.save()`` to save the figure.
 
-    .. jupyter-execute::
+    .. code-block:: python
 
        from sympy import sin, cos, symbols
        from spb import plot, MB
