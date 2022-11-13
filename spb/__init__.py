@@ -33,6 +33,12 @@ from spb.backends.plotly import PB
 from spb.backends.k3d import KB
 from spb.backends.mayavi import MAB
 
-# remove modules
-del defaults, functions, plotgrid, series, utils, vectors
-del _version, ccomplex, backends
+__all__ = [
+    "plot", "plot_parametric", "plot_parametric_region",
+    "plot_contour", "plot3d", "plot3d_parametric_line",
+    "plot3d_parametric_surface", "plot3d_implicit", "plot3d_spherical",
+    "plot3d_revolution", "plot_implicit", "plot_polar", "plot_geometry",
+    "plot_list", "plot_piecewise", "plot_vector", "plot_complex",
+    "plot_complex_list", "plot_real_imag", "plot_complex_vector", "plotgrid",
+    "MB", "BB", "PB", "KB", "MAB"
+]

@@ -5,7 +5,6 @@
 [![Documentation Status](https://readthedocs.org/projects/sympy-plot-backends/badge/?version=latest)](http://sympy-plot-backends.readthedocs.io/)
 ![Coverage](https://github.com/Davide-sd/sympy-plot-backends/blob/master/coverage.svg)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Davide-sd/sympy-plot-backends/HEAD)
-[![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A )](http://numfocus.org)
 
 
 This module contains a few plotting backends that can be used with [SymPy](github.com/sympy/sympy) and [Numpy](https://github.com/numpy/numpy). A backend represents the plotting library: it provides the necessary functionalities to quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots, vector plots, complex plots).
