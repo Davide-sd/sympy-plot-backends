@@ -150,9 +150,6 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
             # TODO: set cse=True once this issue is solved:
             # https://github.com/sympy/sympy/issues/24246
             f = lambdify(free_symbols, expr, modules=modules, cse=False)
-
-            import inspect
-            print(inspect.getsource(f))
             learner = Learner(partial(wrapper_func, f, *args),
                 bounds=bounds, **d)
             simple(learner, goal)
