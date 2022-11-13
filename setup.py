@@ -35,20 +35,25 @@ setup(
     install_requires=[
         "appdirs>=1.4.4",
         "numpy>=1.21.1",
-        "scipy>=1.7.1",  # helps when lambdifying expressions
         "sympy>=1.10.1",
         "matplotlib>3.4.2",    # v3.4.2 is required for tests to pass
         "mergedeep>=1.3.4",
-        "ipympl>=0.7.0",
-        "plotly>=4.14.3",
-        "colorcet",
-        "panel>=0.13.0", # this includes param and bokeh
-        "ipywidgets_bokeh", # starting from panel v0.13.0, it is not part of panel anymore
-        "k3d>=2.9.7",
-        "vtk",  # needed for streamlines in k3d
         "adaptive>=0.13.1",
-        # mayavi-related
-        # "mayavi>=4.8.0",
-        # "PyQt5>=5.15.7",
     ],
+    extras_require={
+        "all": [
+            "scipy>=1.7.1",  # helps when lambdifying expressions
+            "notebook",
+            "ipympl>=0.7.0",
+            "plotly>=4.14.3",
+            "panel>=0.13.0", # this includes param and bokeh
+            "ipywidgets_bokeh", # starting from panel v0.13.0, it is not part of panel anymore
+            "colorcet",
+            "k3d>=2.9.7",
+            "vtk",  # needed for streamlines in k3d
+            # mayavi-related
+            # "mayavi>=4.8.0",
+            # "PyQt5>=5.15.7",
+        ]
+    }
 )

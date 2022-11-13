@@ -65,18 +65,35 @@ To explore the capabilities before the installation, you can:
 
 ## Installation
 
-The repository is avaliable on PyPi:
+SymPy Plotting Backends can be installed with `pip` or `conda`. By default,
+only basic plotting with Matplotlib will be installed:
 
 ```
 pip install sympy_plot_backends
 ```
 
-And also on Conda:
+Or
 
 ```
- conda install -c davide_sd sympy_plot_backends 
+conda install -c davide_sd sympy_plot_backends 
 ```
 
+To install the complete requirements in order to get interactive plots, bokeh,
+plotly, k3d, vtk, execute the following command:
+
+```
+pip install sympy_plot_backends[all]
+```
+
+Or:
+
+```
+conda install -c anaconda scipy notebook colorcet
+conda install -c conda-forge ipympl panel k3d vtk msgpack-python
+conda install -c bokeh ipywidgets_bokeh
+conda install -c plotly plotly
+```
+  
 
 ## Warnings
 

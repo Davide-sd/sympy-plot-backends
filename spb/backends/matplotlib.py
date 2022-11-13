@@ -145,6 +145,7 @@ class MatplotlibBackend(Plot):
         self.matplotlib = import_module(
             'matplotlib',
             import_kwargs={'fromlist': ['pyplot', 'cm', 'collections', 'colors']},
+            warn_not_installed=True,
             min_module_version='1.1.0',
             catch=(RuntimeError,))
         self.plt = self.matplotlib.pyplot

@@ -144,6 +144,7 @@ class PlotlyBackend(Plot):
         plotly = import_module(
             'plotly',
             import_kwargs={'fromlist': ['graph_objects', 'figure_factory']},
+            warn_not_installed=True,
             min_module_version='5.0.0')
         go = plotly.graph_objects
 

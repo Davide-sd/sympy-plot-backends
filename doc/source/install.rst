@@ -4,7 +4,8 @@
 Installation
 ------------
 
-SymPy Plotting Backends can be installed with `pip` or `conda`::
+SymPy Plotting Backends can be installed with `pip` or `conda`. By default,
+only basic plotting with Matplotlib will be installed::
 
     pip install sympy_plot_backends
 
@@ -12,13 +13,25 @@ Or::
 
     conda install sympy_plot_backends
 
+To install the complete requirements in order to get interactive plots, bokeh,
+plotly, k3d, vtk, execute the following command::
+
+    pip install sympy_plot_backends[all]
+
+Or::
+
+    conda install -c anaconda scipy notebook colorcet
+    conda install -c conda-forge ipympl panel k3d vtk msgpack-python
+    conda install -c bokeh ipywidgets_bokeh
+    conda install -c plotly plotly
+
 
 Verify the installation
 =======================
 
 After installation, it is best to verify that the freshly-installed SymPy
 Plotting Backends work. To do this, start up Python and import the necessary
-functionalities, as shown below. To improve typing experience, the acutal name
+functionalities, as shown below. To improve typing experience, the actual name
 of the module has been set to `spb`::
 
     $ python
@@ -28,12 +41,29 @@ of the module has been set to `spb`::
 From here, execute some simple statements like the ones below::
 
     >>> x = Symbol('x')
-    >>> plot(sin(x), cos(x), backend=BB)
+    >>> plot(sin(x), cos(x))
 
-Or:
+If the additional requirements have been installed, try the following:
 
-    >>> plot_complex(sin(x), (x, -3-3j, 3+3j), backend=MB)
+.. code-block:: python
 
+   from sympy import *
+   from spb import *
+   x, a, b, c = symbols("x, a, b, c")
+   plot(
+       (cos(a * x + b) * exp(-c * x), "oscillator"),
+       (exp(-c * x), "upper limit", {"line_dash": "dotted"}),
+       (-exp(-c * x), "lower limit", {"line_dash": "dotted"}),
+       (x, 0, 2 * pi),
+       params={
+           a: (1, 0, 10),     # frequency
+           b: (0, 0, 2 * pi), # phase
+           c: (0.25, 0, 1)    # damping
+       },
+       ylim=(-1.25, 1.25),
+       backend=BB,
+       servable=True
+   )
 
 It is also the perfect time to verify that K3D-Jupyter is working:
 

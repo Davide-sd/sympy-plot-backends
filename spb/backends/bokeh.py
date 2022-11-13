@@ -277,6 +277,7 @@ class BokehBackend(Plot):
         self.bokeh = import_module(
             'bokeh',
             import_kwargs={'fromlist': ['models', 'events', 'plotting', 'io', 'palettes', 'embed', 'resources']},
+            warn_not_installed=True,
             min_module_version='2.3.0')
         bp = self.bokeh.palettes
         cc = import_module(

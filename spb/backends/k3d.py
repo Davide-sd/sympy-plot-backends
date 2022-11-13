@@ -99,14 +99,17 @@ class K3DBackend(Plot):
         self.k3d = k3d = import_module(
             'k3d',
             import_kwargs={'fromlist': ['helpers', 'objects']},
+            warn_not_installed=True,
             min_module_version='2.9.7')
         cc = import_module(
             'colorcet',
+            warn_not_installed=True,
             min_module_version='3.0.0')
         self.matplotlib = import_module(
             'matplotlib',
             import_kwargs={'fromlist': ['tri', 'cm']},
             min_module_version='1.1.0',
+            warn_not_installed=True,
             catch=(RuntimeError,))
         cm = self.matplotlib.cm
 

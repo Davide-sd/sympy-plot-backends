@@ -13,56 +13,36 @@ build:
 
 requirements:
   host:
-    - appdirs
-    - bokeh
-    - colorcet
-    - holoviews
-    - ipyevents
-    - ipympl
-    - k3d
-    - matplotlib
-    - mergedeep
-    - numpy >=1.23.1
-    - panel
-    - param
+    - python
     - pip
-    - plotly >=4.14.3
-    - python
-    - scipy
-    - sympy >=1.10.1
-    - vtk
-    - msgpack-python
-    - adaptive
-    # - mayavi >=4.8.0
-    # - PyQt5 >= 5.15.7
   run:
+    - python
     - appdirs
-    - bokeh
-    - colorcet
-    - holoviews
-    - ipyevents
-    - ipympl
-    - k3d
+    # - bokeh
+    # - colorcet
+    # - holoviews
+    # - ipyevents
+    # - ipympl
+    # - k3d
     - matplotlib
     - mergedeep
     - numpy >=1.23.1
-    - panel
-    - param
-    - plotly >=4.14.3
-    - python
-    - scipy
+    # - panel
+    # - param
+    # - plotly >=4.14.3
+    # - scipy
     - sympy >=1.10.1
-    - vtk
-    - msgpack-python
+    # - vtk
+    # - msgpack-python
     - adaptive
     # - mayavi >=4.8.0
     # - PyQt5 >= 5.15.7
 
-test:
-  imports:
-    - spb
-    - spb.backends
-    - spb.ccomplex
+# test:
+#   imports:
+#     - spb
+#     - spb.backends
+#     - spb.ccomplex
 
 about:
   home: {{ data['url'] }}

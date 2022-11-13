@@ -36,6 +36,14 @@ v1.5.1
 * Implemented support for ``color_func`` keyword argument on ``plot_list``
   and ``plot_complex_list``.
 
+* Added ``extras_require`` to ``setup.py``:
+
+  * by default, ``pip install sympy_plot_backends`` will install only the
+    necessary requirements to get non-interactive plotting to work with
+    Matplotlib.
+  * use ``pip install sympy_plot_backends[all]`` to install all other packages:
+    panel, bokeh, plotly, k3d, vtk, ...
+
 * Documentation:
 
   * Improved examples.
