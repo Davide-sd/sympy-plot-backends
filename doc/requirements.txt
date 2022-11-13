@@ -5,7 +5,6 @@ jupyter-sphinx
 nbsphinx
 nbsphinx_link
 sphinx-rtd-theme
-adaptive
 # sphinx_plotly_directive
 git+https://github.com/Davide-sd/sphinx-plotly-directive@combine
 kaleido
