@@ -26,6 +26,4 @@ python:
      path: .
      extra_requirements:
         - all
-   - method: pip
-     path: sympy-plot-backends
 
