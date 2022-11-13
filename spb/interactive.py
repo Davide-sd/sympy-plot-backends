@@ -1014,23 +1014,18 @@ def iplot(*args, show=True, **kwargs):
     Examples
     ========
 
-    .. jupyter-execute::
-
-       from sympy import (symbols, sqrt, cos, exp, sin, pi, re, im,
-           Matrix, Plane, Polygon, I, log)
-       from spb.interactive import iplot
-       from spb.backends.matplotlib import MB
-       from spb.backends.bokeh import BB
-       from spb.backends.plotly import PB
-       x, y, z = symbols("x, y, z")
-
     Surface plot between -10 <= x, y <= 10 with a damping parameter varying
-    from 0 to 1, with a default value of 0.15, discretized with 100 points
+    from 0 to 1, with a default value of 0.15, discretized with 50 points
     on both directions. Note the use of `threed=True` to specify a 3D plot.
     If `threed=False`, a contour plot will be generated.
 
     .. jupyter-execute::
 
+       from sympy import (symbols, sqrt, cos, exp, sin, pi, re, im,
+           Matrix, Plane, Polygon, I, log)
+       from spb.interactive import iplot
+       from spb import PB
+       x, y, z = symbols("x, y, z")
        r = sqrt(x**2 + y**2)
        d = symbols('d')
        expr = 10 * cos(r) * exp(-r * d)
@@ -1042,8 +1037,12 @@ def iplot(*args, show=True, **kwargs):
            ylabel = "y axis",
            zlabel = "z axis",
            backend = PB,
-           n = 50,
-           threed = True
+           n = 51,
+           threed = True,
+           use_cm = True,
+           use_latex=False,
+           wireframe = True, wf_n1=15, wf_n2=15,
+           wf_rendering_kw={"line_color": "#003428", "line_width": 0.75}
        )
 
     A line plot of the magnitude of a transfer function, illustrating the use
@@ -1059,26 +1058,30 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
+       from sympy import (symbols, sqrt, cos, exp, sin, pi, re, im,
+           Matrix, Plane, Polygon, I, log)
+       from spb.interactive import iplot
+       from spb import MB
        from bokeh.models.formatters import PrintfTickFormatter
        formatter = PrintfTickFormatter(format="%.3f")
        kp, t, z, o = symbols("k_P, tau, zeta, omega")
        G = kp / (I**2 * t**2 * o**2 + 2 * z * t * o * I + 1)
        mod = lambda x: 20 * log(sqrt(re(x)**2 + im(x)**2), 10)
        iplot(
-           (mod(G.subs(z, 0)), (o, 0.1, 100), "G(z=0)", {"line_dash": "dotted"}),
-           (mod(G.subs(z, 1)), (o, 0.1, 100), "G(z=1)", {"line_dash": "dotted"}),
+           (mod(G.subs(z, 0)), (o, 0.1, 100), "G(z=0)", {"linestyle": ":"}),
+           (mod(G.subs(z, 1)), (o, 0.1, 100), "G(z=1)", {"linestyle": ":"}),
            (mod(G), (o, 0.1, 100), "G"),
            params = {
                kp: (1, 0, 3),
                t: (1, 0, 3),
                z: (0.2, 0, 1, 200, formatter, "z")
            },
-           backend = BB,
+           backend = MB,
            n = 2000,
            xscale = "log",
            xlabel = "Frequency, omega, [rad/s]",
            ylabel = "Magnitude [dB]",
-           use_latex = False
+           use_latex = False,
        )
 
     A line plot with a parameter representing an angle in radians, but
@@ -1086,76 +1089,23 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
+       from sympy import sin, pi, symbols
+       from spb import MB
+       from spb.interactive import iplot
        from bokeh.models.formatters import FuncTickFormatter
        # Javascript code is passed to `code=`
        formatter = FuncTickFormatter(code="return (180./3.1415926 * tick).toFixed(2)")
+       x, t = symbols("x, t")
 
        iplot(
            (1 + x * sin(t), (x, -5, 5)),
            params = {
-               t: (0, -2 * pi, 2 * pi, 100, formatter, "theta [deg]")
-           },
-           backend = BB,
-           ylim = (-3, 4),
-           use_latex = False
-       )
-
-    A 3D slice-vector plot. Note: whenever we want to create parametric vector
-    plots, we should set `is_vector=True`.
-
-    .. jupyter-execute::
-
-       a, b = symbols("a, b")
-       iplot(
-           (Matrix([z * a, y * b, x]), (x, -5, 5), (y, -5, 5), (z, -5, 5)),
-           params = {
-               a: (1, 0, 5),
-               b: (1, 0, 5)
-           },
-           backend = PB,
-           is_vector = True,
-           n = 10,
-           slice = Plane((0, 0, 0), (0, 1, 0)),
-           quiver_kw = {"sizeref": 8},
-           use_latex = False
-       )
-
-    A parametric complex domain coloring plot. Note: whenever we want to create
-    parametric complex plots, we must set `is_complex=True`.
-
-    .. jupyter-execute::
-
-       iplot(
-           ((z**2 + 1) / (x * (z**2 - 1)), (z, -4 - 2 * I, 4 + 2 * I)),
-           params = {
-               x: (1, -2, 2)
+               t: (1, -2 * pi, 2 * pi, 100, formatter, "theta [deg]")
            },
            backend = MB,
-           is_complex = True,
-           coloring = "b",
-           grid = False,
-           use_latex = False
-       )
-
-    A parametric plot of a symbolic polygon. Note the use of `param` to create
-    an integer slider.
-
-    .. jupyter-execute::
-
-       import param
-       a, b, c, d = symbols('a:d')
-       iplot(
-           (Polygon((a, b), c, n=d), ),
-           params = {
-               a: (0, -2, 2),
-               b: (0, -2, 2),
-               c: (1, 0, 5),
-               d: param.Integer(3, softbounds=(3, 10), label="n"),
-           },
-           backend = BB,
-           is_filled = False,
-           aspect = "equal",
-           use_latex = False
+           xlabel = "x", ylabel = "y",
+           ylim = (-3, 4),
+           use_latex = False,
        )
 
     Combine together `InteractivePlot` and ``Plot`` instances. The same
@@ -1173,8 +1123,10 @@ def iplot(*args, show=True, **kwargs):
 
     .. jupyter-execute::
 
-       from spb.functions import plot
-       u = symbols("u")
+       from sympy import sin, cos, symbols
+       from spb import plot, MB
+       from spb.interactive import iplot
+       x, u = symbols("x, u")
        params = {
            u: (1, 0, 2)
        }
@@ -1205,10 +1157,12 @@ def iplot(*args, show=True, **kwargs):
        p.show()
 
     Serves the interactive plot to a separate browser window. Note that
-    ``K3DBackend`` is not supported for this operation mode.
+    ``K3DBackend`` is not supported for this operation mode. Also note the
+    two ways to create a integer sliders.
 
     .. code-block:: python
 
+       import param
        from spb.backends.bokeh import BB
        from bokeh.models.formatters import PrintfTickFormatter
        formatter = PrintfTickFormatter(format='%.4f')
@@ -1223,7 +1177,9 @@ def iplot(*args, show=True, **kwargs):
            params = {
                p1: (0.035, -0.035, 0.035, 50, formatter),
                p2: (0.005, -0.02, 0.02, 50, formatter),
-               r: (2, 2, 5, 3),  # another way to create an integer slider
+               # integer parameter created with param
+               r: param.Integer(2, softbounds=(2, 5), label="r"),
+               # integer parameter created with usual syntax
                c: (3, 1, 5, 4)
            },
            is_polar = True,
@@ -1241,7 +1197,7 @@ def iplot(*args, show=True, **kwargs):
     =====
 
     1. This function is specifically designed to work within Jupyter Notebook.
-       However, it is also possible to use it from a regular Python console,
+       It is also possible to use it from a regular Python console,
        by executing: ``iplot(..., servable=True)``, which will create a server
        process loading the interactive plot on the browser.
        However, ``K3DBackend`` is not supported in this mode of operation.
@@ -1252,7 +1208,7 @@ def iplot(*args, show=True, **kwargs):
        * a pane containing the widgets.
        * a pane containing the chart. We can further customize this container
          by setting the ``pane_kw`` dictionary. Please, read its documentation
-         to understand the availabel options.
+         to understand the available options.
 
     3. Some examples use an instance of ``PrintfTickFormatter`` to format the
        value shown by a slider. This class is exposed by Bokeh, but can be
@@ -1279,8 +1235,8 @@ def iplot(*args, show=True, **kwargs):
 
     7. Once this module has been loaded, there could be problems with all
        other plotting functions when using ``BokehBackend``, namely the
-       figure won't show up in the output cell. If that is the case, we need
-       to turn off  automatic updates on panning by setting
+       figure won't show up in the output cell. If that is the case, we might
+       try to turn off automatic updates on panning by setting
        ``update_event=False`` in the function call.
 
     8. When ``BokehBackend`` is used:
@@ -1289,9 +1245,8 @@ def iplot(*args, show=True, **kwargs):
        * rendering of gradient lines is slow.
        * color bars might not update their ranges.
 
-    9. Once this module has been loaded and ``iplot`` has been executed, if
-       the kernel of the notebook needs to be restarted, the safest procedure
-       is the following:
+    9. Once this module has been loaded and ``iplot`` has been executed, the
+       safest procedure to restart Jupyter Notebook's kernel is the following:
 
        * save the current notebook.
        * close the notebook and Jupyter server.
