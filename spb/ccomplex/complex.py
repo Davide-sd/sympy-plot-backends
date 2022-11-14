@@ -626,8 +626,6 @@ def plot_real_imag(*args, **kwargs):
        Plot object containing:
        [0]: complex cartesian surface: sqrt(sqrt(re(x)**2 + im(x)**2)*sin(atan2(im(x), re(x))/2)**2 + sqrt(re(x)**2 + im(x)**2)*cos(atan2(im(x), re(x))/2)**2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
 
-    Riemann surface
-
     3D interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
