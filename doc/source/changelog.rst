@@ -2,7 +2,7 @@
  Changelog
 ==========
 
-v1.5.1
+v1.6.0
 ======
 
 * Added new plotting functions:
@@ -13,7 +13,7 @@ v1.5.1
 
 * ``MatplotlibBackend``:
 
-  * Fixed bug with dealing with colormaps and normalization.
+  * Fixed bug with colormaps and normalization.
 
   * Improved update speed when dealing with parametric domain coloring plots.
 
