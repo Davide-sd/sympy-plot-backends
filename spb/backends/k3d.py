@@ -86,6 +86,7 @@ class K3DBackend(Plot):
     wireframe_color = 0x000000
     colormaps = []
     cyclic_colormaps = []
+    skip_notebook_check = False
 
     # quivers-pivot offsets
     _qp_offset = {"tail": 0, "mid": 0.5, "middle": 0.5, "tip": 1}
@@ -128,9 +129,9 @@ class K3DBackend(Plot):
 
         self._init_cyclers()
         super().__init__(*args, **kwargs)
-        if self._get_mode() != 0:
-            raise ValueError(
-                "Sorry, K3D backend only works within Jupyter Notebook")
+        if (not self.skip_notebook_check) and (self._get_mode() != 0):
+            warnings.warn(
+                "K3DBackend only works properly within Jupyter Notebook")
         self._use_latex = kwargs.get("use_latex", cfg["k3d"]["use_latex"])
         self._set_labels("%s")
 
@@ -152,7 +153,6 @@ class K3DBackend(Plot):
                 "K3D-Jupyter doesn't support log scales. We will "
                 + "continue with linear scales."
             )
-        self.plot_shown = False
 
     @property
     def fig(self):
@@ -244,7 +244,7 @@ class K3DBackend(Plot):
                 if s.use_cm:
                     a["attribute"] = (param.astype(np.float32),)
                     a["color_map"] = next(self._cm)
-                    a["color_range"] = [param.min(), param.max()]
+                    a["color_range"] = [float(param.min()), float(param.max())]
                 kw = merge({}, a, s.rendering_kw)
                 line = self.k3d.line(vertices, **kw)
                 self._fig += line
@@ -269,7 +269,7 @@ class K3DBackend(Plot):
                         indices = Triangulation(x, y).triangles.astype(np.uint32)
                     attribute = s.eval_color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2])
 
-                self._high_aspect_ratio(x, y, z)
+                # self._high_aspect_ratio(x, y, z)
                 a = dict(
                     name=s.get_label(self._use_latex, "%s") if self._show_label else None,
                     side="double",
@@ -280,7 +280,11 @@ class K3DBackend(Plot):
                 if s.use_cm:
                     a["color_map"] = next(self._cm)
                     a["attribute"] = attribute
-                    a["color_range"] = [attribute.min(), attribute.max()]
+                    # NOTE: color_range must contains elements of type float.
+                    # If np.float32 is provided, mgspack will fail to serialize
+                    # it, hence no html export, hence no screenshots on
+                    # documentation.
+                    a["color_range"] = [float(attribute.min()), float(attribute.max())]
 
                 kw = merge({}, a, s.rendering_kw)
                 surf = self.k3d.mesh(vertices, indices, **kw)
@@ -314,7 +318,7 @@ class K3DBackend(Plot):
                 skw = dict(width=0.1, shader="mesh")
                 if s.use_cm and ("color" not in stream_kw.keys()):
                     skw["color_map"] = next(self._cm)
-                    skw["color_range"] = [np.nanmin(magn), np.nanmax(magn)]
+                    skw["color_range"] = [float(np.nanmin(magn)), float(np.nanmax(magn))]
                     skw["attribute"] = magn
                 else:
                     col = stream_kw.pop("color", next(self._cl))
@@ -516,7 +520,7 @@ class K3DBackend(Plot):
                     self._fig.objects[i].vertices = vertices.T
                     if s.use_cm:
                         self._fig.objects[i].attribute = attribute
-                        self._fig.objects[i].color_range = [attribute.min(), attribute.max()]
+                        self._fig.objects[i].color_range = [float(attribute.min()), float(attribute.max())]
                     self._high_aspect_ratio(x, y, z)
 
                 elif s.is_vector and s.is_3D:
@@ -566,7 +570,6 @@ class K3DBackend(Plot):
         """Visualize the plot on the screen."""
         if len(self._fig.objects) != len(self.series):
             self._process_series(self._series)
-        self.plot_shown = True
         self._fig.display()
 
     def _add_clipping_planes(self):
@@ -615,11 +618,6 @@ class K3DBackend(Plot):
         .. [#fn2] https://github.com/msgpack/msgpack-python
 
         """
-        if not self.plot_shown:
-            raise ValueError(
-                "K3D-Jupyter requires the plot to be shown on the screen "
-                + "before saving it."
-            )
 
         ext = os.path.splitext(path)[1]
         if not ext:
@@ -631,6 +629,11 @@ class K3DBackend(Plot):
                 self.fig.snapshot_include_js = include_js
                 f.write(self.fig.get_snapshot(**kwargs))
         elif ext == ".png":
+            if self._get_mode() != 0:
+                raise ValueError(
+                    "K3D-Jupyter requires the plot to be shown on the screen "
+                    + "before saving a png file.")
+
             @self._fig.yield_screenshots
             def _func():
                 self._fig.fetch_screenshot(**kwargs)
