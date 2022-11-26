@@ -24,7 +24,7 @@ build:
          - rm ~/chromedriver_linux64.zip
       post_build:
          - tree $HOME/checkouts/readthedocs.org/user_builds/sympy-plot-backends/checkouts/latest
-         - if [ -f $HOME/checkouts/readthedocs.org/user_builds/sympy-plot-backends/checkouts/latest/docs/chromedriver.log ]; then cat $HOME/checkouts/readthedocs.org/user_builds/sympy-plot-backends/checkouts/latest/docs/chromedriver.log ; fi
+         - if [ -f $HOME/checkouts/readthedocs.org/user_builds/sympy-plot-backends/checkouts/latest/doc/chromedriver.log ];then cat $HOME/checkouts/readthedocs.org/user_builds/sympy-plot-backends/checkouts/latest/doc/chromedriver.log ; fi
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:

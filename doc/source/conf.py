@@ -240,6 +240,10 @@ home_folder = os.path.expanduser("~")
 chrome_path = os.path.join(home_folder, "selenium/chrome-linux/chrome")
 chrome_driver_path = os.path.join(home_folder, "selenium/drivers/chromedriver")
 
+print("Checking paths")
+print("{} : {}".format(chrome_path, os.path.exists(chrome_path)))
+print("{} : {}".format(chrome_driver_path, os.path.exists(chrome_driver_path)))
+
 panel_screenshot_small_size = [800, 550]
 panel_screenshot_intercept_code = _modify_iplot_code
 panel_screenshot_browser = "chrome"
