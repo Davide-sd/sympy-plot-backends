@@ -1,5 +1,14 @@
+import pytest
+import sys
 from spb.doc_utils import _modify_code, _modify_iplot_code
 
+# NOTE: those functions requires Python >= 3.9 because they use the
+# ast module, in particular the unparse function, which is not available
+# on previous version.
+# However, this is not a problem for final users, as those functions are
+# only used to generate the documentation on readthedocs.
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_modify_code_1():
     code = """
 from sympy import symbols, sin, cos, pi
@@ -18,6 +27,7 @@ plot3d(
     assert "myplot = plot3d" in s[-2]
 
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_modify_code_2():
     code = """
 from sympy import *
@@ -47,6 +57,7 @@ line = plot3d_parametric_line(
     assert s[-1] == "myplot.fig"
 
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_modify_iplot_code_do_not_modify():
     code = """
 from sympy import *
@@ -74,6 +85,7 @@ plot3d_parametric_surface(
     assert "params" in s
 
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_modify_iplot_code():
     code = """
 from sympy import *
