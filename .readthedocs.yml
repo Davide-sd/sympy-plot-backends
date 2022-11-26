@@ -9,6 +9,8 @@ build:
    os: ubuntu-22.04
    tools:
       python: "3.9"
+   apt_packages:
+      - tree
    jobs:
       pre_install:
          - mkdir $HOME/selenium
@@ -20,6 +22,9 @@ build:
          - wget -N https://chromedriver.storage.googleapis.com/107.0.5304.62/chromedriver_linux64.zip -P $HOME
          - unzip ~/chromedriver_linux64.zip -d $HOME/selenium/drivers
          - rm ~/chromedriver_linux64.zip
+      post_build:
+         - tree $HOME/checkouts/readthedocs.org/user_builds/sympy-plot-backends/checkouts/latest
+         - if [ -f $HOME/checkouts/readthedocs.org/user_builds/sympy-plot-backends/checkouts/latest/docs/chromedriver.log ]; then cat $HOME/checkouts/readthedocs.org/user_builds/sympy-plot-backends/checkouts/latest/docs/chromedriver.log ; fi
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
