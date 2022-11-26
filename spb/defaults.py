@@ -33,7 +33,7 @@ def _hardcoded_defaults():
             # How will the plot resizes to fill the available space.
             "sizing_mode": "stretch_width",
             # Activate/Deactivate automatic update event on panning
-            "update_event": True,
+            "update_event": False,
             # Show/hide main grid
             "grid": True,
             # Show/hide minor grid
@@ -105,7 +105,7 @@ def _hardcoded_defaults():
             # If the interactive application is being served to a new
             # browser window, an appropriate theme can be choosed.
             # Possible values: "dark", "light"
-            "theme": "dark"
+            "theme": "light"
         },
         plot3d={
             # Wheter to use a color map on a 3D surface
