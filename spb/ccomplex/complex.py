@@ -589,12 +589,14 @@ def plot_real_imag(*args, **kwargs):
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 600
 
        from sympy import *
+       from spb import *
        x, u = symbols("x, u")
        plot_real_imag(sqrt(x) * exp(-u * x**2), (x, -3, 3),
-           params={u: (1, 0, 2)}, ylim=(-0.25, 2))
+           params={u: (1, 0, 2)}, ylim=(-0.25, 2), use_latex=False)
 
     3D plot of the real and imaginary part of the principal branch of a
     function over a complex range. Note the jump in the imaginary part: that's
@@ -629,13 +631,15 @@ def plot_real_imag(*args, **kwargs):
     3D interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 600
 
        from sympy import *
+       from spb import *
        x, u = symbols("x, u")
        plot_real_imag(
            sqrt(x) * exp(u * x), (x, -3-3j, 3+3j),
-           params={u: (0.5, 0, 1)}, n=25, threed=True)
+           params={u: (0.5, 0, 1)}, n=25, threed=True, use_latex=False)
 
     References
     ==========
@@ -903,13 +907,15 @@ def plot_complex(*args, **kwargs):
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 600
 
        from sympy import *
+       from spb import *
        x, u = symbols("x, u")
        plot_complex(
            exp(I * x) * I * sin(u * x), "f", (x, -5, 5),
-           params={u: (1, 0, 2)}, ylim=(-0.2, 1.2))
+           params={u: (1, 0, 2)}, ylim=(-0.2, 1.2), use_latex=False)
 
     Domain coloring plot. To improve the smoothness of the results, increase
     the number of discretization points and/or apply an interpolation (if the
@@ -942,13 +948,16 @@ def plot_complex(*args, **kwargs):
     to learn more about the ``params`` dictionary. Note that a too large
     value of ``n`` will impact performance.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 600
 
        from sympy import *
-       x, u = symbols("x, u")
+       from spb import *
+       z, u = symbols("z, u")
        plot_complex(
-           gamma(u * z), (z, -3 - 3*I, 3 + 3*I),
-           coloring="b", n=250, grid=False, params={u: (1, 0, 2)})
+           sin(u * z), (z, -pi - pi*I, pi + pi*I),
+           {"interpolation": "spline36"}, use_latex=False,
+           coloring="b", n=250, grid=False, params={u: (0.5, 0, 2)})
 
     3D plot of the absolute value of a complex function colored by its
     argument, using Plotly:
@@ -1133,9 +1142,11 @@ def plot_complex_list(*args, **kwargs):
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 600
 
        from sympy import *
+       from spb import *
        z, u = symbols("z u")
        expr1 = z * exp(2 * pi * I * z)
        expr2 = u * expr1
@@ -1144,7 +1155,7 @@ def plot_complex_list(*args, **kwargs):
        l2 = [expr2.subs(z, t / n) for t in range(n)]
        plot_complex_list(
            (l1, "f1"), (l2, "f2"),
-           params={u: (0.5, 0, 2)},
+           params={u: (0.5, 0, 2)}, use_latex=False,
            xlim=(-1.5, 2), ylim=(-2, 1))
 
 
@@ -1376,14 +1387,16 @@ def plot_complex_vector(*args, **kwargs):
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 600
 
        from sympy import *
+       from spb import *
        z, u = symbols("z u")
        plot_complex_vector(
-           log(gamma(u * z)), (z, -5 - 5j, 5 + 5j),
-           params={u: (1, 0, 2)}, n=20,
-           quiver_kw=dict(color="orange"), grid=False)
+            log(gamma(u * z)), (z, -5 - 5j, 5 + 5j),
+            params={u: (1, 0, 2)}, n=20, grid=False, use_latex=False,
+            quiver_kw=dict(color="orange", headwidth=4))
 
     See Also
     ========

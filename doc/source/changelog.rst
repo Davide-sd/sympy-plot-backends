@@ -2,6 +2,14 @@
  Changelog
 ==========
 
+v1.6.1
+======
+
+* Improvements to documentation. In particular, ReadTheDocs now shows pictures
+  generated with ``PlotlyBackend``, ``K3DBackend`` as well as interactive
+  plots with widgets.
+
+
 v1.6.0
 ======
 

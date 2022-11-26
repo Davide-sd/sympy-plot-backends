@@ -2,8 +2,8 @@
 2 - Differences between 3D backends
 -----------------------------------
 
-NOTE: the following page might be slow to load as a few 3D javascript plotting
-libraries are being donwloaded to visualize the figures.
+NOTE: there is an ``html`` link above some of the pictures in this page: click
+it to load the html page containing the plot and interact with it.
 
 In this tutorial we are going to compare the same plot produced with 3 different backends. In particular, we will focus on usability and
 interactivity.
@@ -19,8 +19,13 @@ First, let's initialize the tutorial by running:
 
 Now, let's visualize a plot created with Matplotlib:
 
-.. code-block:: python
+.. plot::
+   :context: reset
+   :include-source: True
 
+   from sympy import *
+   from spb import *
+   u, v = symbols("u, v")
    r = 2 + sin(7 * u + 5 * v)
    expr = (
        r * cos(u) * sin(v),
@@ -30,9 +35,6 @@ Now, let's visualize a plot created with Matplotlib:
    plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "expr",
        backend=MB, use_cm=True)
 
-.. image:: ../_static/tut-2/matplotlib-2.png
-   :width: 600
-   :alt: matplotlib
 
 Here, we can guess what the exact shape of the surface is going to be.
 We could increase the number of discretization points, in the `u` and `v`
@@ -42,25 +44,28 @@ zoom in and out. Now, try to click and drag the surface: there is a lot of
 lag. Matplotlib is not designed to be interactive.
 
 Let's plot the same surface with K3D-Jupyter. Since we are at it, let's
-also bump up the number of discretization points to 500 on both parameters.
-The resulting mesh will have 250 thousand points, therefore the computation
+also bump up the number of discretization points to 250 on both parameters.
+The resulting mesh will have 62500 points, therefore the computation
 may take a few seconds (depending on our machine). Note one major difference
 with SymPy's plotting module: to specify the same numer of discretization points on both directions we can use the keyword argument ``n``.
 Alternatively, we could use ``n1`` and ``n2`` to specify different numbers
 of discretization points.
 
-.. code-block:: python
+.. k3d-screenshot::
+   :camera: 5.152, -7.316, 4.113, 0.094, 0, 0, -0.207, 0.305, 0.929
 
-   n = 500
+   from sympy import *
+   from spb import *
+   u, v = symbols("u, v")
+   n = 250
+   r = 2 + sin(7 * u + 5 * v)
+   expr = (
+       r * cos(u) * sin(v),
+       r * sin(u) * sin(v),
+       r * cos(v)
+   )
    plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "expr",
        n=n, backend=KB, use_cm=True)
-
-Note: in order to speed up the loading of this tutorial page, the following
-plot has been generated with ``n=150``.
-
-.. raw:: html
-
-   <iframe src="../_static/tut-2/k3d-2.html" height="500px" width="100%"></iframe>
 
 To interact with the plot:
 
@@ -93,15 +98,21 @@ setting ``show_label=True``, but it is safe to assume that the label won't fit t
 
 Finally, let's look at the same plot with Plotly:
 
-.. code-block:: python
+.. plotly::
 
+   from sympy import *
+   from spb import *
+   u, v = symbols("u, v")
+   r = 2 + sin(7 * u + 5 * v)
+   expr = (
+       r * cos(u) * sin(v),
+       r * sin(u) * sin(v),
+       r * cos(v)
+   )
    n = 150
    plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "expr",
        n=n, backend=PB, use_cm=True)
 
-.. raw:: html
-
-   <iframe src="../_static/tut-2/plotly-2.html" height="500px" width="100%"></iframe>
 
 Plotly is also great with 3D plots. The main difference between Plotly and
 K3D-Jupyter are:

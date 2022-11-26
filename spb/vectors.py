@@ -500,14 +500,14 @@ def plot_vector(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> v = [-sin(y), cos(x)]
+       >>> v = [sin(x - y), cos(x + y)]
        >>> plot_vector(v, (x, -3, 3), (y, -3, 3),
-       ...     quiver_kw=dict(color="black"),
-       ...     contour_kw={"cmap": "Blues_r", "levels": 20},
+       ...     quiver_kw=dict(color="black", scale=30, headwidth=5),
+       ...     contour_kw={"cmap": "Blues_r", "levels": 15},
        ...     grid=False, xlabel="x", ylabel="y")
        Plot object containing:
-       [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
-       [1]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
+       [0]: contour: sqrt(sin(x - y)**2 + cos(x + y)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [1]: 2D vector series: [sin(x - y), cos(x + y)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
     Quivers plot of a 2D vector field with no background scalar field,
     a custom label and normalized quiver lengths:
@@ -521,10 +521,13 @@ def plot_vector(*args, **kwargs):
        ...     v, (x, -3, 3), (y, -3, 3),
        ...     label="Magnitude of $%s$" % latex([-sin(y), cos(x)]),
        ...     scalar=False, normalize=True,
+       ...     quiver_kw={
+       ...         "scale": 35, "headwidth": 4, "cmap": "gray",
+       ...         "clim": [0, 1.6]},
        ...     grid=False, xlabel="x", ylabel="y")
        Plot object containing:
-       [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
-       [1]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
+       [0]: contour: sqrt(sin(x - y)**2 + cos(x + y)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [1]: 2D vector series: [sin(x - y), cos(x + y)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
     Streamlines plot of a 2D vector field with no background scalar field, and
     a custom label:
@@ -534,12 +537,12 @@ def plot_vector(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> expr = [-sin(y), cos(x)]
-       >>> plot_vector(expr, (x, -3, 3), (y, -3, 3),
+       >>> plot_vector(v, (x, -3, 3), (y, -3, 3),
        ...     streamlines=True, scalar=None,
-       ...     label="Magnitude of %s" % str(expr), xlabel="x", ylabel="y")
+       ...     stream_kw={"density": 1.5},
+       ...     label="Magnitude of %s" % str(v), xlabel="x", ylabel="y")
        Plot object containing:
-       [0]: 2D vector series: [-sin(y), cos(x)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
+       [0]: 2D vector series: [sin(x - y), cos(x + y)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
 
     Plot multiple 2D vectors fields, setting a background scalar field to be
@@ -583,66 +586,98 @@ def plot_vector(*args, **kwargs):
     Interactive-widget 2D vector plot. Refer to ``iplot`` documentation to
     learn more about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 600
 
        from sympy import *
-       x, y, u = symbols("x y u")
+       from spb import *
+       x, y, a, b = symbols("x, y, a, b")
+       v = [-sin(a * y), cos(b * x)]
        plot_vector(
-           [-sin(u * y), cos(x)], (x, -3, 3), (y, -3, 3),
-           params={u: (1, 0, 2)},
-           n=20,
-           quiver_kw=dict(color="black"),
-           contour_kw={"cmap": "Blues_r", "levels": 20},
-           grid=False, xlabel="x", ylabel="y")
+           v, (x, -3, 3), (y, -3, 3),
+           params={a: (1, -2, 2), b: (1, -2, 2)},
+           quiver_kw=dict(color="black", scale=30, headwidth=5),
+           contour_kw={"cmap": "Blues_r", "levels": 15},
+           grid=False, xlabel="x", ylabel="y", use_latex=False)
 
     3D vector field.
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. k3d-screenshot::
 
-       >>> plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
-       ...      label="Magnitude", n=8, quiver_kw={"length": 0.1},
-       ...      xlabel="x", ylabel="y", zlabel="z")
-       Plot object containing:
-       [0]: 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0)
+       from sympy import *
+       from spb import *
+       var("x:z")
+       plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+           backend=KB, n=8, xlabel="x", ylabel="y", zlabel="z",
+           quiver_kw={"scale": 0.5, "line_width": 0.1, "head_size": 10})
 
     3D vector field with 3 orthogonal slice planes.
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. k3d-screenshot::
+       :camera: 18.45, -25.63, 14.10, 0.45, -1.02, -2.32, -0.25, 0.35, 0.9
 
-       >>> plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
-       ...      n=8, quiver_kw={"length": 0.1},
-       ...      slice=[
-       ...          Plane((-10, 0, 0), (1, 0, 0)),
-       ...          Plane((0, 10, 0), (0, 2, 0)),
-       ...          Plane((0, 0, -10), (0, 0, 1))],
-       ...      label=["Magnitude"] * 3, xlabel="x", ylabel="y", zlabel="z")
-       Plot object containing:
-       [0]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) at Plane(Point3D(-10, 0, 0), (1, 0, 0))
-       [1]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) at Plane(Point3D(0, 10, 0), (0, 2, 0))
-       [2]: sliced 3D vector series: [z, y, x] over (x, -10.0, 10.0), (y, -10.0, 10.0), (z, -10.0, 10.0) at Plane(Point3D(0, 0, -10), (0, 0, 1))
+       from sympy import *
+       from spb import *
+       var("x:z")
+       plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+           backend=KB, n=8, use_cm=False, grid=False,
+           xlabel="x", ylabel="y", zlabel="z",
+           quiver_kw={"scale": 0.25, "line_width": 0.1, "head_size": 10},
+           slice=[
+               Plane((-10, 0, 0), (1, 0, 0)),
+               Plane((0, 10, 0), (0, 2, 0)),
+               Plane((0, 0, -10), (0, 0, 1))])
 
     3D vector streamlines starting at a 300 random points:
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. k3d-screenshot::
+       :camera: 3.7, -8.16, 2.8, -0.75, -0.51, -0.63, -0.16, 0.27, 0.96
 
-       >>> plot_vector(Matrix([z, -x, y]), (x, -3, 3), (y, -3, 3), (z, -3, 3),
-       ...     n=40, streamlines=True,
-       ...     stream_kw=dict(
-       ...         starts=True,
-       ...         npoints=300
-       ...     ),
-       ...     label="Magnitude", xlabel="x", ylabel="y", zlabel="z")
-       Plot object containing:
-       [0]: 3D vector series: [z, -x, y] over (x, -3.0, 3.0), (y, -3.0, 3.0), (z, -3.0, 3.0)
+       from sympy import *
+       from spb import *
+       import k3d
+       var("x:z")
+       plot_vector(Matrix([z, -x, y]), (x, -3, 3), (y, -3, 3), (z, -3, 3),
+           backend=KB, n=40, streamlines=True,
+           stream_kw=dict(
+               starts=True,
+               npoints=400,
+               width=0.025,
+               color_map=k3d.colormaps.matplotlib_color_maps.viridis
+           ),
+           xlabel="x", ylabel="y", zlabel="z")
+
+    3D vector streamlines starting at the XY plane. Note that the number of
+    discretization points of the plane controls the numbers of streamlines.
+
+    .. k3d-screenshot::
+       :camera: -2.64, -22.6, 8.8, 0.03, -0.6, -1.13, 0.1, 0.35, 0.93
+
+       from sympy import *
+       from spb import *
+       import k3d
+       var("x:z")
+       u = -y - z
+       v = x + y / 5
+       w = S(1) / 5 + (x - S(5) / 2) * z
+       s = 10 # length of the cubic discretization volume
+       # create an XY plane with n discretization points along each direction
+       n = 8
+       p1 = plot_geometry(
+           Plane((0, 0, 0), (0, 0, 1)), (x, -s, s), (y, -s, s), (z, -s, s),
+           n1=n, n2=n, show=False)
+       # extract the coordinates of the starting points for the streamlines
+       xx, yy, zz = p1[0].get_data()
+       # streamlines plot
+       plot_vector(Matrix([u, v, w]), (x, -s, s), (y, -s, s), (z, -s, s),
+           backend=KB, n=40, streamlines=True, grid=False,
+           stream_kw=dict(
+               starts=dict(x=xx, y=yy, z=zz),
+               npoints=200,
+               width=0.025,
+               color_map=k3d.colormaps.matplotlib_color_maps.plasma
+           ),
+           title="Rössler \, attractor", xlabel="x", ylabel="y", zlabel="z")
 
     Visually verify the normal vector to a circular cone surface.
     The following steps are executed:
@@ -658,36 +693,39 @@ def plot_vector(*args, **kwargs):
     4. plot the sliced vector field.
     5. combine the plots of step 4 and 2 to get a nice visualization.
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. k3d-screenshot::
+       :camera: 4.5, -3.9, 2, 1.3, 0.04, -0.36, -0.25, 0.27, 0.93
 
-       >>> from sympy import tan, cos, sin, pi, symbols
-       >>> from spb import plot3d_parametric_surface
-       >>> from sympy.vector import CoordSys3D, gradient
-       >>> u, v = symbols("u, v")
-       >>> N = CoordSys3D("N")
-       >>> i, j, k = N.base_vectors()
-       >>> xn, yn, zn = N.base_scalars()
-       >>> t = 0.35    # half-cone angle in radians
-       >>> expr = -xn**2 * tan(t)**2 + yn**2 + zn**2    # cone surface equation
-       >>> g = gradient(expr)
-       >>> n = g / g.magnitude()    # unit normal vector
-       >>> n1, n2 = 10, 20 # number of discretization points for the vector field
-       >>> # cone surface for visualization (high number of discretization points)
-       >>> p1 = plot3d_parametric_surface(
-       ...     u / tan(t), u * cos(v), u * sin(v), (u, 0, 1), (v, 0 , 2*pi),
-       ...     {"alpha": 0.15}, show=False, wireframe=True,
-       ...     wf_n1=n1, wf_n2=n2, wf_rendering_kw={"lw": 0.75, "alpha": 0.5})
-       >>> # cone surface for data series generation (low numb of discret points)
-       >>> p2 = plot3d_parametric_surface(
-       ...     u / tan(t), u * cos(v), u * sin(v), (u, 0, 1), (v, 0 , 2*pi),
-       ...     n1=n1, n2=n2, show=False)
-       >>> p3 = plot_vector(
-       ...     n, (xn, -5, 5), (yn, -5, 5), (zn, -5, 5), slice=p2[0],
-       ...     use_cm=False, show=False, quiver_kw={"length": 0.2})
-       >>> (p1 + p3).show()
+       from sympy import tan, cos, sin, pi, symbols
+       from spb import plot3d_parametric_surface, plot_vector, KB
+       from sympy.vector import CoordSys3D, gradient
+
+       u, v = symbols("u, v")
+       N = CoordSys3D("N")
+       i, j, k = N.base_vectors()
+       xn, yn, zn = N.base_scalars()
+
+       t = 0.35    # half-cone angle in radians
+       expr = -xn**2 * tan(t)**2 + yn**2 + zn**2    # cone surface equation
+       g = gradient(expr)
+       n = g / g.magnitude()    # unit normal vector
+       n1, n2 = 10, 20 # number of discretization points for the vector field
+
+       # cone surface for visualization (high number of discretization points)
+       p1 = plot3d_parametric_surface(
+           u / tan(t), u * cos(v), u * sin(v), (u, 0, 1), (v, 0 , 2*pi),
+           {"opacity": 1}, backend=KB, show=False, wireframe=True,
+           wf_n1=n1, wf_n2=n2, wf_rendering_kw={"width": 0.004})
+       # cone surface to discretize vector field (low numb of discret points)
+       p2 = plot3d_parametric_surface(
+           u / tan(t), u * cos(v), u * sin(v), (u, 0, 1), (v, 0 , 2*pi),
+           n1=n1, n2=n2, show=False)
+       # plot vector field on over the surface of the cone
+       p3 = plot_vector(
+           n, (xn, -5, 5), (yn, -5, 5), (zn, -5, 5), slice=p2[0],
+           backend=KB, use_cm=False, show=False,
+           quiver_kw={"scale": 0.5, "pivot": "tail"})
+       (p1 + p3).show()
 
     See Also
     ========

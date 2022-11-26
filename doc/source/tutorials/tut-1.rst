@@ -38,13 +38,15 @@ Only ``MatplotlibBackend``, ``BokehBackend`` and ``PlotlyBackend`` support
 
 Now, let's visualize a plot created with Matplotlib:
 
-.. code-block:: python
+.. plot::
+   :context: reset
+   :include-source: True
 
+   from sympy import *
+   from spb import *
+   var("x")
    p = plot(sin(x), cos(x), log(x), backend=MB)
 
-.. image:: ../_static/tut-1/matplotlib-1.png
-   :width: 600
-   :alt: matplotlib
 
 In the previous command we specified the optional keyword argument
 ``backend=``. If not provided, the default backend will be used. Refer to
@@ -70,31 +72,28 @@ plot object ``p`` contains 3 data series. We can easily access the data
 series by using the index notation: this is useful in order to extract
 numerical data as we will see in :doc:`Tutorial 4 </tutorials/tut-4>`.
 
-.. code-block:: python
+.. plot::
+   :context: close-figs
+   :format: doctest
+   :include-source: True
 
-   print(p)
-   print("\nInformation about the first series:")
-   print(p[0])
-
-.. code-block:: text
-
+   >>> print(p)
    Plot object containing:
    [0]: cartesian line: sin(x) for x over (-10.0, 10.0)
    [1]: cartesian line: cos(x) for x over (-10.0, 10.0)
    [2]: cartesian line: log(x) for x over (-10.0, 10.0)
-
-   Information about the first series:
+   >>> print(p[0])
    cartesian line: sin(x) for x over (-10.0, 10.0)
 
 Let's now do the same with Plotly:
 
-.. code-block:: python
+.. plotly::
 
+   from sympy import *
+   from spb import *
+   var("x")
    plot(sin(x), cos(x), log(x), backend=PB)
 
-.. raw:: html
-
-   <iframe src="../_static/tut-1/plotly-1.html" height="500px" width="100%"></iframe>
 
 The top toolbar can be used to interact with the plot. However, there are
 more natural ways:

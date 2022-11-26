@@ -603,7 +603,8 @@ def plot(*args, **kwargs):
     Interactive-widget plot of an oscillator. Refer to ``iplot`` documentation
     to learn more about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 625
 
        from sympy import *
        from spb import *
@@ -618,7 +619,7 @@ def plot(*args, **kwargs):
                b: (0, 0, 2 * pi), # phase
                c: (0.25, 0, 1)    # damping
            },
-           ylim=(-1.25, 1.25)
+           ylim=(-1.25, 1.25), use_latex=False
        )
 
     References
@@ -917,15 +918,17 @@ def plot_parametric(*args, **kwargs):
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 575
 
        from sympy import *
        from spb import *
        x, a = symbols("x a")
        plot_parametric(
            cos(a * x), sin(x), (x, 0, 2*pi),
-           params={a: (1, 0, 2)},
-           aspect="equal", xlim=(-1.25, 1.25), ylim=(-1.25, 1.25)
+           params={a: (0.5, 0, 2)},
+           aspect="equal", use_latex=False,
+           xlim=(-1.25, 1.25), ylim=(-1.25, 1.25)
        )
 
     References
@@ -1400,8 +1403,10 @@ def plot3d_parametric_line(*args, **kwargs):
 
     .. code-block:: python
 
+       from sympy import *
+       from spb import *
        import k3d
-       a, b = symbols("a, b")
+       a, b, t = symbols("a, b, t")
        c = 2 * sqrt(a * b)
        r = a + b
        params = {a: (1.5, 0, 2), b: (1, 0, 2)}
@@ -1894,18 +1899,19 @@ def plot3d(*args, **kwargs):
     colormap to the radius. Note that the same result can be achieved with
     ``plot3d_revolution``.
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. k3d-screenshot::
+       :camera: 4.6, -3.6, 3.86, 2.55, -2.06, 0.36, -0.6, 0.5, 0.63
 
-       >>> r, theta = symbols("r, theta")
-       >>> expr = cos(r**2) * exp(-r / 3)
-       >>> plot3d(expr, (r, 0, 3.25), (theta, 3 * pi / 2, 2 * pi),
-       ...     "r", {"alpha": 0.4}, is_polar=True, legend=True,
-       ...     use_cm=True, color_func=lambda x, y, z: np.sqrt(x**2 + y**2),
-       ...     wireframe=True, wf_n1=20, wf_n2=10,
-       ...     wf_rendering_kw={"lw": 0.75})
+       from sympy import *
+       from spb import *
+       import numpy as np
+       r, theta = symbols("r, theta")
+       expr = cos(r**2) * exp(-r / 3)
+       plot3d(expr, (r, 0, 5), (theta, 1.6 * pi, 2 * pi),
+           backend=KB, is_polar=True, legend=True, grid=False,
+           use_cm=True, color_func=lambda x, y, z: np.sqrt(x**2 + y**2),
+           wireframe=True, wf_n1=30, wf_n2=10,
+           wf_rendering_kw={"width": 0.005})
 
     Plotting a numerical function instead of a symbolic expression:
 
@@ -1920,14 +1926,15 @@ def plot3d(*args, **kwargs):
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
 
        from sympy import *
        from spb import *
-       x, d = symbols("x d")
+       x, y, d = symbols("x y d")
        plot3d(
            cos(x**2 + y**2) * exp(-(x**2 + y**2) * d), (x, -2, 2), (y, -2, 2),
-           params={d: (0.25, 0, 1)}, n=50, zlim=(-1.25, 1.25))
+           params={d: (0.25, 0, 1)}, backend=PB, use_cm=True, n=50,
+           wireframe=True, wf_n1=15, wf_n2=15, throttled=True, use_latex=False)
 
     References
     ==========
@@ -2148,20 +2155,24 @@ def plot3d_parametric_surface(*args, **kwargs):
     color function mapping the `v` values. Activate the wireframe to better
     visualize the parameterization.
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. k3d-screenshot::
+       :camera: 2.215, -2.945, 2.107, 0.06, -0.374, -0.459, -0.365, 0.428, 0.827
 
-       >>> x = (1 + v / 2 * cos(u / 2)) * cos(u)
-       >>> y = (1 + v / 2 * cos(u / 2)) * sin(u)
-       >>> z = v / 2 * sin(u / 2)
-       >>> plot3d_parametric_surface(
-       ...     x, y, z, (u, 0, 2*pi), (v, -1, 1),
-       ...     "v", {"alpha": 0.75, "cmap": "twilight"},
-       ...     use_cm=True, color_func=lambda u, v: u,
-       ...     title="Möbius strip",
-       ...     wireframe=True, wf_n1=20, wf_rendering_kw={"lw": 0.75})
+       from sympy import *
+       from spb import *
+       import k3d
+       var("u, v")
+
+       x = (1 + v / 2 * cos(u / 2)) * cos(u)
+       y = (1 + v / 2 * cos(u / 2)) * sin(u)
+       z = v / 2 * sin(u / 2)
+       plot3d_parametric_surface(
+           x, y, z, (u, 0, 2*pi), (v, -1, 1),
+           "v", {"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
+           backend=KB,
+           use_cm=True, color_func=lambda u, v: u,
+           title="Möbius \, strip",
+           wireframe=True, wf_n1=20, wf_rendering_kw={"width": 0.004})
 
     Riemann surfaces of the real part of the multivalued function `z**n`,
     using Plotly:
@@ -2186,19 +2197,17 @@ def plot3d_parametric_surface(*args, **kwargs):
     Plotting a numerical function instead of a symbolic expression. Note the
     use of `zlim` to force a near-equal aspect ratio with Matplotlib 3D plots.
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. k3d-screenshot::
+       :camera: 5.3, -7.6, 4, -0.2, -0.9, -1.3, -0.25, 0.4, 0.9
 
-       >>> import numpy as np
-       >>> fx = lambda u, v: (4 + np.cos(u)) * np.cos(v)
-       >>> fy = lambda u, v: (4 + np.cos(u)) * np.sin(v)
-       >>> fz = lambda u, v: np.sin(u)
-       >>> plot3d_parametric_surface(fx, fy, fz, ("u", 0, 2 * pi),
-       ...     ("v", 0, 2 * pi), zlim=(-2.5, 2.5), title="Torus")
-       Plot object containing:
-       [0]: parametric cartesian surface: (<function <lambda> at 0x7f466b8b2950>, <function <lambda> at 0x7f466b8b29e0>, <function <lambda> at 0x7f466b8b2a70>) for u over (0.0, 6.283185307179586) and v over (0.0, 6.283185307179586)
+       from spb import *
+       import numpy as np
+       fx = lambda u, v: (4 + np.cos(u)) * np.cos(v)
+       fy = lambda u, v: (4 + np.cos(u)) * np.sin(v)
+       fz = lambda u, v: np.sin(u)
+       plot3d_parametric_surface(fx, fy, fz, ("u", 0, 2 * np.pi),
+           ("v", 0, 2 * np.pi), zlim=(-2.5, 2.5), title="Torus",
+           backend=KB, grid=False)
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -2701,14 +2710,16 @@ def plot_contour(*args, **kwargs):
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 575
 
        from sympy import *
        from spb import *
-       x, y, a = symbols("x y a")
-       plot_contour(
-           cos(a * x**2 + y**2), (x, -2, 2), (y, -2, 2),
-           params={a: (1, 0, 2)}, grid=False)
+       x, y, a, b = symbols("x y a b")
+       expr = (cos(x) + a * sin(x) * sin(y) - b * sin(x) * cos(y))**2
+       plot_contour(expr, (x, 0, pi), (y, 0, 2 * pi),
+           params={a: (1, 0, 2), b: (1, 0, 2)},
+           grid=False, use_latex=False)
 
     See Also
     ========
@@ -2832,18 +2843,17 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis
 
     Revolve a 2D parametric circle around the z axis:
 
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
+    .. k3d-screenshot::
+       :camera: 4.3, -5.82, 4.95, 0.4, -0.25, -0.67, -0.32, 0.5, 0.8
 
-       >>> circle = (3 + cos(t), sin(t))
-       >>> plot3d_revolution(
-       ...     circle, (t, 0, 2 * pi),
-       ...     rendering_kw={"alpha": 0.1},
-       ...     wireframe=True, wf_n1=15, wf_n2=15,
-       ...     wf_rendering_kw={"lw": 0.5, "alpha": 0.75},
-       ...     show_curve=True, zlim=(-2.5, 2.5))
+       from sympy import *
+       from spb import *
+       t = symbols("t")
+       circle = (3 + cos(t), sin(t))
+       plot3d_revolution(circle, (t, 0, 2 * pi),
+           backend=KB, show_curve=True,
+           rendering_kw={"opacity": 0.65},
+           curve_kw={"rendering_kw": {"width": 0.05}})
 
     Revolve a 3D parametric curve around the z axis for a given azimuthal
     angle, using Plotly:
@@ -3418,7 +3428,8 @@ def plot_geometry(*args, **kwargs):
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 625
 
        from sympy import *
        from spb import *
@@ -3433,7 +3444,7 @@ def plot_geometry(*args, **kwargs):
                c: (2, 1, 2),
                d: param.Integer(3, softbounds=(3, 8), label="n")
            },
-           aspect="equal", is_filled=False,
+           aspect="equal", is_filled=False, use_latex=False,
            xlim=(-2.5, 5.5), ylim=(-3, 6.5))
 
     See Also
@@ -3651,7 +3662,8 @@ def plot_list(*args, **kwargs):
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 625
 
        from sympy import *
        from spb import *
@@ -3661,7 +3673,8 @@ def plot_list(*args, **kwargs):
        p1 = plot_parametric(
            (cos(x), sin(x), (x, 0, 2*pi), {"linestyle": ":"}),
            (cos(2 * x) / 2, sin(2 * x) / 2, (x, 0, pi), {"linestyle": ":"}),
-           params=params, use_cm=False, aspect="equal", show=False)
+           params=params, use_cm=False, aspect="equal",
+           show=False, use_latex=False)
        # plot points
        p2 = plot_list(
            ([cos(t)], [sin(t)], "A"),

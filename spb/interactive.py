@@ -408,10 +408,12 @@ class PanelLayout:
         if not self._servable:
             return content
 
+        return self._create_template(content, True)
+
+    def _create_template(self, content, show=False):
         css = _CUSTOM_CSS + self._custom_css
         if len(self._name.strip()) == 0:
             css = _CUSTOM_CSS_NO_HEADER + self._custom_css
-
 
         # theme = pn.template.vanilla.VanillaDarkTheme if cfg["interactive"]["theme"] == "dark" else pn.template.vanilla.VanillaDefaultTheme
         # vanilla = pn.template.VanillaTemplate(title=self._name, theme=theme)
@@ -423,7 +425,9 @@ class PanelLayout:
         vanilla.main.append(content)
         vanilla.config.raw_css.append(css)
 
-        return vanilla.servable().show()
+        if show:
+            return vanilla.servable().show()
+        return vanilla
 
 
 def create_series(*args, **kwargs):
@@ -1014,22 +1018,24 @@ def iplot(*args, show=True, **kwargs):
     Examples
     ========
 
+    NOTE: the following examples use the ordinary plotting function because
+    ``iplot`` is already integrated with them.
+
     Surface plot between -10 <= x, y <= 10 with a damping parameter varying
     from 0 to 1, with a default value of 0.15, discretized with 50 points
     on both directions. Note the use of `threed=True` to specify a 3D plot.
     If `threed=False`, a contour plot will be generated.
 
-    .. code-block:: python
+    .. panel-screenshot::
 
        from sympy import (symbols, sqrt, cos, exp, sin, pi, re, im,
            Matrix, Plane, Polygon, I, log)
-       from spb.interactive import iplot
-       from spb import PB
+       from spb import *
        x, y, z = symbols("x, y, z")
        r = sqrt(x**2 + y**2)
        d = symbols('d')
        expr = 10 * cos(r) * exp(-r * d)
-       iplot(
+       plot3d(
            (expr, (x, -10, 10), (y, -10, 10)),
            params = { d: (0.15, 0, 1) },
            title = "My Title",
@@ -1038,7 +1044,6 @@ def iplot(*args, show=True, **kwargs):
            zlabel = "z axis",
            backend = PB,
            n = 51,
-           threed = True,
            use_cm = True,
            use_latex=False,
            wireframe = True, wf_n1=15, wf_n2=15,
@@ -1056,27 +1061,26 @@ def iplot(*args, show=True, **kwargs):
        correctly visualize very small or very big numbers.
     6. custom labeling of the parameter-sliders.
 
-    .. code-block:: python
+    .. panel-screenshot::
 
        from sympy import (symbols, sqrt, cos, exp, sin, pi, re, im,
            Matrix, Plane, Polygon, I, log)
-       from spb.interactive import iplot
-       from spb import MB
+       from spb import *
        from bokeh.models.formatters import PrintfTickFormatter
        formatter = PrintfTickFormatter(format="%.3f")
        kp, t, z, o = symbols("k_P, tau, zeta, omega")
        G = kp / (I**2 * t**2 * o**2 + 2 * z * t * o * I + 1)
        mod = lambda x: 20 * log(sqrt(re(x)**2 + im(x)**2), 10)
-       iplot(
-           (mod(G.subs(z, 0)), (o, 0.1, 100), "G(z=0)", {"linestyle": ":"}),
-           (mod(G.subs(z, 1)), (o, 0.1, 100), "G(z=1)", {"linestyle": ":"}),
+       plot(
+           (mod(G.subs(z, 0)), (o, 0.1, 100), "G(z=0)", {"line_dash": "dotted"}),
+           (mod(G.subs(z, 1)), (o, 0.1, 100), "G(z=1)", {"line_dash": "dotted"}),
            (mod(G), (o, 0.1, 100), "G"),
            params = {
                kp: (1, 0, 3),
                t: (1, 0, 3),
                z: (0.2, 0, 1, 200, formatter, "z")
            },
-           backend = MB,
+           backend = BB,
            n = 2000,
            xscale = "log",
            xlabel = "Frequency, omega, [rad/s]",
@@ -1084,20 +1088,53 @@ def iplot(*args, show=True, **kwargs):
            use_latex = False,
        )
 
+    A line plot illustrating the Fouries series approximation of a saw tooth
+    wave and:
+
+    1. custom format of the value shown on the slider.
+    2. creation of an integer spinner widget. This is achieved by setting
+       ``None`` as one of the bounds of the integer parameter.
+
+    .. panel-screenshot::
+
+       from sympy import *
+       from spb import *
+       import param
+       from bokeh.models.formatters import PrintfTickFormatter
+
+       x, T, n, m = symbols("x, T, n, m")
+       sawtooth = frac(x / T)
+       # Fourier Series of a sawtooth wave
+       fs = S(1) / 2 - (1 / pi) * Sum(sin(2 * n * pi * x / T) / n, (n, 1, m))
+
+       formatter = PrintfTickFormatter(format="%.3f")
+       plot(
+           (sawtooth, (x, 0, 10), "f", {"line_dash": "dotted"}),
+           (fs, (x, 0, 10), "approx"),
+           params = {
+               T: (4, 0, 10, 80, formatter),
+               m: param.Integer(4, bounds=(1, None), label="Sum up to n ")
+           },
+           xlabel = "x",
+           ylabel = "y",
+           backend = BB,
+           use_latex = False
+       )
+
     A line plot with a parameter representing an angle in radians, but
     showing the value in degrees on its label:
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 570
 
        from sympy import sin, pi, symbols
-       from spb import MB
-       from spb.interactive import iplot
+       from spb import *
        from bokeh.models.formatters import FuncTickFormatter
        # Javascript code is passed to `code=`
        formatter = FuncTickFormatter(code="return (180./3.1415926 * tick).toFixed(2)")
        x, t = symbols("x, t")
 
-       iplot(
+       plot(
            (1 + x * sin(t), (x, -5, 5)),
            params = {
                t: (1, -2 * pi, 2 * pi, 100, formatter, "theta [deg]")
@@ -1109,7 +1146,8 @@ def iplot(*args, show=True, **kwargs):
        )
 
     Combine together `InteractivePlot` and ``Plot`` instances. The same
-    parameters dictionary must be used for every ``iplot`` command. Note:
+    parameters dictionary must be used for every interactive plot command.
+    Note:
 
     1. the first plot dictates the labels, title and wheter to show the legend
        or not.
@@ -1121,16 +1159,16 @@ def iplot(*args, show=True, **kwargs):
        with ``p.backend``. Then, we can use the ``p.backend.fig`` attribute
        to retrieve the figure, or ``p.backend.save()`` to save the figure.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 570
 
        from sympy import sin, cos, symbols
-       from spb import plot, MB
-       from spb.interactive import iplot
+       from spb import *
        x, u = symbols("x, u")
        params = {
            u: (1, 0, 2)
        }
-       p1 = iplot(
+       p1 = plot(
            (cos(u * x), (x, -5, 5)),
            params = params,
            backend = MB,
@@ -1141,7 +1179,7 @@ def iplot(*args, show=True, **kwargs):
            show = False,
            use_latex = False
        )
-       p2 = iplot(
+       p2 = plot(
            (sin(u * x), (x, -5, 5)),
            params = params,
            backend = MB,
@@ -1160,10 +1198,12 @@ def iplot(*args, show=True, **kwargs):
     ``K3DBackend`` is not supported for this operation mode. Also note the
     two ways to create a integer sliders.
 
-    .. code-block:: python
+    .. panel-screenshot::
+       :small-size: 800, 500
 
+       from sympy import *
+       from spb import *
        import param
-       from spb.backends.bokeh import BB
        from bokeh.models.formatters import PrintfTickFormatter
        formatter = PrintfTickFormatter(format='%.4f')
 
@@ -1172,7 +1212,7 @@ def iplot(*args, show=True, **kwargs):
        phip = phi.diff(t)
        r1 = phip / (1 + phip)
 
-       iplot(
+       plot_polar(
            (r1, (t, 0, 2*pi)),
            params = {
                p1: (0.035, -0.035, 0.035, 50, formatter),
@@ -1182,7 +1222,6 @@ def iplot(*args, show=True, **kwargs):
                # integer parameter created with usual syntax
                c: (3, 1, 5, 4)
            },
-           is_polar = True,
            use_latex = False,
            backend = BB,
            aspect = "equal",
@@ -1331,7 +1370,7 @@ def create_widgets(params, **kwargs):
     Examples
     ========
 
-    .. jupyter-execute::
+    .. code-block:: python
 
        from sympy.abc import x, y, z
        from spb.interactive import create_widgets

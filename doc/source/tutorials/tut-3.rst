@@ -87,6 +87,20 @@ Let's now discuss a few customization options:
 
 .. code-block:: python
 
+   # Set the default evaluation algorithm for line plots:
+   # True: use adaptive algorithm
+   # False: use uniform mesh algorithm
+   cfg["adaptive"]["used_by_default"] = True
+   # Set the "smoothness" goal for the adaptive algorithm.
+   # Lower values create smoother lines, at the cost of
+   # performance.
+   cfg["adaptive"]["goal"] = 0.01
+
+   # Set the overall plot range to be used when the plotting
+   # variable is not specified.
+   cfg["plot_range"]["min"] = -10
+   cfg["plot_range"]["max"] = 10
+
    # Set the location of the intersection between the horizontal and vertical
    # axis of Matplotlib (only works for 2D plots). Possible values:
    #       "center", "auto" or None
@@ -139,19 +153,6 @@ Let's now discuss a few customization options:
    # (value True)
    cfg["interactive"]["throttled"] = False
 
-   # Set the default evaluation algorithm for line plots:
-   # True: use adaptive algorithm
-   # False: use uniform mesh algorithm
-   cfg["adaptive"]["used_by_default"] = True
-   # Set the "smoothness" goal for the adaptive algorithm.
-   # Lower values create smoother lines, at the cost of
-   # performance.
-   cfg["adaptive"]["goal"] = 0.01
-
-   # Set the overall plot range to be used when the plotting
-   # variable is not specified.
-   cfg["plot_range"]["min"] = -10
-   cfg["plot_range"]["max"] = 10
 
 Let's consider ``MatplotlibBackend``. Let's suppose we would like to use
 the old plotting module style:

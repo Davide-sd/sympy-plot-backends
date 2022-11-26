@@ -18,11 +18,16 @@ The following functions are exposed by this module:
   angle.
 * ``plot_list``: visualize numerical data.
 * ``plot_parametric``: visualize a 2D parametric curve.
+* ``plot_parametric_region``: visualize a 2D parametric region.
 * ``plot_contour``: visualized filled or line contours of a function of two
   variables.
 * ``plot3d``: visualize a function of two variables.
 * ``plot3d_parametric_line``: visualize a 3D parametric curve.
 * ``plot3d_parametric_surface``: visualize a 3D parametric surface.
+* ``plot3d_spherical``: plots a radius as a function of the spherical
+  coordinates theta and phi.
+* ``plot3d_revolution``: generate a surface of revolution by rotating a
+  curve around an axis of rotation.
 * ``plot3d_implicit``: visualize isosurfaces of a function.
 * ``plot_geometry``: visualize entities from the `sympy.geometry` module.
 * ``plot_implicit``: visualize implicit equations / inequalities.
@@ -36,9 +41,6 @@ The following functions are exposed by this module:
   colored by its argument.
 * ``plotgrid``: combine multiple plots into a grid-like layout. It works with
   Matplotlib, Bokeh and Plotly.
-* ``iplot``: create parametric-interactive plots using widgets (sliders,
-  buttons, etc.). Note that this function has been integrated with many of the
-  aforementioned functions.
 
 It is also possible to combine different plots together.
 
@@ -51,8 +53,9 @@ libraries):
 `Matplotlib <https://matplotlib.org/>`_,
 `Plotly <https://plotly.com/>`_,
 `Bokeh <https://github.com/bokeh/bokeh>`_,
-`K3D-Jupyter <https://github.com/K3D-tools/K3D-jupyter>`_.
-`Mayavi <https://docs.enthought.com/mayavi/mayavi/>`_.
+`K3D-Jupyter <https://github.com/K3D-tools/K3D-jupyter>`_,
+`Mayavi <https://docs.enthought.com/mayavi/mayavi/>`_ (support for this backend
+is limited).
 
 The 3 most important reasons for supporting multiple backends are:
 
@@ -77,195 +80,17 @@ More information about the backends can be found at:
 Examples
 ========
 
-Originally, the module has been developed with SymPy in mind, however it has
-evolved to the point where lambda functions can be used instead of symbolic
-expressions.
-
 The following code blocks shows a few examples about the capabilities of
 this module. Please, try them on a Jupyter Notebook to explore the interactive
-figures.
-
-
-Polar plot with Matplotlib:
-
-.. code-block:: python
-
-   from sympy import symbols, sin, cos, pi, latex
-   from spb import plot_polar
-   x = symbols("x")
-   expr = sin(2 * x) * cos(5 * x) + pi / 2
-   plot_polar(expr, (x, 0, 2 * pi), ylim=(0, 3), title="$%s$" % latex(expr))
-
-.. image:: _static/polar_matplotlib.png
-  :width: 600
-  :alt: polar plot with matplotlib
-
-
-2D parametric plot with Matplotlib, using Numpy and lambda functions:
-
-.. code-block:: python
-
-   import numpy as np
-   from spb import plot_parametric
-   plot_parametric(
-      lambda t: np.sin(3 * t + np.pi / 4), lambda t: np.sin(4 * t),
-      ("t", 0, 2 * pi), "t [rad]", xlabel="x", ylabel="y", aspect="equal")
-
-.. image:: _static/parametric_matplotlib.png
-  :width: 600
-  :alt: 2D parametric plot with matplotlib
-
-
-3D plot with K3D-Jupyter and cartesian discretization:
-
-.. code-block:: python
-
-   from sympy import symbols, cos, pi
-   from spb import plot3d, KB
-   x, y = symbols("x, y")
-   expr = cos(2 * pi * x * y)
-   title = r"\text{K3D - Latex Support} \qquad f(x, y) = " + latex(expr)
-   plot3d(
-       expr, (x, -2, 2), (y, -2, 2),
-       use_cm=False, n=300, title=title,
-       backend=KB)
-
-.. image:: _static/k3d-2.png
-  :width: 600
-  :alt: surface plot with k3d
-
-
-3D plot with K3D-Jupyter and polar discretization. Two identical expressions
-are going to be plotted, one will display the mesh with a solid color, the
-other will display the connectivity of the mesh (wireframe).
-Customization on the colors, surface/wireframe can easily be done after the
-plot is created:
-
-.. code-block:: python
-
-   from sympy import symbols, cos, sin, pi, latex
-   from spb import plot3d, KB
-   r, theta = symbols("r, theta")
-   expr = cos(r) * cos(sin(4 * theta))
-   plot3d(
-       expr, expr, (r, 0, 2), (theta, 0, 2 * pi),
-       n1=50, n2=200, is_polar=True, grid=False,
-       title=r"f\left(r, \theta\right) = " + latex(expr), backend=KB)
-
-.. image:: _static/k3d-3.png
-  :width: 600
-  :alt: surface plot with k3d
-
-
-3D plot with Plotly of a parametric surface, colored according to the
-radius, with wireframe lines (also known as grid lines) highlighting the
-parameterization:
-
-.. code-block:: python
-
-   from sympy import symbols, cos, sin, pi
-   from spb import plot3d_parametric_surface, PB
-   import numpy as np
-   u, v = symbols("u, v")
-   def trefoil(u, v, r):
-       x = r * sin(3 * u) / (2 + cos(v))
-       y = r * (sin(u) + 2 * sin(2 * u)) / (2 + cos(v + pi * 2 / 3))
-       z = r / 2 * (cos(u) - 2 * cos(2 * u)) * (2 + cos(v)) * (2 + cos(v + pi * 2 / 3)) / 4
-       return x, y, z
-   plot3d_parametric_surface(
-      trefoil(u, v, 3), (u, -pi, 3*pi), (v, -pi, 3*pi), "radius",
-      grid=False, title="Trefoil Knot", backend=PB, use_cm=True,
-      color_func=lambda x, y, z: np.sqrt(x**2 + y**2 + z**2),
-      wireframe=True, wf_n1=100, wf_n2=30, n1=250)
-
-.. image:: _static/trefoil-knot-plotly.png
-  :width: 600
-  :alt: parametric surface plot with plotly showing wireframe lines
-
-
-Visualizing a 2D vector field:
-
-.. code-block:: python
-
-   from sympy import symbols
-   from spb import plot_vector, PB
-   x, y = symbols("x, y")
-   expr = Tuple(x**2 - y**2 -4, 2 * x * y)
-   plot_vector(
-       expr, (x, -5, 5), (y, -5, 5),
-       backend=PB,
-       n=15, quiver_kw={"scale":0.025},
-       theme="plotly_dark",
-       xlim=(-5, 5), ylim=(-5, 5),
-       title=r"$\vec{F} = " + latex(expr) + "$")
-
-.. image:: _static/plotly-vectors.png
-  :width: 600
-  :alt: 2D vector plot with plotly
-
-
-Visualizing a 3D vector field with a random number of streamtubes:
-
-.. code-block:: python
-
-   from sympy import symbols, Tuple
-   from spb import plot_vector, KB
-   x, y, z = symbols("x, y, z")
-   expr = Tuple(-y, -z, x)
-   plot_vector(
-       expr, (x, -5, 5), (y, -5, 5), (z, -5, 5),
-       streamlines=True, n=30,
-       backend=KB, grid=False,
-       stream_kw={"starts":True, "npoints":500},
-       title=r"\vec{F}(x, y, z) = " + latex(expr))
-
-.. image:: _static/k3d_streamtubes.png
-  :width: 600
-  :alt: 3D vector plot with K3D
-
-
-Domain coloring plot of a complex function:
-
-.. code-block:: python
-
-   from sympy import symbols
-   from spb import plot_complex, BB
-   z = symbols("z")
-   expr = (z - 1) / (z**2 + z + 1)
-   plot_complex(
-       expr, (z, -2-2j, 2+2j),
-       coloring="b",
-       backend=BB, theme="dark_minimal",
-       title=str(expr))
-
-.. image:: _static/bokeh_domain_coloring.png
-  :width: 600
-  :alt: domain coloring plot with bokeh
-
-
-3D coloring plot of a complex function:
-
-.. code-block:: python
-
-   from sympy import symbols, latex
-   from spb import plot_complex, KB
-   z = symbols("z")
-   expr = (z - 1) / (z**2 + z + 1)
-   plot_complex(
-       expr, (z, -2-2j, 2+2j),
-       coloring="b", threed=True, zlim=(0, 6),
-       backend=KB, grid=False,
-       title=latex(expr))
-
-.. image:: _static/k3d_domain_coloring.png
-  :width: 600
-  :alt: 3D domain coloring plot with K3D
+figures. Alternatively, consider loading the ``html`` output when available:
+note that changing the state of widgets won't update the plot as there is no
+active Python kernel running on this web page.
 
 
 Interactive-Parametric 2D plot of the magnitude of a second order transfer
 function:
 
-.. code-block:: python
+.. panel-screenshot::
 
    from sympy import symbols, log, sqrt, re, im, I
    from spb import plot, BB
@@ -291,9 +116,130 @@ function:
        use_latex = False
    )
 
-.. image:: _static/iplot_bokeh_2.png
-  :width: 600
-  :alt: iplot with bokeh
+
+Polar plot with Matplotlib:
+
+.. plot::
+   :context: reset
+   :include-source: True
+
+   from sympy import symbols, sin, cos, pi, latex
+   from spb import plot_polar
+   x = symbols("x")
+   expr = sin(2 * x) * cos(5 * x) + pi / 2
+   plot_polar(expr, (x, 0, 2 * np.pi), ylim=(0, 3), title="$%s$" % latex(expr))
+
+
+2D parametric plot with Matplotlib, using Numpy and lambda functions:
+
+.. plot::
+   :context: reset
+   :include-source: True
+
+   import numpy as np
+   from spb import plot_parametric
+   plot_parametric(
+      lambda t: np.sin(3 * t + np.pi / 4), lambda t: np.sin(4 * t),
+      ("t", 0, 2 * np.pi), "t [rad]", xlabel="x", ylabel="y", aspect="equal")
+
+
+Interactive-Parametric domain coloring plot of a complex function:
+
+.. panel-screenshot::
+
+   from sympy import symbols
+   from spb import plot_complex, BB
+   u, z = symbols("u, z")
+   expr = (z - 1) / (u * z**2 + z + 1)
+   plot_complex(
+      expr, (z, -2-2j, 2+2j),
+      params={u: (1, 0, 2)},
+      coloring="b", backend=BB,
+      use_latex=False, title=str(expr))
+
+
+3D plot with K3D-Jupyter and polar discretization. Two identical expressions
+are going to be plotted, one will display the mesh with a solid color, the
+other will display the connectivity of the mesh (wireframe).
+Customization on the colors, surface/wireframe can easily be done after the
+plot is created:
+
+.. k3d-screenshot::
+   :camera: 1.092, -3.01, 1.458, 0.159, -0.107, -0.359, -0.185, 0.427, 0.885
+
+   from sympy import symbols, cos, sin, pi, latex
+   from spb import plot3d, KB
+   r, theta = symbols("r, theta")
+   expr = cos(r) * cos(sin(4 * theta))
+   plot3d(
+       (expr, {"color": 0x1f77b4}),
+       (expr, {"color": 0x1a5fb4, "opacity": 0.15, "wireframe": True}),
+       (r, 0, 2), (theta, 0, 2 * pi),
+       n1=50, n2=200, is_polar=True, grid=False,
+       title=r"f\left(r, \theta\right) = " + latex(expr), backend=KB)
+
+
+3D plot with Plotly of a parametric surface, colored according to the
+radius, with wireframe lines (also known as grid lines) highlighting the
+parameterization:
+
+.. plotly::
+   :camera: 1.75, 0, 0, 0, 0, 0, 0, 0, 1
+
+   from sympy import symbols, cos, sin, pi
+   from spb import plot3d_parametric_surface, PB
+   import numpy as np
+   u, v = symbols("u, v")
+   def trefoil(u, v, r):
+       x = r * sin(3 * u) / (2 + cos(v))
+       y = r * (sin(u) + 2 * sin(2 * u)) / (2 + cos(v + pi * 2 / 3))
+       z = r / 2 * (cos(u) - 2 * cos(2 * u)) * (2 + cos(v)) * (2 + cos(v + pi * 2 / 3)) / 4
+       return x, y, z
+   plot3d_parametric_surface(
+      trefoil(u, v, 3), (u, -pi, 3*pi), (v, -pi, 3*pi), "radius",
+      grid=False, title="Trefoil Knot", backend=PB, use_cm=True,
+      color_func=lambda x, y, z: np.sqrt(x**2 + y**2 + z**2),
+      wireframe=True, wf_n1=100, wf_n2=30, n1=250, show=False)
+
+
+Visualizing a 2D vector field:
+
+.. plotly::
+
+   from sympy import *
+   from spb import *
+   x, y = symbols("x, y")
+   expr = Tuple(1, sin(x**2 + y**2))
+   l = 2
+   plot_vector(
+      expr, (x, -l, l), (y, -l, l),
+      backend=PB, streamlines=True, scalar=False,
+      stream_kw={"line_color": "black", "density": 1.5},
+      xlim=(-l, l), ylim=(-l, l),
+      title=r"$\vec{F} = " + latex(expr) + "$")
+
+
+Visualizing a 3D vector field with a random number of streamtubes:
+
+.. k3d-screenshot::
+   :camera: 40.138, -37.134, 35.253, 4.387, -4.432, 25.837, 0.338, 0.513, 0.789
+
+   from sympy import *
+   from spb import *
+   var("x:z")
+
+   l = 30
+   u = 10 * (y - x)
+   v = 28 * x - y - x * z
+   w = -8 * z / 3 + x * y
+
+   plot_vector(
+      [u, v, w], (x, -l, l), (y, -l, l), (z, 0, 50),
+      backend=KB, n=50, grid=False, use_cm=False, streamlines=True,
+      stream_kw={"starts": True, "npoints": 15},
+      title="Lorentz \, attractor"
+   )
+
 
 
 Differences with sympy.plotting

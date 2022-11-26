@@ -13,7 +13,10 @@ it provides the necessary functionalities to quickly creates the most common
 types of plots, such as line plots, surface plots, parametric plots,
 vector plots, complex plots, geometric plots.
 
-It also provide an interactive plotting function, ``iplot``, which automatically generates widgets (sliders, buttons, ...) starting from symbolic expressions. It allows to better understand the influence of each parameters in a particular expression, without the knowledge of complicated widget libraries.
+Most of the plotting functions can also automatically generates widgets
+(sliders, buttons, ...) starting from symbolic expressions. It allows to
+better understand the influence of each parameters in a particular expression,
+without the knowledge of complicated widget libraries.
 
 .. image:: _static/iplot_bokeh.png
   :width: 220
