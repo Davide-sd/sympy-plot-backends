@@ -240,23 +240,15 @@ home_folder = os.path.expanduser("~")
 chrome_path = os.path.join(home_folder, "selenium/chrome-linux/chrome")
 chrome_driver_path = os.path.join(home_folder, "selenium/drivers/chromedriver")
 
-print("Checking mody code functions")
-print("_modify_code", _modify_code)
-print("_modify_iplot_code", _modify_iplot_code)
+panel_screenshot_small_size = [800, 550]
+panel_screenshot_intercept_code = _modify_iplot_code
+panel_screenshot_browser = "chrome"
+panel_screenshot_browser_path = chrome_path
+panel_screenshot_driver_path = chrome_driver_path
 
-print("Checking browser and driver paths")
-print("{} : {}".format(chrome_path, os.path.exists(chrome_path)))
-print("{} : {}".format(chrome_driver_path, os.path.exists(chrome_driver_path)))
+# -- Options for sphinx_k3d_screenshot ----------------------------------------
 
-# panel_screenshot_small_size = [800, 550]
-# panel_screenshot_intercept_code = _modify_iplot_code
-# panel_screenshot_browser = "chrome"
-# panel_screenshot_browser_path = chrome_path
-# panel_screenshot_driver_path = chrome_driver_path
-
-# # -- Options for sphinx_k3d_screenshot ----------------------------------------
-
-# k3d_screenshot_browser = "chrome"
-# k3d_screenshot_browser_path = chrome_path
-# k3d_screenshot_driver_path = chrome_driver_path
-# k3d_screenshot_intercept_code = _modify_code
+k3d_screenshot_browser = "chrome"
+k3d_screenshot_browser_path = chrome_path
+k3d_screenshot_driver_path = chrome_driver_path
+k3d_screenshot_intercept_code = _modify_code

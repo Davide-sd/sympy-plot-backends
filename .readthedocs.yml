@@ -9,8 +9,16 @@ build:
    os: ubuntu-22.04
    tools:
       python: "3.9"
-   # apt_packages:
-   #    - tree
+   apt_packages:
+      # dependencies for chrome and firefox
+      - bzip2
+      - libxtst6
+      - libgtk-3-0
+      - libx11-xcb-dev
+      - libdbus-glib-1-2
+      - libxt6
+      - libpci-dev
+      - libasound2
    jobs:
       pre_install:
          - mkdir $HOME/selenium
