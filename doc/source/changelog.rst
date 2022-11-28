@@ -19,6 +19,9 @@ v1.6.1
 
 * Added label capability to ``plot_implicit`` with ``MatplotlibBackend``.
 
+* Added ``dots`` keyword argument to ``plot_piecewise`` to choose wheter to
+  show circular markers on endpoints.
+
 
 v1.6.0
 ======

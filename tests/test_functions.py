@@ -428,6 +428,21 @@ def test_plot_piecewise():
     assert len([t for t in s if isinstance(t, List2DSeries) and t.is_filled]) == 2
 
 
+def test_plot_piecewise_dot_false():
+    # Verify that plot_piecewise doesn't create endpoint dots when dots=False.
+
+    x = symbols("x")
+    f = Piecewise((x**2, x < 2), (5, Eq(x, 2)), (10 - x, True))
+    p = plot_piecewise(f, (x, -2, 5), show=False)
+    assert len(p.series) == 5
+    assert len([t for t in p.series if isinstance(t, List2DSeries)]) == 3
+
+    f = Piecewise((x**2, x < 2), (5, Eq(x, 2)), (10 - x, True))
+    p = plot_piecewise(f, (x, -2, 5), show=False, dots=False)
+    assert len(p.series) == 3
+    assert len([t for t in p.series if isinstance(t, List2DSeries)]) == 1
+
+
 ###############################################################################
 ################### PLOT - PLOT_PARAMETRIC - PLOT3D-RELATED ###################
 ###############################################################################

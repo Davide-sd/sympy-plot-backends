@@ -70,6 +70,7 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
     # only contains Line2DSeries with is_filled=True. They have higher
     # rendering priority, as such they will be added to `series` at last.
     filled_series = []
+    dots = kwargs.pop("dots", True)
 
     def func(expr, _set, c, from_union=False):
         if isinstance(_set, Interval):
@@ -95,20 +96,21 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
             main_series = LineOver1DRangeSeries(
                 expr, (_range[0], start, end), label, **kwargs)
             series.append(main_series)
-            xx, yy = main_series.get_data()
 
-            if xx[0] != _range[1]:
-                correct_list = series if _set.left_open else filled_series
-                correct_list.append(
-                    List2DSeries([xx[0]], [yy[0]], is_point=True,
-                        is_filled=not _set.left_open, **kwargs)
-                )
-            if xx[-1] != _range[2]:
-                correct_list = series if _set.right_open else filled_series
-                correct_list.append(
-                    List2DSeries([xx[-1]], [yy[-1]], is_point=True,
-                        is_filled=not _set.right_open, **kwargs)
-                )
+            if dots:
+                xx, yy = main_series.get_data()
+                if xx[0] != _range[1]:
+                    correct_list = series if _set.left_open else filled_series
+                    correct_list.append(
+                        List2DSeries([xx[0]], [yy[0]], is_point=True,
+                            is_filled=not _set.left_open, **kwargs)
+                    )
+                if xx[-1] != _range[2]:
+                    correct_list = series if _set.right_open else filled_series
+                    correct_list.append(
+                        List2DSeries([xx[-1]], [yy[-1]], is_point=True,
+                            is_filled=not _set.right_open, **kwargs)
+                    )
         elif isinstance(_set, FiniteSet):
             loc, val = [], []
             for _loc in _set.args:
@@ -3855,6 +3857,9 @@ def plot_piecewise(*args, **kwargs):
         Defaulto to `False`. To improve detection, increase the number of
         discretization points `n` and/or change the value of `eps`.
 
+    dots : boolean
+        Wheter to show circular markers at the endpoints. Default to True.
+
     eps : float
         An arbitrary small value used by the `detect_poles` algorithm.
         Default value to 0.1. Before changing this value, it is recommended to
@@ -3932,7 +3937,7 @@ def plot_piecewise(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, sin, cos, pi, Heaviside, Piecewise
+       >>> from sympy import symbols, sin, cos, pi, Heaviside, Piecewise, Eq
        >>> from spb import plot_piecewise
        >>> x = symbols('x')
 
@@ -3943,7 +3948,24 @@ def plot_piecewise(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_piecewise(Heaviside(x, 0).rewrite(Piecewise), (x, -10, 10))
+       >>> f = Piecewise((x**2, x < 2), (5, Eq(x, 2)), (10 - x, True))
+       >>> plot_piecewise(f, (x, -2, 5))
+       Plot object containing:
+       [0]: cartesian line: x**2 for x over (-2.0, 1.999999)
+       [1]: list plot
+       [2]: cartesian line: 10 - x for x over (2.000001, 5.0)
+       [3]: list plot
+       [4]: list plot
+
+    Single plot without dots (circular markers):
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_piecewise(Heaviside(x, 0).rewrite(Piecewise),
+       ...     (x, -10, 10), dots=False)
        Plot object containing:
        [0]: cartesian line: 0 for x over (-10.0, 0.0)
        [1]: cartesian line: 1 for x over (1e-06, 10.0)
