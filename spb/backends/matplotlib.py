@@ -55,7 +55,7 @@ class MatplotlibBackend(Plot):
         * ``'auto'``: Matplotlib will fit the plot in the vibile area.
         * ``"equal"``: sets equal spacing on the axis of a 2D plot.
         * tuple containing 2 float numbers, from which the aspect ratio is
-          computed.
+          computed. This only works for 2D plots.
 
     axis_center : (float, float) or str or None, optional
         Set the location of the intersection between the horizontal and
