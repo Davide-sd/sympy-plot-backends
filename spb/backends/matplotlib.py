@@ -1100,12 +1100,19 @@ class MatplotlibBackend(Plot):
         self._create_figure()
         self._process_series(self.series)
 
-    def show(self):
-        """Display the current plot."""
+    def show(self, **kwargs):
+        """Display the current plot.
+
+        Parameters
+        ==========
+
+        **kwargs : dict
+            Keyword arguments to be passed to plt.show().
+        """
         self.process_series()
         if _show:
             self._fig.tight_layout()
-            self.plt.show()
+            self.plt.show(**kwargs)
         else:
             self.close()
 
