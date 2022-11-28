@@ -1,6 +1,7 @@
 from sympy.external import import_module
 from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import MB
+from spb.backends.plotly import PB
 
 
 def _nrows_ncols(nr, nc, nplots):
@@ -56,7 +57,11 @@ def _create_panel_figure(mapping, panel_kw):
     for spec, p in mapping.items():
         rs = spec.rowspan
         cs = spec.colspan
-        fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = p.fig
+        if isinstance(p, PB):
+            d = {"data": list(p.fig.data), "layout": p.fig.layout}
+            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pn.pane.Plotly(d)
+        else:
+            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pn.pane.Pane(p.fig)
     return fig
 
 
@@ -110,55 +115,46 @@ def plotgrid(*args, **kwargs):
 
     First mode of operation with instances of `MatplotlibBackend`:
 
-    .. code-block:: python
+    .. plot::
+       :include-source: True
+       :context: reset
 
-       from sympy import symbols, sin, cos, tan, exp, sqrt, Matrix, gamma
-       from spb.backends.matplotlib import MB
+       from sympy import symbols, sin, cos, tan, exp, sqrt, Matrix, gamma, I
        from spb import *
 
        x, y, z = symbols("x, y, z")
-       p1 = plot(sin(x), backend=MB, show=False)
-       p2 = plot(tan(x), backend=MB, detect_poles=True, show=False)
-       p3 = plot(exp(-x), backend=MB, show=False)
+       p1 = plot(sin(x), backend=MB, title="sin(x)", show=False)
+       p2 = plot(tan(x), backend=MB, adaptive=False, detect_poles=True,
+            title="tan(x)", show=False)
+       p3 = plot(exp(-x), backend=MB, title="exp(-x)", show=False)
        fig = plotgrid(p1, p2, p3)
-
-    First mode of operation with different backends. Try this on a Jupyter
-    Notebook. Note:
-
-    1. the output of `plotgrid` is not captured into a variable. It is
-       captured and rendered by Jupyter Notebook.
-    2. Matplotlib has been integrated as a picture, thus it loses its
-       interactivity.
-
-    .. code-block:: python
-
-       p1 = plot(sin(x), backend=MB, show=False)
-       p2 = plot(tan(x), backend=MB, detect_poles=True, show=False)
-       p3 = plot(exp(-x), backend=MB, show=False)
-       plotgrid(p1, p2, p3, nr=1, nc=3,
-            panel_kw=dict(sizing_mode="stretch_width", height=250))
 
     Second mode of operation, using Matplotlib GridSpec:
 
-    .. code-block:: python
+    .. plot::
+       :include-source: True
+       :context: reset
 
+       from sympy import *
+       from spb import *
        from matplotlib.gridspec import GridSpec
+       x, y, z = symbols("x, y, z")
+       p1 = plot(sin(x), cos(x), adaptive=False, show=False)
+       expr = Tuple(1, sin(x**2 + y**2))
+       p2 = plot_vector(expr, (x, -2, 2), (y, -2, 2),
+            streamlines=True, scalar=False, use_cm=False,
+            title=r"$\\vec{F}(x, y) = %s$" % latex(expr),
+            xlabel="x", ylabel="y", show=False)
+       p3 = plot_complex(gamma(z), (z, -3-3*I, 3+3*I), title=r"$\gamma(z)$",
+            grid=False, show=False)
 
-       p1 = plot(sin(x), cos(x), show=False, backend=MB)
-       p2 = plot_contour(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), show=False, backend=BB)
-       p3 = plot_complex(sqrt(x), show=False, backend=PB)
-       p4 = plot_vector(Matrix([-y, x]), (x, -5, 5), (y, -5, 5), show=False, backend=MB)
-       p5 = plot_complex(gamma(z), (z, -3-3*I, 3+3*I), show=False, backend=MB)
-
-       gs = GridSpec(3, 3)
+       gs = GridSpec(3, 4)
        mapping = {
-           gs[0, :1]: p1,
-           gs[1, :1]: p2,
-           gs[2:, :1]: p3,
-           gs[2:, 1:]: p4,
-           gs[0:2, 1:]: p5,
+           gs[2, :]: p1,
+           gs[0:2, 0:2]: p2,
+           gs[0:2, 2:]: p3,
        }
-       plotgrid(gs=mapping)
+       fig = plotgrid(gs=mapping)
 
     References
     ==========
