@@ -2327,7 +2327,7 @@ def plot3d_spherical(*args, **kwargs):
             limited in [0, 2*pi].
 
         label : str, optional
-            The label to be shown in the colorbar.  If not provided, the string
+            The label to be shown in the colorbar. If not provided, the string
             representation of the expression will be used.
 
         rendering_kw : dict, optional
@@ -2999,6 +2999,11 @@ def plot_implicit(*args, **kwargs):
             axis must be provided, which will be internally converted to a
             range `(sym, -10, 10)`.
 
+        label : str, optional
+            The label to be shown when multiple expressions are plotted.
+            If not provided, the string representation of the expression
+            will be used.
+
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
             function to customize the appearance of contours. Refer to the
@@ -3027,6 +3032,18 @@ def plot_implicit(*args, **kwargs):
         Think of the resulting plot as a picture composed by pixels. By
         increasing `depth` we are increasing the number of pixels, thus
         obtaining a more accurate plot.
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of `expr` will be used. The number of labels must be
+        equal to the number of expressions.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance. Refer to the plotting library
+        (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of expressions.
 
     n1, n2 : int
         Number of discretization points in the horizontal and vertical
@@ -3063,7 +3080,7 @@ def plot_implicit(*args, **kwargs):
         :format: doctest
         :include-source: True
 
-        >>> from sympy import symbols, Eq, And, sin, pi
+        >>> from sympy import symbols, Eq, And, sin, pi, log
         >>> from spb import plot_implicit
         >>> x, y = symbols('x y')
 
@@ -3097,7 +3114,7 @@ def plot_implicit(*args, **kwargs):
         ...     (x, -1.5, 1.5), (y, -1.5, 1.5),
         ...     n = 500)
 
-    Using adaptive meshing and Boolean expressions:
+    Using adaptive meshing to plot multiple Boolean expressions:
 
     .. plot::
         :context: close-figs
@@ -3130,6 +3147,21 @@ def plot_implicit(*args, **kwargs):
 
         >>> plot_implicit(y > x**2, (x, -5, 5))
 
+    Plotting multiple implicit expressions and setting labels:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> V, t, b, L = symbols("V, t, b, L")
+        >>> L_array = [5, 10, 15, 20, 25]
+        >>> b_val = 0.0032
+        >>> expr = b * V * 0.277 * t - b * L - log(1 + b * V * 0.277 * t)
+        >>> expr_list = [expr.subs({b: b_val, L: L_val}) for L_val in L_array]
+        >>> labels = ["L = %s" % L_val for L_val in L_array]
+        >>> plot_implicit(*expr_list, (t, 0, 10), (V, 0, 1000), label=labels)
+
     See Also
     ========
 
@@ -3147,7 +3179,7 @@ def plot_implicit(*args, **kwargs):
     args = list(args)
     if (len(args) == 2) and isinstance(args[1], Symbol):
         args[1] = Tuple(args[1], -10, 10)
-    if (len(args) == 3) and isinstance(args[1], Symbol) and isinstance(args[2], Symbol):
+    elif (len(args) >= 3) and isinstance(args[1], Symbol) and isinstance(args[2], Symbol):
         args[1] = Tuple(args[1], -10, 10)
         args[2] = Tuple(args[2], -10, 10)
 
@@ -3181,6 +3213,9 @@ def plot_implicit(*args, **kwargs):
             ymax = s.end_y
         series.append(s)
 
+    labels = kwargs.pop("label", [])
+    rendering_kw = kwargs.pop("rendering_kw", None)
+    _set_labels(series, labels, rendering_kw)
     series += _create_generic_data_series(**kwargs)
     kwargs.setdefault("xlim", (xmin, xmax))
     kwargs.setdefault("ylim", (ymin, ymax))

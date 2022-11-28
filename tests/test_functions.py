@@ -837,6 +837,19 @@ def tmp_file(dir=None, name=""):
     return NamedTemporaryFile(suffix=".png", dir=dir, delete=False).name
 
 
+def test_plot_implicit_label_rendering_kw():
+    # verify that label and rendering_kw keyword arguments works as expected
+
+    x, y = symbols("x, y")
+    p = plot_implicit(x + y, x - y, (x, -5, 5), (y, -5, 5),
+        show=False, adaptive=False,
+        label=["a", "b"], rendering_kw=[{"levels": 5}, {"alpha": 0.5}])
+    assert p[0].get_label(True) == "a"
+    assert p[1].get_label(True) == "b"
+    assert p[0].rendering_kw == {"levels": 5}
+    assert p[1].rendering_kw == {"alpha": 0.5}
+
+
 @pytest.mark.xfail
 def test_plot_implicit_adaptive_true():
     # verify that plot_implicit with `adaptive=True` produces correct results.

@@ -152,6 +152,7 @@ class MatplotlibBackend(Plot):
         self.cm = cm = self.matplotlib.cm
         self.LineCollection = self.matplotlib.collections.LineCollection
         self.ListedColormap = self.matplotlib.colors.ListedColormap
+        self.Line2D = self.matplotlib.lines.Line2D
         self.Normalize = self.matplotlib.colors.Normalize
 
         # set default colors
@@ -187,6 +188,7 @@ class MatplotlibBackend(Plot):
         self._show_minor_grid = kwargs.get("show_minor_grid", cfg["matplotlib"]["show_minor_grid"])
 
         self._handles = dict()
+        self._legend_handles = []
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
@@ -351,6 +353,7 @@ class MatplotlibBackend(Plot):
 
         self.ax.cla()
         self._init_cyclers()
+        self._legend_handles = []
 
         for i, s in enumerate(series):
             kw = None
@@ -487,7 +490,8 @@ class MatplotlibBackend(Plot):
                 if len(points) == 2:
                     # interval math plotting
                     x, y = _matplotlib_list(points[0])
-                    c = self.ax.fill(x, y, color=next(self._cl),
+                    color = next(self._cl)
+                    c = self.ax.fill(x, y, color=color,
                         edgecolor="None")
                     self._add_handle(i, c)
                 else:
@@ -507,6 +511,9 @@ class MatplotlibBackend(Plot):
                         kw = merge({}, ckw, s.rendering_kw)
                         c = self.ax.contourf(xarray, yarray, zarray, **kw)
                     self._add_handle(i, c, kw)
+                proxy_artist = self.Line2D([], [],
+                    color=color, label=s.get_label(self._use_latex))
+                self._legend_handles.append(proxy_artist)
 
             elif s.is_vector:
                 if s.is_2Dvector:
@@ -759,12 +766,15 @@ class MatplotlibBackend(Plot):
                 if self._show_minor_grid:
                     self.ax.minorticks_on()
         if self.legend:
-            handles, _ = self.ax.get_legend_handles_labels()
-            # Show the legend only if there are legend entries. For example,
-            # if we are plotting only parametric expressions, there will be
-            # only colorbars, no legend entries.
-            if len(handles) > 0:
-                self.ax.legend(loc="best")
+            if len(self._legend_handles) > 0:
+                self.ax.legend(handles=self._legend_handles, loc="best")
+            else:
+                handles, _ = self.ax.get_legend_handles_labels()
+                # Show the legend only if there are legend entries.
+                # For example, if we are plotting only parametric expressions,
+                # there will be only colorbars, no legend entries.
+                if len(handles) > 0:
+                    self.ax.legend(loc="best")
         if self.title:
             self.ax.set_title(self.title)
         if self.xlabel:

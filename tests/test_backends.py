@@ -1683,6 +1683,19 @@ def test_plot_implicit_adaptive_false():
             lambda: _plot_implicit(MAB, contour_kw=dict()).process_series())
 
 
+def test_plot_implicit_multiple_expressions():
+    # verify that legend show multiple entries when multiple expressions are
+    # plotted on the same plot.
+
+    x, y = symbols("x, y")
+    p1 = plot_implicit(x + y, x, y, n=5, show=False)
+    p2 = plot_implicit(x - y, x, y, n=5, show=False)
+    p3 = p1 + p2
+    p3.process_series()
+    legend = [t for t in p3.ax.get_children() if isinstance(t, matplotlib.legend.Legend)][0]
+    assert len(legend.get_lines()) > 0
+
+
 def test_plot_real_imag():
     # verify that the backends produce the expected results when
     # `plot_real_imag()` is called and `rendering_kw` overrides the default

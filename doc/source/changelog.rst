@@ -17,6 +17,8 @@ v1.6.1
   * ``cgf["bokeh"]["update_event"] = False``: Bokeh won't update the plot with
     new data as dragging or zooming operations are performed.
 
+* Added label capability to ``plot_implicit`` with ``MatplotlibBackend``.
+
 
 v1.6.0
 ======
