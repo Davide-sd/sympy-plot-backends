@@ -32,6 +32,7 @@ build:
          - rm ~/chromedriver_linux64.zip
       post_install:
          - pip install "matplotlib<3.6.0"
+         - pip install "panel==0.13.1"
       # post_build:
       #    - cat $HOME/selenium/sphinx_k3d_screenshot.log
 
