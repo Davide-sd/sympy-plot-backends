@@ -30,8 +30,8 @@ build:
          - wget -N https://chromedriver.storage.googleapis.com/107.0.5304.62/chromedriver_linux64.zip -P $HOME
          - unzip ~/chromedriver_linux64.zip -d $HOME/selenium/drivers
          - rm ~/chromedriver_linux64.zip
-      post_build:
-         - cat $HOME/selenium/sphinx_k3d_screenshot.log
+      # post_build:
+      #    - cat $HOME/selenium/sphinx_k3d_screenshot.log
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
