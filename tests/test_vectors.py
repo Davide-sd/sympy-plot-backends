@@ -124,7 +124,7 @@ def test_split_vector():
     do_test(m2, (z, x, y))
     do_test(l2, (z, x, y))
     do_test([fx, fy, fz], (fx, fy, fz))
-    do_test(v3, (-sin(y), cos(x), 0))
+    do_test(v3, (-sin(y), cos(x)))
     do_test(v4, (-sin(y), cos(x), cos(z)))
 
     # too few or too many elements

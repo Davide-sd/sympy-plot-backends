@@ -369,6 +369,8 @@ def _split_vector(expr, ranges, fill_ranges=True):
             + "Received: {}. Number of elements: {}".format(expr, len(expr))
         )
 
+    # TODO: since plot_vector requires all ranges to be specified, this
+    # code block can be eliminated. It requires adjusting some tests...
     if fill_ranges:
         ranges = list(ranges)
         fs = set()
@@ -380,13 +382,20 @@ def _split_vector(expr, ranges, fill_ranges=True):
                 if s not in fs_ranges:
                     ranges.append(Tuple(s, cfg["plot_range"]["min"], cfg["plot_range"]["max"]))
 
+    if (len(ranges) == 2) and (len(expr) == 3):
+        # There might be ambiguities when working with vectors from
+        # sympy.vector. Let f(x, y) be a scalar field. The gradient of f(x, y)
+        # is going to be a 2D vector field. However, at this point it will
+        # have 3 components, one of which is zero. Let's assume the last one
+        # is zero and skip it.
+        expr = expr[:2]
+
     if len(expr) == 2:
         xexpr, yexpr = expr
-        zexpr = S.Zero
+        return (xexpr, yexpr), ranges
     else:
         xexpr, yexpr, zexpr = expr
-    split_expr = xexpr, yexpr, zexpr
-    return split_expr, ranges
+        return (xexpr, yexpr, zexpr), ranges
 
 
 def _instantiate_backend(Backend, *series, **kwargs):

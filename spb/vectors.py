@@ -121,7 +121,7 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
     # parameters
     fs = fs.difference(params.keys())
 
-    if split_expr[2] is S.Zero:  # 2D case
+    if len(split_expr) == 2:  # 2D case
         kwargs = _set_discretization_points(kwargs.copy(), Vector2DSeries)
         if len(fs) > 2:
             raise ValueError(
@@ -152,12 +152,12 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
             return (
                 split_expr,
                 ranges,
-                Vector2DSeries(*split_expr[:2], *ranges, label, **kwargs),
+                Vector2DSeries(*split_expr, *ranges, label, **kwargs),
             )
         return (
             split_expr,
             ranges,
-            InteractiveSeries(split_expr[:2], ranges, label, **kwargs),
+            InteractiveSeries(split_expr, ranges, label, **kwargs),
         )
     else:  # 3D case
         kwargs = _set_discretization_points(kwargs.copy(), Vector3DSeries)

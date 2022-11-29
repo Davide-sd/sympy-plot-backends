@@ -27,6 +27,8 @@ v1.6.1
 * Added ``dots`` keyword argument to ``plot_piecewise`` to choose wheter to
   show circular markers on endpoints.
 
+* Fixed bug with plotting 3D vectors.
+
 
 v1.6.0
 ======
