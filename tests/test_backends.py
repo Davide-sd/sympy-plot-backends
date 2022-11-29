@@ -2396,7 +2396,8 @@ def test_aspect_ratio_3d():
     assert p.aspect == "auto"
 
     # Matplotlib 3D axis requires a string-valued aspect ratio
-    raises(ValueError,
+    # depending on the version, it raises one of the following errors
+    raises((NotImplementedError, ValueError),
         lambda: plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
             n1=5, n2=5, backend=MB, show=False, aspect=(1, 1)).process_series())
 
