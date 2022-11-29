@@ -1,4 +1,4 @@
-matplotlib<3.6.0
+matplotlib
 numpydoc
 sphinx-math-dollar
 jupyter-sphinx
