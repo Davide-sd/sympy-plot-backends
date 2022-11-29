@@ -63,13 +63,14 @@ def test_cfg_bokeh_keys():
 
 
 def test_cfg_k3d_keys():
-    k3d_keys = ["bg_color", "grid_color", "label_color", "use_latex"]
+    k3d_keys = ["bg_color", "grid_color", "label_color", "use_latex",]
     for k in k3d_keys:
         assert k in cfg["k3d"].keys()
         assert isinstance(cfg["k3d"][k], int)
 
     assert "grid" in cfg["k3d"].keys()
     assert isinstance(cfg["k3d"]["grid"], bool)
+    assert "camera_mode" in cfg["k3d"].keys()
 
 
 def test_cfg_mayavi_keys():

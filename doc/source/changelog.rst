@@ -9,13 +9,16 @@ v1.6.1
   generated with ``PlotlyBackend``, ``K3DBackend`` as well as interactive
   plots with widgets.
 
-* Changed values to some default option:
+* Default settings:
 
-  * ``cgf["interactive"]["theme"] = "light"``: interactive plots served on a
-    new browser window will use a light theme.
+  * Changed ``cgf["interactive"]["theme"]`` to ``"light"``: interactive plots
+    served on a new browser window will use a light theme.
   
-  * ``cgf["bokeh"]["update_event"] = False``: Bokeh won't update the plot with
-    new data as dragging or zooming operations are performed.
+  * Changed ``cgf["bokeh"]["update_event"]`` to ``False``: Bokeh won't update
+    the plot with new data as dragging or zooming operations are performed.
+
+  * Added new option ``cgf["k3d"]["camera_mode"]``.
+
 
 * Improvements to ``MatplotlibBackend``:
 

@@ -57,6 +57,10 @@ def _hardcoded_defaults():
             "grid": True,
             # Render latex with K3D
             "use_latex": True,
+            # how the scene rotates when click+drag
+            # Possible values: "trackball", "orbit", "fly". If None, it
+            # defaults to "trackball"
+            "camera_mode": None,
         },
         matplotlib={
             # Position of the intersection of the axis. If None, use a
