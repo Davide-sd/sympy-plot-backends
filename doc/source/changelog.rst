@@ -7,8 +7,14 @@ v1.6.2
 
 * Improved documentation.
 
-* ``PlotlyBackend`` will switch to ``go.Scattergl`` if the number of points
-  of a line are greater than some threshold. This improves performance.
+* ``PlotlyBackend``:
+
+  * if the number of points of a line is greater than some threshold, the
+    backend will switch to ``go.Scattergl``. This improves performance.
+  
+  * Fixed bug with interactive widget contour plot and update of colorbar.
+
+* Fixed bug with addition of interactive plots.
 
 
 v1.6.1

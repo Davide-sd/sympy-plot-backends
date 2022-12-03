@@ -467,7 +467,8 @@ class PlotlyBackend(Plot):
                     ),
                     colorscale=next(self._cm),
                     colorbar=self._create_colorbar(s.get_label(self._use_latex), show_2D_vectors),
-                    showscale=True if s.is_filled else False
+                    showscale=True if s.is_filled else False,
+                    zmin=zz.min(), zmax=zz.max()
                 )
                 kw = merge({}, ckw, s.rendering_kw)
                 self._fig.add_trace(go.Contour(x=xx, y=yy, z=zz, **kw))
@@ -767,6 +768,8 @@ class PlotlyBackend(Plot):
                 elif s.is_contour and (not s.is_complex):
                     _, _, zz = s.get_data()
                     self.fig.data[i]["z"] = zz
+                    self.fig.data[i]["zmin"] = zz.min()
+                    self.fig.data[i]["zmax"] = zz.max()
 
                 elif s.is_vector and s.is_3D:
                     if s.is_streamlines:
