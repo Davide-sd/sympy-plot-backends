@@ -4008,3 +4008,26 @@ def test_matplotlib_axis_center():
     _plot("center").process_series()
     _plot("auto").process_series()
     _plot((0, 0)).process_series()
+
+
+def test_plotly_scatter_gl():
+    # verify that if a line contains enough points, PlotlyBackend will use
+    # Scattergl instead of Scatter.
+
+    n = PB.scattergl_threshold
+    x = symbols("x")
+    p1 = plot(cos(x), adaptive=False, n=n-100, backend=PB, show=False)
+    p2 = plot(cos(x), adaptive=False, n=n+100, backend=PB, show=False)
+    p3 = plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
+        adaptive=False, n=n-100, backend=PB, show=False)
+    p4 = plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
+        adaptive=False, n=n+100, backend=PB, show=False)
+    p5 = plot_parametric(cos(x), sin(x), (x, 0, 2*pi), backend=PB, show=False,
+        adaptive=False, n=n-100)
+    p6 = plot_parametric(cos(x), sin(x), (x, 0, 2*pi), backend=PB, show=False,
+        adaptive=False, n=n+100)
+    f1, f2, f3, f4, f5, f6 = [t.fig for t in [p1, p2, p3, p4, p5, p6]]
+    assert all(isinstance(t.data[0], go.Scatter) for t in [f1, f5])
+    assert all(isinstance(t.data[0], go.Scattergl) for t in [f2, f6])
+    assert isinstance(f3.data[0], go.Scatterpolar)
+    assert isinstance(f4.data[0], go.Scatterpolargl)

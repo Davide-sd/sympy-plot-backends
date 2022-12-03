@@ -2,6 +2,15 @@
  Changelog
 ==========
 
+v1.6.2
+======
+
+* Improved documentation.
+
+* ``PlotlyBackend`` will switch to ``go.Scattergl`` if the number of points
+  of a line are greater than some threshold. This improves performance.
+
+
 v1.6.1
 ======
 

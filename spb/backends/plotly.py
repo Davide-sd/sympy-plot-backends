@@ -132,6 +132,8 @@ class PlotlyBackend(Plot):
     quivers_colors = []
     wireframe_color = "#000000"
 
+    scattergl_threshold = 2000
+
     # color bar spacing
     _cbs = 0.15
     # color bar scale down factor
@@ -260,6 +262,11 @@ class PlotlyBackend(Plot):
             col = next(self._cl)
         return [[0, col], [1, col]]
 
+    def _scatter_class(self, go, n, polar=False):
+        if not polar:
+            return go.Scatter if n < self.scattergl_threshold else go.Scattergl
+        return go.Scatterpolar if n < self.scattergl_threshold else go.Scatterpolargl
+
     def _process_series(self, series):
         np = import_module('numpy')
         plotly = import_module(
@@ -322,7 +329,8 @@ class PlotlyBackend(Plot):
                         lkw["marker"]["colorbar"] = self._create_colorbar(s.get_label(self._use_latex), True)
 
                     kw = merge({}, lkw, s.rendering_kw)
-                    self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
+                    cls = self._scatter_class(go, len(x))
+                    self._fig.add_trace(cls(x=x, y=y, **kw))
                 else:
                     x, y = s.get_data()
                     color = next(self._cl) if s.line_color is None else s.line_color
@@ -345,9 +353,11 @@ class PlotlyBackend(Plot):
                     kw = merge({}, lkw, s.rendering_kw)
                     if s.is_polar:
                         kw.setdefault("thetaunit", "radians")
-                        self._fig.add_trace(go.Scatterpolar(r=y, theta=x, **kw))
+                        cls = self._scatter_class(go, len(x), True)
+                        self._fig.add_trace(cls(r=y, theta=x, **kw))
                     else:
-                        self._fig.add_trace(go.Scatter(x=x, y=y, **kw))
+                        cls = self._scatter_class(go, len(x))
+                        self._fig.add_trace(cls(x=x, y=y, **kw))
             elif s.is_3Dline:
                 # NOTE: As a design choice, I decided to show the legend entry
                 # as well as the colorbar (if use_cm=True). Even though the
