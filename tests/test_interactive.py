@@ -643,7 +643,8 @@ def test_iplot_sum_1():
         ylabel = "y1",
         title = "title 1",
         legend=True,
-        show = False
+        show = False,
+        pane_kw = {"width": 500}
     )
     p2 = iplot(
         (sin(u * x), (x, -5, 5)),
@@ -669,6 +670,7 @@ def test_iplot_sum_1():
     assert len(p.backend.series) == 3
     assert len([s for s in p.backend.series if s.is_interactive]) == 2
     assert len([s for s in p.backend.series if not s.is_interactive]) == 1
+    assert p.pane_kw == {"width": 500}
 
 
 def test_iplot_sum_2():

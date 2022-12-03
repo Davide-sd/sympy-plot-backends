@@ -750,6 +750,13 @@ class InteractivePlot(DynamicParam, PanelLayout):
         """Return the backend"""
         return self._backend
 
+    @property
+    def pane_kw(self):
+        """Return the keyword arguments used to customize the wrapper to the
+        plot.
+        """
+        return self._pane_kw
+
     def save(self, *args, **kwargs):
         """Save the current figure.
         This is a wrapper to the backend's `save` function. Refer to the
@@ -803,7 +810,8 @@ class InteractivePlot(DynamicParam, PanelLayout):
             "throttled": self._throttled,
             "use_latex": self._use_latex,
             "params": self._original_params,
-            "show": False
+            "show": False,
+            "pane_kw": self._pane_kw
         }
 
         new_iplot = type(self)(**merge({}, backend_kw, panel_kw))
