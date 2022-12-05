@@ -2741,7 +2741,7 @@ class VectorBase(BaseSeries):
     is_vector = True
     is_slice = False
     is_streamlines = False
-    _allowed_keys = ["n1", "n2", "n3", "modules", "only_integers", "streamlines", "use_cm", "xscale", "yscale", "zscale", "quiver_kw", "stream_kw", "rendering_kw", "tx", "ty", "tz", "normalize"]
+    _allowed_keys = ["n1", "n2", "n3", "modules", "only_integers", "streamlines", "use_cm", "xscale", "yscale", "zscale", "quiver_kw", "stream_kw", "rendering_kw", "tx", "ty", "tz", "normalize", "color_func"]
 
     def _init_num_discretization_points(self, **kwargs):
         """Subclasses should override this method to provide dirrent values."""

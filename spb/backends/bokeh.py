@@ -264,7 +264,7 @@ class BokehBackend(Plot):
 
     _library = "bokeh"
     _allowed_keys = Plot._allowed_keys + [
-        "markers", "annotations", "fill", "rectangles"]
+        "markers", "annotations", "fill", "rectangles", "update_event"]
 
     colorloop = []
     colormaps = []
@@ -356,7 +356,8 @@ class BokehBackend(Plot):
             self._fig.grid.minor_grid_line_alpha = cfg["bokeh"]["minor_grid_line_alpha"]
             self._fig.grid.minor_grid_line_color = self._fig.grid.grid_line_color[0]
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
-        self._fig.on_event(self.bokeh.events.PanEnd, self._pan_update)
+        if self._update_event:
+            self._fig.on_event(self.bokeh.events.PanEnd, self._pan_update)
 
     @property
     def fig(self):

@@ -574,12 +574,10 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs, color_func=None, ):
 
     if color_func is None:
         streamlines_speed = np.linalg.norm(streamlines_velocity, axis=1)
-        print("streamlines_speed.shape 1", streamlines_speed.shape)
     else:
         x, y, z = streamlines_points.T
         u, v, w = streamlines_velocity.T
         streamlines_speed = color_func(x, y, z, u, v, w)
-        print("streamlines_speed.shape 2", streamlines_speed.shape)
 
     vtkLines = streamline.GetLines()
     vtkLines.InitTraversal()
