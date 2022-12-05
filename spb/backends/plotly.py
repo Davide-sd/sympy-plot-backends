@@ -475,6 +475,10 @@ class PlotlyBackend(Plot):
                 count += 1
 
             elif s.is_vector:
+                if s.color_func is not None:
+                    warnings.warn("PlotlyBackend doesn't support custom "
+                        "coloring of 2D/3D quivers or streamlines plots. "
+                        "`color_func` will not be used.")
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
                     if s.normalize:

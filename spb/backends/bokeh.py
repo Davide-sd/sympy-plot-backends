@@ -484,19 +484,24 @@ class BokehBackend(Plot):
                 else:
                     x, y, u, v = s.get_data()
                     mag = np.sqrt(u**2 + v**2)
+                    u0, v0 = [t.copy() for t in [u, v]]
                     if s.normalize:
                         u, v = [t / mag for t in [u, v]]
                     data, quiver_kw = self._get_quivers_data(x, y, u, v,
                         **s.rendering_kw.copy())
-                    mag = np.tile(mag.flatten(), 3)
-                    data["magnitude"] = mag
+                    color_val = mag
+                    if s.color_func is not None:
+                        color_val = s.color_func(x, y, u0, v0)
+                    color_val = np.tile(color_val.flatten(), 3)
+                    data["color_val"] = color_val
 
                     color_mapper = self.bokeh.models.LinearColorMapper(
-                        palette=next(self._cm), low=min(mag), high=max(mag))
+                        palette=next(self._cm),
+                        low=min(color_val), high=max(color_val))
                     # don't use color map if a scalar field is visible or if
                     # use_cm=False
                     line_color = (
-                        {"field": "magnitude", "transform": color_mapper}
+                        {"field": "color_val", "transform": color_mapper}
                         if ((not s.use_quiver_solid_color) and s.use_cm)
                         else next(self._cl)
                     )
@@ -702,31 +707,38 @@ class BokehBackend(Plot):
                     else:
                         quiver_kw = s.rendering_kw.copy()
                         mag = np.sqrt(u**2 + v**2)
+                        u0, v0 = [t.copy() for t in [u, v]]
                         if s.normalize:
                             u, v = [t / mag for t in [u, v]]
                         data, quiver_kw = self._get_quivers_data(
                             x, y, u, v, **quiver_kw
                         )
-                        mag = np.tile(mag.flatten(), 3)
-                        data["magnitude"] = mag
+                        color_val = mag
+                        if s.color_func is not None:
+                            color_val = s.color_func(x, y, u0, v0)
+                        color_val = np.tile(color_val.flatten(), 3)
+                        data["color_val"] = color_val
                         rend[i].data_source.data.update(data)
 
                         line_color = rend[i].glyph.line_color
                         if (not s.use_quiver_solid_color) and s.use_cm:
                             # update the colorbar
                             cmap = line_color["transform"].palette
-                            mag = data["magnitude"]
+                            color_val = data["color_val"]
                             color_mapper = self.bokeh.models.LinearColorMapper(
-                                palette=cmap, low=min(mag),
-                                high=max(mag))
+                                palette=cmap, low=min(color_val),
+                                high=max(color_val))
                             line_color = quiver_kw.get(
                                 "line_color",
                                 {
-                                    "field": "magnitude",
+                                    "field": "color_val",
                                     "transform": color_mapper
                                 },
                             )
                             rend[i].glyph.line_color = line_color
+                            cb = self._handles[i]
+                            cb.color_mapper.update(
+                                low=min(color_val), high=max(color_val))
 
                 elif s.is_complex and s.is_domain_coloring and not s.is_3Dsurface:
                     # TODO: for some unkown reason, domain_coloring and
@@ -887,7 +899,6 @@ class BokehBackend(Plot):
             "x1": x1s,
             "y0": y0s,
             "y1": y1s,
-            "magnitude": np.tile(magnitude, 3),
         }
 
         return data, quiver_kw

@@ -7,6 +7,8 @@ v1.6.2
 
 * Improved documentation.
 
+* Enabled ``color_func`` keyword argument on ``plot_vector``.
+
 * ``PlotlyBackend``:
 
   * if the number of points of a line is greater than some threshold, the

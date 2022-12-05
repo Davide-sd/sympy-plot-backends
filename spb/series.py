@@ -2767,6 +2767,7 @@ class VectorBase(BaseSeries):
         self.modules = kwargs.get("modules", None)
         self.only_integers = kwargs.get("only_integers", False)
         self.use_cm = kwargs.get("use_cm", True)
+        self.color_func = kwargs.get("color_func", None)
         # NOTE: normalization is achieved at the backend side: this allows to
         # obtain same length arrows, but colored with the actual magnitude.
         # If normalization is applied on the series get_data(), the coloring
@@ -2942,6 +2943,7 @@ class VectorInteractiveBaseSeries(InteractiveSeries):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.normalize = kwargs.get("normalize", False)
+        self.color_func = kwargs.get("color_func", None)
         self.is_streamlines = kwargs.get("streamlines", False)
         if self.is_streamlines:
             self.rendering_kw = kwargs.get("stream_kw", dict())
@@ -3083,6 +3085,7 @@ class SliceVector3DInteractiveSeries(VectorInteractiveBaseSeries, SliceVector3DS
         # NOTE: the following must be executed for the proper discretization
         # to take place
         self.params = kwargs.get("params", dict())
+        self.color_func = kwargs.get("color_func", None)
 
     @property
     def params(self):

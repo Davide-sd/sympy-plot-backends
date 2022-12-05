@@ -318,15 +318,15 @@ class K3DBackend(Plot):
 
             elif s.is_3Dvector and s.is_streamlines:
                 xx, yy, zz, uu, vv, ww = s.get_data()
-                vertices, magn = compute_streamtubes(
-                    xx, yy, zz, uu, vv, ww, s.rendering_kw)
+                vertices, color_val = compute_streamtubes(
+                    xx, yy, zz, uu, vv, ww, s.rendering_kw, s.color_func)
 
                 stream_kw = s.rendering_kw.copy()
                 skw = dict(width=0.1, shader="mesh")
                 if s.use_cm and ("color" not in stream_kw.keys()):
                     skw["color_map"] = next(self._cm)
-                    skw["color_range"] = [float(np.nanmin(magn)), float(np.nanmax(magn))]
-                    skw["attribute"] = magn
+                    skw["color_range"] = [float(np.nanmin(color_val)), float(np.nanmax(color_val))]
+                    skw["attribute"] = color_val
                 else:
                     col = stream_kw.pop("color", next(self._cl))
                     if not isinstance(col, int):
@@ -354,7 +354,7 @@ class K3DBackend(Plot):
                     solid_color = col * np.ones(xx.size)
                     self._handles[ii] = [qkw, colormap]
 
-                origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize)
+                origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize, s.color_func)
                 if colors is None:
                     colors = solid_color
                 vec_colors = self._create_vector_colors(colors)
@@ -431,7 +431,8 @@ class K3DBackend(Plot):
         self._add_clipping_planes()
         self._fig.auto_rendering = True
 
-    def _build_k3d_vector_data(self, xx, yy, zz, uu, vv, ww, qkw, colormap, normalize):
+    def _build_k3d_vector_data(self, xx, yy, zz, uu, vv, ww, qkw, colormap,
+        normalize, color_func):
         """Assemble the origins, vectors and colors (if possible) matrices.
         """
         np = import_module('numpy')
@@ -446,10 +447,13 @@ class K3DBackend(Plot):
         vectors = np.array((uu, vv, ww)).T * scale
         origins = np.array((xx, yy, zz)).T
 
+        color_val = magnitude
+        if color_func is not None:
+            color_val = color_func(xx, yy, zz, uu, vv, ww)
+
         colors = None
         if colormap is not None:
-            colors = self.k3d.helpers.map_colors(
-                magnitude, colormap, [])
+            colors = self.k3d.helpers.map_colors(color_val, colormap, [])
 
         return origins, vectors, colors
 
@@ -536,7 +540,8 @@ class K3DBackend(Plot):
 
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()
                     qkw, colormap = self._handles[i]
-                    origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize)
+                    origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize,
+                    s.color_func)
                     if colors is not None:
                         vec_colors = self._create_vector_colors(colors)
                         self.fig.objects[i].colors = vec_colors

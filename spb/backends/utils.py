@@ -467,7 +467,7 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
         return seeds
 
 
-def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
+def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs, color_func=None, ):
     """ Leverage vtk to compute streamlines in a 3D vector field.
 
     Parameters
@@ -478,6 +478,10 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
 
     kwargs : dict
         Keyword arguments passed to the backend.
+
+    color_func : callable
+        The color function to apply to streamlines. Default to None, which
+        will apply the magnitude of the vector field.
 
 
     Returns
@@ -567,7 +571,15 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs):
         streamline.GetPoints().GetData())
     streamlines_velocity = numpy_support.vtk_to_numpy(
         streamline.GetPointData().GetArray("vector_field"))
-    streamlines_speed = np.linalg.norm(streamlines_velocity, axis=1)
+
+    if color_func is None:
+        streamlines_speed = np.linalg.norm(streamlines_velocity, axis=1)
+        print("streamlines_speed.shape 1", streamlines_speed.shape)
+    else:
+        x, y, z = streamlines_points.T
+        u, v, w = streamlines_velocity.T
+        streamlines_speed = color_func(x, y, z, u, v, w)
+        print("streamlines_speed.shape 2", streamlines_speed.shape)
 
     vtkLines = streamline.GetLines()
     vtkLines.InitTraversal()

@@ -1479,12 +1479,12 @@ def test_plot_vector_2d_normalize():
     x11 = p1.fig.renderers[0].data_source.data["x1"]
     y01 = p1.fig.renderers[0].data_source.data["y0"]
     y11 = p1.fig.renderers[0].data_source.data["y1"]
-    m1 = p1.fig.renderers[0].data_source.data["magnitude"]
+    m1 = p1.fig.renderers[0].data_source.data["color_val"]
     x02 = p2.fig.renderers[0].data_source.data["x0"]
     x12 = p2.fig.renderers[0].data_source.data["x1"]
     y02 = p2.fig.renderers[0].data_source.data["y0"]
     y12 = p2.fig.renderers[0].data_source.data["y1"]
-    m2 = p2.fig.renderers[0].data_source.data["magnitude"]
+    m2 = p2.fig.renderers[0].data_source.data["color_val"]
     assert not np.allclose(x01, x02)
     assert not np.allclose(x11, x12)
     assert not np.allclose(y01, y02)
@@ -1529,12 +1529,12 @@ def test_plot_vector_2d_normalize():
     x11 = p1.fig.renderers[0].data_source.data["x1"]
     y01 = p1.fig.renderers[0].data_source.data["y0"]
     y11 = p1.fig.renderers[0].data_source.data["y1"]
-    m1 = p1.fig.renderers[0].data_source.data["magnitude"]
+    m1 = p1.fig.renderers[0].data_source.data["color_val"]
     x02 = p2.fig.renderers[0].data_source.data["x0"]
     x12 = p2.fig.renderers[0].data_source.data["x1"]
     y02 = p2.fig.renderers[0].data_source.data["y0"]
     y12 = p2.fig.renderers[0].data_source.data["y1"]
-    m2 = p2.fig.renderers[0].data_source.data["magnitude"]
+    m2 = p2.fig.renderers[0].data_source.data["color_val"]
     assert not np.allclose(x01, x02)
     assert not np.allclose(x11, x12)
     assert not np.allclose(y01, y02)
@@ -1599,6 +1599,119 @@ def test_plot_vector_3d_normalize():
     p2 = _pv2(KB, True)
     p2.backend._update_interactive({u: 1.5})
     assert not np.allclose(p1.fig.objects[0].vectors, p2.fig.objects[0].vectors)
+
+
+def test_plot_vector_2d_quiver_color_func():
+    # verify that color_func gets applied to 2D quivers
+    x, y, a = symbols("x, y, a")
+
+    _pv = lambda B, cf: plot_vector((-y, x), (x, -2, 2), (y, -2, 2),
+        scalar=False, use_cm=True, color_func=cf, show=False, backend=B, n=3)
+
+    p1 = _pv(MB, None)
+    p2 = _pv(MB, lambda x, y, u, v: x)
+    a1 = p1.fig.axes[0].collections[0].get_array()
+    a2 = p2.fig.axes[0].collections[0].get_array()
+    assert not np.allclose(a1, a2)
+
+    p1 = _pv(BB, None)
+    p2 = _pv(BB, lambda x, y, u, v: x)
+    a1 = p1.fig.renderers[0].data_source.data["color_val"]
+    a2 = p2.fig.renderers[0].data_source.data["color_val"]
+    assert not np.allclose(a1, a2)
+
+    _pv2 = lambda B, cf: plot_vector((-a * y, x), (x, -2, 2), (y, -2, 2),
+        scalar=False, use_cm=True, color_func=cf, show=False, backend=B, n=3,
+        params={a: (1, 0, 2)})
+
+    p1 = _pv2(MB, None)
+    p2 = _pv2(MB, lambda x, y, u, v: u)
+    p3 = _pv2(MB, lambda x, y, u, v: u)
+    p3.backend._update_interactive({a: 1.5})
+    a1 = p1.fig.axes[0].collections[0].get_array()
+    a2 = p2.fig.axes[0].collections[0].get_array()
+    a3 = p3.fig.axes[0].collections[0].get_array()
+    assert (not np.allclose(a1, a2)) and (not np.allclose(a2, a3))
+
+
+def test_plot_vector_2d_streamline_color_func():
+    # verify that color_func gets applied to 2D streamlines
+
+    x, y, a = symbols("x, y, a")
+
+    _pv = lambda B, cf: plot_vector((-y, x), (x, -2, 2), (y, -2, 2),
+        scalar=False, streamlines=True, use_cm=True, color_func=cf,
+        show=False, backend=B, n=3)
+
+    # TODO: seems like streamline colors get applied only after the plot is
+    # show... How do I perform this test?
+    p1 = _pv(MB, None)
+    p2 = _pv(MB, lambda x, y, u, v: x)
+    c1 = p1.fig.axes[0].collections[0].get_colors()
+    c2 = p2.fig.axes[0].collections[0].get_colors()
+    # assert not np.allclose(c1, c2)
+
+
+def test_plot_vector_3d_quivers_color_func():
+    # verify that color_func gets applied to 3D quivers
+
+    x, y, z, a = symbols("x:z a")
+
+    _pv = lambda B, cf: plot_vector(
+        Matrix([z, y, x]), (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        show=False, backend=B, color_func=cf, n=3)
+
+    # TODO: is it possible to check matplotlib colors without showing the plot?
+    p1 = _pv(MB, None)
+    p2 = _pv(MB, lambda x, y, z, u, v, w: x)
+    p1.process_series()
+    p2.process_series()
+
+    p1 = _pv(KB, None)
+    p2 = _pv(KB, lambda x, y, z, u, v, w: x)
+    assert not np.allclose(p1.fig.objects[0].colors, p2.fig.objects[0].colors)
+
+    _pv2 = lambda B, cf: plot_vector(
+        Matrix([a * z, y, x]), (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        show=False, backend=B, color_func=cf, n=3, params={a: (0, 0, 2)})
+
+    p1 = _pv2(MB, None)
+    p2 = _pv2(MB, lambda x, y, z, u, v, w: u)
+    p3 = _pv2(MB, lambda x, y, z, u, v, w: u)
+    p1.backend._update_interactive({a: 0})
+    p2.backend._update_interactive({a: 0})
+    p3.backend._update_interactive({a: 2})
+
+    p1 = _pv2(KB, None)
+    p2 = _pv2(KB, lambda x, y, z, u, v, w: u)
+    p3 = _pv2(KB, lambda x, y, z, u, v, w: u)
+    p3.backend._update_interactive({a: 2})
+    assert not np.allclose(p1.fig.objects[0].colors, p2.fig.objects[0].colors)
+    assert not np.allclose(p2.fig.objects[0].colors, p3.fig.objects[0].colors)
+
+
+def test_plot_vector_3d_streamlines_color_func():
+    # verify that color_func gets applied to 3D quivers
+
+    x, y, z, a = symbols("x:z a")
+
+    # NOTE: better keep a decent number of discretization points in order to
+    # be sure to have streamlines
+    _pv = lambda B, cf: plot_vector(
+        Matrix([z, y, x]), (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        streamlines=True, show=False, backend=B, color_func=cf, n=7)
+
+    # TODO: is it possible to check matplotlib colors without showing the plot?
+    p1 = _pv(MB, None)
+    p2 = _pv(MB, lambda x, y, z, u, v, w: x)
+    p1.process_series()
+    p2.process_series()
+
+    p1 = _pv(KB, None)
+    p2 = _pv(KB, lambda x, y, z, u, v, w: x)
+    assert not np.allclose(
+        p1.fig.objects[0].attribute, p2.fig.objects[0].attribute)
+
 
 
 def test_plot_implicit_adaptive_true():

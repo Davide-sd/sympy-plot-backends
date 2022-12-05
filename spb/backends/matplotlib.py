@@ -519,13 +519,17 @@ class MatplotlibBackend(Plot):
                 if s.is_2Dvector:
                     xx, yy, uu, vv = s.get_data()
                     mag = np.sqrt(uu ** 2 + vv ** 2)
+                    uu0, vv0 = [t.copy() for t in [uu, vv]]
                     if s.normalize:
                         uu, vv = [t / mag for t in [uu, vv]]
                     if s.is_streamlines:
                         skw = dict()
                         if (not s.use_quiver_solid_color) and s.use_cm:
+                            color_val = mag
+                            if s.color_func is not None:
+                                color_val = s.color_func(xx, yy, uu0, vv0)
                             skw["cmap"] = next(self._cm)
-                            skw["color"] = mag
+                            skw["color"] = color_val
                             kw = merge({}, skw, s.rendering_kw)
                             sp = self.ax.streamplot(xx, yy, uu, vv, **kw)
                             is_cb_added = self._add_colorbar(
@@ -554,9 +558,12 @@ class MatplotlibBackend(Plot):
                         if (not s.use_quiver_solid_color) and s.use_cm:
                             # don't use color map if a scalar field is
                             # visible or if use_cm=False
+                            color_val = mag
+                            if s.color_func is not None:
+                                color_val = s.color_func(xx, yy, uu0, vv0)
                             qkw["cmap"] = next(self._cm)
                             kw = merge({}, qkw, s.rendering_kw)
-                            q = self.ax.quiver(xx, yy, uu, vv, mag, **kw)
+                            q = self.ax.quiver(xx, yy, uu, vv, color_val, **kw)
                             is_cb_added = self._add_colorbar(
                                 q, s.get_label(self._use_latex), s.use_cm)
                         else:
@@ -569,12 +576,15 @@ class MatplotlibBackend(Plot):
                 else:
                     xx, yy, zz, uu, vv, ww = s.get_data()
                     mag = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
+
+                    uu0, vv0, zz0 = [t.copy() for t in [uu, vv, ww]]
                     if s.normalize:
                         uu, vv, ww = [t / mag for t in [uu, vv, ww]]
 
                     if s.is_streamlines:
-                        vertices, magn = compute_streamtubes(
-                            xx, yy, zz, uu, vv, ww, s.rendering_kw)
+                        vertices, color_val = compute_streamtubes(
+                            xx, yy, zz, uu, vv, ww, s.rendering_kw,
+                            s.color_func)
 
                         lkw = dict()
                         stream_kw = s.rendering_kw.copy()
@@ -587,7 +597,7 @@ class MatplotlibBackend(Plot):
                             segments = self.get_segments(
                                 vertices[:, 0], vertices[:, 1], vertices[:, 2])
                             lkw["cmap"] = next(self._cm)
-                            lkw["array"] = magn
+                            lkw["array"] = color_val
                             kw = merge({}, lkw, stream_kw)
                             c = Line3DCollection(segments, **kw)
                             self.ax.add_collection(c)
@@ -606,8 +616,19 @@ class MatplotlibBackend(Plot):
                     else:
                         qkw = dict()
                         if s.use_cm:
+                            # NOTE: each quiver is composed of 3 lines: the
+                            # stem and two segments for the head. I could set
+                            # the colors keyword argument in order to apply
+                            # the same color to the entire quiver, like this:
+                            # [c1, c2, ..., cn, c1, c1, c2, c2, ... cn, cn]
+                            # However, it doesn't appear to work reliably, so
+                            # I'll keep things simpler.
+                            color_val = mag
+                            if s.color_func is not None:
+                                color_val = s.color_func(
+                                    xx, yy, zz, uu0, vv0, zz0)
                             qkw["cmap"] = next(self._cm)
-                            qkw["array"] = mag.flatten()
+                            qkw["array"] = color_val.flatten()
                             kw = merge({}, qkw, s.rendering_kw)
                             q = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
                             is_cb_added = self._add_colorbar(
@@ -1019,9 +1040,17 @@ class MatplotlibBackend(Plot):
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()
                     kw, is_cb_added, cax = self._handles[i][1:]
                     mag = np.sqrt(uu ** 2 + vv ** 2 + ww ** 2)
+                    uu0, vv0, ww0 = [t.copy() for t in [uu, vv, ww]]
                     if s.normalize:
                         uu, vv, ww = [t / mag for t in [uu, vv, ww]]
                     self._handles[i][0].remove()
+
+                    if "array" in kw.keys():
+                        color_val = mag
+                        if s.color_func is not None:
+                            color_val = s.color_func(xx, yy, zz, uu0, vv0, ww0)
+                        kw["array"] = color_val.flatten()
+
                     self._handles[i][0] = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
 
                     if is_cb_added:
@@ -1033,6 +1062,7 @@ class MatplotlibBackend(Plot):
                 elif s.is_vector:
                     xx, yy, uu, vv = self.series[i].get_data()
                     mag = np.sqrt(uu ** 2 + vv ** 2)
+                    uu0, vv0 = [t.copy() for t in [uu, vv]]
                     if s.normalize:
                         uu, vv = [t / mag for t in [uu, vv]]
                     if s.is_streamlines:
@@ -1047,10 +1077,13 @@ class MatplotlibBackend(Plot):
                         self._handles[i][0] = self.ax.streamplot(xx, yy, uu, vv, **kw)
                     else:
                         kw, is_cb_added, cax = self._handles[i][1:]
+                        color_val = mag
+                        if s.color_func is not None:
+                            color_val = s.color_func(xx, yy, uu0, vv0)
 
                         if is_cb_added:
-                            self._handles[i][0].set_UVC(uu, vv, mag)
-                            self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), mag)
+                            self._handles[i][0].set_UVC(uu, vv, color_val)
+                            self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), color_val)
                         else:
                             self._handles[i][0].set_UVC(uu, vv)
                     xlims.append((np.amin(xx), np.amax(xx)))
