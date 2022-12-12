@@ -228,16 +228,28 @@ class K3DBackend(Plot):
 
         for ii, s in enumerate(series):
             if s.is_3Dline and s.is_point:
-                x, y, z, _ = s.get_data()
+                if s.is_parametric:
+                    x, y, z, param = s.get_data()
+                else:
+                    x, y, z = s.get_data()
+                    param = np.zeros_like(x)
                 positions = np.vstack([x, y, z]).T.astype(np.float32)
-                a = dict(point_size=0.2, color=self._convert_to_int(next(self._cl)))
+                a = dict(point_size=0.2,
+                    color=self._convert_to_int(next(self._cl)))
+                if s.use_cm:
+                    a["color_map"] = next(self._cm)
+                    a["attribute"] = param
                 kw = merge({}, a, s.rendering_kw)
                 plt_points = self.k3d.points(positions=positions, **kw)
                 plt_points.shader = "mesh"
                 self._fig += plt_points
 
             elif s.is_3Dline:
-                x, y, z, param = s.get_data()
+                if s.is_parametric:
+                    x, y, z, param = s.get_data()
+                else:
+                    x, y, z = s.get_data()
+                    param = np.zeros_like(x)
                 vertices = np.vstack([x, y, z]).T.astype(np.float32)
                 # keyword arguments for the line object
                 a = dict(
@@ -508,12 +520,15 @@ class K3DBackend(Plot):
                 self.series[i].params = params
 
                 if s.is_3Dline and s.is_point:
-                    x, y, z, _ = self.series[i].get_data()
+                    if s.is_parametric:
+                        x, y, z, _ = s.get_data()
+                    else:
+                        x, y, z = s.get_data()
                     positions = np.vstack([x, y, z]).T.astype(np.float32)
                     self._fig.objects[i].positions = positions
 
                 elif s.is_3Dline:
-                    x, y, z, _ = self.series[i].get_data()
+                    x, y, z, _ = s.get_data()
                     vertices = np.vstack([x, y, z]).T.astype(np.float32)
                     self._fig.objects[i].vertices = vertices
 

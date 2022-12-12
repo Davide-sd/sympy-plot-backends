@@ -661,7 +661,7 @@ class Line2DBaseSeries(BaseSeries):
         self.steps = kwargs.get("steps", False)
         self.only_integers = kwargs.get("only_integers", False)
         self.is_point = kwargs.get("is_point", False)
-        self.is_filled = kwargs.get("is_filled", False)
+        self.is_filled = kwargs.get("is_filled", True)
         self.scale = kwargs.get("xscale", "linear")
         self.n = int(kwargs.get("n", 1000))
         self.modules = kwargs.get("modules", None)
@@ -716,7 +716,10 @@ class Line2DBaseSeries(BaseSeries):
                 x = np.repeat(points[0], 3)[2:]
                 y = np.repeat(points[1], 3)[:-2]
                 z = np.repeat(points[2], 3)[1:-1]
-                points = (x, y, z, points[3])
+                if len(points) > 3:
+                    points = (x, y, z, points[3])
+                else:
+                    points = (x, y, z)
         return points
 
 
@@ -758,6 +761,7 @@ class List2DSeries(Line2DBaseSeries, ParamsMixin):
         self.is_polar = kwargs.get("is_polar", False)
         self.label = label
         self.rendering_kw = kwargs.get("rendering_kw", dict())
+        self.use_cm = kwargs.get("use_cm", False)
         if self.use_cm and self.color_func:
             self.is_parametric = True
 
@@ -782,6 +786,56 @@ class List2DSeries(Line2DBaseSeries, ParamsMixin):
         if self.use_cm and callable(self.color_func):
             return lx, ly, self.eval_color_func(lx, ly)
         return lx, ly
+
+
+class List3DSeries(List2DSeries):
+    is_2Dline = False
+    is_3Dline = True
+
+    def __init__(self, list_x, list_y, list_z, label="", **kwargs):
+        super().__init__(list_x, list_y, label, **kwargs)
+        np = import_module('numpy')
+        if len(list_z) != len(list_x):
+            raise ValueError(
+                "The three lists of coordinates must have the same "
+                "number of elements.\n"
+                "Received: len(list_x) = len(list_y) = {} ".format(len(list_x)) +
+                "and len(list_z) = {}".format(len(list_z))
+            )
+        self._block_lambda_functions(list_z)
+        check = lambda l: [isinstance(t, Expr) and (not t.is_number) for t in l]
+        if any(check(list_z)):
+            if not self.params:
+                raise TypeError("Some or all elements of the provided lists "
+                    "are symbolic expressions, but the ``params`` dictionary "
+                    "was not provided. This operation mode is not supported.")
+            self.list_z = [sympify(t) for t in list_z]
+            self.is_interactive = True
+            InteractiveSeries._check_fs(self,
+                self.list_x + self.list_y + self.list_z,
+                None, label, self._params)
+        else:
+            self.list_z = np.array(list_z, dtype=np.float64)
+
+    def get_expr(self):
+        return self.list_x, self.list_y, self.list_z
+
+    def _get_points(self):
+        """Returns coordinates that needs to be postprocessed."""
+        lx, ly, lz = self.list_x, self.list_y, self.list_z
+
+        if not self.is_interactive:
+            if self.use_cm and callable(self.color_func):
+                return lx, ly, lz, self.eval_color_func(lx, ly, lz)
+            return lx, ly, lz
+
+        np = import_module('numpy')
+        lx = np.array([t.evalf(subs=self.params) for t in lx], dtype=float)
+        ly = np.array([t.evalf(subs=self.params) for t in ly], dtype=float)
+        lz = np.array([t.evalf(subs=self.params) for t in lz], dtype=float)
+        if self.use_cm and callable(self.color_func):
+            return lx, ly, lz, self.eval_color_func(lx, ly, lz)
+        return lx, ly, lz
 
 
 class LineOver1DRangeSeries(Line2DBaseSeries):

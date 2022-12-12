@@ -11,7 +11,7 @@ from spb.series import (
     ComplexPointSeries, ComplexPointInteractiveSeries,
     GeometrySeries, GeometryInteractiveSeries,
     PlaneSeries, PlaneInteractiveSeries,
-    List2DSeries, AbsArgLineSeries,
+    List2DSeries, List3DSeries, AbsArgLineSeries,
     LineInteractiveSeries, AbsArgLineInteractiveSeries,
     Parametric2DLineInteractiveSeries, Parametric3DLineInteractiveSeries,
     ParametricSurfaceInteractiveSeries, SurfaceInteractiveSeries,
@@ -252,6 +252,28 @@ def test_list2dseries():
     assert not s.is_parametric
 
 
+def test_list3dseries():
+    x = symbols("x")
+    zz1 = np.linspace(-3, 3, 10)
+    xx = np.cos(zz1)
+    yy = np.sin(zz1)
+    zz2 = np.linspace(-3, 3, 20)
+
+    # same number of elements: everything is fine
+    s = List3DSeries(xx, yy, zz1)
+    assert not s.is_parametric
+    # different number of elements: error
+    raises(ValueError, lambda: List3DSeries(xx, yy, zz2))
+
+    # no color func: returns only x, y components and s in not parametric
+    s = List3DSeries(xx, yy, zz1)
+    xxs, yys, zzs = s.get_data()
+    assert np.allclose(xx, xxs)
+    assert np.allclose(yy, yys)
+    assert np.allclose(zz1, zzs)
+    assert not s.is_parametric
+
+
 def test_complexpointseries():
     # verify that ComplexPointSeries returns the correct data depending on
     # the provided keyword arguments
@@ -460,6 +482,9 @@ def test_rendering_kw():
     u, v, x, y, z = symbols("u, v, x:z")
 
     s = List2DSeries([1, 2, 3], [4, 5, 6])
+    assert isinstance(s.rendering_kw, dict)
+
+    s = List3DSeries([1, 2, 3], [4, 5, 6], [6, 7, 8])
     assert isinstance(s.rendering_kw, dict)
 
     s = LineOver1DRangeSeries(1, (x, -5, 5))
@@ -999,6 +1024,13 @@ def test_is_point_is_filled():
         is_point=True, is_filled=False)
     assert s.is_point and (not s.is_filled)
 
+    s = List3DSeries([0, 1, 2], [3, 4, 5], [6, 7, 8],
+        is_point=False, is_filled=True)
+    assert (not s.is_point) and s.is_filled
+    s = List3DSeries([0, 1, 2], [3, 4, 5], [6, 7, 8],
+        is_point=True, is_filled=False)
+    assert s.is_point and (not s.is_filled)
+
     s = Parametric2DLineSeries(cos(x), sin(x), (x, -5, 5),
         is_point=False, is_filled=True)
     assert (not s.is_point) and s.is_filled
@@ -1117,10 +1149,13 @@ def test_steps():
     x, u = symbols("x, u")
 
     def do_test(s1, s2):
-        if not s1.is_parametric:
+        if (not s1.is_parametric) and s1.is_2Dline:
             xx1, _ = s1.get_data()
             xx2, _ = s2.get_data()
         elif s1.is_parametric and s1.is_2Dline:
+            xx1, _, _ = s1.get_data()
+            xx2, _, _ = s2.get_data()
+        elif (not s1.is_parametric) and s1.is_3Dline:
             xx1, _, _ = s1.get_data()
             xx2, _, _ = s2.get_data()
         else:
@@ -1143,6 +1178,12 @@ def test_steps():
     s1 = List2DSeries([0, 1, 2], [3, 4, 5],
         adaptive=False, n=40, steps=False)
     s2 = List2DSeries([0, 1, 2], [3, 4, 5],
+        adaptive=False, n=40, steps=True)
+    do_test(s1, s2)
+
+    s1 = List3DSeries([0, 1, 2], [3, 4, 5], [6, 7, 8],
+        adaptive=False, n=40, steps=False)
+    s2 = List3DSeries([0, 1, 2], [3, 4, 5], [6, 7, 8],
         adaptive=False, n=40, steps=True)
     do_test(s1, s2)
 
@@ -1366,6 +1407,33 @@ def test_list2dseries_interactive():
     assert not s.is_parametric
 
 
+def test_list3dseries_interactive():
+    # As a design choice (for simplicity), there is no List3DInteractiveSeries.
+    # Instead, List3DSeries can be interactive if ``params`` is provided.
+
+    x, y, u = symbols("x, y, u")
+
+    s = List3DSeries([1, 2, 3], [1, 2, 3], [1, 2, 3])
+    assert not s.is_interactive
+
+    # symbolic expressions as coordinates, but no ``params``
+    raises(TypeError, lambda: List3DSeries([cos(x)], [sin(x)], [x]))
+
+    # too few parameters
+    raises(ValueError,
+        lambda: List3DSeries([cos(x), y], [sin(x), 2], [x, y], params={u: 1}))
+
+    s = List3DSeries([cos(x)], [sin(x)], [x], params={x: 1})
+    assert s.is_interactive
+
+    s = List3DSeries([x, 2, 3, 4], [4, 3, 2, x], [1, 3, 4, x], params={x: 3})
+    xx, yy, zz = s.get_data()
+    assert np.allclose(xx, [3, 2, 3, 4])
+    assert np.allclose(yy, [4, 3, 2, 3])
+    assert np.allclose(zz, [1, 3, 4, 3])
+    assert not s.is_parametric
+
+
 def test_mpmath():
     # test that the argument of complex functions evaluated with mpmath
     # might be different than the one computed with Numpy (different
@@ -1569,6 +1637,11 @@ def test_use_cm():
     s = List2DSeries([1, 2, 3, 4], [5, 6, 7, 8], "test", use_cm=True)
     assert s.use_cm
     s = List2DSeries([1, 2, 3, 4], [5, 6, 7, 8], "test", use_cm=False)
+    assert not s.use_cm
+
+    s = List3DSeries([1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], "test", use_cm=True)
+    assert s.use_cm
+    s = List3DSeries([1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], "test", use_cm=False)
     assert not s.use_cm
 
     s = AbsArgLineSeries(sqrt(x), (x, -5 + 2j, 5 + 2j), "test", use_cm=True)
@@ -1851,6 +1924,18 @@ def test_apply_transforms():
     assert (y1.min() < -0.9) and (y1.max() > 0.9)
     assert np.isclose(x2[0], -360) and np.isclose(x2[-1], 360)
     assert (y2.min() < -52) and (y2.max() > 52)
+
+    zz = np.linspace(-2*np.pi, 2*np.pi, 10)
+    xx = np.cos(zz)
+    yy = np.cos(zz)
+    s1 = List3DSeries(xx, yy, zz)
+    s2 = List3DSeries(xx, yy, zz, tx=lambda t: 2*t, ty=lambda t: 3*t, tz=lambda t: 4*t)
+    x1, y1, z1 = s1.get_data()
+    x2, y2, z2 = s2.get_data()
+    assert np.allclose(xx, x1) and np.allclose(yy, y1) and np.allclose(zz, z1)
+    assert np.allclose(xx, x2 / 2)
+    assert np.allclose(yy, y2 / 3)
+    assert np.allclose(zz, z2 / 4)
 
     s1 = AbsArgLineSeries(cos(x) + sin(I * x), (x, -2*pi, 2*pi),
         n=10, adaptive=False)
@@ -2174,6 +2259,10 @@ def test_series_labels():
     assert s2.get_label(True) == "test"
 
     s1 = List2DSeries([0, 1, 2, 3], [0, 1, 2, 3], "test")
+    assert s1.get_label(False) == "test"
+    assert s1.get_label(True) == "test"
+
+    s1 = List3DSeries([0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], "test")
     assert s1.get_label(False) == "test"
     assert s1.get_label(True) == "test"
 
@@ -2567,6 +2656,21 @@ def test_color_func():
     assert len(s.get_data()) == 2
     assert not s.is_parametric
 
+    zz = np.linspace(-3, 3, 10)
+    xx = np.cos(zz)
+    yy = np.sin(zz)
+    s = List3DSeries(xx, yy, zz, color_func=lambda x, y, z: 2 * x, use_cm=True)
+    xxs, yys, zzs, col = s.get_data()
+    assert np.allclose(xx, xxs)
+    assert np.allclose(yy, yys)
+    assert np.allclose(zz, zzs)
+    assert np.allclose(2 * xx, col)
+    assert s.is_parametric
+
+    s = List3DSeries(xx, yy, zz, color_func=lambda x, y, z: 2 * x, use_cm=False)
+    assert len(s.get_data()) == 3
+    assert not s.is_parametric
+
     s = ComplexPointSeries([1 + 2 * I, 3 + 4 * I],
         color_func=lambda x, y: x * y, use_cm=True)
     xx, yy, col = s.get_data()
@@ -2664,6 +2768,20 @@ def test_color_func():
     s = List2DSeries([0, 1, 2, x], [x, 2, 3, 4],
         color_func=lambda x, y: 2 * x, params={x: 1}, use_cm=False)
     assert len(s.get_data()) == 2
+    assert not s.is_parametric
+
+    s = List3DSeries([0, 1, 2, x], [x, 2, 3, 4], [1, 3, 2, x],
+        color_func=lambda x, y, z: 2 * x, params={x: 1}, use_cm=True)
+    xx, yy, zz, col = s.get_data()
+    assert np.allclose(xx, [0, 1, 2, 1])
+    assert np.allclose(yy, [1, 2, 3, 4])
+    assert np.allclose(zz, [1, 3, 2, 1])
+    assert np.allclose(2 * xx, col)
+    assert s.is_parametric and s.use_cm
+
+    s = List3DSeries([0, 1, 2, x], [x, 2, 3, 4], [1, 3, 2, x],
+        color_func=lambda x, y, z: 2 * x, params={x: 1}, use_cm=False)
+    assert len(s.get_data()) == 3
     assert not s.is_parametric
 
     s = ComplexPointInteractiveSeries([1 + x * I, 1 + x + 4 * I],
@@ -2921,6 +3039,7 @@ def test_expr_is_lambda_function():
     assert s1.label == ""
 
     raises(TypeError, lambda: List2DSeries(lambda t: t, lambda t: t))
+    raises(TypeError, lambda: List3DSeries(lambda t: t, lambda t: t))
     raises(TypeError, lambda: InteractiveSeries(
         [lambda t: t], [("x", -5, 5)]))
     raises(TypeError, lambda: ComplexPointSeries(lambda t: t, lambda t: t))

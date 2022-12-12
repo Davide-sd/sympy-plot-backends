@@ -5,6 +5,8 @@
 v1.6.2
 ======
 
+* Added ``plot3d_list`` function to plot list of coordinates on 3D space.
+
 * Improved documentation.
 
 * Enabled ``color_func`` keyword argument on ``plot_vector``.

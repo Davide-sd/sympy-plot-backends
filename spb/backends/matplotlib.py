@@ -81,6 +81,7 @@ class MatplotlibBackend(Plot):
         * Refer to [#fn5]_ to customize quiver plots.
         * Refer to [#fn6]_ to customize surface plots.
         * Refer to [#fn7]_ to customize stramline plots.
+        * Refer to [#fn8]_ to customize 3D scatter plots.
 
     use_cm : boolean, optional
         If True, apply a color map to the mesh/surface or parametric lines.
@@ -122,6 +123,7 @@ class MatplotlibBackend(Plot):
     .. [#fn5] https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
     .. [#fn6] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
     .. [#fn7] https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+    .. [#fn8] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
 
 
     See also
@@ -420,10 +422,14 @@ class MatplotlibBackend(Plot):
                 self._add_handle(i, c, kw, self._fig.axes[-1], clabel)
 
             elif s.is_3Dline:
-                x, y, z, param = s.get_data()
+                if s.is_parametric:
+                    x, y, z, param = s.get_data()
+                else:
+                    x, y, z = s.get_data()
+                    param = np.ones_like(x)
                 lkw = dict()
 
-                if len(x) > 1:
+                if not s.is_point:
                     if s.use_cm:
                         segments = self.get_segments(x, y, z)
                         lkw["cmap"] = next(self._cm)
@@ -442,11 +448,21 @@ class MatplotlibBackend(Plot):
                         l = self.ax.plot(x, y, z, **kw)
                         self._add_handle(i, l)
                 else:
-                    # 3D points
-                    lkw["label"] = s.get_label(self._use_latex)
-                    lkw["color"] = next(self._cl) if s.line_color is None else s.line_color
+                    if s.use_cm:
+                        lkw["cmap"] = next(self._cm)
+                        lkw["c"] = param
+                    else:
+                        # lkw["c"] = param
+                        lkw["color"] = next(self._cl) if s.line_color is None else s.line_color
+
+                    if not s.is_filled:
+                        lkw["facecolors"] = "none"
+
+                    lkw["alpha"] = 1
                     kw = merge({}, lkw, s.rendering_kw)
                     l = self.ax.scatter(x, y, z, **kw)
+                    if s.use_cm:
+                        self._add_colorbar(l, s.get_label(self._use_latex), s.use_cm)
                     self._add_handle(i, l)
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
@@ -778,11 +794,11 @@ class MatplotlibBackend(Plot):
             else:
                 self.ax.grid(which='major', axis='x', linewidth=0.75,
                     linestyle='-', color='0.85')
-                self.ax.grid(which='minor', axis='x', linewidth=0.25,
+                self.ax.grid(which='minor', axis='x', linewidth=0.45,
                     linestyle='--', color='0.80')
                 self.ax.grid(which='major', axis='y', linewidth=0.75,
                     linestyle='-', color='0.85')
-                self.ax.grid(which='minor', axis='y', linewidth=0.25,
+                self.ax.grid(which='minor', axis='y', linewidth=0.45,
                     linestyle='--', color='0.80')
                 if self._show_minor_grid:
                     self.ax.minorticks_on()
@@ -950,7 +966,11 @@ class MatplotlibBackend(Plot):
                         self._handles[i][0].set_data(x, y)
 
                 elif s.is_3Dline:
-                    x, y, z, _ = self.series[i].get_data()
+                    if s.is_parametric:
+                        x, y, z, _ = self.series[i].get_data()
+                    else:
+                        x, y, z = self.series[i].get_data()
+
                     if isinstance(self._handles[i][0], Line3DCollection):
                         # gradient lines
                         segments = self.get_segments(x, y, z)
@@ -959,8 +979,12 @@ class MatplotlibBackend(Plot):
                         # 3D points
                         self._handles[i][0]._offsets3d = (x, y, z)
                     else:
-                        # solid lines
-                        self._handles[i][0].set_data_3d(x, y, z)
+                        if hasattr(self._handles[i][0], "set_data_3d"):
+                            # solid lines
+                            self._handles[i][0].set_data_3d(x, y, z)
+                        else:
+                            # scatter
+                            self._handles[i][0].set_offset(np.c_[x, y, z])
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(z), np.amax(z)))

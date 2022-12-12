@@ -21,7 +21,7 @@ from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
     ImplicitSeries, _set_discretization_points,
-    List2DSeries, GeometrySeries, Implicit3DSeries,
+    List2DSeries, List3DSeries, GeometrySeries, Implicit3DSeries,
     InteractiveSeries, GenericDataSeries, Parametric3DLineInteractiveSeries
 )
 from spb.utils import (
@@ -3536,9 +3536,9 @@ def plot_list(*args, **kwargs):
     Typical usage examples are in the followings:
 
     - Plotting coordinates of a single function.
-        `plot(x, y, **kwargs)`
+        `plot_list(x, y, **kwargs)`
     - Plotting coordinates of multiple functions adding custom labels.
-        `plot((x1, y1, label1), (x2, y2, label2), **kwargs)`
+        `plot_list((x1, y1, label1), (x2, y2, label2), **kwargs)`
 
 
     Parameters
@@ -3577,9 +3577,9 @@ def plot_list(*args, **kwargs):
         If True, a scatter plot will be generated.
 
     is_filled : boolean, optional
-        Default to True, which will render empty circular markers. It only
+        Default to False, which will render empty circular markers. It only
         works if `is_point=True`.
-        If False, filled circular markers will be rendered.
+        If True, filled circular markers will be rendered.
 
     label : str or list/tuple, optional
         The label to be shown in the legend. The number of labels must be
@@ -3768,6 +3768,224 @@ def plot_list(*args, **kwargs):
         kw["rendering_kw"] = rendering_kw
         kw["params"] = mod_params
         series.append(List2DSeries(*a[:2], label, **kw))
+
+    _set_labels(series, g_labels, g_rendering_kw)
+    if params:
+        kwargs["series"] = series
+        kwargs["params"] = params
+        return _create_interactive_plot(**kwargs)
+
+    Backend = kwargs.pop("backend", TWO_D_B)
+    return _instantiate_backend(Backend, *series, **kwargs)
+
+
+def plot3d_list(*args, **kwargs):
+    """Plots lists of coordinates (ie, lists of numbers) in 3D space.
+
+    Typical usage examples are in the followings:
+
+    - Plotting coordinates of a single function.
+        `plot3d_list(x, y, **kwargs)`
+    - Plotting coordinates of multiple functions adding custom labels.
+        `plot3d_list((x1, y1, label1), (x2, y2, label2), **kwargs)`
+
+
+    Parameters
+    ==========
+
+    args :
+        x : list or tuple or 1D NumPy array
+            x-coordinates
+
+        y : list or tuple or 1D NumPy array
+            y-coordinates
+
+        z : list or tuple or 1D NumPy array
+            z-coordinates
+
+        label : str, optional
+            The label to be shown in the legend.
+
+        rendering_kw : dict, optional
+            A dictionary of keywords/values which is passed to the backend's
+            function to customize the appearance of lines. Refer to the
+            plotting library (backend) manual for more informations.
+
+    backend : Plot, optional
+        A subclass of `Plot`, which will perform the rendering.
+        Default to `MatplotlibBackend`.
+
+    color_func : callable, optional
+        A function of 3 variables, x, y, z which defines the line color.
+        Default to None. Requires ``use_cm=True`` in order to be applied.
+
+    is_point : boolean, optional
+        Default to False, which will render a line connecting all the points.
+        If True, a scatter plot will be generated.
+
+    is_filled : boolean, optional
+        Default to True, which will render filled circular markers. It only
+        works if `is_point=True`. If True, filled circular markers will be
+        rendered. Note that some backend might not support this feature.
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. The number of labels must be
+        equal to the number of expressions.
+
+    params : dict
+        A dictionary mapping symbols to parameters. This keyword argument
+        enables the interactive-widgets plot. Learn more by reading the
+        documentation of ``iplot``.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+        If a list of dictionaries is provided, the number of dictionaries must
+        be equal to the number of expressions.
+
+    show : bool, optional
+        The default value is set to `True`. Set show to `False` and
+        the function will not display the plot. The returned instance of
+        the `Plot` class can then be used to save or display the plot
+        by calling the `save()` and `show()` methods respectively.
+
+    size : (float, float), optional
+        A tuple in the form (width, height) to specify the size of
+        the overall figure. The default value is set to `None`, meaning
+        the size will be set by the backend.
+
+    title : str, optional
+        Title of the plot. It is set to the latex representation of
+        the expression, if the plot has only one expression.
+
+    use_cm : boolean, optional
+        If True, apply a color map to the parametric lines.
+        If False, solid colors will be used instead. Default to True.
+
+    use_latex : boolean, optional
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.
+
+    xlabel, ylabel, zlabel : str, optional
+        Label for the x-axis, y-axis, z-axis, respectively.
+
+    xlim : (float, float), optional
+        Denotes the x-axis limits, `(min, max)`, visible in the chart.
+
+    ylim : (float, float), optional
+        Denotes the y-axis limits, `(min, max)`, visible in the chart.
+
+    zlim : (float, float), optional
+        Denotes the z-axis limits, `(min, max)`, visible in the chart.
+
+
+    Examples
+    ========
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import *
+       >>> from spb import plot3d_list
+       >>> import numpy as np
+
+    Plot the coordinates of a single function:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> z = np.linspace(0, 6*np.pi, 100)
+       >>> x = z * np.cos(z)
+       >>> y = z * np.sin(z)
+       >>> plot3d_list(x, y, z)
+
+    Plotting multiple functions with custom rendering keywords:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot3d_list(
+       ...     (x, y, z, "A"),
+       ...     (x, y, -z, "B", {"linestyle": "--"}))
+
+    Interactive-widget plot of a dot following a path. Refer to ``iplot``
+    documentation to learn more about the ``params`` dictionary.
+
+    .. panel-screenshot::
+       :small-size: 800, 625
+
+       from sympy import *
+       from spb import *
+       t = symbols("t")
+       z = np.linspace(0, 6*np.pi, 100)
+       x = z * np.cos(z)
+       y = z * np.sin(z)
+       p1 = plot3d_list(x, y, z,
+           show=False, is_point=False)
+       p2 = plot3d_list(
+           [t * cos(t)], [t * sin(t)], [t],
+           params={t: (3*pi, 0, 6*pi)},
+           backend=PB, show=False, is_point=True, use_latex=False)
+       (p2 + p1).show()
+
+    See Also
+    ========
+
+    plot, plot_parametric, plot3d, plot_piecewise
+
+    """
+    g_labels = kwargs.pop("label", [])
+    g_rendering_kw = kwargs.pop("rendering_kw", None)
+    series = []
+
+    def is_tuple(t):
+        # verify that t is a tuple of the form (x, y, label [opt],
+        # rendering_kw [opt])
+        if hasattr(t, "__iter__"):
+            if isinstance(t, (str, dict)):
+                return False
+            if (len(t) >= 3) and all(hasattr(t[i], "__iter__") for i in [0, 1, 2]):
+                return True
+        return False
+
+    if not any(is_tuple(e) for e in args):
+        # in case we are plotting a single line
+        args = [args]
+
+    params = kwargs.pop("params", None)
+    mod_params = None
+    if params:
+        # NOTE: it was easier to not implement a List2DInteractiveSeries.
+        # Hence, List2DSeries can be interactive (if params is provided)
+        # or not. If it is interactive, we must provide ``params`` with the
+        # correct form, meaning mapping symbols to values.
+        mod_params = {k: v[0] for k, v in params.items()}
+
+    for a in args:
+        if not isinstance(a, (list, tuple)):
+            raise TypeError(
+                "Each argument must be a list or tuple.\n"
+                "Received type(a) = {}".format(type(a)))
+        if (len(a) < 3) or (len(a) > 5):
+            raise ValueError(
+                "Each argument must contain from 3 to 5 elements.\n"
+                "Received {} elements.".format(len(a)))
+        label = [b for b in a if isinstance(b, str)]
+        label = "" if not label else label[0]
+        rendering_kw = [b for b in a if isinstance(b, dict)]
+        rendering_kw = None if not rendering_kw else rendering_kw[0]
+
+        kw = kwargs.copy()
+        kw["rendering_kw"] = rendering_kw
+        kw["params"] = mod_params
+        series.append(List3DSeries(*a[:3], label, **kw))
 
     _set_labels(series, g_labels, g_rendering_kw)
     if params:

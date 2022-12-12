@@ -364,7 +364,12 @@ class PlotlyBackend(Plot):
                 # legend entry shows the wrong color (black line), it is useful
                 # in order to hide/show a specific series whenever we are
                 # plotting multiple series.
-                x, y, z, param = s.get_data()
+                if s.is_parametric:
+                    x, y, z, param = s.get_data()
+                else:
+                    x, y, z = s.get_data()
+                    param = np.ones_like(x)
+
                 if not s.is_point:
                     lkw = dict(
                         name=s.get_label(self._use_latex),
@@ -398,10 +403,31 @@ class PlotlyBackend(Plot):
                                 else self.wireframe_color)
                         )
                 else:
+                    color = next(self._cl) if s.line_color is None else s.line_color
                     lkw = dict(
                         name=s.get_label(self._use_latex),
-                        mode="markers",
-                        line_color=next(self._cl) if s.line_color is None else s.line_color)
+                        mode="markers")
+
+                    lkw["marker"] = dict(
+                        color=color if not s.use_cm else param,
+                        size=8,
+                        colorscale=next(self._cm) if s.use_cm else None,
+                        showscale = True if s.use_cm else False,
+                    )
+                    if s.use_cm:
+                        lkw["marker"]["colorbar"] = self._create_colorbar(s.get_label(self._use_latex), True)
+
+                    if not s.is_filled:
+                        # TODO: how to show a colorscale if is_point=True
+                        # and is_filled=False?
+                        lkw["marker"] = dict(
+                            color="#E5ECF6",
+                            line=dict(
+                                width=2,
+                                color=lkw["marker"]["color"],
+                                colorscale=lkw["marker"]["colorscale"],
+                            )
+                        )
 
                 kw = merge({}, lkw, s.rendering_kw)
                 self._fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **kw))
@@ -746,7 +772,11 @@ class PlotlyBackend(Plot):
                         self.fig.data[i]["theta"] = x
 
                 elif s.is_3Dline:
-                    x, y, z, param = s.get_data()
+                    if s.is_parametric:
+                        x, y, z, param = self.series[i].get_data()
+                    else:
+                        x, y, z = self.series[i].get_data()
+                        param = np.zeros_like(x)
                     self.fig.data[i]["x"] = x
                     self.fig.data[i]["y"] = y
                     self.fig.data[i]["z"] = z
