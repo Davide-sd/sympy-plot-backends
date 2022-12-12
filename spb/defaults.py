@@ -71,7 +71,7 @@ def _hardcoded_defaults():
             # Show/hide main grid
             "grid": True,
             # Show/hide minor grid
-            "show_minor_grid": True,
+            "show_minor_grid": False,
             # Render latex with Matplotlib
             "use_latex": True,
         },

@@ -7,6 +7,10 @@ v1.6.2
 
 * Added ``plot3d_list`` function to plot list of coordinates on 3D space.
 
+* Changed value to default setting:
+  ``cfg["matplotlib"]["show_minor_grid"]=False``. Set it to ``True`` in order
+  to visualize minor grid lines.
+
 * Improved documentation.
 
 * Enabled ``color_func`` keyword argument on ``plot_vector``.

@@ -33,4 +33,6 @@ Functions
 
 .. autofunction:: plot_list
 
+.. autofunction:: plot3d_list
+
 .. autofunction:: plot_piecewise

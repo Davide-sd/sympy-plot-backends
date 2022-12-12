@@ -792,14 +792,10 @@ class MatplotlibBackend(Plot):
             if isinstance(self.ax, Axes3D):
                 self.ax.grid()
             else:
-                self.ax.grid(which='major', axis='x', linewidth=0.75,
-                    linestyle='-', color='0.85')
-                self.ax.grid(which='minor', axis='x', linewidth=0.45,
-                    linestyle='--', color='0.80')
-                self.ax.grid(which='major', axis='y', linewidth=0.75,
-                    linestyle='-', color='0.85')
-                self.ax.grid(which='minor', axis='y', linewidth=0.45,
-                    linestyle='--', color='0.80')
+                self.ax.grid(visible=True, which='major', linestyle='-',
+                    linewidth=0.75, color='0.75')
+                self.ax.grid(visible=True, which='minor', linestyle='--',
+                    linewidth=0.6, color='0.825')
                 if self._show_minor_grid:
                     self.ax.minorticks_on()
         if self.legend:

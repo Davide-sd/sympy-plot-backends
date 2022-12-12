@@ -3938,7 +3938,7 @@ def plot3d_list(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_parametric, plot3d, plot_piecewise
+    plot, plot_list, plot3d_parametric_line
 
     """
     g_labels = kwargs.pop("label", [])
