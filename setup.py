@@ -10,6 +10,29 @@ version_ns = {}
 with open(os.path.join(here, 'spb', '_version.py')) as f:
     exec (f.read(), {}, version_ns)
 
+_all_deps = [
+    "scipy>=1.7.1",  # helps when lambdifying expressions
+    "notebook",
+    "ipympl>=0.7.0",
+    "plotly>=4.14.3",
+    "panel>=0.13.0", # this includes param and bokeh
+    "ipywidgets_bokeh", # starting from panel v0.13.0, it is not part of panel anymore
+    "colorcet",
+    "k3d>=2.9.7",
+    "vtk",  # needed for streamlines in k3d
+    # mayavi-related
+    # "mayavi>=4.8.0",
+    # "PyQt5>=5.15.7",
+]
+
+_dev_deps = _all_deps + [
+    "pytest",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "kaleido",
+    "numpydoc"
+]
+
 setup(
     name="sympy_plot_backends",
     version=version_ns["__version__"],
@@ -41,19 +64,7 @@ setup(
         "adaptive>=0.13.1",
     ],
     extras_require={
-        "all": [
-            "scipy>=1.7.1",  # helps when lambdifying expressions
-            "notebook",
-            "ipympl>=0.7.0",
-            "plotly>=4.14.3",
-            "panel>=0.13.0", # this includes param and bokeh
-            "ipywidgets_bokeh", # starting from panel v0.13.0, it is not part of panel anymore
-            "colorcet",
-            "k3d>=2.9.7",
-            "vtk",  # needed for streamlines in k3d
-            # mayavi-related
-            # "mayavi>=4.8.0",
-            # "PyQt5>=5.15.7",
-        ]
+        "all": _all_deps,
+        "dev": _dev_deps,
     }
 )
