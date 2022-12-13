@@ -249,11 +249,13 @@ class MatplotlibBackend(Plot):
 
             is_3D = [s.is_3D for s in self.series]
             if any(is_3D) and (not all(is_3D)):
-                raise ValueError(
-                    "The matplotlib backend can not mix 2D and 3D.")
+                # allow sum of 3D plots with contour plots
+                if not all(s.is_3D or s.is_contour for s in self.series):
+                    raise ValueError(
+                        "MatplotlibBackend can not mix 2D and 3D.")
 
             kwargs = dict(aspect=aspect)
-            if all(is_3D):
+            if any(is_3D):
                 kwargs["projection"] = "3d"
             elif any(s.is_2Dline and s.is_polar for s in self.series):
                 kwargs["projection"] = "polar"

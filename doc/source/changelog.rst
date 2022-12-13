@@ -22,6 +22,8 @@ v1.6.2
   
   * Fixed bug with interactive widget contour plot and update of colorbar.
 
+* ``MatplotlibBackend`` can now combine 3d plots with contour plots.
+
 * Fixed bug with addition of interactive plots.
 
 

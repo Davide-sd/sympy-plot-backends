@@ -4295,3 +4295,33 @@ def test_plot3d_list_interactive():
 
     p = _p2(KB) + _p1(KB)
     p.backend._update_interactive({t: 1})
+
+
+def test_matplotlib_contour_and_3d():
+    # verify that it's possible to combine contour and 3d plots, but that
+    # combining a 2d line plot with contour and 3d plot raises an error.
+
+    x, y = symbols("x, y")
+    expr = cos(x * y) * exp(-0.05 * (x**2 + y**2))
+    ranges = (x, -5, 5), (y, -5, 5)
+
+    p1 = plot3d(expr, *ranges,
+        show=False, legend=True, zlim=(-2, 1), n=4)
+    p2 = plot_contour(
+        expr, *ranges,
+        {"zdir": "z", "offset": -2, "levels": 5},
+        show=False, is_filled=False, legend=True, n=4)
+    p3 = plot(cos(x), (x, 0, 2*pi), adaptive=False, n=5, show=False)
+
+    p = p1 + p2
+    p.process_series()
+    p = p2 + p1
+    p.process_series()
+    p = p2 + p3
+    p.process_series()
+    p = p1 + p3
+    raises(ValueError, lambda : p.process_series())
+    p = p1 + p2 + p3
+    raises(ValueError, lambda : p.process_series())
+    p = p2 + p1 + p3
+    raises(ValueError, lambda : p.process_series())
