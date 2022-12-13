@@ -1239,6 +1239,10 @@ def plot3d_parametric_line(*args, **kwargs):
 
         Default to None.
 
+    is_point : boolean, optional
+        Default to False, which will render a line connecting all the points.
+        If True, a scatter plot will be generated.
+
     label : str or list/tuple, optional
         The label to be shown in the legend or in the colorbar. If not
         provided, the string representation of `expr` will be used. The number
