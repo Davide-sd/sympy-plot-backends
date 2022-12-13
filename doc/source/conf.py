@@ -230,7 +230,7 @@ def linkcode_resolve(domain, info):
 plotly_include_source = True
 plotly_include_directive_source = False
 plotly_iframe_height = "375px"
-plotly_formats = ["png", "html", "pdf"]
+plotly_formats = ["png", "pdf", "html"]
 plotly_intercept_code = _modify_code
 
 
@@ -245,6 +245,8 @@ panel_screenshot_intercept_code = _modify_iplot_code
 panel_screenshot_browser = "chrome"
 panel_screenshot_browser_path = chrome_path
 panel_screenshot_driver_path = chrome_driver_path
+panel_screenshot_formats = ["small.png", "large.png", ("pdf", 150), "html"]
+panel_screenshot_pdf_from = "small.png"
 
 # -- Options for sphinx_k3d_screenshot ----------------------------------------
 
@@ -252,3 +254,8 @@ k3d_screenshot_browser = "chrome"
 k3d_screenshot_browser_path = chrome_path
 k3d_screenshot_driver_path = chrome_driver_path
 k3d_screenshot_intercept_code = _modify_code
+k3d_screenshot_formats = ["small.png", "large.png", "pdf", "html"]
+# while k3D maintain the camera orientation, the actual view appear to be
+# zoomed out when a screenshot is taken. To zoom into the scene just decrease
+# the following factor.
+k3d_screenshot_camera_factor = 1
