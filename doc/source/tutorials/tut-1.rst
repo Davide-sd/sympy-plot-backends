@@ -53,7 +53,7 @@ plot object:
    >>> print(p[0])
    cartesian line: sin(x) for x over (-10.0, 10.0)
 
-We can combine multiple plots together in two ways:
+We can combine multiple plots together in three ways:
 
 1. summing them up: this will create a new plot containing all data series
    from all initial plots. For example:
@@ -91,7 +91,16 @@ We can combine multiple plots together in two ways:
    
    Here, the resulting plot is using the title and axis labels of ``p2``.
 
-2. using the ``append`` method to append one specific data series from one
+2. We can use the ``extend`` method to achieve the same goal as before:
+
+   .. plot::
+     :context: close-figs
+     :include-source: True
+
+     p1.extend(p2)
+     p1.show()
+
+3. using the ``append`` method to append one specific data series from one
    plot object to another. For example:
 
    .. plot::
@@ -99,6 +108,12 @@ We can combine multiple plots together in two ways:
       :format: doctest
       :include-source: True
 
+      >>> p1 = plot(cos(x) * exp(-c * x), (x, 0, 10), "f(x)",
+      ...     title="plot 1", show=False)
+      >>> p2 = plot(
+      ...     (exp(-c * x), "upper limit"),
+      ...     (-exp(-c * x), "lower limit"), (x, 0, 10), {"linestyle": "--"},
+      ...     title="plot 2", xlabel="xx", ylabel="yy", show=False)
       >>> p1.append(p2[0])
       >>> print(p1)
       Plot object containing:
