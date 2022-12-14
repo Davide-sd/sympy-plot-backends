@@ -3369,6 +3369,8 @@ class GeometrySeries(BaseSeries):
         self.line_color = kwargs.get("line_color", None)
         if isinstance(expr, (LinearEntity3D, Point3D)):
             self.is_3Dline = True
+            self.is_parametric = False
+            self.use_cm = kwargs.get("use_cm", False)
             self.start = 0
             self.end = 0
             if isinstance(expr, Point3D):
@@ -3391,7 +3393,7 @@ class GeometrySeries(BaseSeries):
                 np.array([expr.x], dtype=float),
                 np.array([expr.y], dtype=float),
                 np.array([expr.z], dtype=float),
-                np.array([0], dtype=float),
+                # np.array([0], dtype=float),
             )
         elif isinstance(expr, Point2D):
             return np.array([expr.x], dtype=float), np.array([expr.y], dtype=float)
@@ -3425,8 +3427,9 @@ class GeometrySeries(BaseSeries):
             x = np.array([p1.x, p2.x], dtype=float)
             y = np.array([p1.y, p2.y], dtype=float)
             z = np.array([p1.z, p2.z], dtype=float)
-            param = np.zeros_like(x)
-            return x, y, z, param
+            # param = np.zeros_like(x)
+            # return x, y, z, param
+            return x, y, z
         elif isinstance(expr, (Segment, Ray)):
             p1, p2 = expr.points
             x = np.array([p1.x, p2.x])

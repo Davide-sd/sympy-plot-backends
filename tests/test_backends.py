@@ -10,7 +10,8 @@ from spb.series import (
 )
 from sympy import (
     latex, gamma, exp, symbols, Eq, Matrix, pi, I, sin, cos,
-    sqrt, log, Heaviside, Piecewise, Line, Circle, Polygon
+    sqrt, log, Heaviside, Piecewise, Line, Circle, Polygon,
+    Point3D, Line3D, Plane
 )
 from sympy.external import import_module
 from tempfile import TemporaryDirectory
@@ -2318,6 +2319,22 @@ def test_plot_geometry_2():
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Patch)]) == 3
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)]) == 1
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Scatter)]) == 1
+
+
+def test_plot_geometry_3d():
+    # verify that no errors are raised when 3d geometric entities are plotted
+
+    x, y, z = symbols("x, y, z")
+    _p = lambda B: plot_geometry(
+        (Point3D(5, 5, 5), "center"),
+        (Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4)), "line"),
+        (Plane((0, 0, 0), (1, 1, 1)),
+            (x, -5, 5), (y, -4, 4), (z, -10, 10)), show=False, backend=B)
+
+    p = _p(MB)
+    p.process_series()
+    p = _p(PB)
+    p = _p(KB)
 
 
 def test_save():
