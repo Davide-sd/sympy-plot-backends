@@ -490,7 +490,7 @@ def plot(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       plot(x**2, (x, -5, 5))
+       >>> plot(x**2, (x, -5, 5))
 
     Multiple functions over the same range with custom rendering options:
 

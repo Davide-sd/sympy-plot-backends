@@ -685,7 +685,6 @@ def plot_vector(*args, **kwargs):
            backend=KB, n=40, streamlines=True, grid=False,
            stream_kw=dict(
                starts=dict(x=xx, y=yy, z=zz),
-               npoints=200,
                width=0.025,
                color_map=k3d.colormaps.matplotlib_color_maps.plasma
            ),
