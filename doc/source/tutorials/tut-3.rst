@@ -1,183 +1,126 @@
 
-3 - Customizing the module
---------------------------
+3 - Differences between 3D backends
+-----------------------------------
 
-Let's suppose we have identified two backends that we like (one for 2D plots,
-the other for 3D plots). Then, instead of providing the keyword
-``backend=SOMETHING`` each time we need to create a plot, we can customize the
-module to make the plotting functions use our backends. Moreso, it is also
-possible to customize the appearance of the backends.
+NOTE: there is an ``html`` link above some of the pictures in this page: click
+it to load the html page containing the plot and interact with it.
 
-Let's import the necessary tools and visualize the current settings:
+In this tutorial we are going to compare the same plot produced with 3 different backends. In particular, we will focus on usability and
+interactivity.
 
-.. code-block:: python
-
-   from spb.defaults import cfg, set_defaults
-   display(cfg)
-
-Here, we can see the settings associated to the 4 backends: ``'plotly'``,
-``'bokeh'``, ``'matplotlib'``, ``'k3d'``. We will discuss each option later on.
-
-Let's learn how to use the ``set_defaults`` function:
+First, let's initialize the tutorial by running:
 
 .. code-block:: python
 
-   help(set_defaults)
+   %matplotlib widget
+   from sympy import *
+   from spb import *
+   u, v = symbols("u, v")
 
-We need to change the values in the ``cfg`` dictionary and then use the
-``set_defaults`` function to apply the new configurations.
+Now, let's visualize a plot created with Matplotlib:
 
-Let's say we would like to:
-
-* use Plotly for 2D plots and Matplotlib for 3D plots;
-* use ``"seaborn"`` theme in Plotly. We can use `help(PB)` (or any other
-  backend) to read the documentation associated to each backend, in which we
-  will find links towards the official documentation of the plotting library,
-  where we will find the available themes.
-
-Then:
-
-.. code-block:: python
-
-   # we write the name of the plotting library
-   # available options: bokeh, matplotlib, k3d, plotly
-   cfg["backend_2D"] = "plotly"
-   cfg["backend_3D"] = "matplotlib"
-   # the following depends on the plotting library
-   cfg["plotly"]["theme"] = "seaborn"
-   set_defaults(cfg)
-
-Note that if we insert invalid options, the module will automatically reset
-to the default settings!
-
-Now, let's restart the kernel in order to make changes effective.
-Then, we can test test them right away.
-
-.. code-block:: python
+.. plot::
+   :context: reset
+   :include-source: True
 
    from sympy import *
    from spb import *
-   var("u, v, x, y")
-   plot(sin(x), cos(x), log(x))
-
-.. raw:: html
-
-   <iframe src="../_static/tut-1/plotly-1.html" height="500px" width="100%"></iframe>
-
-.. code-block:: python
-
-   n = 125
+   u, v = symbols("u, v")
    r = 2 + sin(7 * u + 5 * v)
    expr = (
        r * cos(u) * sin(v),
        r * sin(u) * sin(v),
        r * cos(v)
    )
-   plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "expr", n=n)
-
-.. image:: ../_static/tut-2/matplotlib-2.png
-   :width: 600
-   :alt: matplotlib
+   plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "expr",
+       backend=MB, use_cm=True)
 
 
-Available Options
-=================
+Here, we can guess what the exact shape of the surface is going to be.
+We could increase the number of discretization points, in the `u` and `v`
+directions, but we are not going to do that with Matplotlib, as the rendering
+would become excessively slow. As always, we can use the toolbar buttons to
+zoom in and out. Now, try to click and drag the surface: there is a lot of
+lag. Matplotlib is not designed to be interactive.
 
-Let's now discuss a few customization options:
+Let's plot the same surface with K3D-Jupyter. Since we are at it, let's
+also bump up the number of discretization points to 250 on both parameters.
+The resulting mesh will have 62500 points, therefore the computation
+may take a few seconds (depending on our machine). Note one major difference
+with SymPy's plotting module: to specify the same numer of discretization points on both directions we can use the keyword argument ``n``.
+Alternatively, we could use ``n1`` and ``n2`` to specify different numbers
+of discretization points.
 
-.. code-block:: python
+.. k3d-screenshot::
+   :camera: 5.152, -7.316, 4.113, 0.094, 0, 0, -0.207, 0.305, 0.929
 
-   # Set the default evaluation algorithm for line plots:
-   # True: use adaptive algorithm
-   # False: use uniform mesh algorithm
-   cfg["adaptive"]["used_by_default"] = True
-   # Set the "smoothness" goal for the adaptive algorithm.
-   # Lower values create smoother lines, at the cost of
-   # performance.
-   cfg["adaptive"]["goal"] = 0.01
+   from sympy import *
+   from spb import *
+   u, v = symbols("u, v")
+   n = 250
+   r = 2 + sin(7 * u + 5 * v)
+   expr = (
+       r * cos(u) * sin(v),
+       r * sin(u) * sin(v),
+       r * cos(v)
+   )
+   plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "expr",
+       n=n, backend=KB, use_cm=True)
 
-   # Set the overall plot range to be used when the plotting
-   # variable is not specified.
-   cfg["plot_range"]["min"] = -10
-   cfg["plot_range"]["max"] = 10
+To interact with the plot:
 
-   # Set the location of the intersection between the horizontal and vertical
-   # axis of Matplotlib (only works for 2D plots). Possible values:
-   #       "center", "auto" or None
-   # If None, use a standard Matplotlib layout with vertical axis on the left,
-   # horizontal axis on the bottom.
-   cfg["matplotlib"]["axis_center"] = None
-   # Turn on the grid on Matplotlib figures
-   cfg["matplotlib"]["grid"] = True
-   # Show minor grids
-   cfg["matplotlib"]["show_minor_grid"] = True
+* Left click and drag: rotate the plot.
+* Scroll with the mouse wheel: zoom in and out.
+* Right click and drag: pan.
 
-   # Find more Plotly themes at the following page:
-   # https://plotly.com/python/templates/
-   cfg["plotly"]["theme"] = "seaborn"
-   # Turn on the grid on Plotly figures
-   cfg["plotly"]["grid"] = True
+Note how smooth the interaction is!!!
 
-   # Find more Bokeh themes at the following page:
-   # https://docs.bokeh.org/en/latest/docs/reference/themes.html
-   cfg["bokeh"]["theme"] = "caliber"
-   # Activate automatic update event on panning
-   cfg["bokeh"]["update_event"] = True
-   # Turn on the grid on Bokeh figures
-   cfg["bokeh"]["grid"] = True
-   # Show minor grids
-   cfg["bokeh"]["show_minor_grid"] = True
-   # depending on the used Bokeh `themes`, we will need
-   # to adjust the opacity of the minor grid lines
-   cfg["bokeh"]["minor_grid_line_alpha"] = 0.6
-   # controls the spacing of the dashes in minor grid lines
-   cfg["bokeh"]["minor_grid_line_dash"] = [2, 2]
+On the top right corner there is a menu with a few entries:
 
-   # Turn on the grid on K3D-Jupyter figures
-   cfg["k3d"]["grid"] = True
-   # K3D-Jupyter colors are represented by an integer number.
-   cfg["k3d"]["bg_color"] = 0xffffff
-   cfg["k3d"]["grid_color"] = 0xE6E6E6
-   cfg["k3d"]["label_color"] = 0x444444
+* **Controls**: we can play with a few options, like hiding the grids,
+  going full screen, ..., add and remove clipping planes.
+* **Objects**: we can see the objects displayed on the plot. Let's click
+  the ``Mesh #1`` entry: we can hide/show the object, its color legend,
+  we can turn on wireframe view (don't do it with such a high number of
+  points, it will slows things down a lot!). Note that by default a color
+  map is applied to the surface, hence we cannot change its color.
+  To apply a solid color to the mesh, run again the previous command also
+  providing the ``use_cm=False`` keyword argument.
+* **Info**: useful information for debug purposes.
 
-   # we can set the numerical evaluation library for complex plots.
-   # Available options: "mpmath" or None (the latter uses Numpy/Scipy)
-   cfg["complex"]["modules"] = None
-   # set a default (complex) domain coloring option.
-   cfg["complex"]["coloring"] = "b"
+It is left to the Reader to play with the controls and learn what they do.
 
-   # Visualize Latex labels in the widgets of `iplot`
-   cfg["interactive"]["use_latex"] = True
-   # Controls wether sliders trigger the update of `iplot`at each
-   # tick (value False) or only when the mouse click is released
-   # (value True)
-   cfg["interactive"]["throttled"] = False
+Note that the name of the surface displayed under **Objects** is ``Mesh #1``.
+If we plot multiple expressions, the names will be ``Mesh #1``,
+``Mesh #2``, ... This is the default behaviour for ``K3DBackend``.
+We can also chose to display the string representation of the expression by
+setting ``show_label=True``, but it is safe to assume that the label won't fit the small amount of width of the **Controls** user interface, therefore it makes sense to leave that option unset.
 
+Finally, let's look at the same plot with Plotly:
 
-Let's consider ``MatplotlibBackend``. Let's suppose we would like to use
-the old plotting module style:
+.. plotly::
 
-.. code-block:: python
-
-   plot(sin(x), backend=MB, axis_center="auto", grid=False)
-
-.. image:: ../_static/tut-3/matplotlib-3.png
-   :width: 600
-   :alt: matplotlib
-
-Then, we can modify the ``cfg`` dictionary and execute the ``set_defaults``
-function, finally restarting the kernel to make the changes effective.
+   from sympy import *
+   from spb import *
+   u, v = symbols("u, v")
+   r = 2 + sin(7 * u + 5 * v)
+   expr = (
+       r * cos(u) * sin(v),
+       r * sin(u) * sin(v),
+       r * cos(v)
+   )
+   n = 150
+   plot3d_parametric_surface(*expr, (u, 0, 2 * pi), (v, 0, pi), "expr",
+       n=n, backend=PB, use_cm=True)
 
 
-Resetting the configuration file
-================================
+Plotly is also great with 3D plots. The main difference between Plotly and
+K3D-Jupyter are:
 
-Suppose we would like to go back to the original default settings. Then:
-
-.. code-block:: python
-
-   from spb.defaults import reset
-   reset()
-
-Now, we restart the kernel and the plotting module is back at its
-original state.
+* the former can stretch the axis, whereas the latter (being more
+  engineering-oriented) uses a fixed aspect ratio representing reality.
+  Type ``help(PB)`` to understand how to control the aspect ratio of Plotly.
+* Plotly is consistently slower at rendering 3D objects than K3D-Jupyter.
+* Plotly doesn't natively support wireframe.
+* By moving the cursor over the surface, we can actually see the coordinates
+  of the "selected" point. This is not currently possible with ``K3DBackend``.

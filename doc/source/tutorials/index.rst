@@ -32,3 +32,4 @@ available at the aforementioned repository.
    tut-3.rst
    tut-4.rst
    tut-5.rst
+   tut-6.rst

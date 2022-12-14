@@ -2,6 +2,14 @@
  Changelog
 ==========
 
+v1.6.3
+======
+
+* Fixed bug with ``plot_geometry`` and 3D geometric entities.
+
+* Added tutorial about combining plots together.
+
+
 v1.6.2
 ======
 
