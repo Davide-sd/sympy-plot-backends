@@ -5,12 +5,18 @@
 v1.6.4
 ======
 
-* ``MatplotlibBackend``: improved ``aspect`` logic. It is now able to support
-  the new values for 3D plots for Matplotlib>=3.6.0.
+* ``MatplotlibBackend``:
+  
+  * improved ``aspect`` logic. It is now able to support the new values for
+    3D plots for Matplotlib>=3.6.0.
+  
+  * exposed the ``ax`` attribute to easily retrieve the plot axis.
 
 * Added ``camera`` keyword arguments to backends in order to set the 3D view
   position. Refer to each backend documentation to get more information about
   its usage.
+
+* improved documentation.
 
 
 v1.6.3

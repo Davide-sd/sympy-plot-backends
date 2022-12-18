@@ -1351,7 +1351,7 @@ def plot3d_parametric_line(*args, **kwargs):
        [0]: 3D parametric cartesian line: (cos(t), sin(t), t) for t over (-5.0, 5.0)
 
     Customize the appearance by setting a label to the colorbar, changing the
-    colormap and the line width. Note the use of `zlim` to force a near-equal aspect ratio with Matplotlib 3D plots.
+    colormap and the line width.
 
     .. plot::
        :context: close-figs
@@ -1361,7 +1361,7 @@ def plot3d_parametric_line(*args, **kwargs):
        >>> plot3d_parametric_line(
        ...     3 * sin(t) + 2 * sin(3 * t), cos(t) - 2 * cos(3 * t), cos(5 * t),
        ...     (t, 0, 2 * pi), "t [rad]", {"cmap": "hsv", "lw": 1.5},
-       ...     zlim=(-3, 3))
+       ...     aspect="equal")
        Plot object containing:
        [0]: 3D parametric cartesian line: (3*sin(t) + 2*sin(3*t), cos(t) - 2*cos(3*t), cos(5*t)) for t over (0.0, 6.283185307179586)
 
@@ -2200,8 +2200,7 @@ def plot3d_parametric_surface(*args, **kwargs):
        plot3d_parametric_surface(*exprs, (r, 0, 3), (theta, -pi, pi),
            backend=PB, wireframe=True, wf_n2=20, zlabel="f(z)")
 
-    Plotting a numerical function instead of a symbolic expression. Note the
-    use of `zlim` to force a near-equal aspect ratio with Matplotlib 3D plots.
+    Plotting a numerical function instead of a symbolic expression.
 
     .. k3d-screenshot::
        :camera: 5.3, -7.6, 4, -0.2, -0.9, -1.3, -0.25, 0.4, 0.9
@@ -3262,7 +3261,7 @@ def plot_polar(*args, **kwargs):
 
     """
     kwargs["is_polar"] = True
-    kwargs.setdefault("axis", "equal")
+    kwargs.setdefault("aspect", "equal")
     kwargs.setdefault("xlabel", "")
     kwargs.setdefault("ylabel", "")
     return plot(*args, **kwargs)
