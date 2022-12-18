@@ -5,6 +5,8 @@ K3DBackend
 
 .. autoclass:: K3DBackend
 
+.. autoattribute:: spb.backends.k3d.K3DBackend.fig
+
 .. autofunction:: spb.backends.k3d.K3DBackend.append
 
 .. autofunction:: spb.backends.k3d.K3DBackend.extend

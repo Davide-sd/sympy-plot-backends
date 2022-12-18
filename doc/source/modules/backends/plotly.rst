@@ -5,6 +5,8 @@ PlotlyBackend
 
 .. autoclass:: PlotlyBackend
 
+.. autoattribute:: spb.backends.plotly.PlotlyBackend.fig
+
 .. autofunction:: spb.backends.plotly.PlotlyBackend.append
 
 .. autofunction:: spb.backends.plotly.PlotlyBackend.extend

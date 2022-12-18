@@ -228,7 +228,7 @@ class MatplotlibBackend(Plot):
     def _create_figure(self):
         if self._plotgrid_fig is not None:
             self._fig = self._plotgrid_fig
-            self.ax = self._plotgrid_ax
+            self._ax = self._plotgrid_ax
         else:
             if not self.is_iplot:
                 self._fig = self.plt.figure(figsize=self.size)
@@ -247,15 +247,30 @@ class MatplotlibBackend(Plot):
                 kwargs["projection"] = "3d"
             elif any(s.is_2Dline and s.is_polar for s in self.series):
                 kwargs["projection"] = "polar"
-            self.ax = self._fig.add_subplot(1, 1, 1, **kwargs)
+            self._ax = self._fig.add_subplot(1, 1, 1, **kwargs)
+
+    def _create_ax_if_not_available(self):
+        if (not hasattr(self, "_ax")):
+            # if the backend was created without showing it
+            self.process_series()
 
     @property
     def fig(self):
         """Returns the figure."""
-        if (not hasattr(self, "ax")):
-            # if the backend was created without showing it
-            self.process_series()
+        self._create_ax_if_not_available()
         return self._fig
+
+    @property
+    def ax(self):
+        """Returns the axis used for the plot.
+
+        Notes
+        =====
+        To get the axis of a colorbar, index ``p.fig.axes`` where ``p`` is a
+        plot object. ``p.fig.axes[0]`` corresponds to ``p.ax``.
+        """
+        self._create_ax_if_not_available()
+        return self._ax
 
     @staticmethod
     def get_segments(x, y, z=None):
@@ -309,7 +324,7 @@ class MatplotlibBackend(Plot):
         # colorbar with the name of the expression on the side.
         if (self.legend and use_cm) or override:
             if norm is None:
-                cb = self._fig.colorbar(c, ax=self.ax)
+                cb = self._fig.colorbar(c, ax=self._ax)
             else:
                 mappable = self.cm.ScalarMappable(cmap=cmap, norm=norm)
                 cb = self._fig.colorbar(mappable)
@@ -343,7 +358,7 @@ class MatplotlibBackend(Plot):
         # https://github.com/matplotlib/matplotlib/issues/17130
         xlims, ylims, zlims = [], [], []
 
-        self.ax.cla()
+        self._ax.cla()
         self._init_cyclers()
         self._legend_handles = []
 
@@ -363,11 +378,11 @@ class MatplotlibBackend(Plot):
                         kw = merge({}, lkw, s.rendering_kw)
                         segments = self.get_segments(x, y)
                         c = self.LineCollection(segments, **kw)
-                        self.ax.add_collection(c)
+                        self._ax.add_collection(c)
                     else:
                         lkw = dict(c=param, cmap=colormap)
                         kw = merge({}, lkw, s.rendering_kw)
-                        c = self.ax.scatter(x, y, **kw)
+                        c = self._ax.scatter(x, y, **kw)
 
                     is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
                     self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
@@ -384,7 +399,7 @@ class MatplotlibBackend(Plot):
                         if not s.is_filled:
                             lkw["markerfacecolor"] = (1, 1, 1)
                     kw = merge({}, lkw, s.rendering_kw)
-                    l = self.ax.plot(x, y, **kw)
+                    l = self._ax.plot(x, y, **kw)
                     self._add_handle(i, l)
 
             elif s.is_contour:
@@ -401,14 +416,14 @@ class MatplotlibBackend(Plot):
                     # quivers. Setting zorder appears to fix the problem.
                     ckw["zorder"] = 0
                 kw = merge({}, ckw, s.rendering_kw)
-                func = self.ax.contourf if s.is_filled else self.ax.contour
+                func = self._ax.contourf if s.is_filled else self._ax.contour
                 c = func(x, y, z, **kw)
                 clabel = None
                 if s.is_filled:
                     self._add_colorbar(c, s.get_label(self._use_latex),
                         s.use_cm, True)
                 else:
-                    clabel = self.ax.clabel(c)
+                    clabel = self._ax.clabel(c)
                 self._add_handle(i, c, kw, self._fig.axes[-1], clabel)
 
             elif s.is_3Dline:
@@ -426,7 +441,7 @@ class MatplotlibBackend(Plot):
                         lkw["array"] = param
                         kw = merge({}, lkw, s.rendering_kw)
                         c = Line3DCollection(segments, **kw)
-                        self.ax.add_collection(c)
+                        self._ax.add_collection(c)
                         self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
                         self._add_handle(i, c)
                     else:
@@ -435,7 +450,7 @@ class MatplotlibBackend(Plot):
                             ({} if s.line_color is None
                             else {"color": s.line_color}) if s.show_in_legend
                             else {"color": self.wireframe_color})
-                        l = self.ax.plot(x, y, z, **kw)
+                        l = self._ax.plot(x, y, z, **kw)
                         self._add_handle(i, l)
                 else:
                     if s.use_cm:
@@ -450,7 +465,7 @@ class MatplotlibBackend(Plot):
 
                     lkw["alpha"] = 1
                     kw = merge({}, lkw, s.rendering_kw)
-                    l = self.ax.scatter(x, y, z, **kw)
+                    l = self._ax.scatter(x, y, z, **kw)
                     if s.use_cm:
                         self._add_colorbar(l, s.get_label(self._use_latex), s.use_cm)
                     self._add_handle(i, l)
@@ -484,7 +499,7 @@ class MatplotlibBackend(Plot):
                     if isinstance(cmap, str):
                         cmap = self.cm.get_cmap(cmap)
                     kw["facecolors"] = cmap(norm(facecolors))
-                c = self.ax.plot_surface(x, y, z, **kw)
+                c = self._ax.plot_surface(x, y, z, **kw)
                 is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm, norm=norm, cmap=cmap)
                 self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 xlims.append((np.amin(x), np.amax(x)))
@@ -497,7 +512,7 @@ class MatplotlibBackend(Plot):
                     # interval math plotting
                     x, y = _matplotlib_list(points[0])
                     color = next(self._cl)
-                    c = self.ax.fill(x, y, color=color,
+                    c = self._ax.fill(x, y, color=color,
                         edgecolor="None")
                     self._add_handle(i, c)
                 else:
@@ -509,13 +524,13 @@ class MatplotlibBackend(Plot):
                         colormap = self.ListedColormap([color, color])
                         ckw = dict(cmap=colormap)
                         kw = merge({}, ckw, s.rendering_kw)
-                        c = self.ax.contour(xarray, yarray, zarray, [0.0],
+                        c = self._ax.contour(xarray, yarray, zarray, [0.0],
                             **kw)
                     else:
                         colormap = self.ListedColormap(["white", color])
                         ckw = dict(cmap=colormap)
                         kw = merge({}, ckw, s.rendering_kw)
-                        c = self.ax.contourf(xarray, yarray, zarray, **kw)
+                        c = self._ax.contourf(xarray, yarray, zarray, **kw)
                     self._add_handle(i, c, kw)
                 proxy_artist = self.Line2D([], [],
                     color=color, label=s.get_label(self._use_latex))
@@ -537,13 +552,13 @@ class MatplotlibBackend(Plot):
                             skw["cmap"] = next(self._cm)
                             skw["color"] = color_val
                             kw = merge({}, skw, s.rendering_kw)
-                            sp = self.ax.streamplot(xx, yy, uu, vv, **kw)
+                            sp = self._ax.streamplot(xx, yy, uu, vv, **kw)
                             is_cb_added = self._add_colorbar(
                                 sp.lines, s.get_label(self._use_latex), s.use_cm)
                         else:
                             skw["color"] = next(self._cl)
                             kw = merge({}, skw, s.rendering_kw)
-                            sp = self.ax.streamplot(xx, yy, uu, vv, **kw)
+                            sp = self._ax.streamplot(xx, yy, uu, vv, **kw)
                             is_cb_added = False
                         self._add_handle(i, sp, kw, is_cb_added,
                             self._fig.axes[-1])
@@ -569,14 +584,14 @@ class MatplotlibBackend(Plot):
                                 color_val = s.color_func(xx, yy, uu0, vv0)
                             qkw["cmap"] = next(self._cm)
                             kw = merge({}, qkw, s.rendering_kw)
-                            q = self.ax.quiver(xx, yy, uu, vv, color_val, **kw)
+                            q = self._ax.quiver(xx, yy, uu, vv, color_val, **kw)
                             is_cb_added = self._add_colorbar(
                                 q, s.get_label(self._use_latex), s.use_cm)
                         else:
                             is_cb_added = False
                             qkw["color"] = next(self._cl)
                             kw = merge({}, qkw, s.rendering_kw)
-                            q = self.ax.quiver(xx, yy, uu, vv, **kw)
+                            q = self._ax.quiver(xx, yy, uu, vv, **kw)
                         self._add_handle(i, q, kw, is_cb_added,
                             self._fig.axes[-1])
                 else:
@@ -606,13 +621,13 @@ class MatplotlibBackend(Plot):
                             lkw["array"] = color_val
                             kw = merge({}, lkw, stream_kw)
                             c = Line3DCollection(segments, **kw)
-                            self.ax.add_collection(c)
+                            self._ax.add_collection(c)
                             self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
                             self._add_handle(i, c)
                         else:
                             lkw["label"] = s.get_label(self._use_latex)
                             kw = merge({}, lkw, stream_kw)
-                            l = self.ax.plot(vertices[:, 0], vertices[:, 1],
+                            l = self._ax.plot(vertices[:, 0], vertices[:, 1],
                                 vertices[:, 2], **kw)
                             self._add_handle(i, l)
 
@@ -636,13 +651,13 @@ class MatplotlibBackend(Plot):
                             qkw["cmap"] = next(self._cm)
                             qkw["array"] = color_val.flatten()
                             kw = merge({}, qkw, s.rendering_kw)
-                            q = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
+                            q = self._ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
                             is_cb_added = self._add_colorbar(
                                 q, s.get_label(self._use_latex), s.use_cm)
                         else:
                             qkw["color"] = next(self._cl)
                             kw = merge({}, qkw, s.rendering_kw)
-                            q = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
+                            q = self._ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
                             is_cb_added = False
                         self._add_handle(i, q, kw, is_cb_added, self._fig.axes[-1])
                     xlims.append((np.amin(xx), np.amax(xx)))
@@ -658,7 +673,7 @@ class MatplotlibBackend(Plot):
                         origin="lower",
                     )
                     kw = merge({}, ikw, s.rendering_kw)
-                    image = self.ax.imshow(img, **kw)
+                    image = self._ax.imshow(img, **kw)
                     self._add_handle(i, image, kw)
 
                     # chroma/phase-colorbar
@@ -672,7 +687,7 @@ class MatplotlibBackend(Plot):
                             orientation="vertical",
                             label="Argument",
                             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
-                            ax=self.ax,
+                            ax=self._ax,
                         )
                         cb2.ax.set_yticklabels(
                             [r"-$\pi$", r"-$\pi / 2$", "0", r"$\pi / 2$", r"$\pi$"]
@@ -684,7 +699,7 @@ class MatplotlibBackend(Plot):
                     if s.use_cm:
                         skw["facecolors"] = facecolors / 255
                     kw = merge({}, skw, s.rendering_kw)
-                    c = self.ax.plot_surface(x, y, mag, **kw)
+                    c = self._ax.plot_surface(x, y, mag, **kw)
 
                     if s.use_cm and (colorscale is not None):
                         if len(colorscale.shape) == 3:
@@ -703,7 +718,7 @@ class MatplotlibBackend(Plot):
                             orientation="vertical",
                             label="Argument",
                             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
-                            ax=self.ax,
+                            ax=self._ax,
                         )
                         cb.ax.set_yticklabels(
                             [r"-$\pi$", r"-$\pi / 2$", "0", r"$\pi / 2$", r"$\pi$"]
@@ -718,21 +733,21 @@ class MatplotlibBackend(Plot):
                 color = next(self._cl)
                 fkw = dict(facecolor=color, fill=s.is_filled, edgecolor=color)
                 kw = merge({}, fkw, s.rendering_kw)
-                c = self.ax.fill(x, y, **kw)
+                c = self._ax.fill(x, y, **kw)
                 self._add_handle(i, c, kw)
 
             elif s.is_generic:
                 if s.type == "markers":
                     kw = merge({}, {"color": next(self._cl)}, s.rendering_kw)
-                    self.ax.plot(*s.args, **kw)
+                    self._ax.plot(*s.args, **kw)
                 elif s.type == "annotations":
-                    self.ax.annotate(*s.args, **s.rendering_kw)
+                    self._ax.annotate(*s.args, **s.rendering_kw)
                 elif s.type == "fill":
                     kw = merge({}, {"color": next(self._cl)}, s.rendering_kw)
-                    self.ax.fill_between(*s.args, **kw)
+                    self._ax.fill_between(*s.args, **kw)
                 elif s.type == "rectangles":
                     kw = merge({}, {"color": next(self._cl)}, s.rendering_kw)
-                    self.ax.add_patch(
+                    self._ax.add_patch(
                         self.matplotlib.patches.Rectangle(*s.args, **kw))
 
             else:
@@ -745,74 +760,74 @@ class MatplotlibBackend(Plot):
         # Set global options.
         # TODO The 3D stuff
         # XXX The order of those is important.
-        if self.xscale and not isinstance(self.ax, Axes3D):
-            self.ax.set_xscale(self.xscale)
-        if self.yscale and not isinstance(self.ax, Axes3D):
-            self.ax.set_yscale(self.yscale)
+        if self.xscale and not isinstance(self._ax, Axes3D):
+            self._ax.set_xscale(self.xscale)
+        if self.yscale and not isinstance(self._ax, Axes3D):
+            self._ax.set_yscale(self.yscale)
         if self.axis_center:
             val = self.axis_center
-            if isinstance(self.ax, Axes3D):
+            if isinstance(self._ax, Axes3D):
                 pass
             elif val == "center":
-                self.ax.spines["left"].set_position("center")
-                self.ax.spines["bottom"].set_position("center")
-                self.ax.yaxis.set_ticks_position("left")
-                self.ax.xaxis.set_ticks_position("bottom")
-                self.ax.spines["right"].set_visible(False)
-                self.ax.spines["top"].set_visible(False)
+                self._ax.spines["left"].set_position("center")
+                self._ax.spines["bottom"].set_position("center")
+                self._ax.yaxis.set_ticks_position("left")
+                self._ax.xaxis.set_ticks_position("bottom")
+                self._ax.spines["right"].set_visible(False)
+                self._ax.spines["top"].set_visible(False)
             elif val == "auto":
-                xl, xh = self.ax.get_xlim()
-                yl, yh = self.ax.get_ylim()
+                xl, xh = self._ax.get_xlim()
+                yl, yh = self._ax.get_ylim()
                 pos_left = ("data", 0) if xl * xh <= 0 else "center"
                 pos_bottom = ("data", 0) if yl * yh <= 0 else "center"
-                self.ax.spines["left"].set_position(pos_left)
-                self.ax.spines["bottom"].set_position(pos_bottom)
-                self.ax.yaxis.set_ticks_position("left")
-                self.ax.xaxis.set_ticks_position("bottom")
-                self.ax.spines["right"].set_visible(False)
-                self.ax.spines["top"].set_visible(False)
+                self._ax.spines["left"].set_position(pos_left)
+                self._ax.spines["bottom"].set_position(pos_bottom)
+                self._ax.yaxis.set_ticks_position("left")
+                self._ax.xaxis.set_ticks_position("bottom")
+                self._ax.spines["right"].set_visible(False)
+                self._ax.spines["top"].set_visible(False)
             else:
-                self.ax.spines["left"].set_position(("data", val[0]))
-                self.ax.spines["bottom"].set_position(("data", val[1]))
-                self.ax.yaxis.set_ticks_position("left")
-                self.ax.xaxis.set_ticks_position("bottom")
-                self.ax.spines["right"].set_visible(False)
-                self.ax.spines["top"].set_visible(False)
+                self._ax.spines["left"].set_position(("data", val[0]))
+                self._ax.spines["bottom"].set_position(("data", val[1]))
+                self._ax.yaxis.set_ticks_position("left")
+                self._ax.xaxis.set_ticks_position("bottom")
+                self._ax.spines["right"].set_visible(False)
+                self._ax.spines["top"].set_visible(False)
         if self.grid:
-            if isinstance(self.ax, Axes3D):
-                self.ax.grid()
+            if isinstance(self._ax, Axes3D):
+                self._ax.grid()
             else:
-                self.ax.grid(visible=True, which='major', linestyle='-',
+                self._ax.grid(visible=True, which='major', linestyle='-',
                     linewidth=0.75, color='0.75')
-                self.ax.grid(visible=True, which='minor', linestyle='--',
+                self._ax.grid(visible=True, which='minor', linestyle='--',
                     linewidth=0.6, color='0.825')
                 if self._show_minor_grid:
-                    self.ax.minorticks_on()
+                    self._ax.minorticks_on()
         if self.legend:
             if len(self._legend_handles) > 0:
-                self.ax.legend(handles=self._legend_handles, loc="best")
+                self._ax.legend(handles=self._legend_handles, loc="best")
             else:
-                handles, _ = self.ax.get_legend_handles_labels()
+                handles, _ = self._ax.get_legend_handles_labels()
                 # Show the legend only if there are legend entries.
                 # For example, if we are plotting only parametric expressions,
                 # there will be only colorbars, no legend entries.
                 if len(handles) > 0:
-                    self.ax.legend(loc="best")
+                    self._ax.legend(loc="best")
         if self.title:
-            self.ax.set_title(self.title)
+            self._ax.set_title(self.title)
         if self.xlabel:
-            self.ax.set_xlabel(
+            self._ax.set_xlabel(
                 self.xlabel, position=(1, 0) if self.axis_center else (0.5, 0)
             )
         if self.ylabel:
-            self.ax.set_ylabel(
+            self._ax.set_ylabel(
                 self.ylabel, position=(0, 1) if self.axis_center else (0, 0.5)
             )
-        if isinstance(self.ax, Axes3D):
+        if isinstance(self._ax, Axes3D):
             if self.zlabel:
-                self.ax.set_zlabel(self.zlabel, position=(0, 1))
+                self._ax.set_zlabel(self.zlabel, position=(0, 1))
             if self.camera is not None:
-                self.ax.view_init(**self.camera)
+                self._ax.view_init(**self.camera)
 
         self._set_lims(xlims, ylims, zlims)
         self._set_aspect()
@@ -831,7 +846,7 @@ class MatplotlibBackend(Plot):
             aspect = float(aspect[1]) / aspect[0]
         else:
             aspect = "auto"
-        self.ax.set_aspect(aspect)
+        self._ax.set_aspect(aspect)
 
     def _get_plotting_func_name(self, t):
         if t == "markers":
@@ -851,9 +866,9 @@ class MatplotlibBackend(Plot):
             import_kwargs={'fromlist': ['mplot3d']},
             catch=(RuntimeError,))
         Axes3D = mpl_toolkits.mplot3d.Axes3D
-        if not isinstance(self.ax, Axes3D):
-            self.ax.autoscale_view(
-                scalex=self.ax.get_autoscalex_on(), scaley=self.ax.get_autoscaley_on()
+        if not isinstance(self._ax, Axes3D):
+            self._ax.autoscale_view(
+                scalex=self._ax.get_autoscalex_on(), scaley=self._ax.get_autoscaley_on()
             )
 
             # HACK: in order to make interactive contour plots to scale to
@@ -865,30 +880,30 @@ class MatplotlibBackend(Plot):
             ):
                 xlims = np.array(xlims)
                 xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
-                self.ax.set_xlim(xlim)
+                self._ax.set_xlim(xlim)
             if ylims and (
                 any(s.is_contour for s in self.series)
                 or any(s.is_2Dline and s.is_parametric for s in self.series)
             ):
                 ylims = np.array(ylims)
                 ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
-                self.ax.set_ylim(ylim)
+                self._ax.set_ylim(ylim)
         else:
             # XXX Workaround for matplotlib issue
             # https://github.com/matplotlib/matplotlib/issues/17130
             if xlims:
                 xlims = np.array(xlims)
                 xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
-                self.ax.set_xlim(xlim)
+                self._ax.set_xlim(xlim)
             else:
-                self.ax.set_xlim([0, 1])
+                self._ax.set_xlim([0, 1])
 
             if ylims:
                 ylims = np.array(ylims)
                 ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
-                self.ax.set_ylim(ylim)
+                self._ax.set_ylim(ylim)
             else:
-                self.ax.set_ylim([0, 1])
+                self._ax.set_ylim([0, 1])
 
             if zlims:
                 zlims = np.array(zlims)
@@ -900,18 +915,18 @@ class MatplotlibBackend(Plot):
                 if np.isnan(zlim[1]):
                     zlim[1] = 10
                 zlim = (-10 if np.isnan(z) else z for z in zlim)
-                self.ax.set_zlim(zlim)
+                self._ax.set_zlim(zlim)
             else:
-                self.ax.set_zlim([0, 1])
+                self._ax.set_zlim([0, 1])
 
         # xlim and ylim should always be set at last so that plot limits
         # doesn't get altered during the process.
         if self.xlim:
-            self.ax.set_xlim(self.xlim)
+            self._ax.set_xlim(self.xlim)
         if self.ylim:
-            self.ax.set_ylim(self.ylim)
+            self._ax.set_ylim(self.ylim)
         if self.zlim:
-            self.ax.set_zlim(self.zlim)
+            self._ax.set_zlim(self.zlim)
 
     def _update_colorbar(self, cax, cmap, label, param=None, norm=None):
         """This method reduces code repetition.
@@ -1003,12 +1018,12 @@ class MatplotlibBackend(Plot):
                     if not s.is_filled:
                         for cl in clabels:
                             cl.remove()
-                    func = self.ax.contourf if s.is_filled else self.ax.contour
+                    func = self._ax.contourf if s.is_filled else self._ax.contour
                     self._handles[i][0] = func(x, y, z, **kw)
                     if s.is_filled:
                         self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), param=z)
                     else:
-                        clabels = self.ax.clabel(self._handles[i][0])
+                        clabels = self._ax.clabel(self._handles[i][0])
                         self._handles[i][-1] = clabels
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
@@ -1036,7 +1051,7 @@ class MatplotlibBackend(Plot):
                             cmap = self.cm.get_cmap(cmap)
                         kw["facecolors"] = cmap(norm(facecolors))
                     self._handles[i][0].remove()
-                    self._handles[i][0] = self.ax.plot_surface(
+                    self._handles[i][0] = self._ax.plot_surface(
                         x, y, z, **kw)
 
                     if is_cb_added:
@@ -1055,11 +1070,11 @@ class MatplotlibBackend(Plot):
                         xx, yy, zz, ones, plot_type = points
                         kw = self._handles[i][1]
                         if plot_type == "contour":
-                            self._handles[i][0] = self.ax.contour(
+                            self._handles[i][0] = self._ax.contour(
                                 xx, yy, zz, [0.0], **kw
                             )
                         else:
-                            self._handles[i][0] = self.ax.contourf(xx, yy, ones, **kw)
+                            self._handles[i][0] = self._ax.contourf(xx, yy, ones, **kw)
                         xlims.append((np.amin(xx), np.amax(xx)))
                         ylims.append((np.amin(yy), np.amax(yy)))
 
@@ -1081,7 +1096,7 @@ class MatplotlibBackend(Plot):
                             color_val = s.color_func(xx, yy, zz, uu0, vv0, ww0)
                         kw["array"] = color_val.flatten()
 
-                    self._handles[i][0] = self.ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
+                    self._handles[i][0] = self._ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
 
                     if is_cb_added:
                         self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), param=mag)
@@ -1104,7 +1119,7 @@ class MatplotlibBackend(Plot):
                         kw = self._handles[i][1]
                         self._handles[i][0].lines.remove()
                         self._handles[i][0].arrows.remove()
-                        self._handles[i][0] = self.ax.streamplot(xx, yy, uu, vv, **kw)
+                        self._handles[i][0] = self._ax.streamplot(xx, yy, uu, vv, **kw)
                     else:
                         kw, is_cb_added, cax = self._handles[i][1:]
                         color_val = mag
@@ -1129,7 +1144,7 @@ class MatplotlibBackend(Plot):
                         kw = self._handles[i][1]
                         if s.use_cm:
                             kw["facecolors"] = facecolors / 255
-                        self._handles[i][0] = self.ax.plot_surface(x, y, mag, **kw)
+                        self._handles[i][0] = self._ax.plot_surface(x, y, mag, **kw)
                         xlims.append((np.amin(x), np.amax(x)))
                         ylims.append((np.amin(y), np.amax(y)))
                         zlims.append((np.amin(mag), np.amax(mag)))
@@ -1138,16 +1153,16 @@ class MatplotlibBackend(Plot):
                     # TODO: fill doesn't update
                     x, y = self.series[i].get_data()
                     self._handles[i][0].remove()
-                    self._handles[i][0] = self.ax.fill(x, y, **self._handles[i][1])
+                    self._handles[i][0] = self._ax.fill(x, y, **self._handles[i][1])
 
         # Update the plot limits according to the new data
         Axes3D = mpl_toolkits.mplot3d.Axes3D
-        if not isinstance(self.ax, Axes3D):
+        if not isinstance(self._ax, Axes3D):
             # https://stackoverflow.com/questions/10984085/automatically-rescale-ylim-and-xlim-in-matplotlib
             # recompute the ax.dataLim
-            self.ax.relim()
+            self._ax.relim()
             # update ax.viewLim using the new dataLim
-            self.ax.autoscale_view()
+            self._ax.autoscale_view()
         else:
             pass
 
@@ -1182,11 +1197,11 @@ class MatplotlibBackend(Plot):
     def save(self, path, **kwargs):
         """Save the current plot at the specified location.
 
-        Refer to [#fn8]_ to visualize all the available keyword arguments.
+        Refer to [#fn10]_ to visualize all the available keyword arguments.
 
         References
         ==========
-        .. [#fn8] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html
+        .. [#fn10] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html
         """
         if self._fig is None:
             self.process_series()

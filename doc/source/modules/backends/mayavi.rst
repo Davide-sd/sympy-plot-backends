@@ -5,6 +5,8 @@ MayaviBackend
 
 .. autoclass:: MayaviBackend
 
+.. autoattribute:: spb.backends.mayavi.MayaviBackend.fig
+
 .. autofunction:: spb.backends.mayavi.MayaviBackend.append
 
 .. autofunction:: spb.backends.mayavi.MayaviBackend.extend

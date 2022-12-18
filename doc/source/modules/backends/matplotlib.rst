@@ -5,6 +5,10 @@ MatplotlibBackend
 
 .. autoclass:: MatplotlibBackend
 
+.. autoattribute:: spb.backends.matplotlib.MatplotlibBackend.fig
+
+.. autoattribute:: spb.backends.matplotlib.MatplotlibBackend.ax
+
 .. autofunction:: spb.backends.matplotlib.MatplotlibBackend.append
 
 .. autofunction:: spb.backends.matplotlib.MatplotlibBackend.close
