@@ -56,6 +56,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
+        "packaging",
         "appdirs>=1.4.4",
         "numpy>=1.21.1",
         "sympy>=1.10.1",

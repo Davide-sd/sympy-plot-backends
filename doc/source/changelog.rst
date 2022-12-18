@@ -2,6 +2,13 @@
  Changelog
 ==========
 
+v1.6.4
+======
+
+* ``MatplotlibBackend``: improved ``aspect`` logic. It is now able to support
+  the new values for 3D plots for Matplotlib>=3.6.0.
+
+
 v1.6.3
 ======
 

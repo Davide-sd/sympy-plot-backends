@@ -4,6 +4,7 @@ from spb.backends.base_backend import Plot
 from spb.backends.utils import compute_streamtubes
 from sympy import latex
 from sympy.external import import_module
+from packaging import version
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
@@ -52,8 +53,8 @@ class MatplotlibBackend(Plot):
     aspect : (float, float) or str, optional
         Set the aspect ratio of a 2D plot. Possible values:
 
-        * ``'auto'``: Matplotlib will fit the plot in the vibile area.
-        * ``"equal"``: sets equal spacing on the axis of a 2D plot.
+        * ``"auto"``: Matplotlib will fit the plot in the vibile area.
+        * ``"equal"``: sets equal spacing.
         * tuple containing 2 float numbers, from which the aspect ratio is
           computed. This only works for 2D plots.
 
@@ -220,24 +221,6 @@ class MatplotlibBackend(Plot):
         self._cyccm = process_iterator(self._cyccm, self.cyclic_colormaps)
 
     def _create_figure(self):
-        is_3Dvector = any([s.is_3Dvector for s in self.series])
-        aspect = self.aspect
-        if aspect != "auto":
-            if aspect == "equal" and is_3Dvector:
-                # plot_vector uses an aspect="equal" by default. In that case
-                # we would get:
-                # NotImplementedError: Axes3D currently only supports the
-                # aspect argument 'auto'. You passed in 1.0.
-                # This fixes it
-                aspect = "auto"
-            elif aspect == "equal":
-                aspect = 1.0
-                if any(s.is_3D for s in self.series):
-                    # for 3D plots, aspect must be "auto"
-                    aspect = "auto"
-            else:
-                aspect = float(aspect[1]) / aspect[0]
-
         if self._plotgrid_fig is not None:
             self._fig = self._plotgrid_fig
             self.ax = self._plotgrid_ax
@@ -254,7 +237,7 @@ class MatplotlibBackend(Plot):
                     raise ValueError(
                         "MatplotlibBackend can not mix 2D and 3D.")
 
-            kwargs = dict(aspect=aspect)
+            kwargs = dict()
             if any(is_3D):
                 kwargs["projection"] = "3d"
             elif any(s.is_2Dline and s.is_polar for s in self.series):
@@ -824,6 +807,23 @@ class MatplotlibBackend(Plot):
             self.ax.set_zlabel(self.zlabel, position=(0, 1))
 
         self._set_lims(xlims, ylims, zlims)
+        self._set_aspect()
+
+    def _set_aspect(self):
+        aspect = self.aspect
+        current_version = version.parse(self.matplotlib.__version__)
+        v_3_6_0 = version.parse("3.6.0")
+        if isinstance(aspect, str):
+            if (aspect == "equal") and (current_version < v_3_6_0):
+                if any(s.is_3D for s in self.series):
+                    # plot_vector uses aspect="equal" by default. Older
+                    # matplotlib versions do not support equal 3D axis.
+                    aspect = "auto"
+        elif hasattr(aspect, "__iter__"):
+            aspect = float(aspect[1]) / aspect[0]
+        else:
+            aspect = "auto"
+        self.ax.set_aspect(aspect)
 
     def _get_plotting_func_name(self, t):
         if t == "markers":

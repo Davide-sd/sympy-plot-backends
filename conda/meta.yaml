@@ -18,6 +18,7 @@ requirements:
   run:
     - python
     - appdirs
+    - packaging
     # - bokeh
     # - colorcet
     # - holoviews
@@ -48,8 +49,7 @@ about:
   home: {{ data['url'] }}
   license: {{ data['license'] }}
   license_family: BSD
-  license_file: 
+  license_file:
   summary: {{ data['description'] }}
-  doc_url: 
-  dev_url: 
-
+  doc_url:
+  dev_url:
