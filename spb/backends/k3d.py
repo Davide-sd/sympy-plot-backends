@@ -14,6 +14,13 @@ class K3DBackend(Plot):
     Parameters
     ==========
 
+    camera : list, optional
+        A list of 9 numbers, namely:
+
+        * ``x_cam, y_cam, z_cam``:  the position of the camera in the scene
+        * ``x_tar, y_tar, z_tar``: the position of the target of the camera
+        * ``x_up, y_up, z_up``: components of the up vector
+
     rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's plot
         functions to customize the appearance of lines, surfaces, images,
@@ -91,7 +98,7 @@ class K3DBackend(Plot):
     # quivers-pivot offsets
     _qp_offset = {"tail": 0, "mid": 0.5, "middle": 0.5, "tip": 1}
 
-    _allowed_keys = Plot._allowed_keys + ["show_label"]
+    _allowed_keys = Plot._allowed_keys + ["show_label", "camera"]
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
@@ -581,17 +588,21 @@ class K3DBackend(Plot):
         # self._fig.auto_rendering = True
 
     def _new_camera_position(self):
-        np = import_module('numpy')
-        if len(self._bounds) > 0:
-            # when there are very high aspect ratio meshes, or when zlim has
-            # been set, we compute a new camera position to improve user
-            # experience
-            self._fig.camera_auto_fit = False
-            bounds = np.array(self._bounds)
-            bounds = np.dstack(
-                [np.min(bounds[:, 0::2], axis=0), np.max(bounds[:, 1::2], axis=0)]
-            ).flatten()
-            self._fig.camera = self._fig.get_auto_camera(1.5, 40, 60, bounds)
+        if self.camera is None:
+            np = import_module('numpy')
+            if len(self._bounds) > 0:
+                # when there are very high aspect ratio meshes, or when zlim has
+                # been set, we compute a new camera position to improve user
+                # experience
+                self._fig.camera_auto_fit = False
+                bounds = np.array(self._bounds)
+                bounds = np.dstack(
+                    [np.min(bounds[:, 0::2], axis=0), np.max(bounds[:, 1::2], axis=0)]
+                ).flatten()
+                self._fig.camera = self._fig.get_auto_camera(1.5, 40, 60, bounds)
+        else:
+            # TODO: why on Earth doesn't it work?
+            self._fig.camera = self.camera
 
     def show(self):
         """Visualize the plot on the screen."""

@@ -69,6 +69,10 @@ class MatplotlibBackend(Plot):
         * ``'center'``: center of the current plot area.
         * ``'auto'``: the intersection point is automatically computed.
 
+    camera : dict, optional
+        A dictionary of keyword arguments that will be passed to the
+        ``Axes3D.view_init`` method. Refer to [#fn9]_ for more information.
+
     rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's plot
         functions to customize the appearance of lines, surfaces, images,
@@ -125,6 +129,7 @@ class MatplotlibBackend(Plot):
     .. [#fn6] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
     .. [#fn7] https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
     .. [#fn8] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+    .. [#fn9] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.view_init
 
 
     See also
@@ -135,7 +140,7 @@ class MatplotlibBackend(Plot):
 
     _library = "matplotlib"
     _allowed_keys = Plot._allowed_keys + [
-        "markers", "annotations", "fill", "rectangles"]
+        "markers", "annotations", "fill", "rectangles", "camera"]
 
     wireframe_color = "k"
     colormaps = []
@@ -803,8 +808,11 @@ class MatplotlibBackend(Plot):
             self.ax.set_ylabel(
                 self.ylabel, position=(0, 1) if self.axis_center else (0, 0.5)
             )
-        if isinstance(self.ax, Axes3D) and self.zlabel:
-            self.ax.set_zlabel(self.zlabel, position=(0, 1))
+        if isinstance(self.ax, Axes3D):
+            if self.zlabel:
+                self.ax.set_zlabel(self.zlabel, position=(0, 1))
+            if self.camera is not None:
+                self.ax.view_init(**self.camera)
 
         self._set_lims(xlims, ylims, zlims)
         self._set_aspect()

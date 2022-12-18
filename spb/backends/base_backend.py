@@ -223,6 +223,7 @@ class Plot:
         self.zlabel = kwargs.get("zlabel", None)
         self.aspect = kwargs.get("aspect", "auto")
         self.axis_center = kwargs.get("axis_center", None)
+        self.camera = kwargs.get("camera", None)
         self.grid = kwargs.get("grid", True)
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
@@ -319,7 +320,8 @@ class Plot:
             zlim=self.zlim,
             size=self.size,
             is_iplot=self.is_iplot,
-            use_latex=self._use_latex
+            use_latex=self._use_latex,
+            camera=self.camera
         )
 
     def _init_cyclers(self):

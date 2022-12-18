@@ -30,6 +30,11 @@ class PlotlyBackend(Plot):
             For example: ``dict(x=1, y=1, z=2)`` forces the z-axis to appear
             twice as big as the other two.
 
+    camera : dict, optional
+        A dictionary of keyword arguments that will be passed to the layout's
+        ``scene_camera`` in order to set the 3D camera orientation.
+        Refer to [#fn18]_ for more information.
+
     rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to Matplotlib's plot
         functions to customize the appearance of lines, surfaces, images,
@@ -103,6 +108,7 @@ class PlotlyBackend(Plot):
     .. [#fn15] https://plotly.com/python/text-and-annotations/
     .. [#fn16] https://plotly.com/python/shapes/
     .. [#fn17] https://plotly.com/python/filled-area-plots/
+    .. [#fn18] https://plotly.com/python/3d-camera-controls/
 
 
     Notes
@@ -124,7 +130,7 @@ class PlotlyBackend(Plot):
 
     _library = "plotly"
     _allowed_keys = Plot._allowed_keys + [
-        "markers", "annotations", "fill", "rectangles"]
+        "markers", "annotations", "fill", "rectangles", "camera"]
 
     colorloop = []
     colormaps = []
@@ -935,7 +941,8 @@ class PlotlyBackend(Plot):
                     visible=self.grid,  # numbers below
                 ),
                 aspectmode=("manual" if isinstance(self.aspect, dict) else (self.aspect if self.aspect != "equal" else "auto")),
-                aspectratio=self.aspect if isinstance(self.aspect, dict) else None
+                aspectratio=self.aspect if isinstance(self.aspect, dict) else None,
+                camera=self.camera
             ),
         )
 
