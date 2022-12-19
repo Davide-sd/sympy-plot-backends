@@ -10,6 +10,8 @@ v1.6.5
 
 * Added polar axis support to ``plot_contour`` with ``MatplotlibBackend``.
 
+* 3D complex plots uses an auto aspect ratio by default.
+
 
 v1.6.4
 ======

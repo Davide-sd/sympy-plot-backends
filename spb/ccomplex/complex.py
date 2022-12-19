@@ -313,8 +313,8 @@ def _set_axis_labels(series, kwargs):
             kwargs.setdefault("ylabel", fy)
 
     if (kwargs.get("aspect", None) is None) and any(
-        (s.is_complex and s.is_domain_coloring) or s.is_point for s in series
-    ):
+        (s.is_complex and s.is_domain_coloring and (not s.is_3D)) or s.is_point
+        for s in series):
         # set aspect equal for 2D domain coloring or complex points
         kwargs.setdefault("aspect", "equal")
 
@@ -323,7 +323,7 @@ def plot_real_imag(*args, **kwargs):
     """Plot the real part, the imaginary parts, the absolute value and the
     argument of a complex function. By default, only the real and imaginary
     parts will be plotted. Use keyword argument to be more specific.
-    By default, the aspect ratio of the plot is set to ``aspect="equal"``.
+    By default, the aspect ratio of 2D plots is set to ``aspect="equal"``.
 
     Depending on the provided expression, this function will produce different
     types of plots:
@@ -662,7 +662,7 @@ def plot_real_imag(*args, **kwargs):
 
 def plot_complex(*args, **kwargs):
     """Plot the absolute value of a complex function colored by its argument.
-    By default, the aspect ratio of the plot is set to ``aspect="equal"``.
+    By default, the aspect ratio of 2D plots is set to ``aspect="equal"``.
 
     Depending on the provided range, this function will produce different
     types of plots:
@@ -1182,8 +1182,8 @@ def plot_complex_list(*args, **kwargs):
 
 def plot_complex_vector(*args, **kwargs):
     """Plot the vector field `[re(f), im(f)]` for a complex function `f`
-    over the specified complex domain. By default, the aspect ratio of the
-    plot is set to ``aspect="equal"``.
+    over the specified complex domain. By default, the aspect ratio of 2D
+    plots is set to ``aspect="equal"``.
 
     Typical usage examples are in the followings:
 
