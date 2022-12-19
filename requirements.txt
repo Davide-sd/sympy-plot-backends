@@ -1,6 +1,6 @@
 packaging
 appdirs>=1.4.4
-numpy>=1.21.1
+numpy>=1.21.1,<1.24.0
 scipy>=1.7.1
 sympy>=1.10.1
 matplotlib==3.4.2
