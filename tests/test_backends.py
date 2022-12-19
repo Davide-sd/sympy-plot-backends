@@ -3067,7 +3067,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex()
             lambda: _plot_vector(MAB).process_series())
 
 
-def test_plot_vector_2d_matplotlib_use_latex():
+def test_plot_vector_2d_use_latex_colorbar():
     # verify that the colorbar uses latex label
 
     x, y = symbols("x, y")
