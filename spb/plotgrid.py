@@ -34,7 +34,8 @@ def _create_mpl_figure(mapping):
     fig = plt.figure()
     for spec, p in mapping.items():
         kw = {"projection": "3d"} if (len(p.series) > 0 and
-            p.series[0].is_3D) else {}
+            p.series[0].is_3D) else ({"projection": "polar"} if p.polar_axis
+            else {})
         cur_ax = fig.add_subplot(spec, **kw)
         # cpa: current plot attributes
         cpa = p._copy_kwargs()

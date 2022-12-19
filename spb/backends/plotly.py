@@ -303,6 +303,15 @@ class PlotlyBackend(Plot):
                     if (not s.is_point) and (not s.use_cm):
                         mode = "lines"
                     color = next(self._cl) if s.line_color is None else s.line_color
+                    # hover template
+                    ht = (
+                        "x: %{x}<br />y: %{y}<br />u: %{customdata}"
+                        if not s.is_complex
+                        else "x: %{x}<br />y: %{y}<br />Arg: %{customdata}"
+                    )
+                    if s.is_polar:
+                        ht = "r: %{r}<br />θ: %{theta}<br />u: %{customdata}"
+
                     lkw = dict(
                         name=s.get_label(self._use_latex),
                         line_color=color,
@@ -318,11 +327,7 @@ class PlotlyBackend(Plot):
                             showscale=self.legend and s.use_cm,
                         ),
                         customdata=param,
-                        hovertemplate=(
-                            "x: %{x}<br />y: %{y}<br />u: %{customdata}"
-                            if not s.is_complex
-                            else "x: %{x}<br />y: %{y}<br />Arg: %{customdata}"
-                        ),
+                        hovertemplate=ht,
                     )
                     if lkw["marker"]["showscale"]:
                         # only add a colorbar if required.
@@ -335,8 +340,14 @@ class PlotlyBackend(Plot):
                         lkw["marker"]["colorbar"] = self._create_colorbar(s.get_label(self._use_latex), True)
 
                     kw = merge({}, lkw, s.rendering_kw)
-                    cls = self._scatter_class(go, len(x))
-                    self._fig.add_trace(cls(x=x, y=y, **kw))
+
+                    if s.is_polar:
+                        kw.setdefault("thetaunit", "radians")
+                        cls = self._scatter_class(go, len(x), True)
+                        self._fig.add_trace(cls(r=y, theta=x, **kw))
+                    else:
+                        cls = self._scatter_class(go, len(x))
+                        self._fig.add_trace(cls(x=x, y=y, **kw))
                 else:
                     x, y = s.get_data()
                     color = next(self._cl) if s.line_color is None else s.line_color

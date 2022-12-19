@@ -1,11 +1,11 @@
 from pytest import raises
 from spb import (
-    MB, PB, BB, KB, plotgrid, plot, plot3d, plot_contour, plot_vector
+    MB, PB, BB, KB, plotgrid, plot, plot3d, plot_contour, plot_vector,
+    plot_polar
 )
 from spb.plotgrid import _nrows_ncols
-from sympy import symbols, sin, cos, tan, exp
+from sympy import symbols, sin, cos, tan, exp, pi
 from sympy.external import import_module
-
 
 matplotlib = import_module(
     'matplotlib',
@@ -217,3 +217,18 @@ def test_panel_kw():
     pg2 = plotgrid(p1, p2, p3, nr=1, nc=3, show=False,
         panel_kw=dict(sizing_mode="stretch_width", height=250))
     assert (pg1.height != pg2.height) and (pg2.height == 250)
+
+
+def test_plotgrid_mode_1_polar_axis():
+    # verify that when polar_axis is used on a plot, the resulting subplot
+    # will use a polar projection
+
+    theta = symbols("theta")
+    r = 3 * sin(4 * theta)
+
+    p = lambda pa=False, yl=None: plot_polar(
+        r, (theta, 0, 2 * pi), show=False, backend=MB,
+        polar_axis=pa, ylim=yl)
+    pg = plotgrid(p(True, (0, 3)), p(), nr=1, nc=-1, show=False)
+    assert isinstance(pg.axes[0], matplotlib.projections.polar.PolarAxes)
+    assert not isinstance(pg.axes[1], matplotlib.projections.polar.PolarAxes)

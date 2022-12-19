@@ -3420,25 +3420,93 @@ def test_k3d_vector_pivot():
 
 
 def test_plot_polar():
-    # verify that 2D polar plot uses polar projection
+    # verify that 2D polar plot can create plots with cartesian axis and
+    #  polar axis
     x = symbols("x")
-    _plot_polar = lambda B: plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
-        backend=B, aspect="equal", show=False, adaptive=False, n=5)
+    _plot_polar = lambda B, pa=False: plot_polar(
+        1 + sin(10 * x) / 10, (x, 0, 2 * pi),
+        backend=B, polar_axis=pa, aspect="equal",
+        show=False, adaptive=False, n=5)
 
-    p = _plot_polar(MB)
-    fig = p.fig
-    assert isinstance(fig.axes[0], matplotlib.projections.polar.PolarAxes)
+    # test for cartesian axis
+    p1 = _plot_polar(MB, False)
+    assert not isinstance(p1.fig.axes[0], matplotlib.projections.polar.PolarAxes)
 
-    p1 = _plot_polar(PB)
-    assert isinstance(p1.fig.data[0], go.Scatterpolar)
+    p2 = _plot_polar(PB, False)
+    assert not isinstance(p2.fig.data[0], go.Scatterpolar)
+
+    p3 = _plot_polar(BB, False)
+    plotly_data = p2[0].get_data()
+    bokeh_data = p3.fig.renderers[0].data_source.data
+    assert np.allclose(plotly_data[0], bokeh_data["xs"])
+    assert np.allclose(plotly_data[1], bokeh_data["ys"])
+
+    # polar axis
+    p1 = _plot_polar(MB, True)
+    assert isinstance(p1.fig.axes[0], matplotlib.projections.polar.PolarAxes)
+
+    p2 = _plot_polar(PB, True)
+    assert isinstance(p2.fig.data[0], go.Scatterpolar)
 
     # Bokeh doesn't have polar projection. Here we check that the backend
     # transforms the data.
-    p2 = _plot_polar(BB)
-    plotly_data = p1[0].get_data()
-    bokeh_data = p2.fig.renderers[0].data_source.data
-    assert not np.allclose(plotly_data[0], bokeh_data["xs"])
-    assert not np.allclose(plotly_data[1], bokeh_data["ys"])
+    raises(ValueError, lambda: _plot_polar(BB, True))
+
+
+def test_plot_polar_use_cm():
+    # verify the correct behavior of plot_polar when color_func
+    # or use_cm are applied
+
+    x = symbols("x")
+    _plot_polar = lambda B, pa=False, ucm=False, cf=None: plot_polar(
+        1 + sin(10 * x) / 10, (x, 0, 2 * pi),
+        backend=B, polar_axis=pa, aspect="equal",
+        show=False, adaptive=False, n=5,
+        use_cm=ucm, color_func=cf)
+    
+    # cartesian axis, no colormap
+    p = _plot_polar(MB, False, False)
+    assert len(p.ax.lines) > 0
+    assert len(p.ax.collections) == 0
+
+    p = _plot_polar(PB, False, False)
+    assert not p.fig.data[0].marker.showscale
+
+    p = _plot_polar(BB, False, False)
+    assert len(p.fig.renderers) == 1
+    assert isinstance(p.fig.renderers[0].glyph, bokeh.models.glyphs.Line)
+
+    # cartesian axis, with colormap
+    p = _plot_polar(MB, False, True)
+    assert len(p.ax.lines) == 0
+    assert len(p.ax.collections) > 0
+
+    p = _plot_polar(PB, False, True)
+    assert p.fig.data[0].marker.showscale
+
+    p = _plot_polar(BB, False, True)
+    assert len(p.fig.renderers) == 1
+    assert isinstance(p.fig.renderers[0].glyph, bokeh.models.glyphs.MultiLine)
+
+    # polar axis, no colormap
+    p = _plot_polar(MB, True, False)
+    assert len(p.ax.lines) > 0
+    assert len(p.ax.collections) == 0
+
+    p = _plot_polar(PB, True, False)
+    assert p.fig.data[0].marker.showscale is False
+
+    raises(ValueError, lambda: _plot_polar(BB, True, False))
+
+    # polar axis, with colormap
+    p = _plot_polar(MB, True, True, lambda t: t)
+    assert len(p.ax.lines) == 0
+    assert len(p.ax.collections) > 0
+
+    p = _plot_polar(PB, True, True, lambda t: t)
+    assert p.fig.data[0].marker.showscale
+
+    raises(ValueError, lambda: _plot_polar(BB, True, True, lambda t: t))
 
 
 def test_plot3d_implicit():
@@ -4158,9 +4226,9 @@ def test_plotly_scatter_gl():
     p1 = plot(cos(x), adaptive=False, n=n-100, backend=PB, show=False)
     p2 = plot(cos(x), adaptive=False, n=n+100, backend=PB, show=False)
     p3 = plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
-        adaptive=False, n=n-100, backend=PB, show=False)
+        adaptive=False, n=n-100, backend=PB, show=False, polar_axis=True)
     p4 = plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi),
-        adaptive=False, n=n+100, backend=PB, show=False)
+        adaptive=False, n=n+100, backend=PB, show=False, polar_axis=True)
     p5 = plot_parametric(cos(x), sin(x), (x, 0, 2*pi), backend=PB, show=False,
         adaptive=False, n=n-100)
     p6 = plot_parametric(cos(x), sin(x), (x, 0, 2*pi), backend=PB, show=False,

@@ -173,7 +173,7 @@ class Plot:
     _allowed_keys = ["aspect", "axis", "axis_center", "backend",
     "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
     "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim",
-    "xscale", "yscale", "zscale", "process_piecewise"]
+    "xscale", "yscale", "zscale", "process_piecewise", "polar_axis"]
     """contains a list of public keyword arguments supported by the series.
     It will be used to validate the user-provided keyword arguments.
     """
@@ -228,6 +228,7 @@ class Plot:
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.zscale = kwargs.get("zscale", "linear")
+        self.polar_axis = kwargs.get("polar_axis", None)
         # NOTE: it would be nice to have detect_poles=True by default.
         # However, the correct detection also depends on the number of points
         # and the value of `eps`. Getting the detection right is likely to
@@ -321,7 +322,8 @@ class Plot:
             size=self.size,
             is_iplot=self.is_iplot,
             use_latex=self._use_latex,
-            camera=self.camera
+            camera=self.camera,
+            polar_axis=self.polar_axis
         )
 
     def _init_cyclers(self):

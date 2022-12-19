@@ -245,7 +245,8 @@ class MatplotlibBackend(Plot):
             kwargs = dict()
             if any(is_3D):
                 kwargs["projection"] = "3d"
-            elif any(s.is_2Dline and s.is_polar for s in self.series):
+            elif (self.polar_axis and
+                any(s.is_2Dline or s.is_contour for s in self.series)):
                 kwargs["projection"] = "polar"
             self._ax = self._fig.add_subplot(1, 1, 1, **kwargs)
 
@@ -366,8 +367,12 @@ class MatplotlibBackend(Plot):
             kw = None
 
             if s.is_2Dline:
-                if s.is_parametric and s.use_cm:
+                if s.is_parametric:
                     x, y, param = s.get_data()
+                else:
+                    x, y = s.get_data()
+
+                if s.is_parametric and s.use_cm:
                     colormap = (
                         next(self._cyccm)
                         if self._use_cyclic_cm(param, s.is_complex)
@@ -387,10 +392,6 @@ class MatplotlibBackend(Plot):
                     is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
                     self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 else:
-                    if s.is_parametric:
-                        x, y, param = s.get_data()
-                    else:
-                        x, y = s.get_data()
                     color = next(self._cl) if s.line_color is None else s.line_color
                     lkw = dict(label=s.get_label(self._use_latex), color=color)
                     if s.is_point:

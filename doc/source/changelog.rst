@@ -2,6 +2,15 @@
  Changelog
 ==========
 
+v1.6.5
+======
+
+* Refinements and bug correction on ``plot_polar``: now it supports both
+  cartesian and polar axis. Set ``polar_axis=True`` to enable polar axis.
+
+* Added polar axis support to ``plot_contour`` with ``MatplotlibBackend``.
+
+
 v1.6.4
 ======
 

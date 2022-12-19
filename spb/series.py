@@ -675,6 +675,7 @@ class Line2DBaseSeries(BaseSeries):
         self.show_in_legend = kwargs.get("show_in_legend", True)
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
+        self.is_polar = kwargs.get("is_polar", False)
         self._init_transforms(**kwargs)
 
     def get_data(self):
@@ -875,7 +876,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         # for complex-related data series, this determines what data to return
         # on the y-axis
         self._return = kwargs.get("return", None)
-        self.is_polar = kwargs.get("is_polar", False)
 
         # if the expressions is a lambda function and no label has been
         # provided, then its better to do the following to avoid suprises on
@@ -1131,6 +1131,14 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         else:
             coords = self._uniform_sampling()
 
+        if self.is_2Dline and self.is_polar:
+            # when plot_polar is executed with polar_axis=True
+            np = import_module('numpy')
+            x, y, _ = coords
+            r = np.sqrt(x**2 + y**2)
+            t = np.arctan2(y, x)
+            coords = [t, r, coords[-1]]
+
         if callable(self.color_func):
             coords = list(coords)
             coords[-1] = self.eval_color_func(*coords)
@@ -1347,7 +1355,7 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
 
         x, y, z = res
         r = x.copy()
-        if self.is_polar:
+        if self.is_polar and self.is_3Dsurface:
             x = r * np.cos(y)
             y = r * np.sin(y)
 
@@ -2172,6 +2180,13 @@ class Parametric2DLineInteractiveSeries(LineInteractiveBaseSeries, Line2DBaseSer
         _re, _im = np.real(results), np.imag(results)
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
         discr = [np.real(t) for t in self.ranges.values()]
+
+        if self.is_2Dline and self.is_polar:
+            # when plot_polar is executed with polar_axis=True
+            r = np.sqrt(_re[0]**2 + _re[1]**2)
+            t = np.arctan2(_re[1], _re[0])
+            _re = [t, r]
+
         if callable(self.color_func):
             discr = [self.eval_color_func(*_re, *discr)]
         if self.is_2Dline and self.detect_poles:
@@ -2237,7 +2252,7 @@ class SurfaceInteractiveSeries(InteractiveSeries):
         x, y = [np.real(t) for t in self.ranges.values()]
 
         r = x.copy()
-        if self.is_polar:
+        if self.is_polar and self.is_3Dsurface:
             x = r * np.cos(y)
             y = r * np.sin(y)
         return self._apply_transform(x, y, _re)

@@ -2638,6 +2638,10 @@ def plot_contour(*args, **kwargs):
         Choose between filled contours or line contours. Default to True
         (filled contours).
 
+    polar_axis : boolean, optional
+        If True, attempt to create a plot with polar axis. Default to False,
+        which creates a plot with cartesian axis.
+
     Examples
     ========
 
@@ -2702,6 +2706,17 @@ def plot_contour(*args, **kwargs):
        >>> eq2 = Eq((cos(x) - 2 * sin(y))**2 - (sin(x) + 2 * cos(y))**2, 3)
        >>> plot_contour(eq1.rewrite(Add), eq2.rewrite(Add), {"levels": [0]},
        ...      (x, 0, 2 * pi), (y, 0, 2 * pi), is_filled=False)
+
+    Contour plot with polar axis:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> r, theta = symbols("r, theta")
+       >>> plot_contour(sin(2 * r) * cos(theta), (theta, 0, 2*pi), (r, 0, 7),
+       ...     {"levels": 100}, polar_axis=True, aspect="equal")
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -3230,8 +3245,17 @@ def plot_implicit(*args, **kwargs):
 def plot_polar(*args, **kwargs):
     """The following function creates a 2D polar plot.
 
-    This function signature is identical to `plot`: refer to its
-    documentation for a list of available argument and keyword arguments.
+    By default, it uses an equal aspect ratio and doesn't apply a colormap.
+
+    Parameters
+    ==========
+
+    This function is going to call ``plot_parametric``: refer to its
+    documentation for the full list of keyword arguments.
+
+    polar_axis : boolean, optional
+        If True, attempt to create a plot with polar axis. Default to False,
+        which creates a plot with cartesian axis.
 
     Examples
     ========
@@ -3241,17 +3265,65 @@ def plot_polar(*args, **kwargs):
         :format: doctest
         :include-source: True
 
-        >>> from sympy import symbols, sin, pi
+        >>> from sympy import symbols, sin, cos, exp, pi
         >>> from spb import plot_polar
-        >>> x = symbols('x')
+        >>> theta = symbols('theta')
 
+    Plot with cartesian axis:
 
     .. plot::
         :context: close-figs
         :format: doctest
         :include-source: True
 
-        >>> plot_polar(1 + sin(10 * x) / 10, (x, 0, 2 * pi))
+        >>> plot_polar(3 * sin(2 * theta), (theta, 0, 2*pi))
+
+    Plot with polar axis:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_polar(
+        ...     exp(sin(theta)) - 2 * cos(4 * theta), (theta, 0, 2 * pi),
+        ...     polar_axis=True)
+
+    Interactive-widget plot of Guilloché Pattern. Refer to ``iplot``
+    documentation to learn more about the params dictionary.
+
+    .. panel-screenshot::
+       :small-size: 800, 500
+
+       from sympy import *
+       from spb import *
+       import param
+       a, b, c, d, e, f, theta = symbols("a:f theta")
+       def func(n):
+           t1 = (c + sin(a * theta + d))
+           t2 = ((b + sin(b * theta + e)) - (c + sin(a * theta + d)))
+           t3 = (f + sin(a * theta + n / pi))
+           return t1 + t2 * t3 / 2
+       exprs = [func(n) for n in range(20)]
+       plot_polar(
+           *exprs, (theta, 0, 2*pi),
+           {"line_color": "black", "line_width": 0.5},
+           params={
+               a: param.Integer(6, label="a"),
+               b: param.Integer(12, label="b"),
+               c: param.Integer(18, label="c"),
+               d: (4.7, 0, 2*pi),
+               e: (1.8, 0, 2*pi),
+               f: (3, 0, 5),
+           },
+           layout = "sbl",
+           ncols = 1,
+           title="Guilloché Pattern Explorer",
+           backend=BB,
+           legend=False,
+           use_latex=False,
+           servable=True
+       )
 
     See Also
     ========
@@ -3260,11 +3332,26 @@ def plot_polar(*args, **kwargs):
     plot_piecewise, plot_list
 
     """
-    kwargs["is_polar"] = True
+    # polar_axis = kwargs.pop("polar_axis", False)
+    kwargs.setdefault("polar_axis", False)
     kwargs.setdefault("aspect", "equal")
     kwargs.setdefault("xlabel", "")
     kwargs.setdefault("ylabel", "")
-    return plot(*args, **kwargs)
+
+    polar_axis = kwargs.get("polar_axis", False)
+    if polar_axis:
+        kwargs.setdefault("is_polar", True)
+
+    kwargs.setdefault("use_cm", False)
+    args = _plot_sympify(args)
+    plot_expr = _check_arguments(args, 1, 1, **kwargs)
+    # apply polar transformation
+    for i, pe in enumerate(plot_expr):
+        r = pe[0]
+        theta = pe[1][0]
+        plot_expr[i] = (r * cos(theta), r * sin(theta), *pe[1:])
+
+    return plot_parametric(*plot_expr, **kwargs)
 
 
 def plot_geometry(*args, **kwargs):

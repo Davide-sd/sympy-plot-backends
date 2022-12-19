@@ -297,6 +297,9 @@ class BokehBackend(Plot):
         self._init_cyclers()
         super().__init__(*args, **kwargs)
 
+        if self.polar_axis:
+            raise ValueError("BokehBackend doesn't support polar axis.")
+
         # set labels
         self._use_latex = kwargs.get("use_latex", cfg["bokeh"]["use_latex"])
         self._set_labels()
