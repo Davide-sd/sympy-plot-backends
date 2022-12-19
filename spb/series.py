@@ -128,7 +128,7 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     # As of adaptive 0.13.0, this warning will be raised if the function to
     # be evaluated returns multiple values. The warning is raised somewhere
     # inside adaptive. Let's ignore it until a PR is done to fix it.
-    np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
+    warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
 
     goal = lambda l: l.loss() < 0.01
     if adaptive_goal is not None:
