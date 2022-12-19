@@ -127,7 +127,8 @@ Polar plot with Matplotlib:
    from spb import plot_polar
    x = symbols("x")
    expr = sin(2 * x) * cos(5 * x) + pi / 2
-   plot_polar(expr, (x, 0, 2 * np.pi), ylim=(0, 3), title="$%s$" % latex(expr))
+   plot_polar(expr, (x, 0, 2 * pi),
+       polar_axis=True, ylim=(0, 3), title="$%s$" % latex(expr))
 
 
 2D parametric plot with Matplotlib, using Numpy and lambda functions:
