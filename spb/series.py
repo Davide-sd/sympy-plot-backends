@@ -3262,8 +3262,10 @@ class PlaneSeries(SurfaceBaseSeries):
             xx, yy, zz = zz, yy, xx
         elif (fs == set([y])) or (fs == set([x, y])):
             # parallel to xz plane (normal vector (0, 1, 0))
+            p1_np = np.array(plane.p1, dtype=float)
+            nv_np = np.array(plane.normal_vector, dtype=float)
             s = SurfaceOver2DRangeSeries(
-                plane.p1[1],
+                nv_np.dot(p1_np) / ((nv_np.T @ nv_np) ** 0.5),
                 (x, *self.x_range[1:]),
                 (y, *self.z_range[1:]),
                 "",
