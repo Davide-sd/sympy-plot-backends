@@ -3260,12 +3260,10 @@ class PlaneSeries(SurfaceBaseSeries):
             )
             xx, yy, zz = s.get_data()
             xx, yy, zz = zz, yy, xx
-        elif (fs == set([y])) or (fs == set([x, y])):
+        elif (fs == set([y])) or ():
             # parallel to xz plane (normal vector (0, 1, 0))
-            p1_np = np.array(plane.p1, dtype=float)
-            nv_np = np.array(plane.normal_vector, dtype=float)
             s = SurfaceOver2DRangeSeries(
-                nv_np.dot(p1_np) / ((nv_np.T @ nv_np) ** 0.5),
+                plane.p1[1],
                 (x, *self.x_range[1:]),
                 (y, *self.z_range[1:]),
                 "",
@@ -3276,22 +3274,43 @@ class PlaneSeries(SurfaceBaseSeries):
             )
             xx, yy, zz = s.get_data()
             xx, yy, zz = xx, zz, yy
-            if fs == set([x, y]):
-                # vertical plane oriented with some angle
-                def R(t):
-                    return np.array([
-                        [np.cos(t), -np.sin(t), 0],
-                        [np.sin(t), np.cos(t), 0],
-                        [0, 0, 1]
-                    ])
-                # convert the normal vector to unit normal vector
-                nv = [float(t) for t in plane.normal_vector]
-                m = np.sqrt(sum(c**2 for c in nv))
-                nv = [c / m for c in nv]
-                theta = np.arctan2(nv[1], nv[0])
-                coords = np.stack([t.flatten() for t in [xx, yy, np.ones_like(xx)]]).T
-                coords = np.matmul(coords, R(theta))
-                yy, xx = coords[:, 0].reshape(yy.shape), coords[:, 1].reshape(xx.shape)
+        elif fs == set([x, y]):
+            # vertical plane oriented with some angle
+
+            # Get numpy vectors
+            p1 = np.array(plane.p1, dtype=float)
+            nv = np.array(plane.normal_vector, dtype=float)
+            # convert the normal vector to unit normal vector
+            nv = nv / np.sqrt(nv.T @ nv)
+
+            # plane has distance to origin as length of projection of p1 onto normal vector
+            proj_p2nv = nv.dot(p1)
+
+            s = SurfaceOver2DRangeSeries(
+                proj_p2nv,
+                (x, *self.x_range[1:]),
+                (y, *self.z_range[1:]),
+                "",
+                n1=self.n1,
+                n2=self.n3,
+                xscale=self.xscale,
+                yscale=self.yscale
+            )
+            xx, yy, zz = s.get_data()
+            xx, yy, zz = xx, zz, yy
+
+            # rotate plane corresponding to the normal vector
+            def R(t):
+                return np.array([
+                    [np.cos(t), -np.sin(t), 0],
+                    [np.sin(t), np.cos(t), 0],
+                    [0, 0, 1]
+                ])
+
+            theta = np.arctan2(nv[1], nv[0])
+            coords = np.stack([t.flatten() for t in [xx, yy, np.ones_like(xx)]]).T
+            coords = np.matmul(coords, R(theta))
+            yy, xx = coords[:, 0].reshape(yy.shape), coords[:, 1].reshape(xx.shape)
         else:
             # any other plane
             eq = plane.equation(x, y, z)
