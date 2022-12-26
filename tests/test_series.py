@@ -3115,34 +3115,101 @@ def test_expr_is_lambda_function():
 
 
 def test_plane_series():
-    # verify that PlaneSeries produces the expected results
+    # verify that PlaneSeries produces the expected results and that it passes
+    # through the provided point
+
+    def compute_distance(xx, yy, zz, point):
+        p1 = np.array([xx[0, 0], yy[0, 0], zz[0, 0]])
+        p2 = np.array([xx[-1, 0], yy[-1, 0], zz[-1, 0]])
+        p3 = np.array([xx[0, -1], yy[0, -1], zz[0, -1]])
+        v1 = p3 - p1
+        v2 = p2 - p1
+        n = np.cross(v1, v2)
+        n = n / np.sqrt(np.dot(n, n))
+        pv = np.array(point) - p1
+        distance = np.dot(n, pv)
+        return distance
 
     x, y, z = symbols("x:z")
 
     # plane parallel to YZ plane
-    s = PlaneSeries(Plane((0, 0, 0), (1, 0, 0)),
+    p = (0, 0, 0)
+    s = PlaneSeries(Plane(p, (1, 0, 0)),
         (x, -5, 4), (y, -3, 2), (z, -6, 7))
     xx, yy, zz = s.get_data()
     assert np.allclose(xx, 0) and (not np.allclose(yy, 0)) and (not np.allclose(zz, 0))
+    assert np.isclose(compute_distance(xx, yy, zz, p), 0)
+
+    p = (-2, 4, 6)
+    s = PlaneSeries(Plane(p, (1, 0, 0)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    xx, yy, zz = s.get_data()
+    assert np.allclose(xx, -2) and (not np.allclose(yy, 0)) and (not np.allclose(zz, 0))
+    assert np.isclose(compute_distance(xx, yy, zz, p), 0)
 
     # plane parallel to XZ plane
-    s = PlaneSeries(Plane((0, 0, 0), (0, 1, 0)),
+    p = (0, 0, 0)
+    s = PlaneSeries(Plane(p, (0, 1, 0)),
         (x, -5, 4), (y, -3, 2), (z, -6, 7))
     xx, yy, zz = s.get_data()
     assert np.allclose(yy, 0) and (not np.allclose(xx, 0)) and (not np.allclose(zz, 0))
+    assert np.isclose(compute_distance(xx, yy, zz, p), 0)
+
+    p = (-2, 4, 6)
+    s = PlaneSeries(Plane(p, (0, 1, 0)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    xx, yy, zz = s.get_data()
+    assert np.allclose(yy, 4) and (not np.allclose(xx, 0)) and (not np.allclose(zz, 0))
+    assert np.isclose(compute_distance(xx, yy, zz, p), 0)
 
     # plane parallel to XY plane
-    s = PlaneSeries(Plane((0, 0, 0), (0, 0, 1)),
+    p = (0, 0, 0)
+    s = PlaneSeries(Plane(p, (0, 0, 1)),
         (x, -5, 4), (y, -3, 2), (z, -6, 7))
     xx, yy, zz = s.get_data()
     assert np.allclose(zz, 0) and (not np.allclose(yy, 0)) and (not np.allclose(xx, 0))
+    assert np.isclose(compute_distance(xx, yy, zz, p), 0)
+
+    p = (-2, 4, 6)
+    s = PlaneSeries(Plane(p, (0, 0, 1)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    xx, yy, zz = s.get_data()
+    assert np.allclose(zz, 6) and (not np.allclose(yy, 0)) and (not np.allclose(xx, 0))
+    assert np.isclose(compute_distance(xx, yy, zz, p), 0)
 
     # generic vertical plane
-    s = PlaneSeries(Plane((0, 0, 0), (1, 1, 0)),
+    p = (0, 0, 0)
+    s = PlaneSeries(Plane(p, (1, 1, 0)),
         (x, -5, 4), (y, -3, 2), (z, -6, 7))
     xx, yy, zz = s.get_data()
     assert all(not np.allclose(t, 0) for t in [xx, yy, zz])
     assert all(np.allclose(zz[i, :], zz[i, 0]) for i in range(zz.shape[0]))
+    assert np.isclose(compute_distance(xx, yy, zz, p), 0)
+
+    p = (-2, 4, 6)
+    s = PlaneSeries(Plane(p, (1, 1, 0)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    xx, yy, zz = s.get_data()
+    assert all(not np.allclose(t, 0) for t in [xx, yy, zz])
+    assert all(np.allclose(zz[i, :], zz[i, 0]) for i in range(zz.shape[0]))
+    assert np.isclose(compute_distance(xx, yy, zz, p), 0)
+
+    # generic plane
+    p = (0, 0, 0)
+    s = PlaneSeries(Plane(p, (1, 1, 1)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    s._use_nan = False
+    xx, yy, zz = s.get_data()
+    assert all(not np.allclose(t, 0) for t in [xx, yy, zz])
+    assert np.isclose(compute_distance(xx, yy, zz, p), 0)
+
+    p = (-2, 4, 6)
+    s = PlaneSeries(Plane(p, (-1, -1, 1)),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7))
+    s._use_nan = False
+    xx, yy, zz = s.get_data()
+    assert all(not np.allclose(t, 0) for t in [xx, yy, zz])
+    assert np.isclose(compute_distance(xx, yy, zz, p), 0)
 
 
 def test_show_in_legend_lines():

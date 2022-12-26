@@ -3208,6 +3208,11 @@ class PlaneSeries(SurfaceBaseSeries):
 
     is_3Dsurface = True
 
+    # a generic plane (for example with normal (1,1,1)) can generate a huge
+    # range along the z-direction. With _use_nan=True, every z-value outside
+    # of the provided z_range will be set to Nan.
+    _use_nan = True
+
     def __init__(
         self, plane, x_range, y_range, z_range=None, label="", params=dict(), **kwargs
     ):
@@ -3260,7 +3265,7 @@ class PlaneSeries(SurfaceBaseSeries):
             )
             xx, yy, zz = s.get_data()
             xx, yy, zz = zz, yy, xx
-        elif (fs == set([y])) or ():
+        elif fs == set([y]):
             # parallel to xz plane (normal vector (0, 1, 0))
             s = SurfaceOver2DRangeSeries(
                 plane.p1[1],
@@ -3327,7 +3332,7 @@ class PlaneSeries(SurfaceBaseSeries):
                 yscale=self.yscale
             )
             xx, yy, zz = s.get_data()
-            if len(fs) > 1:
+            if (len(fs) > 1) and self._use_nan:
                 idx = np.logical_or(zz < self.z_range[1], zz > self.z_range[2])
                 zz[idx] = np.nan
         return xx, yy, zz
