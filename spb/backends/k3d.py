@@ -191,7 +191,9 @@ class K3DBackend(Plot):
     @staticmethod
     def _do_sum_kwargs(p1, p2):
         kw = p1._copy_kwargs()
-        kw["show_label"] = (p1._show_label or p2._show_label)
+        sl1 = False if not hasattr(p1, "_show_label") else p1._show_label
+        sl2 = False if not hasattr(p2, "_show_label") else p2._show_label
+        kw["show_label"] = sl1 or sl2
         return kw
 
     @staticmethod
