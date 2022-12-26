@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v1.6.6
+======
+
+* Fixed bug with ``PlaneSeries``'s data generation. Thanks to `Crillebon <https://github.com/Chrillebon>`_ for the fix!
+
+
 v1.6.5
 ======
 
