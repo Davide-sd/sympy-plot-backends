@@ -11,7 +11,7 @@ only basic plotting with Matplotlib will be installed::
 
 Or::
 
-    conda install sympy_plot_backends
+    conda install -c davide_sd sympy_plot_backends 
 
 To install the complete requirements in order to get interactive plots, bokeh,
 plotly, k3d, vtk, execute the following command::
@@ -21,9 +21,17 @@ plotly, k3d, vtk, execute the following command::
 Or::
 
     conda install -c anaconda scipy notebook colorcet
-    conda install -c conda-forge ipympl panel k3d vtk msgpack-python
+    conda install -c conda-forge ipympl panel
+    conda install -c conda-forge k3d msgpack-python
     conda install -c bokeh ipywidgets_bokeh
     conda install -c plotly plotly
+    conda install -c conda-forge vtk
+    conda install -c davide_sd sympy_plot_backends 
+
+Finally, if you are using zshell, the above `pip` command is going to fail.
+Use the following instead::
+
+    pip install "sympy_plot_backends[all]"
 
 
 Verify the installation

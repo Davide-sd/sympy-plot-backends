@@ -87,10 +87,18 @@ pip install sympy_plot_backends[all]
 Or:
 
 ```
-conda install -c anaconda scipy notebook colorcet
-conda install -c conda-forge ipympl panel k3d vtk msgpack-python
-conda install -c bokeh ipywidgets_bokeh
+conda install -c anaconda scipy notebook
+conda install -c conda-forge ipympl panel k3d msgpack-python
+conda install -c bokeh ipywidgets_bokeh colorcet
 conda install -c plotly plotly
+conda install -c conda-forge vtk
+```
+
+Finally, if you are using zshell, the above `pip` command is going to fail.
+Use the following instead:
+
+```
+pip install "sympy_plot_backends[all]"
 ```
   
 
