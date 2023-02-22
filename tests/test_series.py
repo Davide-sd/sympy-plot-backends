@@ -21,7 +21,8 @@ from spb.series import (
 )
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
-    re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify
+    re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
+    Function, dsolve,
 )
 from sympy.external import import_module
 from sympy.vector import CoordSys3D, gradient
@@ -3352,3 +3353,18 @@ def test_vector_series_normalize():
         [(x, -5, 5), (y, -5, 5), (z, -5, 5)], params={u: 1},
         slice=Plane((0, 0, 0), (0, 1, 0)), normalize=True)
     assert s.normalize
+
+def test_complex_number_eval():
+    xi, wn, x0, v0, t = symbols("xi, omega_n, x0, v0, t")
+    x = Function("x")(t)
+    eq = x.diff(t, 2) + 2 * xi * wn * x.diff(t) + wn**2 * x
+    sol = dsolve(eq, x, ics={x.subs(t, 0): x0, x.diff(t).subs(t, 0): v0})
+    d = {
+        'params' : {
+            wn: 0.5,
+            xi: 0.25,
+            x0: 0.45,
+            v0: 0.0}
+    }
+    s = InteractiveSeries([sol.rhs], [(t, 0, 100)], **d)
+    assert np.all([x != np.nan for x in s.get_data()])
