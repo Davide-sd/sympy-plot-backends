@@ -3368,5 +3368,5 @@ def test_complex_number_eval():
     }
     s = LineInteractiveSeries([sol.rhs], [(t, 0, 100)], n1=5,**d)
     x_axis, y_axis = s.get_data()
-    assert np.all([x != np.nan for x in x_axis])
-    assert np.all([y != np.nan for y in y_axis])
+    assert np.all([not np.isnan(x) for x in x_axis])
+    assert np.all([not np.isnan(y) for y in y_axis])
