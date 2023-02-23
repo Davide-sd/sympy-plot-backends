@@ -2016,13 +2016,16 @@ class InteractiveSeries(BaseSeries, ParamsMixin):
         """
         np = import_module('numpy')
 
+
         # discretized ranges all have the same shape. Take the first!
         discr = list(self.ranges.values())[0]
 
         args = []
+        # convert to complex in order to avoid a RuntimeWarning
+        # when evaluating roots of negative values
         for s in self.signature:
             if s in self._params.keys():
-                args.append(self._params[s])
+                args.append(complex(self._params[s]))
             else:
                 args.append(self.ranges[s])
 
