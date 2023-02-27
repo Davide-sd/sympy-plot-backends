@@ -1506,7 +1506,7 @@ def test_str():
 
     s = AbsArgLineInteractiveSeries([cos(u * x)], [(x, -4, 3)], "test",
         params={u: 1})
-    assert str(s) == "interactive cartesian abs-arg line: cos(u*x) with ranges (x, (-4+0j), (3+0j)) and parameters (u,)"
+    assert str(s) == "interactive cartesian abs-arg line: cos(u*x) with ranges (x, -4.0, 3.0) and parameters (u,)"
 
     s = Parametric2DLineSeries(cos(x), sin(x), (x, -4, 3), "test")
     assert str(s) == "parametric cartesian line: (cos(x), sin(x)) for x over (-4.0, 3.0)"
@@ -3037,7 +3037,7 @@ def test_complex_adaptive_false():
     data4 = s4.get_data()
 
     do_test(data1, data3)
-    assert np.allclose(data1[1], 0) and np.allclose(data3[1], 0)
+    assert (not np.allclose(data1[1], 0)) and (not np.allclose(data3[1], 0))
     do_test(data2, data4)
     assert (not np.allclose(data2[1], 0)) and (not np.allclose(data4[1], 0))
 
@@ -3354,7 +3354,11 @@ def test_vector_series_normalize():
         slice=Plane((0, 0, 0), (0, 1, 0)), normalize=True)
     assert s.normalize
 
-def test_complex_number_eval():
+def test_complex_params_number_eval():
+    # The main expression contains terms like sqrt(xi - 1), with
+    # parameter (0 <= xi <= 1).
+    # There shouldn't be any NaN values on the output.
+
     xi, wn, x0, v0, t = symbols("xi, omega_n, x0, v0, t")
     x = Function("x")(t)
     eq = x.diff(t, 2) + 2 * xi * wn * x.diff(t) + wn**2 * x
@@ -3370,3 +3374,26 @@ def test_complex_number_eval():
     x, y = s.get_data()
     assert not np.isnan(x).any()
     assert not np.isnan(y).any()
+
+
+def test_complex_range_line_plot():
+    # verify that univariate functions are evaluated with a complex
+    # data range (with zero imaginary part). There shouln't be any
+    # NaN value in the output.
+
+    x, u = symbols("x, u")
+    expr1 = im(sqrt(x) * exp(-x**2))
+    expr2 = im(sqrt(u * x) * exp(-x**2))
+    s1 = LineOver1DRangeSeries(expr1, (x, -10, 10), adaptive=True,
+        adaptive_goal=0.1)
+    s2 = LineOver1DRangeSeries(expr1, (x, -10, 10), adaptive=False, n=30)
+    s3 = LineInteractiveSeries([expr2], [(x, -10, 10)], n1=30,
+        params={u: 1})
+    data1 = s1.get_data()
+    data2 = s2.get_data()
+    data3 = s3.get_data()
+
+    assert not np.isnan(data1[1]).any()
+    assert not np.isnan(data2[1]).any()
+    assert not np.isnan(data3[1]).any()
+    assert np.allclose(data2[0], data3[0]) and np.allclose(data2[1], data3[1])

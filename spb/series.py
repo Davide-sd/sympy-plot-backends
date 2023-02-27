@@ -885,10 +885,12 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
                 self.label = ""
 
     def __str__(self):
+        # ditch imaginary part if it's equal to 0
+        f = lambda t: t if t.imag != 0 else t.real
         return "cartesian line: %s for %s over %s" % (
             str(self.expr),
             str(self.var),
-            str((self.start.real, self.end.real)),
+            str((f(self.start.real), f(self.end.real))),
         )
 
     def _adaptive_sampling(self):
@@ -896,7 +898,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
 
         def func(f, imag, x):
             try:
-                w = complex(f(x + 1j * imag if self.is_complex else x))
+                w = complex(f(x + 1j * imag))
                 return w.real, w.imag
             except (ZeroDivisionError, OverflowError):
                 return np.nan, np.nan
@@ -915,9 +917,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
 
         x = xx = self._discretize(self.start.real, self.end.real, self.n, scale=self.scale, only_integers=self.only_integers)
 
-        if self.is_complex:
-            xx = xx + 1j * self.start.imag
-        elif self.only_integers:
+        xx = xx + 1j * self.start.imag
+        if self.only_integers:
             # NOTE: likely plotting a Sum. The lambdified function is
             # using ``range``, requiring integer arguments.
             xx = xx.astype(int)
@@ -1942,9 +1943,8 @@ class InteractiveSeries(BaseSeries, ParamsMixin):
             end = c_end.real if c_start.imag == c_end.imag == 0 else c_end
             d = BaseSeries._discretize(start, end, n[i], scale=scale, only_integers=self.only_integers)
 
-            if self.is_complex:
-                d = d + 1j * c_start.imag
-            elif self.only_integers:
+            d = d + 1j * c_start.imag
+            if self.only_integers:
                 # NOTE: likely plotting a Sum. The lambdified function is
                 # using ``range``, requiring integer arguments.
                 d = d.astype(int)
@@ -1981,8 +1981,10 @@ class InteractiveSeries(BaseSeries, ParamsMixin):
 
     def _str(self, series_type):
         np = import_module('numpy')
+        # ditch imaginary part if it's equal to 0
+        f = lambda t: t if t.imag != 0 else t.real
+        ranges = [(k, f(np.amin(v)), f(np.amax(v))) for k, v in self.ranges.items()]
 
-        ranges = [(k, np.amin(v), np.amax(v)) for k, v in self.ranges.items()]
         return ("interactive %s: %s with ranges %s and parameters %s") % (
             series_type,
             str(self.expr),
@@ -2021,10 +2023,10 @@ class InteractiveSeries(BaseSeries, ParamsMixin):
         discr = list(self.ranges.values())[0]
 
         args = []
-        # convert to complex in order to avoid a RuntimeWarning
-        # when evaluating roots of negative values
         for s in self.signature:
             if s in self._params.keys():
+                # convert to complex in order to avoid a RuntimeWarning
+                # when evaluating roots of negative values
                 args.append(complex(self._params[s]))
             else:
                 args.append(self.ranges[s])
