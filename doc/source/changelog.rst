@@ -2,6 +2,14 @@
  Changelog
 ==========
 
+v1.6.7
+======
+
+* Fixed bugs related to evaluation with complex numbers and parameters.
+  Thanks to `Michele Ceccacci  <https://github.com/michelececcacci>`_ for the
+  fix!
+
+
 v1.6.6
 ======
 
