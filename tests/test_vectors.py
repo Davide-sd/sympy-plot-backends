@@ -150,17 +150,17 @@ def test_series():
     _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector2DSeries)
     # auto generate ranges
-    t1 = (s.exprs[0], s.ranges[0][1], s.ranges[0][2])
-    t2 = (s.exprs[1], s.ranges[1][1], s.ranges[1][2])
+    t1 = (s.expr[0], s.ranges[0][1], s.ranges[0][2])
+    t2 = (s.expr[1], s.ranges[1][1], s.ranges[1][2])
     assert (t1 == (x, -10.0, 10.0))
     assert (t2 == (y, -10.0, 10.0))
 
     args = pw(v1, (x, -5, 5), "test")[0]
     _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector2DSeries)
-    assert (s.exprs[0], s.ranges[0][1], s.ranges[0][2]) == (x, -5.0, 5.0)
+    assert (s.expr[0], s.ranges[0][1], s.ranges[0][2]) == (x, -5.0, 5.0)
     # auto generate range
-    assert (s.exprs[1], s.ranges[1][1], s.ranges[1][2]) == (y, -10.0, 10.0)
+    assert (s.expr[1], s.ranges[1][1], s.ranges[1][2]) == (y, -10.0, 10.0)
 
     # vector doesn't contain free symbols, and not all ranges were provided.
     # raise error because the missing range could be any symbol.
@@ -175,17 +175,17 @@ def test_series():
     args = pw([fx, fy], ("x", -5, 5), ("y", -6, 6), "test")[0]
     _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector2DSeries)
-    assert (s.exprs[0], s.ranges[0][1], s.ranges[0][2]) == (fx, -5.0, 5.0)
-    assert (s.exprs[1], s.ranges[1][1], s.ranges[1][2]) == (fy, -6.0, 6.0)
+    assert (s.expr[0], s.ranges[0][1], s.ranges[0][2]) == (fx, -5.0, 5.0)
+    assert (s.expr[1], s.ranges[1][1], s.ranges[1][2]) == (fy, -6.0, 6.0)
 
     # Tests for 3D vectors
     args = pw(v2, "test")[0]
     _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector3DSeries)
     # auto generate ranges
-    t1 = (s.exprs[0], s.ranges[0][1], s.ranges[0][2])
-    t2 = (s.exprs[1], s.ranges[1][1], s.ranges[1][2])
-    t3 = (s.exprs[2], s.ranges[2][1], s.ranges[2][2])
+    t1 = (s.expr[0], s.ranges[0][1], s.ranges[0][2])
+    t2 = (s.expr[1], s.ranges[1][1], s.ranges[1][2])
+    t3 = (s.expr[2], s.ranges[2][1], s.ranges[2][2])
     assert t1 == (z, -10.0, 10.0)
     assert t2 == (x, -10.0, 10.0)
     assert t3 == (y, -10.0, 10.0)
@@ -193,9 +193,9 @@ def test_series():
     args = pw(v2, (x, -5, 5), "test")[0]
     _, _, s = _series(args[0], *args[1:-1], label=args[-1])
     assert isinstance(s, Vector3DSeries)
-    t1 = (s.exprs[0], s.ranges[0][1], s.ranges[0][2])
-    t2 = (s.exprs[1], s.ranges[1][1], s.ranges[1][2])
-    t3 = (s.exprs[2], s.ranges[2][1], s.ranges[2][2])
+    t1 = (s.expr[0], s.ranges[0][1], s.ranges[0][2])
+    t2 = (s.expr[1], s.ranges[1][1], s.ranges[1][2])
+    t3 = (s.expr[2], s.ranges[2][1], s.ranges[2][2])
     assert t1 == (z, -5.0, 5.0)
     assert t2 == (x, -10.0, 10.0)
     assert t3 == (y, -10.0, 10.0)
@@ -712,7 +712,7 @@ def test_plot_vector_3d():
     assert s[0].ranges[0][1:] == (-10, 9)
     assert s[0].ranges[1][1:] == (-8, 7)
     assert s[0].ranges[2][1:] == (-6, 5)
-    assert s[0].get_expr() == (x, y, z)
+    assert s[0].expr == (x, y, z)
     assert s[0].get_label(False) == "(x, y, z)"
     assert s[0].rendering_kw == {"cmap": "Blues_r"}
 
@@ -725,7 +725,7 @@ def test_plot_vector_3d():
     assert isinstance(s[0], Vector3DInteractiveSeries)
     assert not s[0].is_streamlines
     xx, yy, zz = s[0].ranges.values()
-    assert s[0].get_expr() == (u*x, y, z)
+    assert s[0].expr == (u*x, y, z)
     assert s[0].get_label(False) == "(u*x, y, z)"
     assert (xx.min(), xx.max()) == (-10, 9)
     assert (yy.min(), yy.max()) == (-8, 7)
@@ -764,8 +764,8 @@ def test_plot_vector_3d():
     assert all(t.ranges[0][1:] == (-10, 9) for t in s)
     assert all(t.ranges[1][1:] == (-8, 7) for t in s)
     assert all(t.ranges[2][1:] == (-6, 5) for t in s)
-    assert s[0].get_expr() == (x, y, z)
-    assert s[1].get_expr() == (-sin(y), cos(z), y)
+    assert s[0].expr == (x, y, z)
+    assert s[1].expr == (-sin(y), cos(z), y)
     assert s[0].get_label(False) == "(x, y, z)"
     assert s[1].get_label(False) == "(-sin(y), cos(z), y)"
 
@@ -782,9 +782,9 @@ def test_plot_vector_3d():
         assert (xx.min(), xx.max()) == (-10, 9)
         assert (yy.min(), yy.max()) == (-8, 7)
         assert (zz.min(), zz.max()) == (-6, 5)
-    assert s[0].get_expr() == (u*x, y, z)
+    assert s[0].expr == (u*x, y, z)
     assert s[0].get_label(False) == "(u*x, y, z)"
-    assert s[1].get_expr() == (-sin(u * y), cos(z), y)
+    assert s[1].expr == (-sin(u * y), cos(z), y)
     assert s[1].get_label(False) == "(-sin(u*y), cos(z), y)"
 
     ###########################################################################
@@ -808,8 +808,8 @@ def test_plot_vector_3d():
     assert s[1].ranges[0][1:] == (-4, 3)
     assert s[1].ranges[1][1:] == (-2, 11)
     assert s[1].ranges[2][1:] == (-1, 12)
-    assert s[0].get_expr() == (x, y, z)
-    assert s[1].get_expr() == (-sin(y), cos(z), y)
+    assert s[0].expr == (x, y, z)
+    assert s[1].expr == (-sin(y), cos(z), y)
     assert s[0].get_label(False) == "(x, y, z)"
     assert s[1].get_label(False) == "test"
 
@@ -830,9 +830,9 @@ def test_plot_vector_3d():
     assert (xx.min(), xx.max()) == (-4, 3)
     assert (yy.min(), yy.max()) == (-2, 11)
     assert (zz.min(), zz.max()) == (-1, 12)
-    assert s[0].get_expr() == (u*x, y, z)
+    assert s[0].expr == (u*x, y, z)
     assert s[0].get_label(False) == "(u*x, y, z)"
-    assert s[1].get_expr() == (-sin(u * y), cos(z), y)
+    assert s[1].expr == (-sin(u * y), cos(z), y)
     assert s[1].get_label(False) == "test"
 
 
@@ -1020,7 +1020,7 @@ def test_plot_vector_3d_slice():
     assert isinstance(s[0], SliceVector3DSeries)
     pss = s[0].slice_surf_series
     assert isinstance(pss, ParametricSurfaceSeries)
-    assert pss.get_expr() == (u * cos(v), u * sin(v), u)
+    assert pss.expr == (u * cos(v), u * sin(v), u)
     assert (pss.var_u, pss.start_u, pss.end_u) == (u, -2, 0)
     assert (pss.var_v, pss.start_v, pss.end_v) == (v, 0, float(2*pi))
     assert s[0].ranges[0][1:] == (-10, 9)
@@ -1038,7 +1038,7 @@ def test_plot_vector_3d_slice():
     assert isinstance(s[0], SliceVector3DSeries)
     pss = s[0].slice_surf_series
     assert isinstance(pss, SurfaceOver2DRangeSeries)
-    assert pss.get_expr() == cos(z**2 + y**2)
+    assert pss.expr == cos(z**2 + y**2)
     assert (pss.var_x, pss.start_x, pss.end_x) == (z, -4, 4)
     assert (pss.var_y, pss.start_y, pss.end_y) == (y, -2, 2)
     assert s[0].ranges[0][1:] == (-10, 9)
@@ -1057,7 +1057,7 @@ def test_plot_vector_3d_slice():
     assert isinstance(s[0], SliceVector3DSeries)
     pss = s[0].slice_surf_series
     assert isinstance(pss, SurfaceOver2DRangeSeries)
-    assert pss.get_expr() == cos(x**2 + y**2)
+    assert pss.expr == cos(x**2 + y**2)
     assert (pss.var_x, pss.start_x, pss.end_x) == (x, -4, 4)
     assert (pss.var_y, pss.start_y, pss.end_y) == (y, -2, 2)
     assert s[0].ranges[0][1:] == (-10, 9)
@@ -1084,7 +1084,7 @@ def test_plot_vector_3d_slice():
     assert isinstance(s[0], SliceVector3DInteractiveSeries)
     pss = s[0].slice_surf_series
     assert isinstance(pss, ParametricSurfaceInteractiveSeries)
-    assert pss.get_expr() == (u * cos(v), u * sin(v), t * u)
+    assert pss.expr == (u * cos(v), u * sin(v), t * u)
     uu, vv = pss.ranges.values()
     assert (uu.min(), uu.max()) == (-2, 0)
     assert (vv.min(), vv.max()) == (0, float(2*pi))
@@ -1103,7 +1103,7 @@ def test_plot_vector_3d_slice():
     assert isinstance(s[0], SliceVector3DInteractiveSeries)
     pss = s[0].slice_surf_series
     assert isinstance(pss, SurfaceInteractiveSeries)
-    assert pss.get_expr() == cos(t * x**2 + y**2)
+    assert pss.expr == cos(t * x**2 + y**2)
     xx, yy = pss.ranges.values()
     assert (xx.min(), xx.max()) == (-4, 5)
     assert (yy.min(), yy.max()) == (-3, 2)
@@ -1122,7 +1122,7 @@ def test_plot_vector_3d_slice():
     assert isinstance(s[0], SliceVector3DInteractiveSeries)
     pss = s[0].slice_surf_series
     assert isinstance(pss, SurfaceInteractiveSeries)
-    assert pss.get_expr() == cos(t * z**2 + y**2)
+    assert pss.expr == cos(t * z**2 + y**2)
     xx, yy = pss.ranges.values()
     assert (xx.min(), xx.max()) == (-4, 5)
     assert (yy.min(), yy.max()) == (-3, 2)

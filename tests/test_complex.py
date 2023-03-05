@@ -959,9 +959,9 @@ def test_plot_complex_vector():
     assert isinstance(s[1], Vector2DSeries)
     assert s[1].ranges[0][1:] == (-5, 4)
     assert s[1].ranges[1][1:] == (-2, 3)
-    assert str(s[0].get_expr()) == 'sqrt(((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2)**2 + 4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2)'
-    assert str(s[1].get_expr()[0]) == '(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2'
-    assert str(s[1].get_expr()[1]) == '2*(re(_x) - im(_y))*(re(_y) + im(_x))'
+    assert str(s[0].expr) == 'sqrt(((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2)**2 + 4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2)'
+    assert str(s[1].expr[0]) == '(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2'
+    assert str(s[1].expr[1]) == '2*(re(_x) - im(_y))*(re(_y) + im(_x))'
 
     p = plot_complex_vector(z**x, (z, -5 - 2j, 4 + 3j), params={x: (1, 0, 2)},
         backend=MB, show=False, n=5)
@@ -1060,7 +1060,7 @@ def test_lambda_functions():
     p = plot_complex(lambda x: np.cos(x) + sin(x * 1j), backend=MB, show=False)
     assert len(p.series) == 1
     assert isinstance(p[0], AbsArgLineSeries)
-    assert callable(p[0].get_expr())
+    assert callable(p[0].expr)
 
     raises(TypeError, lambda : plot_real_imag(lambda t: t))
     raises(TypeError, lambda : plot_complex_list(lambda t: t))

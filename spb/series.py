@@ -4,6 +4,7 @@ from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
+    atan2, floor, ceiling
 )
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
@@ -219,7 +220,8 @@ def _uniform_eval(free_symbols, expr, *args, modules=None):
         # case of failures with the default one.
         f1 = lambdify(free_symbols, expr, modules=modules, cse=False)
         f2 = lambdify(free_symbols, expr, modules="sympy", cse=False)
-        return _uniform_eval_helper(f1, f2, *args, modules=modules)
+        force_real_eval = any(expr.has(t) for t in [atan2, floor, ceiling])
+        return _uniform_eval_helper(f1, f2, *args, modules=modules, force_real_eval=force_real_eval)
 
     # NOTE: expr is a callable. It is important that it'll be evaluated by
     # _uniform_eval_helper because it uses np.vectorize
@@ -227,7 +229,7 @@ def _uniform_eval(free_symbols, expr, *args, modules=None):
     return _uniform_eval_helper(expr, None, *args, modules=modules)
 
 
-def _uniform_eval_helper(f1, f2, *args, modules=None):
+def _uniform_eval_helper(f1, f2, *args, modules=None, force_real_eval=False):
     """
     Note: this is an experimental function, as such it is prone to changes.
     Please, do not use it in your code.
@@ -248,13 +250,16 @@ def _uniform_eval_helper(f1, f2, *args, modules=None):
     # TODO: think to a strategy to determine when to apply casting
     # note that (numpy's floor, ceil, ... don't like complex numbers)
     new_args = []
-    for a in args:
-        if isinstance(a, np.ndarray):
-            # see HACK note on LineOver1DRangeSeries
-            new_args.append(a if a.dtype == "object" else a.astype(complex))
-        else:
-            new_args.append(complex(a))
-    
+    if not force_real_eval:
+        for a in args:
+            if isinstance(a, np.ndarray):
+                # see HACK note on LineOver1DRangeSeries
+                new_args.append(a if a.dtype == "object" else a.astype(complex))
+            else:
+                new_args.append(complex(a))
+    else:
+        new_args = args
+
     skip_fast_eval = False
     if modules == "sympy":
         skip_fast_eval = True
@@ -363,6 +368,21 @@ class BaseSeries:
         if any(callable(e) for e in exprs):
             raise TypeError(type(self).__name__ + " requires a symbolic "
                 "expression.")
+    
+    @property
+    def expr(self):
+        """Set the expression (or expressions) of the series."""
+        return self._expr
+    
+    @expr.setter
+    def expr(self, e):
+        """Return the expression (or expressions) of the series."""
+        self._expr = e
+    
+    def get_expr(self):
+        """Set the expression (or expressions) of the series."""
+        warnings.warn("This method is deprecated. Use the `expr` attribute instead.")
+        return self.expr
 
     @property
     def is_3D(self):
@@ -542,10 +562,6 @@ class BaseSeries:
         """
         return wrapper % label
 
-    def get_expr(self):
-        """Return the expression (or expressions) of the series."""
-        return self.expr
-
     def get_label(self, use_latex=False, wrapper="$%s$"):
         """Return the label to be used to display the expression.
 
@@ -564,7 +580,7 @@ class BaseSeries:
         """
         if use_latex is False:
             return self._label
-        if self._label == str(self.get_expr()):
+        if self._label == str(self.expr):
             return self._get_wrapped_label(self._latex_label, wrapper)
         return self._latex_label
 
@@ -776,16 +792,14 @@ class List2DSeries(Line2DBaseSeries, ParamsMixin):
         else:
             self.list_x = np.array(list_x, dtype=np.float64)
             self.list_y = np.array(list_y, dtype=np.float64)
-
+        
+        self.expr = (self.list_x, self.list_y)
         self.is_polar = kwargs.get("is_polar", False)
         self.label = label
         self.rendering_kw = kwargs.get("rendering_kw", dict())
         self.use_cm = kwargs.get("use_cm", False)
         if self.use_cm and self.color_func:
             self.is_parametric = True
-
-    def get_expr(self):
-        return self.list_x, self.list_y
 
     def __str__(self):
         return "list plot"
@@ -835,9 +849,8 @@ class List3DSeries(List2DSeries):
                 None, label, self._params)
         else:
             self.list_z = np.array(list_z, dtype=np.float64)
-
-    def get_expr(self):
-        return self.list_x, self.list_y, self.list_z
+        
+        self.expr = (self.list_x, self.list_y, self.list_z)
 
     def _get_points(self):
         """Returns coordinates that needs to be postprocessed."""
@@ -876,8 +889,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
     def __init__(self, expr, var_start_end, label="", **kwargs):
         super().__init__(**kwargs)
         self.expr = expr if callable(expr) else sympify(expr)
-        self._label = str(self.get_expr()) if label is None else label
-        self._latex_label = latex(self.get_expr()) if label is None else label
+        self._label = str(self.expr) if label is None else label
+        self._latex_label = latex(self.expr) if label is None else label
         self.var = sympify(var_start_end[0])
         # NOTE: even though this class represents a line over a real range,
         # this class serves as a base class for AbsArgLineSeries, which is
@@ -1063,13 +1076,13 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         self._label = str(self.var) if label is None else label
         self._latex_label = latex(self.var) if label is None else label
         if (self.use_cm is False) and (self._label == str(self.var)):
-            self._label = str(self.get_expr())
-            self._latex_label = latex(self.get_expr())
+            self._label = str(self.expr)
+            self._latex_label = latex(self.expr)
         # if the expressions is a lambda function and use_cm=False and no label
         # has been provided, then its better to do the following to avoid
         # suprises on the backend
-        if any(callable(e) for e in self.get_expr()) and (not self.use_cm):
-            if self._label == str(self.get_expr()):
+        if any(callable(e) for e in self.expr) and (not self.use_cm):
+            if self._label == str(self.expr):
                 self.label = ""
 
     def _eval_component(self, expr, param):
@@ -1095,7 +1108,7 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
             except (ZeroDivisionError, OverflowError):
                 return [np.nan for t in range(2 if is_2Dline else 3)]
 
-        if all(not callable(e) for e in self.get_expr()):
+        if all(not callable(e) for e in self.expr):
             expr = Tuple(self.expr_x, self.expr_y)
             if not self.is_2Dline:
                 expr = Tuple(self.expr_x, self.expr_y, self.expr_z)
@@ -1117,11 +1130,6 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
             return data[:, 1], data[:, 2], data[:, 0]
         return data[:, 1], data[:, 2], data[:, 3], data[:, 0]
 
-    def get_expr(self):
-        if self.is_2Dline:
-            return (self.expr_x, self.expr_y)
-        return (self.expr_x, self.expr_y, self.expr_z)
-
     def get_label(self, use_latex=False, wrapper="$%s$"):
         # parametric lines returns the representation of the parameter to be
         # shown on the colorbar if `use_cm=True`, otherwise it returns the
@@ -1134,7 +1142,7 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
             # here the user has provided a custom label
             return self._label
         if use_latex:
-            if self._label != str(self.get_expr()):
+            if self._label != str(self.expr):
                 return self._latex_label
             return self._get_wrapped_label(self._latex_label, wrapper)
         return self._label
@@ -1179,6 +1187,7 @@ class Parametric2DLineSeries(ParametricLineBaseSeries):
         super().__init__(**kwargs)
         self.expr_x = expr_x if callable(expr_x) else sympify(expr_x)
         self.expr_y = expr_y if callable(expr_y) else sympify(expr_y)
+        self.expr = (self.expr_x, self.expr_y)
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
@@ -1212,6 +1221,7 @@ class Parametric3DLineSeries(ParametricLineBaseSeries):
         self.expr_x = expr_x if callable(expr_x) else sympify(expr_x)
         self.expr_y = expr_y if callable(expr_y) else sympify(expr_y)
         self.expr_z = expr_z if callable(expr_z) else sympify(expr_z)
+        self.expr = (self.expr_x, self.expr_y, self.expr_z)
         self.var = sympify(var_start_end[0])
         self.start = float(var_start_end[1])
         self.end = float(var_start_end[2])
@@ -1272,7 +1282,7 @@ class SurfaceBaseSeries(BaseSeries):
         self._init_transforms(**kwargs)
 
     def _set_surface_label(self, label):
-        exprs = self.get_expr()
+        exprs = self.expr
         self._label = str(exprs) if label is None else label
         self._latex_label = latex(exprs) if label is None else label
         # if the expressions is a lambda function and no label
@@ -1395,6 +1405,7 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.expr_x = expr_x if callable(expr_x) else sympify(expr_x)
         self.expr_y = expr_y if callable(expr_y) else sympify(expr_y)
         self.expr_z = expr_z if callable(expr_z) else sympify(expr_z)
+        self.expr = (self.expr_x, self.expr_y, self.expr_z)
         self.var_u = sympify(var_start_end_u[0])
         self.start_u = float(var_start_end_u[1])
         self.end_u = float(var_start_end_u[2])
@@ -1414,9 +1425,6 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
                 "ParametricSurfaceSeries does not support adaptive algorithm. "
                 "Automatically switching to a uniform spacing algorithm.")
             self.adaptive = False
-
-    def get_expr(self):
-        return (self.expr_x, self.expr_y, self.expr_z)
 
     def _get_ranges(self):
         return (self.var_u, self.start_u, self.end_u), (self.var_v, self.start_v, self.end_v)
@@ -2844,7 +2852,7 @@ class VectorBase(BaseSeries):
         new_ranges = []
         for r in ranges:
             new_ranges.append((sympify(r[0]), float(r[1]), float(r[2])))
-        self.exprs = exprs
+        self.expr = tuple([e if callable(e) else sympify(e) for e in exprs])
         self.ranges = new_ranges
         self._label = str(exprs) if label is None else label
         self._latex_label = latex(exprs) if label is None else label
@@ -2868,8 +2876,8 @@ class VectorBase(BaseSeries):
         # if the expressions are lambda functions and no label has been
         # provided, then its better to do the following to avoid suprises on
         # the backend
-        if any(callable(e) for e in self.exprs):
-            if self._label == str(self.exprs):
+        if any(callable(e) for e in self.expr):
+            if self._label == str(self.expr):
                 self.label = "Magnitude"
 
         # NOTE: when plotting vector fields it might be useful to repeat the
@@ -2885,9 +2893,6 @@ class VectorBase(BaseSeries):
             self.rendering_kw = kwargs.get("quiver_kw",
                 kwargs.get("rendering_kw", dict()))
         self._init_transforms(**kwargs)
-
-    def get_expr(self):
-        return self.exprs
 
     def _discretize(self):
         np = import_module('numpy')
@@ -2924,12 +2929,9 @@ class VectorBase(BaseSeries):
         re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
         return re_v
 
-    def get_expr(self):
-        return self.exprs
-
     def get_label(self, use_latex=False, wrapper="$%s$"):
         if use_latex:
-            expr = self.get_expr()
+            expr = self.expr
             if self._label != str(expr):
                 return self._latex_label
             return self._get_wrapped_label(self._latex_label, wrapper)
@@ -2964,11 +2966,11 @@ class VectorBase(BaseSeries):
         meshes = self._discretize()
         free_symbols = [r[0] for r in self.ranges]
         results = []
-        if any(callable(e) for e in self.exprs):
-            for e in self.exprs:
+        if any(callable(e) for e in self.expr):
+            for e in self.expr:
                 results.append(self._eval_component2(meshes, e))
         else:
-            for e in self.exprs:
+            for e in self.expr:
                 results.append(self._eval_component(meshes, free_symbols, e))
         return self._apply_transform(*meshes, *results)
 
@@ -3002,7 +3004,7 @@ class Vector2DSeries(VectorBase):
 
     def __str__(self):
         return "2D vector series: [%s, %s] over %s, %s" % (
-            *self.exprs, *self.ranges)
+            *self.expr, *self.ranges)
 
 
 class Vector3DSeries(VectorBase):
@@ -3018,7 +3020,7 @@ class Vector3DSeries(VectorBase):
 
     def __str__(self):
         return "3D vector series: [%s, %s, %s] over %s, %s, %s" % (
-            *self.exprs, *self.ranges)
+            *self.expr, *self.ranges)
 
 class VectorInteractiveBaseSeries(InteractiveSeries):
     """Represent an interactive vector field."""
@@ -3040,9 +3042,6 @@ class VectorInteractiveBaseSeries(InteractiveSeries):
             self.rendering_kw = kwargs.get("stream_kw", dict())
         else:
             self.rendering_kw = kwargs.get("quiver_kw", dict())
-
-    def get_expr(self):
-        return self.expr
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
         return VectorBase.get_label(self, use_latex, wrapper)
@@ -3240,6 +3239,7 @@ class PlaneSeries(SurfaceBaseSeries):
     ):
         self._block_lambda_functions(plane)
         self.plane = sympify(plane)
+        self.expr = self.plane
         if not isinstance(self.plane, Plane):
             raise TypeError("`plane` must be an instance of sympy.geometry.Plane")
         self.x_range = sympify(x_range)
@@ -3262,9 +3262,6 @@ class PlaneSeries(SurfaceBaseSeries):
         return "plane series: %s over %s, %s, %s" % (
             self.plane, self.x_range, self.y_range, self.z_range
         )
-
-    def get_expr(self):
-        return self.plane
 
     def get_data(self):
         np = import_module('numpy')

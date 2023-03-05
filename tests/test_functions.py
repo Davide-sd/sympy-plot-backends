@@ -134,13 +134,13 @@ def test_plot3d_revolution():
     p2 = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
         show_curve=False, parallel_axis="x")
     xx2, yy2, zz2, tt2, pp2 = p2[0].get_data()
-    assert p2[0].get_expr() != p1[0].get_expr()
+    assert p2[0].expr != p1[0].expr
 
     p3 = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
         show_curve=False, parallel_axis="y")
     xx3, yy3, zz3, tt3, pp3 = p3[0].get_data()
-    assert p3[0].get_expr() != p1[0].get_expr()
-    assert p3[0].get_expr() != p2[0].get_expr()
+    assert p3[0].expr != p1[0].expr
+    assert p3[0].expr != p2[0].expr
 
     # by setting axis it produces different data
     p4 = plot3d_revolution(cos(t), (t, 0, pi), show=False, n=5,
@@ -183,7 +183,7 @@ def test_plot3d_revolution():
     assert len(p.series) == 2
     assert isinstance(p[0], ParametricSurfaceSeries)
     assert isinstance(p[1], Parametric3DLineSeries)
-    assert p[1].get_expr() == (t, 0, cos(t))
+    assert p[1].expr == (t, 0, cos(t))
     assert p[0].rendering_kw == {"color": "r"}
     assert p[1].rendering_kw == {"color": "g"}
 
@@ -204,13 +204,13 @@ def test_plot3d_revolution():
     p2 = plot3d_revolution(cos(k * t), (t, 0, pi), show=False, n=5,
         params={k: (1, 0, 2)}, parallel_axis="y", show_curve=False)
     assert isinstance(p2, InteractivePlot)
-    assert p2.backend[0].get_expr() != p1.backend[0].get_expr()
+    assert p2.backend[0].expr != p1.backend[0].expr
 
     p3 = plot3d_revolution(cos(k * t), (t, 0, pi), show=False, n=5,
         params={k: (1, 0, 2)}, parallel_axis="z", show_curve=False)
     assert isinstance(p3, InteractivePlot)
-    assert p3.backend[0].get_expr() != p1.backend[0].get_expr()
-    assert p3.backend[0].get_expr() != p2.backend[0].get_expr()
+    assert p3.backend[0].expr != p1.backend[0].expr
+    assert p3.backend[0].expr != p2.backend[0].expr
 
     # show_curve should add a Parametric3DLineInteractiveSeries
     # keyword arguments should gets redirected to plot3d_parametric_surface
@@ -222,7 +222,7 @@ def test_plot3d_revolution():
     assert len(p.backend.series) == 2
     assert isinstance(p.backend[0], ParametricSurfaceInteractiveSeries)
     assert isinstance(p.backend[1], Parametric3DLineInteractiveSeries)
-    assert p.backend[1].get_expr() == (t, 0, cos(k * t))
+    assert p.backend[1].expr == (t, 0, cos(k * t))
     assert p.backend[0].rendering_kw == {"color": "r"}
     assert p.backend[1].rendering_kw == {"color": "g"}
 

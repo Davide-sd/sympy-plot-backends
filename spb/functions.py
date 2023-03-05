@@ -1558,7 +1558,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
         param_expr, ranges = [], []
 
         if s.is_3Dsurface:
-            expr = s.get_expr()
+            expr = s.expr
             (x, sx, ex), (y, sy, ey) = s._get_ranges()
 
             kw = wf_kwargs.copy()

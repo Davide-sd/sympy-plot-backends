@@ -1433,9 +1433,9 @@ def plot_complex_vector(*args, **kwargs):
     x, y = symbols("x, y", cls=Dummy)
     for i in range(len(series)):
         s1 = series[i]
-        expr1 = re(s1.get_expr())
-        expr2 = im(s1.get_expr())
-        free_symbols = s1.get_expr().free_symbols
+        expr1 = re(s1.expr)
+        expr2 = im(s1.expr)
+        free_symbols = s1.expr.free_symbols
         if params is not None:
             free_symbols = free_symbols.difference(params.keys())
         free_symbols = list(free_symbols)
