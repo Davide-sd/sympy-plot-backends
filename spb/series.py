@@ -124,12 +124,6 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
         # expr is a user-provided lambda function
         one_d = len(signature(expr).parameters) == 1
 
-    # TODO:
-    # As of adaptive 0.13.0, this warning will be raised if the function to
-    # be evaluated returns multiple values. The warning is raised somewhere
-    # inside adaptive. Let's ignore it until a PR is done to fix it.
-    warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
-
     goal = lambda l: l.loss() < 0.01
     if adaptive_goal is not None:
         if isinstance(adaptive_goal, (int, float)):
@@ -229,6 +223,7 @@ def _uniform_eval(free_symbols, expr, *args, modules=None):
 
     # NOTE: expr is a callable. It is important that it'll be evaluated by
     # _uniform_eval_helper because it uses np.vectorize
+    # return expr(*args)
     return _uniform_eval_helper(expr, None, *args, modules=modules)
 
 
@@ -244,22 +239,45 @@ def _uniform_eval_helper(f1, f2, *args, modules=None):
             return complex(func(*args))
         except (ZeroDivisionError, OverflowError):
             return complex(np.nan, np.nan)
+    
+    # NOTE: np.vectorize is much slower than numpy vectorized operations.
+    # However, this modules must be able to evaluate functions also with
+    # mpmath or sympy.
     wrapper_func = np.vectorize(wrapper_func, otypes=[complex])
 
+    # TODO: think to a strategy to determine when to apply casting
+    # note that (numpy's floor, ceil, ... don't like complex numbers)
+    new_args = []
+    for a in args:
+        if isinstance(a, np.ndarray):
+            # see HACK note on LineOver1DRangeSeries
+            new_args.append(a if a.dtype == "object" else a.astype(complex))
+        else:
+            new_args.append(complex(a))
+    
+    skip_fast_eval = False
+    if modules == "sympy":
+        skip_fast_eval = True
+
     try:
-        return wrapper_func(f1, *args)
+        if skip_fast_eval:
+            raise Exception
+        # f = lambdify(free_symbols, expr, modules=modules, cse=False)
+        return wrapper_func(f1, *new_args)
     except Exception as err:
         if f2 is None:
             raise RuntimeError(
                 "Impossible to evaluate the provided numerical function")
-        warnings.warn(
-            "The evaluation with %s failed.\n" % (
-                "NumPy/SciPy" if not modules else modules) +
-            "{}: {}\n".format(type(err).__name__, err) +
-            "Trying to evaluate the expression with Sympy, but it might "
-            "be a slow operation."
-        )
-        return wrapper_func(f2, *args)
+        if not skip_fast_eval:
+            warnings.warn(
+                "The evaluation with %s failed.\n" % (
+                    "NumPy/SciPy" if not modules else modules) +
+                "{}: {}\n".format(type(err).__name__, err) +
+                "Trying to evaluate the expression with Sympy, but it might "
+                "be a slow operation."
+            )
+        # f = lambdify(free_symbols, expr, modules="sympy", cse=False)
+        return wrapper_func(f2, *new_args)
 
 
 class BaseSeries:
@@ -1072,7 +1090,7 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
 
         def func(f, is_2Dline, x):
             try:
-                w = [complex(t) for t in f(x)]
+                w = [complex(t) for t in f(complex(x))]
                 return [t.real if np.isclose(t.imag, 0) else np.nan for t in w]
             except (ZeroDivisionError, OverflowError):
                 return [np.nan for t in range(2 if is_2Dline else 3)]
@@ -1305,7 +1323,8 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
 
         def func(f, xy):
             try:
-                return f(*xy)
+                w = f(*[complex(t) for t in xy])
+                return w.real if np.isclose(w.imag, 0) else np.nan
             except (ZeroDivisionError, OverflowError):
                 return np.nan
 
@@ -2025,9 +2044,7 @@ class InteractiveSeries(BaseSeries, ParamsMixin):
         args = []
         for s in self.signature:
             if s in self._params.keys():
-                # convert to complex in order to avoid a RuntimeWarning
-                # when evaluating roots of negative values
-                args.append(complex(self._params[s]))
+                args.append(self._params[s])
             else:
                 args.append(self.ranges[s])
 
