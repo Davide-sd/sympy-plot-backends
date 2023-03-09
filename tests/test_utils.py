@@ -3,11 +3,6 @@ from spb import (
     plot, plot3d, plot_implicit, plot_vector, plot_complex, plot_complex_list,
     MB, plot_geometry
 )
-from spb.series import (
-    LineInteractiveSeries, SurfaceInteractiveSeries, Vector2DInteractiveSeries,
-    ComplexDomainColoringInteractiveSeries, ComplexPointInteractiveSeries,
-    GeometryInteractiveSeries
-)
 from spb.utils import (
     _check_arguments, _create_ranges, _plot_sympify, _validate_kwargs
 )

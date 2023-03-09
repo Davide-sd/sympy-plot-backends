@@ -4,16 +4,6 @@ from spb.interactive import (
     iplot, DynamicParam, MyList,
     InteractivePlot, create_widgets, create_series
 )
-from spb.series import (
-    InteractiveSeries, LineInteractiveSeries, AbsArgLineInteractiveSeries,
-    Parametric2DLineInteractiveSeries, Parametric3DLineInteractiveSeries,
-    ParametricSurfaceInteractiveSeries,
-    SurfaceInteractiveSeries, ContourInteractiveSeries,
-    ComplexPointInteractiveSeries, ComplexSurfaceInteractiveSeries,
-    ComplexDomainColoringInteractiveSeries, GeometryInteractiveSeries,
-    Vector2DInteractiveSeries, Vector3DInteractiveSeries,
-    SliceVector3DInteractiveSeries, PlaneInteractiveSeries
-)
 from sympy import (
     sqrt, Integer, Float, Rational, pi, symbols, Tuple,
     sin, cos, Plane

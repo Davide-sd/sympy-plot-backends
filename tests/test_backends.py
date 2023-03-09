@@ -5,7 +5,7 @@ from spb import *
 from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import unset_show
 from spb.series import (
-    BaseSeries, InteractiveSeries, LineOver1DRangeSeries,
+    BaseSeries, LineOver1DRangeSeries, Vector3DSeries,
     SurfaceOver2DRangeSeries, Parametric3DLineSeries, ParametricSurfaceSeries
 )
 from sympy import (
@@ -2461,9 +2461,9 @@ def test_vectors_update_interactive():
 
     def func(B):
         params = {a: 1, b: 2, c: 3}
-        s = InteractiveSeries(
-            [a * z, b * y, c * x],
-            [(x, -5, 5), (y, -5, 5), (z, -5, 5)],
+        s = Vector3DSeries(
+            a * z, b * y, c * x,
+            (x, -5, 5), (y, -5, 5), (z, -5, 5),
             "test",
             params = params,
             streamlines = True,
@@ -3358,9 +3358,9 @@ def test_plot3d_update_interactive():
 
     x, y, u = symbols("x, y, u")
 
-    s = InteractiveSeries(
-        [u * cos(x**2 + y**2)],
-        [(x, -5, 5), (y, -5, 5)],
+    s = SurfaceOver2DRangeSeries(
+        u * cos(x**2 + y**2),
+        (x, -5, 5), (y, -5, 5),
         "test",
         threed = True,
         use_cm = False,
@@ -3376,9 +3376,9 @@ def test_plot3d_update_interactive():
     c2 = kw["color"]
     assert c1 == c2
 
-    s = InteractiveSeries(
-        [u * cos(x**2 + y**2)],
-        [(x, -5, 5), (y, -5, 5)],
+    s = SurfaceOver2DRangeSeries(
+        u * cos(x**2 + y**2),
+        (x, -5, 5), (y, -5, 5),
         "test",
         threed = True,
         use_cm = True,
@@ -3615,16 +3615,16 @@ def test_surface_interactive_color_func():
     r = 2 + sin(7 * u + 5 * v)
     expr2 = (t * r * cos(u) * sin(v), r * sin(u) * sin(v), r * cos(v))
 
-    s1 = InteractiveSeries([expr1], [(x, -5, 5), (y, -5, 5)],
+    s1 = SurfaceOver2DRangeSeries(expr1, (x, -5, 5), (y, -5, 5),
         n1=5, n2=5, params={t: 1}, use_cm=True,
-        color_func=lambda x, y, z: z, threed=True)
-    s2 = InteractiveSeries([expr1], [(x, -5, 5), (y, -5, 5)],
+        color_func=lambda x, y, z: z)
+    s2 = SurfaceOver2DRangeSeries(expr1, (x, -5, 5), (y, -5, 5),
         n1=5, n2=5, params={t: 1}, use_cm=True,
-        color_func=lambda x, y, z: np.sqrt(x**2 + y**2), threed=True)
-    s3 = InteractiveSeries([*expr2], [(u, -5, 5), (v, -5, 5)],
+        color_func=lambda x, y, z: np.sqrt(x**2 + y**2))
+    s3 = ParametricSurfaceSeries(*expr2, (u, -5, 5), (v, -5, 5),
         n1=5, n2=5, params={t: 1}, use_cm=True,
         color_func=lambda x, y, z, u, v: z)
-    s4 = InteractiveSeries([*expr2], [(u, -5, 5), (v, -5, 5)],
+    s4 = ParametricSurfaceSeries(*expr2, (u, -5, 5), (v, -5, 5),
         n1=5, n2=5, params={t: 1}, use_cm=True,
         color_func=lambda x, y, z, u, v: np.sqrt(x**2 + y**2))
 
@@ -3678,10 +3678,10 @@ def test_line_interactive_color_func():
     x, t = symbols("x, t")
 
     expr = t * cos(x * t)
-    s1 = InteractiveSeries([expr], [(x, -3, 3)],
-        n1=5, params={t: 1}, color_func=None)
-    s2 = InteractiveSeries([expr], [(x, -3, 3)],
-        n1=5, params={t: 1}, color_func=lambda x, y: np.cos(x))
+    s1 = LineOver1DRangeSeries(expr, (x, -3, 3),
+        n=5, params={t: 1}, color_func=None)
+    s2 = LineOver1DRangeSeries(expr, (x, -3, 3),
+        n=5, params={t: 1}, color_func=lambda x, y: np.cos(x))
 
     p = MB(s1, s2)
     p.process_series()

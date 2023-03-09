@@ -3,7 +3,6 @@ from spb.backends.utils import get_seeds_points
 from spb.interactive import InteractivePlot
 from spb.series import (
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries, ContourSeries,
-    SliceVector3DInteractiveSeries,
     PlaneSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries
 )
 from spb.utils import _plot_sympify, _split_vector

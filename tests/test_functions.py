@@ -7,7 +7,6 @@ from spb.interactive import InteractivePlot
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, ContourSeries,
     Vector2DSeries, ParametricSurfaceSeries, Parametric3DLineSeries,
-    ParametricSurfaceInteractiveSeries, Parametric3DLineInteractiveSeries,
     Parametric2DLineSeries
 )
 from spb.backends.matplotlib import MB, unset_show
@@ -199,7 +198,8 @@ def test_plot3d_revolution():
         params={k: (1, 0, 2)}, parallel_axis="x", show_curve=False)
     assert isinstance(p1, InteractivePlot)
     assert len(p1.backend.series) == 1
-    assert isinstance(p1.backend[0], ParametricSurfaceInteractiveSeries)
+    s = p1.backend[0]
+    assert isinstance(s, ParametricSurfaceSeries) and s.is_interactive
 
     p2 = plot3d_revolution(cos(k * t), (t, 0, pi), show=False, n=5,
         params={k: (1, 0, 2)}, parallel_axis="y", show_curve=False)
@@ -220,8 +220,8 @@ def test_plot3d_revolution():
         curve_kw={"rendering_kw": {"color": "g"}})
     assert isinstance(p, InteractivePlot)
     assert len(p.backend.series) == 2
-    assert isinstance(p.backend[0], ParametricSurfaceInteractiveSeries)
-    assert isinstance(p.backend[1], Parametric3DLineInteractiveSeries)
+    assert isinstance(p.backend[0], ParametricSurfaceSeries) and p.backend[0].is_interactive
+    assert isinstance(p.backend[1], Parametric3DLineSeries) and p.backend[1].is_interactive
     assert p.backend[1].expr == (t, 0, cos(k * t))
     assert p.backend[0].rendering_kw == {"color": "r"}
     assert p.backend[1].rendering_kw == {"color": "g"}
@@ -231,7 +231,7 @@ def test_plot3d_revolution():
         params={k: (1, 0, 2)}, show_curve=True, wireframe=True)
     assert isinstance(p, InteractivePlot)
     assert len(p.backend.series) > 2
-    assert all(isinstance(t, Parametric3DLineInteractiveSeries) for t in p.backend.series[1:])
+    assert all(isinstance(t, Parametric3DLineSeries) and t.is_interactive for t in p.backend.series[1:])
 
 
 def test_plot3d_spherical():

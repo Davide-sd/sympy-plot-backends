@@ -1,13 +1,9 @@
 from spb.defaults import cfg
 from spb.interactive import InteractivePlot
 from spb.series import (
-    ComplexPointSeries, ComplexPointInteractiveSeries,
-    ComplexSurfaceSeries, ComplexSurfaceInteractiveSeries,
+    ComplexPointSeries, ComplexSurfaceSeries,
     ComplexDomainColoringSeries, ComplexDomainColoringSeries,
-    LineOver1DRangeSeries, LineInteractiveSeries,
-    InteractiveSeries, ContourSeries, ContourInteractiveSeries,
-    Vector2DSeries, Vector2DInteractiveSeries,
-    AbsArgLineSeries, AbsArgLineInteractiveSeries
+    LineOver1DRangeSeries, ContourSeries, Vector2DSeries, AbsArgLineSeries,
 )
 from spb.utils import _plot_sympify
 from spb import (
