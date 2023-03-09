@@ -497,8 +497,8 @@ def test_interactiveseries():
         assert isinstance(s, InteractiveSeries)
         assert s.expr == expr
         assert s.label == label
-        assert len(s.ranges) == len(ranges)
-        assert s.ranges[symbol].shape == shape
+        assert len(s._rranges) == len(ranges)
+        assert s._rranges[symbol].shape == shape
         if len(ranges) == 2:
             assert s.is_2Dvector
             assert not s.is_3Dvector

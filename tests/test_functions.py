@@ -61,7 +61,7 @@ def test_plot_parametric_region():
     assert all(isinstance(s, Parametric2DLineSeries) for s in p.series)
     assert all((s.var, s.start, s.end) == (v, 0, float(2*pi/3)) for s in p.series[:3])
     assert all((s.var, s.start, s.end) == (u, 1, 2) for s in p.series[3:])
-    assert all(s.n == 10 for s in p.series)
+    assert all(s.n[0] == 10 for s in p.series)
     assert all(s.rendering_kw == {"color": "k"} for s in p.series)
 
     p = plot_parametric_region(u * cos(v), u * sin(v),

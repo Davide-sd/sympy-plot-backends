@@ -3,11 +3,8 @@ from spb.backends.utils import get_seeds_points
 from spb.interactive import InteractivePlot
 from spb.series import (
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries, ContourSeries,
-    Vector2DInteractiveSeries, Vector3DInteractiveSeries,
-    SliceVector3DInteractiveSeries, ContourInteractiveSeries,
-    PlaneSeries, PlaneInteractiveSeries,
-    SurfaceOver2DRangeSeries, SurfaceInteractiveSeries,
-    ParametricSurfaceSeries, ParametricSurfaceInteractiveSeries,
+    SliceVector3DInteractiveSeries,
+    PlaneSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries
 )
 from spb.utils import _plot_sympify, _split_vector
 from spb.vectors import _preprocess, _series, plot_vector
@@ -429,18 +426,18 @@ def test_plot_vector_2d():
     assert s[1].get_label(False) == '(-sin(y), cos(x))'
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, backend=MB, show=False)
+        params={z: (1, 0, 2)}, backend=MB, show=False, n=3, nc=3)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert isinstance(s[0], ContourInteractiveSeries)
-    xx, yy = s[0].ranges.values()
+    assert isinstance(s[0], ContourSeries) and s[0].is_interactive
+    xx, yy, zz = s[0].get_data()
     assert (xx.min(), xx.max()) == (-3, 2)
     assert (yy.min(), yy.max()) == (-4, 6)
     assert s[0].get_label(False) == "Magnitude"
-    assert isinstance(s[1], Vector2DInteractiveSeries)
+    assert isinstance(s[1], Vector2DSeries) and s[1].is_interactive
     assert not s[1].is_streamlines
-    xx, yy = s[1].ranges.values()
+    xx, yy, _, _ = s[1].get_data()
     assert (xx.min(), xx.max()) == (-3, 2)
     assert (yy.min(), yy.max()) == (-4, 6)
     assert s[1].get_label(False) == '(-sin(y*z), cos(x))'
@@ -475,13 +472,14 @@ def test_plot_vector_2d():
     assert s[0].get_label(False) == '(-sin(y), cos(x))'
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, scalar=None, backend=MB, show=False, streamlines=True)
+        params={z: (1, 0, 2)}, scalar=None, backend=MB, show=False,
+        streamlines=True, n=3, nc=3)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], Vector2DInteractiveSeries)
+    assert isinstance(s[0], Vector2DSeries) and s[0].is_interactive
     assert s[0].is_streamlines
-    xx, yy = s[0].ranges.values()
+    xx, yy, _, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-3, 2)
     assert (yy.min(), yy.max()) == (-4, 6)
     assert s[0].get_label(False) == '(-sin(y*z), cos(x))'
@@ -517,16 +515,16 @@ def test_plot_vector_2d():
     assert s[1].get_label(False) == '(-y, x)'
 
     p = plot_vector([-sin(y * z), cos(x)], [-y, x], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, backend=MB, show=False)
+        params={z: (1, 0, 2)}, backend=MB, show=False, n=3, nc=3)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, Vector2DInteractiveSeries) for t in s)
-    xx, yy = s[0].ranges.values()
+    assert all(isinstance(t, Vector2DSeries) and t.is_interactive for t in s)
+    xx, yy, _, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-3, 2)
     assert (yy.min(), yy.max()) == (-4, 6)
     assert s[0].get_label(False) == '(-sin(y*z), cos(x))'
-    xx, yy = s[1].ranges.values()
+    xx, yy, _, _ = s[1].get_data()
     assert (xx.min(), xx.max()) == (-3, 2)
     assert (yy.min(), yy.max()) == (-4, 6)
     assert s[1].get_label(False) == '(-y, x)'
@@ -551,19 +549,20 @@ def test_plot_vector_2d():
 
     p = plot_vector([-sin(y * z), cos(x)], [-y, x], (x, -3, 2), (y, -4, 6),
         scalar=sqrt(x**2 + y**2), params={z: (1, 0, 2)},
-        backend=MB, show=False)
+        backend=MB, show=False, n=3, nc=3)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 3
-    assert isinstance(s[0], ContourInteractiveSeries)
+    assert isinstance(s[0], ContourSeries) and s[0].is_interactive
     assert s[0].expr == sqrt(x**2 + y**2)
-    xx, yy = s[0].ranges.values()
+    xx, yy, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-3, 2)
     assert (yy.min(), yy.max()) == (-4, 6)
-    assert isinstance(s[1], Vector2DInteractiveSeries)
-    assert isinstance(s[2], Vector2DInteractiveSeries)
+    assert isinstance(s[1], Vector2DSeries) and s[1].is_interactive
+    assert isinstance(s[2], Vector2DSeries) and s[2].is_interactive
     for t in s:
-        xx, yy = t.ranges.values()
+        d = t.get_data()
+        xx, yy = d[:2]
         assert (xx.min(), xx.max()) == (-3, 2)
         assert (yy.min(), yy.max()) == (-4, 6)
     assert s[0].get_label(False) == 'sqrt(x**2 + y**2)'
@@ -593,15 +592,15 @@ def test_plot_vector_2d():
     p = plot_vector(
         ([-sin(y * z), cos(x)], (x, -3, 0), (y, -4, 0)),
         ([-y, x], (x, 0, 2), (y, 0, 6), "test"),
-        params={z: (1, 0, 2)}, backend=MB, show=False)
+        params={z: (1, 0, 2)}, backend=MB, show=False, n=3, nc=3)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
     assert all(isinstance(t, Vector2DSeries) for t in s)
-    xx, yy = s[0].ranges.values()
+    xx, yy, _, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-3, 0)
     assert (yy.min(), yy.max()) == (-4, 0)
-    xx, yy = s[1].ranges.values()
+    xx, yy, _, _ = s[1].get_data()
     assert (xx.min(), xx.max()) == (0, 2)
     assert (yy.min(), yy.max()) == (0, 6)
     assert s[0].get_label(False) == '(-sin(y*z), cos(x))'
@@ -632,18 +631,18 @@ def test_plot_vector_2d():
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
         scalar=[sqrt(x**2 + y**2), "test"], params={z: (1, 0, 2)},
-        backend=MB, show=False)
+        backend=MB, show=False, n=3, nc=3)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert isinstance(s[0], ContourInteractiveSeries)
+    assert isinstance(s[0], ContourSeries) and s[0].is_interactive
     assert s[0].expr == sqrt(x**2 + y**2)
     assert s[0].get_label(False) == "test"
-    xx, yy = s[0].ranges.values()
+    xx, yy, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-3, 2)
     assert (yy.min(), yy.max()) == (-4, 6)
-    assert isinstance(s[1], Vector2DInteractiveSeries)
-    xx, yy = s[1].ranges.values()
+    assert isinstance(s[1], Vector2DSeries) and s[1].is_interactive
+    xx, yy, _, _ = s[1].get_data()
     assert (xx.min(), xx.max()) == (-3, 2)
     assert (yy.min(), yy.max()) == (-4, 6)
     assert s[1].get_label(False) == '(-sin(y*z), cos(x))'
@@ -722,9 +721,9 @@ def test_plot_vector_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], Vector3DInteractiveSeries)
+    assert isinstance(s[0], Vector3DSeries) and s[0].is_interactive
     assert not s[0].is_streamlines
-    xx, yy, zz = s[0].ranges.values()
+    xx, yy, zz, _, _, _ = s[0].get_data()
     assert s[0].expr == (u*x, y, z)
     assert s[0].get_label(False) == "(u*x, y, z)"
     assert (xx.min(), xx.max()) == (-10, 9)
@@ -775,10 +774,10 @@ def test_plot_vector_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, Vector3DInteractiveSeries) for t in s)
+    assert all(isinstance(t, Vector3DSeries) and t.is_interactive for t in s)
     assert all(not t.is_streamlines for t in s)
     for t in s:
-        xx, yy, zz = t.ranges.values()
+        xx, yy, zz, _, _, _ = t.get_data()
         assert (xx.min(), xx.max()) == (-10, 9)
         assert (yy.min(), yy.max()) == (-8, 7)
         assert (zz.min(), zz.max()) == (-6, 5)
@@ -820,13 +819,13 @@ def test_plot_vector_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, Vector3DInteractiveSeries) for t in s)
+    assert all(isinstance(t, Vector3DSeries) and t.is_interactive for t in s)
     assert all(not t.is_streamlines for t in s)
-    xx, yy, zz = s[0].ranges.values()
+    xx, yy, zz, _, _, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-10, 9)
     assert (yy.min(), yy.max()) == (-8, 7)
     assert (zz.min(), zz.max()) == (-6, 5)
-    xx, yy, zz = s[1].ranges.values()
+    xx, yy, zz, _, _, _ = s[1].get_data()
     assert (xx.min(), xx.max()) == (-4, 3)
     assert (yy.min(), yy.max()) == (-2, 11)
     assert (zz.min(), zz.max()) == (-1, 12)
@@ -870,9 +869,9 @@ def test_plot_vector_3d_slice():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], SliceVector3DInteractiveSeries)
+    assert isinstance(s[0], SliceVector3DSeries) and s[0].is_interactive
     assert isinstance(s[0].slice_surf_series, PlaneSeries)
-    xx, yy, zz = s[0].ranges.values()
+    xx, yy, zz, _, _, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-10, -10)
     assert (yy.min(), yy.max()) == (-8, 7)
     assert (zz.min(), zz.max()) == (-6, 5)
@@ -907,17 +906,17 @@ def test_plot_vector_3d_slice():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 3
-    assert all(isinstance(t, SliceVector3DInteractiveSeries) for t in s)
+    assert all(isinstance(t, SliceVector3DSeries) and t.is_interactive for t in s)
     assert all(isinstance(t.slice_surf_series, PlaneSeries) for t in s)
-    xx, yy, zz = s[0].ranges.values()
+    xx, yy, zz, _, _, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-10, -10)
     assert (yy.min(), yy.max()) == (-8, 7)
     assert (zz.min(), zz.max()) == (-6, 5)
-    xx, yy, zz = s[1].ranges.values()
+    xx, yy, zz, _, _, _ = s[1].get_data()
     assert (xx.min(), xx.max()) == (-10, 9)
     assert (yy.min(), yy.max()) == (-8, -8)
     assert (zz.min(), zz.max()) == (-6, 5)
-    xx, yy, zz = s[2].ranges.values()
+    xx, yy, zz, _, _, _ = s[2].get_data()
     assert (xx.min(), xx.max()) == (-10, 9)
     assert (yy.min(), yy.max()) == (-8, 7)
     assert (zz.min(), zz.max()) == (-6, -6)
@@ -951,16 +950,17 @@ def test_plot_vector_3d_slice():
     s = p1b.backend.series
     assert isinstance(p1b, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], SliceVector3DInteractiveSeries)
-    assert isinstance(s[0].slice_surf_series, SurfaceInteractiveSeries)
-    xx, yy, zz = s[0].ranges.values()
+    assert isinstance(s[0], SliceVector3DSeries) and s[0].is_interactive
+    assert isinstance(s[0].slice_surf_series, SurfaceOver2DRangeSeries) and s[0].slice_surf_series.is_interactive
+    d1b = s[0].get_data()
+    xx, yy, zz, _, _, _ = d1b
     assert (xx.min(), xx.max()) == (-2, 3)
     assert (yy.min(), yy.max()) == (-3, 1)
     assert s[0].get_label(False) == "(u*z, y, x)"
-    xx, yy = s[0].slice_surf_series.ranges.values()
+    xx, yy, _ = s[0].slice_surf_series.get_data()
     assert (xx.min(), xx.max()) == (-2, 3)
     assert (yy.min(), yy.max()) == (-3, 1)
-    d1b = s[0].get_data()
+    
 
     # this surface lies on the y-z plane
     p2a = plot_vector([z, y, x], (x, -2, 3), (y, -3, 1), (z, -6, 5),
@@ -990,16 +990,17 @@ def test_plot_vector_3d_slice():
     s = p2b.backend.series
     assert isinstance(p2b, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], SliceVector3DInteractiveSeries)
-    assert isinstance(s[0].slice_surf_series, SurfaceInteractiveSeries)
-    xx, yy, zz = s[0].ranges.values()
+    assert isinstance(s[0], SliceVector3DSeries) and s[0].is_interactive
+    assert isinstance(s[0].slice_surf_series, SurfaceOver2DRangeSeries) and s[0].slice_surf_series.is_interactive
+    d2b = s[0].get_data()
+    xx, yy, zz, _, _, _ = d2b
     assert (yy.min(), yy.max()) == (-3, 1)
     assert (zz.min(), zz.max()) == (-6, 5)
     assert s[0].get_label(False) == "(u*z, y, x)"
-    xx, yy = s[0].slice_surf_series.ranges.values()
+    xx, yy, _ = s[0].slice_surf_series.get_data()
     assert (xx.min(), xx.max()) == (-3, 1)
     assert (yy.min(), yy.max()) == (-6, 5)
-    d2b = s[0].get_data()
+    
 
     # since the two expressions lies on different planes, they must produce
     # different data
@@ -1074,61 +1075,64 @@ def test_plot_vector_3d_slice():
     assert np.allclose(d3a[4], d3b[4])
 
     t = symbols("t")
-    ss = ParametricSurfaceInteractiveSeries([u * cos(v), u * sin(v), t*u],
-        [(u, -2, 0), (v, 0, 2*pi)], n1=5, n2=5, params={t: 1})
+    ss = ParametricSurfaceSeries(u * cos(v), u * sin(v), t*u,
+        (u, -2, 0), (v, 0, 2*pi), n1=5, n2=5, params={t: 1})
     p = plot_vector([t * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
         n=5, backend=MB, slice=ss, show=False, params={t: (1, 0.5, 1.5)})
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], SliceVector3DInteractiveSeries)
+    assert isinstance(s[0], SliceVector3DSeries) and s[0].is_interactive
     pss = s[0].slice_surf_series
-    assert isinstance(pss, ParametricSurfaceInteractiveSeries)
+    assert isinstance(pss, ParametricSurfaceSeries) and pss.is_interactive
     assert pss.expr == (u * cos(v), u * sin(v), t * u)
-    uu, vv = pss.ranges.values()
+    _, _, _, uu, vv = pss.get_data()
     assert (uu.min(), uu.max()) == (-2, 0)
     assert (vv.min(), vv.max()) == (0, float(2*pi))
-    assert (s[0].ranges[x].min(), s[0].ranges[x].max()) == (-2, 2)
-    assert (s[0].ranges[y].min(), s[0].ranges[y].max()) == (-2, 2)
-    assert (s[0].ranges[z].min(), s[0].ranges[z].max()) == (-2, 0)
+    xx, yy, zz, _, _, _ = s[0].get_data()
+    assert (xx.min(), xx.max()) == (-2, 2)
+    assert (yy.min(), yy.max()) == (-2, 2)
+    assert (zz.min(), zz.max()) == (-2, 0)
     assert s[0].get_label(False) == "(t*z, y, x)"
 
-    ss = SurfaceInteractiveSeries([cos(t * x**2 + y**2)],
-        [(x, -4, 5), (y, -3, 2)], n1=25, n2=25, params={t: 1})
+    ss = SurfaceOver2DRangeSeries(cos(t * x**2 + y**2),
+        (x, -4, 5), (y, -3, 2), n1=25, n2=25, params={t: 1})
     p = plot_vector([t * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
         n=5, backend=MB, slice=ss, show=False, params={t: (1, 0.5, 1.5)})
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], SliceVector3DInteractiveSeries)
+    assert isinstance(s[0], SliceVector3DSeries) and s[0].is_interactive
     pss = s[0].slice_surf_series
-    assert isinstance(pss, SurfaceInteractiveSeries)
+    assert isinstance(pss, SurfaceOver2DRangeSeries) and pss.is_interactive
     assert pss.expr == cos(t * x**2 + y**2)
-    xx, yy = pss.ranges.values()
+    xx, yy, _ = pss.get_data()
     assert (xx.min(), xx.max()) == (-4, 5)
     assert (yy.min(), yy.max()) == (-3, 2)
-    assert (s[0].ranges[x].min(), s[0].ranges[x].max()) == (-4, 5)
-    assert (s[0].ranges[y].min(), s[0].ranges[y].max()) == (-3, 2)
-    assert np.allclose([s[0].ranges[z].min(), s[0].ranges[z].max()], [-1, 1])
+    xx, yy, zz, _, _, _ = s[0].get_data()
+    assert (xx.min(), xx.max()) == (-4, 5)
+    assert (yy.min(), yy.max()) == (-3, 2)
+    assert np.allclose([zz.min(), zz.max()], [-1, 1])
     assert s[0].get_label(False) == "(t*z, y, x)"
 
-    ss = SurfaceInteractiveSeries([cos(t * z**2 + y**2)],
-        [(z, -4, 5), (y, -3, 2)], n1=25, n2=25, params={t: 1})
+    ss = SurfaceOver2DRangeSeries(cos(t * z**2 + y**2),
+        (z, -4, 5), (y, -3, 2), n1=25, n2=25, params={t: 1})
     p = plot_vector([t * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
         n=5, backend=MB, slice=ss, show=False, params={t: (1, 0.5, 1.5)})
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], SliceVector3DInteractiveSeries)
+    assert isinstance(s[0], SliceVector3DSeries) and s[0].is_interactive
     pss = s[0].slice_surf_series
-    assert isinstance(pss, SurfaceInteractiveSeries)
+    assert isinstance(pss, SurfaceOver2DRangeSeries) and pss.is_interactive
     assert pss.expr == cos(t * z**2 + y**2)
-    xx, yy = pss.ranges.values()
+    xx, yy, _ = pss.get_data()
     assert (xx.min(), xx.max()) == (-4, 5)
     assert (yy.min(), yy.max()) == (-3, 2)
-    assert np.allclose([s[0].ranges[x].min(), s[0].ranges[x].max()], [-1, 1])
-    assert (s[0].ranges[z].min(), s[0].ranges[z].max()) == (-4, 5)
-    assert (s[0].ranges[y].min(), s[0].ranges[y].max()) == (-3, 2)
+    xx, yy, zz, _, _, _ = s[0].get_data()
+    assert np.allclose([xx.min(), xx.max()], [-1, 1])
+    assert (zz.min(), zz.max()) == (-4, 5)
+    assert (yy.min(), yy.max()) == (-3, 2)
     assert s[0].get_label(False) == "(t*z, y, x)"
 
 

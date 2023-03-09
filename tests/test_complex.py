@@ -3,7 +3,7 @@ from spb.interactive import InteractivePlot
 from spb.series import (
     ComplexPointSeries, ComplexPointInteractiveSeries,
     ComplexSurfaceSeries, ComplexSurfaceInteractiveSeries,
-    ComplexDomainColoringSeries, ComplexDomainColoringInteractiveSeries,
+    ComplexDomainColoringSeries, ComplexDomainColoringSeries,
     LineOver1DRangeSeries, LineInteractiveSeries,
     InteractiveSeries, ContourSeries, ContourInteractiveSeries,
     Vector2DSeries, Vector2DInteractiveSeries,
@@ -47,7 +47,8 @@ def test_plot_complex_list():
         backend=MB, show=False)
     assert isinstance(p, InteractivePlot)
     assert len(p.backend.series) == 1
-    assert isinstance(p.backend.series[0], ComplexPointInteractiveSeries)
+    s = p.backend.series[0]
+    assert isinstance(s, ComplexPointSeries) and s.is_interactive
 
     # list of complex numbers, each one with its own label
     p = plot_complex_list((3+2*I, "a"), (5 * I, "b"), backend=MB, show=False)
@@ -59,7 +60,7 @@ def test_plot_complex_list():
         backend=MB, show=False)
     assert isinstance(p, InteractivePlot)
     assert len(p.backend.series) == 2
-    assert all(isinstance(t, ComplexPointInteractiveSeries) for t in p.backend.series)
+    assert all(isinstance(t, ComplexPointSeries) and t.is_interactive for t in p.backend.series)
 
     # lists of grouped complex numbers with labels
     p = plot_complex_list(
@@ -76,7 +77,7 @@ def test_plot_complex_list():
         params={x: (1, 0, 2)}, backend=MB, show=False)
     assert isinstance(p, InteractivePlot)
     assert len(p.backend.series) == 2
-    assert all(isinstance(t, ComplexPointInteractiveSeries) for t in p.backend.series)
+    assert all(isinstance(t, ComplexPointSeries) and t.is_interactive for t in p.backend.series)
 
     p = plot_complex_list(
         ([3 + 2 * I, 2 * I, 3], "a"),
@@ -92,7 +93,7 @@ def test_plot_complex_list():
         params={x: (1, 0, 2)}, backend=MB, show=False)
     assert isinstance(p, InteractivePlot)
     assert len(p.backend.series) == 2
-    assert all(isinstance(t, ComplexPointInteractiveSeries) for t in p.backend.series)
+    assert all(isinstance(t, ComplexPointSeries) and t.is_interactive for t in p.backend.series)
 
 
 def test_plot_real_imag_1d():
@@ -125,7 +126,7 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert isinstance(s[0], LineInteractiveSeries)
+    assert isinstance(s[0], LineOver1DRangeSeries) and s[0].is_interactive
 
     # same as the previous case, different range, custom label and
     # rendering keywords
@@ -145,7 +146,7 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, InteractiveSeries) for t in s)
+    assert all(isinstance(t, LineOver1DRangeSeries) and t.is_interactive for t in s)
     assert s[0].get_label(False) == "Re(f)"
     assert s[1].get_label(False) == "Im(f)"
     assert all(ss.rendering_kw == {"color": "k"} for ss in s)
@@ -165,7 +166,7 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], LineInteractiveSeries)
+    assert isinstance(s[0], LineOver1DRangeSeries) and s[0].is_interactive
     _, _rep = s[0].get_data()
 
     # imaginary part of the function
@@ -183,7 +184,7 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], LineInteractiveSeries)
+    assert isinstance(s[0], LineOver1DRangeSeries) and s[0].is_interactive
     _, _imp = s[0].get_data()
 
     # absolute value of the function
@@ -201,7 +202,7 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], LineInteractiveSeries)
+    assert isinstance(s[0], LineOver1DRangeSeries) and s[0].is_interactive
     _, _absp = s[0].get_data()
 
     # argument of the function
@@ -225,7 +226,7 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], LineInteractiveSeries)
+    assert isinstance(s[0], LineOver1DRangeSeries) and s[0].is_interactive
     _, _argp = s[0].get_data()
 
     assert np.allclose(_rep, np.real(np.sqrt(xx)))
@@ -247,7 +248,7 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 4
-    assert all(isinstance(t, LineInteractiveSeries) for t in s)
+    assert all(isinstance(t, LineOver1DRangeSeries) and t.is_interactive for t in s)
     assert all(t.is_2Dline for t in s)
 
     ###########################################################################
@@ -271,7 +272,7 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 4
-    assert all(isinstance(t, LineInteractiveSeries) for t in s)
+    assert all(isinstance(t, LineOver1DRangeSeries) and t.is_interactive for t in s)
     assert all(t.is_2Dline for t in s)
     assert all((ss.start == -8) and (ss.end == 8) for ss in s)
     assert all(ss.rendering_kw == {"color": "k"} for ss in s)
@@ -292,7 +293,7 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 4
-    assert all(isinstance(t, LineInteractiveSeries) for t in s)
+    assert all(isinstance(t, LineOver1DRangeSeries) and t.is_interactive for t in s)
     assert all(t.is_2Dline for t in s)
     assert all((ss.start == xmin) and (ss.end == xmax) for ss in s)
 
@@ -309,7 +310,6 @@ def test_plot_real_imag_1d():
     assert isinstance(p, MB)
     assert len(s) == 4
     assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
     assert (s[0].start == -5) and (s[0].end == 5)
     assert (s[1].start == -5) and (s[1].end == 5)
     assert (s[2].start == -8) and (s[2].end == 8)
@@ -328,16 +328,11 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 4
-    assert all(isinstance(t, LineInteractiveSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
-    r = list(s[0].ranges.values())[0]
-    assert (r[0] == -5) and (r[-1] == 5)
-    r = list(s[1].ranges.values())[0]
-    assert (r[0] == -5) and (r[-1] == 5)
-    r = list(s[2].ranges.values())[0]
-    assert (r[0] == -8) and (r[-1] == 8)
-    r = list(s[3].ranges.values())[0]
-    assert (r[0] == -8) and (r[-1] == 8)
+    assert all(isinstance(t, LineOver1DRangeSeries) and t.is_interactive for t in s)
+    assert (s[0].start == -5) and (s[0].end == 5)
+    assert (s[1].start == -5) and (s[1].end == 5)
+    assert (s[2].start == -8) and (s[2].end == 8)
+    assert (s[3].start == -8) and (s[3].end == 8)
 
     # multiple expressions each one with its label and a common range
     p = plot_real_imag((sqrt(x), "f"), (asin(x), "g"), (x, -5, 5),
@@ -346,7 +341,6 @@ def test_plot_real_imag_1d():
     assert isinstance(p, MB)
     assert len(s) == 4
     assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
     assert all((t.start == -5) and (t.end == 5) for t in s)
 
     p = plot_real_imag((sqrt(x)**y, "f"), (asin(x), "g"), (x, -5, 5),
@@ -354,16 +348,8 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 4
-    assert all(isinstance(t, LineInteractiveSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
-    r = list(s[0].ranges.values())[0]
-    assert (r[0] == -5) and (r[-1] == 5)
-    r = list(s[1].ranges.values())[0]
-    assert (r[0] == -5) and (r[-1] == 5)
-    r = list(s[2].ranges.values())[0]
-    assert (r[0] == -5) and (r[-1] == 5)
-    r = list(s[3].ranges.values())[0]
-    assert (r[0] == -5) and (r[-1] == 5)
+    assert all(isinstance(t, LineOver1DRangeSeries) and t.is_interactive for t in s)
+    assert all((t.start == -5) and (t.end == 5) for t in s)
 
     # multiple expressions each one with its label and range + multiple kwargs
     p = plot_real_imag(
@@ -374,7 +360,6 @@ def test_plot_real_imag_1d():
     assert isinstance(p, MB)
     assert len(s) == 4
     assert all(isinstance(t, LineOver1DRangeSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
     assert all((s[i].start == -5) and (s[i].end == 5) for i in [0, 1])
     assert all((s[i].start == -8) and (s[i].end == 8) for i in [2, 3])
     assert all(s[i].rendering_kw == {"color": "k"} for i in [0, 1])
@@ -388,8 +373,7 @@ def test_plot_real_imag_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 4
-    assert all(isinstance(t, LineInteractiveSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
+    assert all(isinstance(t, LineOver1DRangeSeries) and t.is_interactive for t in s)
     assert all((s[i].start == -5) and (s[i].end == 5) for i in [0, 1])
     assert all((s[i].start == -8) and (s[i].end == 8) for i in [2, 3])
 
@@ -422,7 +406,7 @@ def test_plot_real_imag_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(ss, ComplexSurfaceInteractiveSeries) for ss in s)
+    assert all(isinstance(ss, ComplexSurfaceSeries) for ss in s)
     assert all(ss.is_3Dsurface for ss in s)
     assert s[0].get_label(False) == "Re(sin(y*z))"
     assert s[1].get_label(False) == "Im(sin(y*z))"
@@ -442,7 +426,7 @@ def test_plot_real_imag_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(ss, ComplexSurfaceInteractiveSeries) for ss in s)
+    assert all(isinstance(ss, ComplexSurfaceSeries) for ss in s)
     assert all((not ss.is_3Dsurface) and ss.is_contour for ss in s)
     assert s[0].get_label(False) == "Re(sin(y*z))"
     assert s[1].get_label(False) == "Im(sin(y*z))"
@@ -463,7 +447,7 @@ def test_plot_real_imag_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
+    assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
     _, _, _rep = s[0].get_data()
@@ -484,7 +468,7 @@ def test_plot_real_imag_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
+    assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
     _, _, _imp = s[0].get_data()
@@ -505,7 +489,7 @@ def test_plot_real_imag_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
+    assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
     _, _, _absp = s[0].get_data()
@@ -527,7 +511,7 @@ def test_plot_real_imag_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
+    assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
     assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
     _, _, _argp = s[0].get_data()
@@ -560,7 +544,7 @@ def test_plot_real_imag_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 4
-    assert all(isinstance(t, ComplexSurfaceInteractiveSeries) for t in s)
+    assert all(isinstance(t, ComplexSurfaceSeries) for t in s)
     assert all((not t.is_3Dsurface) and t.is_contour for t in s)
 
     # multiple 3D plots (surfaces) of a complex function over a complex range
@@ -578,7 +562,7 @@ def test_plot_real_imag_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 4
-    assert all(isinstance(t, ComplexSurfaceInteractiveSeries) for t in s)
+    assert all(isinstance(t, ComplexSurfaceSeries) for t in s)
     assert all(t.is_3Dsurface for t in s)
 
     ###########################################################################
@@ -601,7 +585,7 @@ def test_plot_real_imag_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 8
-    assert all(isinstance(t, ComplexSurfaceInteractiveSeries) for t in s)
+    assert all(isinstance(t, ComplexSurfaceSeries) for t in s)
     assert all(t.is_3Dsurface for t in s)
 
     ###########################################################################
@@ -637,7 +621,7 @@ def test_plot_real_imag_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 8
-    assert all(isinstance(t, ComplexSurfaceInteractiveSeries) for t in s)
+    assert all(isinstance(t, ComplexSurfaceSeries) for t in s)
     assert all(t.is_3Dsurface for t in s)
     assert all((s[i].var, s[i].start, s[i].end) == (z, -5-5j, 5+5j) for i in range(4))
     assert all((s[i].var, s[i].start, s[i].end) == (z, -4-3j, 2+1j) for i in range(4, 8))
@@ -674,7 +658,7 @@ def test_plot_complex_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], AbsArgLineInteractiveSeries)
+    assert isinstance(s[0], AbsArgLineSeries)
     assert s[0].get_label(False) == "Arg(x**(y/2))"
 
     # same as the previous case, different range, custom label and
@@ -694,7 +678,7 @@ def test_plot_complex_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], AbsArgLineInteractiveSeries)
+    assert isinstance(s[0], AbsArgLineSeries)
     assert s[0].get_label(False) == "Arg(f)"
     assert s[0].rendering_kw == {"color": "k"}
 
@@ -709,7 +693,6 @@ def test_plot_complex_1d():
     assert isinstance(p, MB)
     assert len(s) == 2
     assert all(isinstance(t, AbsArgLineSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
     assert all((ss.start == -8) and (ss.end == 8) for ss in s)
     assert all(ss.rendering_kw == {"color": "k"} for ss in s)
 
@@ -718,8 +701,7 @@ def test_plot_complex_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, AbsArgLineInteractiveSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
+    assert all(isinstance(t, AbsArgLineSeries) for t in s)
     assert all((ss.start == -8) and (ss.end == 8) for ss in s)
     assert all(ss.rendering_kw == {"color": "k"} for ss in s)
 
@@ -729,7 +711,6 @@ def test_plot_complex_1d():
     assert isinstance(p, MB)
     assert len(s) == 2
     assert all(isinstance(t, AbsArgLineSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
     assert all((ss.start == xmin) and (ss.end == xmax) for ss in s)
 
     p = plot_complex(sqrt(x)**y, asin(x), real=True, imag=True, abs=False,
@@ -738,8 +719,7 @@ def test_plot_complex_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, AbsArgLineInteractiveSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
+    assert all(isinstance(t, AbsArgLineSeries) for t in s)
     assert all((ss.start == xmin) and (ss.end == xmax) for ss in s)
 
     ###########################################################################
@@ -755,7 +735,6 @@ def test_plot_complex_1d():
     assert isinstance(p, MB)
     assert len(s) == 2
     assert all(isinstance(t, AbsArgLineSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
     assert (s[0].start == -5) and (s[0].end == 5)
     assert (s[1].start == -8) and (s[1].end == 8)
     assert s[0].rendering_kw == {"color": "k"}
@@ -770,12 +749,9 @@ def test_plot_complex_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, AbsArgLineInteractiveSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
-    r = list(s[0].ranges.values())[0]
-    assert (r[0] == -5) and (r[-1] == 5)
-    r = list(s[1].ranges.values())[0]
-    assert (r[0] == -8) and (r[-1] == 8)
+    assert all(isinstance(t, AbsArgLineSeries) for t in s)
+    assert (s[0].start == -5) and (s[0].end == 5)
+    assert (s[1].start == -8) and (s[1].end == 8)
     assert s[0].rendering_kw == {"color": "k"}
     assert s[1].rendering_kw == dict()
     assert s[0].get_label(False) == "Arg(f)"
@@ -788,7 +764,6 @@ def test_plot_complex_1d():
     assert isinstance(p, MB)
     assert len(s) == 2
     assert all(isinstance(t, AbsArgLineSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
     assert all((t.start == -5) and (t.end == 5) for t in s)
     assert s[0].get_label(False) == "Arg(f)"
     assert s[1].get_label(False) == "Arg(g)"
@@ -798,12 +773,8 @@ def test_plot_complex_1d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, AbsArgLineInteractiveSeries) for t in s)
-    assert all(t.is_2Dline for t in s)
-    r = list(s[0].ranges.values())[0]
-    assert (r[0] == -5) and (r[-1] == 5)
-    r = list(s[1].ranges.values())[0]
-    assert (r[0] == -5) and (r[-1] == 5)
+    assert all(isinstance(t, AbsArgLineSeries) for t in s)
+    assert all((t.start == -5) and (t.end == 5) for t in s)
     assert s[0].get_label(False) == "Arg(f)"
     assert s[1].get_label(False) == "Arg(g)"
 
@@ -834,7 +805,7 @@ def test_plot_complex_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], ComplexDomainColoringInteractiveSeries)
+    assert isinstance(s[0], ComplexDomainColoringSeries)
     assert s[0].is_3Dsurface
     assert s[0].get_label(False) == "sin(y*z)"
 
@@ -852,7 +823,7 @@ def test_plot_complex_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], ComplexDomainColoringInteractiveSeries)
+    assert isinstance(s[0], ComplexDomainColoringSeries)
     assert (not s[0].is_3Dsurface) and s[0].is_domain_coloring
     assert s[0].get_label(False) == "sin(y*z)"
 
@@ -874,7 +845,7 @@ def test_plot_complex_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, ComplexDomainColoringInteractiveSeries) for t in s)
+    assert all(isinstance(t, ComplexDomainColoringSeries) for t in s)
     assert all((not t.is_3Dsurface) and t.is_domain_coloring for t in s)
 
     # multiple 3D plots (surfaces) of a complex function over a complex range
@@ -891,7 +862,7 @@ def test_plot_complex_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, ComplexDomainColoringInteractiveSeries) for t in s)
+    assert all(isinstance(t, ComplexDomainColoringSeries) for t in s)
     assert all(t.is_3Dsurface for t in s)
 
     ###########################################################################
@@ -924,7 +895,7 @@ def test_plot_complex_2d_3d():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, ComplexDomainColoringInteractiveSeries) for t in s)
+    assert all(isinstance(t, ComplexDomainColoringSeries) for t in s)
     assert all(t.is_3Dsurface for t in s)
     assert (s[0].var, s[0].start, s[0].end) == (z, -5-5j, 5+5j)
     assert (s[1].var, s[1].start, s[1].end) == (z, -4-3j, 2+1j)
@@ -968,13 +939,13 @@ def test_plot_complex_vector():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert isinstance(s[0], ContourInteractiveSeries)
+    assert isinstance(s[0], ContourSeries) and s[0].is_interactive
     assert s[0].get_label(False) == "Magnitude"
-    xx, yy = s[0].ranges.values()
+    xx, yy, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-5, 4)
     assert (yy.min(), yy.max()) == (-2, 3)
-    assert isinstance(s[1], Vector2DInteractiveSeries)
-    xx, yy = s[1].ranges.values()
+    assert isinstance(s[1], Vector2DSeries) and s[1].is_interactive
+    xx, yy, _, _ = s[1].get_data()
     assert (xx.min(), xx.max()) == (-5, 4)
     assert (yy.min(), yy.max()) == (-2, 3)
 
@@ -993,8 +964,8 @@ def test_plot_complex_vector():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
-    assert isinstance(s[0], Vector2DInteractiveSeries)
-    xx, yy = s[0].ranges.values()
+    assert isinstance(s[0], Vector2DSeries) and s[0].is_interactive
+    xx, yy, _, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-5, 4)
     assert (yy.min(), yy.max()) == (-2, 3)
     assert s[0].get_label(False) == "test"
@@ -1027,11 +998,11 @@ def test_plot_complex_vector():
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
-    assert all(isinstance(t, Vector2DInteractiveSeries) for t in s)
-    xx, yy = s[0].ranges.values()
+    assert all(isinstance(t, Vector2DSeries) and t.is_interactive for t in s)
+    xx, yy, _, _ = s[0].get_data()
     assert (xx.min(), xx.max()) == (-5, 0)
     assert (yy.min(), yy.max()) == (-2, 3)
-    xx, yy = s[1].ranges.values()
+    xx, yy, _, _ = s[1].get_data()
     assert (xx.min(), xx.max()) == (0, 4)
     assert (yy.min(), yy.max()) == (-2, 3)
     assert s[0].get_label(False) == 'z**x'
