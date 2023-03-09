@@ -781,8 +781,7 @@ class PlotlyBackend(Plot):
                 elif s.is_2Dline:
                     x, y = self.series[i].get_data()
                     if not s.is_polar:
-                        if s.is_geometry:
-                            self.fig.data[i]["x"] = x
+                        self.fig.data[i]["x"] = x
                         self.fig.data[i]["y"] = y
                     else:
                         self.fig.data[i]["r"] = y
