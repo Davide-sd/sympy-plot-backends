@@ -22,7 +22,7 @@ from spb.series import (
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
     ImplicitSeries, _set_discretization_points,
     List2DSeries, List3DSeries, GeometrySeries, Implicit3DSeries,
-    InteractiveSeries, GenericDataSeries, Parametric3DLineInteractiveSeries
+    GenericDataSeries
 )
 from spb.utils import (
     _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend,
@@ -257,11 +257,11 @@ def _create_series(series_type, plot_expr, **kwargs):
     return series
 
 
-def _create_interactive_plot(*plot_expr, **kwargs):
-    # NOTE: the iplot module is really slow to load, so let's load it only when
+def _create_interactive_plot(*series, **kwargs):
+    # NOTE: Holoviz's Panel is really slow to load, so let's load it only when
     # it is necessary
     from spb.interactive import iplot
-    return iplot(*plot_expr, **kwargs)
+    return iplot(*series, **kwargs)
 
 
 def _create_generic_data_series(**kwargs):
@@ -656,14 +656,14 @@ def plot(*args, **kwargs):
     kwargs.setdefault("ylabel", fy)
     kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
 
-    if params:
-        return _create_interactive_plot(*plot_expr, **kwargs)
-
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _build_line_series(*plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
     series += _create_generic_data_series(**kwargs)
+
+    if params:
+        return _create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -949,14 +949,14 @@ def plot_parametric(*args, **kwargs):
     kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
     plot_expr = _check_arguments(args, 2, 1, **kwargs)
 
-    if kwargs.get("params", None):
-        return _create_interactive_plot(*plot_expr, **kwargs)
-
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _create_series(Parametric2DLineSeries, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
     series += _create_generic_data_series(**kwargs)
+
+    if kwargs.get("params", None):
+        return _create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -1449,13 +1449,13 @@ def plot3d_parametric_line(*args, **kwargs):
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
 
-    if kwargs.get("params", None):
-        return _create_interactive_plot(*plot_expr, **kwargs)
-
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _create_series(Parametric3DLineSeries, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
+
+    if kwargs.get("params", None):
+        return _create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", THREE_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -1497,17 +1497,17 @@ def _plot3d_plot_contour_helper(Series, is_threed, Backend, *args, **kwargs):
         if callable(kwargs["ylabel"]):
             kwargs["ylabel"] = ""
 
-    if kwargs.get("params", None):
-        kwargs["threed"] = is_threed
-        kwargs["backend"] = Backend
-        return _create_interactive_plot(*plot_expr, **kwargs)
-
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _create_series(Series, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
     if is_threed:
         series += _plot3d_wireframe_helper(series, **kwargs)
+
+    if kwargs.get("params", None):
+        kwargs["threed"] = is_threed
+        kwargs["backend"] = Backend
+        return _create_interactive_plot(*series, **kwargs)
 
     return _instantiate_backend(Backend, *series, **kwargs)
 
@@ -1545,13 +1545,10 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
     def create_series(expr, ranges, surface_series, **kw):
         is_interactive = surface_series.is_interactive
         expr = [e if callable(e) else sympify(e) for e in expr]
-        cls = Parametric3DLineSeries if not is_interactive else Parametric3DLineInteractiveSeries
         kw["tx"] = surface_series._tx
         kw["ty"] = surface_series._ty
         kw["tz"] = surface_series._tz
         kw["tp"] = surface_series._tp
-        if is_interactive:
-            return Parametric3DLineInteractiveSeries(expr, ranges, "", **kw)
         return Parametric3DLineSeries(*expr, *ranges, "", **kw)
 
     for s in surfaces:
@@ -1559,7 +1556,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
 
         if s.is_3Dsurface:
             expr = s.expr
-            (x, sx, ex), (y, sy, ey) = s._get_ranges()
+            (x, sx, ex), (y, sy, ey) = s.ranges
 
             kw = wf_kwargs.copy()
             if s.is_interactive:
@@ -2278,15 +2275,16 @@ def plot3d_parametric_surface(*args, **kwargs):
     kwargs.setdefault("ylabel", "y")
     kwargs.setdefault("zlabel", "z")
 
-    if kwargs.get("params", None):
-        return _create_interactive_plot(*plot_expr, **kwargs)
-
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
     series = _create_series(ParametricSurfaceSeries, plot_expr, **kwargs)
     _set_labels(series, labels, rendering_kw)
     series += _plot3d_wireframe_helper(series, **kwargs)
-    Backend = kwargs.pop("backend", THREE_D_B)
+    Backend = kwargs.get("backend", THREE_D_B)
+
+    if kwargs.get("params", None):
+        return _create_interactive_plot(*series, **kwargs)
+
     return _instantiate_backend(Backend, *series, **kwargs)
 
 
@@ -2601,7 +2599,7 @@ def plot3d_implicit(*args, **kwargs):
 
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, Implicit3DSeries)
-    plot_expr = _check_arguments(args, 1, 3)
+    plot_expr = _check_arguments(args, 1, 3, **kwargs)
 
     labels = kwargs.pop("label", dict())
     rendering_kw = kwargs.pop("rendering_kw", None)
@@ -2615,7 +2613,7 @@ def plot3d_implicit(*args, **kwargs):
     kwargs.setdefault("ylabel", fy)
     kwargs.setdefault("zlabel", fz)
 
-    Backend = kwargs.pop("backend", THREE_D_B)
+    Backend = kwargs.get("backend", THREE_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
 
 
@@ -3584,29 +3582,20 @@ def plot_geometry(*args, **kwargs):
         args = [args]
 
     params = kwargs.get("params", None)
-    is_interactive = False if params is None else any(hasattr(t, "__iter__") for t in params.values())
     plot_expr = []
 
     for a in args:
         exprs, ranges, label, rendering_kw = _unpack_args(*a)
 
-        if not is_interactive:
-            kw = kwargs.copy()
-            if rendering_kw is not None:
-                kw["rendering_kw"] = rendering_kw
-            r = ranges if len(ranges) > 0 else [None]
-            if len(exprs) == 1:
-                series.append(GeometrySeries(exprs[0], *r, label, **kw))
-            else:
-                # this is the case where the user provided: v1, v2, ..., range
-                # we use the same ranges for each expression
-                for e in exprs:
-                    series.append(GeometrySeries(e, *r, str(e), **kw))
+        kw = kwargs.copy()
+        r = ranges if len(ranges) > 0 else [None]
+        if len(exprs) == 1:
+            series.append(GeometrySeries(exprs[0], *r, label, **kw))
         else:
-            plot_expr.append([*exprs, *ranges, label, rendering_kw])
-
-    if is_interactive:
-        return _create_interactive_plot(*plot_expr, **kwargs)
+            # this is the case where the user provided: v1, v2, ..., range
+            # we use the same ranges for each expression
+            for e in exprs:
+                series.append(GeometrySeries(e, *r, str(e), **kw))
 
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
@@ -3615,6 +3604,9 @@ def plot_geometry(*args, **kwargs):
     any_3D = any(s.is_3D for s in series)
     if ("aspect" not in kwargs) and (not any_3D):
         kwargs["aspect"] = "equal"
+
+    if kwargs.get("params", None):
+        return _create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", THREE_D_B if any_3D else TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -3831,15 +3823,6 @@ def plot_list(*args, **kwargs):
         # in case we are plotting a single line
         args = [args]
 
-    params = kwargs.pop("params", None)
-    mod_params = None
-    if params:
-        # NOTE: it was easier to not implement a List2DInteractiveSeries.
-        # Hence, List2DSeries can be interactive (if params is provided)
-        # or not. If it is interactive, we must provide ``params`` with the
-        # correct form, meaning mapping symbols to values.
-        mod_params = {k: v[0] for k, v in params.items()}
-
     for a in args:
         if not isinstance(a, (list, tuple)):
             raise TypeError(
@@ -3856,14 +3839,11 @@ def plot_list(*args, **kwargs):
 
         kw = kwargs.copy()
         kw["rendering_kw"] = rendering_kw
-        kw["params"] = mod_params
         series.append(List2DSeries(*a[:2], label, **kw))
 
     _set_labels(series, g_labels, g_rendering_kw)
-    if params:
-        kwargs["series"] = series
-        kwargs["params"] = params
-        return _create_interactive_plot(**kwargs)
+    if kwargs.get("params", None):
+        return _create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -4049,15 +4029,6 @@ def plot3d_list(*args, **kwargs):
         # in case we are plotting a single line
         args = [args]
 
-    params = kwargs.pop("params", None)
-    mod_params = None
-    if params:
-        # NOTE: it was easier to not implement a List2DInteractiveSeries.
-        # Hence, List2DSeries can be interactive (if params is provided)
-        # or not. If it is interactive, we must provide ``params`` with the
-        # correct form, meaning mapping symbols to values.
-        mod_params = {k: v[0] for k, v in params.items()}
-
     for a in args:
         if not isinstance(a, (list, tuple)):
             raise TypeError(
@@ -4074,14 +4045,11 @@ def plot3d_list(*args, **kwargs):
 
         kw = kwargs.copy()
         kw["rendering_kw"] = rendering_kw
-        kw["params"] = mod_params
         series.append(List3DSeries(*a[:3], label, **kw))
 
     _set_labels(series, g_labels, g_rendering_kw)
-    if params:
-        kwargs["series"] = series
-        kwargs["params"] = params
-        return _create_interactive_plot(**kwargs)
+    if kwargs.get("params", None):
+        return _create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)

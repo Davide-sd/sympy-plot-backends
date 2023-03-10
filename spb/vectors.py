@@ -2,7 +2,7 @@ from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.functions import _set_labels
 from spb.series import (
     BaseSeries, Vector2DSeries, Vector3DSeries, ContourSeries,
-    SliceVector3DSeries, InteractiveSeries, _set_discretization_points
+    SliceVector3DSeries, _set_discretization_points
 )
 from spb.utils import (
     _plot_sympify, _unpack_args_extended, _split_vector, _is_range,
@@ -14,7 +14,7 @@ from sympy import (
 from sympy.external import import_module
 
 
-def _build_series(*args, interactive=False, **kwargs):
+def _build_series(*args, **kwargs):
     """Loop over args and create all the necessary series to display a vector
     plot.
     """
@@ -23,9 +23,7 @@ def _build_series(*args, interactive=False, **kwargs):
     all_ranges = []
     is_vec_lambda_function = False
     for a in args:
-        split_expr, ranges, s = _series(
-            a[0], *a[1:-1], label=a[-1], interactive=interactive, **kwargs
-        )
+        split_expr, ranges, s = _series(a[0], *a[1:-1], label=a[-1], **kwargs)
         all_ranges.append(ranges)
         if isinstance(s, (list, tuple)):
             series += s
@@ -95,18 +93,13 @@ def _build_series(*args, interactive=False, **kwargs):
             cs_kwargs = kwargs.copy()
             cs_kwargs["n1"] = nc
             cs_kwargs["n2"] = nc
-            if not interactive:
-                cs = ContourSeries(scalar_field, *cranges, scalar_label, **cs_kwargs)
-            else:
-                cs = InteractiveSeries(
-                    [scalar_field], cranges, scalar_label, **cs_kwargs
-                )
+            cs = ContourSeries(scalar_field, *cranges, scalar_label, **cs_kwargs)
             series = [cs] + series
 
     return series
 
 
-def _series(expr, *ranges, label="", interactive=False, **kwargs):
+def _series(expr, *ranges, label="", **kwargs):
     """Create a vector series from the provided arguments."""
     params = kwargs.get("params", dict())
     fill_ranges = True if params == dict() else False
@@ -148,17 +141,11 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
 
         if len(ranges) > 2:
             raise ValueError("Too many ranges for 2D vector plot.")
-        if not interactive:
-            return (
+        return (
                 split_expr,
                 ranges,
                 Vector2DSeries(*split_expr, *ranges, label, **kwargs),
             )
-        return (
-            split_expr,
-            ranges,
-            InteractiveSeries(split_expr, ranges, label, **kwargs),
-        )
     else:  # 3D case
         kwargs = _set_discretization_points(kwargs.copy(), Vector3DSeries)
         if len(fs) > 3:
@@ -189,17 +176,11 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
 
         _slice = kwargs.pop("slice", None)
         if _slice is None:
-            if not interactive:
-                return (
+            return (
                     split_expr,
                     ranges,
                     Vector3DSeries(*split_expr, *ranges, label, **kwargs),
                 )
-            return (
-                split_expr,
-                ranges,
-                InteractiveSeries(split_expr, ranges, label, **kwargs),
-            )
 
         # verify that the slices are of the correct type
         # NOTE: currently, the slice cannot be a lambda function. To understand
@@ -221,15 +202,9 @@ def _series(expr, *ranges, label="", interactive=False, **kwargs):
 
         series = []
         for s in _slice:
-            if not interactive:
-                series.append(
-                    SliceVector3DSeries(s, *split_expr, *ranges, label, **kwargs)
-                )
-            else:
-                # TODO: this needs to be redone
-                series.append(
-                    InteractiveSeries(split_expr, ranges, label, slice=s, **kwargs)
-                )
+            series.append(
+                SliceVector3DSeries(s, *split_expr, *ranges, label, **kwargs))
+
         return split_expr, ranges, series
 
 
@@ -751,24 +726,21 @@ def plot_vector(*args, **kwargs):
     kwargs.setdefault("aspect", "equal")
     kwargs.setdefault("legend", True)
 
-    params = kwargs.get("params", None)
-    is_interactive = False if params is None else True
-    kwargs["is_interactive"] = is_interactive
-    if is_interactive:
-        from spb.interactive import iplot
-        kwargs["is_vector"] = True
-        return iplot(*args, **kwargs)
-
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
 
     series = _build_series(*args, **kwargs)
+    _set_labels(series, labels, rendering_kw)
+
     if all([isinstance(s, (Vector2DSeries, ContourSeries)) for s in series]):
-        Backend = kwargs.pop("backend", TWO_D_B)
+        Backend = kwargs.get("backend", TWO_D_B)
     elif all([isinstance(s, Vector3DSeries) for s in series]):
-        Backend = kwargs.pop("backend", THREE_D_B)
+        Backend = kwargs.get("backend", THREE_D_B)
     else:
         raise ValueError("Mixing 2D vectors with 3D vectors is not allowed.")
 
-    _set_labels(series, labels, rendering_kw)
+    if kwargs.get("params", None):
+        from spb.interactive import iplot
+        return iplot(*series, **kwargs)
+
     return _instantiate_backend(Backend, *series, **kwargs)

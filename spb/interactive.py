@@ -1,9 +1,5 @@
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
-from spb.ccomplex.complex import _build_series as _build_complex_series
-from spb.functions import _set_labels, _plot3d_wireframe_helper
-from spb.series import InteractiveSeries, _set_discretization_points
-from spb.vectors import _preprocess, _build_series as _build_vector_series
-from spb.utils import _plot_sympify, _unpack_args_extended, _validate_kwargs
+from spb.utils import _validate_kwargs
 from sympy import latex, Tuple
 from sympy.external import import_module
 import warnings
@@ -430,263 +426,12 @@ class PanelLayout:
         return vanilla
 
 
-def create_series(*args, **kwargs):
-    """
-    Create interactive data series, ie. series whose numerical data depends
-    on the expression and all its parameters.
-
-    Typical usage examples are in the followings:
-
-    - Create a single interactive series:
-        `create_series([expr, range], **kwargs)`
-    - Create multiple interactive series:
-        `create_series([(expr1, range1), (expr2, range2)], **kwargs)`
-
-    The correct series type is instantiated only if all ranges are specified.
-    So, to create an interactive line series, one range must be specified.
-    To create an interactive surface series, two ranges must be provided, and
-    so on.
-
-    Notes
-    =====
-
-    The keyword arguments to be provided depends on the interested data series
-    to be created. For example, if we are trying to plot a line, then the
-    same keyword argument associated to the ``plot()`` function can be used.
-    Similarly, if we are trying to create vector-related interactive series,
-    the same keyword arguments associated to ``plot_vector()`` can be used.
-    And so on.
-
-    However, interactive data series do not support adaptive algorithms.
-    Hence, adaptive-related keyword arguments will not be used.
-
-    Parameters
-    ==========
-
-    args : list/tuple
-
-        A list or tuple of the form ``[(expr1, range1), ...]``, where:
-
-        expr : Expr
-            Expression (or expressions) representing the function to evaluate.
-
-        range: (symbol, min, max)
-            A 3-tuple (or multiple 3-tuple) denoting the range of the
-            variable. For the function to work properly, all ranges must be
-            provided.
-
-    params : dict
-        A dictionary mapping symbols to numerical values. If not specified,
-        ``iplot`` should be provided instead.
-
-    iplot : InteractivePlot, optional
-        An existing instance of ``InteractivePlot`` from which the parameters
-        will be extracted. If both ``params`` and ``iplot`` are provided, then
-        ``iplot`` has the precedence.
-
-    is_complex : boolean, optional
-        Default to False. If True, it directs the internal algorithm to
-        create all the necessary series to create a complex plot (for example,
-        one for the real part, one for the imaginary part, ...).
-
-    is_polar : boolean, optional
-        Default to False. If True:
-
-        * for a 2D line plot requests the backend to use a polar chart.
-        * for a 3D surface (or contour) requests a polar discretization.
-          In this case, the first range represents the radius, the second one
-          represents the angle.
-
-    is_vector : boolean, optional
-        Default to False. If True, it directs the internal algorithm to
-        create all the necessary series to create a vector plot (for example,
-        plotting the magnitude of the vector field as a contour plot, ...).
-
-    n1, n2, n3 : int, optional
-        Number of discretization points in the 3 directions.
-
-    n : int, optional
-        Set the same number of discretization points on all directions.
-
-
-    Returns
-    =======
-
-    s : list
-        A list of interactive data series.
-
-
-    Examples
-    ========
-
-    >>> from sympy import (symbols, pi, sin, cos, exp, Plane,
-    ...     Matrix, gamma, I, sqrt, Abs)
-    >>> from spb.interactive import create_series
-    >>> u, v, x, y, z = symbols('u, v, x:z')
-
-    2D line interactive series:
-
-    >>> s = create_series((u * sqrt(x), (x, -5, 5)), params={u: 1})
-    >>> print(len(s), type(s[0]))
-    (1, spb.series.LineInteractiveSeries)
-
-    2D parametric line interactive series:
-
-    >>> s = create_series((u * cos(x), u * sin(x), (x, -5, 5)), params={u: 1})
-    >>> len(s), type(s[0])
-    (1, spb.series.Parametric2DLineInteractiveSeries)
-
-    Multiple 2D lines interactive series:
-
-    >>> s = create_series(
-    ...     (u * sqrt(x), (x, -5, 5)),
-    ...     (cos(u * x), (x, -3, 3)),
-    ...     params={u: 1})
-    >>> len(s), type(s[0]), type(s[1])
-    (2, spb.series.LineInteractiveSeries, spb.series.LineInteractiveSeries)
-
-    Surface interactive series:
-
-    >>> s = create_series((cos(x**2 + u * y**2), (x, -5, 5), (y, -5, 5)),
-    ...     params={u: 1}, threed=True)
-    >>> len(s), type(s[0])
-    (1, spb.series.SurfaceInteractiveSeries)
-
-    Contour interactive series:
-
-    >>> s = create_series((cos(x**2 + u * y**2), (x, -5, 5), (y, -5, 5)),
-    ...     params={u: 1}, threed=False)
-    >>> len(s), type(s[0])
-    (1, spb.series.ContourInteractiveSeries)
-
-    Interactive series of the absolute value of a complex function colored
-    by its argument over a real domain. Note that we are passing
-    ``is_complex=True``:
-
-    >>> s = create_series((u * sqrt(x), (x, -5, 5)), params={u: 1},
-    ...     is_complex=True)
-    >>> len(s), type(s[0])
-    (1, spb.series.AbsArgLineInteractiveSeries)
-
-    Real and imaginary parts of a complex function over a real domain:
-
-    >>> s = create_series((u * sqrt(x), (x, -5, 5)), params={u: 1},
-    ...     is_complex=True, absarg=False, real=True, imag=True)
-    >>> len(s), type(s[0]), type(s[1])
-    (2, spb.series.LineInteractiveSeries, spb.series.LineInteractiveSeries)
-
-    Complex domain coloring interactive series:
-
-    >>> s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
-    ...     is_complex=True)
-    >>> len(s), type(s[0])
-
-    Real and imaginary parts of a complex function over a complex domain:
-
-    >>> s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
-    ...     is_complex=True, threed=True, absarg=False, real=True, imag=True)
-    >>> len(s), type(s[0]), type(s[1])
-    (2, spb.series.ComplexSurfaceInteractiveSeries, spb.series.ComplexSurfaceInteractiveSeries)
-
-    2D vector interactive series (only quivers):
-
-    >>> from sympy.vector import CoordSys3D
-    >>> N = CoordSys3D("N")
-    >>> i, j, k = N.base_vectors()
-    >>> x, y, z = N.base_scalars()
-    >>> a, b, c = symbols("a:c")
-    >>> v1 = -a * sin(y) * i + b * cos(x) * j
-    >>> s = create_series((v1, (x, -5, 5), (y, -4, 4)),
-    ...     params={a: 2, b: 3}, is_vector=False)
-    >>> len(s), type(s[0])
-    (1, spb.series.Vector2DInteractiveSeries)
-
-    2D vector interactive series (contour + quivers):
-
-    >>> s = create_series((v1, (x, -5, 5), (y, -4, 4)),
-    ...     params={a: 2, b: 3}, is_vector=True)
-    >>> len(s), type(s[0]), type(s[1])
-    (2, spb.series.ContourInteractiveSeries, spb.series.Vector2DInteractiveSeries)
-
-    Sliced 3D vector (single slice):
-
-    >>> from sympy import Plane
-    >>> v3 = a * z * i + b * y * j + c * x * k
-    >>> s = create_series((v3, (x, -5, 5), (y, -4, 4), (z, -6, 6)),
-    ...     params={a: 2, b: 3, c: 1}, slice=Plane((1, 2, 3), (1, 0, 0)))
-    >>> len(s), type(s[0])
-    (1, spb.series.SliceVector3DInteractiveSeries)
-
-    Geometry interactive series:
-
-    >>> from sympy import Circle
-    >>> s = create_series((Circle((0, 0), u), ), params={u: 1})
-    >>> len(s), type(s[0])
-    (1, spb.series.GeometryInteractiveSeries)
-
-    See also
-    ========
-
-    iplot, create_widgets
-
-    """
-    args = list(map(_plot_sympify, args))
-
-    iplot_obj = kwargs.pop("iplot", None)
-    if iplot_obj is not None:
-        # read the parameters to generate the initial numerical data for
-        # the interactive series
-        kwargs["params"] = iplot_obj.read_parameters()
-
-    kwargs = _set_discretization_points(kwargs, InteractiveSeries)
-    _slice = kwargs.get("slice", None)
-    is_complex = kwargs.get("is_complex", False)
-    is_vector = kwargs.get("is_vector", False)
-    series = []
-    if is_complex:
-        new_args = []
-        for a in args:
-            exprs, ranges, label, rkw = _unpack_args_extended(
-                *a, matrices=False, fill_ranges=False
-            )
-            new_args.append(Tuple(exprs[0], *ranges, label, rkw, sympify=False))
-        series = _build_complex_series(*new_args, interactive=True, **kwargs)
-    elif is_vector:
-        args = _preprocess(*args, matrices=False, fill_ranges=False)
-        series = _build_vector_series(*args, interactive=True, **kwargs)
-    else:
-        for a in args:
-            # with interactive-parametric plots, vectors could have more
-            # free symbols than the number of dimensions. We set
-            # fill_ranges=False in order to not fill ranges, otherwise
-            # ranges will be created also for parameters. This means
-            # the user must provided all the necessary ranges.
-            exprs, ranges, label, rkw = _unpack_args_extended(
-                *a, matrices=True, fill_ranges=False
-            )
-            kwargs["rendering_kw"] = rkw
-            if isinstance(_slice, (tuple, list)):
-                # Sliced 3D vector field: each slice creates a
-                # unique series
-                kwargs2 = kwargs.copy()
-                kwargs2.pop("slice")
-                for s in _slice:
-                    kwargs2["slice"] = s
-                    series.append(
-                        InteractiveSeries(exprs, ranges, label, **kwargs2)
-                    )
-            else:
-                series.append(InteractiveSeries(exprs, ranges, label, **kwargs))
-
-    return series
-
-
 class InteractivePlot(DynamicParam, PanelLayout):
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
-    def __init__(self, *args, name="", params=None, **kwargs):
+    def __init__(self, *series, name="", params=None, **kwargs):
         """
         Parameters
         ==========
@@ -714,27 +459,16 @@ class InteractivePlot(DynamicParam, PanelLayout):
         custom_css = kwargs.pop("custom_css", "")
 
         self._name = name
-        super().__init__(*args, name=self._name, params=params, use_latex=use_latex)
+        super().__init__(name=self._name, params=params, use_latex=use_latex)
         PanelLayout.__init__(self, layout, ncols, throttled, servable, custom_css, pane_kw)
 
-        # create the series and apply the global labels and rendering keywords
-        labels = kwargs.pop("label", [])
-        rendering_kw = kwargs.pop("rendering_kw", None)
-        # NOTE: plot_list and List2DSeries are different then the other series.
-        # There is no List2DInteractiveSeries (as a design choice, for
-        # simplicity). Hence, that function is going to create the necessary
-        # series.
-        series = kwargs.pop("series", None)
-        if series is None:
-            series = create_series(*args, iplot=self, **kwargs)
-        _set_labels(series, labels, rendering_kw)
-        series += _plot3d_wireframe_helper(series, **kwargs)
+        # assure that each series has the correct values associated
+        # to parameters
+        series = list(series)
+        for s in series:
+            s.params = self.read_parameters()
 
-        if kwargs.get("is_complex", False):
-            from spb.ccomplex.complex import _set_axis_labels
-            _set_axis_labels(series, kwargs)
         is_3D = all([s.is_3D for s in series])
-        # create the plot
         Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
         kwargs["is_iplot"] = True
         self._backend = Backend(*series, **kwargs)
@@ -819,9 +553,9 @@ class InteractivePlot(DynamicParam, PanelLayout):
         return new_iplot
 
 
-def iplot(*args, show=True, **kwargs):
+def iplot(*series, show=True, **kwargs):
     """Create an interactive application containing widgets and charts in order
-    to study symbolic expressions.
+    to study symbolic expressions, using Holoviz's Panel for the user interace.
 
     Note: this function is already integrated with many of the usual
     plotting functions: since their documentation is more specific, it is
@@ -834,21 +568,9 @@ def iplot(*args, show=True, **kwargs):
     Parameters
     ==========
 
-    args : tuples
-        Each tuple represents an expression. Depending on the type of
-        expression, the tuple should have the following forms:
-
-        1. line:
-           `(expr, range, label [optional])`
-        2. parametric line:
-           `(expr1, expr2, expr3 [optional], range, label [optional])`
-        3. surface:
-           `(expr, range1, range2, label [optional])`
-        4. parametric surface:
-           `(expr1, expr2, expr3, range1, range2, label [optional])`
-
-        The label is always optional, whereas the ranges must always be
-        specified. The ranges will create the discretized domain.
+    series : BaseSeries
+        Instances of BaseSeries, representing the symbolic expression to be
+        plotted.
 
     params : dict
         A dictionary mapping the symbols to a parameter. The parameter can be:
@@ -1319,7 +1041,7 @@ def iplot(*args, show=True, **kwargs):
     create_series, create_widgets
 
     """
-    i = InteractivePlot(*args, **kwargs)
+    i = InteractivePlot(*series, **kwargs)
     if show:
         return i.show()
     return i

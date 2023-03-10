@@ -2,6 +2,25 @@
  Changelog
 ==========
 
+v2.0.0
+======
+
+* Breaking changes:
+
+  * Refactoring of ``*Series`` classes. All ``*InteractiveSeries`` classes have
+    been removed. The interactive functionalities have been integrated on
+    regular ``*Series``. This greatly simplifies the code base, meaning bug
+    fixes should take less time to implement.
+  
+  * Refactoring of ``iplot`` to take into account the refactoring mentioned
+    above. In particular, interactive widget plots are now tighly integrated
+    into the usual plotting functions. Again, this simplifies the code base.
+  
+  * The ``spb.interactive.create_series`` function has been removed.
+
+* ``PlotlyBackend``: fixed bug with interactive update of lines.
+
+
 v1.6.7
 ======
 

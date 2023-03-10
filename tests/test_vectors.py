@@ -959,7 +959,7 @@ def test_plot_vector_3d_slice():
     xx, yy, _ = s[0].slice_surf_series.get_data()
     assert (xx.min(), xx.max()) == (-2, 3)
     assert (yy.min(), yy.max()) == (-3, 1)
-    
+
 
     # this surface lies on the y-z plane
     p2a = plot_vector([z, y, x], (x, -2, 3), (y, -3, 1), (z, -6, 5),
@@ -999,7 +999,7 @@ def test_plot_vector_3d_slice():
     xx, yy, _ = s[0].slice_surf_series.get_data()
     assert (xx.min(), xx.max()) == (-3, 1)
     assert (yy.min(), yy.max()) == (-6, 5)
-    
+
 
     # since the two expressions lies on different planes, they must produce
     # different data

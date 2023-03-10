@@ -4,9 +4,7 @@ from spb.functions import (
 )
 from spb.series import (
     LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
-    ComplexInteractiveBaseSeries, ComplexPointSeries,
-    ComplexPointInteractiveSeries, SurfaceOver2DRangeSeries,
-    InteractiveSeries, _set_discretization_points
+    ComplexPointSeries, SurfaceOver2DRangeSeries, _set_discretization_points
 )
 from spb.utils import (
     _unpack_args, _instantiate_backend, _plot_sympify, _check_arguments,
@@ -23,7 +21,7 @@ import warnings
 # * `absarg` refers to the absolute value and argument, which will be used to
 #   create "domain coloring" plots.
 
-def _build_complex_point_series(*args, interactive=False, allow_lambda=False, pc=False, **kwargs):
+def _build_complex_point_series(*args, allow_lambda=False, pc=False, **kwargs):
     """The following types of arguments are supported by plot_complex_list:
 
     * plot_complex_list(n1, n2, ...) where `n-ith` is a complex number
@@ -44,9 +42,8 @@ def _build_complex_point_series(*args, interactive=False, allow_lambda=False, pc
 
     if all([isinstance(a, Expr) for a in args]):
         # args is a list of complex numbers
-        cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         for a in args:
-            series.append(cls([a], "", **kwargs))
+            series.append(ComplexPointSeries([a], "", **kwargs))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
@@ -55,7 +52,6 @@ def _build_complex_point_series(*args, interactive=False, allow_lambda=False, pc
     ):
         # args is a list of tuples of the form (list, label, rendering_kw)
         # where list contains complex points
-        cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         for a in args:
             expr, ranges, label, rkw = _unpack_args(*a)
             # Complex points do not require ranges. However, if 3 complex
@@ -64,16 +60,15 @@ def _build_complex_point_series(*args, interactive=False, allow_lambda=False, pc
             expr = expr or ranges
             kw = kwargs.copy()
             kw["rendering_kw"] = rkw
-            series.append(cls(expr[0], label, **kw))
+            series.append(ComplexPointSeries(expr[0], label, **kw))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
         and all([all([isinstance(t, Expr) and t.is_complex for t in a]) for a in args])
     ):
         # args is a list of lists
-        cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         for a in args:
-            series.append(cls(a, "", **kwargs))
+            series.append(ComplexPointSeries(a, "", **kwargs))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
@@ -81,7 +76,6 @@ def _build_complex_point_series(*args, interactive=False, allow_lambda=False, pc
     ):
         # args is a list of tuples of the form (number, label, rendering_kw)
         # where list contains complex points
-        cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         for a in args:
             expr, ranges, label, rkw = _unpack_args(*a)
             # Complex points do not require ranges. However, if 3 complex
@@ -90,16 +84,15 @@ def _build_complex_point_series(*args, interactive=False, allow_lambda=False, pc
             expr = expr or ranges
             kw = kwargs.copy()
             kw["rendering_kw"] = rkw
-            series.append(cls([expr[0]], label, **kw))
+            series.append(ComplexPointSeries([expr[0]], label, **kw))
 
     else:
         expr, ranges, label, rkw = _unpack_args(*args)
         if isinstance(expr, (list, tuple, Tuple)):
             expr = expr[0]
-        cls = ComplexPointSeries if not interactive else ComplexPointInteractiveSeries
         kw = kwargs.copy()
         kw["rendering_kw"] = rkw
-        series.append(cls(expr, label, **kw))
+        series.append(ComplexPointSeries(expr, label, **kw))
 
     _set_labels(series, global_labels, global_rendering_kw)
     return series
@@ -134,7 +127,7 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
         if len([b for b in argument if _is_range(b)]) > 1:
             # function of two variables
             npar = 2
-        new_args.append(_check_arguments([argument], nexpr, npar)[0])
+        new_args.append(_check_arguments([argument], nexpr, npar, **kwargs)[0])
 
     if all(isinstance(a, (list, tuple, Tuple)) for a in args):
         # deals with the case:
@@ -180,8 +173,8 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
         #    This is undoubtely inefficient as we must evaluate the same
         #    expression multiple times. On the other hand, it allows to
         #    maintain a one-to-one correspondance between Plot.series
-        #    and backend.data, making it easier to work with iplot
-        #    (backend._update_interactive).
+        #    and backend.data, making it easier to work with interactive
+        #    widgets plot.
         # 2. The expression used on each data series is the same one
         #    provided by the user. Each data series will receive the `return`
         #    keyword argument, which specify what data must be returned.
@@ -208,14 +201,11 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
                     kw2[key] = True
                     kw2["return"] = key
                     lbl_wrapper = mapping[key]
-                    if not interactive:
-                        series.append(LineOver1DRangeSeries(expr, *ranges, lbl_wrapper % label, **kw2))
-                    else:
-                        series.append(InteractiveSeries([expr], ranges, lbl_wrapper % label, **kw2))
+                    series.append(LineOver1DRangeSeries(expr, *ranges,
+                        lbl_wrapper % label, **kw2))
 
         else:
             # 2D domain coloring or 3D plots
-            cls = ComplexSurfaceBaseSeries if not interactive else ComplexInteractiveBaseSeries
             kw.setdefault("coloring", cfg["complex"]["coloring"])
             def add_series(flag, key):
                 if flag:
@@ -225,7 +215,8 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
                     lbl_wrapper = mapping[key]
                     if key == "absarg":
                         lbl_wrapper = "%s"
-                    series.append(cls(expr, *ranges, lbl_wrapper % label, **kw2))
+                    series.append(ComplexSurfaceBaseSeries(expr, *ranges,
+                        lbl_wrapper % label, **kw2))
 
         add_series(absarg, "absarg")
         add_series(real, "real")
@@ -244,40 +235,23 @@ def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
     kwargs = _set_discretization_points(kwargs, ComplexSurfaceBaseSeries)
     kwargs["is_complex"] = True
 
-    if (not pcl) and kwargs.get("params", None):
-        # NOTE: the iplot module is really slow to load, so let's load it
-        # only when it is necessary
-        from spb.interactive import iplot
-        kwargs["is_interactive"] = True
-        args = _check_arguments(args, 1, 1, **kwargs)
-        return iplot(*args, **kwargs)
-
     if not pcl:
         series = _build_series(*args, allow_lambda=allow_lambda, **kwargs)
     else:
-        params = kwargs.get("params", None)
-        if params:
-            kwargs["interactive"] = True
-            mod_params = None
-            # NOTE: it was easier to not implement a List2DInteractiveSeries.
-            # Hence, List2DSeries can be interactive (if params is provided)
-            # or not. If it is interactive, we must provide ``params`` with the
-            # correct form, meaning mapping symbols to values.
-            mod_params = {k: v[0] for k, v in params.items()}
-            kwargs["params"] = mod_params
         series = _build_complex_point_series(*args, allow_lambda=allow_lambda, pcl=True, **kwargs)
+
     if len(series) == 0:
         warnings.warn("No series found. Check your keyword arguments.")
 
     _set_axis_labels(series, kwargs)
 
-    if pcl:
-        return series
-
     if any(s.is_3Dsurface for s in series):
-        Backend = kwargs.pop("backend", THREE_D_B)
+        Backend = kwargs.get("backend", THREE_D_B)
     else:
-        Backend = kwargs.pop("backend", TWO_D_B)
+        Backend = kwargs.get("backend", TWO_D_B)
+
+    if kwargs.get("params", None):
+        return _create_interactive_plot(*series, **kwargs)
 
     return _instantiate_backend(Backend, *series, **kwargs)
 
@@ -301,7 +275,7 @@ def _set_axis_labels(series, kwargs):
         if kwargs.get("ylabel", None) is None:
             kwargs["ylabel"] = "Abs"
     else:
-        var = series[0].var if not series[0].is_interactive else list(series[0].ranges.keys())[0]
+        var = series[0].var
 
         if kwargs.get("xlabel", None) is None:
             fx = lambda use_latex: var.name if not use_latex else latex(var)
@@ -1171,13 +1145,7 @@ def plot_complex_list(*args, **kwargs):
     kwargs["real"] = False
     kwargs["imag"] = False
     kwargs["threed"] = False
-    series = _plot_complex(*args, allow_lambda=False, pcl=True, **kwargs)
-    if "params" in kwargs.keys():
-        kwargs["series"] = series
-        return _create_interactive_plot(**kwargs)
-
-    Backend = kwargs.pop("backend", TWO_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+    return _plot_complex(*args, allow_lambda=False, pcl=True, **kwargs)
 
 
 def plot_complex_vector(*args, **kwargs):

@@ -3463,7 +3463,7 @@ def test_plot_polar_use_cm():
         backend=B, polar_axis=pa, aspect="equal",
         show=False, adaptive=False, n=5,
         use_cm=ucm, color_func=cf)
-    
+
     # cartesian axis, no colormap
     p = _plot_polar(MB, False, False)
     assert len(p.ax.lines) > 0

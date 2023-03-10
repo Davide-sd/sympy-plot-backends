@@ -1,12 +1,15 @@
 from pytest import raises
-from spb import plot, BB, PB, MB, plot3d
+from spb import BB, PB, MB, plot, plot3d, plot_vector
 from spb.interactive import (
     iplot, DynamicParam, MyList,
-    InteractivePlot, create_widgets, create_series
+    InteractivePlot, create_widgets
 )
 from sympy import (
     sqrt, Integer, Float, Rational, pi, symbols, Tuple,
     sin, cos, Plane
+)
+from spb.series import (VectorBase, ContourSeries, SurfaceOver2DRangeSeries,
+    Parametric3DLineSeries
 )
 from sympy.external import import_module
 
@@ -182,8 +185,8 @@ def test_iplot():
     a, b, c, d = symbols("a, b, c, d")
     x, y, u, v = symbols("x, y, u, v")
 
-    t = iplot(
-        ((a + b + c + d) * cos(x), (x, -5, 5)),
+    t = plot(
+        (a + b + c + d) * cos(x), (x, -5, 5),
         params={
             a: (2, 1, 3, 5),
             b: (3, 2, 4000, 10, None, "label", "log"),
@@ -231,8 +234,8 @@ def test_iplot():
     current_params = [k for k in InteractivePlot.__dict__.keys() if "dyn_param_" in k]
     assert len(current_params) == 7
 
-    t = iplot(
-        ((a + b + c) * cos(x), (x, -5, 5)),
+    t = plot(
+        (a + b + c) * cos(x), (x, -5, 5),
         params={
             a: (2, 1, 3, 5),
             b: (3, 2, 4000, 10),
@@ -256,8 +259,8 @@ def test_iplot():
     assert p2.label == "$b$"
     assert p3.label == "test"
 
-    t = iplot(
-        ((a + b) * cos(x), (x, -5, 5)),
+    t = plot(
+        (a + b) * cos(x), (x, -5, 5),
         params={
             a: (1, 0, 5),
             b: (1, 1, 10, 10, None, "test3", "log"),
@@ -308,162 +311,6 @@ def test_create_widgets():
     assert isinstance(w[y].format, bokeh.models.formatters.PrintfTickFormatter)
 
 
-def test_create_series():
-    # verify that create_series is able to produce the expected number and
-    # types of series
-
-    x, y, z, u = symbols("x, y, z, u")
-
-    s = create_series((u * sqrt(x), (x, -5, 5)), params={u: 1})
-    assert len(s) == 1
-    assert isinstance(s[0], LineInteractiveSeries)
-
-    s = create_series((u * cos(x), u * sin(x), (x, -5, 5)), params={u: 1})
-    assert len(s) == 1
-    assert isinstance(s[0], Parametric2DLineInteractiveSeries)
-
-    s = create_series((u * cos(x), u * sin(x), u * x, (x, -5, 5)),
-        params={u: 1})
-    assert len(s) == 1
-    assert isinstance(s[0], Parametric3DLineInteractiveSeries)
-
-    s = create_series((cos(x**2 + u * y**2), (x, -5, 5), (y, -5, 5)),
-        params={u: 1}, threed=False)
-    assert len(s) == 1
-    assert isinstance(s[0], ContourInteractiveSeries)
-
-    s = create_series((cos(x**2 + u * y**2), (x, -5, 5), (y, -5, 5)),
-        params={u: 1}, threed=True)
-    assert len(s) == 1
-    assert isinstance(s[0], SurfaceInteractiveSeries)
-
-    s = create_series(
-        (u * cos(x + y), u * sin(x - y), u * x + y, (x, -5, 5), (y, -3, 3)), params={u: 1})
-    assert len(s) == 1
-    assert isinstance(s[0], ParametricSurfaceInteractiveSeries)
-
-    # complex-related series
-    s = create_series((u * sqrt(x), (x, -5, 5)), params={u: 1},
-        is_complex=True)
-    assert len(s) == 1
-    assert isinstance(s[0], AbsArgLineInteractiveSeries)
-
-    s = create_series((u * sqrt(x), (x, -5, 5)), params={u: 1},
-        is_complex=True, real=True, imag=True, abs=True, arg=True)
-    assert len(s) == 5
-    assert isinstance(s[0], AbsArgLineInteractiveSeries)
-    assert all(isinstance(t, LineInteractiveSeries) for t in s)
-
-    s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
-        is_complex=True, threed=False)
-    assert len(s) == 1
-    assert isinstance(s[0], ComplexDomainColoringInteractiveSeries)
-
-    s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
-        is_complex=True, threed=True)
-    assert len(s) == 1
-    assert isinstance(s[0], ComplexDomainColoringInteractiveSeries)
-
-    s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
-        is_complex=True, threed=False, absarg=False, real=True)
-    assert len(s) == 1
-    assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
-    assert (not s[0].is_3Dsurface) and s[0].is_contour
-
-    s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
-        is_complex=True, threed=True, absarg=False, real=True)
-    assert len(s) == 1
-    assert isinstance(s[0], ComplexSurfaceInteractiveSeries)
-    assert s[0].is_3Dsurface and (not s[0].is_contour)
-
-    s = create_series((u * sqrt(x), (x, -5-5j, 5+5j)), params={u: 1},
-        is_complex=True, threed=True, absarg=False, real=True, imag=True)
-    assert len(s) == 2
-    assert all(isinstance(t, ComplexSurfaceInteractiveSeries) for t in s)
-    assert all(t.is_3Dsurface for t in s)
-
-    # vector related series
-    from sympy.vector import CoordSys3D
-    N = CoordSys3D("N")
-    i, j, k = N.base_vectors()
-    x, y, z = N.base_scalars()
-    a, b, c = symbols("a:c")
-    v1 = -a * sin(y) * i + b * cos(x) * j
-    m1 = v1.to_matrix(N)
-    m1 = m1[:-1]
-    l1 = list(m1)
-    v2 = -a * sin(y) * i + b * cos(x) * j + c * cos(z) * k
-    m2 = v2.to_matrix(N)
-    l2 = list(m2)
-
-    # 2D vectors
-    params = {
-        a: 2,
-        b: 3,
-    }
-    ranges = (x, -5, 5), (y, -4, 4)
-
-    s = create_series((v1, *ranges), params=params, is_vector=False)
-    assert (len(s) == 1) and isinstance(s[0], Vector2DInteractiveSeries)
-
-    s = create_series((v1, *ranges), params=params, is_vector=True)
-    assert (len(s) == 2)
-    assert isinstance(s[0], ContourInteractiveSeries)
-    assert isinstance(s[1], Vector2DInteractiveSeries)
-
-    s = create_series((m1, *ranges), params=params, is_vector=False)
-    assert (len(s) == 1) and isinstance(s[0], Vector2DInteractiveSeries)
-
-    s = create_series((m1, *ranges), params=params, is_vector=True)
-    assert (len(s) == 2)
-    assert isinstance(s[0], ContourInteractiveSeries)
-    assert isinstance(s[1], Vector2DInteractiveSeries)
-
-    s = create_series((l1, *ranges), params=params, is_vector=False)
-    assert (len(s) == 1) and isinstance(s[0], Vector2DInteractiveSeries)
-
-    s = create_series((l1, *ranges), params=params, is_vector=True)
-    assert (len(s) == 2)
-    assert isinstance(s[0], ContourInteractiveSeries)
-    assert isinstance(s[1], Vector2DInteractiveSeries)
-
-
-    # 3D vectors
-    params = {
-        a: 2,
-        b: 3,
-        c: 4,
-    }
-    ranges = (x, -5, 5), (y, -4, 4), (z, -6, 6)
-
-    s = create_series((v2, *ranges), params=params, is_vector=False)
-    assert (len(s) == 1) and isinstance(s[0], Vector3DInteractiveSeries)
-
-    s = create_series((v2, *ranges), params=params, is_vector=True)
-    assert (len(s) == 1) and isinstance(s[0], Vector3DInteractiveSeries)
-
-    s = create_series((l2, *ranges), params=params)
-    assert (len(s) == 1) and isinstance(s[0], Vector3DInteractiveSeries)
-
-    s = create_series((m2, *ranges), params=params, is_vector=False)
-    assert (len(s) == 1) and isinstance(s[0], Vector3DInteractiveSeries)
-
-
-    # Sliced 3D vectors: single slice
-    v3 = a * z * i + b * y * j + c * x * k
-    s = create_series((v3, *ranges), params=params,
-        slice=Plane((1, 2, 3), (1, 0, 0)))
-    assert (len(s) == 1) and isinstance(s[0], SliceVector3DInteractiveSeries)
-
-    s = create_series((v3, *ranges), params=params,
-        slice=[
-            Plane((1, 2, 3), (1, 0, 0)),
-            Plane((1, 2, 3), (0, 1, 0)),
-            Plane((1, 2, 3), (0, 0, 1)),
-        ])
-    assert (len(s) == 3) and all(isinstance(t, SliceVector3DInteractiveSeries) for t in s)
-
-
 def test_interactiveseries():
     # verify the instantiation of InteractiveSeries inside InteractivePlot
     from sympy.vector import CoordSys3D
@@ -480,15 +327,17 @@ def test_interactiveseries():
     m2 = v2.to_matrix(N)
     l2 = list(m2)
 
-    def test_vector(v, ranges, params, expr, label, symbol, shape, n=10):
-        t = iplot((v, *ranges), params=params, n=n, backend=PB, show=False)
+    def test_vector(v, ranges, params, expr, label, shape, n=10):
+        t = plot_vector(v, *ranges, params=params, n=n, backend=PB,
+            scalar=False, show=False)
 
         s = t.backend.series[0]
-        assert isinstance(s, InteractiveSeries)
+        assert isinstance(s, VectorBase)
         assert s.expr == expr
         assert s.label == label
-        assert len(s._rranges) == len(ranges)
-        assert s._rranges[symbol].shape == shape
+        assert len(s.ranges) == len(ranges)
+        data = s.get_data()
+        assert data[0].shape == shape
         if len(ranges) == 2:
             assert s.is_2Dvector
             assert not s.is_3Dvector
@@ -509,16 +358,15 @@ def test_interactiveseries():
     ranges = (x, -5, 5), (y, -4, 4)
     test_vector(
         v1, ranges, params, Tuple(-a * sin(N.y), b * cos(N.x)),
-        str(Tuple(-a * sin(N.y), b * cos(N.x))), N.x, (10, 10)
-    )
+        str(Tuple(-a * sin(N.y), b * cos(N.x))), (10, 10))
+
     test_vector(
         m1, ranges, params, Tuple(-a * sin(y), b * cos(x)), str(tuple(m1)),
-        x, (10, 10)
-    )
+        (10, 10))
+
     test_vector(
         l1, ranges, params, Tuple(-a * sin(y), b * cos(x)), str(tuple(l1)),
-        x, (8, 8), 8
-    )
+        (8, 8), 8)
 
     # 3D vectors
     params = {
@@ -528,48 +376,33 @@ def test_interactiveseries():
     }
     ranges = (x, -5, 5), (y, -4, 4), (z, -6, 6)
     test_vector(
-        v2,
-        ranges,
-        params,
+        v2, ranges, params,
         Tuple(-a * sin(N.y), b * cos(N.x), c * cos(N.z)),
         str(Tuple(-a * sin(N.y), b * cos(N.x), c * cos(N.z))),
-        N.x,
-        (10, 10, 10),
-    )
+        (10, 10, 10))
+
     test_vector(
-        m2,
-        ranges,
-        params,
+        m2, ranges, params,
         Tuple(-a * sin(y), b * cos(x), c * cos(z)),
         str(Tuple(-a * sin(y), b * cos(x), c * cos(z))),
-        x,
-        (10, 10, 10),
-    )
+        (10, 10, 10))
+
     test_vector(
-        l2,
-        ranges,
-        params,
+        l2, ranges, params,
         Tuple(-a * sin(y), b * cos(x), c * cos(z)),
         str(Tuple(-a * sin(y), b * cos(x), c * cos(z))),
-        x,
-        (10, 10, 10),
-    )
+        (10, 10, 10))
 
     # Sliced 3D vectors: single slice
     v3 = a * z * i + b * y * j + c * x * k
-    t = iplot(
-        (v3, *ranges),
-        params=params,
-        n1=5,
-        n2=6,
-        n3=7,
+    t = plot_vector(
+        v3, *ranges, params=params,
+        n1=5, n2=6, n3=7,
         slice=Plane((1, 2, 3), (1, 0, 0)),
-        backend=PB,
-        show=False,
-    )
+        backend=PB, show=False)
     assert len(t.backend.series) == 1
     s = t.backend.series[0]
-    assert isinstance(s, InteractiveSeries)
+    assert isinstance(s, VectorBase) and s.is_interactive
     assert s.is_3Dvector
     assert s.is_slice
     xx, yy, zz, uu, vv, ww = s.get_data()
@@ -580,22 +413,17 @@ def test_interactiveseries():
 
     # Sliced 3D vectors: multiple slices. Test that each slice creates a
     # corresponding series
-    t = iplot(
-        (v3, *ranges),
-        params=params,
-        n1=5,
-        n2=6,
-        n3=7,
+    t = plot_vector(
+        v3, *ranges, params=params,
+        n1=5, n2=6, n3=7,
         slice=[
             Plane((1, 2, 3), (1, 0, 0)),
             Plane((1, 2, 3), (0, 1, 0)),
             Plane((1, 2, 3), (0, 0, 1)),
         ],
-        backend=PB,
-        show=False,
-    )
+        backend=PB, show=False)
     assert len(t.backend.series) == 3
-    assert all([isinstance(s, InteractiveSeries) for s in t.backend.series])
+    assert all([isinstance(s, VectorBase) for s in t.backend.series])
     assert all([s.is_3Dvector for s in t.backend.series])
     assert all([s.is_slice for s in t.backend.series])
     xx1, yy1, zz1, uu1, vv1, ww1 = t.backend.series[0].get_data()
@@ -625,26 +453,16 @@ def test_iplot_sum_1():
     params = {
         u: (1, 0, 2)
     }
-    p1 = iplot(
-        (cos(u * x), (x, -5, 5)),
-        params = params,
+    p1 = plot(
+        cos(u * x), (x, -5, 5), params = params,
         backend = MB,
-        xlabel = "x1",
-        ylabel = "y1",
-        title = "title 1",
-        legend=True,
-        show = False,
-        pane_kw = {"width": 500}
-    )
-    p2 = iplot(
-        (sin(u * x), (x, -5, 5)),
-        params = params,
+        xlabel = "x1", ylabel = "y1", title = "title 1",
+        legend=True, show = False, pane_kw = {"width": 500})
+    p2 = plot(
+        sin(u * x), (x, -5, 5), params = params,
         backend = MB,
-        xlabel = "x2",
-        ylabel = "y2",
-        title = "title 2",
-        show = False
-    )
+        xlabel = "x2", ylabel = "y2", title = "title 2",
+        show = False)
     p3 = plot(sin(x)*cos(x), (x, -5, 5), backend=MB,
         adaptive=False, n=50,
         is_point=True, is_filled=True,
@@ -669,30 +487,23 @@ def test_iplot_sum_2():
 
     x, u, v = symbols("x, u, v")
 
-    p1 = iplot(
-        (cos(u * x), (x, -5, 5)),
+    p1 = plot(
+        cos(u * x), (x, -5, 5),
         params = {
             u: (1, 0, 1)
         },
         backend = MB,
-        xlabel = "x1",
-        ylabel = "y1",
-        title = "title 1",
-        legend=True,
-        show = False
-    )
-    p2 = iplot(
-        (sin(u * x) + v, (x, -5, 5)),
+        xlabel = "x1", ylabel = "y1", title = "title 1",
+        legend=True, show = False)
+    p2 = plot(
+        sin(u * x) + v, (x, -5, 5),
         params = {
             u: (1, 0, 1),
             v: (0, -2, 2)
         },
         backend = MB,
-        xlabel = "x2",
-        ylabel = "y2",
-        title = "title 2",
-        show = False
-    )
+        xlabel = "x2", ylabel = "y2", title = "title 2",
+        show = False)
     raises(ValueError, lambda: p1 + p2)
 
 
@@ -706,25 +517,16 @@ def test_iplot_sum_3():
         params = {
             u: (1, 0, 2)
         }
-        p1 = iplot(
-            (cos(u * x), (x, -5, 5)),
-            params = params,
+        p1 = plot(
+            cos(u * x), (x, -5, 5), params = params,
             backend = B,
-            xlabel = "x1",
-            ylabel = "y1",
-            title = "title 1",
-            legend=True,
-            show = False
-        )
-        p2 = iplot(
-            (sin(u * x), (x, -5, 5)),
-            params = params,
+            xlabel = "x1", ylabel = "y1", title = "title 1",
+            legend=True, show = False)
+        p2 = plot(
+            sin(u * x), (x, -5, 5), params = params,
             backend = B,
-            xlabel = "x2",
-            ylabel = "y2",
-            title = "title 2",
-            show = False
-        )
+            xlabel = "x2", ylabel = "y2", title = "title 2",
+            show = False)
         p = p1 + p2
         assert isinstance(p.backend, B)
 
@@ -737,7 +539,7 @@ def test_label_rendering_kw():
     # verify that label and rendering_kw keyword arguments gets applied
     u, x, y = symbols("u, x, y")
 
-    t = iplot(
+    t = plot(
         (sin(u * x), (x, -5, 5)),
         (cos(u * x), (x, -5, 5)),
         params={
@@ -773,8 +575,9 @@ def test_plot3d_wireframe():
     t = _plot3d(True)
     assert isinstance(t, InteractivePlot)
     assert len(t.backend.series) == 1 + 10 + 10
-    assert isinstance(t.backend.series[0], SurfaceInteractiveSeries)
-    assert all(isinstance(s, Parametric3DLineInteractiveSeries) for s in t.backend.series[1:])
+    assert isinstance(t.backend.series[0], SurfaceOver2DRangeSeries)
+    assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
+        for s in t.backend.series[1:])
 
 
 def test_plot3d_wireframe_and_labels():
@@ -791,9 +594,10 @@ def test_plot3d_wireframe_and_labels():
     )
     assert isinstance(t, InteractivePlot)
     assert len(t.backend.series) == 1 + 10 + 10
-    assert isinstance(t.backend.series[0], SurfaceInteractiveSeries)
+    assert isinstance(t.backend.series[0], SurfaceOver2DRangeSeries)
     assert t.backend.series[0].get_label(False) == "test"
-    assert all(isinstance(s, Parametric3DLineInteractiveSeries) for s in t.backend.series[1:])
+    assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
+        for s in t.backend.series[1:])
 
     t = plot3d(
         (cos(u * x**2 + y**2), (x, -2, 0), (y, -2, 2)),
@@ -805,8 +609,9 @@ def test_plot3d_wireframe_and_labels():
     )
     assert isinstance(t, InteractivePlot)
     assert len(t.backend.series) == 2 + (10 + 10) * 2
-    assert isinstance(t.backend.series[0], SurfaceInteractiveSeries)
-    assert isinstance(t.backend.series[1], SurfaceInteractiveSeries)
+    assert isinstance(t.backend.series[0], SurfaceOver2DRangeSeries)
+    assert isinstance(t.backend.series[1], SurfaceOver2DRangeSeries)
     assert t.backend.series[0].get_label(False) == "a"
     assert t.backend.series[1].get_label(False) == "b"
-    assert all(isinstance(s, Parametric3DLineInteractiveSeries) for s in t.backend.series[2:])
+    assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
+        for s in t.backend.series[2:])
