@@ -33,6 +33,14 @@ v2.0.0
   algorithm, they'll have to follow the
   `adaptive module installation instructions <https://github.com/python-adaptive/adaptive>'_.
 
+  If you are upgrading from a previous version, you should run the following
+  code to load the new configuration settings:
+
+  ```
+  from spb.defaults import reset
+  reset()
+  ```
+
 * ``PlotlyBackend``: fixed bug with interactive update of lines.
 
 
