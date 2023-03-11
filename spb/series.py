@@ -110,7 +110,8 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     adaptive = import_module(
         'adaptive',
         import_kwargs={'fromlist': ['runner', 'learner']},
-        min_module_version='0.12.0')
+        min_module_version='0.12.0',
+        warn_not_installed=True)
     simple = adaptive.runner.simple
     Learner1D = adaptive.learner.learner1D.Learner1D
     LearnerND = adaptive.learner.learnerND.LearnerND
