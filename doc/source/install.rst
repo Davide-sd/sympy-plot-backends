@@ -21,6 +21,7 @@ plotly, k3d, vtk, execute the following command::
 Or::
 
     conda install -c anaconda scipy notebook colorcet
+    conda install -c conda-forge adaptive
     conda install -c conda-forge ipympl panel
     conda install -c conda-forge k3d msgpack-python
     conda install -c bokeh ipywidgets_bokeh

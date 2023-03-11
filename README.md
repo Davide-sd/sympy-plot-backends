@@ -88,7 +88,7 @@ Or:
 
 ```
 conda install -c anaconda scipy notebook
-conda install -c conda-forge ipympl panel k3d msgpack-python
+conda install -c conda-forge adaptive ipympl panel k3d msgpack-python
 conda install -c bokeh ipywidgets_bokeh colorcet
 conda install -c plotly plotly
 conda install -c conda-forge vtk

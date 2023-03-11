@@ -1,12 +1,12 @@
 """Plotting module for Sympy.
 
-A plot is represented by the `Plot` class that contains a list of the data
+A plot is represented by the ``Plot`` class that contains a list of the data
 series to be plotted. The data series are instances of classes meant to
 simplify getting points and meshes from sympy expressions.
 
 This module gives only the essential. Especially if you need publication ready
 graphs and this module is not enough for you, use directly the backend, which
-can be accessed with the `fig` attribute:
+can be accessed with the ``fig`` attribute:
 * MatplotlibBackend.fig: returns a Matplotlib figure.
 * BokehBackend.fig: return the Bokeh figure object.
 * PlotlyBackend.fig: return the Plotly figure object.
@@ -52,9 +52,9 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
     As a design choice, the following implementation reuses the existing
     classes, instead of creating a new one to deal with Piecewise. Here, each
     piece is going to create at least one series. If a piece is using a union
-    of coditions (for example, `((x < 0) | (x > 2))`), than two or more
+    of coditions (for example, ``((x < 0) | (x > 2))``), than two or more
     series of the same expression are created (for example, one covering
-    `x < 0` and the other covering `x > 2`), both having the same label.
+    ``x < 0`` and the other covering ``x > 2``), both having the same label.
 
     However, if a piece is outside of the provided plotting range, then it
     will not be added to the plot. This may lead to not-complete plots in some
@@ -159,14 +159,14 @@ def _process_summations(sum_bound, *args):
     ==========
 
     NOTE:
-    Let's consider the following summation: `Sum(1 / x**2, (x, 1, oo))`
+    Let's consider the following summation: ``Sum(1 / x**2, (x, 1, oo))``.
     The current implementation of lambdify (SymPy 1.9 at the time of
     writing this) will create something of this form:
-    `sum(1 / x**2 for x in range(1, INF))`
-    The problem is that type(INF) is float, while `range` requires integers,
-    thus the evaluation will fails.
-    Instead of modifying `lambdify` (which requires a deep knowledge),
-    let's apply this quick dirty hack: substitute symbolic `oo` with an
+    ``sum(1 / x**2 for x in range(1, INF))``
+    The problem is that ``type(INF)`` is float, while ``range`` requires
+    integers, thus the evaluation will fails.
+    Instead of modifying ``lambdify`` (which requires a deep knowledge),
+    let's apply this quick dirty hack: substitute symbolic ``oo`` with an
     arbitrary large number.
     """
     def new_bound(t, bound):
@@ -314,7 +314,7 @@ def plot(*args, **kwargs):
 
         label : str, optional
             The label to be shown in the legend. If not provided, the string
-            representation of `expr` will be used.
+            representation of ``expr`` will be used.
 
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
@@ -322,21 +322,22 @@ def plot(*args, **kwargs):
             plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
-        The default value is set to `True`, which uses the adaptive algorithm
-        implemented in [#fn1]_ to create smooth plots. Use `adaptive_goal`
-        and `loss_fn` to further customize the output.
+        Setting ``adaptive=True`` activates the adaptive algorithm
+        implemented in [#fn1]_ to create smooth plots. Use ``adaptive_goal``
+        and ``loss_fn`` to further customize the output.
 
-        Set adaptive to `False` and specify `n` if uniform sampling is
-        required.
+        The default value is ``False``, which uses an uniform sampling
+        strategy, where the number of discretization points is specified by
+        the ``n`` keyword argument.
 
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
-        * `None` (default):  it will use the following goal:
-          `lambda l: l.loss() < 0.01`
+        * ``None`` (default):  it will use the following goal:
+          ``lambda l: l.loss() < 0.01``
         * number (int or float). The lower the number, the more
           evaluation points. This number will be used in the following goal:
-          `lambda l: l.loss() < number`
+          ``lambda l: l.loss() < number``
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn1]_ for more information.
 
@@ -347,11 +348,11 @@ def plot(*args, **kwargs):
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with `MatplotlibBackend`.
+        {'center', 'auto'}. Only available with ``MatplotlibBackend``.
 
     backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+        A subclass of ``Plot``, which will perform the rendering.
+        Default to ``MatplotlibBackend``.
 
     color_func : callable, optional
         A function of 2 variables, x, y (the points computed by the internal
@@ -359,11 +360,11 @@ def plot(*args, **kwargs):
 
     detect_poles : boolean
         Chose whether to detect and correctly plot poles.
-        Defaulto to `False`. To improve detection, increase the number of
-        discretization points `n` and/or change the value of `eps`.
+        Defaulto to ``False``. To improve detection, increase the number of
+        discretization points ``n`` and/or change the value of ``eps``.
 
     eps : float
-        An arbitrary small value used by the `detect_poles` algorithm.
+        An arbitrary small value used by the ``detect_poles`` algorithm.
         Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
 
@@ -373,30 +374,30 @@ def plot(*args, **kwargs):
 
     is_filled : boolean, optional
         Default to True, which will render empty circular markers. It only
-        works if `is_point=True`.
+        works if ``is_point=True``.
         If False, filled circular markers will be rendered.
 
     label : str or list/tuple, optional
         The label to be shown in the legend. If not provided, the string
-        representation of `expr` will be used. The number of labels must be
+        representation of ``expr`` will be used. The number of labels must be
         equal to the number of expressions.
 
     loss_fn : callable or None
-        The loss function to be used by the `adaptive` learner.
+        The loss function to be used by the ``adaptive`` learner.
         Possible values:
 
-        * `None` (default): it will use the `default_loss` from the
-          `adaptive` module.
+        * ``None`` (default): it will use the ``default_loss`` from the
+          adaptive module.
         * callable : Refer to [#fn1]_ for more information. Specifically,
-          look at `adaptive.learner.learner1D` to find more loss functions.
+          look at ``adaptive.learner.learner1D`` to find more loss functions.
 
     n : int, optional
         Used when the ``adaptive=False``: the function is uniformly
-        sampled at `n` number of points. Default value to 1000.
+        sampled at ``n`` number of points. Default value to 1000.
         If the ``adaptive=True``, this parameter will be ignored.
 
     only_integers : boolean, optional
-        Default to `False`. If `True`, discretize the domain with integer
+        Default to ``False``. If ``True``, discretize the domain with integer
         numbers, which can be useful to plot sums. It only works when
         ``adaptive=False``. When ``only_integers=True``, the number of
         discretization points is choosen by the algorithm.
@@ -419,19 +420,19 @@ def plot(*args, **kwargs):
         chart.
 
     show : bool, optional
-        The default value is set to `True`. Set show to `False` and
+        The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
+        the overall figure. The default value is set to ``None``, meaning
         the size will be set by the backend.
 
     steps : boolean, optional
-        Default to `False`. If `True`, connects consecutive points with steps
-        rather than straight segments.
+        Default to ``False``. If ``True``, connects consecutive points with
+        steps rather than straight segments.
 
     sum_bound : int, optional
         When plotting sums, the expression will be pre-processed in order
@@ -450,25 +451,20 @@ def plot(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
-    xlabel : str, optional
-        Label for the x-axis.
+    xlabel, ylabel : str, optional
+        Labels for the x-axis or y-axis, respectively.
 
-    ylabel : str, optional
-        Label for the y-axis.
-
-    xscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis. Default to 'linear'.
-
-    yscale : 'linear' or 'log', optional
-        Sets the scaling of the y-axis. Default to 'linear'.
+    xscale, yscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis or y-axis, respectively.
+        Default to ``'linear'``.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`, visible in the chart.
+        Denotes the x-axis limits, ``(min, max)``, visible in the chart.
         Note that the function is still being evaluated over the specified
         ``range``.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`, visible in the chart.
+        Denotes the y-axis limits, ``(min, max)``, visible in the chart.
 
 
     Examples
@@ -535,8 +531,9 @@ def plot(*args, **kwargs):
        Plot object containing:
        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
 
-    Detect singularities and apply a transformation function to the discretized
-    domain in order to convert radians to degrees:
+    Using an adaptive algorithm, detect singularities and apply a
+    transformation function to the discretized domain in order to convert
+    radians to degrees:
 
     .. plot::
        :context: close-figs
@@ -544,7 +541,8 @@ def plot(*args, **kwargs):
        :include-source: True
 
        >>> import numpy as np
-       >>> plot(tan(x), (x, -1.5*pi, 1.5*pi), adaptive_goal=0.001,
+       >>> plot(tan(x), (x, -1.5*pi, 1.5*pi),
+       ...      adaptive=True, adaptive_goal=0.001,
        ...      detect_poles=True, tx=np.rad2deg, ylim=(-7, 7),
        ...      xlabel="x [deg]")
        Plot object containing:
@@ -710,16 +708,16 @@ def plot_parametric(*args, **kwargs):
 
         `range` : (symbol, min, max)
             A 3-tuple denoting the parameter symbol, start and stop. For
-            example, `(u, 0, 5)`. If the range is not specified, then a
+            example, ``(u, 0, 5)``. If the range is not specified, then a
             default range of (-10, 10) is used.
 
             However, if the arguments are specified as
-            `(expr_x, expr_y, range), ...`, you must specify the ranges
+            ``(expr_x, expr_y, range), ...``, you must specify the ranges
             for each expressions manually.
 
         `label` : str, optional
             The label to be shown in the legend. If not provided, the string
-            representation of `expr_x` and `expr_y` will be used.
+            representation of ``expr_x`` and ``expr_y`` will be used.
 
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
@@ -727,21 +725,22 @@ def plot_parametric(*args, **kwargs):
             plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
-        The default value is set to `True`, which uses the adaptive algorithm
-        implemented in [#fn2]_ to create smooth plots. Use `adaptive_goal`
-        and `loss_fn` to further customize the output.
+        Setting ``adaptive=True`` activates the adaptive algorithm
+        implemented in [#fn2]_ to create smooth plots. Use ``adaptive_goal``
+        and ``loss_fn`` to further customize the output.
 
-        Set adaptive to `False` and specify `n` if uniform sampling is
-        required.
+        The default value is ``False``, which uses an uniform sampling
+        strategy, where the number of discretization points is specified by
+        the ``n`` keyword argument.
 
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
-        * `None` (default):  it will use the following goal:
-          `lambda l: l.loss() < 0.01`
+        * ``None`` (default):  it will use the following goal:
+          ``lambda l: l.loss() < 0.01``
         * number (int or float). The lower the number, the more
           evaluation points. This number will be used in the following goal:
-          `lambda l: l.loss() < number`
+          ``lambda l: l.loss() < number``
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn2]_ for more information.
 
@@ -752,11 +751,11 @@ def plot_parametric(*args, **kwargs):
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with `MatplotlibBackend`.
+        {'center', 'auto'}. Only available with ``MatplotlibBackend``.
 
     backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+        A subclass of ``Plot``, which will perform the rendering.
+        Default to ``MatplotlibBackend``.
 
     color_func : callable, optional
         A function defining the line color. The arity can be:
@@ -774,19 +773,18 @@ def plot_parametric(*args, **kwargs):
         of labels must be equal to the number of expressions.
 
     loss_fn : callable or None
-        The loss function to be used by the `adaptive` learner.
+        The loss function to be used by the adaptive learner.
         Possible values:
 
-        * `None` (default): it will use the `default_loss` from the
-          `adaptive` module.
+        * ``None`` (default): it will use the ``default_loss`` from the
+          adaptive module.
         * callable : Refer to [#fn2]_ for more information. Specifically,
-          look at `adaptive.learner.learner1D` to find more loss functions.
+          look at ``adaptive.learner.learner1D`` to find more loss functions.
 
     n : int, optional
-        Used when the `adaptive` is set to `False`. The function is uniformly
-        sampled at `n` number of points. Default value to 1000.
-        If the `adaptive` flag is set to `True`, this parameter will be
-        ignored.
+        Used when the ``adaptive=False``. The function is uniformly sampled
+        at ``n`` number of points. Default value to 1000.
+        If the ``adaptive=True``, this parameter will be ignored.
 
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
@@ -802,14 +800,14 @@ def plot_parametric(*args, **kwargs):
         be equal to the number of expressions.
 
     show : bool, optional
-        The default value is set to `True`. Set show to `False` and
+        The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
+        the overall figure. The default value is set to ``None``, meaning
         the size will be set by the backend.
 
     title : str, optional
@@ -817,7 +815,8 @@ def plot_parametric(*args, **kwargs):
         the expression, if the plot has only one expression.
 
     tx, ty, tp : callable, optional
-        Apply a numerical function to the x-direction, y-direction and parameter, respectively.
+        Apply a numerical function to the x-direction, y-direction and
+        parameter, respectively.
 
     use_cm : boolean, optional
         If True, apply a color map to the parametric lines.
@@ -827,23 +826,16 @@ def plot_parametric(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
-    xlabel : str, optional
-        Label for the x-axis.
+    xlabel, ylabel : str, optional
+        Labels for the x-axis or y-axis, respectively.
 
-    ylabel : str, optional
-        Label for the y-axis.
+    xscale, yscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis or y-axis, respectively.
+        Default to ``'linear'``.
 
-    xscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis. Default to 'linear'.
-
-    yscale : 'linear' or 'log', optional
-        Sets the scaling of the y-axis. Default to 'linear'.
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`, visible in the chart.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`, visible in the chart.
+    xlim, ylim : (float, float), optional
+        Denotes the x-axis limits or y-axis limits, respectively,
+        ``(min, max)``, visible in the chart.
 
     Examples
     ========
@@ -915,7 +907,7 @@ def plot_parametric(*args, **kwargs):
        >>> fx = lambda t: np.sin(t) * (np.exp(np.cos(t)) - 2 * np.cos(4 * t) - np.sin(t / 12)**5)
        >>> fy = lambda t: np.cos(t) * (np.exp(np.cos(t)) - 2 * np.cos(4 * t) - np.sin(t / 12)**5)
        >>> plot_parametric(fx, fy, ("t", 0, 12 * pi), title="Butterfly Curve",
-       ...     use_cm=False)
+       ...     use_cm=False, n=2000)
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -1013,14 +1005,12 @@ def plot_parametric_region(*args, **kwargs):
         possible values.
 
     backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+        A subclass of ``Plot``, which will perform the rendering.
+        Default to ``MatplotlibBackend``.
 
     n : int, optional
-        Used when the `adaptive` is set to `False`. The function is uniformly
-        sampled at `n` number of points. Default value to 1000.
-        If the `adaptive` flag is set to `True`, this parameter will be
-        ignored.
+        The functions are uniformly sampled at ``n`` number of points.
+        Default value to 1000.
 
     n1, n2 : int, optional
         Number of lines to create along each direction. Default to 10.
@@ -1033,14 +1023,14 @@ def plot_parametric_region(*args, **kwargs):
         Refer to the plotting library (backend) manual for more informations.
 
     show : bool, optional
-        The default value is set to `True`. Set show to `False` and
+        The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
+        the overall figure. The default value is set to ``None``, meaning
         the size will be set by the backend.
 
     title : str, optional
@@ -1056,10 +1046,10 @@ def plot_parametric_region(*args, **kwargs):
 
     xscale, yscale : 'linear' or 'log', optional
         Sets the scaling of the x-axis or y-axis, respectively.
-        Default to 'linear'.
+        Default to ``'linear'``.
 
     xlim, ylim : (float, float), optional
-        Denotes the x-axis or y-axis limits, `(min, max)`, visible in the
+        Denotes the x-axis or y-axis limits, ``(min, max)``, visible in the
         chart.
 
     Examples
@@ -1207,27 +1197,28 @@ def plot3d_parametric_line(*args, **kwargs):
             plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
-        The default value is set to `True`, which uses the adaptive algorithm
-        implemented in [#fn3]_ to create smooth plots. Use `adaptive_goal`
-        and `loss_fn` to further customize the output.
+        Setting ``adaptive=True`` activates the adaptive algorithm
+        implemented in [#fn3]_ to create smooth plots. Use ``adaptive_goal``
+        and ``loss_fn`` to further customize the output.
 
-        Set adaptive to `False` and specify `n` if uniform sampling is
-        required.
+        The default value is ``False``, which uses an uniform sampling
+        strategy, where the number of discretization points is specified by
+        the ``n`` keyword argument.
 
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
-        * `None` (default):  it will use the following goal:
-          `lambda l: l.loss() < 0.01`
+        * ``None`` (default):  it will use the following goal:
+          ``lambda l: l.loss() < 0.01``
         * number (int or float). The lower the number, the more
           evaluation points. This number will be used in the following goal:
-          `lambda l: l.loss() < number`
+          ``lambda l: l.loss() < number``
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn3]_ for more information.
 
     backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+        A subclass of ``Plot``, which will perform the rendering.
+        Default to ``MatplotlibBackend``.
 
     color_func : callable, optional
         A function defining the line color. The arity can be:
@@ -1245,23 +1236,22 @@ def plot3d_parametric_line(*args, **kwargs):
 
     label : str or list/tuple, optional
         The label to be shown in the legend or in the colorbar. If not
-        provided, the string representation of `expr` will be used. The number
-        of labels must be equal to the number of expressions.
+        provided, the string representation of ``expr`` will be used.
+        The number of labels must be equal to the number of expressions.
 
     loss_fn : callable or None
-        The loss function to be used by the `adaptive` learner.
+        The loss function to be used by the adaptive learner.
         Possible values:
 
-        * `None` (default): it will use the `default_loss` from the
-          `adaptive` module.
+        * ``None`` (default): it will use the ``default_loss`` from the
+          ``adaptive`` module.
         * callable : Refer to [#fn3]_ for more information. Specifically,
-          look at `adaptive.learner.learner1D` to find more loss functions.
+          look at ``adaptive.learner.learner1D`` to find more loss functions.
 
     n : int, optional
-        Used when the `adaptive` is set to `False`. The function is uniformly
-        sampled at `n` number of points. Default value to 1000.
-        If the `adaptive` flag is set to `True`, this parameter will be
-        ignored.
+        Used when the ``adaptive=False``. The function is uniformly
+        sampled at ``n`` number of points. Default value to 1000.
+        If the ``adaptive=True``, this parameter will be ignored.
 
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
@@ -1277,14 +1267,14 @@ def plot3d_parametric_line(*args, **kwargs):
         be equal to the number of expressions.
 
     show : bool, optional
-        The default value is set to `True`. Set show to `False` and
+        The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
+        the overall figure. The default value is set to ``None``, meaning
         the size will be set by the backend.
 
     title : str, optional
@@ -1303,23 +1293,11 @@ def plot3d_parametric_line(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
-    xlabel : str, optional
-        Label for the x-axis.
+    xlabel, ylabel, zlabel : str, optional
+        Labels for the x-axis, y-axis, z-axis, respectively.
 
-    ylabel : str, optional
-        Label for the y-axis.
-
-    zlabel : str, optional
-        Label for the z-axis.
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`, visible in the chart.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`, visible in the chart.
-
-    zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`, visible in the chart.
+    xlim, ylim, zlim : (float, float), optional
+        Denotes the axis limits, `(min, max)`, visible in the chart.
 
 
     Examples
@@ -1650,7 +1628,7 @@ def plot3d(*args, **kwargs):
     - Plotting multiple expressions with custom labels and rendering options.
         `plot3d((expr1, range_x1, range_y1, label1, rendering_kw1), (expr2, range_x2, range_y2, label2, rendering_kw2), ..., **kwargs)`
 
-    Note: it is important to specify at least the `range_x`, otherwise the
+    Note: it is important to specify at least the ``range_x``, otherwise the
     function might create a rotated plot.
 
     Parameters
@@ -1677,7 +1655,7 @@ def plot3d(*args, **kwargs):
 
         label : str, optional
             The label to be shown in the colorbar.  If not provided, the string
-            representation of `expr` will be used.
+            representation of ``expr`` will be used.
 
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
@@ -1685,28 +1663,28 @@ def plot3d(*args, **kwargs):
             plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
-        The default value is set to `False`, which uses a uniform sampling
-        strategy with number of discretization points `n1` and `n2` along the
-        x and y directions, respectively.
+        The default value is set to ``False``, which uses a uniform sampling
+        strategy with number of discretization points ``n1`` and ``n2`` along
+        the x and y directions, respectively.
 
-        Set adaptive to `True` to use the adaptive algorithm implemented in
-        [#fn4]_ to create smooth plots. Use `adaptive_goal` and `loss_fn`
+        Set adaptive to ``True`` to use the adaptive algorithm implemented in
+        [#fn4]_ to create smooth plots. Use ``adaptive_goal`` and ``loss_fn``
         to further customize the output.
 
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
-        * `None` (default):  it will use the following goal:
-          `lambda l: l.loss() < 0.01`
+        * ``None`` (default):  it will use the following goal:
+          ``lambda l: l.loss() < 0.01``
         * number (int or float). The lower the number, the more
           evaluation points. This number will be used in the following goal:
-          `lambda l: l.loss() < number`
+          ``lambda l: l.loss() < number``
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn4]_ for more information.
 
     backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+        A subclass of ``Plot``, which will perform the rendering.
+        Default to ``MatplotlibBackend``.
 
     color_func : callable, optional
         A function of 3 variables, x, y, z (the points computed by the
@@ -1720,17 +1698,17 @@ def plot3d(*args, **kwargs):
 
     label : str or list/tuple, optional
         The label to be shown in the colorbar. If not provided, the string
-        representation of `expr` will be used. The number of labels must be
+        representation of ``expr`` will be used. The number of labels must be
         equal to the number of expressions.
 
     loss_fn : callable or None
-        The loss function to be used by the `adaptive` learner.
+        The loss function to be used by the adaptive learner.
         Possible values:
 
-        * `None` (default): it will use the `default_loss` from the
-          `adaptive` module.
+        * ``None`` (default): it will use the ``default_loss`` from the
+          ``adaptive`` module.
         * callable : Refer to [#fn4]_ for more information. Specifically,
-          look at `adaptive.learner.learnerND` to find more loss functions.
+          look at ``adaptive.learner.learnerND`` to find more loss functions.
 
     n1, n2 : int, optional
         ``n1`` and ``n2`` set the number of discretization points along the
@@ -1738,7 +1716,8 @@ def plot3d(*args, **kwargs):
 
     n : int or two-elements tuple (n1, n2), optional
         If an integer is provided, the x and y ranges are sampled uniformly
-        at `n` of points. If a tuple is provided, it overrides `n1` and `n2`.
+        at ``n`` of points. If a tuple is provided, it overrides
+        ``n1`` and ``n2``.
 
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
@@ -1754,14 +1733,14 @@ def plot3d(*args, **kwargs):
         be equal to the number of expressions.
 
     show : bool, optional
-        The default value is set to `True`. Set show to `False` and
+        The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
         the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
+        the overall figure. The default value is set to ``None``, meaning
         the size will be set by the backend.
 
     title : str, optional
@@ -1800,25 +1779,16 @@ def plot3d(*args, **kwargs):
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of wireframe lines.
 
-    xlabel : str, optional
-        Label for the x-axis.
+    xlabel, ylabel, zlabel : str, optional
+        Labels for the x-axis or y-axis or z-axis, respectively.
 
-    ylabel : str, optional
-        Label for the y-axis.
-
-    zlabel : str, optional
-        Label for the z-axis.
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`, visible in the chart.
-        Note that the function is still being evaluate over ``range_x``.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`, visible in the chart.
-        Note that the function is still being evaluate over ``range_y``.
+    xlim, ylim : (float, float), optional
+        Denotes the x-axis limits or y-axis limits, ``(min, max)``, visible in
+        the chart. Note that the function is still being evaluate over
+        ``range_x`` and ``range_y``.
 
     zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`, visible in the chart.
+        Denotes the z-axis limits, ``(min, max)``, visible in the chart.
 
     Examples
     ========
@@ -2017,8 +1987,8 @@ def plot3d_parametric_surface(*args, **kwargs):
             plotting library (backend) manual for more informations.
 
     backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+        A subclass of ``Plot``, which will perform the rendering.
+        Default to ``MatplotlibBackend``.
 
     color_func : callable, optional
         A function defining the surface color when ``use_cm=True``. The arity
@@ -2043,7 +2013,8 @@ def plot3d_parametric_surface(*args, **kwargs):
 
     n : int or two-elements tuple (n1, n2), optional
         If an integer is provided, the u and v ranges are sampled uniformly
-        at `n` of points. If a tuple is provided, it overrides `n1` and `n2`.
+        at ``n`` of points. If a tuple is provided, it overrides
+        ``n1`` and ``n2``.
 
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
@@ -2058,14 +2029,14 @@ def plot3d_parametric_surface(*args, **kwargs):
         be equal to the number of expressions.
 
     show : bool, optional
-        The default value is set to `True`. Set show to `False` and
+        The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
+        the overall figure. The default value is set to ``None``, meaning
         the size will be set by the backend.
 
     title : str, optional
@@ -2104,23 +2075,12 @@ def plot3d_parametric_surface(*args, **kwargs):
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of wireframe lines.
 
-    xlabel : str, optional
-        Label for the x-axis.
+    xlabel, ylabel, zlabel : str, optional
+        Label for the x-axis or y-axis or z-axis, respectively.
 
-    ylabel : str, optional
-        Label for the y-axis.
-
-    zlabel : str, optional
-        Label for the z-axis.
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`, visible in the chart.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`, visible in the chart.
-
-    zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`, visible in the chart.
+    xlim, ylim, zlim : (float, float), optional
+        Denotes the x-axis limits, or y-axis limits, or z-axis limits,
+        respectively, ``(min, max)``, visible in the chart.
 
 
     Examples
@@ -2493,7 +2453,7 @@ def plot3d_implicit(*args, **kwargs):
             plotting library (backend) manual for more informations.
 
     backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
+        A subclass of ``Plot``, which will perform the rendering.
 
     n1, n2, n3 : int, optional
         Set the number of discretization points along the x, y and z ranges,
@@ -2501,8 +2461,8 @@ def plot3d_implicit(*args, **kwargs):
 
     n : int or three-elements tuple (n1, n2, n3), optional
         If an integer is provided, the x, y and z ranges are sampled uniformly
-        at `n` of points. If a tuple is provided, it overrides `n1`, `n2` and
-        `n3`.
+        at ``n`` of points. If a tuple is provided, it overrides ``n1``,
+        ``n2`` and ``n3``.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -2512,10 +2472,10 @@ def plot3d_implicit(*args, **kwargs):
         be equal to the number of expressions.
 
     show : bool, optional
-        The default value is set to `True`. Set show to `False` and
+        The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
@@ -2530,26 +2490,14 @@ def plot3d_implicit(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
-    xlabel : str, optional
-        Label for the x-axis.
+    xlabel, ylabel, zlabel : str, optional
+        Labels for the x-axis, y-axis or z-axis, respectively.
 
-    ylabel : str, optional
-        Label for the y-axis.
-
-    zlabel : str, optional
-        Label for the z-axis.
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`, visible in the chart.
-        Note that the function is still being evaluated over the ``range_x``.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`, visible in the chart.
-        Note that the function is still being evaluated over the ``range_y``.
-
-    zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`, visible in the chart.
-        Note that the function is still being evaluated over the ``range_z``.
+    xlim, ylim, zlim : (float, float), optional
+        Denotes the x-axis limits, y-axis limits or z-axis limits,
+        respectively, ``(min, max)``, visible in the chart. Note that the
+        function is still being evaluated over the ``range_x``, ``range_y``
+        and ``range_z``.
 
 
     Examples
@@ -2761,7 +2709,7 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis
 
     range_phi : (symbol, min, max)
         A 3-tuple denoting the range of the azimuthal angle where the curve
-        will be revolved. Default to `(phi, 0, 2*pi)`.
+        will be revolved. Default to ``(phi, 0, 2*pi)``.
 
     axis : (coord1, coord2)
         A 2-tuple that specifies the position of the rotation axis.
@@ -2944,8 +2892,6 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis
 
     surface = plot3d_parametric_surface(*v, range_t, range_phi, **kwargs)
 
-    # TODO: need a better integration with interactive plot in order to
-    # simplify the following.
     params = kwargs.get("params", None)
     if show_curve:
         if params is None:
@@ -2983,11 +2929,11 @@ def plot_implicit(*args, **kwargs):
 
     plot_implicit, by default, generates a contour using a mesh grid of fixed
     number of points. The greater the number of points, the greater the memory
-    used. By setting `adaptive=True`, interval arithmetic will be used to plot
-    functions. If the expression cannot be plotted using interval arithmetic,
-    it defaults to generating a contour using a mesh grid. With interval
-    arithmetic, the line width can become very small; in those cases, it is
-    better to use the mesh grid approach.
+    used. By setting ``adaptive=True``, interval arithmetic will be used to
+    plot functions. If the expression cannot be plotted using interval
+    arithmetic, it defaults to generating a contour using a mesh grid.
+    With interval arithmetic, the line width can become very small; in those
+    cases, it is better to use the mesh grid approach.
 
     Parameters
     ==========
@@ -2998,7 +2944,7 @@ def plot_implicit(*args, **kwargs):
 
         ranges : tuples or Symbol
             Two tuple denoting the discretization domain, for example:
-            `(x, -10, 10), (y, -10, 10)`
+            ``(x, -10, 10), (y, -10, 10)``
             To get a correct plot, at least the horizontal range must be
             provided. If no range is given, then the free symbols in the
             expression will be assigned in the order they are sorted, which
@@ -3006,7 +2952,7 @@ def plot_implicit(*args, **kwargs):
 
             Alternatively, a single Symbol corresponding to the horizontal
             axis must be provided, which will be internally converted to a
-            range `(sym, -10, 10)`.
+            range ``(sym, -10, 10)``.
 
         label : str, optional
             The label to be shown when multiple expressions are plotted.
@@ -3018,11 +2964,11 @@ def plot_implicit(*args, **kwargs):
             function to customize the appearance of contours. Refer to the
             plotting library (backend) manual for more informations.
 
-    adaptive : Boolean
-        The default value is set to False, meaning that the internal
+    adaptive : bool, optional
+        The default value is set to ``False``, meaning that the internal
         algorithm uses a mesh grid approach. In such case, Boolean
         combinations of expressions cannot be plotted.
-        If set to True, the internal algorithm uses interval arithmetic.
+        If set to ``True``, the internal algorithm uses interval arithmetic.
         It switches to the meshgrid approach if the expression cannot be
         plotted using interval arithmetic.
 
@@ -3039,12 +2985,12 @@ def plot_implicit(*args, **kwargs):
         The depth of recursion for adaptive mesh grid. Default value is 0.
         Takes value in the range (0, 4).
         Think of the resulting plot as a picture composed by pixels. By
-        increasing `depth` we are increasing the number of pixels, thus
+        increasing ``depth`` we are increasing the number of pixels, thus
         obtaining a more accurate plot.
 
     label : str or list/tuple, optional
         The label to be shown in the legend. If not provided, the string
-        representation of `expr` will be used. The number of labels must be
+        representation of ``expr`` will be used. The number of labels must be
         equal to the number of expressions.
 
     rendering_kw : dict or list of dicts, optional
@@ -3056,11 +3002,12 @@ def plot_implicit(*args, **kwargs):
 
     n1, n2 : int
         Number of discretization points in the horizontal and vertical
-        directions when `adaptive=False`. Default to 1000.
+        directions when ``adaptive=False``. Default to 1000.
 
     n : int or two-elements tuple (n1, n2), optional
         If an integer is provided, the x and y ranges are sampled uniformly
-        at `n` of points. If a tuple is provided, it overrides `n1` and `n2`.
+        at ``n`` of points. If a tuple is provided, it overrides
+        ``n1`` and ``n2``.
 
     show : Boolean
         Default value is True. If set to False, the plot will not be shown.
@@ -3073,11 +3020,8 @@ def plot_implicit(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
-    xlabel : string
-        The label for the x-axis
-
-    ylabel : string
-        The label for the y-axis
+    xlabel, ylabel : string
+        The labels for the x-axis or y-axis, respectively.
 
     Examples
     ========
@@ -3378,15 +3322,15 @@ def plot_geometry(*args, **kwargs):
         possible values.
 
     backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+        A subclass of ``Plot``, which will perform the rendering.
+        Default to ``MatplotlibBackend``.
 
     is_filled : boolean
         Default to True. Fill the polygon/circle/ellipse.
 
     label : str or list/tuple, optional
         The label to be shown in the legend. If not provided, the string
-        representation of `geom` will be used. The number of labels must be
+        representation of ``geom`` will be used. The number of labels must be
         equal to the number of geometric entities.
 
     params : dict
@@ -3403,7 +3347,7 @@ def plot_geometry(*args, **kwargs):
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with MatplotlibBackend.
+        {'center', 'auto'}. Only available with ``MatplotlibBackend``.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -3415,8 +3359,8 @@ def plot_geometry(*args, **kwargs):
     show : bool, optional
         The default value is set to `True`. Set show to `False` and
         the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
@@ -3431,23 +3375,12 @@ def plot_geometry(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
-    xlabel : str, optional
-        Label for the x-axis.
+    xlabel, ylabel, zlabel : str, optional
+        Labels for the x-axis, y-axis or z-axis, respectively.
 
-    ylabel : str, optional
-        Label for the y-axis.
-
-    zlabel : str, optional
-        Label for the z-axis.
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`, visible in the chart.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`, visible in the chart.
-
-    zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`, visible in the chart.
+    xlim, ylim, zlim : (float, float), optional
+        Denotes the x-axis limits, y-axis limits or z-axis limits,
+        respectively, ``(min, max)``, visible in the chart.
 
 
     Examples
@@ -3651,8 +3584,8 @@ def plot_list(*args, **kwargs):
         {'center', 'auto'}. Only available with MatplotlibBackend.
 
     backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+        A subclass of ``Plot``, which will perform the rendering.
+        Default to ``MatplotlibBackend``.
 
     is_point : boolean, optional
         Default to False, which will render a line connecting all the points.
@@ -3660,7 +3593,7 @@ def plot_list(*args, **kwargs):
 
     is_filled : boolean, optional
         Default to False, which will render empty circular markers. It only
-        works if `is_point=True`.
+        works if ``is_point=True``.
         If True, filled circular markers will be rendered.
 
     label : str or list/tuple, optional
@@ -3680,14 +3613,14 @@ def plot_list(*args, **kwargs):
         be equal to the number of expressions.
 
     show : bool, optional
-        The default value is set to `True`. Set show to `False` and
+        The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
+        the overall figure. The default value is set to ``None``, meaning
         the size will be set by the backend.
 
     title : str, optional
@@ -3698,23 +3631,16 @@ def plot_list(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
-    xlabel : str, optional
-        Label for the x-axis.
+    xlabel, ylabel : str, optional
+        Labels for the x-axis or y-axis, respectively.
 
-    ylabel : str, optional
-        Label for the y-axis.
+    xscale, yscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis or y-axis, respectively.
+        Default to ``'linear'``.
 
-    xscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis. Default to 'linear'.
-
-    yscale : 'linear' or 'log', optional
-        Sets the scaling of the y-axis. Default to 'linear'.
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`, visible in the chart.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`, visible in the chart.
+    xlim, ylim : (float, float), optional
+        Denotes the x-axis limits or y-axis limits, respectively,
+        ``(min, max)``, visible in the chart.
 
 
     Examples
@@ -3915,10 +3841,10 @@ def plot3d_list(*args, **kwargs):
         be equal to the number of expressions.
 
     show : bool, optional
-        The default value is set to `True`. Set show to `False` and
+        The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
@@ -3940,14 +3866,9 @@ def plot3d_list(*args, **kwargs):
     xlabel, ylabel, zlabel : str, optional
         Label for the x-axis, y-axis, z-axis, respectively.
 
-    xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`, visible in the chart.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`, visible in the chart.
-
-    zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`, visible in the chart.
+    xlim, ylim, zlim : (float, float), optional
+        Denotes the x-axis limits, y-axis limits or z-axis limits,
+        respectively, ``(min, max)``, visible in the chart.
 
 
     Examples
@@ -4086,7 +4007,7 @@ def plot_piecewise(*args, **kwargs):
 
         label : str, optional
             The label to be shown in the legend. If not provided, the string
-            representation of `expr` will be used.
+            representation of ``expr`` will be used.
 
         rendering_kw : dict, optional
             A dictionary of keywords/values which is passed to the backend's
@@ -4094,21 +4015,22 @@ def plot_piecewise(*args, **kwargs):
             plotting library (backend) manual for more informations.
 
     adaptive : bool, optional
-        The default value is set to `True`, which uses the adaptive algorithm
-        implemented in [#fn5]_ to create smooth plots. Use `adaptive_goal`
-        and `loss_fn` to further customize the output.
+        Setting ``adaptive=True`` activates the adaptive algorithm
+        implemented in [#fn5]_ to create smooth plots. Use ``adaptive_goal``
+        and ``loss_fn`` to further customize the output.
 
-        Set adaptive to `False` and specify `n` if uniform sampling is
-        required.
+        The default value is ``False``, which uses an uniform sampling
+        strategy, where the number of discretization points is specified by
+        the ``n`` keyword argument.
 
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
-        * `None` (default):  it will use the following goal:
-          `lambda l: l.loss() < 0.01`
+        * ``None`` (default):  it will use the following goal:
+          ``lambda l: l.loss() < 0.01``
         * number (int or float). The lower the number, the more
           evaluation points. This number will be used in the following goal:
-          `lambda l: l.loss() < number`
+          ``lambda l: l.loss() < number``
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [#fn5]_ for more information.
 
@@ -4119,22 +4041,22 @@ def plot_piecewise(*args, **kwargs):
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with `MatplotlibBackend`.
+        {'center', 'auto'}. Only available with ``MatplotlibBackend``.
 
     backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+        A subclass of ``Plot``, which will perform the rendering.
+        Default to ``MatplotlibBackend``.
 
     detect_poles : boolean
         Chose whether to detect and correctly plot poles.
-        Defaulto to `False`. To improve detection, increase the number of
-        discretization points `n` and/or change the value of `eps`.
+        Defaulto to ``False``. To improve detection, increase the number of
+        discretization points ``n`` and/or change the value of ``eps``.
 
     dots : boolean
         Wheter to show circular markers at the endpoints. Default to True.
 
     eps : float
-        An arbitrary small value used by the `detect_poles` algorithm.
+        An arbitrary small value used by the ``detect_poles`` algorithm.
         Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
 
@@ -4144,29 +4066,28 @@ def plot_piecewise(*args, **kwargs):
         number of labels must be equal to the number of expressions.
 
     loss_fn : callable or None
-        The loss function to be used by the `adaptive` learner.
+        The loss function to be used by the adaptive learner.
         Possible values:
 
-        * `None` (default): it will use the `default_loss` from the
-          `adaptive` module.
+        * ``None`` (default): it will use the ``default_loss`` from the
+          ``adaptive`` module.
         * callable : Refer to [#fn5]_ for more information. Specifically,
-          look at `adaptive.learner.learner1D` to find more loss functions.
+          look at ``adaptive.learner.learner1D`` to find more loss functions.
 
     n : int, optional
-        Used when the `adaptive` is set to `False`. The function is uniformly
-        sampled at `n` number of points. Default value to 1000.
-        If the `adaptive` flag is set to `True`, this parameter will be
-        ignored.
+        Used when the ``adaptive=False``. The function is uniformly
+        sampled at ``n`` number of points. Default value to 1000.
+        If the ``adaptive=True``, this parameter will be ignored.
 
     show : bool, optional
-        The default value is set to `True`. Set show to `False` and
+        The default value is set to ``True``. Set show to ``False`` and
         the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
+        the ``Plot`` class can then be used to save or display the plot
+        by calling the ``save()`` and ``show()`` methods respectively.
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
+        the overall figure. The default value is set to ``None``, meaning
         the size will be set by the backend.
 
     title : str, optional
@@ -4181,25 +4102,20 @@ def plot_piecewise(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
-    xlabel : str, optional
-        Label for the x-axis.
+    xlabel, ylabel : str, optional
+        Labels for the x-axis or y-axis, respectively.
 
-    ylabel : str, optional
-        Label for the y-axis.
-
-    xscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis. Default to 'linear'.
-
-    yscale : 'linear' or 'log', optional
-        Sets the scaling of the y-axis. Default to 'linear'.
+    xscale, yscale : 'linear' or 'log', optional
+        Sets the scaling of the x-axis or y-axis, respectively.
+        Default to `'linear'`.
 
     xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`, visible in the chart.
+        Denotes the x-axis limits, ``(min, max)``, visible in the chart.
         Note that the function is still being evaluated over the specified
         ``range``.
 
     ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`, visible in the chart.
+        Denotes the y-axis limits, ``(min, max)``, visible in the chart.
 
 
     Examples
@@ -4259,7 +4175,7 @@ def plot_piecewise(*args, **kwargs):
        ...      (sin(x), x < -5),
        ...      (cos(x), x > 5),
        ...      (1 / x, True)), (x, -8, 8), {"linestyle": ":"}),
-       ...   ylim=(-2, 2))
+       ...   ylim=(-2, 2), detect_poles=True)
        Plot object containing:
        [0]: cartesian line: 0 for x over (-10.0, 0.0)
        [1]: cartesian line: 1 for x over (1e-06, 10.0)

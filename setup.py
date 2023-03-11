@@ -12,6 +12,7 @@ with open(os.path.join(here, 'spb', '_version.py')) as f:
 
 _all_deps = [
     "scipy>=1.7.1",  # helps when lambdifying expressions
+    "adaptive>=0.13.1",
     "notebook",
     "ipympl>=0.7.0",
     "plotly>=4.14.3",
@@ -62,7 +63,6 @@ setup(
         "sympy>=1.10.1",
         "matplotlib>3.4.2",    # v3.4.2 is required for tests to pass
         "mergedeep>=1.3.4",
-        "adaptive>=0.13.1",
     ],
     extras_require={
         "all": _all_deps,

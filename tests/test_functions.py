@@ -457,34 +457,34 @@ def test_plot_and_save_1():
         ###
         # Examples from the 'introduction' notebook
         ###
-        p = plot(x, legend=True)
-        p = plot(x * sin(x), x * cos(x))
+        p = plot(x, legend=True, adaptive=False, n=20)
+        p = plot(x * sin(x), x * cos(x), adaptive=False, n=20)
         p.extend(p)
         filename = "test_basic_options_and_colors.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p.extend(plot(x + 1))
-        p.append(plot(x + 3, x ** 2)[1])
+        p.extend(plot(x + 1, adaptive=False, n=20))
+        p.append(plot(x + 3, x ** 2, adaptive=False, n=20)[1])
         filename = "test_plot_extend_append.png"
         p.save(os.path.join(tmpdir, filename))
 
-        p[2] = plot(x ** 2, (x, -2, 3))
+        p[2] = plot(x ** 2, (x, -2, 3), adaptive=False, n=20)
         filename = "test_plot_setitem.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot(sin(x), (x, -2 * pi, 4 * pi))
+        p = plot(sin(x), (x, -2 * pi, 4 * pi), adaptive=False, n=20)
         filename = "test_line_explicit.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot(sin(x))
+        p = plot(sin(x), adaptive=False, n=20)
         filename = "test_line_default_range.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot((x ** 2, (x, -5, 5)), (x ** 3, (x, -3, 3)))
+        p = plot((x ** 2, (x, -5, 5)), (x ** 3, (x, -3, 3)), adaptive=False, n=20)
         filename = "test_line_multiple_range.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -492,12 +492,12 @@ def test_plot_and_save_1():
         raises(ValueError, lambda: plot(x, y))
 
         # Piecewise plots
-        p = plot(Piecewise((1, x > 0), (0, True)), (x, -1, 1))
+        p = plot(Piecewise((1, x > 0), (0, True)), (x, -1, 1), adaptive=False, n=20)
         filename = "test_plot_piecewise.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot(Piecewise((x, x < 1), (x ** 2, True)), (x, -3, 3))
+        p = plot(Piecewise((x, x < 1), (x ** 2, True)), (x, -3, 3), adaptive=False, n=20)
         filename = "test_plot_piecewise_2.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -507,8 +507,8 @@ def test_issue_7471():
     x = symbols("x")
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
-        p1 = plot(x)
-        p2 = plot(3)
+        p1 = plot(x, adaptive=False, n=20)
+        p2 = plot(3, adaptive=False, n=20)
         p1.extend(p2)
         filename = "test_horizontal_line.png"
         p1.save(os.path.join(tmpdir, filename))
@@ -525,7 +525,7 @@ def test_issue_10925():
             (x ** 2, And(0 <= x, x < 1)),
             (x ** 3, x >= 1),
         )
-        p = plot(f, (x, -3, 3))
+        p = plot(f, (x, -3, 3), adaptive=False, n=20)
         filename = "test_plot_piecewise_3.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -537,79 +537,88 @@ def test_plot_and_save_2():
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         # parametric 2d plots.
         # Single plot with default range.
-        p = plot_parametric(sin(x), cos(x))
+        p = plot_parametric(sin(x), cos(x), adaptive=False, n=20)
         filename = "test_parametric.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Single plot with range.
-        p = plot_parametric(sin(x), cos(x), (x, -5, 5), legend=True)
+        p = plot_parametric(sin(x), cos(x), (x, -5, 5), adaptive=False, n=20,
+            legend=True)
         filename = "test_parametric_range.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Multiple plots with same range.
-        p = plot_parametric((sin(x), cos(x)), (x, sin(x)))
+        p = plot_parametric((sin(x), cos(x)), (x, sin(x)), adaptive=False, n=20)
         filename = "test_parametric_multiple.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Multiple plots with different ranges.
-        p = plot_parametric((sin(x), cos(x), (x, -3, 3)), (x, sin(x), (x, -5, 5)))
+        p = plot_parametric(
+            (sin(x), cos(x), (x, -3, 3)),
+            (x, sin(x), (x, -5, 5)),
+            adaptive=False, n=20)
         filename = "test_parametric_multiple_ranges.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        # depth of recursion specified.
-        p = plot_parametric(x, sin(x), depth=13)
-        filename = "test_recursion_depth.png"
+        # No adaptive sampling.
+        p = plot_parametric(cos(x), sin(x), adaptive=False, n=20)
+        filename = "test_adaptive_false.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        # No adaptive sampling.
-        p = plot_parametric(cos(x), sin(x), adaptive=False, n=500)
-        filename = "test_adaptive.png"
+        # With adaptive sampling.
+        p = plot_parametric(cos(x), sin(x), adaptive=True, adaptive_goal=0.1)
+        filename = "test_adaptive_true.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # 3d parametric plots
-        p = plot3d_parametric_line(sin(x), cos(x), x, legend=True)
+        p = plot3d_parametric_line(sin(x), cos(x), x, legend=True,
+            adaptive=False, n=20)
         filename = "test_3d_line.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         p = plot3d_parametric_line(
-            (sin(x), cos(x), x, (x, -5, 5)), (cos(x), sin(x), x, (x, -3, 3))
-        )
+            (sin(x), cos(x), x, (x, -5, 5)),
+            (cos(x), sin(x), x, (x, -3, 3)),
+            adaptive=False, n=20)
         filename = "test_3d_line_multiple.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot3d_parametric_line(sin(x), cos(x), x, n=30)
+        p = plot3d_parametric_line(sin(x), cos(x), x, adaptive=False, n=20)
         filename = "test_3d_line_points.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # 3d surface single plot.
-        p = plot3d(x * y)
+        p = plot3d(x * y, adaptive=False, n=25)
         filename = "test_surface.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Multiple 3D plots with same range.
-        p = plot3d(-x * y, x * y, (x, -5, 5))
+        p = plot3d(-x * y, x * y, (x, -5, 5), adaptive=False, n=25)
         filename = "test_surface_multiple.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Multiple 3D plots with different ranges.
-        p = plot3d((x * y, (x, -3, 3), (y, -3, 3)), (-x * y, (x, -3, 3), (y, -3, 3)))
+        p = plot3d(
+            (x * y, (x, -3, 3), (y, -3, 3)),
+            (-x * y, (x, -3, 3), (y, -3, 3)),
+            adaptive=False, n=20)
         filename = "test_surface_multiple_ranges.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Single Parametric 3D plot
-        p = plot3d_parametric_surface(sin(x + y), cos(x - y), x - y)
+        p = plot3d_parametric_surface(sin(x + y), cos(x - y), x - y, n=25)
         filename = "test_parametric_surface.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -617,20 +626,20 @@ def test_plot_and_save_2():
         # Multiple Parametric 3D plots.
         p = plot3d_parametric_surface(
             (x * sin(z), x * cos(z), z, (x, -5, 5), (z, -5, 5)),
-            (sin(x + y), cos(x - y), x - y, (x, -5, 5), (y, -5, 5)),
-        )
+            (sin(x + y), cos(x - y), x - y, (x, -5, 5), (y, -5, 5)), n=25)
         filename = "test_parametric_surface.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Single Contour plot.
-        p = plot_contour(sin(x) * sin(y), (x, -5, 5), (y, -5, 5))
+        p = plot_contour(sin(x) * sin(y), (x, -5, 5), (y, -5, 5), n=25)
         filename = "test_contour_plot.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Multiple Contour plots with same range.
-        p = plot_contour(x ** 2 + y ** 2, x ** 3 + y ** 3, (x, -5, 5), (y, -5, 5))
+        p = plot_contour(x ** 2 + y ** 2, x ** 3 + y ** 3,
+            (x, -5, 5), (y, -5, 5), n=25)
         filename = "test_contour_plot.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -638,8 +647,7 @@ def test_plot_and_save_2():
         # Multiple Contour plots with different range.
         p = plot_contour(
             (x ** 2 + y ** 2, (x, -5, 5), (y, -5, 5)),
-            (x ** 3 + y ** 3, (x, -3, 3), (y, -3, 3)),
-        )
+            (x ** 3 + y ** 3, (x, -3, 3), (y, -3, 3)), n=25)
         filename = "test_contour_plot.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -654,7 +662,7 @@ def test_plot_and_save_4():
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         i = Integral(log((sin(x) ** 2 + 1) * sqrt(x ** 2 + 1)), (x, 0, y))
-        p = plot(i, (y, 1, 5))
+        p = plot(i, (y, 1, 5), adaptive=False, n=20)
         filename = "test_advanced_integral.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -686,13 +694,13 @@ def test_plot_and_save_6():
         # Test expressions that can not be translated to np and generate complex
         # results.
         ###
-        p = plot(sin(x) + I * cos(x))
+        p = plot(sin(x) + I * cos(x), adaptive=False, n=20)
         p.save(os.path.join(tmpdir, filename))
-        p = plot(sqrt(sqrt(-x)))
+        p = plot(sqrt(sqrt(-x)), adaptive=False, n=20)
         p.save(os.path.join(tmpdir, filename))
-        p = plot(LambertW(x))
+        p = plot(LambertW(x), adaptive=False, n=20)
         p.save(os.path.join(tmpdir, filename))
-        p = plot(sqrt(LambertW(x)))
+        p = plot(sqrt(LambertW(x)), adaptive=False, n=20)
         p.save(os.path.join(tmpdir, filename))
 
         # Characteristic function of a StudentT distribution with nu=10
@@ -709,10 +717,12 @@ def test_issue_11461():
     x = symbols("x")
 
     expr = real_root((log(x / (x - 2))), 3)
-    p = plot(expr, backend=MB, show=False)
+    p = plot(expr, backend=MB, show=False, adaptive=True)
     # Random number of segments, probably more than 100, but we want to see
     # that there are segments generated, as opposed to when the bug was present
-    assert len(p[0].get_data()[0]) > 30
+    d = p[0].get_data()
+    assert len(d[0]) >= 30
+    assert not np.isnan(d[1]).all()
 
     # plot_piecewise is not able to deal with ConditionSet
     raises(TypeError, lambda: plot_piecewise(expr, backend=MB, show=False))
@@ -724,21 +734,27 @@ def test_issue_11865():
         (-I * exp(I * pi * k) / k + I * exp(-I * pi * k) / k, Ne(k, 0)),
         (2 * pi, True)
     )
-    p = plot(f, backend=MB, show=False)
+    p = plot(f, backend=MB, show=False, adaptive=True)
     # Random number of segments, probably more than 100, but we want to see
     # that there are segments generated, as opposed to when the bug was present
-    assert len(p[0].get_data()[0]) > 30
+    d = p[0].get_data()
+    assert len(d[0]) >= 30
+    assert not np.isnan(d[1]).all()
 
-    p = plot_piecewise(f, backend=MB, show=False)
-    assert len(p[0].get_data()[0]) > 30
+    p = plot_piecewise(f, backend=MB, show=False, adaptive=True)
+    d = p[0].get_data()
+    assert len(d[0]) >= 30
+    assert not np.isnan(d[1]).all()
 
 
 def test_issue_16572():
     x = symbols("x")
-    p = plot(LambertW(x), backend=MB, show=False)
+    p = plot(LambertW(x), backend=MB, show=False, adaptive=False)
     # Random number of segments, probably more than 100, but we want to see
     # that there are segments generated, as opposed to when the bug was present
-    assert len(p[0].get_data()[0]) >= 30
+    d = p[0].get_data()
+    assert len(d[0]) >= 30
+    assert not np.isnan(d[1]).all()
 
 
 def test_logplot_PR_16796():
@@ -746,7 +762,9 @@ def test_logplot_PR_16796():
     p = plot(x, (x, 0.001, 100), backend=MB, xscale="log", show=False)
     # Random number of segments, probably more than 100, but we want to see
     # that there are segments generated, as opposed to when the bug was present
-    assert len(p[0].get_data()[0]) >= 30
+    d = p[0].get_data()
+    assert len(d[0]) >= 30
+    assert not np.isnan(d[1]).all()
     assert p[0].end == 100.0
     assert p[0].start == 0.001
 
@@ -757,23 +775,27 @@ def test_issue_17405():
     p = plot(f, (x, -10, 10), backend=MB, show=False)
     # Random number of segments, probably more than 100, but we want to see
     # that there are segments generated, as opposed to when the bug was present
-    assert len(p[0].get_data()[0]) >= 30
+    d = p[0].get_data()
+    assert len(d[0]) >= 30
+    assert not np.isnan(d[1]).all()
 
 
 def test_issue_15265():
     x = symbols("x")
     eqn = sin(x)
 
-    p = plot(eqn, xlim=(-S.Pi, S.Pi), ylim=(-1, 1))
+    p = plot(eqn, xlim=(-S.Pi, S.Pi), ylim=(-1, 1), adaptive=False, n=20)
     p.close()
 
-    p = plot(eqn, xlim=(-1, 1), ylim=(-S.Pi, S.Pi))
+    p = plot(eqn, xlim=(-1, 1), ylim=(-S.Pi, S.Pi), adaptive=False, n=20)
     p.close()
 
-    p = plot(eqn, xlim=(-1, 1), ylim=(sympify("-3.14"), sympify("3.14")))
+    p = plot(eqn, xlim=(-1, 1), ylim=(sympify("-3.14"), sympify("3.14")),
+        adaptive=False, n=20)
     p.close()
 
-    p = plot(eqn, xlim=(sympify("-3.14"), sympify("3.14")), ylim=(-1, 1))
+    p = plot(eqn, xlim=(sympify("-3.14"), sympify("3.14")), ylim=(-1, 1),
+        adaptive=False, n=20)
     p.close()
 
     raises(ValueError, lambda: plot(eqn, xlim=(-S.ImaginaryUnit, 1), ylim=(-1, 1)))
@@ -803,7 +825,8 @@ def test_append_issue_7140():
 
 def test_plot_limits():
     x = symbols("x")
-    p = plot(x, x ** 2, (x, -10, 10), backend=MB, show=False)
+    p = plot(x, x ** 2, (x, -10, 10), backend=MB, show=False,
+        adaptive=False, n=20)
 
     xmin, xmax = p.fig.axes[0].get_xlim()
     assert abs(xmin + 10) < 2
@@ -818,7 +841,7 @@ def test_plot3d_parametric_line_limits():
 
     v1 = (2 * cos(x), 2 * sin(x), 2 * x, (x, -5, 5))
     v2 = (sin(x), cos(x), x, (x, -5, 5))
-    p = plot3d_parametric_line(v1, v2)
+    p = plot3d_parametric_line(v1, v2, adaptive=False, n=200)
 
     xmin, xmax = p.ax.get_xlim()
     assert abs(xmin + 2) < 1e-2
@@ -830,7 +853,7 @@ def test_plot3d_parametric_line_limits():
     assert abs(zmin + 10) < 1e-2
     assert abs(zmax - 10) < 1e-2
 
-    p = plot3d_parametric_line(v2, v1)
+    p = plot3d_parametric_line(v2, v1, adaptive=False, n=200)
 
     xmin, xmax = p.ax.get_xlim()
     assert abs(xmin + 2) < 1e-2

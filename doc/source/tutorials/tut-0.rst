@@ -11,14 +11,15 @@ How does the plotting module works? Conceptually, it is very simple:
 
 When it comes to 2D line plots we can either use:
 
-* an adaptive algorithm which is going to chose where to evaluate a function in
-  order to obtain a smooth plot. The iterative procedure minimizes some loss
-  function (``loss_fn``) and will stop when the ``adaptive_goal`` has been
-  reached. This is the default algorithm used by the plotting module.
 * a meshing algorithm, which divides the specified range into ``n`` points
   (according to some strategy, for example linear or logarithm) over which
   the function will be evaluated. Usually, this approach is faster than the
-  adaptive algorithm.
+  adaptive algorithm. This is the default algorithm used by the plotting
+  module.
+* an adaptive algorithm which is going to chose where to evaluate a function in
+  order to obtain a smooth plot. The iterative procedure minimizes some loss
+  function (``loss_fn``) and will stop when the ``adaptive_goal`` has been
+  reached.
 
 The numerical evaluation is subjected to the limitations of a particular
 module as well as that of the chosen evaluation strategy (adaptive vs meshing
@@ -34,7 +35,8 @@ algorithm. We will understand when it is not appropriate to use it. Generally,
 if a function exhibits mid-to-high frequencies in relation to the plotting
 range, then it is better to switch to the uniform meshing algorithm.
 
-We can also play with ``detect_poles`` and ``eps`` in order to detect singularities. The singularity-dection algorithm is extremely simple,
+We can also play with ``detect_poles`` and ``eps`` in order to detect
+singularities. The singularity-dection algorithm is extremely simple,
 as it doesn't analyze the symbolic expression in any way: it only relies on
 the gradient of the numerical data, thus it is a post-processing step.
 This means than the user must know in advance if a function contains one or
@@ -203,7 +205,7 @@ Example - Smoothness
    :include-source: True
 
    >>> expr = x * sin(20 * x) - Abs(2 * x) + 6
-   >>> plot(expr, (x, -1, 1))
+   >>> plot(expr, (x, -1, 1), adaptive=True)
 
 Here the plotting module used the adaptive algorithm. In the provided range,
 the function has a relatively low frequency, so the adaptive algorithm (using
@@ -216,7 +218,7 @@ Let's try to use a wider plot range:
    :format: doctest
    :include-source: True
 
-   >>> plot(expr, (x, -10, 10))
+   >>> plot(expr, (x, -10, 10), adaptive=True)
 
 This is a case of mid-to-high frequencies (in relation to the plotting range
 used). We can see a few "missed" spikes. If we zoom into the plot, we will also
@@ -237,7 +239,7 @@ Let's try to decrease ``adaptive_goal`` by one order of magnitude:
    :format: doctest
    :include-source: True
 
-   >>> plot(expr, (x, -10, 10), adaptive_goal=1e-03)
+   >>> plot(expr, (x, -10, 10), adaptive=True, adaptive_goal=1e-03)
 
 
 The resulting plot is much better: by zooming into it we will see a nice smooth
@@ -264,7 +266,7 @@ Let's execute the following code:
    :format: doctest
    :include-source: True
 
-   >>> plot(floor(x))
+   >>> plot(floor(x), adaptive=True)
 
 Because we are dealing with a ``floor`` function, there are discontinuities
 between the horizontal segments. Let's activate the singularity-detection
@@ -275,7 +277,17 @@ algorithm:
    :format: doctest
    :include-source: True
 
-   >>> plot(floor(x), detect_poles=True)
+   >>> plot(floor(x), adaptive=True, detect_poles=True)
+
+We can also use the uniform meshing strategy, but we would have to use a
+sufficiently high number of discretization points:
+
+.. plot::
+   :context: close-figs
+   :format: doctest
+   :include-source: True
+
+   >>> plot(floor(x), adaptive=False, n=1e04, detect_poles=True)
 
 
 Example - Discontinuities 2
@@ -384,7 +396,7 @@ Example - Discontinuities 4
    :include-source: True
 
    >>> expr = sin(20 * x) + sign(sin(19.5 * x)) + x
-   >>> plot(expr)
+   >>> plot(expr, adaptive=True)
 
 The expression contains a ``sign`` function, so there should be discontinuities.
 Also, if we zoom into the plot we see that it is not very "smooth": the
@@ -409,7 +421,7 @@ Another function having many singularities:
    :include-source: True
 
    >>> expr = 1 / cos(10 * x) + 5 * sin(x)
-   >>> plot(expr)
+   >>> plot(expr, adaptive=True)
 
 Again, a very big spread along the y-direction. We need to limit it:
 
@@ -418,7 +430,7 @@ Again, a very big spread along the y-direction. We need to limit it:
    :format: doctest
    :include-source: True
 
-   >>> plot(expr, ylim=(-10, 10))
+   >>> plot(expr, adaptive=True, ylim=(-10, 10))
 
 The plot is clearly misleading. We can guess that it has a mid-to-high
 frequency with respect to the plotting range. Also, by looking at the
@@ -452,7 +464,7 @@ Let's try to plot the Gamma function:
    :include-source: True
 
    >>> expr = gamma(x)
-   >>> plot(expr, (x, -5, 5))
+   >>> plot(expr, (x, -5, 5), adaptive=True)
 
 A very big spread along the y-direction. We need to limit it:
 
@@ -461,7 +473,7 @@ A very big spread along the y-direction. We need to limit it:
    :format: doctest
    :include-source: True
 
-   >>> plot(expr, (x, -5, 5), ylim=(-5, 5))
+   >>> plot(expr, (x, -5, 5), ylim=(-5, 5), adaptive=True)
 
 Here we can see a few discontinuities. Let's enable the singularity detection
 algorithm:

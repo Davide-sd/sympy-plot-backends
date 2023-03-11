@@ -29,7 +29,7 @@ def test_adaptive_keys():
     must_have_keys = ["goal", "used_by_default"]
     for k in must_have_keys:
         assert k in cfg["adaptive"].keys()
-    assert cfg["adaptive"]["used_by_default"] is True
+    assert cfg["adaptive"]["used_by_default"] is False
     assert cfg["adaptive"]["goal"] == 0.01
 
 

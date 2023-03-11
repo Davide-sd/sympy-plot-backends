@@ -18,6 +18,21 @@ v2.0.0
   
   * The ``spb.interactive.create_series`` function has been removed.
 
+* Changed the default evaluation algorithm to a uniform sampling strategy,
+  instead of the adaptive algorithm. The latter is still
+  available, just set ``adaptive=True`` on the plotting functions that support
+  it. The motivation behind this change is that the adaptive algorithm is
+  usually much slower to produce comparable results: by default, the uniform
+  sampling strategy uses 1000 discretization points over the specified range
+  (users can increase it or decrease it), which is usually enough to smoothly
+  capture the function.
+
+  It also simplifies the dependencies of the module: now, the adaptive
+  algorithm is not required by the plotting module to successfully visualize
+  symbolic expressions, hence it is not installed. If users need the adaptive
+  algorithm, they'll have to follow the
+  `adaptive module installation instructions <https://github.com/python-adaptive/adaptive>'_.
+
 * ``PlotlyBackend``: fixed bug with interactive update of lines.
 
 

@@ -35,7 +35,7 @@ requirements:
     - sympy >=1.10.1
     # - vtk
     # - msgpack-python
-    - adaptive
+    # - adaptive
     # - mayavi >=4.8.0
     # - PyQt5 >= 5.15.7
 

@@ -119,9 +119,9 @@ def _hardcoded_defaults():
         # settings that will be passed to the adaptive library:
         # https://github.com/python-adaptive/adaptive/
         adaptive={
-            # select adaptive algorithm (True) or uniform meshing algorithm
-            # for line plots
-            "used_by_default": True,
+            # set True for adaptive algorithm, or False for  uniform meshing
+            # algorithm for line plots
+            "used_by_default": False,
             # higher number produces coarser results
             "goal": 0.01
         },
