@@ -41,6 +41,8 @@ v2.0.0
   reset()
   ```
 
+* Improved support for plotting summations.
+
 * ``PlotlyBackend``: fixed bug with interactive update of lines.
 
 

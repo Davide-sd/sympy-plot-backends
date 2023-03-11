@@ -4,7 +4,7 @@ from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    atan2, floor, ceiling, Sum
+    atan2, floor, ceiling, Sum, Product, Symbol
 )
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
@@ -327,9 +327,17 @@ class BaseSeries:
 
         self._functions = []
         self._signature = []
-        self._has_sum = False
         self._force_real_eval = kwargs.get("force_real_eval", None)
         self._discretized_domain = None
+        # NOTE: consider a generic summation, for example:
+        #   s = Sum(cos(pi * x), (x, 1, y))
+        # This gets lambdified to something:
+        #   sum(cos(pi*x) for x in range(1, y+1))
+        # Hence, y needs to be an integer, otherwise it raises:
+        #   TypeError: 'complex' object cannot be interpreted as an integer
+        # This list will contains symbols that are upper bound to summations
+        # or products
+        self._needs_to_be_int = []
 
     def _block_lambda_functions(self, *exprs):
         if any(callable(e) for e in exprs):
@@ -395,32 +403,27 @@ class BaseSeries:
         # NOTE: the goal is to create a dictionary stored in
         # self._discretized_domain, mapping symbols to a numpy array
         # representing the discretization
-        discr_symbols = [r[0] for r in self.ranges]
+        discr_symbols = []
         discretizations = []
 
         # create a 1D discretization
         for i, r in enumerate(self.ranges):
+            discr_symbols.append(r[0])
             c_start = complex(r[1])
             c_end = complex(r[2])
             start = c_start.real if c_start.imag == c_end.imag == 0 else c_start
             end = c_end.real if c_start.imag == c_end.imag == 0 else c_end
+            needs_integer_discr = self.only_integers or (r[0] in self._needs_to_be_int)
             d = BaseSeries._discretize(start, end, self.n[i],
-                scale=self.scales[i], only_integers=self.only_integers)
+                scale=self.scales[i],
+                only_integers=needs_integer_discr)
 
-            if (not self._force_real_eval) and (d.dtype != "complex"):
+            if ((not self._force_real_eval) and (not needs_integer_discr) and
+                (d.dtype != "complex")):
                 d = d + 1j * c_start.imag
 
-            # TODO: move this into uniform_eval and detect for Sum
-            if self.only_integers:
-                # NOTE: likely plotting a Sum. The lambdified function is
-                # using ``range``, requiring integer arguments.
+            if needs_integer_discr:
                 d = d.astype(int)
-                # HACK:
-                # However, now xx is of type np.int64. If the expression
-                # contains powers, for example 2**(-np.int64(3)) than
-                # ValueError is raised. Turns out that by converting to
-                # object the evaluation proceed as expected.
-                d = d.astype(object)
 
             discretizations.append(d)
 
@@ -465,7 +468,9 @@ class BaseSeries:
         args = []
         for s in self._signature:
             if s in self._params.keys():
-                args.append(self._params[s] if self._force_real_eval
+                args.append(
+                    int(self._params[s]) if s in self._needs_to_be_int else
+                    self._params[s] if self._force_real_eval
                     else complex(self._params[s]))
             else:
                 args.append(self._discretized_domain[s])
@@ -497,10 +502,15 @@ class BaseSeries:
         is_callable = callable(e) if not is_iter else any(callable(t) for t in e)
         if is_callable:
             self._expr = e
-            self._has_sum = False
         else:
             self._expr = sympify(e) if not is_iter else Tuple(*e)
-            self._has_sum = self._expr.has(Sum)
+            s = set()
+            for e in self._expr.atoms(Sum, Product):
+                for a in e.args[1:]:
+                    if isinstance(a[-1], Symbol):
+                        s.add(a[-1])
+            self._needs_to_be_int = list(s)
+
             # list of functions that when lambdified, the corresponding numpy
             # functions that don't like complex-type arguments
             pf = [ceiling, floor, atan2]

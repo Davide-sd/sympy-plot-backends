@@ -398,9 +398,9 @@ def plot(*args, **kwargs):
 
     only_integers : boolean, optional
         Default to ``False``. If ``True``, discretize the domain with integer
-        numbers, which can be useful to plot sums. It only works when
-        ``adaptive=False``. When ``only_integers=True``, the number of
-        discretization points is choosen by the algorithm.
+        numbers. It only works when ``adaptive=False``.
+        When ``only_integers=True``, the number of discretization points is
+        choosen by the algorithm.
 
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
@@ -526,7 +526,7 @@ def plot(*args, **kwargs):
        :include-source: True
 
        >>> expr = Sum(1 / x, (x, 1, y))
-       >>> plot(expr, (y, 2, 10), adaptive=False, only_integers=True,
+       >>> plot(expr, (y, 2, 10), adaptive=False,
        ...     is_point=True, is_filled=True, title="$%s$" % latex(expr))
        Plot object containing:
        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
