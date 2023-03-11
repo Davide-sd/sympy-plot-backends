@@ -2238,13 +2238,9 @@ def test_complex_adaptive_true():
     expr1 = sqrt(x) * exp(-x**2)
     expr2 = sqrt(u * x) * exp(-x**2)
     s1 = LineOver1DRangeSeries(im(expr1), (x, -5, 5), "",
-        adaptive=True, adaptive_goal=0.1, is_complex=False)
-    s2 = LineOver1DRangeSeries(im(expr1), (x, -5, 5), "",
-        adaptive=True, adaptive_goal=0.1, is_complex=True)
+        adaptive=True, adaptive_goal=0.1)
     data1 = s1.get_data()
-    data2 = s2.get_data()
     assert all(not np.allclose(d, 0) for d in data1)
-    assert all(not np.allclose(d, 0) for d in data2)
 
     s1 = Parametric2DLineSeries(re(expr1), im(expr1), (x, -pi, pi),
         adaptive=True, adaptive_goal=0.1)

@@ -856,7 +856,7 @@ class BaseSeries:
         elif (len(args) == 5) and isinstance(self, ParametricSurfaceSeries):
             x, y, z, u, v = args
             return (t(x, self._tx), t(y, self._ty), t(z, self._tz), u, v)
-        elif (len(args) == 6) and (not self.is_complex): # 3D vector plot
+        elif (len(args) == 6) and self.is_3Dvector: # 3D vector plot
             x, y, z, u, v, w = args
             return (
                 t(x, self._tx), t(y, self._ty), t(z, self._tz),
@@ -2121,8 +2121,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
             self.scales[1], self.only_integers)
         xx, yy = np.meshgrid(x, y)
         domain = xx + 1j * yy
-        self._rranges = {self.var: domain}
-        self._discretized_domain = self._rranges
+        self._discretized_domain = {self.var: domain}
 
 
 class ComplexSurfaceSeries(ComplexSurfaceBaseSeries):

@@ -233,7 +233,6 @@ def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
     """Create the series and setup the backend."""
     args = _plot_sympify(args)
     kwargs = _set_discretization_points(kwargs, ComplexSurfaceBaseSeries)
-    kwargs["is_complex"] = True
 
     if not pcl:
         series = _build_series(*args, allow_lambda=allow_lambda, **kwargs)
