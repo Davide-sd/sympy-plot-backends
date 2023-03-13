@@ -8,9 +8,4 @@ Series
 
 .. autofunction:: spb.series.BaseSeries.get_data
 
-
-.. autoclass:: InteractiveSeries
-
-.. autofunction:: spb.series.InteractiveSeries.get_data
-
-.. autoattribute:: spb.series.InteractiveSeries.params
+.. autofunction:: spb.series.BaseSeries.params

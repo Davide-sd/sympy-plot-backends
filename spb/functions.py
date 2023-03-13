@@ -358,15 +358,22 @@ def plot(*args, **kwargs):
         A function of 2 variables, x, y (the points computed by the internal
         algorithm) which defines the line color. Default to None.
 
-    detect_poles : boolean
+    detect_poles : boolean, optional
         Chose whether to detect and correctly plot poles.
         Defaulto to ``False``. To improve detection, increase the number of
         discretization points ``n`` and/or change the value of ``eps``.
 
-    eps : float
+    eps : float, optional
         An arbitrary small value used by the ``detect_poles`` algorithm.
         Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
+
+    force_real_eval : boolean, optional
+        Default to False, with which the numerical evaluation is attempted
+        over a complex domain, which is slower but produces correct results.
+        Set this to True if performance is of paramount importance, but be
+        aware that it might produce wrong results. It only works with
+        ``adaptive=False``.
 
     is_point : boolean, optional
         Default to False, which will render a line connecting all the points.
@@ -766,6 +773,13 @@ def plot_parametric(*args, **kwargs):
         * 3 arguments: ``f(x, y, t)``.
 
         Default to None.
+
+    force_real_eval : boolean, optional
+        Default to False, with which the numerical evaluation is attempted
+        over a complex domain, which is slower but produces correct results.
+        Set this to True if performance is of paramount importance, but be
+        aware that it might produce wrong results. It only works with
+        ``adaptive=False``.
 
     label : str or list/tuple, optional
         The label to be shown in the legend or in the colorbar. If not
@@ -1230,6 +1244,13 @@ def plot3d_parametric_line(*args, **kwargs):
 
         Default to None.
 
+    force_real_eval : boolean, optional
+        Default to False, with which the numerical evaluation is attempted
+        over a complex domain, which is slower but produces correct results.
+        Set this to True if performance is of paramount importance, but be
+        aware that it might produce wrong results. It only works with
+        ``adaptive=False``.
+
     is_point : boolean, optional
         Default to False, which will render a line connecting all the points.
         If True, a scatter plot will be generated.
@@ -1691,6 +1712,13 @@ def plot3d(*args, **kwargs):
         internal algorithm) which defines the surface color when
         ``use_cm=True``. Default to None.
 
+    force_real_eval : boolean, optional
+        Default to False, with which the numerical evaluation is attempted
+        over a complex domain, which is slower but produces correct results.
+        Set this to True if performance is of paramount importance, but be
+        aware that it might produce wrong results. It only works with
+        ``adaptive=False``.
+
     is_polar : boolean, optional
         Default to False. If True, requests a polar discretization. In this
         case, ``range_x`` represents the radius, ``range_y`` represents the
@@ -2001,6 +2029,13 @@ def plot3d_parametric_surface(*args, **kwargs):
         * 5 arguments: ``f(x, y, z, u, v)``.
 
         Default to None.
+
+    force_real_eval : boolean, optional
+        Default to False, with which the numerical evaluation is attempted
+        over a complex domain, which is slower but produces correct results.
+        Set this to True if performance is of paramount importance, but be
+        aware that it might produce wrong results. It only works with
+        ``adaptive=False``.
 
     label : str or list/tuple, optional
         The label to be shown in the colorbar. If not provided, the string
@@ -4047,7 +4082,7 @@ def plot_piecewise(*args, **kwargs):
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
 
-    detect_poles : boolean
+    detect_poles : boolean, optional
         Chose whether to detect and correctly plot poles.
         Defaulto to ``False``. To improve detection, increase the number of
         discretization points ``n`` and/or change the value of ``eps``.
@@ -4055,10 +4090,17 @@ def plot_piecewise(*args, **kwargs):
     dots : boolean
         Wheter to show circular markers at the endpoints. Default to True.
 
-    eps : float
+    eps : float, optional
         An arbitrary small value used by the ``detect_poles`` algorithm.
         Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
+
+    force_real_eval : boolean, optional
+        Default to False, with which the numerical evaluation is attempted
+        over a complex domain, which is slower but produces correct results.
+        Set this to True if performance is of paramount importance, but be
+        aware that it might produce wrong results. It only works with
+        ``adaptive=False``.
 
     label : str or list/tuple, optional
         The label to be shown in the legend. If not provided, the string

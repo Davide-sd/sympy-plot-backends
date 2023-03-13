@@ -461,8 +461,8 @@ def _validate_kwargs(backend_obj, **kwargs):
     # some functions injects the following keyword arguments that will be
     # processed by other functions before instantion of Series and Backend.
     allowed_keys = allowed_keys.union([
-        "is_interactive", "abs", "absarg", "arg", "real", "imag",
-        "is_complex", "is_vector", "slice", "threed", "sum_bound", "n",
+        "abs", "absarg", "arg", "real", "imag", "force_real_eval",
+        "slice", "threed", "sum_bound", "n",
         "phaseres", "is_polar", "label",
         "wireframe", "wf_n1", "wf_n2", "wf_npoints", "wf_rendering_kw",
         "dots",

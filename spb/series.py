@@ -374,9 +374,6 @@ class BaseSeries:
         """Create the lambda functions to be used by the uniform meshing
         strategy.
         """
-        if self._functions:
-            return
-
         exprs = self.expr if hasattr(self.expr, "__iter__") else [self.expr]
         if not any(callable(e) for e in exprs):
             fs = set().union(*[e.free_symbols for e in exprs])
@@ -459,9 +456,11 @@ class BaseSeries:
         np = import_module('numpy')
 
         # create lambda functions
-        self._create_lambda_func()
+        if not self._functions:
+            self._create_lambda_func()
         # create (or update) the discretized domain
-        self._create_discretized_domain()
+        if not self._discretized_domain:
+            self._create_discretized_domain()
         # ensure that discretized domains are returned with the proper order
         discr = [self._discretized_domain[s[0]] for s in self.ranges]
 
@@ -574,6 +573,9 @@ class BaseSeries:
             self._n[0] = v
         else:
             self._n[:len(v)] = v
+        if self._discretized_domain:
+            # update the discretized domain
+            self._create_discretized_domain()
 
     @property
     def params(self):
