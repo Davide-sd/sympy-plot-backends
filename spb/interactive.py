@@ -201,8 +201,7 @@ class DynamicParam(param.Parameterized):
                     v = param.Number(**v)
 
             param_name = "dyn_param_{}".format(i)
-            # TODO: using a private method: not the smartest thing to do
-            self.param._add_parameter(param_name, v)
+            self.param.add_parameter(param_name, v)
             self.param.watch(self._increment_val, param_name)
             self.mapping[k] = param_name
 
