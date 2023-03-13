@@ -4,7 +4,7 @@ from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    atan2, floor, ceiling, Sum, Product, Symbol
+    atan2, floor, ceiling, Sum, Product, Symbol, frac
 )
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
@@ -520,7 +520,7 @@ class BaseSeries:
 
             # list of functions that when lambdified, the corresponding numpy
             # functions that don't like complex-type arguments
-            pf = [ceiling, floor, atan2]
+            pf = [ceiling, floor, atan2, frac]
             if self._force_real_eval is not True:
                 self._force_real_eval = any(self._expr.has(f) for f in pf)
                 if self._force_real_eval and (self.modules is None):
