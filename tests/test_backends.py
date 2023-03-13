@@ -786,8 +786,8 @@ def test_plot3d_wireframe():
     assert len(p1.series) == 21
     assert isinstance(p1[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
-    assert all((not s.adaptive) and (s.n[0] == p1[0].n2) for s in p1.series[1:11])
-    assert all((not s.adaptive) and (s.n[0] == p1[0].n1) for s in p1.series[11:])
+    assert all((not s.adaptive) and (s.n[0] == p1[0].n[1]) for s in p1.series[1:11])
+    assert all((not s.adaptive) and (s.n[0] == p1[0].n[0]) for s in p1.series[11:])
     assert all(p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
     assert np.allclose(
         [t.x[0] for t in p1.fig.data[1:11]], np.linspace(-2, 2, 10))
@@ -824,8 +824,8 @@ def test_plot3d_wireframe():
     assert len(p4.series) == 1 + 20 + 40
     assert isinstance(p4[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p4.series[1:])
-    assert all((not s.adaptive) and (s.n[0] == p4[0].n2) for s in p4.series[1:21])
-    assert all((not s.adaptive) and (s.n[0] == p4[0].n1) for s in p4.series[21:])
+    assert all((not s.adaptive) and (s.n[0] == p4[0].n[1]) for s in p4.series[1:21])
+    assert all((not s.adaptive) and (s.n[0] == p4[0].n[0]) for s in p4.series[21:])
     assert all(t["line"]["color"] == "red" for t in p4.fig.data[1:])
     assert np.allclose(
         [t.x[0] for t in p4.fig.data[1:21]], np.linspace(0, 3.25, 20))
@@ -851,8 +851,8 @@ def test_plot3d_wireframe_lambda_function():
     assert len(p1.series) == 21
     assert isinstance(p1[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
-    assert all((not s.adaptive) and (s.n[0] == p1[0].n2) for s in p1.series[1:11])
-    assert all((not s.adaptive) and (s.n[0] == p1[0].n1) for s in p1.series[11:])
+    assert all((not s.adaptive) and (s.n[0] == p1[0].n[1]) for s in p1.series[1:11])
+    assert all((not s.adaptive) and (s.n[0] == p1[0].n[0]) for s in p1.series[11:])
     assert all(p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
     assert np.allclose(
         [t.x[0] for t in p1.fig.data[1:11]], np.linspace(-2, 2, 10))
@@ -869,8 +869,8 @@ def test_plot3d_wireframe_lambda_function():
     assert len(p4.series) == 1 + 20 + 40
     assert isinstance(p4[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p4.series[1:])
-    assert all((not s.adaptive) and (s.n[0] == p4[0].n2) for s in p4.series[1:21])
-    assert all((not s.adaptive) and (s.n[0] == p4[0].n1) for s in p4.series[21:])
+    assert all((not s.adaptive) and (s.n[0] == p4[0].n[1]) for s in p4.series[1:21])
+    assert all((not s.adaptive) and (s.n[0] == p4[0].n[0]) for s in p4.series[21:])
     assert all(t["line"]["color"] == "red" for t in p4.fig.data[1:])
     assert np.allclose(
         [t.x[0] for t in p4.fig.data[1:21]], np.linspace(0, 3.25, 20))
@@ -895,8 +895,8 @@ def test_plot3d_parametric_surface_wireframe():
     assert len(p.series) == 1 + 5 + 6
     assert isinstance(p[0], ParametricSurfaceSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p.series[1:])
-    assert all((not s.adaptive) and (s.n[0] == p[0].n2) for s in p.series[1:6])
-    assert all((not s.adaptive) and (s.n[0] == p[0].n1) for s in p.series[6:])
+    assert all((not s.adaptive) and (s.n[0] == p[0].n[1]) for s in p.series[1:6])
+    assert all((not s.adaptive) and (s.n[0] == p[0].n[0]) for s in p.series[6:])
     assert all(t["line"]["color"] == "red" for t in p.fig.data[1:])
     assert all([np.isclose(k[0], -1) and np.isclose(k[-1], 1)
         for k in [t.get_data()[-1] for t in p.series[1:6]]])
@@ -923,8 +923,8 @@ def test_plot3d_parametric_surface_wireframe_lambda_function():
     assert len(p1.series) == 1 + 5 + 6
     assert isinstance(p1[0], ParametricSurfaceSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
-    assert all((not s.adaptive) and (s.n[0] == p1[0].n2) for s in p1.series[1:6])
-    assert all((not s.adaptive) and (s.n[0] == p1[0].n1) for s in p1.series[6:])
+    assert all((not s.adaptive) and (s.n[0] == p1[0].n[1]) for s in p1.series[1:6])
+    assert all((not s.adaptive) and (s.n[0] == p1[0].n[0]) for s in p1.series[6:])
     assert all(p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
     assert all([np.isclose(k[0], -1) and np.isclose(k[-1], 0)
         for k in [t.get_data()[-1] for t in p1.series[1:6]]])

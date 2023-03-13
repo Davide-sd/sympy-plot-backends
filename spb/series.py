@@ -289,6 +289,10 @@ class BaseSeries:
     # contains a list of keyword arguments supported by the series. It will be
     # used to validate the user-provided keyword arguments.
 
+    _N = 100
+    # default number of discretization points for uniform sampling. Each
+    # subclass can set its number.
+
     def __init__(self, *args, **kwargs):
         # TODO: raise a warning?
         # evaluation with adaptive=False will be done over integers
@@ -301,7 +305,11 @@ class BaseSeries:
 
         self._label = self._latex_label = ""
         self._ranges = []
-        self._n = [0, 0, 0]
+        self._n = [
+            int(kwargs.get("n1", self._N)),
+            int(kwargs.get("n2", self._N)),
+            int(kwargs.get("n3", self._N))
+        ]
         self._scales = [
             kwargs.get("xscale", "linear"),
             kwargs.get("yscale", "linear"),
@@ -565,10 +573,28 @@ class BaseSeries:
 
     @property
     def n(self):
+        """Returns a list [n1, n2, n3] of numbers of discratization points.
+        """
         return self._n
 
     @n.setter
     def n(self, v):
+        """Set the numbers of discretization points. ``v`` must be an int or
+        a list.
+
+        Let ``s`` be a series. Then:
+
+        * to set the number of discretization points along the x direction (or
+          first parameter): ``s.n = 10``
+        * to set the number of discretization points along the x and y
+          directions (or first and second parameters): ``s.n = [10, 15]``
+        * to set the number of discretization points along the x, y and z
+          directions: ``s.n = [10, 15, 20]``
+
+        Note that the following is highly unreccomended, because it prevents
+        the execution of necessary code in order to keep updated data:
+        ``s.n[1] = 15``
+        """
         if not hasattr(v, "__iter__"):
             self._n[0] = v
         else:
@@ -1447,9 +1473,6 @@ class SurfaceBaseSeries(BaseSeries):
 
     def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)
-        self.n1 = int(kwargs.get("n1", 100))
-        self.n2 = int(kwargs.get("n2", 100))
-        self.n = [self.n1, self.n2]
         self.xscale = kwargs.get("xscale", "linear")
         self.yscale = kwargs.get("yscale", "linear")
         self.adaptive = kwargs.get("adaptive", False)
@@ -1936,6 +1959,7 @@ class ImplicitSeries(BaseSeries):
 
 class Implicit3DSeries(SurfaceBaseSeries):
     is_implicit = True
+    _N = 60
 
     def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
         super().__init__(**kwargs)
@@ -1954,12 +1978,6 @@ class Implicit3DSeries(SurfaceBaseSeries):
             (self.var_y, self.start_y, self.end_y),
             (self.var_z, self.start_z, self.end_z),
         ]
-        # keep number of discretization points low as some backend might be
-        # slow at processing/rendering
-        self.n1 = int(kwargs.get("n1", 60))
-        self.n2 = int(kwargs.get("n2", 60))
-        self.n3 = int(kwargs.get("n3", 60))
-        self.n = [self.n1, self.n2, self.n3]
         self._set_surface_label(label)
         self._allowed_keys += ["n3", "zscale"]
 
@@ -2041,6 +2059,7 @@ class ComplexPointSeries(Line2DBaseSeries):
 class ComplexSurfaceBaseSeries(BaseSeries):
     """Represent a complex function."""
     is_complex = True
+    _N = 300
     _allowed_keys = ["absarg", "coloring", "color_func", "modules", "phaseres",
     "is_polar", "n1", "n2", "only_integers", "rendering_kw", "steps",
     "surface_color","use_cm", "xscale", "yscale", "tx", "ty", "tz", "threed"]
@@ -2072,9 +2091,6 @@ class ComplexSurfaceBaseSeries(BaseSeries):
 
         self._label = str(self.expr) if label is None else label
         self._latex_label = latex(self.expr) if label is None else label
-        self.n1 = int(kwargs.get("n1", 300))
-        self.n2 = int(kwargs.get("n2", 300))
-        self.n = [self.n1, self.n2]
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self.is_polar = kwargs.get("is_polar", False)
         self.surface_color = kwargs.get("surface_color", None)
@@ -2117,9 +2133,9 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         end_x = self.end.real
         start_y = self.start.imag
         end_y = self.end.imag
-        x = self._discretize(start_x, end_x, self.n1,
+        x = self._discretize(start_x, end_x, self.n[0],
             self.scales[0], self.only_integers)
-        y = self._discretize(start_y, end_y, self.n2,
+        y = self._discretize(start_y, end_y, self.n[1],
             self.scales[1], self.only_integers)
         xx, yy = np.meshgrid(x, y)
         domain = xx + 1j * yy
@@ -2309,10 +2325,6 @@ class VectorBase(BaseSeries):
         self.ranges = new_ranges
         self._label = str(exprs) if label is None else label
         self._latex_label = latex(exprs) if label is None else label
-        self.n1 = int(kwargs.get("n1", self._N))
-        self.n2 = int(kwargs.get("n2", self._N))
-        self.n3 = int(kwargs.get("n3", self._N))
-        self.n = [self.n1, self.n2, self.n3]
         self.is_streamlines = kwargs.get("streamlines", False)
         self.use_cm = kwargs.get("use_cm", True)
         self.color_func = kwargs.get("color_func", None)
@@ -2564,6 +2576,7 @@ class PlaneSeries(SurfaceBaseSeries):
     """Represents a plane in a 3D domain."""
 
     is_3Dsurface = True
+    _N = 20
 
     # a generic plane (for example with normal (1,1,1)) can generate a huge
     # range along the z-direction. With _use_nan=True, every z-value outside
@@ -2583,10 +2596,6 @@ class PlaneSeries(SurfaceBaseSeries):
         self.y_range = sympify(y_range)
         self.z_range = sympify(z_range)
         self.ranges = [self.x_range, self.y_range, self.z_range]
-        self.n1 = int(kwargs.get("n1", 20))
-        self.n2 = int(kwargs.get("n2", 20))
-        self.n3 = int(kwargs.get("n3", 20))
-        self.n = [self.n1, self.n2, self.n3]
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self._set_surface_label(label)
         self.surface_color = kwargs.get("surface_color", None)
@@ -2614,8 +2623,8 @@ class PlaneSeries(SurfaceBaseSeries):
                 (x, *self.z_range[1:]),
                 (y, *self.y_range[1:]),
                 "",
-                n1=self.n3,
-                n2=self.n2,
+                n1=self.n[2],
+                n2=self.n[1],
                 xscale=self.xscale,
                 yscale=self.yscale
             )
@@ -2628,8 +2637,8 @@ class PlaneSeries(SurfaceBaseSeries):
                 (x, *self.x_range[1:]),
                 (y, *self.z_range[1:]),
                 "",
-                n1=self.n1,
-                n2=self.n3,
+                n1=self.n[0],
+                n2=self.n[2],
                 xscale=self.xscale,
                 yscale=self.yscale
             )
@@ -2652,8 +2661,8 @@ class PlaneSeries(SurfaceBaseSeries):
                 (x, *self.x_range[1:]),
                 (y, *self.z_range[1:]),
                 "",
-                n1=self.n1,
-                n2=self.n3,
+                n1=self.n[0],
+                n2=self.n[2],
                 xscale=self.xscale,
                 yscale=self.yscale
             )
@@ -2682,8 +2691,8 @@ class PlaneSeries(SurfaceBaseSeries):
                 (x, *self.x_range[1:]),
                 (y, *self.y_range[1:]),
                 "",
-                n1=self.n1,
-                n2=self.n2,
+                n1=self.n[0],
+                n2=self.n[1],
                 xscale=self.xscale,
                 yscale=self.yscale
             )

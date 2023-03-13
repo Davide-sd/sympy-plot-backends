@@ -1565,7 +1565,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                 is_callable = any(callable(e) for e in expr)
 
                 for uval in np.linspace(float(sx), float(ex), wf_n1):
-                    kw["n"] = s.n2 if npoints is None else npoints
+                    kw["n"] = s.n[1] if npoints is None else npoints
                     if is_callable:
                         # NOTE: closure on lambda functions
                         param_expr = [lambda t, uv=uval, e=e: e(uv, t) for e in expr]
@@ -1575,7 +1575,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                         ranges = [(y, sy, ey)]
                     lines.append(create_series(param_expr, ranges, s, **kw))
                 for vval in np.linspace(float(sy), float(ey), wf_n2):
-                    kw["n"] = s.n1 if npoints is None else npoints
+                    kw["n"] = s.n[0] if npoints is None else npoints
                     if is_callable:
                         # NOTE: closure on lambda functions
                         param_expr = [lambda t, vv=vval, e=e: e(t, vv) for e in expr]
@@ -1592,7 +1592,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
             else:
                 if not s.is_polar:
                     for xval in np.linspace(float(sx), float(ex), wf_n1):
-                        kw["n"] = s.n2 if npoints is None else npoints
+                        kw["n"] = s.n[1] if npoints is None else npoints
                         if callable(expr):
                             # NOTE: closure on lambda functions
                             param_expr = [lambda t, xv=xval: xv, lambda t: t, lambda t, xv=xval: expr(xv, t)]
@@ -1602,7 +1602,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                             ranges = [(y, sy, ey)]
                         lines.append(create_series(param_expr, ranges, s, **kw))
                     for yval in np.linspace(float(sy), float(ey), wf_n2):
-                        kw["n"] = s.n1 if npoints is None else npoints
+                        kw["n"] = s.n[0] if npoints is None else npoints
                         if callable(expr):
                             # NOTE: closure on lambda functions
                             param_expr = [lambda t: t, lambda t, yv=yval: yv, lambda t, yv=yval: expr(t, yv)]
@@ -1613,7 +1613,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                         lines.append(create_series(param_expr, ranges, s, **kw))
                 else:
                     for rval in np.linspace(float(sx), float(ex), wf_n1):
-                        kw["n"] = s.n2 if npoints is None else npoints
+                        kw["n"] = s.n[1] if npoints is None else npoints
                         if callable(expr):
                             param_expr = [lambda t, rv=rval: rv * np.cos(t), lambda t, rv=rval: rv * np.sin(t), lambda t, rv=rval: expr(rv, t)]
                             ranges = [(y, sy, ey)]
@@ -1622,7 +1622,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                             ranges = [(y, sy, ey)]
                         lines.append(create_series(param_expr, ranges, s, **kw))
                     for tval in np.linspace(float(sy), float(ey), wf_n2):
-                        kw["n"] = s.n1 if npoints is None else npoints
+                        kw["n"] = s.n[0] if npoints is None else npoints
                         if callable(expr):
                             param_expr = [lambda p, tv=tval: p * np.cos(tv), lambda p, tv=tval: p * np.sin(tv), lambda p, tv=tval: expr(p, tv)]
                             ranges = [(x, sx, ex)]
@@ -2931,9 +2931,9 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis
     if show_curve:
         if params is None:
             backend = type(surface)
-            n = surface[0].n1
+            n = surface[0].n[0]
         else:
-            n = surface.backend[0].n1
+            n = surface.backend[0].n[0]
             backend = type(surface.backend)
             curve_kw["params"] = params
 

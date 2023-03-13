@@ -621,8 +621,8 @@ class PlotlyBackend(Plot):
                         go.Image(
                             x0=xmin,
                             y0=ymin,
-                            dx=(xmax - xmin) / s.n1,
-                            dy=(ymax - ymin) / s.n2,
+                            dx=(xmax - xmin) / s.n[0],
+                            dy=(ymax - ymin) / s.n[1],
                             z=img,
                             name=s.get_label(self._use_latex),
                             customdata=np.dstack([mag, angle]),
