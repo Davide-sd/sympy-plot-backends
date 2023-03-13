@@ -364,7 +364,7 @@ class PanelLayout:
             d = dict(data=list(self.fig.data), layout=self.fig.layout)
             self.pane = pn.pane.Plotly(d, **kw)
         else:
-            self.pane = pn.pane.Pane(self.fig, **kw)
+            self.pane = pn.pane.panel(self.fig, **kw)
 
     def layout_controls(self):
         return self.controls
