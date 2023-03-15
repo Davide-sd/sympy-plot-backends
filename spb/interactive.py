@@ -1,5 +1,8 @@
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.utils import _validate_kwargs
+from spb.bootstrap_spb import (
+    SymPyBootstrapTemplate,
+    SymPyBootstrapDarkTheme, SymPyBootstrapDefaultTheme)
 from sympy import latex, Tuple
 from sympy.external import import_module
 import warnings
@@ -24,23 +27,6 @@ class MyList(param.ObjectSelector):
 # explicitely ask panel to use DiscreteSlider when it encounters a
 # MyList object
 pn.Param.mapping[MyList] = pn.widgets.DiscreteSlider
-
-
-# Define a few CSS rules that are going to overwrite the template's ones.
-# They are only going to be used when the interactive application will be
-# served to a new browser window.
-_CUSTOM_CSS = """
-#header {padding: 0}
-.title {
-    font-size: 1em;
-    font-weight: bold;
-    padding-left: 10px;
-}
-"""
-
-_CUSTOM_CSS_NO_HEADER = """
-#header {display: none}
-"""
 
 
 class DynamicParam(param.Parameterized):
@@ -235,7 +221,8 @@ class PanelLayout:
     the library panel.
     """
 
-    def __init__(self, layout, ncols, throttled=False, servable=False, custom_css="", pane_kw=None):
+    def __init__(self, layout, ncols, throttled=False, servable=False,
+        custom_css="", pane_kw=None, template=None):
         """
         Parameters
         ==========
@@ -266,6 +253,16 @@ class PanelLayout:
             pane_kw : dict, optional
                 A dictionary of keyword arguments that are going to be passed
                 to the pane containing the chart.
+
+            template : optional
+                Specify the template to be used to build the interactive
+                application. It can be one of the following options:
+
+                * None: the default template will be used.
+                * dictionary of keyword arguments to customize the default
+                  template.
+                * an instance of pn.template.base.BasicTemplate
+                * a subclass of pn.template.base.BasicTemplate
         """
         # NOTE: More often than not, the numerical evaluation is going to be
         # resource-intensive. By default, panel's sliders will force a
@@ -289,6 +286,7 @@ class PanelLayout:
         self._servable = servable
         self._custom_css = custom_css
         self._pane_kw = pane_kw
+        self._template = template
 
         # NOTE: here I create a temporary panel.Param object in order to
         # reuse the code from the pn.Param.widget method, which returns the
@@ -391,38 +389,57 @@ class PanelLayout:
     def show(self):
         self._init_pane()
 
-        if self._layout == "tb":
-            content = pn.Column(self.layout_controls, self.pane)
-        elif self._layout == "bb":
-            content = pn.Column(self.pane, self.layout_controls)
-        elif self._layout == "sbl":
-            content = pn.Row(pn.Column(self.layout_controls, css_classes=["iplot-controls"], width=250, sizing_mode="fixed"), pn.Column(self.pane), width_policy="max")
-        elif self._layout == "sbr":
-            content = pn.Row(pn.Column(self.pane), pn.Column(self.layout_controls, css_classes=["iplot-controls"]))
-
         if not self._servable:
+            if self._layout == "tb":
+                content = pn.Column(self.layout_controls, self.pane)
+            elif self._layout == "bb":
+                content = pn.Column(self.pane, self.layout_controls)
+            elif self._layout == "sbl":
+                content = pn.Row(
+                    pn.Column(self.layout_controls),
+                    pn.Column(self.pane), width_policy="max")
+            elif self._layout == "sbr":
+                content = pn.Row(
+                    pn.Column(self.pane),
+                    pn.Column(self.layout_controls))
+
             return content
 
-        return self._create_template(content, True)
+        template = self._create_template()
+        template.main.append(self.pane)
+        template.sidebar.append(self.layout_controls)
+        template.config.raw_css.append(self._custom_css)
 
-    def _create_template(self, content, show=False):
-        css = _CUSTOM_CSS + self._custom_css
-        if len(self._name.strip()) == 0:
-            css = _CUSTOM_CSS_NO_HEADER + self._custom_css
-
-        # theme = pn.template.vanilla.VanillaDarkTheme if cfg["interactive"]["theme"] == "dark" else pn.template.vanilla.VanillaDefaultTheme
-        # vanilla = pn.template.VanillaTemplate(title=self._name, theme=theme)
-        # vanilla.main.append(content)
-        # vanilla.config.raw_css.append(css)
-
-        theme = pn.template.bootstrap.BootstrapDarkTheme if cfg["interactive"]["theme"] == "dark" else pn.template.bootstrap.BootstrapDefaultTheme
-        vanilla = pn.template.BootstrapTemplate(title=self._name, theme=theme)
-        vanilla.main.append(content)
-        vanilla.config.raw_css.append(css)
-
+        show = True
         if show:
-            return vanilla.servable().show()
-        return vanilla
+            return template.servable().show()
+        return template
+
+    def _create_template(self):
+        theme = SymPyBootstrapDarkTheme
+        if cfg["interactive"]["theme"] != "dark":
+            theme = SymPyBootstrapDefaultTheme
+        default_template_kw = dict(title=self._name, theme=theme)
+
+        if (self._template is None) or isinstance(self._template, dict):
+            merge = self._backend.merge
+            kw = self._template if isinstance(self._template, dict) else {}
+            kw = merge(default_template_kw, kw)
+            if len(self._name.strip()) == 0:
+                kw.setdefault("show_header", False)
+            template = SymPyBootstrapTemplate(**kw)
+        elif isinstance(self._template, pn.template.base.BasicTemplate):
+            template = self._template
+        elif (isinstance(self._template, type) and
+            issubclass(self._template, pn.template.base.BasicTemplate)):
+            template = self._template(**default_template_kw)
+        else:
+            raise TypeError("`template` not recognized. It can either be a "
+                "dictionary of keyword arguments to be passed to the default "
+                "template, an instance of pn.template.base.BasicTemplate "
+                "or a subclass of pn.template.base.BasicTemplate. Received: "
+                "type(template) = %s" % type(self._template))
+        return template
 
 
 class InteractivePlot(DynamicParam, PanelLayout):
@@ -453,13 +470,13 @@ class InteractivePlot(DynamicParam, PanelLayout):
         servable = kwargs.pop("servable", cfg["interactive"]["servable"])
         use_latex = kwargs.pop("use_latex", cfg["interactive"]["use_latex"])
         pane_kw = kwargs.pop("pane_kw", dict())
-        # NOTE: do not document these arguments yet, they might change in the
-        # future.
         custom_css = kwargs.pop("custom_css", "")
+        template = kwargs.pop("template", None)
 
         self._name = name
         super().__init__(name=self._name, params=params, use_latex=use_latex)
-        PanelLayout.__init__(self, layout, ncols, throttled, servable, custom_css, pane_kw)
+        PanelLayout.__init__(self, layout, ncols, throttled, servable,
+            custom_css, pane_kw, template)
 
         # assure that each series has the correct values associated
         # to parameters
@@ -539,6 +556,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         panel_kw = {
             "backend": type(self._backend),
             "layout": self._layout,
+            "template": self._template,
             "ncols": self._ncols,
             "throttled": self._throttled,
             "use_latex": self._use_latex,
@@ -593,8 +611,8 @@ def iplot(*series, show=True, **kwargs):
            - label: str, optional
                 Custom text associated to the slider.
            - spacing : str, optional
-                Specify the discretization spacing. Default to `"linear"`, can
-                be changed to `"log"`.
+                Specify the discretization spacing. Default to ``"linear"``,
+                can be changed to ``"log"``.
 
         Note that the parameters cannot be linked together (ie, one parameter
         cannot depend on another one).
@@ -602,13 +620,15 @@ def iplot(*series, show=True, **kwargs):
     layout : str, optional
         The layout for the controls/plot. Possible values:
 
-        - `'tb'`: controls in the top bar.
-        - `'bb'`: controls in the bottom bar.
-        - `'sbl'`: controls in the left side bar.
-        - `'sbr'`: controls in the right side bar.
+        - ``'tb'``: controls in the top bar.
+        - ``'bb'``: controls in the bottom bar.
+        - ``'sbl'``: controls in the left side bar.
+        - ``'sbr'``: controls in the right side bar.
 
-        Default layout to `'tb'`. Note that side bar layouts may not
-        work well with some backends.
+        If ``servable=False`` (plot shown inside Jupyter Notebook), then
+        the default value is ``'tb'``. If ``servable=True`` (plot shown on a
+        new browser window) then the default value is ``'sbl'``.
+        Note that side bar layouts may not work well with some backends.
 
     ncols : int, optional
         Number of columns to lay out the widgets. Default to 2.
@@ -644,15 +664,34 @@ def iplot(*series, show=True, **kwargs):
         of `InteractivePlot`, which can later be be shown by calling the
         `show()` method.
 
+    template : optional
+        Specify the template to be used to build the interactive application
+        when ``servable=True``. It can be one of the following options:
+
+        * None: the default template will be used.
+        * dictionary of keyword arguments to customize the default template.
+          Among the options:
+
+          * ``full_width`` (boolean): use the full width of the browser page.
+            Default to True.
+          * ``sidebar_width`` (str): CSS value of the width of the sidebar
+            in pixel or %. Applicable only when ``layout='sbl'`` or
+            ``layout='sbr'``.
+          * ``show_header`` (boolean): wheter to show the header of the
+            application. Default to True.
+
+        * an instance of ``pn.template.base.BasicTemplate``
+        * a subclass of ``pn.template.base.BasicTemplate``
+
+    throttled : boolean, optional
+        Default to False. If True the recompute will be done at mouse-up event
+        on sliders. If False, every slider tick will force a recompute.
+
     use_latex : bool, optional
         Default to True.
         If True, the latex representation of the symbols will be used in the
         labels of the parameter-controls. If False, the string
         representation will be used instead.
-
-    throttled : boolean, optional
-        Default to False. If True the recompute will be done at mouse-up event
-        on sliders. If False, every slider tick will force a recompute.
 
 
     Examples

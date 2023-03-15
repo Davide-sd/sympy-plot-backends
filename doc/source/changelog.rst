@@ -41,6 +41,12 @@ v2.0.0
   reset()
   ```
 
+* Interactive widget plotting:
+
+  * Implemented the ``template`` keyword argument for interactive widget plots
+    with ``servable=True``: user can further customize the layout of the
+    web application, or can provide their own Panel's templates.
+
 * Improved support for plotting summations.
 
 * ``PlotlyBackend``: fixed bug with interactive update of lines.

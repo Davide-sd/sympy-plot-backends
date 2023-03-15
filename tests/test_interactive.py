@@ -4,6 +4,7 @@ from spb.interactive import (
     iplot, DynamicParam, MyList,
     InteractivePlot, create_widgets
 )
+from spb.bootstrap_spb import SymPyBootstrapTemplate
 from sympy import (
     sqrt, Integer, Float, Rational, pi, symbols, Tuple,
     sin, cos, Plane
@@ -344,6 +345,7 @@ def test_interactiveseries():
         else:
             assert not s.is_2Dvector
             assert s.is_3Dvector
+        assert s.is_interactive
 
         # verify that the backend is able to run the `_update_interactive`
         # method.
@@ -615,3 +617,49 @@ def test_plot3d_wireframe_and_labels():
     assert t.backend.series[1].get_label(False) == "b"
     assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
         for s in t.backend.series[2:])
+
+
+def test_template():
+    # verify that user can provide custom templates for servable applications
+    # (the ones that launches on a new browser window instead of being shown
+    # on Jupyter Notebook).
+    # NOTE: I'm not aware of any way to test an application once they have been
+    # served, hence I'm only going to test if the user can change the default
+    # template.
+
+    x, y = symbols("x, y")
+
+    # default template
+    p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
+        show=False, servable=True)
+    t = p._create_template()
+    assert isinstance(t, SymPyBootstrapTemplate)
+
+    # default template with customized settings
+    p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
+        show=False, servable=True, template={
+            "title": "Test",
+            "full_width": False,
+            "sidebar_width": "50%",
+            "header_no_panning": False,
+            "sidebar_location": "tb"})
+    t = p._create_template()
+    assert isinstance(t, SymPyBootstrapTemplate)
+
+    # a different template
+    p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
+        show=False, servable=True, template=pn.template.VanillaTemplate)
+    t = p._create_template()
+    assert isinstance(t, pn.template.VanillaTemplate)
+
+    # an instance of a different template
+    temp = pn.template.MaterialTemplate
+    p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
+        show=False, servable=True, template=temp())
+    t = p._create_template()
+    assert isinstance(t, pn.template.MaterialTemplate)
+
+    # something not supported
+    p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
+        show=False, servable=True, template="str")
+    raises(TypeError, lambda : p._create_template())
