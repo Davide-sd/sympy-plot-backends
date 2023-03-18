@@ -1,6 +1,6 @@
 from pytest import raises
 from spb.backends.utils import get_seeds_points
-from spb.interactive import InteractivePlot
+from spb.interactive.panel import InteractivePlot
 from spb.series import (
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries, ContourSeries,
     PlaneSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries
@@ -12,8 +12,23 @@ from sympy import symbols, Matrix, Tuple, sin, cos, sqrt, Plane, pi
 from sympy.physics.mechanics import Vector as MechVector, ReferenceFrame
 from sympy.vector import CoordSys3D
 from sympy.external import import_module
+import numpy as np
+import pytest
 
-np = import_module('numpy', catch=(RuntimeError,))
+
+@pytest.fixture
+def pv_options(panel_options):
+    panel_options["backend"] = MB
+    panel_options["n"] = 3
+    panel_options["nc"] = 3
+    return panel_options
+
+
+@pytest.fixture
+def pv_options3d(panel_options):
+    panel_options["backend"] = MB
+    panel_options["n"] = 4
+    return panel_options
 
 
 def pw(*args):
@@ -396,7 +411,7 @@ def test_get_seeds_points():
     assert isinstance(d, vtk.vtkPointSource)
 
 
-def test_plot_vector_2d():
+def test_plot_vector_2d(pv_options):
     # verify that plot_vector is capable of creating data
     # series according to the documented modes of operation when dealing
     # with 2D vectors
@@ -409,7 +424,7 @@ def test_plot_vector_2d():
 
     # default to a contour series and quivers
     p = plot_vector([-sin(y), cos(x)], (x, -3, 2), (y, -4, 6),
-        backend=MB, show=False)
+        **pv_options)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 2
@@ -425,7 +440,7 @@ def test_plot_vector_2d():
     assert s[1].get_label(False) == '(-sin(y), cos(x))'
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, backend=MB, show=False, n=3, nc=3)
+        params={z: (1, 0, 2)}, **pv_options)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
@@ -444,23 +459,22 @@ def test_plot_vector_2d():
     # same as before + set custom contour_kw and quiver_kw
     p = plot_vector([-sin(y), cos(x)], (x, -3, 2), (y, -4, 6),
         quiver_kw=dict(color="black"),
-        contour_kw={"cmap": "Blues_r", "levels": 20},
-        backend=MB, show=False)
+        contour_kw={"cmap": "Blues_r", "levels": 20}, **pv_options)
     s = p.series
     assert s[0].rendering_kw == {"cmap": "Blues_r", "levels": 20}
     assert s[1].rendering_kw == dict(color="black")
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, backend=MB, show=False,
+        params={z: (1, 0, 2)},
         quiver_kw=dict(color="black"),
-        contour_kw={"cmap": "Blues_r", "levels": 20})
+        contour_kw={"cmap": "Blues_r", "levels": 20}, **pv_options)
     s = p.backend.series
     assert s[0].rendering_kw == {"cmap": "Blues_r", "levels": 20}
     assert s[1].rendering_kw == dict(color="black")
 
     # 2D vector field without contour series, only quivers, use streamlines
     p = plot_vector([-sin(y), cos(x)], (x, -3, 2), (y, -4, 6),
-        scalar=None, backend=MB, show=False, streamlines=True)
+        scalar=None, streamlines=True, **pv_options)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 1
@@ -471,8 +485,7 @@ def test_plot_vector_2d():
     assert s[0].get_label(False) == '(-sin(y), cos(x))'
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, scalar=None, backend=MB, show=False,
-        streamlines=True, n=3, nc=3)
+        params={z: (1, 0, 2)}, scalar=None, streamlines=True, **pv_options)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
@@ -487,13 +500,13 @@ def test_plot_vector_2d():
     # colorbar). Note the use of scalar=False which is equal to scalar=None.
     # Also, apply stream_kw
     p = plot_vector([-sin(y), cos(x)], (x, -3, 2), (y, -4, 6), "test",
-        scalar=False, backend=MB, show=False,
-        streamlines=True, stream_kw={"cmap": "Blues_r"})
+        scalar=False, streamlines=True, stream_kw={"cmap": "Blues_r"},
+        **pv_options)
     assert p[0].get_label(False) == "test"
     assert p[0].rendering_kw == {"cmap": "Blues_r"}
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6), "test",
-        params={z: (1, 0, 2)}, scalar=False, backend=MB, show=False,
-        streamlines=True, stream_kw={"cmap": "Blues_r"})
+        params={z: (1, 0, 2)}, scalar=False, streamlines=True,
+        stream_kw={"cmap": "Blues_r"}, **pv_options)
     assert p.backend[0].get_label(False) == "test"
     assert p.backend[0].rendering_kw == {"cmap": "Blues_r"}
 
@@ -503,7 +516,7 @@ def test_plot_vector_2d():
 
     # multiple 2D vector fields: only quivers will be shown
     p = plot_vector([-sin(y), cos(x)], [-y, x], (x, -3, 2), (y, -4, 6),
-        backend=MB, show=False)
+        **pv_options)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 2
@@ -514,7 +527,7 @@ def test_plot_vector_2d():
     assert s[1].get_label(False) == '(-y, x)'
 
     p = plot_vector([-sin(y * z), cos(x)], [-y, x], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, backend=MB, show=False, n=3, nc=3)
+        params={z: (1, 0, 2)}, **pv_options)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
@@ -530,7 +543,7 @@ def test_plot_vector_2d():
 
     # multiple 2D vector field with a scalar field: contour + quivers
     p = plot_vector([-sin(y), cos(x)], [-y, x], (x, -3, 2), (y, -4, 6),
-        scalar=sqrt(x**2 + y**2), backend=MB, show=False)
+        scalar=sqrt(x**2 + y**2), **pv_options)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 3
@@ -547,8 +560,7 @@ def test_plot_vector_2d():
     assert s[2].get_label(False) == '(-y, x)'
 
     p = plot_vector([-sin(y * z), cos(x)], [-y, x], (x, -3, 2), (y, -4, 6),
-        scalar=sqrt(x**2 + y**2), params={z: (1, 0, 2)},
-        backend=MB, show=False, n=3, nc=3)
+        scalar=sqrt(x**2 + y**2), params={z: (1, 0, 2)}, **pv_options)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 3
@@ -575,8 +587,7 @@ def test_plot_vector_2d():
     # multiple vector fiedls: default to only quivers
     p = plot_vector(
         ([-sin(y), cos(x)], (x, -3, 0), (y, -4, 0)),
-        ([-y, x], (x, 0, 2), (y, 0, 6), "test"),
-        backend=MB, show=False)
+        ([-y, x], (x, 0, 2), (y, 0, 6), "test"), **pv_options)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 2
@@ -591,7 +602,7 @@ def test_plot_vector_2d():
     p = plot_vector(
         ([-sin(y * z), cos(x)], (x, -3, 0), (y, -4, 0)),
         ([-y, x], (x, 0, 2), (y, 0, 6), "test"),
-        params={z: (1, 0, 2)}, backend=MB, show=False, n=3, nc=3)
+        params={z: (1, 0, 2)}, **pv_options)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
@@ -614,7 +625,7 @@ def test_plot_vector_2d():
 
     # test scalar=[expr, label]
     p = plot_vector([-sin(y), cos(x)], (x, -3, 2), (y, -4, 6),
-        scalar=[sqrt(x**2 + y**2), "test"], backend=MB, show=False)
+        scalar=[sqrt(x**2 + y**2), "test"], **pv_options)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 2
@@ -630,7 +641,7 @@ def test_plot_vector_2d():
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
         scalar=[sqrt(x**2 + y**2), "test"], params={z: (1, 0, 2)},
-        backend=MB, show=False, n=3, nc=3)
+        **pv_options)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
@@ -648,7 +659,7 @@ def test_plot_vector_2d():
 
     # test scalar=numerical function of 2 variables support vectorization
     p = plot_vector([-sin(y), cos(x)], (x, -3, 2), (y, -4, 6),
-        scalar=lambda xx, yy: np.cos(xx * yy), backend=MB, show=False)
+        scalar=lambda xx, yy: np.cos(xx * yy), **pv_options)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 2
@@ -664,12 +675,13 @@ def test_plot_vector_2d():
 
     pl = lambda: plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
         scalar=lambda xx, yy: np.cos(xx * yy), params={z: (1, 0, 2)},
-        backend=MB, show=False)
+        **pv_options)
     raises(TypeError, pl)
 
     # test scalar=[nume func of 2 variables, label]
     p = plot_vector([-sin(y), cos(x)], (x, -3, 2), (y, -4, 6),
-        scalar=[lambda xx, yy: np.cos(xx * yy), "test"], backend=MB, show=False)
+        scalar=[lambda xx, yy: np.cos(xx * yy), "test"],
+        **pv_options)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 2
@@ -685,11 +697,11 @@ def test_plot_vector_2d():
 
     pl = lambda: plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
         scalar=[lambda xx, yy: np.cos(xx * yy), "test"], params={z: (1, 0, 2)},
-        backend=MB, show=False)
+        **pv_options)
     raises(TypeError, pl)
 
 
-def test_plot_vector_3d():
+def test_plot_vector_3d(pv_options3d):
     # verify that plot_vector is capable of creating data
     # series according to the documented modes of operation when dealing
     # with 3d vector fields
@@ -701,7 +713,7 @@ def test_plot_vector_3d():
     ###########################################################################
 
     p = plot_vector([x, y, z], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=4, backend=MB, show=False, quiver_kw={"cmap": "Blues_r"})
+        quiver_kw={"cmap": "Blues_r"}, **pv_options3d)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 1
@@ -715,8 +727,7 @@ def test_plot_vector_3d():
     assert s[0].rendering_kw == {"cmap": "Blues_r"}
 
     p = plot_vector([x * u, y, z], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        params={u: (1, 0, 2)}, n=4, backend=MB, show=False,
-        quiver_kw={"cmap": "Blues_r"})
+        params={u: (1, 0, 2)}, quiver_kw={"cmap": "Blues_r"}, **pv_options3d)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
@@ -732,16 +743,15 @@ def test_plot_vector_3d():
 
     # same as before, use streamlines instead + custom label
     p = plot_vector([x, y, z], (x, -10, 9), (y, -8, 7), (z, -6, 5), "test",
-        n=4, backend=MB, show=False,
-        streamlines=True, stream_kw={"cmap": "Blues_r"})
+        streamlines=True, stream_kw={"cmap": "Blues_r"}, **pv_options3d)
     s = p.series
     assert s[0].is_streamlines
     assert s[0].get_label(False) == "test"
     assert s[0].rendering_kw == {"cmap": "Blues_r"}
 
     p = plot_vector([x * u, y, z], (x, -10, 9), (y, -8, 7), (z, -6, 5), "test",
-        params={u: (1, 0, 2)}, n=4, backend=MB, show=False,
-        streamlines=True, stream_kw={"cmap": "Blues_r"})
+        params={u: (1, 0, 2)}, streamlines=True, stream_kw={"cmap": "Blues_r"},
+        **pv_options3d)
     s = p.backend.series
     assert s[0].is_streamlines
     assert s[0].get_label(False) == "test"
@@ -752,8 +762,7 @@ def test_plot_vector_3d():
     ###########################################################################
 
     p = plot_vector([x, y, z], [-sin(y), cos(z), y],
-        (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=4, backend=MB, show=False)
+        (x, -10, 9), (y, -8, 7), (z, -6, 5), **pv_options3d)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 2
@@ -769,7 +778,7 @@ def test_plot_vector_3d():
 
     p = plot_vector([x * u, y, z], [-sin(u * y), cos(z), y],
         (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        params={u: (1, 0, 2)}, n=4, backend=MB, show=False)
+        params={u: (1, 0, 2)}, **pv_options3d)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
@@ -794,7 +803,7 @@ def test_plot_vector_3d():
     p = plot_vector(
         ([x, y, z], (x, -10, 9), (y, -8, 7), (z, -6, 5)),
         ([-sin(y), cos(z), y], (x, -4, 3), (y, -2, 11), (z, -1, 12), "test"),
-        n=4, backend=MB, show=False)
+        **pv_options3d)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 2
@@ -814,7 +823,7 @@ def test_plot_vector_3d():
     p = plot_vector(
         ([u * x, y, z], (x, -10, 9), (y, -8, 7), (z, -6, 5)),
         ([-sin(u * y), cos(z), y], (x, -4, 3), (y, -2, 11), (z, -1, 12), "test"),
-        params={u: (1, 0, 2)}, n=4, backend=MB, show=False)
+        params={u: (1, 0, 2)}, **pv_options3d)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 2
@@ -834,12 +843,13 @@ def test_plot_vector_3d():
     assert s[1].get_label(False) == "test"
 
 
-def test_plot_vector_3d_slice():
+def test_plot_vector_3d_slice(pv_options3d):
     # verify that plot_vector is capable of creating data
     # series according to the documented modes of operation when dealing
     # with 3d vector fields and slices
 
     x, y, z, u, v = symbols("x:z, u, v")
+    pv_options3d["n"] = 5
 
     ###########################################################################
     ################################## Plane ##################################
@@ -847,9 +857,8 @@ def test_plot_vector_3d_slice():
 
     # Single slice plane
     p = plot_vector([z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=4, backend=MB, show=False,
         slice=Plane((-10, 0, 0), (1, 0, 0)),
-        quiver_kw={"cmap": "Blues_r"})
+        quiver_kw={"cmap": "Blues_r"}, **pv_options3d)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 1
@@ -862,9 +871,9 @@ def test_plot_vector_3d_slice():
     assert s[0].rendering_kw == {"cmap": "Blues_r"}
 
     p = plot_vector([u * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=4, backend=MB, show=False, params={u: (1, 0, 2)},
+        params={u: (1, 0, 2)},
         slice=Plane((-10, 0, 0), (1, 0, 0)),
-        quiver_kw={"cmap": "Blues_r"})
+        quiver_kw={"cmap": "Blues_r"}, **pv_options3d)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
@@ -879,12 +888,11 @@ def test_plot_vector_3d_slice():
 
     # Multiple slice planes
     p = plot_vector([z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=4, backend=MB, show=False,
         slice=[
             Plane((-10, 0, 0), (1, 0, 0)),
             Plane((0, -8, 0), (0, 1, 0)),
             Plane((0, 0, -6), (0, 0, 1)),
-        ])
+        ], **pv_options3d)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 3
@@ -896,12 +904,12 @@ def test_plot_vector_3d_slice():
     assert all(t.get_label(False) == "(z, y, x)" for t in s)
 
     p = plot_vector([u * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=4, backend=MB, show=False, params={u: (1, 0, 2)},
+        params={u: (1, 0, 2)},
         slice=[
             Plane((-10 * u, 0, 0), (1, 0, 0)),
             Plane((0, -8, 0), (0, 1, 0)),
             Plane((0, 0, -6), (0, 0, 1)),
-        ])
+        ], **pv_options3d)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 3
@@ -928,7 +936,7 @@ def test_plot_vector_3d_slice():
     # symbolic expression (must have 2 variables)
     # this surface lies on the x-y plane
     p1a = plot_vector([z, y, x], (x, -2, 3), (y, -3, 1), (z, -6, 5),
-        n=4, backend=MB, show=False, slice=cos(x**2 + y**2))
+        slice=cos(x**2 + y**2), **pv_options3d)
     s = p1a.series
     assert isinstance(p1a, MB)
     assert len(s) == 1
@@ -944,8 +952,7 @@ def test_plot_vector_3d_slice():
     d1a = s[0].get_data()
 
     p1b = plot_vector([u * z, y, x], (x, -2, 3), (y, -3, 1), (z, -6, 5),
-        n=4, backend=MB, show=False, params={u: (1, 0, 2)},
-        slice=cos(u * x**2 + y**2))
+        params={u: (1, 0, 2)}, slice=cos(u * x**2 + y**2), **pv_options3d)
     s = p1b.backend.series
     assert isinstance(p1b, InteractivePlot)
     assert len(s) == 1
@@ -963,7 +970,7 @@ def test_plot_vector_3d_slice():
 
     # this surface lies on the y-z plane
     p2a = plot_vector([z, y, x], (x, -2, 3), (y, -3, 1), (z, -6, 5),
-        n=4, backend=MB, show=False, slice=cos(z**2 + y**2))
+        slice=cos(z**2 + y**2), **pv_options3d)
     s = p2a.series
     assert isinstance(p2a, MB)
     assert len(s) == 1
@@ -984,8 +991,7 @@ def test_plot_vector_3d_slice():
         assert not np.allclose(d1, d2)
 
     p2b = plot_vector([u * z, y, x], (x, -2, 3), (y, -3, 1), (z, -6, 5),
-        n=4, backend=MB, show=False, params={u: (1, 0, 2)},
-        slice=cos(u * z**2 + y**2))
+        params={u: (1, 0, 2)}, slice=cos(u * z**2 + y**2), **pv_options3d)
     s = p2b.backend.series
     assert isinstance(p2b, InteractivePlot)
     assert len(s) == 1
@@ -1013,7 +1019,7 @@ def test_plot_vector_3d_slice():
     ss = ParametricSurfaceSeries(u * cos(v), u * sin(v), u,
         (u, -2, 0), (v, 0, 2*pi), n1=5, n2=5)
     p = plot_vector([z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=5, backend=MB, slice=ss, show=False)
+        slice=ss, **pv_options3d)
     s = p.series
     assert isinstance(p, MB)
     assert len(s) == 1
@@ -1031,7 +1037,7 @@ def test_plot_vector_3d_slice():
     ss = SurfaceOver2DRangeSeries(cos(z**2 + y**2), (z, -4, 4), (y, -2, 2),
         n1=5, n2=5)
     p3a = plot_vector([z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=5, backend=MB, slice=ss, show=False)
+        slice=ss, **pv_options3d)
     s = p3a.series
     assert isinstance(p3a, MB)
     assert len(s) == 1
@@ -1050,7 +1056,7 @@ def test_plot_vector_3d_slice():
     ss = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -4, 4), (y, -2, 2),
         n1=5, n2=5)
     p3b = plot_vector([z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=5, backend=MB, slice=ss, show=False)
+        slice=ss, **pv_options3d)
     s = p3b.series
     assert isinstance(p3b, MB)
     assert len(s) == 1
@@ -1077,7 +1083,7 @@ def test_plot_vector_3d_slice():
     ss = ParametricSurfaceSeries(u * cos(v), u * sin(v), t*u,
         (u, -2, 0), (v, 0, 2*pi), n1=5, n2=5, params={t: 1})
     p = plot_vector([t * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=5, backend=MB, slice=ss, show=False, params={t: (1, 0.5, 1.5)})
+        slice=ss, params={t: (1, 0.5, 1.5)}, **pv_options3d)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
@@ -1097,7 +1103,7 @@ def test_plot_vector_3d_slice():
     ss = SurfaceOver2DRangeSeries(cos(t * x**2 + y**2),
         (x, -4, 5), (y, -3, 2), n1=25, n2=25, params={t: 1})
     p = plot_vector([t * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=5, backend=MB, slice=ss, show=False, params={t: (1, 0.5, 1.5)})
+        slice=ss, params={t: (1, 0.5, 1.5)}, **pv_options3d)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
@@ -1117,7 +1123,7 @@ def test_plot_vector_3d_slice():
     ss = SurfaceOver2DRangeSeries(cos(t * z**2 + y**2),
         (z, -4, 5), (y, -3, 2), n1=25, n2=25, params={t: 1})
     p = plot_vector([t * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=5, backend=MB, slice=ss, show=False, params={t: (1, 0.5, 1.5)})
+        slice=ss, params={t: (1, 0.5, 1.5)}, **pv_options3d)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
     assert len(s) == 1
@@ -1135,7 +1141,7 @@ def test_plot_vector_3d_slice():
     assert s[0].get_label(False) == "(t*z, y, x)"
 
 
-def test_label_kw():
+def test_label_kw(pv_options, pv_options3d):
     # verify that the label keyword argument works, if the correct
     # number of labels is provided.
 
@@ -1143,63 +1149,62 @@ def test_label_kw():
 
     # 2 series -> 2 labels
     p = plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
-        backend=MB, show=False, label=["a", "b"])
+        label=["a", "b"], **pv_options)
     assert p[0].get_label(False) == "a"
     assert p[1].get_label(False) == "b"
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, backend=MB, show=False, label=["a", "b"])
+        params={z: (1, 0, 2)}, label=["a", "b"], **pv_options)
     s = p.backend.series
     assert s[0].get_label(False) == "a"
     assert s[1].get_label(False) == "b"
 
     # 1 series -> 2 labels = raise error
     p = lambda: plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
-        backend=MB, show=False, label=["a", "b"], scalar=False)
+        label=["a", "b"], scalar=False, **pv_options)
     raises(ValueError, p)
 
     p = lambda: plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, backend=MB, show=False, scalar=False,
-        label=["a", "b"])
+        params={z: (1, 0, 2)}, scalar=False,
+        label=["a", "b"], **pv_options)
     raises(ValueError, p)
 
     # 1 series -> 1 label
     p = plot_vector([z, y, x], (x, -2, 3), (y, -3, 1), (z, -6, 5),
-        n=4, backend=MB, show=False, slice=cos(z**2 + y**2), label="a")
+        slice=cos(z**2 + y**2), label="a", **pv_options3d)
     assert p[0].get_label(False) == "a"
 
     p = plot_vector([t * z, y, x], (x, -2, 3), (y, -3, 1), (z, -6, 5),
-        n=4, backend=MB, show=False, slice=cos(z**2 + y**2),
-        params={t: (1, 0, 2)}, label="a")
+        slice=cos(z**2 + y**2),
+        params={t: (1, 0, 2)}, label="a", **pv_options3d)
     s = p.backend.series
     assert s[0].get_label(False) == "a"
 
     # 3 series -> 3 labels
     p = plot_vector([z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=4, backend=MB, show=False,
         slice=[
             Plane((-10, 0, 0), (1, 0, 0)),
             Plane((0, -8, 0), (0, 1, 0)),
             Plane((0, 0, -6), (0, 0, 1)),
-        ], label=["a", "b", "c"])
+        ], label=["a", "b", "c"], **pv_options3d)
     assert p[0].get_label(False) == "a"
     assert p[1].get_label(False) == "b"
     assert p[2].get_label(False) == "c"
 
     p = plot_vector([t * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=4, backend=MB, show=False, params={t: (1, 0, 2)},
+        params={t: (1, 0, 2)},
         slice=[
             Plane((-10 * t, 0, 0), (1, 0, 0)),
             Plane((0, -8, 0), (0, 1, 0)),
             Plane((0, 0, -6), (0, 0, 1)),
-        ], label=["a", "b", "c"])
+        ], label=["a", "b", "c"], **pv_options3d)
     s = p.backend.series
     assert s[0].get_label(False) == "a"
     assert s[1].get_label(False) == "b"
     assert s[2].get_label(False) == "c"
 
 
-def test_rendering_kw():
+def test_rendering_kw(pv_options, pv_options3d):
     # verify that the rendering_kw keyword argument works, if the correct
     # number of dictionaries is provided, and that it will ovveride the values
     # into quiver_kw, stream_kw, contour_kw
@@ -1208,72 +1213,72 @@ def test_rendering_kw():
 
     # 2 series -> 2 dictionaries
     p = plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
-        backend=MB, show=False,
         contour_kw={"cmap": "viridis"}, quiver_kw={"color": "w"},
-        rendering_kw=[{"cmap": "autumn"}, {"color": "k"}])
+        rendering_kw=[{"cmap": "autumn"}, {"color": "k"}], **pv_options)
     assert p[0].rendering_kw == {"cmap": "autumn"}
     assert p[1].rendering_kw == {"color": "k"}
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, backend=MB, show=False,
+        params={z: (1, 0, 2)},
         contour_kw={"cmap": "viridis"}, quiver_kw={"color": "w"},
-        rendering_kw=[{"cmap": "autumn"}, {"color": "k"}])
+        rendering_kw=[{"cmap": "autumn"}, {"color": "k"}], **pv_options)
     s = p.backend.series
     assert s[0].rendering_kw == {"cmap": "autumn"}
     assert s[1].rendering_kw == {"color": "k"}
 
     # 1 series -> 2 dictionaries = raise error
     p = lambda: plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
-        backend=MB, show=False, scalar=False,
-        rendering_kw=[{"cmap": "autumn"}, {"color": "k"}])
+        scalar=False, rendering_kw=[{"cmap": "autumn"}, {"color": "k"}],
+        **pv_options)
     raises(ValueError, p)
 
     p = lambda: plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
-        params={z: (1, 0, 2)}, backend=MB, show=False, scalar=False,
-        rendering_kw=[{"cmap": "autumn"}, {"color": "k"}])
+        params={z: (1, 0, 2)}, scalar=False,
+        rendering_kw=[{"cmap": "autumn"}, {"color": "k"}], **pv_options)
     raises(ValueError, p)
 
     # 1 series -> 1 dictionary
     p = plot_vector([z, y, x], (x, -2, 3), (y, -3, 1), (z, -6, 5),
-        n=4, backend=MB, show=False, slice=cos(z**2 + y**2), use_cm=False,
-        rendering_kw={"color": "k"})
+        slice=cos(z**2 + y**2), use_cm=False,
+        rendering_kw={"color": "k"}, **pv_options3d)
     assert p[0].rendering_kw == {"color": "k"}
 
     p = plot_vector([t * z, y, x], (x, -2, 3), (y, -3, 1), (z, -6, 5),
-        n=4, backend=MB, show=False, slice=cos(z**2 + y**2),
+        slice=cos(z**2 + y**2),
         params={t: (1, 0, 2)}, use_cm=False,
-        rendering_kw={"color": "k"})
+        rendering_kw={"color": "k"}, **pv_options3d)
     s = p.backend.series
     assert s[0].rendering_kw == {"color": "k"}
 
     # 3 series -> 3 dictionaries
     p = plot_vector([z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=4, backend=MB, show=False,
         slice=[
             Plane((-10, 0, 0), (1, 0, 0)),
             Plane((0, -8, 0), (0, 1, 0)),
             Plane((0, 0, -6), (0, 0, 1)),
         ], use_cm=False,
-        rendering_kw=[{"color": "r"}, {"color": "g"}, {"color": "b"}])
+        rendering_kw=[{"color": "r"}, {"color": "g"}, {"color": "b"}],
+        **pv_options3d)
     assert p[0].rendering_kw == {"color": "r"}
     assert p[1].rendering_kw == {"color": "g"}
     assert p[2].rendering_kw == {"color": "b"}
 
     p = plot_vector([t * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
-        n=4, backend=MB, show=False, params={t: (1, 0, 2)},
+        params={t: (1, 0, 2)},
         slice=[
             Plane((-10 * t, 0, 0), (1, 0, 0)),
             Plane((0, -8, 0), (0, 1, 0)),
             Plane((0, 0, -6), (0, 0, 1)),
         ], use_cm=False,
-        rendering_kw=[{"color": "r"}, {"color": "g"}, {"color": "b"}])
+        rendering_kw=[{"color": "r"}, {"color": "g"}, {"color": "b"}],
+        **pv_options3d)
     s = p.backend.series
     assert s[0].rendering_kw == {"color": "r"}
     assert s[1].rendering_kw == {"color": "g"}
     assert s[2].rendering_kw == {"color": "b"}
 
 
-def test_plot_vector_lambda_functions():
+def test_plot_vector_lambda_functions(pv_options3d):
     # verify that plot_vector generates the correct data series when lambda
     # functions are used instead of symbolic expressions
 
@@ -1284,10 +1289,10 @@ def test_plot_vector_lambda_functions():
 
     # verify that plotting symbolic expressions and lambda functions produces
     # the same results
-    p1 = plot_vector(v1, (x, -5, 5), (y, -2, 2), n=5, show=False)
+    p1 = plot_vector(v1, (x, -5, 5), (y, -2, 2), **pv_options3d)
     p2 = plot_vector(
         [lambda x, y: x, lambda x, y: y], ("x", -5, 5), ("y", -2, 2),
-        n=5, show=False)
+        **pv_options3d)
     assert len(p1.series) == len(p2.series) == 2
     assert all(np.allclose(t1, t2) for t1, t2 in
         zip(p1[0].get_data(), p2[0].get_data()))
@@ -1296,10 +1301,9 @@ def test_plot_vector_lambda_functions():
 
     # verify the use of a lambda function scalar field
     p3 = plot_vector(v1, (x, -5, 5), (y, -2, 2),
-        scalar=sqrt(x**2 + y**2), n=5, show=False)
+        scalar=sqrt(x**2 + y**2), **pv_options3d)
     p4 = plot_vector(
         [lambda x, y: x, lambda x, y: y], ("x", -5, 5), ("y", -2, 2),
-        scalar=lambda x, y: np.sqrt(x**2 + y**2),
-        n=5, show=False)
+        scalar=lambda x, y: np.sqrt(x**2 + y**2), **pv_options3d)
     assert all(np.allclose(t1, t2) for t1, t2 in
         zip(p3[0].get_data(), p4[0].get_data()))
