@@ -1,5 +1,7 @@
 from spb.defaults import cfg
 from sympy import latex
+from sympy.external import import_module
+
 
 def _tuple_to_dict(k, v, use_latex=False):
     """Create a dictionary of keyword arguments to be later used to
@@ -75,3 +77,72 @@ def create_interactive_plot(*series, **kwargs):
         return iplot(*series, **kwargs)
 
     raise ValueError("`%s` is not a valid interactive module" % imodule)
+
+
+class IPlot:
+    """Mixin class for interactive plots containing common attributes and
+    methods.
+    """
+
+    @property
+    def fig(self):
+        """Return the plot object"""
+        return self._backend.fig
+
+    @property
+    def backend(self):
+        """Return the backend"""
+        return self._backend
+
+    def save(self, *args, **kwargs):
+        """Save the current figure.
+        This is a wrapper to the backend's `save` function. Refer to the
+        backend's documentation to learn more about arguments and keyword
+        arguments.
+        """
+        self._backend.save(*args, **kwargs)
+
+    def __add__(self, other):
+        return self._do_sum(other)
+
+    def __radd__(self, other):
+        return other._do_sum(self)
+
+    def _do_sum(self, other):
+        """Differently from Plot.extend, this method creates a new plot object,
+        which uses the series of both plots and merges the _kwargs dictionary
+        of `self` with the one of `other`.
+        """
+        from spb.backends.base_backend import Plot
+        mergedeep = import_module('mergedeep')
+        merge = mergedeep.merge
+
+        if not isinstance(other, (Plot, IPlot)):
+            raise TypeError(
+                "Both sides of the `+` operator must be instances of the "
+                "InteractivePlot or Plot class.\n"
+                "Received: {} + {}".format(type(self), type(other)))
+
+        series = self._backend.series
+        if isinstance(other, Plot):
+            series.extend(other.series)
+        else:
+            series.extend(other._backend.series)
+
+        # check that the interactive series uses the same parameters
+        symbols = []
+        for s in series:
+            if s.is_interactive:
+                symbols.append(list(s.params.keys()))
+        if not all(t == symbols[0] for t in symbols):
+            raise ValueError(
+                "The same parameters must be used when summing up multiple "
+                "interactive plots.")
+
+        backend_kw = self._backend._copy_kwargs()
+        iplot_kw = self._get_iplot_kw()
+        iplot_kw["show"] = False
+
+        new_iplot = type(self)(**merge({}, backend_kw, iplot_kw))
+        new_iplot._backend.series.extend(series)
+        return new_iplot

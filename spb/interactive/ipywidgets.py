@@ -2,7 +2,7 @@ import ipywidgets
 from sympy import latex
 from sympy.external import import_module
 from spb.defaults import TWO_D_B, THREE_D_B
-from spb.interactive import _tuple_to_dict
+from spb.interactive import _tuple_to_dict, IPlot
 from spb import BB, MB
 import plotly.graph_objects as go
 from bokeh.io import push_notebook
@@ -44,7 +44,78 @@ def _build_grid_layout(widgets, ncols):
     return grid
 
 
-def iplot(*series, **kwargs):
+class InteractivePlot(IPlot):
+    def __init__(self, *series, **kwargs):
+        params = kwargs.pop("params", dict())
+        if not params:
+            raise ValueError("`params` must be provided.")
+        self._original_params = params
+        self._use_latex = kwargs.get("use_latex", True)
+        self._ncols = kwargs.get("ncols", 2)
+        self._layout = kwargs.get("layout", "tb")
+
+        self._widgets = _build_widgets(params, self._use_latex)
+        self._grid_widgets = _build_grid_layout(self._widgets, self._ncols)
+
+        # map symbols to widgets
+        self._params_widgets = {k: v for k, v in zip(params.keys(), self._widgets)}
+        # assure that each series has the correct values associated
+        # to parameters
+        for s in series:
+            s.params = {k: v.value for k, v in self._params_widgets.items()}
+
+        is_3D = all([s.is_3D for s in series])
+        Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
+        kwargs["is_iplot"] = True
+        kwargs["imodule"] = "ipywidgets"
+        self._backend = Backend(*series, **kwargs)
+
+    def _get_iplot_kw(self):
+        return {
+            "backend": type(self._backend),
+            "layout": self._layout,
+            "ncols": self._ncols,
+            "use_latex": self._use_latex,
+            "params": self._original_params,
+        }
+
+    def show(self):
+        if isinstance(self._backend, MB):
+            self._backend.plt.ioff() # without it there won't be any update
+            self._output_figure = ipywidgets.Box([self._backend.fig.canvas])
+        elif isinstance(self._backend, BB):
+            self._output_figure = ipywidgets.Output()
+            from bokeh.io import show
+            with self._output_figure:
+                show(self._backend.fig)
+        else:
+            self._output_figure = self._backend.fig
+
+        def update(change):
+            self._backend._update_interactive(
+                {k: v.value for k, v in self._params_widgets.items()})
+            if isinstance(self._backend, BB):
+                from bokeh.io import show
+                with self._output_figure:
+                    clear_output(True)
+                    show(self._backend.fig)
+
+        for w in self._widgets:
+            w.observe(update, "value")
+
+        if isinstance(self._backend, MB):
+            self._backend.plt.ion() # without it there won't be any update
+
+        if self._layout == "tb":
+            return ipywidgets.VBox([self._grid_widgets, self._output_figure])
+        elif self._layout == "bb":
+            return ipywidgets.VBox([self._output_figure, self._grid_widgets])
+        elif self._layout == "sbl":
+            return ipywidgets.HBox([self._grid_widgets, self._output_figure])
+        return ipywidgets.HBox([self._output_figure, self._grid_widgets])
+
+
+def iplot(*series, show=True, **kwargs):
     """Create an interactive application containing widgets and charts in order
     to study symbolic expressions, using ipywidgets.
 
@@ -102,7 +173,7 @@ def iplot(*series, **kwargs):
         Default to True.
         If True, it will return an object that will be rendered on the
         output cell of a Jupyter Notebook. If False, it returns an instance
-        of `InteractivePlot`, which can later be be shown by calling the
+        of ``InteractivePlot``, which can later be be shown by calling the
         `show()` method.
 
     use_latex : bool, optional
@@ -204,6 +275,56 @@ def iplot(*series, **kwargs):
            use_latex = True,
        )
 
+    Combine together ``InteractivePlot`` and ``Plot`` instances. The same
+    parameters dictionary must be used for every interactive plot command.
+    Note:
+
+    1. the first plot dictates the labels, title and wheter to show the legend
+       or not.
+    2. Instances of ``Plot`` class must be place on the right side of the ``+``
+       sign.
+    3. ``show=False`` has been set in order for ``iplot`` to return an
+       instance of ``InteractivePlot``, which supports addition.
+    4. Once we are done playing with parameters, we can access the backend
+       with ``p.backend``. Then, we can use the ``p.backend.fig`` attribute
+       to retrieve the figure, or ``p.backend.save()`` to save the figure.
+
+    .. code-block:: python
+
+       from sympy import sin, cos, symbols
+       from spb import *
+       x, u = symbols("x, u")
+       params = {
+           u: (1, 0, 2)
+       }
+       p1 = plot(
+           (cos(u * x), (x, -5, 5)),
+           params = params,
+           backend = MB,
+           xlabel = "x1",
+           ylabel = "y1",
+           title = "title 1",
+           legend = True,
+           show = False,
+           use_latex = False,
+           imodule="panel"
+       )
+       p2 = plot(
+           (sin(u * x), (x, -5, 5)),
+           params = params,
+           backend = MB,
+           xlabel = "x2",
+           ylabel = "y2",
+           title = "title 2",
+           show = False,
+           imodule="panel"
+       )
+       p3 = plot(sin(x)*cos(x), (x, -5, 5), dict(marker="^"), backend=MB,
+           adaptive=False, n=50,
+           is_point=True, is_filled=True, show=False)
+       p = p1 + p2 + p3
+       p.show()
+
     Notes
     =====
 
@@ -214,13 +335,6 @@ def iplot(*series, **kwargs):
        executed at the top of the Jupyter Notebook. It requires the
        installation of the ``ipympl`` module[#fnb]_ .
 
-    3. Differently from Holoviz's Panel, combining together different
-       interactive plots is not supported with ipywidgets.
-
-    4. Differently from Holoviz's Panel, combining together different
-       interactive plots is not supported with ipywidgets.
-
-
     References
     ==========
 
@@ -228,56 +342,7 @@ def iplot(*series, **kwargs):
     .. [#fnb] https://github.com/matplotlib/ipympl
 
     """
-    params = kwargs.pop("params", dict())
-    use_latex = kwargs.get("use_latex", True)
-    ncols = kwargs.get("ncols", 2)
-    layout = kwargs.get("layout", "tb")
-
-    widgets = _build_widgets(params, use_latex)
-    grid_widgets = _build_grid_layout(widgets, ncols)
-
-    # map symbols to widgets
-    params_widgets = {k: v for k, v in zip(params.keys(), widgets)}
-    # assure that each series has the correct values associated
-    # to parameters
-    for s in series:
-        s.params = {k: v.value for k, v in params_widgets.items()}
-
-    is_3D = all([s.is_3D for s in series])
-    Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
-    kwargs["is_iplot"] = True
-    kwargs["imodule"] = "ipywidgets"
-    backend = Backend(*series, **kwargs)
-
-    if isinstance(backend, MB):
-        backend.plt.ioff() # without it there won't be any update
-        output_figure = ipywidgets.Box([backend.fig.canvas])
-    elif isinstance(backend, BB):
-        output_figure = ipywidgets.Output()
-        from bokeh.io import show
-        with output_figure:
-            show(backend.fig)
-    else:
-        output_figure = backend.fig
-
-    def update(change):
-        backend._update_interactive(
-            {k: v.value for k, v in params_widgets.items()})
-        if isinstance(backend, BB):
-            with output_figure:
-                clear_output(True)
-                show(backend.fig)
-
-    for w in widgets:
-        w.observe(update, "value")
-
-    if isinstance(backend, MB):
-        backend.plt.ion() # without it there won't be any update
-
-    if layout == "tb":
-        return ipywidgets.VBox([grid_widgets, output_figure])
-    elif layout == "bb":
-        return ipywidgets.VBox([output_figure, grid_widgets])
-    elif layout == "sbl":
-        return ipywidgets.HBox([grid_widgets, output_figure])
-    return ipywidgets.HBox([output_figure, grid_widgets])
+    i = InteractivePlot(*series, **kwargs)
+    if show:
+        return i.show()
+    return i

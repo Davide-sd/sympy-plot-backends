@@ -1,7 +1,7 @@
 from pytest import raises
 from spb import BB, PB, MB, plot, plot3d
-from spb.interactive.ipywidgets import _build_widgets
-from sympy import symbols, cos, exp, pi, Float, Integer, Rational
+from spb.interactive.ipywidgets import _build_widgets, InteractivePlot
+from sympy import symbols, cos, sin, exp, pi, Float, Integer, Rational
 import ipywidgets
 import numpy as np
 
@@ -59,19 +59,113 @@ def test_plot_layout(ipywidgets_options):
     # verify that the plot uses the correct layout.
 
     x, t = symbols("x, t")
+    options = ipywidgets_options.copy()
+    options["show"] = True
 
     p1 = plot(cos(x) * exp(-x * t), (x, 0, 10), params={t: (0.1, 0, 2)},
         layout="tb", backend=PB, n=10, **ipywidgets_options)
+    assert isinstance(p1, InteractivePlot)
+
+    p1 = plot(cos(x) * exp(-x * t), (x, 0, 10), params={t: (0.1, 0, 2)},
+        layout="tb", backend=PB, n=10, **options)
     assert isinstance(p1, ipywidgets.VBox)
 
     p2 = plot(cos(x) * exp(-x * t), (x, 0, 10), params={t: (0.1, 0, 2)},
-        layout="bb", backend=PB, n=10, **ipywidgets_options)
+        layout="bb", backend=PB, n=10, **options)
     assert isinstance(p2, ipywidgets.VBox)
 
     p3 = plot(cos(x) * exp(-x * t), (x, 0, 10), params={t: (0.1, 0, 2)},
-        layout="sbl", backend=PB, n=10, **ipywidgets_options)
+        layout="sbl", backend=PB, n=10, **options)
     assert isinstance(p3, ipywidgets.HBox)
 
     p4 = plot(cos(x) * exp(-x * t), (x, 0, 10), params={t: (0.1, 0, 2)},
-        layout="sbr", backend=PB, n=10, **ipywidgets_options)
+        layout="sbr", backend=PB, n=10, **options)
     assert isinstance(p4, ipywidgets.HBox)
+
+
+def test_iplot_sum_1(ipywidgets_options):
+    # verify that it is possible to add together different instances of
+    # InteractivePlot (as well as Plot instances), provided that the same
+    # parameters are used.
+
+    x, u = symbols("x, u")
+
+    params = {
+        u: (1, 0, 2)
+    }
+    p1 = plot(
+        cos(u * x), (x, -5, 5), params = params,
+        backend = MB,
+        xlabel = "x1", ylabel = "y1", title = "title 1",
+        legend=True, **ipywidgets_options)
+    p2 = plot(
+        sin(u * x), (x, -5, 5), params = params,
+        backend = MB,
+        xlabel = "x2", ylabel = "y2", title = "title 2", **ipywidgets_options)
+    p3 = plot(sin(x)*cos(x), (x, -5, 5), backend=MB,
+        adaptive=False, n=50,
+        is_point=True, is_filled=True,
+        line_kw=dict(marker="^"), **ipywidgets_options)
+    p = p1 + p2 + p3
+
+    assert isinstance(p, InteractivePlot)
+    assert isinstance(p.backend, MB)
+    assert p.backend.title == "title 1"
+    assert p.backend.xlabel == "x1"
+    assert p.backend.ylabel == "y1"
+    assert p.backend.legend
+    assert len(p.backend.series) == 3
+    assert len([s for s in p.backend.series if s.is_interactive]) == 2
+    assert len([s for s in p.backend.series if not s.is_interactive]) == 1
+
+
+def test_iplot_sum_2(ipywidgets_options):
+    # verify that it is not possible to add together different instances of
+    # InteractivePlot when they are using different parameters
+
+    x, u, v = symbols("x, u, v")
+
+    p1 = plot(
+        cos(u * x), (x, -5, 5),
+        params = {
+            u: (1, 0, 1)
+        },
+        backend = MB,
+        xlabel = "x1", ylabel = "y1", title = "title 1",
+        legend=True, **ipywidgets_options)
+    p2 = plot(
+        sin(u * x) + v, (x, -5, 5),
+        params = {
+            u: (1, 0, 1),
+            v: (0, -2, 2)
+        },
+        backend = MB,
+        xlabel = "x2", ylabel = "y2", title = "title 2", **ipywidgets_options)
+    raises(ValueError, lambda: p1 + p2)
+
+
+def test_iplot_sum_3(ipywidgets_options):
+    # verify that the resulting iplot's backend is of the same type as the
+    # original
+
+    x, u = symbols("x, u")
+
+    def func(B):
+        params = {
+            u: (1, 0, 2)
+        }
+        p1 = plot(
+            cos(u * x), (x, -5, 5), params = params,
+            backend = B,
+            xlabel = "x1", ylabel = "y1", title = "title 1",
+            legend=True, **ipywidgets_options)
+        p2 = plot(
+            sin(u * x), (x, -5, 5), params = params,
+            backend = B,
+            xlabel = "x2", ylabel = "y2", title = "title 2", **ipywidgets_options)
+        p = p1 + p2
+        assert isinstance(p.backend, B)
+
+    func(MB)
+    func(BB)
+    func(PB)

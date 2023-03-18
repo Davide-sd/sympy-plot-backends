@@ -1,6 +1,6 @@
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.utils import _validate_kwargs
-from spb.interactive import _tuple_to_dict
+from spb.interactive import _tuple_to_dict, IPlot
 from spb.interactive.bootstrap_spb import (
     SymPyBootstrapTemplate,
     SymPyBootstrapDarkTheme, SymPyBootstrapDefaultTheme)
@@ -404,7 +404,7 @@ class PanelLayout:
         return template
 
 
-class InteractivePlot(DynamicParam, PanelLayout):
+class InteractivePlot(DynamicParam, PanelLayout, IPlot):
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
@@ -454,69 +454,14 @@ class InteractivePlot(DynamicParam, PanelLayout):
         _validate_kwargs(self._backend, **original_kwargs)
 
     @property
-    def fig(self):
-        """Return the plot object"""
-        return self._backend.fig
-
-    @property
-    def backend(self):
-        """Return the backend"""
-        return self._backend
-
-    @property
     def pane_kw(self):
         """Return the keyword arguments used to customize the wrapper to the
         plot.
         """
         return self._pane_kw
 
-    def save(self, *args, **kwargs):
-        """Save the current figure.
-        This is a wrapper to the backend's `save` function. Refer to the
-        backend's documentation to learn more about arguments and keyword
-        arguments.
-        """
-        self._backend.save(*args, **kwargs)
-
-    def __add__(self, other):
-        return self._do_sum(other)
-
-    def __radd__(self, other):
-        return other._do_sum(self)
-
-    def _do_sum(self, other):
-        """Differently from Plot.extend, this method creates a new plot object,
-        which uses the series of both plots and merges the _kwargs dictionary
-        of `self` with the one of `other`.
-        """
-        from spb.backends.base_backend import Plot
-        mergedeep = import_module('mergedeep')
-        merge = mergedeep.merge
-
-        if not isinstance(other, (Plot, InteractivePlot)):
-            raise TypeError(
-                "Both sides of the `+` operator must be instances of the "
-                "InteractivePlot or Plot class.\n"
-                "Received: {} + {}".format(type(self), type(other)))
-
-        series = self._backend.series
-        if isinstance(other, Plot):
-            series.extend(other.series)
-        else:
-            series.extend(other._backend.series)
-
-        # check that the interactive series uses the same parameters
-        symbols = []
-        for s in series:
-            if s.is_interactive:
-                symbols.append(list(s.params.keys()))
-        if not all(t == symbols[0] for t in symbols):
-            raise ValueError(
-                "The same parameters must be used when summing up multiple "
-                "interactive plots.")
-
-        backend_kw = self._backend._copy_kwargs()
-        panel_kw = {
+    def _get_iplot_kw(self):
+        return {
             "backend": type(self._backend),
             "layout": self._layout,
             "template": self._template,
@@ -524,13 +469,8 @@ class InteractivePlot(DynamicParam, PanelLayout):
             "throttled": self._throttled,
             "use_latex": self._use_latex,
             "params": self._original_params,
-            "show": False,
             "pane_kw": self._pane_kw
         }
-
-        new_iplot = type(self)(**merge({}, backend_kw, panel_kw))
-        new_iplot._backend.series.extend(series)
-        return new_iplot
 
 
 def iplot(*series, show=True, **kwargs):
@@ -624,7 +564,7 @@ def iplot(*series, show=True, **kwargs):
         Default to True.
         If True, it will return an object that will be rendered on the
         output cell of a Jupyter Notebook. If False, it returns an instance
-        of `InteractivePlot`, which can later be be shown by calling the
+        of ``InteractivePlot``, which can later be be shown by calling the
         `show()` method.
 
     template : optional
@@ -786,16 +726,16 @@ def iplot(*series, show=True, **kwargs):
            use_latex = False,
        )
 
-    Combine together `InteractivePlot` and ``Plot`` instances. The same
+    Combine together ``InteractivePlot`` and ``Plot`` instances. The same
     parameters dictionary must be used for every interactive plot command.
     Note:
 
     1. the first plot dictates the labels, title and wheter to show the legend
        or not.
-    2. Instances of ``Plot`` class must be place on the right side of the `+`
+    2. Instances of ``Plot`` class must be place on the right side of the ``+``
        sign.
-    3. `show=False` has been set in order for ``iplot`` to return an instance
-       of ``InteractivePlot``, which supports addition.
+    3. ``show=False`` has been set in order for ``iplot`` to return an
+       instance of ``InteractivePlot``, which supports addition.
     4. Once we are done playing with parameters, we can access the backend
        with ``p.backend``. Then, we can use the ``p.backend.fig`` attribute
        to retrieve the figure, or ``p.backend.save()`` to save the figure.
