@@ -21,20 +21,20 @@ class SymPyBootstrapTemplate(BootstrapTemplate):
 
     full_width = param.Boolean(default=True, doc="""
         Use the entire available width of the page. Default to True.""")
-    
+
     header_no_panning = param.Boolean(default=True, doc="""
         Use no padding on the header and also use a smaller font size.
         Default to True.""")
 
     sidebar_width = param.String("15%", doc="""
         The width of the sidebar, in pixels or %. Default is 350px.""")
-    
+
     sidebar_location = param.String("sbl", doc="""
         The location of the sidebar. Can be one of ['sbl', 'sbr', 'tb', 'bb']
         meaning sidebar-left, sidebar-right, topbar, bottom-bar, respectively.
         Default to 'sbl' (sidebar-left).
         """)
-    
+
     show_header = param.Boolean(default=True, doc="""
         Wheter to show the header. Default to True.""")
 
@@ -48,7 +48,7 @@ class SymPyBootstrapTemplate(BootstrapTemplate):
         self.add_variable("full_width", self.full_width)
         self.add_variable("header_no_panning", self.header_no_panning)
         self.add_variable("show_header", self.show_header)
-    
+
     def add_variable(self, name, value):
         """
         Add parameters to the template, which may then be referenced

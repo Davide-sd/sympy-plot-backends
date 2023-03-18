@@ -24,6 +24,7 @@ from spb.series import (
     List2DSeries, List3DSeries, GeometrySeries, Implicit3DSeries,
     GenericDataSeries
 )
+from spb.interactive import create_interactive_plot
 from spb.utils import (
     _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend,
     spherical_to_cartesian
@@ -255,13 +256,6 @@ def _create_series(series_type, plot_expr, **kwargs):
             kw["rendering_kw"] = args[-1]
         series.append(series_type(*args[:-1], **kw))
     return series
-
-
-def _create_interactive_plot(*series, **kwargs):
-    # NOTE: Holoviz's Panel is really slow to load, so let's load it only when
-    # it is necessary
-    from spb.interactive import iplot
-    return iplot(*series, **kwargs)
 
 
 def _create_generic_data_series(**kwargs):
@@ -668,7 +662,7 @@ def plot(*args, **kwargs):
     series += _create_generic_data_series(**kwargs)
 
     if params:
-        return _create_interactive_plot(*series, **kwargs)
+        return create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -962,7 +956,7 @@ def plot_parametric(*args, **kwargs):
     series += _create_generic_data_series(**kwargs)
 
     if kwargs.get("params", None):
-        return _create_interactive_plot(*series, **kwargs)
+        return create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -1454,7 +1448,7 @@ def plot3d_parametric_line(*args, **kwargs):
     _set_labels(series, labels, rendering_kw)
 
     if kwargs.get("params", None):
-        return _create_interactive_plot(*series, **kwargs)
+        return create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", THREE_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -1506,7 +1500,7 @@ def _plot3d_plot_contour_helper(Series, is_threed, Backend, *args, **kwargs):
     if kwargs.get("params", None):
         kwargs["threed"] = is_threed
         kwargs["backend"] = Backend
-        return _create_interactive_plot(*series, **kwargs)
+        return create_interactive_plot(*series, **kwargs)
 
     return _instantiate_backend(Backend, *series, **kwargs)
 
@@ -2278,7 +2272,7 @@ def plot3d_parametric_surface(*args, **kwargs):
     Backend = kwargs.get("backend", THREE_D_B)
 
     if kwargs.get("params", None):
-        return _create_interactive_plot(*series, **kwargs)
+        return create_interactive_plot(*series, **kwargs)
 
     return _instantiate_backend(Backend, *series, **kwargs)
 
@@ -2725,7 +2719,8 @@ def plot_contour(*args, **kwargs):
         ContourSeries, False, Backend, *args, **kwargs)
 
 
-def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis="z", show_curve=False, curve_kw=None, **kwargs):
+def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
+    parallel_axis="z", show_curve=False, curve_kw=None, **kwargs):
     """Generate a surface of revolution by rotating a curve around an axis of
     rotation.
 
@@ -2883,6 +2878,7 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis
     """
     show = kwargs.pop("show", True)
     kwargs["show"] = False
+    imodule = kwargs.get("imodule", cfg["interactive"]["module"])
 
     if curve_kw is None:
         curve_kw = {}
@@ -2936,6 +2932,7 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0), parallel_axis
             n = surface.backend[0].n[0]
             backend = type(surface.backend)
             curve_kw["params"] = params
+            curve_kw.setdefault("imodule", imodule)
 
         curve_kw["show"] = False
         # uniform mesh evaluation is faster
@@ -3574,7 +3571,7 @@ def plot_geometry(*args, **kwargs):
         kwargs["aspect"] = "equal"
 
     if kwargs.get("params", None):
-        return _create_interactive_plot(*series, **kwargs)
+        return create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", THREE_D_B if any_3D else TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -3804,7 +3801,7 @@ def plot_list(*args, **kwargs):
 
     _set_labels(series, g_labels, g_rendering_kw)
     if kwargs.get("params", None):
-        return _create_interactive_plot(*series, **kwargs)
+        return create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
@@ -4005,7 +4002,7 @@ def plot3d_list(*args, **kwargs):
 
     _set_labels(series, g_labels, g_rendering_kw)
     if kwargs.get("params", None):
-        return _create_interactive_plot(*series, **kwargs)
+        return create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)

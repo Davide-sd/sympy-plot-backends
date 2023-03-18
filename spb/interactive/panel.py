@@ -1,6 +1,7 @@
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.utils import _validate_kwargs
-from spb.bootstrap_spb import (
+from spb.interactive import _tuple_to_dict
+from spb.interactive.bootstrap_spb import (
     SymPyBootstrapTemplate,
     SymPyBootstrapDarkTheme, SymPyBootstrapDefaultTheme)
 from sympy import latex, Tuple
@@ -46,70 +47,18 @@ class DynamicParam(param.Parameterized):
     # overall update.
     check_val = param.Integer(default=0)
 
-    def _tuple_to_dict(self, k, v):
-        """The user can provide a variable length tuple/list containing:
-
-        (default, min, max, N [optional], tick_format [optional],
-            label [optional], spacing [optional])
-
-        where:
-            default : float
-                Default value of the slider
-            min : float
-                Minimum value of the slider.
-            max : float
-                Maximum value of the slider.
-            N : int
-                Number of increments in the slider.
-                (start - end) / N represents the step increment. Default to 40.
-                Set N=-1 to have unit step increments.
-            tick_format : bokeh.models.formatters.TickFormatter or None
-                Default to None. Provide a formatter for the tick value of the
-                slider.
-            label : str
-                Label of the slider. Default to None. If None, the string or
-                latex representation will be used. See use_latex for more
-                information.
-            spacing : str
-                Discretization spacing. Can be "linear" or "log".
-                Default to "linear".
-        """
+    def _tuple_to_dict_panel(self, k, v):
         np = import_module('numpy')
 
-        if not hasattr(v, "__iter__"):
-            raise TypeError(
-                "Provide a tuple or list for the parameter {}".format(k))
-
-        if len(v) >= 5:
-            # remove tick_format, as it won't be used for the creation of the
-            # parameter. Its value has already been stored.
-            v = list(v)
-            v.pop(4)
-
-        N = 40
-        defaults_keys = ["default", "softbounds", "step", "label", "type"]
-        defaults_values = [
-            1,
-            0,
-            2,
-            N,
-            "$%s$" % latex(k) if self._use_latex else str(k),
-            "linear",
-        ]
-        values = defaults_values.copy()
-        values[: len(v)] = v
-        # set the step increment for the slider
-        _min, _max = float(values[1]), float(values[2])
-        if values[3] > 0:
-            N = int(values[3])
-            values[3] = (_max - _min) / N
-        else:
-            values[3] = 1
+        d = _tuple_to_dict(k, v, self._use_latex)
+        values = list(d.values())
 
         if values[-1] == "log":
             # In case of a logarithm slider, we need to instantiate the
             # custom parameter MyList.
 
+            N = 40 if len(v) <=3 else int(v[3])
+            _min, _max = values[1:3]
             # # divide the range in N steps evenly spaced in a log scale
             options = np.geomspace(_min, _max, N)
             # the provided default value may not be in the computed options.
@@ -119,12 +68,8 @@ class DynamicParam(param.Parameterized):
                 default = min(options, key=lambda x: abs(x - default))
             return MyList(default=default, objects=list(options), label=values[4])
 
-        # combine _min, _max into softbounds tuple
-        values = [
-            float(values[0]),
-            (_min, _max),
-            *values[3:]
-        ]
+        defaults_keys = ["default", "softbounds", "step", "label", "type"]
+        values = [values[0], tuple(values[1:3]), *values[3:]]
         return {k: v for k, v in zip(defaults_keys, values)}
 
     def __init__(self, *args, name="", params=None, **kwargs):
@@ -179,7 +124,12 @@ class DynamicParam(param.Parameterized):
             self.formatters[k] = formatter
 
             if not isinstance(v, param.parameterized.Parameter):
-                v = self._tuple_to_dict(k, v)
+                if len(v) >= 5:
+                    # remove tick_format, as it won't be used for the creation
+                    # of the parameter. Its value has already been stored.
+                    v = list(v)
+                    v.pop(4)
+                v = self._tuple_to_dict_panel(k, v)
                 # at this stage, v could be a dictionary representing a number,
                 # or a MyList parameter, representing a log slider
                 if not isinstance(v, param.parameterized.Parameter):
@@ -405,17 +355,22 @@ class PanelLayout:
 
             return content
 
-        template = self._create_template()
-        template.main.append(self.pane)
-        template.sidebar.append(self.layout_controls)
-        template.config.raw_css.append(self._custom_css)
+        return self._create_template(True)
 
-        show = True
-        if show:
-            return template.servable().show()
-        return template
+    def _create_template(self, show=False):
+        """Instantiate a template, populate it and serves it.
 
-    def _create_template(self):
+        Parameters
+        ==========
+
+        show : boolean
+            If True, the template will be served on a new browser window.
+            Otherwise, just return the template: ``show=False`` is used
+            by the documentation to visualize servable applications.
+        """
+        if not show:
+            self._init_pane()
+
         theme = SymPyBootstrapDarkTheme
         if cfg["interactive"]["theme"] != "dark":
             theme = SymPyBootstrapDefaultTheme
@@ -439,6 +394,13 @@ class PanelLayout:
                 "template, an instance of pn.template.base.BasicTemplate "
                 "or a subclass of pn.template.base.BasicTemplate. Received: "
                 "type(template) = %s" % type(self._template))
+
+        template.main.append(self.pane)
+        template.sidebar.append(self.layout_controls)
+        template.config.raw_css.append(self._custom_css)
+
+        if show:
+            return template.servable().show()
         return template
 
 
@@ -487,6 +449,7 @@ class InteractivePlot(DynamicParam, PanelLayout):
         is_3D = all([s.is_3D for s in series])
         Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
         kwargs["is_iplot"] = True
+        kwargs["imodule"] = "panel"
         self._backend = Backend(*series, **kwargs)
         _validate_kwargs(self._backend, **original_kwargs)
 
@@ -702,8 +665,7 @@ def iplot(*series, show=True, **kwargs):
 
     Surface plot between -10 <= x, y <= 10 with a damping parameter varying
     from 0 to 1, with a default value of 0.15, discretized with 50 points
-    on both directions. Note the use of `threed=True` to specify a 3D plot.
-    If `threed=False`, a contour plot will be generated.
+    on both directions.
 
     .. panel-screenshot::
 
@@ -856,7 +818,8 @@ def iplot(*series, show=True, **kwargs):
            title = "title 1",
            legend = True,
            show = False,
-           use_latex = False
+           use_latex = False,
+           imodule="panel"
        )
        p2 = plot(
            (sin(u * x), (x, -5, 5)),
@@ -865,7 +828,8 @@ def iplot(*series, show=True, **kwargs):
            xlabel = "x2",
            ylabel = "y2",
            title = "title 2",
-           show = False
+           show = False,
+           imodule="panel"
        )
        p3 = plot(sin(x)*cos(x), (x, -5, 5), dict(marker="^"), backend=MB,
            adaptive=False, n=50,
@@ -987,7 +951,7 @@ def iplot(*series, show=True, **kwargs):
     See also
     ========
 
-    create_series, create_widgets
+    create_widgets
 
     """
     i = InteractivePlot(*series, **kwargs)

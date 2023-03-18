@@ -237,8 +237,11 @@ class Plot:
         # NOTE: matplotlib is not designed to be interactive, therefore it
         # needs a way to detect where its figure is going to be displayed.
         # For regular plots, plt.figure can be used. For interactive-parametric
-        # plots matplotlib.figure.Figure must be used.
+        # plots with holoviz panel, matplotlib.figure.Figure must be used.
         self.is_iplot = kwargs.get("is_iplot", False)
+        # backend might need to create different types of figure depending on
+        # the interactive module being used
+        self.imodule = kwargs.get("imodule", None)
 
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.

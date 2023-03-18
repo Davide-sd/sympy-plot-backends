@@ -1,3 +1,4 @@
+.. _Tutorial 4:
 
 4 - Customizing the module
 --------------------------
@@ -146,6 +147,9 @@ Let's now discuss a few customization options:
    # set a default (complex) domain coloring option.
    cfg["complex"]["coloring"] = "b"
 
+   # Specify the default interactive module for widgets. Can be:
+   # "ipywidgets" or "panel"
+   cfg["interactive"]["module"] = "ipywidgets"
    # Visualize Latex labels in the widgets of `iplot`
    cfg["interactive"]["use_latex"] = True
    # Controls wether sliders trigger the update of `iplot`at each

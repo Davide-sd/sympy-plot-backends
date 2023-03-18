@@ -196,7 +196,10 @@ class PlotlyBackend(Plot):
 
         self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
         self.grid = kwargs.get("grid", cfg["plotly"]["grid"])
-        self._fig = go.Figure()
+        if self.is_iplot and (self.imodule == "ipywidgets"):
+            self._fig = go.FigureWidget()
+        else:
+            self._fig = go.Figure()
         self._colorbar_counter = 0
 
     @property
@@ -760,6 +763,13 @@ class PlotlyBackend(Plot):
                 )
 
     def _update_interactive(self, params):
+        if self.imodule == "ipywidgets":
+            with self._fig.batch_update():
+                self._update_interactive_helper(params)
+        else:
+            self._update_interactive_helper(params)
+
+    def _update_interactive_helper(self, params):
         np = import_module('numpy')
         plotly = import_module(
             'plotly',

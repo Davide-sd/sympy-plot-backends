@@ -4,6 +4,7 @@ from spb.series import (
     BaseSeries, Vector2DSeries, Vector3DSeries, ContourSeries,
     SliceVector3DSeries, _set_discretization_points
 )
+from spb.interactive import create_interactive_plot
 from spb.utils import (
     _plot_sympify, _unpack_args_extended, _split_vector, _is_range,
     _instantiate_backend
@@ -740,7 +741,6 @@ def plot_vector(*args, **kwargs):
         raise ValueError("Mixing 2D vectors with 3D vectors is not allowed.")
 
     if kwargs.get("params", None):
-        from spb.interactive import iplot
-        return iplot(*series, **kwargs)
+        return create_interactive_plot(*series, **kwargs)
 
     return _instantiate_backend(Backend, *series, **kwargs)

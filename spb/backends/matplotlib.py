@@ -230,10 +230,10 @@ class MatplotlibBackend(Plot):
             self._fig = self._plotgrid_fig
             self._ax = self._plotgrid_ax
         else:
-            if not self.is_iplot:
-                self._fig = self.plt.figure(figsize=self.size)
-            else:
+            if self.is_iplot and (self.imodule == "panel"):
                 self._fig = self.matplotlib.figure.Figure(figsize=self.size)
+            else:
+                self._fig = self.plt.figure(figsize=self.size)
 
             is_3D = [s.is_3D for s in self.series]
             if any(is_3D) and (not all(is_3D)):

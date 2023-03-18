@@ -1,10 +1,10 @@
 from pytest import raises
 from spb import BB, PB, MB, plot, plot3d, plot_vector
-from spb.interactive import (
-    iplot, DynamicParam, MyList,
+from spb.interactive.panel import (
+    DynamicParam, MyList,
     InteractivePlot, create_widgets
 )
-from spb.bootstrap_spb import SymPyBootstrapTemplate
+from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from sympy import (
     sqrt, Integer, Float, Rational, pi, symbols, Tuple,
     sin, cos, Plane
@@ -13,22 +13,10 @@ from spb.series import (VectorBase, ContourSeries, SurfaceOver2DRangeSeries,
     Parametric3DLineSeries
 )
 from sympy.external import import_module
-
-
-np = import_module('numpy', catch=(RuntimeError,))
-param = import_module(
-    'param',
-    min_module_version='1.11.0',
-    catch=(RuntimeError,))
-pn = import_module(
-    'panel',
-    min_module_version='0.12.0',
-    catch=(RuntimeError,))
-bokeh = import_module(
-    'bokeh',
-    import_kwargs={'fromlist':['models']},
-    min_module_version='2.3.0',
-    catch=(RuntimeError,))
+import numpy as np
+import param
+import panel as pn
+import bokeh
 
 
 def test_DynamicParam():
@@ -173,7 +161,8 @@ def test_DynamicParam_symbolic_parameters():
     def test_number(p, d, sb):
         assert isinstance(p, param.Number)
         assert np.isclose(p.default, d) and isinstance(p.default, float)
-        assert (p.softbounds == sb) and all(isinstance(t, float) for t in p.softbounds)
+        assert (p.softbounds == sb)
+        assert all(isinstance(t, float) for t in p.softbounds)
         assert isinstance(p.step, float)
 
     test_number(p1, 1, (0, 5))
@@ -181,7 +170,9 @@ def test_DynamicParam_symbolic_parameters():
     test_number(p3, 1.5 * np.pi, (2 / 3, 5))
 
 
-def test_iplot():
+def test_iplot(panel_options):
+    # verify that the correct widgets are created, with the appropriate labels
+
     bm = bokeh.models
     a, b, c, d = symbols("a, b, c, d")
     x, y, u, v = symbols("x, y, u, v")
@@ -199,10 +190,10 @@ def test_iplot():
             u: param.Boolean(default=True),
             v: param.ObjectSelector(default=2, objects=[1, 2, 3, 4]),
         },
-        show=False,
         layout="tb",
         ncols=2,
-        use_latex=False
+        use_latex=False,
+        **panel_options
     )
 
     # no latex in labels
@@ -242,10 +233,10 @@ def test_iplot():
             b: (3, 2, 4000, 10),
             c: param.Number(0.15, softbounds=(0, 1), label="test", step=0.025),
         },
-        show=False,
         layout="tb",
         ncols=2,
-        use_latex=True
+        use_latex=True,
+        **panel_options
     )
 
     # there are 3 parameters in this plot
@@ -266,9 +257,7 @@ def test_iplot():
             a: (1, 0, 5),
             b: (1, 1, 10, 10, None, "test3", "log"),
         },
-        use_latex=False,
-        show=False,
-    )
+        use_latex=False, **panel_options)
 
     new_params = [k for k in InteractivePlot.__dict__.keys() if "dyn_param_" in k]
     assert len(new_params) == 2
@@ -312,140 +301,7 @@ def test_create_widgets():
     assert isinstance(w[y].format, bokeh.models.formatters.PrintfTickFormatter)
 
 
-def test_interactiveseries():
-    # verify the instantiation of InteractiveSeries inside InteractivePlot
-    from sympy.vector import CoordSys3D
-
-    N = CoordSys3D("N")
-    i, j, k = N.base_vectors()
-    x, y, z = N.base_scalars()
-    a, b, c = symbols("a:c")
-    v1 = -a * sin(y) * i + b * cos(x) * j
-    m1 = v1.to_matrix(N)
-    m1 = m1[:-1]
-    l1 = list(m1)
-    v2 = -a * sin(y) * i + b * cos(x) * j + c * cos(z) * k
-    m2 = v2.to_matrix(N)
-    l2 = list(m2)
-
-    def test_vector(v, ranges, params, expr, label, shape, n=10):
-        t = plot_vector(v, *ranges, params=params, n=n, backend=PB,
-            scalar=False, show=False)
-
-        s = t.backend.series[0]
-        assert isinstance(s, VectorBase)
-        assert s.expr == expr
-        assert s.label == label
-        assert len(s.ranges) == len(ranges)
-        data = s.get_data()
-        assert data[0].shape == shape
-        if len(ranges) == 2:
-            assert s.is_2Dvector
-            assert not s.is_3Dvector
-        else:
-            assert not s.is_2Dvector
-            assert s.is_3Dvector
-        assert s.is_interactive
-
-        # verify that the backend is able to run the `_update_interactive`
-        # method.
-        new_params = {k: v[0] for k, v in params.items()}
-        t._backend._update_interactive(new_params)
-
-    # 2D vectors
-    params = {
-        a: (2, 0, 3),
-        b: (3, 1, 4),
-    }
-    ranges = (x, -5, 5), (y, -4, 4)
-    test_vector(
-        v1, ranges, params, Tuple(-a * sin(N.y), b * cos(N.x)),
-        str(Tuple(-a * sin(N.y), b * cos(N.x))), (10, 10))
-
-    test_vector(
-        m1, ranges, params, Tuple(-a * sin(y), b * cos(x)), str(tuple(m1)),
-        (10, 10))
-
-    test_vector(
-        l1, ranges, params, Tuple(-a * sin(y), b * cos(x)), str(tuple(l1)),
-        (8, 8), 8)
-
-    # 3D vectors
-    params = {
-        a: (2, 0, 3),
-        b: (3, 1, 4),
-        c: (4, 2, 5),
-    }
-    ranges = (x, -5, 5), (y, -4, 4), (z, -6, 6)
-    test_vector(
-        v2, ranges, params,
-        Tuple(-a * sin(N.y), b * cos(N.x), c * cos(N.z)),
-        str(Tuple(-a * sin(N.y), b * cos(N.x), c * cos(N.z))),
-        (10, 10, 10))
-
-    test_vector(
-        m2, ranges, params,
-        Tuple(-a * sin(y), b * cos(x), c * cos(z)),
-        str(Tuple(-a * sin(y), b * cos(x), c * cos(z))),
-        (10, 10, 10))
-
-    test_vector(
-        l2, ranges, params,
-        Tuple(-a * sin(y), b * cos(x), c * cos(z)),
-        str(Tuple(-a * sin(y), b * cos(x), c * cos(z))),
-        (10, 10, 10))
-
-    # Sliced 3D vectors: single slice
-    v3 = a * z * i + b * y * j + c * x * k
-    t = plot_vector(
-        v3, *ranges, params=params,
-        n1=5, n2=6, n3=7,
-        slice=Plane((1, 2, 3), (1, 0, 0)),
-        backend=PB, show=False)
-    assert len(t.backend.series) == 1
-    s = t.backend.series[0]
-    assert isinstance(s, VectorBase) and s.is_interactive
-    assert s.is_3Dvector
-    assert s.is_slice
-    xx, yy, zz, uu, vv, ww = s.get_data()
-    assert all([t.shape == (6, 7) for t in [xx, yy, zz, uu, vv, ww]])
-    assert np.all(xx == 1)
-    assert (np.min(yy.flatten()) == -4) and (np.max(yy.flatten()) == 4)
-    assert (np.min(zz.flatten()) == -6) and (np.max(zz.flatten()) == 6)
-
-    # Sliced 3D vectors: multiple slices. Test that each slice creates a
-    # corresponding series
-    t = plot_vector(
-        v3, *ranges, params=params,
-        n1=5, n2=6, n3=7,
-        slice=[
-            Plane((1, 2, 3), (1, 0, 0)),
-            Plane((1, 2, 3), (0, 1, 0)),
-            Plane((1, 2, 3), (0, 0, 1)),
-        ],
-        backend=PB, show=False)
-    assert len(t.backend.series) == 3
-    assert all([isinstance(s, VectorBase) for s in t.backend.series])
-    assert all([s.is_3Dvector for s in t.backend.series])
-    assert all([s.is_slice for s in t.backend.series])
-    xx1, yy1, zz1, uu1, vv1, ww1 = t.backend.series[0].get_data()
-    xx2, yy2, zz2, uu2, vv2, ww2 = t.backend.series[1].get_data()
-    xx3, yy3, zz3, uu3, vv3, ww3 = t.backend.series[2].get_data()
-    assert all([t.shape == (6, 7) for t in [xx1, yy1, zz1, uu1, vv1, ww1]])
-    assert all([t.shape == (7, 5) for t in [xx2, yy2, zz2, uu2, vv2, ww2]])
-    assert all([t.shape == (6, 5) for t in [xx3, yy3, zz3, uu3, vv3, ww3]])
-    assert np.all(xx1 == 1)
-    assert (np.min(yy1.flatten()) == -4) and (np.max(yy1.flatten()) == 4)
-    assert (np.min(zz1.flatten()) == -6) and (np.max(zz1.flatten()) == 6)
-    assert np.all(yy2 == 2)
-    assert (np.min(xx2.flatten()) == -5) and (np.max(xx2.flatten()) == 5)
-    assert (np.min(zz2.flatten()) == -6) and (np.max(zz2.flatten()) == 6)
-    assert np.all(zz3 == 3)
-    assert (np.min(xx3.flatten()) == -5) and (np.max(xx3.flatten()) == 5)
-    assert (np.min(yy3.flatten()) == -4) and (np.max(yy3.flatten()) == 4)
-
-
-def test_iplot_sum_1():
+def test_iplot_sum_1(panel_options):
     # verify that it is possible to add together different instances of
     # InteractivePlot (as well as Plot instances), provided that the same
     # parameters are used.
@@ -459,16 +315,15 @@ def test_iplot_sum_1():
         cos(u * x), (x, -5, 5), params = params,
         backend = MB,
         xlabel = "x1", ylabel = "y1", title = "title 1",
-        legend=True, show = False, pane_kw = {"width": 500})
+        legend=True, pane_kw = {"width": 500}, **panel_options)
     p2 = plot(
         sin(u * x), (x, -5, 5), params = params,
         backend = MB,
-        xlabel = "x2", ylabel = "y2", title = "title 2",
-        show = False)
+        xlabel = "x2", ylabel = "y2", title = "title 2", **panel_options)
     p3 = plot(sin(x)*cos(x), (x, -5, 5), backend=MB,
         adaptive=False, n=50,
         is_point=True, is_filled=True,
-        line_kw=dict(marker="^"), show=False)
+        line_kw=dict(marker="^"), **panel_options)
     p = p1 + p2 + p3
 
     assert isinstance(p, InteractivePlot)
@@ -483,7 +338,7 @@ def test_iplot_sum_1():
     assert p.pane_kw == {"width": 500}
 
 
-def test_iplot_sum_2():
+def test_iplot_sum_2(panel_options):
     # verify that it is not possible to add together different instances of
     # InteractivePlot when they are using different parameters
 
@@ -496,7 +351,7 @@ def test_iplot_sum_2():
         },
         backend = MB,
         xlabel = "x1", ylabel = "y1", title = "title 1",
-        legend=True, show = False)
+        legend=True, **panel_options)
     p2 = plot(
         sin(u * x) + v, (x, -5, 5),
         params = {
@@ -504,12 +359,11 @@ def test_iplot_sum_2():
             v: (0, -2, 2)
         },
         backend = MB,
-        xlabel = "x2", ylabel = "y2", title = "title 2",
-        show = False)
+        xlabel = "x2", ylabel = "y2", title = "title 2", **panel_options)
     raises(ValueError, lambda: p1 + p2)
 
 
-def test_iplot_sum_3():
+def test_iplot_sum_3(panel_options):
     # verify that the resulting iplot's backend is of the same type as the
     # original
 
@@ -523,12 +377,11 @@ def test_iplot_sum_3():
             cos(u * x), (x, -5, 5), params = params,
             backend = B,
             xlabel = "x1", ylabel = "y1", title = "title 1",
-            legend=True, show = False)
+            legend=True, **panel_options)
         p2 = plot(
             sin(u * x), (x, -5, 5), params = params,
             backend = B,
-            xlabel = "x2", ylabel = "y2", title = "title 2",
-            show = False)
+            xlabel = "x2", ylabel = "y2", title = "title 2", **panel_options)
         p = p1 + p2
         assert isinstance(p.backend, B)
 
@@ -537,89 +390,7 @@ def test_iplot_sum_3():
     func(PB)
 
 
-def test_label_rendering_kw():
-    # verify that label and rendering_kw keyword arguments gets applied
-    u, x, y = symbols("u, x, y")
-
-    t = plot(
-        (sin(u * x), (x, -5, 5)),
-        (cos(u * x), (x, -5, 5)),
-        params={
-            u: (2, 1, 3, 5),
-        },
-        show=False,
-        label=["a", "b"],
-        rendering_kw=[{"color": "r"}, {"linestyle": ":"}],
-        backend=MB
-    )
-    assert isinstance(t, InteractivePlot)
-    assert len(t.backend.series) == 2 and all(s.is_2Dline for s in t.backend.series)
-    assert [s.label for s in t.backend.series] == ["a", "b"]
-    assert t.backend.series[0].rendering_kw == {"color": "r"}
-    assert t.backend.series[1].rendering_kw == {"linestyle": ":"}
-
-
-def test_plot3d_wireframe():
-    # verify that wireframe=True produces the expected data series
-    x, y, u = symbols("x, y, u")
-
-    _plot3d = lambda wf: plot3d(
-        cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        params = {
-            u: (1, 0, 2)
-        },
-        n1=10, n2=10, backend=MB, wireframe=wf, show=False
-    )
-    t = _plot3d(False)
-    assert isinstance(t, InteractivePlot)
-    assert len(t.backend.series) == 1
-
-    t = _plot3d(True)
-    assert isinstance(t, InteractivePlot)
-    assert len(t.backend.series) == 1 + 10 + 10
-    assert isinstance(t.backend.series[0], SurfaceOver2DRangeSeries)
-    assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
-        for s in t.backend.series[1:])
-
-
-def test_plot3d_wireframe_and_labels():
-    # verify that `wireframe=True` produces the expected data series even when
-    # `label` is set
-    x, y, u = symbols("x, y, u")
-
-    t = plot3d(
-        cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        params = {
-            u: (1, 0, 2)
-        },
-        n1=10, n2=10, backend=MB, wireframe=True, label="test", show=False
-    )
-    assert isinstance(t, InteractivePlot)
-    assert len(t.backend.series) == 1 + 10 + 10
-    assert isinstance(t.backend.series[0], SurfaceOver2DRangeSeries)
-    assert t.backend.series[0].get_label(False) == "test"
-    assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
-        for s in t.backend.series[1:])
-
-    t = plot3d(
-        (cos(u * x**2 + y**2), (x, -2, 0), (y, -2, 2)),
-        (cos(u * x**2 + y**2), (x, 0, 2), (y, -2, 2)),
-        params = {
-            u: (1, 0, 2)
-        },
-        n1=10, n2=10, backend=MB, wireframe=True, label=["a", "b"], show=False
-    )
-    assert isinstance(t, InteractivePlot)
-    assert len(t.backend.series) == 2 + (10 + 10) * 2
-    assert isinstance(t.backend.series[0], SurfaceOver2DRangeSeries)
-    assert isinstance(t.backend.series[1], SurfaceOver2DRangeSeries)
-    assert t.backend.series[0].get_label(False) == "a"
-    assert t.backend.series[1].get_label(False) == "b"
-    assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
-        for s in t.backend.series[2:])
-
-
-def test_template():
+def test_template(panel_options):
     # verify that user can provide custom templates for servable applications
     # (the ones that launches on a new browser window instead of being shown
     # on Jupyter Notebook).
@@ -631,35 +402,35 @@ def test_template():
 
     # default template
     p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
-        show=False, servable=True)
+        servable=True, **panel_options)
     t = p._create_template()
     assert isinstance(t, SymPyBootstrapTemplate)
 
     # default template with customized settings
     p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
-        show=False, servable=True, template={
+        servable=True, template={
             "title": "Test",
             "full_width": False,
             "sidebar_width": "50%",
             "header_no_panning": False,
-            "sidebar_location": "tb"})
+            "sidebar_location": "tb"}, **panel_options)
     t = p._create_template()
     assert isinstance(t, SymPyBootstrapTemplate)
 
     # a different template
     p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
-        show=False, servable=True, template=pn.template.VanillaTemplate)
+        servable=True, template=pn.template.VanillaTemplate, **panel_options)
     t = p._create_template()
     assert isinstance(t, pn.template.VanillaTemplate)
 
     # an instance of a different template
     temp = pn.template.MaterialTemplate
     p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
-        show=False, servable=True, template=temp())
+        servable=True, template=temp(), **panel_options)
     t = p._create_template()
     assert isinstance(t, pn.template.MaterialTemplate)
 
     # something not supported
     p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
-        show=False, servable=True, template="str")
+        servable=True, template="str", **panel_options)
     raises(TypeError, lambda : p._create_template())

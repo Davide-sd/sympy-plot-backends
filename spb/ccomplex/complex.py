@@ -1,11 +1,12 @@
 from spb.defaults import cfg, TWO_D_B, THREE_D_B
 from spb.functions import (
-    _set_labels, _create_interactive_plot, _plot3d_wireframe_helper
+    _set_labels, _plot3d_wireframe_helper
 )
 from spb.series import (
     LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
     ComplexPointSeries, SurfaceOver2DRangeSeries, _set_discretization_points
 )
+from spb.interactive import create_interactive_plot
 from spb.utils import (
     _unpack_args, _instantiate_backend, _plot_sympify, _check_arguments,
     _is_range
@@ -250,7 +251,7 @@ def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
         Backend = kwargs.get("backend", TWO_D_B)
 
     if kwargs.get("params", None):
-        return _create_interactive_plot(*series, **kwargs)
+        return create_interactive_plot(*series, **kwargs)
 
     return _instantiate_backend(Backend, *series, **kwargs)
 

@@ -5,6 +5,14 @@
 v2.0.0
 ======
 
+If you are upgrading from a previous version, you should run the following
+code to load the new configuration settings:
+
+```
+from spb.defaults import reset
+reset()
+```
+
 * Breaking changes:
 
   * Refactoring of ``*Series`` classes. All ``*InteractiveSeries`` classes have
@@ -31,25 +39,34 @@ v2.0.0
   algorithm is not required by the plotting module to successfully visualize
   symbolic expressions, hence it is not installed. If users need the adaptive
   algorithm, they'll have to follow the
-  `adaptive module installation instructions <https://github.com/python-adaptive/adaptive>'_.
-
-  If you are upgrading from a previous version, you should run the following
-  code to load the new configuration settings:
-
-  ```
-  from spb.defaults import reset
-  reset()
-  ```
-
-* Interactive widget plotting:
-
-  * Implemented the ``template`` keyword argument for interactive widget plots
-    with ``servable=True``: user can further customize the layout of the
-    web application, or can provide their own Panel's templates.
+  `adaptive module installation instructions <https://github.com/python-adaptive/adaptive>`_.
 
 * Improved support for plotting summations.
 
-* ``PlotlyBackend``: fixed bug with interactive update of lines.
+* Interactive widget plots.
+
+  * Users can now chose the interactive module to use:
+
+    * ``ipywidgets``: new in this release, and set as the default one.
+    * ``panel``: the old one, but probably the most feature-rich.
+
+    Please, read the documentation about the Interactive module to learn more.
+
+  * Implemented the ``template`` keyword argument for interactive widget plots
+    with Holoviz's Panel and ``servable=True``: user can further customize the
+    layout of the web application, or can provide their own Panel's templates.
+
+* ``MatplotlibBackend``:
+
+  * implemented support for ``ipywidgets``.
+
+* ``PlotlyBackend``:
+
+  * fixed bug with interactive update of lines.
+
+  * implemented support for ``ipywidgets``.
+
+* ``BokehBackend``: improved support for Bokeh 3.0.
 
 
 v1.6.7

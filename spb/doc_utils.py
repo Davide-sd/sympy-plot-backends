@@ -37,7 +37,8 @@ def _modify_plot_expr(expr):
                 break
         # if "show" is not present, then add it
         if not found_show:
-            expr.keywords.append(ast.keyword(arg='show', value=ast.Constant(value=False)))
+            expr.keywords.append(ast.keyword(arg='show',
+                value=ast.Constant(value=False)))
 
 
 def _modify_code(code):
@@ -92,7 +93,8 @@ def _modify_code(code):
     # last node
     ln = tree.body[-1]
     if isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call):
-        if isinstance(ln.value.func, ast.Attribute) and (ln.value.func.attr == "show"):
+        if (isinstance(ln.value.func, ast.Attribute) and
+            (ln.value.func.attr == "show")):
             tree.body[-1] = ast.Assign(targets=[ast.Name(id="myplot")],
                 value=ln.value.func.value, lineno=ln.lineno)
         else:
@@ -108,9 +110,14 @@ def _modify_code(code):
 
 
 def _modify_iplot_code(code):
-    """Look for the last command to be ipot/plot_something(params={}, servable=True).
-    Remove servable, set show=False, manually create a template and apply the content.
-    Returns the template.
+    """What this function does:
+
+    1. Look for the last command to be ipot or plot_something(params={},
+       servable=True).
+    2. Remove servable
+    3. set show=False and imodule="panel"
+    4. manually create a template and apply the content.
+    5. Returns the template.
 
     Parameters
     ==========
@@ -123,11 +130,13 @@ def _modify_iplot_code(code):
     """
     tree = ast.parse(code)
     ln = tree.body[-1]
-    
-    if isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call) and isinstance(ln.value.func, ast.Name):
+
+    if (isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call) and
+        isinstance(ln.value.func, ast.Name)):
         func_name = tree.body[-1].value.func.id
         if func_name == "iplot" or (func_name[:4] == "plot"):
-            params_node, servable_node, show_node = None, None, None
+            params_node, servable_node = None, None
+            show_node, imodule_node = None, None
             for kw in tree.body[-1].value.keywords:
                 if kw.arg == "params":
                     params_node = kw
@@ -135,10 +144,18 @@ def _modify_iplot_code(code):
                     servable_node = kw
                 elif kw.arg == "show":
                     show_node = kw
+                elif kw.arg == "imodule":
+                    imodule_node = kw
+            if imodule_node is not None:
+                imodule_node.value.value = "panel"
+            else:
+                tree.body[-1].value.keywords.append(
+                    ast.keyword(arg='imodule', value=ast.Constant(value="panel"))
+                )
             if (params_node is None) or (servable_node is None):
-                return code
+                return ast.unparse(tree)
             if not servable_node.value.value:
-                return code
+                return ast.unparse(tree)
             servable_node.value.value = False
             if show_node is not None:
                 show_node.value.value = False
@@ -146,7 +163,14 @@ def _modify_iplot_code(code):
                 tree.body[-1].value.keywords.append(
                     ast.keyword(arg='show', value=ast.Constant(value=False))
                 )
-            tree.body[-1] = ast.Assign(targets=[ast.Name(id="panelplot")], value=ln.value, lineno=ln.lineno)
-            last_command = ast.parse("panelplot._create_template(panelplot.show())")
+            # the default width of the sidebar is good for full screen, but
+            # it's too small for demo plots in the docs. Let's increase it.
+            tree.body[-1].value.keywords.append(
+                ast.keyword(arg='template', value=ast.Constant(
+                    value={'sidebar_width': '300px'}))
+                )
+            tree.body[-1] = ast.Assign(targets=[ast.Name(id="panelplot")],
+                value=ln.value, lineno=ln.lineno)
+            last_command = ast.parse("panelplot._create_template(show=False)")
             tree.body.append(last_command.body[-1])
     return ast.unparse(tree)

@@ -97,6 +97,9 @@ def _hardcoded_defaults():
 
         # settings about interactive-widget plots
         interactive={
+            # set the default interactive module. Possible options:
+            # "ipywidgets" or "panel"
+            "module": "ipywidgets",
             # Render latex on the widget's labels
             "use_latex": True,
             # Controls wether sliders trigger the update of `iplot`at each
