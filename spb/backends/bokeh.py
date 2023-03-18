@@ -338,7 +338,7 @@ class BokehBackend(Plot):
             # for complex domain coloring
             sizing_mode = None
 
-        self._fig = self.bokeh.plotting.figure(
+        kw = dict(
             title=self.title,
             x_axis_label=self.xlabel if self.xlabel else "x",
             y_axis_label=self.ylabel if self.ylabel else "y",
@@ -347,12 +347,15 @@ class BokehBackend(Plot):
             height=int(self.size[1]) if self.size else 400,
             x_axis_type=self.xscale,
             y_axis_type=self.yscale,
-            x_range=self.xlim,
-            y_range=self.ylim,
             tools="pan,wheel_zoom,box_zoom,reset,hover,save",
             tooltips=TOOLTIPS,
             match_aspect=True if self.aspect == "equal" else False,
         )
+        if self.xlim:
+            kw["x_range"] = self.xlim
+        if self.ylim:
+            kw["y_range"] = self.ylim
+        self._fig = self.bokeh.plotting.figure(**kw)
         self.grid = kwargs.get("grid", cfg["bokeh"]["grid"])
         self._fig.grid.visible = self.grid
         if cfg["bokeh"]["show_minor_grid"]:
