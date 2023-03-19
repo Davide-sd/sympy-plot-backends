@@ -43,6 +43,8 @@ reset()
 
 * Improved support for plotting summations.
 
+* Implemented wireframe lines for 3D complex plots.
+
 * Interactive widget plots.
 
   * Users can now chose the interactive module to use:

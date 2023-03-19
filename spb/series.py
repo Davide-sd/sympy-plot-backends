@@ -2260,6 +2260,44 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
         )
 
 
+class ComplexParametric3DLineSeries(Parametric3DLineSeries):
+    """Represent a mesh/wireframe line of a complex surface series.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # determines what data to return on the z-axis
+        self._return = kwargs.get("return", None)
+
+    def _adaptive_sampling(self):
+        raise NotImplementedError
+
+    def _uniform_sampling(self):
+        """Returns coordinates that needs to be postprocessed."""
+        np = import_module('numpy')
+
+        results = self._evaluate()
+        for i in range(len(results) - 1):
+            _re, _im = np.real(results[i]), np.imag(results[i])
+            _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
+            results[i] = _re
+
+        if self._return is None:
+            pass
+        elif self._return == "real":
+            results[-1] = np.real(results[-1])
+        elif self._return == "imag":
+            results[-1] = np.imag(results[-1])
+        elif self._return == "abs" or self._return == "absarg":
+            results[-1] = np.absolute(results[-1])
+        elif self._return == "arg":
+            results[-1] = np.angle(results[-1])
+        else:
+            raise ValueError("`_return` not recognized. Received: %s" % self._return)
+
+        return [*results[1:], results[0]]
+
+
 def _set_discretization_points(kwargs, pt):
     """Allow the use of the keyword arguments n, n1 and n2 (and n3) to
     specify the number of discretization points in two (or three) directions.

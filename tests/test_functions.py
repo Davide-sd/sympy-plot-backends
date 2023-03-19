@@ -7,7 +7,8 @@ from spb.interactive.panel import InteractivePlot
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, ContourSeries,
     Vector2DSeries, ParametricSurfaceSeries, Parametric3DLineSeries,
-    Parametric2DLineSeries, SurfaceOver2DRangeSeries
+    Parametric2DLineSeries, SurfaceOver2DRangeSeries,
+    ComplexSurfaceSeries, ComplexParametric3DLineSeries
 )
 from spb.backends.matplotlib import MB, unset_show
 from sympy import (
@@ -618,6 +619,23 @@ def test_plot3d_wireframe_and_labels(pi_options):
     assert t.backend.series[0].get_label(False) == "a"
     assert t.backend.series[1].get_label(False) == "b"
     assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
+        for s in t.backend.series[2:])
+
+
+def test_plot_real_imag_wireframe_true():
+    # verify that wireframe lines also work with plot_real_imag
+
+    x, u = symbols("x, u")
+    t = plot_real_imag(
+        sqrt(x) * exp(u * x), (x, -3-3j, 3+3j),
+        wireframe=True, wf_n1=8, wf_n2=6,
+        params={u: (0.25, 0, 1)}, n=12,
+        threed=True, use_latex=False, use_cm=True, show=False, imodule="panel")
+    assert isinstance(t, InteractivePlot)
+    assert len(t.backend.series) == 2 + (8 + 6) * 2
+    assert isinstance(t.backend.series[0], ComplexSurfaceSeries)
+    assert isinstance(t.backend.series[1], ComplexSurfaceSeries)
+    assert all(isinstance(s, ComplexParametric3DLineSeries) and s.is_interactive
         for s in t.backend.series[2:])
 
 

@@ -22,7 +22,7 @@ from spb.series import (
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
     ImplicitSeries, _set_discretization_points,
     List2DSeries, List3DSeries, GeometrySeries, Implicit3DSeries,
-    GenericDataSeries
+    GenericDataSeries, ComplexParametric3DLineSeries
 )
 from spb.interactive import create_interactive_plot
 from spb.utils import (
@@ -31,7 +31,8 @@ from spb.utils import (
 )
 from sympy import (
     latex, Tuple, Expr, Symbol, Wild, oo, Sum, sign, Piecewise, piecewise_fold,
-    Plane, FiniteSet, Interval, Union, cos, sin, pi, sympify, atan2, sqrt
+    Plane, FiniteSet, Interval, Union, cos, sin, pi, sympify, atan2, sqrt,
+    Dummy, symbols, I
 )
 # NOTE: from sympy import EmptySet is a different thing!!!
 from sympy.sets.sets import EmptySet
@@ -1536,26 +1537,27 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
     )
 
     def create_series(expr, ranges, surface_series, **kw):
-        is_interactive = surface_series.is_interactive
         expr = [e if callable(e) else sympify(e) for e in expr]
         kw["tx"] = surface_series._tx
         kw["ty"] = surface_series._ty
         kw["tz"] = surface_series._tz
         kw["tp"] = surface_series._tp
-        return Parametric3DLineSeries(*expr, *ranges, "", **kw)
+        if "return" not in kw.keys():
+            return Parametric3DLineSeries(*expr, *ranges, "", **kw)
+        return ComplexParametric3DLineSeries(*expr, *ranges, "", **kw)
 
     for s in surfaces:
         param_expr, ranges = [], []
 
         if s.is_3Dsurface:
             expr = s.expr
-            (x, sx, ex), (y, sy, ey) = s.ranges
 
             kw = wf_kwargs.copy()
             if s.is_interactive:
                 kw["params"] = s.params.copy()
 
             if s.is_parametric:
+                (x, sx, ex), (y, sy, ey) = s.ranges
                 is_callable = any(callable(e) for e in expr)
 
                 for uval in np.linspace(float(sx), float(ex), wf_n1):
@@ -1578,18 +1580,27 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                         param_expr = [e.subs(y, vval) for e in expr]
                         ranges = [(x, sx, ex)]
                     lines.append(create_series(param_expr, ranges, s, **kw))
-            elif s.is_complex:
-                # TODO: not so easy to implement. Probably need a new
-                # 3d parametric line series class that is able to deal with
-                # complex numbers.
-                pass
+
             else:
+                if not s.is_complex:
+                    (x, sx, ex), (y, sy, ey) = s.ranges
+                else:
+                    x, y = symbols("x, y", cls=Dummy)
+                    z, start, end = s.ranges[0]
+                    expr = s.expr.subs(z, x + I * y)
+                    sx, ex = start.real, end.real
+                    sy, ey = start.imag, end.imag
+                    kw["return"] = s._return
+
                 if not s.is_polar:
                     for xval in np.linspace(float(sx), float(ex), wf_n1):
                         kw["n"] = s.n[1] if npoints is None else npoints
                         if callable(expr):
                             # NOTE: closure on lambda functions
-                            param_expr = [lambda t, xv=xval: xv, lambda t: t, lambda t, xv=xval: expr(xv, t)]
+                            param_expr = [
+                                lambda t, xv=xval: xv,
+                                lambda t: t,
+                                lambda t, xv=xval: expr(xv, t)]
                             ranges = [(y, sy, ey)]
                         else:
                             param_expr = [xval, y, expr.subs(x, xval)]
@@ -1599,7 +1610,10 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                         kw["n"] = s.n[0] if npoints is None else npoints
                         if callable(expr):
                             # NOTE: closure on lambda functions
-                            param_expr = [lambda t: t, lambda t, yv=yval: yv, lambda t, yv=yval: expr(t, yv)]
+                            param_expr = [
+                                lambda t: t,
+                                lambda t, yv=yval: yv,
+                                lambda t, yv=yval: expr(t, yv)]
                             ranges = [(x, sx, ex)]
                         else:
                             param_expr = [x, yval, expr.subs(y, yval)]
@@ -1609,7 +1623,10 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                     for rval in np.linspace(float(sx), float(ex), wf_n1):
                         kw["n"] = s.n[1] if npoints is None else npoints
                         if callable(expr):
-                            param_expr = [lambda t, rv=rval: rv * np.cos(t), lambda t, rv=rval: rv * np.sin(t), lambda t, rv=rval: expr(rv, t)]
+                            param_expr = [
+                                lambda t, rv=rval: rv * np.cos(t),
+                                lambda t, rv=rval: rv * np.sin(t),
+                                lambda t, rv=rval: expr(rv, t)]
                             ranges = [(y, sy, ey)]
                         else:
                             param_expr = [rval * cos(y), rval * sin(y), expr.subs(x, rval)]
@@ -1618,7 +1635,10 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                     for tval in np.linspace(float(sy), float(ey), wf_n2):
                         kw["n"] = s.n[0] if npoints is None else npoints
                         if callable(expr):
-                            param_expr = [lambda p, tv=tval: p * np.cos(tv), lambda p, tv=tval: p * np.sin(tv), lambda p, tv=tval: expr(p, tv)]
+                            param_expr = [
+                                lambda p, tv=tval: p * np.cos(tv),
+                                lambda p, tv=tval: p * np.sin(tv),
+                                lambda p, tv=tval: expr(p, tv)]
                             ranges = [(x, sx, ex)]
                         else:
                             param_expr = [x * cos(tval), x * sin(tval), expr.subs(y, tval)]

@@ -477,6 +477,26 @@ def plot_real_imag(*args, **kwargs):
         Title of the plot. It is set to the latex representation of
         the expression, if the plot has only one expression.
 
+    wireframe : boolean, optional
+        Enable or disable a wireframe over the 3D surface. Depending on the
+        number of wireframe lines (see ``wf_n1`` and ``wf_n2``), activating
+        thisoption might add a considerable overhead during the plot's
+        creation. Default to False (disabled).
+
+    wf_n1, wf_n2 : int, optional
+        Number of wireframe lines along the x and y ranges, respectively.
+        Default to 10. Note that increasing this number might considerably
+        slow down the plot's creation.
+
+    wf_npoint : int or None, optional
+        Number of discretization points for the wireframe lines. Default to
+        None, meaning that each wireframe line will have ``n1`` or ``n2``
+        number of points, depending on the line direction.
+
+    wf_rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of wireframe lines.
+
     xlabel, ylabel, zlabel : str, optional
         Labels for the x-axis, y-axis or z-axis, respectively.
         ``zlabel`` is only available for 3D plots.
@@ -601,8 +621,10 @@ def plot_real_imag(*args, **kwargs):
        from spb import *
        x, u = symbols("x, u")
        plot_real_imag(
-           sqrt(x) * exp(u * x), (x, -3-3j, 3+3j),
-           params={u: (0.5, 0, 1)}, n=25, threed=True, use_latex=False)
+           sqrt(x) * exp(u * x), (x, -3-3j, 3+3j), backend=PB, aspect="cube",
+           wireframe=True, wf_rendering_kw={"line_width": 1},
+           params={u: (0.25, 0, 1)}, n=25, threed=True,
+           use_latex=False, use_cm=True)
 
     References
     ==========
