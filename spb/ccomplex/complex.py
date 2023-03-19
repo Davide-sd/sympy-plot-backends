@@ -260,7 +260,14 @@ def _set_axis_labels(series, kwargs):
     """Set the axis labels for the plot, depending on the series being
     visualized.
     """
-    if all(s.is_domain_coloring or s.is_3Dsurface or isinstance(s, ComplexPointSeries) for s in series):
+    if all(s.is_parametric for s in series):
+        if kwargs.get("xlabel", None) is None:
+            kwargs["xlabel"] = "Real"
+        if kwargs.get("ylabel", None) is None:
+            kwargs["ylabel"] = "Abs"
+    elif all(s.is_domain_coloring or s.is_3Dsurface or
+        isinstance(s, ComplexPointSeries) or
+        s.is_parametric for s in series):
         # when plotting real/imaginary or domain coloring/3D plots, the
         # horizontal axis is the real, the vertical axis is the imaginary
         if kwargs.get("xlabel", None) is None:
@@ -269,11 +276,6 @@ def _set_axis_labels(series, kwargs):
             kwargs["ylabel"] = "Im"
         if kwargs.get("zlabel", None) is None and any(s.is_domain_coloring for s in series):
             kwargs["zlabel"] = "Abs"
-    elif all(s.is_parametric for s in series):
-        if kwargs.get("xlabel", None) is None:
-            kwargs["xlabel"] = "Real"
-        if kwargs.get("ylabel", None) is None:
-            kwargs["ylabel"] = "Abs"
     else:
         var = series[0].var
 
