@@ -14,11 +14,8 @@ from sympy import (
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
     Function, dsolve, Eq
 )
-from sympy.external import import_module
 from sympy.vector import CoordSys3D, gradient
-
-
-np = import_module('numpy', catch=(RuntimeError,))
+import numpy as np
 
 # NOTE:
 #

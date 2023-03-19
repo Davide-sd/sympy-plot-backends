@@ -7,30 +7,16 @@ from sympy.external import import_module
 # plotting library with any other plotting libraries.
 #
 
-matplotlib = import_module(
-    'matplotlib',
-    import_kwargs={'fromlist': ['cm']},
-    min_module_version='1.1.0',
-    catch=(RuntimeError,))
-cm = matplotlib.cm
-
-cc = import_module(
-    'colorcet',
-    min_module_version='3.0.0',
-    catch=(RuntimeError,))
-
-k3d = import_module(
-    'k3d',
-    import_kwargs={'fromlist': ['helpers']},
-    min_module_version='2.9.7',
-    catch=(RuntimeError,))
+import matplotlib
+import matplotlib.cm as cm
+import colorcet as cc
+import k3d
+import numpy as np
 
 _plotly_utils = import_module(
         '_plotly_utils',
         import_kwargs={'fromlist': ['basevalidators']},
         catch=(RuntimeError,))
-
-np = import_module('numpy', catch=(RuntimeError,))
 
 # load color maps
 colorcet_cms = [

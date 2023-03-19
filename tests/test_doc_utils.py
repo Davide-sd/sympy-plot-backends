@@ -83,6 +83,7 @@ plot3d_parametric_surface(
     assert "show" not in s
     assert "servable" not in s
     assert "params" in s
+    assert "imodule='panel'" in s
 
 
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
@@ -125,5 +126,7 @@ plot_polar(
     s = new_code.split("\n")
     assert "show=False" in new_code
     assert "servable=False" in new_code
+    assert "imodule='panel'" in new_code
+    assert "template={" in new_code
     assert "panelplot = plot_polar" in s[-2]
     assert "create_template" in s[-1]

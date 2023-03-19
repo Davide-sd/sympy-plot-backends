@@ -5,23 +5,10 @@ from spb import (
 )
 from spb.plotgrid import _nrows_ncols
 from sympy import symbols, sin, cos, tan, exp, pi
-from sympy.external import import_module
-
-matplotlib = import_module(
-    'matplotlib',
-    import_kwargs={'fromlist': ['pyplot', 'axes', 'cm',
-        'collections', 'colors', 'quiver']},
-    min_module_version='1.1.0',
-    catch=(RuntimeError,))
-plt = matplotlib.pyplot
-mpl_toolkits = import_module(
-    'mpl_toolkits', # noqa
-    import_kwargs={'fromlist': ['mplot3d']},
-    catch=(RuntimeError,))
-pn = import_module(
-    'panel',
-    min_module_version='0.12.0',
-    catch=(RuntimeError,))
+import matplotlib
+import matplotlib.pyplot as plt
+import mpl_toolkits
+import panel as pn
 
 
 class KBchild1(KB):
