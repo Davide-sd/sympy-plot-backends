@@ -1684,6 +1684,7 @@ class ContourSeries(SurfaceOver2DRangeSeries):
         super().__init__(*args, **kwargs)
         self._allowed_keys += ["contour_kw", "is_filled"]
         self.is_filled = kwargs.get("is_filled", True)
+        self.show_clabels = kwargs.get("clabels", True)
 
         # NOTE: contour plots are used by plot_contour, plot_vector and
         # plot_complex_vector. By implementing contour_kw we are able to

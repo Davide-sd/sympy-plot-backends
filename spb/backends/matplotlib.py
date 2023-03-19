@@ -424,7 +424,8 @@ class MatplotlibBackend(Plot):
                     self._add_colorbar(c, s.get_label(self._use_latex),
                         s.use_cm, True)
                 else:
-                    clabel = self._ax.clabel(c)
+                    if s.show_clabels:
+                        clabel = self._ax.clabel(c)
                 self._add_handle(i, c, kw, self._fig.axes[-1], clabel)
 
             elif s.is_3Dline:
@@ -1016,7 +1017,7 @@ class MatplotlibBackend(Plot):
                     kw, cax, clabels = self._handles[i][1:]
                     for c in self._handles[i][0].collections:
                         c.remove()
-                    if not s.is_filled:
+                    if (not s.is_filled) and s.show_clabels:
                         for cl in clabels:
                             cl.remove()
                     func = self._ax.contourf if s.is_filled else self._ax.contour
@@ -1024,8 +1025,9 @@ class MatplotlibBackend(Plot):
                     if s.is_filled:
                         self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), param=z)
                     else:
-                        clabels = self._ax.clabel(self._handles[i][0])
-                        self._handles[i][-1] = clabels
+                        if s.show_clabels:
+                            clabels = self._ax.clabel(self._handles[i][0])
+                            self._handles[i][-1] = clabels
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
 

@@ -509,7 +509,7 @@ class PlotlyBackend(Plot):
                 ckw = dict(
                     contours=dict(
                         coloring=None if s.is_filled else "lines",
-                        showlabels=False if s.is_filled else True,
+                        showlabels=True if (not s.is_filled) and s.show_clabels else False,
                     ),
                     colorscale=next(self._cm),
                     colorbar=self._create_colorbar(s.get_label(self._use_latex), show_2D_vectors),

@@ -20,9 +20,10 @@ reset()
     regular ``*Series``. This greatly simplifies the code base, meaning bug
     fixes should take less time to implement.
   
-  * Refactoring of ``iplot`` to take into account the refactoring mentioned
-    above. In particular, interactive widget plots are now tighly integrated
-    into the usual plotting functions. Again, this simplifies the code base.
+  * Refactoring of ``iplot`` to take into account the aforementioned
+    changes. In particular, interactive widget plots are now tighly integrated
+    into the usual plotting functions. This improves user experience and
+    simplifies the code base.
   
   * The ``spb.interactive.create_series`` function has been removed.
 
@@ -47,9 +48,9 @@ reset()
 
 * Interactive widget plots.
 
-  * Users can now chose the interactive module to use:
+  * Users can now chose the interactive module to be used:
 
-    * ``ipywidgets``: new in this release, and set as the default one.
+    * ``ipywidgets``: new in this release. It is the default one.
     * ``panel``: the old one, but probably the most feature-rich.
 
     Please, read the documentation about the Interactive module to learn more.
@@ -62,6 +63,7 @@ reset()
 
   * implemented support for ``ipywidgets``.
 
+
 * ``PlotlyBackend``:
 
   * fixed bug with interactive update of lines.
@@ -69,6 +71,9 @@ reset()
   * implemented support for ``ipywidgets``.
 
 * ``BokehBackend``: improved support for Bokeh 3.0.
+
+* ``plot_contour``: added keyword argument to show/hide contour labels:
+    ``clabels=True/False``.
 
 
 v1.6.7

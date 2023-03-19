@@ -2,6 +2,7 @@ import matplotlib
 import mpl_toolkits
 import numpy as np
 from pytest import raises
+from sympy import Symbol
 import os
 from tempfile import TemporaryDirectory
 from .make_tests import *
@@ -1436,3 +1437,19 @@ def test_contour_and_3d():
     raises(ValueError, lambda : p.process_series())
     p = p2 + p1 + p3
     raises(ValueError, lambda : p.process_series())
+
+
+def test_contour_show_clabels():
+    p = make_test_contour_show_clabels_1(MB, False)
+    assert len(p.ax.texts) == 0
+
+    p = make_test_contour_show_clabels_1(MB, True)
+    assert len(p.ax.texts) > 0
+
+    p = make_test_contour_show_clabels_2(MB, False)
+    p.backend._update_interactive({Symbol("u"): 2})
+    assert len(p.backend.ax.texts) == 0
+
+    p = make_test_contour_show_clabels_2(MB, True)
+    p.backend._update_interactive({Symbol("u"): 2})
+    assert len(p.backend.ax.texts) > 0

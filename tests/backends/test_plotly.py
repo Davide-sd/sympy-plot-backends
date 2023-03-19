@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import pytest
 from pytest import raises
 import os
+from sympy import Symbol
 from tempfile import TemporaryDirectory
 from .make_tests import *
 
@@ -1144,3 +1145,19 @@ def test_plot3d_list_interactive():
 
     p = make_test_plot3d_list_interactive(MB)
     p.backend._update_interactive({t: 1})
+
+
+def test_contour_show_clabels():
+    p = make_test_contour_show_clabels_1(PB, False)
+    assert not p.fig.data[0].contours.showlabels
+
+    p = make_test_contour_show_clabels_1(PB, True)
+    assert p.fig.data[0].contours.showlabels
+
+    p = make_test_contour_show_clabels_2(PB, False)
+    p.backend._update_interactive({Symbol("u"): 2})
+    assert not p.fig.data[0].contours.showlabels
+
+    p = make_test_contour_show_clabels_2(PB, True)
+    p.backend._update_interactive({Symbol("u"): 2})
+    assert p.fig.data[0].contours.showlabels

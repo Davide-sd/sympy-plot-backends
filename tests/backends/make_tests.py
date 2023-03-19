@@ -71,7 +71,7 @@ def make_plot3d_2(B, show=False):
         use_cm=True, backend=B, use_latex=False, **opts)
 
 
-def make_plot3d_wireframe_1(B, wf=True): 
+def make_plot3d_wireframe_1(B, wf=True):
     return plot3d(
         cos(x**2 + y**2), (x, -2, 2), (y, -3, 3),
         use_cm=True, backend=B, wireframe=wf, **options())
@@ -99,7 +99,7 @@ def make_plot3d_wireframe_4(B, wf=True):
         use_cm=True, backend=B, wireframe=wf, **options())
 
 
-def make_plot3d_wireframe_5(B, wf): 
+def make_plot3d_wireframe_5(B, wf):
     return plot3d(
         lambda r, theta: np.cos(r**2) * np.exp(-r / 3),
         ("r", 0, 3.25), ("theta", 0, 2 * np.pi), "r",
@@ -210,19 +210,19 @@ def make_plot_vector_2d_quiver_color_func_1(B, cf):
         scalar=False, use_cm=True, color_func=cf,backend=B, **options())
 
 
-def make_plot_vector_3d_quiver_color_func_1(B, cf): 
+def make_plot_vector_3d_quiver_color_func_1(B, cf):
     return plot_vector(
         Matrix([z, y, x]), (x, -2, 2), (y, -2, 2), (z, -2, 2),
         backend=B, color_func=cf, **options())
 
 
-def make_plot_vector_3d_quiver_color_func_2(B, cf): 
+def make_plot_vector_3d_quiver_color_func_2(B, cf):
     return plot_vector(
         Matrix([a * z, y, x]), (x, -2, 2), (y, -2, 2), (z, -2, 2),
         backend=B, color_func=cf, params={a: (0, 0, 2)}, **options())
 
 
-def make_plot_vector_3d_streamlines_color_func(B, cf): 
+def make_plot_vector_3d_streamlines_color_func(B, cf):
     # NOTE: better keep a decent number of discretization points in order to
     # be sure to have streamlines
     return plot_vector(
@@ -230,13 +230,13 @@ def make_plot_vector_3d_streamlines_color_func(B, cf):
         streamlines=True, show=False, backend=B, color_func=cf, n=7)
 
 
-def make_test_plot_implicit_adaptive_true(B, contour_kw): 
+def make_test_plot_implicit_adaptive_true(B, contour_kw):
     return plot_implicit(
         x > y, (x, -5, 5), (y, -4, 4), backend=B,
         adaptive=True, contour_kw=contour_kw, use_latex=False, show=False)
 
 
-def make_test_plot_implicit_adaptive_false(B, contour_kw): 
+def make_test_plot_implicit_adaptive_false(B, contour_kw):
     return plot_implicit(
         x > y, (x, -5, 5), (y, -4, 4), n=5, backend=B, adaptive=False,
         show=False, contour_kw=contour_kw, use_latex=False)
@@ -481,7 +481,7 @@ def make_test_plot3d_implicit(B, show=False):
         backend=B,**opts)
 
 
-def make_test_surface_color_func_1(B, col, show=False): 
+def make_test_surface_color_func_1(B, col, show=False):
     opts = options()
     opts["show"] = show
     return plot3d(
@@ -587,3 +587,13 @@ def make_test_plot3d_list_interactive(B):
         backend=B, show=False, is_point=True)
     return p2 + p1
 
+
+def make_test_contour_show_clabels_1(B, clabels):
+    return plot_contour(cos(x*y), (x, -2, 2), (y, -2, 2),
+        backend=B, is_filled=False, clabels=clabels, **options())
+
+
+def make_test_contour_show_clabels_2(B, clabels):
+    return plot_contour(cos(u*x*y), (x, -2, 2), (y, -2, 2),
+        params={u: (1, 0, 1)}, backend=B, is_filled=False, clabels=clabels,
+        **options())

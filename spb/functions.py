@@ -2629,6 +2629,11 @@ def plot_contour(*args, **kwargs):
         being used. Read that backend's documentation to find out the
         possible values.
 
+    clabels : bool, optional
+        Visualize labels of contour lines. Only works when ``is_filled=False``.
+        Default to True. Note that some backend might not implement this
+        feature.
+
     is_filled : bool, optional
         Choose between filled contours or line contours. Default to True
         (filled contours).
@@ -2700,7 +2705,7 @@ def plot_contour(*args, **kwargs):
        >>> eq1 = Eq((cos(x) - sin(y) / 2)**2 + 3 * (-sin(x) + cos(y) / 2)**2, 2)
        >>> eq2 = Eq((cos(x) - 2 * sin(y))**2 - (sin(x) + 2 * cos(y))**2, 3)
        >>> plot_contour(eq1.rewrite(Add), eq2.rewrite(Add), {"levels": [0]},
-       ...      (x, 0, 2 * pi), (y, 0, 2 * pi), is_filled=False)
+       ...      (x, 0, 2 * pi), (y, 0, 2 * pi), is_filled=False, clabels=False)
 
     Contour plot with polar axis:
 
