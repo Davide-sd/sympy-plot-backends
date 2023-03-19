@@ -75,6 +75,10 @@ reset()
 * ``plot_contour``: added keyword argument to show/hide contour labels:
     ``clabels=True/False``.
 
+* ``plot_implicit``: improved logic dealing with legends. When plotting
+  multiple regions, rectangles will be visible on the legend. When plotting
+  multiple lines, lines will be visible on the legend.
+
 
 v1.6.7
 ======

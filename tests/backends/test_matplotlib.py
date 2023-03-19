@@ -2,7 +2,7 @@ import matplotlib
 import mpl_toolkits
 import numpy as np
 from pytest import raises
-from sympy import Symbol
+from sympy import Symbol, symbols
 import os
 from tempfile import TemporaryDirectory
 from .make_tests import *
@@ -1453,3 +1453,34 @@ def test_contour_show_clabels():
     p = make_test_contour_show_clabels_2(MB, True)
     p.backend._update_interactive({Symbol("u"): 2})
     assert len(p.backend.ax.texts) > 0
+
+
+def test_plot_implicit_legend_artists():
+    # verify that plot_implicit sets appropriate plot artists
+
+    # 2 expressions plotted with contour lines -> 2 lines in legend
+    V, t, b, L = symbols("V, t, b, L")
+    L_array = [5, 10]
+    b_val = 0.0032
+    expr = b * V * 0.277 * t - b * L - log(1 + b * V * 0.277 * t)
+    expr_list = [expr.subs({b: b_val, L: L_val}) for L_val in L_array]
+    labels = ["L = %s" % L_val for L_val in L_array]
+    p = plot_implicit(*expr_list, (t, 0, 3), (V, 0, 1000),
+        n=50, label=labels, show=False, backend=MB)
+    assert len(p.ax.get_legend().get_lines()) == 2
+    assert len(p.ax.get_legend().get_patches()) == 0
+
+    # 2 expressions plotted with contourf -> 2 rectangles in legend
+    p = plot_implicit(y > x**2, y < -x**2 + 1, (x, -5, 5), grid=False,
+        backend=MB, n=20, show=False)
+    assert len(p.ax.get_legend().get_lines()) == 0
+    assert len(p.ax.get_legend().get_patches()) == 2
+
+    # two expressions plotted with fill -> 2 rectangles in legend
+    p = plot_implicit(
+        Eq(y, sin(x)) & (y > 0),
+        Eq(y, sin(x)) & (y < 0),
+        (x, -2 * pi, 2 * pi), (y, -4, 4), backend=MB, show=False)
+    assert len(p.ax.get_legend().get_lines()) == 0
+    assert len(p.ax.get_legend().get_patches()) == 2
+    

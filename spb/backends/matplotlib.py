@@ -161,6 +161,7 @@ class MatplotlibBackend(Plot):
         self.LineCollection = self.matplotlib.collections.LineCollection
         self.ListedColormap = self.matplotlib.colors.ListedColormap
         self.Line2D = self.matplotlib.lines.Line2D
+        self.Rectangle = self.matplotlib.patches.Rectangle
         self.Normalize = self.matplotlib.colors.Normalize
 
         # set default colors
@@ -517,6 +518,8 @@ class MatplotlibBackend(Plot):
                     c = self._ax.fill(x, y, color=color,
                         edgecolor="None")
                     self._add_handle(i, c)
+                    proxy_artist = self.Rectangle((0, 0), 1, 1,
+                        color=color, label=s.get_label(self._use_latex))
                 else:
                     # use contourf or contour depending on whether it is
                     # an inequality or equality.
@@ -528,14 +531,17 @@ class MatplotlibBackend(Plot):
                         kw = merge({}, ckw, s.rendering_kw)
                         c = self._ax.contour(xarray, yarray, zarray, [0.0],
                             **kw)
+                        proxy_artist = self.Line2D([], [],
+                            color=color, label=s.get_label(self._use_latex))
                     else:
-                        colormap = self.ListedColormap(["white", color])
+                        colormap = self.ListedColormap(["#ffffff00", color])
                         ckw = dict(cmap=colormap)
                         kw = merge({}, ckw, s.rendering_kw)
                         c = self._ax.contourf(xarray, yarray, zarray, **kw)
+                        proxy_artist = self.Rectangle((0, 0), 1, 1,
+                            color=color, label=s.get_label(self._use_latex))
                     self._add_handle(i, c, kw)
-                proxy_artist = self.Line2D([], [],
-                    color=color, label=s.get_label(self._use_latex))
+
                 self._legend_handles.append(proxy_artist)
 
             elif s.is_vector:
