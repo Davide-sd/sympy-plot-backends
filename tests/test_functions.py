@@ -15,7 +15,8 @@ from sympy import (
     symbols, Piecewise, sin, cos, tan, re, Abs, sqrt, real_root,
     Heaviside, exp, log, LambertW, exp_polar, meijerg,
     And, Or, Eq, Ne, Interval, Sum, oo, I, pi, S,
-    sympify, Integral, Circle, gamma
+    sympify, Integral, Circle, gamma, Circle, Point, Ellipse, Rational,
+    Polygon, Curve, Segment, Point2D, Point3D, Line3D, Plane
 )
 from sympy.vector import CoordSys3D
 from sympy.testing.pytest import skip, warns
@@ -68,6 +69,64 @@ def pat_options(p_options):
     options["adaptive"] = True
     options["adaptive_goal"] = 0.05
     return options
+
+
+def test_plot_geometry(pi_options):
+    # verify that plot_geometry create the correct plot and data series
+
+    x, y, z = symbols('x, y, z')
+
+    # geometric entities defined by numbers
+    p = plot_geometry(
+        Circle(Point(0, 0), 5),
+        Ellipse(Point(-3, 2), hradius=3, eccentricity=Rational(4, 5)),
+        Polygon((4, 0), 4, n=5),
+        Curve((cos(x), sin(x)), (x, 0, 2 * pi)),
+        Segment((-4, -6), (6, 6)),
+        Point2D(0, 0), **pi_options)
+    assert isinstance(p, MB)
+    assert len(p.series) == 6
+    assert all(not s.is_interactive for s in p.series)
+    assert all(not s.is_3D for s in p.series)
+
+    # symbolic geometric entities
+    a, b, c, d = symbols("a, b, c, d")
+    p = plot_geometry(
+        (Polygon((a, b), c, n=d), "triangle"),
+        (Polygon((a + 2, b + 3), c, n=d + 1), "square"),
+        params = {a: 0, b: 1, c: 2, d: 3}, **pi_options)
+    assert isinstance(p, MB)
+    assert len(p.series) == 2
+    assert all(s.is_interactive for s in p.series)
+    assert all(not s.is_3D for s in p.series)
+
+    # 3d geometric entities
+    p = plot_geometry(
+        (Point3D(5, 5, 5), "center"),
+        (Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4)), "line"),
+        (Plane((0, 0, 0), (1, 1, 1)),
+        (x, -5, 5), (y, -4, 4), (z, -10, 10)), **pi_options)
+    assert isinstance(p, MB)
+    assert len(p.series) == 3
+    assert all(not s.is_interactive for s in p.series)
+    assert all(s.is_3D for s in p.series)
+
+    # interactive widget plot
+    p = plot_geometry(
+        (Polygon((a, b), c, n=d), "a"),
+        (Polygon((a + 2, b + 3), c, n=d + 1), "b"),
+        params = {
+            a: (0, -1, 1),
+            b: (1, -1, 1),
+            c: (2, 1, 2),
+            d: (3, 3, 8)
+        },
+        aspect="equal", is_filled=False, use_latex=False,
+        xlim=(-2.5, 5.5), ylim=(-3, 6.5), **pi_options)
+    assert isinstance(p, InteractivePlot)
+    assert len(p.backend.series) == 2
+    assert all(s.is_interactive for s in p.backend.series)
+    assert all(not s.is_3D for s in p.backend.series)
 
 
 def test_plot_parametric_region(p_options, pi_options):

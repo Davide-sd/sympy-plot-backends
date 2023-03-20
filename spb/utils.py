@@ -465,13 +465,13 @@ def _validate_kwargs(backend_obj, **kwargs):
         "slice", "threed", "sum_bound", "n",
         "phaseres", "is_polar", "label",
         "wireframe", "wf_n1", "wf_n2", "wf_npoints", "wf_rendering_kw",
-        "dots",
+        "dots"
     ])
     # params is a keyword argument that is also checked before instantion of
     # Series and Backend.
     allowed_keys = allowed_keys.union(["params", "layout", "ncols",
         "use_latex", "throttled", "servable", "custom_css", "pane_kw",
-        "is_iplot", "series"])
+        "is_iplot", "series", "template"])
     user_provided_keys = set(kwargs.keys())
     unused_keys = user_provided_keys.difference(allowed_keys)
     if len(unused_keys) > 0:

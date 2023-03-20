@@ -1206,6 +1206,22 @@ def test_str():
     s = LineOver1DRangeSeries(cos(x), (x, -4, 3))
     assert str(s) == "cartesian line: cos(x) for x over (-4.0, 3.0)"
 
+    d = {"return": "real"}
+    s = LineOver1DRangeSeries(cos(x), (x, -4, 3), **d)
+    assert str(s) == "cartesian line: re(cos(x)) for x over (-4.0, 3.0)"
+
+    d = {"return": "imag"}
+    s = LineOver1DRangeSeries(cos(x), (x, -4, 3), **d)
+    assert str(s) == "cartesian line: im(cos(x)) for x over (-4.0, 3.0)"
+
+    d = {"return": "abs"}
+    s = LineOver1DRangeSeries(cos(x), (x, -4, 3), **d)
+    assert str(s) == "cartesian line: abs(cos(x)) for x over (-4.0, 3.0)"
+
+    d = {"return": "arg"}
+    s = LineOver1DRangeSeries(cos(x), (x, -4, 3), **d)
+    assert str(s) == "cartesian line: arg(cos(x)) for x over (-4.0, 3.0)"
+
     s = LineOver1DRangeSeries(cos(u * x), (x, -4, 3), params={u: 1})
     assert str(s) == "interactive cartesian line: cos(u*x) for x over (-4.0, 3.0) and parameters (u,)"
 
@@ -1262,11 +1278,25 @@ def test_str():
     s = ComplexPointSeries([2 + 3 * I, 4 * I * y], params={y: 1})
     assert str(s) == "interactive complex points: (2 + 3*I, 4*I*y) and parameters (y,)"
 
-    s = ComplexSurfaceSeries(sqrt(z), (z, -2-3j, 4+5j), threed=False)
-    assert str(s) == "complex contour: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+    d = {"threed": False, "return": "real"}
+    s = ComplexSurfaceSeries(sqrt(z), (z, -2-3j, 4+5j), **d)
+    assert str(s) == "complex contour: re(sqrt(z)) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
 
-    s = ComplexSurfaceSeries(sqrt(z), (z, -2-3j, 4+5j), threed=True)
-    assert str(s) == "complex cartesian surface: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+    d = {"threed": True, "return": "real"}
+    s = ComplexSurfaceSeries(sqrt(z), (z, -2-3j, 4+5j), **d)
+    assert str(s) == "complex cartesian surface: re(sqrt(z)) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+
+    d = {"threed": True, "return": "imag"}
+    s = ComplexSurfaceSeries(sqrt(z), (z, -2-3j, 4+5j), **d)
+    assert str(s) == "complex cartesian surface: im(sqrt(z)) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+
+    d = {"threed": True, "return": "abs"}
+    s = ComplexSurfaceSeries(sqrt(z), (z, -2-3j, 4+5j), **d)
+    assert str(s) == "complex cartesian surface: abs(sqrt(z)) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
+
+    d = {"threed": True, "return": "arg"}
+    s = ComplexSurfaceSeries(sqrt(z), (z, -2-3j, 4+5j), **d)
+    assert str(s) == "complex cartesian surface: arg(sqrt(z)) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
 
     s = ComplexDomainColoringSeries(sqrt(z), (z, -2-3j, 4+5j),
         threed=False)
@@ -1276,13 +1306,14 @@ def test_str():
         threed=True)
     assert str(s) == "complex 3D domain coloring: sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0)"
 
+    d = {"return": "real"}
     s = ComplexSurfaceSeries(x * sqrt(z), (z, -2-3j, 4+5j),
-        threed=False, params={x: 1})
-    assert str(s) == "interactive complex contour: x*sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0) and parameters (x,)"
+        threed=False, params={x: 1}, **d)
+    assert str(s) == "interactive complex contour: re(x*sqrt(z)) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0) and parameters (x,)"
 
     s = ComplexSurfaceSeries(x * sqrt(z), (z, -2-3j, 4+5j),
-        threed=True, params={x: 1})
-    assert str(s) == "interactive complex cartesian surface: x*sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0) and parameters (x,)"
+        threed=True, params={x: 1}, **d)
+    assert str(s) == "interactive complex cartesian surface: re(x*sqrt(z)) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0) and parameters (x,)"
 
     s = ComplexDomainColoringSeries(x * sqrt(z), (z, -2-3j, 4+5j),
         "test", params={x: 1}, threed=False)

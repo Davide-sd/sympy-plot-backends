@@ -225,6 +225,19 @@ def _uniform_eval(f1, f2, *args, modules=None,
         return wrapper_func(f2, *args)
 
 
+def _get_wrapper_for_expr(ret):
+    wrapper = "%s"
+    if ret == "real":
+        wrapper = "re(%s)"
+    elif ret == "imag":
+        wrapper = "im(%s)"
+    elif ret == "abs":
+        wrapper = "abs(%s)"
+    elif ret == "arg":
+        wrapper = "arg(%s)"
+    return wrapper
+
+
 class BaseSeries:
     """Base class for the data objects containing stuff to be plotted.
 
@@ -1163,8 +1176,9 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         post = ""
         if self.is_interactive:
             post = " and parameters " + str(tuple(self.params.keys()))
+        wrapper = _get_wrapper_for_expr(self._return)
         return pre + "cartesian line: %s for %s over %s" % (
-            str(self.expr),
+            wrapper % self.expr,
             str(self.var),
             str((f(self.start.real), f(self.end.real))),
         ) + post
@@ -1682,7 +1696,7 @@ class ContourSeries(SurfaceOver2DRangeSeries):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._allowed_keys += ["contour_kw", "is_filled"]
+        self._allowed_keys += ["contour_kw", "is_filled", "clabels"]
         self.is_filled = kwargs.get("is_filled", True)
         self.show_clabels = kwargs.get("clabels", True)
 
@@ -2117,9 +2131,12 @@ class ComplexSurfaceBaseSeries(BaseSeries):
             prefix = "complex cartesian surface"
             if self.is_contour:
                 prefix = "complex contour"
+
+        wrapper = _get_wrapper_for_expr(self._return)
+
         return self._str_helper(
             prefix + ": %s for" " re(%s) over %s and im(%s) over %s" % (
-                str(self.expr),
+                wrapper % self.expr,
                 str(self.var),
                 str((self.start.real, self.end.real)),
                 str(self.var),
