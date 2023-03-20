@@ -21,10 +21,11 @@ If only a minimal installation of this plotting module has been performed,
 then users have to manually install the chosen interactive modules.
 
 By default, this plotting module will attempt to create interactive widgets
-with ``ipywidgets``. To use Holoviz's Panel, users can either: 
+with ``ipywidgets``. To change interactive module, users can either: 
 
-1. specify the interactive module at runtime by providing the following
-   keyword argument: ``imodule="panel"``.
+1. specify the following keyword argument to use Holoviz's Panel:
+   ``imodule="panel"``. Alternatively, specify ``imodule="ipywidgets"`` to
+   use ipywidgets.
 2. Modify the configuration file to permanently change the interactive module.
    More information are provided in :ref:`Tutorial 4`.
 
