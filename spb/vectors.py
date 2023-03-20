@@ -6,8 +6,8 @@ from spb.series import (
 )
 from spb.interactive import create_interactive_plot
 from spb.utils import (
-    _plot_sympify, _unpack_args_extended, _split_vector, _is_range,
-    _instantiate_backend
+    _plot_sympify, _split_vector, _is_range,
+    _instantiate_backend, _unpack_args
 )
 from sympy import (
     Tuple, sqrt, Expr, S, Plane
@@ -209,13 +209,10 @@ def _series(expr, *ranges, label="", **kwargs):
         return split_expr, ranges, series
 
 
-def _preprocess(*args, matrices=False, fill_ranges=True):
+def _preprocess(*args):
     """Loops over the arguments and build a list of arguments having the
     following form: [expr, *ranges, label].
     `expr` can be a vector, a matrix or a list/tuple/Tuple.
-
-    `matrices` and `fill_ranges` are going to be passed to
-    `_unpack_args_extended`.
     """
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
         # In this case we received arguments in one of the following forms.
@@ -230,9 +227,7 @@ def _preprocess(*args, matrices=False, fill_ranges=True):
 
     new_args = []
     for a in args:
-        exprs, ranges, label, rendering_kw = _unpack_args_extended(
-            *a, matrices=matrices, fill_ranges=fill_ranges
-        )
+        exprs, ranges, label, rendering_kw = _unpack_args(*a)
         if len(exprs) == 1:
             new_args.append([*exprs, *ranges, label])
 

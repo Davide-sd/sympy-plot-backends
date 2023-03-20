@@ -1,8 +1,8 @@
 from spb.defaults import cfg
-from sympy import Tuple, sympify, Expr, Dummy, S, sin, cos
+from sympy import Tuple, sympify, Expr, Dummy, S, sin, cos, Symbol
 from sympy.matrices.dense import DenseMatrix
 from sympy.physics.mechanics import Vector as MechVector
-from sympy.vector import Vector
+from sympy.vector import Vector, BaseScalar
 from sympy.vector.operators import _get_coord_systems
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
@@ -264,38 +264,6 @@ def _unpack_args(*args):
     # _check_arguments, so None might represent the rendering_kw
     results = [not (_is_range(a) or isinstance(a, (str, dict)) or (a is None)) for a in args]
     exprs = [a for a, b in zip(args, results) if b]
-    return exprs, ranges, label, rendering_kw
-
-
-def _unpack_args_extended(*args, matrices=False, fill_ranges=True):
-    """Extendend _unpack_args to deal with vectors expressed as matrices.
-
-    Parameters
-    ==========
-    matrices : boolean
-        Default to False. If True, when a single DenseMatrix is given as
-        the expression, it will be converted to a list. This is useful in
-        order to deal with vectors (written in form of matrices) for
-        iplot.
-
-    fill_ranges : boolean
-        Default to True. If not enough ranges are provided, the algorithm
-        will try to create the missing ones.
-
-    See also
-    ========
-    _unpack_args
-    """
-    exprs, ranges, label, rendering_kw = _unpack_args(*args)
-
-    if matrices and (len(exprs) == 1):
-        if isinstance(exprs[0], (list, tuple, Tuple, DenseMatrix)):
-            exprs = list(exprs[0])
-        elif isinstance(exprs[0], Vector):
-            exprs, ranges = _split_vector(exprs[0], ranges, fill_ranges)
-            if exprs[-1] is S.Zero:
-                exprs = exprs[:-1]
-
     return exprs, ranges, label, rendering_kw
 
 
