@@ -40,12 +40,13 @@ Now, let's visualize a plot created with Matplotlib:
 
 .. plot::
    :context: reset
+   :format: doctest
    :include-source: True
 
-   from sympy import *
-   from spb import *
-   var("x")
-   p = plot(sin(x), cos(x), log(x), backend=MB)
+   >>> from sympy import *
+   >>> from spb import *
+   >>> x = symbols("x")
+   >>> p = plot(sin(x), cos(x), log(x), backend=MB)
 
 
 In the previous command we specified the optional keyword argument

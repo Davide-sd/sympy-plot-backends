@@ -6,12 +6,13 @@ Let's understand what happens when a `plot` command is executed:
 
 .. plot::
    :context: reset
+   :format: doctest
    :include-source: True
 
-   from sympy import *
-   from spb import *
-   var("x")
-   p = plot(sin(x), cos(x), log(x), backend=MB)
+   >>> from sympy import *
+   >>> from spb import *
+   >>> x = symbols("x")
+   >>> p = plot(sin(x), cos(x), log(x), backend=MB)
 
 The plot function is going to loop over the provided arguments: it will create
 and store one data series for each expression. So, in the previous example
@@ -38,9 +39,10 @@ calling the ``series`` attribute:
 
 .. plot::
    :context: close-figs
+   :format: doctest
    :include-source: True
 
-   p.series
+   >>> p.series   # doctest: +SKIP
 
 Alternatively, we can retrieve a single data series by indexing the
 plot object:
@@ -60,45 +62,49 @@ We can combine multiple plots together in three ways:
 
    .. plot::
       :context: close-figs
+      :format: doctest
       :include-source: True
 
-      c = S(2) / 10
-      p1 = plot(cos(x) * exp(-c * x), (x, 0, 10), "f(x)", title="plot 1")
-      p2 = plot(
-          (exp(-c * x), "upper limit"),
-          (-exp(-c * x), "lower limit"), (x, 0, 10), {"linestyle": "--"},
-          title="plot 2", xlabel="xx", ylabel="yy")
+      >>> c = S(2) / 10
+      >>> p1 = plot(cos(x) * exp(-c * x), (x, 0, 10), "f(x)", title="plot 1")
+      >>> p2 = plot(
+      ...     (exp(-c * x), "upper limit"),
+      ...     (-exp(-c * x), "lower limit"), (x, 0, 10), {"linestyle": "--"},
+      ...     title="plot 2", xlabel="xx", ylabel="yy")
 
    And then:
 
    .. plot::
-     :context: close-figs
-     :include-source: True
+      :context: close-figs
+      :format: doctest
+      :include-source: True
 
-     p3 = p1 + p2
-     p3.show()
-     # or more quickly: (p1 + p2).show()
+      >>> p3 = p1 + p2
+      >>> p3.show()
+      >>> # or more quickly: (p1 + p2).show()
    
    Note that the final plot uses the keyword arguments of the left-most plot
    in the summation. In the previous example, the resulting plot has the title
    of ``p1``. Now, let's sum them up in a different order:
 
    .. plot::
-     :context: close-figs
-     :include-source: True
+      :context: close-figs
+      :format: doctest
+      :include-source: True
 
-     (p2 + p1).show()
+      >>> (p2 + p1).show()
    
    Here, the resulting plot is using the title and axis labels of ``p2``.
 
 2. We can use the ``extend`` method to achieve the same goal as before:
 
    .. plot::
-     :context: close-figs
-     :include-source: True
+      :context: close-figs
+      :format: doctest
+      :include-source: True
 
-     p1.extend(p2)
-     p1.show()
+      >>> p1.extend(p2)
+      >>> p1.show()
 
 3. using the ``append`` method to append one specific data series from one
    plot object to another. For example:

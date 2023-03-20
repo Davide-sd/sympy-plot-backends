@@ -65,6 +65,8 @@ subset of the specified plotting range. For example:
    :include-source: True
 
    >>> plot(log(x), (x, -5, 5), adaptive=True)
+   Plot object containing:
+   [0]: cartesian line: log(x) for x over (-5.0, 5.0)
 
 It is well known that `log(x)` is defined for `x > 0`. The adaptive algorithm
 evaluated the function over the entire range `x in [-5, 5]`: obviously, for
@@ -88,6 +90,8 @@ for `x <= 0`.
    :include-source: True
 
    >>> plot(log(x), (x, -5, 0), adaptive=False)
+   Plot object containing:
+   [0]: cartesian line: log(x) for x over (-5.0, 0.0)
 
 
 Example - Evaluation modules
@@ -114,12 +118,13 @@ Let's debug what's going on by creating a numerical function with ``lambdify``:
 
    >>> f = lambdify(x, expr)
    >>> import inspect
-   >>> print(inspect.getsource(f))
+   >>> print(inspect.getsource(f))    # doctest: +SKIP
 
 .. code-block:: text
-
+   
    def _lambdifygenerated(x):
        return 25104128675558732292929443748812027705165520269876079766872595193901106138220937419666018009000254169376172314360982328660708071123369979853445367910653872383599704355532740937678091491429440864316046925074510134847025546014098005907965541041195496105311886173373435145517193282760847755882291690213539123479186274701519396808504940722607033001246328398800550487427999876690416973437861078185344667966871511049653888130136836199010529180056125844549488648617682915826347564148990984138067809999604687488146734837340699359838791124995957584538873616661533093253551256845056046388738129702951381151861413688922986510005440943943014699244112555755279140760492764253740250410391056421979003289600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000*365**(-x)/factorial(365 - x)
+
 
 We can see a very large integer number. Now, let's try to evaluate the
 function: for example ``f(5)``. We will get:
@@ -139,7 +144,7 @@ Now, let's try to switch to the meshing algorithm:
    :format: doctest
    :include-source: True
 
-   >>> plot(expr, (x, 0, 100), adaptive=False)
+   >>> p = plot(expr, (x, 0, 100), adaptive=False)
 
 Again, the plot is empty because an ``OverflowError`` was raised (thus ``nan``
 was returned) for every evaluation point.
@@ -155,12 +160,6 @@ factorial:
    >>> expr = (factorial(365, evaluate=False) / factorial(365 - x)) / 365**x
    >>> f = lambdify(x, expr)
    >>> f(5)
-
-.. code-block:: text
-
-   <lambdifygenerated-2>:2: RuntimeWarning: invalid value encountered in double_scalars
-  return 365**(-x)*factorial(365)/factorial(365 - x)
-
    nan
 
 Again, we are getting a ``nan``. We could try to change the evaluation module
@@ -175,9 +174,6 @@ Alternatively, we can try ``mpmath``:
 
    >>> f = lambdify(x, expr, modules="mpmath")
    >>> f(5)
-
-.. code-block:: text
-
    mpf('0.97286442630020653')
 
 Why is it working? Differently from Python and Numpy, whose ``float`` has a
@@ -190,7 +186,7 @@ consideration that the function will be slower to evaluate:
    :format: doctest
    :include-source: True
 
-   >>> plot(expr, (x, 0, 100), adaptive=True, modules="mpmath")
+   >>> p = plot(expr, (x, 0, 100), adaptive=True, modules="mpmath")
 
 Then, the plot command will also work when switching to a meshing algorithm
 (``adaptive=False``).
@@ -206,6 +202,8 @@ Example - Smoothness
 
    >>> expr = x * sin(20 * x) - Abs(2 * x) + 6
    >>> plot(expr, (x, -1, 1), adaptive=True)
+   Plot object containing:
+   [0]: cartesian line: x*sin(20*x) - 2*Abs(x) + 6 for x over (-1.0, 1.0)
 
 Here the plotting module used the adaptive algorithm. In the provided range,
 the function has a relatively low frequency, so the adaptive algorithm (using
@@ -219,6 +217,8 @@ Let's try to use a wider plot range:
    :include-source: True
 
    >>> plot(expr, (x, -10, 10), adaptive=True)
+   Plot object containing:
+   [0]: cartesian line: x*sin(20*x) - 2*Abs(x) + 6 for x over (-10.0, 10.0)
 
 This is a case of mid-to-high frequencies (in relation to the plotting range
 used). We can see a few "missed" spikes. If we zoom into the plot, we will also
@@ -240,6 +240,8 @@ Let's try to decrease ``adaptive_goal`` by one order of magnitude:
    :include-source: True
 
    >>> plot(expr, (x, -10, 10), adaptive=True, adaptive_goal=1e-03)
+   Plot object containing:
+   [0]: cartesian line: x*sin(20*x) - 2*Abs(x) + 6 for x over (-10.0, 10.0)
 
 
 The resulting plot is much better: by zooming into it we will see a nice smooth
@@ -254,6 +256,8 @@ create a nice smooth plot almost instantly:
    :include-source: True
 
    >>> plot(expr, (x, -10, 10), adaptive=False, n=1e04)
+   Plot object containing:
+   [0]: cartesian line: x*sin(20*x) - 2*Abs(x) + 6 for x over (-10.0, 10.0)
 
 
 Example - Discontinuities 1
@@ -267,6 +271,8 @@ Let's execute the following code:
    :include-source: True
 
    >>> plot(floor(x), adaptive=True)
+   Plot object containing:
+   [0]: cartesian line: floor(x) for x over (-10.0, 10.0)
 
 Because we are dealing with a ``floor`` function, there are discontinuities
 between the horizontal segments. Let's activate the singularity-detection
@@ -278,6 +284,8 @@ algorithm:
    :include-source: True
 
    >>> plot(floor(x), adaptive=True, detect_poles=True)
+   Plot object containing:
+   [0]: cartesian line: floor(x) for x over (-10.0, 10.0)
 
 We can also use the uniform meshing strategy, but we would have to use a
 sufficiently high number of discretization points:
@@ -288,6 +296,8 @@ sufficiently high number of discretization points:
    :include-source: True
 
    >>> plot(floor(x), adaptive=False, n=1e04, detect_poles=True)
+   Plot object containing:
+   [0]: cartesian line: floor(x) for x over (-10.0, 10.0)
 
 
 Example - Discontinuities 2
@@ -304,6 +314,8 @@ so it is advisable to set ``adaptive=False``:
 
    >>> expr = tan(floor(30 * x)) + x / 8
    >>> plot(expr, adaptive=False, n=1e04)
+   Plot object containing:
+   [0]: cartesian line: x/8 + tan(floor(30*x)) for x over (-10.0, 10.0)
 
 There is a wide spread along the y-direction. Let's limit it:
 
@@ -313,6 +325,8 @@ There is a wide spread along the y-direction. Let's limit it:
    :include-source: True
 
    >>> plot(expr, adaptive=False, n=1e04, ylim=(-10, 10))
+   Plot object containing:
+   [0]: cartesian line: x/8 + tan(floor(30*x)) for x over (-10.0, 10.0)
 
 Let's remember that we are dealing with a ``floor`` function, so ther should be
 distinct segments in the plot:
@@ -323,6 +337,8 @@ distinct segments in the plot:
    :include-source: True
 
    >>> plot(expr, adaptive=False, n=1e04, ylim=(-10, 10), detect_poles=True)
+   Plot object containing:
+   [0]: cartesian line: x/8 + tan(floor(30*x)) for x over (-10.0, 10.0)
 
 
 Example - Discontinuities 3
@@ -358,6 +374,8 @@ Let's try the second approach:
    :include-source: True
 
    >>> plot(expr, adaptive=False, n=1e04)
+   Plot object containing:
+   [0]: cartesian line: (sin(1 - 1/cos(x)) + Abs(x) - 6)*sign(x) for x over (-10.0, 10.0)
 
 Much better, but the plot is still misleading: there is a ``sign`` function in
 the expression, so there must be some discontinuities. Let's activate the
@@ -369,6 +387,8 @@ singularity detection algorithm:
    :include-source: True
 
    >>> plot(expr, adaptive=False, n=1e04, detect_poles=True)
+   Plot object containing:
+   [0]: cartesian line: (sin(1 - 1/cos(x)) + Abs(x) - 6)*sign(x) for x over (-10.0, 10.0)
 
 It worked, but it did too much: it has also disconnected the high frequency
 regions. We can try to get a better visualization by:
@@ -385,6 +405,8 @@ This is going to take a few attempts:
    :include-source: True
 
    >>> plot(expr, adaptive=False, n=5e04, detect_poles=True, eps=1e-04)
+   Plot object containing:
+   [0]: cartesian line: (sin(1 - 1/cos(x)) + Abs(x) - 6)*sign(x) for x over (-10.0, 10.0)
 
 
 Example - Discontinuities 4
@@ -397,6 +419,8 @@ Example - Discontinuities 4
 
    >>> expr = sin(20 * x) + sign(sin(19.5 * x)) + x
    >>> plot(expr, adaptive=True)
+   Plot object containing:
+   [0]: cartesian line: x + sin(20*x) + sign(sin(19.5*x)) for x over (-10.0, 10.0)
 
 The expression contains a ``sign`` function, so there should be discontinuities.
 Also, if we zoom into the plot we see that it is not very "smooth": the
@@ -408,6 +432,8 @@ frequency is quite high with respect to the plotting range. So:
    :include-source: True
 
    >>> plot(expr, adaptive=False, n=1e04, detect_poles=True)
+   Plot object containing:
+   [0]: cartesian line: x + sin(20*x) + sign(sin(19.5*x)) for x over (-10.0, 10.0)
 
 
 Example - Discontinuities 5
@@ -422,6 +448,8 @@ Another function having many singularities:
 
    >>> expr = 1 / cos(10 * x) + 5 * sin(x)
    >>> plot(expr, adaptive=True)
+   Plot object containing:
+   [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-10.0, 10.0)
 
 Again, a very big spread along the y-direction. We need to limit it:
 
@@ -431,6 +459,8 @@ Again, a very big spread along the y-direction. We need to limit it:
    :include-source: True
 
    >>> plot(expr, adaptive=True, ylim=(-10, 10))
+   Plot object containing:
+   [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-10.0, 10.0)
 
 The plot is clearly misleading. We can guess that it has a mid-to-high
 frequency with respect to the plotting range. Also, by looking at the
@@ -442,6 +472,8 @@ expression there must be singularities:
    :include-source: True
 
    >>> plot(expr, ylim=(-10, 10), adaptive=False, n=1e04, detect_poles=True)
+   Plot object containing:
+   [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-10.0, 10.0)
 
 We can improve it even further by reducing the ``eps`` parameter:
 
@@ -451,6 +483,8 @@ We can improve it even further by reducing the ``eps`` parameter:
    :include-source: True
 
    >>> plot(expr, ylim=(-10, 10), adaptive=False, n=1e04, detect_poles=True, eps=1e-04)
+   Plot object containing:
+   [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-10.0, 10.0)
 
 
 Example - Discontinuities 6
@@ -465,6 +499,8 @@ Let's try to plot the Gamma function:
 
    >>> expr = gamma(x)
    >>> plot(expr, (x, -5, 5), adaptive=True)
+   Plot object containing:
+   [0]: cartesian line: gamma(x) for x over (-5.0, 5.0)
 
 A very big spread along the y-direction. We need to limit it:
 
@@ -474,6 +510,8 @@ A very big spread along the y-direction. We need to limit it:
    :include-source: True
 
    >>> plot(expr, (x, -5, 5), ylim=(-5, 5), adaptive=True)
+   Plot object containing:
+   [0]: cartesian line: gamma(x) for x over (-5.0, 5.0)
 
 Here we can see a few discontinuities. Let's enable the singularity detection
 algorithm:
@@ -484,4 +522,6 @@ algorithm:
    :include-source: True
 
    >>> plot(expr, (x, -5, 5), ylim=(-5, 5), adaptive=False, n=2e04, detect_poles=True, eps=1e-04)
+   Plot object containing:
+   [0]: cartesian line: gamma(x) for x over (-5.0, 5.0)
 

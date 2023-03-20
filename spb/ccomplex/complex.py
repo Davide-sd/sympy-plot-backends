@@ -534,8 +534,8 @@ def plot_real_imag(*args, **kwargs):
 
        >>> plot_real_imag(sqrt(x), (x, -3, 3))
        Plot object containing:
-       [0]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for x over (-3.0, 3.0)
-       [1]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for x over (-3.0, 3.0)
+       [0]: cartesian line: re(sqrt(x)) for x over (-3.0, 3.0)
+       [1]: cartesian line: im(sqrt(x)) for x over (-3.0, 3.0)
 
     Plot only the real part:
 
@@ -546,7 +546,7 @@ def plot_real_imag(*args, **kwargs):
 
        >>> plot_real_imag(sqrt(x), (x, -3, 3), imag=False)
        Plot object containing:
-       [0]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for x over (-3.0, 3.0)
+       [0]: cartesian line: re(sqrt(x)) for x over (-3.0, 3.0)
 
     Plot only the imaginary part:
 
@@ -557,7 +557,7 @@ def plot_real_imag(*args, **kwargs):
 
        >>> plot_real_imag(sqrt(x), (x, -3, 3), real=False)
        Plot object containing:
-       [0]: cartesian line: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for x over (-3.0, 3.0)
+       [0]: cartesian line: im(sqrt(x)) for x over (-3.0, 3.0)
 
     Plot only the absolute value and argument:
 
@@ -568,7 +568,7 @@ def plot_real_imag(*args, **kwargs):
 
        >>> plot_real_imag(sqrt(x), (x, -3, 3), real=False, imag=False, abs=True, arg=True)
        Plot object containing:
-       [0]: cartesian line: sqrt(sqrt(re(x)**2 + im(x)**2)*sin(atan2(im(x), re(x))/2)**2 + sqrt(re(x)**2 + im(x)**2)*cos(atan2(im(x), re(x))/2)**2) for x over (-3.0, 3.0)
+       [0]: cartesian line: abs(sqrt(x)) for x over (-3.0, 3.0)
        [1]: cartesian line: arg(sqrt(x)) for x over (-3.0, 3.0)
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
@@ -598,8 +598,8 @@ def plot_real_imag(*args, **kwargs):
        >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), n=100, threed=True,
        ...      use_cm=True)
        Plot object containing:
-       [0]: complex cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*cos(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
-       [1]: complex cartesian surface: (re(x)**2 + im(x)**2)**(1/4)*sin(atan2(im(x), re(x))/2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
+       [0]: complex cartesian surface: re(sqrt(x)) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
+       [1]: complex cartesian surface: im(sqrt(x)) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
 
     3D plot of the absolute value of a function over a complex range:
 
@@ -611,7 +611,7 @@ def plot_real_imag(*args, **kwargs):
        >>> plot_real_imag(sqrt(x), (x, -3-3j, 3+3j),
        ...     n=100, real=False, imag=False, abs=True, threed=True)
        Plot object containing:
-       [0]: complex cartesian surface: sqrt(sqrt(re(x)**2 + im(x)**2)*sin(atan2(im(x), re(x))/2)**2 + sqrt(re(x)**2 + im(x)**2)*cos(atan2(im(x), re(x))/2)**2) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
+       [0]: complex cartesian surface: abs(sqrt(x)) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
 
     3D interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -918,7 +918,7 @@ def plot_complex(*args, **kwargs):
        >>> import numpy as np
        >>> plot_complex(lambda z: z, ("z", -5-5j, 5+5j),
        ...     {"interpolation": "spline36"}, # passed to matplotlib's imshow
-       ...     coloring="b", n=600, grid=False)
+       ...     coloring="b", n=600, grid=False)  # doctest: +SKIP
 
     Interactive-widget domain coloring plot. Refer to ``iplot`` documentation
     to learn more about the ``params`` dictionary. Note that a too large

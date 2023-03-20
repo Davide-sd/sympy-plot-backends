@@ -514,8 +514,7 @@ def plot_vector(*args, **kwargs):
        ...         "clim": [0, 1.6]},
        ...     grid=False, xlabel="x", ylabel="y")
        Plot object containing:
-       [0]: contour: sqrt(sin(x - y)**2 + cos(x + y)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
-       [1]: 2D vector series: [sin(x - y), cos(x + y)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
+       [0]: 2D vector series: [sin(x - y), cos(x + y)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
     Streamlines plot of a 2D vector field with no background scalar field, and
     a custom label:
@@ -554,7 +553,7 @@ def plot_vector(*args, **kwargs):
        Plot object containing:
        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)
        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -5.0, 5.0), (y, -3.0, 3.0)
-       [2]: 2D vector series: [y, x] over (x, -5.0, 5.0), (y, -3.0, 3.0)
+       [2]: 2D vector series: [2*y, x] over (x, -5.0, 5.0), (y, -3.0, 3.0)
 
     Plotting a the streamlines of a 2D vector field defined with numerical
     functions instead of symbolic expressions:
@@ -569,7 +568,7 @@ def plot_vector(*args, **kwargs):
        >>> fx = lambda x, y: np.cos(f(x, y))
        >>> fy = lambda x, y: np.sin(f(x, y))
        >>> plot_vector([fx, fy], ("x", -1, 1), ("y", -1, 1),
-       ...     streamlines=True, scalar=False, use_cm=False)
+       ...     streamlines=True, scalar=False, use_cm=False)  # doctest: +SKIP
 
     Interactive-widget 2D vector plot. Refer to ``iplot`` documentation to
     learn more about the ``params`` dictionary.

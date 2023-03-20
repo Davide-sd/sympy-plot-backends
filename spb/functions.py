@@ -489,6 +489,8 @@ def plot(*args, **kwargs):
        :include-source: True
 
        >>> plot(x**2, (x, -5, 5))
+       Plot object containing:
+       [0]: cartesian line: x**2 for x over (-5.0, 5.0)
 
     Multiple functions over the same range with custom rendering options:
 
@@ -548,7 +550,7 @@ def plot(*args, **kwargs):
        ...      detect_poles=True, tx=np.rad2deg, ylim=(-7, 7),
        ...      xlabel="x [deg]")
        Plot object containing:
-       [0]: cartesian line: tan(x) for x over (-10.0, 10.0)
+       [0]: cartesian line: tan(x) for x over (-4.71238898038469, 4.71238898038469)
 
 
     Advanced example showing:
@@ -599,7 +601,7 @@ def plot(*args, **kwargs):
        :include-source: True
 
        >>> import numpy as np
-       >>> plot(lambda t: np.cos(np.exp(-t)), ("t", -pi, 0))
+       >>> plot(lambda t: np.cos(np.exp(-t)), ("t", -pi, 0))   # doctest: +SKIP
 
 
     Interactive-widget plot of an oscillator. Refer to ``iplot`` documentation
@@ -903,7 +905,7 @@ def plot_parametric(*args, **kwargs):
        ...      aspect="equal", tp=np.rad2deg)
        Plot object containing:
        [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
-       [1]: parametric cartesian line: (3*cos(2*u), 5*sin(4*u)) for u over (0.0, 3.141592653589793)
+       [1]: parametric cartesian line: (3*cos(2*v), 5*sin(4*v)) for v over (0.0, 3.141592653589793)
 
     Plotting a numerical function instead of a symbolic expression:
 
@@ -915,7 +917,7 @@ def plot_parametric(*args, **kwargs):
        >>> import numpy as np
        >>> fx = lambda t: np.sin(t) * (np.exp(np.cos(t)) - 2 * np.cos(4 * t) - np.sin(t / 12)**5)
        >>> fy = lambda t: np.cos(t) * (np.exp(np.cos(t)) - 2 * np.cos(4 * t) - np.sin(t / 12)**5)
-       >>> plot_parametric(fx, fy, ("t", 0, 12 * pi), title="Butterfly Curve",
+       >>> p = plot_parametric(fx, fy, ("t", 0, 12 * pi), title="Butterfly Curve",
        ...     use_cm=False, n=2000)
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
@@ -1080,10 +1082,10 @@ def plot_parametric_region(*args, **kwargs):
        :include-source: True
 
        >>> r, theta = symbols("r theta")
-       >>> plot_parametric_region(r * cos(theta), r * sin(theta),
+       >>> p = plot_parametric_region(r * cos(theta), r * sin(theta),
        ...     (r, 1, 2), (theta, 0, 2*pi/3),
        ...     {"color": "k", "linewidth": 0.75},
-       ...     n1=5, n2=15, aspect="equal")
+       ...     n1=5, n2=15, aspect="equal")  # doctest: +SKIP
 
     Complex mapping, applying to different line styles:
 
@@ -1097,7 +1099,7 @@ def plot_parametric_region(*args, **kwargs):
        >>> f_cart = f.subs(z, x + I * y)
        >>> r, i = re(f_cart), im(f_cart)
        >>> n1, n2 = 30, 30
-       >>> plot_parametric_region(r, i, (x, -2, 2), (y, -2, 2),
+       >>> p = plot_parametric_region(r, i, (x, -2, 2), (y, -2, 2),
        ...     rkw_u={"color": "r", "linewidth": 0.75},
        ...     rkw_v={"color": "b", "linewidth": 0.75},
        ...     n1=20, n2=20, aspect="equal", xlim=(-2, 2), ylim=(-2, 2),
@@ -1904,7 +1906,7 @@ def plot3d(*args, **kwargs):
        :include-source: True
 
        >>> f = x**2 + y**2
-       >>> p = plot3d((f, (x, -3, 3), (y, -3, 3)),
+       >>> plot3d((f, (x, -3, 3), (y, -3, 3)),
        ...     (-f, (x, -5, 5), (y, -5, 5)))
        Plot object containing:
        [0]: cartesian surface: x**2 + y**2 for x over (-3.0, 3.0) and y over (-3.0, 3.0)
@@ -1936,7 +1938,7 @@ def plot3d(*args, **kwargs):
        :include-source: True
 
        >>> plot3d(lambda x, y: x * np.exp(-x**2 - y**2),
-       ...     ("x", -3, 3), ("y", -3, 3), use_cm=True)
+       ...     ("x", -3, 3), ("y", -3, 3), use_cm=True)  # doctest: +SKIP
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -2267,7 +2269,7 @@ def plot3d_parametric_surface(*args, **kwargs):
            title=r"Plücker's \, conoid",
            wireframe=True,
            wf_rendering_kw={"width": 0.004},
-           wf_n1=75, wf_n2=6
+           wf_n1=75, wf_n2=6, imodule="panel"
        )
 
     See Also
@@ -2427,7 +2429,7 @@ def plot3d_spherical(*args, **kwargs):
                n: param.Integer(0, label="n"),
                m: param.Integer(0, label="m"),
            },
-           backend=KB
+           backend=KB, imodule="panel"
         )
 
     See Also
@@ -2706,6 +2708,9 @@ def plot_contour(*args, **kwargs):
        >>> eq2 = Eq((cos(x) - 2 * sin(y))**2 - (sin(x) + 2 * cos(y))**2, 3)
        >>> plot_contour(eq1.rewrite(Add), eq2.rewrite(Add), {"levels": [0]},
        ...      (x, 0, 2 * pi), (y, 0, 2 * pi), is_filled=False, clabels=False)
+       Plot object containing:
+       [0]: contour: 3*(-sin(x) + cos(y)/2)**2 + (-sin(y)/2 + cos(x))**2 - 2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+       [1]: contour: -(sin(x) + 2*cos(y))**2 + (-2*sin(y) + cos(x))**2 - 3 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
 
     Contour plot with polar axis:
 
@@ -2717,6 +2722,8 @@ def plot_contour(*args, **kwargs):
        >>> r, theta = symbols("r, theta")
        >>> plot_contour(sin(2 * r) * cos(theta), (theta, 0, 2*pi), (r, 0, 7),
        ...     {"levels": 100}, polar_axis=True, aspect="equal")
+       Plot object containing:
+       [0]: contour: sin(2*r)*cos(theta) for theta over (0.0, 6.283185307179586) and r over (0.0, 7.0)
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -2831,7 +2838,7 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
        ...     curve_kw=dict(rendering_kw={"color": "r", "label": "cos(t)"}),
        ...     # activate the wireframe to visualize the parameterization
        ...     wireframe=True, wf_n1=15, wf_n2=15,
-       ...     wf_rendering_kw={"lw": 0.5, "alpha": 0.75})
+       ...     wf_rendering_kw={"lw": 0.5, "alpha": 0.75})  # doctest: +SKIP
 
     Revolve the same function around an axis parallel to the x axis, using
     Plotly:
@@ -3097,36 +3104,41 @@ def plot_implicit(*args, **kwargs):
     Providing only the symbol for the horizontal axis:
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_implicit(x - 1, x)
+       >>> p = plot_implicit(x - 1, x)
 
     Specify both ranges and set the number of discretization points:
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_implicit(
-        ...     (x**2 + y**2 - 1)**3 - x**2 * y**3,
-        ...     (x, -1.5, 1.5), (y, -1.5, 1.5),
-        ...     n = 500)
+       >>> plot_implicit(
+       ...     (x**2 + y**2 - 1)**3 - x**2 * y**3,
+       ...     (x, -1.5, 1.5), (y, -1.5, 1.5),
+       ...     n = 500)
+       Plot object containing:
+       [0]: Implicit expression: Eq(-x**2*y**3 + (x**2 + y**2 - 1)**3, 0) for x over (-1.5, 1.5) and y over (-1.5, 1.5)
 
     Boolean expressions will be plotted with the adaptive algorithm. Note the
     thin width of lines:
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_implicit(
-        ...     Eq(y, sin(x)) & (y > 0),
-        ...     Eq(y, sin(x)) & (y < 0),
-        ...     (x, -2 * pi, 2 * pi), (y, -4, 4))
+       >>> plot_implicit(
+       ...     Eq(y, sin(x)) & (y > 0),
+       ...     Eq(y, sin(x)) & (y < 0),
+       ...     (x, -2 * pi, 2 * pi), (y, -4, 4))
+       Plot object containing:
+       [0]: Implicit expression: (y > 0) & Eq(y, sin(x)) for x over (-6.283185307179586, 6.283185307179586) and y over (-4.0, 4.0)
+       [1]: Implicit expression: (y < 0) & Eq(y, sin(x)) for x over (-6.283185307179586, 6.283185307179586) and y over (-4.0, 4.0)
 
     Comparison of similar expressions plotted with different algorithms. Note:
 
@@ -3157,26 +3169,34 @@ def plot_implicit(*args, **kwargs):
     Plotting regions:
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_implicit(y > x**2, (x, -5, 5), grid=False)
+       >>> plot_implicit(y > x**2, (x, -5, 5), grid=False)
+       Plot object containing:
+       [0]: Implicit expression: y > x**2 for x over (-5.0, 5.0) and y over (-10.0, 10.0)
 
     Plotting multiple implicit expressions and setting labels:
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> V, t, b, L = symbols("V, t, b, L")
-        >>> L_array = [5, 10, 15, 20, 25]
-        >>> b_val = 0.0032
-        >>> expr = b * V * 0.277 * t - b * L - log(1 + b * V * 0.277 * t)
-        >>> expr_list = [expr.subs({b: b_val, L: L_val}) for L_val in L_array]
-        >>> labels = ["L = %s" % L_val for L_val in L_array]
-        >>> plot_implicit(*expr_list, (t, 0, 3), (V, 0, 1000), label=labels)
+       >>> V, t, b, L = symbols("V, t, b, L")
+       >>> L_array = [5, 10, 15, 20, 25]
+       >>> b_val = 0.0032
+       >>> expr = b * V * 0.277 * t - b * L - log(1 + b * V * 0.277 * t)
+       >>> expr_list = [expr.subs({b: b_val, L: L_val}) for L_val in L_array]
+       >>> labels = ["L = %s" % L_val for L_val in L_array]
+       >>> plot_implicit(*expr_list, (t, 0, 3), (V, 0, 1000), label=labels)
+       Plot object containing:
+       [0]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.016, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
+       [1]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.032, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
+       [2]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.048, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
+       [3]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.064, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
+       [4]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.08, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
 
     See Also
     ========
@@ -3271,22 +3291,26 @@ def plot_polar(*args, **kwargs):
     Plot with cartesian axis:
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_polar(3 * sin(2 * theta), (theta, 0, 2*pi))
+       >>> plot_polar(3 * sin(2 * theta), (theta, 0, 2*pi))
+       Plot object containing:
+       [0]: parametric cartesian line: (3*sin(2*theta)*cos(theta), 3*sin(theta)*sin(2*theta)) for theta over (0.0, 6.283185307179586)
 
     Plot with polar axis:
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> plot_polar(
-        ...     exp(sin(theta)) - 2 * cos(4 * theta), (theta, 0, 2 * pi),
-        ...     polar_axis=True)
+       >>> plot_polar(
+       ...     exp(sin(theta)) - 2 * cos(4 * theta), (theta, 0, 2 * pi),
+       ...     polar_axis=True)
+       Plot object containing:
+       [0]: parametric cartesian line: ((exp(sin(theta)) - 2*cos(4*theta))*cos(theta), (exp(sin(theta)) - 2*cos(4*theta))*sin(theta)) for theta over (0.0, 6.283185307179586)
 
     Interactive-widget plot of Guilloché Pattern. Refer to ``iplot``
     documentation to learn more about the params dictionary.
@@ -3321,7 +3345,8 @@ def plot_polar(*args, **kwargs):
            backend=BB,
            legend=False,
            use_latex=False,
-           servable=True
+           servable=True,
+           imodule="panel"
        )
 
     See Also
@@ -3516,8 +3541,8 @@ def plot_geometry(*args, **kwargs):
        ...      (Polygon((a + 2, b + 3), c, n=d + 1), "square"),
        ...      params = {a: 0, b: 1, c: 2, d: 3})
        Plot object containing:
-       [0]: geometry entity: RegularPolygon(Point2D(a, b), c, d, 0)
-       [1]: geometry entity: RegularPolygon(Point2D(a + 2, b + 3), c, d + 1, 0)
+       [0]: interactive geometry entity: RegularPolygon(Point2D(a, b), c, d, 0) and parameters (a, b, c, d)
+       [1]: interactive geometry entity: RegularPolygon(Point2D(a + 2, b + 3), c, d + 1, 0) and parameters (a, b, c, d)
 
     Plot 3D geometric entities. Note: when plotting a Plane, we must always
     provide the x/y/z ranges:
@@ -3535,7 +3560,7 @@ def plot_geometry(*args, **kwargs):
        Plot object containing:
        [0]: geometry entity: Point3D(5, 5, 5)
        [1]: geometry entity: Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4))
-       [2]: plane series over (x, -5, 5), (y, -4, 4), (z, -10, 10)
+       [2]: plane series: Plane(Point3D(0, 0, 0), (1, 1, 1)) over (x, -5, 5), (y, -4, 4), (z, -10, 10)
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -3557,7 +3582,7 @@ def plot_geometry(*args, **kwargs):
                d: param.Integer(3, softbounds=(3, 8), label="n")
            },
            aspect="equal", is_filled=False, use_latex=False,
-           xlim=(-2.5, 5.5), ylim=(-3, 6.5))
+           xlim=(-2.5, 5.5), ylim=(-3, 6.5), imodule="panel")
 
     See Also
     ========
@@ -3595,7 +3620,22 @@ def plot_geometry(*args, **kwargs):
     if ("aspect" not in kwargs) and (not any_3D):
         kwargs["aspect"] = "equal"
 
-    if kwargs.get("params", None):
+    is_interactive = False
+    if params is not None:
+        param = import_module("param")
+        ipywidgets = import_module("ipywidgets")
+        has_param, has_ipywidgets, has_tuples = False, False, False
+        if param and any(isinstance(t, param.Parameter) for t in params.values()):
+            has_param = True
+        if ipywidgets and any(isinstance(t, ipywidgets.Widget)
+            for t in params.values()):
+            has_ipywidgets = True
+        if any(hasattr(t, "__iter__") for t in params.values()):
+            has_tuples     = True
+
+        is_interactive = any([has_param, has_ipywidgets, has_tuples])
+
+    if is_interactive:
         return create_interactive_plot(*series, **kwargs)
 
     Backend = kwargs.pop("backend", THREE_D_B if any_3D else TWO_D_B)
@@ -3723,7 +3763,7 @@ def plot_list(*args, **kwargs):
        >>> yy = [cos(x).evalf(subs={x: t}) for t in xx]
        >>> plot_list(xx, yy)
        Plot object containing:
-       [0]: list plot
+       [0]: 2D list plot
 
     Plot individual points with custom labels:
 
@@ -3735,9 +3775,9 @@ def plot_list(*args, **kwargs):
        >>> plot_list(([0], [0], "A"), ([1], [1], "B"), ([2], [0], "C"),
        ...     is_point=True, is_filled=True)
        Plot object containing:
-       [0]: list plot
-       [1]: list plot
-       [2]: list plot
+       [0]: 2D list plot
+       [1]: 2D list plot
+       [2]: 2D list plot
 
     Scatter plot of the coordinates of multiple functions, with custom
     rendering keywords:
@@ -3755,8 +3795,8 @@ def plot_list(*args, **kwargs):
        ...     (xx, yy2, "sin", {"marker": "*", "markerfacecolor": None}),
        ...     is_point=True)
        Plot object containing:
-       [0]: list plot
-       [1]: list plot
+       [0]: 2D list plot
+       [1]: 2D list plot
 
     Interactive-widget plot. Refer to ``iplot`` documentation to learn more
     about the ``params`` dictionary.
@@ -3772,8 +3812,8 @@ def plot_list(*args, **kwargs):
        p1 = plot_parametric(
            (cos(x), sin(x), (x, 0, 2*pi), {"linestyle": ":"}),
            (cos(2 * x) / 2, sin(2 * x) / 2, (x, 0, pi), {"linestyle": ":"}),
-           params=params, use_cm=False, aspect="equal",
-           show=False, use_latex=False)
+           use_cm=False, aspect="equal", show=False, use_latex=False,
+           params=params, imodule="panel")
        # plot points
        p2 = plot_list(
            ([cos(t)], [sin(t)], "A"),
@@ -3951,6 +3991,8 @@ def plot3d_list(*args, **kwargs):
        >>> x = z * np.cos(z)
        >>> y = z * np.sin(z)
        >>> plot3d_list(x, y, z)
+       Plot object containing:
+       [0]: 3D list plot
 
     Plotting multiple functions with custom rendering keywords:
 
@@ -3962,6 +4004,9 @@ def plot3d_list(*args, **kwargs):
        >>> plot3d_list(
        ...     (x, y, z, "A"),
        ...     (x, y, -z, "B", {"linestyle": "--"}))
+       Plot object containing:
+       [0]: 3D list plot
+       [1]: 3D list plot
 
     Interactive-widget plot of a dot following a path. Refer to ``iplot``
     documentation to learn more about the ``params`` dictionary.
@@ -3971,6 +4016,7 @@ def plot3d_list(*args, **kwargs):
 
        from sympy import *
        from spb import *
+       import numpy as np
        t = symbols("t")
        z = np.linspace(0, 6*np.pi, 100)
        x = z * np.cos(z)
@@ -3980,7 +4026,8 @@ def plot3d_list(*args, **kwargs):
        p2 = plot3d_list(
            [t * cos(t)], [t * sin(t)], [t],
            params={t: (3*pi, 0, 6*pi)},
-           backend=PB, show=False, is_point=True, use_latex=False)
+           backend=PB, show=False, is_point=True, use_latex=False,
+           imodule="panel")
        (p2 + p1).show()
 
     See Also
@@ -4205,10 +4252,10 @@ def plot_piecewise(*args, **kwargs):
        >>> plot_piecewise(f, (x, -2, 5))
        Plot object containing:
        [0]: cartesian line: x**2 for x over (-2.0, 1.999999)
-       [1]: list plot
+       [1]: 2D list plot
        [2]: cartesian line: 10 - x for x over (2.000001, 5.0)
-       [3]: list plot
-       [4]: list plot
+       [3]: 2D list plot
+       [4]: 2D list plot
 
     Single plot without dots (circular markers):
 
@@ -4222,8 +4269,6 @@ def plot_piecewise(*args, **kwargs):
        Plot object containing:
        [0]: cartesian line: 0 for x over (-10.0, 0.0)
        [1]: cartesian line: 1 for x over (1e-06, 10.0)
-       [2]: list plot
-       [3]: list plot
 
     Plot multiple expressions in which the second piecewise expression has
     a dotted line style.
@@ -4243,15 +4288,15 @@ def plot_piecewise(*args, **kwargs):
        Plot object containing:
        [0]: cartesian line: 0 for x over (-10.0, 0.0)
        [1]: cartesian line: 1 for x over (1e-06, 10.0)
-       [2]: list plot
-       [3]: list plot
-       [4]: cartesian line: sin(x) for x over (-10.0, -5.000001)
-       [5]: list plot
-       [6]: cartesian line: cos(x) for x over (5.000001, 10.0)
-       [7]: list plot
+       [2]: 2D list plot
+       [3]: 2D list plot
+       [4]: cartesian line: sin(x) for x over (-8.0, -5.000001)
+       [5]: 2D list plot
+       [6]: cartesian line: cos(x) for x over (5.000001, 8.0)
+       [7]: 2D list plot
        [8]: cartesian line: 1/x for x over (-5.0, 5.0)
-       [9]: list plot
-       [10]: list plot
+       [9]: 2D list plot
+       [10]: 2D list plot
 
 
     References

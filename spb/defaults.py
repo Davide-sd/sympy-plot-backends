@@ -146,7 +146,7 @@ def get_default_settings():
     Visualize the default settings.
 
         >>> from spb.defaults import get_default_settings
-        >>> print(get_default_settings)
+        >>> print(get_default_settings)  # doctest: +SKIP
     """
     return _hardcoded_defaults()
 

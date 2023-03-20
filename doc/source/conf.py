@@ -259,3 +259,9 @@ k3d_screenshot_formats = ["small.png", "large.png", "pdf", "html"]
 # zoomed out when a screenshot is taken. To zoom into the scene just decrease
 # the following factor.
 k3d_screenshot_camera_factor = 1
+
+# matplotlib's plot directive: setup for doctests
+plot_pre_code = """import numpy as np
+from matplotlib import pyplot as plt
+from spb.backends.base_backend import Plot
+Plot.__repr__ = Plot.__str__"""

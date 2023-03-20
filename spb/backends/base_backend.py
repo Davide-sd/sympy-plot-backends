@@ -130,6 +130,10 @@ class Plot:
        >>> class MBchild(MB):
        ...     colorloop = ["r", "g", "b"]
        >>> plot(sin(x) / 3, sin(x) * S(2) / 3, sin(x), backend=MBchild)
+       Plot object containing:
+       [0]: cartesian line: sin(x)/3 for x over (-10.0, 10.0)
+       [1]: cartesian line: 2*sin(x)/3 for x over (-10.0, 10.0)
+       [2]: cartesian line: sin(x) for x over (-10.0, 10.0)
 
     Create a new backend with custom color maps for 3D plots. Note that
     it's possible to use Plotly/Colorcet/Matplotlib colormaps interchangeably.
@@ -147,6 +151,9 @@ class Plot:
        ...     (cos(x**2 + y**2), (x, -2, 0), (y, -2, 2)),
        ...     (cos(x**2 + y**2), (x, 0, 2), (y, -2, 2)),
        ...     backend=MBchild, n1=25, n2=50, use_cm=True)
+       Plot object containing:
+       [0]: cartesian surface: cos(x**2 + y**2) for x over (-2.0, 0.0) and y over (-2.0, 2.0)
+       [1]: cartesian surface: cos(x**2 + y**2) for x over (0.0, 2.0) and y over (-2.0, 2.0)
 
 
     See also
@@ -173,7 +180,7 @@ class Plot:
     _allowed_keys = ["aspect", "axis", "axis_center", "backend",
     "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
     "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim",
-    "xscale", "yscale", "zscale", "process_piecewise", "polar_axis"]
+    "xscale", "yscale", "zscale", "process_piecewise", "polar_axis", "imodule"]
     """contains a list of public keyword arguments supported by the series.
     It will be used to validate the user-provided keyword arguments.
     """
