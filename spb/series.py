@@ -2293,9 +2293,6 @@ class ComplexSurfaceSeries(ComplexSurfaceBaseSeries):
             # if not 3D, plot the contours
             self.is_contour = True
             self.is_3Dsurface = False
-        self._init_rendering_kw(**kwargs)
-
-    def _init_rendering_kw(self, **kwargs):
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)
         self.rendering_kw = kwargs.get("rendering_kw", dict())
 
@@ -2347,9 +2344,6 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
         super().__init__(*args, **kwargs)
         if kwargs.get("threed", False):
             self.is_3Dsurface = True
-        self._init_rendering_kw(**kwargs)
-
-    def _init_rendering_kw(self, **kwargs):
         self.rendering_kw = kwargs.get("rendering_kw", dict())
 
     def _domain_coloring(self, w):

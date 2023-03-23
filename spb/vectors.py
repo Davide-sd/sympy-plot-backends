@@ -10,7 +10,7 @@ from spb.utils import (
     _instantiate_backend, _unpack_args
 )
 from sympy import (
-    Tuple, sqrt, Expr, S, Plane
+    Tuple, sqrt, Expr, S, Plane, Dummy
 )
 from sympy.external import import_module
 from sympy.physics.mechanics import Vector as MechVector
@@ -95,9 +95,8 @@ def _build_series(*args, **kwargs):
 def _series(expr, *ranges, label="", **kwargs):
     """Create a vector series from the provided arguments."""
     params = kwargs.get("params", dict())
-    fill_ranges = True if params == dict() else False
     # convert expr to a list of 3 elements
-    split_expr, ranges = _split_vector(expr, ranges, fill_ranges)
+    split_expr, ranges = _split_vector(expr, ranges)
 
     # free symbols contained in the provided vector
     fs = set()
@@ -162,7 +161,15 @@ def _series(expr, *ranges, label="", **kwargs):
                 )
             ranges = list(ranges)
             for m in missing:
-                ranges.append(Tuple(m, cfg["plot_range"]["min"], cfg["plot_range"]["max"]))
+                ranges.append(Tuple(m, cfg["plot_range"]["min"],
+                    cfg["plot_range"]["max"]))
+
+            # if not enough symbols have been given in the expression, there
+            # might still be not enough ranges. Fill them with dummy variables.
+            if len(ranges) < 3:
+                for j in range(3 - len(ranges)):
+                    ranges.append(Tuple(Dummy(), cfg["plot_range"]["min"],
+                        cfg["plot_range"]["max"]))
 
         if len(ranges) > 3:
             raise ValueError("Too many ranges for 3D vector plot.")
@@ -201,7 +208,7 @@ def _series(expr, *ranges, label="", **kwargs):
         return split_expr, ranges, series
 
 
-def _split_vector(expr, ranges, fill_ranges=True):
+def _split_vector(expr, ranges):
     """Extract the components of the given vector or matrix.
 
     Parameters
@@ -215,9 +222,6 @@ def _split_vector(expr, ranges, fill_ranges=True):
             Tuple of the form (x_expr, y_expr, z_expr). If a 2D vector is
             provided, z_expr = S.Zero.
         ranges : list/tuple
-
-    NOTE: this function is located in utils.py module (and not in vectors.py)
-    in order to avoid circular import.
     """
     if isinstance(expr, Vector):
         N = list(_get_coord_systems(expr))[0]
@@ -235,19 +239,6 @@ def _split_vector(expr, ranges, fill_ranges=True):
             "This function only plots 2D or 3D vectors.\n"
             + "Received: {}. Number of elements: {}".format(expr, len(expr))
         )
-
-    # TODO: since plot_vector requires all ranges to be specified, this
-    # code block can be eliminated. It requires adjusting some tests...
-    if fill_ranges:
-        ranges = list(ranges)
-        fs = set()
-        if all(not callable(e) for e in expr):
-            fs = fs.union(*[e.free_symbols for e in expr])
-        if len(ranges) < len(fs):
-            fs_ranges = set().union([r[0] for r in ranges])
-            for s in fs:
-                if s not in fs_ranges:
-                    ranges.append(Tuple(s, cfg["plot_range"]["min"], cfg["plot_range"]["max"]))
 
     if (len(ranges) == 2) and (len(expr) == 3):
         # There might be ambiguities when working with vectors from
