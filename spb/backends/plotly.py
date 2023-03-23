@@ -816,9 +816,8 @@ class PlotlyBackend(Plot):
                     else:
                         x, y, z, u, v = s.get_data()
                         surfacecolor = s.eval_color_func(x, y, z, u, v)
-                        self.fig.data[i]["x"] = x
-                        self.fig.data[i]["y"] = y
-
+                    self.fig.data[i]["x"] = x
+                    self.fig.data[i]["y"] = y
                     _min, _max = surfacecolor.min(), surfacecolor.max()
                     self.fig.data[i]["z"] = z
                     self.fig.data[i]["surfacecolor"] = surfacecolor
@@ -826,7 +825,9 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["cmax"] = _max
 
                 elif s.is_contour and (not s.is_complex):
-                    _, _, zz = s.get_data()
+                    xx, yy, zz = s.get_data()
+                    self.fig.data[i]["x"] = xx[0, :]
+                    self.fig.data[i]["y"] = yy[:, 0]
                     self.fig.data[i]["z"] = zz
                     self.fig.data[i]["zmin"] = zz.min()
                     self.fig.data[i]["zmax"] = zz.max()
@@ -835,12 +836,12 @@ class PlotlyBackend(Plot):
                     if s.is_streamlines:
                         raise NotImplementedError
                     x, y, z, u, v, w = self.series[i].get_data()
+                    mag = np.sqrt(u**2 + v**2 + w**2)
                     if s.normalize:
                             # NOTE/TODO: as of Plotly 5.9.0, it is impossible
                             # to set the color of cones. Hence, by applying the
                             # normalization, all cones will have the same
                             # color.
-                            mag = np.sqrt(u**2 + v**2 + w**2)
                             u, v, w = [t / mag for t in [u, v, w]]
                     self.fig.data[i]["x"] = x.flatten()
                     self.fig.data[i]["y"] = y.flatten()
@@ -848,6 +849,8 @@ class PlotlyBackend(Plot):
                     self.fig.data[i]["u"] = u.flatten()
                     self.fig.data[i]["v"] = v.flatten()
                     self.fig.data[i]["w"] = w.flatten()
+                    self.fig.data[i]["cmin"] = cmin=mag.min()
+                    self.fig.data[i]["cmax"] = cmin=mag.max()
 
                 elif s.is_vector:
                     x, y, u, v = self.series[i].get_data()

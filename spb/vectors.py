@@ -72,24 +72,12 @@ def _build_series(*args, **kwargs):
             )
 
         if scalar_field:
-            # plot the scalar field over the entire region covered by all
-            # vector fields
-            _minx, _maxx = float("inf"), -float("inf")
-            _miny, _maxy = float("inf"), -float("inf")
-            for r in all_ranges:
-                _xr, _yr = r
-                if _xr[1] < _minx:
-                    _minx = _xr[1]
-                if _xr[2] > _maxx:
-                    _maxx = _xr[2]
-                if _yr[1] < _miny:
-                    _miny = _yr[1]
-                if _yr[2] > _maxy:
-                    _maxy = _yr[2]
-            cranges = [
-                Tuple(all_ranges[-1][0][0], _minx, _maxx),
-                Tuple(all_ranges[-1][1][0], _miny, _maxy),
-            ]
+            # NOTE: ideally, we would plot the scalar field over the entire
+            # region covered by all vector fields. However, it is impossible
+            # to compare symbolic ranges, meaning we can't compute the entire
+            # region. Just plot the scalar field in order to cover the
+            # first vector fields.
+            cranges = all_ranges[0]
             nc = kwargs.pop("nc", 100)
             cs_kwargs = kwargs.copy()
             cs_kwargs["n1"] = nc
@@ -214,6 +202,7 @@ def _preprocess(*args):
     following form: [expr, *ranges, label].
     `expr` can be a vector, a matrix or a list/tuple/Tuple.
     """
+
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
         # In this case we received arguments in one of the following forms.
         # Here we wrapped them into a list, so that they can be further
@@ -222,6 +211,7 @@ def _preprocess(*args):
         #   v, range        -> [v, range]
         #   v1, v2, ..., range   -> [v1, v2, range]
         args = [args]
+
     if any([_is_range(a) for a in args]):
         args = [args]
 
@@ -230,7 +220,6 @@ def _preprocess(*args):
         exprs, ranges, label, rendering_kw = _unpack_args(*a)
         if len(exprs) == 1:
             new_args.append([*exprs, *ranges, label])
-
         else:
             # this is the case where the user provided: v1, v2, ..., range
             # we use the same ranges for each expression
@@ -444,23 +433,13 @@ def plot_vector(*args, **kwargs):
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
 
-    xlabel : str, optional
-        Label for the x-axis.
+    xlabel, ylabel, zlabel : str, optional
+        Labels for the x-axis, y-axis, z-axis, respectively.
+        ``zlabel`` is only available for 3D plots.
 
-    ylabel : str, optional
-        Label for the y-axis.
-
-    zlabel : str, optional
-        Label for the z-axis. Only available for 3D plots.
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, `(min, max)`.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, `(min, max)`.
-
-    zlim : (float, float), optional
-        Denotes the z-axis limits, `(min, max)`. Only available for 3D plots.
+    xlim, ylim, zlim : (float, float), optional
+        Denotes the axis limits, `(min, max)`, visible in the chart.
+        ``zlim`` is only available for 3D plots
 
 
     Examples
@@ -565,19 +544,28 @@ def plot_vector(*args, **kwargs):
        >>> plot_vector([fx, fy], ("x", -1, 1), ("y", -1, 1),
        ...     streamlines=True, scalar=False, use_cm=False)  # doctest: +SKIP
 
-    Interactive-widget 2D vector plot. Refer to ``iplot`` documentation to
-    learn more about the ``params`` dictionary.
+    Interactive-widget 2D vector plot. Refer to the interactive
+    sub-module documentation to learn more about the ``params`` dictionary.
+    This plot illustrates:
+
+    * customizing the appearance of quivers and countour.
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. panel-screenshot::
        :small-size: 800, 600
 
        from sympy import *
        from spb import *
-       x, y, a, b = symbols("x, y, a, b")
+       x, y, a, b, c, d = symbols("x, y, a, b, c, d")
        v = [-sin(a * y), cos(b * x)]
        plot_vector(
-           v, (x, -3, 3), (y, -3, 3),
-           params={a: (1, -2, 2), b: (1, -2, 2)},
+           v, prange(x, -3*c, 3*c), prange(y, -3*d, 3*d),
+           params={
+               a: (1, -2, 2), b: (1, -2, 2),
+               c: (1, 0, 2), d: (1, 0, 2),
+           },
            quiver_kw=dict(color="black", scale=30, headwidth=5),
            contour_kw={"cmap": "Blues_r", "levels": 15},
            grid=False, xlabel="x", ylabel="y", use_latex=False)

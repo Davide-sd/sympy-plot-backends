@@ -1225,6 +1225,9 @@ def test_str():
     s = LineOver1DRangeSeries(cos(u * x), (x, -4, 3), params={u: 1})
     assert str(s) == "interactive cartesian line: cos(u*x) for x over (-4.0, 3.0) and parameters (u,)"
 
+    s = LineOver1DRangeSeries(cos(u * x), (x, -u, 3*y), params={u: 1, y: 1})
+    assert str(s) == "interactive cartesian line: cos(u*x) for x over (-u, 3*y) and parameters (u, y)"
+
     s = AbsArgLineSeries(sqrt(x), (x, -5 + 2j, 5 + 2j))
     assert str(s) == "cartesian abs-arg line: sqrt(x) for x over ((-5+2j), (5+2j))"
 
@@ -1237,17 +1240,26 @@ def test_str():
     s = Parametric2DLineSeries(cos(u * x), sin(x), (x, -4, 3), params={u: 1})
     assert str(s) == "interactive parametric cartesian line: (cos(u*x), sin(x)) for x over (-4.0, 3.0) and parameters (u,)"
 
+    s = Parametric2DLineSeries(cos(u * x), sin(x), (x, -u, 3*y), params={u: 1, y:1})
+    assert str(s) == "interactive parametric cartesian line: (cos(u*x), sin(x)) for x over (-u, 3*y) and parameters (u, y)"
+
     s = Parametric3DLineSeries(cos(x), sin(x), x, (x, -4, 3))
     assert str(s) == "3D parametric cartesian line: (cos(x), sin(x), x) for x over (-4.0, 3.0)"
 
     s = Parametric3DLineSeries(cos(u*x), sin(x), x, (x, -4, 3), params={u: 1})
     assert str(s) == "interactive 3D parametric cartesian line: (cos(u*x), sin(x), x) for x over (-4.0, 3.0) and parameters (u,)"
 
+    s = Parametric3DLineSeries(cos(u*x), sin(x), x, (x, -u, 3*y), params={u: 1, y: 1})
+    assert str(s) == "interactive 3D parametric cartesian line: (cos(u*x), sin(x), x) for x over (-u, 3*y) and parameters (u, y)"
+
     s = SurfaceOver2DRangeSeries(cos(x * y), (x, -4, 3), (y, -2, 5))
     assert str(s) == "cartesian surface: cos(x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
 
     s = SurfaceOver2DRangeSeries(cos(u * x * y), (x, -4, 3), (y, -2, 5), params={u: 1})
     assert str(s) == "interactive cartesian surface: cos(u*x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0) and parameters (u,)"
+
+    s = SurfaceOver2DRangeSeries(cos(u * x * y), (x, -4*u, 3), (y, -2, 5*u), params={u: 1})
+    assert str(s) == "interactive cartesian surface: cos(u*x*y) for x over (-4*u, 3.0) and y over (-2.0, 5*u) and parameters (u,)"
 
     s = ContourSeries(cos(x * y), (x, -4, 3), (y, -2, 5))
     assert str(s) == "contour: cos(x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
@@ -1315,6 +1327,11 @@ def test_str():
         threed=True, params={x: 1}, **d)
     assert str(s) == "interactive complex cartesian surface: re(x*sqrt(z)) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0) and parameters (x,)"
 
+    a, b = symbols("a, b", real=True)
+    s = ComplexSurfaceSeries(x * sqrt(z), (z, -2*a-3j, 4+5j*b),
+        threed=True, params={x: 1, a: 1, b: 1}, **d)
+    assert str(s) == "interactive complex cartesian surface: re(x*sqrt(z)) for re(z) over (-2*a, 4.0) and im(z) over (-3.0, 5.0*b) and parameters (x, a, b)"
+
     s = ComplexDomainColoringSeries(x * sqrt(z), (z, -2-3j, 4+5j),
         "test", params={x: 1}, threed=False)
     assert str(s) == "interactive complex domain coloring: x*sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0) and parameters (x,)"
@@ -1322,6 +1339,11 @@ def test_str():
     s = ComplexDomainColoringSeries(x * sqrt(z), (z, -2-3j, 4+5j),
         "test", params={x: 1}, threed=True)
     assert str(s) == "interactive complex 3D domain coloring: x*sqrt(z) for re(z) over (-2.0, 4.0) and im(z) over (-3.0, 5.0) and parameters (x,)"
+
+    a, b = symbols("a, b", real=True)
+    s = ComplexDomainColoringSeries(x * sqrt(z), (z, -2*a-3j, 4+5j*b),
+        threed=True, params={x: 1, a: 1, b: 1})
+    assert str(s) == "interactive complex 3D domain coloring: x*sqrt(z) for re(z) over (-2*a, 4.0) and im(z) over (-3.0, 5.0*b) and parameters (x, a, b)"
 
     s = Vector2DSeries(-y, x, (x, -5, 4), (y, -3, 2))
     assert str(s) == "2D vector series: [-y, x] over (x, -5.0, 4.0), (y, -3.0, 2.0)"
@@ -1332,6 +1354,11 @@ def test_str():
     s = Vector2DSeries(-y, x * z, (x, -5, 4), (y, -3, 2),
         "test", params={z: 1})
     assert str(s) == "interactive 2D vector series: [-y, x*z] over (x, -5.0, 4.0), (y, -3.0, 2.0) and parameters (z,)"
+
+    a, b = symbols("a, b")
+    s = Vector2DSeries(-y, x * z, (x, -5 * a, 4 * b), (y, -3 * b, 2 * a),
+        "test", params={z: 1, a: 1, b: 1})
+    assert str(s) == "interactive 2D vector series: [-y, x*z] over (x, -5*a, 4*b), (y, -3*b, 2*a) and parameters (z, a, b)"
 
     s = Vector3DSeries(-y, x * z, x, (x, -5, 4), (y, -3, 2), (z, -6, 7),
         "test", params={z: 1})
@@ -2660,3 +2687,144 @@ def test_contour_series_show_clabels():
 
     s = ContourSeries(cos(x*y), (x, -2, 2), (y, -2, 2), clabels=False)
     assert not s.show_clabels
+
+
+def test_LineOver1DRangeSeries_complex_range():
+    # verify that LineOver1DRangeSeries can accept a complex range
+    # if the imaginary part of the start and end values are the same
+
+    x = symbols("x")
+
+    s = LineOver1DRangeSeries(sqrt(x), (x, -10, 10))
+    s = LineOver1DRangeSeries(sqrt(x), (x, -10-2j, 10-2j))
+    raises(ValueError,
+        lambda : LineOver1DRangeSeries(sqrt(x), (x, -10-2j, 10+2j)))
+
+
+def test_symbolic_plotting_ranges():
+    # verify that data series can use symbolic plotting ranges
+
+    x, y, z, a, b = symbols("x, y, z, a, b")
+
+    def do_test(s1, s2, new_params):
+        d1 = s1.get_data()
+        d2 = s2.get_data()
+        for u, v in zip(d1, d2):
+            assert np.allclose(u, v)
+        s2.params = new_params
+        d2 = s2.get_data()
+        for u, v in zip(d1, d2):
+            assert not np.allclose(u, v)
+
+    s1 = LineOver1DRangeSeries(sin(x), (x, 0, 1), adaptive=False, n=10)
+    s2 = LineOver1DRangeSeries(sin(x), (x, a, b), params={a: 0, b: 1},
+        adaptive=False, n=10)
+    do_test(s1, s2, {a: 0.5, b: 1.5})
+
+    # missing a parameter
+    raises(ValueError,
+        lambda : LineOver1DRangeSeries(sin(x), (x, a, b), params={a: 1}, n=10))
+
+    s1 = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 1), adaptive=False, n=10)
+    s2 = Parametric2DLineSeries(cos(x), sin(x), (x, a, b), params={a: 0, b: 1},
+        adaptive=False, n=10)
+    do_test(s1, s2, {a: 0.5, b: 1.5})
+
+    # missing a parameter
+    raises(ValueError,
+        lambda : Parametric2DLineSeries(cos(x), sin(x), (x, a, b),
+            params={a: 0}, adaptive=False, n=10))
+
+    s1 = Parametric3DLineSeries(cos(x), sin(x), x, (x, 0, 1),
+        adaptive=False, n=10)
+    s2 = Parametric3DLineSeries(cos(x), sin(x), x, (x, a, b),
+        params={a: 0, b: 1}, adaptive=False, n=10)
+    do_test(s1, s2, {a: 0.5, b: 1.5})
+
+    # missing a parameter
+    raises(ValueError,
+        lambda : Parametric3DLineSeries(cos(x), sin(x), x, (x, a, b),
+            params={a: 0}, adaptive=False, n=10))
+
+    s1 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        adaptive=False, n1=5, n2=5)
+    s2 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -pi * a, pi * a),
+        (y, -pi * b, pi * b), params={a: 1, b: 1},
+        adaptive=False, n1=5, n2=5)
+    do_test(s1, s2, {a: 0.5, b: 1.5})
+
+    # missing a parameter
+    raises(ValueError,
+        lambda : SurfaceOver2DRangeSeries(cos(x**2 + y**2),
+        (x, -pi * a, pi * a), (y, -pi * b, pi * b), params={a: 1},
+        adaptive=False, n1=5, n2=5))
+    # one range symbol is included into another range's minimum or maximum val
+    raises(ValueError,
+        lambda : SurfaceOver2DRangeSeries(cos(x**2 + y**2),
+        (x, -pi * a + y, pi * a), (y, -pi * b, pi * b), params={a: 1},
+        adaptive=False, n1=5, n2=5))
+
+    s1 = ParametricSurfaceSeries(
+        cos(x - y), sin(x + y), x - y, (x, -2, 2), (y, -2, 2), n1=5, n2=5)
+    s2 = ParametricSurfaceSeries(
+        cos(x - y), sin(x + y), x - y, (x, -2 * a, 2), (y, -2, 2 * b),
+        params={a: 1, b: 1}, n1=5, n2=5)
+    do_test(s1, s2, {a: 0.5, b: 1.5})
+
+    # missing a parameter
+    raises(ValueError,
+        lambda : ParametricSurfaceSeries(
+        cos(x - y), sin(x + y), x - y, (x, -2 * a, 2), (y, -2, 2 * b),
+        params={a: 1}, n1=5, n2=5))
+
+    s1 = ComplexSurfaceSeries(sin(x), (x, -2-2j, 2+2j), n1=5, n2=5)
+    s2 = ComplexSurfaceSeries(sin(x), (x, -2*a-2j, 2+2j*b), n1=5, n2=5,
+        params={a: 1, b: 1})
+    do_test(s1, s2, {a: 0.5, b: 1.5})
+
+    # missing a parameter
+    raises(ValueError,
+        lambda : ComplexSurfaceSeries(sin(x), (x, -2*a-2j, 2+2j*b), n1=5, n2=5,
+        params={a: 1}))
+
+    s1 = ComplexDomainColoringSeries(sin(x), (x, -2-2j, 2+2j), n1=5, n2=5)
+    s2 = ComplexDomainColoringSeries(sin(x), (x, -2*a-2j, 2+2j*b), n1=5, n2=5,
+        params={a: 1, b: 1})
+    d1 = s1.get_data()
+    d2 = s2.get_data()
+    for u, v in zip(d1, d2):
+        assert np.allclose(u, v)
+    s2.params = {a: 0.5, b: 1.5}
+    d2 = s2.get_data()
+    # NOTE: the last one is the colorbar, which is equal in both cases
+    for u, v in zip(d1[:-1], d2[:-1]):
+        assert not np.allclose(u, v)
+
+    # missing a parameter
+    raises(ValueError,
+        lambda : ComplexDomainColoringSeries(sin(x), (x, -2*a-2j, 2+2j*b),
+            n1=5, n2=5, params={a: 1}))
+
+    s1 = Vector2DSeries(-cos(y), sin(x), (x, -5, 4), (y, -3, 2), n1=4, n2=4)
+    s2 = Vector2DSeries(-cos(y), sin(x), (x, -5*a, 4*b), (y, -3*b, 2*a),
+        n1=4, n2=4, params={a: 1, b: 1})
+    do_test(s1, s2, {a: 0.5, b: 1.5})
+
+    # missing a parameter
+    raises(ValueError,
+        lambda : Vector2DSeries(-cos(y), sin(x), (x, -5*a, 4*b), (y, -3*b, 2*a),
+        n1=4, n2=4, params={a: 1}))
+
+    s1 = Vector3DSeries(-cos(y), sin(x), sin(z),
+        (x, -5, 4), (y, -3, 2), (z, -6, 7), n1=4, n2=4)
+    s2 = Vector3DSeries(-cos(y), sin(x), sin(z),
+        (x, -5*a, 4*b), (y, -3*b, 2*a), (z, -6*a, 7*b),
+        n1=4, n2=4, params={a: 1, b: 1})
+    do_test(s1, s2, {a: 0.5, b: 1.5})
+
+    # missing a parameter
+    raises(ValueError,
+        lambda : Vector3DSeries(-cos(y), sin(x), sin(z),
+        (x, -5*a, 4*b), (y, -3*b, 2*a), (z, -6*a, 7*b),
+        n1=4, n2=4, params={a: 1}))
+    

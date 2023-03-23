@@ -35,6 +35,14 @@ def pc_options(panel_options):
     return panel_options
 
 
+def to_float(t):
+    return tuple(float(v) for v in t)
+
+
+def to_complex(*t):
+    return tuple([t[0], complex(t[1]), complex(t[2])])
+
+
 def test_plot_complex_list(pc_options):
     # verify that plot_complex_list is capable of creating data
     # series according to the documented modes of operation
@@ -434,7 +442,7 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    assert (complex(s[0].start) == -5 - 5j) and (complex(s[0].end) == 5 + 5j)
     _, _, _re = s[0].get_data()
 
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=True, imag=False,
@@ -444,7 +452,7 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    assert (complex(s[0].start) == -5 - 5j) and (complex(s[0].end) == 5 + 5j)
     _, _, _rep = s[0].get_data()
 
     # imaginary part of the function
@@ -455,7 +463,7 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    assert (complex(s[0].start) == -5 - 5j) and (complex(s[0].end) == 5 + 5j)
     _, _, _im = s[0].get_data()
 
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=False, imag=True,
@@ -465,7 +473,7 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    assert (complex(s[0].start) == -5 - 5j) and (complex(s[0].end) == 5 + 5j)
     _, _, _imp = s[0].get_data()
 
     # absolute value of the function
@@ -476,7 +484,7 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    assert (complex(s[0].start) == -5 - 5j) and (complex(s[0].end) == 5 + 5j)
     _, _, _abs = s[0].get_data()
 
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=False, imag=False,
@@ -486,7 +494,7 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    assert (complex(s[0].start) == -5 - 5j) and (complex(s[0].end) == 5 + 5j)
     _, _, _absp = s[0].get_data()
 
     # argument of the function
@@ -497,7 +505,7 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    assert (complex(s[0].start) == -5 - 5j) and (complex(s[0].end) == 5 + 5j)
     _, _, _arg = s[0].get_data()
 
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=False, imag=False,
@@ -507,7 +515,7 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert len(s) == 1
     assert isinstance(s[0], ComplexSurfaceSeries)
     assert s[0].is_contour and (not s[0].is_3Dsurface)
-    assert (s[0].start == -5 - 5j) and (s[0].end == 5 + 5j)
+    assert (complex(s[0].start) == -5 - 5j) and (complex(s[0].end) == 5 + 5j)
     _, _, _argp = s[0].get_data()
 
     xx = yy = np.linspace(-5, 5, 5)
@@ -593,8 +601,8 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert len(s) == 8
     assert all(isinstance(t, ComplexSurfaceSeries) for t in s)
     assert all(t.is_3Dsurface for t in s)
-    assert all((s[i].var, s[i].start, s[i].end) == (z, -5-5j, 5+5j) for i in range(4))
-    assert all((s[i].var, s[i].start, s[i].end) == (z, -4-3j, 2+1j) for i in range(4, 8))
+    assert all(to_complex(s[i].var, s[i].start, s[i].end) == (z, -5-5j, 5+5j) for i in range(4))
+    assert all(to_complex(s[i].var, s[i].start, s[i].end) == (z, -4-3j, 2+1j) for i in range(4, 8))
     assert all(s[i].rendering_kw == dict() for i in range(4))
     assert all(s[i].rendering_kw == {"color": "k"} for i in range(4, 8))
     correct_labels = set(['Re(a)', 'Im(a)', 'Abs(a)', 'Arg(a)'])
@@ -612,8 +620,8 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert len(s) == 8
     assert all(isinstance(t, ComplexSurfaceSeries) for t in s)
     assert all(t.is_3Dsurface for t in s)
-    assert all((s[i].var, s[i].start, s[i].end) == (z, -5-5j, 5+5j) for i in range(4))
-    assert all((s[i].var, s[i].start, s[i].end) == (z, -4-3j, 2+1j) for i in range(4, 8))
+    assert all(to_complex(s[i].var, s[i].start, s[i].end) == (z, -5-5j, 5+5j) for i in range(4))
+    assert all(to_complex(s[i].var, s[i].start, s[i].end) == (z, -4-3j, 2+1j) for i in range(4, 8))
     assert all(s[i].rendering_kw == dict() for i in range(4))
     assert all(s[i].rendering_kw == {"color": "k"} for i in range(4, 8))
     correct_labels = set(['Re(a)', 'Im(a)', 'Abs(a)', 'Arg(a)'])
@@ -861,8 +869,8 @@ def test_plot_complex_2d_3d(pc_options):
     assert len(s) == 2
     assert all(isinstance(t, ComplexDomainColoringSeries) for t in s)
     assert all(t.is_3Dsurface for t in s)
-    assert (s[0].var, s[0].start, s[0].end) == (z, -5-5j, 5+5j)
-    assert (s[1].var, s[1].start, s[1].end) == (z, -4-3j, 2+1j)
+    assert to_complex(s[0].var, s[0].start, s[0].end) == (z, -5-5j, 5+5j)
+    assert to_complex(s[1].var, s[1].start, s[1].end) == (z, -4-3j, 2+1j)
     assert s[0].rendering_kw == dict()
     assert s[1].rendering_kw == {"color": "k"}
     correct_labels = set(['a', 'cos(z)'])
@@ -879,8 +887,8 @@ def test_plot_complex_2d_3d(pc_options):
     assert len(s) == 2
     assert all(isinstance(t, ComplexDomainColoringSeries) for t in s)
     assert all(t.is_3Dsurface for t in s)
-    assert (s[0].var, s[0].start, s[0].end) == (z, -5-5j, 5+5j)
-    assert (s[1].var, s[1].start, s[1].end) == (z, -4-3j, 2+1j)
+    assert to_complex(s[0].var, s[0].start, s[0].end) == (z, -5-5j, 5+5j)
+    assert to_complex(s[1].var, s[1].start, s[1].end) == (z, -4-3j, 2+1j)
     assert s[0].rendering_kw == dict()
     assert s[1].rendering_kw == {"color": "k"}
     correct_labels = set(['a', 'cos(z)'])
@@ -910,8 +918,8 @@ def test_plot_complex_vector(pc_options):
     assert (s[0].start_x, s[0].end_x) == (-5, 4)
     assert (s[0].start_y, s[0].end_y) == (-2, 3)
     assert isinstance(s[1], Vector2DSeries)
-    assert s[1].ranges[0][1:] == (-5, 4)
-    assert s[1].ranges[1][1:] == (-2, 3)
+    assert to_float(s[1].ranges[0][1:]) == (-5, 4)
+    assert to_float(s[1].ranges[1][1:]) == (-2, 3)
     assert str(s[0].expr) == 'sqrt(((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2)**2 + 4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2)'
     assert str(s[1].expr[0]) == '(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2'
     assert str(s[1].expr[1]) == '2*(re(_x) - im(_y))*(re(_y) + im(_x))'
@@ -937,8 +945,8 @@ def test_plot_complex_vector(pc_options):
     assert isinstance(p, MB)
     assert len(s) == 1
     assert isinstance(s[0], Vector2DSeries)
-    assert s[0].ranges[0][1:] == (-5, 4)
-    assert s[0].ranges[1][1:] == (-2, 3)
+    assert to_float(s[0].ranges[0][1:]) == (-5, 4)
+    assert to_float(s[0].ranges[1][1:]) == (-2, 3)
     assert s[0].get_label(False) == "test"
 
     p = plot_complex_vector(z**x, (z, -5 - 2j, 4 + 3j), "test",
@@ -966,10 +974,10 @@ def test_plot_complex_vector(pc_options):
     assert isinstance(p, MB)
     assert len(s) == 2
     assert all(isinstance(t, Vector2DSeries) for t in s)
-    assert s[0].ranges[0][1:] == (-5, 0)
-    assert s[0].ranges[1][1:] == (-2, 3)
-    assert s[1].ranges[0][1:] == (0, 4)
-    assert s[1].ranges[1][1:] == (-2, 3)
+    assert to_float(s[0].ranges[0][1:]) == (-5, 0)
+    assert to_float(s[0].ranges[1][1:]) == (-2, 3)
+    assert to_float(s[1].ranges[0][1:]) == (0, 4)
+    assert to_float(s[1].ranges[1][1:]) == (-2, 3)
     assert s[0].get_label(False) == 'z**2'
     assert s[1].get_label(False) == 'test'
 

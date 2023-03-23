@@ -4,7 +4,7 @@ from spb import (
     MB, plot_geometry
 )
 from spb.utils import (
-    _check_arguments, _create_ranges, _plot_sympify, _validate_kwargs
+    _check_arguments, _create_ranges, _plot_sympify, _validate_kwargs, prange
 )
 from sympy import (
     symbols, Expr, Tuple, Integer, sin, cos, Matrix, I, Polygon, Dummy, Symbol
@@ -598,3 +598,26 @@ def test_raise_warning_keyword_validation():
     kw = dict(is_fille=False)
     p = plot_geometry(Polygon((4, 0), 4, n=5), backend=MB, show=False)
     do_test(p, kw, ["is_fille", "is_filled"])
+
+
+def test_prange():
+    # verify that prange raises the necessary errors
+
+    x, a, b = symbols("x a b")
+
+    p = prange(x, 0, 5)
+    p = prange(x, a, 5)
+    p = prange(x, 0, b)
+    p = prange(x, a, b)
+    p = prange(x, a*b, a+b)
+
+    # too many elements
+    raises(ValueError, lambda : prange(x, a, b, 5))
+    # too few elements
+    raises(ValueError, lambda : prange(x, a))
+    # first element is not a symbol
+    raises(TypeError, lambda : prange(5, a, b))
+    # range symbols is present in the starting position
+    raises(ValueError, lambda : prange(x, x * a, b))
+    # range symbols is present in the ending position
+    raises(ValueError, lambda : prange(x, a, x * b))

@@ -693,15 +693,15 @@ class BokehBackend(Plot):
 
                 elif s.is_contour and (not s.is_complex):
                     x, y, z = s.get_data()
+                    minx, miny, minz = x.min(), y.min(), z.min()
+                    maxx, maxy, maxz = x.max(), y.max(), z.max()
                     cb = self._handles[i]
                     rend[i].data_source.data.update({"image": [z]})
-                    zz = z.flatten()
-                    # TODO: as of Bokeh 2.3.2, the following line is going to
-                    # update the values of the color mapper, but the redraw
-                    # is not applied, hence there is an error in the
-                    # visualization. Keep track of the following issue:
-                    # https://github.com/bokeh/bokeh/issues/11116
-                    cb.color_mapper.update(low=min(zz), high=max(zz))
+                    rend[i].glyph.x = minx
+                    rend[i].glyph.y = miny
+                    rend[i].glyph.dw = abs(maxx - minx)
+                    rend[i].glyph.dh = abs(maxy - miny)
+                    cb.color_mapper.update(low=minz, high=maxz)
 
                 elif s.is_2Dvector:
                     x, y, u, v = s.get_data()
@@ -748,9 +748,9 @@ class BokehBackend(Plot):
                                 low=min(color_val), high=max(color_val))
 
                 elif s.is_complex and s.is_domain_coloring and not s.is_3Dsurface:
-                    # TODO: for some unkown reason, domain_coloring and
-                    # interactive plot don't like each other...
                     x, y, mag, angle, img, _ = s.get_data()
+                    minx, miny = x.min(), y.min()
+                    maxx, maxy = x.max(), y.max()
                     img = self._get_img(img)
                     source = {
                         "image": [img],
@@ -758,6 +758,10 @@ class BokehBackend(Plot):
                         "arg": [angle],
                     }
                     rend[i].data_source.data.update(source)
+                    rend[i].glyph.x = minx
+                    rend[i].glyph.y = miny
+                    rend[i].glyph.dw = abs(maxx - minx)
+                    rend[i].glyph.dh = abs(maxy - miny)
 
                 elif s.is_geometry and (not s.is_2Dline):
                     x, y = s.get_data()

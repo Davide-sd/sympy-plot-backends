@@ -222,12 +222,55 @@ def _is_range(r):
     """A range is defined as (symbol, start, end). start and end should
     be numbers.
     """
+    if isinstance(r, prange):
+        return True
     return (
         isinstance(r, Tuple)
         and (len(r) == 3)
         and (not isinstance(r.args[1], str)) and r.args[1].is_number
         and (not isinstance(r.args[2], str)) and r.args[2].is_number
     )
+
+
+class prange(Tuple):
+    """Represents a plot range, an entity describing what interval a
+    particular variable is allowed to vary. It is a 3-element tuple:
+    (symbol, minimum, maximum).
+
+    Notes
+    =====
+
+    Why does the plotting module needs this class instead of providing a
+    plotting range with ordinary tuple/list? After all, ordinary plots
+    works just fine.
+
+    If a plotting range is provided with a 3-elements tuple/list, the internal
+    algorithm looks at the tuple and tries to determine what it is.
+    If minimum and maximum are numeric values, than it is a plotting range.
+
+    Hovewer, there are some plotting functions in which the expression consists
+    of 3-elements tuple/list. The plotting module is also interactive, meaning
+    that minimum and maximum can also be expressions containing parameters.
+    In that case, the plotting range is indistinguishable from a 3-elements
+    tuple describing an expression.
+
+    This class is meant to solve that ambiguity: it only represents a plotting
+    range.
+    """
+    def __new__(cls, *args):
+        if len(args) != 3:
+            raise ValueError(
+                "`%s` requires 3 elements. Received " % cls.__name__ +
+                "%s elements: %s" % (len(args), args))
+        if not isinstance(args[0], (str, Symbol, BaseScalar)):
+            raise TypeError("The first element of a plotting range must "
+                "be a symbol. Received: %s" % type(args[0]))
+        args = [sympify(a) for a in args]
+        if (args[0] in args[1].free_symbols) or (args[0] in args[2].free_symbols):
+            raise ValueError(
+                "Symbol `%s` representing the range can only " % args[0] +
+                "be specified in the first element of %s" % cls.__name__)
+        return Tuple.__new__(cls, *args, sympify=False)
 
 
 def _unpack_args(*args):

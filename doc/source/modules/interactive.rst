@@ -34,6 +34,14 @@ plotting functions. The purpose of the following documentation is to show a
 few more examples for each interactive module.
 
 
+The prange class
+================
+
+.. module:: spb.utils
+
+.. autoclass:: prange
+
+
 Holoviz's panel
 ===============
 

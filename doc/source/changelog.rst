@@ -58,6 +58,10 @@ reset()
   * Implemented the ``template`` keyword argument for interactive widget plots
     with Holoviz's Panel and ``servable=True``: user can further customize the
     layout of the web application, or can provide their own Panel's templates.
+  
+  * The module is now fully interactive. Thanks to the ``prange`` class, it is
+    possible to specify parametric ranges. Explore the module documentation to
+    find out how to use it.
 
 * ``MatplotlibBackend``:
 

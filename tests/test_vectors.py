@@ -7,7 +7,7 @@ from spb.series import (
 )
 from spb.utils import _plot_sympify, _split_vector
 from spb.vectors import _preprocess, _series, plot_vector
-from spb import plot_vector, MB
+from spb import plot_vector, MB, prange
 from sympy import symbols, Matrix, Tuple, sin, cos, sqrt, Plane, pi
 from sympy.physics.mechanics import Vector as MechVector, ReferenceFrame
 from sympy.vector import CoordSys3D
@@ -36,6 +36,10 @@ def pw(*args):
     calling _preprocess."""
     args = _plot_sympify(args)
     return _preprocess(*args)
+
+
+def to_float(t):
+    return tuple(float(v) for v in t)
 
 
 def test_preprocess():
@@ -435,8 +439,8 @@ def test_plot_vector_2d(pv_options):
     assert s[0].get_label(False) == "Magnitude"
     assert isinstance(s[1], Vector2DSeries)
     assert not s[1].is_streamlines
-    assert s[1].ranges[0][1:] == (-3, 2)
-    assert s[1].ranges[1][1:] == (-4, 6)
+    assert to_float(s[1].ranges[0][1:]) == (-3, 2)
+    assert to_float(s[1].ranges[1][1:]) == (-4, 6)
     assert s[1].get_label(False) == '(-sin(y), cos(x))'
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
@@ -480,8 +484,8 @@ def test_plot_vector_2d(pv_options):
     assert len(s) == 1
     assert isinstance(s[0], Vector2DSeries)
     assert s[0].is_streamlines
-    assert s[0].ranges[0][1:] == (-3, 2)
-    assert s[0].ranges[1][1:] == (-4, 6)
+    assert to_float(s[0].ranges[0][1:]) == (-3, 2)
+    assert to_float(s[0].ranges[1][1:]) == (-4, 6)
     assert s[0].get_label(False) == '(-sin(y), cos(x))'
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
@@ -521,8 +525,8 @@ def test_plot_vector_2d(pv_options):
     assert isinstance(p, MB)
     assert len(s) == 2
     assert all(isinstance(t, Vector2DSeries) for t in s)
-    assert all(t.ranges[0][1:] == (-3, 2) for t in s)
-    assert all(t.ranges[1][1:] == (-4, 6) for t in s)
+    assert all(to_float(t.ranges[0][1:]) == (-3, 2) for t in s)
+    assert all(to_float(t.ranges[1][1:]) == (-4, 6) for t in s)
     assert s[0].get_label(False) == '(-sin(y), cos(x))'
     assert s[1].get_label(False) == '(-y, x)'
 
@@ -553,8 +557,8 @@ def test_plot_vector_2d(pv_options):
     assert (s[0].var_y, s[0].start_y, s[0].end_y) == (y, -4, 6)
     assert isinstance(s[1], Vector2DSeries)
     assert isinstance(s[2], Vector2DSeries)
-    assert all(t.ranges[0][1:] == (-3, 2) for t in s[1:])
-    assert all(t.ranges[1][1:] == (-4, 6) for t in s[1:])
+    assert all(to_float(t.ranges[0][1:]) == (-3, 2) for t in s[1:])
+    assert all(to_float(t.ranges[1][1:]) == (-4, 6) for t in s[1:])
     assert s[0].get_label(False) == 'sqrt(x**2 + y**2)'
     assert s[1].get_label(False) == '(-sin(y), cos(x))'
     assert s[2].get_label(False) == '(-y, x)'
@@ -592,10 +596,10 @@ def test_plot_vector_2d(pv_options):
     assert isinstance(p, MB)
     assert len(s) == 2
     assert all(isinstance(t, Vector2DSeries) for t in s)
-    assert s[0].ranges[0][1:] == (-3, 0)
-    assert s[0].ranges[1][1:] == (-4, 0)
-    assert s[1].ranges[0][1:] == (0, 2)
-    assert s[1].ranges[1][1:] == (0, 6)
+    assert to_float(s[0].ranges[0][1:]) == (-3, 0)
+    assert to_float(s[0].ranges[1][1:]) == (-4, 0)
+    assert to_float(s[1].ranges[0][1:]) == (0, 2)
+    assert to_float(s[1].ranges[1][1:]) == (0, 6)
     assert s[0].get_label(False) == '(-sin(y), cos(x))'
     assert s[1].get_label(False) == 'test'
 
@@ -635,8 +639,8 @@ def test_plot_vector_2d(pv_options):
     assert (s[0].var_x, s[0].start_x, s[0].end_x) == (x, -3, 2)
     assert (s[0].var_y, s[0].start_y, s[0].end_y) == (y, -4, 6)
     assert isinstance(s[1], Vector2DSeries)
-    assert s[1].ranges[0][1:] == (-3, 2)
-    assert s[1].ranges[1][1:] == (-4, 6)
+    assert to_float(s[1].ranges[0][1:]) == (-3, 2)
+    assert to_float(s[1].ranges[1][1:]) == (-4, 6)
     assert s[1].get_label(False) == '(-sin(y), cos(x))'
 
     p = plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
@@ -669,8 +673,8 @@ def test_plot_vector_2d(pv_options):
     assert (s[0].var_x, s[0].start_x, s[0].end_x) == (x, -3, 2)
     assert (s[0].var_y, s[0].start_y, s[0].end_y) == (y, -4, 6)
     assert isinstance(s[1], Vector2DSeries)
-    assert s[1].ranges[0][1:] == (-3, 2)
-    assert s[1].ranges[1][1:] == (-4, 6)
+    assert to_float(s[1].ranges[0][1:]) == (-3, 2)
+    assert to_float(s[1].ranges[1][1:]) == (-4, 6)
     assert s[1].get_label(False) == '(-sin(y), cos(x))'
 
     pl = lambda: plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
@@ -691,8 +695,8 @@ def test_plot_vector_2d(pv_options):
     assert (s[0].var_x, s[0].start_x, s[0].end_x) == (x, -3, 2)
     assert (s[0].var_y, s[0].start_y, s[0].end_y) == (y, -4, 6)
     assert isinstance(s[1], Vector2DSeries)
-    assert s[1].ranges[0][1:] == (-3, 2)
-    assert s[1].ranges[1][1:] == (-4, 6)
+    assert to_float(s[1].ranges[0][1:]) == (-3, 2)
+    assert to_float(s[1].ranges[1][1:]) == (-4, 6)
     assert s[1].get_label(False) == '(-sin(y), cos(x))'
 
     pl = lambda: plot_vector([-sin(y * z), cos(x)], (x, -3, 2), (y, -4, 6),
@@ -719,9 +723,9 @@ def test_plot_vector_3d(pv_options3d):
     assert len(s) == 1
     assert isinstance(s[0], Vector3DSeries)
     assert not s[0].is_streamlines
-    assert s[0].ranges[0][1:] == (-10, 9)
-    assert s[0].ranges[1][1:] == (-8, 7)
-    assert s[0].ranges[2][1:] == (-6, 5)
+    assert to_float(s[0].ranges[0][1:]) == (-10, 9)
+    assert to_float(s[0].ranges[1][1:]) == (-8, 7)
+    assert to_float(s[0].ranges[2][1:]) == (-6, 5)
     assert s[0].expr == (x, y, z)
     assert s[0].get_label(False) == "(x, y, z)"
     assert s[0].rendering_kw == {"cmap": "Blues_r"}
@@ -768,9 +772,9 @@ def test_plot_vector_3d(pv_options3d):
     assert len(s) == 2
     assert all(isinstance(t, Vector3DSeries) for t in s)
     assert all(not t.is_streamlines for t in s)
-    assert all(t.ranges[0][1:] == (-10, 9) for t in s)
-    assert all(t.ranges[1][1:] == (-8, 7) for t in s)
-    assert all(t.ranges[2][1:] == (-6, 5) for t in s)
+    assert to_float(all(t.ranges[0][1:]) == (-10, 9) for t in s)
+    assert to_float(all(t.ranges[1][1:]) == (-8, 7) for t in s)
+    assert to_float(all(t.ranges[2][1:]) == (-6, 5) for t in s)
     assert s[0].expr == (x, y, z)
     assert s[1].expr == (-sin(y), cos(z), y)
     assert s[0].get_label(False) == "(x, y, z)"
@@ -809,12 +813,12 @@ def test_plot_vector_3d(pv_options3d):
     assert len(s) == 2
     assert all(isinstance(t, Vector3DSeries) for t in s)
     assert all(not t.is_streamlines for t in s)
-    assert s[0].ranges[0][1:] == (-10, 9)
-    assert s[0].ranges[1][1:] == (-8, 7)
-    assert s[0].ranges[2][1:] == (-6, 5)
-    assert s[1].ranges[0][1:] == (-4, 3)
-    assert s[1].ranges[1][1:] == (-2, 11)
-    assert s[1].ranges[2][1:] == (-1, 12)
+    assert to_float(s[0].ranges[0][1:]) == (-10, 9)
+    assert to_float(s[0].ranges[1][1:]) == (-8, 7)
+    assert to_float(s[0].ranges[2][1:]) == (-6, 5)
+    assert to_float(s[1].ranges[0][1:]) == (-4, 3)
+    assert to_float(s[1].ranges[1][1:]) == (-2, 11)
+    assert to_float(s[1].ranges[2][1:]) == (-1, 12)
     assert s[0].expr == (x, y, z)
     assert s[1].expr == (-sin(y), cos(z), y)
     assert s[0].get_label(False) == "(x, y, z)"
@@ -864,9 +868,9 @@ def test_plot_vector_3d_slice(pv_options3d):
     assert len(s) == 1
     assert isinstance(s[0], SliceVector3DSeries)
     assert isinstance(s[0].slice_surf_series, PlaneSeries)
-    assert s[0].ranges[0][1:] == (-10, 9)
-    assert s[0].ranges[1][1:] == (-8, 7)
-    assert s[0].ranges[2][1:] == (-6, 5)
+    assert to_float(s[0].ranges[0][1:]) == (-10, 9)
+    assert to_float(s[0].ranges[1][1:]) == (-8, 7)
+    assert to_float(s[0].ranges[2][1:]) == (-6, 5)
     assert s[0].get_label(False) == "(z, y, x)"
     assert s[0].rendering_kw == {"cmap": "Blues_r"}
 
@@ -898,9 +902,9 @@ def test_plot_vector_3d_slice(pv_options3d):
     assert len(s) == 3
     assert all(isinstance(t, SliceVector3DSeries) for t in s)
     assert all(isinstance(t.slice_surf_series, PlaneSeries) for t in s)
-    assert all(t.ranges[0][1:] == (-10, 9) for t in s)
-    assert all(t.ranges[1][1:] == (-8, 7) for t in s)
-    assert all(t.ranges[2][1:] == (-6, 5) for t in s)
+    assert all(to_float(t.ranges[0][1:]) == (-10, 9) for t in s)
+    assert all(to_float(t.ranges[1][1:]) == (-8, 7) for t in s)
+    assert all(to_float(t.ranges[2][1:]) == (-6, 5) for t in s)
     assert all(t.get_label(False) == "(z, y, x)" for t in s)
 
     p = plot_vector([u * z, y, x], (x, -10, 9), (y, -8, 7), (z, -6, 5),
@@ -942,9 +946,9 @@ def test_plot_vector_3d_slice(pv_options3d):
     assert len(s) == 1
     assert isinstance(s[0], SliceVector3DSeries)
     assert isinstance(s[0].slice_surf_series, SurfaceOver2DRangeSeries)
-    assert s[0].ranges[0][1:] == (-2, 3)
-    assert s[0].ranges[1][1:] == (-3, 1)
-    assert s[0].ranges[2][1:] == (-6, 5)
+    assert to_float(s[0].ranges[0][1:]) == (-2, 3)
+    assert to_float(s[0].ranges[1][1:]) == (-3, 1)
+    assert to_float(s[0].ranges[2][1:]) == (-6, 5)
     assert s[0].get_label(False) == "(z, y, x)"
     t = s[0].slice_surf_series
     assert (t.var_x, t.start_x, t.end_x) == (x, -2, 3)
@@ -976,9 +980,9 @@ def test_plot_vector_3d_slice(pv_options3d):
     assert len(s) == 1
     assert isinstance(s[0], SliceVector3DSeries)
     assert isinstance(s[0].slice_surf_series, SurfaceOver2DRangeSeries)
-    assert s[0].ranges[0][1:] == (-2, 3)
-    assert s[0].ranges[1][1:] == (-3, 1)
-    assert s[0].ranges[2][1:] == (-6, 5)
+    assert to_float(s[0].ranges[0][1:]) == (-2, 3)
+    assert to_float(s[0].ranges[1][1:]) == (-3, 1)
+    assert to_float(s[0].ranges[2][1:]) == (-6, 5)
     assert s[0].get_label(False) == "(z, y, x)"
     t = s[0].slice_surf_series
     assert (t.var_x, t.start_x, t.end_x) == (y, -3, 1)
@@ -1029,9 +1033,9 @@ def test_plot_vector_3d_slice(pv_options3d):
     assert pss.expr == (u * cos(v), u * sin(v), u)
     assert (pss.var_u, pss.start_u, pss.end_u) == (u, -2, 0)
     assert (pss.var_v, pss.start_v, pss.end_v) == (v, 0, float(2*pi))
-    assert s[0].ranges[0][1:] == (-10, 9)
-    assert s[0].ranges[1][1:] == (-8, 7)
-    assert s[0].ranges[2][1:] == (-6, 5)
+    assert to_float(s[0].ranges[0][1:]) == (-10, 9)
+    assert to_float(s[0].ranges[1][1:]) == (-8, 7)
+    assert to_float(s[0].ranges[2][1:]) == (-6, 5)
     assert s[0].get_label(False) == "(z, y, x)"
 
     ss = SurfaceOver2DRangeSeries(cos(z**2 + y**2), (z, -4, 4), (y, -2, 2),
@@ -1047,9 +1051,9 @@ def test_plot_vector_3d_slice(pv_options3d):
     assert pss.expr == cos(z**2 + y**2)
     assert (pss.var_x, pss.start_x, pss.end_x) == (z, -4, 4)
     assert (pss.var_y, pss.start_y, pss.end_y) == (y, -2, 2)
-    assert s[0].ranges[0][1:] == (-10, 9)
-    assert s[0].ranges[1][1:] == (-8, 7)
-    assert s[0].ranges[2][1:] == (-6, 5)
+    assert to_float(s[0].ranges[0][1:]) == (-10, 9)
+    assert to_float(s[0].ranges[1][1:]) == (-8, 7)
+    assert to_float(s[0].ranges[2][1:]) == (-6, 5)
     assert s[0].get_label(False) == "(z, y, x)"
     d3a = s[0].get_data()
 
@@ -1066,9 +1070,9 @@ def test_plot_vector_3d_slice(pv_options3d):
     assert pss.expr == cos(x**2 + y**2)
     assert (pss.var_x, pss.start_x, pss.end_x) == (x, -4, 4)
     assert (pss.var_y, pss.start_y, pss.end_y) == (y, -2, 2)
-    assert s[0].ranges[0][1:] == (-10, 9)
-    assert s[0].ranges[1][1:] == (-8, 7)
-    assert s[0].ranges[2][1:] == (-6, 5)
+    assert to_float(s[0].ranges[0][1:]) == (-10, 9)
+    assert to_float(s[0].ranges[1][1:]) == (-8, 7)
+    assert to_float(s[0].ranges[2][1:]) == (-6, 5)
     assert s[0].get_label(False) == "(z, y, x)"
     d3b = s[0].get_data()
 
@@ -1307,3 +1311,24 @@ def test_plot_vector_lambda_functions(pv_options3d):
         scalar=lambda x, y: np.sqrt(x**2 + y**2), **pv_options3d)
     assert all(np.allclose(t1, t2) for t1, t2 in
         zip(p3[0].get_data(), p4[0].get_data()))
+
+
+def test_parametric_ranges_2d_quiver(pv_options):
+    # verify that interactive plots of 2d quivers with scalar fields,
+    # are going to update both the scalar field (contour) and vector fields
+    # (quivers)
+
+    x, y, a, b, u = symbols("x, y, a, b, u")
+
+    p = plot_vector((-cos(u*y), sin(x)),
+        prange(x, -2*a, 2*b), prange(y, -2*b, 2*a),
+        params={u: (1, 0, 2), a: (1, 0, 2), b: (1, 0, 2)}, **pv_options)
+    d1 = p.backend[0].get_data()
+    d2 = p.backend[1].get_data()
+    p.backend._update_interactive({u: 1, a: 0.5, b: 1.5})
+    d3 = p.backend[0].get_data()
+    d4 = p.backend[1].get_data()
+    for s, t in zip(d1, d3):
+        assert not np.allclose(s, t)
+    for s, t in zip(d2, d4):
+        assert not np.allclose(s, t)

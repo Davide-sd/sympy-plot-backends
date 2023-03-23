@@ -9,7 +9,7 @@ from spb.series import (
 from spb.interactive import create_interactive_plot
 from spb.utils import (
     _unpack_args, _instantiate_backend, _plot_sympify, _check_arguments,
-    _is_range
+    _is_range, prange
 )
 from spb.vectors import plot_vector
 from sympy import latex, Tuple, sqrt, re, im, arg, Expr, Dummy, symbols, I
@@ -161,12 +161,6 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
         if (not allow_lambda) and callable(expr):
             raise TypeError("expr must be a symbolic expression.")
 
-        # From now on we are dealing with a function of one variable.
-        # ranges need to contain complex numbers
-        ranges = list(ranges)
-        for i, r in enumerate(ranges):
-            ranges[i] = (r[0], complex(r[1]), complex(r[2]))
-
         # NOTE:
         # 1. as a design choice, a complex function will create one
         #    or more data series, depending on the keyword arguments
@@ -194,7 +188,8 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
         _abs = kw.pop("abs", False)
         _arg = kw.pop("arg", False)
 
-        if ranges[0][1].imag == ranges[0][2].imag:
+        # if ranges[0][1].imag == ranges[0][2].imag:
+        if im(ranges[0][1]) == im(ranges[0][2]):
             # dealing with lines
             def add_series(flag, key):
                 if flag:
@@ -571,8 +566,13 @@ def plot_real_imag(*args, **kwargs):
        [0]: cartesian line: abs(sqrt(x)) for x over (-3.0, 3.0)
        [1]: cartesian line: arg(sqrt(x)) for x over (-3.0, 3.0)
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary. This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * for 1D ``plot_real_imag``, symbols going into ``prange`` must be real.
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. panel-screenshot::
        :small-size: 800, 600
@@ -580,8 +580,10 @@ def plot_real_imag(*args, **kwargs):
        from sympy import *
        from spb import *
        x, u = symbols("x, u")
-       plot_real_imag(sqrt(x) * exp(-u * x**2), (x, -3, 3),
-           params={u: (1, 0, 2)}, ylim=(-0.25, 2), use_latex=False)
+       a = symbols("a", real=True)
+       plot_real_imag(sqrt(x) * exp(-u * x**2), prange(x, -3*a, 3*a),
+           params={u: (1, 0, 2), a: (1, 0, 2)},
+           ylim=(-0.25, 2), use_latex=False)
 
     3D plot of the real and imaginary part of the principal branch of a
     function over a complex range. Note the jump in the imaginary part: that's
@@ -613,20 +615,28 @@ def plot_real_imag(*args, **kwargs):
        Plot object containing:
        [0]: complex cartesian surface: abs(sqrt(x)) for re(x) over (-3.0, 3.0) and im(x) over (-3.0, 3.0)
 
-    3D interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary. This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. panel-screenshot::
        :small-size: 800, 600
 
        from sympy import *
        from spb import *
-       x, u = symbols("x, u")
+       x, u, a, b = symbols("x, u, a, b")
        plot_real_imag(
-           sqrt(x) * exp(u * x), (x, -3-3j, 3+3j), backend=PB, aspect="cube",
+           sqrt(x) * exp(u * x), prange(x, -3*a-b*3j, 3*a+b*3j),
+           backend=PB, aspect="cube",
            wireframe=True, wf_rendering_kw={"line_width": 1},
-           params={u: (0.25, 0, 1)}, n=25, threed=True,
-           use_latex=False, use_cm=True)
+           params={
+               u: (0.25, 0, 1),
+               a: (1, 0, 2),
+               b: (1, 0, 2)
+           }, n=25, threed=True, use_latex=False, use_cm=True)
 
     References
     ==========
@@ -880,18 +890,28 @@ def plot_complex(*args, **kwargs):
        Plot object containing:
        [0]: cartesian abs-arg line: cos(x) + I*sinh(x) for x over ((-2+0j), (2+0j))
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot of a Fourier Transform. Refer to the interactive
+    sub-module documentation to learn more about the ``params`` dictionary.
+    This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * for ``plot_complex``, symbols going into ``prange`` must be real.
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. panel-screenshot::
        :small-size: 800, 600
 
        from sympy import *
        from spb import *
-       x, u = symbols("x, u")
-       plot_complex(
-           exp(I * x) * I * sin(u * x), "f", (x, -5, 5),
-           params={u: (1, 0, 2)}, ylim=(-0.2, 1.2), use_latex=False)
+       x, k, a, b = symbols("x, k, a, b")
+       c = symbols("c", real=True)
+       f = exp(-x**2) * (Heaviside(x + a) - Heaviside(x - b))
+       fs = fourier_transform(f, x, k)
+       plot_complex(fs, prange(k, -c, c),
+               params={a: (1, -2, 2), b: (-2, -2, 2), c: (4, 0.5, 4)},
+               label="Arg(fs)", xlabel="k", yscale="log", ylim=(1e-03, 10),
+               use_latex=False)
 
     Domain coloring plot. To improve the smoothness of the results, increase
     the number of discretization points and/or apply an interpolation (if the
@@ -920,20 +940,29 @@ def plot_complex(*args, **kwargs):
        ...     {"interpolation": "spline36"}, # passed to matplotlib's imshow
        ...     coloring="b", n=600, grid=False)  # doctest: +SKIP
 
-    Interactive-widget domain coloring plot. Refer to ``iplot`` documentation
-    to learn more about the ``params`` dictionary. Note that a too large
-    value of ``n`` will impact performance.
+    Interactive-widget domain coloring plot. Refer to the interactive
+    sub-module documentation to learn more about the ``params`` dictionary.
+    This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. panel-screenshot::
        :small-size: 800, 600
 
        from sympy import *
        from spb import *
-       z, u = symbols("z, u")
+       z, u, a, b = symbols("z, u, a, b")
        plot_complex(
-           sin(u * z), (z, -pi - pi*I, pi + pi*I),
+           sin(u * z), prange(z, -a - b*I, a + b*I),
            {"interpolation": "spline36"}, use_latex=False,
-           coloring="b", n=250, grid=False, params={u: (0.5, 0, 2)})
+           coloring="b", n=250, grid=False,
+           params={
+               u: (0.5, 0, 2),
+               a: (pi, 0, 2*pi),
+               b: (pi, 0, 2*pi),
+           })
 
     3D plot of the absolute value of a complex function colored by its
     argument, using Plotly:
@@ -1340,19 +1369,27 @@ def plot_complex_vector(*args, **kwargs):
        [0]: complex domain coloring: z*log(2*z) + 3 for re(z) over (-2.0, 2.0) and im(z) over (-2.0, 2.0)
        [1]: 2D vector series: [(re(_x) - im(_y))*log(Abs(2*_x + 2*_y*I)) - (re(_y) + im(_x))*arg(_x + _y*I) + 3, (re(_x) - im(_y))*arg(_x + _y*I) + (re(_y) + im(_x))*log(Abs(2*_x + 2*_y*I))] over (_x, -2.0, 2.0), (_y, -2.0, 2.0)
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary. This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. panel-screenshot::
        :small-size: 800, 600
 
        from sympy import *
        from spb import *
-       z, u = symbols("z u")
+       z, u, a, b = symbols("z u a b")
        plot_complex_vector(
-            log(gamma(u * z)), (z, -5 - 5j, 5 + 5j),
-            params={u: (1, 0, 2)}, n=20, grid=False, use_latex=False,
-            quiver_kw=dict(color="orange", headwidth=4))
+           log(gamma(u * z)), prange(z, -5*a - b*5j, 5*a + b*5j),
+           params={
+               u: (1, 0, 2),
+               a: (1, 0, 2),
+               b: (1, 0, 2)
+           }, n=20, grid=False, use_latex=False,
+           quiver_kw=dict(color="orange", headwidth=4))
 
     See Also
     ========
@@ -1387,11 +1424,10 @@ def plot_complex_vector(*args, **kwargs):
     # create new arguments to be used by plot_vector
     new_args = []
     x, y = symbols("x, y", cls=Dummy)
-    for i in range(len(series)):
-        s1 = series[i]
-        expr1 = re(s1.expr)
-        expr2 = im(s1.expr)
-        free_symbols = s1.expr.free_symbols
+    for i, s in enumerate(series):
+        expr1 = re(s.expr)
+        expr2 = im(s.expr)
+        free_symbols = s.expr.free_symbols
         if params is not None:
             free_symbols = free_symbols.difference(params.keys())
         free_symbols = list(free_symbols)
@@ -1399,8 +1435,8 @@ def plot_complex_vector(*args, **kwargs):
             fs = free_symbols[0]
             expr1 = expr1.subs({fs: x + I * y})
             expr2 = expr2.subs({fs: x + I * y})
-        r1 = (x, s1.start.real, s1.end.real)
-        r2 = (y, s1.start.imag, s1.end.imag)
+        r1 = prange(x, re(s.start), re(s.end))
+        r2 = prange(y, im(s.start), im(s.end))
         label = get_label(i)
         new_args.append(((expr1, expr2), r1, r2, label))
 

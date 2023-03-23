@@ -1,10 +1,11 @@
 from inspect import signature
 from spb.defaults import cfg
+from spb.utils import prange
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    atan2, floor, ceiling, Sum, Product, Symbol, frac
+    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re
 )
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
@@ -350,6 +351,7 @@ class BaseSeries:
         self._signature = []
         self._force_real_eval = kwargs.get("force_real_eval", None)
         self._discretized_domain = None
+        self._interactive_ranges = False
         # NOTE: consider a generic summation, for example:
         #   s = Sum(cos(pi * x), (x, 1, y))
         # This gets lambdified to something:
@@ -391,6 +393,23 @@ class BaseSeries:
                 + "Are they ranges or parameters?"
             )
 
+        # verify that all symbols are known (they either represent plotting
+        # ranges or parameters)
+        range_symbols = [r[0] for r in ranges]
+        for r in ranges:
+            fs = set().union(*[e.free_symbols for e in r[1:]])
+            if any(t in fs for t in range_symbols):
+                raise ValueError("Range symbols can't be included into "
+                    "minimum and maximum of a range. "
+                    "Received range: %s" % r)
+            if len(fs) > 0:
+                self._interactive_ranges = True
+            remaining_fs = fs.difference(params.keys())
+            if len(remaining_fs) > 0:
+                raise ValueError(
+                    "Unkown symbols found in plotting range: %s. " % (r,) +
+                    "Are the following parameters? %s" % remaining_fs)
+
     def _create_lambda_func(self):
         """Create the lambda functions to be used by the uniform meshing
         strategy.
@@ -415,6 +434,11 @@ class BaseSeries:
             self._signature = sorted([r[0] for r in self.ranges], key=lambda t: t.name)
             self._functions = [(e, None) for e in exprs]
 
+    def _update_range_value(self, t):
+        if not self._interactive_ranges:
+            return complex(t)
+        return complex(t.subs(self.params))
+
     def _create_discretized_domain(self):
         """Discretize the ranges for uniform meshing strategy.
         """
@@ -427,8 +451,8 @@ class BaseSeries:
         # create a 1D discretization
         for i, r in enumerate(self.ranges):
             discr_symbols.append(r[0])
-            c_start = complex(r[1])
-            c_end = complex(r[2])
+            c_start = self._update_range_value(r[1])
+            c_end = self._update_range_value(r[2])
             start = c_start.real if c_start.imag == c_end.imag == 0 else c_start
             end = c_end.real if c_start.imag == c_end.imag == 0 else c_end
             needs_integer_discr = self.only_integers or (r[0] in self._needs_to_be_int)
@@ -480,7 +504,7 @@ class BaseSeries:
         if not self._functions:
             self._create_lambda_func()
         # create (or update) the discretized domain
-        if not self._discretized_domain:
+        if (not self._discretized_domain) or self._interactive_ranges:
             self._create_discretized_domain()
         # ensure that discretized domains are returned with the proper order
         discr = [self._discretized_domain[s[0]] for s in self.ranges]
@@ -765,6 +789,7 @@ class BaseSeries:
         the backend will eventually execute this function to generate the
         appropriate coloring value.
         """
+        np = import_module('numpy')
         if self.color_func is None:
             # NOTE: with the line_color and surface_color attributes
             # (back-compatibility with the old sympy.plotting module) it is
@@ -777,7 +802,6 @@ class BaseSeries:
             # p[0].line_color = "red"
             # However, this won't apply the red color, because we can't ask
             # a parametric series to be non-parametric!
-            np = import_module('numpy')
             warnings.warn("This is likely not the result you were "
                 "looking for. Please, re-execute the plot command, this time "
                 "with the appropriate line_color or surface_color")
@@ -859,7 +883,11 @@ class BaseSeries:
 
     @ranges.setter
     def ranges(self, val):
-        self._ranges = val
+        new_vals = []
+        for v in val:
+            if v is not None:
+                new_vals.append([sympify(t) for t in v])
+        self._ranges = new_vals
 
     def _apply_transform(self, *args):
         """Apply transformations to the results of numerical evaluation.
@@ -1021,6 +1049,28 @@ class Line2DBaseSeries(BaseSeries):
                     points = (x, y, z)
         return points
 
+    @property
+    def var(self):
+        return None if not self.ranges else self.ranges[0][0]
+
+    @property
+    def start(self):
+        if not self.ranges:
+            return None
+        try:
+            return self._cast(self.ranges[0][1])
+        except:
+            return self.ranges[0][1]
+
+    @property
+    def end(self):
+        if not self.ranges:
+            return None
+        try:
+            return self._cast(self.ranges[0][2])
+        except:
+            return self.ranges[0][2]
+
 
 class List2DSeries(Line2DBaseSeries, ParamsMixin):
     """Representation for a line consisting of list of points."""
@@ -1154,24 +1204,30 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         self.expr = expr if callable(expr) else sympify(expr)
         self._label = str(self.expr) if label is None else label
         self._latex_label = latex(self.expr) if label is None else label
-        self.var = sympify(var_start_end[0])
-        self.start = complex(var_start_end[1])
-        self.end = complex(var_start_end[2])
-        if self.start.imag != self.end.imag:
-            raise ValueError(
-                "%s requires the imaginary " % self.__class__.__name__ +
-                "part of the start and end values of the range "
-                "to be the same.")
-        self._ranges = [(self.var, self.start, self.end)]
+        self.ranges = [var_start_end]
+        self._cast = complex
         # for complex-related data series, this determines what data to return
         # on the y-axis
         self._return = kwargs.get("return", None)
-
         self._post_init()
 
+        if not self._interactive_ranges:
+            # NOTE: the following check is only possible when the minimum and
+            # maximum values of a plotting range are numeric
+            start, end = [complex(t) for t in self.ranges[0][1:]]
+            if im(start) != im(end):
+                raise ValueError(
+                    "%s requires the imaginary " % self.__class__.__name__ +
+                    "part of the start and end values of the range "
+                    "to be the same.")
+
     def __str__(self):
-        # ditch imaginary part if it's equal to 0
-        f = lambda t: t if t.imag != 0 else t.real
+        def f(t):
+            if isinstance(t, complex):
+                if t.imag != 0:
+                    return t
+                return t.real
+            return t
         pre = "interactive " if self.is_interactive else ""
         post = ""
         if self.is_interactive:
@@ -1180,7 +1236,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         return pre + "cartesian line: %s for %s over %s" % (
             wrapper % self.expr,
             str(self.var),
-            str((f(self.start.real), f(self.end.real))),
+            str((f(self.start), f(self.end))),
         ) + post
 
     def _adaptive_sampling(self):
@@ -1195,8 +1251,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
 
         data = _adaptive_eval(
             func, [self.var], self.expr,
-            [self.start.real, self.end.real],
-            self.start.imag,
+            [complex(self.start).real, complex(self.end).real],
+            complex(self.start).imag,
             modules=self.modules,
             adaptive_goal=self.adaptive_goal,
             loss_fn=self.loss_fn)
@@ -1349,7 +1405,7 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
 
         data = _adaptive_eval(
             func, [self.var], expr,
-            [self.start, self.end],
+            [float(self.start), float(self.end)],
             self.is_2Dline,
             modules=self.modules,
             adaptive_goal=self.adaptive_goal,
@@ -1429,10 +1485,8 @@ class Parametric2DLineSeries(ParametricLineBaseSeries):
         self.expr_x = expr_x if callable(expr_x) else sympify(expr_x)
         self.expr_y = expr_y if callable(expr_y) else sympify(expr_y)
         self.expr = (self.expr_x, self.expr_y)
-        self.var = sympify(var_start_end[0])
-        self.start = float(var_start_end[1])
-        self.end = float(var_start_end[2])
-        self.ranges = [(self.var, self.start, self.end)]
+        self.ranges = [var_start_end]
+        self._cast = float
         self._set_parametric_line_label(label)
         self._post_init()
 
@@ -1459,10 +1513,8 @@ class Parametric3DLineSeries(ParametricLineBaseSeries):
         self.expr_y = expr_y if callable(expr_y) else sympify(expr_y)
         self.expr_z = expr_z if callable(expr_z) else sympify(expr_z)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
-        self.var = sympify(var_start_end[0])
-        self.start = float(var_start_end[1])
-        self.end = float(var_start_end[2])
-        self.ranges = [(self.var, self.start, self.end)]
+        self.ranges = [var_start_end]
+        self._cast = float
         self._set_parametric_line_label(label)
         self._post_init()
 
@@ -1527,18 +1579,45 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         super().__init__(**kwargs)
         self.expr = expr if callable(expr) else sympify(expr)
-        self.var_x = sympify(var_start_end_x[0])
-        self.start_x = float(var_start_end_x[1])
-        self.end_x = float(var_start_end_x[2])
-        self.var_y = sympify(var_start_end_y[0])
-        self.start_y = float(var_start_end_y[1])
-        self.end_y = float(var_start_end_y[2])
-        self.ranges = [
-            (self.var_x, self.start_x, self.end_x),
-            (self.var_y, self.start_y, self.end_y)
-        ]
+        self.ranges = [var_start_end_x, var_start_end_y]
         self._set_surface_label(label)
         self._post_init()
+
+    @property
+    def var_x(self):
+        return self.ranges[0][0]
+
+    @property
+    def var_y(self):
+        return self.ranges[1][0]
+
+    @property
+    def start_x(self):
+        try:
+            return float(self.ranges[0][1])
+        except:
+            return self.ranges[0][1]
+
+    @property
+    def end_x(self):
+        try:
+            return float(self.ranges[0][2])
+        except:
+            return self.ranges[0][2]
+
+    @property
+    def start_y(self):
+        try:
+            return float(self.ranges[1][1])
+        except:
+            return self.ranges[1][1]
+
+    @property
+    def end_y(self):
+        try:
+            return float(self.ranges[1][2])
+        except:
+            return self.ranges[1][2]
 
     def __str__(self):
         series_type = "cartesian surface" if self.is_3Dsurface else "contour"
@@ -1624,16 +1703,7 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.expr_y = expr_y if callable(expr_y) else sympify(expr_y)
         self.expr_z = expr_z if callable(expr_z) else sympify(expr_z)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
-        self.var_u = sympify(var_start_end_u[0])
-        self.start_u = float(var_start_end_u[1])
-        self.end_u = float(var_start_end_u[2])
-        self.var_v = sympify(var_start_end_v[0])
-        self.start_v = float(var_start_end_v[1])
-        self.end_v = float(var_start_end_v[2])
-        self.ranges = [
-            (self.var_u, self.start_u, self.end_u),
-            (self.var_v, self.start_v, self.end_v)
-        ]
+        self.ranges = [var_start_end_u, var_start_end_v]
         self.color_func = kwargs.get("color_func", lambda x, y, z, u, v: z)
         self._set_surface_label(label)
 
@@ -1648,6 +1718,42 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
             self.adaptive = False
 
         self._post_init()
+
+    @property
+    def var_u(self):
+        return self.ranges[0][0]
+
+    @property
+    def var_v(self):
+        return self.ranges[1][0]
+
+    @property
+    def start_u(self):
+        try:
+            return float(self.ranges[0][1])
+        except:
+            return self.ranges[0][1]
+
+    @property
+    def end_u(self):
+        try:
+            return float(self.ranges[0][2])
+        except:
+            return self.ranges[0][2]
+
+    @property
+    def start_v(self):
+        try:
+            return float(self.ranges[1][1])
+        except:
+            return self.ranges[1][1]
+
+    @property
+    def end_v(self):
+        try:
+            return float(self.ranges[1][2])
+        except:
+            return self.ranges[1][2]
 
     def __str__(self):
         return self._str_helper(
@@ -1979,30 +2085,23 @@ class Implicit3DSeries(SurfaceBaseSeries):
     def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
         super().__init__(**kwargs)
         self.expr = expr if callable(expr) else sympify(expr)
-        self.var_x = sympify(range_x[0])
-        self.start_x = float(range_x[1])
-        self.end_x = float(range_x[2])
-        self.var_y = sympify(range_y[0])
-        self.start_y = float(range_y[1])
-        self.end_y = float(range_y[2])
-        self.var_z = sympify(range_z[0])
-        self.start_z = float(range_z[1])
-        self.end_z = float(range_z[2])
-        self.ranges = [
-            (self.var_x, self.start_x, self.end_x),
-            (self.var_y, self.start_y, self.end_y),
-            (self.var_z, self.start_z, self.end_z),
-        ]
+        self.ranges = [range_x, range_y, range_z]
+        self.var_x, self.start_x, self.end_x = self.ranges[0]
+        self.var_y, self.start_y, self.end_y = self.ranges[1]
+        self.var_z, self.start_z, self.end_z = self.ranges[2]
         self._set_surface_label(label)
         self._allowed_keys += ["n3", "zscale"]
 
     def __str__(self):
+        var_x, start_x, end_x = self.ranges[0]
+        var_y, start_y, end_y = self.ranges[1]
+        var_z, start_z, end_z = self.ranges[2]
         return ("implicit surface series: %s for %s over %s and %s over %s"
             " and %s over %s") % (
                 str(self.expr),
-                str(self.var_x), str((self.start_x, self.end_x)),
-                str(self.var_y), str((self.start_y, self.end_y)),
-                str(self.var_z), str((self.start_z, self.end_z))
+                str(var_x), str((float(start_x), float(end_x))),
+                str(var_y), str((float(start_y), float(end_y))),
+                str(var_z), str((float(start_z), float(end_z)))
             )
 
     def get_data(self):
@@ -2087,20 +2186,11 @@ class ComplexSurfaceBaseSeries(BaseSeries):
 
     def __init__(self, expr, r, label="", **kwargs):
         super().__init__(**kwargs)
-        self.var = sympify(r[0])
-        self.start = complex(r[1])
-        self.end = complex(r[2])
-        if self.start.imag == self.end.imag:
-            raise ValueError(
-                "The same imaginary part has been used for `start` and "
-                "`end`: %s. " % self.start.imag +
-                "They must be different."
-            )
         if kwargs.get("threed", False):
             self.is_3Dsurface = True
-
         self.expr = expr if callable(expr) else sympify(expr)
-        self.ranges = [(self.var, self.start, self.end)]
+        self.ranges = [r]
+
         if isinstance(self, ComplexSurfaceSeries):
             self._block_lambda_functions(self.expr)
 
@@ -2121,6 +2211,29 @@ class ComplexSurfaceBaseSeries(BaseSeries):
             raise TypeError(
                 "`coloring` must be a character from 'a' to 'j' or a callable.")
         self.phaseres = kwargs.get("phaseres", 20)
+        self._post_init()
+        if not self._interactive_ranges:
+            # NOTE: the following check is only possible when the minimum and
+            # maximum values of a plotting range are numeric
+            start, end = [complex(t) for t in self.ranges[0][1:]]
+            if start.imag == end.imag:
+                raise ValueError(
+                    "The same imaginary part has been used for `start` and "
+                    "`end`: %s. " % start.imag +
+                    "They must be different."
+                )
+
+    @property
+    def var(self):
+        return self.ranges[0][0]
+
+    @property
+    def start(self):
+        return self.ranges[0][1]
+
+    @property
+    def end(self):
+        return self.ranges[0][2]
 
     def __str__(self):
         if self.is_domain_coloring:
@@ -2133,24 +2246,27 @@ class ComplexSurfaceBaseSeries(BaseSeries):
                 prefix = "complex contour"
 
         wrapper = _get_wrapper_for_expr(self._return)
+        res, ree = re(self.start), re(self.end)
+        ims, ime = im(self.start), im(self.end)
+        f = lambda t: float(t) if len(t.free_symbols) == 0 else t
 
         return self._str_helper(
             prefix + ": %s for" " re(%s) over %s and im(%s) over %s" % (
                 wrapper % self.expr,
                 str(self.var),
-                str((self.start.real, self.end.real)),
+                str((f(res), f(ree))),
                 str(self.var),
-                str((self.start.imag, self.end.imag)),
+                str((f(ims), f(ime))),
         ))
 
     def _create_discretized_domain(self):
         """Discretize the ranges in case of uniform meshing strategy.
         """
         np = import_module('numpy')
-        start_x = self.start.real
-        end_x = self.end.real
-        start_y = self.start.imag
-        end_y = self.end.imag
+        start_x = self._update_range_value(self.start).real
+        end_x = self._update_range_value(self.end).real
+        start_y = self._update_range_value(self.start).imag
+        end_y = self._update_range_value(self.end).imag
         x = self._discretize(start_x, end_x, self.n[0],
             self.scales[0], self.only_integers)
         y = self._discretize(start_y, end_y, self.n[1],
@@ -2374,11 +2490,8 @@ class VectorBase(BaseSeries):
 
     def __init__(self, exprs, ranges, label, **kwargs):
         super().__init__(**kwargs)
-        new_ranges = []
-        for r in ranges:
-            new_ranges.append((sympify(r[0]), float(r[1]), float(r[2])))
         self.expr = tuple([e if callable(e) else sympify(e) for e in exprs])
-        self.ranges = new_ranges
+        self.ranges = ranges
         self._label = str(exprs) if label is None else label
         self._latex_label = latex(exprs) if label is None else label
         self.is_streamlines = kwargs.get("streamlines", False)
@@ -2409,6 +2522,7 @@ class VectorBase(BaseSeries):
         else:
             self.rendering_kw = kwargs.get("quiver_kw",
                 kwargs.get("rendering_kw", dict()))
+        self._post_init()
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
         if use_latex:
@@ -2483,9 +2597,13 @@ class Vector2DSeries(VectorBase):
         )
 
     def __str__(self):
+        ranges = []
+        f = lambda t: t if len(t.free_symbols) > 0 else float(t)
+        for r in self.ranges:
+            ranges.append((r[0], f(r[1]), f(r[2])))
         return self._str_helper(
             "2D vector series: [%s, %s] over %s, %s" % (
-            *self.expr, *self.ranges))
+            *self.expr, *ranges))
 
 
 class Vector3DSeries(VectorBase):
@@ -2500,9 +2618,12 @@ class Vector3DSeries(VectorBase):
         super().__init__((u, v, z), (range1, range2, range3), label, **kwargs)
 
     def __str__(self):
+        ranges = []
+        for r in self.ranges:
+            ranges.append((r[0], float(r[1]), float(r[2])))
         return self._str_helper(
             "3D vector series: [%s, %s, %s] over %s, %s, %s" % (
-            *self.expr, *self.ranges))
+            *self.expr, *ranges))
 
 
 def _build_slice_series(slice_surf, ranges, **kwargs):
@@ -2874,11 +2995,11 @@ class GeometrySeries(BaseSeries):
             return x.astype(float), y.astype(float)
         else:  # Line
             p1, p2 = expr.points
-            _range = self.ranges[0]
-            if _range is None:
+            if not self.ranges:
                 x = np.array([p1.x, p2.x])
                 y = np.array([p1.y, p2.y])
             else:
+                _range = self.ranges[0]
                 m = expr.slope
                 q = p1[1] - m * p1[0]
                 x = np.array([_range[1], _range[2]])

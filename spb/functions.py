@@ -27,12 +27,12 @@ from spb.series import (
 from spb.interactive import create_interactive_plot
 from spb.utils import (
     _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend,
-    spherical_to_cartesian
+    spherical_to_cartesian, prange
 )
 from sympy import (
     latex, Tuple, Expr, Symbol, Wild, oo, Sum, sign, Piecewise, piecewise_fold,
     Plane, FiniteSet, Interval, Union, cos, sin, pi, sympify, atan2, sqrt,
-    Dummy, symbols, I
+    Dummy, symbols, I, re, im
 )
 # NOTE: from sympy import EmptySet is a different thing!!!
 from sympy.sets.sets import EmptySet
@@ -604,24 +604,32 @@ def plot(*args, **kwargs):
        >>> plot(lambda t: np.cos(np.exp(-t)), ("t", -pi, 0))   # doctest: +SKIP
 
 
-    Interactive-widget plot of an oscillator. Refer to ``iplot`` documentation
-    to learn more about the ``params`` dictionary.
+    Interactive-widget plot of an oscillator. Refer to the interactive
+    sub-module documentation to learn more about the ``params`` dictionary.
+    This plot illustrates:
+
+    * plotting multiple expressions, each one with its own label and
+      rendering options.
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. panel-screenshot::
        :small-size: 800, 625
 
        from sympy import *
        from spb import *
-       x, a, b, c = symbols("x, a, b, c")
+       x, a, b, c, n = symbols("x, a, b, c, n")
        plot(
            (cos(a * x + b) * exp(-c * x), "oscillator"),
            (exp(-c * x), "upper limit", {"linestyle": ":"}),
            (-exp(-c * x), "lower limit", {"linestyle": ":"}),
-           (x, 0, 2 * pi),
+           prange(x, 0, n * pi),
            params={
                a: (1, 0, 10),     # frequency
                b: (0, 0, 2 * pi), # phase
-               c: (0.25, 0, 1)    # damping
+               c: (0.25, 0, 1),   # damping
+               n: (2, 0, 4)       # multiple of pi
            },
            ylim=(-1.25, 1.25), use_latex=False
        )
@@ -920,18 +928,26 @@ def plot_parametric(*args, **kwargs):
        >>> p = plot_parametric(fx, fy, ("t", 0, 12 * pi), title="Butterfly Curve",
        ...     use_cm=False, n=2000)
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary. This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. panel-screenshot::
        :small-size: 800, 575
 
        from sympy import *
        from spb import *
-       x, a = symbols("x a")
+       x, a, s, e = symbols("x a s, e")
        plot_parametric(
-           cos(a * x), sin(x), (x, 0, 2*pi),
-           params={a: (0.5, 0, 2)},
+           cos(a * x), sin(x), prange(x, s*pi, e*pi),
+           params={
+               a: (0.5, 0, 2),
+               s: (0, 0, 2),
+               e: (2, 0, 2),
+           },
            aspect="equal", use_latex=False,
            xlim=(-1.25, 1.25), ylim=(-1.25, 1.25)
        )
@@ -1400,18 +1416,28 @@ def plot3d_parametric_line(*args, **kwargs):
            title="Helical Toroid", backend=PB, adaptive=False, n=1e04)
 
     Interactive-widget plot of the parametric line over a tennis ball.
-    Refer to ``iplot`` documentation to learn more about the ``params``
-    dictionary.
+    Refer to the interactive sub-module documentation to learn more about the
+    ``params`` dictionary. This plot illustrates:
+
+    * combining together different plots.
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. code-block:: python
 
        from sympy import *
        from spb import *
        import k3d
-       a, b, t = symbols("a, b, t")
+       a, b, s, e, t = symbols("a, b, s, e, t")
        c = 2 * sqrt(a * b)
        r = a + b
-       params = {a: (1.5, 0, 2), b: (1, 0, 2)}
+       params = {
+           a: (1.5, 0, 2),
+           b: (1, 0, 2),
+           s: (0, 0, 2),
+           e: (2, 0, 2)
+       }
        sphere = plot3d_revolution(
            (r * cos(t), r * sin(t)), (t, 0, pi),
            params=params, n=50, parallel_axis="x",
@@ -1421,7 +1447,7 @@ def plot3d_parametric_line(*args, **kwargs):
        line = plot3d_parametric_line(
            a * cos(t) + b * cos(3 * t),
            a * sin(t) - b * sin(3 * t),
-           c * sin(2 * t), (t, 0, 2*pi),
+           c * sin(2 * t), prange(t, s*pi, e*pi),
            {"color_map": k3d.matplotlib_color_maps.Summer}, params=params,
            backend=KB, show=False)
        (line + sphere).show()
@@ -1544,9 +1570,15 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
         kw["ty"] = surface_series._ty
         kw["tz"] = surface_series._tz
         kw["tp"] = surface_series._tp
+        kw["force_real_eval"] = surface_series._force_real_eval
         if "return" not in kw.keys():
             return Parametric3DLineSeries(*expr, *ranges, "", **kw)
         return ComplexParametric3DLineSeries(*expr, *ranges, "", **kw)
+
+    # NOTE: can't use np.linspace because start, end might be
+    # symbolic expressions
+    def linspace(start, end , n):
+        return [start + (end - start) * i / (n - 1) for i in range(n)]
 
     for s in surfaces:
         param_expr, ranges = [], []
@@ -1562,21 +1594,21 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                 (x, sx, ex), (y, sy, ey) = s.ranges
                 is_callable = any(callable(e) for e in expr)
 
-                for uval in np.linspace(float(sx), float(ex), wf_n1):
+                for uval in linspace(sx, ex, wf_n1):
                     kw["n"] = s.n[1] if npoints is None else npoints
                     if is_callable:
                         # NOTE: closure on lambda functions
-                        param_expr = [lambda t, uv=uval, e=e: e(uv, t) for e in expr]
+                        param_expr = [lambda t, uv=uval, e=e: e(float(uv), t) for e in expr]
                         ranges = [(y, sy, ey)]
                     else:
                         param_expr = [e.subs(x, uval) for e in expr]
                         ranges = [(y, sy, ey)]
                     lines.append(create_series(param_expr, ranges, s, **kw))
-                for vval in np.linspace(float(sy), float(ey), wf_n2):
+                for vval in linspace(sy, ey, wf_n2):
                     kw["n"] = s.n[0] if npoints is None else npoints
                     if is_callable:
                         # NOTE: closure on lambda functions
-                        param_expr = [lambda t, vv=vval, e=e: e(t, vv) for e in expr]
+                        param_expr = [lambda t, vv=vval, e=e: e(t, float(vv)) for e in expr]
                         ranges = [(x, sx, ex)]
                     else:
                         param_expr = [e.subs(y, vval) for e in expr]
@@ -1590,57 +1622,57 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                     x, y = symbols("x, y", cls=Dummy)
                     z, start, end = s.ranges[0]
                     expr = s.expr.subs(z, x + I * y)
-                    sx, ex = start.real, end.real
-                    sy, ey = start.imag, end.imag
+                    sx, ex = re(start), re(end)
+                    sy, ey = im(start), im(end)
                     kw["return"] = s._return
 
                 if not s.is_polar:
-                    for xval in np.linspace(float(sx), float(ex), wf_n1):
+                    for xval in linspace(sx, ex, wf_n1):
                         kw["n"] = s.n[1] if npoints is None else npoints
                         if callable(expr):
                             # NOTE: closure on lambda functions
                             param_expr = [
                                 lambda t, xv=xval: xv,
                                 lambda t: t,
-                                lambda t, xv=xval: expr(xv, t)]
+                                lambda t, xv=xval: expr(float(xv), t)]
                             ranges = [(y, sy, ey)]
                         else:
                             param_expr = [xval, y, expr.subs(x, xval)]
                             ranges = [(y, sy, ey)]
                         lines.append(create_series(param_expr, ranges, s, **kw))
-                    for yval in np.linspace(float(sy), float(ey), wf_n2):
+                    for yval in linspace(sy, ey, wf_n2):
                         kw["n"] = s.n[0] if npoints is None else npoints
                         if callable(expr):
                             # NOTE: closure on lambda functions
                             param_expr = [
                                 lambda t: t,
                                 lambda t, yv=yval: yv,
-                                lambda t, yv=yval: expr(t, yv)]
+                                lambda t, yv=yval: expr(t, float(yv))]
                             ranges = [(x, sx, ex)]
                         else:
                             param_expr = [x, yval, expr.subs(y, yval)]
                             ranges = [(x, sx, ex)]
                         lines.append(create_series(param_expr, ranges, s, **kw))
                 else:
-                    for rval in np.linspace(float(sx), float(ex), wf_n1):
+                    for rval in linspace(sx, ex, wf_n1):
                         kw["n"] = s.n[1] if npoints is None else npoints
                         if callable(expr):
                             param_expr = [
-                                lambda t, rv=rval: rv * np.cos(t),
-                                lambda t, rv=rval: rv * np.sin(t),
-                                lambda t, rv=rval: expr(rv, t)]
+                                lambda t, rv=rval: float(rv) * np.cos(t),
+                                lambda t, rv=rval: float(rv) * np.sin(t),
+                                lambda t, rv=rval: expr(float(rv), t)]
                             ranges = [(y, sy, ey)]
                         else:
                             param_expr = [rval * cos(y), rval * sin(y), expr.subs(x, rval)]
                             ranges = [(y, sy, ey)]
                         lines.append(create_series(param_expr, ranges, s, **kw))
-                    for tval in np.linspace(float(sy), float(ey), wf_n2):
+                    for tval in linspace(sy, ey, wf_n2):
                         kw["n"] = s.n[0] if npoints is None else npoints
                         if callable(expr):
                             param_expr = [
-                                lambda p, tv=tval: p * np.cos(tv),
-                                lambda p, tv=tval: p * np.sin(tv),
-                                lambda p, tv=tval: expr(p, tv)]
+                                lambda p, tv=tval: p * np.cos(float(tv)),
+                                lambda p, tv=tval: p * np.sin(float(tv)),
+                                lambda p, tv=tval: expr(p, float(tv))]
                             ranges = [(x, sx, ex)]
                         else:
                             param_expr = [x * cos(tval), x * sin(tval), expr.subs(y, tval)]
@@ -1940,17 +1972,27 @@ def plot3d(*args, **kwargs):
        >>> plot3d(lambda x, y: x * np.exp(-x**2 - y**2),
        ...     ("x", -3, 3), ("y", -3, 3), use_cm=True)  # doctest: +SKIP
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary. This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. panel-screenshot::
 
        from sympy import *
        from spb import *
-       x, y, d = symbols("x y d")
+       x, y, a, b, d = symbols("x y a b d")
        plot3d(
-           cos(x**2 + y**2) * exp(-(x**2 + y**2) * d), (x, -2, 2), (y, -2, 2),
-           params={d: (0.25, 0, 1)}, backend=PB, use_cm=True, n=50,
+           cos(x**2 + y**2) * exp(-(x**2 + y**2) * d),
+           prange(x, -2*a, 2*a), prange(y, -2*b, 2*b),
+           params={
+               a: (1, 0, 3),
+               b: (1, 0, 3),
+               d: (0.25, 0, 1),
+           },
+           backend=PB, use_cm=True, n=100, aspect=dict(x=1.5, y=1.5, z=0.75),
            wireframe=True, wf_n1=15, wf_n2=15, throttled=True, use_latex=False)
 
     References
@@ -2222,33 +2264,41 @@ def plot3d_parametric_surface(*args, **kwargs):
            ("v", 0, 2 * np.pi), zlim=(-2.5, 2.5), title="Torus",
            backend=KB, grid=False)
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary. This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. code-block:: python
 
        from sympy import *
        from spb import *
        import k3d
-       alpha, u, v = symbols("alpha u v")
+       alpha, u, v, up, vp = symbols("alpha u v u_p v_p")
        plot3d_parametric_surface((
-              exp(u) * cos(v - alpha) / 2 + exp(-u) * cos(v + alpha) / 2,
-              exp(u) * sin(v - alpha) / 2 + exp(-u) * sin(v + alpha) / 2,
-              cos(alpha) * u + sin(alpha) * v
-          ),
-          (u, -1, 1), (v, 0, 2 * pi),
-          backend=KB,
-          use_cm=True,
-          color_func=lambda u, v: v,
-          rendering_kw={"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
-          wireframe=True, wf_n2=15, wf_rendering_kw={"width": 0.0025},
-          grid=False, n=50,
-          params={alpha: (0, 0, pi)},
-          title="Catenoid \, to \, Right \, Helicoid \, Transformation")
+           exp(u) * cos(v - alpha) / 2 + exp(-u) * cos(v + alpha) / 2,
+           exp(u) * sin(v - alpha) / 2 + exp(-u) * sin(v + alpha) / 2,
+           cos(alpha) * u + sin(alpha) * v
+       ),
+       prange(u, -up, up), prange(v, 0, vp * pi),
+       backend=KB,
+       use_cm=True,
+       color_func=lambda u, v: v,
+       rendering_kw={"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
+       wireframe=True, wf_n2=15, wf_rendering_kw={"width": 0.005},
+       grid=False, n=50,
+       params={
+           alpha: (0, 0, pi),
+           up: (1, 0, 2),
+           vp: (2, 0, 2),
+       },
+       title="Catenoid \, to \, Right \, Helicoid \, Transformation")
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary. Note that the plot's creation might be
-    slow due to the wireframe lines.
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary. Note that the plot's
+    creation might be slow due to the wireframe lines.
 
     .. code-block:: python
 
@@ -2412,8 +2462,8 @@ def plot3d_spherical(*args, **kwargs):
 
     Interactive-widget plot of spherical harmonics. Note that the plot's
     creation and update might be slow and that it must be ``m < n`` at all
-    times. Refer to ``iplot`` documentation to learn more about the ``params``
-    dictionary.
+    times. Refer to the interactive sub-module documentation to learn more
+    about the ``params`` dictionary.
 
     .. code-block:: python
 
@@ -2429,6 +2479,7 @@ def plot3d_spherical(*args, **kwargs):
                n: param.Integer(0, label="n"),
                m: param.Integer(0, label="m"),
            },
+           force_real_eval=True,
            backend=KB, imodule="panel"
         )
 
@@ -2443,15 +2494,26 @@ def plot3d_spherical(*args, **kwargs):
     kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
     plot_expr = _check_arguments(args, 1, 2, **kwargs)
 
+    # deal with symbolic min/max values of ranges
+    def rel(t, s, threshold, a):
+        try:
+            if t == "<":
+                if s < threshold:
+                    return threshold
+            elif t == ">":
+                if s > threshold:
+                    return threshold
+        except:
+            return a
+        return a
+
     # enforce polar and azimuthal condition and convert spherical to cartesian
     for i, pe in enumerate(plot_expr):
         r, r1, r2 = pe[0], pe[1], pe[2]
         theta, phi = r1[0], r2[0]
         x, y, z = spherical_to_cartesian(r, theta, phi)
-        r1 = (theta, 0 if r1[1] < 0 else r1[1], pi if r1[2] > pi else r1[2])
-        # TODO: what if I want to plot a slice starting from 1.5*pi going to
-        # 3 * pi?
-        r2 = (phi, 0 if r2[1] < 0 else r2[1], 2 * pi if r2[2] > 2 * pi else r2[2])
+        r1 = prange(theta, rel("<", r1[1], 0, r1[1]), rel(">", r1[2], pi, r1[2]))
+        r2 = prange(phi, rel("<", r2[1], 0, r2[1]), rel(">", r2[2], 2*pi, r2[2]))
         plot_expr[i] = (x, y, z, r1, r2, *pe[3:])
     return plot3d_parametric_surface(*plot_expr, **kwargs)
 
@@ -2725,18 +2787,23 @@ def plot_contour(*args, **kwargs):
        Plot object containing:
        [0]: contour: sin(2*r)*cos(theta) for theta over (0.0, 6.283185307179586) and r over (0.0, 7.0)
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot of a goblet. Refer to the interactive sub-module
+    documentation to learn more about the ``params`` dictionary.
+    This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. panel-screenshot::
        :small-size: 800, 575
 
        from sympy import *
        from spb import *
-       x, y, a, b = symbols("x y a b")
+       x, y, a, b, xp, yp = symbols("x y a b x_p y_p")
        expr = (cos(x) + a * sin(x) * sin(y) - b * sin(x) * cos(y))**2
-       plot_contour(expr, (x, 0, pi), (y, 0, 2 * pi),
-           params={a: (1, 0, 2), b: (1, 0, 2)},
+       plot_contour(expr, prange(x, 0, xp*pi), prange(y, 0, yp * pi),
+           params={a: (1, 0, 2), b: (1, 0, 2), xp: (1, 0, 2), yp: (2, 0, 2)},
            grid=False, use_latex=False)
 
     See Also
@@ -2777,9 +2844,12 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
         A 2-tuple that specifies the position of the rotation axis.
         Depending on the value of ``parallel_axis``:
 
-        * "x": the rotation axis intersects the YZ plane at (coord1, coord2).
-        * "y": the rotation axis intersects the XZ plane at (coord1, coord2).
-        * "z": the rotation axis intersects the XY plane at (coord1, coord2).
+        * ``"x"``: the rotation axis intersects the YZ plane at
+          (coord1, coord2).
+        * ``"y"``: the rotation axis intersects the XZ plane at
+          (coord1, coord2).
+        * ``"z"``: the rotation axis intersects the XY plane at
+          (coord1, coord2).
 
         Default to ``(0, 0)``.
 
@@ -2886,17 +2956,25 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
            show_curve=True, backend=PB, aspect="cube",
            wireframe=True, wf_n1=2, wf_n2=5)
 
-    Interactive-widget plot of a goblet. Refer to ``iplot`` documentation to
-    learn more about the ``params`` dictionary.
+    Interactive-widget plot of a goblet. Refer to the interactive sub-module
+    documentation to learn more about the ``params`` dictionary.
+    This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
 
     .. code-block:: python
 
-       from sympy import *
-       from spb import *
-       t, u = symbols("t u")
+       t, phi, u, v, w = symbols("t phi u v w")
        plot3d_revolution(
-           (t, cos(u * t), t**2), (t, 0, 2), axis=(1, 0.2),
-           params={u: (2.5, 0, 6)}, n=50, backend=KB,
+           (t, cos(u * t), t**2), prange(t, 0, v), prange(phi, 0, w*pi),
+           axis=(1, 0.2),
+           params={
+               u: (2.5, 0, 6),
+               v: (2, 0, 3),
+               w: (2, 0, 2)
+           }, n=50, backend=KB, force_real_eval=True,
            wireframe=True, wf_n1=15, wf_n2=15,
            wf_rendering_kw={"width": 0.004},
            show_curve=True, curve_kw={"rendering_kw": {"width": 0.025}})
@@ -2960,11 +3038,13 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
         if params is None:
             backend = type(surface)
             n = surface[0].n[0]
+            force_real_eval = surface[0]._force_real_eval
         else:
             n = surface.backend[0].n[0]
             backend = type(surface.backend)
             curve_kw["params"] = params
             curve_kw.setdefault("imodule", imodule)
+            force_real_eval = surface.backend[0]._force_real_eval
 
         curve_kw["show"] = False
         # uniform mesh evaluation is faster
@@ -2972,6 +3052,7 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
         # link the number of discretization points between the two series
         curve_kw["n"] = n
         curve_kw.setdefault("use_cm", False)
+        curve_kw.setdefault("force_real_eval", force_real_eval)
 
         line = plot3d_parametric_line(
             x, y, z, range_t, backend=backend, **curve_kw)
@@ -3312,8 +3393,14 @@ def plot_polar(*args, **kwargs):
        Plot object containing:
        [0]: parametric cartesian line: ((exp(sin(theta)) - 2*cos(4*theta))*cos(theta), (exp(sin(theta)) - 2*cos(4*theta))*sin(theta)) for theta over (0.0, 6.283185307179586)
 
-    Interactive-widget plot of Guilloché Pattern. Refer to ``iplot``
-    documentation to learn more about the params dictionary.
+    Interactive-widget plot of Guilloché Pattern.
+    Interactive-widget plot of Guilloché Pattern. Refer to the interactive
+    sub-module documentation to learn more about the ``params`` dictionary.
+    This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify the widgets to be
+      created by Holoviz's Panel.
 
     .. panel-screenshot::
        :small-size: 800, 500
@@ -3321,7 +3408,7 @@ def plot_polar(*args, **kwargs):
        from sympy import *
        from spb import *
        import param
-       a, b, c, d, e, f, theta = symbols("a:f theta")
+       a, b, c, d, e, f, theta, tp = symbols("a:f theta tp")
        def func(n):
            t1 = (c + sin(a * theta + d))
            t2 = ((b + sin(b * theta + e)) - (c + sin(a * theta + d)))
@@ -3329,7 +3416,7 @@ def plot_polar(*args, **kwargs):
            return t1 + t2 * t3 / 2
        exprs = [func(n) for n in range(20)]
        plot_polar(
-           *exprs, (theta, 0, 2*pi),
+           *exprs, prange(theta, 0, tp*pi),
            {"line_color": "black", "line_width": 0.5},
            params={
                a: param.Integer(6, label="a"),
@@ -3338,6 +3425,7 @@ def plot_polar(*args, **kwargs):
                d: (4.7, 0, 2*pi),
                e: (1.8, 0, 2*pi),
                f: (3, 0, 5),
+               tp: (2, 0, 2)
            },
            layout = "sbl",
            ncols = 1,
@@ -3562,8 +3650,8 @@ def plot_geometry(*args, **kwargs):
        [1]: geometry entity: Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4))
        [2]: plane series: Plane(Point3D(0, 0, 0), (1, 1, 1)) over (x, -5, 5), (y, -4, 4), (z, -10, 10)
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary.
 
     .. panel-screenshot::
        :small-size: 800, 625
@@ -3798,8 +3886,8 @@ def plot_list(*args, **kwargs):
        [0]: 2D list plot
        [1]: 2D list plot
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary.
 
     .. panel-screenshot::
        :small-size: 800, 625
@@ -4008,8 +4096,9 @@ def plot3d_list(*args, **kwargs):
        [0]: 3D list plot
        [1]: 3D list plot
 
-    Interactive-widget plot of a dot following a path. Refer to ``iplot``
-    documentation to learn more about the ``params`` dictionary.
+    Interactive-widget plot of a dot following a path. Refer to the
+    interactive sub-module documentation to learn more about the ``params``
+    dictionary.
 
     .. panel-screenshot::
        :small-size: 800, 625

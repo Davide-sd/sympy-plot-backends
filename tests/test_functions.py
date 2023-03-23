@@ -644,6 +644,68 @@ def test_plot3d_wireframe(pi_options):
     assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
         for s in t.backend.series[1:])
 
+    # wireframe lines works even when interactive ranges are used
+    a, b = symbols("a, b")
+    p = plot3d(
+        cos(u * x**2 + y**2), prange(x, -2*a, 2*b), prange(y, -2*b, 2*a),
+        params = {
+            u: (1, 0, 2),
+            a: (1, 0, 2),
+            b: (1, 0, 2),
+        },
+        wireframe=True, **pi_options
+    )
+    assert isinstance(p.backend[1], Parametric3DLineSeries)
+    d1 = p.backend[1].get_data()
+    p.backend._update_interactive({u: 1, a: 0.5, b: 1.5})
+    d2 = p.backend[1].get_data()
+    for s, t in zip(d1, d2):
+        assert not np.allclose(s, t)
+
+
+def test_plot3d_parametric_surface_wireframe(pi_options):
+    # verify that wireframe=True produces the expected data series
+    x, y, u = symbols("x, y, u")
+    pi_options["n"] = 10
+
+    _plot3d_ps = lambda wf: plot3d_parametric_surface(
+        u * x * cos(y), x * sin(y), x * cos(4 * y) / 2,
+        (x, 0, pi), (y, 0, 2*pi),
+        params = {
+            u: (1, 0, 2)
+        },
+        wireframe=wf, **pi_options
+    )
+    t = _plot3d_ps(False)
+    assert isinstance(t, InteractivePlot)
+    assert len(t.backend.series) == 1
+
+    t = _plot3d_ps(True)
+    assert isinstance(t, InteractivePlot)
+    assert len(t.backend.series) == 1 + 10 + 10
+    assert isinstance(t.backend.series[0], ParametricSurfaceSeries)
+    assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
+        for s in t.backend.series[1:])
+
+    # wireframe lines works even when interactive ranges are used
+    a, b = symbols("a, b")
+    p = plot3d_parametric_surface(
+        u * x * cos(y), x * sin(y), x * cos(4 * y) / 2,
+        prange(x, -2*a, 2*b), prange(y, -2*b, 2*a),
+        params = {
+            u: (1, 0, 2),
+            a: (1, 0, 2),
+            b: (1, 0, 2),
+        },
+        wireframe=True, **pi_options
+    )
+    assert isinstance(p.backend[1], Parametric3DLineSeries)
+    d1 = p.backend[1].get_data()
+    p.backend._update_interactive({u: 1, a: 0.5, b: 1.5})
+    d2 = p.backend[1].get_data()
+    for s, t in zip(d1, d2):
+        assert not np.allclose(s, t)
+
 
 def test_plot3d_wireframe_and_labels(pi_options):
     # verify that `wireframe=True` produces the expected data series even when
@@ -681,21 +743,35 @@ def test_plot3d_wireframe_and_labels(pi_options):
         for s in t.backend.series[2:])
 
 
-def test_plot_real_imag_wireframe_true():
+def test_plot_real_imag_wireframe_true(pi_options):
     # verify that wireframe lines also work with plot_real_imag
 
     x, u = symbols("x, u")
+    pi_options["n"] = 12
+
     t = plot_real_imag(
         sqrt(x) * exp(u * x), (x, -3-3j, 3+3j),
         wireframe=True, wf_n1=8, wf_n2=6,
-        params={u: (0.25, 0, 1)}, n=12,
-        threed=True, use_latex=False, use_cm=True, show=False, imodule="panel")
+        params={u: (0.25, 0, 1)},
+        threed=True, use_latex=False, use_cm=True, **pi_options)
     assert isinstance(t, InteractivePlot)
     assert len(t.backend.series) == 2 + (8 + 6) * 2
     assert isinstance(t.backend.series[0], ComplexSurfaceSeries)
     assert isinstance(t.backend.series[1], ComplexSurfaceSeries)
     assert all(isinstance(s, ComplexParametric3DLineSeries) and s.is_interactive
         for s in t.backend.series[2:])
+
+    # wireframe lines works even when interactive ranges are used
+    a, b = symbols("a, b")
+    p = plot_real_imag(sqrt(x), prange(x, -2*a-b*2j, 2*b+a*2j), imag=False,
+        params={a: (1, 0, 2), b: (1, 0, 2)}, threed=True,
+        wireframe=True, **pi_options)
+    assert isinstance(p.backend[1], Parametric3DLineSeries)
+    d1 = p.backend[1].get_data()
+    p.backend._update_interactive({a: 0.5, b: 1.5})
+    d2 = p.backend[1].get_data()
+    for s, t in zip(d1, d2):
+        assert not np.allclose(s, t)
 
 
 ###############################################################################

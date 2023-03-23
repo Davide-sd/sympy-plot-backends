@@ -446,7 +446,7 @@ class MatplotlibBackend(Plot):
                         c = Line3DCollection(segments, **kw)
                         self._ax.add_collection(c)
                         self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
-                        self._add_handle(i, c)
+                        self._add_handle(i, c, kw, self._fig.axes[-1])
                     else:
                         lkw["label"] = s.get_label(self._use_latex)
                         kw = merge({}, lkw, s.rendering_kw,
@@ -471,7 +471,9 @@ class MatplotlibBackend(Plot):
                     l = self._ax.scatter(x, y, z, **kw)
                     if s.use_cm:
                         self._add_colorbar(l, s.get_label(self._use_latex), s.use_cm)
-                    self._add_handle(i, l)
+                        self._add_handle(i, l, kw, self._fig.axes[-1])
+                    else:
+                        self._add_handle(i, l)
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
                 zlims.append((np.amin(z), np.amax(z)))
@@ -706,6 +708,8 @@ class MatplotlibBackend(Plot):
                     skw = dict(rstride=1, cstride=1, linewidth=0.1)
                     if s.use_cm:
                         skw["facecolors"] = facecolors / 255
+                    else:
+                        skw["color"] = next(self._cl) if s.surface_color is None else s.surface_color
                     kw = merge({}, skw, s.rendering_kw)
                     c = self._ax.plot_surface(x, y, mag, **kw)
 
@@ -974,12 +978,12 @@ class MatplotlibBackend(Plot):
                         if not s.is_point:
                             segments = self.get_segments(x, y)
                             self._handles[i][0].set_segments(segments)
-                            self._handles[i][0].set_array(param)
                         else:
                             self._handles[i][0].set_offsets(np.c_[x,y])
-                            self._handles[i][0].set_array(param)
-                            self._handles[i][0].set_clim(
-                                vmin=min(param), vmax=max(param))
+
+                        self._handles[i][0].set_array(param)
+                        self._handles[i][0].set_clim(
+                            vmin=min(param), vmax=max(param))
 
                         if is_cb_added:
                             norm = self.Normalize(vmin=np.amin(param), vmax=np.amax(param))
@@ -996,7 +1000,7 @@ class MatplotlibBackend(Plot):
 
                 elif s.is_3Dline:
                     if s.is_parametric:
-                        x, y, z, _ = self.series[i].get_data()
+                        x, y, z, param = self.series[i].get_data()
                     else:
                         x, y, z = self.series[i].get_data()
 
@@ -1014,6 +1018,11 @@ class MatplotlibBackend(Plot):
                         else:
                             # scatter
                             self._handles[i][0].set_offset(np.c_[x, y, z])
+
+                    if s.is_parametric and s.use_cm:
+                        self._handles[i][0].set_array(param)
+                        kw, cax = self._handles[i][1:]
+                        self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), param=param)
                     xlims.append((np.amin(x), np.amax(x)))
                     ylims.append((np.amin(y), np.amax(y)))
                     zlims.append((np.amin(z), np.amax(z)))
@@ -1140,6 +1149,7 @@ class MatplotlibBackend(Plot):
                             self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), color_val)
                         else:
                             self._handles[i][0].set_UVC(uu, vv)
+                        self._handles[i][0].set_offsets(np.c_[xx.flatten(), yy.flatten()])
                     xlims.append((np.amin(xx), np.amax(xx)))
                     ylims.append((np.amin(yy), np.amax(yy)))
 
@@ -1147,6 +1157,7 @@ class MatplotlibBackend(Plot):
                     if not s.is_3Dsurface:
                         x, y, _, _, img, colors = s.get_data()
                         self._handles[i][0].set_data(img)
+                        self._handles[i][0].set_extent((x.min(), x.max(), y.min(), y.max()))
                     else:
                         x, y, mag, arg, facecolors, colorscale = s.get_data()
                         self._handles[i][0].remove()
