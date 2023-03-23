@@ -1,9 +1,7 @@
 from spb.defaults import cfg
 from sympy import Tuple, sympify, Expr, Dummy, S, sin, cos, Symbol
-from sympy.matrices.dense import DenseMatrix
 from sympy.physics.mechanics import Vector as MechVector
 from sympy.vector import Vector, BaseScalar
-from sympy.vector.operators import _get_coord_systems
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 from sympy.external import import_module
@@ -343,70 +341,6 @@ def get_vertices_indices(x, y, z):
                 [ij2k(cols, i - 1, j - 1), ij2k(cols, i, j - 1), ij2k(cols, i - 1, j)]
             )
     return vertices, indices
-
-
-def _split_vector(expr, ranges, fill_ranges=True):
-    """Extract the components of the given vector or matrix.
-
-    Parameters
-    ==========
-        expr : Vector, DenseMatrix or list/tuple
-        ranges : list/tuple
-
-    Returns
-    =======
-        split_expr : tuple
-            Tuple of the form (x_expr, y_expr, z_expr). If a 2D vector is
-            provided, z_expr = S.Zero.
-        ranges : list/tuple
-
-    NOTE: this function is located in utils.py module (and not in vectors.py)
-    in order to avoid circular import.
-    """
-    if isinstance(expr, Vector):
-        N = list(_get_coord_systems(expr))[0]
-        expr = expr.to_matrix(N)
-    elif isinstance(expr, MechVector):
-        expr = expr.args[0][0]
-    elif not isinstance(expr, (DenseMatrix, list, tuple, Tuple)):
-        raise TypeError(
-            "The provided expression must be a symbolic vector, or a "
-            "symbolic matrix, or a tuple/list with 2 or 3 symbolic "
-            + "elements.\nReceived type = {}".format(type(expr))
-        )
-    elif (len(expr) < 2) or (len(expr) > 3):
-        raise ValueError(
-            "This function only plots 2D or 3D vectors.\n"
-            + "Received: {}. Number of elements: {}".format(expr, len(expr))
-        )
-
-    # TODO: since plot_vector requires all ranges to be specified, this
-    # code block can be eliminated. It requires adjusting some tests...
-    if fill_ranges:
-        ranges = list(ranges)
-        fs = set()
-        if all(not callable(e) for e in expr):
-            fs = fs.union(*[e.free_symbols for e in expr])
-        if len(ranges) < len(fs):
-            fs_ranges = set().union([r[0] for r in ranges])
-            for s in fs:
-                if s not in fs_ranges:
-                    ranges.append(Tuple(s, cfg["plot_range"]["min"], cfg["plot_range"]["max"]))
-
-    if (len(ranges) == 2) and (len(expr) == 3):
-        # There might be ambiguities when working with vectors from
-        # sympy.vector. Let f(x, y) be a scalar field. The gradient of f(x, y)
-        # is going to be a 2D vector field. However, at this point it will
-        # have 3 components, one of which is zero. Let's assume the last one
-        # is zero and skip it.
-        expr = expr[:2]
-
-    if len(expr) == 2:
-        xexpr, yexpr = expr
-        return (xexpr, yexpr), ranges
-    else:
-        xexpr, yexpr, zexpr = expr
-        return (xexpr, yexpr, zexpr), ranges
 
 
 def _instantiate_backend(Backend, *series, **kwargs):

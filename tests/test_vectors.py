@@ -5,8 +5,8 @@ from spb.series import (
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries, ContourSeries,
     PlaneSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries
 )
-from spb.utils import _plot_sympify, _split_vector
-from spb.vectors import _preprocess, _series, plot_vector
+from spb.utils import _plot_sympify
+from spb.vectors import _preprocess, _series, plot_vector, _split_vector
 from spb import plot_vector, MB, prange
 from sympy import symbols, Matrix, Tuple, sin, cos, sqrt, Plane, pi
 from sympy.physics.mechanics import Vector as MechVector, ReferenceFrame
