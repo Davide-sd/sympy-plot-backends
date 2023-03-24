@@ -2485,6 +2485,23 @@ def _set_discretization_points(kwargs, pt):
 
     kwargs : dict
     """
+    deprecated_keywords = {
+        "nb_of_points": "n",
+        "nb_of_points_x": "n1",
+        "nb_of_points_y": "n2",
+        "nb_of_points_u": "n1",
+        "nb_of_points_v": "n2",
+        "points": "n"
+    }
+    for k, v in deprecated_keywords.items():
+        if k in kwargs.keys():
+            kwargs[v] = kwargs.pop(k)
+            # TODO: follow sympy doc procedure to create this deprecation
+            sympy_deprecation_warning(
+                f"`{k}` is deprecated. Use `{v}` instead.",
+                deprecated_since_version="1.12",
+                active_deprecations_target='---')
+
     if pt in [LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries]:
         if "n" in kwargs.keys():
             if hasattr(kwargs["n"], "__iter__") and (len(kwargs["n"]) > 0):
