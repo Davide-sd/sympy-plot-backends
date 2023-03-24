@@ -573,18 +573,21 @@ class BaseSeries:
                         s.add(a[-1])
             self._needs_to_be_int = list(s)
 
-            # list of functions that when lambdified, the corresponding numpy
-            # functions that don't like complex-type arguments
+            # list of sympy functions that when lambdified, the corresponding
+            # numpy functions don't like complex-type arguments
             pf = [ceiling, floor, atan2, frac]
             if self._force_real_eval is not True:
-                self._force_real_eval = any(self._expr.has(f) for f in pf)
+                check_res = [self._expr.has(f) for f in pf]
+                self._force_real_eval = any(check_res)
                 if self._force_real_eval and (self.modules is None):
+                    funcs = [f for f, c in zip(pf, check_res) if c]
                     warnings.warn("NumPy is unable to evaluate with complex "
                         "numbers some of the functions included in this "
-                        "symbolic expression. Hence, the evaluation will use "
-                        "real numbers. If you believe the resulting plot "
-                        "is incorrect, change the evaluation module by "
-                        "setting the `modules` keyword argument.")
+                        "symbolic expression: %s. " % funcs +
+                        "Hence, the evaluation will use real numbers. "
+                        "If you believe the resulting plot is incorrect, "
+                        "change the evaluation module by setting the "
+                        "`modules` keyword argument.")
             if self._functions:
                 # update lambda functions
                 self._create_lambda_func()
