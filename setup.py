@@ -28,6 +28,7 @@ _all_deps = [
 
 _dev_deps = _all_deps + [
     "pytest",
+    "pytest-mock",
     "sphinx",
     "sphinx-rtd-theme",
     "kaleido",
