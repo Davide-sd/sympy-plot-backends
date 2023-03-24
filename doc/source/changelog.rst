@@ -68,6 +68,8 @@ reset()
 * ``line_color`` and ``surface_color`` are now deprecated in favor of 
   ``color_func``.
 
+* ``plot_implicit`` supports interactive-widget plots, when ``adaptive=False``.
+
 * Removed ``tutorials`` folder containing Jupyter notebooks. The documentation
   is filled with plently of examples: these notebooks were just reduntant and
   difficult to maintain.

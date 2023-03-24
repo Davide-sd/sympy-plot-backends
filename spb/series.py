@@ -1872,25 +1872,18 @@ class ImplicitSeries(BaseSeries):
     "xscale", "yscale"]
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self._block_lambda_functions(expr)
+        # these are needed for adaptive evaluation
         expr, has_equality = self._has_equality(sympify(expr))
-        self.expr = expr
-        self.var_x = sympify(var_start_end_x[0])
-        self.start_x = float(var_start_end_x[1])
-        self.end_x = float(var_start_end_x[2])
-        self.var_y = sympify(var_start_end_y[0])
-        self.start_y = float(var_start_end_y[1])
-        self.end_y = float(var_start_end_y[2])
+        self._adaptive_expr = expr
         self.has_equality = has_equality
-        self.n1 = int(kwargs.get("n1", 1000))
-        self.n2 = int(kwargs.get("n2", 1000))
+        self.ranges = [var_start_end_x, var_start_end_y]
+        self.var_x, self.start_x, self.end_x = self.ranges[0]
+        self.var_y, self.start_y, self.end_y = self.ranges[1]
         self._label = str(expr) if label is None else label
         self._latex_label = latex(expr) if label is None else label
         self.adaptive = kwargs.get("adaptive", False)
-        self.xscale = kwargs.get("xscale", "linear")
-        self.yscale = kwargs.get("yscale", "linear")
-        self.rendering_kw = kwargs.get("rendering_kw", dict())
 
         if isinstance(expr, BooleanFunction) and (not self.adaptive):
             self.adaptive = True
@@ -1900,6 +1893,19 @@ class ImplicitSeries(BaseSeries):
                 + "automatically switched to an adaptive sampling."
             )
 
+        if isinstance(expr, BooleanFunction):
+            self._non_adaptive_expr = None
+            self._is_equality = False
+        else:
+            # these are needed for uniform meshing evaluation
+            expr, is_equality = self._preprocess_meshgrid_expression(expr)
+            self._non_adaptive_expr = expr
+            self._is_equality = is_equality
+
+        if self.is_interactive and self.adaptive:
+            raise NotImplementedError("Interactive plot with `adaptive=True` "
+                "is not supported.")
+
         # Check whether the depth is greater than 4 or less than 0.
         depth = kwargs.get("depth", 0)
         if depth > 4:
@@ -1907,6 +1913,13 @@ class ImplicitSeries(BaseSeries):
         elif depth < 0:
             depth = 0
         self.depth = 4 + depth
+        self._post_init()
+
+    @property
+    def expr(self):
+        if self.adaptive:
+            return self._adaptive_expr
+        return self._non_adaptive_expr
 
     def _has_equality(self, expr):
         # Represents whether the expression contains an Equality, GreaterThan
@@ -1936,12 +1949,15 @@ class ImplicitSeries(BaseSeries):
         return expr, has_equality
 
     def __str__(self):
-        return ("Implicit expression: %s for %s over %s and %s over %s") % (
-            str(self.expr),
+        f = lambda t: float(t) if len(t.free_symbols) == 0 else t
+
+        return self._str_helper(
+            "Implicit expression: %s for %s over %s and %s over %s") % (
+            str(self._adaptive_expr),
             str(self.var_x),
-            str((self.start_x, self.end_x)),
+            str((f(self.start_x), f(self.end_x))),
             str(self.var_y),
-            str((self.start_y, self.end_y)),
+            str((f(self.start_y), f(self.end_y))),
         )
 
     def get_data(self):
@@ -1990,21 +2006,23 @@ class ImplicitSeries(BaseSeries):
 
         k = self.depth
         interval_list = []
+        sx, sy = [float(t) for t in [self.start_x, self.start_y]]
+        ex, ey = [float(t) for t in [self.end_x, self.end_y]]
         # Create initial 32 divisions
-        xsample = np.linspace(self.start_x, self.end_x, 33)
-        ysample = np.linspace(self.start_y, self.end_y, 33)
+        xsample = np.linspace(sx, ex, 33)
+        ysample = np.linspace(sy, ey, 33)
 
         # Add a small jitter so that there are no false positives for equality.
         # Ex: y==x becomes True for x interval(1, 2) and y interval(1, 2)
         # which will draw a rectangle.
         jitterx = (
             (np.random.rand(len(xsample)) * 2 - 1)
-            * (self.end_x - self.start_x)
+            * (ex - sx)
             / 2 ** 20
         )
         jittery = (
             (np.random.rand(len(ysample)) * 2 - 1)
-            * (self.end_y - self.start_y)
+            * (ey - sy)
             / 2 ** 20
         )
         xsample += jitterx
@@ -2073,16 +2091,13 @@ class ImplicitSeries(BaseSeries):
         """
         np = import_module('numpy')
 
-        expr, equality = self._preprocess_meshgrid_expression(self.expr)
-        xarray = self._discretize(self.start_x, self.end_x, self.n1, self.xscale)
-        yarray = self._discretize(self.start_y, self.end_y, self.n2, self.yscale)
-        x_grid, y_grid = np.meshgrid(xarray, yarray)
-        func = lambdify((self.var_x, self.var_y), expr)
-        z_grid = func(x_grid, y_grid)
-        z_grid = self._correct_shape(z_grid, x_grid)
+        xarray, yarray, z_grid = self._evaluate()
+        _re, _im = np.real(z_grid), np.imag(z_grid)
+        _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
+        z_grid = _re
         z_grid[np.ma.where(z_grid < 0)] = -1
         z_grid[np.ma.where(z_grid > 0)] = 1
-        if equality:
+        if self._is_equality:
             return xarray, yarray, z_grid, 'contour'
         else:
             return xarray, yarray, z_grid, 'contourf'
@@ -2090,7 +2105,7 @@ class ImplicitSeries(BaseSeries):
     @staticmethod
     def _preprocess_meshgrid_expression(expr):
         """If the expression is a Relational, rewrite it as a single
-        expression. This method reduces code repetition.
+        expression.
 
         Returns
         =======
@@ -2117,6 +2132,28 @@ class ImplicitSeries(BaseSeries):
                 "plotting in uniform meshed plot."
             )
         return expr, equality
+
+    def get_label(self, use_latex=False, wrapper="$%s$"):
+        """Return the label to be used to display the expression.
+
+        Parameters
+        ==========
+        use_latex : bool
+            If False, the string representation of the expression is returned.
+            If True, the latex representation is returned.
+        wrapper : str
+            The backend might need the latex representation to be wrapped by
+            some characters. Default to ``"$%s$"``.
+
+        Returns
+        =======
+        label : str
+        """
+        if use_latex is False:
+            return self._label
+        if self._label == str(self._adaptive_expr):
+            return self._get_wrapped_label(self._latex_label, wrapper)
+        return self._latex_label
 
 
 class Implicit3DSeries(SurfaceBaseSeries):

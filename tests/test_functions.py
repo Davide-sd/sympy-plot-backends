@@ -572,7 +572,15 @@ def test_functions_iplot_integration(pi_options):
         params={u: (1, 0, 2)}, **pi_options)
     raises(NotImplementedError, p)
 
-    p = lambda: plot_implicit(Eq(u * x**2 + y**2, 3), (x, -3, 3), (y, -3, 3),
+    # non-boolean expression -> works fine
+    p = plot_implicit(Eq(u * x**2 + y**2, 3), (x, -3, 3), (y, -3, 3),
+        params={u: (1, 0, 2)}, **pi_options)
+    assert isinstance(p, InteractivePlot)
+    p.backend._update_interactive({u: 2})
+
+    # boolean expression -> raise error on update
+    p = lambda : plot_implicit(
+        And(Eq(u * x**2 + y**2, 3), x > y), (x, -3, 3), (y, -3, 3),
         params={u: (1, 0, 2)}, **pi_options)
     raises(NotImplementedError, p)
 

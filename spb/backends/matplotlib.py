@@ -1085,14 +1085,14 @@ class MatplotlibBackend(Plot):
                     else:
                         for c in self._handles[i][0].collections:
                             c.remove()
-                        xx, yy, zz, ones, plot_type = points
+                        xx, yy, zz, plot_type = points
                         kw = self._handles[i][1]
                         if plot_type == "contour":
                             self._handles[i][0] = self._ax.contour(
                                 xx, yy, zz, [0.0], **kw
                             )
                         else:
-                            self._handles[i][0] = self._ax.contourf(xx, yy, ones, **kw)
+                            self._handles[i][0] = self._ax.contourf(xx, yy, zz, **kw)
                         xlims.append((np.amin(xx), np.amax(xx)))
                         ylims.append((np.amin(yy), np.amax(yy)))
 

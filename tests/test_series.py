@@ -431,17 +431,17 @@ def test_lin_log_scale():
 
     s = ImplicitSeries(
         cos(x ** 2 + y ** 2) > 0, (x, 1, 5), (y, 1, 5),
-        n=10, xscale="linear", yscale="linear", adaptive=False)
+        n1=10, n2=10, xscale="linear", yscale="linear", adaptive=False)
     xx, yy, _, _ = s.get_data()
-    assert np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
-    assert np.isclose(yy[1] - yy[0], yy[-1] - yy[-2])
+    assert np.isclose(xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2])
+    assert np.isclose(yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0])
 
     s = ImplicitSeries(
         cos(x ** 2 + y ** 2) > 0, (x, 1, 5), (y, 1, 5),
         n=10, xscale="log", yscale="log", adaptive=False)
     xx, yy, _, _ = s.get_data()
-    assert not np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
-    assert not np.isclose(yy[1] - yy[0], yy[-1] - yy[-2])
+    assert not np.isclose(xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2])
+    assert not np.isclose(yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0])
 
     s = AbsArgLineSeries(cos(x), (x, 1e-05, 1e05), n=10,
         xscale="linear", adaptive=False)

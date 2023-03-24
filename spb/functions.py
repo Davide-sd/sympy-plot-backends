@@ -3178,6 +3178,11 @@ def plot_implicit(*args, **kwargs):
         at ``n`` of points. If a tuple is provided, it overrides
         ``n1`` and ``n2``.
 
+    params : dict
+        A dictionary mapping symbols to parameters. This keyword argument
+        enables the interactive-widgets plot. Learn more by reading the
+        documentation of ``iplot``.
+
     show : Boolean
         Default value is True. If set to False, the plot will not be shown.
         See `Plot` for further information.
@@ -3303,6 +3308,31 @@ def plot_implicit(*args, **kwargs):
        [3]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.064, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
        [4]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.08, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
 
+
+    Interactive-widget implicit plot. Refer to the interactive sub-module
+    documentation to learn more about the ``params`` dictionary.
+    This plot illustrates:
+
+    * the use of ``prange`` (parametric plotting range).
+    * the use of the ``params`` dictionary to specify sliders in
+      their basic form: (default, min, max).
+
+    .. panel-screenshot::
+       :small-size: 800, 500
+
+       from sympy import *
+       from spb import *
+       x, y, a, b, c, d, e = symbols("x, y, a, b, c, d, e")
+       expr = Eq(a * x**2 - b * x + c, d * y + y**2)
+       plot_implicit(expr, (x, -2, 2), prange(y, -e, e),
+           params={
+               a: (10, -15, 15),
+               b: (7, -15, 15),
+               c: (3, -15, 15),
+               d: (2, -15, 15),
+               e: (10, 1, 15),
+           }, n=400)
+
     See Also
     ========
 
@@ -3310,10 +3340,6 @@ def plot_implicit(*args, **kwargs):
     plot3d_parametric_surface, plot_geometry, plot3d_implicit, plot_list
 
     """
-    if kwargs.pop("params", None) is not None:
-        raise NotImplementedError(
-            "plot_implicit doesn't support interactive widgets.")
-
     # if the user is plotting a single expression, then he can pass in one
     # or two symbols to sort the axis. Ranges will then be automatically
     # created.
@@ -3325,7 +3351,7 @@ def plot_implicit(*args, **kwargs):
         args[2] = Tuple(args[2], -10, 10)
 
     args = _plot_sympify(args)
-    args = _check_arguments(args, 1, 2)
+    args = _check_arguments(args, 1, 2, **kwargs)
     kwargs = _set_discretization_points(kwargs, ImplicitSeries)
 
     series_kw = dict(
@@ -3333,24 +3359,25 @@ def plot_implicit(*args, **kwargs):
         n2=kwargs.pop("n2", 1000),
         depth=kwargs.pop("depth", 0),
         adaptive=kwargs.pop("adaptive", False),
-        contour_kw=kwargs.pop("contour_kw", dict())
+        contour_kw=kwargs.pop("contour_kw", dict()),
+        params=kwargs.get("params", dict())
     )
 
     series = []
-    # compute the area that should be visible on the plot
+    # attempt to compute the area that should be visible on the plot.
     xmin, xmax, ymin, ymax = oo, -oo, oo, -oo
     for (expr, r1, r2, label, rendering_kw) in args:
         skw = series_kw.copy()
         if rendering_kw is not None:
             skw["rendering_kw"] = rendering_kw
         s = ImplicitSeries(expr, r1, r2, label, **skw)
-        if s.start_x < xmin:
+        if (not s.start_x.free_symbols) and (s.start_x < xmin):
             xmin = s.start_x
-        if s.end_x > xmax:
+        if (not s.end_x.free_symbols) and (s.end_x > xmax):
             xmax = s.end_x
-        if s.start_y < ymin:
+        if (not s.start_y.free_symbols) and (s.start_y < ymin):
             ymin = s.start_y
-        if s.end_y > ymax:
+        if (not s.end_y.free_symbols) and (s.end_y > ymax):
             ymax = s.end_y
         series.append(s)
 
@@ -3358,10 +3385,16 @@ def plot_implicit(*args, **kwargs):
     rendering_kw = kwargs.pop("rendering_kw", None)
     _set_labels(series, labels, rendering_kw)
     series += _create_generic_data_series(**kwargs)
-    kwargs.setdefault("xlim", (xmin, xmax))
-    kwargs.setdefault("ylim", (ymin, ymax))
+    if (xmin != oo) and (xmax != -oo):
+        kwargs.setdefault("xlim", (xmin, xmax))
+    if (ymin != oo) and (ymax != -oo):
+        kwargs.setdefault("ylim", (ymin, ymax))
     kwargs.setdefault("xlabel", lambda use_latex: series[-1].var_x.name if not use_latex else latex(series[0].var_x))
     kwargs.setdefault("ylabel", lambda use_latex: series[-1].var_y.name if not use_latex else latex(series[0].var_y))
+
+    if kwargs.get("params", dict()):
+        return create_interactive_plot(*series, **kwargs)
+
     Backend = kwargs.pop("backend", TWO_D_B)
     return _instantiate_backend(Backend, *series, **kwargs)
 
@@ -3417,7 +3450,6 @@ def plot_polar(*args, **kwargs):
        Plot object containing:
        [0]: parametric cartesian line: ((exp(sin(theta)) - 2*cos(4*theta))*cos(theta), (exp(sin(theta)) - 2*cos(4*theta))*sin(theta)) for theta over (0.0, 6.283185307179586)
 
-    Interactive-widget plot of Guilloché Pattern.
     Interactive-widget plot of Guilloché Pattern. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
     This plot illustrates:
