@@ -14,3 +14,5 @@ K3DBackend
 .. autofunction:: spb.backends.k3d.K3DBackend.save
 
 .. autofunction:: spb.backends.k3d.K3DBackend.show
+
+.. autofunction:: spb.backends.k3d.K3DBackend.update_interactive

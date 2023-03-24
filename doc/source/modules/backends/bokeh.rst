@@ -14,3 +14,5 @@ BokehBackend
 .. autofunction:: spb.backends.bokeh.BokehBackend.save
 
 .. autofunction:: spb.backends.bokeh.BokehBackend.show
+
+.. autofunction:: spb.backends.bokeh.BokehBackend.update_interactive

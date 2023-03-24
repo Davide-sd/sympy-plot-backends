@@ -1119,7 +1119,7 @@ def test_parametric_ranges_2d_quiver(pv_options):
         params={u: (1, 0, 2), a: (1, 0, 2), b: (1, 0, 2)}, **pv_options)
     d1 = p.backend[0].get_data()
     d2 = p.backend[1].get_data()
-    p.backend._update_interactive({u: 1, a: 0.5, b: 1.5})
+    p.backend.update_interactive({u: 1, a: 0.5, b: 1.5})
     d3 = p.backend[0].get_data()
     d4 = p.backend[1].get_data()
     for s, t in zip(d1, d3):

@@ -92,7 +92,7 @@ class InteractivePlot(IPlot):
             self._output_figure = self._backend.fig
 
         def update(change):
-            self._backend._update_interactive(
+            self._backend.update_interactive(
                 {k: v.value for k, v in self._params_widgets.items()})
             if isinstance(self._backend, BB):
                 from bokeh.io import show

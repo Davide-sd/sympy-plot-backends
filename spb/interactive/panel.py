@@ -157,7 +157,7 @@ class DynamicParam(param.Parameterized):
         # NOTE: in case _backend is not an attribute, it means that this
         # class has been instantiated by create_widgets
         if hasattr(self, "_backend"):
-            self._backend._update_interactive(params)
+            self._backend.update_interactive(params)
             self._action_post_update()
 
 

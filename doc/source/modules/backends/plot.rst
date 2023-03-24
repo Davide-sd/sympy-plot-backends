@@ -25,6 +25,8 @@ In short:
 
 .. autofunction:: spb.backends.base_backend.Plot.extend
 
+.. autofunction:: spb.backends.base_backend.Plot.update_interactive
+
 .. autoattribute:: spb.backends.base_backend.Plot.colorloop
 
 .. autoattribute:: spb.backends.base_backend.Plot.colormaps

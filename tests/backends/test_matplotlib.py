@@ -394,9 +394,9 @@ def test_plot_vector_2d_normalize():
 
     # interactive plots
     p1 = make_plot_vector_2d_normalize_2(MB, False)
-    p1.backend._update_interactive({u: 1.5})
+    p1.backend.update_interactive({u: 1.5})
     p2 = make_plot_vector_2d_normalize_2(MB, True)
-    p2.backend._update_interactive({u: 1.5})
+    p2.backend.update_interactive({u: 1.5})
     uu1 = p1.backend.fig.axes[0].collections[0].U
     vv1 = p1.backend.fig.axes[0].collections[0].V
     uu2 = p2.backend.fig.axes[0].collections[0].U
@@ -422,9 +422,9 @@ def test_plot_vector_3d_normalize():
 
     # interactive plots
     p1 = make_plot_vector_3d_normalize_2(MB, False)
-    p1.backend._update_interactive({u: 1.5})
+    p1.backend.update_interactive({u: 1.5})
     p2 = make_plot_vector_3d_normalize_2(MB, True)
-    p2.backend._update_interactive({u: 1.5})
+    p2.backend.update_interactive({u: 1.5})
     seg1 = np.array(p1.fig.axes[0].collections[0].get_segments())
     seg2 = np.array(p2.fig.axes[0].collections[0].get_segments())
     # TODO: how can I test that these two quivers are different?
@@ -448,7 +448,7 @@ def test_plot_vector_2d_quiver_color_func():
     p1 = _pv2(MB, None)
     p2 = _pv2(MB, lambda x, y, u, v: u)
     p3 = _pv2(MB, lambda x, y, u, v: u)
-    p3.backend._update_interactive({a: 1.5})
+    p3.backend.update_interactive({a: 1.5})
     a1 = p1.fig.axes[0].collections[0].get_array()
     a2 = p2.fig.axes[0].collections[0].get_array()
     a3 = p3.fig.axes[0].collections[0].get_array()
@@ -486,9 +486,9 @@ def test_plot_vector_3d_quivers_color_func():
     p1 = make_plot_vector_3d_quiver_color_func_2(MB, None)
     p2 = make_plot_vector_3d_quiver_color_func_2(MB, lambda x, y, z, u, v, w: np.cos(u))
     p3 = make_plot_vector_3d_quiver_color_func_2(MB, lambda x, y, z, u, v, w: np.cos(u))
-    p1.backend._update_interactive({a: 0})
-    p2.backend._update_interactive({a: 0})
-    p3.backend._update_interactive({a: 2})
+    p1.backend.update_interactive({a: 0})
+    p2.backend.update_interactive({a: 0})
+    p3.backend.update_interactive({a: 2})
 
 
 def test_plot_vector_3d_streamlines_color_func():
@@ -748,13 +748,13 @@ def test_save():
         p.save(os.path.join(tmpdir, filename), dpi=150)
         p.close()
 
-def test_vectors_3d_update_interactive():
+def test_vectors_3dupdate_interactive():
     # Some backends do not support streamlines with iplot. Test that the
     # backends raise error.
 
     p = make_test_vectors_3d_update_interactive(MB)
     raises(NotImplementedError,
-        lambda:p.backend._update_interactive({a: 2, b: 2, c: 2}))
+        lambda:p.backend.update_interactive({a: 2, b: 2, c: 2}))
 
 
 def test_aspect_ratio_2d_issue_11764():
@@ -1014,7 +1014,7 @@ def test_plot3d_use_cm():
     assert "cmap" not in p2._handles[0][1].keys()
 
 
-def test_plot3d_update_interactive():
+def test_plot3dupdate_interactive():
     # verify that MB._update_interactive applies the original color/colormap
     # each time it gets called
     # Since matplotlib doesn't apply color/colormaps until the figure is shown,
@@ -1035,7 +1035,7 @@ def test_plot3d_update_interactive():
     p.process_series()
     kw, _, _ = p._handles[0][1:]
     c1 = kw["color"]
-    p._update_interactive({u: 2})
+    p.update_interactive({u: 2})
     kw, _, _ = p._handles[0][1:]
     c2 = kw["color"]
     assert c1 == c2
@@ -1053,7 +1053,7 @@ def test_plot3d_update_interactive():
     p.process_series()
     kw, _, _ = p._handles[0][1:]
     c1 = kw["cmap"]
-    p._update_interactive({u: 2})
+    p.update_interactive({u: 2})
     kw, _, _ = p._handles[0][1:]
     c2 = kw["cmap"]
     assert c1 == c2
@@ -1129,7 +1129,7 @@ def test_surface_interactive_color_func():
 
     p = make_test_surface_interactive_color_func(MB)
     p.process_series()
-    p._update_interactive({t: 2})
+    p.update_interactive({t: 2})
 
 
 def test_line_color_func():
@@ -1151,7 +1151,7 @@ def test_line_interactive_color_func():
 
     p = make_test_line_interactive_color_func(MB)
     p.process_series()
-    p._update_interactive({t: 2})
+    p.update_interactive({t: 2})
     assert len(p.fig.axes[0].lines) == 1
     assert isinstance(p.fig.axes[0].collections[0], matplotlib.collections.LineCollection)
     assert np.allclose(p.fig.axes[0].collections[0].get_array(), np.cos(np.linspace(-3, 3, 5)))
@@ -1205,7 +1205,7 @@ def test_label_after_plot_instantiation():
     assert f.axes[0].lines[1].get_label() == "$b^{2}$"
 
 
-def test_update_interactive():
+def testupdate_interactive():
     # quick round down of test to verify that _update_interactive doesn't
     # raise errors
 
@@ -1214,24 +1214,24 @@ def test_update_interactive():
     p = plot(sin(u * x), (x, -pi, pi), adaptive=False, n=5,
         backend=MB, show=False, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=MB, show=False, params={u: (1, 0, 2)},
         use_cm=True, is_point=False)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=MB, show=False, params={u: (1, 0, 2)},
         use_cm=True, is_point=True)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=MB, show=False, params={u: (1, 0, 2)}, use_cm=False)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_implicit(x**2 + y**2 - 4, (x, -5, 5), (y, -5, 5), adaptive=False,
         n=5, show=False, backend=MB)
@@ -1241,42 +1241,42 @@ def test_update_interactive():
         cos(u * x), sin(x), x, (x, -pi, pi), backend=MB, is_point=True,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     # line with colormap
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=MB, is_point=False,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=True)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     # line with solid color
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=MB, is_point=False,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=False)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=MB, is_point=False,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=True)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot3d(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=MB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=MB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, is_filled=False)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=MB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, is_filled=True)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     u, v = symbols("u, v")
     fx = (1 + v / 2 * cos(u / 2)) * cos(x * u)
@@ -1286,32 +1286,32 @@ def test_update_interactive():
         backend=MB, use_cm=True, n1=5, n2=5, show=False,
         params={x: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({x: 2})
+    p.backend.update_interactive({x: 2})
 
     p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
         backend=MB, n=4, show=False, params={u: (1, 0, 2)}, scalar=True)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
         backend=MB, n=4, show=False, params={u: (1, 0, 2)}, scalar=False)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_vector(Matrix([u * z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
         backend=MB, n=4, show=False, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
         backend=MB, threed=False, n=5, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
         backend=MB, threed=True, use_cm=True, n=5, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     from sympy.geometry import Line as SymPyLine
     p = plot_geometry(
@@ -1319,14 +1319,14 @@ def test_update_interactive():
         backend=MB, show=False, is_filled=False, use_latex=False,
         params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_geometry(
         SymPyLine((u, 2), (5, 4)), Circle((0, 0), u), Polygon((2, u), 3, n=6),
         backend=MB, show=False, is_filled=True, use_latex=False,
         params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
 
 def test_generic_data_series():
@@ -1406,7 +1406,7 @@ def test_plot3d_list_interactive():
     # verify that no errors are raises while updating a plot3d_list
 
     p = make_test_plot3d_list_interactive(MB)
-    p.backend._update_interactive({t: 1})
+    p.backend.update_interactive({t: 1})
 
 
 def test_contour_and_3d():
@@ -1447,11 +1447,11 @@ def test_contour_show_clabels():
     assert len(p.ax.texts) > 0
 
     p = make_test_contour_show_clabels_2(MB, False)
-    p.backend._update_interactive({Symbol("u"): 2})
+    p.backend.update_interactive({Symbol("u"): 2})
     assert len(p.backend.ax.texts) == 0
 
     p = make_test_contour_show_clabels_2(MB, True)
-    p.backend._update_interactive({Symbol("u"): 2})
+    p.backend.update_interactive({Symbol("u"): 2})
     assert len(p.backend.ax.texts) > 0
 
 
@@ -1498,11 +1498,11 @@ def test_color_func_expr():
     f3 = p3.fig
 
     # update the figure with new parameters: no errors should be raised
-    p1.backend._update_interactive({u: 0.5})
+    p1.backend.update_interactive({u: 0.5})
     # interactive plots with streamlines are not implemented
     raises(NotImplementedError,
-        lambda : p2.backend._update_interactive({u: 0.5}))
-    p3.backend._update_interactive({u: 0.5})
+        lambda : p2.backend.update_interactive({u: 0.5}))
+    p3.backend.update_interactive({u: 0.5})
 
 
     

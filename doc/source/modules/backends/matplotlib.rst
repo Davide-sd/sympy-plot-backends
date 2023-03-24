@@ -18,3 +18,5 @@ MatplotlibBackend
 .. autofunction:: spb.backends.matplotlib.MatplotlibBackend.save
 
 .. autofunction:: spb.backends.matplotlib.MatplotlibBackend.show
+
+.. autofunction:: spb.backends.matplotlib.MatplotlibBackend.update_interactive

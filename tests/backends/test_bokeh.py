@@ -258,9 +258,9 @@ def test_plot_vector_2d_normalize():
     assert np.allclose(m1, m2)
 
     p1 = make_plot_vector_2d_normalize_2(BB, False)
-    p1.backend._update_interactive({u: 1.5})
+    p1.backend.update_interactive({u: 1.5})
     p2 = make_plot_vector_2d_normalize_2(BB, True)
-    p2.backend._update_interactive({u: 1.5})
+    p2.backend.update_interactive({u: 1.5})
     x01 = p1.fig.renderers[0].data_source.data["x0"]
     x11 = p1.fig.renderers[0].data_source.data["x1"]
     y01 = p1.fig.renderers[0].data_source.data["y0"]
@@ -692,7 +692,7 @@ def test_line_interactive_color_func():
     # color function is applied.
 
     p = make_test_line_interactive_color_func(BB)
-    p._update_interactive({t: 2})
+    p.update_interactive({t: 2})
     assert isinstance(p.fig.renderers[0].glyph, bokeh.models.glyphs.Line)
     assert isinstance(p.fig.renderers[1].glyph, bokeh.models.glyphs.MultiLine)
 
@@ -708,7 +708,7 @@ def test_line_color_plot():
     assert p.fig.right[0].title == "sin(x)"
 
 
-def test_update_interactive():
+def testupdate_interactive():
     # quick round down of test to verify that _update_interactive doesn't
     # raise errors
 
@@ -717,51 +717,51 @@ def test_update_interactive():
     p = plot(sin(u * x), (x, -pi, pi), adaptive=False, n=5,
         backend=BB, show=False, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=BB, show=False, params={u: (1, 0, 2)},
         use_cm=True, is_point=False)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=BB, show=False, params={u: (1, 0, 2)},
         use_cm=True, is_point=True)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=BB, show=False, params={u: (1, 0, 2)}, use_cm=False)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=BB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
         backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=True)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
         backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=False,
         scalar=True)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
         backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=False,
         scalar=False)
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
         backend=BB, threed=False, n=5, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     from sympy.geometry import Line as SymPyLine
     p = plot_geometry(
@@ -769,7 +769,7 @@ def test_update_interactive():
         backend=BB, show=False, is_filled=True, use_latex=False,
         params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
 
 def test_generic_data_series():
@@ -798,7 +798,7 @@ def test_color_func_expr():
     f2 = p2.fig
 
     # update the figure with new parameters: no errors should be raised
-    p1.backend._update_interactive({u: 0.5})
+    p1.backend.update_interactive({u: 0.5})
     # Bokeh don't raise an error because it doesn't apply a colormap
     # to streamlines
-    p2.backend._update_interactive({u: 0.5})
+    p2.backend.update_interactive({u: 0.5})

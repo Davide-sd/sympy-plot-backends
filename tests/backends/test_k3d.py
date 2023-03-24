@@ -222,9 +222,9 @@ def test_plot_vector_3d_normalize():
     assert not np.allclose(p1.fig.objects[0].vectors, p2.fig.objects[0].vectors)
 
     p1 = make_plot_vector_3d_normalize_2(KB, False)
-    p1.backend._update_interactive({u: 1.5})
+    p1.backend.update_interactive({u: 1.5})
     p2 = make_plot_vector_3d_normalize_2(KB, True)
-    p2.backend._update_interactive({u: 1.5})
+    p2.backend.update_interactive({u: 1.5})
     assert not np.allclose(p1.fig.objects[0].vectors, p2.fig.objects[0].vectors)
 
 
@@ -239,7 +239,7 @@ def test_plot_vector_3d_quivers_color_func():
     p2 = make_plot_vector_3d_quiver_color_func_2(KB, lambda x, y, z, u, v, w: np.cos(u))
     p3 = make_plot_vector_3d_quiver_color_func_2(KB, lambda x, y, z, u, v, w: np.cos(u))
     assert not np.allclose(p1.fig.objects[0].colors, p2.fig.objects[0].colors)
-    p3.backend._update_interactive({a: 2})
+    p3.backend.update_interactive({a: 2})
     assert not np.allclose(p2.fig.objects[0].colors, p3.fig.objects[0].colors)
 
 
@@ -418,13 +418,13 @@ def test_save():
             include_js=True, parameter=True))
 
 
-def test_vectors_3d_update_interactive():
+def test_vectors_3dupdate_interactive():
     # Some backends do not support streamlines with iplot. Test that the
     # backends raise error.
 
     p = make_test_vectors_3d_update_interactive(KB)
     raises(NotImplementedError,
-        lambda:p.backend._update_interactive({a: 2, b: 2, c: 2}))
+        lambda:p.backend.update_interactive({a: 2, b: 2, c: 2}))
 
 
 def test_backend_latex_labels():
@@ -536,7 +536,7 @@ def test_surface_interactive_color_func():
     # color function is applied.
 
     p = make_test_surface_interactive_color_func(KB)
-    p._update_interactive({t: 2})
+    p.update_interactive({t: 2})
     assert not np.allclose(p.fig.objects[0].attribute, p.fig.objects[1].attribute)
     assert not np.allclose(p.fig.objects[2].attribute, p.fig.objects[3].attribute)
 
@@ -582,7 +582,7 @@ def test_k3d_high_aspect_ratio_meshes():
     assert p1.fig.clipping_planes != p2.fig.clipping_planes
 
 
-def test_update_interactive():
+def testupdate_interactive():
     # quick round down of test to verify that _update_interactive doesn't
     # raise errors
 
@@ -593,19 +593,19 @@ def test_update_interactive():
         cos(u * x), sin(x), x, (x, -pi, pi), backend=KB, is_point=True,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     # line
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=KB, is_point=False,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot3d(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=KB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     u, v = symbols("u, v")
     fx = (1 + v / 2 * cos(u / 2)) * cos(x * u)
@@ -615,17 +615,17 @@ def test_update_interactive():
         backend=KB, use_cm=True, n1=5, n2=5, show=False,
         params={x: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({x: 2})
+    p.backend.update_interactive({x: 2})
 
     p = plot_vector(Matrix([u * z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
         backend=KB, n=4, show=False, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
         backend=KB, threed=True, use_cm=True, n=5, params={u: (1, 0, 2)})
     p.backend.process_series()
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
 
 def test_plot3d_list_use_cm_False():
@@ -672,7 +672,7 @@ def test_plot3d_list_interactive():
     # verify that no errors are raises while updating a plot3d_list
 
     p = make_test_plot3d_list_interactive(MB)
-    p.backend._update_interactive({t: 1})
+    p.backend.update_interactive({t: 1})
 
 
 def test_color_func_expr():
@@ -682,4 +682,4 @@ def test_color_func_expr():
     # compute the original figure: no errors should be raised
     f3 = p3.fig
     # update the figure with new parameters: no errors should be raised
-    p3.backend._update_interactive({u: 0.5})
+    p3.backend.update_interactive({u: 0.5})

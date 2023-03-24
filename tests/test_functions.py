@@ -576,7 +576,7 @@ def test_functions_iplot_integration(pi_options):
     p = plot_implicit(Eq(u * x**2 + y**2, 3), (x, -3, 3), (y, -3, 3),
         params={u: (1, 0, 2)}, **pi_options)
     assert isinstance(p, InteractivePlot)
-    p.backend._update_interactive({u: 2})
+    p.backend.update_interactive({u: 2})
 
     # boolean expression -> raise error on update
     p = lambda : plot_implicit(
@@ -665,7 +665,7 @@ def test_plot3d_wireframe(pi_options):
     )
     assert isinstance(p.backend[1], Parametric3DLineSeries)
     d1 = p.backend[1].get_data()
-    p.backend._update_interactive({u: 1, a: 0.5, b: 1.5})
+    p.backend.update_interactive({u: 1, a: 0.5, b: 1.5})
     d2 = p.backend[1].get_data()
     for s, t in zip(d1, d2):
         assert not np.allclose(s, t)
@@ -709,7 +709,7 @@ def test_plot3d_parametric_surface_wireframe(pi_options):
     )
     assert isinstance(p.backend[1], Parametric3DLineSeries)
     d1 = p.backend[1].get_data()
-    p.backend._update_interactive({u: 1, a: 0.5, b: 1.5})
+    p.backend.update_interactive({u: 1, a: 0.5, b: 1.5})
     d2 = p.backend[1].get_data()
     for s, t in zip(d1, d2):
         assert not np.allclose(s, t)
@@ -776,7 +776,7 @@ def test_plot_real_imag_wireframe_true(pi_options):
         wireframe=True, **pi_options)
     assert isinstance(p.backend[1], Parametric3DLineSeries)
     d1 = p.backend[1].get_data()
-    p.backend._update_interactive({a: 0.5, b: 1.5})
+    p.backend.update_interactive({a: 0.5, b: 1.5})
     d2 = p.backend[1].get_data()
     for s, t in zip(d1, d2):
         assert not np.allclose(s, t)
