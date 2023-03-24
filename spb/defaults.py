@@ -32,8 +32,6 @@ def _hardcoded_defaults():
             "theme": "caliber",
             # How will the plot resizes to fill the available space.
             "sizing_mode": "stretch_width",
-            # Activate/Deactivate automatic update event on panning
-            "update_event": False,
             # Show/hide main grid
             "grid": True,
             # Show/hide minor grid

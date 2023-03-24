@@ -122,8 +122,6 @@ Let's now discuss a few customization options:
    # Find more Bokeh themes at the following page:
    # https://docs.bokeh.org/en/latest/docs/reference/themes.html
    cfg["bokeh"]["theme"] = "caliber"
-   # Activate automatic update event on panning
-   cfg["bokeh"]["update_event"] = True
    # Turn on the grid on Bokeh figures
    cfg["bokeh"]["grid"] = True
    # Show minor grids

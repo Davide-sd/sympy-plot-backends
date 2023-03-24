@@ -215,12 +215,7 @@ class BokehBackend(Plot):
           ``dict(line_width=2, line_alpha=0.8)``
 
     theme : str, optional
-        Set the theme. Default to ``"dark_minimal"``. Find more Bokeh themes
-        at [#fn2]_ .
-
-    update_event : bool, optional
-        If True, the backend will update the data series over the visibile
-        range whenever a pan-event is triggered. Default to True.
+        Set the theme. Find more Bokeh themes at [#fn2]_ .
 
     annotations : list, optional
         A list of dictionaries specifying the type of annotation
@@ -264,7 +259,7 @@ class BokehBackend(Plot):
 
     _library = "bokeh"
     _allowed_keys = Plot._allowed_keys + [
-        "markers", "annotations", "fill", "rectangles", "update_event"]
+        "markers", "annotations", "fill", "rectangles"]
 
     colorloop = []
     colormaps = []
@@ -305,8 +300,6 @@ class BokehBackend(Plot):
         self._set_labels()
 
         self._theme = kwargs.get("theme", cfg["bokeh"]["theme"])
-        self._update_event = kwargs.get("update_event",
-            cfg["bokeh"]["update_event"])
 
         self._run_in_notebook = False
         if self._get_mode() == 0:
@@ -362,8 +355,6 @@ class BokehBackend(Plot):
             self._fig.grid.minor_grid_line_alpha = cfg["bokeh"]["minor_grid_line_alpha"]
             self._fig.grid.minor_grid_line_color = self._fig.grid.grid_line_color[0]
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
-        if self._update_event:
-            self._fig.on_event(self.bokeh.events.PanEnd, self._pan_update)
 
     @property
     def fig(self):
@@ -592,26 +583,6 @@ class BokehBackend(Plot):
             self._fig.legend.click_policy = "hide"
             self._fig.add_layout(self._fig.legend[0], "right")
 
-    def _pan_update(self):
-        rend = self.fig.renderers
-        for i, s in enumerate(self.series):
-            if s.is_2Dline and not s.is_parametric:
-                s.start = self._fig.x_range.start
-                s.end = self._fig.x_range.end
-                x, y = s.get_data()
-                source = {"xs": x, "ys": y}
-                rend[i].data_source.data.update(source)
-            elif s.is_complex and s.is_2Dline and s.is_parametric and s.use_cm:
-                # this is when absarg=True
-                s.start = complex(self._fig.x_range.start)
-                s.end = complex(self._fig.x_range.end)
-                x, y, param = s.get_data()
-                xs, ys, us = self._get_segments(x, y, param)
-                rend[i].data_source.data.update({"xs": xs, "ys": ys, "us": us})
-                if i in self._handles.keys():
-                    cb = self._handles[i]
-                    cb.color_mapper.update(low=min(us), high=max(us))
-
     def _get_img(self, img):
         np = import_module('numpy')
         new_img = np.zeros(img.shape[:2], dtype=np.uint32)
@@ -810,30 +781,16 @@ class BokehBackend(Plot):
             self._fig.output_backend = "canvas"
             self.bokeh.io.export_png(self._fig, filename=path)
 
-    def _launch_server(self, doc):
-        """By launching a server application, we can use Python callbacks
-        associated to events.
-        """
-        doc.theme = self._theme
-        doc.add_root(self._fig)
-
     def show(self):
         """Visualize the plot on the screen."""
         if len(self._fig.renderers) != len(self.series):
             self._process_series(self._series)
-        if self._run_in_notebook and self._update_event:
-            # TODO: the current way we are launching the server only works
-            # within Jupyter Notebook. Is there another way of launching
-            # it so that it can run from any Python interpreter?
-            self.bokeh.plotting.show(self._launch_server)
-        else:
-            # if the backend it running from a python interpreter, the server
-            # wont' work. Hence, launch a static figure, which doesn't listen
-            # to events (no pan-auto-update).
-            curdoc = self.bokeh.io.curdoc
-
-            curdoc().theme = self._theme
-            self.bokeh.plotting.show(self._fig)
+        # if the backend it running from a python interpreter, the server
+        # wont' work. Hence, launch a static figure, which doesn't listen
+        # to events (no pan-auto-update).
+        curdoc = self.bokeh.io.curdoc
+        curdoc().theme = self._theme
+        self.bokeh.plotting.show(self._fig)
 
     def _get_quivers_data(self, xs, ys, u, v, **quiver_kw):
         """Compute the segments coordinates to plot quivers.

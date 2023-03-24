@@ -50,12 +50,11 @@ def test_cfg_plotly_keys():
 
 
 def test_cfg_bokeh_keys():
-    bokeh_keys = ["theme", "sizing_mode", "update_event", "show_minor_grid",
+    bokeh_keys = ["theme", "sizing_mode", "show_minor_grid",
         "minor_grid_line_alpha", "minor_grid_line_dash", "grid", "use_latex"]
     for k in bokeh_keys:
         assert k in cfg["bokeh"].keys()
     assert isinstance(cfg["bokeh"]["sizing_mode"], str)
-    assert isinstance(cfg["bokeh"]["update_event"], bool)
     assert isinstance(cfg["bokeh"]["grid"], bool)
     assert isinstance(cfg["bokeh"]["show_minor_grid"], bool)
     assert isinstance(cfg["bokeh"]["minor_grid_line_alpha"], (float, int))

@@ -855,20 +855,14 @@ def iplot(*series, show=True, **kwargs):
        great. Therefore, the use of ``PlotlyBackend`` or ``BokehBackend`` is
        encouraged.
 
-    7. Once this module has been loaded, there could be problems with all
-       other plotting functions when using ``BokehBackend``, namely the
-       figure won't show up in the output cell. If that is the case, we might
-       try to turn off automatic updates on panning by setting
-       ``update_event=False`` in the function call.
-
-    8. When ``BokehBackend`` is used:
+    7. When ``BokehBackend`` is used:
 
        * the user-defined theme won't be applied.
        * rendering of gradient lines is slow.
        * color bars might not update their ranges.
 
-    9. Once this module has been loaded and ``iplot`` has been executed, the
-       safest procedure to restart Jupyter Notebook's kernel is the following:
+    8. Once this module has been loaded and executed, the safest procedure
+    to restart Jupyter Notebook's kernel is the following:
 
        * save the current notebook.
        * close the notebook and Jupyter server.

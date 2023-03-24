@@ -123,11 +123,7 @@ Finally, let's use Bokeh:
 
 Here, we can:
 
-* Click and drag to pan the plot around. **Once we are done panning, the plot
-  automatically updates all the data series according to the new range**.
-  This is a wonderful feature of Bokeh, which allows us to type less and
-  explore more. We can disable this behaviour by setting ``update_event=False``
-  in the function call.
+* Click and drag to pan the plot around.
 * Click and drag the axis to pan the plot only on one direction.
 * Click the legend entries to hide/show the data series.
 * Move the cursor over a line: a tooltip will show the coordinate of that

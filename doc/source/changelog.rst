@@ -65,6 +65,9 @@ reset()
 
 * ``color_func`` now support symbolic expressions.
 
+* ``line_color`` and ``surface_color`` are now deprecated in favor of 
+  ``color_func``.
+
 * ``MatplotlibBackend``:
 
   * implemented support for ``ipywidgets``.
@@ -76,7 +79,11 @@ reset()
 
   * implemented support for ``ipywidgets``.
 
-* ``BokehBackend``: improved support for Bokeh 3.0.
+* ``BokehBackend``:
+
+  * improved support for Bokeh 3.0.
+  * removed ``update_event`` as it was a redundant feature now that the module
+    is fully parametric.
 
 * ``plot_contour``: added keyword argument to show/hide contour labels:
     ``clabels=True/False``.
