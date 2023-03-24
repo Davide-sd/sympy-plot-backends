@@ -68,6 +68,10 @@ reset()
 * ``line_color`` and ``surface_color`` are now deprecated in favor of 
   ``color_func``.
 
+* Removed ``tutorials`` folder containing Jupyter notebooks. The documentation
+  is filled with plently of examples: these notebooks were just reduntant and
+  difficult to maintain.
+
 * ``MatplotlibBackend``:
 
   * implemented support for ``ipywidgets``.

@@ -4,7 +4,6 @@
 [![Conda (channel only)](https://img.shields.io/conda/vn/davide_sd/sympy_plot_backends?color=%2340BA12&label=conda%20package)](https://anaconda.org/Davide_sd/sympy_plot_backends)
 [![Documentation Status](https://readthedocs.org/projects/sympy-plot-backends/badge/?version=latest)](http://sympy-plot-backends.readthedocs.io/)
 ![Coverage](https://github.com/Davide-sd/sympy-plot-backends/blob/master/coverage.svg)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Davide-sd/sympy-plot-backends/HEAD)
 
 
 This module contains a few plotting backends that can be used with [SymPy](github.com/sympy/sympy) and [Numpy](https://github.com/numpy/numpy). A backend represents the plotting library: it provides the necessary functionalities to quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots, vector plots, complex plots).
@@ -53,13 +52,9 @@ a PR.
 
 ## Explore the Capabilities
 
-To explore the capabilities before the installation, you can:
-
-1. [Read the documentation](https://sympy-plot-backends.readthedocs.io/),
-   download this repository and follow the tutorials inside the `tutorials`
-   folder.
-2. Click the following button to run the tutorials with Binder (note that
-   Binder is slow to load the module and execute the commands). [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Davide-sd/sympy-plot-backends/HEAD)
+[Read the documentation](https://sympy-plot-backends.readthedocs.io/) to 
+explore the capabilities before the installation, which is filled with
+examples.
 
 
 ## Installation
