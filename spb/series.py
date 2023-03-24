@@ -16,6 +16,7 @@ from sympy.external import import_module
 from sympy.printing.pycode import PythonCodePrinter
 from sympy.printing.precedence import precedence
 from sympy.core.sorting import default_sort_key
+from sympy.utilities.exceptions import sympy_deprecation_warning
 import warnings
 
 class IntervalMathPrinter(PythonCodePrinter):
@@ -607,11 +608,21 @@ class BaseSeries:
 
     def _line_surface_color(self, prop, val):
         """This method enables back-compatibility with old sympy.plotting"""
+        if val:
+            if callable(val) or isinstance(val, Expr):
+                use = "color_func"
+            else:
+                use = "rendering_kw"
+            # TODO: follow sympy doc procedure to create this deprecation
+            sympy_deprecation_warning(
+                f"`{prop[1:]}` is deprecated. Use `{use}` instead.",
+                deprecated_since_version="1.12",
+                active_deprecations_target='---')
         # NOTE: color_func is set inside the init method of the series.
         # If line_color/surface_color is not a callable, then color_func will
         # be set to None.
         setattr(self, prop, val)
-        if callable(val):
+        if callable(val) or isinstance(val, Expr):
             self.color_func = val
             setattr(self, prop, None)
         elif val is not None:
