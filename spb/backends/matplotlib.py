@@ -558,7 +558,7 @@ class MatplotlibBackend(Plot):
                         if (not s.use_quiver_solid_color) and s.use_cm:
                             color_val = mag
                             if s.color_func is not None:
-                                color_val = s.color_func(xx, yy, uu0, vv0)
+                                color_val = s.eval_color_func(xx, yy, uu0, vv0)
                             skw["cmap"] = next(self._cm)
                             skw["color"] = color_val
                             kw = merge({}, skw, s.rendering_kw)
@@ -591,7 +591,7 @@ class MatplotlibBackend(Plot):
                             # visible or if use_cm=False
                             color_val = mag
                             if s.color_func is not None:
-                                color_val = s.color_func(xx, yy, uu0, vv0)
+                                color_val = s.eval_color_func(xx, yy, uu0, vv0)
                             qkw["cmap"] = next(self._cm)
                             kw = merge({}, qkw, s.rendering_kw)
                             q = self._ax.quiver(xx, yy, uu, vv, color_val, **kw)
@@ -656,7 +656,7 @@ class MatplotlibBackend(Plot):
                             # I'll keep things simpler.
                             color_val = mag
                             if s.color_func is not None:
-                                color_val = s.color_func(
+                                color_val = s.eval_color_func(
                                     xx, yy, zz, uu0, vv0, zz0)
                             qkw["cmap"] = next(self._cm)
                             qkw["array"] = color_val.flatten()
@@ -1111,7 +1111,7 @@ class MatplotlibBackend(Plot):
                     if "array" in kw.keys():
                         color_val = mag
                         if s.color_func is not None:
-                            color_val = s.color_func(xx, yy, zz, uu0, vv0, ww0)
+                            color_val = s.eval_color_func(xx, yy, zz, uu0, vv0, ww0)
                         kw["array"] = color_val.flatten()
 
                     self._handles[i][0] = self._ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
@@ -1142,7 +1142,7 @@ class MatplotlibBackend(Plot):
                         kw, is_cb_added, cax = self._handles[i][1:]
                         color_val = mag
                         if s.color_func is not None:
-                            color_val = s.color_func(xx, yy, uu0, vv0)
+                            color_val = s.eval_color_func(xx, yy, uu0, vv0)
 
                         if is_cb_added:
                             self._handles[i][0].set_UVC(uu, vv, color_val)

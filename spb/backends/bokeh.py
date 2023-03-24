@@ -498,7 +498,7 @@ class BokehBackend(Plot):
                         **s.rendering_kw.copy())
                     color_val = mag
                     if s.color_func is not None:
-                        color_val = s.color_func(x, y, u0, v0)
+                        color_val = s.eval_color_func(x, y, u0, v0)
                     color_val = np.tile(color_val.flatten(), 3)
                     data["color_val"] = color_val
 
@@ -722,7 +722,7 @@ class BokehBackend(Plot):
                         )
                         color_val = mag
                         if s.color_func is not None:
-                            color_val = s.color_func(x, y, u0, v0)
+                            color_val = s.eval_color_func(x, y, u0, v0)
                         color_val = np.tile(color_val.flatten(), 3)
                         data["color_val"] = color_val
                         rend[i].data_source.data.update(data)

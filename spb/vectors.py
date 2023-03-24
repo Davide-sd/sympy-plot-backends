@@ -338,16 +338,20 @@ def plot_vector(*args, **kwargs):
         Default to `MatplotlibBackend`.
 
     color_func : callable, optional
-        A numerical function to map quivers (or streamlines) colors to a
-        colormap. It must be:
+        Define the quiver/streamlines color mapping when ``use_cm=True``.
+        It can either be:
 
-        * ``f(x, y, u, v)`` for a 2D vector field. Further, ``scalar=False``
-          must be set in order to hide the contour plot so that a colormap
-          is applied to quivers/streamlines.
-        * ``f(x, y, z, u, v, w)`` for a 3D vector field.
+        * A numerical function supporting vectorization. The arity can be:
 
-        Default to None, which will map colors according to the magnitude of
-        the vector.
+          1. ``f(x, y, u, v)`` for a 2D vector field. Further, ``scalar=False``
+             must be set in order to hide the contour plot so that a colormap
+             is applied to quivers/streamlines.
+          2. ``f(x, y, z, u, v, w)`` for a 3D vector field.
+
+        * A symbolic expression having at most as many free symbols as
+          ``expr``. This only works for quivers plot.
+        * None: the default value, which will map colors according to the
+          magnitude of the vector.
 
     contour_kw : dict
         A dictionary of keywords/values which is passed to the backend

@@ -349,9 +349,14 @@ def plot(*args, **kwargs):
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
 
-    color_func : callable, optional
-        A function of 2 variables, x, y (the points computed by the internal
-        algorithm) which defines the line color. Default to None.
+    color_func : callable or Expr, optional
+        Define the line color mapping. It can either be:
+
+        * A numerical function of 2 variables, x, y (the points computed by
+          the internal algorithm) supporting vectorization.
+        * A symbolic expression having at most as many free symbols as
+          ``expr``.
+        * None: the default value (no color mapping).
 
     detect_poles : boolean, optional
         Chose whether to detect and correctly plot poles.
@@ -770,14 +775,18 @@ def plot_parametric(*args, **kwargs):
         Default to ``MatplotlibBackend``.
 
     color_func : callable, optional
-        A function defining the line color. The arity can be:
+        Define the line color mapping when ``use_cm=True``. It can either be:
 
-        * 1 argument: ``f(t)``, where ``t`` is the parameter.
-        * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of the
-          points.
-        * 3 arguments: ``f(x, y, t)``.
+        * A numerical function supporting vectorization. The arity can be:
 
-        Default to None.
+          * 1 argument: ``f(t)``, where ``t`` is the parameter.
+          * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of
+            the points.
+          * 3 arguments: ``f(x, y, t)``.
+
+        * A symbolic expression having at most as many free symbols as
+          ``expr_x`` or ``expr_y``.
+        * None: the default value (color mapping applied to the parameter).
 
     force_real_eval : boolean, optional
         Default to False, with which the numerical evaluation is attempted
@@ -1248,14 +1257,18 @@ def plot3d_parametric_line(*args, **kwargs):
         Default to ``MatplotlibBackend``.
 
     color_func : callable, optional
-        A function defining the line color. The arity can be:
+        Define the line color mapping when ``use_cm=True``. It can either be:
 
-        * 1 argument: ``f(t)``, where ``t`` is the parameter.
-        * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates of
-          the points.
-        * 4 arguments: ``f(x, y, z, t)``.
+        * A numerical function supporting vectorization. The arity can be:
 
-        Default to None.
+          * 1 argument: ``f(t)``, where ``t`` is the parameter.
+          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
+            of the points.
+          * 4 arguments: ``f(x, y, z, t)``.
+
+        * A symbolic expression having at most as many free symbols as
+          ``expr_x`` or ``expr_y`` or ``expr_z``.
+        * None: the default value (color mapping applied to the parameter).
 
     force_real_eval : boolean, optional
         Default to False, with which the numerical evaluation is attempted
@@ -1756,9 +1769,15 @@ def plot3d(*args, **kwargs):
         Default to ``MatplotlibBackend``.
 
     color_func : callable, optional
-        A function of 3 variables, x, y, z (the points computed by the
-        internal algorithm) which defines the surface color when
-        ``use_cm=True``. Default to None.
+        Define the surface color mapping when ``use_cm=True``.
+        It can either be:
+
+        * A numerical function of 3 variables, x, y, z (the points computed
+          by the internal algorithm) supporting vectorization.
+        * A symbolic expression having at most as many free symbols as
+          ``expr``.
+        * None: the default value (color mapping applied to the z-value of
+          the surface).
 
     force_real_eval : boolean, optional
         Default to False, with which the numerical evaluation is attempted
@@ -2077,16 +2096,21 @@ def plot3d_parametric_surface(*args, **kwargs):
         Default to ``MatplotlibBackend``.
 
     color_func : callable, optional
-        A function defining the surface color when ``use_cm=True``. The arity
-        can be:
+        Define the surface color mapping when ``use_cm=True``.
+        It can either be:
 
-        * 1 argument: ``f(u)``, where ``u`` is the first parameter.
-        * 2 arguments: ``f(u, v)`` where ``u, v`` are the parameters.
-        * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates of
-          the points.
-        * 5 arguments: ``f(x, y, z, u, v)``.
+        * A numerical function supporting vectorization. The arity can be:
 
-        Default to None.
+          * 1 argument: ``f(u)``, where ``u`` is the first parameter.
+          * 2 arguments: ``f(u, v)`` where ``u, v`` are the parameters.
+          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates of
+            the points.
+          * 5 arguments: ``f(x, y, z, u, v)``.
+
+        * A symbolic expression having at most as many free symbols as
+          ``expr_x`` or ``expr_y`` or ``expr_z``.
+        * None: the default value (color mapping applied to the z-value of
+          the surface).
 
     force_real_eval : boolean, optional
         Default to False, with which the numerical evaluation is attempted
@@ -2472,16 +2496,16 @@ def plot3d_spherical(*args, **kwargs):
        import param
        n, m = symbols("n, m")
        phi, theta = symbols("phi, theta", real=True)
-       r = abs(re(Ynm(n, m, theta, phi).expand(func=True).rewrite(sin).expand()))
+       r = re(Ynm(n, m, theta, phi).expand(func=True).rewrite(sin).expand())
        plot3d_spherical(
-           r, (theta, 0, pi), (phi, 0, 2*pi),
+           abs(r), (theta, 0, pi), (phi, 0, 2*pi),
            params = {
-               n: param.Integer(0, label="n"),
+               n: param.Integer(2, label="n"),
                m: param.Integer(0, label="m"),
            },
            force_real_eval=True,
-           backend=KB, imodule="panel"
-        )
+           use_cm=True, color_func=r,
+           backend=KB, imodule="panel")
 
     See Also
     ========
@@ -3997,7 +4021,7 @@ def plot3d_list(*args, **kwargs):
         Default to `MatplotlibBackend`.
 
     color_func : callable, optional
-        A function of 3 variables, x, y, z which defines the line color.
+        A numerical function of 3 variables, x, y, z defining the line color.
         Default to None. Requires ``use_cm=True`` in order to be applied.
 
     is_point : boolean, optional

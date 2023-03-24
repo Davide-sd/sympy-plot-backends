@@ -218,8 +218,8 @@ def make_plot_vector_3d_quiver_color_func_1(B, cf):
 
 def make_plot_vector_3d_quiver_color_func_2(B, cf):
     return plot_vector(
-        Matrix([a * z, y, x]), (x, -2, 2), (y, -2, 2), (z, -2, 2),
-        backend=B, color_func=cf, params={a: (0, 0, 2)}, **options())
+        Matrix([a * z, a * y, a * x]), (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        backend=B, color_func=cf, params={a: (1, 0, 2)}, **options())
 
 
 def make_plot_vector_3d_streamlines_color_func(B, cf):
@@ -597,3 +597,16 @@ def make_test_contour_show_clabels_2(B, clabels):
     return plot_contour(cos(u*x*y), (x, -2, 2), (y, -2, 2),
         params={u: (1, 0, 1)}, backend=B, is_filled=False, clabels=clabels,
         **options())
+
+
+def make_test_color_func_expr_1(B, streamlines=False):
+    return plot_vector([cos(u * y), -sin(x)], (x, -5, 5), (y, -5, 5),
+        streamlines=streamlines, use_cm=True, color_func=cos(x**2+y**2),
+        backend=B, params={u: (1, 0, 1)}, scalar=False, **options())
+
+
+def make_test_color_func_expr_2(B):
+    return plot_vector(
+        Matrix([u*z, -x, y]), (x, -3, 3), (y, -3, 3), (z, -3, 3),
+        backend=B, use_cm=True, color_func=sqrt(x**2+y**2),
+        params={u: (1, 0, 1)}, **options())

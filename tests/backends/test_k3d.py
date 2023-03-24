@@ -236,10 +236,10 @@ def test_plot_vector_3d_quivers_color_func():
     assert not np.allclose(p1.fig.objects[0].colors, p2.fig.objects[0].colors)
 
     p1 = make_plot_vector_3d_quiver_color_func_2(KB, None)
-    p2 = make_plot_vector_3d_quiver_color_func_2(KB, lambda x, y, z, u, v, w: u)
-    p3 = make_plot_vector_3d_quiver_color_func_2(KB, lambda x, y, z, u, v, w: u)
-    p3.backend._update_interactive({a: 2})
+    p2 = make_plot_vector_3d_quiver_color_func_2(KB, lambda x, y, z, u, v, w: np.cos(u))
+    p3 = make_plot_vector_3d_quiver_color_func_2(KB, lambda x, y, z, u, v, w: np.cos(u))
     assert not np.allclose(p1.fig.objects[0].colors, p2.fig.objects[0].colors)
+    p3.backend._update_interactive({a: 2})
     assert not np.allclose(p2.fig.objects[0].colors, p3.fig.objects[0].colors)
 
 
@@ -673,3 +673,13 @@ def test_plot3d_list_interactive():
 
     p = make_test_plot3d_list_interactive(MB)
     p.backend._update_interactive({t: 1})
+
+
+def test_color_func_expr():
+    # verify that passing an expression to color_func is supported
+
+    p3 = make_test_color_func_expr_2(KB)
+    # compute the original figure: no errors should be raised
+    f3 = p3.fig
+    # update the figure with new parameters: no errors should be raised
+    p3.backend._update_interactive({u: 0.5})

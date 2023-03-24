@@ -7,12 +7,13 @@ from spb.series import (
     ComplexSurfaceSeries, ComplexDomainColoringSeries,
     ComplexSurfaceBaseSeries, ComplexPointSeries, GeometrySeries,
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
-    _set_discretization_points
+    _set_discretization_points, ColoredLineOver1DRangeSeries
 )
+from spb import plot3d_spherical
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
-    Function, dsolve, Eq
+    Function, dsolve, Eq, Ynm
 )
 from sympy.vector import CoordSys3D, gradient
 import numpy as np
@@ -2827,4 +2828,58 @@ def test_symbolic_plotting_ranges():
         lambda : Vector3DSeries(-cos(y), sin(x), sin(z),
         (x, -5*a, 4*b), (y, -3*b, 2*a), (z, -6*a, 7*b),
         n1=4, n2=4, params={a: 1}))
-    
+
+
+def test_color_func_expression():
+    # verify that color_func is able to deal with instances of Expr: they will
+    # be lambdified with the same signature used for the main expression.
+
+    # NOTE: considering how complicated the following expression is,
+    # in this case it is easier to use plot3d_spherical to generate the
+    # data series.
+    phi, theta = symbols("phi, theta", real=True)
+    r = re(Ynm(3, 1, theta, phi).expand(func=True).rewrite(sin).expand())
+    p = plot3d_spherical(
+        abs(r), (theta, 0, pi), (phi, 0, 2*pi),
+        color_func=r, use_cm=True, n=20,
+        force_real_eval=True, grid=False, show=False)
+    d = p[0].get_data()
+    # the following statement should not raise errors
+    colors = p[0].eval_color_func(*d)
+    assert callable(p[0].color_func)
+
+    x, y = symbols("x, y")
+    s1 = LineOver1DRangeSeries(cos(x), (x, -10, 10), color_func=sin(x),
+        adaptive=False, n=10)
+    s2 = LineOver1DRangeSeries(cos(x), (x, -10, 10),
+        color_func=lambda x: np.cos(x), adaptive=False, n=10)
+    assert all(isinstance(t, ColoredLineOver1DRangeSeries) for t in [s1, s2])
+    # the following statement should not raise errors
+    d1 = s1.get_data()
+    assert callable(s1.color_func)
+    d2 = s2.get_data()
+    assert not np.allclose(d1[-1], d2[-1])
+
+    s1 = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 2*pi),
+        color_func=sin(x), adaptive=False, n=10, use_cm=True)
+    s2 = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 2*pi),
+        color_func=lambda x: np.cos(x), adaptive=False, n=10, use_cm=True)
+    # the following statement should not raise errors
+    d1 = s1.get_data()
+    assert callable(s1.color_func)
+    d2 = s2.get_data()
+    assert not np.allclose(d1[-1], d2[-1])
+
+    s = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        color_func=sin(x**2 + y**2), adaptive=False, n1=5, n2=5)
+    # the following statement should not raise errors
+    d = s.get_data()
+    assert callable(s.color_func)
+
+    xx = [1, 2, 3, 4, 5]
+    yy = [1, 2, 3, 4, 5]
+    zz = [1, 2, 3, 4, 5]
+    raises(TypeError,
+        lambda : List2DSeries(xx, yy, use_cm=True, color_func=sin(x)))
+    raises(TypeError,
+        lambda : List3DSeries(xx, yy, zz, use_cm=True, color_func=sin(x)))

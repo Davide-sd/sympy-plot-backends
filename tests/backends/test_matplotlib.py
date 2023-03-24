@@ -484,8 +484,8 @@ def test_plot_vector_3d_quivers_color_func():
     p2.process_series()
 
     p1 = make_plot_vector_3d_quiver_color_func_2(MB, None)
-    p2 = make_plot_vector_3d_quiver_color_func_2(MB, lambda x, y, z, u, v, w: u)
-    p3 = make_plot_vector_3d_quiver_color_func_2(MB, lambda x, y, z, u, v, w: u)
+    p2 = make_plot_vector_3d_quiver_color_func_2(MB, lambda x, y, z, u, v, w: np.cos(u))
+    p3 = make_plot_vector_3d_quiver_color_func_2(MB, lambda x, y, z, u, v, w: np.cos(u))
     p1.backend._update_interactive({a: 0})
     p2.backend._update_interactive({a: 0})
     p3.backend._update_interactive({a: 2})
@@ -1483,4 +1483,26 @@ def test_plot_implicit_legend_artists():
         (x, -2 * pi, 2 * pi), (y, -4, 4), backend=MB, show=False)
     assert len(p.ax.get_legend().get_lines()) == 0
     assert len(p.ax.get_legend().get_patches()) == 2
+
+
+def test_color_func_expr():
+    # verify that passing an expression to color_func is supported
+
+    p1 = make_test_color_func_expr_1(MB, False)
+    p2 = make_test_color_func_expr_1(MB, True)
+    p3 = make_test_color_func_expr_2(MB)
+
+    # compute the original figure: no errors should be raised
+    f1 = p1.fig
+    f2 = p2.fig
+    f3 = p3.fig
+
+    # update the figure with new parameters: no errors should be raised
+    p1.backend._update_interactive({u: 0.5})
+    # interactive plots with streamlines are not implemented
+    raises(NotImplementedError,
+        lambda : p2.backend._update_interactive({u: 0.5}))
+    p3.backend._update_interactive({u: 0.5})
+
+
     

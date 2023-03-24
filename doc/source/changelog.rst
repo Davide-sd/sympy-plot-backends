@@ -63,6 +63,8 @@ reset()
     possible to specify parametric ranges. Explore the module documentation to
     find out how to use it.
 
+* ``color_func`` now support symbolic expressions.
+
 * ``MatplotlibBackend``:
 
   * implemented support for ``ipywidgets``.

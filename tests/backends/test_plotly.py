@@ -1161,3 +1161,13 @@ def test_contour_show_clabels():
     p = make_test_contour_show_clabels_2(PB, True)
     p.backend._update_interactive({Symbol("u"): 2})
     assert p.fig.data[0].contours.showlabels
+
+
+def test_color_func_expr():
+    # verify that passing an expression to color_func is supported
+
+    p3 = make_test_color_func_expr_2(PB)
+    # compute the original figure: no errors should be raised
+    f3 = p3.fig
+    # update the figure with new parameters: no errors should be raised
+    p3.backend._update_interactive({u: 0.5})

@@ -375,7 +375,9 @@ class K3DBackend(Plot):
                     solid_color = col * np.ones(xx.size)
                     self._handles[ii] = [qkw, colormap]
 
-                origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize, s.color_func)
+                origins, vectors, colors = self._build_k3d_vector_data(
+                    xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize,
+                    s.eval_color_func)
                 if colors is None:
                     colors = solid_color
                 vec_colors = self._create_vector_colors(colors)
@@ -471,6 +473,9 @@ class K3DBackend(Plot):
         color_val = magnitude
         if color_func is not None:
             color_val = color_func(xx, yy, zz, uu, vv, ww)
+            # if color_func was a symbolic  expression, than color_val is
+            # a matrix. Need to flatten.
+            color_val = color_val.flatten()
 
         colors = None
         if colormap is not None:
@@ -564,8 +569,9 @@ class K3DBackend(Plot):
 
                     xx, yy, zz, uu, vv, ww = self.series[i].get_data()
                     qkw, colormap = self._handles[i]
-                    origins, vectors, colors = self._build_k3d_vector_data(xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize,
-                    s.color_func)
+                    origins, vectors, colors = self._build_k3d_vector_data(
+                        xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize,
+                        s.eval_color_func)
                     if colors is not None:
                         vec_colors = self._create_vector_colors(colors)
                         self.fig.objects[i].colors = vec_colors

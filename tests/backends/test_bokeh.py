@@ -778,3 +778,20 @@ def test_generic_data_series():
         fill=[{"x": [0, 1, 2, 3], "y1": [0, 1, 2, 3], "y2": [0, 0, 0, 0]}],
         rectangles=[{"x": 0, "y": -3, "width": 5, "height": 2}])
     p.process_series()
+
+
+def test_color_func_expr():
+    # verify that passing an expression to color_func is supported
+
+    p1 = make_test_color_func_expr_1(BB, False)
+    p2 = make_test_color_func_expr_1(BB, True)
+
+    # compute the original figure: no errors should be raised
+    f1 = p1.fig
+    f2 = p2.fig
+
+    # update the figure with new parameters: no errors should be raised
+    p1.backend._update_interactive({u: 0.5})
+    # Bokeh don't raise an error because it doesn't apply a colormap
+    # to streamlines
+    p2.backend._update_interactive({u: 0.5})

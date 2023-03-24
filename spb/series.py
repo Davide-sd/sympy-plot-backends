@@ -308,8 +308,6 @@ class BaseSeries:
     # subclass can set its number.
 
     def __init__(self, *args, **kwargs):
-        # TODO: raise a warning?
-        # evaluation with adaptive=False will be done over integers
         self.only_integers = kwargs.get("only_integers", False)
         # represents the evaluation modules to be used by lambdify
         self.modules = kwargs.get("modules", None)
@@ -361,6 +359,16 @@ class BaseSeries:
         # This list will contains symbols that are upper bound to summations
         # or products
         self._needs_to_be_int = []
+        # subclasses that requires this attribute must set an appropriate
+        # default value.
+        self.color_func = None
+        # NOTE: color_func usually receives numerical functions that are going
+        # to be evaluated over the coordinates of the computed points (or the
+        # discretized meshes).
+        # However, if an expression is given to color_func, then it will be
+        # lambdified with symbols in self._signature, and it will be evaluated
+        # with the same data used to evaluate the plotted expression.
+        self._eval_color_func_with_signature = False
 
     def _block_lambda_functions(self, *exprs):
         if any(callable(e) for e in exprs):
@@ -433,6 +441,11 @@ class BaseSeries:
         else:
             self._signature = sorted([r[0] for r in self.ranges], key=lambda t: t.name)
             self._functions = [(e, None) for e in exprs]
+
+        # deal with symbolic color_func
+        if isinstance(self.color_func, Expr):
+            self.color_func = lambdify(self._signature, self.color_func)
+            self._eval_color_func_with_signature = True
 
     def _update_range_value(self, t):
         if not self._interactive_ranges:
@@ -509,15 +522,7 @@ class BaseSeries:
         # ensure that discretized domains are returned with the proper order
         discr = [self._discretized_domain[s[0]] for s in self.ranges]
 
-        args = []
-        for s in self._signature:
-            if s in self._params.keys():
-                args.append(
-                    int(self._params[s]) if s in self._needs_to_be_int else
-                    self._params[s] if self._force_real_eval
-                    else complex(self._params[s]))
-            else:
-                args.append(self._discretized_domain[s])
+        args = self._aggregate_args()
 
         results = []
         for f in self._functions:
@@ -533,6 +538,18 @@ class BaseSeries:
         if cast_to_real:
             discr = [np.real(d.astype(complex)) for d in discr]
         return [*discr, *results]
+
+    def _aggregate_args(self):
+        args = []
+        for s in self._signature:
+            if s in self._params.keys():
+                args.append(
+                    int(self._params[s]) if s in self._needs_to_be_int else
+                    self._params[s] if self._force_real_eval
+                    else complex(self._params[s]))
+            else:
+                args.append(self._discretized_domain[s])
+        return args
 
     @property
     def expr(self):
@@ -806,6 +823,13 @@ class BaseSeries:
                 "looking for. Please, re-execute the plot command, this time "
                 "with the appropriate line_color or surface_color")
             return np.ones_like(args[0])
+
+        if self._eval_color_func_with_signature:
+            args = self._aggregate_args()
+            color = self.color_func(*args)
+            _re, _im = np.real(color), np.imag(color)
+            _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
+            return _re
 
         nargs = arity(self.color_func)
         if nargs == 1:
@@ -1112,6 +1136,10 @@ class List2DSeries(Line2DBaseSeries, ParamsMixin):
         self.use_cm = kwargs.get("use_cm", False)
         if self.use_cm and self.color_func:
             self.is_parametric = True
+            if isinstance(self.color_func, Expr):
+                raise TypeError(
+                    "%s don't support symbolic " % self.__class__.__name__ +
+                    "expression for `color_func`.")
 
     def __str__(self):
         return "2D list plot"
@@ -1195,7 +1223,9 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
             return super().__new__(AbsArgLineSeries)
-        if callable(kwargs.get("color_func", None)) or callable(kwargs.get("line_color", None)):
+        cf = kwargs.get("color_func", None)
+        if (callable(cf) or  callable(kwargs.get("line_color", None)) or
+            isinstance(cf, Expr)):
             return super().__new__(ColoredLineOver1DRangeSeries)
         return object.__new__(cls)
 
@@ -2610,6 +2640,9 @@ class Vector3DSeries(VectorBase):
 
     def __init__(self, u, v, z, range1, range2, range3, label="", **kwargs):
         super().__init__((u, v, z), (range1, range2, range3), label, **kwargs)
+        if self.is_streamlines and isinstance(self.color_func, Expr):
+            raise TypeError("Vector3DSeries with streamlines can't use "
+                "symbolic `color_func`.")
 
     def __str__(self):
         ranges = []
