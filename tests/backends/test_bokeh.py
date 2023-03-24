@@ -5,7 +5,6 @@ import os
 from tempfile import TemporaryDirectory
 from .make_tests import *
 
-
 # NOTE
 # While BB, PB, KB creates the figure at instantiation, MB creates the figure
 # once the `show()` method is called. All backends do not populate the figure
@@ -456,34 +455,42 @@ def test_plot_geometry_2():
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Scatter)]) == 1
 
 
-# def test_save():
-#     # Verify the save method. Note that:
-#     #    Bokeh and Plotly should not be able to save static pictures because
-#     #    by default they need additional libraries. See the documentation of
-#     #    the save methods for each backends to see what is required.
-#     #    Hence, if in our system those libraries are installed, tests will
-#     #    fail!
-#     x, y, z = symbols("x:z")
-#     options = dict(backend=BB, show=False, adaptive=False, n=5)
+def test_save(mocker):
+    # Verify the save method. Note that:
+    #    Bokeh and Plotly should not be able to save static pictures because
+    #    by default they need additional libraries. See the documentation of
+    #    the save methods for each backends to see what is required.
+    #    Hence, if in our system those libraries are installed, tests will
+    #    fail!
+    x, y, z = symbols("x:z")
+    options = dict(backend=BB, show=False, adaptive=False, n=5)
 
-#     with TemporaryDirectory(prefix="sympy_") as tmpdir:
-#         # Bokeh requires additional libraries to save static pictures.
-#         # Raise an error because their are not installed.
-#         p = plot(sin(x), cos(x), **options)
-#         filename = "test_bokeh_save_1.png"
-#         raises(RuntimeError, lambda: p.save(os.path.join(tmpdir, filename)))
+    with TemporaryDirectory(prefix="sympy_") as tmpdir:
+        # Bokeh requires additional libraries to save static pictures.
+        # Raise an error because their are not installed.
+        mocker.patch(
+            "bokeh.io.export_png",
+            side_effect=RuntimeError
+        )
+        p = plot(sin(x), cos(x), **options)
+        filename = "test_bokeh_save_1.png"
+        raises(RuntimeError, lambda: p.save(os.path.join(tmpdir, filename)))
 
-#         p = plot(sin(x), cos(x), **options)
-#         filename = "test_bokeh_save_2.svg"
-#         raises(RuntimeError, lambda: p.save(os.path.join(tmpdir, filename)))
+        mocker.patch(
+            "bokeh.io.export_svg",
+            side_effect=RuntimeError
+        )
+        p = plot(sin(x), cos(x), **options)
+        filename = "test_bokeh_save_2.svg"
+        raises(RuntimeError, lambda: p.save(os.path.join(tmpdir, filename)))
 
-#         p = plot(sin(x), cos(x), **options)
-#         filename = "test_bokeh_save_3.html"
-#         p.save(os.path.join(tmpdir, filename))
+        p = plot(sin(x), cos(x), **options)
+        filename = "test_bokeh_save_3.html"
+        p.save(os.path.join(tmpdir, filename))
 
-#         p = plot(sin(x), cos(x), **options)
-#         filename = "test_bokeh_save_4.html"
-#         p.save(os.path.join(tmpdir, filename), resources=bokeh.resources.INLINE)
+        p = plot(sin(x), cos(x), **options)
+        filename = "test_bokeh_save_4.html"
+        p.save(os.path.join(tmpdir, filename), resources=bokeh.resources.INLINE)
 
 
 def test_aspect_ratio_2d_issue_11764():
