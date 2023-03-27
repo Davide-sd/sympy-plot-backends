@@ -683,3 +683,20 @@ def test_color_func_expr():
     f3 = p3.fig
     # update the figure with new parameters: no errors should be raised
     p3.backend.update_interactive({u: 0.5})
+
+
+def test_plot_vector_3d_quivers_default_color_func():
+    # verify that the default color function based on the magnitude of the
+    # vector field is applied correctly
+
+    x, y, z = symbols("x:z")
+
+    p1 = plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+        backend=KB, n=4, use_cm=True, show=False)
+    p2 = plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+        backend=KB, n=4, use_cm=False, show=False)
+    # just test that p2 colors are all equal to each other and p1 colors are
+    # different from p2
+    assert not np.allclose(
+        p1.fig.objects[0].colors, p2.fig.objects[0].colors)
+    assert np.allclose(p2.fig.objects[0].colors, p2.fig.objects[0].colors[0])
