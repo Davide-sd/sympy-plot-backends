@@ -59,6 +59,36 @@ line = plot3d_parametric_line(
 
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_modify_iplot_code_do_not_modify():
+    # Many plots will be able to be screenshotted without any modifications
+    code = """
+from sympy import *
+from spb import *
+x, a, b, c, n = symbols("x, a, b, c, n")
+plot(
+   (cos(a * x + b) * exp(-c * x), "oscillator"),
+   (exp(-c * x), "upper limit", {"linestyle": ":"}),
+   (-exp(-c * x), "lower limit", {"linestyle": ":"}),
+   prange(x, 0, n * pi),
+   params={
+       a: (1, 0, 10),
+       b: (0, 0, 2 * pi),
+       c: (0.25, 0, 1),
+       n: (2, 0, 4)
+   },
+   ylim=(-1.25, 1.25), imodule="panel")
+"""
+    s = _modify_iplot_code(code)
+    assert "show" not in s
+    assert "servable" not in s
+    assert "params" in s
+    assert "imodule='panel'" in s
+    assert "panelplot" not in s
+
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+def test_modify_iplot_code_KB():
+    # Verify that interactive plots with backend=KB returns a panel object
+    # containing only widgets
     code = """
 from sympy import *
 from spb import *
@@ -80,14 +110,19 @@ plot3d_parametric_surface(
     wf_n1=75, wf_n2=6)
 """
     s = _modify_iplot_code(code)
-    assert "show" not in s
+    assert "show" in s
     assert "servable" not in s
     assert "params" in s
     assert "imodule='panel'" in s
+    assert "panelplot" in s
+    assert "layout_controls" in s
 
 
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_modify_iplot_code():
+    # Verify that if servable=True, then the modified code contains the
+    # variable panelplot and that it returns the template in order to
+    # construct the webpage for the screenshot
     code = """
 from sympy import *
 from spb import *

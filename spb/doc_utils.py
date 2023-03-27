@@ -136,7 +136,7 @@ def _modify_iplot_code(code):
         func_name = tree.body[-1].value.func.id
         if func_name == "iplot" or (func_name[:4] == "plot"):
             params_node, servable_node = None, None
-            show_node, imodule_node = None, None
+            show_node, imodule_node, backend_node = None, None, None
             for kw in tree.body[-1].value.keywords:
                 if kw.arg == "params":
                     params_node = kw
@@ -146,15 +146,21 @@ def _modify_iplot_code(code):
                     show_node = kw
                 elif kw.arg == "imodule":
                     imodule_node = kw
+                elif kw.arg == "backend":
+                    backend_node = kw
             if imodule_node is not None:
                 imodule_node.value.value = "panel"
             else:
                 tree.body[-1].value.keywords.append(
                     ast.keyword(arg='imodule', value=ast.Constant(value="panel"))
                 )
-            if (params_node is None) or (servable_node is None):
+            is_KB = backend_node and (backend_node.value.id in ["KB", "K3DBackend"])
+            if ((params_node is None) or (servable_node is None)) and (not is_KB):
                 return ast.unparse(tree)
-            if not servable_node.value.value:
+            if servable_node is None:
+                servable_node = ast.keyword(
+                    arg='servable_node', value=ast.Constant(value=False))
+            if (not servable_node.value.value) and (not is_KB):
                 return ast.unparse(tree)
             servable_node.value.value = False
             if show_node is not None:
@@ -171,6 +177,47 @@ def _modify_iplot_code(code):
                 )
             tree.body[-1] = ast.Assign(targets=[ast.Name(id="panelplot")],
                 value=ln.value, lineno=ln.lineno)
-            last_command = ast.parse("panelplot._create_template(show=False)")
+
+            if is_KB:
+                last_command = ast.parse("panelplot.layout_controls()")
+            else:
+                last_command = ast.parse("panelplot._create_template(show=False)")
+
             tree.body.append(last_command.body[-1])
     return ast.unparse(tree)
+
+
+def postprocess_KB_interactive_image(ns, size, img, browser, browser_path,
+    driver_path, driver_options=[]):
+    import numpy as np
+    from PIL import Image
+    from spb.interactive.panel import InteractivePlot
+    from spb import KB
+    from sphinx_k3d_screenshot.utils import get_k3d_screenshot, get_driver
+
+    if "panelplot" not in ns.keys():
+        return img
+
+    panelplot = ns["panelplot"]
+    if not isinstance(panelplot, InteractivePlot):
+        return img
+    if not isinstance(panelplot.backend, KB):
+        return img
+
+    # guesstimate (in pixel) for the vertical space of each row of widgets
+    hr = 50
+    nr = int(np.ceil(len(panelplot.backend[0].params) / panelplot._ncols))
+    # need to pad before first row and after last row. Guesstimate for padding.
+    pad_h = 25
+    h = hr * nr + 2 * pad_h
+    img = img.crop((0, 0, img.width, h))
+
+    driver = get_driver(
+        browser, browser_path, driver_path, driver_options)
+    plot = get_k3d_screenshot(driver, size, panelplot.fig)
+
+    # concatenate vertically the two images
+    final = Image.new('RGB', (img.width, img.height + plot.height))
+    final.paste(img, (0, 0))
+    final.paste(plot, (0, img.height))
+    return final
