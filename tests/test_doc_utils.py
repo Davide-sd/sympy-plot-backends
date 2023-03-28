@@ -165,3 +165,41 @@ plot_polar(
     assert "template={" in new_code
     assert "panelplot = plot_polar" in s[-2]
     assert "create_template" in s[-1]
+
+
+def test_modify_iplot_code_KB_sums():
+    # verify that sums of interactive plots with K3DBackends get preprocessed
+    # correctly.
+
+    code = """from sympy import *
+from spb import *
+import k3d
+a, b, s, e, t = symbols("a, b, s, e, t")
+c = 2 * sqrt(a * b)
+r = a + b
+params = {
+   a: (1.5, 0, 2),
+   b: (1, 0, 2),
+   s: (0, 0, 2),
+   e: (2, 0, 2)
+}
+sphere = plot3d_revolution(
+   (r * cos(t), r * sin(t)), (t, 0, pi),
+   params=params, n=50, parallel_axis="x",
+   backend=KB,
+   show_curve=False, show=False,imodule="ipywidgets",
+   rendering_kw={"color":0x353535})
+line = plot3d_parametric_line(
+   a * cos(t) + b * cos(3 * t),
+   a * sin(t) - b * sin(3 * t),
+   c * sin(2 * t), prange(t, s*pi, e*pi),
+   {"color_map": k3d.matplotlib_color_maps.Summer}, params=params,
+   backend=KB, show=False)
+(line + sphere).show()"""
+
+    new_code = _modify_iplot_code(code)
+    assert "ipywidgets" not in new_code
+    assert "imodule='ipywidgets'" not in new_code
+    assert "imodule='panel'" in new_code
+    assert "panelplot = line + sphere" in new_code
+    assert "layout_controls" in new_code

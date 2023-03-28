@@ -11,7 +11,7 @@ extensions where to look for the data they need.
 But docstring examples are designed to be executed by the users, so adding
 code to retrieve the figure in the code blocks is useless and confusing.
 
-The following functions uses the ast module to preprocess a code block, add
+The following functions uses the ast module to preprocess a code block, adding
 the necessary code to extract data.
 """
 
@@ -42,13 +42,16 @@ def _modify_plot_expr(expr):
 
 
 def _modify_code(code):
-    """In the docstrings, the last command of each example is either:
+    """This function is meant to be used by sphinx_plotly_directive.
+
+    In the docstrings, the last command of each example is either:
     1. plot_something(...) # plot command can span multiple rows
     2. (p1 + p2 + ...).show()
 
     Either way, the ``.. plotly`` directive is unable to extract the Plotly
-    figure from the `Plot` object. This function parses the `code` and apply
-    a few modifications. In particular:
+    figure from the `Plot` object: it doesn't know where the figure is store.
+    This function parses the `code` and apply a few modifications.
+    In particular:
 
     1. plot_something(...) will be transformed to:
        myplot = plot_something(..., show=False)
@@ -110,14 +113,34 @@ def _modify_code(code):
 
 
 def _modify_iplot_code(code):
-    """What this function does:
+    """This function is meant to be used by sphinx_panel_screenshot.
 
-    1. Look for the last command to be ipot or plot_something(params={},
+    Preprocess code blocks containing interactive widget plots before being
+    executed by Sphinx.
+
+    What this function does:
+
+    1. Look for the last command to be plot_something(params={},
        servable=True).
     2. Remove servable
     3. set show=False and imodule="panel"
     4. manually create a template and apply the content.
-    5. Returns the template.
+    5. Returns the template from which a screenshot is generated.
+
+    Regarding the creation of the template: sphinx_panel_screenshot is able to
+    take screenshots of an interactive application built with Panel by
+    exporting it to an html file, loading it into a browser and taking a
+    screenshot. This usually works well. However, K3D-Jupyter and Panel don't
+    understand each other very well: numerical data is not saved in the html
+    file, so the screenshot won't display a plot. Hence, we need a workaround:
+
+    1. for interactive widgets plots using K3D-Jupyter, let's export an html
+       file containing only the widgets.
+    2. sphinx_panel_screenshot takes a screenshot of the exported widgets.
+    3. sphinx_panel_screenshot accepts a post-processing function,
+       ``postprocess_KB_interactive_image`` (defined below), which generates
+       the K3D-Jupyter screenshot and then append it to the widget screenshot,
+       thus obtaining the final picture.
 
     Parameters
     ==========
@@ -132,9 +155,42 @@ def _modify_iplot_code(code):
     ln = tree.body[-1]
 
     if (isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call) and
+        isinstance(ln.value.func, ast.Attribute) and
+        (ln.value.func.attr == "show") and
+        (("KB" in code) or ("K3DBackend" in code))):
+        # something like: (p1 + p2).show()
+        # using backend=KB
+
+        # loop over the arguments of the plot addition. For each one, find
+        # the corresponding plot command and add `imodule="panel"`
+        # TODO: this only works for 2 elements binary operation. Need to
+        # implement recursion if summing up three or more plots.
+        left_plot_name = ln.value.func.value.left.id
+        right_plot_name = ln.value.func.value.right.id
+        for node in tree.body:
+            if (isinstance(node, ast.Assign) and
+                isinstance(node.targets[0], ast.Name) and
+                (node.targets[0].id in [left_plot_name, right_plot_name])):
+                imodule_node = None
+                for kw in node.value.keywords:
+                    if kw.arg == "imodule":
+                        imodule_node = kw
+                        imodule_node.value.value = "panel"
+                if imodule_node is None:
+                    node.value.keywords.append(
+                        ast.keyword(
+                            arg='imodule', value=ast.Constant(value="panel")))
+
+        tree.body[-1] = ast.Assign(targets=[ast.Name(id="panelplot")],
+            value=ln.value.func.value, lineno=ln.lineno)
+        last_command = ast.parse("panelplot.layout_controls()")
+        tree.body.append(last_command.body[-1])
+
+    elif (isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call) and
         isinstance(ln.value.func, ast.Name)):
+        # ordinary example: plot_something(expr, range, params={}, ...)
         func_name = tree.body[-1].value.func.id
-        if func_name == "iplot" or (func_name[:4] == "plot"):
+        if func_name[:4] == "plot":
             params_node, servable_node = None, None
             show_node, imodule_node, backend_node = None, None, None
             for kw in tree.body[-1].value.keywords:
@@ -189,6 +245,37 @@ def _modify_iplot_code(code):
 
 def postprocess_KB_interactive_image(ns, size, img, browser, browser_path,
     driver_path, driver_options=[]):
+    """This function is meant to be used by sphinx_panel_screenshot.
+
+    If the current code block contains an interactive widget plot using
+    K3D-Jupyter, the following steps are executed:
+
+    1. Crop img in order to for it to only contain widgets.
+    2. Generate a screenshot of the K3D-Jupyter plot.
+    3. Append the K3D-Jupyter screenshot to the image containing widgets.
+
+    Parameters
+    ==========
+
+    ns : dict
+        A namespace dictionary containing the variables defined in the
+        current code block being processed by sphinx_panel_screenshot, which
+        has already been executed.
+    size : (width, height)
+        Size of the expected screenshot in pixels.
+    img : PIL.Image
+        Screenshot generated by sphinx_panel_screenshot of the current code
+        block. In this case, a screenshot of widgets-only.
+    browser, browser_path, driver_path : str
+        Settings to be passed to sphinx_k3d_screenshot
+    driver_options : list
+        Settings to be passed to sphinx_k3d_screenshot
+
+    Returns
+    =======
+
+    final_img : PIL.Image
+    """
     import numpy as np
     from PIL import Image
     from spb.interactive.panel import InteractivePlot
@@ -204,14 +291,20 @@ def postprocess_KB_interactive_image(ns, size, img, browser, browser_path,
     if not isinstance(panelplot.backend, KB):
         return img
 
-    # guesstimate (in pixel) for the vertical space of each row of widgets
+    # At this point img has dimension specified by `size`, but only the top
+    # portion is actually populated with widgets. The remaining portions is
+    # blank. Let's crop this image so it only contains widgets.
+    # Guesstimate (in pixel) for the vertical space of each row of widgets
     hr = 50
+    # number of rows used by the widgets
     nr = int(np.ceil(len(panelplot.backend[0].params) / panelplot._ncols))
     # need to pad before first row and after last row. Guesstimate for padding.
     pad_h = 25
+    # Prediction of the height of image to be cropped
     h = hr * nr + 2 * pad_h
     img = img.crop((0, 0, img.width, h))
 
+    # generate K3D-Jupyter screenshot
     driver = get_driver(
         browser, browser_path, driver_path, driver_options)
     plot = get_k3d_screenshot(driver, size, panelplot.fig)

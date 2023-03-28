@@ -8,4 +8,4 @@ Series
 
 .. autofunction:: spb.series.BaseSeries.get_data
 
-.. autofunction:: spb.series.BaseSeries.params
+.. autoattribute:: spb.series.BaseSeries.params

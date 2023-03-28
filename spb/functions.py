@@ -1437,7 +1437,7 @@ def plot3d_parametric_line(*args, **kwargs):
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
 
-    .. code-block:: python
+    .. panel-screenshot::
 
        from sympy import *
        from spb import *
@@ -1456,13 +1456,13 @@ def plot3d_parametric_line(*args, **kwargs):
            params=params, n=50, parallel_axis="x",
            backend=KB,
            show_curve=False, show=False,
-           rendering_kw={"color":0x353535})
+           rendering_kw={"color":0x353535}, imodule="panel")
        line = plot3d_parametric_line(
            a * cos(t) + b * cos(3 * t),
            a * sin(t) - b * sin(3 * t),
            c * sin(2 * t), prange(t, s*pi, e*pi),
            {"color_map": k3d.matplotlib_color_maps.Summer}, params=params,
-           backend=KB, show=False)
+           backend=KB, show=False, imodule="panel")
        (line + sphere).show()
 
     References
@@ -2295,36 +2295,36 @@ def plot3d_parametric_surface(*args, **kwargs):
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
 
-    .. code-block:: python
+    .. panel-screenshot::
 
        from sympy import *
        from spb import *
        import k3d
        alpha, u, v, up, vp = symbols("alpha u v u_p v_p")
        plot3d_parametric_surface((
-           exp(u) * cos(v - alpha) / 2 + exp(-u) * cos(v + alpha) / 2,
-           exp(u) * sin(v - alpha) / 2 + exp(-u) * sin(v + alpha) / 2,
-           cos(alpha) * u + sin(alpha) * v
-       ),
-       prange(u, -up, up), prange(v, 0, vp * pi),
-       backend=KB,
-       use_cm=True,
-       color_func=lambda u, v: v,
-       rendering_kw={"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
-       wireframe=True, wf_n2=15, wf_rendering_kw={"width": 0.005},
-       grid=False, n=50,
-       params={
-           alpha: (0, 0, pi),
-           up: (1, 0, 2),
-           vp: (2, 0, 2),
-       },
-       title="Catenoid \, to \, Right \, Helicoid \, Transformation")
+               exp(u) * cos(v - alpha) / 2 + exp(-u) * cos(v + alpha) / 2,
+               exp(u) * sin(v - alpha) / 2 + exp(-u) * sin(v + alpha) / 2,
+               cos(alpha) * u + sin(alpha) * v
+           ),
+           prange(u, -up, up), prange(v, 0, vp * pi),
+           backend=KB,
+           use_cm=True,
+           color_func=lambda u, v: v,
+           rendering_kw={"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
+           wireframe=True, wf_n2=15, wf_rendering_kw={"width": 0.005},
+           grid=False, n=50, use_latex=False,
+           params={
+               alpha: (0, 0, pi),
+               up: (1, 0, 2),
+               vp: (2, 0, 2),
+           },
+           title="Catenoid \, to \, Right \, Helicoid \, Transformation")
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. Note that the plot's
     creation might be slow due to the wireframe lines.
 
-    .. code-block:: python
+    .. panel-screenshot::
 
        from sympy import *
        from spb import *
@@ -2336,7 +2336,7 @@ def plot3d_parametric_surface(*args, **kwargs):
        plot3d_parametric_surface(
            (x, y, z, (u, 0, 2*pi), (v, -1, 0)),
            params = {
-               n: param.Integer(2, label="n")
+               n: param.Integer(3, label="n")
            },
            backend=KB,
            use_cm=True,
@@ -2489,7 +2489,7 @@ def plot3d_spherical(*args, **kwargs):
     times. Refer to the interactive sub-module documentation to learn more
     about the ``params`` dictionary.
 
-    .. code-block:: python
+    .. panel-screenshot::
 
        from sympy import *
        from spb import *
@@ -2811,9 +2811,8 @@ def plot_contour(*args, **kwargs):
        Plot object containing:
        [0]: contour: sin(2*r)*cos(theta) for theta over (0.0, 6.283185307179586) and r over (0.0, 7.0)
 
-    Interactive-widget plot of a goblet. Refer to the interactive sub-module
-    documentation to learn more about the ``params`` dictionary.
-    This plot illustrates:
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary. This plot illustrates:
 
     * the use of ``prange`` (parametric plotting range).
     * the use of the ``params`` dictionary to specify sliders in
@@ -2988,8 +2987,10 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
 
-    .. code-block:: python
+    .. panel-screenshot::
 
+       from sympy import *
+       from spb import *
        t, phi, u, v, w = symbols("t phi u v w")
        plot3d_revolution(
            (t, cos(u * t), t**2), prange(t, 0, v), prange(phi, 0, w*pi),
@@ -3001,7 +3002,8 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
            }, n=50, backend=KB, force_real_eval=True,
            wireframe=True, wf_n1=15, wf_n2=15,
            wf_rendering_kw={"width": 0.004},
-           show_curve=True, curve_kw={"rendering_kw": {"width": 0.025}})
+           show_curve=True, curve_kw={"rendering_kw": {"width": 0.025}},
+           use_latex=False)
 
     See Also
     ========
