@@ -167,6 +167,7 @@ plot_polar(
     assert "create_template" in s[-1]
 
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_modify_iplot_code_KB_sums():
     # verify that sums of interactive plots with K3DBackends get preprocessed
     # correctly.
