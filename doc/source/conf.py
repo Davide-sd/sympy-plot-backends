@@ -243,16 +243,16 @@ home_folder = os.path.expanduser("~")
 browser_path = os.path.join(home_folder, "selenium/chrome-linux/chrome")
 browser_driver_path = os.path.join(home_folder, "selenium/drivers/chromedriver")
 
-browser = "firefox"
-home_folder = os.path.expanduser("~")
-browser_path = os.path.join(home_folder, "selenium/firefox/firefox")
-browser_driver_path = os.path.join(home_folder, "selenium/drivers/geckodriver")
+# browser = "firefox"
+# home_folder = os.path.expanduser("~")
+# browser_path = os.path.join(home_folder, "selenium/firefox/firefox")
+# browser_driver_path = os.path.join(home_folder, "selenium/drivers/geckodriver")
 
 
 driver_options = [
     "--headless",
-    # "--disable-dev-shm-usage",  # overcome limited resource problems
-    # "--no-sandbox"              # Bypass OS security model
+    "--disable-dev-shm-usage",  # overcome limited resource problems
+    "--no-sandbox"              # Bypass OS security model
 ]
 
 panel_screenshot_small_size = [800, 550]
@@ -261,8 +261,9 @@ panel_screenshot_browser = browser
 panel_screenshot_browser_path = browser_path
 panel_screenshot_driver_path = browser_driver_path
 panel_screenshot_driver_options = driver_options
-panel_screenshot_formats = ["small.png", "large.png", ("pdf", 150), "html"]
-panel_screenshot_pdf_from = "small.png"
+panel_screenshot_formats = ["small.png"]
+# panel_screenshot_formats = ["small.png", "large.png", ("pdf", 150), "html"]
+# panel_screenshot_pdf_from = "small.png"
 panel_screenshot_postprocess_image = postprocess_KB_interactive_image
 
 postprocess_func = lambda ns, size, img: postprocess_KB_interactive_image(
@@ -283,7 +284,8 @@ k3d_screenshot_browser_path = browser_path
 k3d_screenshot_driver_path = browser_driver_path
 k3d_screenshot_driver_options = driver_options
 k3d_screenshot_intercept_code = _modify_code
-k3d_screenshot_formats = ["small.png", "large.png", "pdf", "html"]
+k3d_screenshot_formats = ["small.png"]
+# k3d_screenshot_formats = ["small.png", "large.png", "pdf", "html"]
 # while k3D maintain the camera orientation, the actual view appear to be
 # zoomed out when a screenshot is taken. To zoom into the scene just decrease
 # the following factor.

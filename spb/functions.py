@@ -1456,13 +1456,13 @@ def plot3d_parametric_line(*args, **kwargs):
            params=params, n=50, parallel_axis="x",
            backend=KB,
            show_curve=False, show=False,
-           rendering_kw={"color":0x353535}, imodule="panel")
+           rendering_kw={"color":0x353535})
        line = plot3d_parametric_line(
            a * cos(t) + b * cos(3 * t),
            a * sin(t) - b * sin(3 * t),
            c * sin(2 * t), prange(t, s*pi, e*pi),
            {"color_map": k3d.matplotlib_color_maps.Summer}, params=params,
-           backend=KB, show=False, imodule="panel")
+           backend=KB, show=False, use_latex=False)
        (line + sphere).show()
 
     References
@@ -2484,10 +2484,12 @@ def plot3d_spherical(*args, **kwargs):
        plot3d_spherical(r1, r2, (theta, 0, pi / 2), (phi, 0.35 * pi, 2 * pi),
            wireframe=True, wf_n2=25, backend=PB)
 
-    Interactive-widget plot of spherical harmonics. Note that the plot's
-    creation and update might be slow and that it must be ``m < n`` at all
-    times. Refer to the interactive sub-module documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot of real spherical harmonics, highlighting the
+    regions in which the real part is positive and negative.
+    Note that the plot's creation and update might be slow and that
+    it must be ``m < n`` at all times.
+    Refer to the interactive sub-module documentation to learn more about the
+    ``params`` dictionary.
 
     .. panel-screenshot::
 
@@ -3333,7 +3335,7 @@ def plot_implicit(*args, **kwargs):
                c: (3, -15, 15),
                d: (2, -15, 15),
                e: (10, 1, 15),
-           }, n=400)
+           }, n=400, use_latex=False)
 
     See Also
     ========
