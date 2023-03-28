@@ -255,7 +255,7 @@ driver_options = [
     "--no-sandbox"              # Bypass OS security model
 ]
 
-panel_screenshot_small_size = [800, 550]
+panel_screenshot_small_size = [800, 575]
 panel_screenshot_intercept_code = _modify_iplot_code
 panel_screenshot_browser = browser
 panel_screenshot_browser_path = browser_path

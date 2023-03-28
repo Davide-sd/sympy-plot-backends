@@ -617,7 +617,7 @@ def plot_vector(*args, **kwargs):
       their basic form: (default, min, max).
 
     .. panel-screenshot::
-       :small-size: 800, 600
+       :small-size: 800, 610
 
        from sympy import *
        from spb import *

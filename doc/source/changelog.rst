@@ -8,10 +8,10 @@ v2.0.0
 If you are upgrading from a previous version, you should run the following
 code to load the new configuration settings:
 
-```
-from spb.defaults import reset
-reset()
-```
+.. code-block:: python
+
+   from spb.defaults import reset
+   reset()
 
 * Breaking changes:
 
@@ -51,32 +51,39 @@ reset()
   * Users can now chose the interactive module to be used:
 
     * ``ipywidgets``: new in this release. It is the default one.
-    * ``panel``: the old one, but probably the most feature-rich.
+    * ``panel``: the same, old one.
 
-    Please, read the documentation about the Interactive module to learn more.
+    Please, read the documentation about the interactive sub-module to learn
+    more about them, and how to chose one or the other.
 
   * Implemented the ``template`` keyword argument for interactive widget plots
     with Holoviz's Panel and ``servable=True``: user can further customize the
     layout of the web application, or can provide their own Panel's templates.
   
   * The module is now fully interactive. Thanks to the ``prange`` class, it is
-    possible to specify parametric ranges. Explore the module documentation to
-    find out how to use it.
+    possible to specify parametric ranges. Explore the examples in the module
+    documentation to find out how to use it.
 
 * ``color_func`` now support symbolic expressions.
 
 * ``line_color`` and ``surface_color`` are now deprecated in favor of 
   ``color_func``.
 
-* ``plot_implicit`` supports interactive-widget plots, when ``adaptive=False``.
+* ``plot_implicit``:
+
+  * now it supports interactive-widget plots, when ``adaptive=False``.
+
+  * not it support ``rendering_kw`` for plots created with ``adaptive=True``.
+
+  * improved logic dealing with legends. When plotting
+    multiple regions, rectangles will be visible on the legend. When plotting
+    multiple lines, lines will be visible on the legend.
 
 * Removed ``tutorials`` folder containing Jupyter notebooks. The documentation
-  is filled with plently of examples: these notebooks were just reduntant and
+  contains plently of examples: the notebooks were just reduntant and
   difficult to maintain.
 
-* ``MatplotlibBackend``:
-
-  * implemented support for ``ipywidgets``.
+* ``MatplotlibBackend``: implemented support for ``ipywidgets``.
 
 
 * ``PlotlyBackend``:
@@ -88,15 +95,13 @@ reset()
 * ``BokehBackend``:
 
   * improved support for Bokeh 3.0.
-  * removed ``update_event`` as it was a redundant feature now that the module
-    is fully parametric.
+  * removed ``update_event`` because it became a redundant feature now that
+    the module is fully parametric.
 
-* ``plot_contour``: added keyword argument to show/hide contour labels:
-    ``clabels=True/False``.
+* ``plot_contour``: added the ``clabels`` keyword argument to show/hide
+  contour labels.
 
-* ``plot_implicit``: improved logic dealing with legends. When plotting
-  multiple regions, rectangles will be visible on the legend. When plotting
-  multiple lines, lines will be visible on the legend.
+* Documentation is now able to show interactive widget plots with K3D-Jupyter.
 
 
 v1.6.7

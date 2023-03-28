@@ -945,7 +945,6 @@ def plot_parametric(*args, **kwargs):
       their basic form: (default, min, max).
 
     .. panel-screenshot::
-       :small-size: 800, 575
 
        from sympy import *
        from spb import *
@@ -1999,6 +1998,7 @@ def plot3d(*args, **kwargs):
       their basic form: (default, min, max).
 
     .. panel-screenshot::
+       :small-size: 800, 600
 
        from sympy import *
        from spb import *
@@ -2821,7 +2821,6 @@ def plot_contour(*args, **kwargs):
       their basic form: (default, min, max).
 
     .. panel-screenshot::
-       :small-size: 800, 575
 
        from sympy import *
        from spb import *
@@ -3322,7 +3321,7 @@ def plot_implicit(*args, **kwargs):
       their basic form: (default, min, max).
 
     .. panel-screenshot::
-       :small-size: 800, 500
+       :small-size: 800, 700
 
        from sympy import *
        from spb import *
@@ -3463,7 +3462,6 @@ def plot_polar(*args, **kwargs):
       created by Holoviz's Panel.
 
     .. panel-screenshot::
-       :small-size: 800, 500
 
        from sympy import *
        from spb import *
