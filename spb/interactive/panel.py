@@ -10,10 +10,12 @@ import warnings
 
 param = import_module(
     'param',
-    min_module_version='1.11.0')
+    min_module_version='1.11.0',
+    warn_not_installed=True)
 pn = import_module(
     'panel',
-    min_module_version='0.12.0')
+    min_module_version='0.12.0',
+    warn_not_installed=True)
 
 pn.extension("plotly", sizing_mode="stretch_width")
 
@@ -32,7 +34,6 @@ pn.Param.mapping[MyList] = pn.widgets.DiscreteSlider
 
 class DynamicParam(param.Parameterized):
     """Dynamically add parameters based on the user-provided dictionary.
-    Also, generate the lambda functions to be evaluated at a later stage.
     """
 
     # NOTE: why DynamicParam is a child class of param.Parameterized?
@@ -76,7 +77,8 @@ class DynamicParam(param.Parameterized):
         bokeh = import_module(
             'bokeh',
             import_kwargs={'fromlist': ['models']},
-            min_module_version='2.3.0')
+            min_module_version='2.3.0',
+            warn_not_installed=True)
         TickFormatter = bokeh.models.formatters.TickFormatter
 
         # use latex on control labels and legends
