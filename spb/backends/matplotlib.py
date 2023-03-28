@@ -516,12 +516,12 @@ class MatplotlibBackend(Plot):
                 if len(points) == 2:
                     # interval math plotting
                     x, y = _matplotlib_list(points[0])
-                    color = next(self._cl)
-                    c = self._ax.fill(x, y, color=color,
-                        edgecolor="None")
-                    self._add_handle(i, c)
+                    fkw = {"color": next(self._cl), "edgecolor": "None"}
+                    kw = merge({}, fkw, s.rendering_kw)
+                    c = self._ax.fill(x, y, **kw)
+                    self._add_handle(i, c, kw)
                     proxy_artist = self.Rectangle((0, 0), 1, 1,
-                        color=color, label=s.get_label(self._use_latex))
+                        color=kw["color"], label=s.get_label(self._use_latex))
                 else:
                     # use contourf or contour depending on whether it is
                     # an inequality or equality.

@@ -230,10 +230,10 @@ def make_plot_vector_3d_streamlines_color_func(B, cf):
         streamlines=True, show=False, backend=B, color_func=cf, n=7)
 
 
-def make_test_plot_implicit_adaptive_true(B, contour_kw):
+def make_test_plot_implicit_adaptive_true(B, rendering_kw):
     return plot_implicit(
         x > y, (x, -5, 5), (y, -4, 4), backend=B,
-        adaptive=True, contour_kw=contour_kw, use_latex=False, show=False)
+        adaptive=True, rendering_kw=rendering_kw, use_latex=False, show=False)
 
 
 def make_test_plot_implicit_adaptive_false(B, contour_kw):

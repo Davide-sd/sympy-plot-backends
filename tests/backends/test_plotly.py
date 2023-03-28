@@ -434,7 +434,7 @@ def test_plot_implicit_adaptive_true():
     # PlotlyBackend doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_true(
-            PB, contour_kw=dict()).process_series())
+            PB, rendering_kw=dict()).process_series())
 
 
 def test_plot_implicit_adaptive_false():

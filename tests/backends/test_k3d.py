@@ -259,7 +259,7 @@ def test_plot_implicit_adaptive_true():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_true(
-            KB, contour_kw=dict()).process_series())
+            KB, rendering_kw=dict()).process_series())
 
 
 def test_plot_implicit_adaptive_false():

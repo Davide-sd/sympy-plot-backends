@@ -295,7 +295,7 @@ def test_plot_implicit_adaptive_true():
     # BokehBackend doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_true(
-            BB, contour_kw=dict()).process_series())
+            BB, rendering_kw=dict()).process_series())
 
 
 def test_plot_implicit_adaptive_false():

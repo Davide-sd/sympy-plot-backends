@@ -505,12 +505,13 @@ def test_plot_implicit_adaptive_true():
     # verify that the backends produce the expected results when
     # `plot_implicit()` is called with `adaptive=True`
 
-    p = make_test_plot_implicit_adaptive_true(MB, contour_kw=dict(cmap="jet"))
+    p = make_test_plot_implicit_adaptive_true(MB, rendering_kw=dict(color="r"))
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 0
     assert len(ax.patches) == 1
+    assert ax.patches[0].get_facecolor() == (1, 0, 0, 1)
     p.close()
 
 
