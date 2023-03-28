@@ -215,7 +215,9 @@ def _uniform_eval(f1, f2, *args, modules=None,
     except Exception as err:
         if f2 is None:
             raise RuntimeError(
-                "Impossible to evaluate the provided numerical function")
+                "Impossible to evaluate the provided numerical function "
+                "because the following exception was raised:\n"
+                "{}: {}".format(type(err).__name__, err))
         if not skip_fast_eval:
             warnings.warn(
                 "The evaluation with %s failed.\n" % (
