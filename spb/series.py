@@ -579,7 +579,8 @@ class BaseSeries:
             if self._force_real_eval is not True:
                 check_res = [self._expr.has(f) for f in pf]
                 self._force_real_eval = any(check_res)
-                if self._force_real_eval and (self.modules is None):
+                if self._force_real_eval and ((self.modules is None) or
+                    (isinstance(self.modules, str) and "numpy" in self.modules)):
                     funcs = [f for f, c in zip(pf, check_res) if c]
                     warnings.warn("NumPy is unable to evaluate with complex "
                         "numbers some of the functions included in this "
