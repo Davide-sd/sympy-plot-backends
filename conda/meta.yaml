@@ -9,47 +9,34 @@ source:
 
 build:
   number: 0
+  noarch: python
   script: "{{ PYTHON }} -m pip install . -vv"
 
 requirements:
   host:
-    - python
+    - python >=3.6
     - pip
   run:
-    - python
-    - appdirs
+    - python >=3.6
     - packaging
-    # - bokeh
-    # - colorcet
-    # - holoviews
-    # - ipyevents
-    # - ipympl
-    # - k3d
-    - matplotlib
-    - mergedeep
-    - numpy >=1.23.1
-    # - panel
-    # - param
-    # - plotly >=4.14.3
-    # - scipy
+    - appdirs >=1.4.4
+    - numpy >=1.21.1
     - sympy >=1.10.1
-    # - vtk
-    # - msgpack-python
-    # - adaptive
-    # - mayavi >=4.8.0
-    # - PyQt5 >= 5.15.7
+    - matplotlib-base >3.4.2
+    - mergedeep >=1.3.4
 
-# test:
-#   imports:
-#     - spb
-#     - spb.backends
-#     - spb.ccomplex
+test:
+  imports:
+    - spb
+  commands:
+    - pip check
+  requires:
+    - pip
 
 about:
   home: {{ data['url'] }}
   license: {{ data['license'] }}
   license_family: BSD
-  license_file:
+  license_file: LICENSE
   summary: {{ data['description'] }}
-  doc_url:
-  dev_url:
+
