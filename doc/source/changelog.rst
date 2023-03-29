@@ -2,6 +2,13 @@
  Changelog
 ==========
 
+v2.0.1
+======
+
+* Improved import statements on ``spb.interactive.ipywidgets``: now, this
+  module can be used even when only matplotlib and ipywidgets are installed.
+
+
 v2.0.0
 ======
 
