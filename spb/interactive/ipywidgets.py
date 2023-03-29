@@ -4,8 +4,6 @@ from sympy.external import import_module
 from spb.defaults import TWO_D_B, THREE_D_B
 from spb.interactive import _tuple_to_dict, IPlot
 from spb import BB, MB
-import plotly.graph_objects as go
-from bokeh.io import push_notebook
 from IPython.display import clear_output
 
 
@@ -85,9 +83,13 @@ class InteractivePlot(IPlot):
             self._output_figure = ipywidgets.Box([self._backend.fig.canvas])
         elif isinstance(self._backend, BB):
             self._output_figure = ipywidgets.Output()
-            from bokeh.io import show
+            bokeh = import_module(
+                'bokeh',
+                import_kwargs={'fromlist': ['io']},
+                warn_not_installed=True,
+                min_module_version='2.3.0')
             with self._output_figure:
-                show(self._backend.fig)
+                bokeh.io.show(self._backend.fig)
         else:
             self._output_figure = self._backend.fig
 
@@ -95,10 +97,14 @@ class InteractivePlot(IPlot):
             self._backend.update_interactive(
                 {k: v.value for k, v in self._params_widgets.items()})
             if isinstance(self._backend, BB):
-                from bokeh.io import show
+                bokeh = import_module(
+                    'bokeh',
+                    import_kwargs={'fromlist': ['io']},
+                    warn_not_installed=True,
+                    min_module_version='2.3.0')
                 with self._output_figure:
                     clear_output(True)
-                    show(self._backend.fig)
+                    bokeh.io.show(self._backend.fig)
 
         for w in self._widgets:
             w.observe(update, "value")
