@@ -223,6 +223,8 @@ def iplot(*series, show=True, **kwargs):
     2. the parameter ``n`` is a spinner.
     3. the parameter ``phi`` will be rendered as a slider: note the custom
        number of steps and the custom label.
+    4. when using Matplotlib, the ``%matplotlib widget`` must be executed at
+       the top of the notebook.
 
     .. code-block:: python
 
@@ -240,6 +242,36 @@ def iplot(*series, show=True, **kwargs):
                phi: (0, 0, 2*pi, 50, "$\phi$ [rad]")
            },
            ylim=(-1.25, 1.25))
+
+    A line plot illustrating the Fouries series approximation of a saw tooth
+    wave and:
+
+    1. custom number of steps and label in the slider.
+    2. creation of an integer spinner widget.
+
+    .. code-block:: python
+
+       from sympy import *
+       from spb import *
+       import ipywidgets
+
+       x, T, n, m = symbols("x, T, n, m")
+       sawtooth = frac(x / T)
+       # Fourier Series of a sawtooth wave
+       fs = S(1) / 2 - (1 / pi) * Sum(sin(2 * n * pi * x / T) / n, (n, 1, m))
+
+       formatter = PrintfTickFormatter(format="%.3f")
+       plot(
+           (sawtooth, (x, 0, 10), "f", {"line_dash": "dotted"}),
+           (fs, (x, 0, 10), "approx"),
+           params = {
+               T: (4, 0, 10, 80, "Period, T"),
+               m: ipywidgets.BoundedIntText(value=4, min=1, max=100, description="Sum up to n ")
+           },
+           xlabel = "x",
+           ylabel = "y",
+           backend = BB
+       )
 
     A line plot of the magnitude of a transfer function, illustrating the use
     of multiple expressions and:
@@ -275,6 +307,40 @@ def iplot(*series, show=True, **kwargs):
            use_latex = True,
        )
 
+    A polar line plot. Note:
+
+    1. when using Matplotlib, the ``%matplotlib widget`` must be executed at
+       the top of the notebook.
+    2. the two ways to create a integer sliders.
+
+    .. code-block:: python
+
+       %matplotlib widget
+       from sympy import *
+       from spb import *
+       import ipywidgets
+
+       p1, p2, t, r, c = symbols("p1, p2, t, r, c")
+       phi = - (r * t + p1 * sin(c * r * t) + p2 * sin(2 * c * r * t))
+       phip = phi.diff(t)
+       r1 = phip / (1 + phip)
+
+       plot_polar(
+           (r1, (t, 0, 2*pi)),
+           params = {
+               p1: (0.035, -0.035, 0.035, 50),
+               p2: (0.005, -0.02, 0.02, 50),
+               # integer parameter created with ipywidgets
+               r: ipywidgets.BoundedIntText(value=2, min=2, max=5, description="r"),
+               # integer parameter created with usual syntax
+               c: (3, 1, 5, 4)
+           },
+           backend = MB,
+           aspect = "equal",
+           n = 5000,
+           name = "Non Circular Planetary Drive - Ring Profile"
+       )
+
     Combine together ``InteractivePlot`` and ``Plot`` instances. The same
     parameters dictionary must be used for every interactive plot command.
     Note:
@@ -305,9 +371,7 @@ def iplot(*series, show=True, **kwargs):
            ylabel = "y1",
            title = "title 1",
            legend = True,
-           show = False,
-           use_latex = False,
-           imodule="panel"
+           show = False
        )
        p2 = plot(
            (sin(u * x), (x, -5, 5)),
@@ -316,8 +380,7 @@ def iplot(*series, show=True, **kwargs):
            xlabel = "x2",
            ylabel = "y2",
            title = "title 2",
-           show = False,
-           imodule="panel"
+           show = False
        )
        p3 = plot(sin(x)*cos(x), (x, -5, 5), dict(marker="^"), backend=MB,
            adaptive=False, n=50,
@@ -329,11 +392,11 @@ def iplot(*series, show=True, **kwargs):
     =====
 
     1. This function is specifically designed to work within Jupyter Notebook
-       and requires the ``ipywidgets`` module[#fna]_ .
+       and requires the ``ipywidgets`` module [#fna]_ .
 
     2. To update Matplotlib plots, the ``%matplotlib widget`` command must be
        executed at the top of the Jupyter Notebook. It requires the
-       installation of the ``ipympl`` module[#fnb]_ .
+       installation of the ``ipympl`` module [#fnb]_ .
 
     References
     ==========

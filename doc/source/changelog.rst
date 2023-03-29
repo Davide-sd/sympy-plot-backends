@@ -103,6 +103,10 @@ code to load the new configuration settings:
 
 * Documentation is now able to show interactive widget plots with K3D-Jupyter.
 
+* conda package is now built and made available through the conda-forge
+  channel. This greatly simplify the workflow and should allow an easier
+  installation with conda.
+
 
 v1.6.7
 ======

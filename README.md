@@ -1,7 +1,7 @@
 # Sympy Plotting Backends
 
 [![PyPI version](https://badge.fury.io/py/sympy-plot-backends.svg)](https://badge.fury.io/py/sympy-plot-backends)
-[![Conda (channel only)](https://img.shields.io/conda/vn/davide_sd/sympy_plot_backends?color=%2340BA12&label=conda%20package)](https://anaconda.org/Davide_sd/sympy_plot_backends)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/sympy_plot_backends.svg)](https://anaconda.org/conda-forge/sympy_plot_backends)
 [![Documentation Status](https://readthedocs.org/projects/sympy-plot-backends/badge/?version=latest)](http://sympy-plot-backends.readthedocs.io/)
 ![Coverage](https://github.com/Davide-sd/sympy-plot-backends/blob/master/coverage.svg)
 
@@ -69,7 +69,7 @@ pip install sympy_plot_backends
 Or
 
 ```
-conda install -c davide_sd sympy_plot_backends 
+conda install -c conda-forge sympy_plot_backends
 ```
 
 To install the complete requirements in order to get interactive plots, bokeh,
@@ -82,9 +82,13 @@ pip install sympy_plot_backends[all]
 Or:
 
 ```
-conda install -c anaconda scipy notebook
-conda install -c conda-forge adaptive ipympl panel k3d msgpack-python
-conda install -c bokeh ipywidgets_bokeh colorcet
+conda install -c anaconda scipy notebook colorcet
+conda install -c conda-forge adaptive
+conda install -c conda-forge panel
+conda install -c anaconda ipywidgets
+conda install -c conda-forge ipympl
+conda install -c bokeh ipywidgets_bokeh
+conda install -c conda-forge k3d msgpack-python
 conda install -c plotly plotly
 conda install -c conda-forge vtk
 ```

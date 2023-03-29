@@ -29,9 +29,17 @@ with ``ipywidgets``. To change interactive module, users can either:
 2. Modify the configuration file to permanently change the interactive module.
    More information are provided in :ref:`Tutorial 4`.
 
-Note that interactive capabilities are already integrated with many
-plotting functions. The purpose of the following documentation is to show a
-few more examples for each interactive module.
+Note that:
+
+* interactive capabilities are already integrated with many plotting functions.
+  The purpose of the following documentation is to show a few more examples
+  for each interactive module.
+
+* For technical reasons, all interactive-widgets plots in this documentation
+  are created using Holoviz's Panel. Often, they will ran just fine with
+  ipywidgets too. However, if a specific example uses the ``param`` library,
+  then users will have to modify the ``params`` dictionary in order to make
+  it work with ipywidgets. A couple of examples are provided below.
 
 
 The prange class

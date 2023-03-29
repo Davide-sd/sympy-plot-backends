@@ -20,14 +20,25 @@ plotly, k3d, vtk, execute the following command::
 
 Or::
 
+    # optional: colorcet gives more colormaps, scipy gives more numerical
+    # functions, notebook install the Jupyter Notebook (enabling interactivity)
     conda install -c anaconda scipy notebook colorcet
+    # optional: to install the adaptive algorithm:
     conda install -c conda-forge adaptive
-    conda install -c conda-forge ipympl panel
-    conda install -c conda-forge k3d msgpack-python
+    # optional: to install interactive widgets with holoviz's Panel
+    conda install -c conda-forge panel
+    # optional: to install interactive widgets with ipywidgets
+    conda install -c anaconda ipywidgets
+    conda install -c conda-forge ipympl
     conda install -c bokeh ipywidgets_bokeh
+    # optional: to install K3D-Jupyter
+    conda install -c conda-forge k3d msgpack-python
+    # optional: to install Plotly
     conda install -c plotly plotly
+    # optional: to enable 3D streamlines plots with matplotlib and K3D-Jupyter
     conda install -c conda-forge vtk
-    conda install -c davide_sd sympy_plot_backends 
+    # required: to install the basic plotting module with Matplotlib
+    conda install -c conda-forge sympy_plot_backends
 
 Finally, if you are using zshell, the above `pip` command is going to fail.
 Use the following instead::

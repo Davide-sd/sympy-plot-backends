@@ -232,7 +232,7 @@ def _is_range(r):
 
 class prange(Tuple):
     """Represents a plot range, an entity describing what interval a
-    particular variable is allowed to vary. It is a 3-element tuple:
+    particular variable is allowed to vary. It is a 3-elements tuple:
     (symbol, minimum, maximum).
 
     Notes
@@ -249,11 +249,25 @@ class prange(Tuple):
     Hovewer, there are some plotting functions in which the expression consists
     of 3-elements tuple/list. The plotting module is also interactive, meaning
     that minimum and maximum can also be expressions containing parameters.
-    In that case, the plotting range is indistinguishable from a 3-elements
+    In these cases, the plotting range is indistinguishable from a 3-elements
     tuple describing an expression.
 
     This class is meant to solve that ambiguity: it only represents a plotting
     range.
+
+    Examples
+    ========
+
+    Let x be a symbol and u, v, t be parameters. An example plotting range is:
+
+    .. doctest::
+
+       >>> from sympy import symbols
+       >>> from spb import prange
+       >>> x, u, v, t = symbols("x, u, v, t")
+       >>> prange(x, u * v, v**2 + t)
+       (x, u*v, t + v**2)
+
     """
     def __new__(cls, *args):
         if len(args) != 3:
