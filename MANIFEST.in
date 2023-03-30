@@ -1,2 +1,2 @@
-include spb/interactive/*.html
-include spb/interactive/*.css
+include spb/interactive/bootstrap_spb/*.html
+include spb/interactive/bootstrap_spb/*.css
