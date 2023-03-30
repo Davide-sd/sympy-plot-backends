@@ -3141,8 +3141,8 @@ def plot_implicit(*args, **kwargs):
         algorithm uses a mesh grid approach. In such case, Boolean
         combinations of expressions cannot be plotted.
         If set to ``True``, the internal algorithm uses interval arithmetic.
-        It switches to the meshgrid approach if the expression cannot be
-        plotted using interval arithmetic.
+        If the expression cannot be plotted with interval arithmetic, it
+        switches to the meshgrid approach.
 
     aspect : (float, float) or str, optional
         Set the aspect ratio of the plot. The value depends on the backend

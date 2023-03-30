@@ -1,148 +1,181 @@
 
-5 - Creating custom plots
--------------------------
+5 - Colors and Colormaps
+------------------------
 
-Sometimes, the functions exposed by Sympy's plotting module are not enough to
-accomplish our visualization objectives. If that's the case, we can either:
+Backends apply default rendering settings to the objects of the figure
+depending on the type of plot we are generating. For example, when executing the ``plot()`` function, backends use solid color and solid line style.
+When executing ``plot_parametric()`` or ``plot3d()``, they use colormaps.
 
-1. ``lambdify`` the symbolic expressions and evaluate it numerically.
-   However, this process is manually intensive.
-2. If the expressions can be plotted by the common plotting functions
-   (``plot``, ``plot3d``, ``plot_parametric``, ...), we can easily extract
-   the numerical data by calling the ``get_data`` method of the interested
-   series. Remember, the plot object can be indexed in order to access the
-   series.
+In this tutorial we are going to see how to modify this rendering options.
+It is assumed that the default backend is Matplotlib, both for 2D and 3D plots.
 
-Once we have the numerical data, we can use our preferred plotting library.
-If we are lucky enough, we can also:
+Change rendering options
+========================
 
-1. use one of the plotting functions as a starting point;
-2. extract the plot object associated to the plotting library;
-3. use the appropriate command of the plotting library to add new data to
-   the plot.
+Let's start by plotting a couple of expressions. By default, the backend will
+apply a colorloop so that each expression gets a unique color.
 
-Example - Editing and Adding Data
-=================================
-
-The current backends are able to plot lines, gradient lines, contours,
-quivers, streamlines. However, they are not able to plot things
-like *curve fills*, bars, ...
-
-In this example we are going to illustrate a procedure that can be used to
-further customize the plot. Since we are going to use backend-specific
-commands, the procedure is backend-specific. In the following, we are going
-to use ``PlotlyBackend``. For other backends, the procedure might need to be
-adjusted.
-
-Let's say we would like to plot on the same figure:
-
-* a normal distribution filled to the horizontal axis.
-* a dampened oscillation.
-* bars following an exponential decay at integer locations.
-
-.. code-block:: python
+.. plot::
+   :context: reset
+   :include-source: True
 
    from sympy import *
    from spb import *
-   x, mu, sigma = symbols("x, mu, sigma")
-   expr1 = 1 / (sigma * sqrt(2 * pi)) * exp(-((x - mu) / sigma)**2 / 2)
-   expr2 = cos(x) * exp(-x / 6)
-   expr3 = exp(-x / 5)
+   var("x, y")
+   plot(sin(x), cos(x))
 
-We start by plotting the first two expressions, as the third one requires
-a different approach:
+We can modify the styling of the lines by providing backend-specific commands
+through the ``rendering_kw`` argument (or keyword argument), which will be
+passed directly to the backend-specific function responsible to draw lines.
+
+Some plot functions might create multiple data series about the same symbolic
+expression, so it exposes different rendering-related keyword arguments.
+For example, ``plot_vector`` combines a contour plot with a quiver (or
+streamline) plot, hence it exposes ``contour_kw``, ``quiver_kw`` and
+``stream_kw``.
+
+Let's try to apply a dashed line style:
+
+.. plot::
+   :context: close-figs
+   :include-source: True
+
+   # provide the rendering_kw argument
+   plot(sin(x), cos(x), dict(linestyle="--"))
+   # alternatively, we can set the rendering_kw keyword argument
+   # plot(sin(x), cos(x), rendering_kw=dict(linestyle="--"))
+
+
+As we can see, the same style has been applied to every series. What if we
+would like to apply different styles to different series? We can create a tuple
+of the form ``(expr, label [optional], rendering_kw [optional])`` for each
+expression, or we can provide a list of dictionaries to the ``rendering_kw``
+keyword argument, where the number of dictionaries must be equal to the number
+of expressions being plotted. For example:
+
+.. plot::
+   :context: close-figs
+   :include-source: True
+
+   plot((sin(x), dict(color="red")), (cos(x), dict(linestyle="--")))
+   # alternatively, set rendering_kw to a list of dictionaries
+   # plot(sin(x), cos(x), rendering_kw=[dict(color="red"), dict(linestyle="--")])
+
+
+Alternatively, we can create different plots and combine them together:
+
+.. plot::
+   :context: close-figs
+   :include-source: True
+
+   p1 = plot(sin(x), dict(color="red"), show=False)
+   p2 = plot(cos(x), dict(linestyle="--"), show=False)
+   p3 = p1 + p2
+   p3.show()
+
+
+Note that the second series, ``cos(x)``, is using the automatic color provided
+by the backend.
+
+Now, let's try to do the same with Plotly. Note that the rendering
+options are different!
+
+.. plotly::
+   :include-source: True
+
+   from sympy import *
+   from spb import *
+   var("x, y")
+   plot((sin(x), dict(line_color="green")), (cos(x), dict(line_dash="dash")), backend=PB)
+
+
+Let's now use same concepts with a 3D plot. This is the default look:
+
+.. plot::
+   :context: close-figs
+   :include-source: True
+
+   plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), use_cm=True)
+
+Now, let's change the colormap:
+
+.. plot::
+   :context: close-figs
+   :include-source: True
+
+   import matplotlib.cm as cm
+   plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), dict(cmap=cm.coolwarm), use_cm=True)
+
+
+Custom color loop and colormaps
+===============================
+
+We can also modify the color loop and the colormaps used by the backend.
+Each backend exposes the ``colorloop`` and ``colormaps`` class attributes,
+which are empty lists:
 
 .. code-block:: python
 
-   p = plot(
-       (expr1.subs({sigma: 0.8, mu: 5}), "normal"),
-       (expr2, "oscillation"),
-       (x, 0, 10), backend=PB)
-
-.. raw:: html
-
-   <iframe src="../_static/tut-4/plotly-4.html" height="500px" width="100%"></iframe>
-
-Now, we'd like to fill the first curve. First, we extract the figure object;
-then we set the necessary attribute to get the job done. Obviously, the
-following procedure depends on the backend being used.
-
-.. code-block:: python
-
-   f = p.fig
-   f.data[0]["fill"]="tozerox"
-   f
-
-.. raw:: html
-
-   <iframe src="../_static/tut-4/f1.html" height="500px" width="100%"></iframe>
-
-At this point we have to convert ``expr3`` to numerical data.
-We can do it with the ``plot`` function:
-
-.. code-block:: python
-
-   p2 = plot(expr3, (x, 0, 10), adaptive=False, only_integers=True, show=False)
-   # p2[0] is the data series representing our expression
-   xx, yy = p2[0].get_data()
-   print(xx)
-   print(yy)
+   print(MB.colorloop)
+   print(MB.colormaps)
 
 .. code-block:: text
 
-   [ 0.  1.  2.  3.  4.  5.  6.  7.  8.  9. 10.]
-   [1.         0.81873075 0.67032005 0.54881164 0.44932896 0.36787944
-    0.30119421 0.24659696 0.20189652 0.16529889 0.13533528]
+   []
+   []
 
-The advantage of this approach is that we can visualize the data
-(if ``show=True``).
+We can fill these lists with our preferred colors or colormaps.
+For example:
 
-It is important to realize that the ``get_data()`` method of each series may
-returns different elements. Read its documentation to find out what it returns:
+.. plot::
+   :context: close-figs
+   :include-source: True
 
-.. code-block:: python
+   import matplotlib.cm as cm
+   MB.colorloop = cm.Dark2.colors
+   plot(sin(x), cos(x), sin(x) * cos(x))
 
-   help(p2[0].get_data)
+Note that ``cm.Dark2.colors`` returns a list of colors. By comparing this
+picture with the ones at the beginning, we can confirm that the colorloop
+has changed.
 
-.. code-block:: text
+After setting these two class attribute, every plot will use the new
+colors, until the kernel is restarted or the attributes are set to empty lists.
 
-   Help on method get_data in module spb.series:
+Let's try a 3D plot with default colormaps:
 
-   get_data() method of spb.series.LineOver1DRangeSeries instance
-       Return coordinates for plotting the line.
+.. plotly::
 
-       Returns
-       =======
+   from sympy import *
+   from spb import *
+   var("x, y")
+   expr = cos(x**2 + y**2)
+   plot3d(
+       (expr, (x, -2, 0), (y, -2, 0)),
+       (expr, (x, 0, 2), (y, -2, 0)),
+       (expr, (x, -2, 0), (y, 0, 2)),
+       (expr, (x, 0, 2), (y, 0, 2)),
+       n = 20, backend=PB, use_cm=True
+   )
 
-       x: np.ndarray
-           x-coordinates
+Now, let's change the colormaps:
 
-       y: np.ndarray
-           y-coordinates
+.. plotly::
 
-       z: np.ndarray (optional)
-           z-coordinates in case of Parametric3DLineSeries,
-           Parametric3DLineInteractiveSeries
+   from sympy import *
+   from spb import *
+   import colorcet as cc
+   import matplotlib.cm as cm
+   var("x, y")
+   expr = cos(x**2 + y**2)
+   PB.colormaps = ["solar", "aggrnyl", cm.coolwarm, cc.kbc]
+   plot3d(
+       (expr, (x, -2, 0), (y, -2, 0)),
+       (expr, (x, 0, 2), (y, -2, 0)),
+       (expr, (x, -2, 0), (y, 0, 2)),
+       (expr, (x, 0, 2), (y, 0, 2)),
+       n = 20, backend=PB, use_cm=True
+   )
 
-       param : np.ndarray (optional)
-           The parameter in case of Parametric2DLineSeries,
-           Parametric3DLineSeries or AbsArgLineSeries (and their
-           corresponding interactive series).
-
-
-Now that we have generated the numerical values at integer locations, we can
-add the bars with the appropriate command:
-
-.. code-block:: python
-
-   import plotly.graph_objects as go
-   import numpy as np
-   f.add_trace(go.Bar(x=xx, y=yy, width=np.ones_like(xx) / 2, name="bars"))
-   f
-
-.. raw:: html
-
-   <iframe src="../_static/tut-4/f2.html" height="500px" width="100%"></iframe>
-
-
-That's it, job done.
+Note that all backend are able to use colormaps from a different
+plotting library!

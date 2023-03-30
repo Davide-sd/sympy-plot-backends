@@ -5,7 +5,7 @@ Installation
 ------------
 
 SymPy Plotting Backends can be installed with `pip` or `conda`. By default,
-only basic plotting with Matplotlib will be installed::
+only basic plotting with Numpy and Matplotlib will be installed::
 
     pip install sympy_plot_backends
 
@@ -13,37 +13,40 @@ Or::
 
     conda install -c conda-forge sympy_plot_backends 
 
-To install the complete requirements in order to get interactive plots, bokeh,
-plotly, k3d, vtk, execute the following command::
+To install the complete requirements in order to get adaptive algorithm,
+interactive plots, bokeh, plotly, k3d, vtk, execute the following command::
 
     pip install sympy_plot_backends[all]
 
-Or::
-
-    # optional: colorcet gives more colormaps, scipy gives more numerical
-    # functions, notebook install the Jupyter Notebook (enabling interactivity)
-    conda install -c anaconda scipy notebook colorcet
-    # optional: to install the adaptive algorithm:
-    conda install -c conda-forge adaptive
-    # optional: to install interactive widgets with holoviz's Panel
-    conda install -c conda-forge panel
-    # optional: to install interactive widgets with ipywidgets
-    conda install -c anaconda ipywidgets
-    conda install -c conda-forge ipympl
-    conda install -c bokeh ipywidgets_bokeh
-    # optional: to install K3D-Jupyter
-    conda install -c conda-forge k3d msgpack-python
-    # optional: to install Plotly
-    conda install -c plotly plotly
-    # optional: to enable 3D streamlines plots with matplotlib and K3D-Jupyter
-    conda install -c conda-forge vtk
-    # required: to install the basic plotting module with Matplotlib
-    conda install -c conda-forge sympy_plot_backends
-
-Finally, if you are using zshell, the above `pip` command is going to fail.
+If you are using zshell, the above `pip` command is going to fail.
 Use the following instead::
 
     pip install "sympy_plot_backends[all]"
+
+To install the complete requirements with conda::
+
+    # scipy gives more numerical functions, notebook install the
+    # Jupyter Notebook (enabling interactivity)
+    conda install -c anaconda scipy notebook
+    # to install the adaptive algorithm:
+    conda install -c conda-forge adaptive
+    # to install interactive widgets with holoviz's Panel
+    conda install -c conda-forge panel
+    # to install interactive widgets with ipywidgets
+    conda install -c anaconda ipywidgets
+    conda install -c conda-forge ipympl
+    conda install -c bokeh ipywidgets_bokeh
+    # colorcet gives more colormaps
+    conda install -c conda-forge colorcet
+    # to install K3D-Jupyter
+    conda install -c conda-forge k3d msgpack-python
+    # to install Plotly
+    conda install -c plotly plotly
+    # to enable 3D streamlines plots with matplotlib and K3D-Jupyter
+    conda install -c conda-forge vtk
+    # finally
+    conda install -c conda-forge sympy_plot_backends
+
 
 
 Verify the installation
@@ -111,8 +114,9 @@ It is also the perfect time to verify that K3D-Jupyter is working:
    4. Restart ``jupyter notebook``
    5. Open the previous notebook and execute the plot command.
 
-Refer to the :ref:`tutorials` for a starter guide on using the plotting backends or to the :ref:`functions` to visualize the output of some of the
-plotting functions.
+Refer :ref:`functions` to explore visualize the output of some of the
+plotting functions, or to the :ref:`tutorials` for a starter guide on using
+the plotting backends.
 
 
 Installing Mayavi

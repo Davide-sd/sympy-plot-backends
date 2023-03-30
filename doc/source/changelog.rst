@@ -2,6 +2,15 @@
  Changelog
 ==========
 
+
+v2.0.1
+======
+
+* Bug fix: included static files necessary for serving interactive application
+  on a new browser window.
+* Improved documentation.
+
+
 v2.0.1
 ======
 
