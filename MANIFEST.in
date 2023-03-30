@@ -1,0 +1,2 @@
+include spb/interactive/*.html
+include spb/interactive/*.css
