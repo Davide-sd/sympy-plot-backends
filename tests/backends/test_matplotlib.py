@@ -1322,6 +1322,7 @@ def testupdate_interactive():
         params={u: (1, 0, 2)})
     p.backend.process_series()
     p.backend.update_interactive({u: 2})
+    p.backend.update_interactive({u: 3})
 
     p = plot_geometry(
         SymPyLine((u, 2), (5, 4)), Circle((0, 0), u), Polygon((2, u), 3, n=6),
@@ -1329,6 +1330,7 @@ def testupdate_interactive():
         params={u: (1, 0, 2)})
     p.backend.process_series()
     p.backend.update_interactive({u: 2})
+    p.backend.update_interactive({u: 3})
 
 
 def test_generic_data_series():

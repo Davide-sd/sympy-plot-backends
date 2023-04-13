@@ -3,7 +3,15 @@
 ==========
 
 
-v2.0.1
+v2.0.3
+======
+
+* Bug fix on ``MatplotlibBackend`` when plotting filled geometries with
+  interactive widgets.
+
+
+
+v2.0.2
 ======
 
 * Bug fix: included static files necessary for serving interactive application

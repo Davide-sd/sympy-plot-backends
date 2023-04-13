@@ -1179,10 +1179,9 @@ class MatplotlibBackend(Plot):
                         zlims.append((np.amin(mag), np.amax(mag)))
 
                 elif s.is_geometry and not (s.is_2Dline):
-                    # TODO: fill doesn't update
                     x, y = self.series[i].get_data()
                     self._handles[i][0].remove()
-                    self._handles[i][0] = self._ax.fill(x, y, **self._handles[i][1])
+                    self._handles[i][0] = self._ax.fill(x, y, **self._handles[i][1])[0]
 
         # Update the plot limits according to the new data
         Axes3D = mpl_toolkits.mplot3d.Axes3D
