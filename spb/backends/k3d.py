@@ -344,8 +344,8 @@ class K3DBackend(Plot):
 
                 stream_kw = s.rendering_kw.copy()
                 skw = dict(width=0.1, shader="mesh")
-                if s.use_cm and ("color" not in stream_kw.keys()):
-                    skw["color_map"] = next(self._cm)
+                if s.use_cm:
+                    skw["color_map"] = stream_kw.get("color", next(self._cm))
                     skw["color_range"] = [float(np.nanmin(color_val)), float(np.nanmax(color_val))]
                     skw["attribute"] = color_val
                 else:
@@ -363,8 +363,8 @@ class K3DBackend(Plot):
                 qkw = dict(scale=1)
                 qkw = merge(qkw, s.rendering_kw)
                 quiver_kw = s.rendering_kw
-                if s.use_cm and ("color" not in quiver_kw.keys()):
-                    colormap = next(self._cm)
+                if s.use_cm:
+                    colormap = quiver_kw.get("color", next(self._cm))
                     # store useful info for interactive vector plots
                     self._handles[ii] = [qkw, colormap]
                 else:

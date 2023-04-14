@@ -9,6 +9,7 @@ v2.0.3
 * Bug fix on ``MatplotlibBackend`` when plotting filled geometries with
   interactive widgets.
 
+* Bug fix on ``K3DBackend`` when plotting 3D quivers with custom colormaps.
 
 
 v2.0.2

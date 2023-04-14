@@ -178,7 +178,7 @@ def test_plot_vector_3d_quivers():
     # `plot_vector()` is called and `quiver_kw` overrides the
     # default settings
 
-    p = make_plot_vector_3d_quiver(KB, quiver_kw=dict(scale=0.5, color=16711680))
+    p = make_plot_vector_3d_quiver(KB, quiver_kw=dict(scale=0.5, color=16711680), use_cm=False)
     assert len(p.series) == 1
     f = p.fig
     assert len(f.objects) == 1
