@@ -9,7 +9,11 @@ v2.0.3
 * Bug fix on ``MatplotlibBackend`` when plotting filled geometries with
   interactive widgets.
 
-* Bug fix on ``K3DBackend`` when plotting 3D quivers with custom colormaps.
+* Bug fixes on ``K3DBackend``:
+
+  * it is now possible to plot 3D quivers with custom colormaps.
+
+  * fixed color bar visibility when plotting 3D complex plots.
 
 * ``MatplotlibBackend`` and ``PlotlyBackend`` are now able to visualize legend
   entries for 3D surface plots using solid colors.

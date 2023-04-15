@@ -38,9 +38,10 @@ class K3DBackend(Plot):
           - ``scale``: a float number acting as a scale multiplier.
           - ``pivot``: indicates the part of the arrow that is anchored to the
             X, Y, Z grid. It can be ``"tail", "mid", "middle", "tip"``.
-          - ``color``: set a solid color by specifying an integer color. If this
-            key is not provided, a default color or colormap is used, depenging
-            on the value of ``use_cm``.
+          - ``color``: set a solid color by specifying an integer color, or
+            a colormap by specifying one of k3d's colormaps.
+            If this key is not provided, a default color or colormap is used,
+            depending on the value of ``use_cm``.
 
           Set ``use_cm=False`` to switch to a default solid color.
 
@@ -413,7 +414,7 @@ class K3DBackend(Plot):
                     flat_shading=False,
                     wireframe=False,
                     color=self._convert_to_int(next(self._cl)),
-                    color_range=[-np.pi, np.pi],
+                    colorLegend=self.legend or s.use_cm,
                 )
                 if s.use_cm:
                     colors = colors.reshape((-1, 3))
