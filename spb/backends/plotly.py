@@ -466,7 +466,8 @@ class PlotlyBackend(Plot):
                 colormap = next(self._cm)
                 skw = dict(
                     name=s.get_label(self._use_latex),
-                    showscale=self.legend,
+                    showscale=s.use_cm and self.legend,
+                    showlegend=(not s.use_cm) and self.legend,
                     colorbar=self._create_colorbar(s.get_label(self._use_latex), mix_3Dsurfaces_3Dlines),
                     colorscale=colormap if s.use_cm else colorscale,
                     surfacecolor=surfacecolor,

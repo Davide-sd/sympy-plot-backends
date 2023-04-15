@@ -1935,8 +1935,8 @@ def plot3d(*args, **kwargs):
            xlabel="x [deg]", ylabel="y [deg]",
            aspect=dict(x=1.5, y=1.5, z=0.5))
 
-    Multiple plots with same range. Set ``use_cm=True`` to distinguish the
-    expressions:
+    Multiple plots with same range using color maps. By default, colors are
+    mapped to the z values:
 
     .. plot::
        :context: close-figs

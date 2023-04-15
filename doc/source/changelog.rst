@@ -11,6 +11,9 @@ v2.0.3
 
 * Bug fix on ``K3DBackend`` when plotting 3D quivers with custom colormaps.
 
+* ``MatplotlibBackend`` and ``PlotlyBackend`` are now able to visualize legend
+  entries for 3D surface plots using solid colors.
+
 
 v2.0.2
 ======

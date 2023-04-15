@@ -297,13 +297,13 @@ class K3DBackend(Plot):
                         indices = Triangulation(x, y).triangles.astype(np.uint32)
                     attribute = s.eval_color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2])
 
-                # self._high_aspect_ratio(x, y, z)
                 a = dict(
                     name=s.get_label(self._use_latex, "%s") if self._show_label else None,
                     side="double",
                     flat_shading=False,
                     wireframe=False,
                     color=self._convert_to_int(next(self._cl)) if s.surface_color is None else s.surface_color,
+                    colorLegend=self.legend or s.use_cm,
                 )
                 if s.use_cm:
                     a["color_map"] = next(self._cm)

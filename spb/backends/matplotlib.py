@@ -495,6 +495,9 @@ class MatplotlibBackend(Plot):
                     skw["cmap"] = cmap
                 else:
                     skw["color"] = next(self._cl) if s.surface_color is None else s.surface_color
+                    proxy_artist = self.Rectangle((0, 0), 1, 1,
+                        color=skw["color"], label=s.get_label(self._use_latex))
+                    self._legend_handles.append(proxy_artist)
 
                 kw = merge({}, skw, s.rendering_kw)
                 if s.use_cm:
