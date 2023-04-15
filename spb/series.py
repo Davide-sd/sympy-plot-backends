@@ -412,7 +412,7 @@ class BaseSeries:
             if any(t in fs for t in range_symbols):
                 raise ValueError("Range symbols can't be included into "
                     "minimum and maximum of a range. "
-                    "Received range: %s" % r)
+                    "Received range: %s" % str(r))
             if len(fs) > 0:
                 self._interactive_ranges = True
             remaining_fs = fs.difference(params.keys())
@@ -927,7 +927,7 @@ class BaseSeries:
         new_vals = []
         for v in val:
             if v is not None:
-                new_vals.append([sympify(t) for t in v])
+                new_vals.append(tuple([sympify(t) for t in v]))
         self._ranges = new_vals
 
     def _apply_transform(self, *args):
