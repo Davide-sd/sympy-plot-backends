@@ -3,7 +3,7 @@ from spb.defaults import cfg
 from spb.utils import prange
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
-    Equality, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
+    Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
     atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re
 )
@@ -1875,7 +1875,8 @@ class ImplicitSeries(BaseSeries):
 
     is_implicit = True
     _allowed_keys = ["adaptive", "depth", "n1", "n2", "rendering_kw",
-    "xscale", "yscale"]
+    "xscale", "yscale", "show_in_legend", "color"]
+    _N = 100
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         super().__init__(**kwargs)
@@ -1890,11 +1891,17 @@ class ImplicitSeries(BaseSeries):
         self._label = str(expr) if label is None else label
         self._latex_label = latex(expr) if label is None else label
         self.adaptive = kwargs.get("adaptive", False)
+        self.show_in_legend = kwargs.get("show_in_legend", True)
+        self.color = kwargs.get("color", kwargs.get("line_color", None))
 
-        if isinstance(expr, BooleanFunction) and (not self.adaptive):
+        if ((isinstance(expr, BooleanFunction) or isinstance(expr, Ne))
+            and (not self.adaptive)):
             self.adaptive = True
+            msg = "contains Boolean functions. "
+            if isinstance(expr, Ne):
+                msg = "is an unequality. "
             warnings.warn(
-                "The provided expression contains Boolean functions. "
+                "The provided expression " + msg
                 + "In order to plot the expression, the algorithm "
                 + "automatically switched to an adaptive sampling."
             )
@@ -1904,7 +1911,7 @@ class ImplicitSeries(BaseSeries):
             self._is_equality = False
         else:
             # these are needed for uniform meshing evaluation
-            expr, is_equality = self._preprocess_meshgrid_expression(expr)
+            expr, is_equality = self._preprocess_meshgrid_expression(expr, self.adaptive)
             self._non_adaptive_expr = expr
             self._is_equality = is_equality
 
@@ -2100,16 +2107,12 @@ class ImplicitSeries(BaseSeries):
         xarray, yarray, z_grid = self._evaluate()
         _re, _im = np.real(z_grid), np.imag(z_grid)
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
-        z_grid = _re
-        z_grid[np.ma.where(z_grid < 0)] = -1
-        z_grid[np.ma.where(z_grid > 0)] = 1
         if self._is_equality:
-            return xarray, yarray, z_grid, 'contour'
-        else:
-            return xarray, yarray, z_grid, 'contourf'
+            return xarray, yarray, _re, 'contour'
+        return xarray, yarray, _re, 'contourf'
 
     @staticmethod
-    def _preprocess_meshgrid_expression(expr):
+    def _preprocess_meshgrid_expression(expr, adaptive):
         """If the expression is a Relational, rewrite it as a single
         expression.
 
@@ -2126,13 +2129,11 @@ class ImplicitSeries(BaseSeries):
         if isinstance(expr, Equality):
             expr = expr.lhs - expr.rhs
             equality = True
-
         elif isinstance(expr, (GreaterThan, StrictGreaterThan)):
             expr = expr.lhs - expr.rhs
-
         elif isinstance(expr, (LessThan, StrictLessThan)):
             expr = expr.rhs - expr.lhs
-        else:
+        elif not adaptive:
             raise NotImplementedError(
                 "The expression is not supported for "
                 "plotting in uniform meshed plot."

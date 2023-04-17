@@ -6,6 +6,19 @@
 v2.0.3
 ======
 
+* Improved ``plot_implicit``:
+
+  * it supports the ``color`` keyword argument, to set the color of line or
+    region being plotted.
+  
+  * it supports the ``border_color`` keyword argument: this will add a new
+    data series to represent a limiting border when plotting inequalities
+    (``>, >=, <, <=``).
+  
+  * reduced the number of discretization points from 1000 to 100. Thanks to
+    improvements to the backend and data generation, same quality can be
+    achieved much more efficiently.
+
 * Bug fix on ``MatplotlibBackend`` when plotting filled geometries with
   interactive widgets.
 

@@ -32,7 +32,7 @@ from spb.utils import (
 from sympy import (
     latex, Tuple, Expr, Symbol, Wild, oo, Sum, sign, Piecewise, piecewise_fold,
     Plane, FiniteSet, Interval, Union, cos, sin, pi, sympify, atan2, sqrt,
-    Dummy, symbols, I, re, im
+    Dummy, symbols, I, re, im, Eq, Ne
 )
 # NOTE: from sympy import EmptySet is a different thing!!!
 from sympy.sets.sets import EmptySet
@@ -3143,18 +3143,21 @@ def plot_implicit(*args, **kwargs):
         If set to ``True``, the internal algorithm uses interval arithmetic.
         If the expression cannot be plotted with interval arithmetic, it
         switches to the meshgrid approach.
+    
+    border_color : str or bool, optional
+        If given, a limiting border will be added when plotting inequalities
+        (<, <=, >, >=).
+    
+    color : str, optional
+        Specify the color of lines/regions. Default to None (automatic
+        coloring by the backend).
 
     aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
-
-    backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+        Set the aspect ratio of the plot. Possible values are ``"auto"`` or
+        ``"equals"``. Default to ``"auto"``.
 
     depth : integer
-        The depth of recursion for adaptive mesh grid. Default value is 0.
+        The depth of recursion for adaptive grid. Default value is 0.
         Takes value in the range (0, 4).
         Think of the resulting plot as a picture composed by pixels. By
         increasing ``depth`` we are increasing the number of pixels, thus
@@ -3167,14 +3170,16 @@ def plot_implicit(*args, **kwargs):
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance. Refer to the plotting library
-        (backend) manual for more informations.
+        function to customize the appearance. If the adaptive algorithm is
+        used, then matplotlib's ``fill`` command will be executed.
+        If ``adaptive=False``, then matplotlib's ``contour`` or ``contourf``
+        commands will be executed.
         If a list of dictionaries is provided, the number of dictionaries must
         be equal to the number of expressions.
 
     n1, n2 : int
         Number of discretization points in the horizontal and vertical
-        directions when ``adaptive=False``. Default to 1000.
+        directions when ``adaptive=False``. Default to 100.
 
     n : int or two-elements tuple (n1, n2), optional
         If an integer is provided, the x and y ranges are sampled uniformly
@@ -3186,9 +3191,14 @@ def plot_implicit(*args, **kwargs):
         enables the interactive-widgets plot. Learn more by reading the
         documentation of ``iplot``.
 
-    show : Boolean
+    show : bool
         Default value is True. If set to False, the plot will not be shown.
         See `Plot` for further information.
+    
+    show_in_legend : bool
+        If True, add a legend entry for the expression being plotted.
+        This option is useful to hide a particular expression when combining
+        together multiple plots. Default to True.
 
     title : string
         The title for the plot.
@@ -3210,7 +3220,7 @@ def plot_implicit(*args, **kwargs):
         :format: doctest
         :include-source: True
 
-        >>> from sympy import symbols, Eq, And, sin, pi, log
+        >>> from sympy import symbols, Ne, Eq, And, sin, cos, pi, log, latex
         >>> from spb import plot_implicit
         >>> x, y = symbols('x y')
 
@@ -3223,20 +3233,36 @@ def plot_implicit(*args, **kwargs):
 
        >>> p = plot_implicit(x - 1, x)
 
-    Specify both ranges and set the number of discretization points:
+    Specify both ranges, set the number of discretization points and plot a
+    region:
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot_implicit(
-       ...     (x**2 + y**2 - 1)**3 - x**2 * y**3,
-       ...     (x, -1.5, 1.5), (y, -1.5, 1.5),
-       ...     n = 500)
+       >>> plot_implicit(y > x**2, (x, -5, 5), (y, -10, 10), n=150, grid=False)
        Plot object containing:
-       [0]: Implicit expression: Eq(-x**2*y**3 + (x**2 + y**2 - 1)**3, 0) for x over (-1.5, 1.5) and y over (-1.5, 1.5)
+       [0]: Implicit expression: y > x**2 for x over (-5.0, 5.0) and y over (-10.0, 10.0)
 
+    Plot a region using a custom color, highlights the limiting border and
+    customize its appearance. In this particular case, the content of
+    ``rendering_kw`` will be sent to matplotlib's ``contour`` of ``contourf``
+    commands.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> expr = 4 * (cos(x) - sin(y) / 5)**2 + 4 * (-cos(x) / 5 + sin(y))**2
+       >>> plot_implicit(expr <= pi, (x, -pi, pi), (y, -pi, pi),
+       ...     grid=False, color="gold", border_color="k",
+       ...     rendering_kw={"linestyles": "-.", "linewidths": 1})
+       Plot object containing:
+       [0]: Implicit expression: 4*(-sin(y)/5 + cos(x))**2 + 4*(sin(y) - cos(x)/5)**2 <= pi for x over (-3.141592653589793, 3.141592653589793) and y over (-3.141592653589793, 3.141592653589793)
+       [1]: Implicit expression: Eq(-4*(-sin(y)/5 + cos(x))**2 - 4*(sin(y) - cos(x)/5)**2 + pi, 0) for x over (-3.141592653589793, 3.141592653589793) and y over (-3.141592653589793, 3.141592653589793)
+    
     Boolean expressions will be plotted with the adaptive algorithm. Note the
     thin width of lines:
 
@@ -3252,43 +3278,6 @@ def plot_implicit(*args, **kwargs):
        Plot object containing:
        [0]: Implicit expression: (y > 0) & Eq(y, sin(x)) for x over (-6.283185307179586, 6.283185307179586) and y over (-4.0, 4.0)
        [1]: Implicit expression: (y < 0) & Eq(y, sin(x)) for x over (-6.283185307179586, 6.283185307179586) and y over (-4.0, 4.0)
-
-    Comparison of similar expressions plotted with different algorithms. Note:
-
-    1. Adaptive algorithm (``adaptive=True``) can be used with any expression,
-       but it usually creates lines with variable thickness. The ``depth``
-       keyword argument can be used to improve the accuracy, but reduces line
-       thickness even further.
-    2. Mesh grid algorithm (``adaptive=False``) creates lines with contant
-       thickness.
-
-    .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
-
-        >>> expr1 = Eq(x * y - 20, 15 * y)
-        >>> expr2 = Eq((x - 3) * y - 20, 15 * y)
-        >>> expr3 = Eq((x - 6) * y - 20, 15 * y)
-        >>> ranges = (x, 15, 30), (y, 0, 50)
-        >>> p1 = plot_implicit(expr1, *ranges, adaptive=True, depth=0,
-        ...     label="adaptive=True, depth=0", grid=False, show=False)
-        >>> p2 = plot_implicit(expr2, *ranges, adaptive=True, depth=1,
-        ...     label="adaptive=True, depth=1", grid=False, show=False)
-        >>> p3 = plot_implicit(expr3, *ranges, adaptive=False,
-        ...     label="adaptive=False", grid=False, show=False)
-        >>> (p1 + p2 + p3).show()
-
-    Plotting regions:
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-       >>> plot_implicit(y > x**2, (x, -5, 5), grid=False)
-       Plot object containing:
-       [0]: Implicit expression: y > x**2 for x over (-5.0, 5.0) and y over (-10.0, 10.0)
 
     Plotting multiple implicit expressions and setting labels:
 
@@ -3311,6 +3300,57 @@ def plot_implicit(*args, **kwargs):
        [3]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.064, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
        [4]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.08, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
 
+    Comparison of similar expressions plotted with different algorithms. Note:
+
+    1. Adaptive algorithm (``adaptive=True``) can be used with any expression,
+       but it usually creates lines with variable thickness. The ``depth``
+       keyword argument can be used to improve the accuracy, but reduces line
+       thickness even further.
+    2. Mesh grid algorithm (``adaptive=False``) creates lines with constant
+       thickness.
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> expr1 = Eq(x * y - 20, 15 * y)
+        >>> expr2 = Eq((x - 3) * y - 20, 15 * y)
+        >>> expr3 = Eq((x - 6) * y - 20, 15 * y)
+        >>> ranges = (x, 15, 30), (y, 0, 50)
+        >>> p1 = plot_implicit(expr1, *ranges, adaptive=True, depth=0,
+        ...     label="adaptive=True, depth=0", grid=False, show=False)
+        >>> p2 = plot_implicit(expr2, *ranges, adaptive=True, depth=1,
+        ...     label="adaptive=True, depth=1", grid=False, show=False)
+        >>> p3 = plot_implicit(expr3, *ranges, adaptive=False,
+        ...     label="adaptive=False", grid=False, show=False)
+        >>> (p1 + p2 + p3).show()
+
+    If the expression is plotted with the adaptive algorithm and it produces
+    "low-quality" results, maybe it's possible to rewrite it in order to use
+    the mesh grid approach (contours). For example:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> from spb import plotgrid
+        >>> expr = Ne(x*y, 1)
+        >>> p1 = plot_implicit(
+        ...     expr, (x, -10, 10), (y, -10, 10),
+        ...     grid=False, aspect="equal", show=False,
+        ...     title="$%s$ : First approach" % latex(expr))
+        >>> # plot the entire visible region
+        >>> p2 = plot_implicit(
+        ...     x < 20, (x, -10, 10), (y, -10, 10),
+        ...     show=False, grid=False, aspect="equal",
+        ...     title="$%s$ : Second approach" % latex(expr))
+        >>> # plot the excluded contour
+        >>> p3 = plot_implicit(
+        ...     Eq(*expr.args), (x, -10, 10), (y, -10, 10),
+        ...     color="w", show_in_legend=False, show=False)
+        >>> plotgrid(p1, (p2 + p3), nc=2)  # doctest: +SKIP
 
     Interactive-widget implicit plot. Refer to the interactive sub-module
     documentation to learn more about the ``params`` dictionary.
@@ -3334,7 +3374,7 @@ def plot_implicit(*args, **kwargs):
                c: (3, -15, 15),
                d: (2, -15, 15),
                e: (10, 1, 15),
-           }, n=400, use_latex=False)
+           }, n=150, use_latex=False, ylim=(-10, 10))
 
     See Also
     ========
@@ -3356,21 +3396,15 @@ def plot_implicit(*args, **kwargs):
     args = _plot_sympify(args)
     args = _check_arguments(args, 1, 2, **kwargs)
     kwargs = _set_discretization_points(kwargs, ImplicitSeries)
-
-    series_kw = dict(
-        n1=kwargs.pop("n1", 1000),
-        n2=kwargs.pop("n2", 1000),
-        depth=kwargs.pop("depth", 0),
-        adaptive=kwargs.pop("adaptive", False),
-        contour_kw=kwargs.pop("contour_kw", dict()),
-        params=kwargs.get("params", dict())
-    )
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+    border_color = kwargs.pop("border_color", None)
 
     series = []
     # attempt to compute the area that should be visible on the plot.
     xmin, xmax, ymin, ymax = oo, -oo, oo, -oo
     for (expr, r1, r2, label, rendering_kw) in args:
-        skw = series_kw.copy()
+        skw = kwargs.copy()
         if rendering_kw is not None:
             skw["rendering_kw"] = rendering_kw
         s = ImplicitSeries(expr, r1, r2, label, **skw)
@@ -3383,10 +3417,14 @@ def plot_implicit(*args, **kwargs):
         if (not s.end_y.free_symbols) and (s.end_y > ymax):
             ymax = s.end_y
         series.append(s)
+        if border_color and (not isinstance(expr, (Expr, Eq, Ne))):
+            skw2 = skw.copy()
+            skw2["color"] = border_color
+            skw2.setdefault("show_in_legend", False)
+            series.append(
+                ImplicitSeries(expr.rhs - expr.lhs, r1, r2, label, **skw2))
 
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    _set_labels(series, labels, rendering_kw)
+    _set_labels(series, global_labels, global_rendering_kw)
     series += _create_generic_data_series(**kwargs)
     if (xmin != oo) and (xmax != -oo):
         kwargs.setdefault("xlim", (xmin, xmax))

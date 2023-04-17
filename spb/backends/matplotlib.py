@@ -516,10 +516,11 @@ class MatplotlibBackend(Plot):
 
             elif s.is_implicit and not s.is_3Dsurface:
                 points = s.get_data()
+                color = next(self._cl) if (s.color is None) or isinstance(s.color, bool) else s.color
                 if len(points) == 2:
                     # interval math plotting
                     x, y = _matplotlib_list(points[0])
-                    fkw = {"color": next(self._cl), "edgecolor": "None"}
+                    fkw = {"color": color, "edgecolor": "None"}
                     kw = merge({}, fkw, s.rendering_kw)
                     c = self._ax.fill(x, y, **kw)
                     self._add_handle(i, c, kw)
@@ -529,7 +530,6 @@ class MatplotlibBackend(Plot):
                     # use contourf or contour depending on whether it is
                     # an inequality or equality.
                     xarray, yarray, zarray, plot_type = points
-                    color = next(self._cl)
                     if plot_type == "contour":
                         colormap = self.ListedColormap([color, color])
                         ckw = dict(cmap=colormap)
@@ -540,14 +540,16 @@ class MatplotlibBackend(Plot):
                             color=color, label=s.get_label(self._use_latex))
                     else:
                         colormap = self.ListedColormap(["#ffffff00", color])
-                        ckw = dict(cmap=colormap)
+                        ckw = dict(cmap=colormap, levels=[-1e-15, 0, 1e-15],
+                            extend="both")
                         kw = merge({}, ckw, s.rendering_kw)
                         c = self._ax.contourf(xarray, yarray, zarray, **kw)
                         proxy_artist = self.Rectangle((0, 0), 1, 1,
                             color=color, label=s.get_label(self._use_latex))
                     self._add_handle(i, c, kw)
 
-                self._legend_handles.append(proxy_artist)
+                if s.show_in_legend:
+                    self._legend_handles.append(proxy_artist)
 
             elif s.is_vector:
                 if s.is_2Dvector:
@@ -1104,7 +1106,8 @@ class MatplotlibBackend(Plot):
                                 xx, yy, zz, [0.0], **kw
                             )
                         else:
-                            self._handles[i][0] = self._ax.contourf(xx, yy, zz, **kw)
+                            self._handles[i][0] = self._ax.contourf(
+                                xx, yy, zz, **kw)
                         xlims.append((np.amin(xx), np.amax(xx)))
                         ylims.append((np.amin(yy), np.amax(yy)))
 
