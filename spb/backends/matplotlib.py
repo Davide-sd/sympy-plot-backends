@@ -822,7 +822,8 @@ class MatplotlibBackend(Plot):
                     self._ax.minorticks_on()
         if self.legend:
             if len(self._legend_handles) > 0:
-                self._ax.legend(handles=self._legend_handles, loc="best")
+                handles, _ = self._ax.get_legend_handles_labels()
+                self._ax.legend(handles=self._legend_handles + handles, loc="best")
             else:
                 handles, _ = self._ax.get_legend_handles_labels()
                 # Show the legend only if there are legend entries.

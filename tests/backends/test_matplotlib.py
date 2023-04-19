@@ -1512,4 +1512,19 @@ def test_color_func_expr():
     p3.backend.update_interactive({u: 0.5})
 
 
-    
+def test_legend_plot_sum():
+    # because plot_implicit creates custom proxy artists to show on the legend,
+    # need to make sure that every legend artists is shown when combining
+    # plot_implicit with some other plot type.
+
+    x, y = symbols("x, y")
+    p1 = plot_implicit(
+        x**2 + y**2 - 1, "plot_implicit",
+        (x, -1.2, 1.2), (y, -1.2, 1.5), legend=True, aspect="equal", show=False)
+    p2 = plot_list(
+        [0],[1], "point", legend=True, is_point=True,
+        xlim=(-1.2, 1.2), ylim=(-1.2, 1.5), aspect="equal", show=False)
+    p3 = (p1 + p2)
+    handles = p3.ax.get_legend().legendHandles
+    assert len(handles) == 2
+
