@@ -3,7 +3,7 @@
 ==========
 
 
-v2.0.3
+v2.1.0
 ======
 
 * Improved ``plot_implicit``:
