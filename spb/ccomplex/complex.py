@@ -788,13 +788,17 @@ def plot_complex(*args, **kwargs):
         - ``"k"``: black and white magnitude of the complex function.
           Zeros are black, poles are white.
         - ``"l"``:enhanced domain coloring showing iso-modulus and iso-phase
-          lines, blended with the magnitude: poles are white.
+          lines, blended with the magnitude: white regions indicates greater
+          magnitudes. Can be used to distinguish poles from zeros.
         - ``"m"``: enhanced domain coloring showing iso-modulus lines, blended
-          with the magnitude: poles are white.
+          with the magnitude: white regions indicates greater magnitudes.
+          Can be used to distinguish poles from zeros.
         - ``"n"``: enhanced domain coloring showing iso-phase lines, blended
-          with the magnitude: poles are white.
+          with the magnitude: white regions indicates greater magnitudes.
+          Can be used to distinguish poles from zeros.
         - ``"o"``: enhanced domain coloring showing iso-phase lines, blended
-          with the magnitude: poles are white.
+          with the magnitude: white regions indicates greater magnitudes.
+          Can be used to distinguish poles from zeros.
 
         The user can also provide a callable, ``f(w)``, where ``w`` is an
         [n x m] Numpy array (provided by the plotting module) containing

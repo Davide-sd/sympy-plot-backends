@@ -147,16 +147,22 @@ Polar plot with Matplotlib:
 Interactive-Parametric domain coloring plot of a complex function:
 
 .. panel-screenshot::
+   :small-size: 800, 625
 
-   from sympy import symbols
-   from spb import plot_complex, BB
-   u, z = symbols("u, z")
-   expr = (z - 1) / (u * z**2 + z + 1)
+   from sympy import symbols, latex
+   from spb import plot_complex
+   import colorcet
+   u, v, w, z = symbols("u, v, w, z")
+   expr = (z - 1) / (u * z**2 + v * z + w * 1)
    plot_complex(
-      expr, (z, -2-2j, 2+2j),
-      params={u: (1, 0, 2)},
-      coloring="b", backend=BB,
-      use_latex=False, title=str(expr))
+     expr, (z, -2-2j, 2+2j),
+     params={
+         u: (1, 1e-5, 2),
+         v: (1, 0, 2),
+         w: (1, 0, 2),
+     },
+     coloring="b", cmap=colorcet.CET_C7, n=500,
+     use_latex=False, title="$%s$" % latex(expr), grid=False)
 
 
 3D plot with K3D-Jupyter and polar discretization. Two identical expressions
