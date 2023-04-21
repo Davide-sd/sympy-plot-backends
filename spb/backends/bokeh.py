@@ -544,7 +544,7 @@ class BokehBackend(Plot):
                     labels = ["-π", "-π / 2", "0", "π / 2", "π"]
                     colorbar1 = self.bokeh.models.ColorBar(
                         color_mapper=cm1,
-                        title="Argument",
+                        title="Argument" if s.get_label(False) == str(s.expr) else s.get_label(self._use_latex),
                         ticker=self.bokeh.models.tickers.FixedTicker(ticks=ticks),
                         major_label_overrides={k: v for k, v in zip(ticks, labels)})
                     self._fig.add_layout(colorbar1, "right")

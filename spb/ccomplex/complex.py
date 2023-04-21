@@ -245,6 +245,9 @@ def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
     else:
         Backend = kwargs.get("backend", TWO_D_B)
 
+    if any(s.is_domain_coloring for s in series):
+        kwargs.setdefault("legend", True)
+
     if kwargs.get("params", None):
         return create_interactive_plot(*series, **kwargs)
 
@@ -665,14 +668,16 @@ def plot_complex(*args, **kwargs):
     types of plots:
 
     1. Line plot over the reals.
-    2. Image plot over the complex plane if `threed=False`. This is also
-       known as Domain Coloring. Use the `coloring` keyword argument to
-       select a different color scheme. At the moment, only HSV coloring is
-       supported.
+    2. Image plot over the complex plane if ``threed=False``. This is also
+       known as Domain Coloring. Use the ``coloring`` keyword argument to
+       select a different coloring strategy and ``cmap`` to set a custom
+       color map (default to HSV).
     3. If ``threed=True``, plot a 3D surface of the absolute value over the
-       complex plane, colored by its argument. Use the `coloring` keyword
-       argument to select a different color scheme. At the moment, only HSV
-       coloring is supported.
+       complex plane, colored by its argument. Use the ``coloring`` keyword
+       argument to select a different coloring strategy and ``cmap`` to set
+       a custom color map (default to HSV).
+
+    Read the `Notes` section to learn more about colormaps.
 
     Typical usage examples are in the followings:
 
@@ -749,6 +754,59 @@ def plot_complex(*args, **kwargs):
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
 
+    blevel : float, optional
+        Controls the black level of ehanced domain coloring plots. It must be
+        `0 (black) <= blevel <= 1 (white)`. Default to 0.75.
+
+    cmap : str, iterable, optional
+        Specify the colormap to be used on enhanced domain coloring plots
+        (both images and 3d plots). Default to ``"hsv"``. Can be any colormap
+        from matplotlib or colorcet.
+
+    coloring : str or callable, optional
+        Choose between different domain coloring options. Default to ``"a"``.
+        Refer to [#fn1]_ for more information.
+
+        - ``"a"``: standard domain coloring showing the argument of the
+          complex function.
+        - ``"b"``: enhanced domain coloring showing iso-modulus and iso-phase
+          lines.
+        - ``"c"``: enhanced domain coloring showing iso-modulus lines.
+        - ``"d"``: enhanced domain coloring showing iso-phase lines.
+        - ``"e"``: alternating black and white stripes corresponding to
+          modulus.
+        - ``"f"``: alternating black and white stripes corresponding to
+          phase.
+        - ``"g"``: alternating black and white stripes corresponding to
+          real part.
+        - ``"h"``: alternating black and white stripes corresponding to
+          imaginary part.
+        - ``"i"``: cartesian chessboard on the complex points space. The
+          result will hide zeros.
+        - ``"j"``: polar Chessboard on the complex points space. The result
+          will show conformality.
+        - ``"k"``: black and white magnitude of the complex function.
+          Zeros are black, poles are white.
+        - ``"l"``:enhanced domain coloring showing iso-modulus and iso-phase
+          lines, blended with the magnitude: poles are white.
+        - ``"m"``: enhanced domain coloring showing iso-modulus lines, blended
+          with the magnitude: poles are white.
+        - ``"n"``: enhanced domain coloring showing iso-phase lines, blended
+          with the magnitude: poles are white.
+        - ``"o"``: enhanced domain coloring showing iso-phase lines, blended
+          with the magnitude: poles are white.
+
+        The user can also provide a callable, ``f(w)``, where ``w`` is an
+        [n x m] Numpy array (provided by the plotting module) containing
+        the results (complex numbers) of the evaluation of the complex
+        function. The callable should return:
+
+        - img : ndarray [n x m x 3]
+            An array of RGB colors (0 <= R,G,B <= 255)
+        - colorscale : ndarray [N x 3] or None
+            An array with N RGB colors, (0 <= R,G,B <= 255).
+            If ``colorscale=None``, no color bar will be shown on the plot.
+
     label : str or list/tuple, optional
         The label to be shown in the legend or colorbar in case of a line plot.
         If not provided, the string representation of ``expr`` will be used.
@@ -780,11 +838,19 @@ def plot_complex(*args, **kwargs):
         points in all directions. If a tuple is provided, it overrides
         ``n1`` and ``n2``. It only works when ``adaptive=False``.
 
-    params : dict
+    params : dict, optional
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot, which doesn't support the
         adaptive algorithm (meaning it will use ``adaptive=False``).
         Learn more by reading the documentation of ``iplot``.
+
+    phaseres : int, optional
+        Default value to 20. It controls the number of iso-phase and/or
+        iso-modulus lines in domain coloring plots.
+
+    phaseoffset : float, optional
+        Controls the phase offset of the colormap in domain coloring plots.
+        Default to 0.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -805,46 +871,6 @@ def plot_complex(*args, **kwargs):
         It only applies to a complex function over a complex range. If False,
         a 2D image plot will be shown. If True, 3D surfaces will be shown.
         Default to False.
-
-    coloring : str or callable
-        Choose between different domain coloring options. Default to ``"a"``.
-        Refer to [#fn1]_ for more information.
-
-        - ``"a"``: standard domain coloring using HSV, showing the argument
-          of the complex function.
-        - ``"b"``: enhanced domain coloring using HSV, showing iso-modulus
-          and is-phase lines.
-        - ``"c"``: enhanced domain coloring using HSV, showing iso-modulus
-          lines.
-        - ``"d"``: enhanced domain coloring using HSV, showing iso-phase
-          lines.
-        - ``"e"``: alternating black and white stripes corresponding to
-          modulus.
-        - ``"f"``: alternating black and white stripes corresponding to
-          phase.
-        - ``"g"``: alternating black and white stripes corresponding to
-          real part.
-        - ``"h"``: alternating black and white stripes corresponding to
-          imaginary part.
-        - ``"i"``: cartesian chessboard on the complex points space. The
-          result will hide zeros.
-        - ``"j"``: polar Chessboard on the complex points space. The result
-          will show conformality.
-
-        The user can also provide a callable, ``f(w)``, where ``w`` is an
-        [n x m] Numpy array (provided by the plotting module) containing
-        the results (complex numbers) of the evaluation of the complex
-        function. The callable should return:
-
-        - img : ndarray [n x m x 3]
-            An array of RGB colors (0 <= R,G,B <= 255)
-        - colorscale : ndarray [N x 3] or None
-            An array with N RGB colors, (0 <= R,G,B <= 255).
-            If ``colorscale=None``, no color bar will be shown on the plot.
-
-    phaseres : int
-        Default value to 20. It controls the number of iso-phase and/or
-        iso-modulus lines in domain coloring plots.
 
     title : str, optional
         Title of the plot. It is set to the latex representation of
@@ -923,27 +949,16 @@ def plot_complex(*args, **kwargs):
        :include-source: True
 
        >>> plot_complex(gamma(z), (z, -3-3j, 3+3j),
-       ...     {"interpolation": "spline36"}, # passed to matplotlib's imshow
        ...     coloring="b", n=500, grid=False)
        Plot object containing:
        [0]: complex domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
-
-    Plotting a numerical function instead of a symbolic expression:
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-       >>> import numpy as np
-       >>> plot_complex(lambda z: z, ("z", -5-5j, 5+5j),
-       ...     {"interpolation": "spline36"}, # passed to matplotlib's imshow
-       ...     coloring="b", n=600, grid=False)  # doctest: +SKIP
 
     Interactive-widget domain coloring plot. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
     This plot illustrates:
 
+    * setting a custom colormap and adjusting the black-level of the enhanced
+      visualization.
     * the use of ``prange`` (parametric plotting range).
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
@@ -953,10 +968,11 @@ def plot_complex(*args, **kwargs):
 
        from sympy import *
        from spb import *
+       import colorcet
        z, u, a, b = symbols("z, u, a, b")
        plot_complex(
            sin(u * z), prange(z, -a - b*I, a + b*I),
-           {"interpolation": "spline36"}, use_latex=False,
+           cmap=colorcet.colorwheel, blevel=0.85, use_latex=False,
            coloring="b", n=250, grid=False,
            params={
                u: (0.5, 0, 2),
@@ -977,6 +993,133 @@ def plot_complex(*args, **kwargs):
            backend=PB, zlim=(-1, 6), use_cm=True)
 
 
+    Notes
+    =====
+
+    By default, a domain coloring plot will show the phase portrait: each point
+    of the complex plane is color-coded according to its arguments. The default
+    colormap is HSV, which is characterized by 2 important problems:
+
+    * It is not friendly to people affected by color deficiencies.
+    * Because it isn't perceptually uniform, it might be misleading: features
+      disappear at points of low perceptual contrast, or false features appear
+      that are in the colormap but not in the data (refer to colorcet [#fn3]_
+      for more information).
+
+    Hence, it might be helpful to chose a perceptually uniform colormap.
+    Domaing coloring plots are naturally suited to be represented by cyclic
+    colormaps, but sequential colormaps can be used too. In the following
+    example we illustrate the phase portrait of `f(z) = z` using different
+    colormaps:
+
+    .. plot::
+       :context: close-figs
+       :include-source: True
+
+       from sympy import symbols, pi
+       import colorcet
+       from spb import *
+
+       z = symbols("z")
+       cmaps = {
+           "hsv": "hsv",
+           "twilight": "twilight",
+           "colorwheel": colorcet.colorwheel,
+           "CET-C7": colorcet.CET_C7,
+           "viridis": "viridis"
+       }
+       plots = []
+       for k, v in cmaps.items():
+           plots.append(
+               plot_complex(z, (z, -2-2j, 2+2j), coloring="a",
+                   grid=False, show=False, legend=True, cmap=v, title=k))
+
+       fig = plotgrid(*plots, nc=2, show=False)
+       fig.set_size_inches(6.5, 8)
+       fig.tight_layout()
+       fig
+
+    In the above figure, when using the HSV colormap the eye is drawn to
+    the yellow, cyan and magenta colors, where there is a lightness gradient:
+    those are false features caused by the colormap. Indeed, there is nothing
+    going on these regions when looking with a perceptually uniform colormap.
+
+    Phase is computed with Numpy: it lies between [-pi, pi]. Then, phase is
+    normalized between [0, 1] using `(arg / (2 * pi)) % 1`. The figure
+    below shows the mapping between phase in radians and normalized phase.
+    A phase of 0 radians corresponds to a normalized phase of 0, which gets
+    mapped to the beginning of a colormap.
+
+    .. plot:: ./plot_complex_explanation.py
+       :context: close-figs
+       :include-source: False
+
+    The zero radians phase is then located in the middle of the colorbar.
+    Hence, the colorbar might feel "weird" if a sequential colormap is chosen,
+    because there is a color-discontinuity in the middle of it, as can be seen
+    in the previous example.
+    The ``phaseoffset`` keyword argument allows to apply a phase offset in
+    order to adjust the position of the colormap:
+
+    .. plot::
+       :context: close-figs
+       :include-source: True
+
+       p1 = plot_complex(
+           z, (z, -2-2j, 2+2j), grid=False, show=False, legend=True,
+           coloring="a", cmap="viridis", phaseoffset=0,
+           title="phase offset = 0")
+       p2 = plot_complex(
+           z, (z, -2-2j, 2+2j), grid=False, show=False, legend=True,
+           coloring="a", cmap="viridis", phaseoffset=pi,
+           title=r"phase offset = $\pi$")
+       fig = plotgrid(p1, p2, nc=2, show=False)
+       fig.set_size_inches(6, 2)
+       fig
+
+    A pure phase portrait is rarely useful, as it conveys too little
+    information. Let's now quickly visualize the different ``coloring``
+    schemes. In the following, `arg` is the argument (phase), `mag` is the
+    magnitude (absolute value) and `contour` is a line of constant value.
+    Refer to [#fn1]_ for more information.
+
+    .. plot::
+       :context: close-figs
+       :include-source: True
+
+       from matplotlib import rcParams
+       rcParams["font.size"] = 8
+       colorings = "abcdlmnoefghijk"
+       titles = [
+           "phase portrait", "mag + arg contours", "mag contours", "arg contours",
+           "'a' + poles", "'b' + poles", "'c' + poles", "'d' + poles",
+           "mag stripes", "arg stripes", "real part stripes", "imag part stripes",
+           "hide zeros", "conformality", "magnitude"]
+       plots = []
+       expr = (z - 1) / (z**2 + z + 1)
+       for c, t in zip(colorings, titles):
+           plots.append(
+               plot_complex(expr, (z, -2-2j, 2+2j), coloring=c,
+                   grid=False, show=False, legend=False, cmap=colorcet.CET_C7,
+                   title=("'%s'" % c) + ": " + t, xlabel="", ylabel=""))
+
+       fig = plotgrid(*plots, nc=4, show=False)
+       fig.set_size_inches(8, 8.5)
+       fig.tight_layout()
+       fig
+
+    From the above picture, we can see that:
+
+    * Some enhancements decrese the lighness of the colors: depending on the
+      colormap, it might be difficult to distinguish features in darker
+      regions.
+    * Other enhancements increases the lightness in proximity of poles. Hence,
+      colormaps with very light colors might not convey enough information.
+
+    The selection of a proper colormap not only depends on the target audience
+    of the visualization, but also on the function being visualized. Hence,
+    its selection is left to the user.
+
     References
     ==========
 
@@ -985,6 +1128,8 @@ def plot_complex(*args, **kwargs):
        The book provides the background to better understand the images.
 
     .. [#fn2] https://github.com/python-adaptive/adaptive
+
+    .. [#fn3] https://colorcet.com/
 
     See Also
     ========

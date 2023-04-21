@@ -684,7 +684,7 @@ class MatplotlibBackend(Plot):
                     x, y, _, _, img, colors = s.get_data()
                     ikw = dict(
                         extent=[np.amin(x), np.amax(x), np.amin(y), np.amax(y)],
-                        interpolation="nearest",
+                        interpolation="spline36",
                         origin="lower",
                     )
                     kw = merge({}, ikw, s.rendering_kw)
@@ -692,7 +692,7 @@ class MatplotlibBackend(Plot):
                     self._add_handle(i, image, kw)
 
                     # chroma/phase-colorbar
-                    if colors is not None:
+                    if (colors is not None) and self.legend:
                         colors = colors / 255.0
 
                         colormap = self.ListedColormap(colors)
@@ -700,7 +700,7 @@ class MatplotlibBackend(Plot):
                         cb2 = self._fig.colorbar(
                             self.cm.ScalarMappable(norm=norm, cmap=colormap),
                             orientation="vertical",
-                            label="Argument",
+                            label="Argument" if s.get_label(False) == str(s.expr) else s.get_label(self._use_latex),
                             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
                             ax=self._ax,
                         )

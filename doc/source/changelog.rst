@@ -8,10 +8,10 @@ v2.0.3
 
 * Improved ``plot_implicit``:
 
-  * it supports the ``color`` keyword argument, to set the color of line or
+  * implemented the ``color`` keyword argument, to set the color of line or
     region being plotted.
   
-  * it supports the ``border_color`` keyword argument: this will add a new
+  * implemented the ``border_color`` keyword argument: this will add a new
     data series to represent a limiting border when plotting inequalities
     (``>, >=, <, <=``).
   
@@ -19,8 +19,20 @@ v2.0.3
     improvements to the backend and data generation, same quality can be
     achieved much more efficiently.
 
-* Bug fix on ``MatplotlibBackend`` when plotting filled geometries with
-  interactive widgets.
+* Improved ``plot_complex`` and domain coloring plots:
+
+  * User can now set a different colormap.
+
+  * Added new coloring schemes.
+
+  * User can change the label of the colorbar.
+
+* Bug fixes on ``MatplotlibBackend``:
+
+  * fixed bad behavior when plotting filled geometries with interactive
+    widgets.
+  
+  * fixed missing legend entries when combining different types of plots.
 
 * Bug fixes on ``K3DBackend``:
 

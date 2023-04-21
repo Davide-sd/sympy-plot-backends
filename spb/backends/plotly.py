@@ -667,7 +667,7 @@ class PlotlyBackend(Plot):
                                             "&#x3C0;",
                                         ],
                                         x=1 + 0.1 * count,
-                                        title="Argument",
+                                        title="Argument" if s.get_label(False) == str(s.expr) else s.get_label(self._use_latex),
                                         titleside="right",
                                     ),
                                     showscale=True,

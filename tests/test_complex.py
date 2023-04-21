@@ -1716,3 +1716,15 @@ def plot_complex_vector_rendering_kw(pc_options):
         scalar=False, params={t: (1, 0, 2)},
         rendering_kw=[{"cmap": "autumn"}, {"color": "w"}], **pc_options)
     raises(ValueError, p)
+
+
+def test_domain_coloring_schemes(pc_options):
+    # verify that coloring schemes do not generate errors
+
+    z = symbols("z")
+    expr = (z - 1) / (z**2 + z + 1)
+    schemes = "abcdefghijklmno"
+
+    for s in schemes:
+        p = plot_complex(expr, (z, -2-2j, 2+2j), coloring=s, **pc_options)
+        fig = p.fig

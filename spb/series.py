@@ -5,7 +5,7 @@ from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re
+    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta
 )
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
@@ -577,7 +577,7 @@ class BaseSeries:
 
             # list of sympy functions that when lambdified, the corresponding
             # numpy functions don't like complex-type arguments
-            pf = [ceiling, floor, atan2, frac]
+            pf = [ceiling, floor, atan2, frac, zeta]
             if self._force_real_eval is not True:
                 check_res = [self._expr.has(f) for f in pf]
                 self._force_real_eval = any(check_res)
@@ -2429,13 +2429,27 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
         super().__init__(*args, **kwargs)
         if kwargs.get("threed", False):
             self.is_3Dsurface = True
+        self.cmap = kwargs.get("cmap", None)
+        self.blevel = float(kwargs.get("blevel", 0.75))
+        self.phaseoffset = float(kwargs.get("phaseoffset", 0))
         self.rendering_kw = kwargs.get("rendering_kw", dict())
+        self._allowed_keys += ["cmap", "blevel", "phaseoffset"]
+
+        if self.blevel < 0:
+            warnings.warn("It must be 0 <= blevel <= 1. Automatically "
+                "setting blevel = 0.")
+            self.blevel = 0
+        if self.blevel > 1:
+            warnings.warn("It must be 0 <= blevel <= 1. Automatically "
+                "setting blevel = 1.")
+            self.blevel = 1
 
     def _domain_coloring(self, w):
         if isinstance(self.coloring, str):
             from spb.ccomplex.wegert import wegert
             self.coloring = self.coloring.lower()
-            return wegert(self.coloring, w, self.phaseres)
+            return wegert(self.coloring, w, self.phaseres, self.cmap,
+                self.blevel, self.phaseoffset)
         return self.coloring(w)
 
     def get_data(self):
