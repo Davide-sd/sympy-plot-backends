@@ -1054,7 +1054,7 @@ def plot_complex(*args, **kwargs):
     A phase of 0 radians corresponds to a normalized phase of 0, which gets
     mapped to the beginning of a colormap.
 
-    .. plot:: ./plot_complex_explanation.py
+    .. plot:: ./modules/plot_complex_explanation.py
        :context: close-figs
        :include-source: False
 
