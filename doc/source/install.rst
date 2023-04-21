@@ -25,6 +25,7 @@ Use the following instead::
 
 To install the complete requirements with conda::
 
+    conda install -c conda-forge sympy_plot_backends
     # scipy gives more numerical functions, notebook install the
     # Jupyter Notebook (enabling interactivity)
     conda install -c anaconda scipy notebook
@@ -44,8 +45,6 @@ To install the complete requirements with conda::
     conda install -c plotly plotly
     # to enable 3D streamlines plots with matplotlib and K3D-Jupyter
     conda install -c conda-forge vtk
-    # finally
-    conda install -c conda-forge sympy_plot_backends
 
 
 
