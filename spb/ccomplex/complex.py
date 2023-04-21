@@ -997,7 +997,7 @@ def plot_complex(*args, **kwargs):
     =====
 
     By default, a domain coloring plot will show the phase portrait: each point
-    of the complex plane is color-coded according to its arguments. The default
+    of the complex plane is color-coded according to its argument. The default
     colormap is HSV, which is characterized by 2 important problems:
 
     * It is not friendly to people affected by color deficiencies.
@@ -1058,8 +1058,8 @@ def plot_complex(*args, **kwargs):
     Hence, the colorbar might feel "weird" if a sequential colormap is chosen,
     because there is a color-discontinuity in the middle of it, as can be seen
     in the previous example.
-    The ``phaseoffset`` keyword argument allows to apply a phase offset in
-    order to adjust the position of the colormap:
+    The ``phaseoffset`` keyword argument allows to adjust the position of
+    the colormap:
 
     .. plot::
        :context: close-figs
@@ -1116,9 +1116,9 @@ def plot_complex(*args, **kwargs):
     * Other enhancements increases the lightness in proximity of poles. Hence,
       colormaps with very light colors might not convey enough information.
 
-    The selection of a proper colormap not only depends on the target audience
-    of the visualization, but also on the function being visualized. Hence,
-    its selection is left to the user.
+    The selection of a proper colormap is left to the user because not only
+    it depends on the target audience of the visualization, but also on the
+    function being visualized.
 
     References
     ==========

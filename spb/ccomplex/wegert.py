@@ -36,11 +36,11 @@ def saw_func(x, dx, a, b):
     return a + (b - a) * x
 
 
-def alpha_blending(rgb, brightness):
-    """Alpha blending between RGB image with a white image using the inverse
-    of the brightness mask: zeros will retain colors, poles go white.
-    """
+def _apply_enhancement(mag, rgb):
+    brightness = mag / (mag + 1)
     brightness = np.dstack([brightness, brightness, brightness])
+    # Alpha blending between RGB image with a white image using the inverse
+    # of the brightness mask: zeros will retain colors, poles go white.
     return (1 - brightness) * rgb + brightness
 
 
@@ -60,10 +60,7 @@ def domain_coloring(w, phaseres=20, cmap=None, poffset=0, **kwargs):
 
     if not kwargs.get("enhance", False):
         return rgb
-
-    mag = np.absolute(w)
-    brightness = mag / (mag + 1)
-    return alpha_blending(rgb, brightness)
+    return _apply_enhancement(np.absolute(w), rgb)
 
 
 @to_rgb_255
@@ -90,10 +87,7 @@ def enhanced_domain_coloring(w, phaseres=20, cmap=None, blevel=0.75,
 
     if not kwargs.get("enhance", False):
         return rgb
-
-    mag = np.absolute(w)
-    brightness = mag / (mag + 1)
-    return alpha_blending(rgb, brightness)
+    return _apply_enhancement(mag, rgb)
 
 
 @to_rgb_255
@@ -118,10 +112,7 @@ def enhanced_domain_coloring_phase(w, phaseres=20, cmap=None, blevel=0.75,
 
     if not kwargs.get("enhance", False):
         return rgb
-
-    mag = np.absolute(w)
-    brightness = mag / (mag + 1)
-    return alpha_blending(rgb, brightness)
+    return _apply_enhancement(mag, rgb)
 
 
 @to_rgb_255
@@ -146,10 +137,7 @@ def enhanced_domain_coloring_mag(w, phaseres=20, cmap=None, blevel=0.75,
 
     if not kwargs.get("enhance", False):
         return rgb
-
-    mag = np.absolute(w)
-    brightness = mag / (mag + 1)
-    return alpha_blending(rgb, brightness)
+    return _apply_enhancement(mag, rgb)
 
 
 @to_rgb_255
