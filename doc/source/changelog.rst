@@ -7,6 +7,8 @@ v2.1.1
 
 * Enabled support for plotting indexed objects.
 
+* Fixed bug with ``PlotlyBackend`` when creating 3D analytic landscapes.
+
 
 v2.1.0
 ======

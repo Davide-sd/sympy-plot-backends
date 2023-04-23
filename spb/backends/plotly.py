@@ -693,6 +693,9 @@ class PlotlyBackend(Plot):
                         for loc, c in zip(locations, colorscale):
                             tmp.append([loc, "rgb" + str(tuple(c))])
                         colorscale = tmp
+                        # to avoid jumps in the colormap, first and last colors
+                        # must be the same.
+                        colorscale[-1][1] = colorscale[0][1]
                     else:
                         colorscale = [[0, col], [1, col]]
                     colormap = next(self._cyccm)
