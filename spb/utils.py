@@ -1,5 +1,5 @@
 from spb.defaults import cfg
-from sympy import Tuple, sympify, Expr, Dummy, S, sin, cos, Symbol
+from sympy import Tuple, sympify, Expr, Dummy, S, sin, cos, Symbol, Indexed
 from sympy.physics.mechanics import Vector as MechVector
 from sympy.vector import Vector, BaseScalar
 from sympy.core.relational import Relational
@@ -34,11 +34,10 @@ def _create_ranges(exprs, ranges, npar, label="", params=None):
 
     """
 
-    get_default_range = lambda symbol: Tuple(symbol, cfg["plot_range"]["min"], cfg["plot_range"]["max"])
-    free_symbols = set()
-    if all(not callable(e) for e in exprs):
-        free_symbols = free_symbols.union(*[e.free_symbols for e in exprs])
+    get_default_range = lambda symbol: Tuple(
+        symbol, cfg["plot_range"]["min"], cfg["plot_range"]["max"])
 
+    free_symbols = _get_free_symbols(exprs)
     if params is not None:
         free_symbols = free_symbols.difference(params.keys())
 
@@ -73,7 +72,7 @@ def _create_ranges(exprs, ranges, npar, label="", params=None):
         # plotting the function f(x, y) = x (which is a plane); in this case,
         # free_symbols = {x} whereas rfs = {x, y} (or x and Dummy)
         rfs = set().union([r[0] for r in ranges])
-        if free_symbols.difference(rfs) != set():
+        if len(free_symbols.difference(rfs)) > 0:
             raise ValueError(
                 "Incompatible free symbols of the expressions with "
                 "the ranges.\n"
@@ -81,6 +80,24 @@ def _create_ranges(exprs, ranges, npar, label="", params=None):
                 + "Free symbols in the ranges: {}".format(rfs)
             )
     return ranges
+
+
+def _get_free_symbols(exprs):
+    """Returns the free symbols of a symbolic expression. If the expression
+    contains indexed objects, assume that these objects are the symbols to
+    be plotted.
+    """
+    # TODO: this function gets called 3 times to generate a single plot.
+    # See if its possible to remove one functions call inside series.py
+    if not isinstance(exprs, (list, tuple, set)):
+        exprs = [exprs]
+    if all(callable(e) for e in exprs):
+        return set()
+    
+    free_indexed = set().union(*[e.atoms(Indexed) for e in exprs])
+    if len(free_indexed) > 0:
+        return set().union(*[e.atoms(Indexed) for e in exprs])
+    return set().union(*[e.free_symbols for e in exprs])
 
 
 def _check_arguments(args, nexpr, npar, **kwargs):

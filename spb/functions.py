@@ -32,7 +32,7 @@ from spb.utils import (
 from sympy import (
     latex, Tuple, Expr, Symbol, Wild, oo, Sum, sign, Piecewise, piecewise_fold,
     Plane, FiniteSet, Interval, Union, cos, sin, pi, sympify, atan2, sqrt,
-    Dummy, symbols, I, re, im, Eq, Ne
+    Dummy, symbols, I, re, im, Eq, Ne, Indexed
 )
 # NOTE: from sympy import EmptySet is a different thing!!!
 from sympy.sets.sets import EmptySet
@@ -1511,8 +1511,8 @@ def _plot3d_plot_contour_helper(Series, is_threed, Backend, *args, **kwargs):
     free_x = set()
     free_y = set()
     for p in plot_expr:
-        free_x |= {p[1][0]} if isinstance(p[1][0], (Symbol, BaseScalar)) else {Symbol(p[1][0])}
-        free_y |= {p[2][0]} if isinstance(p[2][0], (Symbol, BaseScalar)) else {Symbol(p[2][0])}
+        free_x |= {p[1][0]} if isinstance(p[1][0], (Symbol, BaseScalar, Indexed)) else {Symbol(p[1][0])}
+        free_y |= {p[2][0]} if isinstance(p[2][0], (Symbol, BaseScalar, Indexed)) else {Symbol(p[2][0])}
     x = free_x.pop() if free_x else Symbol("x")
     y = free_y.pop() if free_y else Symbol("y")
     fx = lambda use_latex: x.name if not use_latex else latex(x)

@@ -1,6 +1,6 @@
 from inspect import signature
 from spb.defaults import cfg
-from spb.utils import prange
+from spb.utils import prange, _get_free_symbols
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
@@ -389,7 +389,7 @@ class BaseSeries:
 
         # from the expression's free symbols, remove the ones used in
         # the parameters and the ranges
-        fs = set().union(*[e.free_symbols for e in exprs])
+        fs = _get_free_symbols(exprs)
         fs = fs.difference(params.keys())
         if ranges is not None:
             fs = fs.difference([r[0] for r in ranges])
@@ -427,7 +427,7 @@ class BaseSeries:
         """
         exprs = self.expr if hasattr(self.expr, "__iter__") else [self.expr]
         if not any(callable(e) for e in exprs):
-            fs = set().union(*[e.free_symbols for e in exprs])
+            fs = _get_free_symbols(exprs)
             self._signature = sorted(fs, key=lambda t: t.name)
 
             # Generate a list of lambda functions, two for each expression:

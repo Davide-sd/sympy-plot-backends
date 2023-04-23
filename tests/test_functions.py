@@ -16,7 +16,7 @@ from sympy import (
     Heaviside, exp, log, LambertW, exp_polar, meijerg,
     And, Or, Eq, Ne, Interval, Sum, oo, I, pi, S,
     sympify, Integral, Circle, gamma, Circle, Point, Ellipse, Rational,
-    Polygon, Curve, Segment, Point2D, Point3D, Line3D, Plane
+    Polygon, Curve, Segment, Point2D, Point3D, Line3D, Plane, IndexedBase
 )
 from sympy.vector import CoordSys3D
 from sympy.testing.pytest import skip, warns
@@ -1808,3 +1808,15 @@ def test_plot_implicit_region_and():
         do_test(r1 ^ r2, (x, -5, 5), (y, -5, 5), "test_region_xor.png", 0.005)
     finally:
         TmpFileManager.cleanup()
+
+
+def test_indexed_objects():
+    # verify that plot functions and series correctly process indexed objects
+    x = IndexedBase("x")
+
+    kwargs = dict(adaptive=False, n=10, show=False, backend=MB)
+    p = plot(cos(x[0]), (x[0], -pi, pi), **kwargs)
+    d = p[0].get_data()
+
+    p = plot3d(cos(x[0]**2 + x[1]**2), (x[0], -pi, pi), (x[1], -pi, pi), **kwargs)
+    d = p[0].get_data()

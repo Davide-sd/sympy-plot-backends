@@ -2,6 +2,11 @@
  Changelog
 ==========
 
+v2.1.1
+======
+
+* Enabled support for plotting indexed objects.
+
 
 v2.1.0
 ======
