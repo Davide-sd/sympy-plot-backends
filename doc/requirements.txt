@@ -7,11 +7,8 @@ nbsphinx_link
 sphinx-rtd-theme
 # sphinx_plotly_directive
 git+https://github.com/Davide-sd/sphinx-plotly-directive@combine
-# git+https://github.com/Davide-sd/sphinx_k3d_screenshot@main
 sphinx_panel_screenshot
 sphinx_k3d_screenshot
 kaleido
-# # to be able to install mayavi we need:
-# vtk
 # to satidfy ipympl requirements we need
 ipywidgets<8,>=7.6.0
