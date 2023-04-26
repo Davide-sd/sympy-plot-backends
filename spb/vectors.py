@@ -393,9 +393,8 @@ def plot_vector(*args, **kwargs):
 
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of ``iplot``.
+        enables the interactive-widgets plot. Learn more by reading the
+        documentation of the interactive sub-module.
 
     quiver_kw : dict
         A dictionary of keywords/values which is passed to the backend quivers-
@@ -758,11 +757,6 @@ def plot_vector(*args, **kwargs):
            backend=KB, use_cm=False, show=False,
            quiver_kw={"scale": 0.5, "pivot": "tail"})
        (p1 + p3).show()
-
-    See Also
-    ========
-
-    iplot
 
     """
     args = _plot_sympify(args)

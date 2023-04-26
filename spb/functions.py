@@ -223,8 +223,6 @@ def _build_line_series(*args, **kwargs):
 def _set_labels(series, labels, rendering_kw):
     """Apply the label keyword argument to the series.
     """
-    # NOTE: this function is a workaround until a better integration is
-    # achieved between iplot and all other plotting functions.
     if not isinstance(labels, (list, tuple)):
         labels = [labels]
     if len(labels) > 0:
@@ -413,7 +411,7 @@ def plot(*args, **kwargs):
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot, which doesn't support the
         adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of ``iplot``.
+        Learn more by reading the documentation of the interactive sub-module.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -818,7 +816,7 @@ def plot_parametric(*args, **kwargs):
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot, which doesn't support the
         adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of ``iplot``.
+        Learn more by reading the documentation of the interactive sub-module.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -1303,7 +1301,7 @@ def plot3d_parametric_line(*args, **kwargs):
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot, which doesn't support the
         adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of ``iplot``.
+        Learn more by reading the documentation of the interactive sub-module.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -1817,7 +1815,7 @@ def plot3d(*args, **kwargs):
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot, which doesn't support the
         adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of ``iplot``.
+        Learn more by reading the documentation of the interactive sub-module.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -2136,7 +2134,7 @@ def plot3d_parametric_surface(*args, **kwargs):
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot. Learn more by reading the
-        documentation of ``iplot``.
+        documentation of the interactive sub-module.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -3143,11 +3141,11 @@ def plot_implicit(*args, **kwargs):
         If set to ``True``, the internal algorithm uses interval arithmetic.
         If the expression cannot be plotted with interval arithmetic, it
         switches to the meshgrid approach.
-    
+
     border_color : str or bool, optional
         If given, a limiting border will be added when plotting inequalities
         (<, <=, >, >=).
-    
+
     color : str, optional
         Specify the color of lines/regions. Default to None (automatic
         coloring by the backend).
@@ -3189,12 +3187,12 @@ def plot_implicit(*args, **kwargs):
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot. Learn more by reading the
-        documentation of ``iplot``.
+        documentation of the interactive sub-module.
 
     show : bool
         Default value is True. If set to False, the plot will not be shown.
         See `Plot` for further information.
-    
+
     show_in_legend : bool
         If True, add a legend entry for the expression being plotted.
         This option is useful to hide a particular expression when combining
@@ -3262,7 +3260,7 @@ def plot_implicit(*args, **kwargs):
        Plot object containing:
        [0]: Implicit expression: 4*(-sin(y)/5 + cos(x))**2 + 4*(sin(y) - cos(x)/5)**2 <= pi for x over (-3.141592653589793, 3.141592653589793) and y over (-3.141592653589793, 3.141592653589793)
        [1]: Implicit expression: Eq(-4*(-sin(y)/5 + cos(x))**2 - 4*(sin(y) - cos(x)/5)**2 + pi, 0) for x over (-3.141592653589793, 3.141592653589793) and y over (-3.141592653589793, 3.141592653589793)
-    
+
     Boolean expressions will be plotted with the adaptive algorithm. Note the
     thin width of lines:
 
@@ -3445,11 +3443,11 @@ def plot_polar(*args, **kwargs):
 
     By default, it uses an equal aspect ratio and doesn't apply a colormap.
 
-    Parameters
-    ==========
-
     This function is going to call ``plot_parametric``: refer to its
     documentation for the full list of keyword arguments.
+
+    Parameters
+    ==========
 
     polar_axis : boolean, optional
         If True, attempt to create a plot with polar axis. Default to False,
@@ -3609,7 +3607,8 @@ def plot_geometry(*args, **kwargs):
         2. If the values are tuples representing parameters, the dictionary
            enables the interactive-widgets plot, which doesn't support the
            adaptive algorithm (meaning it will use ``adaptive=False``).
-           Learn more by reading the documentation of ``iplot``.
+           Learn more by reading the documentation of the interactive
+           sub-module.
 
     axis_center : (float, float), optional
         Tuple of two floats denoting the coordinates of the center or
@@ -3884,7 +3883,7 @@ def plot_list(*args, **kwargs):
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot. Learn more by reading the
-        documentation of ``iplot``.
+        documentation of the interactive sub-module.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -4112,7 +4111,7 @@ def plot3d_list(*args, **kwargs):
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot. Learn more by reading the
-        documentation of ``iplot``.
+        documentation of the interactive sub-module.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's

@@ -25,9 +25,6 @@ from spb.ccomplex.complex import (
 from spb.utils import prange
 
 from spb.plotgrid import plotgrid
-# NOTE: it would be nice to have `iplot` readily available, however loading
-# `panel` is a slow operation.
-# from spb.interactive import iplot
 
 from spb.backends.matplotlib import MB
 from spb.backends.bokeh import BB

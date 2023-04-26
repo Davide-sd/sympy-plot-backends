@@ -453,7 +453,7 @@ def plot_real_imag(*args, **kwargs):
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot, which doesn't support the
         adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of ``iplot``.
+        Learn more by reading the documentation of the interactive sub-module.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -668,7 +668,7 @@ def plot_real_imag(*args, **kwargs):
     See Also
     ========
 
-    plot_complex, plot_complex_list, plot_complex_vector, iplot
+    plot_complex, plot_complex_list, plot_complex_vector
 
     """
     kwargs["absarg"] = False
@@ -769,6 +769,12 @@ def plot_complex(*args, **kwargs):
         being used. Read that backend's documentation to find out the
         possible values.
 
+    at_infinity : boolean, optional
+        Apply the transformation $z \\rightarrow \\frac{1}{z}$ in order to
+        study the behaviour of the function around the point at infinity.
+        It is recommended to also set ``show_axis=False`` in order to avoid
+        confusion.
+
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
@@ -865,7 +871,7 @@ def plot_complex(*args, **kwargs):
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot, which doesn't support the
         adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of ``iplot``.
+        Learn more by reading the documentation of the interactive sub-module.
 
     phaseres : int, optional
         Default value to 20. It controls the number of iso-phase and/or
@@ -884,6 +890,9 @@ def plot_complex(*args, **kwargs):
 
     show : boolean, optional
         Default to True, in which case the plot will be shown on the screen.
+
+    show_axis : boolean, optional
+        Turn on/off the axis of the plot. Default to True (axis are visible).
 
     size : (float, float), optional
         A tuple in the form (width, height) to specify the size of
@@ -976,6 +985,19 @@ def plot_complex(*args, **kwargs):
        Plot object containing:
        [0]: complex domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
+    Domain coloring of the same function evaluated near the point
+    $z=\\infty$:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_complex(gamma(z), (z, -1-1j, 1+1j), coloring="b", n=500,
+       ...     grid=False, at_infinity=True, show_axis=False)
+       Plot object containing:
+       [0]: complex domain coloring: gamma(1/z) for re(z) over (-1.0, 1.0) and im(z) over (-1.0, 1.0)
+
     Interactive-widget domain coloring plot. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
     This plot illustrates:
@@ -1003,8 +1025,8 @@ def plot_complex(*args, **kwargs):
                b: (pi, 0, 2*pi),
            })
 
-    3D plot of the absolute value of a complex function colored by its
-    argument, using Plotly:
+    The analytic landscape is 3D plot of the absolute value of a complex
+    function colored by its argument:
 
     .. plotly::
        :context: reset
@@ -1014,6 +1036,20 @@ def plot_complex(*args, **kwargs):
        z = symbols('z')
        plot_complex(gamma(z), (z, -3 - 3*I, 3 + 3*I), threed=True,
            backend=PB, zlim=(-1, 6), use_cm=True)
+
+    Because the function goes to infinity at poles, sometimes it might be
+    beneficial to visualize the logarithm of the absolute value in order to
+    easily identify zeros:
+
+    .. k3d-screenshot::
+       :camera: -4.28, 6.55, 4.83, 0.13, -0.20, 1.9, 0.16, -0.24, 0.96
+
+       from sympy import symbols, I
+       from spb import plot_complex, KB
+       z = symbols("z")
+       expr = (z**3 - 5) / z
+       plot_complex(expr, (z, -3-3j, 3+3j), coloring="b", threed=True,
+           use_cm=True, grid=False, n=500, backend=KB, tz=np.log)
 
 
     Notes
@@ -1157,7 +1193,7 @@ def plot_complex(*args, **kwargs):
     See Also
     ========
 
-    plot_riemann_sphere, plot_real_imag, plot_complex_list, plot_complex_vector, iplot
+    plot_riemann_sphere, plot_real_imag, plot_complex_list, plot_complex_vector
 
     """
     kwargs["absarg"] = True
@@ -1226,7 +1262,7 @@ def plot_complex_list(*args, **kwargs):
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot, which doesn't support the
         adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of ``iplot``.
+        Learn more by reading the documentation of the interactive sub-module.
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -1305,8 +1341,8 @@ def plot_complex_list(*args, **kwargs):
        [0]: complex points: (0.0, 0.0666666666666667*exp(0.133333333333333*I*pi), 0.133333333333333*exp(0.266666666666667*I*pi), 0.2*exp(0.4*I*pi), 0.266666666666667*exp(0.533333333333333*I*pi), 0.333333333333333*exp(0.666666666666667*I*pi), 0.4*exp(0.8*I*pi), 0.466666666666667*exp(0.933333333333333*I*pi), 0.533333333333333*exp(1.06666666666667*I*pi), 0.6*exp(1.2*I*pi), 0.666666666666667*exp(1.33333333333333*I*pi), 0.733333333333333*exp(1.46666666666667*I*pi), 0.8*exp(1.6*I*pi), 0.866666666666667*exp(1.73333333333333*I*pi), 0.933333333333333*exp(1.86666666666667*I*pi))
        [1]: complex points: (0, 0.133333333333333*exp(0.133333333333333*I*pi), 0.266666666666667*exp(0.266666666666667*I*pi), 0.4*exp(0.4*I*pi), 0.533333333333333*exp(0.533333333333333*I*pi), 0.666666666666667*exp(0.666666666666667*I*pi), 0.8*exp(0.8*I*pi), 0.933333333333333*exp(0.933333333333333*I*pi), 1.06666666666667*exp(1.06666666666667*I*pi), 1.2*exp(1.2*I*pi), 1.33333333333333*exp(1.33333333333333*I*pi), 1.46666666666667*exp(1.46666666666667*I*pi), 1.6*exp(1.6*I*pi), 1.73333333333333*exp(1.73333333333333*I*pi), 1.86666666666667*exp(1.86666666666667*I*pi))
 
-    Interactive-widget plot. Refer to ``iplot`` documentation to learn more
-    about the ``params`` dictionary.
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary.
 
     .. panel-screenshot::
        :small-size: 800, 600
@@ -1328,7 +1364,7 @@ def plot_complex_list(*args, **kwargs):
     See Also
     ========
 
-    plot_real_imag, plot_complex, plot_complex_vector, iplot
+    plot_real_imag, plot_complex, plot_complex_vector
 
     """
     kwargs["absarg"] = False
@@ -1403,7 +1439,7 @@ def plot_complex_vector(*args, **kwargs):
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot, which doesn't support the
         adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of ``iplot``.
+        Learn more by reading the documentation of the interactive sub-module.
 
     quiver_kw : dict
         A dictionary of keywords/values which is passed to the backend
@@ -1562,7 +1598,7 @@ def plot_complex_vector(*args, **kwargs):
     See Also
     ========
 
-    plot_real_imag, plot_complex, plot_complex_list, plot_vector, iplot
+    plot_real_imag, plot_complex, plot_complex_list, plot_vector
 
     """
     # for each argument, generate one series. Those series will be used to
@@ -1694,11 +1730,12 @@ def plot_riemann_sphere(*args, **kwargs):
 
     1. a stereographic projection of the sphere from the north pole, which
        depict the Southern Hemisphere. It corresponds to an ordinary
-       (enhanced) domain coloring plot around the complex point z=0.
+       (enhanced) domain coloring plot around the complex point $z=0$.
     2. a stereographic projection of the sphere from the south pole, which
        depict the Northen Hemisphere. It corresponds to an ordinary
-       (enhanced) domain coloring plot around the complex point z=oo
-       (infinity). Practically, it depicts the transformation `z -> 1/z`.
+       (enhanced) domain coloring plot around the complex point $z=\\infty$
+       (infinity). Practically, it depicts the transformation
+       $z \\rightarrow \\frac{1}{z}$.
 
     Let's look at an example:
 

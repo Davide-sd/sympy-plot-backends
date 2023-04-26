@@ -100,16 +100,17 @@ def _hardcoded_defaults():
             "module": "ipywidgets",
             # Render latex on the widget's labels
             "use_latex": True,
-            # Controls wether sliders trigger the update of `iplot`at each
+            # Controls wether sliders trigger the update at each
             # tick (value False) or only when the mouse click is released
-            # (value True)
+            # (value True). Only works with module="panel".
             "throttled": False,
             # If True, the interactive application will be served on a new
-            # browser window, otherwise it will be shown on Jupyter Notebook
+            # browser window, otherwise it will be shown on Jupyter Notebook.
+            # Only works with module="panel".
             "servable": False,
             # If the interactive application is being served to a new
             # browser window, an appropriate theme can be choosed.
-            # Possible values: "dark", "light"
+            # Possible values: "dark", "light". Only works with module="panel".
             "theme": "light"
         },
         plot3d={
