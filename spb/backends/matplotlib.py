@@ -1,5 +1,6 @@
 import itertools
 from spb.defaults import cfg
+from spb.series import GenericDataSeries, List2DSeries
 from spb.backends.base_backend import Plot
 from spb.backends.utils import compute_streamtubes
 from sympy import latex
@@ -87,6 +88,10 @@ class MatplotlibBackend(Plot):
         * Refer to [#fn6]_ to customize surface plots.
         * Refer to [#fn7]_ to customize stramline plots.
         * Refer to [#fn8]_ to customize 3D scatter plots.
+
+    show_axis : boolean, optional
+        Turns on/off the axis visibility (and associated tick labels).
+        Default to True (axis are visible).
 
     use_cm : boolean, optional
         If True, apply a color map to the mesh/surface or parametric lines.
@@ -198,6 +203,42 @@ class MatplotlibBackend(Plot):
 
         self._handles = dict()
         self._legend_handles = []
+
+        # when using plotgrid, set imagegrid=True to require matplotlib to
+        # use ImageGrid, which is suited to create equal aspect ratio axes
+        # sharing colorbar
+        self._imagegrid = kwargs.get("imagegrid", False)
+
+        if self.aouc:
+            pixel_offset = 15
+            # options for annotations
+            akws = dict(textcoords="offset pixels", ha="center", va="center")
+            # assumption: there is only one data series being plotted.
+            sign = -1 if self.series[0].at_infinity else 1
+            new_series = [
+                List2DSeries([1, 0, 0], [0, 1, -1], is_point=True,
+                    is_filled=False, show_in_legend=False,
+                    rendering_kw={"color": "k", "markersize": 3}),
+                List2DSeries([0], [0], is_point=True,
+                    is_filled=(not self.series[0].at_infinity), show_in_legend=False,
+                    rendering_kw={"color": "k", "markersize": 3}),
+                GenericDataSeries("annotations", text="1", xy=(1, 0),
+                    xytext=(pixel_offset * sign, 0), **akws),
+                GenericDataSeries("annotations", text="i", xy=(0, 1),
+                    xytext=(0, pixel_offset), **akws),
+                GenericDataSeries("annotations", text="-i", xy=(0, -1),
+                    xytext=(0, -pixel_offset), **akws)
+            ]
+            if not self.series[0].at_infinity:
+                new_series.append(
+                    GenericDataSeries("annotations", text="0",
+                    xy=(0, 0), xytext=(pixel_offset, 0), **akws))
+            else:
+                new_series.append(
+                    GenericDataSeries("annotations", text=r"$\infty$",
+                    xy=(0, 0), xytext=(pixel_offset, 0), **akws))
+            self._series = self._series + new_series
+
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
@@ -393,7 +434,11 @@ class MatplotlibBackend(Plot):
                     is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
                     self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 else:
-                    color = next(self._cl) if s.line_color is None else s.line_color
+                    if s.get_label(False) != "__k__":
+                        color = next(self._cl) if s.line_color is None else s.line_color
+                    else:
+                        color = self.wireframe_color
+
                     lkw = dict(label=s.get_label(self._use_latex), color=color)
                     if s.is_point:
                         lkw["marker"] = "o"
@@ -683,10 +728,14 @@ class MatplotlibBackend(Plot):
                 if not s.is_3Dsurface:
                     x, y, _, _, img, colors = s.get_data()
                     ikw = dict(
-                        extent=[np.amin(x), np.amax(x), np.amin(y), np.amax(y)],
                         interpolation="spline36",
                         origin="lower",
                     )
+                    if s.at_infinity:
+                        ikw["extent"] = [np.amax(x), np.amin(x), np.amin(y), np.amax(y)]
+                        img = np.flip(np.flip(img, axis=0), axis=1)
+                    else:
+                        ikw["extent"] = [np.amin(x), np.amax(x), np.amin(y), np.amax(y)]
                     kw = merge({}, ikw, s.rendering_kw)
                     image = self._ax.imshow(img, **kw)
                     self._add_handle(i, image, kw)
@@ -697,9 +746,10 @@ class MatplotlibBackend(Plot):
 
                         colormap = self.ListedColormap(colors)
                         norm = self.Normalize(vmin=-np.pi, vmax=np.pi)
-                        cb2 = self._fig.colorbar(
+                        method = self._fig.colorbar if not self._imagegrid else self._ax.cax.colorbar
+                        cb2 = method(
                             self.cm.ScalarMappable(norm=norm, cmap=colormap),
-                            orientation="vertical",
+                            # orientation="vertical",
                             label="Argument" if s.get_label(False) == str(s.expr) else s.get_label(self._use_latex),
                             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
                             ax=self._ax,
@@ -810,6 +860,8 @@ class MatplotlibBackend(Plot):
                 self._ax.xaxis.set_ticks_position("bottom")
                 self._ax.spines["right"].set_visible(False)
                 self._ax.spines["top"].set_visible(False)
+        if not self.show_axis:
+            self._ax.axis(False)
         if self.grid:
             if isinstance(self._ax, Axes3D):
                 self._ax.grid()

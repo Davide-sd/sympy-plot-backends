@@ -1528,3 +1528,16 @@ def test_legend_plot_sum():
     handles = p3.ax.get_legend().legendHandles
     assert len(handles) == 2
 
+
+def test_domain_coloring_2d():
+    # verify that at_infinity=True flips the image
+
+    p1 = make_test_domain_coloring_2d(MB, False)
+    _, _, _, _, img1a, _ = p1[0].get_data()
+    img1b = p1.ax.images[0].get_array()
+    assert np.allclose(img1a, img1b)
+
+    p2 = make_test_domain_coloring_2d(MB, True)
+    _, _, _, _, img2a, _ = p2[0].get_data()
+    img2b = p2.ax.images[0].get_array()
+    assert np.allclose(img2b, np.flip(np.flip(img2a, axis=0), axis=1))

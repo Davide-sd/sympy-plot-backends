@@ -20,7 +20,7 @@ from spb.functions import (
 from spb.vectors import plot_vector
 from spb.ccomplex.complex import (
     plot_complex, plot_complex_list,
-    plot_real_imag, plot_complex_vector
+    plot_real_imag, plot_complex_vector, plot_riemann_sphere
 )
 from spb.utils import prange
 
@@ -42,5 +42,6 @@ __all__ = [
     "plot3d_revolution", "plot_implicit", "plot_polar", "plot_geometry",
     "plot_list", "plot_piecewise", "plot_vector", "plot_complex",
     "plot_complex_list", "plot_real_imag", "plot_complex_vector", "plotgrid",
-    "MB", "BB", "PB", "KB", "MAB", "plot3d_list", "prange"
+    "MB", "BB", "PB", "KB", "MAB", "plot3d_list", "prange",
+    "plot_riemann_sphere"
 ]

@@ -3,6 +3,7 @@ import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.utils import get_seeds_points
+from spb.series import GenericDataSeries
 from sympy.external import import_module
 import warnings
 
@@ -53,6 +54,10 @@ class PlotlyBackend(Plot):
           ``dict( arrow_scale = 0.15 )``.
         * Refer to [#fn9]_ to customize 3D streamlines plots. Defaul to:
           ``dict( sizeref = 0.3 )``.
+
+    show_axis : boolean, optional
+        Turns on/off the axis visibility (and associated tick labels).
+        Default to True (axis are visible).
 
     theme : str, optional
         Set the theme. Default to ``"plotly_dark"``. Find more Plotly themes at
@@ -202,6 +207,32 @@ class PlotlyBackend(Plot):
             self._fig = go.Figure()
         self._colorbar_counter = 0
 
+        if self.aouc:
+            # assumption: there is only one data series being plotted.
+            at_infinity = self.series[0].at_infinity
+            sign = 1 if not at_infinity else -1
+            labels = ["1", "i", "-i"]
+            labels = ["<b>%s</b>" % t for t in labels]
+
+            new_series = [
+                GenericDataSeries("markers",
+                    x=[sign, 0, 0], y=[0, 1, -1], mode="markers+text",
+                    text=labels, marker=dict(color="#E5ECF6", size=8,
+                        line=dict(width=2, color="black")),
+                    textposition=[
+                        "top right" if not at_infinity else "top left",
+                        "bottom center", "top center"],
+                    textfont=dict(size=15)),
+                GenericDataSeries("markers",
+                    x=[0], y=[0], mode="markers+text",
+                    text="<b>inf</b>" if at_infinity else "<b>0</b>",
+                    marker=dict(color="#E5ECF6", size=8,
+                        line=dict(width=2, color="black")) if at_infinity
+                        else dict(size=8, color="black"),
+                    textposition="top right", textfont=dict(size=15)),
+            ]
+            self._series = self._series + new_series
+
     @property
     def fig(self):
         """Returns the figure."""
@@ -305,7 +336,10 @@ class PlotlyBackend(Plot):
                     mode = "lines+markers" if not s.is_point else "markers"
                     if (not s.is_point) and (not s.use_cm):
                         mode = "lines"
-                    color = next(self._cl) if s.line_color is None else s.line_color
+                    if s.get_label(False) != "__k__":
+                        color = next(self._cl) if s.line_color is None else s.line_color
+                    else:
+                        color = "black"
                     # hover template
                     ht = (
                         "x: %{x}<br />y: %{y}<br />u: %{customdata}"
@@ -621,6 +655,10 @@ class PlotlyBackend(Plot):
                     xmin, xmax = x.min(), x.max()
                     ymin, ymax = y.min(), y.max()
 
+                    if s.at_infinity:
+                        mag, angle, img = [np.flip(np.flip(t, axis=0),
+                            axis=1) for t in [mag, angle, img]]
+
                     self._fig.add_trace(
                         go.Image(
                             x0=xmin,
@@ -931,6 +969,7 @@ class PlotlyBackend(Plot):
                 showgrid=self.grid,  # thin lines in the background
                 zeroline=self.grid,  # thick line at x=0
                 constrain="domain",
+                visible=self.show_axis
             ),
             yaxis=dict(
                 title="" if not self.ylabel else self.ylabel,
@@ -939,6 +978,7 @@ class PlotlyBackend(Plot):
                 showgrid=self.grid,  # thin lines in the background
                 zeroline=self.grid,  # thick line at x=0
                 scaleanchor="x" if self.aspect == "equal" else None,
+                visible=self.show_axis
             ),
             polar=dict(
                 angularaxis={'direction': 'counterclockwise', 'rotation': 0},

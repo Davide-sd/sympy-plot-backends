@@ -2883,3 +2883,77 @@ def test_color_func_expression():
         lambda : List2DSeries(xx, yy, use_cm=True, color_func=sin(x)))
     raises(TypeError,
         lambda : List3DSeries(xx, yy, zz, use_cm=True, color_func=sin(x)))
+
+
+def test_2d_complex_domain_coloring_schemes():
+    # verify that domain coloring schemes produce different data from one
+    # another
+    
+    z = symbols("z")
+    expr = (z - 1) / (z**2 + z + 1)
+    n1 = n2 = 10
+    colorings = "abcdefghijklmno"
+    series = [
+        ComplexDomainColoringSeries(
+            expr, (z, -3 - 3 * I, 3 + 3 * I), "",
+            coloring=c, n1=n1, n2=n2) for c in colorings]
+    imgs = [s.get_data()[-2] for s in series]
+    for i in range(len(series) - 1):
+        for j in range(i + 1, len(series)):
+            assert not np.allclose(imgs[i], imgs[j])
+
+
+def test_2d_complex_domain_coloring_cmap_blevel():
+    # verify that complex domain coloring is applying colormap and black level
+    
+    z = symbols("z")
+    expr = (z - 1) / (z**2 + z + 1)
+    n1 = n2 = 10
+    s1 = ComplexDomainColoringSeries(
+        expr, (z, -3 - 3 * I, 3 + 3 * I), "",
+        coloring="b", cmap=None, blevel=0.75, n1=n1, n2=n2)
+    s2 = ComplexDomainColoringSeries(
+        expr, (z, -3 - 3 * I, 3 + 3 * I), "",
+        coloring="b", cmap=None, blevel=0.85, n1=n1, n2=n2)
+    s3 = ComplexDomainColoringSeries(
+        expr, (z, -3 - 3 * I, 3 + 3 * I), "",
+        coloring="b", cmap="twilight", blevel=0.75, n1=n1, n2=n2)
+    s4 = ComplexDomainColoringSeries(
+        expr, (z, -3 - 3 * I, 3 + 3 * I), "",
+        coloring="b", cmap="twilight", blevel=0.85, n1=n1, n2=n2)
+    d1, d2, d3, d4 = [t.get_data() for t in [s1, s2, s3, s4]]
+    assert not np.allclose(d1[-2], d2[-2])
+    assert not np.allclose(d1[-2], d3[-2])
+    assert not np.allclose(d1[-2], d4[-2])
+    assert not np.allclose(d2[-2], d3[-2])
+    assert not np.allclose(d2[-2], d4[-2])
+    assert not np.allclose(d3[-2], d4[-2])
+
+
+def test_2d_complex_domain_coloring_zero_infinity():
+    # verify that the domain coloring image is different for the same function
+    # when evaluate around zero and around infinity, and that Riemann mask
+    # works.
+
+    z = symbols("z")
+    expr = (z - 1) / (z**2 + z + 1)
+    n1 = n2 = 10
+    s1 = ComplexDomainColoringSeries(
+        expr, (z, -1.25 - 1.25 * I, 1.25 + 1.25 * I), "",
+        coloring="b", at_infinity=False, riemann_mask=False, n1=n1, n2=n2)
+    s2 = ComplexDomainColoringSeries(
+        expr, (z, -1.25 - 1.25 * I, 1.25 + 1.25 * I), "",
+        coloring="b", at_infinity=False, riemann_mask=True, n1=n1, n2=n2)
+    s3 = ComplexDomainColoringSeries(
+        expr, (z, -1.25 - 1.25 * I, 1.25 + 1.25 * I), "",
+        coloring="b", at_infinity=True, riemann_mask=False, n1=n1, n2=n2)
+    s4 = ComplexDomainColoringSeries(
+        expr, (z, -1.25 - 1.25 * I, 1.25 + 1.25 * I), "",
+        coloring="b", at_infinity=True, riemann_mask=True, n1=n1, n2=n2)
+    d1, d2, d3, d4 = [t.get_data() for t in [s1, s2, s3, s4]]
+    assert not np.allclose(d1[-2], d2[-2])
+    assert not np.allclose(d1[-2], d3[-2])
+    assert not np.allclose(d1[-2], d4[-2])
+    assert not np.allclose(d2[-2], d3[-2])
+    assert not np.allclose(d2[-2], d4[-2])
+    assert not np.allclose(d3[-2], d4[-2])

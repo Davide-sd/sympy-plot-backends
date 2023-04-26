@@ -23,15 +23,44 @@ def _nrows_ncols(nr, nc, nplots):
     return nr, nc
 
 
-def _create_mpl_figure(mapping):
+def _create_mpl_figure(mapping, imagegrid=False, size=None):
     matplotlib = import_module(
         'matplotlib',
         import_kwargs={'fromlist': ['pyplot', 'gridspec']},
         min_module_version='1.1.0',
         catch=(RuntimeError,))
+    mpl_toolkits = import_module(
+        'mpl_toolkits',
+        import_kwargs={'fromlist': ['axes_grid1']},
+        catch=(RuntimeError,))
     plt = matplotlib.pyplot
 
-    fig = plt.figure()
+    print("size", size)
+    kw = {} if not size else {"figsize": size}
+    fig = plt.figure(**kw)
+
+    if imagegrid:
+        gs =list(mapping.keys())[0].get_gridspec()
+        grid = mpl_toolkits.axes_grid1.ImageGrid(
+            fig, 111,
+            nrows_ncols=(gs.nrows, gs.ncols),
+            axes_pad=0.15,
+            cbar_location="right",
+            cbar_mode="single",
+            cbar_size="7%",
+            cbar_pad=0.15,
+        )
+        for (_, p), ax in zip(mapping.items(), grid):
+            # cpa: current plot attributes
+            cpa = p._copy_kwargs()
+            cpa["backend"] = MB
+            cpa["fig"] = fig
+            cpa["ax"] = ax
+            cpa["imagegrid"] = True
+            p = Plot(*p.series, **cpa)
+            p.process_series()
+        return fig
+
     for spec, p in mapping.items():
         kw = {"projection": "3d"} if (len(p.series) > 0 and
             p.series[0].is_3D) else ({"projection": "polar"} if p.polar_axis
@@ -62,7 +91,7 @@ def _create_panel_figure(mapping, panel_kw):
             d = {"data": list(p.fig.data), "layout": p.fig.layout}
             fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pn.pane.Plotly(d)
         else:
-            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pn.pane.Pane(p.fig)
+            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pn.pane.panel(p.fig)
     return fig
 
 
@@ -174,6 +203,8 @@ def plotgrid(*args, **kwargs):
     show = kwargs.get("show", True)
     gs = kwargs.get("gs", None)
     panel_kw = kwargs.get("panel_kw", dict(sizing_mode="stretch_width"))
+    imagegrid = kwargs.get("imagegrid", False)
+    size = kwargs.get("size", None)
 
     if (gs is None) and (len(args) == 0):
         fig = plt.figure()
@@ -195,7 +226,7 @@ def plotgrid(*args, **kwargs):
                 c += 1
 
         if all(isinstance(a, MB) for a in args):
-            fig = _create_mpl_figure(mapping)
+            fig = _create_mpl_figure(mapping, imagegrid, size)
         else:
             fig = _create_panel_figure(mapping, panel_kw)
 
@@ -212,12 +243,13 @@ def plotgrid(*args, **kwargs):
                 "matplotlib.gridspec.GridSpec to create them.")
 
         if all(isinstance(a, MB) for a in gs.values()):
-            fig = _create_mpl_figure(gs)
+            fig = _create_mpl_figure(gs, imagegrid, size)
         else:
             fig = _create_panel_figure(gs, panel_kw)
 
     if isinstance(fig, plt.Figure):
-        fig.tight_layout()
+        if not imagegrid:
+            fig.tight_layout()
         if show:
             plt.show()
     return fig

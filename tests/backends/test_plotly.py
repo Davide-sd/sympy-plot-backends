@@ -1171,3 +1171,25 @@ def test_color_func_expr():
     f3 = p3.fig
     # update the figure with new parameters: no errors should be raised
     p3.backend.update_interactive({u: 0.5})
+
+
+def test_domain_coloring_2d():
+    # verify that at_infinity=True flips the image
+
+    p1 = make_test_domain_coloring_2d(PB, False)
+    _, _, abs1a, arg1a, img1a, _ = p1[0].get_data()
+    abs1b = p1.fig.data[0].customdata[:, :, 0]
+    arg1b = p1.fig.data[0].customdata[:, :, 1]
+    img1b = p1.fig.data[0].z
+    assert np.allclose(abs1a, abs1b)
+    assert np.allclose(arg1a, arg1b)
+    assert np.allclose(img1a, img1b)
+
+    p2 = make_test_domain_coloring_2d(PB, True)
+    _, _, abs2a, arg2a, img2a, _ = p2[0].get_data()
+    abs2b = p2.fig.data[0].customdata[:, :, 0]
+    arg2b = p2.fig.data[0].customdata[:, :, 1]
+    img2b = p2.fig.data[0].z
+    assert np.allclose(abs2b, np.flip(np.flip(abs2a, axis=0), axis=1))
+    assert np.allclose(arg2b, np.flip(np.flip(arg2a, axis=0), axis=1))
+    assert np.allclose(img2b, np.flip(np.flip(img2a, axis=0), axis=1))

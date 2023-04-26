@@ -4,15 +4,19 @@ from spb.functions import (
 )
 from spb.series import (
     LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
-    ComplexPointSeries, SurfaceOver2DRangeSeries, _set_discretization_points
+    ComplexPointSeries, SurfaceOver2DRangeSeries, _set_discretization_points,
+    Parametric2DLineSeries, ComplexDomainColoringSeries,
+    Parametric2DLineSeries, List2DSeries, GenericDataSeries
 )
 from spb.interactive import create_interactive_plot
 from spb.utils import (
     _unpack_args, _instantiate_backend, _plot_sympify, _check_arguments,
-    _is_range, prange
+    _is_range, prange, _get_free_symbols
 )
 from spb.vectors import plot_vector
-from sympy import latex, Tuple, sqrt, re, im, arg, Expr, Dummy, symbols, I
+from spb.plotgrid import plotgrid
+from sympy import (latex, Tuple, sqrt, re, im, arg, Expr, Dummy, symbols, I,
+    sin, cos, pi)
 import warnings
 
 
@@ -247,6 +251,21 @@ def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
 
     if any(s.is_domain_coloring for s in series):
         kwargs.setdefault("legend", True)
+
+        dc_2d_series = [s for s in series if s.is_domain_coloring and not s.is_3D]
+        if ((len(dc_2d_series) > 0) and kwargs.get("riemann_mask", False)):
+            # ask the backend to add annotations on unit circle in the complex
+            # plane. We can't do it here because each backend requires
+            # different data format.
+            kwargs.setdefault("aouc", any(s.annotate for s in dc_2d_series))
+            # add unit circle: hide it from legend and requests its color
+            # to be black
+            t = symbols("t")
+            series.append(
+                Parametric2DLineSeries(cos(t), sin(t), (t, 0, 2*pi), "__k__",
+                    adaptive=False, n=1000, use_cm=False,
+                    show_in_legend=False))
+
 
     if kwargs.get("params", None):
         return create_interactive_plot(*series, **kwargs)
@@ -1138,7 +1157,7 @@ def plot_complex(*args, **kwargs):
     See Also
     ========
 
-    plot_real_imag, plot_complex_list, plot_complex_vector, iplot
+    plot_riemann_sphere, plot_real_imag, plot_complex_list, plot_complex_vector, iplot
 
     """
     kwargs["absarg"] = True
@@ -1603,3 +1622,237 @@ def plot_complex_vector(*args, **kwargs):
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
     return plot_vector(*new_args, **kwargs)
+
+
+def plot_riemann_sphere(*args, **kwargs):
+    """Visualize stereographic projections of the Riemann sphere.
+
+    Note:
+
+    1. Differently from other plot functions that return instances of
+       ``BaseBackend``, this function returns a Matplotlib figure.
+    2. This function calls ``plot_complex``: refer to its documentation for
+       the full list of keyword arguments.
+
+    Parameters
+    ==========
+
+    args :
+        expr : Expr
+            Represent the complex function to be plotted.
+
+        range : 3-element tuple, optional
+            Denotes the range of the variables.
+            Default to ``(z, -1.25 - 1.25*I, 1.25 + 1.25*I)``.
+
+    annotate : boolean, optional
+        Turn on/off the annotations on the Riemann sphere. Default to True
+        (annotations are visible). They can only be visible when
+        ``riemann_mask=True``.
+
+    riemann_mask : boolean, optional
+        Turn on/off the unit disk mask representing the Riemann sphere.
+        Default to True (mask is active).
+
+    show_axis : boolean, optional
+        Turn on/off the axis of the subplots. Default to False (axis not
+        visible).
+
+    size : (width, height)
+        Specify the size of the resulting figure.
+
+    title : str, list, optional
+        A list of two strings representing the titles for the two plots.
+
+
+    Notes
+    =====
+
+    The Riemann sphere is a model of the extented complex plane, comprised of
+    the complex plane plus a point at infinity. Let's consider a 3D space with
+    a sphere with radius 1 centered at the origin. The xy plane, representing
+    the complex plane, cut the sphere in half at the equator.
+    The stereographic projection of any point in the complex plane on the
+    sphere is given by the intersection point between a line connecting the
+    complex point with the north pole of the sphere.
+    Let's consider the magnitude of a complex point:
+
+    * if its lower than one (points inside the unit disk), then the point is
+      mapped to the Southern Hemisphere (the line connecting the complex point
+      to the north pole intersects the sphere in the Southern Hemisphere).
+      The origin of the complex plane is mapped to the south pole.
+    * if its equal to one (points in the unit circle), then the point is
+      already on the sphere, specifically in its equator.
+    * if its greater than one (points outside the unit disk), then the point
+      is mapped to the Northen Hemisphere. The north pole represents the point
+      at infinity.
+
+    Visualizing a 3D sphere is difficult (refer to Wegert [#fn4]_ for more
+    information): the most obvious problem is that only a part can be seen
+    from any location. A better way to fully visualize the sphere is with
+    two 2D charts depicting the sphere from the inside:
+
+    1. a stereographic projection of the sphere from the north pole, which
+       depict the Southern Hemisphere. It corresponds to an ordinary
+       (enhanced) domain coloring plot around the complex point z=0.
+    2. a stereographic projection of the sphere from the south pole, which
+       depict the Northen Hemisphere. It corresponds to an ordinary
+       (enhanced) domain coloring plot around the complex point z=oo
+       (infinity). Practically, it depicts the transformation `z -> 1/z`.
+
+    Let's look at an example:
+
+    .. plot::
+       :context: close-figs
+       :include-source: True
+
+       from sympy import symbols, pi
+       from spb import *
+       z = symbols("z")
+       expr = (z - 1) / (z**2 + z + 2)
+       plot_riemann_sphere(expr, coloring="b", n=800)
+
+    The saturated disks represents the hemispheres. The black circle is the
+    equator. Also, a few important points are displayed to make the plot
+    easier to understand.
+
+    Note the orientation of the Northen Hemisphere: it has been rotated
+    around the point at infinity by an angle `pi` and flipped about the real
+    axis. This is convenient because:
+
+    1. we can now imagine to fold the two charts so that the points 1, i, -i
+       are overlayed, glue the equator and blow it up to obtain a sphere.
+    2. imagine bringing the two discs closer so that they touch at the point 1.
+       Now, roll the two discs together: assuming there are no branch cuts,
+       there is continuity of argument and absolute value across the equator:
+       what is outside of the disc in the left plot, is inside of the disk in
+       the second plot, and vice-versa.
+
+    From the above plots, the zero located at $z=1$ is clearly visible, as
+    well as the two poles located at
+    $z = -\\frac{1}{2} - i \\frac{\\sqrt{7}}{2}$ and
+    $z = -\\frac{1}{2} + i \\frac{\\sqrt{7}}{2}$.
+    Not obvious at first, there is a zero located at $z=\\infty$. We can tell
+    its a zero by looking at ordering of colors around it in comparison to
+    the poles. Alternatively, we can use some enhanced color scheme, for
+    example one which brings poles to white:
+
+    .. plot::
+       :context: close-figs
+       :include-source: True
+
+       plot_riemann_sphere(expr, coloring="m", n=800)
+
+
+    Examples
+    ========
+
+    Standard output:
+
+    .. plot::
+       :context: close-figs
+       :include-source: True
+
+       from sympy import symbols, Rational, I
+       from spb import *
+       z = symbols("z")
+       expr = 1 / (2 * z**2) + z
+       plot_riemann_sphere(expr, coloring="b", n=800)
+
+    Hide annotations:
+
+    .. plot::
+       :context: close-figs
+       :include-source: True
+
+       plot_riemann_sphere(expr, coloring="b", n=800, annotate=False)
+
+
+    Hiding Riemann disk mask and annotations, set a custom domain, show axis
+    (note that the right-most plot might be misleading because the center
+    represents infinity), custom colormap, set the black level of contours,
+    set titles.
+
+    .. plot::
+       :context: close-figs
+       :include-source: True
+
+       import colorcet
+       expr = z**5 + Rational(1, 10)
+       l = 2
+       plot_riemann_sphere(
+           expr, (z, -l-l*I, l+l*I), coloring="b", n=800,
+           riemann_mask=False, show_axis=True, grid=False,
+           cmap=colorcet.CET_C2, blevel=0.85,
+           title=["Around zero", "Around infinity"])
+
+
+    See Also
+    ========
+
+    plot_complex
+
+
+    References
+    ==========
+
+    .. [#fn4] Domain Coloring is based on Elias Wegert's book
+       `"Visual Complex Functions" <https://www.springer.com/de/book/9783034801799>`_.
+       The book provides the background to better understand the images.
+
+    """
+    if kwargs.get("threed", False):
+        raise NotImplementedError
+
+    if kwargs.get("params", dict()):
+        raise NotImplementedError("Interactive widgets plots over the "
+            "Riemann sphere is not implemented.")
+
+    args = _plot_sympify(args)
+    # look for the range: if not given, set it to an appropriate domain
+    r, found_r, fs = None, False, set()
+    for a in args:
+        if _is_range(a):
+            r = a
+            found_r = True
+        elif isinstance(a, Expr):
+            fs = _get_free_symbols([a])
+    if not r:
+        s = fs.pop() if len(fs) > 0 else symbols("z")
+        args.append(Tuple(s, -1.25 - 1.25 * I, 1.25 + 1.25 * I))
+
+    kwargs = _set_discretization_points(kwargs, ComplexSurfaceBaseSeries)
+    # don't show the individual plots
+    show = kwargs.get("show", False)
+    kwargs["show"] = False
+    # set default options for Riemann sphere plots
+    kwargs.setdefault("show_axis", False)
+    kwargs.setdefault("riemann_mask", True)
+    kwargs.setdefault("annotate", True)
+    # size is applied to the final figure, not individual plots
+    size = kwargs.pop("size", None)
+    title = kwargs.pop("title", None)
+    get_title = lambda i: title[i] if isinstance(title, (tuple, list)) else title
+
+    # hide colorbar on first plot
+    legend = kwargs.get("legend", None)
+    kwargs["legend"] = False
+    kwargs["title"] = get_title(0) if title is not None else "Southern Hemisphere"
+    kwargs["at_infinity"] = False
+    p1 = plot_complex(*args, **kwargs)
+    test = (ComplexDomainColoringSeries, Parametric2DLineSeries,
+        List2DSeries, GenericDataSeries)
+    series = [s for s in p1.series if not isinstance(s, test)]
+    if len(series) > 1:
+        msg = "\n".join(str(s) for s in p1.series)
+        raise ValueError("Only one symbolic expression can be plotted. "
+            "Instead, the following have been received:\n" + msg)
+
+    kwargs["title"] = get_title(1) if title is not None else "Northen Hemisphere"
+    kwargs["at_infinity"] = True
+    kwargs["legend"] = True if legend or (legend is None) else False
+    p2 = plot_complex(*args, **kwargs)
+
+    if legend or (legend is None):
+        return plotgrid(p1, p2, nc=2, show=show, imagegrid=True, size=size)
+    return plotgrid(p1, p2, nc=2, show=show, size=size)

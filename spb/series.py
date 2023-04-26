@@ -2433,7 +2433,27 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
         self.blevel = float(kwargs.get("blevel", 0.75))
         self.phaseoffset = float(kwargs.get("phaseoffset", 0))
         self.rendering_kw = kwargs.get("rendering_kw", dict())
-        self._allowed_keys += ["cmap", "blevel", "phaseoffset"]
+        # apply the transformation z -> 1/z in order to study the behavior
+        # of the function at z=infinity
+        self.at_infinity = kwargs.get("at_infinity", False)
+        if self.at_infinity:
+            if callable(self.expr):
+                raise ValueError(
+                    "``at_infinity=True`` is only supported for symbolic "
+                    "expressions. Instead, a callable was provided.")
+            z = self.ranges[0][0]
+            tmp = self.expr.subs(z, 1 / z)
+            if self._label == str(self.expr):
+                # adjust labels to prevent the wrong one to be seen on colorbar
+                self._label = str(tmp)
+                self._latex_label = latex(tmp)
+            self.expr = tmp
+
+        self.annotate = kwargs.get("annotate", True)
+        self.riemann_mask = kwargs.get("riemann_mask", False)
+        self._allowed_keys += [
+            "cmap", "blevel", "phaseoffset", "at_infinity", "riemann_mask",
+            "annotate"]
 
         if self.blevel < 0:
             warnings.warn("It must be 0 <= blevel <= 1. Automatically "
@@ -2444,12 +2464,14 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
                 "setting blevel = 1.")
             self.blevel = 1
 
-    def _domain_coloring(self, w):
+    def _domain_coloring(self, domain, w):
         if isinstance(self.coloring, str):
             from spb.ccomplex.wegert import wegert
             self.coloring = self.coloring.lower()
             return wegert(self.coloring, w, self.phaseres, self.cmap,
-                self.blevel, self.phaseoffset)
+                self.blevel, self.phaseoffset,
+                self.at_infinity, self.riemann_mask,
+                domain=[domain[0, 0], domain[-1, -1]])
         return self.coloring(w)
 
     def get_data(self):
@@ -2483,7 +2505,7 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
         return self._apply_transform(
             np.real(domain), np.imag(domain),
             np.absolute(z), np.angle(z),
-            *self._domain_coloring(z),
+            *self._domain_coloring(domain, z),
         )
 
 
@@ -3132,7 +3154,7 @@ class GenericDataSeries(BaseSeries):
 
     annotations, markers, rectangles, fill
 
-    Sadly, the developers forgot to properly document them, as there are no
+    Sadly, the developers forgot to properly document them: there are no
     example whatsoever about their usage. This is actually a very good thing
     for this new plotting module, which supports multiple backends.
     Every backend exposes different functions:

@@ -1,6 +1,7 @@
 import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
+from spb.series import GenericDataSeries, List2DSeries
 from sympy.external import import_module
 import warnings
 
@@ -214,6 +215,10 @@ class BokehBackend(Plot):
         * Default options for streamline plots:
           ``dict(line_width=2, line_alpha=0.8)``
 
+    show_axis : boolean, optional
+        Turns on/off the axis visibility (and associated tick labels).
+        Default to True (axis are visible).
+
     theme : str, optional
         Set the theme. Find more Bokeh themes at [#fn2]_ .
 
@@ -349,12 +354,40 @@ class BokehBackend(Plot):
         if self.ylim:
             kw["y_range"] = self.ylim
         self._fig = self.bokeh.plotting.figure(**kw)
+        self._fig.axis.visible = self.show_axis
         self.grid = kwargs.get("grid", cfg["bokeh"]["grid"])
         self._fig.grid.visible = self.grid
         if cfg["bokeh"]["show_minor_grid"]:
             self._fig.grid.minor_grid_line_alpha = cfg["bokeh"]["minor_grid_line_alpha"]
             self._fig.grid.minor_grid_line_color = self._fig.grid.grid_line_color[0]
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
+
+        if self.aouc:
+            pixel_offset = 15
+            # assumption: there is only one data series being plotted.
+            sign = 1
+            labels = ["0", "i", "-i", "1"]
+            if self.series[0].at_infinity:
+                labels[0] = "inf"
+                sign = -1
+            source = self.bokeh.models.ColumnDataSource(data={
+                "x": [0, 0, 0, 1], "y": [0, 1, -1, 0], "labels": labels,
+                "x_offset": [pixel_offset, 0, 0, sign * pixel_offset],
+                "y_offset": [0, pixel_offset, -pixel_offset, 0]
+            })
+            new_series = [
+                List2DSeries([1, 0, 0], [0, 1, -1], is_point=True,
+                    is_filled=False, show_in_legend=False,
+                    rendering_kw={"color": "#000000", "marker": "circle", "size": 6}),
+                List2DSeries([0], [0], is_point=True,
+                    is_filled=(not self.series[0].at_infinity), show_in_legend=False,
+                    rendering_kw={"color": "#000000", "marker": "circle", "size": 6}),
+                GenericDataSeries("annotations", x="x", y="y", text="labels",
+                    x_offset="x_offset", y_offset="y_offset", source=source,
+                    text_baseline="middle", text_align="center",
+                    text_font_style="bold", text_color="#000000"),
+            ]
+            self._series = self._series + new_series
 
     @property
     def fig(self):
@@ -422,10 +455,12 @@ class BokehBackend(Plot):
                             "ys": y if not s.is_polar else y * np.sin(x)
                         }
 
-                    color = next(self._cl) if s.line_color is None else s.line_color
-                    lkw = dict(line_width=2,
-                        legend_label=s.get_label(self._use_latex),
-                        color=color)
+                    if s.get_label(False) != "__k__":
+                        color = next(self._cl) if s.line_color is None else s.line_color
+                    else:
+                        color = "#000000"
+                    lkw = dict(line_width=2, color=color,
+                        legend_label=s.get_label(self._use_latex))
                     if not s.is_point:
                         kw = merge({}, lkw, s.rendering_kw)
                         self._fig.line("xs", "ys", source=source, **kw)
@@ -519,6 +554,10 @@ class BokehBackend(Plot):
                 x, y, mag, angle, img, colors = s.get_data()
                 img = self._get_img(img)
 
+                self._fig.x_range.flipped = s.at_infinity
+                if s.at_infinity:
+                    mag, angle, img = [np.flip(np.flip(t, axis=0),
+                        axis=1) for t in [mag, angle, img]]
                 source = self.bokeh.models.ColumnDataSource(
                     {
                         "image": [img],

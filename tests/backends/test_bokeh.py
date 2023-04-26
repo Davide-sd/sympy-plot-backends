@@ -802,3 +802,27 @@ def test_color_func_expr():
     # Bokeh don't raise an error because it doesn't apply a colormap
     # to streamlines
     p2.backend.update_interactive({u: 0.5})
+
+
+def test_domain_coloring_2d():
+    # verify that at_infinity=True flips the image
+
+    p1 = make_test_domain_coloring_2d(BB, False)
+    _, _, abs1a, arg1a, img1a, _ = p1[0].get_data()
+    img1a = p1._get_img(img1a)
+    abs1b = p1.fig.renderers[0].data_source.data["abs"][0]
+    arg1b = p1.fig.renderers[0].data_source.data["arg"][0]
+    img1b = p1.fig.renderers[0].data_source.data["image"][0]
+    assert np.allclose(abs1a, abs1b)
+    assert np.allclose(arg1a, arg1b)
+    assert np.allclose(img1a, img1b)
+
+    p2 = make_test_domain_coloring_2d(BB, True)
+    _, _, abs2a, arg2a, img2a, _ = p2[0].get_data()
+    img2a = p1._get_img(img2a)
+    abs2b = p2.fig.renderers[0].data_source.data["abs"][0]
+    arg2b = p2.fig.renderers[0].data_source.data["arg"][0]
+    img2b = p2.fig.renderers[0].data_source.data["image"][0]
+    assert np.allclose(abs2b, np.flip(np.flip(abs2a, axis=0), axis=1))
+    assert np.allclose(arg2b, np.flip(np.flip(arg2a, axis=0), axis=1))
+    assert np.allclose(img2b, np.flip(np.flip(img2a, axis=0), axis=1))

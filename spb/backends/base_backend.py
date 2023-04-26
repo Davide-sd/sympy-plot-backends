@@ -177,9 +177,9 @@ class Plot:
     ranges over [-pi, pi]).
     """
 
-    _allowed_keys = ["aspect", "axis", "axis_center", "backend",
+    _allowed_keys = ["aspect", "axis", "axis_center", "backend", "aouc",
     "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
-    "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim",
+    "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim", "show_axis",
     "xscale", "yscale", "zscale", "process_piecewise", "polar_axis", "imodule"]
     """contains a list of public keyword arguments supported by the series.
     It will be used to validate the user-provided keyword arguments.
@@ -249,6 +249,8 @@ class Plot:
         # backend might need to create different types of figure depending on
         # the interactive module being used
         self.imodule = kwargs.get("imodule", None)
+        # add annotations on unit circle in the complex plane.
+        self.aouc = kwargs.get("aouc", None)
 
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.
@@ -306,6 +308,7 @@ class Plot:
         check_and_set("zlim", kwargs.get("zlim", None))
         self.size = None
         check_and_set("size", kwargs.get("size", None))
+        self.show_axis = kwargs.get("show_axis", True)
 
     def _copy_kwargs(self):
         """Copy the values of the plot attributes into a dictionary which will
@@ -331,7 +334,9 @@ class Plot:
             is_iplot=self.is_iplot,
             use_latex=self._use_latex,
             camera=self.camera,
-            polar_axis=self.polar_axis
+            polar_axis=self.polar_axis,
+            aouc=self.aouc,
+            show_axis=self.show_axis,
         )
 
     def _init_cyclers(self):

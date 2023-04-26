@@ -610,3 +610,9 @@ def make_test_color_func_expr_2(B):
         Matrix([u*z, -x, y]), (x, -3, 3), (y, -3, 3), (z, -3, 3),
         backend=B, use_cm=True, color_func=sqrt(x**2+y**2),
         params={u: (1, 0, 1)}, **options())
+
+
+def make_test_domain_coloring_2d(B, at_infinity):
+    return plot_complex(
+        (z - 1) / (z**2 + z + 1), (z, -3-3*I, 3+3*I),
+        backend=B, at_infinity=at_infinity, n=10, show=False)

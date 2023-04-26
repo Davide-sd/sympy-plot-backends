@@ -5,6 +5,8 @@
 v2.1.1
 ======
 
+* Improved complex domain coloring and added ``plot_riemann_sphere``.
+
 * Enabled support for plotting indexed objects.
 
 * Fixed bug with ``PlotlyBackend`` when creating 3D analytic landscapes.

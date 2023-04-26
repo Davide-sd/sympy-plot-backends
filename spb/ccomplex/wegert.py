@@ -13,6 +13,7 @@ under BSD 3 clauses.
 
 import matplotlib
 import numpy as np
+import warnings
 
 
 def to_rgb_255(func):
@@ -36,12 +37,79 @@ def saw_func(x, dx, a, b):
     return a + (b - a) * x
 
 
+def disk_mask(center, radius, shape):
+    """Create a 2D numpy array containing a disc shaped mask.
+
+    Parameters
+    ==========
+    center : (cr, cc)
+        Center of the disk along the rows and columns.
+    radius : float
+    shape : (nr, nc)
+        Number of rows and columns.
+    """
+    cr, cc = center
+    nr, nc = shape
+    y, x = np.ogrid[-cr:nr-cr, -cc:nc-cc]
+    return x**2 + y**2 <= radius**2
+
+
 def _apply_enhancement(mag, rgb):
+    """Alpha blending between RGB image with a white image using the inverse
+    of the brightness mask: zeros will retain colors, poles go white.
+    """
     brightness = mag / (mag + 1)
     brightness = np.dstack([brightness, brightness, brightness])
-    # Alpha blending between RGB image with a white image using the inverse
-    # of the brightness mask: zeros will retain colors, poles go white.
     return (1 - brightness) * rgb + brightness
+
+
+def _apply_riemann_mask(lower_left, upper_right, rgb):
+    """Lighten the outside of the unit circle in order to highlight its
+    inside, which corresponds to the northen or southern hemisphere of a
+    Riemann sphere.
+
+    Parameters
+    ==========
+    lower_left, upper_right : complex
+        Lower left and upper right corners of the complex domain being studied,
+        which must be square.
+    rgb : np.ndarray [n x n x 3]
+        Square RGB image with 0 <= R,G,B <= 1.
+    """
+    sx, sy = lower_left.real, lower_left.imag
+    ex, ey = upper_right.real, upper_right.imag
+    rangex = abs(ex - sx)
+    rangey = abs(ey - sy)
+
+    # KISS
+    if rangex != rangey:
+        warnings.warn("`riemann_mask` only works for square domains. "
+            "Instead, the provided domain is characterized by "
+            "%s <= Re(z) <= %s and " % (sx, ex) +
+            "%s <= Im(z) <= %s. " % (sy, ey) +
+            "Returning image without unit disk.")
+        return rgb
+    if rgb.shape[0] != rgb.shape[1]:
+        warnings.warn("`riemann_mask` only works when the number of "
+            "discretization points is the same on real and imaginary "
+            "directions. Returning image without unit disk.")
+        return rgb
+
+    # convert cartesian coordinates to pixel coordinates
+    r = int(rgb.shape[1] / rangex)
+    cc = int(rgb.shape[1] * (0 - sx) / rangex)
+    cr = int(rgb.shape[0] * (0 - sy) / rangey)
+
+    # create a layer masking the outside of the unit circle:
+    # elements inside unit circle are 0s, elements outside are 1s.
+    mask = disk_mask((cr, cc), r, rgb.shape[:2])
+    layer = np.zeros(rgb.shape[:2])
+    layer[~mask] = 1
+    layer = np.dstack([layer, layer, layer])
+    # apply a lighten blending mode between the rgb and the layer using
+    # a specified opacity value
+    opacity = 0.5
+    return np.maximum(rgb, layer) * opacity + rgb * (1 - opacity)
 
 
 @to_rgb_255
@@ -58,9 +126,12 @@ def domain_coloring(w, phaseres=20, cmap=None, poffset=0, **kwargs):
     else:
         rgb = cmap(arg)[:, :, :-1]
 
-    if not kwargs.get("enhance", False):
-        return rgb
-    return _apply_enhancement(np.absolute(w), rgb)
+    if kwargs.get("enhance", False):
+        rgb = _apply_enhancement(np.absolute(w), rgb)
+    if kwargs.get("riemann_mask", False):
+        domain = kwargs.get("domain")
+        rgb = _apply_riemann_mask(*domain, rgb)
+    return rgb
 
 
 @to_rgb_255
@@ -85,9 +156,12 @@ def enhanced_domain_coloring(w, phaseres=20, cmap=None, blevel=0.75,
         black = np.dstack([black, black, black])
         rgb = cmap(arg)[:, :, :-1] * black
 
-    if not kwargs.get("enhance", False):
-        return rgb
-    return _apply_enhancement(mag, rgb)
+    if kwargs.get("enhance", False):
+        rgb = _apply_enhancement(mag, rgb)
+    if kwargs.get("riemann_mask", False):
+        domain = kwargs.get("domain")
+        rgb = _apply_riemann_mask(*domain, rgb)
+    return rgb
 
 
 @to_rgb_255
@@ -110,9 +184,12 @@ def enhanced_domain_coloring_phase(w, phaseres=20, cmap=None, blevel=0.75,
         colors = cmap(arg)[:, :, :-1]
         rgb = colors * black
 
-    if not kwargs.get("enhance", False):
-        return rgb
-    return _apply_enhancement(mag, rgb)
+    if kwargs.get("enhance", False):
+        rgb = _apply_enhancement(mag, rgb)
+    if kwargs.get("riemann_mask", False):
+        domain = kwargs.get("domain")
+        rgb = _apply_riemann_mask(*domain, rgb)
+    return rgb
 
 
 @to_rgb_255
@@ -135,9 +212,12 @@ def enhanced_domain_coloring_mag(w, phaseres=20, cmap=None, blevel=0.75,
         colors = cmap(arg)[:, :, :-1]
         rgb = colors * black
 
-    if not kwargs.get("enhance", False):
-        return rgb
-    return _apply_enhancement(mag, rgb)
+    if kwargs.get("enhance", False):
+        rgb = _apply_enhancement(mag, rgb)
+    if kwargs.get("riemann_mask", False):
+        domain = kwargs.get("domain")
+        rgb = _apply_riemann_mask(*domain, rgb)
+    return rgb
 
 
 @to_rgb_255
@@ -252,7 +332,8 @@ def create_colorscale(cmap, poffset=0, N=256):
     return colorscale
 
 
-def wegert(coloring, w, phaseres=20, cmap="hsv_r", blevel=0.75, poffset=0, N=256):
+def wegert(coloring, w, phaseres=20, cmap="hsv_r", blevel=0.75, poffset=0,
+    at_infinity=False, riemann_mask=False, N=256, domain=None):
     """ Choose between different domain coloring options.
 
     Parameters
@@ -353,9 +434,13 @@ def wegert(coloring, w, phaseres=20, cmap="hsv_r", blevel=0.75, poffset=0, N=256
     # normalize the phase offset
     poffset = (poffset / (2 * np.pi)) % 1
 
-    kwargs = dict(phaseres=phaseres, cmap=cmap, blevel=blevel, poffset=poffset)
+    kwargs = dict(
+        phaseres=phaseres, cmap=cmap, blevel=blevel, poffset=poffset,
+        at_infinity=at_infinity, riemann_mask=riemann_mask)
     if coloring in ["l", "m", "n", "o"]:
         kwargs["enhance"] = True
+    if domain:
+        kwargs["domain"] = [complex(t) for t in domain]
 
     func, create_cc = mapping[coloring]
     if create_cc:
