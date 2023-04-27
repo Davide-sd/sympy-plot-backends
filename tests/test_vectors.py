@@ -1126,3 +1126,38 @@ def test_parametric_ranges_2d_quiver(pv_options):
         assert not np.allclose(s, t)
     for s, t in zip(d2, d4):
         assert not np.allclose(s, t)
+
+
+def test_number_discretization_points():
+    # verify the different ways of setting the numbers of discretization points
+    x, y, z = symbols("x, y, z")
+    options = dict(show=False, backend=MB)
+
+    p = plot_vector([-cos(y), sin(x)], (x, -10, 10), (y, -10, 10), **options)
+    assert p[0].n[:2] == [100, 100]
+    assert p[1].n[:2] == [25, 25]
+    p = plot_vector([-cos(y), sin(x)], (x, -10, 10), (y, -10, 10),
+        n=15, nc=200, **options)
+    assert p[0].n[:2] == [200, 200]
+    assert p[1].n[:2] == [15, 15]
+    p = plot_vector([-cos(y), sin(x)], (x, -10, 10), (y, -10, 10),
+        n1=15, n2=20, nc=50, **options)
+    assert p[0].n[:2] == [50, 50]
+    assert p[1].n[:2] == [15, 20]
+
+    p = plot_vector(Matrix([cos(z), -cos(y), sin(x)]),
+        (x, -10, 10), (y, -10, 10), (z, -10, 10), **options)
+    assert p[0].n == [10, 10, 10]
+    p = plot_vector(Matrix([cos(z), -cos(y), sin(x)]),
+        (x, -10, 10), (y, -10, 10), (z, -10, 10), n=5, **options)
+    assert p[0].n == [5, 5, 5]
+    p = plot_vector(Matrix([cos(z), -cos(y), sin(x)]),
+        (x, -10, 10), (y, -10, 10), (z, -10, 10), n1=5, n2=7, n3=9, **options)
+    assert p[0].n == [5, 7, 9]
+
+    p = plot_vector([z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+        n=8, use_cm=False, slice=[
+            Plane((-10, 0, 0), (1, 0, 0)),
+            Plane((0, 10, 0), (0, 2, 0)),
+            Plane((0, 0, -10), (0, 0, 1))], **options)
+    assert all(s.n == [8, 8, 8] for s in p.series)

@@ -312,6 +312,7 @@ class BaseSeries:
     # subclass can set its number.
 
     def __init__(self, *args, **kwargs):
+        kwargs = _set_discretization_points(kwargs.copy(), type(self))
         self.only_integers = kwargs.get("only_integers", False)
         # represents the evaluation modules to be used by lambdify
         self.modules = kwargs.get("modules", None)
@@ -1028,13 +1029,13 @@ class Line2DBaseSeries(BaseSeries):
     """A base class for 2D lines."""
 
     is_2Dline = True
+    _N = 1000
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.steps = kwargs.get("steps", False)
         self.is_point = kwargs.get("is_point", False)
         self.is_filled = kwargs.get("is_filled", True)
-        self.n = int(kwargs.get("n", 1000))
         self.adaptive = kwargs.get("adaptive", cfg["adaptive"]["used_by_default"])
         self.adaptive_goal = kwargs.get("adaptive_goal", cfg["adaptive"]["goal"])
         self.loss_fn = kwargs.get("loss_fn", None)
@@ -2584,15 +2585,17 @@ def _set_discretization_points(kwargs, pt):
                 deprecated_since_version="1.12",
                 active_deprecations_target='---')
 
-    if pt in [LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries]:
+    if pt in [LineOver1DRangeSeries, Parametric2DLineSeries,
+        Parametric3DLineSeries, AbsArgLineSeries, ColoredLineOver1DRangeSeries,
+        ComplexParametric3DLineSeries]:
         if "n" in kwargs.keys():
+            kwargs["n1"] = kwargs["n"]
             if hasattr(kwargs["n"], "__iter__") and (len(kwargs["n"]) > 0):
-                kwargs["n"] = kwargs["n"][0]
-        elif "n1" in kwargs.keys():
-            kwargs["n"] = kwargs["n1"]
+                kwargs["n1"] = kwargs["n"][0]
     elif pt in [
         SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-        ComplexSurfaceBaseSeries, Vector2DSeries, ImplicitSeries,
+        ComplexSurfaceSeries, ComplexDomainColoringSeries,
+        Vector2DSeries, ImplicitSeries, RiemannSphereSeries
     ]:
         if "n" in kwargs.keys():
             if hasattr(kwargs["n"], "__iter__") and (len(kwargs["n"]) > 1):
@@ -2600,7 +2603,8 @@ def _set_discretization_points(kwargs, pt):
                 kwargs["n2"] = kwargs["n"][1]
             else:
                 kwargs["n1"] = kwargs["n2"] = kwargs["n"]
-    elif pt in [Vector3DSeries, SliceVector3DSeries, Implicit3DSeries]:
+    elif pt in [Vector3DSeries, SliceVector3DSeries, Implicit3DSeries,
+        PlaneSeries]:
         if "n" in kwargs.keys():
             if hasattr(kwargs["n"], "__iter__") and (len(kwargs["n"]) > 2):
                 kwargs["n1"] = kwargs["n"][0]

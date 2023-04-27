@@ -2,7 +2,7 @@ from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.functions import _set_labels
 from spb.series import (
     BaseSeries, Vector2DSeries, Vector3DSeries, ContourSeries,
-    SliceVector3DSeries, _set_discretization_points
+    SliceVector3DSeries
 )
 from spb.interactive import create_interactive_plot
 from spb.utils import (
@@ -84,6 +84,9 @@ def _build_series(*args, **kwargs):
             cranges = all_ranges[0]
             nc = kwargs.pop("nc", 100)
             cs_kwargs = kwargs.copy()
+            for kw in ["n", "n1", "n2"]:
+                if kw in cs_kwargs.keys():
+                    cs_kwargs.pop(kw)
             cs_kwargs["n1"] = nc
             cs_kwargs["n2"] = nc
             cs = ContourSeries(scalar_field, *cranges, scalar_label, **cs_kwargs)
@@ -107,7 +110,6 @@ def _series(expr, *ranges, label="", **kwargs):
     fs = fs.difference(params.keys())
 
     if len(split_expr) == 2:  # 2D case
-        kwargs = _set_discretization_points(kwargs.copy(), Vector2DSeries)
         if len(fs) > 2:
             raise ValueError(
                 "Too many free symbols. 2D vector plots require "
@@ -139,7 +141,6 @@ def _series(expr, *ranges, label="", **kwargs):
                 Vector2DSeries(*split_expr, *ranges, label, **kwargs),
             )
     else:  # 3D case
-        kwargs = _set_discretization_points(kwargs.copy(), Vector3DSeries)
         if len(fs) > 3:
             raise ValueError(
                 "Too many free symbols. 3D vector plots require "
@@ -762,7 +763,6 @@ def plot_vector(*args, **kwargs):
     args = _plot_sympify(args)
     args = _preprocess(*args)
 
-    kwargs = _set_discretization_points(kwargs, Vector3DSeries)
     kwargs.setdefault("aspect", "equal")
     kwargs.setdefault("legend", True)
 

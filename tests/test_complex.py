@@ -1761,3 +1761,65 @@ def test_plot_riemann_sphere():
     assert len(fig.axes[0].lines) == 0
     assert len(fig.axes[1].images) == 1
     assert len(fig.axes[1].lines) == 0
+
+
+def test_number_discretization_points():
+    # verify the different ways of setting the numbers of discretization points
+    z = symbols("z")
+    options = dict(adaptive=False, show=False, backend=MB)
+
+    p = plot_real_imag(sqrt(z), (z, -10, 10), **options)
+    assert all(s.n[0] == 1000 for s in p.series)
+    p = plot_real_imag(sqrt(z), (z, -10, 10), n=10, **options)
+    assert all(s.n[0] == 10 for s in p.series)
+    p = plot_real_imag(sqrt(z), (z, -10, 10), n1=10, **options)
+    assert all(s.n[0] == 10 for s in p.series)
+
+    p = plot_real_imag(sqrt(z), (z, -3-3j, 3+3j), threed=True, **options)
+    assert all(s.n[:2] == [300, 300] for s in p.series)
+    p = plot_real_imag(sqrt(z), (z, -3-3j, 3+3j), threed=True, n=50, **options)
+    assert all(s.n[:2] == [50, 50] for s in p.series)
+    p = plot_real_imag(sqrt(z), (z, -3-3j, 3+3j), threed=True, n1=50, **options)
+    assert all(s.n[:2] == [50, 300] for s in p.series)
+    p = plot_real_imag(sqrt(z), (z, -3-3j, 3+3j), threed=True, n1=50, n2=20, **options)
+    assert all(s.n[:2] == [50, 20] for s in p.series)
+
+    p = plot_complex(cos(z) + sin(I * z), (z, -2, 2), **options)
+    assert p[0].n[0] == 1000
+    p = plot_complex(cos(z) + sin(I * z), (z, -2, 2), n=10, **options)
+    assert p[0].n[0] == 10
+    p = plot_complex(cos(z) + sin(I * z), (z, -2, 2), n1=10, **options)
+    assert p[0].n[0] == 10
+
+    p = plot_complex(cos(z), (z, -2-2j, 2+2j), **options)
+    assert p[0].n[:2] == [300, 300]
+    p = plot_complex(cos(z), (z, -2-2j, 2+2j), n=50, **options)
+    assert p[0].n[:2] == [50, 50]
+    p = plot_complex(cos(z), (z, -2-2j, 2+2j), n1=50, **options)
+    assert p[0].n[:2] == [50, 300]
+    p = plot_complex(cos(z), (z, -2-2j, 2+2j), n2=50, **options)
+    assert p[0].n[:2] == [300, 50]
+    p = plot_complex(cos(z), (z, -2-2j, 2+2j), n1=20, n2=50, **options)
+    assert p[0].n[:2] == [20, 50]
+
+    p = plot_complex(cos(z), (z, -2-2j, 2+2j), threed=True, **options)
+    assert p[0].n[:2] == [300, 300]
+    p = plot_complex(cos(z), (z, -2-2j, 2+2j), threed=True, n=50, **options)
+    assert p[0].n[:2] == [50, 50]
+    p = plot_complex(cos(z), (z, -2-2j, 2+2j), threed=True, n1=50, **options)
+    assert p[0].n[:2] == [50, 300]
+    p = plot_complex(cos(z), (z, -2-2j, 2+2j), threed=True, n2=50, **options)
+    assert p[0].n[:2] == [300, 50]
+    p = plot_complex(cos(z), (z, -2-2j, 2+2j), threed=True, n1=20, n2=50, **options)
+    assert p[0].n[:2] == [20, 50]
+
+    p = plot_riemann_sphere((z - 1) / (z**2 + z + 1), threed=True, **options)
+    assert p[0].n[:2] == [150, 600]
+    p = plot_riemann_sphere((z - 1) / (z**2 + z + 1), n=50, threed=True, **options)
+    assert p[0].n[:2] == [50, 200]
+    p = plot_riemann_sphere((z - 1) / (z**2 + z + 1), n1=50, threed=True, **options)
+    assert p[0].n[:2] == [50, 150]
+    p = plot_riemann_sphere((z - 1) / (z**2 + z + 1), n2=50, threed=True, **options)
+    assert p[0].n[:2] == [150, 50]
+    p = plot_riemann_sphere((z - 1) / (z**2 + z + 1), n1=50, n2=100, threed=True, **options)
+    assert p[0].n[:2] == [50, 100]

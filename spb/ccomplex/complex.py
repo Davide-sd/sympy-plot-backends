@@ -4,7 +4,7 @@ from spb.functions import (
 )
 from spb.series import (
     LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
-    ComplexPointSeries, SurfaceOver2DRangeSeries, _set_discretization_points,
+    ComplexPointSeries, SurfaceOver2DRangeSeries,
     Parametric2DLineSeries, ComplexDomainColoringSeries,
     Parametric2DLineSeries, List2DSeries, GenericDataSeries,
     RiemannSphereSeries
@@ -233,7 +233,6 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
 def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
     """Create the series and setup the backend."""
     args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, ComplexSurfaceBaseSeries)
 
     if not pcl:
         series = _build_series(*args, allow_lambda=allow_lambda, **kwargs)
@@ -1859,16 +1858,16 @@ def plot_riemann_sphere(*args, **kwargs):
     args = _plot_sympify(args)
 
     if kwargs.get("threed", False):
-        kwargs = _set_discretization_points(kwargs, ComplexSurfaceBaseSeries)
         kwargs.setdefault("xlabel", "Re")
         kwargs.setdefault("ylabel", "Im")
+        kwargs["legend"] = False
         Backend = kwargs.get("backend", THREE_D_B)
         t, p = symbols("theta phi")
         # Northen and Southern hemispheres
         s1 = RiemannSphereSeries(args[0], (t, 0, pi/2), (p, 0, 2*pi),
-            legend=False, **kwargs)
+            **kwargs)
         s2 = RiemannSphereSeries(args[0], (t, pi/2, pi), (p, 0, 2*pi),
-            legend=True, **kwargs)
+            **kwargs)
         return _instantiate_backend(Backend, s1, s2, **kwargs)
 
     # look for the range: if not given, set it to an appropriate domain
@@ -1883,7 +1882,6 @@ def plot_riemann_sphere(*args, **kwargs):
         s = fs.pop() if len(fs) > 0 else symbols("z")
         args.append(Tuple(s, -1.25 - 1.25 * I, 1.25 + 1.25 * I))
 
-    kwargs = _set_discretization_points(kwargs, ComplexSurfaceBaseSeries)
     # don't show the individual plots
     show = kwargs.get("show", False)
     kwargs["show"] = False

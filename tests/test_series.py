@@ -195,10 +195,10 @@ def test_number_discretization_points():
         kw1 = _set_discretization_points({"n": 10}, pt)
         kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
         kw3 = _set_discretization_points({"n1": 10}, pt)
-        assert all(("n" in kw) and kw["n"] == 10 for kw in [kw1, kw2, kw3])
+        assert all(("n1" in kw) and kw["n1"] == 10 for kw in [kw1, kw2, kw3])
 
     for pt in [SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-        ComplexSurfaceBaseSeries, Vector2DSeries, ImplicitSeries]:
+        ComplexSurfaceSeries, ComplexDomainColoringSeries, Vector2DSeries, ImplicitSeries]:
         kw1 = _set_discretization_points({"n": 10}, pt)
         kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
         kw3 = _set_discretization_points({"n1": 10, "n2": 20}, pt)

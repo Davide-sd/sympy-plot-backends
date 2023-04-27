@@ -20,7 +20,7 @@ from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-    ImplicitSeries, _set_discretization_points,
+    ImplicitSeries,
     List2DSeries, List3DSeries, GeometrySeries, Implicit3DSeries,
     GenericDataSeries, ComplexParametric3DLineSeries
 )
@@ -667,7 +667,6 @@ def plot(*args, **kwargs):
     fy = lambda use_latex: wrap(use_latex) % fx(use_latex)
     kwargs.setdefault("xlabel", fx)
     kwargs.setdefault("ylabel", fy)
-    kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
 
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
@@ -971,7 +970,6 @@ def plot_parametric(*args, **kwargs):
 
     """
     args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
     plot_expr = _check_arguments(args, 2, 1, **kwargs)
 
     labels = kwargs.pop("label", [])
@@ -1136,7 +1134,6 @@ def plot_parametric_region(*args, **kwargs):
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
     args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, Parametric2DLineSeries)
     kwargs["adaptive"] = False
     kwargs["use_cm"] = False
     kwargs["legend"] = False
@@ -1475,7 +1472,6 @@ def plot3d_parametric_line(*args, **kwargs):
 
     """
     args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, Parametric3DLineSeries)
     plot_expr = _check_arguments(args, 3, 1, **kwargs)
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
@@ -1498,7 +1494,6 @@ def _plot3d_plot_contour_helper(Series, is_threed, Backend, *args, **kwargs):
     code repetition.
     """
     args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, SurfaceOver2DRangeSeries)
     plot_expr = _check_arguments(args, 1, 2, **kwargs)
 
     if is_threed:
@@ -2270,7 +2265,8 @@ def plot3d_parametric_surface(*args, **kwargs):
            for i in range(n)]
        exprs = [(r * cos(theta), r * sin(theta), rb) for rb in branches]
        plot3d_parametric_surface(*exprs, (r, 0, 3), (theta, -pi, pi),
-           backend=PB, wireframe=True, wf_n2=20, zlabel="f(z)")
+           backend=PB, wireframe=True, wf_n2=20, zlabel="f(z)",
+           label=["branch %s" % (i + 1) for i in range(len(branches))])
 
     Plotting a numerical function instead of a symbolic expression.
 
@@ -2352,7 +2348,6 @@ def plot3d_parametric_surface(*args, **kwargs):
 
     """
     args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
     plot_expr = _check_arguments(args, 3, 2, **kwargs)
     kwargs.setdefault("xlabel", "x")
     kwargs.setdefault("ylabel", "y")
@@ -2480,7 +2475,7 @@ def plot3d_spherical(*args, **kwargs):
        r1 = 1
        r2 = 1.5 + sin(5 * phi) * sin(10 * theta) / 10
        plot3d_spherical(r1, r2, (theta, 0, pi / 2), (phi, 0.35 * pi, 2 * pi),
-           wireframe=True, wf_n2=25, backend=PB)
+           wireframe=True, wf_n2=25, backend=PB, label=["r1", "r2"])
 
     Interactive-widget plot of real spherical harmonics, highlighting the
     regions in which the real part is positive and negative.
@@ -2515,7 +2510,6 @@ def plot3d_spherical(*args, **kwargs):
 
     """
     args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, ParametricSurfaceSeries)
     plot_expr = _check_arguments(args, 1, 2, **kwargs)
 
     # deal with symbolic min/max values of ranges
@@ -2683,7 +2677,6 @@ def plot3d_implicit(*args, **kwargs):
             "plot3d_implicit doesn't support interactive widgets.")
 
     args = _plot_sympify(args)
-    kwargs = _set_discretization_points(kwargs, Implicit3DSeries)
     plot_expr = _check_arguments(args, 1, 3, **kwargs)
 
     labels = kwargs.pop("label", dict())
@@ -3393,7 +3386,6 @@ def plot_implicit(*args, **kwargs):
 
     args = _plot_sympify(args)
     args = _check_arguments(args, 1, 2, **kwargs)
-    kwargs = _set_discretization_points(kwargs, ImplicitSeries)
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
     border_color = kwargs.pop("border_color", None)
@@ -4516,7 +4508,6 @@ def plot_piecewise(*args, **kwargs):
     fy = lambda use_latex: wrap(use_latex) % fx(use_latex)
     kwargs.setdefault("xlabel", fx)
     kwargs.setdefault("ylabel", fy)
-    kwargs = _set_discretization_points(kwargs, LineOver1DRangeSeries)
     kwargs.setdefault("legend", False)
     kwargs["process_piecewise"] = True
 

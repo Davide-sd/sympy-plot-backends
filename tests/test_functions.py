@@ -1820,3 +1820,167 @@ def test_indexed_objects():
 
     p = plot3d(cos(x[0]**2 + x[1]**2), (x[0], -pi, pi), (x[1], -pi, pi), **kwargs)
     d = p[0].get_data()
+
+
+def test_number_discretization_points():
+    # verify the different ways of setting the numbers of discretization points
+    x, y, z = symbols("x, y, z")
+    options = dict(adaptive=False, show=False, backend=MB)
+
+    p = plot(cos(x), (x, -10, 10), **options)
+    assert p[0].n[0] == 1000
+    p = plot(cos(x), (x, -10, 10), n=10, **options)
+    assert p[0].n[0] == 10
+    p = plot(cos(x), (x, -10, 10), n1=10, **options)
+    assert p[0].n[0] == 10
+    p = plot(cos(x), (x, -10, 10), nb_of_points=10, **options)
+    assert p[0].n[0] == 10
+    p = plot(cos(x), sin(x), (x, -10, 10), n=10, **options)
+    assert (len(p.series) > 1) and all(t.n[0] == 10 for t in p.series)
+
+    p = plot_parametric(cos(x), sin(x), (x, 0, 2*pi), **options)
+    assert p[0].n[0] == 1000
+    p = plot_parametric(cos(x), sin(x), (x, 0, 2*pi), n=10, **options)
+    assert p[0].n[0] == 10
+    p = plot_parametric(cos(x), sin(x), (x, 0, 2*pi), n1=10, **options)
+    assert p[0].n[0] == 10
+    p = plot_parametric(cos(x), sin(x), (x, 0, 2*pi),
+        nb_of_points=10, **options)
+    assert p[0].n[0] == 10
+    p = plot_parametric((cos(x), sin(x)), (cos(x), x), (x, 0, 2*pi),
+        n=10, **options)
+    assert (len(p.series) > 1) and all(t.n[0] == 10 for t in p.series)
+
+    p = plot3d_parametric_line(cos(x), sin(x), x, (x, 0, 2*pi), **options)
+    assert p[0].n[0] == 1000
+    p = plot3d_parametric_line(cos(x), sin(x), x, (x, 0, 2*pi),
+        n=10, **options)
+    assert p[0].n[0] == 10
+    p = plot3d_parametric_line(cos(x), sin(x), x, (x, 0, 2*pi),
+        n1=10, **options)
+    assert p[0].n[0] == 10
+    p = plot3d_parametric_line(cos(x), sin(x), x, (x, 0, 2*pi),
+        nb_of_points=10, **options)
+    assert p[0].n[0] == 10
+    p = plot3d_parametric_line(
+        (cos(x), sin(x), x), (sin(x), cos(x), x**2), (x, 0, 2*pi),
+        n=10, **options)
+    assert (len(p.series) > 1) and all(t.n[0] == 10 for t in p.series)
+
+    p = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), **options)
+    assert p[0].n[:2] == [100, 100]
+    p = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        n=400, **options)
+    assert p[0].n[:2] == [400, 400]
+    p = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        n1=50, **options)
+    assert p[0].n[:2] == [50, 100]
+    p = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        n1=50, n2=20, **options)
+    assert p[0].n[:2] == [50, 20]
+    p = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        nb_of_points_x=50, nb_of_points_y=20, **options)
+    assert p[0].n[:2] == [50, 20]
+    p = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        n1=50, n2=20, wireframe=True, wf_n1=5, wf_n2=5, **options)
+    assert p[0].n[:2] == [50, 20]
+    assert all(s.n[0] == 20 for s in p.series[1:6])
+    assert all(s.n[0] == 50 for s in p.series[6:])
+    assert p[0].n[:2] == [50, 20]
+    p = plot3d(cos(x**2 + y**2), sin(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        n=400, **options)
+    assert (len(p.series) > 1) and all(t.n[:2] == [400, 400] for t in p.series)
+
+    p = plot_contour(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), **options)
+    assert p[0].n[:2] == [100, 100]
+    p = plot_contour(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        n=400, **options)
+    assert p[0].n[:2] == [400, 400]
+    p = plot_contour(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        n1=50, **options)
+    assert p[0].n[:2] == [50, 100]
+    p = plot_contour(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        n1=50, n2=20, **options)
+    assert p[0].n[:2] == [50, 20]
+    p = plot_contour(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        nb_of_points_x=50, nb_of_points_y=20, **options)
+    assert p[0].n[:2] == [50, 20]
+    p = plot_contour(
+        cos(x**2 + y**2), sin(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        n=400, **options)
+    assert (len(p.series) > 1) and all(t.n[:2] == [400, 400] for t in p.series)
+
+    p = plot3d_parametric_surface(
+        x + y, x - y, x, (x, -pi, pi), (y, -pi, pi), **options)
+    assert p[0].n[:2] == [100, 100]
+    p = plot3d_parametric_surface(
+        x + y, x - y, x, (x, -pi, pi), (y, -pi, pi),
+        n=400, **options)
+    assert p[0].n[:2] == [400, 400]
+    p = plot3d_parametric_surface(
+        x + y, x - y, x, (x, -pi, pi), (y, -pi, pi),
+        n1=50, **options)
+    assert p[0].n[:2] == [50, 100]
+    p = plot3d_parametric_surface(
+        x + y, x - y, x, (x, -pi, pi), (y, -pi, pi),
+        n1=50, n2=20, **options)
+    assert p[0].n[:2] == [50, 20]
+    p = plot3d_parametric_surface(
+        x + y, x - y, x, (x, -pi, pi), (y, -pi, pi),
+        nb_of_points_u=50, nb_of_points_v=20, **options)
+    assert p[0].n[:2] == [50, 20]
+    p = plot3d_parametric_surface(
+        x + y, x - y, x, (x, -pi, pi), (y, -pi, pi),
+        n1=50, n2=20, wireframe=True, wf_n1=5, wf_n2=5, **options)
+    assert p[0].n[:2] == [50, 20]
+    assert all(s.n[0] == 20 for s in p.series[1:6])
+    assert all(s.n[0] == 50 for s in p.series[6:])
+
+    p = plot3d_spherical(1, (x, 0, 0.7 * pi), (y, 0, 1.8 * pi), **options)
+    assert p[0].n[:2] == [100, 100]
+    p = plot3d_spherical(1, (x, 0, 0.7 * pi), (y, 0, 1.8 * pi),
+        n=400, **options)
+    assert p[0].n[:2] == [400, 400]
+    p = plot3d_spherical(1, (x, 0, 0.7 * pi), (y, 0, 1.8 * pi),
+        n1=50, **options)
+    assert p[0].n[:2] == [50, 100]
+    p = plot3d_spherical(1, (x, 0, 0.7 * pi), (y, 0, 1.8 * pi),
+        n1=50, n2=20, **options)
+    assert p[0].n[:2] == [50, 20]
+    p = plot3d_spherical(1, (x, 0, 0.7 * pi), (y, 0, 1.8 * pi),
+        nb_of_points_u=50, nb_of_points_v=20, **options)
+    assert p[0].n[:2] == [50, 20]
+
+    p = plot3d_implicit(
+        x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2), **options)
+    assert p[0].n == [60, 60, 60]
+    p = plot3d_implicit(
+        x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        n=400, **options)
+    assert p[0].n == [400, 400, 400]
+    p = plot3d_implicit(
+        x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        n1=50, **options)
+    assert p[0].n == [50, 60, 60]
+    p = plot3d_implicit(
+        x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        n1=50, n2=20, n3=10, **options)
+    assert p[0].n == [50, 20, 10]
+
+    p = plot_implicit(y > x**2, (x, -5, 5), (y, -10, 10), **options)
+    assert p[0].n[:2] == [100, 100]
+    p = plot_implicit(y > x**2, (x, -5, 5), (y, -10, 10),
+        n=400, **options)
+    assert p[0].n[:2] == [400, 400]
+    p = plot_implicit(y > x**2, (x, -5, 5), (y, -10, 10),
+        n1=50, **options)
+    assert p[0].n[:2] == [50, 100]
+    p = plot_implicit(y > x**2, (x, -5, 5), (y, -10, 10),
+        n1=50, n2=20, **options)
+    assert p[0].n[:2] == [50, 20]
+    p = plot_implicit(y > x**2, (x, -5, 5), (y, -10, 10),
+        points=20, **options)
+    assert p[0].n[:2] == [20, 20]
+    p = plot_implicit(y > x**2, y < sin(x), (x, -5, 5), (y, -10, 10),
+        n=400, **options)
+    assert (len(p.series) > 1) and all(t.n[:2] == [400, 400] for t in p.series)
