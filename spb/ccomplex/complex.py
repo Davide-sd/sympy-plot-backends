@@ -6,7 +6,8 @@ from spb.series import (
     LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
     ComplexPointSeries, SurfaceOver2DRangeSeries, _set_discretization_points,
     Parametric2DLineSeries, ComplexDomainColoringSeries,
-    Parametric2DLineSeries, List2DSeries, GenericDataSeries
+    Parametric2DLineSeries, List2DSeries, GenericDataSeries,
+    RiemannSphereSeries
 )
 from spb.interactive import create_interactive_plot
 from spb.utils import (
@@ -1678,20 +1679,20 @@ def plot_riemann_sphere(*args, **kwargs):
             Represent the complex function to be plotted.
 
         range : 3-element tuple, optional
-            Denotes the range of the variables.
+            Denotes the range of the variables. Only works for 2D plots.
             Default to ``(z, -1.25 - 1.25*I, 1.25 + 1.25*I)``.
 
     annotate : boolean, optional
-        Turn on/off the annotations on the Riemann sphere. Default to True
-        (annotations are visible). They can only be visible when
-        ``riemann_mask=True``.
+        Turn on/off the annotations on the 2D projections of the Riemann
+        sphere. Default to True (annotations are visible). They can only
+        be visible when ``riemann_mask=True``.
 
     riemann_mask : boolean, optional
-        Turn on/off the unit disk mask representing the Riemann sphere.
-        Default to True (mask is active).
+        Turn on/off the unit disk mask representing the Riemann sphere on the
+        2D projections. Default to True (mask is active).
 
     show_axis : boolean, optional
-        Turn on/off the axis of the subplots. Default to False (axis not
+        Turn on/off the axis of the 2D subplots. Default to False (axis not
         visible).
 
     size : (width, height)
@@ -1823,6 +1824,20 @@ def plot_riemann_sphere(*args, **kwargs):
            cmap=colorcet.CET_C2, blevel=0.85,
            title=["Around zero", "Around infinity"])
 
+    3D plot of a complex function on the Riemann sphere. Note, the higher the
+    number of discretization points, the better the final results, but the
+    higher memory consumption:
+
+    .. k3d-screenshot::
+       :camera: 1.87, 1.40, 1.96, 0, 0, 0, -0.45, -0.4, 0.8
+
+       from sympy import *
+       from spb import *
+       z = symbols("z")
+       expr = (z - 1) / (z**2 + z + 1)
+       plot_riemann_sphere(expr, threed=True, n=150,
+           coloring="b", backend=KB, legend=False, grid=False)
+
 
     See Also
     ========
@@ -1838,14 +1853,24 @@ def plot_riemann_sphere(*args, **kwargs):
        The book provides the background to better understand the images.
 
     """
-    if kwargs.get("threed", False):
-        raise NotImplementedError
-
     if kwargs.get("params", dict()):
         raise NotImplementedError("Interactive widgets plots over the "
             "Riemann sphere is not implemented.")
-
     args = _plot_sympify(args)
+
+    if kwargs.get("threed", False):
+        kwargs = _set_discretization_points(kwargs, ComplexSurfaceBaseSeries)
+        kwargs.setdefault("xlabel", "Re")
+        kwargs.setdefault("ylabel", "Im")
+        Backend = kwargs.get("backend", THREE_D_B)
+        t, p = symbols("theta phi")
+        # Northen and Southern hemispheres
+        s1 = RiemannSphereSeries(args[0], (t, 0, pi/2), (p, 0, 2*pi),
+            legend=False, **kwargs)
+        s2 = RiemannSphereSeries(args[0], (t, pi/2, pi), (p, 0, 2*pi),
+            legend=True, **kwargs)
+        return _instantiate_backend(Backend, s1, s2, **kwargs)
+
     # look for the range: if not given, set it to an appropriate domain
     r, found_r, fs = None, False, set()
     for a in args:

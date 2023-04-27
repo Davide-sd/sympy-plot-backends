@@ -2,7 +2,7 @@ from pytest import raises
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-    ImplicitSeries, Implicit3DSeries,
+    ImplicitSeries, Implicit3DSeries, RiemannSphereSeries,
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
     ComplexSurfaceSeries, ComplexDomainColoringSeries,
     ComplexSurfaceBaseSeries, ComplexPointSeries, GeometrySeries,
@@ -2888,7 +2888,7 @@ def test_color_func_expression():
 def test_2d_complex_domain_coloring_schemes():
     # verify that domain coloring schemes produce different data from one
     # another
-    
+
     z = symbols("z")
     expr = (z - 1) / (z**2 + z + 1)
     n1 = n2 = 10
@@ -2905,7 +2905,7 @@ def test_2d_complex_domain_coloring_schemes():
 
 def test_2d_complex_domain_coloring_cmap_blevel():
     # verify that complex domain coloring is applying colormap and black level
-    
+
     z = symbols("z")
     expr = (z - 1) / (z**2 + z + 1)
     n1 = n2 = 10
@@ -2957,3 +2957,15 @@ def test_2d_complex_domain_coloring_zero_infinity():
     assert not np.allclose(d2[-2], d3[-2])
     assert not np.allclose(d2[-2], d4[-2])
     assert not np.allclose(d3[-2], d4[-2])
+
+
+def test_riemann_sphere_series():
+    # verify that it correctly instatiates and doesn't raise error when
+    # producing data.
+
+    z = symbols("z")
+    expr = (z - 1) / (z**2 + z + 1)
+    t, p = symbols("theta phi")
+    s = RiemannSphereSeries(expr, (t, 0, pi), (p, 0, 2*pi), n1=5, n2=15)
+    d = s.get_data()
+    assert d[0].shape == (5, 15)

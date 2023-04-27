@@ -1,14 +1,15 @@
 from spb.defaults import cfg
 from spb.interactive.panel import InteractivePlot
 from spb.series import (
-    ComplexPointSeries, ComplexSurfaceSeries,
+    ComplexPointSeries, ComplexSurfaceSeries, GenericDataSeries,
     ComplexDomainColoringSeries, ComplexDomainColoringSeries,
     LineOver1DRangeSeries, ContourSeries, Vector2DSeries, AbsArgLineSeries,
+    Parametric2DLineSeries
 )
 from spb.utils import _plot_sympify
 from spb import (
     plot_complex, plot_complex_list, plot_complex_vector,
-    plot_real_imag, plot_vector, PB, MB
+    plot_real_imag, plot_vector, PB, MB, BB, plot_riemann_sphere
 )
 from sympy import (
     exp, symbols, I, pi, sin, cos, asin, sqrt, log,
@@ -1728,3 +1729,35 @@ def test_domain_coloring_schemes(pc_options):
     for s in schemes:
         p = plot_complex(expr, (z, -2-2j, 2+2j), coloring=s, **pc_options)
         fig = p.fig
+
+
+def test_plot_riemann_sphere():
+    # verify the modes of operation
+
+    z = symbols("z")
+    expr = (z - 1) / (z**2 + z + 1)
+    t, p = symbols("theta phi")
+    p = plot_riemann_sphere(expr, backend=MB, n=10, threed=True, show=False)
+    assert len(p.series) == 2
+    p.fig
+
+    expr = 1 / (2 * z**2) + z
+    fig = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB)
+    assert len(fig.axes[0].images) == 1
+    assert len(fig.axes[0].lines) > 1
+    assert len(fig.axes[1].images) == 1
+    assert len(fig.axes[1].lines) > 1
+
+    fig = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB,
+        annotate=False)
+    assert len(fig.axes[0].images) == 1
+    assert len(fig.axes[0].lines) == 1
+    assert len(fig.axes[1].images) == 1
+    assert len(fig.axes[1].lines) == 1
+
+    fig = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB,
+        riemann_mask=False)
+    assert len(fig.axes[0].images) == 1
+    assert len(fig.axes[0].lines) == 0
+    assert len(fig.axes[1].images) == 1
+    assert len(fig.axes[1].lines) == 0

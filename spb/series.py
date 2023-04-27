@@ -1,6 +1,7 @@
 from inspect import signature
+from spb.ccomplex.wegert import wegert
 from spb.defaults import cfg
-from spb.utils import prange, _get_free_symbols
+from spb.utils import prange, _get_free_symbols, spherical_to_cartesian
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
@@ -2260,14 +2261,35 @@ class ComplexSurfaceBaseSeries(BaseSeries):
     is_complex = True
     _N = 300
     _allowed_keys = ["absarg", "coloring", "color_func", "modules", "phaseres",
-    "is_polar", "n1", "n2", "only_integers", "rendering_kw", "steps",
-    "surface_color","use_cm", "xscale", "yscale", "tx", "ty", "tz", "threed"]
+    "is_polar", "n1", "n2", "only_integers", "rendering_kw", "steps", "cmap",
+    "surface_color","use_cm", "xscale", "yscale", "tx", "ty", "tz", "threed",
+    "blevel", "phaseoffset"]
 
     def __new__(cls, *args, **kwargs):
         domain_coloring = kwargs.get("absarg", False)
         if domain_coloring:
             return super().__new__(ComplexDomainColoringSeries)
         return super().__new__(ComplexSurfaceSeries)
+
+    def _init_domain_coloring_kw(self, **kwargs):
+        self.coloring = kwargs.get("coloring", "a")
+        if isinstance(self.coloring, str):
+            self.coloring = self.coloring.lower()
+        elif not callable(self.coloring):
+            raise TypeError(
+                "`coloring` must be a character from 'a' to 'j' or a callable.")
+        self.phaseres = kwargs.get("phaseres", 20)
+        self.cmap = kwargs.get("cmap", None)
+        self.blevel = float(kwargs.get("blevel", 0.75))
+        if self.blevel < 0:
+            warnings.warn("It must be 0 <= blevel <= 1. Automatically "
+                "setting blevel = 0.")
+            self.blevel = 0
+        if self.blevel > 1:
+            warnings.warn("It must be 0 <= blevel <= 1. Automatically "
+                "setting blevel = 1.")
+            self.blevel = 1
+        self.phaseoffset = float(kwargs.get("phaseoffset", 0))
 
     def __init__(self, expr, r, label="", **kwargs):
         super().__init__(**kwargs)
@@ -2289,13 +2311,8 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         self._return = kwargs.get("return", None)
 
         # domain coloring mode
-        self.coloring = kwargs.get("coloring", "a")
-        if isinstance(self.coloring, str):
-            self.coloring = self.coloring.lower()
-        elif not callable(self.coloring):
-            raise TypeError(
-                "`coloring` must be a character from 'a' to 'j' or a callable.")
-        self.phaseres = kwargs.get("phaseres", 20)
+        self._init_domain_coloring_kw(**kwargs)
+
         self._post_init()
         if not self._interactive_ranges:
             # NOTE: the following check is only possible when the minimum and
@@ -2429,9 +2446,6 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
         super().__init__(*args, **kwargs)
         if kwargs.get("threed", False):
             self.is_3Dsurface = True
-        self.cmap = kwargs.get("cmap", None)
-        self.blevel = float(kwargs.get("blevel", 0.75))
-        self.phaseoffset = float(kwargs.get("phaseoffset", 0))
         self.rendering_kw = kwargs.get("rendering_kw", dict())
         # apply the transformation z -> 1/z in order to study the behavior
         # of the function at z=infinity
@@ -2451,22 +2465,10 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
 
         self.annotate = kwargs.get("annotate", True)
         self.riemann_mask = kwargs.get("riemann_mask", False)
-        self._allowed_keys += [
-            "cmap", "blevel", "phaseoffset", "at_infinity", "riemann_mask",
-            "annotate"]
-
-        if self.blevel < 0:
-            warnings.warn("It must be 0 <= blevel <= 1. Automatically "
-                "setting blevel = 0.")
-            self.blevel = 0
-        if self.blevel > 1:
-            warnings.warn("It must be 0 <= blevel <= 1. Automatically "
-                "setting blevel = 1.")
-            self.blevel = 1
+        self._allowed_keys += ["at_infinity", "riemann_mask", "annotate"]
 
     def _domain_coloring(self, domain, w):
         if isinstance(self.coloring, str):
-            from spb.ccomplex.wegert import wegert
             self.coloring = self.coloring.lower()
             return wegert(self.coloring, w, self.phaseres, self.cmap,
                 self.blevel, self.phaseoffset,
@@ -3221,3 +3223,83 @@ class GenericDataSeries(BaseSeries):
 
     def get_data(self):
         return self.args
+
+
+class RiemannSphereSeries(BaseSeries):
+    is_complex = True
+    is_domain_coloring = True
+    is_3Dsurface = True
+    _N = 150
+    _allowed_keys = ["n1", "n2", "cmap", "coloring", "blevel", "phaseres",
+        "phaseoffset"]
+
+    def __init__(self, f, range_t, range_p, **kwargs):
+        self._block_lambda_functions(f)
+        super().__init__(**kwargs)
+        if len(f.free_symbols) > 1:
+            # NOTE: considering how computationally heavy this series is,
+            # it is rather unuseful to allow interactive-widgets plot.
+            raise ValueError(
+                "Complex function can only have one free symbol. "
+                "Received free symbols: %s" % f.free_symbols)
+        self.expr = f
+        # NOTE: we can easily create a sphere with a single data series.
+        # However, K3DBackend is unable to properly visualize it, and it
+        # would require a few hours of work to apply the necessary edits.
+        # Instead, I'm going to create two sphere caps (Northen and Southern
+        # hemispheres, respectively), hence the need for ranges :D
+        self.ranges = [range_t, range_p]
+        ComplexDomainColoringSeries._init_domain_coloring_kw(self, **kwargs)
+        if self.n[0] == self.n[1]:
+            self.n = [self.n[0], 4 * self.n[0]]
+
+    def get_data(self):
+        """Return arrays of coordinates for plotting.
+
+        Returns
+        =======
+
+        x, y, z : np.ndarray [n2 x n1]
+            Coordinates on the unit sphere.
+
+        arg : np.ndarray [n2 x n1]
+            Argument of the function.
+
+        img : np.ndarray [n2 x n1 x 3]
+            RGB image values computed from the argument of the function.
+            0 <= R, G, B <= 255
+
+        colors : np.ndarray [256 x 3]
+            Color scale associated to `img`.
+        """
+        np = import_module('numpy')
+
+        # discretize the unit sphere
+        r = 1
+        # TODO: this parameterization places a lot of points near the poles
+        # but not enough near the equator. Can a different parameterization
+        # improves the final result, maybe even reducing the computational
+        # cost?
+        ts, te = [float(t) for t in self.ranges[0][1:]]
+        ps, pe = [float(t) for t in self.ranges[1][1:]]
+        t, p = np.mgrid[ts:te:self.n[0]*1j, ps:pe:self.n[1]*1j]
+        X = r * np.sin(t) * np.cos(p)
+        Y = r * np.sin(t) * np.sin(p)
+        Z = r * np.cos(t)
+        # stereographic projection
+        # TODO: suppress warnings
+        x = X / (1 - Z)
+        y = Y / (1 - Z)
+        # evaluation over the complex plane
+        # NOTE: _uniform_eval should be used, as it is able to deal with
+        # different evaluation modules. However, that method is much slower
+        # than vanilla-Numpy with vectorization, even when using Numpy.
+        # To get decent results, the function must be evaluated on a big
+        # number of discretization points, which automatically precludes
+        # mpmath or sympy. Hence, just use bare bones Numpy, even though this
+        # module might not implement all the interesting functions.
+        z = x + 1j * y
+        f = lambdify(list(self.expr.free_symbols)[0], self.expr)
+        w = f(z)
+        img, cs = wegert(self.coloring, w, self.phaseres, self.cmap)
+        return X, Y, Z, np.angle(w), img, cs
