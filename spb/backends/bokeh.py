@@ -441,7 +441,7 @@ class BokehBackend(Plot):
                         x, y, param, colormap, s.get_label(self._use_latex),
                         s.rendering_kw, s.is_point)
                     self._fig.add_glyph(ds, line)
-                    if self.legend:
+                    if s.colorbar:
                         self._handles[i] = cb
                         self._fig.add_layout(cb, "right")
                 else:
@@ -496,13 +496,14 @@ class BokehBackend(Plot):
                     **kw
                 )
 
-                colormapper = self.bokeh.models.LinearColorMapper(
-                    palette=cm, low=minz, high=maxz)
-                cbkw = dict(width=8, title=s.get_label(self._use_latex))
-                colorbar = self.bokeh.models.ColorBar(
-                    color_mapper=colormapper, **cbkw)
-                self._fig.add_layout(colorbar, "right")
-                self._handles[i] = colorbar
+                if s.colorbar:
+                    colormapper = self.bokeh.models.LinearColorMapper(
+                        palette=cm, low=minz, high=maxz)
+                    cbkw = dict(width=8, title=s.get_label(self._use_latex))
+                    colorbar = self.bokeh.models.ColorBar(
+                        color_mapper=colormapper, **cbkw)
+                    self._fig.add_layout(colorbar, "right")
+                    self._handles[i] = colorbar
 
             elif s.is_2Dvector:
                 if s.is_streamlines:
@@ -544,7 +545,7 @@ class BokehBackend(Plot):
                     glyph = self.bokeh.models.Segment(
                         x0="x0", y0="y0", x1="x1", y1="y1", **kw)
                     self._fig.add_glyph(source, glyph)
-                    if isinstance(line_color, dict):
+                    if isinstance(line_color, dict) and s.colorbar:
                         colorbar = self.bokeh.models.ColorBar(
                             color_mapper=color_mapper, width=8, title=s.get_label(self._use_latex))
                         self._fig.add_layout(colorbar, "right")
@@ -574,7 +575,7 @@ class BokehBackend(Plot):
                     dh=y.max() - y.min(),
                 )
 
-                if colors is not None:
+                if (colors is not None) and s.colorbar:
                     # chroma/phase-colorbar
                     cm1 = self.bokeh.models.LinearColorMapper(
                         palette=[tuple(c) for c in colors],
@@ -714,13 +715,14 @@ class BokehBackend(Plot):
                     x, y, z = s.get_data()
                     minx, miny, minz = x.min(), y.min(), z.min()
                     maxx, maxy, maxz = x.max(), y.max(), z.max()
-                    cb = self._handles[i]
                     rend[i].data_source.data.update({"image": [z]})
                     rend[i].glyph.x = minx
                     rend[i].glyph.y = miny
                     rend[i].glyph.dw = abs(maxx - minx)
                     rend[i].glyph.dh = abs(maxy - miny)
-                    cb.color_mapper.update(low=minz, high=maxz)
+                    if s.colorbar:
+                        cb = self._handles[i]
+                        cb.color_mapper.update(low=minz, high=maxz)
 
                 elif s.is_2Dvector:
                     x, y, u, v = s.get_data()
@@ -762,9 +764,10 @@ class BokehBackend(Plot):
                                 },
                             )
                             rend[i].glyph.line_color = line_color
-                            cb = self._handles[i]
-                            cb.color_mapper.update(
-                                low=min(color_val), high=max(color_val))
+                            if s.colorbar:
+                                cb = self._handles[i]
+                                cb.color_mapper.update(
+                                    low=min(color_val), high=max(color_val))
 
                 elif s.is_complex and s.is_domain_coloring and not s.is_3Dsurface:
                     x, y, mag, angle, img, _ = s.get_data()

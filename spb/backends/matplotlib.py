@@ -342,22 +342,15 @@ class MatplotlibBackend(Plot):
         points = np.ma.array(points).T.reshape(-1, 1, dim)
         return np.ma.concatenate([points[:-1], points[1:]], axis=1)
 
-    def _add_colorbar(self, c, label, use_cm, override=False, norm=None, cmap=None):
+    def _add_colorbar(self, c, label, show_cb, norm=None, cmap=None):
         """Add a colorbar for the specificied collection
 
         Parameters
         ==========
 
         c : collection
-
         label : str
-
-        override : boolean
-            For parametric plots the colorbar acts like a legend. Hence,
-            when legend=False we don't display the colorbar. However,
-            for contour plots the colorbar is essential to understand it.
-            Hence, to show it we set override=True.
-            Default to False.
+        show_cb : boolean
         """
         np = import_module('numpy')
 
@@ -365,7 +358,7 @@ class MatplotlibBackend(Plot):
         # would require to work with proxy artists and custom
         # classes in order to create a gradient line), just show a
         # colorbar with the name of the expression on the side.
-        if (self.legend and use_cm) or override:
+        if show_cb:
             if norm is None:
                 cb = self._fig.colorbar(c, ax=self._ax)
             else:
@@ -431,7 +424,7 @@ class MatplotlibBackend(Plot):
                         kw = merge({}, lkw, s.rendering_kw)
                         c = self._ax.scatter(x, y, **kw)
 
-                    is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
+                    is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm and s.colorbar)
                     self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 else:
                     if s.get_label(False) != "__k__":
@@ -439,7 +432,9 @@ class MatplotlibBackend(Plot):
                     else:
                         color = self.wireframe_color
 
-                    lkw = dict(label=s.get_label(self._use_latex), color=color)
+                    lkw = dict(
+                        label=s.get_label(self._use_latex) if s.show_in_legend else "_nolegend_",
+                        color=color)
                     if s.is_point:
                         lkw["marker"] = "o"
                         lkw["linestyle"] = "None"
@@ -467,8 +462,7 @@ class MatplotlibBackend(Plot):
                 c = func(x, y, z, **kw)
                 clabel = None
                 if s.is_filled:
-                    self._add_colorbar(c, s.get_label(self._use_latex),
-                        s.use_cm, True)
+                    self._add_colorbar(c, s.get_label(self._use_latex), s.colorbar)
                 else:
                     if s.show_clabels:
                         clabel = self._ax.clabel(c)
@@ -490,14 +484,14 @@ class MatplotlibBackend(Plot):
                         kw = merge({}, lkw, s.rendering_kw)
                         c = Line3DCollection(segments, **kw)
                         self._ax.add_collection(c)
-                        self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
+                        self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm and s.colorbar)
                         self._add_handle(i, c, kw, self._fig.axes[-1])
                     else:
-                        lkw["label"] = s.get_label(self._use_latex)
-                        kw = merge({}, lkw, s.rendering_kw,
-                            ({} if s.line_color is None
-                            else {"color": s.line_color}) if s.show_in_legend
-                            else {"color": self.wireframe_color})
+                        lkw["label"] = s.get_label(self._use_latex) if s.show_in_legend else "_nolegend_"
+                        lkw["color"] = ((next(self._cl) if s.line_color is None
+                            else s.line_color) if s.show_in_legend
+                            else self.wireframe_color)
+                        kw = merge({}, lkw, s.rendering_kw)
                         l = self._ax.plot(x, y, z, **kw)
                         self._add_handle(i, l)
                 else:
@@ -515,7 +509,7 @@ class MatplotlibBackend(Plot):
                     kw = merge({}, lkw, s.rendering_kw)
                     l = self._ax.scatter(x, y, z, **kw)
                     if s.use_cm:
-                        self._add_colorbar(l, s.get_label(self._use_latex), s.use_cm)
+                        self._add_colorbar(l, s.get_label(self._use_latex), s.use_cm and s.colorbar)
                         self._add_handle(i, l, kw, self._fig.axes[-1])
                     else:
                         self._add_handle(i, l)
@@ -542,7 +536,8 @@ class MatplotlibBackend(Plot):
                     skw["color"] = next(self._cl) if s.surface_color is None else s.surface_color
                     proxy_artist = self.Rectangle((0, 0), 1, 1,
                         color=skw["color"], label=s.get_label(self._use_latex))
-                    self._legend_handles.append(proxy_artist)
+                    if s.show_in_legend:
+                        self._legend_handles.append(proxy_artist)
 
                 kw = merge({}, skw, s.rendering_kw)
                 if s.use_cm:
@@ -553,7 +548,7 @@ class MatplotlibBackend(Plot):
                         cmap = self.cm.get_cmap(cmap)
                     kw["facecolors"] = cmap(norm(facecolors))
                 c = self._ax.plot_surface(x, y, z, **kw)
-                is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm, norm=norm, cmap=cmap)
+                is_cb_added = self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm and s.colorbar, norm=norm, cmap=cmap)
                 self._add_handle(i, c, kw, is_cb_added, self._fig.axes[-1])
                 xlims.append((np.amin(x), np.amax(x)))
                 ylims.append((np.amin(y), np.amax(y)))
@@ -614,7 +609,7 @@ class MatplotlibBackend(Plot):
                             kw = merge({}, skw, s.rendering_kw)
                             sp = self._ax.streamplot(xx, yy, uu, vv, **kw)
                             is_cb_added = self._add_colorbar(
-                                sp.lines, s.get_label(self._use_latex), s.use_cm)
+                                sp.lines, s.get_label(self._use_latex), s.use_cm and s.colorbar)
                         else:
                             skw["color"] = next(self._cl)
                             kw = merge({}, skw, s.rendering_kw)
@@ -646,7 +641,7 @@ class MatplotlibBackend(Plot):
                             kw = merge({}, qkw, s.rendering_kw)
                             q = self._ax.quiver(xx, yy, uu, vv, color_val, **kw)
                             is_cb_added = self._add_colorbar(
-                                q, s.get_label(self._use_latex), s.use_cm)
+                                q, s.get_label(self._use_latex), s.use_cm and s.colorbar)
                         else:
                             is_cb_added = False
                             qkw["color"] = next(self._cl)
@@ -682,7 +677,7 @@ class MatplotlibBackend(Plot):
                             kw = merge({}, lkw, stream_kw)
                             c = Line3DCollection(segments, **kw)
                             self._ax.add_collection(c)
-                            self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm)
+                            self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm and s.colorbar)
                             self._add_handle(i, c)
                         else:
                             lkw["label"] = s.get_label(self._use_latex)
@@ -713,7 +708,7 @@ class MatplotlibBackend(Plot):
                             kw = merge({}, qkw, s.rendering_kw)
                             q = self._ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
                             is_cb_added = self._add_colorbar(
-                                q, s.get_label(self._use_latex), s.use_cm)
+                                q, s.get_label(self._use_latex), s.use_cm and s.colorbar)
                         else:
                             qkw["color"] = next(self._cl)
                             kw = merge({}, qkw, s.rendering_kw)
@@ -741,7 +736,7 @@ class MatplotlibBackend(Plot):
                     self._add_handle(i, image, kw)
 
                     # chroma/phase-colorbar
-                    if (colors is not None) and self.legend:
+                    if (colors is not None) and s.colorbar:
                         colors = colors / 255.0
 
                         colormap = self.ListedColormap(colors)
@@ -768,14 +763,12 @@ class MatplotlibBackend(Plot):
                     kw = merge({}, skw, s.rendering_kw)
                     c = self._ax.plot_surface(x, y, mag, **kw)
 
-                    if s.use_cm and (colorscale is not None):
+                    if s.use_cm and (colorscale is not None) and s.colorbar:
                         if len(colorscale.shape) == 3:
                             colorscale = colorscale.reshape((-1, 3))
                         else:
                             colorscale = colorscale / 255.0
 
-                        # this colorbar is essential to understand the plot.
-                        # Always show it, except when use_cm=False
                         norm = self.Normalize(vmin=-np.pi, vmax=np.pi)
                         mappable = self.cm.ScalarMappable(
                             cmap=self.ListedColormap(colorscale), norm=norm
@@ -1104,10 +1097,11 @@ class MatplotlibBackend(Plot):
                             cl.remove()
                     func = self._ax.contourf if s.is_filled else self._ax.contour
                     self._handles[i][0] = func(x, y, z, **kw)
-                    if s.is_filled:
+
+                    if s.is_filled and s.colorbar:
                         self._update_colorbar(cax, kw["cmap"], s.get_label(self._use_latex), param=z)
                     else:
-                        if s.show_clabels:
+                        if (not s.is_filled) and s.show_clabels:
                             clabels = self._ax.clabel(self._handles[i][0])
                             self._handles[i][-1] = clabels
                     xlims.append((np.amin(x), np.amax(x)))
@@ -1124,7 +1118,7 @@ class MatplotlibBackend(Plot):
                     # update becomes really really slow.
                     kw, is_cb_added, cax = self._handles[i][1:]
 
-                    if is_cb_added:
+                    if is_cb_added or ("cmap" in kw.keys()):
                         # TODO: if use_cm=True and a single 3D expression is
                         # shown with legend=False, this won't get executed.
                         # In widget plots, the surface will never change color.
@@ -1198,14 +1192,6 @@ class MatplotlibBackend(Plot):
                         uu, vv = [t / mag for t in [uu, vv]]
                     if s.is_streamlines:
                         raise NotImplementedError
-
-                        # Streamlines are composed by lines and arrows.
-                        # Arrows belongs to a PatchCollection. Currently,
-                        # there is no way to remove a PatchCollection....
-                        kw = self._handles[i][1]
-                        self._handles[i][0].lines.remove()
-                        self._handles[i][0].arrows.remove()
-                        self._handles[i][0] = self._ax.streamplot(xx, yy, uu, vv, **kw)
                     else:
                         kw, is_cb_added, cax = self._handles[i][1:]
                         color_val = mag

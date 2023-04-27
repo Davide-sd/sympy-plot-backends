@@ -1860,14 +1860,14 @@ def plot_riemann_sphere(*args, **kwargs):
     if kwargs.get("threed", False):
         kwargs.setdefault("xlabel", "Re")
         kwargs.setdefault("ylabel", "Im")
-        kwargs["legend"] = False
+        colorbar = kwargs.pop("colorbar", True)
         Backend = kwargs.get("backend", THREE_D_B)
         t, p = symbols("theta phi")
         # Northen and Southern hemispheres
         s1 = RiemannSphereSeries(args[0], (t, 0, pi/2), (p, 0, 2*pi),
-            **kwargs)
+            colorbar=False, **kwargs)
         s2 = RiemannSphereSeries(args[0], (t, pi/2, pi), (p, 0, 2*pi),
-            **kwargs)
+            colorbar=colorbar, **kwargs)
         return _instantiate_backend(Backend, s1, s2, **kwargs)
 
     # look for the range: if not given, set it to an appropriate domain

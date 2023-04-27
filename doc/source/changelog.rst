@@ -9,6 +9,8 @@ v2.1.1
 
 * Enabled support for plotting indexed objects.
 
+* Added ``colorbar`` keyword argument to show/hide colorbar.
+
 * Fixed bug with ``PlotlyBackend`` when creating 3D analytic landscapes.
 
 

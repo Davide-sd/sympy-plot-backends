@@ -1193,3 +1193,96 @@ def test_domain_coloring_2d():
     assert np.allclose(abs2b, np.flip(np.flip(abs2a, axis=0), axis=1))
     assert np.allclose(arg2b, np.flip(np.flip(arg2a, axis=0), axis=1))
     assert np.allclose(img2b, np.flip(np.flip(img2a, axis=0), axis=1))
+
+
+def test_show_hide_colorbar():
+    x, y, z = symbols("x, y, z")
+    options = dict(use_cm=True, n=5, adaptive=False, backend=PB, show=False)
+
+    p = lambda c: plot_parametric(
+        cos(x), sin(x), (x, 0, 2*pi), colorbar=c, **options)
+    assert p(True).fig.data[0].marker.showscale
+    assert not p(False).fig.data[0].marker.showscale
+    p = lambda c: plot_parametric(
+        (cos(x), sin(x)), (cos(x) / 2, sin(x) / 2), (x, 0, 2*pi),
+        colorbar=c, **options)
+    assert all(t.marker.showscale for t in p(True).fig.data)
+    assert not all(t.marker.showscale for t in p(False).fig.data)
+
+    p = lambda c: plot(cos(x), color_func=lambda t: t, colorbar=c, **options)
+    assert p(True).fig.data[0].marker.showscale
+    assert not p(False).fig.data[0].marker.showscale
+
+    p = lambda c: plot3d_parametric_line(
+        cos(x), sin(x), x, (x, 0, 2*pi), colorbar=c, **options)
+    assert p(True).fig.data[0].line.showscale
+    assert not p(False).fig.data[0].line.showscale
+    p = lambda c: plot3d_parametric_line(
+        (cos(x), sin(x), x), (cos(x) / 2, sin(x) / 2, x), (x, 0, 2*pi),
+        colorbar=c, **options)
+    assert all(t.line.showscale for t in p(True).fig.data)
+    assert not all(t.line.showscale for t in p(False).fig.data)
+
+    p = lambda c: plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        colorbar=c, **options)
+    assert p(True).fig.data[0].showscale
+    assert not p(False).fig.data[0].showscale
+    p = lambda c: plot3d(
+        cos(x**2 + y**2), x*y, (x, -pi, pi), (y, -pi, pi),
+        colorbar=c, **options)
+    assert all(t.showscale for t in p(True).fig.data)
+    assert not all(t.showscale for t in p(False).fig.data)
+
+    p = lambda c: plot_contour(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        colorbar=c, **options)
+    assert p(True).fig.data[0].showscale
+    assert not p(False).fig.data[0].showscale
+
+    p = lambda c: plot3d_parametric_surface(
+        x * cos(y), x * sin(y), x * cos(4 * y) / 2, (x, 0, pi), (y, 0, 2*pi),
+        colorbar=c, **options)
+    assert p(True).fig.data[0].showscale
+    assert not p(False).fig.data[0].showscale
+
+    p = lambda c: plot3d_spherical(1, (x, 0, 0.7 * pi), (y, 0, 1.8 * pi),
+        colorbar=c, **options)
+    assert p(True).fig.data[0].showscale
+    assert not p(False).fig.data[0].showscale
+
+    p = lambda c: plot3d_revolution(cos(t), (t, 0, pi), colorbar=c, **options)
+    assert p(True).fig.data[0].showscale
+    assert not p(False).fig.data[0].showscale
+
+    p = lambda c: plot_vector([sin(x - y), cos(x + y)], (x, -3, 3), (y, -3, 3),
+        colorbar=c, **options)
+    assert p(True).fig.data[0].showscale
+    assert not p(False).fig.data[0].showscale
+
+    p = lambda c: plot_vector(
+        [z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+        colorbar=c, **options)
+    assert p(True).fig.data[0].showscale
+    assert not p(False).fig.data[0].showscale
+
+    p = lambda c: plot_complex(cos(x) + sin(I * x), "f", (x, -2, 2),
+        colorbar=c, **options)
+    assert p(True).fig.data[0].marker.showscale
+    assert not p(False).fig.data[0].marker.showscale
+    p = lambda c: plot_complex(sin(z), (z, -3-3j, 3+3j),
+        colorbar=c, **options)
+    assert len(p(True).fig.data) == 2
+    assert len(p(False).fig.data) == 1
+    p = lambda c: plot_complex(sin(z), (z, -3-3j, 3+3j),
+        colorbar=c, threed=True, **options)
+    assert p(True).fig.data[0].showscale
+    assert not p(False).fig.data[0].showscale
+
+    p = lambda c: plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), threed=True,
+        colorbar=c, **options)
+    assert p(True).fig.data[0].showscale
+    assert not p(False).fig.data[0].showscale
+
+    expr = (z - 1) / (z**2 + z + 1)
+    p = lambda c: plot_riemann_sphere(expr, threed=True, colorbar=c, **options)
+    assert p(True).fig.data[1].showscale
+    assert not p(False).fig.data[1].showscale

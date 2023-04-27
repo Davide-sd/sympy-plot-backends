@@ -1525,7 +1525,7 @@ def test_legend_plot_sum():
         [0],[1], "point", legend=True, is_point=True,
         xlim=(-1.2, 1.2), ylim=(-1.2, 1.5), aspect="equal", show=False)
     p3 = (p1 + p2)
-    handles = p3.ax.get_legend().legendHandles
+    handles = p3.ax.get_legend().legend_handles
     assert len(handles) == 2
 
 
@@ -1541,3 +1541,104 @@ def test_domain_coloring_2d():
     _, _, _, _, img2a, _ = p2[0].get_data()
     img2b = p2.ax.images[0].get_array()
     assert np.allclose(img2b, np.flip(np.flip(img2a, axis=0), axis=1))
+
+
+def test_show_hide_colorbar():
+    x, y, z = symbols("x, y, z")
+    options = dict(use_cm=True, n=5, adaptive=False, backend=MB, show=False)
+
+    p = lambda c: plot_parametric(
+        cos(x), sin(x), (x, 0, 2*pi), colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+    p = lambda c: plot_parametric(
+        (cos(x), sin(x)), (cos(x) / 2, sin(x) / 2), (x, 0, 2*pi),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 3
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot(cos(x), color_func=lambda t: t, colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot3d_parametric_line(
+        cos(x), sin(x), x, (x, 0, 2*pi), colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+    p = lambda c: plot3d_parametric_line(
+        (cos(x), sin(x), x), (cos(x) / 2, sin(x) / 2, x), (x, 0, 2*pi),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 3
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+    p = lambda c: plot3d(
+        cos(x**2 + y**2), x*y, (x, -pi, pi), (y, -pi, pi),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 3
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot_contour(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot3d_parametric_surface(
+        x * cos(y), x * sin(y), x * cos(4 * y) / 2, (x, 0, pi), (y, 0, 2*pi),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot3d_spherical(1, (x, 0, 0.7 * pi), (y, 0, 1.8 * pi),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot3d_revolution(cos(t), (t, 0, pi), colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot_vector([sin(x - y), cos(x + y)], (x, -3, 3), (y, -3, 3),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+    p = lambda c: plot_vector([sin(x - y), cos(x + y)], (x, -3, 3), (y, -3, 3),
+        scalar=False, colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+    p = lambda c: plot_vector([sin(x - y), cos(x + y)], (x, -3, 3), (y, -3, 3),
+        scalar=False, streamlines=True, colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot_vector(
+        [z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot_complex(cos(x) + sin(I * x), "f", (x, -2, 2),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+    p = lambda c: plot_complex(sin(z), (z, -3-3j, 3+3j),
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+    p = lambda c: plot_complex(sin(z), (z, -3-3j, 3+3j),
+        colorbar=c, threed=True, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1
+
+    p = lambda c: plot_real_imag(sqrt(x), (x, -3-3j, 3+3j), threed=True,
+        colorbar=c, **options)
+    assert len(p(True).fig.axes) == 3
+    assert len(p(False).fig.axes) == 1
+
+    expr = (z - 1) / (z**2 + z + 1)
+    p = lambda c: plot_riemann_sphere(expr, threed=True, colorbar=c, **options)
+    assert len(p(True).fig.axes) == 2
+    assert len(p(False).fig.axes) == 1

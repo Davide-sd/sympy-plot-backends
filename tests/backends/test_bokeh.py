@@ -826,3 +826,42 @@ def test_domain_coloring_2d():
     assert np.allclose(abs2b, np.flip(np.flip(abs2a, axis=0), axis=1))
     assert np.allclose(arg2b, np.flip(np.flip(arg2a, axis=0), axis=1))
     assert np.allclose(img2b, np.flip(np.flip(img2a, axis=0), axis=1))
+
+
+def test_show_hide_colorbar():
+    x, y, z = symbols("x, y, z")
+    options = dict(use_cm=True, n=5, adaptive=False, backend=BB, show=False)
+
+    p = lambda c: plot_parametric(
+        cos(x), sin(x), (x, 0, 2*pi), colorbar=c, **options)
+    assert len(p(True).fig.right) == 1
+    assert len(p(False).fig.right) == 0
+    p = lambda c: plot_parametric(
+        (cos(x), sin(x)), (cos(x) / 2, sin(x) / 2), (x, 0, 2*pi),
+        colorbar=c, **options)
+    assert len(p(True).fig.right) == 2
+    assert len(p(False).fig.right) == 0
+
+    p = lambda c: plot(cos(x), color_func=lambda t: t, colorbar=c, **options)
+    assert len(p(True).fig.right) == 1
+    assert len(p(False).fig.right) == 0
+
+    p = lambda c: plot_contour(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        colorbar=c, **options)
+    assert len(p(True).fig.right) == 1
+    assert len(p(False).fig.right) == 0
+
+    p = lambda c: plot_vector([sin(x - y), cos(x + y)], (x, -3, 3), (y, -3, 3),
+        colorbar=c, **options)
+    assert len(p(True).fig.right) == 1
+    assert len(p(False).fig.right) == 0
+
+    p = lambda c: plot_complex(cos(x) + sin(I * x), "f", (x, -2, 2),
+        colorbar=c, **options)
+    assert len(p(True).fig.right) == 1
+    assert len(p(False).fig.right) == 0
+    p = lambda c: plot_complex(sin(z), (z, -3-3j, 3+3j),
+        colorbar=c, **options)
+    assert len(p(True).fig.right) == 1
+    assert len(p(False).fig.right) == 0
+    

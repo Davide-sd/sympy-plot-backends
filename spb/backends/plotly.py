@@ -361,7 +361,7 @@ class PlotlyBackend(Plot):
                                 else next(self._cm)
                             ),
                             size=6,
-                            showscale=self.legend and s.use_cm,
+                            showscale=s.use_cm and s.colorbar,
                         ),
                         customdata=param,
                         hovertemplate=ht,
@@ -430,7 +430,7 @@ class PlotlyBackend(Plot):
                         mode="lines",
                         showlegend=s.show_in_legend,
                     )
-                    if self.legend and s.use_cm:
+                    if s.use_cm:
                         # only add a colorbar if required.
 
                         # TODO: when plotting many (14 or more) parametric
@@ -446,7 +446,7 @@ class PlotlyBackend(Plot):
                                 else self._solid_colorscale(s)
                             ),
                             color = param,
-                            showscale = True,
+                            showscale = s.colorbar,
                         )
                     else:
                         lkw["line"] = dict(
@@ -466,7 +466,7 @@ class PlotlyBackend(Plot):
                         color=color if not s.use_cm else param,
                         size=8,
                         colorscale=next(self._cm) if s.use_cm else None,
-                        showscale = True if s.use_cm else False,
+                        showscale = s.use_cm and s.colorbar,
                     )
                     if s.use_cm:
                         lkw["marker"]["colorbar"] = self._create_colorbar(s.get_label(self._use_latex), True)
@@ -500,7 +500,7 @@ class PlotlyBackend(Plot):
                 colormap = next(self._cm)
                 skw = dict(
                     name=s.get_label(self._use_latex),
-                    showscale=s.use_cm and self.legend,
+                    showscale=s.use_cm and s.colorbar,
                     showlegend=(not s.use_cm) and self.legend,
                     colorbar=self._create_colorbar(s.get_label(self._use_latex), mix_3Dsurfaces_3Dlines),
                     colorscale=colormap if s.use_cm else colorscale,
@@ -548,7 +548,7 @@ class PlotlyBackend(Plot):
                     ),
                     colorscale=next(self._cm),
                     colorbar=self._create_colorbar(s.get_label(self._use_latex), show_2D_vectors),
-                    showscale=True if s.is_filled else False,
+                    showscale=s.is_filled and s.colorbar,
                     zmin=zz.min(), zmax=zz.max()
                 )
                 kw = merge({}, ckw, s.rendering_kw)
@@ -595,7 +595,7 @@ class PlotlyBackend(Plot):
                                 else self._solid_colorscale(s)
                             ),
                             sizeref=0.3,
-                            showscale=self.legend and s.use_cm,
+                            showscale=s.use_cm and s.colorbar,
                             colorbar=self._create_colorbar(s.get_label(self._use_latex)),
                             starts=dict(
                                 x=seeds_points[:, 0],
@@ -629,7 +629,7 @@ class PlotlyBackend(Plot):
                             # color.
                             uu, vv, ww = [t / mag for t in [uu, vv, ww]]
                         qkw = dict(
-                            showscale=(not s.is_slice) or self.legend,
+                            showscale=s.colorbar,
                             colorscale=next(self._cm),
                             sizemode="absolute",
                             sizeref=40,
@@ -675,7 +675,7 @@ class PlotlyBackend(Plot):
                         )
                     )
 
-                    if colors is not None:
+                    if (colors is not None) and s.colorbar:
                         # chroma/phase-colorbar
                         self._fig.add_trace(
                             go.Scatter(
@@ -739,7 +739,7 @@ class PlotlyBackend(Plot):
                     colormap = next(self._cyccm)
                     skw = dict(
                         name=s.get_label(self._use_latex),
-                        showscale=True,
+                        showscale=s.colorbar,
                         colorbar=dict(
                             x=1 + 0.1 * count,
                             title="Argument",

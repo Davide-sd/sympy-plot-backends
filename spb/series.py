@@ -317,8 +317,13 @@ class BaseSeries:
         # represents the evaluation modules to be used by lambdify
         self.modules = kwargs.get("modules", None)
         # plot functions might create data series that might not be useful to
-        # visualize in the legend, for example wireframe lines on 3D plots.
-        self.show_in_legend = True
+        # be shown on the legend, for example wireframe lines on 3D plots.
+        self.show_in_legend = kwargs.get("show_in_legend", True)
+        # line and surface series can show data with a colormap, hence a
+        # colorbar is essential to understand the data. However, sometime it
+        # is useful to hide it on series-by-series base. The following keyword
+        # controls wheter the series should show a colorbar or not.
+        self.colorbar = kwargs.get("colorbar", True)
 
         self._label = self._latex_label = ""
         self._ranges = []
@@ -1042,7 +1047,6 @@ class Line2DBaseSeries(BaseSeries):
         self.use_cm = kwargs.get("use_cm", True)
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
-        self.show_in_legend = kwargs.get("show_in_legend", True)
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
         self.is_polar = kwargs.get("is_polar", False)
@@ -1877,7 +1881,7 @@ class ImplicitSeries(BaseSeries):
 
     is_implicit = True
     _allowed_keys = ["adaptive", "depth", "n1", "n2", "rendering_kw",
-    "xscale", "yscale", "show_in_legend", "color"]
+    "xscale", "yscale", "color"]
     _N = 100
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
@@ -1893,7 +1897,6 @@ class ImplicitSeries(BaseSeries):
         self._label = str(expr) if label is None else label
         self._latex_label = latex(expr) if label is None else label
         self.adaptive = kwargs.get("adaptive", False)
-        self.show_in_legend = kwargs.get("show_in_legend", True)
         self.color = kwargs.get("color", kwargs.get("line_color", None))
 
         if ((isinstance(expr, BooleanFunction) or isinstance(expr, Ne))
