@@ -386,6 +386,10 @@ def plot(*args, **kwargs):
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used. The number of labels must be
         equal to the number of expressions.
+    
+    legend : bool, optional
+        Show/hide the legend. Default to None (the backend determines when
+        it is appropriate to show it).
 
     loss_fn : callable or None
         The loss function to be used by the ``adaptive`` learner.
@@ -770,6 +774,10 @@ def plot_parametric(*args, **kwargs):
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
+    
+    colorbar : boolean, optional
+        Show/hide the colorbar. Default to True (colorbar is visible).
+        Only works when ``use_cm=True``.
 
     color_func : callable, optional
         Define the line color mapping when ``use_cm=True``. It can either be:
@@ -796,6 +804,10 @@ def plot_parametric(*args, **kwargs):
         The label to be shown in the legend or in the colorbar. If not
         provided, the string representation of `expr` will be used. The number
         of labels must be equal to the number of expressions.
+    
+    legend : bool, optional
+        Show/hide the legend. Default to None (the backend determines when
+        it is appropriate to show it). Only works when ``use_cm=False``.
 
     loss_fn : callable or None
         The loss function to be used by the adaptive learner.
@@ -1249,6 +1261,10 @@ def plot3d_parametric_line(*args, **kwargs):
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
+    
+    colorbar : boolean, optional
+        Show/hide the colorbar. Default to True (colorbar is visible).
+        Only works when ``use_cm=True``.
 
     color_func : callable, optional
         Define the line color mapping when ``use_cm=True``. It can either be:
@@ -1279,6 +1295,10 @@ def plot3d_parametric_line(*args, **kwargs):
         The label to be shown in the legend or in the colorbar. If not
         provided, the string representation of ``expr`` will be used.
         The number of labels must be equal to the number of expressions.
+    
+    legend : bool, optional
+        Show/hide the legend. Default to None (the backend determines when
+        it is appropriate to show it). Only works when ``use_cm=False``.
 
     loss_fn : callable or None
         The loss function to be used by the adaptive learner.
@@ -1759,6 +1779,10 @@ def plot3d(*args, **kwargs):
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
+    
+    colorbar : boolean, optional
+        Show/hide the colorbar. Default to True (colorbar is visible).
+        Only works when ``use_cm=True``.
 
     color_func : callable, optional
         Define the surface color mapping when ``use_cm=True``.
@@ -1787,6 +1811,10 @@ def plot3d(*args, **kwargs):
         The label to be shown in the colorbar. If not provided, the string
         representation of ``expr`` will be used. The number of labels must be
         equal to the number of expressions.
+    
+    legend : bool, optional
+        Show/hide the legend. Default to None (the backend determines when
+        it is appropriate to show it). Only works when ``use_cm=False``.
 
     loss_fn : callable or None
         The loss function to be used by the adaptive learner.
@@ -2087,6 +2115,10 @@ def plot3d_parametric_surface(*args, **kwargs):
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
+    
+    colorbar : boolean, optional
+        Show/hide the colorbar. Default to True (colorbar is visible).
+        Only works when ``use_cm=True``.
 
     color_func : callable, optional
         Define the surface color mapping when ``use_cm=True``.
@@ -2125,6 +2157,10 @@ def plot3d_parametric_surface(*args, **kwargs):
         If an integer is provided, the u and v ranges are sampled uniformly
         at ``n`` of points. If a tuple is provided, it overrides
         ``n1`` and ``n2``.
+    
+    legend : bool, optional
+        Show/hide the legend. Default to None (the backend determines when
+        it is appropriate to show it). Only works when ``use_cm=False``.
 
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
@@ -2416,8 +2452,9 @@ def plot3d_spherical(*args, **kwargs):
             function to customize the appearance of surfaces. Refer to the
             plotting library (backend) manual for more informations.
 
-    Keyword arguments are the same as ``plot3d_parametric_surface``. Refer to
-    its documentation for more information.
+        ``**kwargs`` : 
+            Keyword arguments are the same as ``plot3d_parametric_surface``.
+            Refer to its documentation for more information.
 
     Examples
     ========
@@ -2881,7 +2918,7 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
         the appearance of the initial curve. Refer to its documentation for
         more information.
 
-    **kwargs :
+    ``**kwargs`` :
         Keyword arguments are the same as ``plot3d_parametric_surface``.
         Refer to its documentation for more information.
 
@@ -3158,6 +3195,10 @@ def plot_implicit(*args, **kwargs):
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used. The number of labels must be
         equal to the number of expressions.
+    
+    legend : bool, optional
+        Show/hide the legend. Default to None (the backend determines when
+        it is appropriate to show it).
 
     rendering_kw : dict or list of dicts, optional
         A dictionary of keywords/values which is passed to the backend's
@@ -3588,6 +3629,10 @@ def plot_geometry(*args, **kwargs):
         The label to be shown in the legend. If not provided, the string
         representation of ``geom`` will be used. The number of labels must be
         equal to the number of geometric entities.
+    
+    legend : bool, optional
+        Show/hide the legend. Default to None (the backend determines when
+        it is appropriate to show it).
 
     params : dict
         A dictionary in which the keys are symbols, enabling two different
@@ -3871,6 +3916,10 @@ def plot_list(*args, **kwargs):
     label : str or list/tuple, optional
         The label to be shown in the legend. The number of labels must be
         equal to the number of expressions.
+    
+    legend : bool, optional
+        Show/hide the legend. Default to None (the backend determines when
+        it is appropriate to show it).
 
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
@@ -4099,6 +4148,10 @@ def plot3d_list(*args, **kwargs):
     label : str or list/tuple, optional
         The label to be shown in the legend. The number of labels must be
         equal to the number of expressions.
+    
+    legend : bool, optional
+        Show/hide the legend. Default to None (the backend determines when
+        it is appropriate to show it).
 
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument

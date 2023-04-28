@@ -623,7 +623,8 @@ class BokehBackend(Plot):
             # add a new legend only showing the appropriate items
             legend_items = []
             for s, r in zip(self.series, self._fig.renderers):
-                if s.show_in_legend and s.is_2Dline:
+                if (s.show_in_legend and (s.is_2Dline or s.is_geometry) and
+                    (not s.use_cm)):
                     legend_items.append(
                         self.bokeh.models.LegendItem(
                             label=s.get_label(self._use_latex), renderers=[r]))

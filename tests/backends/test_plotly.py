@@ -142,7 +142,7 @@ def test_plot3d_2():
     assert f.data[0].name == str(cos(x ** 2 + y ** 2))
     assert f.data[1].name == str(sin(x ** 2 + y ** 2))
     assert f.data[0]["showscale"]
-    assert f.layout["showlegend"]
+    assert f.layout["showlegend"] is None
 
 
 def test_plot3d_wireframe():
@@ -753,7 +753,7 @@ def test_plot3d_use_latex():
     assert f.data[0].name == "$%s$" % latex(cos(x ** 2 + y ** 2))
     assert f.data[1].name == "$%s$" % latex(sin(x ** 2 + y ** 2))
     assert f.data[0]["showscale"]
-    assert f.layout["showlegend"]
+    assert f.layout["showlegend"] is None
 
 
 def test_plot_vector_2d_quivers_use_latex():
@@ -1298,3 +1298,27 @@ def test_show_in_legend():
     assert [t.showlegend for t in p2.fig.data] == [True, False, True]
     assert [t.showlegend for t in p3.fig.data] == [True, False, True]
     assert [t.showlegend for t in p4.fig.data] == [True, False, True]
+
+
+def test_legend_plot_sum():
+    # when summing up plots together, the first plot dictates if legend
+    # is visible or not
+
+    # first case: legend is specified on the first plot
+    # if legend is not specified, the resulting plot will show the legend
+    p = make_test_legend_plot_sum_1(PB, None)
+    assert p.fig.layout.showlegend
+    p = make_test_legend_plot_sum_1(PB, True)
+    assert p.fig.layout.showlegend
+    # first plot has legend=False: output plot won't show the legend
+    p = make_test_legend_plot_sum_1(PB, False)
+    assert not p.fig.layout.showlegend
+
+    # second case: legend is specified on the second plot
+    # the resulting plot will always show the legend
+    p = make_test_legend_plot_sum_2(PB, None)
+    assert p.fig.layout.showlegend
+    p = make_test_legend_plot_sum_2(PB, True)
+    assert p.fig.layout.showlegend
+    p = make_test_legend_plot_sum_2(PB, False)
+    assert p.fig.layout.showlegend

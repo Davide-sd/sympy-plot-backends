@@ -12,10 +12,10 @@ ipywidgets. Refer to :ref:`interactive` module for more information.
 
 .. autofunction:: plot_complex
 
+.. autofunction:: plot_riemann_sphere
+
 .. autofunction:: plot_complex_list
 
 .. autofunction:: plot_real_imag
 
 .. autofunction:: plot_complex_vector
-
-.. autofunction:: plot_riemann_sphere

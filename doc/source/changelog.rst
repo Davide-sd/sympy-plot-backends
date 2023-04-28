@@ -14,6 +14,8 @@ v2.1.1
 * Implemented ``show_in_legend`` keyword argument to show/hide a specific
   series on the legend of a plot.
 
+* Improved logic about legend.
+
 * Fixed bug with ``PlotlyBackend`` when creating 3D analytic landscapes.
 
 

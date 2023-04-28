@@ -267,8 +267,8 @@ class BaseSeries:
     is_contour = False
 
     is_implicit = False
-    # Different from is_contour as the colormap in backend will be
-    # different
+    # Both contour and implicit series uses colormap, but they are different.
+    # Hence, a different attribute
 
     is_parametric = False
 
@@ -285,19 +285,8 @@ class BaseSeries:
     # Represent a complex expression
     is_domain_coloring = False
 
-    is_point = False
-    # If True, the rendering will use points, not lines.
-
     is_geometry = False
     # If True, it represents an object of the sympy.geometry module
-
-    is_polar = False
-    # If True, the backend will attempt to render it on a polar-projection
-    # axis, or using a polar discretization if a 3D plot is requested
-
-    use_cm = True
-    # Some series might use a colormap as default coloring. Setting this
-    # attribute to False will inform the backends to use solid color.
 
     is_generic = False
     # Implement back-compatibility with sympy.plotting <= 1.11
@@ -313,6 +302,7 @@ class BaseSeries:
 
     def __init__(self, *args, **kwargs):
         kwargs = _set_discretization_points(kwargs.copy(), type(self))
+        # discretize the domain using only integer numbers
         self.only_integers = kwargs.get("only_integers", False)
         # represents the evaluation modules to be used by lambdify
         self.modules = kwargs.get("modules", None)
@@ -324,7 +314,15 @@ class BaseSeries:
         # is useful to hide it on series-by-series base. The following keyword
         # controls wheter the series should show a colorbar or not.
         self.colorbar = kwargs.get("colorbar", True)
-
+        # Some series might use a colormap as default coloring. Setting this
+        # attribute to False will inform the backends to use solid color.
+        self.use_cm = kwargs.get("use_cm", False)
+        # If True, the backend will attempt to render it on a polar-projection
+        # axis, or using a polar discretization if a 3D plot is requested
+        self.is_polar = kwargs.get("is_polar", False)
+        # If True, the rendering will use points, not lines.
+        self.is_point = kwargs.get("is_point", False)
+        
         self._label = self._latex_label = ""
         self._ranges = []
         self._n = [
@@ -347,6 +345,7 @@ class BaseSeries:
 
         self.rendering_kw = kwargs.get("rendering_kw", dict())
 
+        # numerical transformation functions to be applied to the output data
         self._tx = kwargs.get("tx", None)
         self._ty = kwargs.get("ty", None)
         self._tz = kwargs.get("tz", None)
@@ -355,10 +354,16 @@ class BaseSeries:
             [self._tx, self._ty, self._tz, self._tp]):
             raise TypeError("`tx`, `ty`, `tz`, `tp` must be functions.")
 
+        # list of numerical functions representing the expressions to evaluate
         self._functions = []
+        # signature of for the numerical functions
         self._signature = []
+        # some expressions don't like to be evaluated over complex data.
+        # if that's the case, set this to True
         self._force_real_eval = kwargs.get("force_real_eval", None)
+        # eventually it will contain a dictionary with the discretized ranges
         self._discretized_domain = None
+        # wheter the series contains any interactive range
         self._interactive_ranges = False
         # NOTE: consider a generic summation, for example:
         #   s = Sum(cos(pi * x), (x, 1, y))
@@ -1044,7 +1049,7 @@ class Line2DBaseSeries(BaseSeries):
         self.adaptive = kwargs.get("adaptive", cfg["adaptive"]["used_by_default"])
         self.adaptive_goal = kwargs.get("adaptive_goal", cfg["adaptive"]["goal"])
         self.loss_fn = kwargs.get("loss_fn", None)
-        self.use_cm = kwargs.get("use_cm", True)
+        self.use_cm = kwargs.get("use_cm", False)
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
         self.detect_poles = kwargs.get("detect_poles", False)
@@ -1156,7 +1161,6 @@ class List2DSeries(Line2DBaseSeries, ParamsMixin):
         self.is_polar = kwargs.get("is_polar", False)
         self.label = label
         self.rendering_kw = kwargs.get("rendering_kw", dict())
-        self.use_cm = kwargs.get("use_cm", False)
         if self.use_cm and self.color_func:
             self.is_parametric = True
             if isinstance(self.color_func, Expr):
@@ -1364,6 +1368,10 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
     """Represents a 2D line series in which `color_func` is a callable.
     """
     is_parametric = True
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.use_cm = kwargs.get("use_cm", True)
 
     def _get_points(self):
         """Returns coordinates that needs to be postprocessed.
@@ -1385,6 +1393,10 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.use_cm = kwargs.get("use_cm", True)
 
     def __str__(self):
         return self._str_helper("cartesian abs-arg line: %s for %s over %s" % (
@@ -1540,6 +1552,7 @@ class Parametric2DLineSeries(ParametricLineBaseSeries):
         self.expr = (self.expr_x, self.expr_y)
         self.ranges = [var_start_end]
         self._cast = float
+        self.use_cm = kwargs.get("use_cm", True)
         self._set_parametric_line_label(label)
         self._post_init()
 
@@ -1568,6 +1581,7 @@ class Parametric3DLineSeries(ParametricLineBaseSeries):
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
         self.ranges = [var_start_end]
         self._cast = float
+        self.use_cm = kwargs.get("use_cm", True)
         self._set_parametric_line_label(label)
         self._post_init()
 
@@ -1880,6 +1894,7 @@ class ImplicitSeries(BaseSeries):
     """
 
     is_implicit = True
+    use_cm = False
     _allowed_keys = ["adaptive", "depth", "n1", "n2", "rendering_kw",
     "xscale", "yscale", "color"]
     _N = 100
@@ -3068,13 +3083,12 @@ class GeometrySeries(BaseSeries):
         self._latex_label = latex(expr) if label is None else label
         self.is_filled = kwargs.get("is_filled", True)
         self.n = int(kwargs.get("n", 200))
-        self.use_cm = kwargs.get("use_cm", True)
+        self.use_cm = kwargs.get("use_cm", False)
         self.color_func = kwargs.get("color_func", None)
         self.line_color = kwargs.get("line_color", None)
         if isinstance(expr, (LinearEntity3D, Point3D)):
             self.is_3Dline = True
             self.is_parametric = False
-            self.use_cm = kwargs.get("use_cm", False)
             self.start = 0
             self.end = 0
             if isinstance(expr, Point3D):
@@ -3259,6 +3273,7 @@ class RiemannSphereSeries(BaseSeries):
         ComplexDomainColoringSeries._init_domain_coloring_kw(self, **kwargs)
         if self.n[0] == self.n[1]:
             self.n = [self.n[0], 4 * self.n[0]]
+        self.use_cm = True
 
     def get_data(self):
         """Return arrays of coordinates for plotting.

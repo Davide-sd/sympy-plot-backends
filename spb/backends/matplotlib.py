@@ -500,7 +500,7 @@ class MatplotlibBackend(Plot):
                         lkw["cmap"] = next(self._cm)
                         lkw["c"] = param
                     else:
-                        # lkw["c"] = param
+                        lkw["label"] = s.get_label(self._use_latex)
                         lkw["color"] = next(self._cl) if s.line_color is None else s.line_color
 
                     if not s.is_filled:
@@ -795,6 +795,10 @@ class MatplotlibBackend(Plot):
                 fkw = dict(facecolor=color, fill=s.is_filled, edgecolor=color)
                 kw = merge({}, fkw, s.rendering_kw)
                 c = self._ax.fill(x, y, **kw)
+                proxy_artist = self.Rectangle((0, 0), 1, 1,
+                    color=color, label=s.get_label(self._use_latex))
+                if s.show_in_legend:
+                    self._legend_handles.append(proxy_artist)
                 self._add_handle(i, c, kw)
 
             elif s.is_generic:

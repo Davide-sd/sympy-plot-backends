@@ -440,6 +440,7 @@ def test_plot_geometry_1():
     assert f.legend[0].items[0].label["value"] == str(Line((1, 2), (5, 4)))
     assert f.legend[0].items[1].label["value"] == str(Circle((0, 0), 4))
     assert f.legend[0].items[2].label["value"] == str(Polygon((2, 2), 3, n=6))
+    assert len(f.legend[0].items) == 3
 
 
 def test_plot_geometry_2():
@@ -449,11 +450,13 @@ def test_plot_geometry_2():
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Line)]) == 4
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)]) == 1
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Scatter)]) == 1
+    assert len(p.fig.legend[0].items) == 5
     p = make_test_plot_geometry_2(BB, True)
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Line)]) == 1
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Patch)]) == 3
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)]) == 1
     assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Scatter)]) == 1
+    assert len(p.fig.legend[0].items) == 5
 
 
 def test_save(mocker):
@@ -874,3 +877,32 @@ def test_show_in_legend():
 
     assert len(p1.fig.legend[0].items) == 2
     assert len(p2.fig.legend[0].items) == 2
+
+
+def test_legend_plot_sum():
+    # when summing up plots together, the first plot dictates if legend
+    # is visible or not
+
+    # first case: legend is specified on the first plot
+    # if legend is not specified, the resulting plot will show the legend
+    p = make_test_legend_plot_sum_1(BB, None)
+    assert len(p.fig.legend[0].items) == 3
+    assert p.fig.legend[0].visible
+    p = make_test_legend_plot_sum_1(BB, True)
+    assert len(p.fig.legend[0].items) == 3
+    assert p.fig.legend[0].visible
+    # first plot has legend=False: output plot won't show the legend
+    p = make_test_legend_plot_sum_1(BB, False)
+    assert not p.fig.legend[0].visible
+
+    # second case: legend is specified on the second plot
+    # the resulting plot will always show the legend
+    p = make_test_legend_plot_sum_2(BB, None)
+    assert len(p.fig.legend[0].items) == 3
+    assert p.fig.legend[0].visible
+    p = make_test_legend_plot_sum_2(BB, True)
+    assert len(p.fig.legend[0].items) == 3
+    assert p.fig.legend[0].visible
+    p = make_test_legend_plot_sum_2(BB, False)
+    assert len(p.fig.legend[0].items) == 3
+    assert p.fig.legend[0].visible

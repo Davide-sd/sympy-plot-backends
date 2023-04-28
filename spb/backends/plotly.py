@@ -290,7 +290,7 @@ class PlotlyBackend(Plot):
             title=label,
             titleside="right",
             # scale down the color bar to make room for legend
-            len=self._cbsdf if (sc and self.legend) else 1,
+            len=self._cbsdf if (sc and (self.legend or (self.legend is None))) else 1,
             yanchor="bottom",
             y=0,
         )

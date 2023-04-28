@@ -700,6 +700,7 @@ def test_plot_geometry_1():
     assert ax.get_lines()[0].get_label() == str(Line((1, 2), (5, 4)))
     assert ax.get_lines()[1].get_label() == str(Circle((0, 0), 4))
     assert ax.get_lines()[2].get_label() == str(Polygon((2, 2), 3, n=6))
+    assert len(p.ax.get_legend().legend_handles) == 3
     p.close()
 
 
@@ -710,10 +711,12 @@ def test_plot_geometry_2():
     assert len(p.fig.axes[0].lines) == 5
     assert len(p.fig.axes[0].collections) == 1
     assert len(p.fig.axes[0].patches) == 0
+    assert len(p.ax.get_legend().legend_handles) == 5
     p = make_test_plot_geometry_2(MB, True)
     assert len(p.fig.axes[0].lines) == 2
     assert len(p.fig.axes[0].collections) == 1
     assert len(p.fig.axes[0].patches) == 3
+    assert len(p.ax.get_legend().legend_handles) == 5
 
 
 def test_plot_geometry_3d():
@@ -1513,6 +1516,28 @@ def test_color_func_expr():
 
 
 def test_legend_plot_sum():
+    # when summing up plots together, the first plot dictates if legend
+    # is visible or not
+
+    # first case: legend is specified on the first plot
+    # if legend is not specified, the resulting plot will show the legend
+    p = make_test_legend_plot_sum_1(MB, None)
+    assert len(p.ax.get_legend().legend_handles) == 3
+    p = make_test_legend_plot_sum_1(MB, True)
+    assert len(p.ax.get_legend().legend_handles) == 3
+    # first plot has legend=False: output plot won't show the legend
+    p = make_test_legend_plot_sum_1(MB, False)
+    assert p.ax.get_legend() is None
+
+    # second case: legend is specified on the second plot
+    # the resulting plot will always show the legend
+    p = make_test_legend_plot_sum_2(MB, None)
+    assert len(p.ax.get_legend().legend_handles) == 3
+    p = make_test_legend_plot_sum_2(MB, True)
+    assert len(p.ax.get_legend().legend_handles) == 3
+    p = make_test_legend_plot_sum_2(MB, False)
+    assert len(p.ax.get_legend().legend_handles) == 3
+
     # because plot_implicit creates custom proxy artists to show on the legend,
     # need to make sure that every legend artists is shown when combining
     # plot_implicit with some other plot type.
