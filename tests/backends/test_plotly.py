@@ -869,7 +869,7 @@ def test_plot_polar_use_cm():
     assert p.fig.data[0].marker.showscale
 
     p = make_test_plot_polar_use_cm(PB, True, False)
-    assert p.fig.data[0].marker.showscale is False
+    assert p.fig.data[0].marker.showscale is None
 
     p = make_test_plot_polar_use_cm(PB, True, True, lambda t: t)
     assert p.fig.data[0].marker.showscale
@@ -1286,3 +1286,15 @@ def test_show_hide_colorbar():
     p = lambda c: plot_riemann_sphere(expr, threed=True, colorbar=c, **options)
     assert p(True).fig.data[1].showscale
     assert not p(False).fig.data[1].showscale
+
+
+def test_show_in_legend():
+    # verify that ability of hiding traces from the legend
+
+    p1, p2 = make_test_show_in_legend_2d(PB)
+    p3, p4 = make_test_show_in_legend_3d(PB)
+
+    assert [t.showlegend for t in p1.fig.data] == [True, False, True]
+    assert [t.showlegend for t in p2.fig.data] == [True, False, True]
+    assert [t.showlegend for t in p3.fig.data] == [True, False, True]
+    assert [t.showlegend for t in p4.fig.data] == [True, False, True]

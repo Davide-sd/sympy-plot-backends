@@ -1,5 +1,6 @@
 import bokeh
 from bokeh.models import ColumnDataSource
+import pytest
 from pytest import raises
 import os
 from tempfile import TemporaryDirectory
@@ -864,4 +865,12 @@ def test_show_hide_colorbar():
         colorbar=c, **options)
     assert len(p(True).fig.right) == 1
     assert len(p(False).fig.right) == 0
-    
+
+
+def test_show_in_legend():
+    # verify that ability of hiding traces from the legend
+
+    p1, p2 = make_test_show_in_legend_2d(BB)
+
+    assert len(p1.fig.legend[0].items) == 2
+    assert len(p2.fig.legend[0].items) == 2

@@ -353,7 +353,12 @@ class PlotlyBackend(Plot):
                         name=s.get_label(self._use_latex),
                         line_color=color,
                         mode=mode,
-                        marker=dict(
+                        customdata=param,
+                        hovertemplate=ht,
+                        showlegend=s.show_in_legend,
+                    )
+                    if s.use_cm:
+                        lkw["marker"] = dict(
                             color=param,
                             colorscale=(
                                 next(self._cyccm)
@@ -362,19 +367,16 @@ class PlotlyBackend(Plot):
                             ),
                             size=6,
                             showscale=s.use_cm and s.colorbar,
-                        ),
-                        customdata=param,
-                        hovertemplate=ht,
-                    )
-                    if lkw["marker"]["showscale"]:
-                        # only add a colorbar if required.
+                        )
+                        if lkw["marker"]["showscale"]:
+                            # only add a colorbar if required.
 
-                        # TODO: when plotting many (14 or more) parametric
-                        # expressions, each one requiring a colorbar, it might
-                        # happens that the horizontal space required by all
-                        # colorbars is greater than the available figure width.
-                        # That raises a strange error.
-                        lkw["marker"]["colorbar"] = self._create_colorbar(s.get_label(self._use_latex), True)
+                            # TODO: when plotting many (14 or more) parametric
+                            # expressions, each one requiring a colorbar, it might
+                            # happens that the horizontal space required by all
+                            # colorbars is greater than the available figure width.
+                            # That raises a strange error.
+                            lkw["marker"]["colorbar"] = self._create_colorbar(s.get_label(self._use_latex), True)
 
                     kw = merge({}, lkw, s.rendering_kw)
 
@@ -391,7 +393,8 @@ class PlotlyBackend(Plot):
                     lkw = dict(
                         name=s.get_label(self._use_latex),
                         mode="lines" if not s.is_point else "markers",
-                        line_color=color
+                        line_color=color,
+                        showlegend=s.show_in_legend
                     )
                     if s.is_point:
                         lkw["marker"] = dict(size=8)
@@ -453,14 +456,15 @@ class PlotlyBackend(Plot):
                             width = 4,
                             color = (
                                 (next(self._cl) if s.line_color is None
-                                else s.line_color) if s.show_in_legend
+                                else s.line_color) if (s.show_in_legend or s.get_label(self._use_latex) != "__k__")
                                 else self.wireframe_color)
                         )
                 else:
                     color = next(self._cl) if s.line_color is None else s.line_color
                     lkw = dict(
                         name=s.get_label(self._use_latex),
-                        mode="markers")
+                        mode="markers",
+                        showlegend=s.show_in_legend)
 
                     lkw["marker"] = dict(
                         color=color if not s.use_cm else param,
@@ -501,7 +505,7 @@ class PlotlyBackend(Plot):
                 skw = dict(
                     name=s.get_label(self._use_latex),
                     showscale=s.use_cm and s.colorbar,
-                    showlegend=(not s.use_cm) and self.legend,
+                    showlegend=(not s.use_cm) and s.show_in_legend,
                     colorbar=self._create_colorbar(s.get_label(self._use_latex), mix_3Dsurfaces_3Dlines),
                     colorscale=colormap if s.use_cm else colorscale,
                     surfacecolor=surfacecolor,

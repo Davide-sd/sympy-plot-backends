@@ -1577,8 +1577,8 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
         kw["tp"] = surface_series._tp
         kw["force_real_eval"] = surface_series._force_real_eval
         if "return" not in kw.keys():
-            return Parametric3DLineSeries(*expr, *ranges, "", **kw)
-        return ComplexParametric3DLineSeries(*expr, *ranges, "", **kw)
+            return Parametric3DLineSeries(*expr, *ranges, "__k__", **kw)
+        return ComplexParametric3DLineSeries(*expr, *ranges, "__k__", **kw)
 
     # NOTE: can't use np.linspace because start, end might be
     # symbolic expressions

@@ -9,7 +9,10 @@ v2.1.1
 
 * Enabled support for plotting indexed objects.
 
-* Added ``colorbar`` keyword argument to show/hide colorbar.
+* Implemented ``colorbar`` keyword argument to show/hide colorbar.
+
+* Implemented ``show_in_legend`` keyword argument to show/hide a specific
+  series on the legend of a plot.
 
 * Fixed bug with ``PlotlyBackend`` when creating 3D analytic landscapes.
 

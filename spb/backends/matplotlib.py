@@ -487,9 +487,10 @@ class MatplotlibBackend(Plot):
                         self._add_colorbar(c, s.get_label(self._use_latex), s.use_cm and s.colorbar)
                         self._add_handle(i, c, kw, self._fig.axes[-1])
                     else:
-                        lkw["label"] = s.get_label(self._use_latex) if s.show_in_legend else "_nolegend_"
+                        slabel = s.get_label(self._use_latex)
+                        lkw["label"] = slabel if s.show_in_legend else "_nolegend_"
                         lkw["color"] = ((next(self._cl) if s.line_color is None
-                            else s.line_color) if s.show_in_legend
+                            else s.line_color) if (s.show_in_legend or (slabel != "__k__"))
                             else self.wireframe_color)
                         kw = merge({}, lkw, s.rendering_kw)
                         l = self._ax.plot(x, y, z, **kw)

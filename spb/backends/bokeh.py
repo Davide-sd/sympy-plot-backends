@@ -618,10 +618,20 @@ class BokehBackend(Plot):
                 )
 
         if len(self._fig.legend) > 0:
-            self._fig.legend.visible = self.legend
-            # interactive legend
-            self._fig.legend.click_policy = "hide"
-            self._fig.add_layout(self._fig.legend[0], "right")
+            # hide default legend
+            self._fig.legend.visible = False
+            # add a new legend only showing the appropriate items
+            legend_items = []
+            for s, r in zip(self.series, self._fig.renderers):
+                if s.show_in_legend and s.is_2Dline:
+                    legend_items.append(
+                        self.bokeh.models.LegendItem(
+                            label=s.get_label(self._use_latex), renderers=[r]))
+            if self.legend and (len(legend_items) > 0):
+                legend = self.bokeh.models.Legend(items=legend_items)
+                # interactive legend
+                legend.click_policy = "hide"
+                self._fig.add_layout(legend, "right")
 
     def _get_img(self, img):
         np = import_module('numpy')

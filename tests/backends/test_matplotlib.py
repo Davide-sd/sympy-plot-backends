@@ -1642,3 +1642,15 @@ def test_show_hide_colorbar():
     p = lambda c: plot_riemann_sphere(expr, threed=True, colorbar=c, **options)
     assert len(p(True).fig.axes) == 2
     assert len(p(False).fig.axes) == 1
+
+
+def test_show_in_legend():
+    # verify that ability of hiding traces from the legend
+
+    p1, p2 = make_test_show_in_legend_2d(MB)
+    p3, p4 = make_test_show_in_legend_3d(MB)
+
+    assert len(p1.ax.get_legend().legend_handles) == 2
+    assert len(p2.ax.get_legend().legend_handles) == 2
+    assert len(p3.ax.get_legend().legend_handles) == 2
+    assert len(p4.ax.get_legend().legend_handles) == 2

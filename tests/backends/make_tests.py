@@ -616,3 +616,37 @@ def make_test_domain_coloring_2d(B, at_infinity):
     return plot_complex(
         (z - 1) / (z**2 + z + 1), (z, -3-3*I, 3+3*I),
         backend=B, at_infinity=at_infinity, n=10, show=False)
+
+
+def make_test_show_in_legend_3d(B):
+    options = dict(backend=B, use_cm=False, show=False)
+
+    p1 = plot3d_parametric_line(cos(x), sin(x), x, (x, 0, 2*pi), "a", **options)
+    p2 = plot3d_parametric_line(cos(x)/2, sin(x)/2, x, (x, 0, 2*pi), "b",
+        show_in_legend=False, **options)
+    p3 = plot3d_parametric_line(cos(x)/3, sin(x)/3, x, (x, 0, 2*pi), "c", **options)
+    p4 = p1 + p2 + p3
+
+    p13 = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), "a", **options)
+    p14 = plot3d(sin(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), "b",
+        show_in_legend=False, **options)
+    p15 = plot3d(cos(x * y), (x, -pi, pi), (y, -pi, pi), "c", **options)
+    p16 = p13 + p14 + p15
+
+    return p4, p16
+
+def make_test_show_in_legend_2d(B):
+    options = dict(backend=B, use_cm=False, show=False)
+
+    p5 = plot_parametric(cos(x), sin(x), (x, 0, 2*pi), "a", **options)
+    p6 = plot_parametric(cos(x)/2, sin(x)/2, (x, 0, 2*pi), "b",
+        show_in_legend=False, **options)
+    p7 = plot_parametric(cos(x)/3, sin(x)/3, (x, 0, 2*pi), "c", **options)
+    p8 = p5 + p6 + p7
+
+    p9 = plot(cos(x), **options)
+    p10 = plot(sin(x), show_in_legend=False, **options)
+    p11 = plot(sin(x) * cos(x), **options)
+    p12 = p9 + p10 + p11
+
+    return p8, p12
