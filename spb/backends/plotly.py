@@ -222,14 +222,15 @@ class PlotlyBackend(Plot):
                     textposition=[
                         "top right" if not at_infinity else "top left",
                         "bottom center", "top center"],
-                    textfont=dict(size=15)),
+                    textfont=dict(size=15), showlegend=False),
                 GenericDataSeries("markers",
                     x=[0], y=[0], mode="markers+text",
                     text="<b>inf</b>" if at_infinity else "<b>0</b>",
                     marker=dict(color="#E5ECF6", size=8,
                         line=dict(width=2, color="black")) if at_infinity
                         else dict(size=8, color="black"),
-                    textposition="top right", textfont=dict(size=15)),
+                    textposition="top right", textfont=dict(size=15),
+                    showlegend=False),
             ]
             self._series = self._series + new_series
 
@@ -993,8 +994,9 @@ class PlotlyBackend(Plot):
                 t=50,
                 l=0,
                 b=0,
+                r=40
             ),
-            showlegend=self.legend,
+            showlegend=True if self.legend else False,
             scene=dict(
                 xaxis=dict(
                     title="" if not self.xlabel else self.xlabel,

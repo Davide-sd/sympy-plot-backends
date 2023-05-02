@@ -2465,6 +2465,7 @@ class ComplexDomainColoringSeries(ComplexSurfaceBaseSeries):
         super().__init__(*args, **kwargs)
         if kwargs.get("threed", False):
             self.is_3Dsurface = True
+            self.use_cm = kwargs.get("use_cm", True)
         self.rendering_kw = kwargs.get("rendering_kw", dict())
         # apply the transformation z -> 1/z in order to study the behavior
         # of the function at z=infinity
