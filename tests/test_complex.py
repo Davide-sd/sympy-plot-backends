@@ -1742,25 +1742,25 @@ def test_plot_riemann_sphere():
     p.fig
 
     expr = 1 / (2 * z**2) + z
-    fig = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB)
-    assert len(fig.axes[0].images) == 1
-    assert len(fig.axes[0].lines) > 1
-    assert len(fig.axes[1].images) == 1
-    assert len(fig.axes[1].lines) > 1
+    p = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB)
+    assert len(p.fig.axes[0].images) == 1
+    assert len(p.fig.axes[0].lines) > 1
+    assert len(p.fig.axes[1].images) == 1
+    assert len(p.fig.axes[1].lines) > 1
 
-    fig = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB,
+    p = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB,
         annotate=False)
-    assert len(fig.axes[0].images) == 1
-    assert len(fig.axes[0].lines) == 1
-    assert len(fig.axes[1].images) == 1
-    assert len(fig.axes[1].lines) == 1
+    assert len(p.fig.axes[0].images) == 1
+    assert len(p.fig.axes[0].lines) == 1
+    assert len(p.fig.axes[1].images) == 1
+    assert len(p.fig.axes[1].lines) == 1
 
-    fig = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB,
+    p = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB,
         riemann_mask=False)
-    assert len(fig.axes[0].images) == 1
-    assert len(fig.axes[0].lines) == 0
-    assert len(fig.axes[1].images) == 1
-    assert len(fig.axes[1].lines) == 0
+    assert len(p.fig.axes[0].images) == 1
+    assert len(p.fig.axes[0].lines) == 0
+    assert len(p.fig.axes[1].images) == 1
+    assert len(p.fig.axes[1].lines) == 0
 
 
 def test_number_discretization_points():

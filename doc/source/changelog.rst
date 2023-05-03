@@ -7,6 +7,8 @@ v2.1.1
 
 * Improved complex domain coloring and added ``plot_riemann_sphere``.
 
+* Added ``imagegrid`` keyword argument to ``plotgrid``.
+
 * Enabled support for plotting indexed objects.
 
 * Implemented ``colorbar`` keyword argument to show/hide colorbar.

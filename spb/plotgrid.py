@@ -2,6 +2,7 @@ from sympy.external import import_module
 from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import MB
 from spb.backends.plotly import PB
+from sympy.utilities.exceptions import sympy_deprecation_warning
 
 
 def _nrows_ncols(nr, nc, nplots):
@@ -17,6 +18,8 @@ def _nrows_ncols(nr, nc, nplots):
         nr = int(np.ceil(nplots / nc))
     elif nc <= 0:
         nc = int(np.ceil(nplots / nr))
+    elif nr == 1:
+        nc = nplots
     elif nr * nc < nplots:
         nr += 1
         return _nrows_ncols(nr, nc, nplots)
@@ -35,7 +38,6 @@ def _create_mpl_figure(mapping, imagegrid=False, size=None):
         catch=(RuntimeError,))
     plt = matplotlib.pyplot
 
-    print("size", size)
     kw = {} if not size else {"figsize": size}
     fig = plt.figure(**kw)
 
@@ -103,47 +105,52 @@ def plotgrid(*args, **kwargs):
     Parameters
     ==========
 
-    args : sequence (optional)
+    args : sequence
         A sequence of aldready created plots. This, in combination with
-        `nr` and `nc` represents the first mode of operation, where a basic
-        grid with (nc * nr) subplots will be created.
+        ``nr`` and ``nc`` represents the first mode of operation, where a
+        basic grid with (nc * nr) subplots will be created.
 
-    nr, nc : int (optional)
+    nr, nc : int, optional
         Number of rows and columns.
-        By default, `nc = 1` and `nr = -1`: this will create as many rows
+        By default, ``nc = 1`` and ``nr = -1``: this will create as many rows
         as necessary, and a single column.
-        By setting `nr = 1` and `nc = -1`, it will create a single row and
-        as many columns as necessary.
+        By setting ``nr = 1`` a grid with a single row and as many columns as
+        necessary will be created.
 
-    gs : dict (optional)
-        A dictionary mapping Matplotlib's `GridSpec` objects to the plots.
+    gs : dict, optional
+        A dictionary mapping Matplotlib's ``GridSpec`` objects to the plots.
         The keys represent the cells of the layout. Each cell will host the
         associated plot.
         This represents the second mode of operation, as it allows to create
         more complicated layouts.
+    
+    imagegrid : boolean, optional
+        Requests Matplotlib's ``ImageGrid`` axes [#fn2]_ to be used. This is
+        best suited for plots with equal aspect ratio sharing a common
+        colorbar. Default to False.
 
-    panel_kw : dict (optional)
-        A dictionary of keyword arguments to be passed to panel's `GridSpec`
+    panel_kw : dict, optional
+        A dictionary of keyword arguments to be passed to panel's ``GridSpec``
         for further customization. Default to
-        `dict(sizing_mode="stretch_width")`. Refer to [#fn1]_ for more
+        ``dict(sizing_mode="stretch_width")``. Refer to [#fn1]_ for more
         information.
 
-    show : boolean (optional)
+    show : boolean, optional
         It applies only to Matplotlib figures. Default to True.
 
     Returns
     =======
 
-    fig : `plt.Figure` or `pn.GridSpec`
-        If all input plots are instances of `MatplotlibBackend`, than a
-        Matplotlib `Figure` will be returned. Otherwise an instance of
-        Holoviz Panel's `GridSpec` will be returned.
+    fig : ``plt.Figure`` or ``pn.GridSpec``
+        If all input plots are instances of ``MatplotlibBackend``, than a
+        Matplotlib ``Figure`` will be returned. Otherwise an instance of
+        Holoviz Panel's ``GridSpec`` will be returned.
 
 
     Examples
     ========
 
-    First mode of operation with instances of `MatplotlibBackend`:
+    First mode of operation with instances of ``MatplotlibBackend``:
 
     .. plot::
        :include-source: True
@@ -157,9 +164,24 @@ def plotgrid(*args, **kwargs):
        p2 = plot(tan(x), backend=MB, adaptive=False, detect_poles=True,
             title="tan(x)", show=False)
        p3 = plot(exp(-x), backend=MB, title="exp(-x)", show=False)
-       fig = plotgrid(p1, p2, p3)
+       plotgrid(p1, p2, p3)
+    
+    When plots represents images with equal aspect ratio and common
+    colorbar, set ``imagegrid=True``:
 
-    Second mode of operation, using Matplotlib GridSpec:
+    .. plot::
+       :include-source: True
+       :context: reset
+
+       from sympy import symbols, sin, cos, pi, I
+       from spb import *
+       z = symbols("z")
+       options = dict(coloring="b", show=False, grid=False)
+       p1 = plot_complex(sin(z), (z, -pi-pi*I, pi+pi*I), **options)
+       p2 = plot_complex(cos(z), (z, -pi-pi*I, pi+pi*I), **options)
+       plotgrid(p1, p2, nr=1, imagegrid=True)
+
+    Second mode of operation, using Matplotlib ``GridSpec``:
 
     .. plot::
        :include-source: True
@@ -184,72 +206,171 @@ def plotgrid(*args, **kwargs):
            gs[0:2, 0:2]: p2,
            gs[0:2, 2:]: p3,
        }
-       fig = plotgrid(gs=mapping)
+       plotgrid(gs=mapping)
 
     References
     ==========
 
     .. [#fn1] https://panel.holoviz.org/reference/layouts/GridSpec.html
+    .. [#fn2] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.axes_grid1.axes_grid.ImageGrid.html
 
     """
-    matplotlib = import_module(
-        'matplotlib',
-        import_kwargs={'fromlist': ['pyplot', 'gridspec']},
-        min_module_version='1.1.0',
-        catch=(RuntimeError,))
-    plt = matplotlib.pyplot
-    GridSpec = matplotlib.gridspec.GridSpec
 
-    show = kwargs.get("show", True)
-    gs = kwargs.get("gs", None)
-    panel_kw = kwargs.get("panel_kw", dict(sizing_mode="stretch_width"))
-    imagegrid = kwargs.get("imagegrid", False)
-    size = kwargs.get("size", None)
+    nr = kwargs.get("nr", -1)
+    nc = kwargs.get("nc", 1)
+    nr, nc = _nrows_ncols(nr, nc, len(args))
+    show = kwargs.pop("show", True)
+    p = PlotGrid(nr, nc, *args, show=False, **kwargs)
+    if not show:
+        return p
+    if p.is_matplotlib_fig:
+        p.show()
+        return p
+    return p.show()
 
-    if (gs is None) and (len(args) == 0):
-        fig = plt.figure()
 
-    elif (gs is None):
-        ### First mode of operation
-        # default layout: 1 columns, as many rows as needed
-        nr = kwargs.get("nr", -1)
-        nc = kwargs.get("nc", 1)
-        nr, nc = _nrows_ncols(nr, nc, len(args))
+class PlotGrid:
+    """Implement the logic to create a grid of plots. Refer to ``plotgrid``
+    about examples.
+    """
+    _panel_row_height = 350
 
-        gs = GridSpec(nr, nc)
-        mapping = {}
-        c = 0
-        for i in range(nr):
-            for j in range(nc):
-                if c < len(args):
-                    mapping[gs[i, j]] = args[c]
-                c += 1
+    def __init__(self, nrows, ncols, *args, **kwargs):
+        self.matplotlib = import_module(
+            'matplotlib',
+            import_kwargs={'fromlist': ['pyplot', 'gridspec']},
+            min_module_version='1.1.0',
+            catch=(RuntimeError,))
+        self.plt = self.matplotlib.pyplot
 
-        if all(isinstance(a, MB) for a in args):
-            fig = _create_mpl_figure(mapping, imagegrid, size)
+        self.nrows = nrows
+        self.ncolumns = ncols
+        self.args = args
+        self.size = kwargs.get("size", None)
+        # requests Matplotlib's ImageGrid axis to be used
+        self.imagegrid = kwargs.get("imagegrid", False)
+        self._fig = None
+        self.is_matplotlib_fig = all(isinstance(t, MB) for t in args)
+
+        # validate GridSpec, if provided
+        self.gs = kwargs.get("gs", None)
+        if self.gs:
+            if not isinstance(self.gs, dict):
+                raise TypeError("`gs` must be a dictionary.")
+
+            SubplotSpec = self.matplotlib.gridspec.SubplotSpec
+            if not isinstance(list(self.gs.keys())[0], SubplotSpec):
+                raise ValueError(
+                    "Keys of `gs` must be of elements of type "
+                    "matplotlib.gridspec.SubplotSpec. Use "
+                    "matplotlib.gridspec.GridSpec to create them.")
+        
+        self.panel_kw = kwargs.get("panel_kw", dict())
+
+        if kwargs.get("show", True):
+            self.show()
+
+    @property
+    def backend(self):
+        # TODO: follow sympy doc procedure to create this deprecation
+        sympy_deprecation_warning(
+            f"`backend` is deprecated. Use `fig` instead.",
+            deprecated_since_version="1.12",
+            active_deprecations_target='---')
+    
+    @property
+    def _series(self):
+        # TODO: follow sympy doc procedure to create this deprecation
+        sympy_deprecation_warning(
+            f"`_series` is deprecated.",
+            deprecated_since_version="1.12",
+            active_deprecations_target='---')
+    
+    def close(self):
+        """Close the current plot, if it is a Matplotlib figure."""
+        self.plt.close(self.fig)
+        
+    @property
+    def fig(self):
+        if self._fig is None:
+            self._create_figure()
+        return self._fig
+    
+    def save(self, path, **kwargs):
+        """Save the current plot at the specified location.
+
+        Refer to:
+        
+        * [#fn10]_ to visualize all the available keyword arguments when
+          saving a Matplotlib figure.
+        * [#fn11]_ to visualize all the available keyword arguments when
+          saving a Holoviz's Panel object.
+
+        References
+        ==========
+        .. [#fn10] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html
+        .. [#fn11] https://panel.holoviz.org/api/panel.viewable.html#panel.viewable.Viewable.save
+        """
+        if self.is_matplotlib_fig:
+            self.fig.savefig(path, **kwargs)
         else:
-            fig = _create_panel_figure(mapping, panel_kw)
+            self.fig.save(path, **kwargs)
+    
+    def _create_figure(self, **kwargs):
+        GridSpec = self.matplotlib.gridspec.GridSpec
+        gs = self.gs
 
-    else:
-        ### Second mode of operation
-        if not isinstance(gs, dict):
-            raise TypeError("`gs` must be a dictionary.")
+        if (gs is None) and (len(self.args) == 0):
+            self._fig = self.plt.figure()
 
-        SubplotSpec = matplotlib.gridspec.SubplotSpec
-        if not isinstance(list(gs.keys())[0], SubplotSpec):
-            raise ValueError(
-                "Keys of `gs` must be of elements of type "
-                "matplotlib.gridspec.SubplotSpec. Use "
-                "matplotlib.gridspec.GridSpec to create them.")
+        elif (gs is None):
+            ### First mode of operation
+            nr, nc = self.nrows, self.ncolumns
+            gs = GridSpec(nr, nc)
+            mapping = {}
+            c = 0
+            for i in range(nr):
+                for j in range(nc):
+                    if c < len(self.args):
+                        mapping[gs[i, j]] = self.args[c]
+                    c += 1
 
-        if all(isinstance(a, MB) for a in gs.values()):
-            fig = _create_mpl_figure(gs, imagegrid, size)
+            if all(isinstance(a, MB) for a in self.args):
+                self._fig = _create_mpl_figure(
+                    mapping, self.imagegrid, self.size)
+            else:
+                size = self.size
+                self.panel_kw.setdefault("width", 800 if not size else size[0])
+                self.panel_kw.setdefault("height",
+                    nr * self._panel_row_height if not size else size[1])
+                self._fig = _create_panel_figure(mapping, self.panel_kw)
+
         else:
-            fig = _create_panel_figure(gs, panel_kw)
+            ### Second mode of operation
+            if all(isinstance(a, MB) for a in gs.values()):
+                self._fig = _create_mpl_figure(
+                    gs, self.imagegrid, self.size)
+            else:
+                self._fig = _create_panel_figure(gs, self.panel_kw)
 
-    if isinstance(fig, plt.Figure):
-        if not imagegrid:
-            fig.tight_layout()
-        if show:
-            plt.show()
-    return fig
+    def show(self, **kwargs):
+        """Display the current plot.
+
+        Parameters
+        ==========
+
+        **kwargs : dict
+            Keyword arguments to be passed to plt.show() if a Matplotlib
+            figure is created.
+        """
+        if self._fig is None:
+            self._create_figure()
+
+        if self.is_matplotlib_fig:
+            if not self.imagegrid:
+                self._fig.tight_layout()
+            self.plt.show(**kwargs)
+        else:
+            # holoviz's panel object must be shown on an interactive cell
+            return self.fig
+

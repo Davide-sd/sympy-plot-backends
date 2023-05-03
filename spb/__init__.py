@@ -24,7 +24,7 @@ from spb.ccomplex.complex import (
 )
 from spb.utils import prange
 
-from spb.plotgrid import plotgrid
+from spb.plotgrid import plotgrid, PlotGrid
 
 from spb.backends.matplotlib import MB
 from spb.backends.bokeh import BB
@@ -40,5 +40,5 @@ __all__ = [
     "plot_list", "plot_piecewise", "plot_vector", "plot_complex",
     "plot_complex_list", "plot_real_imag", "plot_complex_vector", "plotgrid",
     "MB", "BB", "PB", "KB", "MAB", "plot3d_list", "prange",
-    "plot_riemann_sphere"
+    "plot_riemann_sphere", "PlotGrid"
 ]
