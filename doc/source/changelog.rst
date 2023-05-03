@@ -2,7 +2,7 @@
  Changelog
 ==========
 
-v2.1.1
+v2.2.0
 ======
 
 * Improved complex domain coloring and added ``plot_riemann_sphere``.
