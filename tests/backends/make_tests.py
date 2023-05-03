@@ -666,3 +666,10 @@ def make_test_legend_plot_sum_2(B, l):
     p2 = plot(sin(x), **options, legend=l)
     p3 = plot(cos(x) * sin(x), **options)
     return p1 + p2 + p3
+
+
+def make_test_analytic_landscape(B):
+    expr = z**5 + Rational(1, 10)
+    return plot_riemann_sphere(expr, threed=True, n1=10, n2=40,
+    coloring="k", backend=B, legend=False, show=False)
+     

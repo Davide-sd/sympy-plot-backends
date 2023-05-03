@@ -420,12 +420,16 @@ class K3DBackend(Plot):
                     colors = colors.reshape((-1, 3))
                     a["colors"] = [self._rgb_to_int(c) for c in colors]
 
-                    r = []
-                    loc = np.linspace(0, 1, colorscale.shape[0])
-                    colorscale = colorscale / 255
-                    for l, c in zip(loc, colorscale):
-                        r.append(l)
-                        r += list(c)
+                    if colorscale is None:
+                        # grayscale colormap
+                        r = [0, 0, 0, 0, 1, 1, 1, 1]
+                    else:
+                        r = []
+                        loc = np.linspace(0, 1, colorscale.shape[0])
+                        colorscale = colorscale / 255
+                        for l, c in zip(loc, colorscale):
+                            r.append(l)
+                            r += list(c)
 
                     a["color_map"] = r
                     a["color_range"] = [-np.pi, np.pi]

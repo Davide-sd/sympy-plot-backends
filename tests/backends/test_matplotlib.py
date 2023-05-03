@@ -1679,3 +1679,11 @@ def test_show_in_legend():
     assert len(p2.ax.get_legend().legend_handles) == 2
     assert len(p3.ax.get_legend().legend_handles) == 2
     assert len(p4.ax.get_legend().legend_handles) == 2
+
+
+def test_make_analytic_landscape_black_and_white():
+    # verify that the backend doesn't raise an error when grayscale coloring
+    # schemes are required
+
+    p = make_test_analytic_landscape(MB)
+    p.fig

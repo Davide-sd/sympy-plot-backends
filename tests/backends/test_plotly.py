@@ -1334,3 +1334,11 @@ def test_show_legend():
     p = plot(sin(x), cos(x), (x, -pi, pi), backend=PB, adaptive=False,
         n=5, show=False)
     assert p.fig.layout.showlegend
+
+
+def test_make_analytic_landscape_black_and_white():
+    # verify that the backend doesn't raise an error when grayscale coloring
+    # schemes are required
+
+    p = make_test_analytic_landscape(PB)
+    p.fig

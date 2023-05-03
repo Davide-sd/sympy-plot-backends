@@ -723,22 +723,26 @@ class PlotlyBackend(Plot):
                     xx, yy, mag, angle, colors, colorscale = s.get_data()
                     if s.coloring != "a":
                         warnings.warn(
-                            "Plotly doesn't support custom coloring "
-                            + "over surfaces. The surface color will show the "
+                            "The visualization could be wrong becaue Plotly "
+                            + "doesn't support custom coloring over surfaces. "
+                            + "The surface color will show the "
                             + "argument of the complex function."
                         )
                     # create a solid color to be used when s.use_cm=False
                     col = next(self._cl)
                     if s.use_cm:
-                        tmp = []
-                        locations = list(range(0, len(colorscale)))
-                        locations = [t / (len(colorscale) - 1) for t in locations]
-                        for loc, c in zip(locations, colorscale):
-                            tmp.append([loc, "rgb" + str(tuple(c))])
-                        colorscale = tmp
-                        # to avoid jumps in the colormap, first and last colors
-                        # must be the same.
-                        colorscale[-1][1] = colorscale[0][1]
+                        if colorscale is None:
+                            colorscale = "gray"
+                        else:
+                            tmp = []
+                            locations = list(range(0, len(colorscale)))
+                            locations = [t / (len(colorscale) - 1) for t in locations]
+                            for loc, c in zip(locations, colorscale):
+                                tmp.append([loc, "rgb" + str(tuple(c))])
+                            colorscale = tmp
+                            # to avoid jumps in the colormap, first and last colors
+                            # must be the same.
+                            colorscale[-1][1] = colorscale[0][1]
                     else:
                         colorscale = [[0, col], [1, col]]
                     colormap = next(self._cyccm)

@@ -700,3 +700,11 @@ def test_plot_vector_3d_quivers_default_color_func():
     assert not np.allclose(
         p1.fig.objects[0].colors, p2.fig.objects[0].colors)
     assert np.allclose(p2.fig.objects[0].colors, p2.fig.objects[0].colors[0])
+
+
+def test_make_analytic_landscape_black_and_white():
+    # verify that the backend doesn't raise an error when grayscale coloring
+    # schemes are required
+
+    p = make_test_analytic_landscape(KB)
+    p.fig
