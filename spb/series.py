@@ -1424,7 +1424,7 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
     is_parametric = True
     _allowed_keys = ["adaptive", "adaptive_goal", "color_func", "is_filled",
     "is_point", "line_color", "loss_fn", "modules", "n", "only_integers",
-    "rendering_kw", "use_cm", "xscale", "tx", "ty", "tz", "tp"]
+    "rendering_kw", "use_cm", "xscale", "tx", "ty", "tz", "tp", "colorbar"]
 
     def _set_parametric_line_label(self, label):
         """Logic to set the correct label to be shown on the plot.
@@ -1601,8 +1601,9 @@ class SurfaceBaseSeries(BaseSeries):
 
     is_3Dsurface = True
     _allowed_keys = ["adaptive", "adaptive_goal", "color_func", "is_polar",
-    "loss_fn", "modules", "n1", "n2", "only_integers", "rendering_kw",
-    "surface_color", "use_cm", "xscale", "yscale", "tx", "ty", "tz"]
+        "loss_fn", "modules", "n1", "n2", "only_integers", "rendering_kw",
+        "surface_color", "use_cm", "xscale", "yscale", "tx", "ty", "tz",
+        "colorbar"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)
@@ -1869,7 +1870,7 @@ class ContourSeries(SurfaceOver2DRangeSeries):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._allowed_keys += ["contour_kw", "is_filled", "clabels"]
+        self._allowed_keys += ["contour_kw", "is_filled", "clabels", "colorbar"]
         self.is_filled = kwargs.get("is_filled", True)
         self.show_clabels = kwargs.get("clabels", True)
 
@@ -2282,7 +2283,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
     _allowed_keys = ["absarg", "coloring", "color_func", "modules", "phaseres",
     "is_polar", "n1", "n2", "only_integers", "rendering_kw", "steps", "cmap",
     "surface_color","use_cm", "xscale", "yscale", "tx", "ty", "tz", "threed",
-    "blevel", "phaseoffset"]
+    "blevel", "phaseoffset", "colorbar"]
 
     def __new__(cls, *args, **kwargs):
         domain_coloring = kwargs.get("absarg", False)
@@ -2643,7 +2644,7 @@ class VectorBase(BaseSeries):
     _allowed_keys = ["n1", "n2", "n3", "modules", "only_integers",
         "streamlines", "use_cm", "xscale", "yscale", "zscale", "quiver_kw",
         "stream_kw", "rendering_kw", "tx", "ty", "tz", "normalize",
-        "color_func"]
+        "color_func", "colorbar"]
 
     def __init__(self, exprs, ranges, label, **kwargs):
         super().__init__(**kwargs)
@@ -3048,7 +3049,7 @@ class GeometrySeries(BaseSeries):
 
     is_geometry = True
     _allowed_keys = ["is_filled", "use_cm", "color_func", "line_color",
-    "rendering_kw"]
+    "rendering_kw", "colorbar"]
 
     def __new__(cls, *args, **kwargs):
         if isinstance(args[0], Plane):
