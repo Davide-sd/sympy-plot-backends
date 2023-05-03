@@ -1100,10 +1100,7 @@ def plot_complex(*args, **kwargs):
                plot_complex(z, (z, -2-2j, 2+2j), coloring="a",
                    grid=False, show=False, legend=True, cmap=v, title=k))
 
-       fig = plotgrid(*plots, nc=2, show=False)
-       fig.set_size_inches(6.5, 8)
-       fig.tight_layout()
-       fig
+       plotgrid(*plots, nc=2, size=(6.5, 8))
 
     In the above figure, when using the HSV colormap the eye is drawn to
     the yellow, cyan and magenta colors, where there is a lightness gradient:
@@ -1134,14 +1131,12 @@ def plot_complex(*args, **kwargs):
        p1 = plot_complex(
            z, (z, -2-2j, 2+2j), grid=False, show=False, legend=True,
            coloring="a", cmap="viridis", phaseoffset=0,
-           title="phase offset = 0")
+           title="phase offset = 0", show_axis=False)
        p2 = plot_complex(
            z, (z, -2-2j, 2+2j), grid=False, show=False, legend=True,
            coloring="a", cmap="viridis", phaseoffset=pi,
-           title=r"phase offset = $\pi$")
-       fig = plotgrid(p1, p2, nc=2, show=False)
-       fig.set_size_inches(6, 2)
-       fig
+           title=r"phase offset = $\pi$", show_axis=False)
+       plotgrid(p1, p2, nc=2, size=(6, 2))
 
     A pure phase portrait is rarely useful, as it conveys too little
     information. Let's now quickly visualize the different ``coloring``
@@ -1169,10 +1164,7 @@ def plot_complex(*args, **kwargs):
                    grid=False, show=False, legend=False, cmap=colorcet.CET_C7,
                    title=("'%s'" % c) + ": " + t, xlabel="", ylabel=""))
 
-       fig = plotgrid(*plots, nc=4, show=False)
-       fig.set_size_inches(8, 8.5)
-       fig.tight_layout()
-       fig
+       plotgrid(*plots, nc=4, size=(8, 8.5))
 
     From the above picture, we can see that:
 
