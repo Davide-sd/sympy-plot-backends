@@ -142,7 +142,7 @@ def test_plot3d_2():
     assert f.data[0].name == str(cos(x ** 2 + y ** 2))
     assert f.data[1].name == str(sin(x ** 2 + y ** 2))
     assert f.data[0]["showscale"]
-    assert f.layout["showlegend"] is None
+    assert f.layout["showlegend"] is False
 
 
 def test_plot3d_wireframe():
@@ -753,7 +753,7 @@ def test_plot3d_use_latex():
     assert f.data[0].name == "$%s$" % latex(cos(x ** 2 + y ** 2))
     assert f.data[1].name == "$%s$" % latex(sin(x ** 2 + y ** 2))
     assert f.data[0]["showscale"]
-    assert f.layout["showlegend"] is None
+    assert f.layout["showlegend"] is False
 
 
 def test_plot_vector_2d_quivers_use_latex():
@@ -1321,4 +1321,16 @@ def test_legend_plot_sum():
     p = make_test_legend_plot_sum_2(PB, True)
     assert p.fig.layout.showlegend
     p = make_test_legend_plot_sum_2(PB, False)
+    assert p.fig.layout.showlegend
+
+
+def test_show_legend():
+    # if there is only one data series, don't show the legend
+
+    x = symbols("x")
+    p = plot(sin(x), (x, -pi, pi), backend=PB, adaptive=False, n=5, show=False)
+    assert not p.fig.layout.showlegend
+
+    p = plot(sin(x), cos(x), (x, -pi, pi), backend=PB, adaptive=False,
+        n=5, show=False)
     assert p.fig.layout.showlegend
