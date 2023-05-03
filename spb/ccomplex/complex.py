@@ -1894,7 +1894,7 @@ def plot_riemann_sphere(*args, **kwargs):
         args.append(Tuple(s, -1.25 - 1.25 * I, 1.25 + 1.25 * I))
 
     # don't show the individual plots
-    show = kwargs.get("show", False)
+    show = kwargs.get("show", True)
     kwargs["show"] = False
     # set default options for Riemann sphere plots
     kwargs.setdefault("show_axis", False)
@@ -1925,5 +1925,15 @@ def plot_riemann_sphere(*args, **kwargs):
     p2 = plot_complex(*args, **kwargs)
 
     if legend or (legend is None):
-        return plotgrid(p1, p2, nc=2, show=show, imagegrid=True, size=size)
-    return plotgrid(p1, p2, nc=2, show=show, size=size)
+        pg = plotgrid(p1, p2, nc=2, imagegrid=True, size=size, show=False)
+    else:
+        pg = plotgrid(p1, p2, nc=2, size=size, show=False)
+
+    if pg.is_matplotlib_fig:
+        if show:
+            pg.show()
+            return pg
+        return pg
+    if show:
+        return pg.show()
+    return pg

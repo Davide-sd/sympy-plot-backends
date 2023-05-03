@@ -1743,6 +1743,7 @@ def test_plot_riemann_sphere():
 
     expr = 1 / (2 * z**2) + z
     p = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB)
+    assert len(p.args) == 2
     assert len(p.fig.axes[0].images) == 1
     assert len(p.fig.axes[0].lines) > 1
     assert len(p.fig.axes[1].images) == 1
@@ -1750,6 +1751,7 @@ def test_plot_riemann_sphere():
 
     p = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB,
         annotate=False)
+    assert len(p.args) == 2
     assert len(p.fig.axes[0].images) == 1
     assert len(p.fig.axes[0].lines) == 1
     assert len(p.fig.axes[1].images) == 1
@@ -1757,6 +1759,7 @@ def test_plot_riemann_sphere():
 
     p = plot_riemann_sphere(expr, coloring="b", n=8, show=False, backend=MB,
         riemann_mask=False)
+    assert len(p.args) == 2
     assert len(p.fig.axes[0].images) == 1
     assert len(p.fig.axes[0].lines) == 0
     assert len(p.fig.axes[1].images) == 1

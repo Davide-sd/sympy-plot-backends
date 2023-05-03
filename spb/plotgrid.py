@@ -363,7 +363,7 @@ class PlotGrid:
             Keyword arguments to be passed to plt.show() if a Matplotlib
             figure is created.
         """
-        if self._fig is None:
+        if (self._fig is None) or self.is_matplotlib_fig:
             self._create_figure()
 
         if self.is_matplotlib_fig:
