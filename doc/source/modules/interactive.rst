@@ -35,6 +35,14 @@ Note that:
   The purpose of the following documentation is to show a few more examples
   for each interactive module.
 
+* if user is attempting to execute an interactive widget plot and gets an
+  error similar to the following:
+  *TraitError: The 'children' trait of a Box instance contains an Instance of
+  a TypedTuple which expected a Widget, not the FigureCanvasAgg at '0x...'*.
+  It means that the ipywidget module is being used with Matplotlib, but the
+  interactive Matplotlib backend has not been loaded. First, execute the magic
+  command ``%matplotlib widget``, then execute the plot command.
+
 * For technical reasons, all interactive-widgets plots in this documentation
   are created using Holoviz's Panel. Often, they will ran just fine with
   ipywidgets too. However, if a specific example uses the ``param`` library,
