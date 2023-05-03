@@ -998,26 +998,6 @@ class BaseSeries:
         return pre + s + post
 
 
-class ParamsMixin:
-    @property
-    def params(self):
-        """Get or set the current parameters dictionary.
-
-        Parameters
-        ==========
-
-        p : dict
-
-            * key: symbol associated to the parameter
-            * val: the numeric value
-        """
-        return self._params
-
-    @params.setter
-    def params(self, p):
-        self._params = p
-
-
 def _detect_poles_helper(x, y, eps=0.01):
     """Compute the steepness of each segment. If it's greater than a
     threshold, set the right-point y-value non NaN.
@@ -1124,7 +1104,7 @@ class Line2DBaseSeries(BaseSeries):
             return self.ranges[0][2]
 
 
-class List2DSeries(Line2DBaseSeries, ParamsMixin):
+class List2DSeries(Line2DBaseSeries):
     """Representation for a line consisting of list of points."""
 
     _allowed_keys = ["adaptive", "adaptive_goal", "color_func", "is_filled",
