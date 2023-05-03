@@ -62,7 +62,7 @@ setup(
         "appdirs>=1.4.4",
         "numpy>=1.21.1",
         "sympy>=1.10.1",
-        "matplotlib>3.4.2",    # v3.4.2 is required for tests to pass
+        "matplotlib>3.4.2",
         "mergedeep>=1.3.4",
     ],
     extras_require={
