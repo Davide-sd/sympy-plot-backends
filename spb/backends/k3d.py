@@ -101,9 +101,6 @@ class K3DBackend(Plot):
 
     _allowed_keys = Plot._allowed_keys + ["show_label", "camera"]
 
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls)
-
     def __init__(self, *args, **kwargs):
         self.k3d = k3d = import_module(
             'k3d',

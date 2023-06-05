@@ -215,7 +215,7 @@ class BokehBackend(Plot):
         * Default options for streamline plots:
           ``dict(line_width=2, line_alpha=0.8)``
 
-    show_axis : boolean, optional
+    axis : boolean, optional
         Turns on/off the axis visibility (and associated tick labels).
         Default to True (axis are visible).
 
@@ -269,9 +269,6 @@ class BokehBackend(Plot):
     colorloop = []
     colormaps = []
     cyclic_colormaps = []
-
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
         self.bokeh = import_module(
@@ -354,7 +351,7 @@ class BokehBackend(Plot):
         if self.ylim:
             kw["y_range"] = self.ylim
         self._fig = self.bokeh.plotting.figure(**kw)
-        self._fig.axis.visible = self.show_axis
+        self._fig.axis.visible = self.axis
         self.grid = kwargs.get("grid", cfg["bokeh"]["grid"])
         self._fig.grid.visible = self.grid
         if cfg["bokeh"]["show_minor_grid"]:

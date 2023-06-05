@@ -185,17 +185,6 @@ class Plot:
     It will be used to validate the user-provided keyword arguments.
     """
 
-    def __new__(cls, *args, **kwargs):
-        backend = cls._get_backend(kwargs)
-        return super().__new__(backend)
-
-    @classmethod
-    def _get_backend(cls, kwargs):
-        backend = kwargs.get("backend", "matplotlib")
-        if not ((type(backend) == type) and issubclass(backend, cls)):
-            raise TypeError("backend must be a subclass of Plot")
-        return backend
-
     def _set_labels(self, wrapper="$%s$"):
         """Set the correct labels.
 
@@ -228,7 +217,7 @@ class Plot:
         self.xlabel = kwargs.get("xlabel", None)
         self.ylabel = kwargs.get("ylabel", None)
         self.zlabel = kwargs.get("zlabel", None)
-        self.aspect = kwargs.get("aspect", "auto")
+        self.aspect = kwargs.get("aspect", kwargs.get("aspect_ratio", "auto"))
         self.axis_center = kwargs.get("axis_center", None)
         self.camera = kwargs.get("camera", None)
         self.grid = kwargs.get("grid", True)
@@ -307,7 +296,7 @@ class Plot:
         check_and_set("zlim", kwargs.get("zlim", None))
         self.size = None
         check_and_set("size", kwargs.get("size", None))
-        self.show_axis = kwargs.get("show_axis", True)
+        self.axis = kwargs.get("show_axis", kwargs.get("axis", True))
 
     def _copy_kwargs(self):
         """Copy the values of the plot attributes into a dictionary which will
@@ -335,7 +324,7 @@ class Plot:
             camera=self.camera,
             polar_axis=self.polar_axis,
             aouc=self.aouc,
-            show_axis=self.show_axis,
+            axis=self.axis,
         )
 
     def _init_cyclers(self):

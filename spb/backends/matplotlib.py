@@ -89,7 +89,7 @@ class MatplotlibBackend(Plot):
         * Refer to [#fn7]_ to customize stramline plots.
         * Refer to [#fn8]_ to customize 3D scatter plots.
 
-    show_axis : boolean, optional
+    axis : boolean, optional
         Turns on/off the axis visibility (and associated tick labels).
         Default to True (axis are visible).
 
@@ -150,9 +150,6 @@ class MatplotlibBackend(Plot):
     wireframe_color = "k"
     colormaps = []
     cyclic_colormaps = []
-
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
         self.matplotlib = import_module(
@@ -238,7 +235,6 @@ class MatplotlibBackend(Plot):
                     GenericDataSeries("annotations", text=r"$\infty$",
                     xy=(0, 0), xytext=(pixel_offset, 0), **akws))
             self._series = self._series + new_series
-
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
@@ -858,7 +854,7 @@ class MatplotlibBackend(Plot):
                 self._ax.xaxis.set_ticks_position("bottom")
                 self._ax.spines["right"].set_visible(False)
                 self._ax.spines["top"].set_visible(False)
-        if not self.show_axis:
+        if not self.axis:
             self._ax.axis(False)
         if self.grid:
             if isinstance(self._ax, Axes3D):

@@ -55,11 +55,10 @@ def _create_mpl_figure(mapping, imagegrid=False, size=None):
         for (_, p), ax in zip(mapping.items(), grid):
             # cpa: current plot attributes
             cpa = p._copy_kwargs()
-            cpa["backend"] = MB
             cpa["fig"] = fig
             cpa["ax"] = ax
             cpa["imagegrid"] = True
-            p = Plot(*p.series, **cpa)
+            p = MB(*p.series, **cpa)
             p.process_series()
         return fig
 
@@ -70,10 +69,9 @@ def _create_mpl_figure(mapping, imagegrid=False, size=None):
         cur_ax = fig.add_subplot(spec, **kw)
         # cpa: current plot attributes
         cpa = p._copy_kwargs()
-        cpa["backend"] = MB
         cpa["fig"] = fig
         cpa["ax"] = cur_ax
-        p = Plot(*p.series, **cpa)
+        p = MB(*p.series, **cpa)
         p.process_series()
     return fig
 

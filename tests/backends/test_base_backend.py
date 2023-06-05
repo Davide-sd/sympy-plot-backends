@@ -17,33 +17,33 @@ class UnsupportedSeries(BaseSeries):
     pass
 
 
-def test_instance_plot():
-    # verify that instantiating the Plot base class creates the correct
-    # backend
+# def test_instance_plot():
+#     # verify that instantiating the Plot base class creates the correct
+#     # backend
 
-    from bokeh.plotting.figure import Figure
-    from k3d.plot import Plot as K3DPlot
+#     from bokeh.plotting.figure import Figure
+#     from k3d.plot import Plot as K3DPlot
 
-    x, y, z = symbols("x, y, z")
+#     x, y, z = symbols("x, y, z")
 
-    s = LineOver1DRangeSeries(cos(x), (x, -10, 10), "test")
+#     s = LineOver1DRangeSeries(cos(x), (x, -10, 10), "test")
 
-    p = Plot(s, backend=MB, show=False)
-    assert isinstance(p, MB)
-    assert isinstance(p.fig, plt.Figure)
+#     p = Plot(s, backend=MB, show=False)
+#     assert isinstance(p, MB)
+#     assert isinstance(p.fig, plt.Figure)
 
-    p = Plot(s, backend=PB, show=False)
-    assert isinstance(p, PB)
-    assert isinstance(p.fig, go.Figure)
+#     p = Plot(s, backend=PB, show=False)
+#     assert isinstance(p, PB)
+#     assert isinstance(p.fig, go.Figure)
 
-    p = Plot(s, backend=BB, show=False)
-    assert isinstance(p, BB)
-    assert isinstance(p.fig, Figure)
+#     p = Plot(s, backend=BB, show=False)
+#     assert isinstance(p, BB)
+#     assert isinstance(p.fig, Figure)
 
-    s = SurfaceOver2DRangeSeries(cos(x * y), (x, -5, 5), (y, -5, 5), "test")
-    p = Plot(s, backend=KB, show=False)
-    assert isinstance(p, KB)
-    assert isinstance(p.fig, K3DPlot)
+#     s = SurfaceOver2DRangeSeries(cos(x * y), (x, -5, 5), (y, -5, 5), "test")
+#     p = Plot(s, backend=KB, show=False)
+#     assert isinstance(p, KB)
+#     assert isinstance(p.fig, K3DPlot)
 
 
 def test_unsupported_series():
@@ -51,16 +51,16 @@ def test_unsupported_series():
     series = [UnsupportedSeries()]
     raises(
         NotImplementedError,
-        lambda: Plot(*series, backend=MB).process_series())
+        lambda: MB(*series).process_series())
     raises(
         NotImplementedError,
-        lambda: Plot(*series, backend=PB).process_series())
+        lambda: PB(*series).process_series())
     raises(
         NotImplementedError,
-        lambda: Plot(*series, backend=BB).process_series())
+        lambda: BB(*series).process_series())
     raises(
         NotImplementedError,
-        lambda: Plot(*series, backend=KB).process_series())
+        lambda: KB(*series).process_series())
 
 
 def test_common_keywords():
@@ -80,10 +80,8 @@ def test_common_keywords():
         ylim=(-2, 2),
         zlim=(-3, 3),
         size=(5, 10),
-        backend=BB,
     )
-    p = Plot(**kw)
-    assert isinstance(p, BB)
+    p = BB(**kw)
     assert p.title == "a"
     assert p.xlabel == "x"
     assert p.ylabel == "y"

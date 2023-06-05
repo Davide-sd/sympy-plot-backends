@@ -55,7 +55,7 @@ class PlotlyBackend(Plot):
         * Refer to [#fn9]_ to customize 3D streamlines plots. Defaul to:
           ``dict( sizeref = 0.3 )``.
 
-    show_axis : boolean, optional
+    axis : boolean, optional
         Turns on/off the axis visibility (and associated tick labels).
         Default to True (axis are visible).
 
@@ -149,9 +149,6 @@ class PlotlyBackend(Plot):
     _cbs = 0.15
     # color bar scale down factor
     _cbsdf = 0.75
-
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
         plotly = import_module(
@@ -978,7 +975,7 @@ class PlotlyBackend(Plot):
                 showgrid=self.grid,  # thin lines in the background
                 zeroline=self.grid,  # thick line at x=0
                 constrain="domain",
-                visible=self.show_axis
+                visible=self.axis
             ),
             yaxis=dict(
                 title="" if not self.ylabel else self.ylabel,
@@ -987,7 +984,7 @@ class PlotlyBackend(Plot):
                 showgrid=self.grid,  # thin lines in the background
                 zeroline=self.grid,  # thick line at x=0
                 scaleanchor="x" if self.aspect == "equal" else None,
-                visible=self.show_axis
+                visible=self.axis
             ),
             polar=dict(
                 angularaxis={'direction': 'counterclockwise', 'rotation': 0},
