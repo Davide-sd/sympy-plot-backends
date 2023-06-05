@@ -776,7 +776,7 @@ def plot_complex(*args, **kwargs):
     at_infinity : boolean, optional
         Apply the transformation $z \\rightarrow \\frac{1}{z}$ in order to
         study the behaviour of the function around the point at infinity.
-        It is recommended to also set ``show_axis=False`` in order to avoid
+        It is recommended to also set ``axis=False`` in order to avoid
         confusion.
 
     backend : Plot, optional
@@ -898,7 +898,7 @@ def plot_complex(*args, **kwargs):
     show : boolean, optional
         Default to True, in which case the plot will be shown on the screen.
 
-    show_axis : boolean, optional
+    axis : boolean, optional
         Turn on/off the axis of the plot. Default to True (axis are visible).
 
     size : (float, float), optional
@@ -1001,7 +1001,7 @@ def plot_complex(*args, **kwargs):
        :include-source: True
 
        >>> plot_complex(gamma(z), (z, -1-1j, 1+1j), coloring="b", n=500,
-       ...     grid=False, at_infinity=True, show_axis=False)
+       ...     grid=False, at_infinity=True, axis=False)
        Plot object containing:
        [0]: complex domain coloring: gamma(1/z) for re(z) over (-1.0, 1.0) and im(z) over (-1.0, 1.0)
 
@@ -1067,7 +1067,7 @@ def plot_complex(*args, **kwargs):
     colormap is HSV, which is characterized by 2 important problems:
 
     * It is not friendly to people affected by color deficiencies.
-    * Because it isn't perceptually uniform, it might be misleading: features
+    * It might be misleading because it isn't perceptually uniform: features
       disappear at points of low perceptual contrast, or false features appear
       that are in the colormap but not in the data (refer to colorcet [#fn3]_
       for more information).
@@ -1107,7 +1107,7 @@ def plot_complex(*args, **kwargs):
     those are false features caused by the colormap. Indeed, there is nothing
     going on these regions when looking with a perceptually uniform colormap.
 
-    Phase is computed with Numpy: it lies between [-pi, pi]. Then, phase is
+    Phase is computed with Numpy and lies between [-pi, pi]. Then, phase is
     normalized between [0, 1] using `(arg / (2 * pi)) % 1`. The figure
     below shows the mapping between phase in radians and normalized phase.
     A phase of 0 radians corresponds to a normalized phase of 0, which gets
@@ -1131,11 +1131,11 @@ def plot_complex(*args, **kwargs):
        p1 = plot_complex(
            z, (z, -2-2j, 2+2j), grid=False, show=False, legend=True,
            coloring="a", cmap="viridis", phaseoffset=0,
-           title="phase offset = 0", show_axis=False)
+           title="phase offset = 0", axis=False)
        p2 = plot_complex(
            z, (z, -2-2j, 2+2j), grid=False, show=False, legend=True,
            coloring="a", cmap="viridis", phaseoffset=pi,
-           title=r"phase offset = $\pi$", show_axis=False)
+           title=r"phase offset = $\pi$", axis=False)
        plotgrid(p1, p2, nc=2, size=(6, 2))
 
     A pure phase portrait is rarely useful, as it conveys too little
@@ -1161,7 +1161,8 @@ def plot_complex(*args, **kwargs):
        for c, t in zip(colorings, titles):
            plots.append(
                plot_complex(expr, (z, -2-2j, 2+2j), coloring=c,
-                   grid=False, show=False, legend=False, cmap=colorcet.CET_C7,
+                   grid=False, show=False, legend=False, cmap=colorcet.CET_C2,
+                   axis=False, colorbar=False,
                    title=("'%s'" % c) + ": " + t, xlabel="", ylabel=""))
 
        plotgrid(*plots, nc=4, size=(8, 8.5))
@@ -1174,9 +1175,9 @@ def plot_complex(*args, **kwargs):
     * Other enhancements increases the lightness in proximity of poles. Hence,
       colormaps with very light colors might not convey enough information.
 
-    The selection of a proper colormap is left to the user because not only
-    it depends on the target audience of the visualization, but also on the
-    function being visualized.
+    With this considerations in mind, the selection of a proper colormap is
+    left to the user because not only it depends on the target audience of
+    the visualization, but also on the function being visualized.
 
     References
     ==========
@@ -1692,7 +1693,7 @@ def plot_riemann_sphere(*args, **kwargs):
         Turn on/off the unit disk mask representing the Riemann sphere on the
         2D projections. Default to True (mask is active).
 
-    show_axis : boolean, optional
+    axis : boolean, optional
         Turn on/off the axis of the 2D subplots. Default to False (axis not
         visible).
 
@@ -1706,10 +1707,10 @@ def plot_riemann_sphere(*args, **kwargs):
     Notes
     =====
 
-    The Riemann sphere is a model of the extented complex plane, comprised of
-    the complex plane plus a point at infinity. Let's consider a 3D space with
-    a sphere with radius 1 centered at the origin. The xy plane, representing
-    the complex plane, cut the sphere in half at the equator.
+    The Riemann sphere[#fn5]_ is a model of the extented complex plane,
+    comprised of the complex plane plus a point at infinity. Let's consider
+    a 3D space with a sphere of radius 1 centered at the origin. The xy plane,
+    representing the complex plane, cut the sphere in half at the equator.
     The stereographic projection of any point in the complex plane on the
     sphere is given by the intersection point between a line connecting the
     complex point with the north pole of the sphere.
@@ -1721,7 +1722,7 @@ def plot_riemann_sphere(*args, **kwargs):
       The origin of the complex plane is mapped to the south pole.
     * if its equal to one (points in the unit circle), then the point is
       already on the sphere, specifically in its equator.
-    * if its greater than one (points outside the unit disk), then the point
+    * if its greater than one (point outside the unit disk), then the point
       is mapped to the Northen Hemisphere. The north pole represents the point
       at infinity.
 
@@ -1821,7 +1822,7 @@ def plot_riemann_sphere(*args, **kwargs):
        l = 2
        plot_riemann_sphere(
            expr, (z, -l-l*I, l+l*I), coloring="b", n=800,
-           riemann_mask=False, show_axis=True, grid=False,
+           riemann_mask=False, axis=True, grid=False,
            cmap=colorcet.CET_C2, blevel=0.85,
            title=["Around zero", "Around infinity"])
 
@@ -1852,6 +1853,8 @@ def plot_riemann_sphere(*args, **kwargs):
     .. [#fn4] Domain Coloring is based on Elias Wegert's book
        `"Visual Complex Functions" <https://www.springer.com/de/book/9783034801799>`_.
        The book provides the background to better understand the images.
+    .. [#fn5] `Riemann sphere at Wikipedia <https://en.wikipedia.org/wiki/Riemann_sphere>`_.
+    .. [#fn6] `Stereographic projection at Wikipedia <https://en.wikipedia.org/wiki/Stereographic_projection>`_.
 
     """
     if kwargs.get("params", dict()):
@@ -1889,7 +1892,7 @@ def plot_riemann_sphere(*args, **kwargs):
     show = kwargs.get("show", True)
     kwargs["show"] = False
     # set default options for Riemann sphere plots
-    kwargs.setdefault("show_axis", False)
+    kwargs.setdefault("axis", False)
     kwargs.setdefault("riemann_mask", True)
     kwargs.setdefault("annotate", True)
     # size is applied to the final figure, not individual plots
