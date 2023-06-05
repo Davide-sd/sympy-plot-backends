@@ -77,9 +77,6 @@ class MayaviBackend(Plot):
     _allowed_keys = Plot._allowed_keys + ["window", "notebook_kw"]
     wireframe_color = (0, 0, 0)
 
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls)
-
     def __init__(self, *args, **kwargs):
         matplotlib = import_module(
             'matplotlib',
