@@ -1587,8 +1587,6 @@ class SurfaceBaseSeries(BaseSeries):
 
     def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)
-        self.xscale = kwargs.get("xscale", "linear")
-        self.yscale = kwargs.get("yscale", "linear")
         self.adaptive = kwargs.get("adaptive", False)
         self.adaptive_goal = kwargs.get("adaptive_goal", cfg["adaptive"]["goal"])
         self.loss_fn = kwargs.get("loss_fn", None)
@@ -2943,8 +2941,8 @@ class PlaneSeries(SurfaceBaseSeries):
                 "",
                 n1=self.n[2],
                 n2=self.n[1],
-                xscale=self.xscale,
-                yscale=self.yscale
+                xscale=self._scales[0],
+                yscale=self._scales[1]
             )
             xx, yy, zz = s.get_data()
             xx, yy, zz = zz, yy, xx
@@ -2957,8 +2955,8 @@ class PlaneSeries(SurfaceBaseSeries):
                 "",
                 n1=self.n[0],
                 n2=self.n[2],
-                xscale=self.xscale,
-                yscale=self.yscale
+                xscale=self._scales[0],
+                yscale=self._scales[1]
             )
             xx, yy, zz = s.get_data()
             xx, yy, zz = xx, zz, yy
@@ -2981,8 +2979,8 @@ class PlaneSeries(SurfaceBaseSeries):
                 "",
                 n1=self.n[0],
                 n2=self.n[2],
-                xscale=self.xscale,
-                yscale=self.yscale
+                xscale=self._scales[0],
+                yscale=self._scales[1]
             )
             xx, yy, zz = s.get_data()
             xx, yy, zz = xx, zz, yy
@@ -3011,8 +3009,8 @@ class PlaneSeries(SurfaceBaseSeries):
                 "",
                 n1=self.n[0],
                 n2=self.n[1],
-                xscale=self.xscale,
-                yscale=self.yscale
+                xscale=self._scales[0],
+                yscale=self._scales[1]
             )
             xx, yy, zz = s.get_data()
             if (len(fs) > 1) and self._use_nan:
