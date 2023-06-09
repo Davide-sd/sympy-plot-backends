@@ -346,6 +346,32 @@ class Plot:
             convert_colormap(cm, self._library) for cm in cyclic_colormaps
         ]
         self._cyccm = cycle(cyclic_colormaps)
+    
+    def _create_renderers(self):
+        """Connect data series to appropriate renderers."""
+        self._renderers = []
+        for s in self.series:
+            t = type(s)
+            if t in self.renderers_map.keys():
+                self._renderers.append(self.renderers_map[t](self, s))
+            else:
+                # NOTE: technically, I could just raise an error at this point.
+                # However, there are occasions where it might be useful to
+                # create data series starting from plotting functions, without
+                # showing the plot. Hence, I raise the error later, if needed.
+                self._renderers.append(None)
+    
+    def _check_supported_series(self, renderer, series):
+        if renderer is None:
+            raise NotImplementedError(
+                f"{type(series).__name__} is not associated to any renderer "
+                f"compatible with {type(self).__name__}. Follow these "
+                "steps to make it works:\n"
+                "1. Code an appropriate rendeder class.\n"
+                f"2. Execute {type(self).__name__}.renderers_map.update"
+                "({%s})\n" % f"{type(series).__name__}: YourRendererClass"
+                + "3. Execute again the plot statement."
+            )
 
     def _get_mode(self):
         """Verify which environment is used to run the code.
@@ -395,6 +421,11 @@ class Plot:
     def fig(self):
         """Returns the figure used to render/display the plots."""
         return self._fig
+    
+    @property
+    def renderers(self):
+        """Returns the renderers associated to each series."""
+        return self._renderers
 
     @property
     def series(self):

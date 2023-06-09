@@ -13,7 +13,7 @@ from .make_tests import *
 # called.
 # In the following tests, we will use `show=False`, hence the `show()` method
 # won't be executed. To add numerical data to the plots we either call `fig`
-# or `process_series()`.
+# or `draw()`.
 
 
 class BBchild(BB):
@@ -107,7 +107,7 @@ def test_plot3d_parametric_line():
 
     # Bokeh doesn't support 3D plots
     raises(NotImplementedError, lambda: make_plot3d_parametric_line_1(BB,
-        rendering_kw=dict(line_color="red")).process_series())
+        rendering_kw=dict(line_color="red")).draw())
 
 
 def test_plot3d():
@@ -119,7 +119,7 @@ def test_plot3d():
     raises(
         NotImplementedError,
         lambda: make_plot3d_1(BB, rendering_kw=dict(
-            colorscale=[[0, "cyan"], [1, "cyan"]])).process_series())
+            colorscale=[[0, "cyan"], [1, "cyan"]])).draw())
 
 
 def test_plot3d_2():
@@ -129,7 +129,7 @@ def test_plot3d_2():
     # Bokeh doesn't support 3D plots
     raises(
         NotImplementedError,
-        lambda: make_plot3d_2(BB).process_series())
+        lambda: make_plot3d_2(BB).draw())
 
 
 def test_plot3d_wireframe():
@@ -139,13 +139,13 @@ def test_plot3d_wireframe():
     # Bokeh doesn't support 3D plots
     raises(
         NotImplementedError,
-        lambda: make_plot3d_wireframe_1(BB).process_series())
+        lambda: make_plot3d_wireframe_1(BB).draw())
     raises(
         NotImplementedError,
-        lambda: make_plot3d_wireframe_2(BB, {}).process_series())
+        lambda: make_plot3d_wireframe_2(BB, {}).draw())
     raises(
         NotImplementedError,
-        lambda: make_plot3d_wireframe_3(BB, {}).process_series())
+        lambda: make_plot3d_wireframe_3(BB, {}).draw())
 
 
 def test_plot_contour():
@@ -219,7 +219,7 @@ def test_plot_vector_3d_quivers():
     # Bokeh doesn't support 3D plots
     raises(NotImplementedError,
         lambda: make_plot_vector_3d_quiver(
-            BB, quiver_kw=dict(sizeref=5)).process_series())
+            BB, quiver_kw=dict(sizeref=5)).draw())
 
 
 def test_plot_vector_3d_streamlines():
@@ -231,7 +231,7 @@ def test_plot_vector_3d_streamlines():
     raises(
         NotImplementedError,
         lambda: make_plot_vector_3d_streamlines_1(BB, stream_kw=dict(
-            colorscale=[[0, "red"], [1, "red"]])).process_series())
+            colorscale=[[0, "red"], [1, "red"]])).draw())
 
 
 def test_plot_vector_2d_normalize():
@@ -296,7 +296,7 @@ def test_plot_implicit_adaptive_true():
     # BokehBackend doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_true(
-            BB, rendering_kw=dict()).process_series())
+            BB, rendering_kw=dict()).draw())
 
 
 def test_plot_implicit_adaptive_false():
@@ -307,7 +307,7 @@ def test_plot_implicit_adaptive_false():
     # BokehBackend doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_false(
-            BB, contour_kw=dict()).process_series())
+            BB, contour_kw=dict()).draw())
 
 
 def test_plot_real_imag():
@@ -367,7 +367,7 @@ def test_plot_complex_3d():
     # Bokeh doesn't support 3D plots
     raises(
         NotImplementedError,
-        lambda: make_test_plot_complex_3d(BB, rendering_kw=dict()).process_series())
+        lambda: make_test_plot_complex_3d(BB, rendering_kw=dict()).draw())
 
 
 def test_plot_list_is_filled_false():
@@ -678,7 +678,7 @@ def test_plot3d_implicit():
     # verify that plot3d_implicit don't raise errors
 
     raises(NotImplementedError,
-        lambda : make_test_plot3d_implicit(BB).process_series())
+        lambda : make_test_plot3d_implicit(BB).draw())
 
 
 def test_line_color_func():
@@ -712,7 +712,7 @@ def test_line_color_plot():
     assert p.fig.right[0].title == "sin(x)"
 
 
-def testupdate_interactive():
+def test_update_interactive():
     # quick round down of test to verify that _update_interactive doesn't
     # raise errors
 
@@ -720,51 +720,51 @@ def testupdate_interactive():
 
     p = plot(sin(u * x), (x, -pi, pi), adaptive=False, n=5,
         backend=BB, show=False, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=BB, show=False, params={u: (1, 0, 2)},
         use_cm=True, is_point=False)
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=BB, show=False, params={u: (1, 0, 2)},
         use_cm=True, is_point=True)
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=BB, show=False, params={u: (1, 0, 2)}, use_cm=False)
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=BB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
         backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=True)
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
         backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=False,
         scalar=True)
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
         backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=False,
         scalar=False)
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
         backend=BB, threed=False, n=5, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     from sympy.geometry import Line as SymPyLine
@@ -772,7 +772,7 @@ def testupdate_interactive():
         Polygon((2, u), 3, n=6),
         backend=BB, show=False, is_filled=True, use_latex=False,
         params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
 
@@ -788,7 +788,7 @@ def test_generic_data_series():
         annotations=[{"x": "x", "y": "y", "source": source}],
         fill=[{"x": [0, 1, 2, 3], "y1": [0, 1, 2, 3], "y2": [0, 0, 0, 0]}],
         rectangles=[{"x": 0, "y": -3, "width": 5, "height": 2}])
-    p.process_series()
+    p.draw()
 
 
 def test_color_func_expr():

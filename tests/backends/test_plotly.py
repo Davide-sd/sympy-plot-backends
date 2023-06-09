@@ -16,7 +16,7 @@ from .make_tests import *
 # called.
 # In the following tests, we will use `show=False`, hence the `show()` method
 # won't be executed. To add numerical data to the plots we either call `fig`
-# or `process_series()`.
+# or `draw()`.
 
 
 class PBchild(PB):
@@ -434,7 +434,7 @@ def test_plot_implicit_adaptive_true():
     # PlotlyBackend doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_true(
-            PB, rendering_kw=dict()).process_series())
+            PB, rendering_kw=dict()).draw())
 
 
 def test_plot_implicit_adaptive_false():
@@ -445,7 +445,7 @@ def test_plot_implicit_adaptive_false():
     # PlotlyBackend doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_false(
-            PB, contour_kw=dict()).process_series())
+            PB, contour_kw=dict()).draw())
 
 
 def test_plot_real_imag():
@@ -592,7 +592,7 @@ def test_plot_geometry_3d():
     # verify that no errors are raised when 3d geometric entities are plotted
 
     p = make_test_plot_geometry_3d(PB)
-    p.process_series()
+    p.draw()
 
 
 @pytest.mark.xfail
@@ -618,7 +618,7 @@ def test_save():
         p.save(os.path.join(tmpdir, filename), include_plotlyjs="cdn")
 
 
-def test_vectors_3dupdate_interactive():
+def test_vectors_3d_update_interactive():
     # Some backends do not support streamlines with iplot. Test that the
     # backends raise error.
 
@@ -971,7 +971,7 @@ def test_plotly_3d_many_line_series():
         show_curve=True, curve_kw={"use_cm": True})
     f = p.fig
 
-def testupdate_interactive():
+def test_update_interactive():
     # quick round down of test to verify that _update_interactive doesn't
     # raise errors
 
@@ -979,47 +979,47 @@ def testupdate_interactive():
 
     p = plot(sin(u * x), (x, -pi, pi), adaptive=False, n=5,
         backend=PB, show=False, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_polar(1 + sin(10 * u * x) / 10, (x, 0, 2 * pi),
         adaptive=False, n=5, backend=PB, show=False, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=PB, show=False, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     # points
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=PB, is_point=True,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     # line
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=PB, is_point=False,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=False)
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=PB, is_point=False,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=True)
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot3d(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=PB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=PB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     u, v = symbols("u, v")
@@ -1029,22 +1029,22 @@ def testupdate_interactive():
     p = plot3d_parametric_surface(fx, fy, fz, (u, 0, 2*pi), (v, -1, 1),
         backend=PB, use_cm=True, n1=5, n2=5, show=False,
         params={x: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({x: 2})
 
     p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
         backend=PB, n=4, show=False, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_vector(Matrix([u * z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
         backend=PB, n=4, show=False, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
         backend=PB, threed=True, use_cm=True, n=5, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     from sympy.geometry import Line as SymPyLine
@@ -1052,14 +1052,14 @@ def testupdate_interactive():
         SymPyLine((u, 2), (5, 4)), Circle((0, 0), u), Polygon((2, u), 3, n=6),
         backend=PB, show=False, is_filled=False, use_latex=False,
         params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_geometry(
         SymPyLine((u, 2), (5, 4)), Circle((0, 0), u), Polygon((2, u), 3, n=6),
         backend=PB, show=False, is_filled=True, use_latex=False,
         params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
 
@@ -1073,7 +1073,7 @@ def test_generic_data_series():
         annotations=[{"x": [0, 1], "y": [0, 1], "text": ["a", "b"]}],
         fill=[{"x": [0, 1, 2, 3], "y": [0, 1, 2, 3], "fill": "tozeroy"}],
         rectangles=[{"type": "rect", "x0": 1, "y0": 1, "x1": 2, "y1": 3}])
-    p.process_series()
+    p.draw()
 
 
 def test_scatter_gl():

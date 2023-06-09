@@ -59,7 +59,7 @@ def _create_mpl_figure(mapping, imagegrid=False, size=None):
             cpa["ax"] = ax
             cpa["imagegrid"] = True
             p = MB(*p.series, **cpa)
-            p.process_series()
+            p.draw()
         return fig
 
     for spec, p in mapping.items():
@@ -72,7 +72,7 @@ def _create_mpl_figure(mapping, imagegrid=False, size=None):
         cpa["fig"] = fig
         cpa["ax"] = cur_ax
         p = MB(*p.series, **cpa)
-        p.process_series()
+        p.draw()
     return fig
 
 

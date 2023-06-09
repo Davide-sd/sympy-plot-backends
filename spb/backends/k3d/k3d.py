@@ -1,9 +1,8 @@
 import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from spb.backends.utils import compute_streamtubes
-from spb.series import PlaneSeries
-from spb.utils import get_vertices_indices
+from spb.backends.k3d.renderers import *
+from spb.series import *
 from sympy.external import import_module
 import warnings
 
@@ -101,7 +100,24 @@ class K3DBackend(Plot):
 
     _allowed_keys = Plot._allowed_keys + ["show_label", "camera"]
 
+    renderers_map = {
+        Parametric3DLineSeries: Line3DRenderer,
+        ComplexParametric3DLineSeries: Line3DRenderer,
+        List3DSeries: Line3DRenderer,
+        Vector3DSeries: Vector3DRenderer,
+        SliceVector3DSeries: Vector3DRenderer,
+        Implicit3DSeries: Implicit3DRenderer,
+        ComplexDomainColoringSeries: ComplexRenderer,
+        ComplexSurfaceSeries: ComplexRenderer,
+        RiemannSphereSeries: ComplexRenderer,
+        SurfaceOver2DRangeSeries: SurfaceRenderer,
+        ParametricSurfaceSeries: SurfaceRenderer,
+        PlaneSeries: SurfaceRenderer,
+        GeometrySeries: GeometryRenderer,
+    }
+
     def __init__(self, *args, **kwargs):
+        self.np = import_module('numpy')
         self.k3d = k3d = import_module(
             'k3d',
             import_kwargs={'fromlist': ['helpers', 'objects']},
@@ -165,26 +181,26 @@ class K3DBackend(Plot):
                 "K3D-Jupyter doesn't support log scales. We will "
                 + "continue with linear scales."
             )
+        
+        self._create_renderers()
 
     @property
     def fig(self):
         """Returns the figure."""
-        # K3D title is an object in the figure
-        n = len(self._fig.objects)
-        if self.title is not None:
-            n -= 1
-        if len(self.series) != n:
+        if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
             # if the backend was created without showing it
-            self.process_series()
+            self._process_renderers()
         return self._fig
 
-    def process_series(self):
-        """ Loop over data series, generates numerical data and add it to the
-        figure.
+    def draw(self):
+        """ Loop over data renderers, generates numerical data and add it to
+        the figure. Note that this method doesn't show the plot.
         """
         # this is necessary in order for the series to be added even if
         # show=False
-        self._process_series(self._series)
+        self._process_renderers()
+    
+    # process_series = draw
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
@@ -223,223 +239,16 @@ class K3DBackend(Plot):
         color = [int(c * 255) for c in color]
         return cls._rgb_to_int(color)
 
-    def _process_series(self, series):
-        np = import_module('numpy')
-        merge = self.merge
-        Triangulation = self.matplotlib.tri.Triangulation
+    def _process_renderers(self):
         self._init_cyclers()
         self._fig.auto_rendering = False
         # clear data
         for o in self._fig.objects:
             self._fig.remove_class(o)
 
-        for ii, s in enumerate(series):
-            if s.is_3Dline and s.is_point:
-                if s.is_parametric:
-                    x, y, z, param = s.get_data()
-                else:
-                    x, y, z = s.get_data()
-                    param = np.zeros_like(x)
-                positions = np.vstack([x, y, z]).T.astype(np.float32)
-                a = dict(point_size=0.2,
-                    color=self._convert_to_int(next(self._cl)))
-                if s.use_cm:
-                    a["color_map"] = next(self._cm)
-                    a["attribute"] = param
-                kw = merge({}, a, s.rendering_kw)
-                plt_points = self.k3d.points(positions=positions, **kw)
-                plt_points.shader = "mesh"
-                self._fig += plt_points
-
-            elif s.is_3Dline:
-                if s.is_parametric:
-                    x, y, z, param = s.get_data()
-                else:
-                    x, y, z = s.get_data()
-                    param = np.zeros_like(x)
-                vertices = np.vstack([x, y, z]).T.astype(np.float32)
-                # keyword arguments for the line object
-                a = dict(
-                    width=0.1 if s.show_in_legend else 0.001,
-                    name=self._get_series_label(s, "%s") if self._show_label else None,
-                    color=(
-                        self.wireframe_color if not s.show_in_legend
-                        else (self._convert_to_int(next(self._cl)) if s.line_color is None else s.line_color)),
-                    shader="mesh",
-                )
-                if s.use_cm:
-                    a["attribute"] = (param.astype(np.float32),)
-                    a["color_map"] = next(self._cm)
-                    a["color_range"] = [float(param.min()), float(param.max())]
-                kw = merge({}, a, s.rendering_kw)
-                line = self.k3d.line(vertices, **kw)
-                self._fig += line
-
-            elif (s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit)):
-                if s.is_parametric:
-                    x, y, z, u, v = s.get_data()
-                    vertices, indices = get_vertices_indices(x, y, z)
-                    vertices = vertices.astype(np.float32)
-                    attribute = s.eval_color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2], u.flatten().astype(np.float32), v.flatten().astype(np.float32))
-                else:
-                    x, y, z = s.get_data()
-                    if isinstance(s, PlaneSeries):
-                        # avoid triangulation errors when plotting vertical
-                        # planes
-                        vertices, indices = get_vertices_indices(x, y, z)
-                    else:
-                        x = x.flatten()
-                        y = y.flatten()
-                        z = z.flatten()
-                        vertices = np.vstack([x, y, z]).T.astype(np.float32)
-                        indices = Triangulation(x, y).triangles.astype(np.uint32)
-                    attribute = s.eval_color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2])
-
-                a = dict(
-                    name=s.get_label(self._use_latex, "%s") if self._show_label else None,
-                    side="double",
-                    flat_shading=False,
-                    wireframe=False,
-                    color=self._convert_to_int(next(self._cl)) if s.surface_color is None else s.surface_color,
-                    colorLegend=self.legend or s.use_cm,
-                )
-                if s.use_cm:
-                    a["color_map"] = next(self._cm)
-                    a["attribute"] = attribute
-                    # NOTE: color_range must contains elements of type float.
-                    # If np.float32 is provided, mgspack will fail to serialize
-                    # it, hence no html export, hence no screenshots on
-                    # documentation.
-                    a["color_range"] = [float(attribute.min()), float(attribute.max())]
-
-                kw = merge({}, a, s.rendering_kw)
-                surf = self.k3d.mesh(vertices, indices, **kw)
-
-                self._fig += surf
-
-            elif s.is_implicit and s.is_3Dsurface:
-                _, _, _, r = s.get_data()
-                xmin, xmax = s.start_x, s.end_x
-                ymin, ymax = s.start_y, s.end_y
-                zmin, zmax = s.start_z, s.end_z
-                a = dict(
-                    xmin=xmin, xmax=xmax,
-                    ymin=ymin, ymax=ymax,
-                    zmin=zmin, zmax=zmax,
-                    compression_level=9,
-                    level=0.0, flat_shading=True,
-                    color=self._convert_to_int(next(self._cl))
-                )
-                kw = merge({}, a, s.rendering_kw)
-                plt_iso = self.k3d.marching_cubes(r.T.astype(np.float32), **kw)
-
-                self._fig += plt_iso
-
-            elif s.is_3Dvector and s.is_streamlines:
-                xx, yy, zz, uu, vv, ww = s.get_data()
-                vertices, color_val = compute_streamtubes(
-                    xx, yy, zz, uu, vv, ww, s.rendering_kw, s.color_func)
-
-                stream_kw = s.rendering_kw.copy()
-                skw = dict(width=0.1, shader="mesh")
-                if s.use_cm:
-                    skw["color_map"] = stream_kw.get("color", next(self._cm))
-                    skw["color_range"] = [float(np.nanmin(color_val)), float(np.nanmax(color_val))]
-                    skw["attribute"] = color_val
-                else:
-                    col = stream_kw.pop("color", next(self._cl))
-                    if not isinstance(col, int):
-                        col = self._convert_to_int(col)
-                    stream_kw["color"] = col
-
-                kw = merge({}, skw, stream_kw)
-                self._fig += self.k3d.line(
-                    vertices.astype(np.float32), **kw)
-
-            elif s.is_3Dvector:
-                xx, yy, zz, uu, vv, ww = s.get_data()
-                qkw = dict(scale=1)
-                qkw = merge(qkw, s.rendering_kw)
-                quiver_kw = s.rendering_kw
-                if s.use_cm:
-                    colormap = quiver_kw.get("color", next(self._cm))
-                    # store useful info for interactive vector plots
-                    self._handles[ii] = [qkw, colormap]
-                else:
-                    colormap = None
-                    col = quiver_kw.get("color", next(self._cl))
-                    if not isinstance(col, int):
-                        col = self._convert_to_int(col)
-                    solid_color = col * np.ones(xx.size)
-                    self._handles[ii] = [qkw, colormap]
-
-                origins, vectors, colors = self._build_k3d_vector_data(
-                    xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize, s)
-                if colors is None:
-                    colors = solid_color
-                vec_colors = self._create_vector_colors(colors)
-
-                pivot = quiver_kw.get("pivot", "mid")
-                if pivot not in self._qp_offset.keys():
-                    raise ValueError(
-                        "`pivot` must be one of the following values: "
-                        "{}".format(list(self._qp_offset.keys())))
-
-                vec_kw = qkw.copy()
-                kw_to_remove = ["scale", "color", "pivot"]
-                for k in kw_to_remove:
-                    if k in vec_kw.keys():
-                        vec_kw.pop(k)
-                vec_kw["origins"] = origins - vectors * self._qp_offset[pivot]
-                vec_kw["vectors"] = vectors
-                vec_kw["colors"] = vec_colors
-
-                vec = self.k3d.vectors(**vec_kw)
-                self._fig += vec
-
-            elif s.is_complex and s.is_3Dsurface:
-                x, y, mag, arg, colors, colorscale = s.get_data()
-
-                x, y, z = [t.flatten() for t in [x, y, mag]]
-                vertices = np.vstack([x, y, z]).T.astype(np.float32)
-                indices = Triangulation(x, y).triangles.astype(np.uint32)
-                self._high_aspect_ratio(x, y, z)
-
-                a = dict(
-                    name=s.get_label(self._use_latex, "%s") if self._show_label else None,
-                    side="double",
-                    flat_shading=False,
-                    wireframe=False,
-                    color=self._convert_to_int(next(self._cl)),
-                    colorLegend=self.legend or s.use_cm,
-                )
-                if s.use_cm:
-                    colors = colors.reshape((-1, 3))
-                    a["colors"] = [self._rgb_to_int(c) for c in colors]
-
-                    if colorscale is None:
-                        # grayscale colormap
-                        r = [0, 0, 0, 0, 1, 1, 1, 1]
-                    else:
-                        r = []
-                        loc = np.linspace(0, 1, colorscale.shape[0])
-                        colorscale = colorscale / 255
-                        for l, c in zip(loc, colorscale):
-                            r.append(l)
-                            r += list(c)
-
-                    a["color_map"] = r
-                    a["color_range"] = [-np.pi, np.pi]
-                kw = merge({}, a, s.rendering_kw)
-                surf = self.k3d.mesh(vertices, indices, **kw)
-
-                self._fig += surf
-
-            else:
-                raise NotImplementedError(
-                    "{} is not supported by {}\n".format(type(s), type(self).__name__)
-                    + "K3D-Jupyter only supports 3D plots."
-                )
+        for r, s in zip(self.renderers, self.series):
+            self._check_supported_series(r, s)
+            r.draw()
 
         xl = self.xlabel if self.xlabel else "x"
         yl = self.ylabel if self.ylabel else "y"
@@ -528,77 +337,16 @@ class K3DBackend(Plot):
         params : dict
             Map parameter-symbols to numeric values.
         """
-        np = import_module('numpy')
         self._bounds = []
 
-        # K3D title is an object in the figure
-        n = len(self._fig.objects)
-        if self.title is not None:
-            n -= 1
-        if len(self.series) != n:
-            self._process_series(self.series)
-
-        # self._fig.auto_rendering = False
-        for i, s in enumerate(self.series):
-            if s.is_interactive:
-                self.series[i].params = params
-
-                if s.is_3Dline and s.is_point:
-                    if s.is_parametric:
-                        x, y, z, _ = s.get_data()
-                    else:
-                        x, y, z = s.get_data()
-                    positions = np.vstack([x, y, z]).T.astype(np.float32)
-                    self._fig.objects[i].positions = positions
-
-                elif s.is_3Dline:
-                    x, y, z, _ = s.get_data()
-                    vertices = np.vstack([x, y, z]).T.astype(np.float32)
-                    self._fig.objects[i].vertices = vertices
-
-                elif s.is_3Dsurface and (not s.is_domain_coloring) and (not s.is_implicit):
-                    if s.is_parametric:
-                        x, y, z, u, v = s.get_data()
-                        x, y, z, u, v = [t.flatten().astype(np.float32) for t in [x, y, z, u, v]]
-                        attribute = s.eval_color_func(x, y, z, u, v)
-                    else:
-                        x, y, z = s.get_data()
-                        x, y, z = [t.flatten().astype(np.float32) for t in [x, y, z]]
-                        attribute = s.eval_color_func(x, y, z)
-
-                    vertices = np.vstack([x, y, z]).astype(np.float32)
-                    self._fig.objects[i].vertices = vertices.T
-                    if s.use_cm:
-                        self._fig.objects[i].attribute = attribute
-                        self._fig.objects[i].color_range = [float(attribute.min()), float(attribute.max())]
-                    self._high_aspect_ratio(x, y, z)
-
-                elif s.is_vector and s.is_3D:
-                    if s.is_streamlines:
-                        raise NotImplementedError
-
-                    xx, yy, zz, uu, vv, ww = self.series[i].get_data()
-                    qkw, colormap = self._handles[i]
-                    origins, vectors, colors = self._build_k3d_vector_data(
-                        xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize, s)
-                    if colors is not None:
-                        vec_colors = self._create_vector_colors(colors)
-                        self.fig.objects[i].colors = vec_colors
-
-                    pivot = s.rendering_kw.get("pivot", "mid")
-                    self.fig.objects[i].origins = origins - vectors * self._qp_offset[pivot]
-                    self.fig.objects[i].vectors = vectors
-
-                elif s.is_complex and s.is_3Dsurface:
-                    x, y, mag, _, colors, _ = s.get_data()
-                    x, y, z = [t.flatten().astype(np.float32) for t in [x, y, mag]]
-                    vertices = np.vstack([x, y, z]).astype(np.float32)
-                    self._fig.objects[i].vertices = vertices.T
-                    if s.use_cm:
-                        colors = colors.reshape((-1, 3))
-                        colors = [self._rgb_to_int(c) for c in colors]
-                        self._fig.objects[i].colors = colors
-                    self._high_aspect_ratio(x, y, z)
+        # Because InteractivePlot doesn't call the show method, the following
+        # line of code will add the numerical data (if not already present).
+        if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
+            self.draw()
+        
+        for r in self.renderers:
+            if r.series.is_interactive:
+                r.update(params)
 
         self._new_camera_position()
         self._add_clipping_planes()
@@ -623,8 +371,8 @@ class K3DBackend(Plot):
 
     def show(self):
         """Visualize the plot on the screen."""
-        if len(self._fig.objects) != len(self.series):
-            self._process_series(self._series)
+        if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
+            self._process_renderers()
         self._fig.display()
 
     def _add_clipping_planes(self):

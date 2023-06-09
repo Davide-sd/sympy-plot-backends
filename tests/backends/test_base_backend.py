@@ -51,16 +51,16 @@ def test_unsupported_series():
     series = [UnsupportedSeries()]
     raises(
         NotImplementedError,
-        lambda: MB(*series).process_series())
+        lambda: MB(*series).draw())
     raises(
         NotImplementedError,
-        lambda: PB(*series).process_series())
+        lambda: PB(*series).draw())
     raises(
         NotImplementedError,
-        lambda: BB(*series).process_series())
+        lambda: BB(*series).draw())
     raises(
         NotImplementedError,
-        lambda: KB(*series).process_series())
+        lambda: KB(*series).draw())
 
 
 def test_common_keywords():
@@ -174,7 +174,7 @@ def test_plot_sum():
     # NOTE: the output plot is of type MB
     p1 = plot(sin(x), backend=MB, rendering_kw=dict(linestyle=":"), **options)
     p2 = plot(cos(x), backend=PB, rendering_kw=dict(line_dash="dash"), **options)
-    raises(AttributeError, lambda: (p1 + p2).process_series())
+    raises(AttributeError, lambda: (p1 + p2).draw())
 
     # verify that summing up bokeh plots doesn't raise errors
     p1 = plot(sin(x), (x, -pi, pi), backend=BB, **options)

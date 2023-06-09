@@ -143,6 +143,5 @@ class IPlot:
         iplot_kw = self._get_iplot_kw()
         iplot_kw["show"] = False
 
-        new_iplot = type(self)(**merge({}, backend_kw, iplot_kw))
-        new_iplot._backend.series.extend(series)
+        new_iplot = type(self)(*series, **merge({}, backend_kw, iplot_kw))
         return new_iplot

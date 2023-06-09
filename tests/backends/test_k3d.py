@@ -14,7 +14,7 @@ from .make_tests import *
 # called.
 # In the following tests, we will use `show=False`, hence the `show()` method
 # won't be executed. To add numerical data to the plots we either call `fig`
-# or `process_series()`.
+# or `draw()`.
 
 
 KB.skip_notebook_check = True
@@ -59,7 +59,7 @@ def test_plot():
     raises(
         NotImplementedError,
         lambda: make_plot_1(KB,
-            rendering_kw=dict(line_color="red")).process_series())
+            rendering_kw=dict(line_color="red")).draw())
 
 
 def test_plot_parametric():
@@ -70,7 +70,7 @@ def test_plot_parametric():
     raises(
         NotImplementedError,
         lambda: make_plot_parametric_1(KB,
-            rendering_kw=dict(line_color="red")).process_series())
+            rendering_kw=dict(line_color="red")).draw())
 
 
 def test_plot3d_parametric_line():
@@ -146,7 +146,7 @@ def test_plot_contour():
     raises(
         NotImplementedError,
         lambda: make_plot_contour_1(KB,
-            rendering_kw=dict()).process_series())
+            rendering_kw=dict()).draw())
 
 
 def test_plot_vector_2d_quivers():
@@ -158,7 +158,7 @@ def test_plot_vector_2d_quivers():
     raises(
         NotImplementedError,
         lambda: make_plot_vector_2d_quiver(KB, quiver_kw=dict(),
-            contour_kw=dict()).process_series())
+            contour_kw=dict()).draw())
 
 
 def test_plot_vector_2d_streamlines_custom_scalar_field():
@@ -170,7 +170,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field():
     raises(
         NotImplementedError,
         lambda: make_plot_vector_2d_streamlines_1(KB, stream_kw=dict(),
-            contour_kw=dict()).process_series())
+            contour_kw=dict()).draw())
 
 
 def test_plot_vector_3d_quivers():
@@ -259,7 +259,7 @@ def test_plot_implicit_adaptive_true():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_true(
-            KB, rendering_kw=dict()).process_series())
+            KB, rendering_kw=dict()).draw())
 
 
 def test_plot_implicit_adaptive_false():
@@ -270,7 +270,7 @@ def test_plot_implicit_adaptive_false():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_false(
-            KB, contour_kw=dict()).process_series())
+            KB, contour_kw=dict()).draw())
 
 
 def test_plot_real_imag():
@@ -280,7 +280,7 @@ def test_plot_real_imag():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: make_test_real_imag(KB, rendering_kw=dict()).process_series())
+        lambda: make_test_real_imag(KB, rendering_kw=dict()).draw())
 
 
 def test_plot_complex_1d():
@@ -290,7 +290,7 @@ def test_plot_complex_1d():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: make_test_plot_complex_1d(KB, rendering_kw=dict()).process_series())
+        lambda: make_test_plot_complex_1d(KB, rendering_kw=dict()).draw())
 
 
 def test_plot_complex_2d():
@@ -300,7 +300,7 @@ def test_plot_complex_2d():
 
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
-        lambda: make_test_plot_complex_2d(KB, rendering_kw=dict()).process_series())
+        lambda: make_test_plot_complex_2d(KB, rendering_kw=dict()).draw())
 
 
 def test_plot_complex_3d():
@@ -323,7 +323,7 @@ def test_plot_list_is_filled_false():
     # K3D doesn't support 2D plots
     raises(
         NotImplementedError,
-        lambda: make_test_plot_list_is_filled_false(KB).process_series())
+        lambda: make_test_plot_list_is_filled_false(KB).draw())
 
 
 def test_plot_list_is_filled_true():
@@ -333,7 +333,7 @@ def test_plot_list_is_filled_true():
     # K3D doesn't support 2D plots
     raises(
         NotImplementedError,
-        lambda: make_test_plot_list_is_filled_true(KB).process_series())
+        lambda: make_test_plot_list_is_filled_true(KB).draw())
 
 
 def test_plot_list_color_func():
@@ -343,7 +343,7 @@ def test_plot_list_color_func():
     # K3D doesn't support 2D plots
     raises(
         NotImplementedError,
-        lambda: make_test_plot_list_color_func(KB).process_series())
+        lambda: make_test_plot_list_color_func(KB).draw())
 
 
 def test_plot_piecewise_single_series():
@@ -369,14 +369,14 @@ def test_plot_geometry_1():
     # K3D doesn't support 2D plots
     raises(
         NotImplementedError,
-        lambda: make_test_plot_geometry_1(KB).process_series())
+        lambda: make_test_plot_geometry_1(KB).draw())
 
 
 def test_plot_geometry_3d():
     # verify that no errors are raised when 3d geometric entities are plotted
 
     p = make_test_plot_geometry_3d(KB)
-    p.process_series()
+    p.draw()
 
 
 def test_save():
@@ -418,7 +418,7 @@ def test_save():
             include_js=True, parameter=True))
 
 
-def test_vectors_3dupdate_interactive():
+def test_vectors_3d_update_interactive():
     # Some backends do not support streamlines with iplot. Test that the
     # backends raise error.
 
@@ -570,11 +570,11 @@ def test_k3d_high_aspect_ratio_meshes():
     p1 = plot_complex(1 / sin(pi + z**3), (z, -2-2j, 2+2j),
         grid=False, threed=True, use_cm=True, backend=KB, coloring="a",
         n=5, show=False)
-    p1.process_series()
+    p1.draw()
     p2 = plot_complex(1 / sin(pi + z**3), (z, -2-2j, 2+2j),
         grid=False, threed=True, use_cm=True, backend=KB, coloring="a",
         n=5, zlim=(0, 6), show=False)
-    p2.process_series()
+    p2.draw()
 
     assert p1._bounds != p2._bounds
     assert p1.fig.camera != p2.fig.camera
@@ -582,7 +582,7 @@ def test_k3d_high_aspect_ratio_meshes():
     assert p1.fig.clipping_planes != p2.fig.clipping_planes
 
 
-def testupdate_interactive():
+def test_update_interactive():
     # quick round down of test to verify that _update_interactive doesn't
     # raise errors
 
@@ -592,19 +592,19 @@ def testupdate_interactive():
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=KB, is_point=True,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     # line
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=KB, is_point=False,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot3d(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=KB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     u, v = symbols("u, v")
@@ -614,17 +614,17 @@ def testupdate_interactive():
     p = plot3d_parametric_surface(fx, fy, fz, (u, 0, 2*pi), (v, -1, 1),
         backend=KB, use_cm=True, n1=5, n2=5, show=False,
         params={x: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({x: 2})
 
     p = plot_vector(Matrix([u * z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
         backend=KB, n=4, show=False, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
         backend=KB, threed=True, use_cm=True, n=5, params={u: (1, 0, 2)})
-    p.backend.process_series()
+    p.backend.draw()
     p.backend.update_interactive({u: 2})
 
 
