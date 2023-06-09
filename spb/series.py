@@ -1058,9 +1058,20 @@ class Line2DBaseSeries(BaseSeries):
             corresponding interactive series).
         """
         np = import_module('numpy')
+        points = self._get_data_helper()
 
-        points = self._get_points()
+        # postprocessing
         points = self._apply_transform(*points)
+
+        if self.is_2Dline and self.detect_poles:
+            if len(points) == 2:
+                x, y = points
+                x, y = _detect_poles_helper(x, y, self.eps)
+                points = (x, y)
+            else:
+                x, y, p = points
+                x, y = _detect_poles_helper(x, y, self.eps)
+                points = (x, y, p)
 
         if self.steps is True:
             if self.is_2Dline:
@@ -1151,21 +1162,22 @@ class List2DSeries(Line2DBaseSeries):
     def __str__(self):
         return "2D list plot"
 
-    def _get_points(self):
+    def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed."""
         lx, ly = self.list_x, self.list_y
 
         if not self.is_interactive:
-            if self.use_cm and callable(self.color_func):
-                return lx, ly, self.eval_color_func(lx, ly)
-            return lx, ly
+            return self._eval_color_func_and_return(lx, ly)
 
         np = import_module('numpy')
         lx = np.array([t.evalf(subs=self.params) for t in lx], dtype=float)
         ly = np.array([t.evalf(subs=self.params) for t in ly], dtype=float)
+        return self._eval_color_func_and_return(lx, ly)
+    
+    def _eval_color_func_and_return(self, *data):
         if self.use_cm and callable(self.color_func):
-            return lx, ly, self.eval_color_func(lx, ly)
-        return lx, ly
+            return [*data, self.eval_color_func(*data)]
+        return data
 
 
 class List3DSeries(List2DSeries):
@@ -1197,22 +1209,18 @@ class List3DSeries(List2DSeries):
 
         self._expr = (self.list_x, self.list_y, self.list_z)
 
-    def _get_points(self):
+    def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed."""
         lx, ly, lz = self.list_x, self.list_y, self.list_z
 
         if not self.is_interactive:
-            if self.use_cm and callable(self.color_func):
-                return lx, ly, lz, self.eval_color_func(lx, ly, lz)
-            return lx, ly, lz
+            return self._eval_color_func_and_return(lx, ly, lz)
 
         np = import_module('numpy')
         lx = np.array([t.evalf(subs=self.params) for t in lx], dtype=float)
         ly = np.array([t.evalf(subs=self.params) for t in ly], dtype=float)
         lz = np.array([t.evalf(subs=self.params) for t in lz], dtype=float)
-        if self.use_cm and callable(self.color_func):
-            return lx, ly, lz, self.eval_color_func(lx, ly, lz)
-        return lx, ly, lz
+        return self._eval_color_func_and_return(lx, ly, lz)
 
     def __str__(self):
         return "3D list plot"
@@ -1304,7 +1312,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         _im = self._correct_shape(_im, x)
         return x, _re, _im
 
-
     def _get_real_imag(self):
         """ By evaluating the function over a complex range it should
         return complex values. The imaginary part can be used to mask out the
@@ -1314,11 +1321,8 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
             return self._adaptive_sampling()
         return self._uniform_sampling()
 
-    def _get_points(self):
+    def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed.
-        Depending on the `adaptive` option, this function will either use an
-        adaptive algorithm or it will uniformly sample the expression over the
-        provided range.
         """
         np = import_module('numpy')
 
@@ -1339,8 +1343,6 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         else:
             raise ValueError("`_return` not recognized. Received: %s" % self._return)
 
-        if self.detect_poles:
-            return _detect_poles_helper(x, _re, self.eps)
         return x, _re
 
 
@@ -1353,13 +1355,13 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
         super().__init__(*args, **kwargs)
         self.use_cm = kwargs.get("use_cm", True)
 
-    def _get_points(self):
+    def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed.
         Depending on the `adaptive` option, this function will either use an
         adaptive algorithm or it will uniformly sample the expression over the
         provided range.
         """
-        x, y = super()._get_points()
+        x, y = super()._get_data_helper()
         return x, y, self.eval_color_func(x, y)
 
 
@@ -1384,7 +1386,7 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
             str(self.var),
             str((self.start, self.end))))
 
-    def _get_points(self):
+    def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed.
         Depending on the `adaptive` option, this function will either use an
         adaptive algorithm or it will uniformly sample the expression over the
@@ -1395,8 +1397,6 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
         x, _re, _im = self._get_real_imag()
         _abs = np.sqrt(_re**2 + _im**2)
         _angle = np.arctan2(_im, _re)
-        if self.detect_poles:
-            _, _abs = _detect_poles_helper(x, _abs, self.eps)
         return x, _abs, _angle
 
 
@@ -1477,7 +1477,7 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
             return self._get_wrapped_label(self._latex_label, wrapper)
         return self._label
 
-    def _get_points(self):
+    def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed.
         Depending on the `adaptive` option, this function will either use an
         adaptive algorithm or it will uniformly sample the expression over the
@@ -1499,10 +1499,6 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
         if callable(self.color_func):
             coords = list(coords)
             coords[-1] = self.eval_color_func(*coords)
-
-        if self.is_2Dline and self.detect_poles:
-            x, y = _detect_poles_helper(*coords[:-1], self.eps)
-            return x, y, coords[-1]
 
         return coords
 
@@ -1973,44 +1969,72 @@ class ImplicitSeries(BaseSeries):
         )
 
     def get_data(self):
+        """Returns numerical data.
+
+        Returns
+        =======
+
+        If the series is evaluated with the `adaptive=True` it returns:
+
+        interval_list : list
+            List of bounding rectangular intervals to be postprocessed and
+            eventually used with Matplotlib's ``fill`` command.
+        dummy : str
+            A string containing ``"fill"``.
+        
+        Otherwise, it returns 2D numpy arrays to be used with Matplotlib's
+        ``contour`` or ``contourf`` commands:
+
+        x_array : np.ndarray
+        y_array : np.ndarray
+        z_array : np.ndarray
+        plot_type : str
+            A string specifying which plot command to use, ``"contour"``
+            or ``"contourf"``.
+        """
         if self.adaptive:
-            import sympy.plotting.intervalmath.lib_interval as li
-
-            user_functions = {}
-            printer = IntervalMathPrinter({
-                'fully_qualified_modules': False, 'inline': True,
-                'allow_unknown_functions': True,
-                'user_functions': user_functions})
-
-            keys = [t for t in dir(li) if ("__" not in t) and (t not in ["import_module", "interval"])]
-            vals = [getattr(li, k) for k in keys]
-            d = {k: v for k, v in zip(keys, vals)}
-            func = lambdify((self.var_x, self.var_y), self.expr, modules=[d], printer=printer)
-
-            try:
-                data = self._get_raster_interval(func)
-            except NameError as err:
-                warnings.warn(
-                    "Adaptive meshing could not be applied to the"
-                    " expression, as some functions are not yet implemented"
-                    " in the interval math module:\n\n"
-                    "NameError: %s\n\n" % err +
-                    "Proceeding with uniform meshing."
-                    )
-                self.adaptive = False
-            except (AttributeError, TypeError):
-                # XXX: AttributeError("'list' object has no attribute 'is_real'")
-                # That needs fixing somehow - we shouldn't be catching
-                # AttributeError here.
-                warnings.warn(
-                    "Adaptive meshing could not be applied to the"
-                    " expression. Using uniform meshing.")
-                self.adaptive = False
-
-            if self.adaptive:
+            data = self._adaptive_eval()
+            if data is not None:
                 return data
 
         return self._get_meshes_grid()
+    
+    def _adaptive_eval(self):
+        import sympy.plotting.intervalmath.lib_interval as li
+
+        user_functions = {}
+        printer = IntervalMathPrinter({
+            'fully_qualified_modules': False, 'inline': True,
+            'allow_unknown_functions': True,
+            'user_functions': user_functions})
+
+        keys = [t for t in dir(li) if ("__" not in t) and (t not in ["import_module", "interval"])]
+        vals = [getattr(li, k) for k in keys]
+        d = {k: v for k, v in zip(keys, vals)}
+        func = lambdify((self.var_x, self.var_y), self.expr, modules=[d], printer=printer)
+        data = None
+
+        try:
+            data = self._get_raster_interval(func)
+        except NameError as err:
+            warnings.warn(
+                "Adaptive meshing could not be applied to the"
+                " expression, as some functions are not yet implemented"
+                " in the interval math module:\n\n"
+                "NameError: %s\n\n" % err +
+                "Proceeding with uniform meshing."
+                )
+            self.adaptive = False
+        except (AttributeError, TypeError):
+            # XXX: AttributeError("'list' object has no attribute 'is_real'")
+            # That needs fixing somehow - we shouldn't be catching
+            # AttributeError here.
+            warnings.warn(
+                "Adaptive meshing could not be applied to the"
+                " expression. Using uniform meshing.")
+            self.adaptive = False
+
+        return data
 
     def _get_raster_interval(self, func):
         """Uses interval math to adaptively mesh and obtain the plot"""
@@ -2240,7 +2264,7 @@ class ComplexPointSeries(Line2DBaseSeries):
             self.is_parametric = True
         self.line_color = kwargs.get("line_color", None)
 
-    def _get_points(self):
+    def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed."""
         np = import_module('numpy')
         points = [complex(p.evalf(subs=self.params)) for p in self.expr]
