@@ -1128,6 +1128,13 @@ def test_list2dseries_interactive():
     assert np.allclose(yy, [4, 3, 2, 3])
     assert not s.is_parametric
 
+    # numeric lists + params is present -> interactive series and
+    # lists are converted to Tuple.
+    s = List2DSeries([1, 2, 3], [1, 2, 3], params={x: 1})
+    assert s.is_interactive
+    assert isinstance(s.list_x, Tuple)
+    assert isinstance(s.list_y, Tuple)
+
 
 def test_list3dseries_interactive():
     x, y, u = symbols("x, y, u")

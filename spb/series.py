@@ -1135,7 +1135,7 @@ class List2DSeries(Line2DBaseSeries):
             )
         self._block_lambda_functions(list_x, list_y)
         check = lambda l: [isinstance(t, Expr) and (not t.is_number) for t in l]
-        if any(check(list_x) + check(list_y)):
+        if any(check(list_x) + check(list_y)) or self.params:
             if not self.params:
                 raise TypeError("Some or all elements of the provided lists "
                     "are symbolic expressions, but the ``params`` dictionary "
