@@ -210,6 +210,7 @@ class PlotlyBackend(Plot):
         # https://github.com/plotly/plotly.js/issues/608
         self._use_latex = kwargs.get("use_latex", cfg["plotly"]["use_latex"])
         self._set_labels()
+        self._set_title()
 
         if ((len([s for s in self._series if s.is_2Dline]) > 10) and
             (not type(self).colorloop) and

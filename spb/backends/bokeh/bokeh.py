@@ -146,6 +146,7 @@ class BokehBackend(Plot):
         # set labels
         self._use_latex = kwargs.get("use_latex", cfg["bokeh"]["use_latex"])
         self._set_labels()
+        self._set_title()
 
         self._theme = kwargs.get("theme", cfg["bokeh"]["theme"])
 

@@ -192,6 +192,7 @@ class MatplotlibBackend(Plot):
         # set labels
         self._use_latex = kwargs.get("use_latex", cfg["matplotlib"]["use_latex"])
         self._set_labels()
+        self._set_title()
 
         if ((len([s for s in self._series if s.is_2Dline]) > 10) and
             (not type(self).colorloop) and

@@ -186,7 +186,8 @@ class Plot:
     """
 
     def _set_labels(self, wrapper="$%s$"):
-        """Set the correct labels.
+        """Set the correct axis labels depending on wheter the backend support
+        Latex rendering.
 
         Parameters
         ==========
@@ -204,6 +205,23 @@ class Plot:
             self.ylabel = wrapper % self.ylabel(self._use_latex)
         if callable(self.zlabel):
             self.zlabel = wrapper % self.zlabel(self._use_latex)
+    
+    def _set_title(self, wrapper="$%s$"):
+        """Set the correct title depending on wheter the backend support
+        Latex rendering.
+
+        Parameters
+        ==========
+        use_latex : boolean
+            Wheter the backend is customized to show latex labels.
+        wrapper : str
+            Wrapper string for the latex labels. Default to '$%s$'.
+        """
+        if not self._use_latex:
+            wrapper = "%s"
+        
+        if callable(self.title):
+            self.title = self.title(wrapper, self._use_latex)
 
     def __init__(self, *args, **kwargs):
         # the merge function is used by all backends

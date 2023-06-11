@@ -1,31 +1,15 @@
-from spb import plotgrid
 from spb.defaults import TWO_D_B
 from spb.interactive import create_interactive_plot
+from spb.plotgrid import plotgrid
 from spb.series import List2DSeries, LineOver1DRangeSeries, HVLineSeries
-from spb.utils import _instantiate_backend
+from spb.utils import _instantiate_backend, prange
 import numpy as np
 from sympy import (roots, exp, Poly, degree, re, im, latex, apart, Dummy,
-    I, log, Abs, arg
+    I, log, Abs, arg, sympify
 )
 from sympy.integrals.laplace import _fast_inverse_laplace
 from sympy.physics.control.lti import SISOLinearTimeInvariant
 from mergedeep import merge
-
-
-# TODO:
-# if a series have label="something" and show_in_legend=False, MB still
-# shows it on the legend...
-# interactive widget plotgrid
-# latex on title only if backend supports it... use lambda func for title
-# interactive prange with lower_limit and upper_limit
-# https://www.mathworks.com/help/control/ug/nichols-plot-design.html
-# https://www.mathworks.com/help/control/ref/dynamicsystem.nicholsplot.html
-# https://www.mathworks.com/matlabcentral/answers/22783-bode-diagram-to-nichols-curve
-# https://www.mathworks.com/help/ident/ug/how-to-plot-bode-and-nyquist-plots-at-the-command-line.html
-# https://www.mathworks.com/help/ident/ref/dynamicsystem.nyquist.html
-# https://www.mathworks.com/help/ident/ref/dynamicsystem.nyquistplot.html
-# https://www.mathworks.com/help/ident/ref/idlti.spectrum.html
-# https://www.mathworks.com/help/ident/ref/dynamicsystem.bodeplot.html
 
 
 __all__ = [
@@ -88,13 +72,19 @@ def _unpack_systems(systems):
 
 
 def _create_title_helper(systems, base):
-    title = base
-    if len(systems) == 1:
-        label = systems[0][1]
-        if label == "System 1":
-            label = f"${latex(systems[0][0])}$"
-        title = base + f" of {label}"
-    return title
+    """Create a suitable title depending on the number of systems being shown
+    and wheter the backend supports latex or not.
+    """
+    def func(wrapper, use_latex):
+        title = base
+        if len(systems) == 1:
+            label = systems[0][1]
+            if label == "System 1":
+                print_func = latex if use_latex else str
+                label = wrapper % f"{print_func(systems[0][0])}"
+            title = base + f" of {label}"
+        return title
+    return func
 
 
 def _pole_zero_helper(system, label, multiple_systems,
@@ -194,6 +184,9 @@ def plot_pole_zero(*systems, pole_markersize=10, zero_markersize=7, show_axes=Fa
     p_rendering_kw : dict
         A dictionary of keyword arguments to further customize the appearance
         of poles.
+    **kwargs : 
+        See ``plot`` for a list of keyword arguments to further customize
+        the resulting figure.
 
     Examples
     ========
@@ -212,7 +205,7 @@ def plot_pole_zero(*systems, pole_markersize=10, zero_markersize=7, show_axes=Fa
     Interactive-widgets plot of multiple systems, one of which is parametric:
 
     .. panel-screenshot::
-       :small-size: 800, 625
+       :small-size: 800, 650
 
        from sympy.abc import a, b, c, d, s
        from sympy.physics.control.lti import TransferFunction
@@ -270,7 +263,7 @@ def _unit_response_helper(system, label, lower_limit, upper_limit,
     # in Numpy. `doit()` is going to expand it, so that Numpy can be used.
     _y = _y.doit()
     
-    return LineOver1DRangeSeries(_y, (_x, lower_limit, upper_limit),
+    return LineOver1DRangeSeries(_y, prange(_x, lower_limit, upper_limit),
         label, **kwargs)
 
 
@@ -300,6 +293,9 @@ def plot_step_response(*systems, lower_limit=0, upper_limit=10,
         Defaults to 8.
     show_axes : boolean, optional
         If ``True``, the coordinate axes will be shown. Defaults to False.
+    **kwargs : 
+        See ``plot`` for a list of keyword arguments to further customize
+        the resulting figure.
 
     Examples
     ========
@@ -316,24 +312,28 @@ def plot_step_response(*systems, lower_limit=0, upper_limit=10,
         >>> step_response_plot(tf1)   # doctest: +SKIP
     
 
-    Interactive-widgets plot of multiple systems, one of which is parametric:
+    Interactive-widgets plot of multiple systems, one of which is parametric.
+    Note the use of parametric ``lower_limit`` and ``upper_limit``.
 
     .. panel-screenshot::
-       :small-size: 800, 625
+       :small-size: 800, 700
 
-       from sympy.abc import a, b, c, d, e, s
+       from sympy.abc import a, b, c, d, e, f, g, s
        from sympy.physics.control.lti import TransferFunction
        from spb.control import plot_step_response
        tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
        tf2 = TransferFunction(s**2 + a*s + b, s**3 + c*s**2 + d*s + e, s)
        plot_step_response(
-           (tf1, "A"), (tf2, "B"),
+           (tf1, "A"), (tf2, "B"), lower_limit=f, upper_limit=g,
            params={
                a: (3.7, 0, 5),
                b: (10, 0, 20),
                c: (7, 0, 8),
                d: (6, 0, 25),
                e: (16, 0, 25),
+               # NOTE: remove `None` if using ipywidgets
+               f: (0, 0, 10, 50, None, "lower limit"),
+               g: (10, 0, 25, 50, None, "upper limit"),
            })
 
     See Also
@@ -347,8 +347,9 @@ def plot_step_response(*systems, lower_limit=0, upper_limit=10,
     .. [1] https://www.mathworks.com/help/control/ref/lti.step.html
 
     """
-    
-    if lower_limit < 0:
+    # allows parametric lower_limit
+    lower_limit = sympify(lower_limit)
+    if lower_limit.is_Number and lower_limit < 0:
         raise ValueError("Lower limit of time must be greater "
             "than or equal to zero.")
     
@@ -376,7 +377,7 @@ def _impulse_response_helper(system, label, lower_limit, upper_limit,
     _y = _fast_inverse_laplace(expr, system.var, _x).evalf(prec)
     _y = _y.doit()
 
-    return LineOver1DRangeSeries(_y, (_x, lower_limit, upper_limit),
+    return LineOver1DRangeSeries(_y, prange(_x, lower_limit, upper_limit),
         label, **kwargs)
 
 
@@ -406,6 +407,9 @@ def plot_impulse_response(*systems, prec=8, lower_limit=0,
         Defaults to 8.
     show_axes : boolean, optional
         If ``True``, the coordinate axes will be shown. Defaults to False.
+    **kwargs : 
+        See ``plot`` for a list of keyword arguments to further customize
+        the resulting figure.
 
     Examples
     ========
@@ -421,18 +425,19 @@ def plot_impulse_response(*systems, prec=8, lower_limit=0,
         >>> tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
         >>> impulse_response_plot(tf1)   # doctest: +SKIP
     
-    Interactive-widgets plot of multiple systems, one of which is parametric:
+    Interactive-widgets plot of multiple systems, one of which is parametric.
+    Note the use of parametric ``lower_limit`` and ``upper_limit``.
 
     .. panel-screenshot::
-       :small-size: 800, 625
+       :small-size: 800, 700
 
-       from sympy.abc import a, b, c, d, e, f, s
+       from sympy.abc import a, b, c, d, e, f, g, h, s
        from sympy.physics.control.lti import TransferFunction
        from spb.control import plot_impulse_response
        tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
        tf2 = TransferFunction(a*s**2 + b*s + c, s**3 + d*s**2 + e*s + f, s)
        plot_impulse_response(
-           (tf1, "A"), (tf2, "B"),
+           (tf1, "A"), (tf2, "B"), lower_limit=g, upper_limit=h,
            params={
                a: (4, 0, 10),
                b: (24, 0, 40),
@@ -440,6 +445,9 @@ def plot_impulse_response(*systems, prec=8, lower_limit=0,
                d: (3, 0, 25),
                e: (12.5, 0, 25),
                f: (17.5, 0, 50),
+               # NOTE: remove `None` if using ipywidgets
+               g: (0, 0, 10, 50, None, "lower limit"),
+               h: (8, 0, 25, 50, None, "upper limit"),
            }) 
        
 
@@ -454,7 +462,9 @@ def plot_impulse_response(*systems, prec=8, lower_limit=0,
     .. [1] https://www.mathworks.com/help/control/ref/lti.impulse.html
 
     """
-    if lower_limit < 0:
+    # allows parametric lower_limit
+    lower_limit = sympify(lower_limit)
+    if lower_limit.is_Number and lower_limit < 0:
         raise ValueError("Lower limit of time must be greater "
             "than or equal to zero.")
     
@@ -482,7 +492,7 @@ def _ramp_response_helper(system, label, lower_limit, upper_limit,
     _y = _fast_inverse_laplace(expr, system.var, _x).evalf(prec)
     _y = _y.doit()
 
-    return LineOver1DRangeSeries(_y, (_x, lower_limit, upper_limit),
+    return LineOver1DRangeSeries(_y, prange(_x, lower_limit, upper_limit),
         label, **kwargs)
 
 
@@ -518,6 +528,9 @@ def plot_ramp_response(*systems, slope=1, prec=8,
         Defaults to 8.
     show_axes : boolean, optional
         If ``True``, the coordinate axes will be shown. Defaults to False.
+    **kwargs : 
+        See ``plot`` for a list of keyword arguments to further customize
+        the resulting figure.
 
     Examples
     ========
@@ -533,21 +546,27 @@ def plot_ramp_response(*systems, slope=1, prec=8,
         >>> tf1 = TransferFunction(s, (s+4)*(s+8), s)
         >>> ramp_response_plot(tf1, upper_limit=2)   # doctest: +SKIP
 
-    Interactive-widgets plot of multiple systems, one of which is parametric:
+    Interactive-widgets plot of multiple systems, one of which is parametric.
+    Note the use of parametric ``lower_limit``, ``upper_limit`` and ``slope``.
 
     .. panel-screenshot::
-       :small-size: 800, 625
+       :small-size: 800, 675
 
-       from sympy.abc import a, b, s
+       from sympy.abc import a, b, c, d, e, s
        from sympy.physics.control.lti import TransferFunction
        from spb.control import plot_ramp_response
        tf1 = TransferFunction(s, (s+4)*(s+8), s)
        tf2 = TransferFunction(s, (s+a)*(s+b), s)
        plot_ramp_response(
-           (tf1, "A"), (tf2, "B"), upper_limit=2,
+           (tf1, "A"), (tf2, "B"),
+           slope=c, lower_limit=d, upper_limit=e,
            params={
                a: (6, 0, 10),
-               b: (7, 0, 10)
+               b: (7, 0, 10),
+               # NOTE: remove `None` if using ipywidgets
+               c: (1, 0, 10, 50, None, "slope"),
+               d: (0, 0, 5, 50, None, "lower limit"),
+               e: (5, 2, 10, 50, None, "upper limit"),
            })
 
     See Also
@@ -561,10 +580,14 @@ def plot_ramp_response(*systems, slope=1, prec=8,
     .. [1] https://en.wikipedia.org/wiki/Ramp_function
 
     """
-    if slope < 0:
+    # allows parametric slope
+    slope = sympify(slope)
+    if slope.is_Number and slope < 0:
         raise ValueError("Slope must be greater than or equal"
             " to zero.")
-    if lower_limit < 0:
+    # allows parametric lower_limit
+    lower_limit = sympify(lower_limit)
+    if lower_limit.is_Number and lower_limit < 0:
         raise ValueError("Lower limit of time must be greater "
             "than or equal to zero.")
     
@@ -595,7 +618,8 @@ def _bode_magnitude_helper(system, label, initial_exp, final_exp,
     w_expr = expr.subs({system.var: repl})
 
     mag = 20*log(Abs(w_expr), 10)
-    return LineOver1DRangeSeries(mag, (_w, 10**initial_exp, 10**final_exp),
+    return LineOver1DRangeSeries(mag,
+        prange(_w, 10**initial_exp, 10**final_exp),
         label, xscale='log', **kwargs)
 
 
@@ -642,7 +666,8 @@ def _bode_phase_helper(system, label, initial_exp, final_exp,
     else:
         phase = arg(w_expr)
 
-    return LineOver1DRangeSeries(phase, (_w, 10**initial_exp, 10**final_exp),
+    return LineOver1DRangeSeries(phase,
+        prange(_w, 10**initial_exp, 10**final_exp),
         label, xscale='log', **kwargs)
 
 
@@ -701,9 +726,14 @@ def plot_bode(*systems, initial_exp=-5, final_exp=5,
     show_axes : boolean, optional
         If ``True``, the coordinate axes will be shown. Defaults to False.
     freq_unit : string, optional
-        User can choose between ``'rad/sec'`` (radians/second) and ``'Hz'`` (Hertz) as frequency units.
+        User can choose between ``'rad/sec'`` (radians/second) and ``'Hz'``
+        (Hertz) as frequency units.
     phase_unit : string, optional
-        User can choose between ``'rad'`` (radians) and ``'deg'`` (degree) as phase units.
+        User can choose between ``'rad'`` (radians) and ``'deg'`` (degree)
+        as phase units.
+    **kwargs : 
+        See ``plot`` for a list of keyword arguments to further customize
+        the resulting figure.
 
     Examples
     ========
