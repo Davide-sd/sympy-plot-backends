@@ -7,7 +7,8 @@ from spb.series import (
     ComplexSurfaceSeries, ComplexDomainColoringSeries,
     ComplexSurfaceBaseSeries, ComplexPointSeries, GeometrySeries,
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
-    _set_discretization_points, ColoredLineOver1DRangeSeries
+    _set_discretization_points, ColoredLineOver1DRangeSeries,
+    HVLineSeries
 )
 from spb import plot3d_spherical
 from sympy import (
@@ -1113,7 +1114,7 @@ def test_list2dseries_interactive():
     assert not s.is_interactive
 
     # symbolic expressions as coordinates, but no ``params``
-    raises(TypeError, lambda: List2DSeries([cos(x)], [sin(x)]))
+    raises(ValueError, lambda: List2DSeries([cos(x)], [sin(x)]))
 
     # too few parameters
     raises(ValueError,
@@ -1143,7 +1144,7 @@ def test_list3dseries_interactive():
     assert not s.is_interactive
 
     # symbolic expressions as coordinates, but no ``params``
-    raises(TypeError, lambda: List3DSeries([cos(x)], [sin(x)], [x]))
+    raises(ValueError, lambda: List3DSeries([cos(x)], [sin(x)], [x]))
 
     # too few parameters
     raises(ValueError,
@@ -2976,3 +2977,30 @@ def test_riemann_sphere_series():
     s = RiemannSphereSeries(expr, (t, 0, pi), (p, 0, 2*pi), n1=5, n2=15)
     d = s.get_data()
     assert d[0].shape == (5, 15)
+
+
+def test_hvline_series():
+    x, y = symbols("x y")
+
+    s = HVLineSeries(4.5, True)
+    assert s.is_horizontal
+    assert not s.is_interactive
+    loc = s.get_data()
+    assert isinstance(loc, float)
+    assert np.isclose(loc, 4.5)
+    assert s.get_label(False) == ""
+
+    s = HVLineSeries(4.5, False, "test")
+    assert not s.is_horizontal
+    assert not s.is_interactive
+    loc = s.get_data()
+    assert isinstance(loc, float)
+    assert np.isclose(loc, 4.5)
+    assert s.get_label(False) == "test"
+
+    s = HVLineSeries(x + y, True, params={x: 2, y: 3.5})
+    assert s.is_horizontal
+    assert s.is_interactive
+    loc = s.get_data()
+    assert isinstance(loc, float)
+    assert np.isclose(loc, 5.5)

@@ -1137,9 +1137,9 @@ class List2DSeries(Line2DBaseSeries):
         check = lambda l: [isinstance(t, Expr) and (not t.is_number) for t in l]
         if any(check(list_x) + check(list_y)) or self.params:
             if not self.params:
-                raise TypeError("Some or all elements of the provided lists "
+                raise ValueError("Some or all elements of the provided lists "
                     "are symbolic expressions, but the ``params`` dictionary "
-                    "was not provided. This operation mode is not supported.")
+                    "was not provided: those elements can't be evaluated.")
             self.list_x = Tuple(*list_x)
             self.list_y = Tuple(*list_y)
         else:
@@ -1199,9 +1199,9 @@ class List3DSeries(List2DSeries):
         check = lambda l: [isinstance(t, Expr) and (not t.is_number) for t in l]
         if any(check(list_z)):
             if not self.params:
-                raise TypeError("Some or all elements of the provided lists "
+                raise ValueError("Some or all elements of the provided lists "
                     "are symbolic expressions, but the ``params`` dictionary "
-                    "was not provided. This operation mode is not supported.")
+                    "was not provided: those elements can't be evaluated.")
             self.list_z = Tuple(*list_z)
             self._check_fs()
         else:
@@ -3329,3 +3329,21 @@ class RiemannSphereSeries(BaseSeries):
         w = f(z)
         img, cs = wegert(self.coloring, w, self.phaseres, self.cmap)
         return X, Y, Z, np.angle(w), img, cs
+
+
+class HVLineSeries(BaseSeries):
+    """Represent an horizontal or vertical line series.
+    In Matplotlib, this will be rendered by axhline or axvline.
+    """
+    def __init__(self, v, horizontal, label="", **kwargs):
+        super().__init__(**kwargs)
+        self._expr = sympify(v)
+        self.is_horizontal = horizontal
+        self._label = str(self.expr) if label is None else label
+        self._latex_label = latex(self.expr) if label is None else label
+
+    def get_data(self):
+        location = self.expr
+        if self.is_interactive:
+            location = self.expr.subs(self.params)
+        return float(location)
