@@ -291,7 +291,7 @@ class prange(Tuple):
             raise ValueError(
                 "`%s` requires 3 elements. Received " % cls.__name__ +
                 "%s elements: %s" % (len(args), args))
-        if not isinstance(args[0], (str, Symbol, BaseScalar)):
+        if not isinstance(args[0], (str, Symbol, BaseScalar, Indexed)):
             raise TypeError("The first element of a plotting range must "
                 "be a symbol. Received: %s" % type(args[0]))
         args = [sympify(a) for a in args]
