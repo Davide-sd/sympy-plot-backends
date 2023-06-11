@@ -8,3 +8,4 @@ from spb.backends.matplotlib.renderers.vector2d import Vector2DRenderer
 from spb.backends.matplotlib.renderers.vector3d import Vector3DRenderer
 from spb.backends.matplotlib.renderers.complex import ComplexRenderer
 from spb.backends.matplotlib.renderers.generic import GenericRenderer
+from spb.backends.matplotlib.renderers.hvline import HVLineRenderer

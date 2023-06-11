@@ -152,6 +152,7 @@ class MatplotlibBackend(Plot):
         PlaneSeries: SurfaceRenderer,
         GeometrySeries: GeometryRenderer,
         GenericDataSeries: GenericRenderer,
+        HVLineSeries: HVLineRenderer
     }
 
     def __init__(self, *args, **kwargs):
