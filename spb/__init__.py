@@ -22,6 +22,10 @@ from spb.ccomplex.complex import (
     plot_complex, plot_complex_list,
     plot_real_imag, plot_complex_vector, plot_riemann_sphere
 )
+from spb.control import (
+    plot_pole_zero, step_response_plot, plot_impulse_response,
+    plot_ramp_response, plot_bode_magnitude, plot_bode_phase, plot_bode
+)
 from spb.utils import prange
 
 from spb.plotgrid import plotgrid, PlotGrid
@@ -40,5 +44,7 @@ __all__ = [
     "plot_list", "plot_piecewise", "plot_vector", "plot_complex",
     "plot_complex_list", "plot_real_imag", "plot_complex_vector", "plotgrid",
     "MB", "BB", "PB", "KB", "MAB", "plot3d_list", "prange",
-    "plot_riemann_sphere", "PlotGrid"
+    "plot_riemann_sphere", "PlotGrid",
+    "plot_pole_zero", "step_response_plot", "plot_impulse_response",
+    "plot_ramp_response", "plot_bode_magnitude", "plot_bode_phase", "plot_bode"
 ]
