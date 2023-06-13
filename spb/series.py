@@ -2419,6 +2419,9 @@ class ComplexSurfaceSeries(ComplexSurfaceBaseSeries):
             self.is_3Dsurface = False
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)
         self.rendering_kw = kwargs.get("rendering_kw", dict())
+        self.is_filled = kwargs.get("is_filled", True)
+        self.show_clabels = kwargs.get("clabels", True)
+        self._allowed_keys += ["is_filled", "clabels"]
 
     def get_data(self):
         """Return arrays of coordinates for plotting.

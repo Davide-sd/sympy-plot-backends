@@ -3004,3 +3004,18 @@ def test_hvline_series():
     loc = s.get_data()
     assert isinstance(loc, float)
     assert np.isclose(loc, 5.5)
+
+
+def test_complex_surface_contour():
+    # verify that ComplexSurfaceSeries exposes the proper attributes
+    # to be rendered as a contour.
+
+    z = symbols("z")
+    s = ComplexSurfaceSeries(sqrt(z), (z, -5 - 5j, 5 + 5j))
+    assert s.is_filled
+    assert s.show_clabels
+
+    s = ComplexSurfaceSeries(sqrt(z), (z, -5 - 5j, 5 + 5j), is_filled=False,
+        clabels=False)
+    assert not s.is_filled
+    assert not s.show_clabels
