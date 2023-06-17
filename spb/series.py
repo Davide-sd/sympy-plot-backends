@@ -6,7 +6,7 @@ from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta
+    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly
 )
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
@@ -14,6 +14,7 @@ from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
+from sympy.physics.control.lti import TransferFunction
 from sympy.printing.pycode import PythonCodePrinter
 from sympy.printing.precedence import precedence
 from sympy.core.sorting import default_sort_key
@@ -322,7 +323,7 @@ class BaseSeries:
         self.is_polar = kwargs.get("is_polar", False)
         # If True, the rendering will use points, not lines.
         self.is_point = kwargs.get("is_point", False)
-        
+
         self._label = self._latex_label = ""
         self._ranges = []
         self._n = [
@@ -1173,7 +1174,7 @@ class List2DSeries(Line2DBaseSeries):
         lx = np.array([t.evalf(subs=self.params) for t in lx], dtype=float)
         ly = np.array([t.evalf(subs=self.params) for t in ly], dtype=float)
         return self._eval_color_func_and_return(lx, ly)
-    
+
     def _eval_color_func_and_return(self, *data):
         if self.use_cm and callable(self.color_func):
             return [*data, self.eval_color_func(*data)]
@@ -1350,7 +1351,7 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
     """Represents a 2D line series in which `color_func` is a callable.
     """
     is_parametric = True
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.use_cm = kwargs.get("use_cm", True)
@@ -1375,7 +1376,7 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.use_cm = kwargs.get("use_cm", True)
@@ -1981,7 +1982,7 @@ class ImplicitSeries(BaseSeries):
             eventually used with Matplotlib's ``fill`` command.
         dummy : str
             A string containing ``"fill"``.
-        
+
         Otherwise, it returns 2D numpy arrays to be used with Matplotlib's
         ``contour`` or ``contourf`` commands:
 
@@ -1998,7 +1999,7 @@ class ImplicitSeries(BaseSeries):
                 return data
 
         return self._get_meshes_grid()
-    
+
     def _adaptive_eval(self):
         import sympy.plotting.intervalmath.lib_interval as li
 
@@ -2612,7 +2613,7 @@ def _set_discretization_points(kwargs, pt):
 
     if pt in [LineOver1DRangeSeries, Parametric2DLineSeries,
         Parametric3DLineSeries, AbsArgLineSeries, ColoredLineOver1DRangeSeries,
-        ComplexParametric3DLineSeries]:
+        ComplexParametric3DLineSeries, NyquistLineSeries]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             if hasattr(kwargs["n"], "__iter__") and (len(kwargs["n"]) > 0):
@@ -3350,3 +3351,258 @@ class HVLineSeries(BaseSeries):
         if self.is_interactive:
             location = self.expr.subs(self.params)
         return float(location)
+
+
+class NyquistLineSeries(Parametric2DLineSeries):
+    """Represent a line on a Nyquist plot.
+
+    Differently from Parametric2DLineSeries, which returns real `x, y, param`,
+    this class returns real `x, y` but complex `param`.
+
+    This class incorporates code from the `python-control` package,
+    specifically the `freqplot.py` module
+    """
+    def __init__(self, tf, omega_range, label="", **kwargs):
+        self.tf = tf
+        tf_expr = self.tf.to_expr()
+        # NOTE/TODO: this might be fragile, it might results in something
+        # different then a fraction, creating a wrong denominator which
+        # causes wrong poles to be computed, which trigger warnings.
+        # Maybe it's better to adopt `python-control` approach to compute
+        # the feedback system transfer function
+        tf_cl_expr = tf_expr / (1 + tf_expr).together()
+        num, den = tf_cl_expr.as_numer_denom()
+        self.tf_cl = TransferFunction(num, den, self.tf.var)
+
+        super().__init__(re(tf_expr), im(tf_expr), omega_range, label, **kwargs)
+
+        self.omega_range_given = kwargs.get("omega_range_given", False)
+        self.m_circles = kwargs.get("m_circles", False)
+        self.clabels_to_top = kwargs.get("clabels_to_top", True)
+        self.arrows_loc = kwargs.get("arrows", 2)
+        self.indent_points = kwargs.get("indent_points", 50)
+        self.indent_radius = kwargs.get("indent_radius", 1e-04)
+        self.indent_direction = kwargs.get("indent_direction", 'right')
+        self.max_curve_magnitude = kwargs.get("max_curve_magnitude", 20)
+        self.max_curve_offset = kwargs.get("max_curve_offset", 0.02)
+        self.encirclement_threshold = kwargs.get("encirclement_threshold", 0.05)
+        self.warn_encirclements = kwargs.get("warn_encirclements", True)
+        self.start_marker = kwargs.get("start_marker", True)
+        self.primary_style = kwargs.get("primary_style", None)
+        self.mirror_style = kwargs.get("mirror_style", None)
+        self._update_poles()
+
+        self._allowed_keys += [
+            "m_circles", "clabels_to_top", "arrows", "indent_points",
+            "indent_radius", "indent_direction",
+            "max_curve_magnitude", "max_curve_offset",
+            "encirclement_threshold", "omega_range_given", "start_marker",
+            "primary_style", "mirror_style"]
+
+    def _update_poles(self):
+        """Computes the poles of the open-loop transfer function as well as
+        the closed-loop transfer function, which will be used to raise
+        appropriate warnings, if necessary.
+        """
+        np = import_module('numpy')
+
+        # NOTE: at instantiation, `self.params` contains the tuples provided
+        # by user. Can't proceed in that case.
+        go_on = True
+        if len(self.params) > 0:
+            first_param = list(self.params.values())[0]
+            if isinstance(first_param, (list, tuple)):
+                go_on = False
+
+        if go_on:
+            s = self.tf.var
+            den_tf_poly = Poly(self.tf.den.subs(self.params), s)
+            den_tf_poly = np.array(den_tf_poly.all_coeffs(), dtype=np.complex128)
+            self._poles = np.roots(den_tf_poly)
+
+            den_tf_cl_poly = Poly(self.tf_cl.den.subs(self.params), s)
+            den_tf_cl_poly = np.array(den_tf_cl_poly.all_coeffs(), dtype=np.complex128)
+            self._poles_cl = np.roots(den_tf_cl_poly)
+
+    @property
+    def arrows_loc(self):
+        return self._arrows_loc
+
+    @arrows_loc.setter
+    def arrows_loc(self, v):
+        """Set arrows position."""
+        np = import_module('numpy')
+
+        # from https://github.com/python-control/python-control/blob/main/control/freqplot.py
+        if not v:
+            self._arrows_loc = []
+        elif isinstance(v, int):
+            N = v
+            # Space arrows out, starting midway along each "region"
+            self._arrows_loc = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
+        elif isinstance(v, (list, np.ndarray)):
+            self._arrows_loc = np.sort(np.atleast_1d(v))
+        else:
+            raise ValueError("unknown or unsupported arrow location")
+
+    def _create_discretized_domain(self):
+        """Discretize the ranges for uniform meshing strategy.
+        """
+        np = import_module('numpy')
+
+        r = self.ranges[0]
+        discr_symbols = [r[0]]
+
+        c_start = self._update_range_value(r[1])
+        c_end = self._update_range_value(r[2])
+        start = c_start.real if c_start.imag == c_end.imag == 0 else c_start
+        end = c_end.real if c_start.imag == c_end.imag == 0 else c_end
+
+        # NOTE: here we generate n points. However, depending on the input
+        # arguments and/or on the transfer function, the final number of points
+        # will be greater!
+        omega = BaseSeries._discretize(
+            start, end, self.n[0], scale=self.scales[0])
+
+        if not self.omega_range_given:
+            omega[0] = 0
+            # TODO: the following should be better, but is it really necessary?
+            # it makes testing more difficult...
+            # d = np.concatenate((
+            #         np.linspace(0, d[0], self.indent_points), d[1:]))
+
+        omega= 1j * omega
+        omega = self._modify_discretization(omega)
+        discretizations = [omega]
+        self._create_discretized_domain_helper(discr_symbols, discretizations)
+
+    @property
+    def params(self):
+        """Get or set the current parameters dictionary.
+
+        Parameters
+        ==========
+
+        p : dict
+
+            * key: symbol associated to the parameter
+            * val: the numeric value
+        """
+        return self._params
+
+    @params.setter
+    def params(self, p):
+        self._params = p
+        self._update_poles()
+
+    def _modify_discretization(self, splane_contour):
+        # from https://github.com/python-control/python-control/blob/main/control/freqplot.py
+
+        np = import_module('numpy')
+        splane_poles = self._poles
+        splane_cl_poles = self._poles_cl
+        indent_points = self.indent_points
+        indent_radius = self.indent_radius
+        indent_direction = self.indent_direction
+        warn_encirclements = self.warn_encirclements
+
+        #
+        # Check to make sure indent radius is small enough
+        #
+        # If there is a closed loop pole that is near the imaginary axis
+        # at a point that is near an open loop pole, it is possible that
+        # indentation might skip or create an extraneous encirclement.
+        # We check for that situation here and generate a warning if that
+        # could happen.
+        #
+        for p_cl in splane_cl_poles:
+            # See if any closed loop poles are near the imaginary axis
+            if abs(p_cl.real) <= indent_radius:
+                # See if any open loop poles are close to closed loop poles
+                if len(splane_poles) > 0:
+                    p_ol = splane_poles[
+                        (np.abs(splane_poles - p_cl)).argmin()]
+
+                    if abs(p_ol - p_cl) <= indent_radius and \
+                            warn_encirclements:
+                        warnings.warn(
+                            "indented contour may miss closed loop pole; "
+                            "consider reducing indent_radius to below "
+                            f"{abs(p_ol - p_cl):5.2g}", stacklevel=2)
+
+        #
+        # See if we should add some frequency points near imaginary poles
+        #
+        for p in splane_poles:
+            # print("adding points")
+            # See if we need to process this pole (skip if on the negative
+            # imaginary axis or not near imaginary axis + user override)
+            if p.imag < 0 or abs(p.real) > indent_radius:
+                continue
+
+            # Find the frequencies before the pole frequency
+            below_points = np.argwhere(
+                splane_contour.imag - abs(p.imag) < -indent_radius)
+            if below_points.size > 0:
+                first_point = below_points[-1].item()
+                start_freq = p.imag - indent_radius
+            else:
+                # Add the points starting at the beginning of the contour
+                assert splane_contour[0] == 0
+                first_point = 0
+                start_freq = 0
+
+            # Find the frequencies after the pole frequency
+            above_points = np.argwhere(
+                splane_contour.imag - abs(p.imag) > indent_radius)
+            last_point = above_points[0].item()
+
+            # Add points for half/quarter circle around pole frequency
+            # (these will get indented left or right below)
+            splane_contour = np.concatenate((
+                splane_contour[0:first_point+1],
+                (1j * np.linspace(
+                    start_freq, p.imag + indent_radius, indent_points)),
+                splane_contour[last_point:]))
+
+        # Indent points that are too close to a pole
+        if len(splane_poles) > 0: # accomodate no splane poles if dtime sys
+            for i, s in enumerate(splane_contour):
+                # Find the nearest pole
+                p = splane_poles[(np.abs(splane_poles - s)).argmin()]
+
+                # See if we need to indent around it
+                if abs(s - p) < indent_radius:
+                    # Figure out how much to offset (simple trigonometry)
+                    offset = np.sqrt(indent_radius ** 2 - (s - p).imag ** 2) \
+                        - (s - p).real
+
+                    # Figure out which way to offset the contour point
+                    if p.real < 0 or (p.real == 0 and
+                                    indent_direction == 'right'):
+                        # Indent to the right
+                        splane_contour[i] += offset
+
+                    elif p.real > 0 or (p.real == 0 and
+                                        indent_direction == 'left'):
+                        # Indent to the left
+                        splane_contour[i] -= offset
+
+                    else:
+                        raise ValueError("unknown value for indent_direction")
+
+        return splane_contour
+
+    def _uniform_sampling(self):
+        """Returns coordinates that needs to be postprocessed."""
+        # print("orci ")
+        np = import_module('numpy')
+
+        results = self._evaluate(cast_to_real=False)
+        for i, r in enumerate(results):
+            if i != 0:
+                _re, _im = np.real(r), np.imag(r)
+                _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
+                results[i] = _re
+        # print([t.dtype for t in results])
+        return [*results[1:], results[0]]

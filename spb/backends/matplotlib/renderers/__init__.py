@@ -9,3 +9,4 @@ from spb.backends.matplotlib.renderers.vector3d import Vector3DRenderer
 from spb.backends.matplotlib.renderers.complex import ComplexRenderer
 from spb.backends.matplotlib.renderers.generic import GenericRenderer
 from spb.backends.matplotlib.renderers.hvline import HVLineRenderer
+from spb.backends.matplotlib.renderers.nyquist import NyquistRenderer
