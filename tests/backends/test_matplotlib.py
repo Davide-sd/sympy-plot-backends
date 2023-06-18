@@ -725,6 +725,15 @@ def test_plot_geometry_3d():
     p.draw()
 
 
+def test_plot_geometry_rendering_kw():
+    # verify that rendering_kw works fine
+    p = plot_geometry(
+        Segment((0, 0), (1, 0)), 'r', {'color': 'red'}, show=False)
+    assert p[0].rendering_kw == {'color': 'red'}
+    p.draw()
+    assert p.ax.lines[0].get_color() == "red"
+
+
 def test_save():
     # Verify that the save method accepts keyword arguments.
 

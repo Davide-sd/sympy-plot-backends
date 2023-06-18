@@ -3823,6 +3823,7 @@ def plot_geometry(*args, **kwargs):
         exprs, ranges, label, rendering_kw = _unpack_args(*a)
 
         kw = kwargs.copy()
+        kw["rendering_kw"] = rendering_kw
         r = ranges if len(ranges) > 0 else [None]
         if len(exprs) == 1:
             series.append(GeometrySeries(exprs[0], *r, label, **kw))
