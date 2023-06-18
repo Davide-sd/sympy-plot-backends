@@ -153,7 +153,8 @@ class MatplotlibBackend(Plot):
         GeometrySeries: GeometryRenderer,
         GenericDataSeries: GenericRenderer,
         HVLineSeries: HVLineRenderer,
-        NyquistLineSeries: NyquistRenderer
+        NyquistLineSeries: NyquistRenderer,
+        NicholsLineSeries: NicholsRenderer
     }
 
     def __init__(self, *args, **kwargs):

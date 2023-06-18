@@ -2,7 +2,7 @@
 from spb.control import  (
     plot_pole_zero, plot_step_response, plot_impulse_response,
     plot_ramp_response, plot_bode_magnitude,
-    plot_bode_phase, plot_bode, plot_nyquist)
+    plot_bode_phase, plot_bode, plot_nyquist, plot_nichols)
 from spb.interactive import IPlot
 from spb.series import HVLineSeries
 from spb.backends.matplotlib import unset_show
@@ -618,3 +618,62 @@ def test_plot_nyquist_omega_limits():
     assert p2[0].ranges[0][1] == 1e-05
     assert p2[0].ranges[0][2] == 1e-02
     assert p1[0].ranges[0][1:] != p2[0].ranges[0][1:]
+
+
+def test_plot_nichols():
+    # verify that NicholsLineSeries produces correct results
+
+    def nichols_res_tester(sys, omega_limits, num_points, expected_value):
+        p = plot_nichols(sys, omega_limits=omega_limits,
+            show=False, n=num_points)
+        x, y, param = p[0].get_data()
+        x_check = check_point_accuracy(x, expected_value[0])
+        y_check = check_point_accuracy(y, expected_value[1])
+        param_check = check_point_accuracy(param, expected_value[2])
+        return x_check and y_check and param_check
+
+    tf1 = TransferFunction(5 * (s - 1), s**2 * (s**2 + s + 4), s)
+    exp1 = (
+        [  -7.14627703,  -11.87501843,  -19.6071407 ,  -31.89094174,
+         -50.57631953,  -81.231069  , -171.68469677, -232.49622166,
+        -249.89886567, -258.34254381],
+        [ 42.0004288 ,  33.22148705,  24.63227702,  16.53494133,
+          9.61324014,   5.28081374,   1.12439465, -16.46462887,
+        -31.69352926, -45.66968097],
+        [ 0.1       ,  0.16681005,  0.27825594,  0.46415888,  0.77426368,
+         1.29154967,  2.15443469,  3.59381366,  5.9948425 , 10.        ]
+    )
+    assert nichols_res_tester(tf1, [1e-01, 1e01], 10, exp1)
+
+    tf2 = TransferFunction(-4*s**4 + 48*s**3 - 18*s**2 + 250*s + 600, s**4 + 30*s**3 + 282*s**2 + 525*s + 60, s)
+    exp2 = (
+        [  -4.7642299 ,  -10.74556702,  -23.41579813,  -44.99062736,
+         -67.91516888,  -85.00078123, -107.10140914, -227.43935552,
+        -331.72108713, -412.10280752, -477.24930481, -511.78850082,
+        -527.54912472, -534.52446663, -537.59367177],
+        [ 19.97103009,  19.85200215,  19.28289443,  17.14539872,
+         12.36002147,   5.86393272,  -1.78976124, -10.51502076,
+          2.44764247,   9.06567945,  11.41302756,  11.91973828,
+         12.01777399,  12.0366782 ,  12.04032688],
+        [1.00000000e-02, 2.27584593e-02, 5.17947468e-02, 1.17876863e-01,
+        2.68269580e-01, 6.10540230e-01, 1.38949549e+00, 3.16227766e+00,
+        7.19685673e+00, 1.63789371e+01, 3.72759372e+01, 8.48342898e+01,
+        1.93069773e+02, 4.39397056e+02, 1.00000000e+03]
+    )
+    assert nichols_res_tester(tf2, [1e-02, 1e03], 15, exp2)
+
+
+def test_plot_nichols_matplotlib():
+    tf = TransferFunction(5 * (s - 1), s**2 * (s**2 + s + 4), s)
+    
+    # with nichols grid lines
+    p = plot_nichols(tf, ngrid=True, show=False, n=10)
+    ax = p.ax
+    assert len(ax.lines) > 2
+    assert len(ax.texts) > 0
+
+    # no nichols grid lines
+    p = plot_nichols(tf, ngrid=False, show=False, n=10)
+    ax = p.ax
+    assert len(ax.lines) == 1
+    assert len(ax.texts) == 0

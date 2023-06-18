@@ -1,7 +1,9 @@
 from inspect import signature
 from spb.ccomplex.wegert import wegert
 from spb.defaults import cfg
-from spb.utils import prange, _get_free_symbols, spherical_to_cartesian
+from spb.utils import (
+    prange, _get_free_symbols, spherical_to_cartesian, unwrap
+)
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
@@ -2613,7 +2615,7 @@ def _set_discretization_points(kwargs, pt):
 
     if pt in [LineOver1DRangeSeries, Parametric2DLineSeries,
         Parametric3DLineSeries, AbsArgLineSeries, ColoredLineOver1DRangeSeries,
-        ComplexParametric3DLineSeries, NyquistLineSeries]:
+        ComplexParametric3DLineSeries, NyquistLineSeries, NicholsLineSeries]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
             if hasattr(kwargs["n"], "__iter__") and (len(kwargs["n"]) > 0):
@@ -3471,7 +3473,7 @@ class NyquistLineSeries(Parametric2DLineSeries):
             # d = np.concatenate((
             #         np.linspace(0, d[0], self.indent_points), d[1:]))
 
-        omega= 1j * omega
+        omega = 1j * omega
         omega = self._modify_discretization(omega)
         discretizations = [omega]
         self._create_discretized_domain_helper(discr_symbols, discretizations)
@@ -3604,5 +3606,21 @@ class NyquistLineSeries(Parametric2DLineSeries):
                 _re, _im = np.real(r), np.imag(r)
                 _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
                 results[i] = _re
-        # print([t.dtype for t in results])
         return [*results[1:], results[0]]
+
+
+class NicholsLineSeries(Parametric2DLineSeries):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ngrid = kwargs.get("ngrid", True)
+        self.label_cl_phases = kwargs.get("label_cl_phases", False)
+        self.cl_line_style = kwargs.get("cl_line_style", None)
+        self._allowed_keys += ["ngrid", "label_cl_phases", "cl_line_style"]
+
+    def get_data(self):
+        np = import_module('numpy')
+        phase, mag, omega = super().get_data()
+        mag = 20 * np.log10(mag)
+        phase = unwrap(phase)
+        phase = np.degrees(phase)
+        return phase, mag, omega

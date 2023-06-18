@@ -1,7 +1,6 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
-# from spb.backends.matplotlib.renderers.line2d import (
-#     _draw_line2d_helper, _update_line2d_helper
-# )
+from spb.utils import unwrap
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.font_manager as font_manager
@@ -239,48 +238,6 @@ def _compute_curve_offset(resp, mask, max_offset):
     return offset
 
 
-# Utility function to unwrap an angle measurement
-def _unwrap(angle, period=2*np.pi):
-    """Unwrap a phase angle to give a continuous curve
-
-    Parameters
-    ----------
-    angle : array_like
-        Array of angles to be unwrapped
-    period : float, optional
-        Period (defaults to `2*pi`)
-
-    Returns
-    -------
-    angle_out : array_like
-        Output array, with jumps of period/2 eliminated
-
-    Examples
-    --------
-    >>> # Already continuous
-    >>> theta1 = np.array([1.0, 1.5, 2.0, 2.5, 3.0]) * np.pi
-    >>> theta2 = ct.unwrap(theta1)
-    >>> theta2/np.pi                                            # doctest: +SKIP
-    array([1. , 1.5, 2. , 2.5, 3. ])
-
-    >>> # Wrapped, discontinuous
-    >>> theta1 = np.array([1.0, 1.5, 0.0, 0.5, 1.0]) * np.pi
-    >>> theta2 = ct.unwrap(theta1)
-    >>> theta2/np.pi                                            # doctest: +SKIP
-    array([1. , 1.5, 2. , 2.5, 3. ])
-
-    Notes
-    -----
-    from https://github.com/python-control/python-control/blob/main/control/ctrlutil.py
-
-    """
-    dangle = np.diff(angle)
-    dangle_desired = (dangle + period/2.) % period - period/2.
-    correction = np.cumsum(dangle_desired - dangle)
-    angle[1:] += correction
-    return angle
-
-
 def _process_data_helper(data, max_curve_magnitude, max_curve_offset,
     encirclement_threshold, indent_direction, tf_poles, tf_cl_poles):
     resp = data[0] + 1j * data[1]
@@ -289,7 +246,7 @@ def _process_data_helper(data, max_curve_magnitude, max_curve_offset,
     # from https://github.com/python-control/python-control/blob/main/control/freqplot.py
 
     # Compute CW encirclements of -1 by integrating the (unwrapped) angle
-    phase = -_unwrap(np.angle(resp + 1))
+    phase = -unwrap(np.angle(resp + 1))
     encirclements = np.sum(np.diff(phase)) / np.pi
     count = int(np.round(encirclements, 0))
 

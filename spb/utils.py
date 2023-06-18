@@ -519,3 +519,49 @@ def spherical_to_cartesian(r, theta, phi):
         y = r * sin(theta) * sin(phi)
         z = r * cos(theta)
     return x, y, z
+
+
+def unwrap(angle, period=None):
+    """Unwrap a phase angle to give a continuous curve
+
+    Parameters
+    ----------
+    angle : array_like
+        Array of angles to be unwrapped
+    period : float, optional
+        Period (defaults to `2*pi`)
+
+    Returns
+    -------
+    angle_out : array_like
+        Output array, with jumps of period/2 eliminated
+
+    Examples
+    --------
+    >>> # Already continuous
+    >>> theta1 = np.array([1.0, 1.5, 2.0, 2.5, 3.0]) * np.pi
+    >>> theta2 = ct.unwrap(theta1)
+    >>> theta2/np.pi                                            # doctest: +SKIP
+    array([1. , 1.5, 2. , 2.5, 3. ])
+
+    >>> # Wrapped, discontinuous
+    >>> theta1 = np.array([1.0, 1.5, 0.0, 0.5, 1.0]) * np.pi
+    >>> theta2 = ct.unwrap(theta1)
+    >>> theta2/np.pi                                            # doctest: +SKIP
+    array([1. , 1.5, 2. , 2.5, 3. ])
+
+    Notes
+    -----
+
+    This function comes from the `control` package, specifically the
+    `control.ctrlutil.py` module.
+
+    """
+    np = import_module('numpy')
+    if period is None:
+        period = 2 * np.pi
+    dangle = np.diff(angle)
+    dangle_desired = (dangle + period/2.) % period - period/2.
+    correction = np.cumsum(dangle_desired - dangle)
+    angle[1:] += correction
+    return angle

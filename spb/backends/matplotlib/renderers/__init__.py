@@ -10,3 +10,4 @@ from spb.backends.matplotlib.renderers.complex import ComplexRenderer
 from spb.backends.matplotlib.renderers.generic import GenericRenderer
 from spb.backends.matplotlib.renderers.hvline import HVLineRenderer
 from spb.backends.matplotlib.renderers.nyquist import NyquistRenderer
+from spb.backends.matplotlib.renderers.nichols import NicholsRenderer

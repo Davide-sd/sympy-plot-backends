@@ -24,7 +24,8 @@ from spb.ccomplex.complex import (
 )
 from spb.control import (
     plot_pole_zero, step_response_plot, plot_impulse_response,
-    plot_ramp_response, plot_bode_magnitude, plot_bode_phase, plot_bode
+    plot_ramp_response, plot_bode_magnitude, plot_bode_phase, plot_bode,
+    plot_nyquist, plot_nichols
 )
 from spb.utils import prange
 
@@ -46,5 +47,6 @@ __all__ = [
     "MB", "BB", "PB", "KB", "MAB", "plot3d_list", "prange",
     "plot_riemann_sphere", "PlotGrid",
     "plot_pole_zero", "step_response_plot", "plot_impulse_response",
-    "plot_ramp_response", "plot_bode_magnitude", "plot_bode_phase", "plot_bode"
+    "plot_ramp_response", "plot_bode_magnitude", "plot_bode_phase",
+    "plot_bode", "plot_nyquist", "plot_nichols"
 ]
