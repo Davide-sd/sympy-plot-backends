@@ -205,7 +205,8 @@ class BokehBackend(Plot):
             self._fig.grid.minor_grid_line_alpha = cfg["bokeh"]["minor_grid_line_alpha"]
             self._fig.grid.minor_grid_line_color = self._fig.grid.grid_line_color[0]
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
-
+        if self._invert_x_axis:
+            self._fig.x_range.flipped = True
         if self.aouc:
             pixel_offset = 15
             # assumption: there is only one data series being plotted.

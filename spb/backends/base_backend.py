@@ -1,6 +1,7 @@
 from itertools import cycle
-from spb.series import BaseSeries
+from spb.series import BaseSeries, LineOver1DRangeSeries
 from spb.backends.utils import convert_colormap
+from spb.utils import prange
 from sympy.utilities.iterables import is_sequence
 from sympy.external import import_module
 
@@ -287,6 +288,18 @@ class Plot:
                 # backend
                 if not ("process_piecewise" in kwargs.keys()):
                     self.legend = True
+        
+        # allow to invert x-axis if the range is given as (symbol, max, min)
+        # instead of (symbol, min, max).
+        # just check the first series.
+        self._invert_x_axis = False
+        if ((len(self._series) > 0) and isinstance(self._series[0], LineOver1DRangeSeries)):
+            r = self._series[0].ranges[0]
+            # elements of parametric ranges can't be compared because they
+            # are likely going to be symbolic expressions
+            if not isinstance(r, prange):
+                if r[1] > r[2]:
+                    self._invert_x_axis = True
 
         # Objects used to render/display the plots, which depends on the
         # plotting library.

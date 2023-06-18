@@ -403,7 +403,8 @@ class PlotlyBackend(Plot):
                 showgrid=self.grid,  # thin lines in the background
                 zeroline=self.grid,  # thick line at x=0
                 constrain="domain",
-                visible=self.axis
+                visible=self.axis,
+                autorange=None if not self._invert_x_axis else "reversed"
             ),
             yaxis=dict(
                 title="" if not self.ylabel else self.ylabel,

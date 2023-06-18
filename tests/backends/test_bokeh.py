@@ -906,3 +906,16 @@ def test_legend_plot_sum():
     p = make_test_legend_plot_sum_2(BB, False)
     assert len(p.fig.legend[0].items) == 3
     assert p.fig.legend[0].visible
+
+
+def test_xaxis_inverted():
+    # verify that for a plot containing a LineOver1DRangeSeries,
+    # if range is given as (symb, max, min) then x-axis is inverted.
+
+    x = symbols("x")
+    p = plot(sin(x), (x, 0, 3), backend=BB, show=False, n=10)
+    assert not p.fig.x_range.flipped
+
+    p = plot(sin(x), (x, 3, 0), backend=BB, show=False, n=10)
+    assert p.fig.x_range.flipped
+    

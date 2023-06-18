@@ -1710,3 +1710,15 @@ def test_axis_limits():
         eps=1e-04, color_func=lambda x, y: x, show=False)
     p.draw()
     
+
+def test_xaxis_inverted():
+    # verify that for a plot containing a LineOver1DRangeSeries,
+    # if range is given as (symb, max, min) then x-axis is inverted.
+
+    x = symbols("x")
+    p = plot(sin(x), (x, 0, 3), backend=MB, show=False, n=10)
+    assert not p.ax.xaxis.get_inverted()
+
+    p = plot(sin(x), (x, 3, 0), backend=MB, show=False, n=10)
+    assert p.ax.xaxis.get_inverted()
+    

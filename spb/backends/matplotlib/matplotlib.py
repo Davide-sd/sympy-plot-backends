@@ -531,6 +531,9 @@ class MatplotlibBackend(Plot):
                 self._ax.set_zlim(zlim)
             else:
                 self._ax.set_zlim([0, 1])
+        
+        if self._invert_x_axis:
+            self._ax.invert_xaxis()
 
         # xlim and ylim should always be set at last so that plot limits
         # doesn't get altered during the process.
