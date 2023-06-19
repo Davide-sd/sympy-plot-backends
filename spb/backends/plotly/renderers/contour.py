@@ -21,11 +21,13 @@ def _draw_contour_helper(renderer, data):
     kw = p.merge({}, ckw, s.rendering_kw)
     handle = p.go.Contour(x=xx, y=yy, z=zz, **kw)
     p._fig.add_trace(handle)
-    return handle
+    return len(p._fig.data) - 1
 
 
-def _update_contour_helper(renderer, data, handle):
+def _update_contour_helper(renderer, data, idx):
     p, s = renderer.plot, renderer.series
+    handle = p.fig.data[idx]
+
     xx, yy, zz = data
     handle["x"] = xx[0, :]
     handle["y"] = yy[:, 0]

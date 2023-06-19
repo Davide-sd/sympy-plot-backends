@@ -30,11 +30,12 @@ def _draw_surface_helper(renderer, data):
     kw = p.merge({}, skw, s.rendering_kw)
     handle = p.go.Surface(x=xx, y=yy, z=zz, **kw)
     p._fig.add_trace(handle)
-    return handle
+    return len(p._fig.data) - 1
 
 
-def _update_surface_helper(renderer, data, handle):
+def _update_surface_helper(renderer, data, idx):
     p, s = renderer.plot, renderer.series
+    handle = p.fig.data[idx]
     
     if not s.is_parametric:
         x, y, z = data

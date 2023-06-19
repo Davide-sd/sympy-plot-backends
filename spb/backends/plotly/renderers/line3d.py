@@ -81,12 +81,13 @@ def _draw_line3d_helper(renderer, data):
     kw = p.merge({}, lkw, s.rendering_kw)
     handle = p.go.Scatter3d(x=x, y=y, z=z, **kw)
     p._fig.add_trace(handle)
-    return handle
+    return len(p._fig.data) - 1
 
 
-def _update_line3d_helper(renderer, data, handle):
+def _update_line3d_helper(renderer, data, idx):
     p, s = renderer.plot, renderer.series
     np = p.np
+    handle = p.fig.data[idx]
 
     if s.is_parametric:
         x, y, z, param = data

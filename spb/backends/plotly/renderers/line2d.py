@@ -98,11 +98,15 @@ def _draw_line2d_helper(renderer, data):
             handle = cls(x=x, y=y, **kw)
     
     p._fig.add_trace(handle)
-    return handle
+    # NOTE: as of Plotly 5.12.0, the figure appears to create a copy of
+    # `handle`, which cannot be used to update the figure. Hence, need to keep
+    # track of the index of traces
+    return len(p._fig.data) - 1
 
 
-def _update_line2d_helper(renderer, data, handle):
+def _update_line2d_helper(renderer, data, idx):
     p, s = renderer.plot, renderer.series
+    handle = p.fig.data[idx]
 
     if s.is_2Dline and s.is_parametric:
         x, y, param = data
@@ -118,6 +122,21 @@ def _update_line2d_helper(renderer, data, handle):
         else:
             handle["r"] = y
             handle["theta"] = x
+
+    # if s.is_2Dline and s.is_parametric:
+    #     x, y, param = data
+    #     handle["x"] = x
+    #     handle["y"] = y
+    #     handle["marker"]["color"] = param
+    #     handle["customdata"] = param
+    # else:
+    #     x, y = data
+    #     if not s.is_polar:
+    #         handle["x"] = x
+    #         handle["y"] = y
+    #     else:
+    #         handle["r"] = y
+    #         handle["theta"] = x
 
 
 class Line2DRenderer(Renderer):

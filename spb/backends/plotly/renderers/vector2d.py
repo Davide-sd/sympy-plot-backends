@@ -37,14 +37,16 @@ def _draw_vector2d_helper(renderer, data):
         quiver = p.create_quiver(xx, yy, uu, vv, **kw)
         handle = quiver.data[0]
     p._fig.add_trace(handle)
-    return [handle, col]
+    return [len(p._fig.data) - 1, col]
 
 
 def _update_vector2d_helper(renderer, data, handle):
     p, s = renderer.plot, renderer.series
     np = p.np
     x, y, u, v = data
-    old_quivers, quivers_col = handle
+    idx, quivers_col = handle
+    old_quivers = p.fig.data[idx]
+    
     if s.normalize:
         mag = np.sqrt(u**2 + v**2 )
         u, v = [t / mag for t in [u, v]]

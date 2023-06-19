@@ -22,7 +22,7 @@ def _draw_implicit3d_helper(renderer, data):
     )
     p._fig.add_trace(handle)
     p._colorbar_counter += 1
-    return handle
+    return len(p._fig.data) - 1
 
 
 def _update_implicit3d_helper(renderer, data, handle):

@@ -63,12 +63,13 @@ def _draw_vector3d_helper(renderer, data):
                 x=xx.flatten(), y=yy.flatten(), z=zz.flatten(),
                 u=uu.flatten(), v=vv.flatten(), w=ww.flatten(), **kw)
     p._fig.add_trace(handle)
-    return handle
+    return len(p._fig.data) - 1
 
 
-def _update_vector3d_helper(renderer, data, handle):
+def _update_vector3d_helper(renderer, data, idx):
     p, s = renderer.plot, renderer.series
     np = p.np
+    handle = p.fig.data[idx]
     
     if s.is_streamlines:
         raise NotImplementedError

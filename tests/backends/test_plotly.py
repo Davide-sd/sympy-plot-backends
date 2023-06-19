@@ -972,55 +972,61 @@ def test_plotly_3d_many_line_series():
     f = p.fig
 
 def test_update_interactive():
-    # quick round down of test to verify that _update_interactive doesn't
+    # quick round down of tests to verify that _update_interactive doesn't
     # raise errors
 
     u, v, x, y, z = symbols("u, v, x:z")
 
+    def do_test(p, params, prop):
+        p.backend.draw()
+        d1 = p.backend[0].get_data()
+        v1 = np.array(p.fig.data[0][prop])
+        # quivers contain None, which is not comparable with np.allclose
+        v1[v1 == None] = np.nan
+        p.backend.update_interactive(params)
+        d2 = p.backend[0].get_data()
+        v2 = np.array(p.fig.data[0][prop])
+        v2[v2 == None] = np.nan
+        c1 = not all(np.allclose(s, t) for s, t in zip(d1, d2))
+        c2 = not np.allclose(v1.astype(float), v2.astype(float), equal_nan=True)
+        return c1 and c2
+
     p = plot(sin(u * x), (x, -pi, pi), adaptive=False, n=5,
         backend=PB, show=False, params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "y")
 
     p = plot_polar(1 + sin(10 * u * x) / 10, (x, 0, 2 * pi),
         adaptive=False, n=5, backend=PB, show=False, params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 1.5}, "y")
 
     p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
         n=5, backend=PB, show=False, params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "y")
 
     # points
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=PB, is_point=True,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "x")
 
     # line
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=PB, is_point=False,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=False)
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "x")
 
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi), backend=PB, is_point=False,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)}, use_cm=True)
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "x")
 
     p = plot3d(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=PB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "z")
 
     p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=PB,
         show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "z")
 
     u, v = symbols("u, v")
     fx = (1 + v / 2 * cos(u / 2)) * cos(x * u)
@@ -1029,38 +1035,32 @@ def test_update_interactive():
     p = plot3d_parametric_surface(fx, fy, fz, (u, 0, 2*pi), (v, -1, 1),
         backend=PB, use_cm=True, n1=5, n2=5, show=False,
         params={x: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({x: 2})
+    assert do_test(p, {x: 2}, "x")
 
     p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
-        backend=PB, n=4, show=False, params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+        backend=PB, n=4, show=False, params={u: (1, 0, 2)}, scalar=False)
+    assert do_test(p, {u: 2}, "x")
 
     p = plot_vector(Matrix([u * z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
         backend=PB, n=4, show=False, params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "u")
 
     p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
         backend=PB, threed=True, use_cm=True, n=5, params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "z")
 
     from sympy.geometry import Line as SymPyLine
     p = plot_geometry(
         SymPyLine((u, 2), (5, 4)), Circle((0, 0), u), Polygon((2, u), 3, n=6),
         backend=PB, show=False, is_filled=False, use_latex=False,
         params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "x")
 
     p = plot_geometry(
         SymPyLine((u, 2), (5, 4)), Circle((0, 0), u), Polygon((2, u), 3, n=6),
         backend=PB, show=False, is_filled=True, use_latex=False,
         params={u: (1, 0, 2)})
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    assert do_test(p, {u: 2}, "x")
 
 
 def test_generic_data_series():

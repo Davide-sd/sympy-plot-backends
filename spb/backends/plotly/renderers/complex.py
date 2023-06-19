@@ -144,12 +144,14 @@ def _draw_analytic_landscape_helper(renderer, data):
     handle = p.go.Surface(x=xx, y=yy, z=mag, **kw)
     p._fig.add_trace(handle)
     p._colorbar_counter += 1
-    return handle
+    return len(p._fig.data) - 1
 
 
-def _update_analytic_landscape_helper(renderer, data, handle):
+def _update_analytic_landscape_helper(renderer, data, idx):
     p, s = renderer.plot, renderer.series
     np = p.np
+    handle = p.fig.data[idx]
+    
     xx, yy, mag, angle, colors, colorscale = data
     handle["z"] = mag
     handle["surfacecolor"] = angle
