@@ -123,21 +123,6 @@ def _update_line2d_helper(renderer, data, idx):
             handle["r"] = y
             handle["theta"] = x
 
-    # if s.is_2Dline and s.is_parametric:
-    #     x, y, param = data
-    #     handle["x"] = x
-    #     handle["y"] = y
-    #     handle["marker"]["color"] = param
-    #     handle["customdata"] = param
-    # else:
-    #     x, y = data
-    #     if not s.is_polar:
-    #         handle["x"] = x
-    #         handle["y"] = y
-    #     else:
-    #         handle["r"] = y
-    #         handle["theta"] = x
-
 
 class Line2DRenderer(Renderer):
     draw_update_map = {
