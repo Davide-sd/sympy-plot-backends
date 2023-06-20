@@ -25,7 +25,8 @@ This document is automatically generated using spb's docstrings.
 .. toctree::
    :maxdepth: 2
 
-   functions.rst
+   2d_functions.rst
+   3d_functions.rst
    vectors.rst
    ccomplex.rst
    control.rst

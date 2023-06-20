@@ -517,7 +517,7 @@ def plot_vector(*args, **kwargs):
        :include-source: True
 
        >>> from sympy import symbols, sin, cos, Plane, Matrix, sqrt, latex
-       >>> from spb.vectors import plot_vector
+       >>> from spb import plot_vector
        >>> x, y, z = symbols('x, y, z')
 
     Quivers plot of a 2D vector field with a contour plot in background

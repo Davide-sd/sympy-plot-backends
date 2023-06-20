@@ -573,7 +573,7 @@ def plot(*args, **kwargs):
        >>> plot(tan(x), (x, -1.5*pi, 1.5*pi),
        ...      adaptive=True, adaptive_goal=0.001,
        ...      detect_poles="symbolic", tx=np.rad2deg, ylim=(-7, 7),
-       ...      xlabel="x [deg]")
+       ...      xlabel="x [deg]", grid=False)
        Plot object containing:
        [0]: cartesian line: tan(x) for x over (-4.71238898038469, 4.71238898038469)
 
@@ -3716,6 +3716,17 @@ def plot_geometry(*args, **kwargs):
         ...      Rational, pi, Point, cos, sin)
         >>> from spb import plot_geometry
         >>> x, y, z = symbols('x, y, z')
+    
+    Plot a single geometry, customizing its color:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_geometry(
+       ...     Ellipse(Point(-3, 2), hradius=3, eccentricity=Rational(4, 5)),
+       ...     {"color": "tab:orange"}, grid=False)
 
     Plot several numeric geometric entitiesy. By default, circles, ellipses and
     polygons are going to be filled. Plotting Curve objects is the same as

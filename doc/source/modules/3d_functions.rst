@@ -1,7 +1,7 @@
 .. _functions:
 
-Functions
----------
+3D general plotting
+-------------------
 
 **NOTE:** 
 For technical reasons, all interactive-widgets plots in this documentation are
@@ -11,12 +11,6 @@ will have to modify the params dictionary in order to make it work with
 ipywidgets. Refer to :ref:`interactive` module for more information.
 
 .. module:: spb.functions
-
-.. autofunction:: plot
-
-.. autofunction:: plot_parametric
-
-.. autofunction:: plot_parametric_region
 
 .. autofunction:: plot3d
 
@@ -30,16 +24,4 @@ ipywidgets. Refer to :ref:`interactive` module for more information.
 
 .. autofunction:: plot3d_implicit
 
-.. autofunction:: plot_contour
-
-.. autofunction:: plot_implicit
-
-.. autofunction:: plot_polar
-
-.. autofunction:: plot_geometry
-
-.. autofunction:: plot_list
-
 .. autofunction:: plot3d_list
-
-.. autofunction:: plot_piecewise

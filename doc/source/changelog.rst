@@ -2,6 +2,56 @@
  Changelog
 ==========
 
+v2.3.0
+======
+
+* Improvements to the ``plot`` function:
+
+  * Implemented reversed x-axis. Usually, a plot range is given with the
+    form ``(symbol, min_val, max_val)``, with ``min_val`` on the left of
+    the plot. If a range is given with ``(symbol, max_val, min_val)``, then
+    the x-axis will be reversed.
+
+  * The ``plot`` function is now able to show vertical lines at discontinuities
+    when ``detect_poles="symbolic"``, at least for simple symbolic expressions.
+
+* Introducing the ``Renderer`` class. Up to version `2.2.0`, all the rendering
+  logic was located into each backend class, making it very difficult if not
+  impossible to extend the capabilities for final users. From this
+  version, each data series is going to be paired with an instance of
+  ``Renderer``: users can create new data series and renderers. Then, by
+  informing the backend of their existance, users can create new plot
+  functions or modify the rendering of the old ones.
+
+* Introducing the control module, which contains plotting functions for some
+  of the common plots used in control system. This is an improved version of
+  what is currently present on SymPy (version 1.12), because:
+  
+    * it allows to plot multiple systems simultaneously, making it easier to
+      compare different transfer functions.
+    * it works both on Matplotlib, Plotly and Bokeh.
+    * it allows to create interactive-widgets plots, allowing the study of
+      parametric systems.
+  
+  Thanks to all SymPy developers that worked on the
+  ``sympy.physics.control.control_plots`` module.
+
+  Further, it includes ``plot_nyquist`` and ``plot_nichols``, which currently
+  only works with Matplotlib. Their underlying rendering logic comes from the
+  `python-control package <https://github.com/python-control/python-control>`_.
+  Huge thanks to all the ``python-control`` developers that worked on those
+  functions.
+
+* Upgrading dependency of Holoviz's Panel to version greater or equal
+  than 1.0.0.
+
+* Bug fixes:
+
+  * complex surfaces can now be plotted with ``plot_contour``.
+
+  * custom rendering keyword arguments can be passed to ``plot_geometry``.
+
+
 v2.2.0
 ======
 

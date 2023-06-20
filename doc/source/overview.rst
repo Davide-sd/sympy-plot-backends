@@ -8,41 +8,10 @@ module.
 Plotting functions
 ==================
 
-The following functions are exposed by this module:
-
-* ``plot``: visualize a function of a single variable, with the capability
-  to correctly visualize discontinuities.
-* ``plot_piecewise``: plot piecewise expressions, with the capability
-  to correctly visualize discontinuities.
-* ``plot_polar``: visualize a curve of a given radius as a function of an
-  angle.
-* ``plot_list``: visualize numerical data.
-* ``plot_parametric``: visualize a 2D parametric curve.
-* ``plot_parametric_region``: visualize a 2D parametric region.
-* ``plot_contour``: visualized filled or line contours of a function of two
-  variables.
-* ``plot3d``: visualize a function of two variables.
-* ``plot3d_parametric_line``: visualize a 3D parametric curve.
-* ``plot3d_parametric_surface``: visualize a 3D parametric surface.
-* ``plot3d_spherical``: plots a radius as a function of the spherical
-  coordinates theta and phi.
-* ``plot3d_revolution``: generate a surface of revolution by rotating a
-  curve around an axis of rotation.
-* ``plot3d_implicit``: visualize isosurfaces of a function.
-* ``plot_geometry``: visualize entities from the `sympy.geometry` module.
-* ``plot_implicit``: visualize implicit equations / inequalities.
-* ``plot_vector``: visualize 2D/3D vector fields with quivers or streamlines.
-* ``plot_real_imag``: visualize the real and imaginary parts of a complex
-  function.
-* ``plot_complex_vector``: visualize the vector field `[re(f), im(f)]` for a
-  complex function `f` over the specified complex domain.
-* ``plot_complex_list``: visualize list of complex numbers.
-* ``plot_complex``: visualize the absolute value of a complex function
-  colored by its argument.
-* ``plotgrid``: combine multiple plots into a grid-like layout. It works with
-  Matplotlib, Bokeh and Plotly.
-
-It is also possible to combine different plots together.
+On top of the usual and limited SymPy plotting functions, many new functions
+are implemented to deal with 2D or 3D lines, contours, surfaces, vectors,
+complex functions and control theory. The output of all of them can be viewed
+by exploring the :doc:`Modules </modules/index>` section.
 
 
 Backends
@@ -59,6 +28,11 @@ is limited).
 
 The 3 most important reasons for supporting multiple backends are:
 
+#. **In the Python ecosystem there is no perfect plotting library**. Each one
+   is great at something and terrible at something else. Supporting multiple
+   backends allows the plotting module to have a greater capability of
+   visualizing different kinds of symbolic expressions.
+
 #. **Better interactive** experience (explored in the tutorial section), which
    translates to better data exploration and visualization (especially when
    working with Jupyter Notebook).
@@ -67,11 +41,6 @@ The 3 most important reasons for supporting multiple backends are:
    can be used as a starting point to plot symbolic expressions; then, we could
    use the figure object to add numerical (or experimental) results using the
    commands associated to the specific plotting library.
-
-#. **In the Python ecosystem there is no perfect plotting library**. Each one
-   is great at something and terrible at something else. Supporting multiple
-   backends allows the plotting module to have a greater capability of
-   visualizing different kinds of symbolic expressions.
 
 More information about the backends can be found at:
 :doc:`Backends </modules/backends/index>` .

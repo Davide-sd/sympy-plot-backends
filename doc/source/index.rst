@@ -36,8 +36,8 @@ without the knowledge of complicated widget libraries.
 
    overview.rst
    install.rst
-   tutorials/index.rst
    modules/index.rst
+   tutorials/index.rst
    changelog.rst
 
 
