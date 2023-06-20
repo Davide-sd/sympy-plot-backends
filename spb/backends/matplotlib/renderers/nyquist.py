@@ -278,7 +278,7 @@ def _process_data_helper(data, max_curve_magnitude, max_curve_offset,
             "number of encirclements does not match Nyquist criterion;"
             " check frequency range and indent radius/direction",
             UserWarning, stacklevel=2)
-    elif indent_direction == 'none' and any(sys.poles().real == 0):
+    elif indent_direction == 'none' and any(tf_poles.real == 0):
         warnings.warn(
             "system has pure imaginary poles but indentation is"
             " turned off; results may be meaningless",

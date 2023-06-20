@@ -1,11 +1,12 @@
 from spb.defaults import cfg
-from sympy import Tuple, sympify, Expr, Dummy, S, sin, cos, Symbol, Indexed
+from sympy import Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed
 from sympy.physics.mechanics import Vector as MechVector
-from sympy.vector import Vector, BaseScalar
+from sympy.vector import BaseScalar
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 from sympy.external import import_module
 import warnings
+
 
 def _create_ranges(exprs, ranges, npar, label="", params=None):
     """This function does two things:

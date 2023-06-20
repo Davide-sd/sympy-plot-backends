@@ -1,4 +1,5 @@
 from spb.backends.base_renderer import Renderer
+import warnings
 
 
 def _draw_contour_helper(renderer, data):

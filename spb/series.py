@@ -2,7 +2,7 @@ from inspect import signature
 from spb.ccomplex.wegert import wegert
 from spb.defaults import cfg
 from spb.utils import (
-    prange, _get_free_symbols, spherical_to_cartesian, unwrap
+    _get_free_symbols, unwrap
 )
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
