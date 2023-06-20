@@ -2,13 +2,7 @@
 Bootstrap template based on the bootstrap.css library.
 """
 import pathlib
-
 import param
-
-# from panel.io.resources import CSS_URLS, JS_URLS
-# from panel.layout import Card
-# from panel.template.base import BasicTemplate
-from panel.template.theme import DarkTheme, DefaultTheme
 from panel.template import BootstrapTemplate
 
 
@@ -38,7 +32,7 @@ class SymPyBootstrapTemplate(BootstrapTemplate):
     show_header = param.Boolean(default=True, doc="""
         Wheter to show the header. Default to True.""")
 
-    _css = pathlib.Path(__file__).parent / 'bootstrap.css'
+    # _css = pathlib.Path(__file__).parent / 'bootstrap.css'
 
     _template = pathlib.Path(__file__).parent / 'bootstrap.html'
 
@@ -67,15 +61,3 @@ class SymPyBootstrapTemplate(BootstrapTemplate):
                              'has a unique name by which it can be '
                              'referenced in the template.' % name)
         self._render_variables[name] = value
-
-
-class SymPyBootstrapDefaultTheme(DefaultTheme):
-
-    _template = SymPyBootstrapTemplate
-
-
-class SymPyBootstrapDarkTheme(DarkTheme):
-
-    css = param.Filename(default=pathlib.Path(__file__).parent / 'dark.css')
-
-    _template = SymPyBootstrapTemplate

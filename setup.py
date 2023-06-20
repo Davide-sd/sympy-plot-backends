@@ -16,7 +16,7 @@ _all_deps = [
     "notebook",
     "ipympl>=0.7.0",
     "plotly>=4.14.3",
-    "panel>=0.13.0", # this includes param and bokeh
+    "panel>=1.0.0", # this includes param and bokeh
     "ipywidgets_bokeh", # starting from panel v0.13.0, it is not part of panel anymore
     "colorcet",
     "k3d>=2.9.7",

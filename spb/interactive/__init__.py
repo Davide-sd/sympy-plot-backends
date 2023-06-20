@@ -3,7 +3,7 @@ from sympy import latex
 from sympy.external import import_module
 
 
-def _tuple_to_dict(k, v, use_latex=False):
+def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
     """Create a dictionary of keyword arguments to be later used to
     instantiate sliders.
 
@@ -44,7 +44,7 @@ def _tuple_to_dict(k, v, use_latex=False):
     N = 40
     defaults_keys = ["value", "min", "max", "step", "description", "type"]
     defaults_values = [1, 0, 2, N,
-        "$%s$" % latex(k) if use_latex else str(k),
+        latex_wrapper % latex(k) if use_latex else str(k),
         "linear",
     ]
     values = defaults_values.copy()

@@ -30,9 +30,9 @@ build:
          - wget -N https://chromedriver.storage.googleapis.com/107.0.5304.62/chromedriver_linux64.zip -P $HOME
          - unzip ~/chromedriver_linux64.zip -d $HOME/selenium/drivers
          - rm ~/chromedriver_linux64.zip
-      post_install:
-         - pip install "matplotlib<3.6.0"
-         - pip install "panel==0.13.1"
+      # post_install:
+      #    - pip install "matplotlib<3.6.0"
+      #    - pip install "panel==0.13.1"
       # post_build:
       #    - cat $HOME/selenium/sphinx_k3d_screenshot.log
 

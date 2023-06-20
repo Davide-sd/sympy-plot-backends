@@ -78,8 +78,8 @@ def test_DynamicParam():
     p3 = getattr(t.param, "dyn_param_2")
     p4 = getattr(t.param, "dyn_param_3")
 
-    test_number(p1, 1, (0, 5), "$a$", 0.125)
-    test_number(p2, 2, (1.5, 4.5), "$b$", 0.15)
+    test_number(p1, 1, (0, 5), "$$a$$", 0.125)
+    test_number(p2, 2, (1.5, 4.5), "$$b$$", 0.15)
     test_number(p3, 3, (2, 5), "test1", 0.1)
     test_log_slider(p4, 1, (1, 10), 10, "test2")
 
@@ -218,7 +218,7 @@ def test_iplot(panel_options):
     assert isinstance(gridbox.children[2][0], bm.Slider)
     assert isinstance(gridbox.children[3][0], bm.Slider)
     assert isinstance(gridbox.children[4][0], bm.Spinner)
-    assert isinstance(gridbox.children[5][0], bm.CheckboxGroup)
+    assert isinstance(gridbox.children[5][0], bm.Checkbox)
     assert isinstance(gridbox.children[6][0], bm.Select)
 
     # test that the previous class-attribute associated to the previous
@@ -247,8 +247,8 @@ def test_iplot(panel_options):
     p2 = getattr(t.param, "dyn_param_1")
     p3 = getattr(t.param, "dyn_param_2")
 
-    assert p1.label == "$a$"
-    assert p2.label == "$b$"
+    assert p1.label == "$$a$$"
+    assert p2.label == "$$b$$"
     assert p3.label == "test"
 
     t = plot(
@@ -268,7 +268,7 @@ def test_create_widgets():
 
     w = create_widgets({
         x: (2, 0, 4),
-        y: (200, 1, 1000, 10, None, "$y$", "log"),
+        y: (200, 1, 1000, 10, None, "y", "log"),
         z: param.Integer(3, softbounds=(3, 10), label="n")
     }, use_latex = True)
 
@@ -277,8 +277,8 @@ def test_create_widgets():
     assert isinstance(w[x], pn.widgets.FloatSlider)
     assert isinstance(w[y], pn.widgets.DiscreteSlider)
     assert isinstance(w[z], pn.widgets.IntSlider)
-    assert w[x].name == "$x$"
-    assert w[y].name == "$y$"
+    assert w[x].name == "$$x$$"
+    assert w[y].name == "y"
     assert w[z].name == "n"
 
     formatter = bokeh.models.formatters.PrintfTickFormatter(format="%.4f")
