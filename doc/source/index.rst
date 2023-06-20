@@ -20,7 +20,7 @@ without the knowledge of complicated widget libraries.
 
 .. image:: _static/iplot_bokeh.png
   :width: 220
-  :alt: iplot with bokeh
+  :alt: interactive plot with bokeh
 
 .. image:: _static/bokeh_domain_coloring.png
   :width: 220

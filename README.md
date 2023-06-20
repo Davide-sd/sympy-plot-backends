@@ -25,22 +25,20 @@ The following plotting libraries are supported: [Matplolib](https://matplotlib.o
 On top of the usual plotting functions exposed by SymPy (`plot`,
 `plot_parametric`, `plot3d`, etc.), this module offers the capabily to:
 
-* use a different backend.
+* use a different plotting library.
 * visualize discontinuities on 2D line plots.
-* `plot_piecewise` to visualize 2D line plots of piecewise functions with
-  their discontinuities.
 * `plot_vector` to quickly visualize 2D/3D vector fields with quivers
   or streamlines.
 * `plot_real_imag`, `plot_complex`, `plot_complex_list`, `plot_complex_vector`
   to visualize complex functions.
-* `plot_polar` function.
 * `plot_geometry` to quickly visualize entities from the `sympy.geometry`
   module.
-* `iplot` function to create parametric-interactive plots using widgets
-  (sliders, buttons, etc.).
+* capability to create parametric-interactive plots using widgets
+  (sliders, buttons, etc.) with *ipywidgets* or *Holoviz's Panel*.
 * `plotgrid` function, which replaces the `PlotGrid` class: it allows to
   combine multiple plots into a grid-like layout. It works with Matplotlib,
   Bokeh and Plotly.
+* `plot_bode`, `plot_nyquist`, `plot_nichols`, etc. to visualize control systems.
 
 Please, read the
 [following documentation page](https://sympy-plot-backends.readthedocs.io/en/latest/overview.html#differences-with-sympy-plotting)

@@ -23,7 +23,7 @@ from spb.ccomplex.complex import (
     plot_real_imag, plot_complex_vector, plot_riemann_sphere
 )
 from spb.control import (
-    plot_pole_zero, step_response_plot, plot_impulse_response,
+    plot_pole_zero, plot_step_response, plot_impulse_response,
     plot_ramp_response, plot_bode_magnitude, plot_bode_phase, plot_bode,
     plot_nyquist, plot_nichols
 )
@@ -46,7 +46,7 @@ __all__ = [
     "plot_complex_list", "plot_real_imag", "plot_complex_vector", "plotgrid",
     "MB", "BB", "PB", "KB", "MAB", "plot3d_list", "prange",
     "plot_riemann_sphere", "PlotGrid",
-    "plot_pole_zero", "step_response_plot", "plot_impulse_response",
+    "plot_pole_zero", "plot_step_response", "plot_impulse_response",
     "plot_ramp_response", "plot_bode_magnitude", "plot_bode_phase",
     "plot_bode", "plot_nyquist", "plot_nichols"
 ]

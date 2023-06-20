@@ -148,9 +148,9 @@ Let's now discuss a few customization options:
    # Specify the default interactive module for widgets. Can be:
    # "ipywidgets" or "panel"
    cfg["interactive"]["module"] = "ipywidgets"
-   # Visualize Latex labels in the widgets of `iplot`
+   # Visualize Latex labels in the widgets of interactive plots
    cfg["interactive"]["use_latex"] = True
-   # Controls wether sliders trigger the update of `iplot`at each
+   # Controls wether sliders trigger the update of interactive plots at each
    # tick (value False) or only when the mouse click is released
    # (value True)
    cfg["interactive"]["throttled"] = False

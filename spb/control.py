@@ -212,9 +212,9 @@ def plot_pole_zero(*systems, pole_markersize=10, zero_markersize=7, show_axes=Fa
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import pole_zero_plot
+        >>> from spb import plot_pole_zero
         >>> tf1 = TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
-        >>> pole_zero_plot(tf1)   # doctest: +SKIP
+        >>> plot_pole_zero(tf1)   # doctest: +SKIP
 
     Interactive-widgets plot of multiple systems, one of which is parametric:
 
@@ -236,11 +236,6 @@ def plot_pole_zero(*systems, pole_markersize=10, zero_markersize=7, show_axes=Fa
            },
            xlim=(-4, 1), ylim=(-4, 4),
            show_axes=True, use_latex=False)
-
-    See Also
-    ========
-
-    pole_zero_numerical_data
 
     References
     ==========
@@ -348,12 +343,12 @@ def plot_step_response(*systems, lower_limit=0, upper_limit=10,
                # NOTE: remove `None` if using ipywidgets
                f: (0, 0, 10, 50, None, "lower limit"),
                g: (10, 0, 25, 50, None, "upper limit"),
-           })
+           }, use_latex=False)
 
     See Also
     ========
 
-    impulse_response_plot, ramp_response_plot
+    plot_impulse_response, plot_ramp_response
 
     References
     ==========
@@ -462,13 +457,13 @@ def plot_impulse_response(*systems, prec=8, lower_limit=0,
                # NOTE: remove `None` if using ipywidgets
                g: (0, 0, 10, 50, None, "lower limit"),
                h: (8, 0, 25, 50, None, "upper limit"),
-           })
+           }, use_latex=False)
 
 
     See Also
     ========
 
-    step_response_plot, ramp_response_plot
+    plot_step_response, plot_ramp_response
 
     References
     ==========
@@ -581,12 +576,12 @@ def plot_ramp_response(*systems, slope=1, prec=8,
                c: (1, 0, 10, 50, None, "slope"),
                d: (0, 0, 5, 50, None, "lower limit"),
                e: (5, 2, 10, 50, None, "upper limit"),
-           })
+           }, use_latex=False)
 
     See Also
     ========
 
-    step_response_plot, impulse_response_plot
+    plot_step_response, plot_impulse_response
 
     References
     ==========
@@ -642,7 +637,7 @@ def plot_bode_magnitude(*systems, initial_exp=-5, final_exp=5,
     """
     Returns the Bode magnitude plot of a continuous-time system.
 
-    See ``bode_plot`` for all the parameters.
+    See ``plot_bode`` for all the parameters.
     """
     freq_units = ('rad/sec', 'Hz')
     if freq_unit not in freq_units:
@@ -690,7 +685,7 @@ def plot_bode_phase(*systems, initial_exp=-5, final_exp=5,
     """
     Returns the Bode phase plot of a continuous-time system.
 
-    See ``bode_plot`` for all the parameters.
+    See ``plot_bode`` for all the parameters.
     """
     freq_units = ('rad/sec', 'Hz')
     phase_units = ('rad', 'deg')
@@ -759,14 +754,14 @@ def plot_bode(*systems, initial_exp=-5, final_exp=5,
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import bode_plot
+        >>> from spb import plot_bode
         >>> tf1 = TransferFunction(1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
-        >>> bode_plot(tf1, initial_exp=0.2, final_exp=0.7)   # doctest: +SKIP
+        >>> plot_bode(tf1, initial_exp=0.2, final_exp=0.7)   # doctest: +SKIP
 
     See Also
     ========
 
-    bode_magnitude_plot, bode_phase_plot
+    plot_bode_magnitude, plot_bode_phase, plot_nyquist, plot_nichols
 
     """
     if kwargs.get("params", None):
@@ -942,6 +937,11 @@ def plot_nyquist(*systems, **kwargs):
     ==========
 
     .. [#fn1] https://en.wikipedia.org/wiki/Hall_circles
+
+    See Also
+    ========
+
+    plot_bode, plot_nichols
 
     Notes
     =====
@@ -1137,6 +1137,11 @@ def plot_nichols(*systems, **kwargs):
            },
            xlim=(-360, 360)
        )
+
+    See Also
+    ========
+
+    plot_bode, plot_nyquist
 
     """
     systems = _unpack_systems(systems)
