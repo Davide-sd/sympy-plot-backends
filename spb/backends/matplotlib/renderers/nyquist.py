@@ -34,7 +34,7 @@ def _draw_m_circles(ax, xlim=None, ylim=None, x=None, y=None,
         axis_limits["xmin"], axis_limits["xmax"] = xlim
     if ylim:
         axis_limits["ymin"], axis_limits["ymax"] = ylim
-    
+
     mx, my = ax.margins()
     if axis_limits["xmin"] is None:
         if x is not None:
@@ -54,7 +54,7 @@ def _draw_m_circles(ax, xlim=None, ylim=None, x=None, y=None,
         else:
             axis_limits["ymin"] = -1
             axis_limits["ymax"] = 1
-    
+
     dbs = [-20, -10, -6, -4, -2, 0, 2, 4, 6, 10, 20]
     magnitudes = [10**(t / 20) for t in dbs]
     magnitudes[5] = -0.5
@@ -71,7 +71,7 @@ def _draw_m_circles(ax, xlim=None, ylim=None, x=None, y=None,
     x, y = np.mgrid[
         axis_limits["xmin"]:axis_limits["xmax"]:n1*1j,
         axis_limits["ymin"]:axis_limits["ymax"]:n2*1j]
-    
+
     contours = []
     clabels = []
     for m, l in zip(magnitudes, labels):
@@ -109,7 +109,7 @@ def _draw_m_circles(ax, xlim=None, ylim=None, x=None, y=None,
         for t in texts:
             t.set_rotation(0)
             t.set_text(l)
-    
+
     return contours, clabels
 
 
@@ -125,7 +125,7 @@ def _draw_arrows_helper(
     line: Line2D object as returned by plot command
     arrow_locs: list of locations where to insert arrows, % of total length
     arrowstyle: style of the arrow
-    dir: direction of the arrows. +1 along the line, -1 in opposite direction. 
+    dir: direction of the arrows. +1 along the line, -1 in opposite direction.
 
     Returns:
     --------
@@ -427,7 +427,7 @@ def _draw_nyquist_helper(renderer, data):
         arrows2 = _draw_arrows_helper(
             ax, invisible_secondary_line, s.arrows_loc, arrowstyle=arrow_style, dir=-1)
         arrows_handles.extend(arrows2)
-    
+
     # Mark the start of the curve
     start_marker_handle = None
     if s.start_marker:
@@ -440,7 +440,7 @@ def _draw_nyquist_helper(renderer, data):
 
     # Mark the -1 point
     ax.plot([-1], [0], 'r+')
-    
+
 
     handles = [
         m_handles,
@@ -467,7 +467,7 @@ def _update_nyquist_helper(renderer, data, handles):
         s.encirclement_threshold, s.indent_direction,
         s._poles, s._poles_cl)
     x_reg, y_reg, x_scl, y_scl, x_inv1, y_inv1, x_inv2, y_inv2, curve_offset = new_data
-    
+
     # remove previous arrows
     for a in arrows_handles:
         a.remove()
@@ -493,7 +493,7 @@ def _update_nyquist_helper(renderer, data, handles):
         arrows2 = _draw_arrows_helper(
             ax, invisible_secondary_line, s.arrows_loc, arrowstyle=arrow_style, dir=-1)
         arrows_handles.extend(arrows2)
-    
+
     if start_marker_handle:
         start_marker_handle.set_data([x_reg[0]], [y_reg[0]])
 

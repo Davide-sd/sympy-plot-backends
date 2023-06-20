@@ -1025,7 +1025,7 @@ def _detect_poles_numerical_helper(x, y, eps=0.01, expr=None, symb=None, symboli
         angle = np.arctan(dy / dx)
         if abs(angle) >= threshold:
             yy[i + 1] = np.nan
-    
+
     return x, yy
 
 def _detect_poles_symbolic_helper(expr, symb, start, end):

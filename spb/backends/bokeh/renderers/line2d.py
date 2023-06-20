@@ -86,7 +86,7 @@ def _update_line2d_helper(renderer, data, handles):
                 "ys": y if not s.is_polar else y * np.sin(x)
             }
         handle[0].data_source.data.update(source)
-    
+
     # update vertical lines
     if len(vlines) != len(s.poles_locations):
         # instead of removing elements from p._fig.center, let's add new
@@ -101,7 +101,7 @@ def _update_line2d_helper(renderer, data, handles):
         vlines = handles[1]
         for vl, x_loc in zip(vlines, s.poles_locations):
             vl.location = float(x_loc)
-        
+
         # hide the unnecessary ones
         for vl in vlines[len(s.poles_locations):]:
             vl.visible = False

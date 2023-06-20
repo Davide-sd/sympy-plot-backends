@@ -31,7 +31,7 @@ def _draw_complex_helper(renderer, data):
             cb2 = method(
                 p.cm.ScalarMappable(norm=norm, cmap=colormap),
                 # orientation="vertical",
-                label="Argument" if s.get_label(False) == str(s.expr) else s.get_label(self._use_latex),
+                label="Argument" if s.get_label(False) == str(s.expr) else s.get_label(p._use_latex),
                 ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
                 ax=p._ax,
             )
@@ -86,7 +86,7 @@ def _update_complex_helper(renderer, data, handle):
         if s.use_cm:
             kw["facecolors"] = facecolors / 255
         handle[0] = p._ax.plot_surface(x, y, mag, **kw)
-    
+
 
 class ComplexRenderer(MatplotlibRenderer):
     draw_update_map = {

@@ -61,7 +61,7 @@ def _draw_domain_coloring_helper(renderer, data):
                         "&#x3C0;",
                     ],
                     x=1 + 0.1 * p._colorbar_counter,
-                    title="Argument" if s.get_label(False) == str(s.expr) else s.get_label(self._use_latex),
+                    title="Argument" if s.get_label(False) == str(s.expr) else s.get_label(p._use_latex),
                     titleside="right",
                 ),
                 showscale=True,
@@ -70,7 +70,7 @@ def _draw_domain_coloring_helper(renderer, data):
         handles.append(h2)
         p._fig.add_trace(h2)
         p._colorbar_counter += 1
-    
+
     return handles
 
 
@@ -151,7 +151,7 @@ def _update_analytic_landscape_helper(renderer, data, idx):
     p, s = renderer.plot, renderer.series
     np = p.np
     handle = p.fig.data[idx]
-    
+
     xx, yy, mag, angle, colors, colorscale = data
     handle["z"] = mag
     handle["surfacecolor"] = angle

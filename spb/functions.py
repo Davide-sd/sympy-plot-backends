@@ -359,7 +359,7 @@ def plot(*args, **kwargs):
     detect_poles : boolean or str, optional
         Chose whether to detect and correctly plot poles. There are two
         algorithms at work:
-        
+
         1. based on the gradient of the numerical data, it introduces NaN
            values at locations where the steepness is greater than some
            threshold. This splits the line into multiple segments. To improve
@@ -404,7 +404,7 @@ def plot(*args, **kwargs):
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used. The number of labels must be
         equal to the number of expressions.
-    
+
     legend : bool, optional
         Show/hide the legend. Default to None (the backend determines when
         it is appropriate to show it).
@@ -792,7 +792,7 @@ def plot_parametric(*args, **kwargs):
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
-    
+
     colorbar : boolean, optional
         Show/hide the colorbar. Default to True (colorbar is visible).
         Only works when ``use_cm=True``.
@@ -822,7 +822,7 @@ def plot_parametric(*args, **kwargs):
         The label to be shown in the legend or in the colorbar. If not
         provided, the string representation of `expr` will be used. The number
         of labels must be equal to the number of expressions.
-    
+
     legend : bool, optional
         Show/hide the legend. Default to None (the backend determines when
         it is appropriate to show it). Only works when ``use_cm=False``.
@@ -1279,7 +1279,7 @@ def plot3d_parametric_line(*args, **kwargs):
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
-    
+
     colorbar : boolean, optional
         Show/hide the colorbar. Default to True (colorbar is visible).
         Only works when ``use_cm=True``.
@@ -1313,7 +1313,7 @@ def plot3d_parametric_line(*args, **kwargs):
         The label to be shown in the legend or in the colorbar. If not
         provided, the string representation of ``expr`` will be used.
         The number of labels must be equal to the number of expressions.
-    
+
     legend : bool, optional
         Show/hide the legend. Default to None (the backend determines when
         it is appropriate to show it). Only works when ``use_cm=False``.
@@ -1797,7 +1797,7 @@ def plot3d(*args, **kwargs):
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
-    
+
     colorbar : boolean, optional
         Show/hide the colorbar. Default to True (colorbar is visible).
         Only works when ``use_cm=True``.
@@ -1829,7 +1829,7 @@ def plot3d(*args, **kwargs):
         The label to be shown in the colorbar. If not provided, the string
         representation of ``expr`` will be used. The number of labels must be
         equal to the number of expressions.
-    
+
     legend : bool, optional
         Show/hide the legend. Default to None (the backend determines when
         it is appropriate to show it). Only works when ``use_cm=False``.
@@ -2133,7 +2133,7 @@ def plot3d_parametric_surface(*args, **kwargs):
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
-    
+
     colorbar : boolean, optional
         Show/hide the colorbar. Default to True (colorbar is visible).
         Only works when ``use_cm=True``.
@@ -2175,7 +2175,7 @@ def plot3d_parametric_surface(*args, **kwargs):
         If an integer is provided, the u and v ranges are sampled uniformly
         at ``n`` of points. If a tuple is provided, it overrides
         ``n1`` and ``n2``.
-    
+
     legend : bool, optional
         Show/hide the legend. Default to None (the backend determines when
         it is appropriate to show it). Only works when ``use_cm=False``.
@@ -2470,7 +2470,7 @@ def plot3d_spherical(*args, **kwargs):
             function to customize the appearance of surfaces. Refer to the
             plotting library (backend) manual for more informations.
 
-        ``**kwargs`` : 
+        ``**kwargs`` :
             Keyword arguments are the same as ``plot3d_parametric_surface``.
             Refer to its documentation for more information.
 
@@ -3213,7 +3213,7 @@ def plot_implicit(*args, **kwargs):
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used. The number of labels must be
         equal to the number of expressions.
-    
+
     legend : bool, optional
         Show/hide the legend. Default to None (the backend determines when
         it is appropriate to show it).
@@ -3647,7 +3647,7 @@ def plot_geometry(*args, **kwargs):
         The label to be shown in the legend. If not provided, the string
         representation of ``geom`` will be used. The number of labels must be
         equal to the number of geometric entities.
-    
+
     legend : bool, optional
         Show/hide the legend. Default to None (the backend determines when
         it is appropriate to show it).
@@ -3716,7 +3716,7 @@ def plot_geometry(*args, **kwargs):
         ...      Rational, pi, Point, cos, sin)
         >>> from spb import plot_geometry
         >>> x, y, z = symbols('x, y, z')
-    
+
     Plot a single geometry, customizing its color:
 
     .. plot::
@@ -3946,7 +3946,7 @@ def plot_list(*args, **kwargs):
     label : str or list/tuple, optional
         The label to be shown in the legend. The number of labels must be
         equal to the number of expressions.
-    
+
     legend : bool, optional
         Show/hide the legend. Default to None (the backend determines when
         it is appropriate to show it).
@@ -4178,7 +4178,7 @@ def plot3d_list(*args, **kwargs):
     label : str or list/tuple, optional
         The label to be shown in the legend. The number of labels must be
         equal to the number of expressions.
-    
+
     legend : bool, optional
         Show/hide the legend. Default to None (the backend determines when
         it is appropriate to show it).
@@ -4413,7 +4413,7 @@ def plot_piecewise(*args, **kwargs):
     detect_poles : boolean or str, optional
         Chose whether to detect and correctly plot poles. There are two
         algorithms at work:
-        
+
         1. based on the gradient of the numerical data, it introduces NaN
            values at locations where the steepness is greater than some
            threshold. This splits the line into multiple segments. To improve

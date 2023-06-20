@@ -337,7 +337,7 @@ def plot_vector(*args, **kwargs):
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
-    
+
     colorbar : boolean, optional
         Show/hide the colorbar. Default to True (colorbar is visible).
 

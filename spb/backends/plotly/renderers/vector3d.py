@@ -10,7 +10,7 @@ def _draw_vector3d_helper(renderer, data):
         warnings.warn("PlotlyBackend doesn't support custom "
             "coloring of 2D/3D quivers or streamlines plots. "
             "`color_func` will not be used.")
-    
+
     xx, yy, zz, uu, vv, ww = data
     if s.is_streamlines:
         stream_kw = s.rendering_kw.copy()
@@ -58,7 +58,7 @@ def _draw_vector3d_helper(renderer, data):
             cmax=mag.max(),
         )
         kw = p.merge({}, qkw, s.rendering_kw)
-        
+
         handle = p.go.Cone(
                 x=xx.flatten(), y=yy.flatten(), z=zz.flatten(),
                 u=uu.flatten(), v=vv.flatten(), w=ww.flatten(), **kw)
@@ -70,7 +70,7 @@ def _update_vector3d_helper(renderer, data, idx):
     p, s = renderer.plot, renderer.series
     np = p.np
     handle = p.fig.data[idx]
-    
+
     if s.is_streamlines:
         raise NotImplementedError
     x, y, z, u, v, w = data
@@ -89,7 +89,7 @@ def _update_vector3d_helper(renderer, data, idx):
     handle["w"] = w.flatten()
     handle["cmin"] = cmin=mag.min()
     handle["cmax"] = cmin=mag.max()
-    
+
 
 class Vector3DRenderer(Renderer):
     draw_update_map = {

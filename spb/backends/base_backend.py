@@ -206,7 +206,7 @@ class Plot:
             self.ylabel = wrapper % self.ylabel(self._use_latex)
         if callable(self.zlabel):
             self.zlabel = wrapper % self.zlabel(self._use_latex)
-    
+
     def _set_title(self, wrapper="$%s$"):
         """Set the correct title depending on wheter the backend support
         Latex rendering.
@@ -220,7 +220,7 @@ class Plot:
         """
         if not self._use_latex:
             wrapper = "%s"
-        
+
         if callable(self.title):
             self.title = self.title(wrapper, self._use_latex)
 
@@ -288,7 +288,7 @@ class Plot:
                 # backend
                 if not ("process_piecewise" in kwargs.keys()):
                     self.legend = True
-        
+
         # allow to invert x-axis if the range is given as (symbol, max, min)
         # instead of (symbol, min, max).
         # just check the first series.
@@ -377,7 +377,7 @@ class Plot:
             convert_colormap(cm, self._library) for cm in cyclic_colormaps
         ]
         self._cyccm = cycle(cyclic_colormaps)
-    
+
     def _create_renderers(self):
         """Connect data series to appropriate renderers."""
         self._renderers = []
@@ -391,7 +391,7 @@ class Plot:
                 # create data series starting from plotting functions, without
                 # showing the plot. Hence, I raise the error later, if needed.
                 self._renderers.append(None)
-    
+
     def _check_supported_series(self, renderer, series):
         if renderer is None:
             raise NotImplementedError(
@@ -452,7 +452,7 @@ class Plot:
     def fig(self):
         """Returns the figure used to render/display the plots."""
         return self._fig
-    
+
     @property
     def renderers(self):
         """Returns the renderers associated to each series."""

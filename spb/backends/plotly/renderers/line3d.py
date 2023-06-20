@@ -99,7 +99,7 @@ def _update_line3d_helper(renderer, data, idx):
     handle["z"] = z
     if s.use_cm:
         handle["line"]["color"] = param
-    
+
 
 class Line3DRenderer(Renderer):
     draw_update_map = {

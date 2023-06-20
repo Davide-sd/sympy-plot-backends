@@ -402,7 +402,7 @@ def plot_real_imag(*args, **kwargs):
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
-    
+
     colorbar : boolean, optional
         Show/hide the colorbar. Only works when ``use_cm=True`` and 3D plots.
         Default to True (colorbar is visible).
@@ -791,7 +791,7 @@ def plot_complex(*args, **kwargs):
         Specify the colormap to be used on enhanced domain coloring plots
         (both images and 3d plots). Default to ``"hsv"``. Can be any colormap
         from matplotlib or colorcet.
-    
+
     colorbar : boolean, optional
         Show/hide the colorbar. Default to True (colorbar is visible).
 
@@ -1415,7 +1415,7 @@ def plot_complex_vector(*args, **kwargs):
     backend : Plot, optional
         A subclass of `Plot`, which will perform the rendering.
         Default to `MatplotlibBackend`.
-    
+
     colorbar : boolean, optional
         Show/hide the colorbar. Default to True (colorbar is visible).
 

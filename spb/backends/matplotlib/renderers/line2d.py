@@ -46,7 +46,7 @@ def _draw_line2d_helper(renderer, data):
         kw = p.merge({}, lkw, s.rendering_kw)
         l = p._ax.plot(x, y, **kw)
         handle = l
-    
+
     # add vertical lines at discontinuities
     hvlines = [
         p._ax.axvline(x_loc, **p.pole_line_kw) for x_loc in s.poles_locations
@@ -61,7 +61,7 @@ def _update_line2d_helper(renderer, data, handles):
         x, y, param = data
     else:
         x, y = data
-    
+
     line_handles, hvlines = handles
 
     if s.is_parametric and s.use_cm:
@@ -84,7 +84,7 @@ def _update_line2d_helper(renderer, data, handles):
         line = line_handles[0]
         # TODO: Point2D are updated but not visible.
         line.set_data(x, y)
-    
+
     # update vertical lines
     if len(hvlines) != len(s.poles_locations):
         for hvl in hvlines:
@@ -106,7 +106,7 @@ class Line2DRenderer(MatplotlibRenderer):
         super().__init__(*args, **kwargs)
         if self.series.use_cm:
             self._sal = True
-    
+
     def draw(self):
         data = self.series.get_data()
 

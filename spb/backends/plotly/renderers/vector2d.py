@@ -10,7 +10,7 @@ def _draw_vector2d_helper(renderer, data):
         warnings.warn("PlotlyBackend doesn't support custom "
             "coloring of 2D/3D quivers or streamlines plots. "
             "`color_func` will not be used.")
-    
+
     xx, yy, uu, vv = data
     if s.normalize:
         mag = np.sqrt(uu**2 + vv**2 )
@@ -46,7 +46,7 @@ def _update_vector2d_helper(renderer, data, handle):
     x, y, u, v = data
     idx, quivers_col = handle
     old_quivers = p.fig.data[idx]
-    
+
     if s.normalize:
         mag = np.sqrt(u**2 + v**2 )
         u, v = [t / mag for t in [u, v]]

@@ -24,7 +24,7 @@ __all__ = [
     'bode_magnitude_plot', 'plot_bode_magnitude',
     'bode_phase_plot', 'plot_bode_phase',
     'bode_plot', 'plot_bode',
-    'nyquist_plot', 'plot_nyquist'
+    'nyquist_plot', 'plot_nyquist',
     'nichols_plot', 'plot_nichols'
 ]
 
@@ -1056,7 +1056,7 @@ def plot_nichols(*systems, **kwargs):
 
     Parameters
     ==========
-    
+
     system : SISOLinearTimeInvariant type
         The LTI SISO system for which the Bode Plot is to be computed.
         It can be:
@@ -1097,7 +1097,7 @@ def plot_nichols(*systems, **kwargs):
        >>> from spb.control import plot_nichols
        >>> tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
        >>> plot_nichols(tf)
-    
+
     Turning off the Nichols grid lines:
 
     .. plot::
@@ -1106,7 +1106,7 @@ def plot_nichols(*systems, **kwargs):
        :include-source: True
 
        >>> plot_nichols(tf, ngrid=False)
-    
+
     Plotting multiple transfer functions:
 
     .. plot::
@@ -1117,7 +1117,7 @@ def plot_nichols(*systems, **kwargs):
        >>> tf1 = TransferFunction(1, s**2 + 2*s + 1, s)
        >>> tf2 = TransferFunction(1, s**2 - 2*s + 1, s)
        >>> plot_nichols(tf1, tf2, xlim=(-360, 360))
-    
+
     Interactive-widgets plot of a systems. For these kind of plots, it is
     recommended to set both ``omega_limits`` and ``xlim``:
 

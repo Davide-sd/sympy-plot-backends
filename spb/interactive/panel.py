@@ -256,7 +256,7 @@ class PanelLayout:
             if isinstance(t, param.Number):
                 if self.formatters[k] is not None:
                     widgets[v]["format"] = self.formatters[k]
-        
+
         # turn on/off throttling according to:
         # https://panel.holoviz.org/how_to/performance/throttling.html
         pn.config.throttled = throttled

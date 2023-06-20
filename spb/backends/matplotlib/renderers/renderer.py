@@ -3,7 +3,7 @@ from spb.backends.base_renderer import Renderer
 
 class MatplotlibRenderer(Renderer):
     draw_update_map = {}
-    
+
     # NOTE: matplotlib 3d plots (and also 2D plots containing LineCollection)
     # suffer from this problem:
     # https://github.com/matplotlib/matplotlib/issues/17130
@@ -17,14 +17,14 @@ class MatplotlibRenderer(Renderer):
         self._xlims = []
         self._ylims = []
         self._zlims = []
-    
+
     def draw(self):
         data = self.series.get_data()
         self._set_axis_limits(data)
         for draw_method in self.draw_update_map.keys():
             self.handles.append(
                 draw_method(self, data))
-    
+
     def update(self, params):
         s = self.series
         self.series.params = params
@@ -32,7 +32,7 @@ class MatplotlibRenderer(Renderer):
         self._set_axis_limits(data)
         for update_method, handle in zip(self.draw_update_map.values(), self.handles):
             update_method(self, data, handle)
-    
+
     def _set_axis_limits(self, data):
         np = self.plot.np
         if self._sal:
@@ -41,5 +41,3 @@ class MatplotlibRenderer(Renderer):
             self._ylims = [[np.nanmin(data[1]), np.nanmax(data[1])]]
             if self.series.is_3D:
                 self._zlims = [[np.nanmin(data[2]), np.nanmax(data[2])]]
-    
-

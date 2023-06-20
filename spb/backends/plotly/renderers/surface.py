@@ -3,7 +3,7 @@ from spb.backends.base_renderer import Renderer
 
 def _draw_surface_helper(renderer, data):
     p, s = renderer.plot, renderer.series
-    
+
     if not s.is_parametric:
         xx, yy, zz = data
         surfacecolor = s.eval_color_func(xx, yy, zz)
@@ -36,7 +36,7 @@ def _draw_surface_helper(renderer, data):
 def _update_surface_helper(renderer, data, idx):
     p, s = renderer.plot, renderer.series
     handle = p.fig.data[idx]
-    
+
     if not s.is_parametric:
         x, y, z = data
         surfacecolor = s.eval_color_func(x, y, z)

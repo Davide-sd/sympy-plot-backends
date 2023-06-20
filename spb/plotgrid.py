@@ -121,7 +121,7 @@ def plotgrid(*args, **kwargs):
         associated plot.
         This represents the second mode of operation, as it allows to create
         more complicated layouts.
-    
+
     imagegrid : boolean, optional
         Requests Matplotlib's ``ImageGrid`` axes [#fn2]_ to be used. This is
         best suited for plots with equal aspect ratio sharing a common
@@ -163,7 +163,7 @@ def plotgrid(*args, **kwargs):
             title="tan(x)", show=False)
        p3 = plot(exp(-x), backend=MB, title="exp(-x)", show=False)
        plotgrid(p1, p2, p3)
-    
+
     When plots represents images with equal aspect ratio and common
     colorbar, set ``imagegrid=True``:
 
@@ -262,7 +262,7 @@ class PlotGrid:
                     "Keys of `gs` must be of elements of type "
                     "matplotlib.gridspec.SubplotSpec. Use "
                     "matplotlib.gridspec.GridSpec to create them.")
-        
+
         self.panel_kw = kwargs.get("panel_kw", dict())
 
         if kwargs.get("show", True):
@@ -275,7 +275,7 @@ class PlotGrid:
             f"`backend` is deprecated. Use `fig` instead.",
             deprecated_since_version="1.12",
             active_deprecations_target='---')
-    
+
     @property
     def _series(self):
         # TODO: follow sympy doc procedure to create this deprecation
@@ -283,22 +283,22 @@ class PlotGrid:
             f"`_series` is deprecated.",
             deprecated_since_version="1.12",
             active_deprecations_target='---')
-    
+
     def close(self):
         """Close the current plot, if it is a Matplotlib figure."""
         self.plt.close(self.fig)
-        
+
     @property
     def fig(self):
         if self._fig is None:
             self._create_figure()
         return self._fig
-    
+
     def save(self, path, **kwargs):
         """Save the current plot at the specified location.
 
         Refer to:
-        
+
         * [#fn10]_ to visualize all the available keyword arguments when
           saving a Matplotlib figure.
         * [#fn11]_ to visualize all the available keyword arguments when
@@ -313,7 +313,7 @@ class PlotGrid:
             self.fig.savefig(path, **kwargs)
         else:
             self.fig.save(path, **kwargs)
-    
+
     def _create_figure(self, **kwargs):
         GridSpec = self.matplotlib.gridspec.GridSpec
         gs = self.gs
@@ -371,4 +371,3 @@ class PlotGrid:
         else:
             # holoviz's panel object must be shown on an interactive cell
             return self.fig
-

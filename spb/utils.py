@@ -93,7 +93,7 @@ def _get_free_symbols(exprs):
         exprs = [exprs]
     if all(callable(e) for e in exprs):
         return set()
-    
+
     free_indexed = set().union(*[e.atoms(Indexed) for e in exprs])
     if len(free_indexed) > 0:
         return set().union(*[e.atoms(Indexed) for e in exprs])

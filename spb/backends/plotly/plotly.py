@@ -262,7 +262,7 @@ class PlotlyBackend(Plot):
                     showlegend=False),
             ]
             self._series = self._series + new_series
-        
+
         self._scale_down_colorbar = (
             self.legend and
             any(s.use_cm for s in self.series) and
@@ -285,7 +285,7 @@ class PlotlyBackend(Plot):
         """
         self._process_renderers()
         self._update_layout()
-    
+
     process_series = draw
 
     def _set_piecewise_color(self, s, color):

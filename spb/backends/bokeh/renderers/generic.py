@@ -5,7 +5,7 @@ class GenericRenderer(Renderer):
     def draw(self):
         s = self.series
         p = self.plot
-        
+
         if s.type == "markers":
             kw = p.merge({}, {"color": next(p._cl)}, s.rendering_kw)
             p._fig.scatter(*s.args, **kw)

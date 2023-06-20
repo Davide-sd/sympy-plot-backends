@@ -226,14 +226,14 @@ def _draw_vector2d_helper(renderer, data):
                 title=s.get_label(p._use_latex))
             p._fig.add_layout(colorbar, "right")
             handle.append(colorbar)
-            
+
     return handle
 
 
 def _update_vector2d_helper(renderer, data, handle):
     p, s = renderer.plot, renderer.series
     np = p.np
-    
+
     x, y, u, v = data
     if s.is_streamlines:
         density = s.rendering_kw.copy().pop("density", 2)

@@ -96,7 +96,7 @@ def _draw_line2d_helper(renderer, data):
         else:
             cls = _scatter_class(p, len(x))
             handle = cls(x=x, y=y, **kw)
-    
+
     p._fig.add_trace(handle)
 
     # add vertical lines at discontinuities
@@ -131,7 +131,7 @@ def _update_line2d_helper(renderer, data, idxs):
         else:
             handle["r"] = y
             handle["theta"] = x
-    
+
     # update vertical lines
     if len(vlines_idx) != len(s.poles_locations):
         # TODO: highly unreliable! It doesn't work.

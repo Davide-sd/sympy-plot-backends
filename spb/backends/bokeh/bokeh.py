@@ -236,7 +236,7 @@ class BokehBackend(Plot):
                     text_font_style="bold", text_color="#000000"),
             ]
             self._series = self._series + new_series
-        
+
         self._create_renderers()
 
     @property
@@ -252,7 +252,7 @@ class BokehBackend(Plot):
         the figure. Note that this method doesn't show the plot.
         """
         self._process_renderers()
-    
+
     process_series = draw
 
     def _set_piecewise_color(self, s, color):
@@ -275,7 +275,7 @@ class BokehBackend(Plot):
         # colorbars which are added to the right side.
         self._fig.renderers = []
         self._fig.right = []
-        
+
         for r, s in zip(self.renderers, self.series):
             self._check_supported_series(r, s)
             r.draw()
@@ -354,7 +354,7 @@ class BokehBackend(Plot):
         """
         if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
             self.draw()
-        
+
         for r in self.renderers:
             if r.series.is_interactive:
                 r.update(params)

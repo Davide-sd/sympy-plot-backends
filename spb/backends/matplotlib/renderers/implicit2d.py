@@ -57,7 +57,7 @@ def _draw_implicit2d_helper(renderer, data):
 
     if s.show_in_legend:
         p._legend_handles.append(proxy_artist)
-    
+
     return [c, kw]
 
 

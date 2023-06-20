@@ -39,7 +39,7 @@ def _draw_domain_coloring_helper(renderer, data):
         labels = ["-π", "-π / 2", "0", "π / 2", "π"]
         colorbar1 = p.bokeh.models.ColorBar(
             color_mapper=cm1,
-            title="Argument" if s.get_label(False) == str(s.expr) else s.get_label(self._use_latex),
+            title="Argument" if s.get_label(False) == str(s.expr) else s.get_label(p._use_latex),
             ticker=p.bokeh.models.tickers.FixedTicker(ticks=ticks),
             major_label_overrides={k: v for k, v in zip(ticks, labels)})
         p._fig.add_layout(colorbar1, "right")

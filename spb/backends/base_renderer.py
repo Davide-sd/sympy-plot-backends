@@ -16,13 +16,13 @@ class Renderer:
     * ``draw_update_map``: a dictionary mapping `draw_method` to
       `update_method`, which is where the rendering is actually implemented.
       In particular:
-      
+
       * ``draw_method(renderer, data)``: use numerical ``data`` to add
         graphical elements to ``renderer.plot.fig``. It must return an handle,
         which is eventually used by `update_method`.
       * ``update_method(renderer, data, handle)``: update graphical elements
         stored in ``handle`` with new numerical ``data``.
-    
+
       Multiple key/value pairs can be added, all of which will receive the
       same numerical data. This allows to add different graphical elements
       to the same data series, in order to create more complex plots, promoting
@@ -43,7 +43,7 @@ class Renderer:
         self.plot = plot if isinstance(plot, Plot) else plot.backend
         self.series = series
         self.handles = []
-    
+
     def draw(self):
         data = self.series.get_data()
         for draw_method in self.draw_update_map.keys():

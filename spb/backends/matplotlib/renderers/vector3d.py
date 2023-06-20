@@ -33,13 +33,13 @@ def _draw_vector3d_helper(renderer, data):
             p._ax.add_collection(streamlines)
             p._add_colorbar(
                 streamlines, s.get_label(p._use_latex), s.use_cm and s.colorbar)
-            
+
         else:
             lkw["label"] = s.get_label(p._use_latex)
             kw = p.merge({}, lkw, stream_kw)
             streamlines = p._ax.plot(vertices[:, 0], vertices[:, 1],
                 vertices[:, 2], **kw)
-        
+
         handle = [streamlines]
     else:
         qkw = dict()
