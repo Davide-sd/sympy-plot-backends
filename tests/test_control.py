@@ -520,16 +520,32 @@ def test_plot_nyquist():
         x_check = np.allclose(x, expected_value[0])
         y_check = np.allclose(y, expected_value[1])
         param_check = np.allclose(param, expected_value[2])
-        return x_check and y_check and param_check
+        return x_check, y_check, param_check
 
-    assert nyquist_res_tester(tf1, 10, exp1)
-    assert nyquist_res_tester(tf2, 10, exp2)
-    assert nyquist_res_tester(tf3, 10, exp3)
-    assert nyquist_res_tester(tf4, 10, exp4)
-    assert nyquist_res_tester(tf5, 10, exp5)
-    assert nyquist_res_tester(tf6, 10, exp6)
-    assert nyquist_res_tester(tf7, 10, exp7)
-    assert nyquist_res_tester(tf8, 10, exp8)
+    res = nyquist_res_tester(tf1, 10, exp1)
+    assert res[0] and res[1]
+    assert res[2]
+    res = nyquist_res_tester(tf2, 10, exp2)
+    assert res[0] and res[1]
+    assert res[2]
+    res = nyquist_res_tester(tf3, 10, exp3)
+    assert res[0] and res[1]
+    assert res[2]
+    res = nyquist_res_tester(tf4, 10, exp4)
+    assert res[0] and res[1]
+    assert res[2]
+    res = nyquist_res_tester(tf5, 10, exp5)
+    assert res[0] and res[1]
+    assert res[2]
+    res = nyquist_res_tester(tf6, 10, exp6)
+    assert res[0] and res[1]
+    assert res[2]
+    res = nyquist_res_tester(tf7, 10, exp7)
+    assert res[0] and res[1]
+    assert res[2]
+    res = nyquist_res_tester(tf8, 10, exp8)
+    assert res[0] and res[1]
+    assert res[2]
 
 
 def test_plot_nyquist_matplotlib():
