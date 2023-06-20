@@ -4,3 +4,4 @@ from spb.backends.bokeh.renderers.geometry import GeometryRenderer
 from spb.backends.bokeh.renderers.vector2d import Vector2DRenderer
 from spb.backends.bokeh.renderers.complex import ComplexRenderer
 from spb.backends.bokeh.renderers.generic import GenericRenderer
+from spb.backends.bokeh.renderers.hvline import HVLineRenderer

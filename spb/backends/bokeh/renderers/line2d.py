@@ -49,12 +49,20 @@ def _draw_line2d_helper(renderer, data):
             kw = p.merge({}, lkw, s.rendering_kw)
             handle = [p._fig.scatter("xs", "ys", source=source, **kw)]
 
-    return handle
+    # add vertical lines at discontinuities
+    vlines = []
+    for x_loc in s.poles_locations:
+        vl = p.bokeh.models.Span(location=float(x_loc),
+            dimension="height", **p.pole_line_kw)
+        p._fig.add_layout(vl)
+        vlines.append(vl)
+    return [handle, vlines]
 
 
-def _update_line2d_helper(renderer, data, handle):
+def _update_line2d_helper(renderer, data, handles):
     p, s = renderer.plot, renderer.series
     np = p.np
+    handle, vlines = handles
 
     if s.is_2Dline and s.is_parametric and s.use_cm:
         x, y, param = data
@@ -78,6 +86,29 @@ def _update_line2d_helper(renderer, data, handle):
                 "ys": y if not s.is_polar else y * np.sin(x)
             }
         handle[0].data_source.data.update(source)
+    
+    # update vertical lines
+    if len(vlines) != len(s.poles_locations):
+        # instead of removing elements from p._fig.center, let's add new
+        # lines or hide the ones that are not needed
+        if len(vlines) < len(s.poles_locations):
+            for i in range(len(s.poles_locations) - len(vlines)):
+                vl = p.bokeh.models.Span(location=0,
+                    dimension="height", **p.pole_line_kw)
+                p._fig.add_layout(vl)
+                handles[1].append(vl)
+
+        vlines = handles[1]
+        for vl, x_loc in zip(vlines, s.poles_locations):
+            vl.location = float(x_loc)
+        
+        # hide the unnecessary ones
+        for vl in vlines[len(s.poles_locations):]:
+            vl.visible = False
+
+    elif len(vlines) > 0:
+        for vl, x_loc in zip(vlines, s.poles_locations):
+            vl.location = float(x_loc)
 
 
 class Line2DRenderer(Renderer):

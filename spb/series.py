@@ -8,8 +8,10 @@ from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly
+    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
+    Union, Interval, nsimplify
 )
+from sympy.calculus.util import continuous_domain
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
 from sympy.core.relational import Relational
@@ -1001,9 +1003,17 @@ class BaseSeries:
         return pre + s + post
 
 
-def _detect_poles_helper(x, y, eps=0.01):
+def _detect_poles_numerical_helper(x, y, eps=0.01, expr=None, symb=None, symbolic=False):
     """Compute the steepness of each segment. If it's greater than a
-    threshold, set the right-point y-value non NaN.
+    threshold, set the right-point y-value non NaN and record the
+    corresponding x-location for further processing.
+
+    Returns
+    =======
+    x : np.ndarray
+        Unchanged x-data.
+    yy : np.ndarray
+        Modified y-data with NaN values.
     """
     np = import_module('numpy')
 
@@ -1015,7 +1025,39 @@ def _detect_poles_helper(x, y, eps=0.01):
         angle = np.arctan(dy / dx)
         if abs(angle) >= threshold:
             yy[i + 1] = np.nan
+    
     return x, yy
+
+def _detect_poles_symbolic_helper(expr, symb, start, end):
+    """Attempts to compute symbolic discontinuities.
+
+    Returns
+    =======
+    pole : list
+        List of symbolic poles, possibily empty.
+    """
+    poles = []
+    interval = Interval(nsimplify(start), nsimplify(end))
+    res = continuous_domain(expr, symb, interval)
+    res = res.simplify()
+    if res == interval:
+        pass
+    elif (isinstance(res, Union) and
+        all(isinstance(t, Interval) for t in res.args)):
+        poles = []
+        for s in res.args:
+            if s.left_open:
+                poles.append(s.left)
+            if s.right_open:
+                poles.append(s.right)
+        poles = list(set(poles))
+    else:
+        raise ValueError(
+            f"Could not parse the following object: {res} .\n"
+            "Please, submit this as a bug. Consider also to set "
+            "`detect_poles=True`."
+        )
+    return poles
 
 
 class Line2DBaseSeries(BaseSeries):
@@ -1038,6 +1080,9 @@ class Line2DBaseSeries(BaseSeries):
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
         self.is_polar = kwargs.get("is_polar", False)
+        # when detect_poles=True, stores the location of poles so that they
+        # can be appropriately rendered
+        self.poles_locations = []
 
     def get_data(self):
         """Return coordinates for plotting the line.
@@ -1063,17 +1108,26 @@ class Line2DBaseSeries(BaseSeries):
         np = import_module('numpy')
         points = self._get_data_helper()
 
+        if (isinstance(self, LineOver1DRangeSeries) and
+            (self.detect_poles == "symbolic")):
+            poles = _detect_poles_symbolic_helper(
+                self.expr.subs(self.params), *self.ranges[0])
+            poles = np.array([float(t) for t in poles])
+            t = lambda x, transform: x if transform is None else transform(x)
+            self.poles_locations = t(np.array(poles), self._tx)
+
         # postprocessing
         points = self._apply_transform(*points)
 
         if self.is_2Dline and self.detect_poles:
             if len(points) == 2:
                 x, y = points
-                x, y = _detect_poles_helper(x, y, self.eps)
+                x, y = _detect_poles_numerical_helper(
+                    x, y, self.eps)
                 points = (x, y)
             else:
                 x, y, p = points
-                x, y = _detect_poles_helper(x, y, self.eps)
+                x, y = _detect_poles_numerical_helper(x, y, self.eps)
                 points = (x, y, p)
 
         if self.steps is True:
@@ -3107,9 +3161,11 @@ class GeometrySeries(BaseSeries):
             isinstance(expr, (Polygon, Circle, Ellipse)) and (not self.is_filled)
         ):
             self.is_2Dline = True
+            self.poles_locations = []
         elif isinstance(expr, Point2D):
             self.is_point = True
             self.is_2Dline = True
+            self.poles_locations = []
         self.rendering_kw = kwargs.get("rendering_kw", dict())
 
     def get_data(self):
@@ -3536,7 +3592,6 @@ class NyquistLineSeries(Parametric2DLineSeries):
         # See if we should add some frequency points near imaginary poles
         #
         for p in splane_poles:
-            # print("adding points")
             # See if we need to process this pole (skip if on the negative
             # imaginary axis or not near imaginary axis + user override)
             if p.imag < 0 or abs(p.real) > indent_radius:
@@ -3597,7 +3652,6 @@ class NyquistLineSeries(Parametric2DLineSeries):
 
     def _uniform_sampling(self):
         """Returns coordinates that needs to be postprocessed."""
-        # print("orci ")
         np = import_module('numpy')
 
         results = self._evaluate(cast_to_real=False)

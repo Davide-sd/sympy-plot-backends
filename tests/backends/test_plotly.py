@@ -1354,4 +1354,59 @@ def test_xaxis_inverted():
 
     p = plot(sin(x), (x, 3, 0), backend=PB, show=False, n=10)
     assert p.fig.layout.xaxis.autorange == "reversed"
-    
+
+
+def test_detect_poles():
+    # no detection: only one line is visible
+    p = make_test_detect_poles(PB, False)
+    assert len(p.fig.data) == 1
+    assert len(p.fig.layout.shapes) == 0
+
+    # detection is done only with numerical data
+    # only one line is visible
+    p = make_test_detect_poles(PB, True)
+    assert len(p.fig.data) == 1
+    assert len(p.fig.layout.shapes) == 0
+
+    # detection is done only both with numerical data
+    # and symbolic analysis. Multiple lines are visible
+    p = make_test_detect_poles(PB, "symbolic")
+    assert len(p.fig.data) == 1
+    assert len(p.fig.layout.shapes) > 0
+    assert all(t.line.color == "black" for t in p.fig.layout.shapes)
+
+
+def test_detect_poles_interactive():
+    # no detection: only one line is visible
+    ip = make_test_detect_poles_interactive(PB, False)
+    p = ip.backend
+    assert len(p.fig.data) == 1
+    assert len(p.fig.layout.shapes) == 0
+
+    # detection is done only with numerical data
+    # only one line is visible
+    ip = make_test_detect_poles_interactive(PB, True)
+    p = ip.backend
+    assert len(p.fig.data) == 1
+    assert len(p.fig.layout.shapes) == 0
+
+    # no errors are raised
+    p.update_interactive({y: 1})
+    p.update_interactive({y: -1})
+
+    # detection is done only both with numerical data
+    # and symbolic analysis. Multiple lines are visible
+    ip = make_test_detect_poles_interactive(PB, "symbolic")
+    p = ip.backend
+    p.draw()
+    assert len(p.fig.data) == 1
+    assert len(p.fig.layout.shapes) == 6
+
+    # one more discontinuity is getting into the visible range
+    p.update_interactive({y: 1})
+    assert len(p.fig.data) == 1
+    assert len(p.fig.layout.shapes) == 7
+
+    p.update_interactive({y: -1})
+    assert len(p.fig.data) == 1
+    assert len(p.fig.layout.shapes) == 7

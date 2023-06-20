@@ -5,7 +5,7 @@ from spb.series import (
 from sympy import (
     symbols, sin, cos, pi, exp, Matrix, sqrt, Heaviside, Piecewise, Eq, I,
     Circle, Line, Polygon, Ellipse, Curve, Point2D, Segment, Rational,
-    Point3D, Line3D, Plane, log, gamma, latex
+    Point3D, Line3D, Plane, log, gamma, latex, tan
 )
 from sympy.abc import a, b, c, x, y, z, u, v, t
 import numpy as np
@@ -672,4 +672,15 @@ def make_test_analytic_landscape(B):
     expr = z**5 + Rational(1, 10)
     return plot_riemann_sphere(expr, threed=True, n1=10, n2=40,
     coloring="k", backend=B, legend=False, show=False)
-     
+
+
+def make_test_detect_poles(B, dp):
+    expr = tan(x)
+    return plot(expr, (x, -10, 10), backend=B, show=False,
+        detect_poles=dp)
+
+
+def make_test_detect_poles_interactive(B, dp):
+    expr = tan(x - y)
+    return plot(expr, (x, -10, 10), backend=B, show=False,
+        params={y: (0, -1, 1)}, detect_poles=dp)

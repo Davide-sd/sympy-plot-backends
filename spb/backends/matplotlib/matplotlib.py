@@ -157,6 +157,8 @@ class MatplotlibBackend(Plot):
         NicholsLineSeries: NicholsRenderer
     }
 
+    pole_line_kw = {"color": "k", "linestyle": ":"}
+
     def __init__(self, *args, **kwargs):
         self.matplotlib = import_module(
             'matplotlib',

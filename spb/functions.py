@@ -356,10 +356,28 @@ def plot(*args, **kwargs):
           ``expr``.
         * None: the default value (no color mapping).
 
-    detect_poles : boolean, optional
-        Chose whether to detect and correctly plot poles.
-        Defaulto to ``False``. To improve detection, increase the number of
-        discretization points ``n`` and/or change the value of ``eps``.
+    detect_poles : boolean or str, optional
+        Chose whether to detect and correctly plot poles. There are two
+        algorithms at work:
+        
+        1. based on the gradient of the numerical data, it introduces NaN
+           values at locations where the steepness is greater than some
+           threshold. This splits the line into multiple segments. To improve
+           detection, increase the number of discretization points ``n``
+           and/or change the value of ``eps``.
+        2. a symbolic approach based on the ``continuous_domain`` function
+           from the ``sympy.calculus.util`` module, which computes the
+           locations of discontinuities. If any is found, vertical lines
+           will be shown.
+
+        Possible options:
+
+        * ``True``: activate poles detection computed with the numerical
+          gradient.
+        * ``False``: no poles detection.
+        * ``"symbolic"``: use both numerical and symbolic algorithms.
+
+        Default to ``False``.
 
     eps : float, optional
         An arbitrary small value used by the ``detect_poles`` algorithm.
@@ -542,9 +560,9 @@ def plot(*args, **kwargs):
        Plot object containing:
        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
 
-    Using an adaptive algorithm, detect singularities and apply a
-    transformation function to the discretized domain in order to convert
-    radians to degrees:
+    Using an adaptive algorithm, detect and plot vertical lines at
+    singularities. Also, apply a transformation function to the discretized
+    domain in order to convert radians to degrees:
 
     .. plot::
        :context: close-figs
@@ -554,7 +572,7 @@ def plot(*args, **kwargs):
        >>> import numpy as np
        >>> plot(tan(x), (x, -1.5*pi, 1.5*pi),
        ...      adaptive=True, adaptive_goal=0.001,
-       ...      detect_poles=True, tx=np.rad2deg, ylim=(-7, 7),
+       ...      detect_poles="symbolic", tx=np.rad2deg, ylim=(-7, 7),
        ...      xlabel="x [deg]")
        Plot object containing:
        [0]: cartesian line: tan(x) for x over (-4.71238898038469, 4.71238898038469)
@@ -4381,10 +4399,28 @@ def plot_piecewise(*args, **kwargs):
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
 
-    detect_poles : boolean, optional
-        Chose whether to detect and correctly plot poles.
-        Defaulto to ``False``. To improve detection, increase the number of
-        discretization points ``n`` and/or change the value of ``eps``.
+    detect_poles : boolean or str, optional
+        Chose whether to detect and correctly plot poles. There are two
+        algorithms at work:
+        
+        1. based on the gradient of the numerical data, it introduces NaN
+           values at locations where the steepness is greater than some
+           threshold. This splits the line into multiple segments. To improve
+           detection, increase the number of discretization points ``n``
+           and/or change the value of ``eps``.
+        2. a symbolic approach based on the ``continuous_domain`` function
+           from the ``sympy.calculus.util`` module, which computes the
+           locations of discontinuities. If any is found, vertical lines
+           will be shown.
+
+        Possible options:
+
+        * ``True``: activate poles detection computed with the numerical
+          gradient.
+        * ``False``: no poles detection.
+        * ``"symbolic"``: use both numerical and symbolic algorithms.
+
+        Default to ``False``.
 
     dots : boolean
         Wheter to show circular markers at the endpoints. Default to True.

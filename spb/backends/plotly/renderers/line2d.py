@@ -98,15 +98,24 @@ def _draw_line2d_helper(renderer, data):
             handle = cls(x=x, y=y, **kw)
     
     p._fig.add_trace(handle)
+
+    # add vertical lines at discontinuities
+    for x_loc in s.poles_locations:
+        p._fig.add_vline(float(x_loc), **p.pole_line_kw)
+    n = len(p._fig.layout["shapes"])
+    m = len(s.poles_locations)
+    hvlines = list(range(n - m, n))
+
     # NOTE: as of Plotly 5.12.0, the figure appears to create a copy of
     # `handle`, which cannot be used to update the figure. Hence, need to keep
     # track of the index of traces
-    return len(p._fig.data) - 1
+    return [len(p._fig.data) - 1, hvlines]
 
 
-def _update_line2d_helper(renderer, data, idx):
+def _update_line2d_helper(renderer, data, idxs):
     p, s = renderer.plot, renderer.series
-    handle = p.fig.data[idx]
+    handle = p.fig.data[idxs[0]]
+    vlines_idx = idxs[1]
 
     if s.is_2Dline and s.is_parametric:
         x, y, param = data
@@ -122,6 +131,29 @@ def _update_line2d_helper(renderer, data, idx):
         else:
             handle["r"] = y
             handle["theta"] = x
+    
+    # update vertical lines
+    if len(vlines_idx) != len(s.poles_locations):
+        # TODO: highly unreliable! It doesn't work.
+        shapes = list(p._fig.layout.shapes)
+        p._fig.layout.shapes = []
+        for idx in reversed(vlines_idx):
+            shapes.pop(idx)
+        for shape in shapes:
+            p._fig.add_shape(shape)
+        for x_loc in s.poles_locations:
+            # TODO: weirdly, add_vline refuses to work here...
+            # p._fig.add_vline(x=float(x_loc), **p.pole_line_kw)
+            p._fig.add_shape(type="line", x0=float(x_loc), x1=float(x_loc),
+                y0=0, y1=1, xref="x", yref="y domain",
+                **p.pole_line_kw)
+        n = len(p._fig.layout["shapes"])
+        m = len(s.poles_locations)
+        idxs[1] = list(range(n - m, n))
+    elif len(vlines_idx) > 0:
+        for idx, x_loc in zip(vlines_idx, s.poles_locations):
+            p._fig.layout.shapes[idx]["x0"] = float(x_loc)
+            p._fig.layout.shapes[idx]["x1"] = float(x_loc)
 
 
 class Line2DRenderer(Renderer):

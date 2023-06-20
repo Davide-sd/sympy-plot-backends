@@ -8,3 +8,4 @@ from spb.backends.plotly.renderers.vector2d import Vector2DRenderer
 from spb.backends.plotly.renderers.vector3d import Vector3DRenderer
 from spb.backends.plotly.renderers.complex import ComplexRenderer
 from spb.backends.plotly.renderers.generic import GenericRenderer
+from spb.backends.plotly.renderers.hvline import HVLineRenderer

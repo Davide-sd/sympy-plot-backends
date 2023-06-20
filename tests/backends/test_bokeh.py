@@ -1,5 +1,5 @@
 import bokeh
-from bokeh.models import ColumnDataSource
+from bokeh.models import ColumnDataSource, Span
 import pytest
 from pytest import raises
 import os
@@ -918,4 +918,60 @@ def test_xaxis_inverted():
 
     p = plot(sin(x), (x, 3, 0), backend=BB, show=False, n=10)
     assert p.fig.x_range.flipped
-    
+
+
+def test_detect_poles():
+    # no detection: only one line is visible
+    p = make_test_detect_poles(BB, False)
+    assert len(p.fig.renderers) == 1
+    assert len([t for t in p.fig.center if isinstance(t, Span)]) == 0
+
+    # detection is done only with numerical data
+    # only one line is visible
+    p = make_test_detect_poles(BB, True)
+    assert len(p.fig.renderers) == 1
+    assert len([t for t in p.fig.center if isinstance(t, Span)]) == 0
+
+    # detection is done only both with numerical data
+    # and symbolic analysis. Multiple lines are visible
+    p = make_test_detect_poles(BB, "symbolic")
+    assert len([t for t in p.fig.center if isinstance(t, Span)]) == 6
+    assert len([t for t in p.fig.center if isinstance(t, Span) and t.visible]) == 6
+    assert all([t.line_color == "#000000" for t in p.fig.center if isinstance(t, Span)])
+
+
+def test_detect_poles_interactive():
+    # no detection: only one line is visible
+    ip = make_test_detect_poles_interactive(BB, False)
+    p = ip.backend
+    assert len(p.fig.renderers) == 1
+
+    # detection is done only with numerical data
+    # only one line is visible
+    ip = make_test_detect_poles_interactive(BB, True)
+    p = ip.backend
+    assert len(p.fig.renderers) == 1
+
+    # no errors are raised
+    p.update_interactive({y: 1})
+    p.update_interactive({y: -1})
+
+    # detection is done only both with numerical data
+    # and symbolic analysis. Multiple lines are visible
+    ip = make_test_detect_poles_interactive(BB, "symbolic")
+    p = ip.backend
+    assert len(p.fig.renderers) == 1
+    assert len([t for t in p.fig.center if isinstance(t, Span)]) == 6
+    assert all([t.visible for t in p.fig.center if isinstance(t, Span)])
+    assert all([t.line_color == "#000000" for t in p.fig.center if isinstance(t, Span)])
+
+    # one more discontinuity is getting into the visible range
+    p.update_interactive({y: 1})
+    assert len(p.fig.renderers) == 1
+    assert len([t for t in p.fig.center if isinstance(t, Span)]) == 7
+    assert all([t.visible for t in p.fig.center if isinstance(t, Span)])
+
+    p.update_interactive({y: -0.8})
+    assert len(p.fig.renderers) == 1
+    assert len([t for t in p.fig.center if isinstance(t, Span)]) == 7
+    assert len([t for t in p.fig.center if isinstance(t, Span) and not t.visible]) == 1

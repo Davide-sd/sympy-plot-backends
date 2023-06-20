@@ -113,7 +113,10 @@ class BokehBackend(Plot):
         ContourSeries: ContourRenderer,
         GeometrySeries: GeometryRenderer,
         GenericDataSeries: GenericRenderer,
+        HVLineSeries: HVLineRenderer,
     }
+
+    pole_line_kw = {"line_color": "#000000", "line_dash": "dotted"}
 
     def __init__(self, *args, **kwargs):
         self.np = import_module('numpy')

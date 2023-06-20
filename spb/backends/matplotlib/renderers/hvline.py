@@ -17,7 +17,7 @@ def _draw_hvline_helper(renderer, data):
 def _update_hvline_helper(renderer, data, handle):
     s = renderer.series
     method = handle.set_ydata if s.is_horizontal else handle.set_xdata
-    method = ([data, data])
+    method([data, data])
 
 
 class HVLineRenderer(MatplotlibRenderer):

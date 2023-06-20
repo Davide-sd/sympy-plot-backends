@@ -1,5 +1,7 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
-
+from spb.backends.matplotlib.renderers.hvline import (
+    _draw_hvline_helper, _update_hvline_helper
+)
 
 def _draw_line2d_helper(renderer, data):
     p, s = renderer.plot, renderer.series
@@ -44,18 +46,26 @@ def _draw_line2d_helper(renderer, data):
         kw = p.merge({}, lkw, s.rendering_kw)
         l = p._ax.plot(x, y, **kw)
         handle = l
-    return handle
+    
+    # add vertical lines at discontinuities
+    hvlines = [
+        p._ax.axvline(x_loc, **p.pole_line_kw) for x_loc in s.poles_locations
+    ]
+
+    return [handle, hvlines]
 
 
-def _update_line2d_helper(renderer, data, handle):
+def _update_line2d_helper(renderer, data, handles):
     p, s = renderer.plot, renderer.series
     if s.is_parametric:
         x, y, param = data
     else:
         x, y = data
+    
+    line_handles, hvlines = handles
 
     if s.is_parametric and s.use_cm:
-        line, kw, is_cb_added, cax = handle
+        line, kw, is_cb_added, cax = line_handles
 
         if not s.is_point:
             segments = p.get_segments(x, y)
@@ -71,9 +81,20 @@ def _update_line2d_helper(renderer, data, handle):
             p._update_colorbar(
                 cax, kw["cmap"], s.get_label(p._use_latex), norm=norm)
     else:
-        line = handle[0]
+        line = line_handles[0]
         # TODO: Point2D are updated but not visible.
         line.set_data(x, y)
+    
+    # update vertical lines
+    if len(hvlines) != len(s.poles_locations):
+        for hvl in hvlines:
+            hvl.remove()
+        handles[1] = [
+            p._ax.axvline(x_loc, **p.pole_line_kw) for x_loc in s.poles_locations
+        ]
+    elif len(hvlines) > 0:
+        for hvl, x_loc in zip(hvlines, s.poles_locations):
+            hvl.set_xdata([x_loc, x_loc])
 
 
 class Line2DRenderer(MatplotlibRenderer):

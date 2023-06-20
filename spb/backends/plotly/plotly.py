@@ -173,7 +173,10 @@ class PlotlyBackend(Plot):
         PlaneSeries: SurfaceRenderer,
         GeometrySeries: GeometryRenderer,
         GenericDataSeries: GenericRenderer,
+        HVLineSeries: HVLineRenderer
     }
+
+    pole_line_kw = {"line": dict(color='black', dash='dot', width=1)}
 
     def __init__(self, *series, **kwargs):
         self.np = import_module('numpy')
