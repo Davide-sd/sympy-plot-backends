@@ -18,7 +18,7 @@ from mergedeep import merge
 
 __all__ = [
     'pole_zero_plot', 'plot_pole_zero',
-    'step_response_plot', 'step_response_plot',
+    'step_response_plot', 'plot_step_response',
     'impulse_response_plot', 'plot_impulse_response',
     'ramp_response_plot', 'plot_ramp_response',
     'bode_magnitude_plot', 'plot_bode_magnitude',
@@ -214,7 +214,10 @@ def plot_pole_zero(*systems, pole_markersize=10, zero_markersize=7, show_axes=Fa
         >>> from sympy.physics.control.lti import TransferFunction
         >>> from spb import plot_pole_zero
         >>> tf1 = TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
-        >>> plot_pole_zero(tf1)   # doctest: +SKIP
+        >>> plot_pole_zero(tf1)
+        Plot object containing:
+        [0]: 2D list plot
+        [1]: 2D list plot
 
     Interactive-widgets plot of multiple systems, one of which is parametric:
 
@@ -316,9 +319,9 @@ def plot_step_response(*systems, lower_limit=0, upper_limit=10,
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import step_response_plot
+        >>> from spb import plot_step_response
         >>> tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
-        >>> step_response_plot(tf1)   # doctest: +SKIP
+        >>> plot_step_response(tf1)   # doctest: +SKIP
 
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
@@ -430,9 +433,9 @@ def plot_impulse_response(*systems, prec=8, lower_limit=0,
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import impulse_response_plot
+        >>> from spb import plot_impulse_response
         >>> tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
-        >>> impulse_response_plot(tf1)   # doctest: +SKIP
+        >>> plot_impulse_response(tf1)   # doctest: +SKIP
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     Note the use of parametric ``lower_limit`` and ``upper_limit``.
@@ -551,9 +554,9 @@ def plot_ramp_response(*systems, slope=1, prec=8,
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import ramp_response_plot
+        >>> from spb import plot_ramp_response
         >>> tf1 = TransferFunction(s, (s+4)*(s+8), s)
-        >>> ramp_response_plot(tf1, upper_limit=2)   # doctest: +SKIP
+        >>> plot_ramp_response(tf1, upper_limit=2)   # doctest: +SKIP
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     Note the use of parametric ``lower_limit``, ``upper_limit`` and ``slope``.
@@ -977,7 +980,7 @@ def plot_nyquist(*systems, **kwargs):
        >>> from sympy.physics.control.lti import TransferFunction
        >>> from spb import plot_nyquist
        >>> tf1 = TransferFunction(4 * s**2 + 5 * s + 1, 3 * s**2 + 2 * s + 5, s)
-       >>> plot_nyquist(tf1)
+       >>> plot_nyquist(tf1)                                # doctest: +SKIP
 
     Visualizing M-circles:
 
@@ -986,7 +989,7 @@ def plot_nyquist(*systems, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_nyquist(tf1, m_circles=True)
+    >>> plot_nyquist(tf1, m_circles=True)                   # doctest: +SKIP
 
     Plotting multiple transfer functions:
 
@@ -996,7 +999,7 @@ def plot_nyquist(*systems, **kwargs):
        :include-source: True
 
        >>> tf2 = TransferFunction(1, s + Rational(1, 3), s)
-       >>> plot_nyquist(tf1, tf2)
+       >>> plot_nyquist(tf1, tf2)                           # doctest: +SKIP
 
     Interactive-widgets plot of a systems:
 
@@ -1096,7 +1099,7 @@ def plot_nichols(*systems, **kwargs):
        >>> from sympy.physics.control.lti import TransferFunction
        >>> from spb import plot_nichols
        >>> tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
-       >>> plot_nichols(tf)
+       >>> plot_nichols(tf)                                 # doctest: +SKIP
 
     Turning off the Nichols grid lines:
 
@@ -1105,7 +1108,7 @@ def plot_nichols(*systems, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_nichols(tf, ngrid=False)
+       >>> plot_nichols(tf, ngrid=False)                    # doctest: +SKIP
 
     Plotting multiple transfer functions:
 
@@ -1116,7 +1119,7 @@ def plot_nichols(*systems, **kwargs):
 
        >>> tf1 = TransferFunction(1, s**2 + 2*s + 1, s)
        >>> tf2 = TransferFunction(1, s**2 - 2*s + 1, s)
-       >>> plot_nichols(tf1, tf2, xlim=(-360, 360))
+       >>> plot_nichols(tf1, tf2, xlim=(-360, 360))         # doctest: +SKIP
 
     Interactive-widgets plot of a systems. For these kind of plots, it is
     recommended to set both ``omega_limits`` and ``xlim``:

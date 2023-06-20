@@ -3729,6 +3729,8 @@ def plot_geometry(*args, **kwargs):
        >>> plot_geometry(
        ...     Ellipse(Point(-3, 2), hradius=3, eccentricity=Rational(4, 5)),
        ...     {"color": "tab:orange"}, grid=False)
+       Plot object containing:
+       [0]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
 
     Plot several numeric geometric entitiesy. By default, circles, ellipses and
     polygons are going to be filled. Plotting Curve objects is the same as
