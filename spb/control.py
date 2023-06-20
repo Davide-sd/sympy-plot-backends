@@ -9,7 +9,7 @@ from spb.utils import _instantiate_backend, prange
 import numpy as np
 from sympy import (roots, exp, Poly, degree, re, im, latex, apart, Dummy,
     I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt,
-    floor, ceiling, frac
+    floor, ceiling, frac, pi
 )
 from sympy.integrals.laplace import _fast_inverse_laplace
 from sympy.physics.control.lti import SISOLinearTimeInvariant
