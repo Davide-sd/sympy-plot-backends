@@ -212,7 +212,7 @@ def plot_pole_zero(*systems, pole_markersize=10, zero_markersize=7, show_axes=Fa
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb.control import pole_zero_plot
+        >>> from spb import pole_zero_plot
         >>> tf1 = TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
         >>> pole_zero_plot(tf1)   # doctest: +SKIP
 
@@ -223,7 +223,7 @@ def plot_pole_zero(*systems, pole_markersize=10, zero_markersize=7, show_axes=Fa
 
        from sympy.abc import a, b, c, d, s
        from sympy.physics.control.lti import TransferFunction
-       from spb.control import plot_pole_zero
+       from spb import plot_pole_zero
        tf1 = TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
        tf2 = TransferFunction(s**2 + b, s**4 + a*s**3 + b*s**2 + c*s + d, s)
        plot_pole_zero(
@@ -321,7 +321,7 @@ def plot_step_response(*systems, lower_limit=0, upper_limit=10,
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb.control import step_response_plot
+        >>> from spb import step_response_plot
         >>> tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
         >>> step_response_plot(tf1)   # doctest: +SKIP
 
@@ -334,7 +334,7 @@ def plot_step_response(*systems, lower_limit=0, upper_limit=10,
 
        from sympy.abc import a, b, c, d, e, f, g, s
        from sympy.physics.control.lti import TransferFunction
-       from spb.control import plot_step_response
+       from spb import plot_step_response
        tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
        tf2 = TransferFunction(s**2 + a*s + b, s**3 + c*s**2 + d*s + e, s)
        plot_step_response(
@@ -435,7 +435,7 @@ def plot_impulse_response(*systems, prec=8, lower_limit=0,
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb.control import impulse_response_plot
+        >>> from spb import impulse_response_plot
         >>> tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
         >>> impulse_response_plot(tf1)   # doctest: +SKIP
 
@@ -447,7 +447,7 @@ def plot_impulse_response(*systems, prec=8, lower_limit=0,
 
        from sympy.abc import a, b, c, d, e, f, g, h, s
        from sympy.physics.control.lti import TransferFunction
-       from spb.control import plot_impulse_response
+       from spb import plot_impulse_response
        tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
        tf2 = TransferFunction(a*s**2 + b*s + c, s**3 + d*s**2 + e*s + f, s)
        plot_impulse_response(
@@ -556,7 +556,7 @@ def plot_ramp_response(*systems, slope=1, prec=8,
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb.control import ramp_response_plot
+        >>> from spb import ramp_response_plot
         >>> tf1 = TransferFunction(s, (s+4)*(s+8), s)
         >>> ramp_response_plot(tf1, upper_limit=2)   # doctest: +SKIP
 
@@ -568,7 +568,7 @@ def plot_ramp_response(*systems, slope=1, prec=8,
 
        from sympy.abc import a, b, c, d, e, s
        from sympy.physics.control.lti import TransferFunction
-       from spb.control import plot_ramp_response
+       from spb import plot_ramp_response
        tf1 = TransferFunction(s, (s+4)*(s+8), s)
        tf2 = TransferFunction(s, (s+a)*(s+b), s)
        plot_ramp_response(
@@ -759,7 +759,7 @@ def plot_bode(*systems, initial_exp=-5, final_exp=5,
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb.control import bode_plot
+        >>> from spb import bode_plot
         >>> tf1 = TransferFunction(1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
         >>> bode_plot(tf1, initial_exp=0.2, final_exp=0.7)   # doctest: +SKIP
 
@@ -975,7 +975,7 @@ def plot_nyquist(*systems, **kwargs):
        >>> from sympy import Rational
        >>> from sympy.abc import s
        >>> from sympy.physics.control.lti import TransferFunction
-       >>> from spb.control import plot_nyquist
+       >>> from spb import plot_nyquist
        >>> tf1 = TransferFunction(4 * s**2 + 5 * s + 1, 3 * s**2 + 2 * s + 5, s)
        >>> plot_nyquist(tf1)
 
@@ -1005,7 +1005,7 @@ def plot_nyquist(*systems, **kwargs):
 
        from sympy.abc import a, b, c, d, e, f, s
        from sympy.physics.control.lti import TransferFunction
-       from spb.control import plot_nyquist
+       from spb import plot_nyquist
        tf = TransferFunction(a * s**2 + b * s + c, d**2 * s**2 + e * s + f, s)
        plot_nyquist(
            tf,
@@ -1094,7 +1094,7 @@ def plot_nichols(*systems, **kwargs):
 
        >>> from sympy.abc import s
        >>> from sympy.physics.control.lti import TransferFunction
-       >>> from spb.control import plot_nichols
+       >>> from spb import plot_nichols
        >>> tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
        >>> plot_nichols(tf)
 
@@ -1125,7 +1125,7 @@ def plot_nichols(*systems, **kwargs):
        :small-size: 800, 650
 
        from sympy.abc import a, b, c, s
-       from spb.control import plot_nichols
+       from spb import plot_nichols
        from sympy.physics.control.lti import TransferFunction
        tf = TransferFunction(a*s**2 + b*s + c, s**3 + 10*s**2 + 5 * s + 1, s)
        plot_nichols(

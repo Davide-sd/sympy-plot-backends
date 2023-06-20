@@ -19,3 +19,8 @@ in control system.
 .. autofunction:: plot_bode_phase
 
 .. autofunction:: plot_bode
+
+.. autofunction:: plot_nyquist
+
+.. autofunction:: plot_nichols
+

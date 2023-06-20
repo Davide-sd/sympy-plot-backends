@@ -972,6 +972,7 @@ def plot_parametric(*args, **kwargs):
       their basic form: (default, min, max).
 
     .. panel-screenshot::
+       :small-size: 800, 600
 
        from sympy import *
        from spb import *
@@ -2867,6 +2868,7 @@ def plot_contour(*args, **kwargs):
       their basic form: (default, min, max).
 
     .. panel-screenshot::
+       :small-size: 800, 600
 
        from sympy import *
        from spb import *
