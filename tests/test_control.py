@@ -517,9 +517,9 @@ def test_plot_nyquist():
     def nyquist_res_tester(sys, num_points, expected_value):
         p = plot_nyquist(sys, show=False, n=num_points)
         x, y, param = p[0].get_data()
-        x_check = check_point_accuracy(x, expected_value[0])
-        y_check = check_point_accuracy(y, expected_value[1])
-        param_check = check_point_accuracy(param, expected_value[2])
+        x_check = np.allclose(x, expected_value[0])
+        y_check = np.allclose(y, expected_value[1])
+        param_check = np.allclose(param, expected_value[2])
         return x_check and y_check and param_check
 
     assert nyquist_res_tester(tf1, 10, exp1)
