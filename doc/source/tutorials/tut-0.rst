@@ -408,6 +408,18 @@ This is going to take a few attempts:
    Plot object containing:
    [0]: cartesian line: (sin(1 - 1/cos(x)) + Abs(x) - 6)*sign(x) for x over (-10.0, 10.0)
 
+Finally, we can enable the symbolic poles detection algorith to visualize
+where this function is not defined:
+
+.. plot::
+   :context: close-figs
+   :format: doctest
+   :include-source: True
+
+   >>> plot(expr, adaptive=False, n=5e04, detect_poles="symbolic", eps=1e-04, grid=False)
+   Plot object containing:
+   [0]: cartesian line: (sin(1 - 1/cos(x)) + Abs(x) - 6)*sign(x) for x over (-10.0, 10.0)
+
 
 Example - Discontinuities 4
 ===========================
