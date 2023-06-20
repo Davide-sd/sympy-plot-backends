@@ -294,10 +294,10 @@ class Plot:
         # just check the first series.
         self._invert_x_axis = False
         if ((len(self._series) > 0) and isinstance(self._series[0], LineOver1DRangeSeries)):
-            r = self._series[0].ranges[0]
             # elements of parametric ranges can't be compared because they
             # are likely going to be symbolic expressions
-            if not isinstance(r, prange):
+            if not self._series[0]._interactive_ranges:
+                r = self._series[0].ranges[0]
                 if r[1] > r[2]:
                     self._invert_x_axis = True
 

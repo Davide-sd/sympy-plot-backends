@@ -17,35 +17,6 @@ class UnsupportedSeries(BaseSeries):
     pass
 
 
-# def test_instance_plot():
-#     # verify that instantiating the Plot base class creates the correct
-#     # backend
-
-#     from bokeh.plotting.figure import Figure
-#     from k3d.plot import Plot as K3DPlot
-
-#     x, y, z = symbols("x, y, z")
-
-#     s = LineOver1DRangeSeries(cos(x), (x, -10, 10), "test")
-
-#     p = Plot(s, backend=MB, show=False)
-#     assert isinstance(p, MB)
-#     assert isinstance(p.fig, plt.Figure)
-
-#     p = Plot(s, backend=PB, show=False)
-#     assert isinstance(p, PB)
-#     assert isinstance(p.fig, go.Figure)
-
-#     p = Plot(s, backend=BB, show=False)
-#     assert isinstance(p, BB)
-#     assert isinstance(p.fig, Figure)
-
-#     s = SurfaceOver2DRangeSeries(cos(x * y), (x, -5, 5), (y, -5, 5), "test")
-#     p = Plot(s, backend=KB, show=False)
-#     assert isinstance(p, KB)
-#     assert isinstance(p.fig, K3DPlot)
-
-
 def test_unsupported_series():
     # verify that an error is raised when an unsupported series is given in
     series = [UnsupportedSeries()]
@@ -187,3 +158,23 @@ def test_plot_sum():
     p2 = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), backend=KB,
         **options)
     p3 = p1 + p2
+
+
+def test_xaxis_inverted():
+    # verify that no errors are raised when parametric ranges are used
+
+    x, a, b, c, n = symbols("x, a, b, c, n")
+    p = plot(
+        (cos(a * x + b) * exp(-c * x), "oscillator"),
+        (exp(-c * x), "upper limit", {"linestyle": ":"}),
+        (-exp(-c * x), "lower limit", {"linestyle": ":"}),
+        prange(x, 0, n * pi),
+        params={
+            a: (1, 0, 10),     # frequency
+            b: (0, 0, 2 * pi), # phase
+            c: (0.25, 0, 1),   # damping
+            n: (2, 0, 4)       # multiple of pi
+        },
+        ylim=(-1.25, 1.25), backend=MB, use_latex=False, show=False, n=10
+    )
+    p.backend.draw()
