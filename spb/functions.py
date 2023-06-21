@@ -667,8 +667,8 @@ def plot(*args, **kwargs):
     See Also
     ========
 
-    plot_polar, plot_parametric, plot_contour, plot3d, plot3d_parametric_line,
-    plot_implicit, plot_geometry, plot_piecewise
+    plot_implicit, plot_polar, plot_parametric, plot_list, plot_contour,
+    plot_geometry, plot_piecewise
 
     """
     args = _plot_sympify(args)
@@ -996,8 +996,8 @@ def plot_parametric(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot3d, plot3d_parametric_line, plot_implicit,
-    plot_geometry, plot_piecewise, plot_list
+    plot, plot_implicit, plot_polar, plot_list, plot_contour,
+    plot_geometry, plot_piecewise
 
     """
     args = _plot_sympify(args)
@@ -1506,8 +1506,8 @@ def plot3d_parametric_line(*args, **kwargs):
     See Also
     ========
 
-    plot, plot3d, plot_contour, plot3d_parametric_surface,
-    plot3d_spherical, plot3d_revolution, plot3d_implicit
+    plot3d, plot3d_parametric_surface, plot3d_spherical,
+    plot3d_revolution, plot3d_implicit, plot3d_list
 
     """
     args = _plot_sympify(args)
@@ -2062,8 +2062,8 @@ def plot3d(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_contour, plot3d_parametric_line, plot3d_parametric_surface,
-    plot3d_implicit, plot3d_revolution, plot3d_spherical
+    plot3d_parametric_list, plot3d_parametric_surface, plot3d_spherical,
+    plot3d_revolution, plot3d_implicit, plot3d_list, plot_contour
 
     """
     Backend = kwargs.pop("backend", THREE_D_B)
@@ -2398,8 +2398,8 @@ def plot3d_parametric_surface(*args, **kwargs):
     See Also
     ========
 
-    plot, plot3d, plot_contour, plot3d_parametric_line, plot3d_spherical,
-    plot3d_revolution, plot3d_implicit
+    plot3d, plot3d_parametric_list, plot3d_spherical,
+    plot3d_revolution, plot3d_implicit, plot3d_list
 
     """
     args = _plot_sympify(args)
@@ -2561,8 +2561,8 @@ def plot3d_spherical(*args, **kwargs):
     See Also
     ========
 
-    plot3d, plot3d_parametric_surface, plot3d_parametric_line, plot3d_implicit,
-    plot3d_revolution
+    plot3d, plot3d_parametric_list, plot3d_parametric_surface,
+    plot3d_revolution, plot3d_implicit, plot3d_list
 
     """
     args = _plot_sympify(args)
@@ -2724,8 +2724,8 @@ def plot3d_implicit(*args, **kwargs):
     See Also
     ========
 
-    plot, plot3d, plot_contour, plot3d_parametric_line,
-    plot3d_parametric_surface, plot3d_revolution, plot3d_spherical
+    plot3d, plot3d_parametric_list, plot3d_parametric_surface,
+    plot3d_spherical, plot3d_revolution, plot3d_list
 
     """
     if kwargs.pop("params", None) is not None:
@@ -2881,8 +2881,8 @@ def plot_contour(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot_parametric, plot3d, plot_implicit, plot_geometry,
-    plot_piecewise, plot_list
+    plot, plot_implicit, plot_polar, plot_parametric, plot_list, plot3d,
+    plot_geometry, plot_piecewise
 
     """
     Backend = kwargs.pop("backend", TWO_D_B)
@@ -3057,8 +3057,8 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
     See Also
     ========
 
-    plot3d, plot3d_parametric_surface, plot3d_parametric_line,
-    plot3d_spherical, plot_contour
+    plot3d, plot3d_parametric_list, plot3d_parametric_surface,
+    plot3d_spherical, plot3d_implicit, plot3d_list
 
     """
     show = kwargs.pop("show", True)
@@ -3431,8 +3431,8 @@ def plot_implicit(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot3d, plot_contour, plot3d_parametric_line,
-    plot3d_parametric_surface, plot_geometry, plot3d_implicit, plot_list
+    plot, plot_polar, plot_parametric, plot_list, plot_contour,
+    plot_geometry, plot_piecewise
 
     """
     # if the user is plotting a single expression, then he can pass in one
@@ -3587,8 +3587,8 @@ def plot_polar(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_parametric, plot3d, plot_implicit, plot_geometry,
-    plot_piecewise, plot_list
+    plot, plot_implicit, plot_parametric, plot_list, plot_contour,
+    plot_geometry, plot_piecewise
 
     """
     # polar_axis = kwargs.pop("polar_axis", False)
@@ -3840,7 +3840,8 @@ def plot_geometry(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_piecewise, plot_polar, plot_list
+    plot, plot_implicit, plot_polar, plot_parametric, plot_list,
+    plot_contour, plot_piecewise
 
     """
     args = _plot_sympify(args)
@@ -4083,7 +4084,8 @@ def plot_list(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_parametric, plot3d, plot_piecewise
+    plot, plot_implicit, plot_polar, plot_parametric, plot_contour,
+    plot_geometry, plot_piecewise, plot3d_list
 
     """
     g_labels = kwargs.pop("label", [])
@@ -4296,7 +4298,8 @@ def plot3d_list(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_list, plot3d_parametric_line
+    plot3d, plot3d_parametric_list, plot3d_parametric_surface,
+    plot3d_spherical, plot3d_revolution, plot3d_implicit
 
     """
     g_labels = kwargs.pop("label", [])
@@ -4589,8 +4592,8 @@ def plot_piecewise(*args, **kwargs):
     See Also
     ========
 
-    plot, plot_polar, plot_parametric, plot3d, plot_implicit, plot_geometry,
-    plot_list
+    plot, plot_implicit, plot_polar, plot_parametric, plot_list,
+    plot_contour, plot_geometry
 
     """
     if kwargs.pop("params", None) is not None:
