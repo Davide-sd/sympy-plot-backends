@@ -405,6 +405,8 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert all(ss.is_3Dsurface for ss in s)
     assert s[0].get_label(False) == "Re(sin(z))"
     assert s[1].get_label(False) == "Im(sin(z))"
+    assert p.xlabel == "Re"
+    assert p.ylabel == "Im"
 
     p = plot_real_imag(sin(y * z), (z, -5-5j, 5+5j), params={y: (1, 0, 2)},
         threed=True, **pc_options)
@@ -415,6 +417,8 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert all(ss.is_3Dsurface for ss in s)
     assert s[0].get_label(False) == "Re(sin(y*z))"
     assert s[1].get_label(False) == "Im(sin(y*z))"
+    assert p.backend.xlabel == "Re"
+    assert p.backend.ylabel == "Im"
 
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), threed=False, **pc_options)
     s = p.series
@@ -424,6 +428,8 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert all((not ss.is_3Dsurface) and ss.is_contour for ss in s)
     assert s[0].get_label(False) == "Re(sin(z))"
     assert s[1].get_label(False) == "Im(sin(z))"
+    assert p.xlabel == "Re"
+    assert p.ylabel == "Im"
 
     p = plot_real_imag(sin(y * z), (z, -5-5j, 5+5j), params={y: (1, 0, 2)},
         threed=False, **pc_options)
@@ -434,6 +440,8 @@ def test_plot_real_imag_2d_3d(pc_options):
     assert all((not ss.is_3Dsurface) and ss.is_contour for ss in s)
     assert s[0].get_label(False) == "Re(sin(y*z))"
     assert s[1].get_label(False) == "Im(sin(y*z))"
+    assert p.backend.xlabel == "Re"
+    assert p.backend.ylabel == "Im"
 
     # real part of the function
     p = plot_real_imag(sin(z), (z, -5-5j, 5+5j), real=True, imag=False,

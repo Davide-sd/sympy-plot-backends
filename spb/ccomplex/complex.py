@@ -4,8 +4,7 @@ from spb.functions import (
 )
 from spb.series import (
     LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
-    ComplexPointSeries, SurfaceOver2DRangeSeries,
-    Parametric2DLineSeries, ComplexDomainColoringSeries,
+    ComplexPointSeries, ComplexDomainColoringSeries,
     Parametric2DLineSeries, List2DSeries, GenericDataSeries,
     RiemannSphereSeries
 )
@@ -282,7 +281,7 @@ def _set_axis_labels(series, kwargs):
             kwargs["xlabel"] = "Real"
         if kwargs.get("ylabel", None) is None:
             kwargs["ylabel"] = "Abs"
-    elif all(s.is_domain_coloring or s.is_3Dsurface or
+    elif all(s.is_domain_coloring or s.is_3Dsurface or s.is_contour or
         isinstance(s, ComplexPointSeries) or
         s.is_parametric for s in series):
         # when plotting real/imaginary or domain coloring/3D plots, the
