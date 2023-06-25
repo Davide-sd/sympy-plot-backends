@@ -1,8 +1,18 @@
+from spb.defaults import cfg
 from sympy.external import import_module
 from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import MB
 from spb.backends.plotly import PB
+from spb.backends.bokeh import BB
+from spb.interactive import IPlot, create_interactive_plot
 from sympy.utilities.exceptions import sympy_deprecation_warning
+from IPython.display import clear_output
+
+
+# NOTE: the code in this module, particularly the one about interactive widget
+# plot, is ugly and probably difficult to comprehend. Turns out that it is
+# extremely difficult to get ipywidgets (and in much less extent, panel) to
+# work with different plotting libraries...
 
 
 def _nrows_ncols(nr, nc, nplots):
@@ -26,7 +36,16 @@ def _nrows_ncols(nr, nc, nplots):
     return nr, nc
 
 
-def _create_mpl_figure(mapping, imagegrid=False, size=None):
+def _are_all_plots_instances_of(plots, Backend):
+    """Verify that plots (or interactive plots) are produces with the
+    specified backend.
+    """
+    return all(isinstance(t, Backend)  or
+        (isinstance(t, IPlot) and isinstance(t.backend, Backend))
+        for t in plots)
+
+
+def _create_mpl_figure(mapping, imagegrid=False, size=None, is_iplot_panel=False):
     matplotlib = import_module(
         'matplotlib',
         import_kwargs={'fromlist': ['pyplot', 'gridspec']},
@@ -38,9 +57,25 @@ def _create_mpl_figure(mapping, imagegrid=False, size=None):
         catch=(RuntimeError,))
     plt = matplotlib.pyplot
 
-    kw = {} if not size else {"figsize": size}
-    fig = plt.figure(**kw)
+    def get_fig_panes_plots(fig):
+        panes_plots = {}
+        if is_iplot_panel:
+            pn = import_module(
+                'panel',
+                min_module_version='0.12.0')
+            pane = pn.pane.Matplotlib(fig, dpi=96)
+            panes_plots[pane] = fig
+            return pane, panes_plots
+        return fig, panes_plots
 
+    kw = {} if not size else {"figsize": size}
+    if is_iplot_panel:
+        fig = matplotlib.figure.Figure(**kw)
+    else:
+        fig = plt.figure(**kw)
+
+    new_plots = []
+    panes_plots = {}
     if imagegrid:
         gs =list(mapping.keys())[0].get_gridspec()
         grid = mpl_toolkits.axes_grid1.ImageGrid(
@@ -53,6 +88,8 @@ def _create_mpl_figure(mapping, imagegrid=False, size=None):
             cbar_pad=0.15,
         )
         for (_, p), ax in zip(mapping.items(), grid):
+            if isinstance(p, IPlot):
+                p = p.backend
             # cpa: current plot attributes
             cpa = p._copy_kwargs()
             cpa["fig"] = fig
@@ -60,9 +97,13 @@ def _create_mpl_figure(mapping, imagegrid=False, size=None):
             cpa["imagegrid"] = True
             p = MB(*p.series, **cpa)
             p.draw()
-        return fig
+            new_plots.append(p)
+        fig, panes_plots = get_fig_panes_plots(fig)
+        return fig, new_plots, panes_plots
 
     for spec, p in mapping.items():
+        if isinstance(p, IPlot):
+            p = p.backend
         kw = {"projection": "3d"} if (len(p.series) > 0 and
             p.series[0].is_3D) else ({"projection": "polar"} if p.polar_axis
             else {})
@@ -73,26 +114,148 @@ def _create_mpl_figure(mapping, imagegrid=False, size=None):
         cpa["ax"] = cur_ax
         p = MB(*p.series, **cpa)
         p.draw()
-    return fig
+        new_plots.append(p)
+
+    fig.tight_layout()
+    fig, panes_plots = get_fig_panes_plots(fig)
+    return fig, new_plots, panes_plots
 
 
 def _create_panel_figure(mapping, panel_kw):
     pn = import_module(
         'panel',
         min_module_version='0.12.0')
-
     pn.extension("plotly")
 
+    panes_plots = {}
     fig = pn.GridSpec(**panel_kw)
     for spec, p in mapping.items():
         rs = spec.rowspan
         cs = spec.colspan
         if isinstance(p, PB):
-            d = {"data": list(p.fig.data), "layout": p.fig.layout}
-            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pn.pane.Plotly(d)
+            d = p.fig.to_dict()
+            pane = pn.pane.Plotly(d)
+            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pane
         else:
-            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pn.pane.panel(p.fig)
-    return fig
+            pane = pn.pane.panel(p.fig)
+            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pane
+        panes_plots[pane] = p
+    return fig, panes_plots
+
+
+def _create_ipywidgets_figure(mapping, panel_kw):
+    ipy = import_module('ipywidgets')
+    plotly = import_module(
+        'plotly',
+        import_kwargs={'fromlist': ['graph_objects']},
+        warn_not_installed=True,
+        min_module_version='5.0.0')
+    go = plotly.graph_objects
+
+    fig = ipy.GridspecLayout(**panel_kw)
+    bokeh_outputs_plots = []
+    for spec, p in mapping.items():
+        rs = spec.rowspan
+        cs = spec.colspan
+        plot_fig = p.fig
+        if isinstance(p, PB):
+            # ipywidgets requires Plotly's FigureWidget
+            plot_fig = go.FigureWidget(p.fig.to_dict())
+        elif _are_all_plots_instances_of([p], BB):
+            bokeh = import_module(
+                'bokeh',
+                import_kwargs={'fromlist': ['io']},
+                warn_not_installed=True,
+                min_module_version='2.3.0')
+            # let's assume cfg["bokeh"]["height"] is an integer
+            min_height = str(cfg["bokeh"]["height"]) + "px"
+            new_fig = ipy.Output(layout=ipy.Layout(
+                height='auto', min_height=min_height, width='100%', max_width="100%"))
+            with new_fig:
+                bokeh.io.show(plot_fig)
+            bokeh_outputs_plots.append((new_fig, p))
+            plot_fig = new_fig
+        fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = ipy.Box([plot_fig])
+    return fig, bokeh_outputs_plots
+
+
+def _check_gs(gs):
+    """Helper function to verify the provided GridSpec.
+    """
+    if not isinstance(gs, dict):
+        raise TypeError("`gs` must be a dictionary.")
+
+    matplotlib = import_module(
+        'matplotlib',
+        import_kwargs={'fromlist': ['pyplot', 'gridspec']},
+        min_module_version='1.1.0',
+        catch=(RuntimeError,))
+
+    SubplotSpec = matplotlib.gridspec.SubplotSpec
+    if not isinstance(list(gs.keys())[0], SubplotSpec):
+        raise ValueError(
+            "Keys of `gs` must be of elements of type "
+            "matplotlib.gridspec.SubplotSpec. Use "
+            "matplotlib.gridspec.GridSpec to create them.")
+
+
+def _get_all_parameters(plots):
+    """Loop over the provided plots and extract the original parameters.
+    """
+    all_parameters, all_plots = {}, []
+    for plot in plots:
+        if isinstance(plot, IPlot):
+            all_plots.append(plot.backend)
+            # all_plots.append(plot)
+            all_parameters.update(plot._original_params)
+        else:
+            all_plots.append(plot)
+
+    return all_parameters, all_plots
+
+
+def _get_plots_imodule(plots):
+    """Verify that all plots uses the same interactive module, and return it.
+    """
+    imodules = set()
+    for plot in plots:
+        if isinstance(plot, IPlot):
+            imodules.add(plot.backend.imodule)
+        else:
+            imodules.add(plot.imodule)
+
+    if None in imodules:
+        imodules.remove(None)
+
+    if len(imodules) > 1:
+        raise ValueError(
+            "The provided interactive plots uses different interactive "
+            "modules. This is not supported. Please, only chose one "
+            "interactive module for all plots.\n"
+            f"Received interactive modules: {imodules}")
+    return imodules.pop() if len(imodules) > 0 else None
+
+
+def _check_imodules(plots_imodule, plotgrid_imodule):
+    def raise_error(plots_imodule, plotgrid_imodule):
+        raise ValueError(
+            "The interactive module used by `plotgrid` is different from "
+            "the interactive module used by the plots. This is not supported. "
+            "Please, only chose one interactive module. Received:\n"
+            f"plotgrid imodule={plotgrid_imodule}\n"
+            f"plots imodule={plots_imodule}"
+        )
+    default_imodule = cfg["interactive"]["module"]
+    if (plots_imodule is None) and (plotgrid_imodule is None):
+        pass
+    elif plots_imodule is None:
+        if plotgrid_imodule != default_imodule:
+            raise_error(default_imodule, plotgrid_imodule)
+    elif plotgrid_imodule is None:
+        if plots_imodule != default_imodule:
+            raise_error(plots_imodule, default_imodule)
+    elif plotgrid_imodule != plots_imodule:
+        raise_error(plots_imodule, plotgrid_imodule)
 
 
 def plotgrid(*args, **kwargs):
@@ -206,6 +369,34 @@ def plotgrid(*args, **kwargs):
        }
        plotgrid(gs=mapping)
 
+    Interactive-widget plotgrid with first mode of operation, illustrating:
+
+    * ``plotgrid`` accepts interactive plots.
+    * the use of the ``prange`` class (parametric range).
+    * the same interactive module, ``imodule``, must be used on the plots as
+      well as on the plotgrid. Here, ``imodule="panel"`` has been used, but
+      users can change it to ``imodule="ipywidgets"``, provided that
+      ``%matplotlib widget`` is executed first.
+
+    .. panel-screenshot::
+       :small-size: 800, 675
+
+       from sympy import *
+       from spb import *
+       from sympy.abc import a, b, c, d, x
+       imodule = "panel"
+       options = dict(
+           imodule=imodule, show=False, use_latex=False, params={
+               a: (1, 0, 2),
+               b: (5, 0, 10),
+               c: (0, 0, 2*pi),
+               d: (10, 1, 20)
+           })
+
+       p1 = plot(sin(x*a + c) * exp(-abs(x) / b), prange(x, -d, d), **options)
+       p2 = plot(cos(x*a + c) * exp(-abs(x) / b), (x, -10, 10), **options)
+       plotgrid(p1, p2, imodule=imodule)
+
     References
     ==========
 
@@ -218,7 +409,32 @@ def plotgrid(*args, **kwargs):
     nc = kwargs.get("nc", 1)
     nr, nc = _nrows_ncols(nr, nc, len(args))
     show = kwargs.pop("show", True)
-    p = PlotGrid(nr, nc, *args, show=False, **kwargs)
+    gs = kwargs.get("gs", None)
+
+    all_parameters = {}
+    # TODO: remove new_args
+    new_args = []
+    if len(args) > 0:
+        plots_imodule = _get_plots_imodule(args)
+        all_parameters, new_args = _get_all_parameters(args)
+    elif gs:
+        _check_gs(gs)
+        plots = list(gs.values())
+        plots_imodule = _get_plots_imodule(plots)
+        all_parameters, new_args = _get_all_parameters(plots)
+    else:
+        plots_imodule = None
+
+    _check_imodules(plots_imodule, kwargs.get("imodule", None))
+
+    is_iplot = len(all_parameters) > 0
+    p = PlotGrid(nr, nc, *args, show=False, is_iplot=is_iplot, **kwargs)
+    if is_iplot:
+        kwargs["plotgrid"] = p
+        kwargs["params"] = all_parameters
+        kwargs["show"] = show
+        return create_interactive_plot(**kwargs)
+
     if not show:
         return p
     if p.is_matplotlib_fig:
@@ -233,7 +449,7 @@ class PlotGrid:
     """
     _panel_row_height = 350
 
-    def __init__(self, nrows, ncols, *args, **kwargs):
+    def __init__(self, nrows, ncolumns, *args, **kwargs):
         self.matplotlib = import_module(
             'matplotlib',
             import_kwargs={'fromlist': ['pyplot', 'gridspec']},
@@ -242,26 +458,39 @@ class PlotGrid:
         self.plt = self.matplotlib.pyplot
 
         self.nrows = nrows
-        self.ncolumns = ncols
+        self.ncolumns = ncolumns
         self.args = args
         self.size = kwargs.get("size", None)
         # requests Matplotlib's ImageGrid axis to be used
         self.imagegrid = kwargs.get("imagegrid", False)
         self._fig = None
-        self.is_matplotlib_fig = all(isinstance(t, MB) for t in args)
+        # If args are all instances of MB, than new plots will be created.
+        # All of them will share the same figure, but uses a different axes.
+        # Need to store the new plots in order to update them, in case of
+        # interactive widget plot.
+        self._new_plots = []
+        # the following is used when imodule="ipywidgets". It maps bokeh
+        # outputs to plots, so that bokeh outputs can be reconstructed after
+        # the plots have updated their data.
+        self._bokeh_outputs_plots = []
+        # the following is used when imodule="panel". It maps plots to panes,
+        # so that panel can update what is shown on the pane after the plots
+        # have updated their data.
+        self._panes_plots = {}
+        self._is_iplot = kwargs.get("is_iplot", False)
+        self._imodule = kwargs.get("imodule", cfg["interactive"]["module"])
 
         # validate GridSpec, if provided
         self.gs = kwargs.get("gs", None)
         if self.gs:
-            if not isinstance(self.gs, dict):
-                raise TypeError("`gs` must be a dictionary.")
-
-            SubplotSpec = self.matplotlib.gridspec.SubplotSpec
-            if not isinstance(list(self.gs.keys())[0], SubplotSpec):
-                raise ValueError(
-                    "Keys of `gs` must be of elements of type "
-                    "matplotlib.gridspec.SubplotSpec. Use "
-                    "matplotlib.gridspec.GridSpec to create them.")
+            _check_gs(self.gs)
+            self.is_matplotlib_fig = _are_all_plots_instances_of(
+                self.gs.values(), MB)
+            self.is_bokeh_fig = _are_all_plots_instances_of(
+                self.gs.values(), BB)
+        else:
+            self.is_matplotlib_fig = _are_all_plots_instances_of(args, MB)
+            self.is_bokeh_fig = _are_all_plots_instances_of(args, BB)
 
         self.panel_kw = kwargs.get("panel_kw", dict())
 
@@ -317,6 +546,7 @@ class PlotGrid:
     def _create_figure(self, **kwargs):
         GridSpec = self.matplotlib.gridspec.GridSpec
         gs = self.gs
+        is_iplot_panel = self._is_iplot and (self._imodule == "panel")
 
         if (gs is None) and (len(self.args) == 0):
             self._fig = self.plt.figure()
@@ -333,23 +563,96 @@ class PlotGrid:
                         mapping[gs[i, j]] = self.args[c]
                     c += 1
 
-            if all(isinstance(a, MB) for a in self.args):
-                self._fig = _create_mpl_figure(
-                    mapping, self.imagegrid, self.size)
+            if self.is_matplotlib_fig:
+                self._fig, self._new_plots, self._panes_plots = _create_mpl_figure(
+                    mapping, self.imagegrid, self.size, is_iplot_panel)
             else:
                 size = self.size
-                self.panel_kw.setdefault("width", 800 if not size else size[0])
-                self.panel_kw.setdefault("height",
-                    nr * self._panel_row_height if not size else size[1])
-                self._fig = _create_panel_figure(mapping, self.panel_kw)
+
+                # NOTE: assumimg all plots are of the same backend
+                self._new_plots = self.args
+
+                if self._imodule == "panel":
+                    self.panel_kw.setdefault("width", 800 if not size else size[0])
+                    self.panel_kw.setdefault("height",
+                        nr * self._panel_row_height if not size else size[1])
+                    self._fig, self._panes_plots = _create_panel_figure(mapping, self.panel_kw)
+                else:
+                    get_size = lambda t: str(t) + "px" if isinstance(t, int) else t
+                    self.panel_kw.setdefault("width", "800px" if not size else get_size(size[0]))
+                    if not self.is_bokeh_fig:
+                        # NOTE: this doesn't work well with bokeh
+                        self.panel_kw.setdefault("height",
+                            str(nr * self._panel_row_height) + "px" if not size else get_size(size[1]))
+                    self.panel_kw["n_rows"] = nr
+                    self.panel_kw["n_columns"] = nc
+                    self._fig, self._bokeh_outputs_plots = _create_ipywidgets_figure(
+                        mapping, self.panel_kw)
 
         else:
             ### Second mode of operation
-            if all(isinstance(a, MB) for a in gs.values()):
-                self._fig = _create_mpl_figure(
-                    gs, self.imagegrid, self.size)
+            if self.is_matplotlib_fig:
+                self._fig, self._new_plots, self._panes_plots = _create_mpl_figure(
+                    gs, self.imagegrid, self.size, is_iplot_panel)
             else:
-                self._fig = _create_panel_figure(gs, self.panel_kw)
+                for plot in gs.values():
+                    if isinstance(plot, IPlot):
+                        self._new_plots.append(plot.backend)
+                    else:
+                        self._new_plots.append(plot)
+
+                if self._imodule == "panel":
+                    self._fig, self._panes_plots = _create_panel_figure(gs, self.panel_kw)
+                else:
+                    first_element = list(gs.keys())[0]
+                    mpl_gs = first_element.get_gridspec()
+                    self.panel_kw = {
+                        "n_rows": mpl_gs.nrows, "n_columns": mpl_gs.ncols}
+                    self._fig, self._bokeh_outputs_plots = _create_ipywidgets_figure(
+                        gs, self.panel_kw)
+
+    def _action_post_update(self):
+        """With Holoviz's Panel, plots are contained into `panes`: they are
+        ultimately responsible to update what is shown on the screen.
+        This method is executed by the interactive widget plot after all
+        subplots have updated their data.
+        """
+        for pane, plot in self._panes_plots.items():
+            pane.param.trigger("object")
+            if isinstance(plot, PB):
+                pane.object = plot.fig.to_dict()
+            elif isinstance(plot, self.matplotlib.figure.Figure):
+                pane.object = plot
+            else:
+                pane.object = plot.fig
+
+    def update_interactive(self, params):
+        """Implement the logic to update the data generated by
+        interactive-widget plots.
+
+        Parameters
+        ==========
+
+        params : dict
+            Map parameter-symbols to numeric values.
+        """
+        for p in self._new_plots:
+            if isinstance(p, IPlot):
+                p.backend.update_interactive(params)
+            else:
+                p.update_interactive(params)
+
+        # update bokeh panes if ipywidgets was used to create
+        # this visualization
+        bokeh = import_module(
+            'bokeh',
+            import_kwargs={'fromlist': ['io']},
+            warn_not_installed=True,
+            min_module_version='2.3.0')
+        for (bokeh_output, plot) in self._bokeh_outputs_plots:
+            with bokeh_output:
+                clear_output(True)
+                bokeh.io.show(plot.fig)
 
     def show(self, **kwargs):
         """Display the current plot.

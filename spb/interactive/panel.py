@@ -2,6 +2,7 @@ from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.utils import _validate_kwargs
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
+from spb.plotgrid import PlotGrid
 from sympy import latex, Tuple
 from sympy.external import import_module
 import warnings
@@ -222,6 +223,9 @@ class PanelLayout:
         #
         # https://panel.holoviz.org/reference/panes/Param.html#disabling-continuous-updates-for-slider-widgets
 
+        mergedeep = import_module('mergedeep')
+        self.merge = mergedeep.merge
+
         layouts = ["tb", "bb", "sbl", "sbr"]
         layout = layout.lower()
         if layout not in layouts:
@@ -270,10 +274,20 @@ class PanelLayout:
             sizing_mode="stretch_width",
         )
 
+    @property
+    def ncols(self):
+        return self._ncols
+
+    @ncols.setter
+    def ncols(self, v):
+        if v is not None:
+            self._ncols = v
+
     def _init_pane(self):
         """Here we wrap the figure exposed by the backend with a Pane, which
         allows to set useful properties.
         """
+
         # NOTE: If the following import statement was located at the
         # beginning of the file, there would be a circular import.
         from spb import KB, MB
@@ -296,8 +310,8 @@ class PanelLayout:
             # example outputs to become visible on Sphinx.
             default_kw["interactive"] = False
 
-        merge = self._backend.merge
-        kw = merge({}, default_kw, self._pane_kw)
+        # merge = self._backend.merge
+        kw = self.merge({}, default_kw, self._pane_kw)
         # NOTE: If the following import statement was located at the
         # beginning of the file, there would be a circular import.
         from spb import PB
@@ -322,9 +336,15 @@ class PanelLayout:
         # beginning of the file, there would be a circular import.
         from spb import KB, PB
 
-        if not isinstance(self._backend, KB):
+        if isinstance(self._backend, PlotGrid):
+            self._backend._action_post_update()
+
+        elif not isinstance(self._backend, KB):
             # KB exhibits a strange behavior when executing the following
             # lines. For the moment, do not execute them with KB
+            # if isinstance(self._backend, PlotGrid):
+            #     pass
+            # else:
             self.pane.param.trigger("object")
             # self.pane.object = self.fig
             if not isinstance(self._backend, PB):
@@ -380,9 +400,8 @@ class PanelLayout:
         default_template_kw = dict(title=self._name, theme=theme)
 
         if (self._template is None) or isinstance(self._template, dict):
-            merge = self._backend.merge
             kw = self._template if isinstance(self._template, dict) else {}
-            kw = merge(default_template_kw, kw)
+            kw = self.merge(default_template_kw, kw)
             kw["sidebar_location"] = self._layout
             if len(self._name.strip()) == 0:
                 kw.setdefault("show_header", False)
@@ -443,18 +462,22 @@ class InteractivePlot(DynamicParam, PanelLayout, IPlot):
         PanelLayout.__init__(self, layout, ncols, throttled, servable,
             custom_css, pane_kw, template)
 
-        # assure that each series has the correct values associated
-        # to parameters
-        series = list(series)
-        for s in series:
-            s.params = self.read_parameters()
+        plotgrid = kwargs.get("plotgrid", None)
+        if plotgrid:
+            self._backend = plotgrid
+        else:
+            # assure that each series has the correct values associated
+            # to parameters
+            series = list(series)
+            for s in series:
+                s.params = self.read_parameters()
 
-        is_3D = all([s.is_3D for s in series])
-        Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
-        kwargs["is_iplot"] = True
-        kwargs["imodule"] = "panel"
-        self._backend = Backend(*series, **kwargs)
-        _validate_kwargs(self._backend, **original_kwargs)
+            is_3D = all([s.is_3D for s in series])
+            Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
+            kwargs["is_iplot"] = True
+            kwargs["imodule"] = "panel"
+            self._backend = Backend(*series, **kwargs)
+            _validate_kwargs(self._backend, **original_kwargs)
 
     @property
     def pane_kw(self):

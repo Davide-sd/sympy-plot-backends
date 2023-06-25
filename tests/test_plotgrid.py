@@ -2,17 +2,24 @@ from pytest import raises
 from spb import (
     MB, PB, BB, KB, plotgrid, plot, plot3d, plot_contour, plot_vector,
     plot_polar, PlotGrid, plot_complex, plot_parametric,
-    plot3d_parametric_line, plot_contour
+    plot3d_parametric_line, plot_contour, plot_riemann_sphere
 )
+from spb.backends.matplotlib import unset_show
+from spb.interactive import IPlot
 from spb.plotgrid import _nrows_ncols
 from sympy import symbols, sin, cos, tan, exp, pi, Piecewise
+import bokeh
+import ipywidgets
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import mpl_toolkits
-import panel as pn
 import numpy as np
+import panel as pn
+import plotly.graph_objects as go
 import os
 from tempfile import TemporaryDirectory
+
 
 class KBchild1(KB):
     def _get_mode(self):
@@ -105,6 +112,7 @@ def test_plotgrid_mode_1():
     assert len(p.fig.axes[1].get_lines()) == 2
 
     # mix different backends
+    options["imodule"] = "panel"
     p1 = plot(cos(x), (x, -3, 3), **options)
     p2 = plot_contour(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
         backend=PB, n1=20, n2=20, show=False)
@@ -112,13 +120,116 @@ def test_plotgrid_mode_1():
         backend=KBchild1, n1=20, n2=20, show=False)
     p4 = plot_vector([-y, x], (x, -5, 5), (y, -5, 5), backend=BB, show=False)
 
-    p = plotgrid(p1, p2, p3, p4, nr=2, nc=2, show=False)
+    p = plotgrid(p1, p2, p3, p4, nr=2, nc=2, show=False, imodule="panel")
     assert isinstance(p.fig, pn.GridSpec)
     assert p.ncolumns == 2 and p.nrows == 2
     assert isinstance(p.fig.objects[(0, 0, 1, 1)], pn.pane.plot.Matplotlib)
     assert isinstance(p.fig.objects[(0, 1, 1, 2)], pn.pane.plotly.Plotly)
     assert isinstance(p.fig.objects[(1, 0, 2, 1)], pn.pane.ipywidget.IPyWidget)
     assert isinstance(p.fig.objects[(1, 1, 2, 2)], pn.pane.plot.Bokeh)
+
+
+def test_plotgrid_mode_1_interactive_ipywidgets():
+    # verify the correct behavior when providing interactive widget plots.
+
+    def build_plotgrid(backend):
+        x, y, z = symbols("x, y, z")
+        options = dict(adaptive=False, n=10, backend=backend,
+            imodule="ipywidgets", show=False, params={
+                y: (1, 0, 2),
+                z: (5, 0, 10),
+            })
+
+        # all plots with PlotlyBackend
+        p1 = plot(sin(x*y) * exp(-abs(x) / z), **options)
+        p2 = plot(cos(x*y) * exp(-abs(x) / z), **options)
+        p3 = plot(cos(x*y) * sin(x*y) * exp(-abs(x) / z), **options)
+        return plotgrid(p1, p2, p3, show=False, imodule="ipywidgets")
+
+    # NOTE: I'm going to test with Plotly and not Matplotlib because I have
+    # no idea how to setup test for Matplotlib, which requires interactivity...
+    p = build_plotgrid(PB)
+    assert isinstance(p, IPlot)
+    res = p.show()
+    assert isinstance(res, ipywidgets.VBox)
+    assert len(res.children) == 2
+    assert all(isinstance(t, ipywidgets.GridspecLayout) for t in res.children)
+    # widgets grid
+    assert res.children[0].n_rows == 1
+    assert res.children[0].n_columns == 2
+    assert isinstance(res.children[0][0, 0], ipywidgets.FloatSlider)
+    assert isinstance(res.children[0][0, 1], ipywidgets.FloatSlider)
+    # plots grid
+    assert res.children[1].n_rows == 3
+    assert res.children[1].n_columns == 1
+    assert all(isinstance(res.children[1][i, 0].children[0], go.FigureWidget)
+        for i in range(3))
+
+    # quick run-down to verify that no errors are raised when changing the
+    # value of a widget
+    res.children[0][0, 0].value = 2
+
+    # NOTE: this opens pictures in the browser. Why?
+    p = build_plotgrid(BB)
+    res = p.show()
+    res.children[0][0, 0].value = 2
+
+    # TODO: it would be nice to test matplotlib too, but how?
+    p = build_plotgrid(MB)
+    # res = p.show()
+    # res.children[0][0, 0].value = 2
+
+
+def test_plotgrid_mode_1_interactive_panel():
+    # verify the correct behavior when providing interactive widget plots.
+
+    def build_plotgrid(backend):
+        x, y, z = symbols("x, y, z")
+        options = dict(adaptive=False, n=10, backend=backend,
+            imodule="panel", show=False, params={
+                y: (1, 0, 2),
+                z: (5, 0, 10),
+            })
+
+        p1 = plot(sin(x*y) * exp(-abs(x) / z), **options)
+        p2 = plot(cos(x*y) * exp(-abs(x) / z), **options)
+        p3 = plot(cos(x*y) * sin(x*y) * exp(-abs(x) / z), **options)
+        return plotgrid(p1, p2, p3, show=False, imodule="panel")
+
+    # NOTE: I'm going to test with Plotly and not Matplotlib because I have
+        # no idea how to setup test for Matplotlib, which requires interactivity...
+    p = build_plotgrid(PB)
+    assert isinstance(p, IPlot)
+    res = p.show()
+    assert isinstance(res, pn.Column)
+    assert len(res.objects) == 2
+    assert isinstance(res.objects[0], pn.param.ParamMethod)
+    assert isinstance(res.objects[1], pn.GridSpec)
+    # widgets grid
+    t = res.objects[0].get_root()
+    sliders = t.children[0].children[0].children
+    assert all(isinstance(s[0], bokeh.models.widgets.sliders.Slider) for s in sliders)
+    # plots grid
+    assert res.objects[1].nrows == 3
+    assert res.objects[1].ncols == 1
+    assert all(isinstance(res.objects[1][i, 0], pn.pane.plotly.Plotly)
+        for i in range(3))
+
+    # quick run-down to verify that no errors are raised when changing the
+    # value of a widget
+    sliders[0][0].value = 2
+
+    p = build_plotgrid(BB)
+    res = p.show()
+    t = res.objects[0].get_root()
+    sliders = t.children[0].children[0].children
+    sliders[0][0].value = 2
+
+    p = build_plotgrid(MB)
+    res = p.show()
+    t = res.objects[0].get_root()
+    sliders = t.children[0].children[0].children
+    sliders[0][0].value = 2
 
 
 def test_plotgrid_mode_2():
@@ -172,7 +283,7 @@ def test_plotgrid_mode_2():
 
     # Mixture of different backends
     options = dict(adaptive=False, n=100,
-        show=False, use_latex=False)
+        show=False, use_latex=False, imodule="panel")
     p1 = plot(exp(x), backend=MB, **options)
     p2 = plot(sin(x), backend=PB, **options)
     p3 = plot(tan(x), backend=MB, detect_poles=True, eps=0.1, ylim=(-5, 5),
@@ -189,7 +300,7 @@ def test_plotgrid_mode_2():
         gs[2:, 1:]: p4,
         gs[0:2, 1:]: p5,
     }
-    p = plotgrid(gs=mapping, show=False)
+    p = plotgrid(gs=mapping, show=False, imodule="panel")
     assert isinstance(p, PlotGrid)
     assert isinstance(p.fig, pn.GridSpec)
     assert p.fig.nrows == p.fig.ncols == 3
@@ -201,14 +312,134 @@ def test_plotgrid_mode_2():
     assert isinstance(p.fig.objects[(0, 1, 2, 3)], pn.pane.ipywidget.IPyWidget)
 
 
-def test_panel_kw():
+def test_plotgrid_mode_2_interactive_ipywidgets():
+    # verify the correct behavior when providing interactive widget plots.
+    # NOTE: I'm going to test with Plotly and not Matplotlib because I have
+    # no idea how to setup test for Matplotlib, which requires interactivity...
+
+    x, y, z = symbols("x, y, z")
+    # all plots are instances of PlotlyBackend
+    options = dict(adaptive=False, n=100, backend=PB,
+        show=False, use_latex=False, params={
+            y: (1, 0, 2),
+            z: (5, 0, 10),
+        })
+
+    p1 = plot(exp(x*y) * exp(-abs(x) / z), **options)
+    p2 = plot(sin(x*y) * exp(-abs(x) / z), **options)
+    p3 = plot(tan(x*y) * exp(-abs(x) / z),
+        detect_poles=True, eps=0.1, ylim=(-5, 5), **options)
+    p4 = plot(cos(x*y) * exp(-abs(x) / z), **options)
+    options["n"] = 20
+    p5 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), **options)
+
+    # gs is not a dictionary
+    raises(TypeError, lambda: plotgrid(
+        p1, p2, p3, p4, p5, gs=1, show=False, imodule="ipywidgets"))
+    # wrong type of the keys
+    gs = {1: p1, 2: p2}
+    raises(ValueError, lambda: plotgrid(
+        p1, p2, p3, p4, p5, gs=gs, show=False, imodule="ipywidgets"))
+
+    gs = GridSpec(3, 3)
+    mapping = {
+        gs[0, :1]: p1,
+        gs[1, :1]: p2,
+        gs[2:, :1]: p3,
+        gs[2:, 1:]: p4,
+        gs[0:2, 1:]: p5,
+    }
+    p = plotgrid(gs=mapping, show=False, imodule="ipywidgets")
+
+    assert isinstance(p, IPlot)
+    res = p.show()
+    assert isinstance(res, ipywidgets.VBox)
+    assert len(res.children) == 2
+    assert all(isinstance(t, ipywidgets.GridspecLayout) for t in res.children)
+    # widgets grid
+    assert res.children[0].n_rows == 1
+    assert res.children[0].n_columns == 2
+    assert isinstance(res.children[0][0, 0], ipywidgets.FloatSlider)
+    assert isinstance(res.children[0][0, 1], ipywidgets.FloatSlider)
+    # plots grid
+    assert res.children[1].n_rows == 3
+    assert res.children[1].n_columns == 3
+    assert isinstance(res.children[1][0, 0].children[0], go.FigureWidget)
+    assert isinstance(res.children[1][1, 0].children[0], go.FigureWidget)
+    assert isinstance(res.children[1][2, 0].children[0], go.FigureWidget)
+    assert isinstance(res.children[1][2, 1:].children[0], go.FigureWidget)
+    assert isinstance(res.children[1][0:2, 1:].children[0], go.FigureWidget)
+
+
+def test_plotgrid_mode_2_interactive_panel():
+    # verify the correct behavior when providing interactive widget plots.
+
+    x, y, z = symbols("x, y, z")
+    # all plots are instances of PlotlyBackend
+    options = dict(adaptive=False, n=100, backend=PB, imodule="panel",
+        show=False, use_latex=False, params={
+            y: (1, 0, 2),
+            z: (5, 0, 10),
+        })
+
+    p1 = plot(exp(x*y) * exp(-abs(x) / z), **options)
+    p2 = plot(sin(x*y) * exp(-abs(x) / z), **options)
+    p3 = plot(tan(x*y) * exp(-abs(x) / z),
+        detect_poles=True, eps=0.1, ylim=(-5, 5), **options)
+    p4 = plot(cos(x*y) * exp(-abs(x) / z), **options)
+    options["n"] = 20
+    p5 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), **options)
+
+    # gs is not a dictionary
+    raises(TypeError, lambda: plotgrid(
+        p1, p2, p3, p4, p5, gs=1, show=False, imodule="panel"))
+    # wrong type of the keys
+    gs = {1: p1, 2: p2}
+    raises(ValueError, lambda: plotgrid(
+        p1, p2, p3, p4, p5, gs=gs, show=False, imodule="panel"))
+
+    gs = GridSpec(3, 3)
+    mapping = {
+        gs[0, :1]: p1,
+        gs[1, :1]: p2,
+        gs[2:, :1]: p3,
+        gs[2:, 1:]: p4,
+        gs[0:2, 1:]: p5,
+    }
+    p = plotgrid(gs=mapping, show=False, imodule="panel")
+
+    assert isinstance(p, IPlot)
+    res = p.show()
+    assert isinstance(res, pn.Column)
+    assert len(res.objects) == 2
+    assert isinstance(res.objects[0], pn.param.ParamMethod)
+    assert isinstance(res.objects[1], pn.GridSpec)
+    # widgets grid
+    t = res.objects[0].get_root()
+    sliders = t.children[0].children[0].children
+    assert all(isinstance(s[0], bokeh.models.widgets.sliders.Slider) for s in sliders)
+    # plots grid
+    assert res.objects[1].nrows == 3
+    assert res.objects[1].ncols == 3
+    assert isinstance(res.objects[1][0, 0], pn.pane.plotly.Plotly)
+    assert isinstance(res.objects[1][1, 0], pn.pane.plotly.Plotly)
+    assert isinstance(res.objects[1][2, 0], pn.pane.plotly.Plotly)
+    assert isinstance(res.objects[1][2, 1:], pn.GridSpec)
+    assert isinstance(
+        list(res.objects[1][2, 1:].objects.values())[0], pn.pane.plotly.Plotly)
+    assert isinstance(res.objects[1][0:2, 1:], pn.GridSpec)
+    assert isinstance(
+        list(res.objects[1][0:2, 1:].objects.values())[0], pn.pane.plotly.Plotly)
+
+
+def test_panel_kw_imodule_panel():
     x = symbols("x")
-    options = dict(adaptive=False, n=100, show=False)
+    options = dict(adaptive=False, n=100, show=False, imodule="panel")
     p1 = plot(sin(x), backend=MB, **options)
     p2 = plot(tan(x), backend=PB, **options)
     p3 = plot(exp(-x), backend=BB, **options)
-    pg1 = plotgrid(p1, p2, p3, nr=1, nc=3, show=False)
-    pg2 = plotgrid(p1, p2, p3, nr=1, nc=3, show=False,
+    pg1 = plotgrid(p1, p2, p3, nr=1, nc=3, show=False, imodule="panel")
+    pg2 = plotgrid(p1, p2, p3, nr=1, nc=3, show=False, imodule="panel",
         panel_kw=dict(sizing_mode="stretch_width", height=250))
     assert (pg1.fig.height != pg2.fig.height) and (pg2.fig.height == 250)
 
@@ -241,7 +472,15 @@ def test_plot_size():
     options = dict(adaptive=False, n=100, backend=PB, show=False)
     p1 = plot(sin(x), **options)
     p2 = plot(cos(x), **options)
-    p = plotgrid(p1, p2, size=(400, 600), show=False)
+    p = plotgrid(p1, p2, size=(400, 600), show=False, imodule="ipywidgets")
+    res = p.show()
+    assert res.width == "400px"
+    # assert res.height == "600px"
+
+    options = dict(adaptive=False, n=100, backend=PB, show=False, imodule="panel")
+    p1 = plot(sin(x), **options)
+    p2 = plot(cos(x), **options)
+    p = plotgrid(p1, p2, size=(400, 600), show=False, imodule="panel")
     assert p.fig.width == 400
     assert p.fig.height == 600
 
@@ -288,7 +527,7 @@ def test_save():
     with TemporaryDirectory(prefix='sympy_') as tmpdir:
         # matplotlib figures
         p1, p2, p3, p4, p5, p6, p7 = _create_plots(MB)
-        
+
         # symmetric grid
         p = PlotGrid(2, 2, p1, p2, p3, p4, show=False)
         filename = 'test_grid1.png'
@@ -312,15 +551,75 @@ def test_save():
         p1, p2, p3, p4, p5, p6, p7 = _create_plots(PB)
 
         # symmetric grid
-        p = PlotGrid(2, 2, p1, p2, p3, p4, show=False)
+        p = PlotGrid(2, 2, p1, p2, p3, p4, show=False, imodule="panel")
         p.save("test_1.html")
 
         # grid size greater than the number of subplots
-        p = PlotGrid(3, 4, p1, p2, p3, p4, show=False)
+        p = PlotGrid(3, 4, p1, p2, p3, p4, show=False, imodule="panel")
         p.save("test_2.html")
 
         # unsymmetric grid (subplots in one line)
-        p = PlotGrid(1, 3, p5, p6, p7, show=False)
+        p = PlotGrid(1, 3, p5, p6, p7, show=False, imodule="panel")
         p.save("test_3.html")
-        
 
+
+def test_plotgrid_interactive_mixed_modules():
+    def build_plots(imodule1, imodule2):
+        x, y, z = symbols("x, y, z")
+        # all plots are instances of PlotlyBackend
+        options = dict(adaptive=False, n=100, backend=PB, #imodule="panel",
+            show=False, use_latex=False, params={
+                y: (1, 0, 2),
+                z: (5, 0, 10),
+            })
+        p1 = plot(exp(x*y) * exp(-abs(x) / z), imodule=imodule1, **options)
+        p2 = plot(sin(x*y) * exp(-abs(x) / z), imodule=imodule1, **options)
+        p3 = plot(tan(x*y) * exp(-abs(x) / z), imodule=imodule2,
+            detect_poles=True, eps=0.1, ylim=(-5, 5), **options)
+        return p1, p2, p3
+
+    # plots without imodule are built with default module, ipywidgets.
+    # no error because imodule corresponds between plots and plotgrid
+    p1, p2, p3 = build_plots(None, None)
+    plotgrid(p1, p2, p3, imodule="ipywidgets", show=False)
+
+    # error because imodule is different between plots and plotgrid
+    p1, p2, p3 = build_plots(None, None)
+    raises(ValueError,
+        lambda: plotgrid(p1, p2, p3, imodule="panel", show=False))
+
+    # error because mix of different interactive modules on plots
+    p1, p2, p3 = build_plots("panel", "ipywidgets")
+    raises(ValueError,
+        lambda: plotgrid(p1, p2, p3, imodule="ipywidgets", show=False))
+
+    # error because mix of different interactive modules on plots
+    p1, p2, p3 = build_plots("panel", None)
+    raises(ValueError,
+        lambda: plotgrid(p1, p2, p3, imodule="ipywidgets", show=False))
+
+    # error because mix of different interactive modules on plots
+    p1, p2, p3 = build_plots(None, "panel")
+    raises(ValueError,
+        lambda: plotgrid(p1, p2, p3, imodule="ipywidgets", show=False))
+
+    # error because mix of different interactive modules on plots
+    p1, p2, p3 = build_plots("ipywidgets", "panel")
+    raises(ValueError,
+        lambda: plotgrid(p1, p2, p3, imodule="ipywidgets", show=False))
+
+    # same module on plots and plotgrid
+    p1, p2, p3 = build_plots("ipywidgets", "ipywidgets")
+    plotgrid(p1, p2, p3, imodule="ipywidgets", show=False)
+
+    p1, p2, p3 = build_plots("panel", "panel")
+    plotgrid(p1, p2, p3, imodule="panel", show=False)
+
+    # plots and plotgrid uses different interactive modules
+    p1, p2, p3 = build_plots("ipywidgets", "ipywidgets")
+    raises(ValueError,
+        lambda: plotgrid(p1, p2, p3, imodule="panel", show=False))
+
+    p1, p2, p3 = build_plots("panel", "panel")
+    raises(ValueError,
+        lambda: plotgrid(p1, p2, p3, imodule="ipywidgets", show=False))

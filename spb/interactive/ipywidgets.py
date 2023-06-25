@@ -3,7 +3,7 @@ from sympy import latex
 from sympy.external import import_module
 from spb.defaults import TWO_D_B, THREE_D_B
 from spb.interactive import _tuple_to_dict, IPlot
-from spb import BB, MB
+from spb import BB, MB, PlotGrid
 from IPython.display import clear_output
 
 
@@ -48,7 +48,7 @@ class InteractivePlot(IPlot):
         if not params:
             raise ValueError("`params` must be provided.")
         self._original_params = params
-        self._use_latex = kwargs.get("use_latex", True)
+        self._use_latex = kwargs.pop("use_latex", True)
         self._ncols = kwargs.get("ncols", 2)
         self._layout = kwargs.get("layout", "tb")
 
@@ -57,16 +57,22 @@ class InteractivePlot(IPlot):
 
         # map symbols to widgets
         self._params_widgets = {k: v for k, v in zip(params.keys(), self._widgets)}
-        # assure that each series has the correct values associated
-        # to parameters
-        for s in series:
-            s.params = {k: v.value for k, v in self._params_widgets.items()}
 
-        is_3D = all([s.is_3D for s in series])
-        Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
-        kwargs["is_iplot"] = True
-        kwargs["imodule"] = "ipywidgets"
-        self._backend = Backend(*series, **kwargs)
+        plotgrid = kwargs.get("plotgrid", None)
+
+        if plotgrid:
+            self._backend = plotgrid
+        else:
+            # assure that each series has the correct values associated
+            # to parameters
+            for s in series:
+                s.params = {k: v.value for k, v in self._params_widgets.items()}
+
+            is_3D = all([s.is_3D for s in series])
+            Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
+            kwargs["is_iplot"] = True
+            kwargs["imodule"] = "ipywidgets"
+            self._backend = Backend(*series, **kwargs)
 
     def _get_iplot_kw(self):
         return {
@@ -78,21 +84,7 @@ class InteractivePlot(IPlot):
         }
 
     def show(self):
-        if isinstance(self._backend, MB):
-            self._backend.plt.ioff() # without it there won't be any update
-            self._output_figure = ipywidgets.Box([self._backend.fig.canvas])
-        elif isinstance(self._backend, BB):
-            self._output_figure = ipywidgets.Output()
-            bokeh = import_module(
-                'bokeh',
-                import_kwargs={'fromlist': ['io']},
-                warn_not_installed=True,
-                min_module_version='2.3.0')
-            with self._output_figure:
-                bokeh.io.show(self._backend.fig)
-        else:
-            self._output_figure = self._backend.fig
-
+        # bind widgets state to this update function
         def update(change):
             self._backend.update_interactive(
                 {k: v.value for k, v in self._params_widgets.items()})
@@ -109,7 +101,32 @@ class InteractivePlot(IPlot):
         for w in self._widgets:
             w.observe(update, "value")
 
-        if isinstance(self._backend, MB):
+        # create the output figure
+        if (isinstance(self._backend, MB) or
+            (isinstance(self._backend, PlotGrid) and self._backend.is_matplotlib_fig)):
+            # without plt.ioff, picture will show up twice. Morover, there
+            # won't be any update
+            self._backend.plt.ioff()
+            if isinstance(self._backend, PlotGrid):
+                if not self._backend.imagegrid:
+                    self._backend.fig.tight_layout()
+            self._output_figure = ipywidgets.Box([self._backend.fig.canvas])
+        elif isinstance(self._backend, BB):
+            self._output_figure = ipywidgets.Output()
+            bokeh = import_module(
+                'bokeh',
+                import_kwargs={'fromlist': ['io']},
+                warn_not_installed=True,
+                min_module_version='2.3.0')
+            with self._output_figure:
+                bokeh.io.show(self._backend.fig)
+        else:
+            self._output_figure = self._backend.fig
+
+        if (isinstance(self._backend, MB) or
+            (isinstance(self._backend, PlotGrid) and self._backend.is_matplotlib_fig)):
+            # turn back interactive behavior with plt.ion, so that picture
+            # will be updated.
             self._backend.plt.ion() # without it there won't be any update
 
         if self._layout == "tb":

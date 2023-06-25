@@ -65,6 +65,8 @@ def create_interactive_plot(*series, **kwargs):
     """Select which interactive module to use.
     """
     imodule = kwargs.pop("imodule", cfg["interactive"]["module"])
+    if imodule is None:
+        imodule = cfg["interactive"]["module"]
     imodule = imodule.lower()
 
     if imodule == "panel":
