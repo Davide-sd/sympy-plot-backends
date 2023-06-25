@@ -32,6 +32,9 @@ def _hardcoded_defaults():
             "theme": "caliber",
             # How will the plot resizes to fill the available space.
             "sizing_mode": "stretch_width",
+            # the default size of the plot when sizing_mode=fixed
+            "width": 600,
+            "height": 400,
             # Show/hide main grid
             "grid": True,
             # Show/hide minor grid
