@@ -179,17 +179,19 @@ class BokehBackend(Plot):
                 TOOLTIPS += [("Abs", "@abs"), ("Arg", "@arg")]
 
         sizing_mode = cfg["bokeh"]["sizing_mode"]
-        if any(s.is_complex and s.is_domain_coloring for s in self.series):
-            # for complex domain coloring
-            sizing_mode = None
+        # if any(s.is_complex and s.is_domain_coloring for s in self.series):
+        #     # for complex domain coloring: the idea is to have the colorbar
+        #     # closer to the actual plot, rather than having a lot of white
+        #     # space in between.
+        #     sizing_mode = None
 
         kw = dict(
             title=self.title,
             x_axis_label=self.xlabel if self.xlabel else "x",
             y_axis_label=self.ylabel if self.ylabel else "y",
             sizing_mode="fixed" if self.size else sizing_mode,
-            width=int(self.size[0]) if self.size else 600,
-            height=int(self.size[1]) if self.size else 400,
+            width=int(self.size[0]) if self.size else cfg["bokeh"]["width"],
+            height=int(self.size[1]) if self.size else cfg["bokeh"]["height"],
             x_axis_type=self.xscale,
             y_axis_type=self.yscale,
             tools="pan,wheel_zoom,box_zoom,reset,hover,save",
@@ -210,32 +212,6 @@ class BokehBackend(Plot):
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
         if self._invert_x_axis:
             self._fig.x_range.flipped = True
-        if self.aouc:
-            pixel_offset = 15
-            # assumption: there is only one data series being plotted.
-            sign = 1
-            labels = ["0", "i", "-i", "1"]
-            if self.series[0].at_infinity:
-                labels[0] = "inf"
-                sign = -1
-            source = self.bokeh.models.ColumnDataSource(data={
-                "x": [0, 0, 0, 1], "y": [0, 1, -1, 0], "labels": labels,
-                "x_offset": [pixel_offset, 0, 0, sign * pixel_offset],
-                "y_offset": [0, pixel_offset, -pixel_offset, 0]
-            })
-            new_series = [
-                List2DSeries([1, 0, 0], [0, 1, -1], is_point=True,
-                    is_filled=False, show_in_legend=False,
-                    rendering_kw={"color": "#000000", "marker": "circle", "size": 6}),
-                List2DSeries([0], [0], is_point=True,
-                    is_filled=(not self.series[0].at_infinity), show_in_legend=False,
-                    rendering_kw={"color": "#000000", "marker": "circle", "size": 6}),
-                GenericDataSeries("annotations", x="x", y="y", text="labels",
-                    x_offset="x_offset", y_offset="y_offset", source=source,
-                    text_baseline="middle", text_align="center",
-                    text_font_style="bold", text_color="#000000"),
-            ]
-            self._series = self._series + new_series
 
         self._create_renderers()
 

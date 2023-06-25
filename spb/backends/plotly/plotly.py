@@ -236,33 +236,6 @@ class PlotlyBackend(Plot):
             self._fig = self.go.Figure()
         self._colorbar_counter = 0
 
-        if self.aouc:
-            # assumption: there is only one data series being plotted.
-            at_infinity = self.series[0].at_infinity
-            sign = 1 if not at_infinity else -1
-            labels = ["1", "i", "-i"]
-            labels = ["<b>%s</b>" % t for t in labels]
-
-            new_series = [
-                GenericDataSeries("markers",
-                    x=[sign, 0, 0], y=[0, 1, -1], mode="markers+text",
-                    text=labels, marker=dict(color="#E5ECF6", size=8,
-                        line=dict(width=2, color="black")),
-                    textposition=[
-                        "top right" if not at_infinity else "top left",
-                        "bottom center", "top center"],
-                    textfont=dict(size=15), showlegend=False),
-                GenericDataSeries("markers",
-                    x=[0], y=[0], mode="markers+text",
-                    text="<b>inf</b>" if at_infinity else "<b>0</b>",
-                    marker=dict(color="#E5ECF6", size=8,
-                        line=dict(width=2, color="black")) if at_infinity
-                        else dict(size=8, color="black"),
-                    textposition="top right", textfont=dict(size=15),
-                    showlegend=False),
-            ]
-            self._series = self._series + new_series
-
         self._scale_down_colorbar = (
             self.legend and
             any(s.use_cm for s in self.series) and

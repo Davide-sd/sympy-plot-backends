@@ -1410,3 +1410,21 @@ def test_detect_poles_interactive():
     p.update_interactive({y: -1})
     assert len(p.fig.data) == 1
     assert len(p.fig.layout.shapes) == 7
+
+
+def test_plot_riemann_sphere():
+    p = make_test_plot_riemann_sphere(PB, True)
+    p.fig
+    f1 = p._new_plots[0].fig
+    f2 = p._new_plots[1].fig
+    # 1 image + 1 unit disk line + 2 scatters/annotation + 1 invisible
+    # scatter to place the colorbar
+    assert len(f1.data) == len(f2.data) == 5
+
+    p = make_test_plot_riemann_sphere(PB, False)
+    p.fig
+    f1 = p._new_plots[0].fig
+    f2 = p._new_plots[1].fig
+    # 1 image + 1 unit disk line + 1 invisible
+    # scatter to place the colorbar
+    assert len(f1.data) == len(f2.data) == 3

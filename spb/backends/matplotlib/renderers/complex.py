@@ -38,6 +38,34 @@ def _draw_complex_helper(renderer, data):
             cb2.ax.set_yticklabels(
                 [r"-$\pi$", r"-$\pi / 2$", "0", r"$\pi / 2$", r"$\pi$"]
             )
+
+        if s.riemann_mask and s.annotate:
+            pixel_offset = 15
+            # assumption: there is only one data series being plotted.
+            sign = -1 if s.at_infinity else 1
+
+            # plot markers at (1, 0), (0, i), (0, -i)
+            markers, = p._ax.plot([1, 0, 0], [0, 1, -1], linestyle="none",
+                color="k", markersize=4, marker="o",
+                markerfacecolor=(1, 1, 1), zorder=10)
+            center, = p._ax.plot([0], [0], linestyle="none",
+                color="k", markersize=4, marker="o", zorder=10,
+                markerfacecolor=(1, 1, 1) if s.at_infinity else None)
+            a_plus_1 = p._ax.annotate(
+                text="1", xy=(1, 0), xytext=(pixel_offset * sign, 0),
+                textcoords="offset pixels", ha="center", va="center")
+            a_plus_i = p._ax.annotate(
+                text="i", xy=(0, 1), xytext=(0, pixel_offset),
+                textcoords="offset pixels", ha="center", va="center")
+            a_minus_i = p._ax.annotate(
+                text="-i", xy=(0, -1), xytext=(0, -pixel_offset),
+                textcoords="offset pixels", ha="center", va="center")
+            a_center = p._ax.annotate(
+                text=r"$\infty$" if s.at_infinity else "0",
+                xy=(0, 0), xytext=(0, -pixel_offset),
+                textcoords="offset pixels", ha="center", va="center")
+
+            handle += [markers, center, a_plus_1, a_plus_i, a_minus_i, a_center]
     else:
         x, y, mag, arg, facecolors, colorscale = data
 
@@ -75,10 +103,13 @@ def _draw_complex_helper(renderer, data):
 
 def _update_complex_helper(renderer, data, handle):
     p, s = renderer.plot, renderer.series
+    np = p.np
+
     if not s.is_3Dsurface:
         x, y, _, _, img, colors = data
+        if s.at_infinity:
+            img = np.flip(np.flip(img, axis=0), axis=1)
         handle[0].set_data(img)
-        handle[0].set_extent((x.min(), x.max(), y.min(), y.max()))
     else:
         x, y, mag, arg, facecolors, colorscale = data
         handle[0].remove()

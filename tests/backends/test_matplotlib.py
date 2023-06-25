@@ -1702,14 +1702,14 @@ def test_axis_limits():
     # solid colors), axis limits must be set in order to get the correct
     # visualization. Axis limits can't be NaN or Inf.
     # The following examples shouldn't raise any error.
-    
+
     x = symbols("x")
     expr = 1 / cos(10 * x) + 5 * sin(x)
     p = plot(expr, (x, -5, 5), ylim=(-10, 10),
         adaptive=False, detect_poles=True, n=1000,
         eps=1e-04, color_func=lambda x, y: x, show=False)
     p.draw()
-    
+
 
 def test_xaxis_inverted():
     # verify that for a plot containing a LineOver1DRangeSeries,
@@ -1775,3 +1775,21 @@ def test_detect_poles_interactive():
 
     p.update_interactive({y: -1})
     assert len(p.ax.lines) == 8
+
+
+def test_plot_riemann_sphere():
+    p = make_test_plot_riemann_sphere(MB, True)
+    fig = p.fig
+    ax1 = fig.axes[0]
+    ax2 = fig.axes[1]
+    assert len(ax1.images) == len(ax2.images) == 1
+    assert len(ax1.lines) == len(ax2.lines) == 3
+    assert len(ax1.texts) == len(ax2.texts) == 4
+
+    p = make_test_plot_riemann_sphere(MB, False)
+    fig = p.fig
+    ax1 = fig.axes[0]
+    ax2 = fig.axes[1]
+    assert len(ax1.images) == len(ax2.images) == 1
+    assert len(ax1.lines) == len(ax2.lines) == 1
+    assert len(ax1.texts) == len(ax2.texts) == 0

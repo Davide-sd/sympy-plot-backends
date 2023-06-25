@@ -829,7 +829,7 @@ def test_domain_coloring_2d():
     img2b = p2.fig.renderers[0].data_source.data["image"][0]
     assert np.allclose(abs2b, np.flip(np.flip(abs2a, axis=0), axis=1))
     assert np.allclose(arg2b, np.flip(np.flip(arg2a, axis=0), axis=1))
-    assert np.allclose(img2b, np.flip(np.flip(img2a, axis=0), axis=1))
+    assert np.allclose(img2b, np.flip(img2a, axis=0))
 
 
 def test_show_hide_colorbar():
@@ -975,3 +975,21 @@ def test_detect_poles_interactive():
     assert len(p.fig.renderers) == 1
     assert len([t for t in p.fig.center if isinstance(t, Span)]) == 7
     assert len([t for t in p.fig.center if isinstance(t, Span) and not t.visible]) == 1
+
+
+def test_plot_riemann_sphere():
+    p = make_test_plot_riemann_sphere(BB, True)
+    p.fig
+    f1 = p._new_plots[0].fig
+    f2 = p._new_plots[1].fig
+    # 1 image + 2 scatters + 1 line for black unit circle
+    assert len(f1.renderers) == 4
+    assert len(f2.renderers) == 4
+
+    p = make_test_plot_riemann_sphere(BB, False)
+    p.fig
+    f1 = p._new_plots[0].fig
+    f2 = p._new_plots[1].fig
+    # 1 image + 1 line for black unit circle
+    assert len(f1.renderers) == 2
+    assert len(f2.renderers) == 2

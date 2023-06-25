@@ -178,7 +178,7 @@ class Plot:
     ranges over [-pi, pi]).
     """
 
-    _allowed_keys = ["aspect", "axis", "axis_center", "backend", "aouc",
+    _allowed_keys = ["aspect", "axis", "axis_center", "backend",
     "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
     "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim", "show_axis",
     "xscale", "yscale", "zscale", "process_piecewise", "polar_axis", "imodule"]
@@ -257,8 +257,6 @@ class Plot:
         # backend might need to create different types of figure depending on
         # the interactive module being used
         self.imodule = kwargs.get("imodule", None)
-        # add annotations on unit circle in the complex plane.
-        self.aouc = kwargs.get("aouc", None)
 
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.
@@ -354,7 +352,6 @@ class Plot:
             use_latex=self._use_latex,
             camera=self.camera,
             polar_axis=self.polar_axis,
-            aouc=self.aouc,
             axis=self.axis,
         )
 

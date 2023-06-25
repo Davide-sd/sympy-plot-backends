@@ -214,45 +214,12 @@ class MatplotlibBackend(Plot):
         self.grid = kwargs.get("grid", cfg["matplotlib"]["grid"])
         self._show_minor_grid = kwargs.get("show_minor_grid", cfg["matplotlib"]["show_minor_grid"])
 
-        # self._handles = dict()
         self._legend_handles = []
 
         # when using plotgrid, set imagegrid=True to require matplotlib to
         # use ImageGrid, which is suited to create equal aspect ratio axes
         # sharing colorbar
         self._imagegrid = kwargs.get("imagegrid", False)
-
-
-
-        if self.aouc:
-            pixel_offset = 15
-            # options for annotations
-            akws = dict(textcoords="offset pixels", ha="center", va="center")
-            # assumption: there is only one data series being plotted.
-            sign = -1 if self.series[0].at_infinity else 1
-            new_series = [
-                List2DSeries([1, 0, 0], [0, 1, -1], is_point=True,
-                    is_filled=False, show_in_legend=False,
-                    rendering_kw={"color": "k", "markersize": 3}),
-                List2DSeries([0], [0], is_point=True,
-                    is_filled=(not self.series[0].at_infinity), show_in_legend=False,
-                    rendering_kw={"color": "k", "markersize": 3}),
-                GenericDataSeries("annotations", text="1", xy=(1, 0),
-                    xytext=(pixel_offset * sign, 0), **akws),
-                GenericDataSeries("annotations", text="i", xy=(0, 1),
-                    xytext=(0, pixel_offset), **akws),
-                GenericDataSeries("annotations", text="-i", xy=(0, -1),
-                    xytext=(0, -pixel_offset), **akws)
-            ]
-            if not self.series[0].at_infinity:
-                new_series.append(
-                    GenericDataSeries("annotations", text="0",
-                    xy=(0, 0), xytext=(pixel_offset, 0), **akws))
-            else:
-                new_series.append(
-                    GenericDataSeries("annotations", text=r"$\infty$",
-                    xy=(0, 0), xytext=(pixel_offset, 0), **akws))
-            self._series = self._series + new_series
 
         self._create_renderers()
 

@@ -71,6 +71,31 @@ def _draw_domain_coloring_helper(renderer, data):
         p._fig.add_trace(h2)
         p._colorbar_counter += 1
 
+    if s.riemann_mask and s.annotate:
+        sign = 1 if not s.at_infinity else -1
+        labels = ["1", "i", "-i"]
+        labels = ["<b>%s</b>" % t for t in labels]
+        # points (1, 0), (0, i), (0, -i)
+        p._fig.add_trace(p.go.Scatter(
+            x=[sign, 0, 0], y=[0, 1, -1], mode="markers+text",
+            text=labels, marker=dict(color="#E5ECF6", size=8,
+                line=dict(width=2, color="black")),
+            textposition=[
+                "top right" if not s.at_infinity else "top left",
+                "bottom center", "top center"],
+            textfont=dict(size=15), showlegend=False
+        ))
+        # center point
+        p._fig.add_trace(p.go.Scatter(
+            x=[0], y=[0], mode="markers+text",
+            text="<b>inf</b>" if s.at_infinity else "<b>0</b>",
+            marker=dict(color="#E5ECF6", size=8,
+                line=dict(width=2, color="black")) if s.at_infinity
+                else dict(size=8, color="black"),
+            textposition="top right", textfont=dict(size=15),
+            showlegend=False
+        ))
+
     return handles
 
 

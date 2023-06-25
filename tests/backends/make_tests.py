@@ -684,3 +684,9 @@ def make_test_detect_poles_interactive(B, dp):
     expr = tan(x - y)
     return plot(expr, (x, -10, 10), backend=B, show=False,
         params={y: (0, -1, 1)}, detect_poles=dp)
+
+
+def make_test_plot_riemann_sphere(B, annotate):
+    expr = (z - 1) / (z**2 + z + 2)
+    return plot_riemann_sphere(expr, coloring="b", n=10, show=False,
+        backend=B, annotate=annotate, riemann_mask=True, imodule="panel")
