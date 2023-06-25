@@ -8,7 +8,7 @@ from spb.series import (
     Parametric2DLineSeries, List2DSeries, GenericDataSeries,
     RiemannSphereSeries
 )
-from spb.interactive import create_interactive_plot
+from spb.interactive import create_interactive_plot, IPlot
 from spb.utils import (
     _unpack_args, _instantiate_backend, _plot_sympify, _check_arguments,
     _is_range, prange, _get_free_symbols
@@ -253,10 +253,6 @@ def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
 
         dc_2d_series = [s for s in series if s.is_domain_coloring and not s.is_3D]
         if ((len(dc_2d_series) > 0) and kwargs.get("riemann_mask", False)):
-            # ask the backend to add annotations on unit circle in the complex
-            # plane. We can't do it here because each backend requires
-            # different data format.
-            kwargs.setdefault("aouc", any(s.annotate for s in dc_2d_series))
             # add unit circle: hide it from legend and requests its color
             # to be black
             t = symbols("t")
@@ -1825,6 +1821,29 @@ def plot_riemann_sphere(*args, **kwargs):
            cmap=colorcet.CET_C2, blevel=0.85,
            title=["Around zero", "Around infinity"])
 
+    Interactive-widget plot. Refer to the interactive sub-module documentation
+    to learn more about the ``params`` dictionary. This plot illustrates
+    the use of the ``params`` dictionary to specify sliders in their basic
+    form: (default, min, max).
+
+    .. panel-screenshot::
+       :small-size: 800, 650
+
+       from sympy import *
+       from sympy.abc import a, b, c
+       from spb import *
+       z = symbols("z")
+       expr = (z - 1) / (a * z**2 + b * z + c)
+       plot_riemann_sphere(
+           expr, coloring="b", n=300,
+           params={
+               a: (1, -2, 2),
+               b: (1, -2, 2),
+               c: (2, -10, 10),
+           },
+           use_latex=False
+       )
+
     3D plot of a complex function on the Riemann sphere. Note, the higher the
     number of discretization points, the better the final results, but the
     higher memory consumption:
@@ -1856,12 +1875,13 @@ def plot_riemann_sphere(*args, **kwargs):
     .. [#fn6] `Stereographic projection at Wikipedia <https://en.wikipedia.org/wiki/Stereographic_projection>`_.
 
     """
-    if kwargs.get("params", dict()):
-        raise NotImplementedError("Interactive widgets plots over the "
-            "Riemann sphere is not implemented.")
     args = _plot_sympify(args)
+    params = kwargs.get("params", {})
 
     if kwargs.get("threed", False):
+        if kwargs.get("params", dict()):
+            raise NotImplementedError("Interactive widgets plots over the "
+                "Riemann sphere is not implemented.")
         kwargs.setdefault("xlabel", "Re")
         kwargs.setdefault("ylabel", "Im")
         kwargs.setdefault("zlabel", "")
@@ -1884,6 +1904,7 @@ def plot_riemann_sphere(*args, **kwargs):
         elif isinstance(a, Expr):
             fs = _get_free_symbols([a])
     if not r:
+        fs = fs.difference(params.keys())
         s = fs.pop() if len(fs) > 0 else symbols("z")
         args.append(Tuple(s, -1.25 - 1.25 * I, 1.25 + 1.25 * I))
 
@@ -1907,7 +1928,8 @@ def plot_riemann_sphere(*args, **kwargs):
     p1 = plot_complex(*args, **kwargs)
     test = (ComplexDomainColoringSeries, Parametric2DLineSeries,
         List2DSeries, GenericDataSeries)
-    series = [s for s in p1.series if not isinstance(s, test)]
+    plot = p1.backend if isinstance(p1, IPlot) else p1
+    series = [s for s in plot.series if not isinstance(s, test)]
     if len(series) > 1:
         msg = "\n".join(str(s) for s in p1.series)
         raise ValueError("Only one symbolic expression can be plotted. "
@@ -1918,15 +1940,27 @@ def plot_riemann_sphere(*args, **kwargs):
     kwargs["legend"] = True if legend or (legend is None) else False
     p2 = plot_complex(*args, **kwargs)
 
+    pg_interactive_kwargs = dict(
+        imodule=kwargs.get("imodule", None),
+        layout=kwargs.get("layout", "tb"),
+        template=kwargs.get("template", None),
+        ncols=kwargs.get("ncols", 2),
+    )
     if legend or (legend is None):
-        pg = plotgrid(p1, p2, nc=2, imagegrid=True, size=size, show=False)
+        pg = plotgrid(p1, p2, nc=2, imagegrid=True, size=size, show=False,
+            **pg_interactive_kwargs)
     else:
-        pg = plotgrid(p1, p2, nc=2, size=size, show=False)
+        pg = plotgrid(p1, p2, nc=2, size=size, show=False,
+            **pg_interactive_kwargs)
 
-    if pg.is_matplotlib_fig:
-        if show:
-            pg.show()
+    if len(params) == 0:
+        if pg.is_matplotlib_fig:
+            if show:
+                pg.show()
+                return pg
             return pg
+        if show:
+            return pg.show()
         return pg
     if show:
         return pg.show()

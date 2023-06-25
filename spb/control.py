@@ -761,35 +761,55 @@ def plot_bode(*systems, initial_exp=-5, final_exp=5,
         >>> tf1 = TransferFunction(1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
         >>> plot_bode(tf1, initial_exp=0.2, final_exp=0.7)   # doctest: +SKIP
 
+    Interactive-widget plot:
+
+    .. panel-screenshot::
+       :small-size: 800, 675
+
+       from sympy.abc import a, b, c, d, e, f, s
+       from sympy.physics.control.lti import TransferFunction
+       from spb import *
+
+       tf1 = TransferFunction(a*s**2 + b*s + c, d*s**4 + e*s**3 + f*s**2, s)
+       plot_bode(
+           tf1, initial_exp=-2, final_exp=2,
+           params={
+               a: (0.5, -10, 10),
+               b: (0.1, -1, 1),
+               c: (8, -10, 10),
+               d: (10, -10, 10),
+               e: (0.1, -1, 1),
+               f: (1, -10, 10),
+           },
+           imodule="panel", ncols=3, use_latex=False
+       )
+
     See Also
     ========
 
     plot_bode_magnitude, plot_bode_phase, plot_nyquist, plot_nichols
 
     """
-    if kwargs.get("params", None):
-        raise NotImplementedError(
-            "`plot_bode` internally uses `plotgrid`, which doesn't support "
-            "interactive widgets plots.")
-
     show = kwargs.pop("show", True)
     kwargs["show"] = False
     p1 = plot_bode_magnitude(*systems, show_axes=show_axes,
         initial_exp=initial_exp, final_exp=final_exp,
-        freq_unit=freq_unit, **kwargs)
+        freq_unit=freq_unit, **kwargs.copy())
     p2 = plot_bode_phase(*systems, show_axes=show_axes,
         initial_exp=initial_exp, final_exp=final_exp,
         freq_unit=freq_unit, phase_unit=phase_unit,
-        title="", **kwargs)
+        title="", **kwargs.copy())
 
     systems = _unpack_systems(systems)
     title = "Bode Plot"
     if len(systems) == 1:
         title = f'Bode Plot of ${latex(systems[0][0])}$'
     p1.title = title
-    p = plotgrid(p1, p2, show=False)
+    p = plotgrid(p1, p2, **kwargs)
 
     if show:
+        if kwargs.get("params", None):
+            return p.show()
         p.show()
     return p
 
