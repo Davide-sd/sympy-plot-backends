@@ -274,15 +274,6 @@ class PanelLayout:
             sizing_mode="stretch_width",
         )
 
-    @property
-    def ncols(self):
-        return self._ncols
-
-    @ncols.setter
-    def ncols(self, v):
-        if v is not None:
-            self._ncols = v
-
     def _init_pane(self):
         """Here we wrap the figure exposed by the backend with a Pane, which
         allows to set useful properties.

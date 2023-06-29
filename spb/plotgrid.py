@@ -132,12 +132,17 @@ def _create_panel_figure(mapping, panel_kw):
     for spec, p in mapping.items():
         rs = spec.rowspan
         cs = spec.colspan
+        if isinstance(p, IPlot):
+            # a panel's `pane` must receive a figure of some kind, not another
+            # panel's object, otherwise there will be performance penalty,
+            # especially noticeable with Plotly and Bokeh
+            p = p.backend
+        _fig = p.fig
         if isinstance(p, PB):
-            d = p.fig.to_dict()
-            pane = pn.pane.Plotly(d)
+            pane = pn.pane.Plotly(_fig.to_dict())
             fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pane
         else:
-            pane = pn.pane.panel(p.fig)
+            pane = pn.pane.panel(_fig)
             fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pane
         panes_plots[pane] = p
     return fig, panes_plots
