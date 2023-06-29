@@ -2,6 +2,7 @@ from spb.defaults import cfg
 from sympy import Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed
 from sympy.physics.mechanics import Vector as MechVector
 from sympy.vector import BaseScalar
+from sympy.core.function import AppliedUndef
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 from sympy.external import import_module
@@ -84,9 +85,13 @@ def _create_ranges(exprs, ranges, npar, label="", params=None):
 
 
 def _get_free_symbols(exprs):
-    """Returns the free symbols of a symbolic expression. If the expression
-    contains indexed objects, assume that these objects are the symbols to
-    be plotted.
+    """Returns the free symbols of a symbolic expression.
+
+    If the expression contains any of these elements, assume that they are
+    the "free symbols" of the expression:
+
+    * indexed objects
+    * applied undefined function (useful for sympy.physics.mechanics module)
     """
     # TODO: this function gets called 3 times to generate a single plot.
     # See if its possible to remove one functions call inside series.py
@@ -95,9 +100,10 @@ def _get_free_symbols(exprs):
     if all(callable(e) for e in exprs):
         return set()
 
-    free_indexed = set().union(*[e.atoms(Indexed) for e in exprs])
-    if len(free_indexed) > 0:
-        return set().union(*[e.atoms(Indexed) for e in exprs])
+    free = set().union(*[e.atoms(Indexed) for e in exprs])
+    free = free.union(*[e.atoms(AppliedUndef) for e in exprs])
+    if len(free) > 0:
+        return free
     return set().union(*[e.free_symbols for e in exprs])
 
 

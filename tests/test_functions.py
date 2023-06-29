@@ -16,7 +16,8 @@ from sympy import (
     Heaviside, exp, log, LambertW, exp_polar, meijerg,
     And, Or, Eq, Ne, Interval, Sum, oo, I, pi, S,
     sympify, Integral, Circle, gamma, Circle, Point, Ellipse, Rational,
-    Polygon, Curve, Segment, Point2D, Point3D, Line3D, Plane, IndexedBase
+    Polygon, Curve, Segment, Point2D, Point3D, Line3D, Plane, IndexedBase,
+    Function
 )
 from sympy.vector import CoordSys3D
 from sympy.testing.pytest import skip, warns
@@ -1814,12 +1815,38 @@ def test_indexed_objects():
     # verify that plot functions and series correctly process indexed objects
     x = IndexedBase("x")
 
-    kwargs = dict(adaptive=False, n=10, show=False, backend=MB)
+    kwargs = dict(adaptive=False, n=10, show=False, backend=MB,
+        use_latex=False)
     p = plot(cos(x[0]), (x[0], -pi, pi), **kwargs)
     d = p[0].get_data()
+    assert p.xlabel == "x[0]"
 
     p = plot3d(cos(x[0]**2 + x[1]**2), (x[0], -pi, pi), (x[1], -pi, pi), **kwargs)
     d = p[0].get_data()
+    assert p.xlabel == "x[0]"
+    assert p.ylabel == "x[1]"
+    assert p.zlabel == "f(x[0], x[1])"
+
+
+def test_appliedundef_objects():
+    # verify that plot functions and series correctly process AppliedUndef
+    # functions (especially useful for dealing with sympy.physics.mechanics)
+    t = symbols("t")
+    f1, f2 = symbols("f1, f2", cls=Function)
+    f1 = f1(t)
+    f2 = f2(t)
+
+    kwargs = dict(adaptive=False, n=10, show=False, backend=MB,
+        use_latex=False)
+    p = plot(cos(f1), (f1, -pi, pi), **kwargs)
+    d = p[0].get_data()
+    assert p.xlabel == "f1"
+
+    expr = 2*cos(f1) + 3*cos(f1 + f2) + 4 * cos(f1 - f2)
+    p = plot_contour(expr, (f1, -pi, pi), (f2, -pi, pi), **kwargs)
+    d = p[0].get_data()
+    assert p.xlabel == "f1"
+    assert p.ylabel == "f2"
 
 
 def test_number_discretization_points():
