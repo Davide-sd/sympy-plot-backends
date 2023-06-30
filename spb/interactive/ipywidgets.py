@@ -201,10 +201,13 @@ def iplot(*series, show=True, **kwargs):
 
     title : str or tuple
         The title to be shown on top of the figure. To specify a parametric
-        title, write a tuple of the form: ``(title_str, param_symbol1, ...)``.
-        In particular, ``title_str`` must be a formatted string,
-        ``param_symbol1, ...`` must be a symbols contained in the ``params``
-        dictionary.
+        title, write a tuple of the form:``(title_str, param_symbol1, ...)``,
+        where:
+
+        * ``title_str`` must be a formatted string, for example:
+          ``"test = {:.2f}"``.
+        * ``param_symbol1, ...`` must be a symbol or a symbolic expression
+          whose free symbols are contained in the ``params`` dictionary.
 
     use_latex : bool, optional
         Default to True.

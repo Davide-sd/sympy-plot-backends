@@ -2,6 +2,7 @@ from itertools import cycle
 from spb.series import BaseSeries, LineOver1DRangeSeries
 from spb.backends.utils import convert_colormap
 from spb.utils import prange
+from sympy import Symbol
 from sympy.utilities.iterables import is_sequence
 from sympy.external import import_module
 
@@ -231,17 +232,18 @@ class Plot:
         an updated text.
         """
         if isinstance(t, (tuple, list)):
+            t_symbols = set().union(*[e.free_symbols for e in t[1:]])
+            remaining_symbols = set(t_symbols).difference(params.keys())
             # TODO: is it worth creating a `ptext` class so that this check
             # is only run once at the beginning, and not at every update?
-            t_symbols = t[1:]
-            remaining_symbols = set(t_symbols).difference(params.keys())
             if len(remaining_symbols) > 0:
                 raise ValueError(
                     "This parametric text contains symbols that are "
                     "not part of the `params` dictionary:\n"
                     f"{t}.\nWhat are these symbols? {remaining_symbols}"
                 )
-            values = [params[s] for s in t_symbols]
+            values = [params[s] if isinstance(s, Symbol) else s.subs(params)
+                for s in t[1:]]
             return t[0].format(*values)
         return t
 

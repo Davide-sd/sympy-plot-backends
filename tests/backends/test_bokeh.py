@@ -999,9 +999,9 @@ def test_parametric_texts():
     # verify that xlabel, ylabel, zlabel, title accepts parametric texts
     x, y, p = make_test_parametric_texts_2d(BB)
     assert p.fig.title.text == "y=1.0, z=0.000"
-    assert p.fig.xaxis.axis_label == "test y=1.00"
+    assert p.fig.xaxis.axis_label == "test y+z=1.00"
     assert p.fig.yaxis.axis_label == "test z=0.00"
     p.backend.update_interactive({y: 1.5, z: 2})
     assert p.fig.title.text == "y=1.5, z=2.000"
-    assert p.fig.xaxis.axis_label == "test y=1.50"
+    assert p.fig.xaxis.axis_label == "test y+z=3.50"
     assert p.fig.yaxis.axis_label == "test z=2.00"

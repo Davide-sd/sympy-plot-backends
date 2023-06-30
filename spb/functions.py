@@ -640,9 +640,12 @@ def plot(*args, **kwargs):
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
     * the use of a parametric title, specified with a tuple of the form:
-      ``(title_str, param_symbol1, ...)``. In particular, ``title_str`` must
-      be a formatted string, ``param_symbol1, ...`` must be a symbols
-      contained in the ``params`` dictionary.
+      ``(title_str, param_symbol1, ...)``, where:
+
+      * ``title_str`` must be a formatted string, for example:
+        ``"test = {:.2f}"``.
+      * ``param_symbol1, ...`` must be a symbol or a symbolic expression
+        whose free symbols are contained in the ``params`` dictionary.
 
     .. panel-screenshot::
        :small-size: 800, 625

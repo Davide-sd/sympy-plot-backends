@@ -714,14 +714,14 @@ def test_parametric_texts():
     # verify that xlabel, ylabel, zlabel, title accepts parametric texts
     a, b, p = make_test_parametric_texts_3d(KB)
     xl, yl, zl = p.fig.axes
-    assert p.fig.objects[1].text == "a=1.0, b=0.000"
+    assert p.fig.objects[1].text == "a=1.0, a+b=1.000"
     assert xl == "test a=1.00"
     assert yl == "test b=0.00"
     assert zl == "test a=1.00, b=0.00"
     assert len(p.fig.objects) == 2
     p.backend.update_interactive({a: 1.5, b: 2})
     xl, yl, zl = p.fig.axes
-    assert p.fig.objects[1].text == "a=1.5, b=2.000"
+    assert p.fig.objects[1].text == "a=1.5, a+b=3.500"
     assert xl == "test a=1.50"
     assert yl == "test b=2.00"
     assert zl == "test a=1.50, b=2.00"

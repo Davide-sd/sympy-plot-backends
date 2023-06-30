@@ -1435,20 +1435,20 @@ def test_parametric_texts():
     wrapper = "<b>%s</b>"
     x, y, p = make_test_parametric_texts_2d(PB)
     assert p.fig.layout.title.text == wrapper % "y=1.0, z=0.000"
-    assert p.fig.layout.xaxis.title.text == "test y=1.00"
+    assert p.fig.layout.xaxis.title.text == "test y+z=1.00"
     assert p.fig.layout.yaxis.title.text == "test z=0.00"
     p.backend.update_interactive({y: 1.5, z: 2})
     assert p.fig.layout.title.text == wrapper % "y=1.5, z=2.000"
-    assert p.fig.layout.xaxis.title.text == "test y=1.50"
+    assert p.fig.layout.xaxis.title.text == "test y+z=3.50"
     assert p.fig.layout.yaxis.title.text == "test z=2.00"
 
     a, b, p = make_test_parametric_texts_3d(PB)
-    assert p.fig.layout.title.text == wrapper % "a=1.0, b=0.000"
+    assert p.fig.layout.title.text == wrapper % "a=1.0, a+b=1.000"
     assert p.fig.layout.scene.xaxis.title.text == "test a=1.00"
     assert p.fig.layout.scene.yaxis.title.text == "test b=0.00"
     assert p.fig.layout.scene.zaxis.title.text == "test a=1.00, b=0.00"
     p.backend.update_interactive({a: 1.5, b: 2})
-    assert p.fig.layout.title.text == wrapper % "a=1.5, b=2.000"
+    assert p.fig.layout.title.text == wrapper % "a=1.5, a+b=3.500"
     assert p.fig.layout.scene.xaxis.title.text == "test a=1.50"
     assert p.fig.layout.scene.yaxis.title.text == "test b=2.00"
     assert p.fig.layout.scene.zaxis.title.text == "test a=1.50, b=2.00"

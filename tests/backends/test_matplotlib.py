@@ -1799,20 +1799,20 @@ def test_parametric_texts():
     # verify that xlabel, ylabel, zlabel, title accepts parametric texts
     x, y, p = make_test_parametric_texts_2d(MB)
     assert p.backend.ax.get_title() == "y=1.0, z=0.000"
-    assert p.backend.ax.get_xlabel() == "test y=1.00"
+    assert p.backend.ax.get_xlabel() == "test y+z=1.00"
     assert p.backend.ax.get_ylabel() == "test z=0.00"
     p.backend.update_interactive({y: 1.5, z: 2})
     assert p.backend.ax.get_title() == "y=1.5, z=2.000"
-    assert p.backend.ax.get_xlabel() == "test y=1.50"
+    assert p.backend.ax.get_xlabel() == "test y+z=3.50"
     assert p.backend.ax.get_ylabel() == "test z=2.00"
 
     a, b, p = make_test_parametric_texts_3d(MB)
-    assert p.backend.ax.get_title() == "a=1.0, b=0.000"
+    assert p.backend.ax.get_title() == "a=1.0, a+b=1.000"
     assert p.backend.ax.get_xlabel() == "test a=1.00"
     assert p.backend.ax.get_ylabel() == "test b=0.00"
     assert p.backend.ax.get_zlabel() == "test a=1.00, b=0.00"
     p.backend.update_interactive({a: 1.5, b: 2})
-    assert p.backend.ax.get_title() == "a=1.5, b=2.000"
+    assert p.backend.ax.get_title() == "a=1.5, a+b=3.500"
     assert p.backend.ax.get_xlabel() == "test a=1.50"
     assert p.backend.ax.get_ylabel() == "test b=2.00"
     assert p.backend.ax.get_zlabel() == "test a=1.50, b=2.00"
