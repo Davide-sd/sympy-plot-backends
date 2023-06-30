@@ -993,3 +993,15 @@ def test_plot_riemann_sphere():
     # 1 image + 1 line for black unit circle
     assert len(f1.renderers) == 2
     assert len(f2.renderers) == 2
+
+
+def test_parametric_texts():
+    # verify that xlabel, ylabel, zlabel, title accepts parametric texts
+    x, y, p = make_test_parametric_texts_2d(BB)
+    assert p.fig.title.text == "y=1.0, z=0.000"
+    assert p.fig.xaxis.axis_label == "test y=1.00"
+    assert p.fig.yaxis.axis_label == "test z=0.00"
+    p.backend.update_interactive({y: 1.5, z: 2})
+    assert p.fig.title.text == "y=1.5, z=2.000"
+    assert p.fig.xaxis.axis_label == "test y=1.50"
+    assert p.fig.yaxis.axis_label == "test z=2.00"

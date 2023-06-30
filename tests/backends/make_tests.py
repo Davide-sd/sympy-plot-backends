@@ -690,3 +690,27 @@ def make_test_plot_riemann_sphere(B, annotate):
     expr = (z - 1) / (z**2 + z + 2)
     return plot_riemann_sphere(expr, coloring="b", n=10, show=False,
         backend=B, annotate=annotate, riemann_mask=True, imodule="panel")
+
+
+def make_test_parametric_texts_2d(B):
+    expr = sin(y * x + z)
+    options = dict(params={y: (1, 0, 2), z: (0, -pi, pi)})
+    return x, y, plot(expr, n=10, backend=B, show=False,
+        params={y: (1, 0, 2), z: (0, -pi, pi)},
+        title=("y={}, z={:.3f}", y, z),
+        xlabel=("test y={:.2f}", y),
+        ylabel=("test z={:.2f}", z)
+    )
+
+
+def make_test_parametric_texts_3d(B):
+    expr = sin(a * y * x + b)
+    options = dict(params={a: (1, 0, 2), b: (0, -pi, pi)})
+    return a, b, plot3d(expr, (x, -pi, pi), (y, -pi, pi),
+        n=5, backend=B, show=False,
+        params={a: (1, 0, 2), b: (0, -pi, pi)},
+        title=("a={}, b={:.3f}", a, b),
+        xlabel=("test a={:.2f}", a),
+        ylabel=("test b={:.2f}", b),
+        zlabel=("test a={:.2f}, b={:.2f}", a, b)
+    )

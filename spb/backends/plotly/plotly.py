@@ -360,20 +360,23 @@ class PlotlyBackend(Plot):
         else:
             self._update_interactive_helper(params)
 
+        self._set_axes_texts()
+
     def _update_interactive_helper(self, params):
         for r in self.renderers:
             if r.series.is_interactive:
                 r.update(params)
 
     def _update_layout(self):
+        title, xlabel, ylabel, zlabel = self._get_title_and_labels()
         self._fig.update_layout(
             template=self._theme,
             width=None if not self.size else self.size[0],
             height=None if not self.size else self.size[1],
-            title=r"<b>%s</b>" % ("" if not self.title else self.title),
+            title=r"<b>%s</b>" % ("" if not title else title),
             title_x=0.5,
             xaxis=dict(
-                title="" if not self.xlabel else self.xlabel,
+                title="" if not xlabel else xlabel,
                 range=None if not self.xlim else self.xlim,
                 type=self.xscale,
                 showgrid=self.grid,  # thin lines in the background
@@ -383,7 +386,7 @@ class PlotlyBackend(Plot):
                 autorange=None if not self._invert_x_axis else "reversed"
             ),
             yaxis=dict(
-                title="" if not self.ylabel else self.ylabel,
+                title="" if not ylabel else ylabel,
                 range=None if not self.ylim else self.ylim,
                 type=self.yscale,
                 showgrid=self.grid,  # thin lines in the background
@@ -405,7 +408,7 @@ class PlotlyBackend(Plot):
             showlegend=True if self.legend else False,
             scene=dict(
                 xaxis=dict(
-                    title="" if not self.xlabel else self.xlabel,
+                    title="" if not xlabel else xlabel,
                     range=None if not self.xlim else self.xlim,
                     type=self.xscale,
                     showgrid=self.grid,  # thin lines in the background
@@ -413,7 +416,7 @@ class PlotlyBackend(Plot):
                     visible=self.grid,  # numbers below
                 ),
                 yaxis=dict(
-                    title="" if not self.ylabel else self.ylabel,
+                    title="" if not ylabel else ylabel,
                     range=None if not self.ylim else self.ylim,
                     type=self.yscale,
                     showgrid=self.grid,  # thin lines in the background
@@ -421,7 +424,7 @@ class PlotlyBackend(Plot):
                     visible=self.grid,  # numbers below
                 ),
                 zaxis=dict(
-                    title="" if not self.zlabel else self.zlabel,
+                    title="" if not zlabel else zlabel,
                     range=None if not self.zlim else self.zlim,
                     type=self.zscale,
                     showgrid=self.grid,  # thin lines in the background
@@ -431,6 +434,29 @@ class PlotlyBackend(Plot):
                 aspectmode=("manual" if isinstance(self.aspect, dict) else (self.aspect if self.aspect != "equal" else "auto")),
                 aspectratio=self.aspect if isinstance(self.aspect, dict) else None,
                 camera=self.camera
+            ),
+        )
+
+    def _set_axes_texts(self):
+        title, xlabel, ylabel, zlabel = self._get_title_and_labels()
+        self._fig.update_layout(
+            title=r"<b>%s</b>" % ("" if not title else title),
+            xaxis=dict(
+                title="" if not xlabel else xlabel,
+            ),
+            yaxis=dict(
+                title="" if not ylabel else ylabel,
+            ),
+            scene=dict(
+                xaxis=dict(
+                    title="" if not xlabel else xlabel,
+                ),
+                yaxis=dict(
+                    title="" if not ylabel else ylabel,
+                ),
+                zaxis=dict(
+                    title="" if not zlabel else zlabel,
+                ),
             ),
         )
 

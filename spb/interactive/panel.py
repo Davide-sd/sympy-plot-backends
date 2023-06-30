@@ -603,6 +603,13 @@ def iplot(*series, show=True, **kwargs):
         * an instance of ``pn.template.base.BasicTemplate``
         * a subclass of ``pn.template.base.BasicTemplate``
 
+    title : str or tuple
+        The title to be shown on top of the figure. To specify a parametric
+        title, write a tuple of the form: ``(title_str, param_symbol1, ...)``.
+        In particular, ``title_str`` must be a formatted string,
+        ``param_symbol1, ...`` must be a symbols contained in the ``params``
+        dictionary.
+
     throttled : boolean, optional
         Default to False. If True the recompute will be done at mouse-up event
         on sliders. If False, every slider tick will force a recompute.

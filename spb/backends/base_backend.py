@@ -224,6 +224,47 @@ class Plot:
         if callable(self.title):
             self.title = self.title(wrapper, self._use_latex)
 
+    def _create_parametric_text(self, t, params):
+        """Given a tuple of the form `(str, symbol1, symbol2, ...)`
+        where `str` is a formatted string, read the values from the parameters
+        `symbol1, symbol2, ...`, pass them to the formatted string to create
+        an updated text.
+        """
+        if isinstance(t, (tuple, list)):
+            # TODO: is it worth creating a `ptext` class so that this check
+            # is only run once at the beginning, and not at every update?
+            t_symbols = t[1:]
+            remaining_symbols = set(t_symbols).difference(params.keys())
+            if len(remaining_symbols) > 0:
+                raise ValueError(
+                    "This parametric text contains symbols that are "
+                    "not part of the `params` dictionary:\n"
+                    f"{t}.\nWhat are these symbols? {remaining_symbols}"
+                )
+            values = [params[s] for s in t_symbols]
+            return t[0].format(*values)
+        return t
+
+    def _get_title_and_labels(self):
+        """Returns the appropriate text to be shown on the title and
+        axis labels.
+        """
+        title = self.title
+        xlabel = self.xlabel
+        ylabel = self.ylabel
+        zlabel = self.zlabel
+
+        params = None
+        if len(self.series) > 0:
+            # assuming all data series received the same parameters
+            params = self.series[0].params
+        if params:
+            title = self._create_parametric_text(title, params)
+            xlabel = self._create_parametric_text(xlabel, params)
+            ylabel = self._create_parametric_text(ylabel, params)
+            zlabel = self._create_parametric_text(zlabel, params)
+        return title, xlabel, ylabel, zlabel
+
     def __init__(self, *args, **kwargs):
         # the merge function is used by all backends
         self._mergedeep = import_module('mergedeep')

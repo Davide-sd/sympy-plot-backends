@@ -185,10 +185,11 @@ class BokehBackend(Plot):
         #     # space in between.
         #     sizing_mode = None
 
+        title, xlabel, ylabel, zlabel = self._get_title_and_labels()
         kw = dict(
-            title=self.title,
-            x_axis_label=self.xlabel if self.xlabel else "x",
-            y_axis_label=self.ylabel if self.ylabel else "y",
+            title=title,
+            x_axis_label=xlabel if xlabel else "x",
+            y_axis_label=ylabel if ylabel else "y",
             sizing_mode="fixed" if self.size else sizing_mode,
             width=int(self.size[0]) if self.size else cfg["bokeh"]["width"],
             height=int(self.size[1]) if self.size else cfg["bokeh"]["height"],
@@ -334,6 +335,14 @@ class BokehBackend(Plot):
         for r in self.renderers:
             if r.series.is_interactive:
                 r.update(params)
+
+        self._set_axes_texts()
+
+    def _set_axes_texts(self):
+        title, xlabel, ylabel, zlabel = self._get_title_and_labels()
+        self._fig.title = title
+        self._fig.xaxis.axis_label = xlabel
+        self._fig.yaxis.axis_label = ylabel
 
     def save(self, path, **kwargs):
         """ Export the plot to a static picture or to an interactive html file.

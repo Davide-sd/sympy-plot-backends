@@ -160,7 +160,7 @@ class K3DBackend(Plot):
         self._show_label = kwargs.get("show_label", False)
         self._bounds = []
         self._clipping = []
-        self._handles = dict()
+        self._title_handle = None
         self.grid = kwargs.get("grid", cfg["k3d"]["grid"])
 
         kw = dict(
@@ -182,7 +182,7 @@ class K3DBackend(Plot):
                 "K3D-Jupyter doesn't support log scales. We will "
                 + "continue with linear scales."
             )
-        
+
         self._create_renderers()
 
     @property
@@ -200,7 +200,7 @@ class K3DBackend(Plot):
         # this is necessary in order for the series to be added even if
         # show=False
         self._process_renderers()
-    
+
     # process_series = draw
 
     @staticmethod
@@ -251,19 +251,26 @@ class K3DBackend(Plot):
             self._check_supported_series(r, s)
             r.draw()
 
-        xl = self.xlabel if self.xlabel else "x"
-        yl = self.ylabel if self.ylabel else "y"
-        zl = self.zlabel if self.zlabel else "z"
-        self._fig.axes = [xl, yl, zl]
-
-        if self.title:
-            self._fig += self.k3d.text2d(
-                self.title, position=[0.025, 0.015], color=0, size=1, label_box=False
-            )
-
+        self._set_axes_texts()
         self._new_camera_position()
         self._add_clipping_planes()
         self._fig.auto_rendering = True
+
+    def _set_axes_texts(self):
+        title, xlabel, ylabel, zlabel = self._get_title_and_labels()
+        xl = xlabel if xlabel else "x"
+        yl = ylabel if ylabel else "y"
+        zl = zlabel if zlabel else "z"
+        self._fig.axes = [xl, yl, zl]
+
+        if title:
+            if not self._title_handle:
+                self._fig += self.k3d.text2d(
+                    title, position=[0.025, 0.015], color=0, size=1,
+                    label_box=False)
+                self._title_handle = len(self._fig.objects) - 1
+            else:
+                self._fig.objects[self._title_handle].text = title
 
     def _build_k3d_vector_data(self, xx, yy, zz, uu, vv, ww, qkw, colormap,
         normalize, series):
@@ -344,11 +351,12 @@ class K3DBackend(Plot):
         # line of code will add the numerical data (if not already present).
         if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
             self.draw()
-        
+
         for r in self.renderers:
             if r.series.is_interactive:
                 r.update(params)
 
+        self._set_axes_texts()
         self._new_camera_position()
         self._add_clipping_planes()
         # self._fig.auto_rendering = True

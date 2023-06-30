@@ -639,6 +639,10 @@ def plot(*args, **kwargs):
     * the use of ``prange`` (parametric plotting range).
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
+    * the use of a parametric title, specified with a tuple of the form:
+      ``(title_str, param_symbol1, ...)``. In particular, ``title_str`` must
+      be a formatted string, ``param_symbol1, ...`` must be a symbols
+      contained in the ``params`` dictionary.
 
     .. panel-screenshot::
        :small-size: 800, 625
@@ -657,7 +661,8 @@ def plot(*args, **kwargs):
                c: (0.25, 0, 1),   # damping
                n: (2, 0, 4)       # multiple of pi
            },
-           ylim=(-1.25, 1.25), use_latex=False
+           ylim=(-1.25, 1.25), use_latex=False,
+           title=("Frequency = {:.2f} Hz", a)
        )
 
     References

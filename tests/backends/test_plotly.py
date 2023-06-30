@@ -1428,3 +1428,27 @@ def test_plot_riemann_sphere():
     # 1 image + 1 unit disk line + 1 invisible
     # scatter to place the colorbar
     assert len(f1.data) == len(f2.data) == 3
+
+
+def test_parametric_texts():
+    # verify that xlabel, ylabel, zlabel, title accepts parametric texts
+    wrapper = "<b>%s</b>"
+    x, y, p = make_test_parametric_texts_2d(PB)
+    assert p.fig.layout.title.text == wrapper % "y=1.0, z=0.000"
+    assert p.fig.layout.xaxis.title.text == "test y=1.00"
+    assert p.fig.layout.yaxis.title.text == "test z=0.00"
+    p.backend.update_interactive({y: 1.5, z: 2})
+    assert p.fig.layout.title.text == wrapper % "y=1.5, z=2.000"
+    assert p.fig.layout.xaxis.title.text == "test y=1.50"
+    assert p.fig.layout.yaxis.title.text == "test z=2.00"
+
+    a, b, p = make_test_parametric_texts_3d(PB)
+    assert p.fig.layout.title.text == wrapper % "a=1.0, b=0.000"
+    assert p.fig.layout.scene.xaxis.title.text == "test a=1.00"
+    assert p.fig.layout.scene.yaxis.title.text == "test b=0.00"
+    assert p.fig.layout.scene.zaxis.title.text == "test a=1.00, b=0.00"
+    p.backend.update_interactive({a: 1.5, b: 2})
+    assert p.fig.layout.title.text == wrapper % "a=1.5, b=2.000"
+    assert p.fig.layout.scene.xaxis.title.text == "test a=1.50"
+    assert p.fig.layout.scene.yaxis.title.text == "test b=2.00"
+    assert p.fig.layout.scene.zaxis.title.text == "test a=1.50, b=2.00"

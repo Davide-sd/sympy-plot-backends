@@ -199,6 +199,13 @@ def iplot(*series, show=True, **kwargs):
         of ``InteractivePlot``, which can later be be shown by calling the
         `show()` method.
 
+    title : str or tuple
+        The title to be shown on top of the figure. To specify a parametric
+        title, write a tuple of the form: ``(title_str, param_symbol1, ...)``.
+        In particular, ``title_str`` must be a formatted string,
+        ``param_symbol1, ...`` must be a symbols contained in the ``params``
+        dictionary.
+
     use_latex : bool, optional
         Default to True.
         If True, the latex representation of the symbols will be used in the
