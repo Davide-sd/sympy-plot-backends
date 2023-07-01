@@ -386,7 +386,7 @@ def plot(*args, **kwargs):
         increase the number of discretization points.
 
     exclude : list, optional
-        A list of numerical values in the horizontal coordinated which are
+        A list of numerical values in the horizontal coordinate which are
         going to be excluded from the plot. In practice, it introduces
         discontinuities in the resulting line.
 
