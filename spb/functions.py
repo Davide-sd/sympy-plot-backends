@@ -385,6 +385,11 @@ def plot(*args, **kwargs):
         Default value to 0.1. Before changing this value, it is recommended to
         increase the number of discretization points.
 
+    exclude : list, optional
+        A list of numerical values in the horizontal coordinated which are
+        going to be excluded from the plot. In practice, it introduces
+        discontinuities in the resulting line.
+
     force_real_eval : boolean, optional
         Default to False, with which the numerical evaluation is attempted
         over a complex domain, which is slower but produces correct results.
@@ -503,7 +508,7 @@ def plot(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, sin, pi, tan, exp, cos, log
+       >>> from sympy import symbols, sin, pi, tan, exp, cos, log, floor
        >>> from spb import plot
        >>> x, y = symbols('x, y')
 
@@ -578,6 +583,17 @@ def plot(*args, **kwargs):
        Plot object containing:
        [0]: cartesian line: tan(x) for x over (-4.71238898038469, 4.71238898038469)
 
+    Introducing discontinuities by excluding specified points:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot(floor(x) / x, (x, -3.25, 3.25), ylim=(-1, 5),
+       ...     exclude=list(range(-4, 5)))
+       Plot object containing:
+       [0]: cartesian line: floor(x)/x for x over (-3.25, 3.25)
 
     Advanced example showing:
 
@@ -820,6 +836,11 @@ def plot_parametric(*args, **kwargs):
           ``expr_x`` or ``expr_y``.
         * None: the default value (color mapping applied to the parameter).
 
+    exclude : list, optional
+        A list of numerical values along the parameter which are going to
+        be excluded from the plot. In practice, it introduces discontinuities
+        in the resulting line.
+
     force_real_eval : boolean, optional
         Default to False, with which the numerical evaluation is attempted
         over a complex domain, which is slower but produces correct results.
@@ -909,7 +930,7 @@ def plot_parametric(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols, cos, sin, pi
+       >>> from sympy import symbols, cos, sin, pi, floor, log
        >>> from spb import plot_parametric
        >>> t, u, v = symbols('t, u, v')
 
@@ -959,6 +980,20 @@ def plot_parametric(*args, **kwargs):
        Plot object containing:
        [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
        [1]: parametric cartesian line: (3*cos(2*v), 5*sin(4*v)) for v over (0.0, 3.141592653589793)
+
+    Introducing discontinuities by excluding specified points:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> e1 = log(floor(x))*cos(x)
+       >>> e2 = log(floor(x))*sin(x)
+       >>> plot_parametric(e1, e2, (x, 1, 4*pi),
+       ...     exclude=list(range(1, 13)), grid=False)
+       Plot object containing:
+       [0]: parametric cartesian line: (log(floor(x))*cos(x), log(floor(x))*sin(x)) for x over (1.0, 12.566370614359172)
 
     Plotting a numerical function instead of a symbolic expression:
 

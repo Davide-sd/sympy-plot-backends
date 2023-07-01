@@ -1,5 +1,7 @@
 from spb.defaults import cfg
-from sympy import Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed
+from sympy import (
+    Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed, ImageSet, FiniteSet
+)
 from sympy.physics.mechanics import Vector as MechVector
 from sympy.vector import BaseScalar
 from sympy.core.function import AppliedUndef
@@ -572,3 +574,24 @@ def unwrap(angle, period=None):
     correction = np.cumsum(dangle_desired - dangle)
     angle[1:] += correction
     return angle
+
+
+def extract_solution(set_sol, n=10):
+    """Extract numerical solutions from a set solution (computed by solveset,
+    linsolve, nonlinsolve). Often, it is not trivial do get something useful
+    out of them.
+
+    Parameters
+    ==========
+
+    n : int, optional
+        In order to replace ImageSet with FiniteSet, an iterator is created
+        for each ImageSet contained in `set_sol`, starting from 0 up to `n`.
+        Default value: 10.
+    """
+    images = set_sol.find(ImageSet)
+    for im in images:
+        it = iter(im)
+        s = FiniteSet(*[next(it) for n in range(0, n)])
+        set_sol = set_sol.subs(im, s)
+    return set_sol

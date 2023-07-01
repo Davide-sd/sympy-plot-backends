@@ -299,6 +299,17 @@ sufficiently high number of discretization points:
    Plot object containing:
    [0]: cartesian line: floor(x) for x over (-10.0, 10.0)
 
+Alternatively, we can provide a list of exclusion points:
+
+.. plot::
+   :context: close-figs
+   :format: doctest
+   :include-source: True
+
+   >>> plot(floor(x), (x, -9.5, 9.5), exclude=list(range(-10, 11)))
+   Plot object containing:
+   [0]: cartesian line: floor(x) for x over (-9.5, 9.5)
+
 
 Example - Discontinuities 2
 ===========================
@@ -495,6 +506,21 @@ We can improve it even further by reducing the ``eps`` parameter:
    :include-source: True
 
    >>> plot(expr, ylim=(-10, 10), adaptive=False, n=1e04, detect_poles=True, eps=1e-04)
+   Plot object containing:
+   [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-10.0, 10.0)
+
+Alternatively, we can provide a list of exclusion points. The following example
+executes ``solveset(cos(10 * x))``, which returns a set solution. This set is
+given to the ``exclude`` keyword argument, which will attempt to extract
+suitable numerical solutions for the exclusion points:
+
+.. plot::
+   :context: close-figs
+   :format: doctest
+   :include-source: True
+
+   >>> expr = 1 / cos(10 * x) + 5 * sin(x)
+   >>> plot(expr, ylim=(-10, 10), exclude=solveset(cos(10 * x)))
    Plot object containing:
    [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-10.0, 10.0)
 

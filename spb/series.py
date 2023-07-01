@@ -2,14 +2,14 @@ from inspect import signature
 from spb.ccomplex.wegert import wegert
 from spb.defaults import cfg
 from spb.utils import (
-    _get_free_symbols, unwrap
+    _get_free_symbols, unwrap, extract_solution
 )
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
     atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Union, Interval, nsimplify
+    Union, Interval, nsimplify, Set
 )
 from sympy.calculus.util import continuous_domain
 from sympy.geometry.entity import GeometryEntity
@@ -1080,9 +1080,16 @@ class Line2DBaseSeries(BaseSeries):
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
         self.is_polar = kwargs.get("is_polar", False)
-        # when detect_poles=True, stores the location of poles so that they
-        # can be appropriately rendered
+        # when detect_poles="symbolic", stores the location of poles so that
+        # they can be appropriately rendered
         self.poles_locations = []
+        exclude = kwargs.get("exclude", [])
+        if isinstance(exclude, Set):
+            exclude = list(extract_solution(exclude, n=100))
+        if not hasattr(exclude, "__iter__"):
+            exclude = [exclude]
+        exclude = [float(e) for e in exclude]
+        self.exclude = sorted(exclude)
 
     def get_data(self):
         """Return coordinates for plotting the line.
@@ -1147,6 +1154,62 @@ class Line2DBaseSeries(BaseSeries):
                     points = (x, y, z, points[3])
                 else:
                     points = (x, y, z)
+
+        points = self._insert_exclusions(points)
+        return points
+
+    def _insert_exclusions(self, points):
+        """Add NaN to each of the exclusion point. Practically, this adds a
+        NaN to the exlusion point, plus two other nearby points evaluated with
+        the numerical functions associated to this data series.
+        These nearby points are important when the number of discretization
+        points is low, or the scale is logarithm.
+
+        NOTE: it would be easier to just add exclusion points to the
+        discretized domain before evaluation, then after evaluation add NaN
+        to the exclusion points. But that's only work with adaptive=False.
+        The following approach work even with adaptive=True.
+        """
+        np = import_module("numpy")
+        points = list(points)
+        n = len(points)
+        # index of the x-coordinate (for 2d plots) or parameter (for 2d/3d
+        # parametric plots)
+        k = n - 1
+        if n == 2:
+            k = 0
+        # indeces of the other coordinates
+        j_indeces = sorted(set(range(n)).difference([k]))
+        # TODO: for now, I assume that numpy functions are going to succeed
+        funcs = [f[0] for f in self._functions]
+
+        for e in self.exclude:
+            res = points[k] - e >= 0
+            # if res contains both True and False, ie, if e is found
+            if any(res) and any(~res):
+                idx = np.nanargmax(res)
+                # select the previous point with respect to e
+                idx -= 1
+                # TODO: what if points[k][idx]==e or points[k][idx+1]==e?
+
+                if idx > 0 and idx < len(points[k]) - 1:
+                    delta_prev = abs(e - points[k][idx])
+                    delta_post = abs(e - points[k][idx + 1])
+                    delta = min(delta_prev, delta_post) / 100
+                    prev = e - delta
+                    post = e + delta
+
+                    # add points to the x-coord or the parameter
+                    points[k] = np.concatenate(
+                        (points[k][:idx], [prev, e, post], points[k][idx+1:]))
+
+                    # add points to the other coordinates
+                    c = 0
+                    for j in j_indeces:
+                        values = funcs[c](np.array([prev, post]))
+                        c += 1
+                        points[j] = np.concatenate(
+                            (points[j][:idx], [values[0], np.nan, values[1]], points[j][idx+1:]))
         return points
 
     @property
@@ -1290,7 +1353,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
     _allowed_keys = ["absarg", "adaptive", "adaptive_goal", "color_func",
     "detect_poles", "eps","is_complex", "is_filled", "is_point", "line_color",
     "loss_fn", "modules", "n", "only_integers", "rendering_kw", "steps",
-    "use_cm", "xscale", "tx", "ty", "tz", "is_polar"]
+    "use_cm", "xscale", "tx", "ty", "tz", "is_polar", "exclude"]
 
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
@@ -1461,7 +1524,8 @@ class ParametricLineBaseSeries(Line2DBaseSeries):
     is_parametric = True
     _allowed_keys = ["adaptive", "adaptive_goal", "color_func", "is_filled",
     "is_point", "line_color", "loss_fn", "modules", "n", "only_integers",
-    "rendering_kw", "use_cm", "xscale", "tx", "ty", "tz", "tp", "colorbar"]
+    "rendering_kw", "use_cm", "xscale", "tx", "ty", "tz", "tp", "colorbar",
+    "exclude"]
 
     def _set_parametric_line_label(self, label):
         """Logic to set the correct label to be shown on the plot.

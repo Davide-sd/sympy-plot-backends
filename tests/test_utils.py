@@ -4,10 +4,12 @@ from spb import (
     MB, plot_geometry
 )
 from spb.utils import (
-    _check_arguments, _create_ranges, _plot_sympify, _validate_kwargs, prange
+    _check_arguments, _create_ranges, _plot_sympify, _validate_kwargs, prange,
+    extract_solution
 )
 from sympy import (
-    symbols, Expr, Tuple, Integer, sin, cos, Matrix, I, Polygon, Dummy, Symbol
+    symbols, Expr, Tuple, Integer, sin, cos, Matrix, I, Polygon, Dummy, Symbol,
+    solveset, FiniteSet, ImageSet
 )
 
 
@@ -165,3 +167,17 @@ def test_prange():
     raises(ValueError, lambda : prange(x, x * a, b))
     # range symbols is present in the ending position
     raises(ValueError, lambda : prange(x, a, x * b))
+
+
+def test_extract_solution():
+    x = symbols("x")
+
+    sol = solveset(cos(10 * x))
+    assert sol.has(ImageSet)
+    res = extract_solution(sol)
+    assert len(res) == 20
+    assert isinstance(res, FiniteSet)
+
+    res = extract_solution(sol, 20)
+    assert len(res) == 40
+    assert isinstance(res, FiniteSet)
