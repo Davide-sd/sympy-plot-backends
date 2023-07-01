@@ -15,14 +15,14 @@ v2.4.0
 
 * Implemented the ``exclude`` keyword argument for ``plot`` and
   ``plot_parametric``. It accepts a list of values at which a discontinuity
-  will be introduced. This complemented the poles detection algorithm.
+  will be introduced. This complementes the poles detection algorithm.
 
 * Bug fixes
 
   * fixed bug with axis labels of ``plot_real_imag`` when creating contour
     plots.
   
-  * fixed bug with colorbar legend of 3d plots with lambda functions.
+  * fixed bug with colorbar label of 3d plots with lambda functions.
   
 
 v2.3.0
