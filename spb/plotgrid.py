@@ -400,7 +400,7 @@ def plotgrid(*args, **kwargs):
 
        p1 = plot(sin(x*a + c) * exp(-abs(x) / b), prange(x, -d, d), **options)
        p2 = plot(cos(x*a + c) * exp(-abs(x) / b), (x, -10, 10), **options)
-       plotgrid(p1, p2, imodule=imodule)
+       plotgrid(p1, p2, imodule=imodule, use_latex=False)
 
     References
     ==========

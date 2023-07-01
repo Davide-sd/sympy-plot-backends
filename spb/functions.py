@@ -988,12 +988,12 @@ def plot_parametric(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> e1 = log(floor(x))*cos(x)
-       >>> e2 = log(floor(x))*sin(x)
-       >>> plot_parametric(e1, e2, (x, 1, 4*pi),
+       >>> e1 = log(floor(t))*cos(t)
+       >>> e2 = log(floor(t))*sin(t)
+       >>> plot_parametric(e1, e2, (t, 1, 4*pi),
        ...     exclude=list(range(1, 13)), grid=False)
        Plot object containing:
-       [0]: parametric cartesian line: (log(floor(x))*cos(x), log(floor(x))*sin(x)) for x over (1.0, 12.566370614359172)
+       [0]: parametric cartesian line: (log(floor(t))*cos(t), log(floor(t))*sin(t)) for t over (1.0, 12.566370614359172)
 
     Plotting a numerical function instead of a symbolic expression:
 
