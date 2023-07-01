@@ -1733,6 +1733,7 @@ class SurfaceBaseSeries(BaseSeries):
             else any(callable(e) for e in exprs))
         if is_lambda and (self._label == str(exprs)):
                 self._label = ""
+                self._latex_label = ""
 
 
 class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
