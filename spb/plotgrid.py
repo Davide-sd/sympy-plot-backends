@@ -6,7 +6,7 @@ from spb.backends.plotly import PB
 from spb.backends.bokeh import BB
 from spb.interactive import IPlot, create_interactive_plot
 from sympy.utilities.exceptions import sympy_deprecation_warning
-from IPython.display import clear_output
+from sympy.external import import_module
 
 
 # NOTE: the code in this module, particularly the one about interactive widget
@@ -654,9 +654,13 @@ class PlotGrid:
             import_kwargs={'fromlist': ['io']},
             warn_not_installed=True,
             min_module_version='2.3.0')
+        IPython = import_module(
+            "IPython",
+            import_kwargs={'fromlist': ['display']},
+            warn_not_installed=True)
         for (bokeh_output, plot) in self._bokeh_outputs_plots:
             with bokeh_output:
-                clear_output(True)
+                IPython.display.clear_output(True)
                 bokeh.io.show(plot.fig)
 
     def show(self, **kwargs):
