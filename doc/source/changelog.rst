@@ -2,6 +2,29 @@
  Changelog
 ==========
 
+v2.4.0
+======
+
+* Enabled interactive-widgets ``plotgrid``. In particular, this allows to
+  create interactive widget plots with ``plot_bode`` and
+  ``plot_riemann_sphere``.
+
+* Enabled support for plotting applied undefined functions.
+
+* Implemented parametric text for titles and axis labels.
+
+* Implemented the ``exclude`` keyword argument for ``plot`` and
+  ``plot_parametric``. It accepts a list of values at which a discontinuity
+  will be introduced. This complemented the poles detection algorithm.
+
+* Bug fixes
+
+  * fixed bug with axis labels of ``plot_real_imag`` when creating contour
+    plots.
+  
+  * fixed bug with colorbar legend of 3d plots with lambda functions.
+  
+
 v2.3.0
 ======
 
