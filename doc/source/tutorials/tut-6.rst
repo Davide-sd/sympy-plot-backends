@@ -5,6 +5,9 @@ This tutorial explains how to extend the plotting module when the plotting
 functions and/or the customization options are not enough to achieve the
 desired results.
 
+We are only going to look at extending ``MatplotlibBackend`` (or ``MB``),
+as the procedure to modify other backends is the same.
+
 Here is how the plotting module works:
 
 * a plotting function is called, receiving one or more symbolic expression,
