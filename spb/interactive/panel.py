@@ -737,9 +737,9 @@ def iplot(*series, show=True, **kwargs):
 
        from sympy import sin, pi, symbols
        from spb import *
-       from bokeh.models.formatters import FuncTickFormatter
+       from bokeh.models.formatters import CustomJSTickFormatter
        # Javascript code is passed to `code=`
-       formatter = FuncTickFormatter(code="return (180./3.1415926 * tick).toFixed(2)")
+       formatter = CustomJSTickFormatter(code="return (180./3.1415926 * tick).toFixed(2)")
        x, t = symbols("x, t")
 
        plot(
