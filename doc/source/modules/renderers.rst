@@ -3,11 +3,11 @@
 Renderers
 ---------
 
-.. module:: spb.backend.base_renderer
+.. module:: spb.backends.base_renderer
 
 .. autoclass:: BaseRenderer
 
 
-.. module:: spb.backend.matplotlib.renderers.renderer
+.. module:: spb.backends.matplotlib.renderers.renderer
 
 .. autoclass:: MatplotlibRenderer

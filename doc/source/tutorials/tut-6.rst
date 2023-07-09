@@ -1,4 +1,4 @@
-0 - Extending the module
+6 - Extending the module
 ------------------------
 
 This tutorial explains how to extend the plotting module when the plotting
