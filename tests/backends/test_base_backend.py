@@ -1,5 +1,5 @@
 from spb.backends.base_backend import Plot
-from spb.series import BaseSeries
+from spb.series import BaseSeries, HVLineSeries
 from pytest import raises
 import matplotlib
 import matplotlib.pyplot as plt
@@ -178,3 +178,27 @@ def test_xaxis_inverted():
         ylim=(-1.25, 1.25), backend=MB, use_latex=False, show=False, n=10
     )
     p.backend.draw()
+
+
+def test_number_of_renderers():
+    # verify that once `extend` or `append` is executed, the number of
+    # renderers will be equal to the new number of series
+
+    x = symbols("x")
+    hor = HVLineSeries(0, True, show_in_legend=False)
+    ver1 = HVLineSeries(0, False, show_in_legend=False)
+    ver2 = HVLineSeries(1, False, show_in_legend=False)
+
+    def do_test(B):
+        p = plot(sin(x), (x, -5, 5), backend=B, show=False, n=5)
+        assert len(p.series) == len(p.renderers) == 1
+
+        p.extend([hor, ver1])
+        assert len(p.series) == len(p.renderers) == 3
+
+        p.append(ver2)
+        assert len(p.series) == len(p.renderers) == 4
+    
+    do_test(MB)
+    do_test(PB)
+    do_test(BB)

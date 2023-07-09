@@ -617,6 +617,8 @@ class Plot:
                 self.legend = True
         else:
             raise TypeError("Must specify element of plot to append.")
+        # recreate renderers
+        self._create_renderers()
 
     def extend(self, arg):
         """Adds all series from another plot.
@@ -664,3 +666,5 @@ class Plot:
         # auto legend
         if len(self._series) > 1:
             self.legend = True
+        # recreate renderers
+        self._create_renderers()
