@@ -28,14 +28,15 @@ class Renderer:
       to the same data series, in order to create more complex plots, promoting
       code reusability at the same time.
 
-    A renderer must implement these methods:
+    A renderer implements these methods:
 
     * `draw`: it will be called by ``plot`` when the figure is empty. This
       method extracts the numerical data from the ``series``, and sends it to
-      ``draw_method``.
+      each ``draw_method`` contained in ``draw_update_map``.
     * ``update``: it will be called by ``plot`` when the widgets change state.
       This method extracts the numerical data from the ``series``, and sends it
-      to ``update_method`` together with the appropriate ``handle``.
+      to each ``update_method`` contained in ``draw_update_map``, together
+      with the appropriate ``handle``.
     """
     draw_update_map = {}
 

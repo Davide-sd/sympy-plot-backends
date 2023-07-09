@@ -32,6 +32,7 @@ This document is automatically generated using spb's docstrings.
    control.rst
    plotgrid.rst
    series.rst
+   renderers.rst
    interactive.rst
    defaults.rst
    backends/index.rst
