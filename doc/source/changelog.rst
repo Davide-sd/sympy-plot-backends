@@ -2,6 +2,19 @@
  Changelog
 ==========
 
+v2.4.2
+======
+
+* Fixed bug with renderers and the ``extend`` and ``append`` methods of
+  plot objects.
+
+
+v2.4.1
+======
+
+* Fixed bug with conda package.
+
+
 v2.4.0
 ======
 
