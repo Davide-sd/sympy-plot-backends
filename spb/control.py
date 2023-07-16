@@ -743,6 +743,10 @@ def plot_bode(*systems, initial_exp=-5, final_exp=5,
     phase_unit : string, optional
         User can choose between ``'rad'`` (radians) and ``'deg'`` (degree)
         as phase units.
+    unwrap : bool, optional
+        Depending on the transfer function, there could be discontinuities in
+        the phase plot. Set ``unwrap=True`` to get a continuous phase.
+        Default to False.
     **kwargs :
         See ``plot`` for a list of keyword arguments to further customize
         the resulting figure.
@@ -757,9 +761,21 @@ def plot_bode(*systems, initial_exp=-5, final_exp=5,
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import plot_bode
+        >>> from spb import plot_bode, plot_bode_phase, plotgrid
         >>> tf1 = TransferFunction(1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
         >>> plot_bode(tf1, initial_exp=0.2, final_exp=0.7)   # doctest: +SKIP
+
+    In this example it is necessary to unwrap the phase:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> TransferFunction(1, s**3 + 2*s**2 + s, s)
+        >>> p1 = plot_bode_phase(tf, unwrap=False, show=False, title="unwrap=False")
+        >>> p2 = plot_bode_phase(tf, unwrap=True, show=False, title="unwrap=True")
+        >>> plotgrid(p1, p2)
 
     Interactive-widget plot:
 

@@ -1080,6 +1080,7 @@ class Line2DBaseSeries(BaseSeries):
         self.detect_poles = kwargs.get("detect_poles", False)
         self.eps = kwargs.get("eps", 0.01)
         self.is_polar = kwargs.get("is_polar", False)
+        self.unwrap = kwargs.get("unwrap", False)
         # when detect_poles="symbolic", stores the location of poles so that
         # they can be appropriately rendered
         self.poles_locations = []
@@ -1136,6 +1137,20 @@ class Line2DBaseSeries(BaseSeries):
                 x, y, p = points
                 x, y = _detect_poles_numerical_helper(x, y, self.eps)
                 points = (x, y, p)
+
+        if self.unwrap:
+            kw = {}
+            if self.unwrap is not True:
+                kw = self.unwrap
+            if self.is_2Dline:
+                if len(points) == 2:
+                    x, y = points
+                    y = np.unwrap(y, **kw)
+                    points = (x, y)
+                else:
+                    x, y, p = points
+                    y = np.unwrap(y, **kw)
+                    points = (x, y, p)
 
         if self.steps is True:
             if self.is_2Dline:
@@ -1353,7 +1368,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
     _allowed_keys = ["absarg", "adaptive", "adaptive_goal", "color_func",
     "detect_poles", "eps","is_complex", "is_filled", "is_point", "line_color",
     "loss_fn", "modules", "n", "only_integers", "rendering_kw", "steps",
-    "use_cm", "xscale", "tx", "ty", "tz", "is_polar", "exclude"]
+    "use_cm", "xscale", "tx", "ty", "tz", "is_polar", "exclude", "unwrap"]
 
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
