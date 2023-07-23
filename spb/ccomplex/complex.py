@@ -527,6 +527,62 @@ def plot_real_imag(*args, **kwargs):
         Denotes the x-axis limits, y-axis limits or z-axis limits,
         respectively, ``(min, max)``. ``zlim`` is only available for 3D plots.
 
+    Notes
+    =====
+
+    Given a symbolic expression, there are two possible way to create a
+    real/imag plot:
+
+    1. Apply Sympy's ``re`` or ``im`` to the symbolic expression, then
+       evaluates it.
+    2. Evaluates the symbolic expression over the provided range in order to
+       get complex values, then extract the real/imaginary parts with Numpy.
+
+    For performance reasons, ``plot_real_imag`` implements the second approach.
+    In fact, SymPy's ``re`` and ``im`` functions evaluate their arguments,
+    potentially creating unecessarely long symbolic expressions that requires
+    a lot of time to be evaluated.
+
+    Another thing to be aware of is branch cuts of complex-valued functions.
+    The plotting module attempt to evaluate a symbolic expression using complex
+    numbers. Depending on the evaluation module being used, we might get
+    different results. For example, the following two expressions should be
+    equal only when ``x > 0``. Instead, the plotting module gives us an
+    incorrect result:
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import symbols, im, Rational
+       >>> from spb import plot_real_imag, plot
+       >>> x = symbols('x')
+       >>> e1 = (1 / x)**(Rational(6, 5))
+       >>> e2 = x**(-Rational(6, 5))
+       >>> plot_real_imag((e1, "e1"), (e2, "e2"), real=False, ylim=(-5, 5))
+
+    We can force the evaluation to use only real numbers:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_real_imag((e1, "e1"), (e2, "e2"), real=False, ylim=(-5, 5),
+       ...     force_real_eval=True)
+
+    This produced the correct visualization. Alternatively, we can evaluate
+    the expressions with mpmath:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> plot_real_imag((e1, "e1"), (e2, "e2"), real=False, ylim=(-5, 5),
+       ...     modules="mpmath")
+
 
     Examples
     ========
