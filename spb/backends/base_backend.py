@@ -283,9 +283,9 @@ class Plot:
         self.axis_center = kwargs.get("axis_center", None)
         self.camera = kwargs.get("camera", None)
         self.grid = kwargs.get("grid", True)
-        self.xscale = kwargs.get("xscale", "linear")
-        self.yscale = kwargs.get("yscale", "linear")
-        self.zscale = kwargs.get("zscale", "linear")
+        self.xscale = kwargs.get("xscale", None)
+        self.yscale = kwargs.get("yscale", None)
+        self.zscale = kwargs.get("zscale", None)
         self.polar_axis = kwargs.get("polar_axis", None)
         # NOTE: it would be nice to have detect_poles=True by default.
         # However, the correct detection also depends on the number of points

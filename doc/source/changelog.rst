@@ -2,6 +2,21 @@
  Changelog
 ==========
 
+v2.4.3
+======
+
+* Bug fix: set axis scales only if the appropriate keyword arguments are
+  provided. This allows to create symbolic plots with categorical axis.
+
+* Fixed deprecation warning of one example using Holoviz panel and Bokeh
+  formatters.
+
+* Added new tutorial to documentation.
+
+* Added the ``unwrap`` keyword argument to ``plot_bode`` in order to get a
+  continous phase plot.
+
+
 v2.4.2
 ======
 

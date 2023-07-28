@@ -193,8 +193,6 @@ class BokehBackend(Plot):
             sizing_mode="fixed" if self.size else sizing_mode,
             width=int(self.size[0]) if self.size else cfg["bokeh"]["width"],
             height=int(self.size[1]) if self.size else cfg["bokeh"]["height"],
-            x_axis_type=self.xscale,
-            y_axis_type=self.yscale,
             tools="pan,wheel_zoom,box_zoom,reset,hover,save",
             tooltips=TOOLTIPS,
             match_aspect=True if self.aspect == "equal" else False,
@@ -203,6 +201,10 @@ class BokehBackend(Plot):
             kw["x_range"] = self.xlim
         if self.ylim:
             kw["y_range"] = self.ylim
+        if self.xscale:
+            kw["x_axis_type"] = self.xscale
+        if self.yscale:
+            kw["y_axis_type"] = self.yscale
         self._fig = self.bokeh.plotting.figure(**kw)
         self._fig.axis.visible = self.axis
         self.grid = kwargs.get("grid", cfg["bokeh"]["grid"])
