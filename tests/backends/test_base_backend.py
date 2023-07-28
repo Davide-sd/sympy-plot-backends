@@ -198,7 +198,28 @@ def test_number_of_renderers():
 
         p.append(ver2)
         assert len(p.series) == len(p.renderers) == 4
-    
+
     do_test(MB)
     do_test(PB)
     do_test(BB)
+
+
+def test_axis_scales():
+    # by default, axis scales should be set to None: this allows users to
+    # extend plot capabilities to create plots with categoricals axis.
+    # See: https://github.com/Davide-sd/sympy-plot-backends/issues/29
+    x = symbols("x")
+    p = plot(sin(x), backend=MB, show=False, n=5)
+    assert all(t is None for t in [p.xscale, p.yscale, p.zscale])
+
+    p = plot(sin(x), backend=MB, show=False, n=5, xscale="linear")
+    assert p.xscale == "linear"
+    assert all(t is None for t in [p.yscale, p.zscale])
+
+    p = plot(sin(x), backend=MB, show=False, n=5, yscale="linear")
+    assert p.yscale == "linear"
+    assert all(t is None for t in [p.xscale, p.zscale])
+
+    p = plot(sin(x), backend=MB, show=False, n=5, zscale="linear")
+    assert p.zscale == "linear"
+    assert all(t is None for t in [p.xscale, p.yscale])
