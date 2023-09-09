@@ -1,6 +1,7 @@
 from spb.defaults import cfg
 from sympy import (
-    Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed, ImageSet, FiniteSet
+    Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed, ImageSet, FiniteSet,
+    Basic
 )
 from sympy.physics.mechanics import Vector as MechVector
 from sympy.vector import BaseScalar
@@ -111,14 +112,13 @@ def _get_free_symbols(exprs):
 
 def _check_arguments(args, nexpr, npar, **kwargs):
     """Checks the arguments and converts into tuples of the
-    form (exprs, ranges, name_expr).
+    form (exprs, ranges, label, rendering_kw).
 
     Parameters
     ==========
 
     args
         The arguments provided to the plot functions
-
     nexpr
         The number of sub-expression forming an expression to be plotted.
         For example:
@@ -128,10 +128,12 @@ def _check_arguments(args, nexpr, npar, **kwargs):
         nexpr=1 for plot3d.
         nexpr=3 for plot3d_parametric_line: a curve is represented by a tuple
             of three elements.
-
     npar
         The number of free symbols required by the plot functions. For example,
         npar=1 for plot, npar=2 for plot3d, ...
+    **kwargs : 
+        keyword arguments passed to the plotting function. It will be used to
+        verify if ``params`` has ben provided.
 
     Examples
     ========
@@ -237,7 +239,9 @@ def _plot_sympify(args):
     for i, a in enumerate(args):
         if isinstance(a, (list, tuple)):
             args[i] = Tuple(*_plot_sympify(a), sympify=False)
-        elif not (isinstance(a, (str, dict, MechVector)) or callable(a)):
+        elif not (isinstance(a, (str, dict)) or callable(a)
+            or ((a.__class__.__name__ == "Vector") and not isinstance(a, Basic))
+        ):
             args[i] = sympify(a)
     return args
 

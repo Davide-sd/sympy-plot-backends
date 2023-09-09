@@ -11,6 +11,7 @@ from sympy import (
     atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
     Union, Interval, nsimplify, Set
 )
+from sympy.core.relational import Relational
 from sympy.calculus.util import continuous_domain
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
@@ -210,29 +211,45 @@ def _uniform_eval(f1, f2, *args, modules=None,
     # mpmath or sympy.
     wrapper_func = np.vectorize(wrapper_func, otypes=[complex])
 
-    skip_fast_eval = False
-    if modules == "sympy":
-        skip_fast_eval = True
+    # skip_fast_eval = False
+    # if modules == "sympy":
+    #     skip_fast_eval = True
 
-    try:
-        if skip_fast_eval:
-            raise Exception
-        return wrapper_func(f1, *args)
-    except Exception as err:
+    # try:
+    #     if skip_fast_eval:
+    #         raise Exception
+    #     return wrapper_func(f1, *args)
+    # except Exception as err:
+    #     if f2 is None:
+    #         raise RuntimeError(
+    #             "Impossible to evaluate the provided numerical function "
+    #             "because the following exception was raised:\n"
+    #             "{}: {}".format(type(err).__name__, err))
+    #     if not skip_fast_eval:
+    #         warnings.warn(
+    #             "The evaluation with %s failed.\n" % (
+    #                 "NumPy/SciPy" if not modules else modules) +
+    #             "{}: {}\n".format(type(err).__name__, err) +
+    #             "Trying to evaluate the expression with Sympy, but it might "
+    #             "be a slow operation."
+    #         )
+    #     return wrapper_func(f2, *args)
+
+    def _eval_with_sympy():
         if f2 is None:
             raise RuntimeError(
                 "Impossible to evaluate the provided numerical function "
                 "because the following exception was raised:\n"
                 "{}: {}".format(type(err).__name__, err))
-        if not skip_fast_eval:
-            warnings.warn(
-                "The evaluation with %s failed.\n" % (
-                    "NumPy/SciPy" if not modules else modules) +
-                "{}: {}\n".format(type(err).__name__, err) +
-                "Trying to evaluate the expression with Sympy, but it might "
-                "be a slow operation."
-            )
         return wrapper_func(f2, *args)
+
+    if modules == "sympy":
+        return _eval_with_sympy()
+    
+    try:
+        return wrapper_func(f1, *args)
+    except Exception as err:
+        return _eval_with_sympy()
 
 
 def _get_wrapper_for_expr(ret):
@@ -573,7 +590,7 @@ class BaseSeries:
 
     @property
     def expr(self):
-        """Set the expression (or expressions) of the series."""
+        """Return the expression (or expressions) of the series."""
         return self._expr
 
     @expr.setter
@@ -1860,8 +1877,8 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
             res = self._uniform_sampling()
 
         x, y, z = res
-        r = x.copy()
         if self.is_polar and self.is_3Dsurface:
+            r = x.copy()
             x = r * np.cos(y)
             y = r * np.sin(y)
 
@@ -2013,39 +2030,14 @@ class ImplicitSeries(BaseSeries):
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         super().__init__(**kwargs)
-        self._block_lambda_functions(expr)
-        # these are needed for adaptive evaluation
-        expr, has_equality = self._has_equality(sympify(expr))
-        self._adaptive_expr = expr
-        self.has_equality = has_equality
+        self.adaptive = kwargs.get("adaptive", False)
+        self.expr = expr
+        self._label = str(expr) if label is None else label
+        self._latex_label = latex(expr) if label is None else label
         self.ranges = [var_start_end_x, var_start_end_y]
         self.var_x, self.start_x, self.end_x = self.ranges[0]
         self.var_y, self.start_y, self.end_y = self.ranges[1]
-        self._label = str(expr) if label is None else label
-        self._latex_label = latex(expr) if label is None else label
-        self.adaptive = kwargs.get("adaptive", False)
-        self.color = kwargs.get("color", kwargs.get("line_color", None))
-
-        if ((isinstance(expr, BooleanFunction) or isinstance(expr, Ne))
-            and (not self.adaptive)):
-            self.adaptive = True
-            msg = "contains Boolean functions. "
-            if isinstance(expr, Ne):
-                msg = "is an unequality. "
-            warnings.warn(
-                "The provided expression " + msg
-                + "In order to plot the expression, the algorithm "
-                + "automatically switched to an adaptive sampling."
-            )
-
-        if isinstance(expr, BooleanFunction):
-            self._non_adaptive_expr = None
-            self._is_equality = False
-        else:
-            # these are needed for uniform meshing evaluation
-            expr, is_equality = self._preprocess_meshgrid_expression(expr, self.adaptive)
-            self._non_adaptive_expr = expr
-            self._is_equality = is_equality
+        self._color = kwargs.get("color", kwargs.get("line_color", None))
 
         if self.is_interactive and self.adaptive:
             raise NotImplementedError("Interactive plot with `adaptive=True` "
@@ -2065,6 +2057,46 @@ class ImplicitSeries(BaseSeries):
         if self.adaptive:
             return self._adaptive_expr
         return self._non_adaptive_expr
+    
+    @expr.setter
+    def expr(self, expr):
+        self._block_lambda_functions(expr)
+        # these are needed for adaptive evaluation
+        expr, has_equality = self._has_equality(sympify(expr))
+        self._adaptive_expr = expr
+        self.has_equality = has_equality
+        self._label = str(expr)
+        self._latex_label = latex(expr)
+
+        if isinstance(expr, (BooleanFunction, Ne)) and (not self.adaptive):
+            self.adaptive = True
+            msg = "contains Boolean functions. "
+            if isinstance(expr, Ne):
+                msg = "is an unequality. "
+            warnings.warn(
+                "The provided expression " + msg
+                + "In order to plot the expression, the algorithm "
+                + "automatically switched to an adaptive sampling."
+            )
+
+        if isinstance(expr, BooleanFunction):
+            self._non_adaptive_expr = None
+            self._is_equality = False
+        else:
+            # these are needed for uniform meshing evaluation
+            expr, is_equality = self._preprocess_meshgrid_expression(expr, self.adaptive)
+            self._non_adaptive_expr = expr
+            self._is_equality = is_equality
+    
+    @property
+    def line_color(self):
+        return self._color
+
+    @line_color.setter
+    def line_color(self, v):
+        self._color = v
+    
+    color = line_color
 
     def _has_equality(self, expr):
         # Represents whether the expression contains an Equality, GreaterThan
@@ -2289,10 +2321,8 @@ class ImplicitSeries(BaseSeries):
         if isinstance(expr, Equality):
             expr = expr.lhs - expr.rhs
             equality = True
-        elif isinstance(expr, (GreaterThan, StrictGreaterThan)):
-            expr = expr.lhs - expr.rhs
-        elif isinstance(expr, (LessThan, StrictLessThan)):
-            expr = expr.rhs - expr.lhs
+        elif isinstance(expr, Relational):
+            expr = expr.gts - expr.lts
         elif not adaptive:
             raise NotImplementedError(
                 "The expression is not supported for "
