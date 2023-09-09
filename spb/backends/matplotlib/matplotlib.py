@@ -469,6 +469,7 @@ class MatplotlibBackend(Plot):
                 self._ax.set_xlim(xlim)
             if ylims and (
                 any(s.is_contour for s in self.series)
+                or any(s.is_vector and (not s.is_3D) for s in self.series)
                 or any(s.is_2Dline and s.is_parametric for s in self.series)
             ):
                 ylims = np.array(ylims)
