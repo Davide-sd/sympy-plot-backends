@@ -470,7 +470,7 @@ def _validate_kwargs(backend_obj, **kwargs):
             msg += "* '%s'" % k
             msg += ": did you mean '%s'?\n" % possible_match
         warnings.warn(msg, stacklevel=3)
-        # this returns helps with tests
+        # this "return" helps with tests
         return msg
 
 
