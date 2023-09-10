@@ -539,7 +539,7 @@ class MatplotlibBackend(Plot):
                 cb = self._fig.colorbar(c, ax=self._ax)
             else:
                 mappable = self.cm.ScalarMappable(cmap=cmap, norm=norm)
-                cb = self._fig.colorbar(mappable)
+                cb = self._fig.colorbar(mappable, ax=self._ax)
             cb.set_label(label, rotation=90)
             return True
         return False
