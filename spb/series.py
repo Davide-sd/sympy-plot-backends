@@ -9,7 +9,7 @@ from sympy import (
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
     atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Union, Interval, nsimplify, Set
+    Union, Interval, nsimplify, Set, Integral
 )
 from sympy.core.relational import Relational
 from sympy.calculus.util import continuous_domain
@@ -23,8 +23,16 @@ from sympy.physics.control.lti import TransferFunction
 from sympy.printing.pycode import PythonCodePrinter
 from sympy.printing.precedence import precedence
 from sympy.core.sorting import default_sort_key
-from sympy.utilities.exceptions import sympy_deprecation_warning
 import warnings
+
+
+def format_warnings_on_one_line(message, category, filename, lineno, file=None, line=None):
+    # https://stackoverflow.com/a/26433913/2329968
+    return '%s:%s: %s: %s\n' % (filename, lineno, category.__name__, message)
+
+
+warnings.formatwarning = format_warnings_on_one_line
+
 
 class IntervalMathPrinter(PythonCodePrinter):
     """A printer to be used inside `plot_implicit` when `adaptive=True`,
@@ -181,7 +189,7 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
     # For multivariate functions, create a meshgrid where to interpolate the
     # results. Taken from adaptive.learner.learnerND.plot
     x, y = learner._bbox
-    scale_factor = np.product(np.diag(learner._transform))
+    scale_factor = np.prod(np.diag(learner._transform))
     a_sq = np.sqrt(np.min(learner.tri.volumes()) * scale_factor)
     n = max(10, int(0.658 / a_sq) * 2)
     xs = ys = np.linspace(0, 1, n)
@@ -211,30 +219,6 @@ def _uniform_eval(f1, f2, *args, modules=None,
     # mpmath or sympy.
     wrapper_func = np.vectorize(wrapper_func, otypes=[complex])
 
-    # skip_fast_eval = False
-    # if modules == "sympy":
-    #     skip_fast_eval = True
-
-    # try:
-    #     if skip_fast_eval:
-    #         raise Exception
-    #     return wrapper_func(f1, *args)
-    # except Exception as err:
-    #     if f2 is None:
-    #         raise RuntimeError(
-    #             "Impossible to evaluate the provided numerical function "
-    #             "because the following exception was raised:\n"
-    #             "{}: {}".format(type(err).__name__, err))
-    #     if not skip_fast_eval:
-    #         warnings.warn(
-    #             "The evaluation with %s failed.\n" % (
-    #                 "NumPy/SciPy" if not modules else modules) +
-    #             "{}: {}\n".format(type(err).__name__, err) +
-    #             "Trying to evaluate the expression with Sympy, but it might "
-    #             "be a slow operation."
-    #         )
-    #     return wrapper_func(f2, *args)
-
     def _eval_with_sympy():
         if f2 is None:
             raise RuntimeError(
@@ -242,13 +226,38 @@ def _uniform_eval(f1, f2, *args, modules=None,
                 "because the following exception was raised:\n"
                 "{}: {}".format(type(err).__name__, err))
         return wrapper_func(f2, *args)
+    
+    # TODO: same message as adaptive_eval... use common function
+    def _msg(err):
+        warnings.warn(
+                "The evaluation with %s failed.\n" % (
+                    "NumPy/SciPy" if not modules else modules) +
+                "{}: {}\n".format(type(err).__name__, err) +
+                "Trying to evaluate the expression with Sympy, but it might "
+                "be a slow operation.",
+                stacklevel=2
+            )
 
     if modules == "sympy":
         return _eval_with_sympy()
+    elif (modules is None) or ("numpy" in modules) or ("numexpr" in modules):
+        try:
+            # attempt to use numpy/numexpr native vectorized operation
+            return f1(*args)
+        except ValueError:
+            # attempt to use numpy/numexpr with numpy.vectorize
+            return wrapper_func(f1, *args)
+        except Exception as err:
+            # fall back to sympy
+            _msg(err)
+            return _eval_with_sympy()
     
     try:
+        # any other module attempts to use numpy.vectorize
         return wrapper_func(f1, *args)
     except Exception as err:
+        # fall back to sympy
+        _msg(err)
         return _eval_with_sympy()
 
 
@@ -563,7 +572,7 @@ class BaseSeries:
 
         results = []
         for f in self._functions:
-            r = _uniform_eval(*f, *args)
+            r = _uniform_eval(*f, *args, modules=self.modules)
             # the evaluation might produce an int/float. Need this correction.
             r = self._correct_shape(np.array(r), discr[0])
             # sometime the evaluation is performed over arrays of type object.
@@ -611,7 +620,7 @@ class BaseSeries:
 
             # list of sympy functions that when lambdified, the corresponding
             # numpy functions don't like complex-type arguments
-            pf = [ceiling, floor, atan2, frac, zeta]
+            pf = [ceiling, floor, atan2, frac, zeta, Integral]
             if self._force_real_eval is not True:
                 check_res = [self._expr.has(f) for f in pf]
                 self._force_real_eval = any(check_res)
@@ -653,11 +662,6 @@ class BaseSeries:
                 use = "color_func"
             else:
                 use = "rendering_kw"
-            # TODO: follow sympy doc procedure to create this deprecation
-            sympy_deprecation_warning(
-                f"`{prop[1:]}` is deprecated. Use `{use}` instead.",
-                deprecated_since_version="1.12",
-                active_deprecations_target='---')
         # NOTE: color_func is set inside the init method of the series.
         # If line_color/surface_color is not a callable, then color_func will
         # be set to None.
@@ -2073,10 +2077,10 @@ class ImplicitSeries(BaseSeries):
             msg = "contains Boolean functions. "
             if isinstance(expr, Ne):
                 msg = "is an unequality. "
-            warnings.warn(
-                "The provided expression " + msg
-                + "In order to plot the expression, the algorithm "
-                + "automatically switched to an adaptive sampling."
+            warnings.warn(f"The provided expression {msg}"
+                "In order to plot the expression, the algorithm "
+                "automatically switched to an adaptive sampling.",
+                stacklevel=1
             )
 
         if isinstance(expr, BooleanFunction):
@@ -2771,11 +2775,6 @@ def _set_discretization_points(kwargs, pt):
     for k, v in deprecated_keywords.items():
         if k in kwargs.keys():
             kwargs[v] = kwargs.pop(k)
-            # TODO: follow sympy doc procedure to create this deprecation
-            sympy_deprecation_warning(
-                f"`{k}` is deprecated. Use `{v}` instead.",
-                deprecated_since_version="1.12",
-                active_deprecations_target='---')
 
     if pt in [LineOver1DRangeSeries, Parametric2DLineSeries,
         Parametric3DLineSeries, AbsArgLineSeries, ColoredLineOver1DRangeSeries,
