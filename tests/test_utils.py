@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import raises, warns
 from spb import (
     plot, plot3d, plot_implicit, plot_vector, plot_complex, plot_complex_list,
     MB, plot_geometry
@@ -106,44 +106,78 @@ def test_raise_warning_keyword_validation():
 
     # x_label should be xlabel: this is a Backend-related keyword
     kw = dict(adaptive=False, x_label="a")
-    p = plot(sin(x), backend=MB, show=False, **kw)
-    do_test(p, kw, ["x_label", "xlabel"])
+
+    with warns(
+            UserWarning,
+            match="The following keyword arguments are unused."
+        ):
+        p = plot(sin(x), backend=MB, show=False, **kw)
+        do_test(p, kw, ["x_label", "xlabel"])
 
     # adapt should be adaptive: this is a LineOver1DRangeSeries keyword
     kw = dict(adapt=False)
-    p = plot(sin(x), backend=MB, show=False, **kw)
-    do_test(p, kw, ["adapt", "adaptive"])
+
+    with warns(
+            UserWarning,
+            match="The following keyword arguments are unused."
+        ):
+        p = plot(sin(x), backend=MB, show=False, **kw)
+        do_test(p, kw, ["adapt", "adaptive"])
 
     # surface_colors should be surface_color: this is a SurfaceBaseSeries
     # keyword
     kw = dict(surface_colors="r")
-    p = plot3d(cos(x**2 + y**2), backend=MB, show=False, **kw)
-    do_test(p, kw, ["surface_colors", "surface_color"])
+    with warns(
+            UserWarning,
+            match="The following keyword arguments are unused."
+        ):
+        p = plot3d(cos(x**2 + y**2), backend=MB, show=False, **kw)
+        do_test(p, kw, ["surface_colors", "surface_color"])
 
     # deptt should be depth: this is a ImplicitSeries keyword
     kw = dict(deptt=2)
-    p = plot_implicit(cos(x), backend=MB, show=False, **kw)
-    do_test(p, kw, ["deptt", "depth"])
+    with warns(
+            UserWarning,
+            match="The following keyword arguments are unused."
+        ):
+        p = plot_implicit(cos(x), backend=MB, show=False, **kw)
+        do_test(p, kw, ["deptt", "depth"])
 
     # streamline should be streamlines: this is a VectorBase keyword
     kw = dict(streamline=True)
-    p = plot_vector(Matrix([sin(y), cos(x)]), backend=MB, show=False, **kw)
-    do_test(p, kw, ["streamline", "streamlines"])
+    with warns(
+            UserWarning,
+            match="The following keyword arguments are unused."
+        ):
+        p = plot_vector(Matrix([sin(y), cos(x)]), backend=MB, show=False, **kw)
+        do_test(p, kw, ["streamline", "streamlines"])
 
     # phase_res should be phaseres
     kw = dict(phase_res=3)
-    p = plot_complex(z, (z, -2-2j, 2+2j), backend=MB, show=False, **kw)
-    do_test(p, kw, ["phase_res", "phaseres"])
+    with warns(
+            UserWarning,
+            match="The following keyword arguments are unused."
+        ):
+        p = plot_complex(z, (z, -2-2j, 2+2j), backend=MB, show=False, **kw)
+        do_test(p, kw, ["phase_res", "phaseres"])
 
     # render_kw should be rendering_kw
     kw = dict(render_kw={"color": "r"})
-    p = plot_complex_list(3 + 2 * I, backend=MB, show=False, **kw)
-    do_test(p, kw, ["render_kw", "rendering_kw"])
+    with warns(
+            UserWarning,
+            match="The following keyword arguments are unused."
+        ):
+        p = plot_complex_list(3 + 2 * I, backend=MB, show=False, **kw)
+        do_test(p, kw, ["render_kw", "rendering_kw"])
 
     # is_fille should be is_filled
     kw = dict(is_fille=False)
-    p = plot_geometry(Polygon((4, 0), 4, n=5), backend=MB, show=False)
-    do_test(p, kw, ["is_fille", "is_filled"])
+    with warns(
+            UserWarning,
+            match="The following keyword arguments are unused."
+        ):
+        p = plot_geometry(Polygon((4, 0), 4, n=5), backend=MB, show=False)
+        do_test(p, kw, ["is_fille", "is_filled"])
 
 
 def test_prange():

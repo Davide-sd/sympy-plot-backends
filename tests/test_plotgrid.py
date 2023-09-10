@@ -1,3 +1,4 @@
+import pytest
 from pytest import raises
 from spb import (
     MB, PB, BB, KB, plotgrid, plot, plot3d, plot_contour, plot_vector,
@@ -64,6 +65,7 @@ def test_empty_plotgrid():
     assert isinstance(p.fig, plt.Figure)
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_plotgrid_mode_1():
     x, y, z = symbols("x, y, z")
     options = dict(adaptive=False, n=10, backend=MB, show=False)
@@ -129,6 +131,7 @@ def test_plotgrid_mode_1():
     assert isinstance(p.fig.objects[(1, 1, 2, 2)], pn.pane.plot.Bokeh)
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_plotgrid_mode_1_interactive_ipywidgets():
     # verify the correct behavior when providing interactive widget plots.
 
@@ -232,6 +235,7 @@ def test_plotgrid_mode_1_interactive_panel():
     sliders[0][0].value = 2
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_plotgrid_mode_2():
     from matplotlib.gridspec import GridSpec
 
@@ -312,6 +316,7 @@ def test_plotgrid_mode_2():
     assert isinstance(p.fig.objects[(0, 1, 2, 3)], pn.pane.ipywidget.IPyWidget)
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_plotgrid_mode_2_interactive_ipywidgets():
     # verify the correct behavior when providing interactive widget plots.
     # NOTE: I'm going to test with Plotly and not Matplotlib because I have
@@ -371,6 +376,7 @@ def test_plotgrid_mode_2_interactive_ipywidgets():
     assert isinstance(res.children[1][0:2, 1:].children[0], go.FigureWidget)
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_plotgrid_mode_2_interactive_panel():
     # verify the correct behavior when providing interactive widget plots.
 
@@ -432,6 +438,7 @@ def test_plotgrid_mode_2_interactive_panel():
         list(res.objects[1][0:2, 1:].objects.values())[0], pn.pane.plotly.Plotly)
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_panel_kw_imodule_panel():
     x = symbols("x")
     options = dict(adaptive=False, n=100, show=False, imodule="panel")
@@ -444,6 +451,7 @@ def test_panel_kw_imodule_panel():
     assert (pg1.fig.height != pg2.fig.height) and (pg2.fig.height == 250)
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_plotgrid_mode_1_polar_axis():
     # verify that when polar_axis is used on a plot, the resulting subplot
     # will use a polar projection
@@ -459,6 +467,7 @@ def test_plotgrid_mode_1_polar_axis():
     assert not isinstance(pg.fig.axes[1], matplotlib.projections.polar.PolarAxes)
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_plot_size():
     # verify that the `size` keyword argument works fine
 
@@ -485,6 +494,7 @@ def test_plot_size():
     assert p.fig.height == 600
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_imagegrid():
     # verify that matplotlib's ImageGrid axis works fine
 
@@ -506,6 +516,7 @@ def test_imagegrid():
     assert p.fig.axes[3].get_ylabel() == "Argument"
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_save():
     x, y = symbols("x, y")
 
@@ -563,6 +574,7 @@ def test_save():
         p.save("test_3.html")
 
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 def test_plotgrid_interactive_mixed_modules():
     def build_plots(imodule1, imodule2):
         x, y, z = symbols("x, y, z")

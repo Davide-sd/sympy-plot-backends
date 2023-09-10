@@ -2,7 +2,7 @@ import matplotlib
 import mpl_toolkits
 import numpy as np
 import pytest
-from pytest import raises
+from pytest import raises, warns
 from sympy import Symbol, symbols
 import os
 from tempfile import TemporaryDirectory
@@ -407,6 +407,7 @@ def test_plot_vector_2d_normalize():
     assert np.allclose(np.sqrt(uu2**2 + vv2**2), 1)
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_plot_vector_3d_normalize():
     # verify that backends are capable of normalizing a vector field before
     # plotting it. Since all backend are different from each other, let's test
@@ -520,7 +521,7 @@ def test_plot_implicit_adaptive_false():
     # `plot_implicit()` is called with `adaptive=True` and `contour_kw`
     # overrides the default settings
 
-    p = make_test_plot_implicit_adaptive_false(MB, contour_kw=dict(cmap="jet"))
+    p = make_test_plot_implicit_adaptive_false(MB, rendering_kw=dict(cmap="jet"))
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
@@ -823,6 +824,7 @@ def test_plot_size():
     p.close()
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_plot_scale_lin_log():
     # verify that backends are applying the correct scale to the axes
     # NOTE: none of the 3D libraries currently support log scale.
@@ -986,6 +988,7 @@ def test_plot_vector_3d_streamlines_use_latex():
     p.close()
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_plot_complex_use_latex():
     # complex plot function should return the same result (for axis labels)
     # wheter use_latex is True or False
@@ -1445,7 +1448,11 @@ def test_contour_and_3d():
     p = p2 + p1
     p.draw()
     p = p2 + p3
-    p.draw()
+    with warns(
+        UserWarning,
+        match="The following kwargs were not used by contour"
+    ):
+        p.draw()
     p = p1 + p3
     raises(ValueError, lambda : p.draw())
     p = p1 + p2 + p3
@@ -1473,6 +1480,7 @@ def test_contour_show_clabels():
     assert len(p.backend.ax.texts) > 0
 
 
+@pytest.mark.filterwarnings("ignore:The provided expression contains Boolean functions")
 def test_plot_implicit_legend_artists():
     # verify that plot_implicit sets appropriate plot artists
 
@@ -1576,6 +1584,9 @@ def test_domain_coloring_2d():
     assert np.allclose(img2b, np.flip(np.flip(img2a, axis=0), axis=1))
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+@pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
+@pytest.mark.filterwarnings("ignore:NumPy is unable to evaluate with complex numbers")
 def test_show_hide_colorbar():
     x, y, z = symbols("x, y, z")
     options = dict(use_cm=True, n=5, adaptive=False, backend=MB, show=False)
@@ -1689,6 +1700,7 @@ def test_show_in_legend():
     assert len(p4.ax.get_legend().legend_handles) == 2
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_make_analytic_landscape_black_and_white():
     # verify that the backend doesn't raise an error when grayscale coloring
     # schemes are required

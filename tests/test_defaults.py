@@ -1,7 +1,7 @@
 
 import json
 import os
-from pytest import raises
+from pytest import raises, warns
 from spb.defaults import cfg, set_defaults, reset
 from spb import BB, MB
 from sympy import symbols
@@ -121,13 +121,21 @@ def test_set_defaults():
     # changing backends should be a smooth operation
     cfg["backend_2D"] = "bokeh"
     cfg["backend_3D"] = "matplotlib"
-    set_defaults(cfg)
+    with warns(
+            UserWarning,
+            match="Successfully written settings"
+        ):
+        set_defaults(cfg)
     loaded_cfg = get_current_setting()
     assert loaded_cfg["backend_2D"] == "bokeh"
     assert loaded_cfg["backend_3D"] == "matplotlib"
 
     # wrong backends settings -> reset to default settings
     cfg["backend_2D"] = "k3d"
-    raises(ValueError, lambda: set_defaults(cfg))
+    with warns(
+            UserWarning,
+            match="Successfully written settings"
+        ):
+        raises(ValueError, lambda: set_defaults(cfg))
     loaded_cfg = get_current_setting()
     assert loaded_cfg["backend_2D"] == "matplotlib"

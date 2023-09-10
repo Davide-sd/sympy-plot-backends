@@ -1,3 +1,4 @@
+import pytest
 from pytest import raises
 from spb import BB, PB, MB, plot, plot3d, plot_vector
 from spb.interactive.panel import (
@@ -301,6 +302,7 @@ def test_create_widgets():
     assert isinstance(w[y].format, bokeh.models.formatters.PrintfTickFormatter)
 
 
+@pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
 def test_iplot_sum_1(panel_options):
     # verify that it is possible to add together different instances of
     # InteractivePlot (as well as Plot instances), provided that the same
@@ -363,6 +365,7 @@ def test_iplot_sum_2(panel_options):
     raises(ValueError, lambda: p1 + p2)
 
 
+@pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
 def test_iplot_sum_3(panel_options):
     # verify that the resulting iplot's backend is of the same type as the
     # original

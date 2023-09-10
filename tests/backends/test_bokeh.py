@@ -1,7 +1,7 @@
 import bokeh
 from bokeh.models import ColumnDataSource, Span
 import pytest
-from pytest import raises
+from pytest import raises, warns
 import os
 from tempfile import TemporaryDirectory
 from .make_tests import *
@@ -307,7 +307,7 @@ def test_plot_implicit_adaptive_false():
     # BokehBackend doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_false(
-            BB, contour_kw=dict()).draw())
+            BB, rendering_kw=dict()).draw())
 
 
 def test_plot_real_imag():
@@ -522,6 +522,7 @@ def test_plot_size():
     assert (p.fig.width == 400) and (p.fig.height == 200)
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_plot_scale_lin_log():
     # verify that backends are applying the correct scale to the axes
     # NOTE: none of the 3D libraries currently support log scale.
@@ -620,6 +621,7 @@ def test_plot_vector_2d_use_latex_colorbar():
     p = make_test_plot_vector_2d_use_latex_colorbar(BB, False, True)
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_plot_complex_use_latex():
     # complex plot function should return the same result (for axis labels)
     # wheter use_latex is True or False
@@ -832,6 +834,7 @@ def test_domain_coloring_2d():
     assert np.allclose(img2b, np.flip(img2a, axis=0))
 
 
+@pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
 def test_show_hide_colorbar():
     x, y, z = symbols("x, y, z")
     options = dict(use_cm=True, n=5, adaptive=False, backend=BB, show=False)

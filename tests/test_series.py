@@ -1,4 +1,5 @@
-from pytest import raises
+import pytest
+from pytest import raises, warns
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
@@ -113,6 +114,7 @@ def test_adaptive_zerodivisionerror():
     x1, y1, z1, p1 = s1.get_data()
 
 
+@pytest.mark.filterwarnings('ignore::RuntimeWarning')
 def test_detect_poles():
     x, u = symbols("x, u")
 
@@ -132,17 +134,25 @@ def test_detect_poles():
     assert not np.any(np.isnan(yy3))
     assert np.any(np.isnan(yy2))
 
-    s1 = LineOver1DRangeSeries(frac(x), (x, -10, 10),
-        adaptive=False, n=1000, detect_poles=False)
-    xx1, yy1 = s1.get_data()
-    s2 = LineOver1DRangeSeries(frac(x), (x, -10, 10),
-        adaptive=False, n=1000, detect_poles=True, eps=0.05)
-    xx2, yy2 = s2.get_data()
-    xx3, yy3 = s3.get_data()
-
-    assert np.allclose(xx1, xx2)
-    assert not np.any(np.isnan(yy1))
-    assert np.any(np.isnan(yy2))
+    with warns(
+            UserWarning,
+            match="NumPy is unable to evaluate with complex numbers some of",
+        ):
+        s1 = LineOver1DRangeSeries(frac(x), (x, -10, 10),
+            adaptive=False, n=1000, detect_poles=False)
+        xx1, yy1 = s1.get_data()
+        s2 = LineOver1DRangeSeries(frac(x), (x, -10, 10),
+            adaptive=False, n=1000, detect_poles=True, eps=0.05)
+        s3 = LineOver1DRangeSeries(frac(x), (x, -10, 10),
+            adaptive=False, n=1000, detect_poles="symbolic")
+        xx1, yy1 = s1.get_data()
+        xx2, yy2 = s2.get_data()
+        xx3, yy3 = s3.get_data()
+        assert np.allclose(xx1, xx2) and np.allclose(xx1, xx3)
+        assert not np.any(np.isnan(yy1))
+        assert np.any(np.isnan(yy2)) and np.any(np.isnan(yy2))
+        assert not np.allclose(yy1, yy2, equal_nan=True)
+        assert len(s3.poles_locations) == 0
 
     s1 = LineOver1DRangeSeries(tan(u * x), (x, -pi, pi), params={u: 1},
         adaptive=False, n=1000, detect_poles=False)
@@ -160,31 +170,39 @@ def test_detect_poles():
     assert not np.any(np.isnan(yy3))
     assert np.any(np.isnan(yy2))
 
-    u, v = symbols("u, v", real=True)
-    n = S(1) / 3
-    f = (u + I * v)**n
-    r, i = re(f), im(f)
-    s1 = Parametric2DLineSeries(r.subs(u, -2), i.subs(u, -2), (v, -2, 2),
-        adaptive=False, n=1000, detect_poles=False)
-    xx1, yy1, pp1 = s1.get_data()
-    assert not np.isnan(yy1).any()
-    s2 = Parametric2DLineSeries(r.subs(u, -2), i.subs(u, -2), (v, -2, 2),
-        adaptive=False, n=1000, detect_poles=True)
-    xx2, yy2, pp2 = s2.get_data()
-    assert np.isnan(yy2).any()
+    with warns(
+            UserWarning,
+            match="NumPy is unable to evaluate with complex numbers some of",
+        ):
+        u, v = symbols("u, v", real=True)
+        n = S(1) / 3
+        f = (u + I * v)**n
+        r, i = re(f), im(f)
+        s1 = Parametric2DLineSeries(r.subs(u, -2), i.subs(u, -2), (v, -2, 2),
+            adaptive=False, n=1000, detect_poles=False)
+        s2 = Parametric2DLineSeries(r.subs(u, -2), i.subs(u, -2), (v, -2, 2),
+            adaptive=False, n=1000, detect_poles=True)
+        xx1, yy1, pp1 = s1.get_data()
+        assert not np.isnan(yy1).any()
+        xx2, yy2, pp2 = s2.get_data()
+        assert np.isnan(yy2).any()
 
-    f = (x * u + x * I * v)**n
-    r, i = re(f), im(f)
-    s1 = Parametric2DLineSeries(r.subs(u, -2), i.subs(u, -2),
-        (v, -2, 2), params={x: 1},
-        adaptive=False, n1=1000, detect_poles=False)
-    xx1, yy1, pp1 = s1.get_data()
-    assert not np.isnan(yy1).any()
-    s2 = Parametric2DLineSeries(r.subs(u, -2), i.subs(u, -2),
-        (v, -2, 2), params={x: 1},
-        adaptive=False, n1=1000, detect_poles=True)
-    xx2, yy2, pp2 = s2.get_data()
-    assert np.isnan(yy2).any()
+    with warns(
+            UserWarning,
+            match="NumPy is unable to evaluate with complex numbers some of",
+        ):
+        f = (x * u + x * I * v)**n
+        r, i = re(f), im(f)
+        s1 = Parametric2DLineSeries(r.subs(u, -2), i.subs(u, -2),
+            (v, -2, 2), params={x: 1},
+            adaptive=False, n1=1000, detect_poles=False)
+        xx1, yy1, pp1 = s1.get_data()
+        assert not np.isnan(yy1).any()
+        s2 = Parametric2DLineSeries(r.subs(u, -2), i.subs(u, -2),
+            (v, -2, 2), params={x: 1},
+            adaptive=False, n1=1000, detect_poles=True)
+        xx2, yy2, pp2 = s2.get_data()
+        assert np.isnan(yy2).any()
 
 
 def test_number_discretization_points():
@@ -674,6 +692,7 @@ def test_data_shape():
     assert (rr.shape == mag.shape) and (rr.shape == arg.shape)
 
 
+@pytest.mark.filterwarnings('ignore::RuntimeWarning')
 def test_only_integers():
     x, y, u, v = symbols("x, y, u, v")
 
@@ -1168,23 +1187,31 @@ def test_mpmath():
     # behaviour at branch cuts)
     z, u = symbols("z, u")
 
-    s1 = LineOver1DRangeSeries(im(sqrt(-z)), (z, 1e-03, 5),
-        adaptive=True, modules=None)
-    s2 = LineOver1DRangeSeries(im(sqrt(-z)), (z, 1e-03, 5),
-        adaptive=True, modules="mpmath")
-    xx1, yy1 = s1.get_data()
-    xx2, yy2 = s2.get_data()
-    assert np.all(yy1 < 0)
-    assert np.all(yy2 > 0)
+    with warns(
+            UserWarning,
+            match="NumPy is unable to evaluate with complex numbers some of",
+        ):
+        s1 = LineOver1DRangeSeries(im(sqrt(-z)), (z, 1e-03, 5),
+            adaptive=True, modules=None)
+        s2 = LineOver1DRangeSeries(im(sqrt(-z)), (z, 1e-03, 5),
+            adaptive=True, modules="mpmath")
+        xx1, yy1 = s1.get_data()
+        xx2, yy2 = s2.get_data()
+        assert np.all(yy1 < 0)
+        assert np.all(yy2 > 0)
 
-    s1 = LineOver1DRangeSeries(im(sqrt(-z)), (z, -5, 5),
-        adaptive=False, n=20, modules=None)
-    s2 = LineOver1DRangeSeries(im(sqrt(-z)), (z, -5, 5),
-        adaptive=False, n=20, modules="mpmath")
-    xx1, yy1 = s1.get_data()
-    xx2, yy2 = s2.get_data()
-    assert np.allclose(xx1, xx2)
-    assert not np.allclose(yy1, yy2)
+    with warns(
+            UserWarning,
+            match="NumPy is unable to evaluate with complex numbers some of",
+        ):
+        s1 = LineOver1DRangeSeries(im(sqrt(-z)), (z, -5, 5),
+            adaptive=False, n=20, modules=None)
+        s2 = LineOver1DRangeSeries(im(sqrt(-z)), (z, -5, 5),
+            adaptive=False, n=20, modules="mpmath")
+        xx1, yy1 = s1.get_data()
+        xx2, yy2 = s2.get_data()
+        assert np.allclose(xx1, xx2)
+        assert not np.allclose(yy1, yy2)
 
     # here, there will be different values at x+0j for positive x
     s1 = ComplexSurfaceSeries(arg(sqrt(-z)), (z, -3 - 3j, 3 + 3j),
@@ -1532,7 +1559,11 @@ def test_sums():
 
     s = LineOver1DRangeSeries(Sum(1 / x, (x, 1, y)), (y, 2, 10),
         adaptive=True)
-    raises(TypeError, lambda: s.get_data())
+    with warns(
+            UserWarning,
+            match="The evaluation with NumPy/SciPy failed.",
+        ):
+        raises(TypeError, lambda: s.get_data())
 
 
 def test_absargline():
@@ -1892,6 +1923,7 @@ def test_surface_use_cm():
     assert s1.use_cm == s2.use_cm
 
 
+@pytest.mark.filterwarnings('ignore::RuntimeWarning')
 def test_sliced_vector_interactive_series():
     # verify that interactive SliceVector3DSeries using an instance of
     # SurfaceBaseSeries as a slice, produced the correct results,
@@ -2293,6 +2325,7 @@ def test_complex_adaptive_false():
     assert (not np.allclose(data1[1], 0)) and (not np.allclose(data2[1], 0))
 
 
+@pytest.mark.filterwarnings('ignore::RuntimeWarning')
 def test_complex_adaptive_true():
     # verify that series with adaptive=True is evaluated with discretized
     # ranges of type complex.
@@ -2667,6 +2700,7 @@ def test_complex_range_line_plot_2():
     assert np.allclose(yy1, yy2)
 
 
+@pytest.mark.filterwarnings('ignore::RuntimeWarning')
 def test_force_real_eval():
     # verify that force_real_eval=True produces inconsistent results when
     # compared with evaluation of complex domain.
@@ -2967,6 +3001,7 @@ def test_2d_complex_domain_coloring_zero_infinity():
     assert not np.allclose(d3[-2], d4[-2])
 
 
+@pytest.mark.filterwarnings('ignore::RuntimeWarning')
 def test_riemann_sphere_series():
     # verify that it correctly instatiates and doesn't raise error when
     # producing data.
@@ -3027,7 +3062,11 @@ def test_exclude_points():
     x = symbols("x")
 
     expr = (floor(x) + S.Half) / (1 - (x - S.Half)**2)
-    s = LineOver1DRangeSeries(expr, (x, -3.5, 3.5), adaptive=False, n=100,
+    with warns(
+            UserWarning,
+            match="NumPy is unable to evaluate with complex numbers some of",
+        ):
+        s = LineOver1DRangeSeries(expr, (x, -3.5, 3.5), adaptive=False, n=100,
         exclude=list(range(-3, 4)))
     xx, yy = s.get_data()
     assert not np.isnan(xx).any()
@@ -3036,8 +3075,12 @@ def test_exclude_points():
 
     e1 = log(floor(x)) * cos(x)
     e2 = log(floor(x)) * sin(x)
-    s = Parametric2DLineSeries(e1, e2, (x, 1, 12), adaptive=False, n=100,
-        exclude=list(range(1, 13)))
+    with warns(
+            UserWarning,
+            match="NumPy is unable to evaluate with complex numbers some of",
+        ):
+        s = Parametric2DLineSeries(e1, e2, (x, 1, 12), adaptive=False, n=100,
+            exclude=list(range(1, 13)))
     xx, yy, pp = s.get_data()
     assert not np.isnan(pp).any()
     assert np.count_nonzero(np.isnan(xx)) == 11
@@ -3066,4 +3109,3 @@ def test_unwrap():
     assert not np.allclose(y1, y2)
     assert not np.allclose(y1, y3)
     assert not np.allclose(y2, y3)
-    

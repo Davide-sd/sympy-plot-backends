@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import raises, warns
 from spb.backends.utils import get_seeds_points
 from spb.interactive.panel import InteractivePlot
 from spb.series import (
@@ -209,6 +209,7 @@ def test_get_seeds_points():
     assert isinstance(d, vtk.vtkPointSource)
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_plot_vector_2d(pv_options):
     # verify that plot_vector is capable of creating data
     # series according to the documented modes of operation when dealing
@@ -939,6 +940,7 @@ def test_plot_vector_3d_slice(pv_options3d):
     assert s[0].get_label(False) == "(t*z, y, x)"
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_label_kw(pv_options, pv_options3d):
     # verify that the label keyword argument works, if the correct
     # number of labels is provided.
@@ -1002,6 +1004,7 @@ def test_label_kw(pv_options, pv_options3d):
     assert s[2].get_label(False) == "c"
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_rendering_kw(pv_options, pv_options3d):
     # verify that the rendering_kw keyword argument works, if the correct
     # number of dictionaries is provided, and that it will ovveride the values
@@ -1107,6 +1110,7 @@ def test_plot_vector_lambda_functions(pv_options3d):
         zip(p3[0].get_data(), p4[0].get_data()))
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_parametric_ranges_2d_quiver(pv_options):
     # verify that interactive plots of 2d quivers with scalar fields,
     # are going to update both the scalar field (contour) and vector fields
@@ -1128,6 +1132,7 @@ def test_parametric_ranges_2d_quiver(pv_options):
         assert not np.allclose(s, t)
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_number_discretization_points():
     # verify the different ways of setting the numbers of discretization points
     x, y, z = symbols("x, y, z")

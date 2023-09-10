@@ -1,6 +1,7 @@
 from spb.series import Parametric3DLineSeries
 import k3d
 import numpy as np
+import pytest
 from pytest import raises
 import os
 from tempfile import TemporaryDirectory
@@ -211,6 +212,7 @@ def test_plot_vector_3d_streamlines():
         KB, stream_kw=dict(), kwargs=dict(use_cm=False))
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_plot_vector_3d_normalize():
     # verify that backends are capable of normalizing a vector field before
     # plotting it. Since all backend are different from each other, let's test
@@ -270,7 +272,7 @@ def test_plot_implicit_adaptive_false():
     # K3D doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_false(
-            KB, contour_kw=dict()).draw())
+            KB, rendering_kw=dict()).draw())
 
 
 def test_plot_real_imag():
@@ -561,6 +563,7 @@ def test_surface_color_plot3d():
     assert len(p.fig.objects[0].attribute) > 0
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_k3d_high_aspect_ratio_meshes():
     # K3D is not great at dealing with high aspect ratio meshes. So, users
     # should set zlim and the backend should add clipping planes and modify
@@ -702,6 +705,7 @@ def test_plot_vector_3d_quivers_default_color_func():
     assert np.allclose(p2.fig.objects[0].colors, p2.fig.objects[0].colors[0])
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_make_analytic_landscape_black_and_white():
     # verify that the backend doesn't raise an error when grayscale coloring
     # schemes are required

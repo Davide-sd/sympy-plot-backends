@@ -16,7 +16,7 @@ from sympy import (
     re, im, arg, Float, Dummy
 )
 import pytest
-from pytest import raises
+from pytest import raises, warns
 import numpy as np
 
 
@@ -49,27 +49,29 @@ def test_plot_complex_list(pc_options):
     # series according to the documented modes of operation
 
     x, y, z = symbols("x:z")
+    pc_list_options = pc_options.copy()
+    pc_list_options.pop("adaptive")
 
     # single complex number
-    p = plot_complex_list(3 + 2 * I, **pc_options)
+    p = plot_complex_list(3 + 2 * I, **pc_list_options)
     assert isinstance(p, MB)
     assert len(p.series) == 1
     assert isinstance(p.series[0], ComplexPointSeries)
 
-    p = plot_complex_list(x * 3 + 2 * I, params={x: (1, 0, 2)}, **pc_options)
+    p = plot_complex_list(x * 3 + 2 * I, params={x: (1, 0, 2)}, **pc_list_options)
     assert isinstance(p, InteractivePlot)
     assert len(p.backend.series) == 1
     s = p.backend.series[0]
     assert isinstance(s, ComplexPointSeries) and s.is_interactive
 
     # list of complex numbers, each one with its own label
-    p = plot_complex_list((3+2*I, "a"), (5 * I, "b"), **pc_options)
+    p = plot_complex_list((3+2*I, "a"), (5 * I, "b"), **pc_list_options)
     assert isinstance(p, MB)
     assert len(p.series) == 2
     assert all(isinstance(t, ComplexPointSeries) for t in p.series)
 
     p = plot_complex_list((3+2*I, "a"), (5 * I, "b"), params={x: (1, 0, 2)},
-        **pc_options)
+        **pc_list_options)
     assert isinstance(p, InteractivePlot)
     assert len(p.backend.series) == 2
     assert all(isinstance(t, ComplexPointSeries) and t.is_interactive for t in p.backend.series)
@@ -78,7 +80,7 @@ def test_plot_complex_list(pc_options):
     p = plot_complex_list(
         [3 + 2 * I, 2 * I, 3],
         [2 + 3 * I, -2 * I, -3],
-        **pc_options)
+        **pc_list_options)
     assert isinstance(p, MB)
     assert len(p.series) == 2
     assert all(isinstance(t, ComplexPointSeries) for t in p.series)
@@ -86,7 +88,7 @@ def test_plot_complex_list(pc_options):
     p = plot_complex_list(
         [3 + 2 * I, 2 * I, 3],
         [2 + 3 * I, -2 * I, -3],
-        params={x: (1, 0, 2)}, **pc_options)
+        params={x: (1, 0, 2)}, **pc_list_options)
     assert isinstance(p, InteractivePlot)
     assert len(p.backend.series) == 2
     assert all(isinstance(t, ComplexPointSeries) and t.is_interactive for t in p.backend.series)
@@ -94,7 +96,7 @@ def test_plot_complex_list(pc_options):
     p = plot_complex_list(
         ([3 + 2 * I, 2 * I, 3], "a"),
         ([2 + 3 * I, -2 * I, -3], "b"),
-        **pc_options)
+        **pc_list_options)
     assert isinstance(p, MB)
     assert len(p.series) == 2
     assert all(isinstance(t, ComplexPointSeries) for t in p.series)
@@ -102,7 +104,7 @@ def test_plot_complex_list(pc_options):
     p = plot_complex_list(
         ([3 + 2 * I, 2 * I, 3], "a"),
         ([2 + 3 * I, -2 * I, -3], "b"),
-        params={x: (1, 0, 2)}, **pc_options)
+        params={x: (1, 0, 2)}, **pc_list_options)
     assert isinstance(p, InteractivePlot)
     assert len(p.backend.series) == 2
     assert all(isinstance(t, ComplexPointSeries) and t.is_interactive for t in p.backend.series)
@@ -384,6 +386,7 @@ def test_plot_real_imag_1d(pc_options):
     assert all((s[i].start == -8) and (s[i].end == 8) for i in [2, 3])
 
 
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_real_imag_2d_3d(pc_options):
     # verify that plot_real_imag is capable of creating data
     # series according to the documented modes of operation when it comes to
@@ -780,6 +783,7 @@ def test_plot_complex_1d(pc_options):
     assert s[1].get_label(False) == "Arg(g)"
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_plot_complex_2d_3d(pc_options):
     # verify that plot_complex is capable of creating data
     # series according to the documented modes of operation when it comes to
@@ -906,6 +910,7 @@ def test_plot_complex_2d_3d(pc_options):
     assert len(correct_labels) == 0
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_plot_complex_vector(pc_options):
     # verify that plot_complex_vector is capable of creating data
     # series according to the documented modes of operation
@@ -1136,6 +1141,7 @@ def test_plot_real_imag_1d_label_kw(pc_options):
     assert s[3].get_label(False) == "im(g)"
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_plot_real_imag_2d_3d_label_kw(pc_options):
     # verify that the label keyword argument works, if the correct
     # number of labels is provided.
@@ -1247,6 +1253,7 @@ def test_plot_complex_1d_label_kw(pc_options):
     assert s[1].get_label(False) == "g"
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_plot_complex_2d_3d_label_kw(pc_options):
     # verify that the label keyword argument works, if the correct
     # number of labels is provided.
@@ -1291,6 +1298,7 @@ def test_plot_complex_2d_3d_label_kw(pc_options):
     assert s[1].get_label(False) == "g"
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_plot_complex_list_label_kw(pc_options):
     # verify that the label keyword argument works, if the correct
     # number of labels is provided.
@@ -1457,6 +1465,7 @@ def test_plot_real_imag_1d_rendering_kw(pc_options):
     assert s[3].rendering_kw == {"color": "k"}
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_plot_real_imag_2d_3d_rendering_kw(pc_options):
     # verify that the rendering_kw keyword argument works, if the correct
     # number of dictionaries is provided.
@@ -1577,6 +1586,7 @@ def test_plot_complex_1d_rendering_kw(pc_options):
     assert s[1].rendering_kw == {"cmap": "winter"}
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_plot_complex_2d_3d_rendering_kw(pc_options):
     # verify that the rendering_kw keyword argument works, if the correct
     # number of dictionaries is provided.
@@ -1628,6 +1638,7 @@ def test_plot_complex_2d_3d_rendering_kw(pc_options):
     assert s[1].rendering_kw == {"interpolation": "none"}
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_plot_complex_list_rendering_kw(pc_options):
     # verify that the rendering_kw keyword argument works, if the correct
     # number of dictionaries is provided.
@@ -1727,6 +1738,8 @@ def plot_complex_vector_rendering_kw(pc_options):
     raises(ValueError, p)
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
+@pytest.mark.filterwarnings('ignore::RuntimeWarning')
 def test_domain_coloring_schemes(pc_options):
     # verify that coloring schemes do not generate errors
 
@@ -1739,6 +1752,7 @@ def test_domain_coloring_schemes(pc_options):
         fig = p.fig
 
 
+@pytest.mark.filterwarnings('ignore::RuntimeWarning')
 def test_plot_riemann_sphere():
     # verify the modes of operation
 
@@ -1774,6 +1788,7 @@ def test_plot_riemann_sphere():
     assert len(p.fig.axes[1].lines) == 0
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_number_discretization_points():
     # verify the different ways of setting the numbers of discretization points
     z = symbols("z")

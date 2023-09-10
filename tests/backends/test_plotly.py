@@ -2,7 +2,7 @@ from spb.series import Parametric3DLineSeries
 import numpy as np
 import plotly.graph_objects as go
 import pytest
-from pytest import raises
+from pytest import raises, warns
 import os
 from sympy import Symbol
 from tempfile import TemporaryDirectory
@@ -168,9 +168,6 @@ def test_plot3d_wireframe():
     assert len(p3.series) == 1 + 20 + 30
     assert all(s.n[0] == 12 for s in p3.series[1:])
     assert all(t["line"]["color"] == "#ff0000" for t in p3.fig.data[1:])
-
-    p3 = make_plot3d_wireframe_2(KB, {"color": 0xff0000})
-    assert all(t.color == 0xff0000 for t in p3.fig.objects[1:])
 
     p4 = make_plot3d_wireframe_3(PB, {"line_color": "red"})
     assert len(p4.series) == 1 + 20 + 40
@@ -406,6 +403,7 @@ def test_plot_vector_2d_normalize():
     assert not np.allclose(d1y, d2y, equal_nan=True)
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_plot_vector_3d_normalize():
     # verify that backends are capable of normalizing a vector field before
     # plotting it. Since all backend are different from each other, let's test
@@ -445,7 +443,7 @@ def test_plot_implicit_adaptive_false():
     # PlotlyBackend doesn't support 2D plots
     raises(NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_false(
-            PB, contour_kw=dict()).draw())
+            PB, rendering_kw=dict()).draw())
 
 
 def test_plot_real_imag():
@@ -665,6 +663,7 @@ def test_plot_size():
     assert p.fig.layout.height == 400
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_plot_scale_lin_log():
     # verify that backends are applying the correct scale to the axes
     # NOTE: none of the 3D libraries currently support log scale.
@@ -810,6 +809,7 @@ def test_plot_vector_3d_streamlines_use_latex():
     assert p.fig.data[0]["colorbar"]["title"]["text"] == '$\\left( z, \\  y, \\  x\\right)$'
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_plot_complex_use_latex():
     # complex plot function should return the same result (for axis labels)
     # wheter use_latex is True or False
@@ -966,9 +966,13 @@ def test_plotly_3d_many_line_series():
 
     # in this example there are 31 lines. 30 of them use solid colors, the
     # last one uses a colormap. No errors should be raised.
-    p = plot3d_revolution(cos(t), (t, 0, pi), backend=PB, n=5, show=False,
-        wireframe=True, wf_n1=15, wf_n2=15,
-        show_curve=True, curve_kw={"use_cm": True})
+    with warns(
+        UserWarning,
+        match="NumPy is unable to evaluate with complex numbers"
+    ):
+        p = plot3d_revolution(cos(t), (t, 0, pi), backend=PB, n=5, show=False,
+            wireframe=True, wf_n1=15, wf_n2=15,
+            show_curve=True, curve_kw={"use_cm": True})
     f = p.fig
 
 def test_update_interactive():
@@ -1166,11 +1170,15 @@ def test_contour_show_clabels():
 def test_color_func_expr():
     # verify that passing an expression to color_func is supported
 
-    p3 = make_test_color_func_expr_2(PB)
-    # compute the original figure: no errors should be raised
-    f3 = p3.fig
-    # update the figure with new parameters: no errors should be raised
-    p3.backend.update_interactive({u: 0.5})
+    with warns(
+        UserWarning,
+        match="PlotlyBackend doesn't support custom coloring"
+    ):
+        p3 = make_test_color_func_expr_2(PB)
+        # compute the original figure: no errors should be raised
+        f3 = p3.fig
+        # update the figure with new parameters: no errors should be raised
+        p3.backend.update_interactive({u: 0.5})
 
 
 def test_domain_coloring_2d():
@@ -1195,6 +1203,9 @@ def test_domain_coloring_2d():
     assert np.allclose(img2b, np.flip(np.flip(img2a, axis=0), axis=1))
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+@pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
+@pytest.mark.filterwarnings("ignore:NumPy is unable to evaluate with complex numbers")
 def test_show_hide_colorbar():
     x, y, z = symbols("x, y, z")
     options = dict(use_cm=True, n=5, adaptive=False, backend=PB, show=False)
@@ -1336,12 +1347,17 @@ def test_show_legend():
     assert p.fig.layout.showlegend
 
 
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_make_analytic_landscape_black_and_white():
     # verify that the backend doesn't raise an error when grayscale coloring
     # schemes are required
 
     p = make_test_analytic_landscape(PB)
-    p.fig
+    with warns(
+        UserWarning,
+        match="The visualization could be wrong becaue Plotly doesn't support custom coloring"
+    ):
+        p.fig
 
 
 def test_xaxis_inverted():

@@ -165,6 +165,7 @@ def make_plot_vector_2d_streamlines_2(B, stream_kw, contour_kw):
 def make_plot_vector_3d_quiver(B, quiver_kw, show=False, **kwargs):
     opts = options()
     opts["show"] = show
+    opts.pop("adaptive")
     return plot_vector(
         Matrix([z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
         backend=B, quiver_kw=quiver_kw, use_latex=False, **opts,
@@ -174,6 +175,7 @@ def make_plot_vector_3d_quiver(B, quiver_kw, show=False, **kwargs):
 def make_plot_vector_3d_streamlines_1(B, stream_kw, show=False, kwargs=dict()):
     opts = options()
     opts["show"] = show
+    opts.pop("adaptive")
     return plot_vector(
         Matrix([z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
         backend=B, stream_kw=stream_kw,
@@ -181,12 +183,16 @@ def make_plot_vector_3d_streamlines_1(B, stream_kw, show=False, kwargs=dict()):
 
 
 def make_plot_vector_2d_normalize_1(B, norm):
+    opts = options()
+    opts.pop("adaptive")
     return plot_vector(
         [-sin(y), cos(x)], (x, -2, 2), (y, -2, 2),
-        backend=B, normalize=norm, scalar=False, use_cm=False, **options())
+        backend=B, normalize=norm, scalar=False, use_cm=False, **opts)
 
 
 def make_plot_vector_2d_normalize_2(B, norm):
+    opts = options()
+    opts.pop("adaptive")
     return plot_vector(
         [-u * sin(y), cos(x)], (x, -2, 2), (y, -2, 2),
         backend=B, normalize=norm, scalar=False, use_cm=False,
@@ -194,32 +200,42 @@ def make_plot_vector_2d_normalize_2(B, norm):
 
 
 def make_plot_vector_3d_normalize_1(B, norm):
+    opts = options()
+    opts.pop("adaptive")
     return plot_vector(
         [z, -x, y], (x, -2, 2), (y, -2, 2), (z, -2, 2),
-        backend=B, normalize=norm, use_cm=False, **options())
+        backend=B, normalize=norm, use_cm=False, **opts)
 
 def make_plot_vector_3d_normalize_2(B, norm):
+    opts = options()
+    opts.pop("adaptive")
     return plot_vector(
         [u * z, -x, y], (x, -2, 2), (y, -2, 2), (z, -2, 2),
         backend=B, normalize=norm, use_cm=False,
-        params={u: (1, 0, 2)}, **options())
+        params={u: (1, 0, 2)}, **opts)
 
 
 def make_plot_vector_2d_quiver_color_func_1(B, cf):
+    opts = options()
+    opts.pop("adaptive")
     return plot_vector((-y, x), (x, -2, 2), (y, -2, 2),
-        scalar=False, use_cm=True, color_func=cf,backend=B, **options())
+        scalar=False, use_cm=True, color_func=cf,backend=B, **opts)
 
 
 def make_plot_vector_3d_quiver_color_func_1(B, cf):
+    opts = options()
+    opts.pop("adaptive")
     return plot_vector(
         Matrix([z, y, x]), (x, -2, 2), (y, -2, 2), (z, -2, 2),
-        backend=B, color_func=cf, **options())
+        backend=B, color_func=cf, **opts)
 
 
 def make_plot_vector_3d_quiver_color_func_2(B, cf):
+    opts = options()
+    opts.pop("adaptive")
     return plot_vector(
         Matrix([a * z, a * y, a * x]), (x, -2, 2), (y, -2, 2), (z, -2, 2),
-        backend=B, color_func=cf, params={a: (1, 0, 2)}, **options())
+        backend=B, color_func=cf, params={a: (1, 0, 2)}, **opts)
 
 
 def make_plot_vector_3d_streamlines_color_func(B, cf):
@@ -236,10 +252,10 @@ def make_test_plot_implicit_adaptive_true(B, rendering_kw):
         adaptive=True, rendering_kw=rendering_kw, use_latex=False, show=False)
 
 
-def make_test_plot_implicit_adaptive_false(B, contour_kw):
+def make_test_plot_implicit_adaptive_false(B, rendering_kw):
     return plot_implicit(
         x > y, (x, -5, 5), (y, -4, 4), n=5, backend=B, adaptive=False,
-        show=False, contour_kw=contour_kw, use_latex=False)
+        show=False, rendering_kw=rendering_kw, use_latex=False)
 
 
 def make_test_real_imag(B, rendering_kw):
@@ -255,16 +271,20 @@ def make_test_plot_complex_1d(B, rendering_kw):
 
 
 def make_test_plot_complex_2d(B, rendering_kw):
+    opts = options()
+    opts.pop("adaptive")
     return plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I), backend=B, coloring="a",
-        rendering_kw=rendering_kw, **options())
+        rendering_kw=rendering_kw, **opts)
 
 
 def make_test_plot_complex_3d(B, rendering_kw):
+    opts = options()
+    opts.pop("adaptive")
     return plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
         backend=B, rendering_kw=rendering_kw, threed=True, use_cm=False,
-        **options())
+        **opts)
 
 
 def make_test_plot_list_is_filled_false(B):
@@ -416,15 +436,18 @@ def make_test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_la
 
 
 def make_test_plot_vector_2d_use_latex_colorbar(B, scalar, streamlines):
+    opts = options()
+    opts.pop("adaptive")
     return plot_vector(
         Matrix([x, y]), (x, -5, 5), (y, -4, 4),
         backend=B, scalar=scalar, streamlines=streamlines,
-        use_cm=True, use_latex=True, **options())
+        use_cm=True, use_latex=True, **opts)
 
 
 def make_test_plot_vector_3d_quivers_use_latex(B, show=False):
     opts = options()
     opts["show"] = show
+    opts.pop("adaptive")
     return plot_vector(
         Matrix([z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
         backend=B, use_cm=True, use_latex=True, **opts)
@@ -433,6 +456,7 @@ def make_test_plot_vector_3d_quivers_use_latex(B, show=False):
 def make_test_plot_vector_3d_streamlines_use_latex(B, show=False):
     opts = options()
     opts["show"] = show
+    opts.pop("adaptive")
     return plot_vector(
         Matrix([z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
         backend=B, streamlines=True, use_latex=True, **opts)
@@ -444,8 +468,10 @@ def make_test_plot_complex_use_latex_1(B):
 
 
 def make_test_plot_complex_use_latex_2(B):
+    opts = options()
+    opts.pop("adaptive")
     return plot_complex(
-        gamma(z), (z, -3 - 3*I, 3 + 3*I), use_latex=True, backend=B, **options())
+        gamma(z), (z, -3 - 3*I, 3 + 3*I), use_latex=True, backend=B, **opts)
 
 
 def make_test_plot_real_imag_use_latex(B):

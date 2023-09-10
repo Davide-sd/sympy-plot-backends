@@ -1,3 +1,4 @@
+import pytest
 from pytest import raises
 from spb import BB, PB, MB, plot, plot3d
 from spb.interactive.ipywidgets import _build_widgets, InteractivePlot
@@ -15,7 +16,7 @@ def test_slider():
     params = {
         d: (Float(0.1), 0, 1),
         k: (2, Integer(1), 10, 20),
-        phi: (0, 0, 2*pi, 50, "$\phi$ [rad]"),
+        phi: (0, 0, 2*pi, 50, r"$\phi$ [rad]"),
         x: (1, -4, 5, Rational(100), "test", "log")
     }
     widgets = _build_widgets(params, False)
@@ -30,7 +31,7 @@ def test_slider():
     assert np.allclose(get_values(1), [2, 1, 10, (10 - 1) / 20])
     assert widgets[1].description == "k"
     assert np.allclose(get_values(2), [0, 0, 2*np.pi, (2*np.pi - 0) / 50])
-    assert widgets[2].description == "$\phi$ [rad]"
+    assert widgets[2].description == r"$\phi$ [rad]"
     assert np.allclose(
         [widgets[3].value, widgets[3].min, widgets[3].max], [1, -4, 5])
     assert widgets[3].description == "test"
@@ -43,7 +44,7 @@ def test_widgets(ipywidgets_options):
     params = {
         d: (0.1, 0, 1),
         n: ipywidgets.BoundedIntText(value=2, min=1, max=10, description="$n$"),
-        phi: (0, 0, 2*pi, 50, "$\phi$ [rad]")
+        phi: (0, 0, 2*pi, 50, r"$\phi$ [rad]")
     }
     widgets = _build_widgets(params, False)
     assert isinstance(widgets[0], ipywidgets.FloatSlider)
@@ -83,6 +84,7 @@ def test_plot_layout(ipywidgets_options):
     assert isinstance(p4, ipywidgets.HBox)
 
 
+@pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
 def test_iplot_sum_1(ipywidgets_options):
     # verify that it is possible to add together different instances of
     # InteractivePlot (as well as Plot instances), provided that the same
