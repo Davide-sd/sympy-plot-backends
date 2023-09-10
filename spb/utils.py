@@ -464,12 +464,12 @@ def _validate_kwargs(backend_obj, **kwargs):
     user_provided_keys = set(kwargs.keys())
     unused_keys = user_provided_keys.difference(allowed_keys)
     if len(unused_keys) > 0:
-        msg = "\nThe following keyword arguments are unused.\n"
+        msg = "The following keyword arguments are unused.\n"
         for k in unused_keys:
             possible_match = find_closest_string(k, allowed_keys)
             msg += "* '%s'" % k
             msg += ": did you mean '%s'?\n" % possible_match
-        warnings.warn(msg)
+        warnings.warn(msg, stacklevel=3)
         # this returns helps with tests
         return msg
 
