@@ -4,6 +4,8 @@ from spb.series import (
     BaseSeries, Vector2DSeries, Vector3DSeries, ContourSeries,
     SliceVector3DSeries
 )
+from spb.graphics import vector_field_2d, vector_field_3d, graphics
+from spb.graphics.vectors import _split_vector
 from spb.interactive import create_interactive_plot
 from spb.utils import (
     _plot_sympify, _is_range,
@@ -17,244 +19,6 @@ from sympy.physics.mechanics import Vector as MechVector
 from sympy.vector import Vector
 from sympy.vector.operators import _get_coord_systems
 from sympy.matrices.dense import DenseMatrix
-
-
-def _build_series(*args, **kwargs):
-    """Loop over args and create all the necessary series to display a vector
-    plot.
-    """
-    np = import_module('numpy')
-    series = []
-    all_ranges = []
-    is_vec_lambda_function = False
-    for a in args:
-        split_expr, ranges, s = _series(a[0], *a[1:-1], label=a[-1], **kwargs)
-        all_ranges.append(ranges)
-        if isinstance(s, (list, tuple)):
-            series += s
-        else:
-            series.append(s)
-        if any(callable(e) for e in split_expr):
-            is_vec_lambda_function = True
-
-    # add a scalar series only on 2D plots
-    if all([s.is_2Dvector for s in series]):
-        # NOTE: don't pop this keyword: some backend needs it to decide the
-        # color for quivers (solid color if a scalar field is present, gradient
-        # color otherwise)
-        scalar = kwargs.get("scalar", True)
-        if (len(series) == 1) and (scalar is True):
-            if not is_vec_lambda_function:
-                scalar_field = sqrt(split_expr[0] ** 2 + split_expr[1] ** 2)
-            else:
-                scalar_field = lambda x, y: (np.sqrt(
-                    split_expr[0](x, y) ** 2 + split_expr[1](x, y) ** 2))
-            scalar_label = "Magnitude"
-        elif scalar is True:
-            scalar_field = None  # do nothing when
-        elif isinstance(scalar, Expr):
-            scalar_field = scalar
-            scalar_label = str(scalar)
-        elif isinstance(scalar, (list, tuple)):
-            scalar_field = scalar[0]
-            scalar_label = scalar[1]
-        elif callable(scalar):
-            scalar_field = scalar
-            scalar_label = "Magnitude"
-        elif not scalar:
-            scalar_field = None
-        else:
-            raise ValueError(
-                "`scalar` must be either:\n"
-                + "1. True, in which case the magnitude of the vector field "
-                + "will be plotted.\n"
-                + "2. a symbolic expression representing a scalar field.\n"
-                + "3. None/False: do not plot any scalar field.\n"
-                + "4. list/tuple of two elements, [scalar_expr, label].\n"
-                + "5. a numerical function of 2 variables supporting "
-                + "vectorization."
-            )
-
-        if scalar_field:
-            # NOTE: ideally, we would plot the scalar field over the entire
-            # region covered by all vector fields. However, it is impossible
-            # to compare symbolic ranges, meaning we can't compute the entire
-            # region. Just plot the scalar field in order to cover the
-            # first vector fields.
-            cranges = all_ranges[0]
-            nc = kwargs.pop("nc", 100)
-            cs_kwargs = kwargs.copy()
-            for kw in ["n", "n1", "n2"]:
-                if kw in cs_kwargs.keys():
-                    cs_kwargs.pop(kw)
-            cs_kwargs["n1"] = nc
-            cs_kwargs["n2"] = nc
-            cs = ContourSeries(scalar_field, *cranges, scalar_label, **cs_kwargs)
-            series = [cs] + series
-
-    return series
-
-
-def _series(expr, *ranges, label="", **kwargs):
-    """Create a vector series from the provided arguments."""
-    params = kwargs.get("params", dict())
-    # convert expr to a list of 3 elements
-    split_expr, ranges = _split_vector(expr, ranges)
-
-    # free symbols contained in the provided vector
-    fs = set()
-    if not any(callable(e) for e in split_expr):
-        fs = fs.union(*[e.free_symbols for e in split_expr])
-    # if we are building a parametric-interactive series, remove the
-    # parameters
-    fs = fs.difference(params.keys())
-
-    if len(split_expr) == 2:  # 2D case
-        if len(fs) > 2:
-            raise ValueError(
-                "Too many free symbols. 2D vector plots require "
-                + "at most 2 free symbols. Received {}".format(fs)
-            )
-
-        # check validity of ranges
-        fs_ranges = set().union([r[0] for r in ranges])
-
-        if len(fs_ranges) < 2:
-            missing = fs.difference(fs_ranges)
-            if not missing:
-                raise ValueError(
-                    "In a 2D vector field, 2 unique ranges are expected. "
-                    + "Unfortunately, it is not possible to deduce them from "
-                    + "the provided vector.\n"
-                    + "Vector: {}, Free symbols: {}\n".format(expr, fs)
-                    + "Provided ranges: {}".format(ranges)
-                )
-            ranges = list(ranges)
-            for m in missing:
-                ranges.append(Tuple(m, cfg["plot_range"]["min"], cfg["plot_range"]["max"]))
-
-        if len(ranges) > 2:
-            raise ValueError("Too many ranges for 2D vector plot.")
-        return (
-                split_expr,
-                ranges,
-                Vector2DSeries(*split_expr, *ranges, label, **kwargs),
-            )
-    else:  # 3D case
-        if len(fs) > 3:
-            raise ValueError(
-                "Too many free symbols. 3D vector plots require "
-                + "at most 3 free symbols. Received {}".format(fs)
-            )
-
-        # check validity of ranges
-        fs_ranges = set().union([r[0] for r in ranges])
-
-        if len(fs_ranges) < 3:
-            missing = fs.difference(fs_ranges)
-            if not missing:
-                raise ValueError(
-                    "In a 3D vector field, 3 unique ranges are expected. "
-                    + "Unfortunately, it is not possible to deduce them from "
-                    + "the provided vector.\n"
-                    + "Vector: {}, Free symbols: {}\n".format(expr, fs)
-                    + "Provided ranges: {}".format(ranges)
-                )
-            ranges = list(ranges)
-            for m in missing:
-                ranges.append(Tuple(m, cfg["plot_range"]["min"],
-                    cfg["plot_range"]["max"]))
-
-            # if not enough symbols have been given in the expression, there
-            # might still be not enough ranges. Fill them with dummy variables.
-            if len(ranges) < 3:
-                for j in range(3 - len(ranges)):
-                    ranges.append(Tuple(Dummy(), cfg["plot_range"]["min"],
-                        cfg["plot_range"]["max"]))
-
-        if len(ranges) > 3:
-            raise ValueError("Too many ranges for 3D vector plot.")
-
-        _slice = kwargs.pop("slice", None)
-        if _slice is None:
-            return (
-                    split_expr,
-                    ranges,
-                    Vector3DSeries(*split_expr, *ranges, label, **kwargs),
-                )
-
-        # verify that the slices are of the correct type
-        # NOTE: currently, the slice cannot be a lambda function. To understand
-        # the reason, look at series.py -> _build_slice_series: we use
-        # symbolic manipulation!
-        def _check_slice(s):
-            if not isinstance(s, (Expr, Plane, BaseSeries)):
-                raise ValueError(
-                    "A slice must be of type Plane or Expr or BaseSeries.\n"
-                    + "Received: {}, {}".format(type(s), s)
-                )
-
-        if isinstance(_slice, (list, tuple, Tuple)):
-            for s in _slice:
-                _check_slice(s)
-        else:
-            _check_slice(_slice)
-            _slice = [_slice]
-
-        series = []
-        for s in _slice:
-            series.append(
-                SliceVector3DSeries(s, *split_expr, *ranges, label, **kwargs))
-
-        return split_expr, ranges, series
-
-
-def _split_vector(expr, ranges):
-    """Extract the components of the given vector or matrix.
-
-    Parameters
-    ==========
-        expr : Vector, DenseMatrix or list/tuple
-        ranges : list/tuple
-
-    Returns
-    =======
-        split_expr : tuple
-            Tuple of the form (x_expr, y_expr, z_expr). If a 2D vector is
-            provided, z_expr = S.Zero.
-        ranges : list/tuple
-    """
-    if isinstance(expr, Vector):
-        N = list(_get_coord_systems(expr))[0]
-        expr = expr.to_matrix(N)
-    elif isinstance(expr, MechVector):
-        expr = expr.args[0][0]
-    elif not isinstance(expr, (DenseMatrix, list, tuple, Tuple)):
-        raise TypeError(
-            "The provided expression must be a symbolic vector, or a "
-            "symbolic matrix, or a tuple/list with 2 or 3 symbolic "
-            + "elements.\nReceived type = {}".format(type(expr))
-        )
-    elif (len(expr) < 2) or (len(expr) > 3):
-        raise ValueError(
-            "This function only plots 2D or 3D vectors.\n"
-            + "Received: {}. Number of elements: {}".format(expr, len(expr))
-        )
-
-    if (len(ranges) == 2) and (len(expr) == 3):
-        # There might be ambiguities when working with vectors from
-        # sympy.vector. Let f(x, y) be a scalar field. The gradient of f(x, y)
-        # is going to be a 2D vector field. However, at this point it will
-        # have 3 components, one of which is zero. Let's assume the last one
-        # is zero and skip it.
-        expr = expr[:2]
-
-    if len(expr) == 2:
-        xexpr, yexpr = expr
-        return (xexpr, yexpr), ranges
-    else:
-        xexpr, yexpr, zexpr = expr
-        return (xexpr, yexpr, zexpr), ranges
 
 
 def _preprocess(*args):
@@ -765,24 +529,28 @@ def plot_vector(*args, **kwargs):
     """
     args = _plot_sympify(args)
     args = _preprocess(*args)
-
     kwargs.setdefault("aspect", "equal")
-    kwargs.setdefault("legend", True)
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+    scalar = kwargs.pop("scalar", -1)
+    if (scalar == -1) and len(args) == 1:
+        scalar = True
 
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
+    series = []
+    for i, a in enumerate(args):
+        vec = _split_vector(a[0])
+        label = None if not isinstance(a[-1], str) else a[-1]
+        ranges = a[1:-1]
 
-    series = _build_series(*args, **kwargs)
-    _set_labels(series, labels, rendering_kw)
+        kw = kwargs.copy()
+        kw.update(dict(zip(["range1", "range2", "range3"], ranges)))
+        kw["label"] = label
+        kw["scalar"] = scalar if (i == 0) and (scalar != -1) else None
 
-    if all([isinstance(s, (Vector2DSeries, ContourSeries)) for s in series]):
-        Backend = kwargs.get("backend", TWO_D_B)
-    elif all([isinstance(s, Vector3DSeries) for s in series]):
-        Backend = kwargs.get("backend", THREE_D_B)
-    else:
-        raise ValueError("Mixing 2D vectors with 3D vectors is not allowed.")
+        if (vec[-1] is None) or (vec[-1] == 0):
+            series.extend(vector_field_2d(*vec[:2], **kw))
+        else:
+            series.extend(vector_field_3d(*vec, **kw))
+    _set_labels(series, global_labels, global_rendering_kw)
 
-    if kwargs.get("params", None):
-        return create_interactive_plot(*series, **kwargs)
-
-    return _instantiate_backend(Backend, *series, **kwargs)
+    return graphics(*series, **kwargs)

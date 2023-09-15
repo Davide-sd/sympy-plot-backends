@@ -12,7 +12,7 @@ from sympy.external import import_module
 import warnings
 
 
-def _create_ranges(exprs, ranges, npar, label="", params=None):
+def _create_missing_ranges(exprs, ranges, npar, params=None, imaginary=False):
     """This function does two things:
     1. Check if the number of free symbols is in agreement with the type of
        plot chosen. For example, plot() requires 1 free symbol;
@@ -25,22 +25,25 @@ def _create_ranges(exprs, ranges, npar, label="", params=None):
 
     exprs : iterable
         The expressions from which to extract the free symbols
-
     ranges : iterable
         The limiting ranges provided by the user
-
     npar : int
         The number of free symbols required by the plot functions.
         For example,
         npar=1 for plot, npar=2 for plot3d, ...
-
     params : dict
         A dictionary mapping symbols to parameters for iplot.
+    imaginary : bool
+        Include the imaginary part. Default to False.
 
     """
 
-    get_default_range = lambda symbol: Tuple(
-        symbol, cfg["plot_range"]["min"], cfg["plot_range"]["max"])
+    def get_default_range(symbol):
+        _min = cfg["plot_range"]["min"]
+        _max = cfg["plot_range"]["max"]
+        if not imaginary:
+            return Tuple(symbol, _min, _max)
+        return Tuple(symbol, _min + _min * 1j, _max + _max * 1j)
 
     free_symbols = _get_free_symbols(exprs)
     if params is not None:
@@ -87,6 +90,58 @@ def _create_ranges(exprs, ranges, npar, label="", params=None):
     return ranges
 
 
+def _create_ranges_iterable(*ranges):
+    """Create a list of ranges. If a range is not provided, it won't be
+    included in this list.
+
+    Returns
+    -------
+    provided_ranges : list
+        A list, for example `[r1, r2, r3]`. If `r2` is not provide, the list
+        looks like `[r1, r2]`. If no range is provided, `[]` is returned.
+    mapping : dict
+        Maps the i-th provided range to its position in `provided_ranges`.
+    """
+    provided_ranges = []
+    mapping = {}
+    for i, r in enumerate(ranges):
+        if r is not None:
+            provided_ranges.append(r)
+            mapping[i] = len(provided_ranges) - 1
+    return provided_ranges, mapping
+
+
+def _preprocess_multiple_ranges(exprs, ranges, npar, params={}):
+    """Users might not provide the necessary ranges to create a 3D plot.
+    This function looks at what has been provided, eventually add missing
+    ranges and sort them to the appropriate order.
+
+    Parameters
+    ----------
+    exprs : iterable
+        The expressions from which to extract the free symbols
+    ranges : iterable
+        The limiting ranges provided by the user
+    npar : int
+        The number of free symbols required by the plot functions.
+        For example, npar=1 for plot, npar=2 for plot3d, ...
+    params : dict
+        A dictionary mapping symbols to parameters for iplot.
+    """
+    provided_ranges, mapping = _create_ranges_iterable(*ranges)
+    # add missing ranges
+    ranges = _create_missing_ranges(exprs, provided_ranges.copy(), npar, params)
+    # sort the ranges in order to get [range1, range2, ranges3 [optional]]
+    sorted_ranges = [None] * npar
+    for k, v in mapping.items():
+        sorted_ranges[k] = provided_ranges[v]
+        ranges.remove(provided_ranges[v])
+    for r in ranges:
+        i = sorted_ranges.index(None)
+        sorted_ranges[i] = r
+    return sorted_ranges
+
+
 def _get_free_symbols(exprs):
     """Returns the free symbols of a symbolic expression.
 
@@ -131,7 +186,7 @@ def _check_arguments(args, nexpr, npar, **kwargs):
     npar
         The number of free symbols required by the plot functions. For example,
         npar=1 for plot, npar=2 for plot3d, ...
-    **kwargs : 
+    **kwargs :
         keyword arguments passed to the plotting function. It will be used to
         verify if ``params`` has ben provided.
 
@@ -164,7 +219,7 @@ def _check_arguments(args, nexpr, npar, **kwargs):
 
         exprs, ranges, label, rendering_kw = _unpack_args(*args)
         free_symbols = set().union(*[e.free_symbols for e in exprs])
-        ranges = _create_ranges(exprs, ranges, npar, label, params)
+        ranges = _create_missing_ranges(exprs, ranges, npar, params)
 
         if nexpr > 1:
             # in case of plot_parametric or plot3d_parametric_line, there will
@@ -217,7 +272,7 @@ def _check_arguments(args, nexpr, npar, **kwargs):
             if all(not callable(a) for a in arg):
                 free_symbols = free_symbols.union(*[a.free_symbols for a in arg])
             if len(r) != npar:
-                r = _create_ranges(arg, r, npar, "", params)
+                r = _create_missing_ranges(arg, r, npar, params)
 
             label = None if not l else l[0]
             output.append((*arg, *r, label, rend_kw))

@@ -96,7 +96,7 @@ def test_plot_geometry(pi_options):
         params = {a: 0, b: 1, c: 2, d: 3}, **pi_options)
     assert isinstance(p, MB)
     assert len(p.series) == 2
-    assert all(s.is_interactive for s in p.series)
+    assert all(not s.is_interactive for s in p.series)
     assert all(not s.is_3D for s in p.series)
 
     # 3d geometric entities
@@ -561,7 +561,6 @@ def test_plot3d_parametric_surface(p_options):
     assert p[1].rendering_kw == {}
 
 
-# @pytest.mark.filterwarnings("ignore:The following")
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_implicit(p_options):
     ### Test arguments for plot_implicit
@@ -574,6 +573,7 @@ def test_plot_implicit(p_options):
     assert p[0].ranges == [(x, -2, 2), (y, -3, 3)]
     assert p[0].get_label(False) == "x > 0"
     assert p[0].rendering_kw == {}
+    assert p.xlim and p.ylim
 
     # single expression with one missing range
     p = plot_implicit(x > y, (x, -2, 2), "test", {"color": "k"}, **p_options)
@@ -581,6 +581,7 @@ def test_plot_implicit(p_options):
     assert p[0].ranges == [(x, -2, 2), (y, -10, 10)]
     assert p[0].get_label(False) == "test"
     assert p[0].rendering_kw == {"color": "k"}
+    assert p.xlim and p.ylim
 
     # multiple expressions
     with warns(
@@ -598,6 +599,7 @@ def test_plot_implicit(p_options):
     assert p[1].ranges == [(x, -10, 10), (y, -10, 10)]
     assert p[1].get_label(False) == "test"
     assert p[1].rendering_kw == {"color": "r"}
+    assert p.xlim and p.ylim
 
     # incompatible free symbols between expression and ranges
     z = symbols("z")
@@ -1227,12 +1229,13 @@ def test_plot3d_wireframe_and_labels(pi_options):
         wireframe=True, label=["a", "b"], **pi_options)
     assert isinstance(t, InteractivePlot)
     assert len(t.backend.series) == 2 + (10 + 10) * 2
-    assert isinstance(t.backend.series[0], SurfaceOver2DRangeSeries)
-    assert isinstance(t.backend.series[1], SurfaceOver2DRangeSeries)
-    assert t.backend.series[0].get_label(False) == "a"
-    assert t.backend.series[1].get_label(False) == "b"
-    assert all(isinstance(s, Parametric3DLineSeries) and s.is_interactive
-        for s in t.backend.series[2:])
+    surfaces = [s for s in t.backend.series if
+        isinstance(s, SurfaceOver2DRangeSeries)]
+    assert len(surfaces) == 2
+    assert [s.get_label(False) for s in surfaces] == ["a", "b"]
+    wireframe_lines = [s for s in t.backend.series if
+        isinstance(s, Parametric3DLineSeries)]
+    assert len(wireframe_lines) == (10 + 10) * 2
 
 
 def test_plot_real_imag_wireframe_true(pi_options):
@@ -1248,10 +1251,12 @@ def test_plot_real_imag_wireframe_true(pi_options):
         threed=True, use_latex=False, use_cm=True, **pi_options)
     assert isinstance(t, InteractivePlot)
     assert len(t.backend.series) == 2 + (8 + 6) * 2
-    assert isinstance(t.backend.series[0], ComplexSurfaceSeries)
-    assert isinstance(t.backend.series[1], ComplexSurfaceSeries)
-    assert all(isinstance(s, ComplexParametric3DLineSeries) and s.is_interactive
-        for s in t.backend.series[2:])
+    ss = [s for s in t.backend.series if isinstance(s, ComplexSurfaceSeries)]
+    wfs = [s for s in t.backend.series if isinstance(s, ComplexParametric3DLineSeries)]
+    assert len(ss) == 2
+    assert len(wfs) == (8 + 6) * 2
+    assert all(s.is_interactive for s in ss)
+    assert all(s.is_interactive for s in wfs)
 
     # wireframe lines works even when interactive ranges are used
     a, b = symbols("a, b")
@@ -1756,6 +1761,7 @@ def test_plot_implicit_label_rendering_kw(paf_options):
     assert p[1].get_label(True) == "b"
     assert p[0].rendering_kw == {"levels": 5}
     assert p[1].rendering_kw == {"alpha": 0.5}
+    assert p.xlim and p.ylim
 
 
 @pytest.mark.xfail
@@ -1788,6 +1794,7 @@ def test_plot_implicit_adaptive_true():
         p = plot_implicit(expr, range_x, range_y,
             size=(5, 4), adaptive=True, grid=False, show=False,
             use_latex=False, backend=MB)
+        assert p.xlim and p.ylim
         p.save(test_filename)
         p.close()
         assert compare_images(cmp_filename, test_filename, tol) is None
@@ -1843,6 +1850,7 @@ def test_plot_implicit_region_and():
         p = plot_implicit(expr, range_x, range_y,
             size=(8, 6), adaptive=True, grid=False, show=False,
             use_latex=False, backend=MB)
+        assert p.xlim and p.ylim
         p.save(test_filename)
         p.close()
         assert compare_images(cmp_filename, test_filename, tol) is None

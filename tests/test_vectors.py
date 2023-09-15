@@ -6,7 +6,6 @@ from spb.series import (
     PlaneSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries
 )
 from spb.utils import _plot_sympify
-from spb.vectors import _preprocess, _series, plot_vector, _split_vector
 from spb import plot_vector, MB, prange
 from sympy import symbols, Matrix, Tuple, sin, cos, sqrt, Plane, pi
 from sympy.physics.mechanics import Vector as MechVector, ReferenceFrame
@@ -31,120 +30,8 @@ def pv_options3d(panel_options):
     return panel_options
 
 
-def pw(*args):
-    """_preprocess wrapper. Only need it to sympify the arguments before
-    calling _preprocess."""
-    args = _plot_sympify(args)
-    return _preprocess(*args)
-
-
 def to_float(t):
     return tuple(float(v) for v in t)
-
-
-def test_preprocess():
-    # verify that the preprocessing is correctly applied to the
-    # input arguments
-
-    x, y, z = symbols("x:z")
-    N = CoordSys3D("N")
-    v1 = x * N.i + y * N.j + z * N.k
-    v2 = z * N.i + x * N.j + y * N.k
-    m1 = v1.to_matrix(N)
-    m2 = v2.to_matrix(N)
-    l1 = list(m1)
-    l2 = list(m2)
-
-    # passing in vectors
-    r = pw(v1)[0]
-    assert r[0] == v1
-    assert r[1] == None
-
-    r = pw(v1, (x, -5, 5), "test")[0]
-    assert r == [v1, Tuple(x, -5, 5), "test"]
-
-    r = pw((v1, (x, -5, 5), "test"))[0]
-    assert r == [v1, Tuple(x, -5, 5), "test"]
-
-    r = pw((v1, (x, -5, 5), "v1"), (v2, (x, -5, 5), (y, -2, 2)))
-    assert r[0] == [v1, Tuple(x, -5, 5), "v1"]
-    assert r[1] == [v2, Tuple(x, -5, 5), Tuple(y, -2, 2), None]
-
-    r = pw(v1, v2, (x, -5, 5), (y, -2, 2), (z, -3, 3))
-    assert r[0] == [v1, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), None]
-    assert r[1] == [v2, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), None]
-
-    # passing in matrices
-    r = pw(m1, (x, -5, 5), "test")[0]
-    assert r == [m1, Tuple(x, -5, 5), "test"]
-
-    r = pw(m1, m2, (x, -5, 5), (y, -2, 2), (z, -3, 3))
-    assert r[0] == [m1, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), None]
-    assert r[1] == [m2, Tuple(x, -5, 5), Tuple(y, -2, 2), Tuple(z, -3, 3), None]
-
-    # passing in lists
-    r = pw(l1, (x, -5, 5), "test")[0]
-    assert r == [tuple(l1), Tuple(x, -5, 5), "test"]
-
-    r = pw(l1, l2, (x, -5, 5), (y, -2, 2), (z, -3, 3))
-    assert r[0] == [
-        tuple(l1),
-        Tuple(x, -5, 5),
-        Tuple(y, -2, 2),
-        Tuple(z, -3, 3),
-        None,
-    ]
-    assert r[1] == [
-        tuple(l2),
-        Tuple(x, -5, 5),
-        Tuple(y, -2, 2),
-        Tuple(z, -3, 3),
-        None,
-    ]
-
-
-def test_split_vector():
-    # verify that the correct components of a vector are retrieved, no matter
-    # the type of the input vector (list, matrix, symbolic vector, lambda
-    # functions)
-
-    x, y, z = symbols("x:z")
-    N = CoordSys3D("N")
-    v1 = x * N.i + y * N.j + z * N.k
-    v2 = z * N.i + x * N.j + y * N.k
-    m1 = v1.to_matrix(N)
-    m2 = v2.to_matrix(N)
-    l1 = list(m1)
-    l2 = list(m2)
-    fx = lambda x, y, z: z
-    fy = lambda x, y, z: x
-    fz = lambda x, y, z: y
-    A = ReferenceFrame("A")
-    v3 = -sin(y) * A.x + cos(x) * A.y
-    v4 = -sin(y) * A.x + cos(x) * A.y + cos(z) * A.z
-
-
-    ranges_in = [Tuple(x, -5, 5)]
-    ranges_out = [Tuple(x, -5, 5), Tuple(y, -10, 10), Tuple(z, -10, 10)]
-
-    def do_test(expr_in, expr_out):
-        exprs, ranges = _split_vector(expr_in, ranges_in)
-        assert exprs == expr_out
-        assert all([r in ranges_out for r in ranges])
-
-    do_test(v1, (x, y, z))
-    do_test(m1, (x, y, z))
-    do_test(l1, (x, y, z))
-    do_test(v2, (z, x, y))
-    do_test(m2, (z, x, y))
-    do_test(l2, (z, x, y))
-    do_test([fx, fy, fz], (fx, fy, fz))
-    do_test(v3, (-sin(y), cos(x), 0))
-    do_test(v4, (-sin(y), cos(x), cos(z)))
-
-    # too few or too many elements
-    raises(ValueError, lambda: _split_vector([x], ranges_in))
-    raises(ValueError, lambda: _split_vector([x, x, x, x], ranges_in))
 
 
 def test_get_seeds_points():
@@ -1086,7 +973,6 @@ def test_plot_vector_lambda_functions(pv_options3d):
     x, y, z = symbols("x:z")
     N = CoordSys3D("N")
     v1 = x * N.i + y * N.j
-    v2 = z * N.i + x * N.j + y * N.k
 
     # verify that plotting symbolic expressions and lambda functions produces
     # the same results

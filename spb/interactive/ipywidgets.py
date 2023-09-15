@@ -44,7 +44,13 @@ def _build_grid_layout(widgets, ncols):
 
 class InteractivePlot(IPlot):
     def __init__(self, *series, **kwargs):
-        params = kwargs.pop("params", dict())
+        params = kwargs.pop("params", {})
+        if len(params) == 0:
+            # this is the case when an interactive widget plot is build with
+            # the `graphics` interface.
+            for s in series:
+                if s.is_interactive:
+                    params.update(s.params)
         if not params:
             raise ValueError("`params` must be provided.")
         self._original_params = params

@@ -986,14 +986,15 @@ def test_plot_complex_vector(pc_options):
         use_cm=True, **pc_options)
     s = p.series
     assert isinstance(p, MB)
-    assert len(s) == 2
-    assert all(isinstance(t, Vector2DSeries) for t in s)
+    assert len(s) == 4
+    assert len([t for t in s if isinstance(t, Vector2DSeries)]) == 2
+    assert len([t for t in s if isinstance(t, ContourSeries)]) == 2
     assert to_float(s[0].ranges[0][1:]) == (-5, 0)
     assert to_float(s[0].ranges[1][1:]) == (-2, 3)
-    assert to_float(s[1].ranges[0][1:]) == (0, 4)
-    assert to_float(s[1].ranges[1][1:]) == (-2, 3)
-    assert s[0].get_label(False) == 'z**2'
-    assert s[1].get_label(False) == 'test'
+    assert to_float(s[2].ranges[0][1:]) == (0, 4)
+    assert to_float(s[2].ranges[1][1:]) == (-2, 3)
+    assert s[1].get_label(False) == 'z**2'
+    assert s[3].get_label(False) == 'test'
 
     p = plot_complex_vector(
         (z**x, (z, -5 - 2j, 0 + 3j)),
@@ -1001,16 +1002,19 @@ def test_plot_complex_vector(pc_options):
         params={x: (1, 0, 2)}, use_cm=True, **pc_options)
     s = p.backend.series
     assert isinstance(p, InteractivePlot)
-    assert len(s) == 2
-    assert all(isinstance(t, Vector2DSeries) and t.is_interactive for t in s)
-    xx, yy, _, _ = s[0].get_data()
+    assert len(s) == 4
+    vs = [t for t in s if isinstance(t, Vector2DSeries)]
+    cs = [t for t in s if isinstance(t, ContourSeries)]
+    assert len(vs) == 2 and len(cs) == 2
+    assert all(t.is_interactive for t in vs + cs)
+    xx, yy, _, _ = s[1].get_data()
     assert (xx.min(), xx.max()) == (-5, 0)
     assert (yy.min(), yy.max()) == (-2, 3)
-    xx, yy, _, _ = s[1].get_data()
+    xx, yy, _, _ = s[3].get_data()
     assert (xx.min(), xx.max()) == (0, 4)
     assert (yy.min(), yy.max()) == (-2, 3)
-    assert s[0].get_label(False) == 'z**x'
-    assert s[1].get_label(False) == 'test'
+    assert s[1].get_label(False) == 'z**x'
+    assert s[3].get_label(False) == 'test'
 
 
 def test_issue_6(pc_options):
@@ -1378,16 +1382,6 @@ def test_plot_complex_vector_label_kw(pc_options):
     assert len(s) == 2
     assert s[0].get_label(False) == "a"
     assert s[1].get_label(False) == "b"
-
-    # one expression -> 1 series -> 2 labels -> raise error
-    p = lambda: plot_complex_vector(x**2 + sin(x), (x, -5-5j, 5+5j),
-        scalar=False, label=["a", "b"], **pc_options)
-    raises(ValueError, p)
-
-    p = lambda: plot_complex_vector(x**2 + sin(t * x), (x, -5-5j, 5+5j),
-        scalar=False, label=["a", "b"],
-        params={t: (1, 0, 2)}, **pc_options)
-    raises(ValueError, p)
 
 
 def test_plot_real_imag_1d_rendering_kw(pc_options):

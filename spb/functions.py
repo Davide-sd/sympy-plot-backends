@@ -17,17 +17,22 @@ it if you care at all about performance.
 """
 
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
+from spb.graphics import (
+    graphics, line, line_parametric_2d, line_parametric_3d, line_polar,
+    surface, surface_parametric, surface_revolution, surface_spherical,
+    contour, implicit_2d, implicit_3d, list_2d, list_3d, geometry
+)
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-    ImplicitSeries,
+    ImplicitSeries, PlaneSeries,
     List2DSeries, List3DSeries, GeometrySeries, Implicit3DSeries,
     GenericDataSeries, ComplexParametric3DLineSeries
 )
 from spb.interactive import create_interactive_plot
 from spb.utils import (
     _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend,
-    spherical_to_cartesian, prange
+    spherical_to_cartesian, prange, _is_range
 )
 from sympy import (
     latex, Tuple, Expr, Symbol, Wild, oo, Sum, sign, Piecewise, piecewise_fold,
@@ -39,186 +44,6 @@ from sympy.core.function import AppliedUndef
 from sympy.sets.sets import EmptySet
 from sympy.vector import BaseScalar
 from sympy.external import import_module
-
-# N.B.
-# When changing the minimum module version for matplotlib, please change
-# the same in the `SymPyDocTestFinder` in `sympy/testing/runtests.py`
-
-
-def _process_piecewise(piecewise, _range, label, **kwargs):
-    """Extract the pieces of an univariate Piecewise function and create the
-    necessary series for an univariate plot.
-
-    Notes
-    =====
-
-    As a design choice, the following implementation reuses the existing
-    classes, instead of creating a new one to deal with Piecewise. Here, each
-    piece is going to create at least one series. If a piece is using a union
-    of coditions (for example, ``((x < 0) | (x > 2))``), than two or more
-    series of the same expression are created (for example, one covering
-    ``x < 0`` and the other covering ``x > 2``), both having the same label.
-
-    However, if a piece is outside of the provided plotting range, then it
-    will not be added to the plot. This may lead to not-complete plots in some
-    backend, such as BokehBackend, which is capable of auto-recompute the data
-    on mouse drag. If the user drags the mouse over an area previously not
-    shown (thus no data series), there won't be any line on the plot in this
-    area.
-    """
-    # initial range
-    irange = Interval(_range[1], _range[2], False, False)
-    # ultimately it will contain all the series
-    series = []
-    # only contains Line2DSeries with is_filled=True. They have higher
-    # rendering priority, as such they will be added to `series` at last.
-    filled_series = []
-    dots = kwargs.pop("dots", True)
-
-    def func(expr, _set, c, from_union=False):
-        if isinstance(_set, Interval):
-            start, end = _set.args[0], _set.args[1]
-
-            # arbitrary small offset
-            offset = 1e-06
-            # offset must be small even if the interval is small
-            diff = end - start
-            if diff < 1:
-                e = 0
-                while diff < 1:
-                    diff *= 10
-                    e -= 1
-                offset *= e
-
-            # prevent NaNs from happening at the ends of the interval
-            if _set.left_open:
-                start += offset
-            if _set.right_open:
-                end -= offset
-
-            main_series = LineOver1DRangeSeries(
-                expr, (_range[0], start, end), label, **kwargs)
-            series.append(main_series)
-
-            if dots:
-                xx, yy = main_series.get_data()
-                if xx[0] != _range[1]:
-                    correct_list = series if _set.left_open else filled_series
-                    correct_list.append(
-                        List2DSeries([xx[0]], [yy[0]], is_point=True,
-                            is_filled=not _set.left_open, **kwargs)
-                    )
-                if xx[-1] != _range[2]:
-                    correct_list = series if _set.right_open else filled_series
-                    correct_list.append(
-                        List2DSeries([xx[-1]], [yy[-1]], is_point=True,
-                            is_filled=not _set.right_open, **kwargs)
-                    )
-        elif isinstance(_set, FiniteSet):
-            loc, val = [], []
-            for _loc in _set.args:
-                loc.append(float(_loc))
-                val.append(float(expr.evalf(subs={_range[0]: _loc})))
-            filled_series.append(List2DSeries(loc, val, is_point=True,
-                is_filled=True, **kwargs))
-            if not from_union:
-                c += 1
-        elif isinstance(_set, Union):
-            for _s in _set.args:
-                c = func(expr, _s, c, from_union=True)
-        elif isinstance(_set, EmptySet):
-            # in this case, some pieces are outside of the provided range.
-            # don't add any series, but increase the counter nonetheless so that
-            # there is one-to-one correspondance between the expression and
-            # what is plotted.
-            if not from_union:
-                c += 1
-        else:
-            raise TypeError(
-                "Unhandle situation:\n" +
-                "expr: {}\ncond: {}\ntype(cond): {}\n".format(str(expr),
-                    _set, type(_set)) +
-                "See if you can rewrite the piecewise without "
-                "this type of condition and then plot it again.")
-
-        return c
-
-    piecewise = piecewise_fold(piecewise)
-    expr_cond = piecewise.as_expr_set_pairs()
-    # for the label, attach the number of the piece
-    count = 1
-    for expr, cond in expr_cond:
-        count = func(expr, irange.intersection(cond), count)
-
-    series += filled_series
-    return series
-
-
-def _process_summations(sum_bound, *args):
-    """Substitute oo (infinity) lower/upper bounds of a summation with an
-    arbitrary big integer number.
-
-    Parameters
-    ==========
-
-    NOTE:
-    Let's consider the following summation: ``Sum(1 / x**2, (x, 1, oo))``.
-    The current implementation of lambdify (SymPy 1.9 at the time of
-    writing this) will create something of this form:
-    ``sum(1 / x**2 for x in range(1, INF))``
-    The problem is that ``type(INF)`` is float, while ``range`` requires
-    integers, thus the evaluation will fails.
-    Instead of modifying ``lambdify`` (which requires a deep knowledge),
-    let's apply this quick dirty hack: substitute symbolic ``oo`` with an
-    arbitrary large number.
-    """
-    def new_bound(t, bound):
-        if (not t.is_number) or t.is_finite:
-            return t
-        if sign(t) >= 0:
-            return bound
-        return -bound
-
-    args = list(args)
-    expr = args[0]
-
-    # select summations whose lower/upper bound is infinity
-    w = Wild("w", properties=[
-        lambda t: isinstance(t, Sum),
-        lambda t: any((not a[1].is_finite) or (not a[2].is_finite) for i, a in enumerate(t.args) if i > 0)
-    ])
-
-    for t in list(expr.find(w)):
-        sums_args = list(t.args)
-        for i, a in enumerate(sums_args):
-            if i > 0:
-                sums_args[i] = (a[0], new_bound(a[1], sum_bound),
-                    new_bound(a[2], sum_bound))
-        s = Sum(*sums_args)
-        expr = expr.subs(t, s)
-    args[0] = expr
-    return args
-
-
-def _build_line_series(*args, **kwargs):
-    """Loop over the provided arguments. If a piecewise function is found,
-    decompose it in such a way that each argument gets its own series.
-    """
-    series = []
-    pp = kwargs.get("process_piecewise", False)
-    sum_bound = int(kwargs.get("sum_bound", 1000))
-    for arg in args:
-        expr, r, label, rendering_kw = arg
-        kw = kwargs.copy()
-        if rendering_kw is not None:
-            kw["rendering_kw"] = rendering_kw
-        if not callable(expr) and expr.has(Piecewise) and pp:
-            series += _process_piecewise(expr, r, label, **kw)
-        else:
-            if not callable(expr):
-                arg = _process_summations(sum_bound, *arg)
-            series.append(LineOver1DRangeSeries(*arg[:-1], **kw))
-    return series
 
 
 def _set_labels(series, labels, rendering_kw):
@@ -698,34 +523,16 @@ def plot(*args, **kwargs):
     """
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 1, 1, **kwargs)
-    params = kwargs.get("params", None)
-    free = set()
-    for p in plot_expr:
-        if not isinstance(p[1][0], str):
-            free |= {p[1][0]}
-        else:
-            free |= set([Symbol(p[1][0])])
-    if params:
-        free = free.difference(params.keys())
-    x = free.pop() if free else Symbol("x")
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+    lines = []
 
-    fx = lambda use_latex: x.name if not use_latex else latex(x)
-    wrap = lambda use_latex: "f(%s)" if not use_latex else r"f\left(%s\right)"
-    fy = lambda use_latex: wrap(use_latex) % fx(use_latex)
-    kwargs.setdefault("xlabel", fx)
-    kwargs.setdefault("ylabel", fy)
-
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    series = _build_line_series(*plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
-    series += _create_generic_data_series(**kwargs)
-
-    if params:
-        return create_interactive_plot(*series, **kwargs)
-
-    Backend = kwargs.pop("backend", TWO_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+    for pe in plot_expr:
+        expr, r, label, rendering_kw = pe
+        lines.extend(line(expr, r, label, rendering_kw, **kwargs))
+    _set_labels(lines, global_labels, global_rendering_kw)
+    gs = _create_generic_data_series(**kwargs)
+    return graphics(*lines, gs, **kwargs)
 
 
 def plot_parametric(*args, **kwargs):
@@ -1046,18 +853,17 @@ def plot_parametric(*args, **kwargs):
     """
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 2, 1, **kwargs)
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+    lines = []
 
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    series = _create_series(Parametric2DLineSeries, plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
-    series += _create_generic_data_series(**kwargs)
-
-    if kwargs.get("params", None):
-        return create_interactive_plot(*series, **kwargs)
-
-    Backend = kwargs.pop("backend", TWO_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+    for pe in plot_expr:
+        e1, e2, r, label, rendering_kw = pe
+        lines.extend(
+            line_parametric_2d(e1, e2, r, label, rendering_kw, **kwargs))
+    _set_labels(lines, global_labels, global_rendering_kw)
+    gs = _create_generic_data_series(**kwargs)
+    return graphics(*lines, gs, **kwargs)
 
 
 def plot_parametric_region(*args, **kwargs):
@@ -1556,72 +1362,19 @@ def plot3d_parametric_line(*args, **kwargs):
     """
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 3, 1, **kwargs)
-    kwargs.setdefault("xlabel", "x")
-    kwargs.setdefault("ylabel", "y")
-    kwargs.setdefault("zlabel", "z")
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+    lines = []
 
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    series = _create_series(Parametric3DLineSeries, plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
-
-    if kwargs.get("params", None):
-        return create_interactive_plot(*series, **kwargs)
-
-    Backend = kwargs.pop("backend", THREE_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+    for pe in plot_expr:
+        e1, e2, e3, r, label, rendering_kw = pe
+        lines.extend(
+            line_parametric_3d(e1, e2, e3, r, label, rendering_kw, **kwargs))
+    _set_labels(lines, global_labels, global_rendering_kw)
+    return graphics(*lines, **kwargs)
 
 
-def _plot3d_plot_contour_helper(Series, is_threed, Backend, *args, **kwargs):
-    """plot3d and plot_contour are structurally identical. Let's reduce
-    code repetition.
-    """
-    args = _plot_sympify(args)
-    plot_expr = _check_arguments(args, 1, 2, **kwargs)
-
-    if is_threed:
-        if any(isinstance(p[0], Plane) for p in plot_expr):
-            raise ValueError("Please, use ``plot_geometry`` to visualize "
-                "a plane.")
-
-    free_x = set()
-    free_y = set()
-    for p in plot_expr:
-        free_x |= {p[1][0]} if isinstance(p[1][0], (Symbol, BaseScalar, Indexed, AppliedUndef)) else {Symbol(p[1][0])}
-        free_y |= {p[2][0]} if isinstance(p[2][0], (Symbol, BaseScalar, Indexed, AppliedUndef)) else {Symbol(p[2][0])}
-    x = free_x.pop() if free_x else Symbol("x")
-    y = free_y.pop() if free_y else Symbol("y")
-    fx = lambda use_latex: x.name if not use_latex else latex(x)
-    fy = lambda use_latex: y.name if not use_latex else latex(y)
-    wrap = lambda use_latex: "f(%s, %s)" if not use_latex else r"f\left(%s, %s\right)"
-    fz = lambda use_latex: wrap(use_latex) % (fx(use_latex), fy(use_latex))
-    kwargs.setdefault("xlabel", fx)
-    kwargs.setdefault("ylabel", fy)
-    kwargs.setdefault("zlabel", fz)
-
-    # if a polar discretization is requested and automatic labelling has ben
-    # applied, hide the labels on the x-y axis.
-    if kwargs.get("is_polar", False):
-        if callable(kwargs["xlabel"]):
-            kwargs["xlabel"] = ""
-        if callable(kwargs["ylabel"]):
-            kwargs["ylabel"] = ""
-
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    series = _create_series(Series, plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
-    if is_threed:
-        series += _plot3d_wireframe_helper(series, **kwargs)
-
-    if kwargs.get("params", None):
-        kwargs["threed"] = is_threed
-        kwargs["backend"] = Backend
-        return create_interactive_plot(*series, **kwargs)
-
-    return _instantiate_backend(Backend, *series, **kwargs)
-
-
+# TODO: remove this
 def _plot3d_wireframe_helper(surfaces, **kwargs):
     """Create data series representing wireframe lines.
 
@@ -1768,6 +1521,24 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                         lines.append(create_series(param_expr, ranges, s, **kw))
 
     return lines
+
+
+def _plot3d_plot_contour_helper(threed, *args, **kwargs):
+    args = _plot_sympify(args)
+    plot_expr = _check_arguments(args, 1, 2, **kwargs)
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+    surfaces = []
+    func = surface if threed else contour
+    indeces = []
+    for i, pe in enumerate(plot_expr):
+        indeces.append(len(surfaces))
+        expr, r1, r2, label, rendering_kw = pe
+        surfaces.extend(
+            func(expr, r1, r2, label, rendering_kw, **kwargs))
+    actual_surfaces = [s for i, s in enumerate(surfaces) if i in indeces]
+    _set_labels(actual_surfaces, global_labels, global_rendering_kw)
+    return graphics(*surfaces, **kwargs)
 
 
 def plot3d(*args, **kwargs):
@@ -2110,9 +1881,7 @@ def plot3d(*args, **kwargs):
     plot3d_revolution, plot3d_implicit, plot3d_list, plot_contour
 
     """
-    Backend = kwargs.pop("backend", THREE_D_B)
-    return _plot3d_plot_contour_helper(
-        SurfaceOver2DRangeSeries, True, Backend, *args, **kwargs)
+    return _plot3d_plot_contour_helper(True, *args, **kwargs)
 
 
 def plot3d_parametric_surface(*args, **kwargs):
@@ -2448,21 +2217,19 @@ def plot3d_parametric_surface(*args, **kwargs):
     """
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 3, 2, **kwargs)
-    kwargs.setdefault("xlabel", "x")
-    kwargs.setdefault("ylabel", "y")
-    kwargs.setdefault("zlabel", "z")
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+    surfaces = []
+    indeces = []
 
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    series = _create_series(ParametricSurfaceSeries, plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
-    series += _plot3d_wireframe_helper(series, **kwargs)
-    Backend = kwargs.get("backend", THREE_D_B)
-
-    if kwargs.get("params", None):
-        return create_interactive_plot(*series, **kwargs)
-
-    return _instantiate_backend(Backend, *series, **kwargs)
+    for i, pe in enumerate(plot_expr):
+        indeces.append(len(surfaces))
+        e1, e2, e3, r1, r2, label, rendering_kw = pe
+        surfaces.extend(
+            surface_parametric(e1, e2, e3, r1, r2, label, rendering_kw, **kwargs))
+    actual_surfaces = [s for i, s in enumerate(surfaces) if i in indeces]
+    _set_labels(actual_surfaces, global_labels, global_rendering_kw)
+    return graphics(*surfaces, **kwargs)
 
 
 def plot3d_spherical(*args, **kwargs):
@@ -2611,29 +2378,19 @@ def plot3d_spherical(*args, **kwargs):
     """
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 1, 2, **kwargs)
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+    surfaces = []
+    indeces = []
 
-    # deal with symbolic min/max values of ranges
-    def rel(t, s, threshold, a):
-        try:
-            if t == "<":
-                if s < threshold:
-                    return threshold
-            elif t == ">":
-                if s > threshold:
-                    return threshold
-        except:
-            return a
-        return a
-
-    # enforce polar and azimuthal condition and convert spherical to cartesian
     for i, pe in enumerate(plot_expr):
-        r, r1, r2 = pe[0], pe[1], pe[2]
-        theta, phi = r1[0], r2[0]
-        x, y, z = spherical_to_cartesian(r, theta, phi)
-        r1 = prange(theta, rel("<", r1[1], 0, r1[1]), rel(">", r1[2], pi, r1[2]))
-        r2 = prange(phi, rel("<", r2[1], 0, r2[1]), rel(">", r2[2], 2*pi, r2[2]))
-        plot_expr[i] = (x, y, z, r1, r2, *pe[3:])
-    return plot3d_parametric_surface(*plot_expr, **kwargs)
+        indeces.append(len(surfaces))
+        expr, r1, r2, label, rendering_kw = pe
+        surfaces.extend(
+            surface_spherical(expr, r1, r2, label, rendering_kw, **kwargs))
+    actual_surfaces = [s for i, s in enumerate(surfaces) if i in indeces]
+    _set_labels(actual_surfaces, global_labels, global_rendering_kw)
+    return graphics(*surfaces, **kwargs)
 
 
 def plot3d_implicit(*args, **kwargs):
@@ -2778,21 +2535,19 @@ def plot3d_implicit(*args, **kwargs):
 
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 1, 3, **kwargs)
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
+    surfaces = []
+    indeces = []
 
-    labels = kwargs.pop("label", dict())
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    series = _create_series(Implicit3DSeries, plot_expr, **kwargs)
-    _set_labels(series, labels, rendering_kw)
-
-    fx = lambda use_latex: series[0].var_x.name if not use_latex else latex(series[0].var_x)
-    fy = lambda use_latex: series[0].var_y.name if not use_latex else latex(series[0].var_y)
-    fz = lambda use_latex: series[0].var_z.name if not use_latex else latex(series[0].var_z)
-    kwargs.setdefault("xlabel", fx)
-    kwargs.setdefault("ylabel", fy)
-    kwargs.setdefault("zlabel", fz)
-
-    Backend = kwargs.get("backend", THREE_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+    for i, pe in enumerate(plot_expr):
+        indeces.append(len(surfaces))
+        expr, r1, r2, r3, label, rendering_kw = pe
+        surfaces.extend(
+            implicit_3d(expr, r1, r2, r3, label, rendering_kw, **kwargs))
+    actual_surfaces = [s for i, s in enumerate(surfaces) if i in indeces]
+    _set_labels(actual_surfaces, global_labels, global_rendering_kw)
+    return graphics(*surfaces, **kwargs)
 
 
 def plot_contour(*args, **kwargs):
@@ -2929,13 +2684,11 @@ def plot_contour(*args, **kwargs):
     plot_geometry, plot_piecewise
 
     """
-    Backend = kwargs.pop("backend", TWO_D_B)
-    return _plot3d_plot_contour_helper(
-        ContourSeries, False, Backend, *args, **kwargs)
+    return _plot3d_plot_contour_helper(False, *args, **kwargs)
 
 
 def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
-    parallel_axis="z", show_curve=False, curve_kw=None, **kwargs):
+    parallel_axis="z", show_curve=False, curve_kw={}, **kwargs):
     """Generate a surface of revolution by rotating a curve around an axis of
     rotation.
 
@@ -3105,87 +2858,10 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
     plot3d_spherical, plot3d_implicit, plot3d_list
 
     """
-    show = kwargs.pop("show", True)
-    kwargs["show"] = False
-    imodule = kwargs.get("imodule", cfg["interactive"]["module"])
-
-    if curve_kw is None:
-        curve_kw = {}
-
-    if parallel_axis.lower() not in ["x", "y", "z"]:
-        raise ValueError("`parallel_axis` must be either 'x' 'y' or 'z'. "
-            "Received: %s " % parallel_axis)
-
-    # NOTE: a surface of revolution is a particular case of 3D parametric
-    # surface
-    if isinstance(curve, (tuple, list, Tuple)):
-        if len(curve) == 2:     # curve is a 2D parametric line
-            x, z = curve
-            y = 0
-        elif len(curve) == 3:   # curve is a 3D parametric line
-            x, y, z = curve
-    else: # curve is an expression
-        x = range_t[0]
-        y = 0
-        z = curve
-
-    phi = range_phi[0] if range_phi else Symbol("phi")
-    if range_phi is None:
-        range_phi = (phi, 0, 2*pi)
-
-    phase = 0
-    if parallel_axis == "x":
-        y0, z0 = axis
-        phase = atan2(z - z0, y - y0)
-        r = sqrt((y - y0)**2 + (z - z0)**2)
-        v = (x, r * cos(phi + phase) + y0, r * sin(phi + phase) + z0)
-    elif parallel_axis == "y":
-        x0, z0 = axis
-        phase = atan2(z - z0, x - x0)
-        r = sqrt((x - x0)**2 + (z - z0)**2)
-        v = (r * cos(phi + phase) + x0, y, r * sin(phi + phase) + z0)
-    else:
-        x0, y0 = axis
-        phase = atan2(y - y0, x - x0)
-        r = sqrt((x - x0)**2 + (y - y0)**2)
-        v = (r * cos(phi + phase) + x0, r * sin(phi + phase) + y0, z)
-
-    surface = plot3d_parametric_surface(*v, range_t, range_phi, **kwargs)
-
-    params = kwargs.get("params", None)
-    if show_curve:
-        if params is None:
-            backend = type(surface)
-            n = surface[0].n[0]
-            force_real_eval = surface[0]._force_real_eval
-        else:
-            n = surface.backend[0].n[0]
-            backend = type(surface.backend)
-            curve_kw["params"] = params
-            curve_kw.setdefault("imodule", imodule)
-            force_real_eval = surface.backend[0]._force_real_eval
-
-        curve_kw["show"] = False
-        # uniform mesh evaluation is faster
-        curve_kw["adaptive"] = False
-        # link the number of discretization points between the two series
-        curve_kw["n"] = n
-        curve_kw.setdefault("use_cm", False)
-        curve_kw.setdefault("force_real_eval", force_real_eval)
-
-        line = plot3d_parametric_line(
-            x, y, z, range_t, backend=backend, **curve_kw)
-        result = surface + line
-    else:
-        result = surface
-
-    if show:
-        if params is None:
-            result.show()
-        else:
-            return result.show()
-
-    return result
+    surfaces = surface_revolution(curve, range_t, range_phi,
+        axis=axis, parallel_axis=parallel_axis, show_curve=show_curve,
+        curve_kw=curve_kw, **kwargs)
+    return graphics(*surfaces, **kwargs)
 
 
 def plot_implicit(*args, **kwargs):
@@ -3493,16 +3169,16 @@ def plot_implicit(*args, **kwargs):
     args = _check_arguments(args, 1, 2, **kwargs)
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    color = kwargs.pop("color", None)
     border_color = kwargs.pop("border_color", None)
 
     series = []
     # attempt to compute the area that should be visible on the plot.
     xmin, xmax, ymin, ymax = oo, -oo, oo, -oo
     for (expr, r1, r2, label, rendering_kw) in args:
-        skw = kwargs.copy()
-        if rendering_kw is not None:
-            skw["rendering_kw"] = rendering_kw
-        s = ImplicitSeries(expr, r1, r2, label, **skw)
+        series.extend(implicit_2d(expr, r1, r2, label, rendering_kw,
+            color=color, border_color=border_color, **kwargs))
+        s = series[-1]
         if (not s.start_x.free_symbols) and (s.start_x < xmin):
             xmin = s.start_x
         if (not s.end_x.free_symbols) and (s.end_x > xmax):
@@ -3511,13 +3187,6 @@ def plot_implicit(*args, **kwargs):
             ymin = s.start_y
         if (not s.end_y.free_symbols) and (s.end_y > ymax):
             ymax = s.end_y
-        series.append(s)
-        if border_color and (not isinstance(expr, (Expr, Eq, Ne))):
-            skw2 = skw.copy()
-            skw2["color"] = border_color
-            skw2.setdefault("show_in_legend", False)
-            series.append(
-                ImplicitSeries(expr.rhs - expr.lhs, r1, r2, label, **skw2))
 
     _set_labels(series, global_labels, global_rendering_kw)
     series += _create_generic_data_series(**kwargs)
@@ -3525,14 +3194,7 @@ def plot_implicit(*args, **kwargs):
         kwargs.setdefault("xlim", (xmin, xmax))
     if (ymin != oo) and (ymax != -oo):
         kwargs.setdefault("ylim", (ymin, ymax))
-    kwargs.setdefault("xlabel", lambda use_latex: series[-1].var_x.name if not use_latex else latex(series[0].var_x))
-    kwargs.setdefault("ylabel", lambda use_latex: series[-1].var_y.name if not use_latex else latex(series[0].var_y))
-
-    if kwargs.get("params", dict()):
-        return create_interactive_plot(*series, **kwargs)
-
-    Backend = kwargs.pop("backend", TWO_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+    return graphics(*series, **kwargs)
 
 
 def plot_polar(*args, **kwargs):
@@ -3635,7 +3297,8 @@ def plot_polar(*args, **kwargs):
     plot_geometry, plot_piecewise
 
     """
-    # polar_axis = kwargs.pop("polar_axis", False)
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
     kwargs.setdefault("polar_axis", False)
     kwargs.setdefault("aspect", "equal")
     kwargs.setdefault("xlabel", "")
@@ -3648,13 +3311,16 @@ def plot_polar(*args, **kwargs):
     kwargs.setdefault("use_cm", False)
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 1, 1, **kwargs)
+    lines = []
     # apply polar transformation
     for i, pe in enumerate(plot_expr):
         r = pe[0]
         theta = pe[1][0]
-        plot_expr[i] = (r * cos(theta), r * sin(theta), *pe[1:])
-
-    return plot_parametric(*plot_expr, **kwargs)
+        e1, e2 = (r * cos(theta), r * sin(theta))
+        lines.extend(line_parametric_2d(e1, e2, *pe[1:], **kwargs))
+    _set_labels(lines, global_labels, global_rendering_kw)
+    gs = _create_generic_data_series(**kwargs)
+    return graphics(*lines, gs, **kwargs)
 
 
 def plot_geometry(*args, **kwargs):
@@ -3889,38 +3555,15 @@ def plot_geometry(*args, **kwargs):
 
     """
     args = _plot_sympify(args)
+    global_labels = kwargs.pop("label", [])
+    global_rendering_kw = kwargs.pop("rendering_kw", None)
 
-    series = []
     if not all([isinstance(a, (list, tuple, Tuple)) for a in args]):
         args = [args]
 
-    params = kwargs.get("params", None)
-    plot_expr = []
-
-    for a in args:
-        exprs, ranges, label, rendering_kw = _unpack_args(*a)
-
-        kw = kwargs.copy()
-        kw["rendering_kw"] = rendering_kw
-        r = ranges if len(ranges) > 0 else [None]
-        if len(exprs) == 1:
-            series.append(GeometrySeries(exprs[0], *r, label, **kw))
-        else:
-            # this is the case where the user provided: v1, v2, ..., range
-            # we use the same ranges for each expression
-            for e in exprs:
-                series.append(GeometrySeries(e, *r, str(e), **kw))
-
-    labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
-    _set_labels(series, labels, rendering_kw)
-
-    any_3D = any(s.is_3D for s in series)
-    if ("aspect" not in kwargs) and (not any_3D):
-        kwargs["aspect"] = "equal"
-
+    params = kwargs.pop("params", {})
     is_interactive = False
-    if params is not None:
+    if len(params) > 0:
         param = import_module("param")
         ipywidgets = import_module("ipywidgets")
         has_param, has_ipywidgets, has_tuples = False, False, False
@@ -3930,15 +3573,36 @@ def plot_geometry(*args, **kwargs):
             for t in params.values()):
             has_ipywidgets = True
         if any(hasattr(t, "__iter__") for t in params.values()):
-            has_tuples     = True
-
+            has_tuples = True
         is_interactive = any([has_param, has_ipywidgets, has_tuples])
 
+    series = []
     if is_interactive:
-        return create_interactive_plot(*series, **kwargs)
+        kwargs["params"] = params
+    for a in args:
+        exprs, ranges, label, rkw = _unpack_args(*a)
 
-    Backend = kwargs.pop("backend", THREE_D_B if any_3D else TWO_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+        if len(ranges) > 0:
+            # assume it is a plane series
+            for e in exprs:
+                lbl = str(e) if not label else label
+                kw = kwargs.copy()
+                kw["rendering_kw"] = rkw
+                kw["label"] = lbl
+                if not is_interactive and params:
+                    e = e.subs(params)
+                series.append(PlaneSeries(e, *ranges, **kw))
+        else:
+            for e in exprs:
+                lbl = str(e) if not label else label
+                kw = kwargs.copy()
+                kw["rendering_kw"] = rkw
+                kw["label"] = lbl
+                if not is_interactive and params:
+                    e = e.subs(params)
+                series.extend(geometry(e, **kw))
+    _set_labels(series, global_labels, global_rendering_kw)
+    return graphics(*series, **kwargs)
 
 
 def plot_list(*args, **kwargs):
@@ -4163,17 +3827,10 @@ def plot_list(*args, **kwargs):
         label = "" if not label else label[0]
         rendering_kw = [b for b in a if isinstance(b, dict)]
         rendering_kw = None if not rendering_kw else rendering_kw[0]
-
-        kw = kwargs.copy()
-        kw["rendering_kw"] = rendering_kw
-        series.append(List2DSeries(*a[:2], label, **kw))
+        series.extend(list_2d(*a[:2], label, rendering_kw, **kwargs))
 
     _set_labels(series, g_labels, g_rendering_kw)
-    if kwargs.get("params", None):
-        return create_interactive_plot(*series, **kwargs)
-
-    Backend = kwargs.pop("backend", TWO_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+    return graphics(*series, **kwargs)
 
 
 def plot3d_list(*args, **kwargs):
@@ -4377,17 +4034,11 @@ def plot3d_list(*args, **kwargs):
         label = "" if not label else label[0]
         rendering_kw = [b for b in a if isinstance(b, dict)]
         rendering_kw = None if not rendering_kw else rendering_kw[0]
-
-        kw = kwargs.copy()
-        kw["rendering_kw"] = rendering_kw
-        series.append(List3DSeries(*a[:3], label, **kw))
+        series.extend(
+            list_3d(*a[:3], label, rendering_kw, **kwargs))
 
     _set_labels(series, g_labels, g_rendering_kw)
-    if kwargs.get("params", None):
-        return create_interactive_plot(*series, **kwargs)
-
-    Backend = kwargs.pop("backend", TWO_D_B)
-    return _instantiate_backend(Backend, *series, **kwargs)
+    return graphics(*series, **kwargs)
 
 
 def plot_piecewise(*args, **kwargs):
@@ -4644,12 +4295,10 @@ def plot_piecewise(*args, **kwargs):
         raise NotImplementedError(
             "plot_piecewise doesn't support interactive widgets.")
 
-    Backend = kwargs.pop("backend", TWO_D_B)
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 1, 1)
     if any(callable(p[0]) for p in plot_expr):
         raise TypeError("plot_piecewise requires symbolic expressions.")
-    show = kwargs.get("show", True)
     free = set()
     for p in plot_expr:
         free |= p[0].free_symbols
@@ -4674,7 +4323,8 @@ def plot_piecewise(*args, **kwargs):
     # (expr, range, label [optional], rendering_kw [optional])
     color_series_dict = dict()
     for i, a in enumerate(plot_expr):
-        series = _build_line_series(a, **kwargs)
+        expr, r, lbl, rkw = a
+        series = line(expr, r, lbl, rkw, **kwargs)
         if i < len(labels):
             _set_labels(series, [labels[i]] * len(series), None)
         color_series_dict[i] = series
@@ -4682,5 +4332,4 @@ def plot_piecewise(*args, **kwargs):
     # NOTE: let's overwrite this keyword argument: the dictionary will be used
     # by the backend to assign the proper colors to the pieces
     kwargs["process_piecewise"] = color_series_dict
-
-    return _instantiate_backend(Backend, **kwargs)
+    return graphics(**kwargs)

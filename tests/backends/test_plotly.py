@@ -1433,17 +1433,21 @@ def test_plot_riemann_sphere():
     p.fig
     f1 = p._new_plots[0].fig
     f2 = p._new_plots[1].fig
+    # 1 image + 1 unit disk line + 2 scatters/annotation
+    assert len(f1.data) == 4
     # 1 image + 1 unit disk line + 2 scatters/annotation + 1 invisible
     # scatter to place the colorbar
-    assert len(f1.data) == len(f2.data) == 5
+    assert len(f2.data) == 5
 
     p = make_test_plot_riemann_sphere(PB, False)
     p.fig
     f1 = p._new_plots[0].fig
     f2 = p._new_plots[1].fig
+    # 1 image + 1 unit disk line
+    assert len(f1.data) == 2
     # 1 image + 1 unit disk line + 1 invisible
     # scatter to place the colorbar
-    assert len(f1.data) == len(f2.data) == 3
+    assert len(f2.data) == 3
 
 
 def test_parametric_texts():

@@ -449,6 +449,14 @@ class InteractivePlot(DynamicParam, PanelLayout, IPlot):
         template = kwargs.pop("template", None)
 
         self._name = name
+        if params is None:
+            params = {}
+        if len(params) == 0:
+            # this is the case when an interactive widget plot is build with
+            # the `graphics` interface.
+            for s in series:
+                if s.is_interactive:
+                    params.update(s.params)
         super().__init__(name=self._name, params=params, use_latex=use_latex)
         PanelLayout.__init__(self, layout, ncols, throttled, servable,
             custom_css, pane_kw, template)

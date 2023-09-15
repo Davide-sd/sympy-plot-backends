@@ -8,6 +8,12 @@ from spb.series import (
     Parametric2DLineSeries, List2DSeries, GenericDataSeries,
     RiemannSphereSeries
 )
+from spb.graphics import (
+    complex_points, line_abs_arg, line_abs_arg_colored, line_real_imag,
+    surface_abs_arg, surface_real_imag, domain_coloring, analytic_landscape,
+    riemann_sphere_2d, riemann_sphere_3d, complex_vector_field, graphics,
+    contour_abs_arg, contour_real_imag
+)
 from spb.interactive import create_interactive_plot, IPlot
 from spb.utils import (
     _unpack_args, _instantiate_backend, _plot_sympify, _check_arguments,
@@ -48,7 +54,7 @@ def _build_complex_point_series(*args, allow_lambda=False, pc=False, **kwargs):
     if all([isinstance(a, Expr) for a in args]):
         # args is a list of complex numbers
         for a in args:
-            series.append(ComplexPointSeries([a], "", **kwargs))
+            series.extend(complex_points(a, **kwargs))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
@@ -63,9 +69,8 @@ def _build_complex_point_series(*args, allow_lambda=False, pc=False, **kwargs):
             # points are given inside a list, _unpack_args will see them as a
             # range.
             expr = expr or ranges
-            kw = kwargs.copy()
-            kw["rendering_kw"] = rkw
-            series.append(ComplexPointSeries(expr[0], label, **kw))
+            series.extend(complex_points(
+                expr[0], label=label, rendering_kw=rkw, **kwargs))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
@@ -73,7 +78,7 @@ def _build_complex_point_series(*args, allow_lambda=False, pc=False, **kwargs):
     ):
         # args is a list of lists
         for a in args:
-            series.append(ComplexPointSeries(a, "", **kwargs))
+            series.extend(complex_points(a, **kwargs))
     elif (
         (len(args) > 0)
         and all([isinstance(a, (list, tuple, Tuple)) for a in args])
@@ -87,17 +92,15 @@ def _build_complex_point_series(*args, allow_lambda=False, pc=False, **kwargs):
             # points are given inside a list, _unpack_args will see them as a
             # range.
             expr = expr or ranges
-            kw = kwargs.copy()
-            kw["rendering_kw"] = rkw
-            series.append(ComplexPointSeries([expr[0]], label, **kw))
+            series.extend(complex_points(expr[0], label=label,
+                rendering_kw=rkw, **kwargs))
 
     else:
         expr, ranges, label, rkw = _unpack_args(*args)
         if isinstance(expr, (list, tuple, Tuple)):
             expr = expr[0]
-        kw = kwargs.copy()
-        kw["rendering_kw"] = rkw
-        series.append(ComplexPointSeries(expr, label, **kw))
+        series.append(complex_points(expr, label=label,
+            rendering_kw=rkw, **kwargs))
 
     _set_labels(series, global_labels, global_rendering_kw)
     return series
@@ -192,40 +195,35 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
         _abs = kw.pop("abs", False)
         _arg = kw.pop("arg", False)
 
-        # if ranges[0][1].imag == ranges[0][2].imag:
         if im(ranges[0][1]) == im(ranges[0][2]):
             # dealing with lines
-            def add_series(flag, key):
-                if flag:
-                    kw2 = kw.copy()
-                    kw2[key] = True
-                    kw2["return"] = key
-                    lbl_wrapper = mapping[key]
-                    series.append(LineOver1DRangeSeries(expr, *ranges,
-                        lbl_wrapper % label, **kw2))
-
+            if absarg:
+                series.extend(
+                    line_abs_arg_colored(expr, ranges[0], label, **kw))
+            if real or imag:
+                series.extend(
+                    line_real_imag(expr, ranges[0], label,
+                    real=real, imag=imag, **kw))
+            if _abs or _arg:
+                series.extend(
+                    line_abs_arg(expr, ranges[0], label,
+                    abs=_abs, arg=_arg, **kw))
         else:
-            # 2D domain coloring or 3D plots
-            kw.setdefault("coloring", cfg["complex"]["coloring"])
-            def add_series(flag, key):
-                if flag:
-                    kw2 = kw.copy()
-                    kw2[key] = True
-                    kw2["return"] = key
-                    lbl_wrapper = mapping[key]
-                    if key == "absarg":
-                        lbl_wrapper = "%s"
-                    series.append(ComplexSurfaceBaseSeries(expr, *ranges,
-                        lbl_wrapper % label, **kw2))
-
-        add_series(absarg, "absarg")
-        add_series(real, "real")
-        add_series(imag, "imag")
-        add_series(_abs, "abs")
-        add_series(_arg, "arg")
+            threed = kw.pop("threed", False)
+            if absarg:
+                func = analytic_landscape if threed else domain_coloring
+                asd = func(expr, ranges[0], label, **kw)
+                series.extend(asd)
+            if real or imag:
+                func = surface_real_imag if threed else contour_real_imag
+                series.extend(
+                    func(expr, ranges[0], label, real=real, imag=imag, **kw))
+            if _abs or _arg:
+                func = surface_abs_arg if threed else contour_abs_arg
+                series.extend(
+                    func(expr, ranges[0], label, abs=_abs, arg=_arg, **kw))
 
     _set_labels(series, global_labels, global_rendering_kw)
-    series += _plot3d_wireframe_helper(series, **kwargs)
     return series
 
 
@@ -242,30 +240,7 @@ def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
         warnings.warn("No series found. Check your keyword arguments.")
 
     _set_axis_labels(series, kwargs)
-
-    if any(s.is_3Dsurface for s in series):
-        Backend = kwargs.get("backend", THREE_D_B)
-    else:
-        Backend = kwargs.get("backend", TWO_D_B)
-
-    if any(s.is_domain_coloring for s in series):
-        kwargs.setdefault("legend", True)
-
-        dc_2d_series = [s for s in series if s.is_domain_coloring and not s.is_3D]
-        if ((len(dc_2d_series) > 0) and kwargs.get("riemann_mask", False)):
-            # add unit circle: hide it from legend and requests its color
-            # to be black
-            t = symbols("t")
-            series.append(
-                Parametric2DLineSeries(cos(t), sin(t), (t, 0, 2*pi), "__k__",
-                    adaptive=False, n=1000, use_cm=False,
-                    show_in_legend=False))
-
-
-    if kwargs.get("params", None):
-        return create_interactive_plot(*series, **kwargs)
-
-    return _instantiate_backend(Backend, *series, **kwargs)
+    return graphics(*series, **kwargs)
 
 
 def _set_axis_labels(series, kwargs):
@@ -715,11 +690,6 @@ def plot_real_imag(*args, **kwargs):
                b: (1, 0, 2)
            }, n=25, threed=True, use_latex=False, use_cm=True)
 
-    References
-    ==========
-
-    .. [#fn0] https://github.com/python-adaptive/adaptive
-
     See Also
     ========
 
@@ -817,7 +787,7 @@ def plot_complex(*args, **kwargs):
           evaluation points. This number will be used in the following goal:
           ``lambda l: l.loss() < number``
         * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn2]_ for more information.
+          must return a float number. Refer to [python-adaptive]_ for more information.
 
     aspect : (float, float) or str, optional
         Set the aspect ratio of the plot. The value depends on the backend
@@ -848,7 +818,7 @@ def plot_complex(*args, **kwargs):
 
     coloring : str or callable, optional
         Choose between different domain coloring options. Default to ``"a"``.
-        Refer to [#fn1]_ for more information.
+        Refer to [Wegert]_ for more information.
 
         - ``"a"``: standard domain coloring showing the argument of the
           complex function.
@@ -905,7 +875,7 @@ def plot_complex(*args, **kwargs):
 
         * ``None`` (default): it will use the ``default_loss`` from the
           ``adaptive`` module.
-        * callable : Refer to [#fn2]_ for more information. Specifically,
+        * callable : Refer to [python-adaptive]_ for more information. Specifically,
           look at `adaptive.learner.learner1D` to find more loss functions.
 
     modules : str, optional
@@ -1120,7 +1090,7 @@ def plot_complex(*args, **kwargs):
     * It is not friendly to people affected by color deficiencies.
     * It might be misleading because it isn't perceptually uniform: features
       disappear at points of low perceptual contrast, or false features appear
-      that are in the colormap but not in the data (refer to colorcet [#fn3]_
+      that are in the colormap but not in the data (refer to colorcet [colorcet]_
       for more information).
 
     Hence, it might be helpful to chose a perceptually uniform colormap.
@@ -1193,7 +1163,7 @@ def plot_complex(*args, **kwargs):
     information. Let's now quickly visualize the different ``coloring``
     schemes. In the following, `arg` is the argument (phase), `mag` is the
     magnitude (absolute value) and `contour` is a line of constant value.
-    Refer to [#fn1]_ for more information.
+    Refer to [Wegert]_ for more information.
 
     .. plot::
        :context: close-figs
@@ -1229,17 +1199,6 @@ def plot_complex(*args, **kwargs):
     With this considerations in mind, the selection of a proper colormap is
     left to the user because not only it depends on the target audience of
     the visualization, but also on the function being visualized.
-
-    References
-    ==========
-
-    .. [#fn1] Domain Coloring is based on Elias Wegert's book
-       `"Visual Complex Functions" <https://www.springer.com/de/book/9783034801799>`_.
-       The book provides the background to better understand the images.
-
-    .. [#fn2] https://github.com/python-adaptive/adaptive
-
-    .. [#fn3] https://colorcet.com/
 
     See Also
     ========
@@ -1551,7 +1510,7 @@ def plot_complex_vector(*args, **kwargs):
         Default to ``'linear'``.
 
     xlim, ylim, zlim : (float, float), optional
-        Denotes the x-axis limits ory-axis limits, respectively,
+        Denotes the x-axis limits or y-axis limits, respectively,
         ``(min, max)``.
 
 
@@ -1679,42 +1638,18 @@ def plot_complex_vector(*args, **kwargs):
                 return t
         return str(args[i][0] if multiple_expr else args[0])
 
-    # create new arguments to be used by plot_vector
-    new_args = []
-    x, y = symbols("x, y", cls=Dummy)
+    new_series = []
     for i, s in enumerate(series):
-        expr1 = re(s.expr)
-        expr2 = im(s.expr)
-        free_symbols = s.expr.free_symbols
-        if params is not None:
-            free_symbols = free_symbols.difference(params.keys())
-        free_symbols = list(free_symbols)
-        if len(free_symbols) > 0:
-            fs = free_symbols[0]
-            expr1 = expr1.subs({fs: x + I * y})
-            expr2 = expr2.subs({fs: x + I * y})
-        r1 = prange(x, re(s.start), re(s.end))
-        r2 = prange(y, im(s.start), im(s.end))
-        label = get_label(i)
-        new_args.append(((expr1, expr2), r1, r2, label))
-
-    # substitute the complex variable in the scalar field
-    scalar = kwargs.get("scalar", None)
-    if scalar is not None:
-        if isinstance(scalar, Expr):
-            scalar = scalar.subs({fs: x + I * y})
-        elif isinstance(scalar, (list, tuple)):
-            scalar = list(scalar)
-            scalar[0] = scalar[0].subs({fs: x + I * y})
-        kwargs["scalar"] = scalar
-
-    kwargs["label"] = global_labels
-    kwargs.setdefault("xlabel", "x")
-    kwargs.setdefault("ylabel", "y")
-    return plot_vector(*new_args, **kwargs)
+        new_series.extend(
+            complex_vector_field(s.expr, s.ranges[0], label=get_label(i), **kwargs)
+        )
+    for s, lbl in zip(new_series, global_labels):
+        s.label = lbl
+    return graphics(*new_series, **kwargs)
 
 
-def plot_riemann_sphere(*args, **kwargs):
+def plot_riemann_sphere(expr, range=None, annotate=True, riemann_mask=True,
+    **kwargs):
     """Visualize stereographic projections of the Riemann sphere.
 
     Note:
@@ -1758,11 +1693,11 @@ def plot_riemann_sphere(*args, **kwargs):
     Notes
     =====
 
-    The Riemann sphere[#fn5]_ is a model of the extented complex plane,
+    The [Riemann-sphere] is a model of the extented complex plane,
     comprised of the complex plane plus a point at infinity. Let's consider
     a 3D space with a sphere of radius 1 centered at the origin. The xy plane,
     representing the complex plane, cut the sphere in half at the equator.
-    The stereographic projection of any point in the complex plane on the
+    The [Stereographic]_ projection of any point in the complex plane on the
     sphere is given by the intersection point between a line connecting the
     complex point with the north pole of the sphere.
     Let's consider the magnitude of a complex point:
@@ -1777,7 +1712,7 @@ def plot_riemann_sphere(*args, **kwargs):
       is mapped to the Northen Hemisphere. The north pole represents the point
       at infinity.
 
-    Visualizing a 3D sphere is difficult (refer to Wegert [#fn4]_ for more
+    Visualizing a 3D sphere is difficult (refer to [Wegert]_ for more
     information): the most obvious problem is that only a part can be seen
     from any location. A better way to fully visualize the sphere is with
     two 2D charts depicting the sphere from the inside:
@@ -1920,81 +1855,47 @@ def plot_riemann_sphere(*args, **kwargs):
 
     plot_complex
 
-
-    References
-    ==========
-
-    .. [#fn4] Domain Coloring is based on Elias Wegert's book
-       `"Visual Complex Functions" <https://www.springer.com/de/book/9783034801799>`_.
-       The book provides the background to better understand the images.
-    .. [#fn5] `Riemann sphere at Wikipedia <https://en.wikipedia.org/wiki/Riemann_sphere>`_.
-    .. [#fn6] `Stereographic projection at Wikipedia <https://en.wikipedia.org/wiki/Stereographic_projection>`_.
-
     """
-    args = _plot_sympify(args)
+    expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
 
     if kwargs.get("threed", False):
         if kwargs.get("params", dict()):
             raise NotImplementedError("Interactive widgets plots over the "
                 "Riemann sphere is not implemented.")
+        series = riemann_sphere_3d(expr, **kwargs)
         kwargs.setdefault("xlabel", "Re")
         kwargs.setdefault("ylabel", "Im")
         kwargs.setdefault("zlabel", "")
-        colorbar = kwargs.pop("colorbar", True)
-        Backend = kwargs.get("backend", THREE_D_B)
-        t, p = symbols("theta phi")
-        # Northen and Southern hemispheres
-        s1 = RiemannSphereSeries(args[0], (t, 0, pi/2), (p, 0, 2*pi),
-            colorbar=False, **kwargs)
-        s2 = RiemannSphereSeries(args[0], (t, pi/2, pi), (p, 0, 2*pi),
-            colorbar=colorbar, **kwargs)
-        return _instantiate_backend(Backend, s1, s2, **kwargs)
+        return graphics(*series, **kwargs)
 
-    # look for the range: if not given, set it to an appropriate domain
-    r, found_r, fs = None, False, set()
-    for a in args:
-        if _is_range(a):
-            r = a
-            found_r = True
-        elif isinstance(a, Expr):
-            fs = _get_free_symbols([a])
-    if not r:
-        fs = fs.difference(params.keys())
+    if not range:
+        fs = _get_free_symbols(expr).difference(params.keys())
         s = fs.pop() if len(fs) > 0 else symbols("z")
-        args.append(Tuple(s, -1.25 - 1.25 * I, 1.25 + 1.25 * I))
+        range = Tuple(s, -1.25 - 1.25 * I, 1.25 + 1.25 * I)
 
     # don't show the individual plots
     show = kwargs.get("show", True)
     kwargs["show"] = False
     # set default options for Riemann sphere plots
     kwargs.setdefault("axis", False)
-    kwargs.setdefault("riemann_mask", True)
-    kwargs.setdefault("annotate", True)
+    kwargs["riemann_mask"] = riemann_mask
+    kwargs["annotate"] = annotate
     # size is applied to the final figure, not individual plots
     size = kwargs.pop("size", None)
     title = kwargs.pop("title", None)
     get_title = lambda i: title[i] if isinstance(title, (tuple, list)) else title
 
     # hide colorbar on first plot
-    legend = kwargs.get("legend", None)
-    kwargs["legend"] = False
+    kwargs["colorbar"] = False
     kwargs["title"] = get_title(0) if title is not None else "Southern Hemisphere"
     kwargs["at_infinity"] = False
-    p1 = plot_complex(*args, **kwargs)
-    test = (ComplexDomainColoringSeries, Parametric2DLineSeries,
-        List2DSeries, GenericDataSeries)
-    plot = p1.backend if isinstance(p1, IPlot) else p1
-    series = [s for s in plot.series if not isinstance(s, test)]
-    if len(series) > 1:
-        msg = "\n".join(str(s) for s in p1.series)
-        raise ValueError("Only one symbolic expression can be plotted. "
-            "Instead, the following have been received:\n" + msg)
+    p1 = graphics(riemann_sphere_2d(expr, range, **kwargs), **kwargs)
 
     kwargs["title"] = get_title(1) if title is not None else "Northen Hemisphere"
     kwargs["at_infinity"] = True
-    kwargs["legend"] = True if legend or (legend is None) else False
-    p2 = plot_complex(*args, **kwargs)
+    kwargs["colorbar"] = True
+    p2 = graphics(riemann_sphere_2d(expr, range, **kwargs), **kwargs)
 
     pg_interactive_kwargs = dict(
         imodule=kwargs.get("imodule", None),
@@ -2002,12 +1903,8 @@ def plot_riemann_sphere(*args, **kwargs):
         template=kwargs.get("template", None),
         ncols=kwargs.get("ncols", 2),
     )
-    if legend or (legend is None):
-        pg = plotgrid(p1, p2, nc=2, imagegrid=True, size=size, show=False,
-            **pg_interactive_kwargs)
-    else:
-        pg = plotgrid(p1, p2, nc=2, size=size, show=False,
-            **pg_interactive_kwargs)
+    pg = plotgrid(p1, p2, nc=2, imagegrid=True, size=size, show=False,
+        **pg_interactive_kwargs)
 
     if len(params) == 0:
         if pg.is_matplotlib_fig:
