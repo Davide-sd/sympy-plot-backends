@@ -204,3 +204,82 @@ line = plot3d_parametric_line(
     assert "imodule='panel'" in new_code
     assert "panelplot = line + sphere" in new_code
     assert "layout_controls" in new_code
+
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+def test_modify_graphics_plotly():
+    # verify that doc_utils adds `show=false` and `myplot=` to code block
+    # containing `graphics(...)`
+
+    code = """
+from sympy import symbols, sin, cos, pi
+from spb import *
+import numpy as np
+x, y = symbols("x, y")
+expr = (cos(x) + sin(x) * sin(y) - sin(x) * cos(y))**2
+graphics(
+    surface(expr, (x, 0, pi), (y, 0, 2 * pi), use_cm=True,
+        tx=np.rad2deg, ty=np.rad2deg,
+        wireframe=True, wf_n1=20, wf_n2=20),
+    backend=PB, xlabel="x [deg]", ylabel="y [deg]",
+    aspect=dict(x=1.5, y=1.5, z=0.5))"""
+
+    new_code = _modify_code(code)
+
+    assert "show=False" in new_code
+    assert "myplot = graphics" in new_code
+
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+def test_modify_iplot_code():
+    # Verify that if `graphics(..., servable=True), then the modified code
+    # contains the variable panelplot and that it returns the template in
+    # order to construct the webpage for the screenshot
+    code = """
+from sympy import *
+from spb import *
+import param
+a, b, c, d, e, f, theta, tp = symbols("a:f theta tp")
+def func(n):
+    t1 = (c + sin(a * theta + d))
+    t2 = ((b + sin(b * theta + e)) - (c + sin(a * theta + d)))
+    t3 = (f + sin(a * theta + n / pi))
+    return t1 + t2 * t3 / 2
+params = {
+    a: param.Integer(6, label="a"),
+    b: param.Integer(12, label="b"),
+    c: param.Integer(18, label="c"),
+    d: (4.7, 0, 2*pi),
+    e: (1.8, 0, 2*pi),
+    f: (3, 0, 5),
+    tp: (2, 0, 2)
+}
+series = []
+for n in range(20):
+    series += line_polar(
+        func(n), prange(theta, 0, tp*pi), params=params,
+        rendering_kw={"line_color": "black", "line_width": 0.5})
+graphics(
+    *series,
+    aspect="equal",
+    layout = "sbl",
+    ncols = 1,
+    title="Guilloché Pattern Explorer",
+    backend=BB,
+    legend=False,
+    use_latex=False,
+    servable=True,
+    imodule="panel"
+)
+"""
+    assert "show" not in code
+    assert "servable=True" in code
+
+    new_code = _modify_iplot_code(code)
+    s = new_code.split("\n")
+    assert "show=False" in new_code
+    assert "servable=False" in new_code
+    assert "imodule='panel'" in new_code
+    assert "template={" in new_code
+    assert "panelplot = graphics" in s[-2]
+    assert "create_template" in s[-1]

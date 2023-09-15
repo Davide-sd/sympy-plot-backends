@@ -26,7 +26,8 @@ def _modify_plot_expr(expr):
 
     func_name = expr.func.id
     # look for function calls starting with "plot"
-    if (len(func_name) >= 4) and (func_name[:4] == "plot"):
+    if (((len(func_name) >= 4) and (func_name[:4] == "plot")) or
+        (func_name == "graphics")):
         found_show = False
         # loop over kwargs, if "show" is already present, set its
         # value to False
@@ -47,6 +48,7 @@ def _modify_code(code):
     In the docstrings, the last command of each example is either:
     1. plot_something(...) # plot command can span multiple rows
     2. (p1 + p2 + ...).show()
+    3. graphics(...)
 
     Either way, the ``.. plotly`` directive is unable to extract the Plotly
     figure from the `Plot` object: it doesn't know where the figure is store.
@@ -58,6 +60,9 @@ def _modify_code(code):
        myplot.fig
     2. (p1 + p2 + ...).show() will be transformed to:
        myplot = p1 + p2 + ...
+       myplot.fig
+    3. graphics(...) will be transformed to:
+       myplot = graphics(..., show=False)
        myplot.fig
 
     So, the last command will actually be the Plotly figure. Therefore, the
@@ -121,7 +126,7 @@ def _modify_iplot_code(code):
     What this function does:
 
     1. Look for the last command to be plot_something(params={},
-       servable=True).
+       servable=True) or ``graphics(...)``.
     2. Remove servable
     3. set show=False and imodule="panel"
     4. manually create a template and apply the content.
@@ -190,7 +195,7 @@ def _modify_iplot_code(code):
         isinstance(ln.value.func, ast.Name)):
         # ordinary example: plot_something(expr, range, params={}, ...)
         func_name = tree.body[-1].value.func.id
-        if func_name[:4] == "plot":
+        if (func_name == "graphics") or (func_name[:4] == "plot"):
             params_node, servable_node = None, None
             show_node, imodule_node, backend_node = None, None, None
             for kw in tree.body[-1].value.keywords:
@@ -211,6 +216,9 @@ def _modify_iplot_code(code):
                     ast.keyword(arg='imodule', value=ast.Constant(value="panel"))
                 )
             is_KB = backend_node and (backend_node.value.id in ["KB", "K3DBackend"])
+            # HACK to deal with ``graphics``
+            if (func_name == "graphics") and ("params=" in ast.unparse(tree)):
+                params_node = True
             if ((params_node is None) or (servable_node is None)) and (not is_KB):
                 return ast.unparse(tree)
             if servable_node is None:

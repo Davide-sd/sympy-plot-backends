@@ -37,6 +37,8 @@ from spb.backends.plotly import PB
 from spb.backends.k3d import KB
 from spb.backends.mayavi import MAB
 
+from spb.graphics import *
+
 __all__ = [
     "plot", "plot_parametric", "plot_parametric_region",
     "plot_contour", "plot3d", "plot3d_parametric_line",
@@ -48,5 +50,14 @@ __all__ = [
     "plot_riemann_sphere", "PlotGrid",
     "plot_pole_zero", "plot_step_response", "plot_impulse_response",
     "plot_ramp_response", "plot_bode_magnitude", "plot_bode_phase",
-    "plot_bode", "plot_nyquist", "plot_nichols"
+    "plot_bode", "plot_nyquist", "plot_nichols",
+    "graphics", "line", "line_parametric_2d", "line_polar", "implicit_2d",
+    "list_2d", "geometry", "contour", "surface", "surface_parametric",
+    "surface_spherical", "surface_revolution", "line_parametric_3d",
+    "implicit_3d", "list_3d", "wireframes", "vector_field_2d",
+    "vector_field_3d", "complex_points", "line_abs_arg_colored",
+    "line_abs_arg", "line_real_imag", "surface_abs_arg", "surface_real_imag",
+    "domain_coloring", "analytic_landscape", "riemann_sphere_2d",
+    "riemann_sphere_3d", "complex_vector_field",
+    "contour_real_imag", "contour_abs_arg", "plane"
 ]
