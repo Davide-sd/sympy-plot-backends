@@ -15,7 +15,7 @@ from spb import plot3d_spherical
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
-    Function, dsolve, Eq, Ynm, floor
+    Function, dsolve, Eq, Ynm, floor, Ne
 )
 from sympy.vector import CoordSys3D, gradient
 import numpy as np
@@ -3109,3 +3109,25 @@ def test_unwrap():
     assert not np.allclose(y1, y2)
     assert not np.allclose(y1, y3)
     assert not np.allclose(y2, y3)
+
+
+def test_implicit_3d_series_plane():
+    # verify that if a Plane is given to Implicit3DSeries, the equation will
+    # be extracted
+
+    x, y, z = symbols("x:z")
+
+    s = Implicit3DSeries(
+        Plane((0, 0, 0), (1, 1, 1)), (x, -2, 2), (y, -3, 3), (z, -4, 4))
+    assert s.expr == x + y + z
+
+
+@pytest.mark.filterwarnings("ignore:The provided expression is an unequality.")
+@pytest.mark.parametrize("adaptive", [True, False])
+def test_implicit_2d_series_ne(adaptive):
+    # verify that objects of type Ne don't raise any error
+
+    x, y = symbols("x y")
+    expr = Ne(x*y, 1)
+    s = ImplicitSeries(expr, (x, -10, 10), (y, -10, 10), adaptive=adaptive)
+    s.get_data()

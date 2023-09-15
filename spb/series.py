@@ -226,7 +226,7 @@ def _uniform_eval(f1, f2, *args, modules=None,
                 "because the following exception was raised:\n"
                 "{}: {}".format(type(err).__name__, err))
         return wrapper_func(f2, *args)
-    
+
     # TODO: same message as adaptive_eval... use common function
     def _msg(err):
         warnings.warn(
@@ -251,7 +251,7 @@ def _uniform_eval(f1, f2, *args, modules=None,
             # fall back to sympy
             _msg(err)
             return _eval_with_sympy()
-    
+
     try:
         # any other module attempts to use numpy.vectorize
         return wrapper_func(f1, *args)
@@ -352,7 +352,7 @@ class BaseSeries:
         # axis, or using a polar discretization if a 3D plot is requested
         self.is_polar = kwargs.get("is_polar", False)
         # If True, the rendering will use points, not lines.
-        self.is_point = kwargs.get("is_point", False)
+        self.is_point = kwargs.get("point", kwargs.get("is_point", False))
 
         self._label = self._latex_label = ""
         self._ranges = []
@@ -1090,8 +1090,8 @@ class Line2DBaseSeries(BaseSeries):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.steps = kwargs.get("steps", False)
-        self.is_point = kwargs.get("is_point", False)
-        self.is_filled = kwargs.get("is_filled", True)
+        self.is_point = kwargs.get("point", kwargs.get("is_point", False))
+        self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.adaptive = kwargs.get("adaptive", cfg["adaptive"]["used_by_default"])
         self.adaptive_goal = kwargs.get("adaptive_goal", cfg["adaptive"]["goal"])
         self.loss_fn = kwargs.get("loss_fn", None)
@@ -2003,7 +2003,7 @@ class ContourSeries(SurfaceOver2DRangeSeries):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._allowed_keys += ["contour_kw", "is_filled", "clabels", "colorbar"]
-        self.is_filled = kwargs.get("is_filled", True)
+        self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.show_clabels = kwargs.get("clabels", True)
 
         # NOTE: contour plots are used by plot_contour, plot_vector and
@@ -2061,7 +2061,7 @@ class ImplicitSeries(BaseSeries):
         if self.adaptive:
             return self._adaptive_expr
         return self._non_adaptive_expr
-    
+
     @expr.setter
     def expr(self, expr):
         self._block_lambda_functions(expr)
@@ -2091,7 +2091,7 @@ class ImplicitSeries(BaseSeries):
             expr, is_equality = self._preprocess_meshgrid_expression(expr, self.adaptive)
             self._non_adaptive_expr = expr
             self._is_equality = is_equality
-    
+
     @property
     def line_color(self):
         return self._color
@@ -2099,7 +2099,7 @@ class ImplicitSeries(BaseSeries):
     @line_color.setter
     def line_color(self, v):
         self._color = v
-    
+
     color = line_color
 
     def _has_equality(self, expr):
@@ -2325,8 +2325,10 @@ class ImplicitSeries(BaseSeries):
         if isinstance(expr, Equality):
             expr = expr.lhs - expr.rhs
             equality = True
-        elif isinstance(expr, Relational):
-            expr = expr.gts - expr.lts
+        elif isinstance(expr, (GreaterThan, StrictGreaterThan)):
+            expr = expr.lhs - expr.rhs
+        elif isinstance(expr, (LessThan, StrictLessThan)):
+            expr = expr.rhs - expr.lhs
         elif not adaptive:
             raise NotImplementedError(
                 "The expression is not supported for "
@@ -2368,6 +2370,8 @@ class Implicit3DSeries(SurfaceBaseSeries):
         self.var_x, self.start_x, self.end_x = self.ranges[0]
         self.var_y, self.start_y, self.end_y = self.ranges[1]
         self.var_z, self.start_z, self.end_z = self.ranges[2]
+        if isinstance(self.expr, Plane):
+            self.expr = self.expr.equation(self.var_x, self.var_y, self.var_z)
         self._set_surface_label(label)
         self._allowed_keys += ["n3", "zscale"]
 
@@ -2423,8 +2427,8 @@ class ComplexPointSeries(Line2DBaseSeries):
             self.expr = expr
         self._block_lambda_functions(*self.expr)
 
-        self.is_point = kwargs.get("is_point", True)
-        self.is_filled = kwargs.get("is_filled", True)
+        self.is_point = kwargs.get("point", kwargs.get("is_point", True))
+        self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.steps = kwargs.get("steps", False)
         self._label = label
         self._latex_label = label
@@ -2499,7 +2503,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
         self.use_cm = kwargs.get("use_cm", cfg["plot3d"]["use_cm"])
         self.is_polar = kwargs.get("is_polar", False)
         self.surface_color = kwargs.get("surface_color", None)
-        self.is_filled = kwargs.get("is_filled", True)
+        self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         # determines what data to return on the z-axis
         self._return = kwargs.get("return", None)
 
@@ -2590,7 +2594,7 @@ class ComplexSurfaceSeries(ComplexSurfaceBaseSeries):
             self.is_3Dsurface = False
         self.color_func = kwargs.get("color_func", lambda x, y, z: z)
         self.rendering_kw = kwargs.get("rendering_kw", dict())
-        self.is_filled = kwargs.get("is_filled", True)
+        self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.show_clabels = kwargs.get("clabels", True)
         self._allowed_keys += ["is_filled", "clabels"]
 
@@ -3231,9 +3235,7 @@ class GeometrySeries(BaseSeries):
                 if len(args[0].functions) == 2
                 else Parametric3DLineSeries
             )
-            label = [a for a in args if isinstance(a, str)]
-            label = label[0] if len(label) > 0 else str(args[0])
-            return new_cls(*args[0].functions, args[0].limits, label, **kwargs)
+            return new_cls(*args[0].functions, args[0].limits, **kwargs)
         return object.__new__(cls)
 
     def __init__(self, expr, _range=None, label="", **kwargs):
@@ -3254,7 +3256,7 @@ class GeometrySeries(BaseSeries):
         self.ranges = [_range]
         self._label = str(expr) if label is None else label
         self._latex_label = latex(expr) if label is None else label
-        self.is_filled = kwargs.get("is_filled", True)
+        self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.n = int(kwargs.get("n", 200))
         self.use_cm = kwargs.get("use_cm", False)
         self.color_func = kwargs.get("color_func", None)
