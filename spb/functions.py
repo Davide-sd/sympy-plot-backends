@@ -16,9 +16,9 @@ Simplicity of code takes much greater importance than performance. Don't use
 it if you care at all about performance.
 """
 
-from spb.defaults import TWO_D_B, THREE_D_B, cfg
+from spb.defaults import TWO_D_B
 from spb.graphics import (
-    graphics, line, line_parametric_2d, line_parametric_3d, line_polar,
+    graphics, line, line_parametric_2d, line_parametric_3d,
     surface, surface_parametric, surface_revolution, surface_spherical,
     contour, implicit_2d, implicit_3d, list_2d, list_3d, geometry
 )
