@@ -59,218 +59,49 @@ def plot_vector(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a vector field with a single range.
-        `plot(expr, range1, range2, range3 [optional], **kwargs)`
+    - Plotting a 2D vector field:
 
-    - Plotting multiple vector fields with different ranges and custom labels.
-        `plot((expr1, range1, range2, range3 [optional], label1 [optional]), (expr2, range4, range5, range6 [optional], label2 [optional]), **kwargs)`
+      .. code-block::
 
-    Parameters
-    ==========
+         plot_vector(vec, range_x, range_y, **kwargs)
 
-    args :
-        expr : Vector, or Matrix/list/tuple with 2 or 3 elements
-            Represents the vector to be plotted. It can be a:
+    - Plotting multiple 2D vector fields with different ranges and
+      custom labels:
 
-            * Vector from the `sympy.vector` module or from the
-              `sympy.physics.mechanics` module.
-            * Matrix/list/tuple with 2 (or 3) symbolic elements.
-            * list/tuple with 2 (or 3) numerical functions of 2 (or 3)
-              variables.
+      .. code-block::
 
-            Note: if a 3D symbolic vector is given with a list/tuple, it might
-            happens that the internal algorithm thinks of it as a range.
-            Therefore, 3D vectors should be given as a Matrix or as a Vector:
-            this reduces ambiguities.
+         plot_vector(
+            (vec1, range1_x, range1_y, label1 [opt]),
+            (vec2, range2_x, range2_y, label2 [opt]),
+            **kwargs)
 
-        ranges : 3-element tuples
-            Denotes the range of the variables. For example (x, -5, 5). For 2D
-            vector plots, 2 ranges must be provided. For 3D vector plots, 3
-            ranges are needed.
+    - Plotting a 3D vector field:
 
-        label : str, optional
-            The name of the vector field to be eventually shown on the legend
-            or colorbar. If none is provided, the string representation of
-            the vector will be used.
+      .. code-block::
 
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
+         plot_vector(vec, range_x, range_y, range_z, **kwargs)
 
-    backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
+    - Plotting multiple 3D vector fields with different ranges and
+      custom labels:
 
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
+      .. code-block::
 
-    color_func : callable, optional
-        Define the quiver/streamlines color mapping when ``use_cm=True``.
-        It can either be:
+         plot_vector(
+            (vec1, range1_x, range1_y, range1_z, label1 [opt]),
+            (vec2, range2_x, range2_y, range2_z, label2 [opt]),
+            **kwargs)
 
-        * A numerical function supporting vectorization. The arity can be:
+    Refer to :func:`~spb.graphics.vectors.vector_field_2d` for a full
+    list of keyword arguments to customize the appearances of quivers,
+    streamlines and contours for a 2D vector field.
 
-          1. ``f(x, y, u, v)`` for a 2D vector field. Further, ``scalar=False``
-             must be set in order to hide the contour plot so that a colormap
-             is applied to quivers/streamlines.
-          2. ``f(x, y, z, u, v, w)`` for a 3D vector field.
+    Refer to :func:`~spb.graphics.vectors.vector_field_3d` for a full
+    list of keyword arguments to customize the appearances of quivers and
+    streamlines for a 3D vector field.
 
-        * A symbolic expression having at most as many free symbols as
-          ``expr``. This only works for quivers plot.
-        * None: the default value, which will map colors according to the
-          magnitude of the vector.
-
-    contour_kw : dict
-        A dictionary of keywords/values which is passed to the backend
-        contour function to customize the appearance. Refer to the plotting
-        library (backend) manual for more informations.
-
-    label : list/tuple, optional
-        The label to be shown in the colorbar if ``scalar=None``.
-        If not provided, the string representation of `expr` will be used.
-
-        The number of labels must be equal to the number of series generated
-        by the plotting function. For example:
-
-        * if a scalar field and a quiver (or streamline) are shown
-          simultaneously, then two labels must be provided;
-        * if only a quiver (or streamline) is shown, then one label must be
-          provided.
-        * if two or more quivers (or streamlines) are shown, then two or more
-          labels must be provided.
-
-    n1, n2, n3 : int
-        Number of discretization points for the quivers or streamlines in the
-        x/y/z-direction, respectively. Default to 25.
-
-    n : int or three-elements tuple (n1, n2, n3), optional
-        If an integer is provided, the ranges are sampled uniformly
-        at `n` number of points. If a tuple is provided, it overrides
-        `n1`, `n2` and `n3`. Default to 25.
-
-    nc : int
-        Number of discretization points for the scalar contour plot.
-        Default to 100.
-
-    normalize : bool
-        Default to False. If True, the vector field will be normalized,
-        resulting in quivers having the same length. If ``use_cm=True``, the
-        backend will color the quivers by the (pre-normalized) vector field's
-        magnitude. Note: only quivers will be affected by this option.
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
-
-    quiver_kw : dict
-        A dictionary of keywords/values which is passed to the backend quivers-
-        plotting function to customize the appearance. Refer to the plotting
-        library (backend) manual for more informations.
-
-    rendering_kw : list of dicts, optional
-        A list of dictionaries of keywords/values which is passed to the
-        backend's functions to customize the appearance.
-
-        The number of dictionaries must be equal to the number of series
-        generated by the plotting function. For example:
-
-        * if a scalar field and a quiver (or streamline) are shown
-          simultaneously, then two dictionaries must be provided;
-        * if only a quiver (or streamline) is shown, then one dictionary must
-          be provided.
-        * if two or more quivers (or streamlines) are shown, then two or more
-          dictionaries must be provided.
-
-        Note that this will override ``quiver_kw``, ``stream_kw``,
-        ``contour_kw``.
-
-    scalar : boolean, Expr, None or list/tuple of 2 elements
-        Represents the scalar field to be plotted in the background of a 2D
-        vector field plot. Can be:
-
-        - `True`: plot the magnitude of the vector field. Only works when a
-          single vector field is plotted.
-        - `False`/`None`: do not plot any scalar field.
-        - `Expr`: a symbolic expression representing the scalar field.
-        - a numerical function of 2 variables supporting vectorization.
-        - `list`/`tuple`: [scalar_expr, label], where the label will be
-          shown on the colorbar. scalar_expr can be a symbolic expression
-          or a numerical function of 2 variables supporting vectorization.
-
-        Default to True.
-
-    show : boolean
-        The default value is set to `True`. Set show to `False` and
-        the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the `save()` and `show()` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
-        the size will be set by the backend.
-
-    slice : Plane, list, Expr
-        Plot the 3D vector field over the provided slice. It can be:
-
-        - a Plane object from sympy.geometry module.
-        - a list of planes.
-        - an instance of ``SurfaceOver2DRangeSeries`` or
-          ``ParametricSurfaceSeries``.
-        - a symbolic expression representing a surface of two variables.
-
-        The number of discretization points will be `n1`, `n2`, `n3`.
-        Note that:
-
-        - only quivers plots are supported with slices. Streamlines plots
-          are unaffected.
-        - `n3` will only be used with planes parallel to xz or yz.
-        - `n1`, `n2`, `n3` doesn't affect the slice if it is an instance of
-          ``SurfaceOver2DRangeSeries`` or ``ParametricSurfaceSeries``.
-
-    streamlines : boolean
-        Whether to plot the vector field using streamlines (True) or quivers
-        (False). Default to False.
-
-    stream_kw : dict
-        A dictionary of keywords/values which is passed to the backend
-        streamlines-plotting function to customize the appearance. Refer to
-        the Notes section to learn more.
-
-        For 3D vector fields, by default the streamlines will start at the
-        boundaries of the domain where the vectors are pointed inward.
-        Depending on the vector field, this may results in too tight
-        streamlines. Use the `starts` keyword argument to control the
-        generation of streamlines:
-
-        - `starts=None`: the default aforementioned behaviour.
-        - `starts=dict(x=x_list, y=y_list, z=z_list)`: specify the starting
-          points of the streamlines.
-        - `starts=True`: randomly create starting points inside the domain.
-          In this setup we can set the number of starting point with `npoints`
-          (default value to 200).
-
-        If 3D streamlines appears to be cut short inside the specified domain,
-        try to increase `max_prop` (default value to 5000).
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel, zlabel : str, optional
-        Labels for the x-axis, y-axis, z-axis, respectively.
-        ``zlabel`` is only available for 3D plots.
-
-    xlim, ylim, zlim : (float, float), optional
-        Denotes the axis limits, `(min, max)`, visible in the chart.
-        ``zlim`` is only available for 3D plots
-
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========

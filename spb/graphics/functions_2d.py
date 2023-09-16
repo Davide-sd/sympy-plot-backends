@@ -185,7 +185,7 @@ def _build_line_series(expr, r, label, **kwargs):
 
 
 def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
-    """
+    """Plot a function of one variable over a 2D space.
 
     Parameters
     ==========
@@ -505,6 +505,12 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
            title=("Frequency = {:.2f} Hz", a)
        )
 
+    See Also
+    ========
+
+    line_parametric_2d, line_polar, implicit_2d, list_2d, geometry,
+    spb.graphics.functions_3d.line_parametric_3d
+
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
@@ -742,6 +748,11 @@ def line_parametric_2d(expr1, expr2, range=None, label=None, rendering_kw=None,
            xlim=(-1.25, 1.25), ylim=(-1.25, 1.25)
        )
 
+    See Also
+    ========
+
+    spb.graphics.functions_3d.line_parametric_3d, line_polar, line
+
     """
     expr1, expr2 = map(_plot_sympify, [expr1, expr2])
     params = kwargs.get("params", {})
@@ -845,6 +856,11 @@ def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
            imodule="panel"
        )
 
+    See Also
+    ========
+
+    line_parametric_2d, line
+
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
@@ -874,7 +890,8 @@ def contour(expr, range1=None, range2=None, label=None, rendering_kw=None,
         Choose between filled contours or line contours. Default to True
         (filled contours).
     **kwargs :
-        Keyword arguments are the same as ``surface``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_3d.surface`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -1010,6 +1027,11 @@ def contour(expr, range1=None, range2=None, label=None, rendering_kw=None,
            grid=False, use_latex=False
        )
 
+    See Also
+    ========
+
+    spb.graphics.functions_3d.surface
+
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
@@ -1030,13 +1052,14 @@ def implicit_2d(expr, range1=None, range2=None, label=None, rendering_kw=None,
     """
     Plot implicit equations / inequalities.
 
-    ``implicit_2d``, by default, generates a contour using a mesh grid of fixed
-    number of points. The greater the number of points, the greater the memory
-    used. By setting ``adaptive=True``, interval arithmetic will be used to
-    plot functions. If the expression cannot be plotted using interval
-    arithmetic, it defaults to generating a contour using a mesh grid.
-    With interval arithmetic, the line width can become very small; in those
-    cases, it is better to use the mesh grid approach.
+    ``implicit_2d``, by default, generates a contour using a mesh grid of
+    fixednumber of points. The greater the number of points, the better the
+    results, but also the greater the memory used.
+    By setting ``adaptive=True``, interval arithmetic will be used to plot
+    functions. If the expression cannot be plotted using interval arithmetic,
+    it defaults to generating a contour using a mesh grid. With interval
+    arithmetic, the line width can become very small; in those cases, it is
+    better to use the mesh grid approach.
 
     Parameters
     ==========
@@ -1282,6 +1305,11 @@ def implicit_2d(expr, range1=None, range2=None, label=None, rendering_kw=None,
                }, n=150),
            use_latex=False, ylim=(-10, 10))
 
+    See Also
+    ========
+
+    line, spb.graphics.functions_3d.implicit_3d
+
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
@@ -1430,6 +1458,11 @@ def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
                params=params, is_point=True),
            aspect="equal", use_latex=False
        )
+
+    See Also
+    ========
+
+    line, spb.graphics.functions_3d.list_3d
 
     """
     if not hasattr(coord_x, "__iter__"):
@@ -1593,6 +1626,11 @@ def geometry(geom, label=None, rendering_kw=None,
                params=params, fill=False),
            aspect="equal", use_latex=False,
            xlim=(-2.5, 5.5), ylim=(-3, 6.5), imodule="panel")
+
+    See Also
+    ========
+
+    line, spb.graphics.functions_3d.plane
 
     """
     s = GeometrySeries(geom, label=label, rendering_kw=rendering_kw,

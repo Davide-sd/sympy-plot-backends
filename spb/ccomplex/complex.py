@@ -1,6 +1,6 @@
 from spb.defaults import cfg, TWO_D_B, THREE_D_B
 from spb.functions import (
-    _set_labels, _plot3d_wireframe_helper
+    _set_labels
 )
 from spb.series import (
     LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
@@ -283,7 +283,7 @@ def _set_axis_labels(series, kwargs):
 
 
 def plot_real_imag(*args, **kwargs):
-    """Plot the real part, the imaginary parts, the absolute value and the
+    """Plot the real and imaginary parts, the absolute value and the
     argument of a complex function. By default, only the real and imaginary
     parts will be plotted. Use keyword argument to be more specific.
     By default, the aspect ratio of 2D plots is set to ``aspect="equal"``.
@@ -297,267 +297,46 @@ def plot_real_imag(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a single expression with a single range.
-        `plot_real_imag(expr, range, **kwargs)`
-    - Plotting a single expression with the default range (-10, 10).
-        `plot_real_imag(expr, **kwargs)`
-    - Plotting multiple expressions with a single range.
-        `plot_real_imag(expr1, expr2, ..., range, **kwargs)`
-    - Plotting multiple expressions with multiple ranges.
-        `plot_real_imag((expr1, range1), (expr2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with custom labels and rendering options.
-        `plot_real_imag((expr1, range1, label1, rendering_kw1), (expr2, range2, label2, rendering_kw2), ..., **kwargs)`
+    - Plotting a single expression with the default range (-10, 10):
+
+      .. code-block::
+
+         plot_real_imag(expr, **kwargs)
+
+    - Plotting multiple expressions with a single range:
+
+      .. code-block::
+
+         plot_real_imag(expr1, expr2, ..., range, **kwargs)
+
+    - Plotting multiple expressions with multiple ranges, custom labels and
+      rendering options:
+
+      .. code-block::
+
+         plot_real_imag(
+            (expr1, range1, label1 [opt], rendering_kw1 [opt]),
+            (expr2, range2, label2 [opt], rendering_kw2 [opt]), ..., **kwargs)
+
+    Refer to :func:`~spb.graphics.complex_analysis.line_real_imag` or
+    :func:`~spb.graphics.complex_analysis.surface_real_imag` for a full
+    list of keyword arguments to customize the appearances of lines and
+    surfaces.
+
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Parameters
     ==========
-    args :
-        expr : Expr
-            Represent the complex function to be plotted.
-
-        range : 3-element tuple
-            Denotes the range of the variables. For example:
-
-            * ``(z, -5, 5)``: plot a line over the reals from point `-5` to
-              `5`
-            * ``(z, -5 + 2*I, 5 + 2*I)``: plot a line from complex point
-              ``(-5 + 2*I)`` to ``(5 + 2 * I)``. Note the same imaginary part
-              for the start/end point. Also note that we can specify the
-              ranges by using standard Python complex numbers, for example
-              ``(z, -5+2j, 5+2j)``.
-            * ``(z, -5 - 3*I, 5 + 3*I)``: surface or contour plot of the
-              complex function over the specified domain using a rectangular
-              discretization.
-
-        label : str, optional
-            The name of the complex function to be eventually shown on the
-            legend. If none is provided, the string representation of the
-            function will be used.
-
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of lines. Refer to the
-            plotting library (backend) manual for more informations. Note that
-            the same options will be applied to all series generated for the
-            specified expression.
-
-    abs : boolean, optional
-        If True, plot the modulus of the complex function. Default to False.
-
-    adaptive : bool, optional
-        If ``True``, creates line plots by using an adaptive algorithm.
-        Use ``adaptive_goal`` and ``loss_fn`` to further customize the output.
-        Image and surface plots do not use an adaptive algorithm.
-
-        Default to ``False``, which uses a uniform sampling strategy.
-
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn0]_ for more information.
-
-    arg : boolean, optional
-        If True, plot the argument of the complex function. Default to False.
-
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
-
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
-
-    colorbar : boolean, optional
-        Show/hide the colorbar. Only works when ``use_cm=True`` and 3D plots.
-        Default to True (colorbar is visible).
-
-    detect_poles : boolean, optional
-        Chose whether to detect and correctly plot poles. Defaulto to False.
-        It only works with line plots. To improve detection, increase the
-        number of discretization points if ``adaptive=False`` and/or change
-        the value of ``eps``.
-
-    eps : float, optional
-        An arbitrary small value used by the ``detect_poles`` algorithm.
-        Default value to 0.1. Before changing this value, it is better to
-        increase the number of discretization points.
-
-    imag : boolean, optional
-        If True, plot the imaginary part of the complex function.
-        Default to True.
-
-    label : list/tuple, optional
-        The labels to be shown in the legend. If not provided, the string
-        representation of ``expr`` will be used. The number of labels must be
-        equal to the number of series generated by the plotting function.
-
-    loss_fn : callable or None
-        The loss function to be used by the adaptive learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          ``adaptive`` module.
-        * callable : Refer to [#fn0]_ for more information. Specifically,
-          look at ``adaptive.learner.learner1D`` to find more loss functions.
-
-    modules : str, optional
-        Specify the modules to be used for the numerical evaluation. Refer to
-        ``lambdify`` to visualize the available options. Default to None,
-        meaning Numpy/Scipy will be used. Note that other modules might
-        produce different results, based on the way they deal with branch
-        cuts.
-
-    n1, n2 : int, optional
-        Number of discretization points in the real/imaginary-directions,
-        respectively, when `adaptive=False`. For line plots, default to 1000.
-        For surface/contour plots (2D and 3D), default to 300.
-
-    n : int or two-elements tuple (n1, n2), optional
-        If an integer is provided, set the same number of discretization
-        points in all directions. If a tuple is provided, it overrides
-        ``n1`` and ``n2``. It only works when ``adaptive=False``.
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of series generated by the plotting function.
-
     real : boolean, optional
-        If True, plot the real part of the complex function. Default to True.
-
-    show : boolean, optional
-        Default to True, in which case the plot will be shown on the screen.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
-        the size will be set by the backend.
-
-    surface_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-
-    threed : boolean, optional
-        It only applies to a complex function over a complex range. If False,
-        contour plots will be shown. If True, 3D surfaces will be shown.
-        Default to False.
-
-    use_cm : boolean, optional
-        If False, surfaces will be rendered with a solid color.
-        If True, a color map highlighting the elevation will be used.
-        Default to True.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    wireframe : boolean, optional
-        Enable or disable a wireframe over the 3D surface. Depending on the
-        number of wireframe lines (see ``wf_n1`` and ``wf_n2``), activating
-        thisoption might add a considerable overhead during the plot's
-        creation. Default to False (disabled).
-
-    wf_n1, wf_n2 : int, optional
-        Number of wireframe lines along the x and y ranges, respectively.
-        Default to 10. Note that increasing this number might considerably
-        slow down the plot's creation.
-
-    wf_npoint : int or None, optional
-        Number of discretization points for the wireframe lines. Default to
-        None, meaning that each wireframe line will have ``n1`` or ``n2``
-        number of points, depending on the line direction.
-
-    wf_rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of wireframe lines.
-
-    xlabel, ylabel, zlabel : str, optional
-        Labels for the x-axis, y-axis or z-axis, respectively.
-        ``zlabel`` is only available for 3D plots.
-
-    xscale, yscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis or y-axis, respectively.
-        Default to ``'linear'``.
-
-    xlim, ylim, zlim : (float, float), optional
-        Denotes the x-axis limits, y-axis limits or z-axis limits,
-        respectively, ``(min, max)``. ``zlim`` is only available for 3D plots.
-
-    Notes
-    =====
-
-    Given a symbolic expression, there are two possible way to create a
-    real/imag plot:
-
-    1. Apply Sympy's ``re`` or ``im`` to the symbolic expression, then
-       evaluates it.
-    2. Evaluates the symbolic expression over the provided range in order to
-       get complex values, then extract the real/imaginary parts with Numpy.
-
-    For performance reasons, ``plot_real_imag`` implements the second approach.
-    In fact, SymPy's ``re`` and ``im`` functions evaluate their arguments,
-    potentially creating unecessarely long symbolic expressions that requires
-    a lot of time to be evaluated.
-
-    Another thing to be aware of is branch cuts of complex-valued functions.
-    The plotting module attempt to evaluate a symbolic expression using complex
-    numbers. Depending on the evaluation module being used, we might get
-    different results. For example, the following two expressions should be
-    equal only when ``x > 0``. Instead, the plotting module gives us an
-    incorrect result:
-
-    .. plot::
-       :context: reset
-       :format: doctest
-       :include-source: True
-
-       >>> from sympy import symbols, im, Rational
-       >>> from spb import plot_real_imag, plot
-       >>> x = symbols('x')
-       >>> e1 = (1 / x)**(Rational(6, 5))
-       >>> e2 = x**(-Rational(6, 5))
-       >>> plot_real_imag((e1, "e1"), (e2, "e2"), real=False, ylim=(-5, 5))
-
-    We can force the evaluation to use only real numbers:
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-       >>> plot_real_imag((e1, "e1"), (e2, "e2"), real=False, ylim=(-5, 5),
-       ...     force_real_eval=True)
-
-    This produced the correct visualization. Alternatively, we can evaluate
-    the expressions with mpmath:
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-       >>> plot_real_imag((e1, "e1"), (e2, "e2"), real=False, ylim=(-5, 5),
-       ...     modules="mpmath")
-
+        Show/hide the real part. Default to True (visible).
+    imag : boolean, optional
+        Show/hide the imaginary part. Default to True (visible).
+    abs : boolean, optional
+        Show/hide the absolute value. Default to False (hidden).
+    arg : boolean, optional
+        Show/hide the argument. Default to False (hidden).
 
     Examples
     ========
@@ -721,237 +500,33 @@ def plot_complex(*args, **kwargs):
        argument to select a different coloring strategy and ``cmap`` to set
        a custom color map (default to HSV).
 
-    Read the `Notes` section to learn more about colormaps.
-
     Typical usage examples are in the followings:
 
-    - Plotting a single expression with a single range.
-        `plot_complex(expr, range, **kwargs)`
-    - Plotting a single expression with the default range (-10, 10).
-        `plot_complex(expr, **kwargs)`
-    - Plotting multiple expressions with a single range.
-        `plot_complex(expr1, expr2, ..., range, **kwargs)`
-    - Plotting multiple expressions with multiple ranges.
-        `plot_complex((expr1, range1), (expr2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with custom labels and rendering options.
-        `plot_complex((expr1, range1, label1, rendering_kw1), (expr2, range2, label2, rendering_kw2), ..., **kwargs)`
+    - Plotting a single expression with a single range:
 
-    Parameters
-    ==========
-    args :
-        expr : Expr or callable
-            Represent the complex function to be plotted. It can be a:
+      .. code-block::
 
-            * Symbolic expression.
-            * Numerical function of one variable, supporting vectorization.
-              In this case the following keyword arguments are not supported:
-              ``params``.
+         plot_complex(expr, range, **kwargs)
 
-        range : 3-element tuple
-            Denotes the range of the variables. For example:
+    - Plotting multiple expressions with different ranges, custom labels and
+      rendering options:
 
-            * ``(z, -5, 5)``: plot a line over the reals from point `-5` to
-              `5`
-            * ``(z, -5 + 2*I, 5 + 2*I)``: plot a line from complex point
-              ``(-5 + 2*I)`` to ``(5 + 2 * I)``. Note the same imaginary part
-              for the start/end point. Also note that we can specify the
-              ranges by using standard Python complex numbers, for example
-              ``(z, -5+2j, 5+2j)``.
-            * ``(z, -5 - 3*I, 5 + 3*I)``: surface or contour plot of the
-              complex function over the specified domain.
+      .. code-block::
 
-        label : str, optional
-            The name of the complex function to be eventually shown on the
-            legend. If none is provided, the string representation of the
-            function will be used.
+         plot_complex(
+            (expr1, range1, label1 [opt], rendering_kw1 [opt]),
+            (expr2, range2, label2 [opt], rendering_kw2 [opt]),
+            ..., **kwargs)
 
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of lines, surfaces or images.
-            Refer to the plotting library (backend) manual for more
-            informations.
+    Refer to :func:`~spb.graphics.complex_analysis.line_abs_arg_colored` or
+    :func:`~spb.graphics.complex_analysis.domain_coloring` or
+    :func:`~spb.graphics.complex_analysis.analytic_landscape` for a full
+    list of keyword arguments to customize the appearances of lines and
+    surfaces.
 
-    adaptive : bool, optional
-        If ``True``, creates line plots by using an adaptive algorithm.
-        Use ``adaptive_goal`` and ``loss_fn`` to further customize the output.
-        Image and surface plots do not use an adaptive algorithm.
-
-        Default to ``False``, which uses a uniform sampling strategy.
-
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [python-adaptive]_ for more information.
-
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
-
-    at_infinity : boolean, optional
-        Apply the transformation $z \\rightarrow \\frac{1}{z}$ in order to
-        study the behaviour of the function around the point at infinity.
-        It is recommended to also set ``axis=False`` in order to avoid
-        confusion.
-
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
-
-    blevel : float, optional
-        Controls the black level of ehanced domain coloring plots. It must be
-        `0 (black) <= blevel <= 1 (white)`. Default to 0.75.
-
-    cmap : str, iterable, optional
-        Specify the colormap to be used on enhanced domain coloring plots
-        (both images and 3d plots). Default to ``"hsv"``. Can be any colormap
-        from matplotlib or colorcet.
-
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-
-    coloring : str or callable, optional
-        Choose between different domain coloring options. Default to ``"a"``.
-        Refer to [Wegert]_ for more information.
-
-        - ``"a"``: standard domain coloring showing the argument of the
-          complex function.
-        - ``"b"``: enhanced domain coloring showing iso-modulus and iso-phase
-          lines.
-        - ``"c"``: enhanced domain coloring showing iso-modulus lines.
-        - ``"d"``: enhanced domain coloring showing iso-phase lines.
-        - ``"e"``: alternating black and white stripes corresponding to
-          modulus.
-        - ``"f"``: alternating black and white stripes corresponding to
-          phase.
-        - ``"g"``: alternating black and white stripes corresponding to
-          real part.
-        - ``"h"``: alternating black and white stripes corresponding to
-          imaginary part.
-        - ``"i"``: cartesian chessboard on the complex points space. The
-          result will hide zeros.
-        - ``"j"``: polar Chessboard on the complex points space. The result
-          will show conformality.
-        - ``"k"``: black and white magnitude of the complex function.
-          Zeros are black, poles are white.
-        - ``"l"``:enhanced domain coloring showing iso-modulus and iso-phase
-          lines, blended with the magnitude: white regions indicates greater
-          magnitudes. Can be used to distinguish poles from zeros.
-        - ``"m"``: enhanced domain coloring showing iso-modulus lines, blended
-          with the magnitude: white regions indicates greater magnitudes.
-          Can be used to distinguish poles from zeros.
-        - ``"n"``: enhanced domain coloring showing iso-phase lines, blended
-          with the magnitude: white regions indicates greater magnitudes.
-          Can be used to distinguish poles from zeros.
-        - ``"o"``: enhanced domain coloring showing iso-phase lines, blended
-          with the magnitude: white regions indicates greater magnitudes.
-          Can be used to distinguish poles from zeros.
-
-        The user can also provide a callable, ``f(w)``, where ``w`` is an
-        [n x m] Numpy array (provided by the plotting module) containing
-        the results (complex numbers) of the evaluation of the complex
-        function. The callable should return:
-
-        - img : ndarray [n x m x 3]
-            An array of RGB colors (0 <= R,G,B <= 255)
-        - colorscale : ndarray [N x 3] or None
-            An array with N RGB colors, (0 <= R,G,B <= 255).
-            If ``colorscale=None``, no color bar will be shown on the plot.
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend or colorbar in case of a line plot.
-        If not provided, the string representation of ``expr`` will be used.
-        The number of labels must be  equal to the number of expressions.
-
-    loss_fn : callable or None
-        The loss function to be used by the adaptive learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          ``adaptive`` module.
-        * callable : Refer to [python-adaptive]_ for more information. Specifically,
-          look at `adaptive.learner.learner1D` to find more loss functions.
-
-    modules : str, optional
-        Specify the modules to be used for the numerical evaluation. Refer to
-        ``lambdify`` to visualize the available options. Default to None,
-        meaning Numpy/Scipy will be used. Note that other modules might
-        produce different results, based on the way they deal with branch
-        cuts.
-
-    n1, n2 : int, optional
-        Number of discretization points in the real/imaginary-directions,
-        respectively, when ``adaptive=False``. For line plots, default to 1000.
-        For surface/contour plots (2D and 3D), default to 300.
-
-    n : int or two-elements tuple (n1, n2), optional
-        If an integer is provided, set the same number of discretization
-        points in all directions. If a tuple is provided, it overrides
-        ``n1`` and ``n2``. It only works when ``adaptive=False``.
-
-    params : dict, optional
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-
-    phaseres : int, optional
-        Default value to 20. It controls the number of iso-phase and/or
-        iso-modulus lines in domain coloring plots.
-
-    phaseoffset : float, optional
-        Controls the phase offset of the colormap in domain coloring plots.
-        Default to 0.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines, surfaces or images.
-        Refer to the plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of series generated by the plotting function.
-
-    show : boolean, optional
-        Default to True, in which case the plot will be shown on the screen.
-
-    axis : boolean, optional
-        Turn on/off the axis of the plot. Default to True (axis are visible).
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the backend.
-
-    threed : boolean, optional
-        It only applies to a complex function over a complex range. If False,
-        a 2D image plot will be shown. If True, 3D surfaces will be shown.
-        Default to False.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel, zlabel : str, optional
-        Labels for the x-axis, y-axis or z-axis, respectively.
-        ``zlabel`` is only available for 3D plots.
-
-    xscale, yscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis or y-axis, respectively.
-        Default to ``'linear'``.
-
-    xlim, ylim, zlim : (float, float), optional
-        Denotes the x-axis limits, y-axis limits or z-axis limits,
-        respectively, ``(min, max)``. ``zlim`` is only available for 3D plots.
-
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
@@ -1079,127 +654,6 @@ def plot_complex(*args, **kwargs):
        plot_complex(expr, (z, -3-3j, 3+3j), coloring="b", threed=True,
            use_cm=True, grid=False, n=500, backend=KB, tz=np.log)
 
-
-    Notes
-    =====
-
-    By default, a domain coloring plot will show the phase portrait: each point
-    of the complex plane is color-coded according to its argument. The default
-    colormap is HSV, which is characterized by 2 important problems:
-
-    * It is not friendly to people affected by color deficiencies.
-    * It might be misleading because it isn't perceptually uniform: features
-      disappear at points of low perceptual contrast, or false features appear
-      that are in the colormap but not in the data (refer to colorcet [colorcet]_
-      for more information).
-
-    Hence, it might be helpful to chose a perceptually uniform colormap.
-    Domaing coloring plots are naturally suited to be represented by cyclic
-    colormaps, but sequential colormaps can be used too. In the following
-    example we illustrate the phase portrait of `f(z) = z` using different
-    colormaps:
-
-    .. plot::
-       :context: close-figs
-       :include-source: True
-
-       from sympy import symbols, pi
-       import colorcet
-       from spb import *
-
-       z = symbols("z")
-       cmaps = {
-           "hsv": "hsv",
-           "twilight": "twilight",
-           "colorwheel": colorcet.colorwheel,
-           "CET-C7": colorcet.CET_C7,
-           "viridis": "viridis"
-       }
-       plots = []
-       for k, v in cmaps.items():
-           plots.append(
-               plot_complex(z, (z, -2-2j, 2+2j), coloring="a",
-                   grid=False, show=False, legend=True, cmap=v, title=k))
-
-       plotgrid(*plots, nc=2, size=(6.5, 8))
-
-    In the above figure, when using the HSV colormap the eye is drawn to
-    the yellow, cyan and magenta colors, where there is a lightness gradient:
-    those are false features caused by the colormap. Indeed, there is nothing
-    going on these regions when looking with a perceptually uniform colormap.
-
-    Phase is computed with Numpy and lies between [-pi, pi]. Then, phase is
-    normalized between [0, 1] using `(arg / (2 * pi)) % 1`. The figure
-    below shows the mapping between phase in radians and normalized phase.
-    A phase of 0 radians corresponds to a normalized phase of 0, which gets
-    mapped to the beginning of a colormap.
-
-    .. plot:: ./modules/plot_complex_explanation.py
-       :context: close-figs
-       :include-source: False
-
-    The zero radians phase is then located in the middle of the colorbar.
-    Hence, the colorbar might feel "weird" if a sequential colormap is chosen,
-    because there is a color-discontinuity in the middle of it, as can be seen
-    in the previous example.
-    The ``phaseoffset`` keyword argument allows to adjust the position of
-    the colormap:
-
-    .. plot::
-       :context: close-figs
-       :include-source: True
-
-       p1 = plot_complex(
-           z, (z, -2-2j, 2+2j), grid=False, show=False, legend=True,
-           coloring="a", cmap="viridis", phaseoffset=0,
-           title="phase offset = 0", axis=False)
-       p2 = plot_complex(
-           z, (z, -2-2j, 2+2j), grid=False, show=False, legend=True,
-           coloring="a", cmap="viridis", phaseoffset=pi,
-           title=r"phase offset = $\pi$", axis=False)
-       plotgrid(p1, p2, nc=2, size=(6, 2))
-
-    A pure phase portrait is rarely useful, as it conveys too little
-    information. Let's now quickly visualize the different ``coloring``
-    schemes. In the following, `arg` is the argument (phase), `mag` is the
-    magnitude (absolute value) and `contour` is a line of constant value.
-    Refer to [Wegert]_ for more information.
-
-    .. plot::
-       :context: close-figs
-       :include-source: True
-
-       from matplotlib import rcParams
-       rcParams["font.size"] = 8
-       colorings = "abcdlmnoefghijk"
-       titles = [
-           "phase portrait", "mag + arg contours", "mag contours", "arg contours",
-           "'a' + poles", "'b' + poles", "'c' + poles", "'d' + poles",
-           "mag stripes", "arg stripes", "real part stripes", "imag part stripes",
-           "hide zeros", "conformality", "magnitude"]
-       plots = []
-       expr = (z - 1) / (z**2 + z + 1)
-       for c, t in zip(colorings, titles):
-           plots.append(
-               plot_complex(expr, (z, -2-2j, 2+2j), coloring=c,
-                   grid=False, show=False, legend=False, cmap=colorcet.CET_C2,
-                   axis=False, colorbar=False,
-                   title=("'%s'" % c) + ": " + t, xlabel="", ylabel=""))
-
-       plotgrid(*plots, nc=4, size=(8, 8.5))
-
-    From the above picture, we can see that:
-
-    * Some enhancements decrese the lighness of the colors: depending on the
-      colormap, it might be difficult to distinguish features in darker
-      regions.
-    * Other enhancements increases the lightness in proximity of poles. Hence,
-      colormaps with very light colors might not convey enough information.
-
-    With this considerations in mind, the selection of a proper colormap is
-    left to the user because not only it depends on the target audience of
-    the visualization, but also on the function being visualized.
-
     See Also
     ========
 
@@ -1220,94 +674,33 @@ def plot_complex_list(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a single list of complex numbers.
-        `plot_complex_list(l1, **kwargs)`
-    - Plotting multiple lists of complex numbers.
-        `plot_complex_list(l1, l2, **kwargs)`
-    - Plotting multiple lists of complex numbers each one with a custom label.
-        `plot_complex_list((l1, label1), (l2, label2), **kwargs)`
+    - Plotting a single list of complex numbers:
 
+      .. code-block::
 
-    Parameters
-    ==========
-    args :
-        numbers : list, tuple
-            A list of complex numbers.
+         plot_complex_list(l1, **kwargs)
 
-        label : str
-            The name associated to the list of the complex numbers to be
-            eventually shown on the legend. Default to empty string.
+    - Plotting multiple lists of complex numbers:
 
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of lines. Refer to the
-            plotting library (backend) manual for more informations. Note that
-            the same options will be applied to all series generated for the
-            specified expression.
+      .. code-block::
 
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
+         plot_complex_list(l1, l2, **kwargs)
 
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
+    - Plotting multiple lists of complex numbers each one with a custom label
+      and rendering options:
 
-    is_point : boolean
-        If True, a scatter plot will be produced. Otherwise a line plot will
-        be created. Default to True.
+      .. code-block::
 
-    is_filled : boolean, optional
-        Default to True, which will render empty circular markers. It only
-        works if ``is_point=True``.
-        If False, filled circular markers will be rendered.
+         plot_complex_list(
+            (l1, label1, rendering_kw1),
+            (l2, label2, rendering_kw2), **kwargs)`
 
-    label : str or list/tuple, optional
-        The name associated to the list of the complex numbers to be
-        eventually shown on the legend. The number of labels must be equal to
-        the number of series generated by the plotting function.
+    Refer to :func:`~spb.graphics.complex_analysis.complex_points` for a full
+    list of keyword arguments to customize the appearances of lines.
 
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of series generated by the plotting function.
-
-    show : boolean
-        Default to True, in which case the plot will be shown on the screen.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
-        the size will be set by the backend.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel : str, optional
-        Labels for the x-axis or y-axis, respectively.
-
-    xscale, yscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis or y-axis, respectively.
-        Default to ``'linear'``.
-
-    xlim, ylim : (float, float), optional
-        Denotes the x-axis limits or y-axis limits, respectively,
-        ``(min, max)``.
-
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
@@ -1393,126 +786,27 @@ def plot_complex_vector(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a vector field of a complex function.
-        `plot_complex_vector(expr, range, **kwargs)`
+    - Plotting a vector field of a complex function:
 
-    - Plotting multiple vector fields with different ranges and custom labels.
-        `plot_complex_vector((expr1, range1, label1 [optional]), (expr2, range2, label2 [optional]), **kwargs)`
+      .. code-block::
 
-    Parameters
-    ==========
+         plot_complex_vector(expr, range, **kwargs)
 
-    args :
-        expr : Expr
-            Represent the complex function.
+    - Plotting multiple vector fields with different ranges and custom labels:
 
-        range : 3-element tuples
-            Denotes the range of the variables. For example
-            ``(z, -5 - 3*I, 5 + 3*I)``. Note that we can specify the range
-            by using standard Python complex numbers, for example
-            ``(z, -5-3j, 5+3j)``.
+      .. code-block::
 
-        label : str, optional
-            The name of the complex expression to be eventually shown on the
-            legend. If none is provided, the string representation of the
-            expression will be used.
+         plot_complex_vector(
+            (expr1, range1, label1 [optional]),
+            (expr2, range2, label2 [optional]), **kwargs)
 
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
+    Refer to :func:`~spb.graphics.vectors.vector_field_2d` for a full
+    list of keyword arguments to customize the appearances of quivers,
+    streamlines and contour.
 
-    backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
-
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-
-    contours_kw : dict
-        A dictionary of keywords/values which is passed to the backend
-        contour function to customize the appearance. Refer to the plotting
-        library (backend) manual for more informations.
-
-    n1, n2 : int
-        Number of discretization points for the quivers or streamlines in the
-        x/y-direction, respectively. Default to 25.
-
-    n : int or two-elements tuple (n1, n2), optional
-        If an integer is provided, set the same number of discretization
-        points in all directions for quivers or streamlines. If a tuple is
-        provided, it overrides ``n1`` and ``n2``. It only works when
-        ``adaptive=False``. Default to 25.
-
-    nc : int
-        Number of discretization points for the scalar contour plot.
-        Default to 100.
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-
-    quiver_kw : dict
-        A dictionary of keywords/values which is passed to the backend
-        quivers-plotting function to customize the appearance. Refer to the
-        plotting library (backend) manual for more informations.
-
-    scalar : boolean, Expr, None or list/tuple of 2 elements
-        Represents the scalar field to be plotted in the background of a 2D
-        vector field plot. Can be:
-
-        - ``True``: plot the magnitude of the vector field. Only works when a
-          single vector field is plotted.
-        - ``False``/``None``: do not plot any scalar field.
-        - ``Expr``: a symbolic expression representing the scalar field.
-        - ``list``/``tuple``: [scalar_expr, label], where the label will be
-          shown on the colorbar.
-
-        Remember: the scalar function must return real data.
-
-        Default to True.
-
-    show : boolean
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the backend.
-
-    streamlines : boolean
-        Whether to plot the vector field using streamlines (True) or quivers
-        (False). Default to False.
-
-    stream_kw : dict
-        A dictionary of keywords/values which is passed to the backend
-        streamlines-plotting function to customize the appearance. Refer to
-        the plotting library (backend) manual for more informations.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel : str, optional
-        Labels for the x-axis or y-axis, respectively.
-
-    xscale, yscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis or y-axis, respectively.
-        Default to ``'linear'``.
-
-    xlim, ylim, zlim : (float, float), optional
-        Denotes the x-axis limits or y-axis limits, respectively,
-        ``(min, max)``.
-
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
@@ -1656,8 +950,8 @@ def plot_riemann_sphere(expr, range=None, annotate=True, riemann_mask=True,
 
     1. Differently from other plot functions that return instances of
        ``BaseBackend``, this function returns a Matplotlib figure.
-    2. This function calls ``plot_complex``: refer to its documentation for
-       the full list of keyword arguments.
+    2. This function calls :func:`~plot_complex`: refer to its documentation
+       for the full list of keyword arguments.
 
     Parameters
     ==========
@@ -1693,7 +987,7 @@ def plot_riemann_sphere(expr, range=None, annotate=True, riemann_mask=True,
     Notes
     =====
 
-    The [Riemann-sphere] is a model of the extented complex plane,
+    The [Riemann-sphere]_ is a model of the extented complex plane,
     comprised of the complex plane plus a point at infinity. Let's consider
     a 3D space with a sphere of radius 1 centered at the origin. The xy plane,
     representing the complex plane, cut the sphere in half at the equator.

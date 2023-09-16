@@ -240,6 +240,12 @@ def line_parametric_3d(expr1, expr2, expr3, range=None, label=None,
            ),
            backend=KB, use_latex=False
        )
+
+    See Also
+    ========
+
+    spb.graphics.functions_2d.line_parametric_2d, list_3d
+
     """
     expr1, expr2, expr3 = map(_plot_sympify, [expr1, expr2, expr3])
     params = kwargs.get("params", {})
@@ -253,7 +259,7 @@ def line_parametric_3d(expr1, expr2, expr3, range=None, label=None,
 
 def surface(expr, range1=None, range2=None, label=None, rendering_kw=None,
     colorbar=True, use_cm=False, **kwargs):
-    """Creates a surface of a function of 2 variables.
+    """Creates the surface of a function of 2 variables.
 
     Parameters
     ==========
@@ -504,6 +510,12 @@ def surface(expr, range1=None, range2=None, label=None, rendering_kw=None,
            backend=PB, aspect=dict(x=1.5, y=1.5, z=0.75),
            use_latex=False)
 
+    See Also
+    ========
+
+    spb.graphics.functions_2d.contour, surface_parametric, surface_spherical,
+    surface_revolution, wireframes, plane
+
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
@@ -751,6 +763,11 @@ def surface_parametric(expr1, expr2, expr3, range1=None, range2=None,
            imodule="panel"
        )
 
+    See Also
+    ========
+
+    surface, surface_spherical, surface_revolution, wireframes
+
     """
     expr1, expr2, expr3 = map(_plot_sympify, [expr1, expr2, expr3])
     params = kwargs.get("params", {})
@@ -799,7 +816,8 @@ def surface_spherical(r, range_theta=None, range_phi=None, label=None,
         function to customize the appearance of surfaces. Refer to the
         plotting library (backend) manual for more informations.
     **kwargs :
-        Keyword arguments are the same as ``surface_parametric``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_3d.surface_parametric`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -892,6 +910,11 @@ def surface_spherical(r, range_theta=None, range_phi=None, label=None,
                },
                use_cm=True, color_func=r, force_real_eval=True),
            backend=PB, imodule="panel")
+
+    See Also
+    ========
+
+    surface, surface_parametric, surface_revolution, wireframes
 
     """
     r = _plot_sympify(r)
@@ -1013,6 +1036,12 @@ def implicit_3d(expr, range1=None, range2=None, range3=None, label=None,
                }),
            backend=PB
        )
+
+    See Also
+    ========
+
+    surface, spb.graphics.functions_2d.implicit_2d
+
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
@@ -1077,7 +1106,8 @@ def surface_revolution(curve, range_t, range_phi=None, axis=(0, 0),
         the appearance of the initial curve. Refer to its documentation for
         more information.
     **kwargs :
-        Keyword arguments are the same as ``surface_parametric``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_3d.surface_parametric`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -1207,6 +1237,11 @@ def surface_revolution(curve, range_t, range_phi=None, axis=(0, 0),
                    w: (2, 0, 2)
                }),
            backend=KB, force_real_eval=True, use_latex=False)
+
+    See Also
+    ========
+
+    surface, surface_spherical, surface_parametric, wireframes
 
     """
     if parallel_axis.lower() not in ["x", "y", "z"]:
@@ -1367,6 +1402,11 @@ def list_3d(coord_x, coord_y, coord_z, label=None, rendering_kw=None, **kwargs):
            use_late=False, backend=PB
        )
 
+    See Also
+    ========
+
+    spb.graphics.functions_2d.line, line_parametric_3d
+
     """
     if not hasattr(coord_x, "__iter__"):
         coord_x = [coord_x]
@@ -1399,7 +1439,8 @@ def wireframes(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
         function to customize the appearance of surfaces. Refer to the
         plotting library (backend) manual for more informations.
     **kwargs :
-        Keyword arguments are the same as ``line_parametric_3d``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_3d.line_parametric_3d`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -1451,6 +1492,11 @@ def wireframes(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
            backend=PB, grid=False
        )
 
+    See Also
+    ========
+
+    surface, surface_parametric, surface_spherical, surface_revolution
+
     """
     allowed = (ComplexSurfaceBaseSeries, SurfaceOver2DRangeSeries,
         ParametricSurfaceSeries)
@@ -1489,7 +1535,8 @@ def plane(p, range1=None, range2=None, range3=None, label=None,
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
     **kwargs :
-        Keyword arguments are the same as ``surface``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_3d.surface`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -1514,6 +1561,11 @@ def plane(p, range1=None, range2=None, range3=None, label=None,
            plane(Plane((0, 0, 0), (1, 1, 1)), *ranges, label="inclined", n=150),
            backend=PB, xlabel="x", ylabel="y", zlabel="z"
        )
+
+    See Also
+    ========
+
+    surface
 
     """
     p = _plot_sympify(p)

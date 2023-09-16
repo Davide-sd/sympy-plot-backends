@@ -1,8 +1,8 @@
 """Plotting module for Sympy.
 
 A plot is represented by the ``Plot`` class that contains a list of the data
-series to be plotted. The data series are instances of classes meant to
-simplify getting points and meshes from sympy expressions.
+series to be plotted. The data series are responsible to generate numerical
+data from sympy expressions.
 
 This module gives only the essential. Especially if you need publication ready
 graphs and this module is not enough for you, use directly the backend, which
@@ -101,229 +101,41 @@ def plot(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a single expression with a single range.
-        `plot(expr, range, **kwargs)`
-    - Plotting a single expression with custom rendering options.
-        `plot(expr, range, rendering_kw, **kwargs)`
-    - Plotting a single expression with the default range (-10, 10).
-        `plot(expr, **kwargs)`
+    - Plotting a single expression with the default range:
+
+      .. code-block::
+
+         plot(expr, **kwargs)
+
+    - Plotting a single expression with a custom range, custom label and
+      rendering options.
+
+      .. code-block::
+
+         plot(expr, range, label [opt], rendering_kw [opt], **kwargs)
+
     - Plotting multiple expressions with a single range.
-        `plot(expr1, expr2, ..., range, **kwargs)`
-    - Plotting multiple expressions with multiple ranges.
-        `plot((expr1, range1), (expr2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with custom labels and rendering options.
-        `plot((expr1, range1, label1, rendering_kw1), (expr2, range2, label2, rendering_kw2), ..., **kwargs)`
 
-    Parameters
-    ==========
+      .. code-block::
 
-    args :
-        expr : Expr or callable
-            It can either be a:
+         plot(expr1, expr2, ..., range, **kwargs)
 
-            * Symbolic expression representing the function of one variable
-              to be plotted.
-            * Numerical function of one variable, supporting vectorization.
-              In this case the following keyword arguments are not supported:
-              ``params``, ``sum_bound``.
+    - Plotting multiple expressions with different ranges, custom labels and
+      rendering options.
 
-        range : (symbol, min, max)
-            A 3-tuple denoting the range of the x variable. Default values:
-            `min=-10` and `max=10`.
+      .. code-block::
 
-        label : str, optional
-            The label to be shown in the legend. If not provided, the string
-            representation of ``expr`` will be used.
+         plot(
+            (expr1, range1, label1 [opt], rendering_kw1 [opt]),
+            (expr2, range2, label2 [opt], rendering_kw2 [opt]),
+            ..., **kwargs)
 
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of lines. Refer to the
-            plotting library (backend) manual for more informations.
+    Refer to :func:`~spb.graphics.functions_2d.line` for a full list of
+    keyword arguments to customize the appearances of lines.
 
-    adaptive : bool, optional
-        Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [#fn1]_ to create smooth plots. Use ``adaptive_goal``
-        and ``loss_fn`` to further customize the output.
-
-        The default value is ``False``, which uses an uniform sampling
-        strategy, where the number of discretization points is specified by
-        the ``n`` keyword argument.
-
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn1]_ for more information.
-
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
-
-    axis_center : (float, float), optional
-        Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with ``MatplotlibBackend``.
-
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
-
-    color_func : callable or Expr, optional
-        Define the line color mapping. It can either be:
-
-        * A numerical function of 2 variables, x, y (the points computed by
-          the internal algorithm) supporting vectorization.
-        * A symbolic expression having at most as many free symbols as
-          ``expr``.
-        * None: the default value (no color mapping).
-
-    detect_poles : boolean or str, optional
-        Chose whether to detect and correctly plot poles. There are two
-        algorithms at work:
-
-        1. based on the gradient of the numerical data, it introduces NaN
-           values at locations where the steepness is greater than some
-           threshold. This splits the line into multiple segments. To improve
-           detection, increase the number of discretization points ``n``
-           and/or change the value of ``eps``.
-        2. a symbolic approach based on the ``continuous_domain`` function
-           from the ``sympy.calculus.util`` module, which computes the
-           locations of discontinuities. If any is found, vertical lines
-           will be shown.
-
-        Possible options:
-
-        * ``True``: activate poles detection computed with the numerical
-          gradient.
-        * ``False``: no poles detection.
-        * ``"symbolic"``: use both numerical and symbolic algorithms.
-
-        Default to ``False``.
-
-    eps : float, optional
-        An arbitrary small value used by the ``detect_poles`` algorithm.
-        Default value to 0.1. Before changing this value, it is recommended to
-        increase the number of discretization points.
-
-    exclude : list, optional
-        A list of numerical values in the horizontal coordinate which are
-        going to be excluded from the plot. In practice, it introduces
-        discontinuities in the resulting line.
-
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-
-    is_point : boolean, optional
-        Default to False, which will render a line connecting all the points.
-        If True, a scatter plot will be generated.
-
-    is_filled : boolean, optional
-        Default to True, which will render empty circular markers. It only
-        works if ``is_point=True``.
-        If False, filled circular markers will be rendered.
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of ``expr`` will be used. The number of labels must be
-        equal to the number of expressions.
-
-    legend : bool, optional
-        Show/hide the legend. Default to None (the backend determines when
-        it is appropriate to show it).
-
-    loss_fn : callable or None
-        The loss function to be used by the ``adaptive`` learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          adaptive module.
-        * callable : Refer to [#fn1]_ for more information. Specifically,
-          look at ``adaptive.learner.learner1D`` to find more loss functions.
-
-    n : int, optional
-        Used when the ``adaptive=False``: the function is uniformly
-        sampled at ``n`` number of points. Default value to 1000.
-        If the ``adaptive=True``, this parameter will be ignored.
-
-    only_integers : boolean, optional
-        Default to ``False``. If ``True``, discretize the domain with integer
-        numbers. It only works when ``adaptive=False``.
-        When ``only_integers=True``, the number of discretization points is
-        choosen by the algorithm.
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of expressions.
-
-    is_polar : boolean, optional
-        Default to False. If True, requests the backend to use a 2D polar
-        chart.
-
-    show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the backend.
-
-    steps : boolean, optional
-        Default to ``False``. If ``True``, connects consecutive points with
-        steps rather than straight segments.
-
-    sum_bound : int, optional
-        When plotting sums, the expression will be pre-processed in order
-        to replace lower/upper bounds set to +/- infinity with this +/-
-        numerical value. Default value to 1000. Note: the higher this number,
-        the slower the evaluation.
-
-    title : str, optional
-        Title of the plot.
-
-    tx, ty : callable, optional
-        Apply a numerical function to the discretized x-direction or to the
-        output of the numerical evaluation, the y-direction.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel : str, optional
-        Labels for the x-axis or y-axis, respectively.
-
-    xscale, yscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis or y-axis, respectively.
-        Default to ``'linear'``.
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)``, visible in the chart.
-        Note that the function is still being evaluated over the specified
-        ``range``.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)``, visible in the chart.
-
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
@@ -509,11 +321,6 @@ def plot(*args, **kwargs):
            title=("Frequency = {:.2f} Hz", a)
        )
 
-    References
-    ==========
-
-    .. [#fn1] https://github.com/python-adaptive/adaptive
-
     See Also
     ========
 
@@ -541,193 +348,34 @@ def plot_parametric(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a single parametric curve with a range
-        `plot_parametric(expr_x, expr_y, range)`
-    - Plotting multiple parametric curves with the same range
-        `plot_parametric((expr_x, expr_y), ..., range)`
-    - Plotting multiple parametric curves with different ranges
-        `plot_parametric((expr_x, expr_y, range), ...)`
-    - Plotting multiple curves with different ranges and custom labels
-        `plot_parametric((expr_x, expr_y, range, label), ...)`
+    - Plotting a single parametric curve with a range:
 
-    Parameters
-    ==========
+      .. code-block::
 
-    args :
-        `expr_x` : Expr
-            The expression representing x component of the parametric
-            function. It can be a:
+         plot_parametric(expr_x, expr_y, range)
 
-            * Symbolic expression representing the function of one variable
-              to be plotted.
-            * Numerical function of one variable, supporting vectorization.
-              In this case the following keyword arguments are not supported:
-              ``params``.
+    - Plotting multiple parametric curves with the same range:
 
-        `expr_y` : Expr
-            The expression representing y component of the parametric
-            function. It can be a:
+      .. code-block::
 
-            * Symbolic expression representing the function of one variable
-              to be plotted.
-            * Numerical function of one variable, supporting vectorization.
-              In this case the following keyword arguments are not supported:
-              ``params``.
+         plot_parametric(
+            (expr_x1, expr_y1), (expr_x2, expr_y2), ..., range)
 
-        `range` : (symbol, min, max)
-            A 3-tuple denoting the parameter symbol, start and stop. For
-            example, ``(u, 0, 5)``. If the range is not specified, then a
-            default range of (-10, 10) is used.
+    - Plotting multiple curves with different ranges, custom labels and
+      rendering options:
 
-            However, if the arguments are specified as
-            ``(expr_x, expr_y, range), ...``, you must specify the ranges
-            for each expressions manually.
+      .. code-block::
 
-        `label` : str, optional
-            The label to be shown in the legend. If not provided, the string
-            representation of ``expr_x`` and ``expr_y`` will be used.
+         plot_parametric(
+            (expr_x1, expr_y1, range1, label1 [opt], rendering_kw1 [opt]),
+            (expr_x2, expr_y2, range2, label2 [opt], rendering_kw2 [opt]), ...)
 
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of lines. Refer to the
-            plotting library (backend) manual for more informations.
+    Refer to :func:`~spb.graphics.functions_2d.line_parametric_2d` for a full
+    list of keyword arguments to customize the appearances of lines.
 
-    adaptive : bool, optional
-        Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [#fn2]_ to create smooth plots. Use ``adaptive_goal``
-        and ``loss_fn`` to further customize the output.
-
-        The default value is ``False``, which uses an uniform sampling
-        strategy, where the number of discretization points is specified by
-        the ``n`` keyword argument.
-
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn2]_ for more information.
-
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
-
-    axis_center : (float, float), optional
-        Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with ``MatplotlibBackend``.
-
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
-
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
-
-    color_func : callable, optional
-        Define the line color mapping when ``use_cm=True``. It can either be:
-
-        * A numerical function supporting vectorization. The arity can be:
-
-          * 1 argument: ``f(t)``, where ``t`` is the parameter.
-          * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of
-            the points.
-          * 3 arguments: ``f(x, y, t)``.
-
-        * A symbolic expression having at most as many free symbols as
-          ``expr_x`` or ``expr_y``.
-        * None: the default value (color mapping applied to the parameter).
-
-    exclude : list, optional
-        A list of numerical values along the parameter which are going to
-        be excluded from the plot. In practice, it introduces discontinuities
-        in the resulting line.
-
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend or in the colorbar. If not
-        provided, the string representation of `expr` will be used. The number
-        of labels must be equal to the number of expressions.
-
-    legend : bool, optional
-        Show/hide the legend. Default to None (the backend determines when
-        it is appropriate to show it). Only works when ``use_cm=False``.
-
-    loss_fn : callable or None
-        The loss function to be used by the adaptive learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          adaptive module.
-        * callable : Refer to [#fn2]_ for more information. Specifically,
-          look at ``adaptive.learner.learner1D`` to find more loss functions.
-
-    n : int, optional
-        Used when the ``adaptive=False``. The function is uniformly sampled
-        at ``n`` number of points. Default value to 1000.
-        If the ``adaptive=True``, this parameter will be ignored.
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of expressions.
-
-    show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the backend.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    tx, ty, tp : callable, optional
-        Apply a numerical function to the x-direction, y-direction and
-        parameter, respectively.
-
-    use_cm : boolean, optional
-        If True, apply a color map to the parametric lines.
-        If False, solid colors will be used instead. Default to True.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel : str, optional
-        Labels for the x-axis or y-axis, respectively.
-
-    xscale, yscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis or y-axis, respectively.
-        Default to ``'linear'``.
-
-    xlim, ylim : (float, float), optional
-        Denotes the x-axis limits or y-axis limits, respectively,
-        ``(min, max)``, visible in the chart.
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
@@ -839,11 +487,6 @@ def plot_parametric(*args, **kwargs):
            xlim=(-1.25, 1.25), ylim=(-1.25, 1.25)
        )
 
-    References
-    ==========
-
-    .. [#fn2] https://github.com/python-adaptive/adaptive
-
     See Also
     ========
 
@@ -876,12 +519,23 @@ def plot_parametric_region(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a single parametric curve with a range
-        `plot_parametric(expr_x, expr_y, range_u, range_v)`
-    - Plotting multiple parametric curves with the same range
-        `plot_parametric((expr_x, expr_y), ..., range_u, range_v)`
-    - Plotting multiple parametric curves with different ranges
-        `plot_parametric((expr_x, expr_y, range_u, range_v), ...)`
+    - Plotting a single parametric curve with a range:
+
+      .. code-block::
+
+         plot_parametric(expr_x, expr_y, range_u, range_v)
+
+    - Plotting multiple parametric curves with the same range:
+
+      .. code-block::
+
+         plot_parametric((expr_x, expr_y), ..., range_u, range_v)
+
+    - Plotting multiple parametric curves with different ranges:
+
+      .. code-block::
+
+         plot_parametric((expr_x, expr_y, range_u, range_v), ...)
 
     Parameters
     ==========
@@ -1048,195 +702,45 @@ def plot3d_parametric_line(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a single expression.
-        `plot3d_parametric_line(expr_x, expr_y, expr_z, range, **kwargs)`
-    - Plotting a single expression with a custom label and rendering options.
-        `plot3d_parametric_line(expr_x, expr_y, expr_z, range, label, rendering_kw, **kwargs)`
-    - Plotting multiple expressions with the same ranges.
-        `plot3d_parametric_line((expr_x1, expr_y1, expr_z1), (expr_x2, expr_y2, expr_z2), ..., range, **kwargs)`
-    - Plotting multiple expressions with different ranges.
-        `plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1), (expr_x2, expr_y2, expr_z2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with custom labels and rendering options.
-        `plot3d_parametric_line((expr_x1, expr_y1, expr_z1, range1, label1, rendering_kw1), (expr_x2, expr_y2, expr_z2, range2, label1, rendering_kw2), ..., **kwargs)`
+    - Plotting a single expression:
 
+      .. code-block::
 
-    Parameters
-    ==========
+         plot3d_parametric_line(expr_x, expr_y, expr_z, range, **kwargs)
 
-    args :
-        expr_x : Expr
-            The expression representing x component of the parametric
-            function. It can be a:
+    - Plotting a single expression with a custom label and rendering options:
 
-            * Symbolic expression representing the function of one variable
-              to be plotted.
-            * Numerical function of one variable, supporting vectorization.
-              In this case the following keyword arguments are not supported:
-              ``params``.
+      .. code-block::
 
-        expr_y : Expr
-            The expression representing y component of the parametric
-            function. It can be a:
+         plot3d_parametric_line(expr_x, expr_y, expr_z, range,
+            label [opt], rendering_kw [opt], **kwargs)
 
-            * Symbolic expression representing the function of one variable
-              to be plotted.
-            * Numerical function of one variable, supporting vectorization.
-              In this case the following keyword arguments are not supported:
-              ``params``.
+    - Plotting multiple expressions with the same ranges:
 
-        expr_z : Expr
-            The expression representing z component of the parametric
-            function. It can be a:
+      .. code-block::
 
-            * Symbolic expression representing the function of one variable
-              to be plotted.
-            * Numerical function of one variable, supporting vectorization.
-              In this case the following keyword arguments are not supported:
-              ``params``.
+         plot3d_parametric_line((expr_x1, expr_y1, expr_z1),
+            (expr_x2, expr_y2, expr_z2), ..., range, **kwargs)
 
-        range : (symbol, min, max)
-            A 3-tuple denoting the range of the parameter variable.
+    - Plotting multiple expressions with different ranges, custom labels and
+      rendering options:
 
-        label : str, optional
-            An optional string denoting the label of the expression
-            to be visualized on the legend. If not provided, the string
-            representation of the expression will be used.
+      .. code-block::
 
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of lines. Refer to the
-            plotting library (backend) manual for more informations.
+         plot3d_parametric_line(
+            (expr_x1, expr_y1, expr_z1, range1, label1, rendering_kw1),
+            (expr_x2, expr_y2, expr_z2, range2, label1, rendering_kw2),
+            ..., **kwargs)
 
-    adaptive : bool, optional
-        Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [#fn3]_ to create smooth plots. Use ``adaptive_goal``
-        and ``loss_fn`` to further customize the output.
+    Refer to :func:`~spb.graphics.functions_3d.line_parametric_3d` for a full
+    list of keyword arguments to customize the appearances of lines.
 
-        The default value is ``False``, which uses an uniform sampling
-        strategy, where the number of discretization points is specified by
-        the ``n`` keyword argument.
-
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn3]_ for more information.
-
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
-
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
-
-    color_func : callable, optional
-        Define the line color mapping when ``use_cm=True``. It can either be:
-
-        * A numerical function supporting vectorization. The arity can be:
-
-          * 1 argument: ``f(t)``, where ``t`` is the parameter.
-          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
-            of the points.
-          * 4 arguments: ``f(x, y, z, t)``.
-
-        * A symbolic expression having at most as many free symbols as
-          ``expr_x`` or ``expr_y`` or ``expr_z``.
-        * None: the default value (color mapping applied to the parameter).
-
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-
-    is_point : boolean, optional
-        Default to False, which will render a line connecting all the points.
-        If True, a scatter plot will be generated.
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend or in the colorbar. If not
-        provided, the string representation of ``expr`` will be used.
-        The number of labels must be equal to the number of expressions.
-
-    legend : bool, optional
-        Show/hide the legend. Default to None (the backend determines when
-        it is appropriate to show it). Only works when ``use_cm=False``.
-
-    loss_fn : callable or None
-        The loss function to be used by the adaptive learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          ``adaptive`` module.
-        * callable : Refer to [#fn3]_ for more information. Specifically,
-          look at ``adaptive.learner.learner1D`` to find more loss functions.
-
-    n : int, optional
-        Used when the ``adaptive=False``. The function is uniformly
-        sampled at ``n`` number of points. Default value to 1000.
-        If the ``adaptive=True``, this parameter will be ignored.
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of expressions.
-
-    show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the backend.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    tx, ty, tz, tp : callable, optional
-        Apply a numerical function to the x, y, z directions and to the
-        discretized parameter.
-
-    use_cm : boolean, optional
-        If True, apply a color map to the parametric lines.
-        If False, solid colors will be used instead. Default to True.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel, zlabel : str, optional
-        Labels for the x-axis, y-axis, z-axis, respectively.
-
-    xlim, ylim, zlim : (float, float), optional
-        Denotes the axis limits, `(min, max)`, visible in the chart.
-
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
-
-    Note: for documentation purposes, the following examples uses Matplotlib.
-    However, Matplotlib's 3D capabilities are rather limited. Consider running
-    these examples with a different backend (hence, modify ``rendering_kw``
-    to pass the correct options to the backend).
 
     .. plot::
        :context: reset
@@ -1348,11 +852,6 @@ def plot3d_parametric_line(*args, **kwargs):
            backend=KB, show=False, use_latex=False)
        (line + sphere).show()
 
-    References
-    ==========
-
-    .. [#fn3] https://github.com/python-adaptive/adaptive
-
     See Also
     ========
 
@@ -1372,155 +871,6 @@ def plot3d_parametric_line(*args, **kwargs):
             line_parametric_3d(e1, e2, e3, r, label, rendering_kw, **kwargs))
     _set_labels(lines, global_labels, global_rendering_kw)
     return graphics(*lines, **kwargs)
-
-
-# TODO: remove this
-def _plot3d_wireframe_helper(surfaces, **kwargs):
-    """Create data series representing wireframe lines.
-
-    Parameters
-    ==========
-
-    surfaces : list of BaseSeries
-
-    Returns
-    =======
-
-    line_series : list of Parametric3DLineSeries
-    """
-    if not kwargs.get("wireframe", False):
-        return []
-
-    np = import_module('numpy')
-    lines = []
-    wf_n1 = kwargs.get("wf_n1", 10)
-    wf_n2 = kwargs.get("wf_n2", 10)
-    npoints = kwargs.get("wf_npoints", None)
-    wf_rend_kw = kwargs.get("wf_rendering_kw", dict())
-
-    wf_kwargs = dict(
-        use_cm=False, show_in_legend=False,
-        # use uniform meshing to maximize performance
-        adaptive=False, n=npoints,
-        rendering_kw=wf_rend_kw
-    )
-
-    def create_series(expr, ranges, surface_series, **kw):
-        expr = [e if callable(e) else sympify(e) for e in expr]
-        kw["tx"] = surface_series._tx
-        kw["ty"] = surface_series._ty
-        kw["tz"] = surface_series._tz
-        kw["tp"] = surface_series._tp
-        kw["force_real_eval"] = surface_series._force_real_eval
-        if "return" not in kw.keys():
-            return Parametric3DLineSeries(*expr, *ranges, "__k__", **kw)
-        return ComplexParametric3DLineSeries(*expr, *ranges, "__k__", **kw)
-
-    # NOTE: can't use np.linspace because start, end might be
-    # symbolic expressions
-    def linspace(start, end , n):
-        return [start + (end - start) * i / (n - 1) for i in range(n)]
-
-    for s in surfaces:
-        param_expr, ranges = [], []
-
-        if s.is_3Dsurface:
-            expr = s.expr
-
-            kw = wf_kwargs.copy()
-            if s.is_interactive:
-                kw["params"] = s.params.copy()
-
-            if s.is_parametric:
-                (x, sx, ex), (y, sy, ey) = s.ranges
-                is_callable = any(callable(e) for e in expr)
-
-                for uval in linspace(sx, ex, wf_n1):
-                    kw["n"] = s.n[1] if npoints is None else npoints
-                    if is_callable:
-                        # NOTE: closure on lambda functions
-                        param_expr = [lambda t, uv=uval, e=e: e(float(uv), t) for e in expr]
-                        ranges = [(y, sy, ey)]
-                    else:
-                        param_expr = [e.subs(x, uval) for e in expr]
-                        ranges = [(y, sy, ey)]
-                    lines.append(create_series(param_expr, ranges, s, **kw))
-                for vval in linspace(sy, ey, wf_n2):
-                    kw["n"] = s.n[0] if npoints is None else npoints
-                    if is_callable:
-                        # NOTE: closure on lambda functions
-                        param_expr = [lambda t, vv=vval, e=e: e(t, float(vv)) for e in expr]
-                        ranges = [(x, sx, ex)]
-                    else:
-                        param_expr = [e.subs(y, vval) for e in expr]
-                        ranges = [(x, sx, ex)]
-                    lines.append(create_series(param_expr, ranges, s, **kw))
-
-            else:
-                if not s.is_complex:
-                    (x, sx, ex), (y, sy, ey) = s.ranges
-                else:
-                    x, y = symbols("x, y", cls=Dummy)
-                    z, start, end = s.ranges[0]
-                    expr = s.expr.subs(z, x + I * y)
-                    sx, ex = re(start), re(end)
-                    sy, ey = im(start), im(end)
-                    kw["return"] = s._return
-
-                if not s.is_polar:
-                    for xval in linspace(sx, ex, wf_n1):
-                        kw["n"] = s.n[1] if npoints is None else npoints
-                        if callable(expr):
-                            # NOTE: closure on lambda functions
-                            param_expr = [
-                                lambda t, xv=xval: xv,
-                                lambda t: t,
-                                lambda t, xv=xval: expr(float(xv), t)]
-                            ranges = [(y, sy, ey)]
-                        else:
-                            param_expr = [xval, y, expr.subs(x, xval)]
-                            ranges = [(y, sy, ey)]
-                        lines.append(create_series(param_expr, ranges, s, **kw))
-                    for yval in linspace(sy, ey, wf_n2):
-                        kw["n"] = s.n[0] if npoints is None else npoints
-                        if callable(expr):
-                            # NOTE: closure on lambda functions
-                            param_expr = [
-                                lambda t: t,
-                                lambda t, yv=yval: yv,
-                                lambda t, yv=yval: expr(t, float(yv))]
-                            ranges = [(x, sx, ex)]
-                        else:
-                            param_expr = [x, yval, expr.subs(y, yval)]
-                            ranges = [(x, sx, ex)]
-                        lines.append(create_series(param_expr, ranges, s, **kw))
-                else:
-                    for rval in linspace(sx, ex, wf_n1):
-                        kw["n"] = s.n[1] if npoints is None else npoints
-                        if callable(expr):
-                            param_expr = [
-                                lambda t, rv=rval: float(rv) * np.cos(t),
-                                lambda t, rv=rval: float(rv) * np.sin(t),
-                                lambda t, rv=rval: expr(float(rv), t)]
-                            ranges = [(y, sy, ey)]
-                        else:
-                            param_expr = [rval * cos(y), rval * sin(y), expr.subs(x, rval)]
-                            ranges = [(y, sy, ey)]
-                        lines.append(create_series(param_expr, ranges, s, **kw))
-                    for tval in linspace(sy, ey, wf_n2):
-                        kw["n"] = s.n[0] if npoints is None else npoints
-                        if callable(expr):
-                            param_expr = [
-                                lambda p, tv=tval: p * np.cos(float(tv)),
-                                lambda p, tv=tval: p * np.sin(float(tv)),
-                                lambda p, tv=tval: expr(p, float(tv))]
-                            ranges = [(x, sx, ex)]
-                        else:
-                            param_expr = [x * cos(tval), x * sin(tval), expr.subs(y, tval)]
-                            ranges = [(x, sx, ex)]
-                        lines.append(create_series(param_expr, ranges, s, **kw))
-
-    return lines
 
 
 def _plot3d_plot_contour_helper(threed, *args, **kwargs):
@@ -1547,205 +897,40 @@ def plot3d(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a single expression.
-        `plot3d(expr, range_x, range_y, **kwargs)`
-    - Plotting multiple expressions with the same ranges.
-        `plot3d(expr1, expr2, range_x, range_y, **kwargs)`
-    - Plotting multiple expressions with different ranges.
-        `plot3d((expr1, range_x1, range_y1), (expr2, range_x2, range_y2), ..., **kwargs)`
-    - Plotting multiple expressions with custom labels and rendering options.
-        `plot3d((expr1, range_x1, range_y1, label1, rendering_kw1), (expr2, range_x2, range_y2, label2, rendering_kw2), ..., **kwargs)`
+    - Plotting a single expression:
+
+      .. code-block::
+
+         plot3d(expr, range_x, range_y, **kwargs)
+
+    - Plotting multiple expressions with the same ranges:
+
+      .. code-block::
+
+         plot3d(expr1, expr2, range_x, range_y, **kwargs)
+
+    - Plotting multiple expressions with different ranges, custom labels and
+      rendering options:
+
+      .. code-block::
+
+         plot3d(
+            (expr1, range_x1, range_y1, label1 [opt], rendering_kw1 [opt]),
+            (expr2, range_x2, range_y2, label2 [opt], rendering_kw2 [opt]),
+            ..., **kwargs)
 
     Note: it is important to specify at least the ``range_x``, otherwise the
     function might create a rotated plot.
 
-    Parameters
-    ==========
+    Refer to :func:`~spb.graphics.functions_3d.surface` for a full
+    list of keyword arguments to customize the appearances of surfaces.
 
-    args :
-        expr : Expr
-            Expression representing the function of two variables to be plotted.
-            The expression representing the function of two variables to be
-            plotted. It can be a:
-
-            * Symbolic expression.
-            * Numerical function of two variable, supporting vectorization.
-              In this case the following keyword arguments are not supported:
-              ``params``.
-
-        range_x: (symbol, min, max)
-            A 3-tuple denoting the range of the x variable. Default values:
-            `min=-10` and `max=10`.
-
-        range_y: (symbol, min, max)
-            A 3-tuple denoting the range of the y variable. Default values:
-            `min=-10` and `max=10`.
-
-        label : str, optional
-            The label to be shown in the colorbar.  If not provided, the string
-            representation of ``expr`` will be used.
-
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of surfaces. Refer to the
-            plotting library (backend) manual for more informations.
-
-    adaptive : bool, optional
-        The default value is set to ``False``, which uses a uniform sampling
-        strategy with number of discretization points ``n1`` and ``n2`` along
-        the x and y directions, respectively.
-
-        Set adaptive to ``True`` to use the adaptive algorithm implemented in
-        [#fn4]_ to create smooth plots. Use ``adaptive_goal`` and ``loss_fn``
-        to further customize the output.
-
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn4]_ for more information.
-
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
-
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
-
-    color_func : callable, optional
-        Define the surface color mapping when ``use_cm=True``.
-        It can either be:
-
-        * A numerical function of 3 variables, x, y, z (the points computed
-          by the internal algorithm) supporting vectorization.
-        * A symbolic expression having at most as many free symbols as
-          ``expr``.
-        * None: the default value (color mapping applied to the z-value of
-          the surface).
-
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-
-    is_polar : boolean, optional
-        Default to False. If True, requests a polar discretization. In this
-        case, ``range_x`` represents the radius, ``range_y`` represents the
-        angle.
-
-    label : str or list/tuple, optional
-        The label to be shown in the colorbar. If not provided, the string
-        representation of ``expr`` will be used. The number of labels must be
-        equal to the number of expressions.
-
-    legend : bool, optional
-        Show/hide the legend. Default to None (the backend determines when
-        it is appropriate to show it). Only works when ``use_cm=False``.
-
-    loss_fn : callable or None
-        The loss function to be used by the adaptive learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          ``adaptive`` module.
-        * callable : Refer to [#fn4]_ for more information. Specifically,
-          look at ``adaptive.learner.learnerND`` to find more loss functions.
-
-    n1, n2 : int, optional
-        ``n1`` and ``n2`` set the number of discretization points along the
-        x and y ranges, respectively. Default value to 100.
-
-    n : int or two-elements tuple (n1, n2), optional
-        If an integer is provided, the x and y ranges are sampled uniformly
-        at ``n`` of points. If a tuple is provided, it overrides
-        ``n1`` and ``n2``.
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of expressions.
-
-    show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the `Plot` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the backend.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    tx, ty, tz : callable, optional
-        Apply a numerical function to the discretized domain in the
-        x, y and z direction, respectively.
-
-    use_cm : boolean, optional
-        If True, apply a color map to the surface.
-        If False, solid colors will be used instead. Default to False.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    wireframe : boolean, optional
-        Enable or disable a wireframe over the surface. Depending on the number
-        of wireframe lines (see ``wf_n1`` and ``wf_n2``), activating this
-        option might add a considerable overhead during the plot's creation.
-        Default to False (disabled).
-
-    wf_n1, wf_n2 : int, optional
-        Number of wireframe lines along the x and y ranges, respectively.
-        Default to 10. Note that increasing this number might considerably
-        slow down the plot's creation.
-
-    wf_npoint : int or None, optional
-        Number of discretization points for the wireframe lines. Default to
-        None, meaning that each wireframe line will have ``n1`` or ``n2``
-        number of points, depending on the line direction.
-
-    wf_rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of wireframe lines.
-
-    xlabel, ylabel, zlabel : str, optional
-        Labels for the x-axis or y-axis or z-axis, respectively.
-
-    xlim, ylim : (float, float), optional
-        Denotes the x-axis limits or y-axis limits, ``(min, max)``, visible in
-        the chart. Note that the function is still being evaluate over
-        ``range_x`` and ``range_y``.
-
-    zlim : (float, float), optional
-        Denotes the z-axis limits, ``(min, max)``, visible in the chart.
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
-
-    Note: for documentation purposes, the following examples uses Matplotlib.
-    However, Matplotlib's 3D capabilities are rather limited. Consider running
-    these examples with a different backend (hence, modify the ``rendering_kw``
-    and ``wf_rendering_kw`` to pass the correct options to the backend).
 
     .. plot::
        :context: reset
@@ -1869,11 +1054,6 @@ def plot3d(*args, **kwargs):
            backend=PB, use_cm=True, n=100, aspect=dict(x=1.5, y=1.5, z=0.75),
            wireframe=True, wf_n1=15, wf_n2=15, throttled=True, use_latex=False)
 
-    References
-    ==========
-
-    .. [#fn4] https://github.com/python-adaptive/adaptive
-
     See Also
     ========
 
@@ -1890,184 +1070,42 @@ def plot3d_parametric_surface(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a single expression.
-        `plot3d_parametric_surface(expr_x, expr_y, expr_z, range_u, range_v, label, **kwargs)`
-    - Plotting multiple expressions with the same ranges.
-        `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1), (expr_x2, expr_y2, expr_z2), range_u, range_v, **kwargs)`
-    - Plotting multiple expressions with different ranges.
-        `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2), **kwargs)`
-    - Plotting multiple expressions with different ranges and rendering option.
-        `plot3d_parametric_surface((expr_x1, expr_y1, expr_z1, range_u1, range_v1, label1, rendering_kw1), (expr_x2, expr_y2, expr_z2, range_u2, range_v2, label2, rendering_kw2), **kwargs)`
+    - Plotting a single expression:
+
+      .. code-block::
+
+         plot3d_parametric_surface(
+                expr_x, expr_y, expr_z, range_u, range_v, label, **kwargs)
+
+    - Plotting multiple expressions with the same ranges:
+
+      .. code-block::
+
+         plot3d_parametric_surface((expr_x1, expr_y1, expr_z1),
+            (expr_x2, expr_y2, expr_z2), range_u, range_v, **kwargs)
+
+    - Plotting multiple expressions with different ranges, custom labels and
+      rendering option:
+
+      .. code-block::
+
+         plot3d_parametric_surface(
+            (expr_x1, expr_y1, expr_z1, range_u1, range_v1,
+                label1 [opt], rendering_kw1 [opt]),
+            (expr_x2, expr_y2, expr_z2, range_u2, range_v2,
+                label2 [opt], rendering_kw2 [opt]), **kwargs)`
 
     Note: it is important to specify both the ranges.
 
-    Parameters
-    ==========
+    Refer to :func:`~spb.graphics.functions_3d.surface_parametric` for a full
+    list of keyword arguments to customize the appearances of surfaces.
 
-    args :
-        expr_x: Expr
-            Expression representing the function along `x`. It can be a:
-
-            * Symbolic expression.
-            * Numerical function of two variable, f(u, v), supporting
-              vectorization. In this case the following keyword arguments are
-              not supported: ``params``.
-
-        expr_y: Expr
-            Expression representing the function along `y`. It can be a:
-
-            * Symbolic expression.
-            * Numerical function of two variable, f(u, v), supporting
-              vectorization. In this case the following keyword arguments are
-              not supported: ``params``.
-
-        expr_z: Expr
-            Expression representing the function along `z`. It can be a:
-
-            * Symbolic expression.
-            * Numerical function of two variable, f(u, v), supporting
-              vectorization. In this case the following keyword arguments are
-              not supported: ``params``.
-
-        range_u: (symbol, min, max)
-            A 3-tuple denoting the range of the `u` variable.
-
-        range_v: (symbol, min, max)
-            A 3-tuple denoting the range of the `v` variable.
-
-        label : str, optional
-            The label to be shown in the colorbar.  If not provided, the string
-            representation of the expression will be used.
-
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of surfaces. Refer to the
-            plotting library (backend) manual for more informations.
-
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
-
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
-
-    color_func : callable, optional
-        Define the surface color mapping when ``use_cm=True``.
-        It can either be:
-
-        * A numerical function supporting vectorization. The arity can be:
-
-          * 1 argument: ``f(u)``, where ``u`` is the first parameter.
-          * 2 arguments: ``f(u, v)`` where ``u, v`` are the parameters.
-          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates of
-            the points.
-          * 5 arguments: ``f(x, y, z, u, v)``.
-
-        * A symbolic expression having at most as many free symbols as
-          ``expr_x`` or ``expr_y`` or ``expr_z``.
-        * None: the default value (color mapping applied to the z-value of
-          the surface).
-
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-
-    label : str or list/tuple, optional
-        The label to be shown in the colorbar. If not provided, the string
-        representation will be used. The number of labels must be
-        equal to the number of expressions.
-
-    n1, n2 : int, optional
-        ``n1`` and ``n2`` set the number of discretization points along the
-        u and v ranges, respectively. Default value to 100.
-
-    n : int or two-elements tuple (n1, n2), optional
-        If an integer is provided, the u and v ranges are sampled uniformly
-        at ``n`` of points. If a tuple is provided, it overrides
-        ``n1`` and ``n2``.
-
-    legend : bool, optional
-        Show/hide the legend. Default to None (the backend determines when
-        it is appropriate to show it). Only works when ``use_cm=False``.
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of expressions.
-
-    show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the backend.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    tx, ty, tz : callable, optional
-        Apply a numerical function to the discretized domain in the
-        x, y and z direction, respectively.
-
-    use_cm : boolean, optional
-        If True, apply a color map to the surface.
-        If False, solid colors will be used instead. Default to False.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    wireframe : boolean, optional
-        Enable or disable a wireframe over the surface. Depending on the number
-        of wireframe lines (see ``wf_n1`` and ``wf_n2``), activating this
-        option might add a considerable overhead during the plot's creation.
-        Default to False (disabled).
-
-    wf_n1, wf_n2 : int, optional
-        Number of wireframe lines along the u and v ranges, respectively.
-        Default to 10. Note that increasing this number might considerably
-        slow down the plot's creation.
-
-    wf_npoint : int or None, optional
-        Number of discretization points for the wireframe lines. Default to
-        None, meaning that each wireframe line will have ``n1`` or ``n2``
-        number of points, depending on the line direction.
-
-    wf_rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of wireframe lines.
-
-    xlabel, ylabel, zlabel : str, optional
-        Label for the x-axis or y-axis or z-axis, respectively.
-
-    xlim, ylim, zlim : (float, float), optional
-        Denotes the x-axis limits, or y-axis limits, or z-axis limits,
-        respectively, ``(min, max)``, visible in the chart.
-
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
-
-    Note: for documentation purposes, the following examples uses Matplotlib.
-    However, Matplotlib's 3D capabilities are rather limited. Consider running
-    these examples with a different backend (hence, modify the ``rendering_kw``
-    and ``wf_rendering_kw`` to pass the correct options to the backend).
 
     .. plot::
        :context: reset
@@ -2238,62 +1276,39 @@ def plot3d_spherical(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a single expression.
-        `plot3d_spherical(r, range_theta, range_phi, **kwargs)`
-    - Plotting multiple expressions with the same ranges.
-        `plot3d_parametric_surface(r1, r2, range_theta, range_phi, **kwargs)`
-    - Plotting multiple expressions with different ranges.
-        `plot3d_parametric_surface((r1, range_theta1, range_phi1), (r2, range_theta2, range_phi2), **kwargs)`
-    - Plotting multiple expressions with different ranges and rendering option.
-        `plot3d_parametric_surface((r1, range_theta1, range_phi1, label1, rendering_kw1), (r2, range_theta2, range_phi2, label2, rendering_kw2), **kwargs)`
+    - Plotting a single expression.:
+
+      .. code-block::
+
+         plot3d_spherical(r, range_theta, range_phi, **kwargs)
+
+    - Plotting multiple expressions with the same ranges.:
+
+      .. code-block::
+
+         plot3d_spherical(r1, r2, range_theta, range_phi, **kwargs)
+
+    - Plotting multiple expressions with different ranges, custom labels and
+      rendering options:
+
+      .. code-block::
+
+         plot3d_spherical(
+            (r1, range_theta1, range_phi1, label1 [opt], rendering_kw1 [opt]),
+            (r2, range_theta2, range_phi2, label2 [opt], rendering_kw2 [opt]),
+            ..., **kwargs)
 
     Note: it is important to specify both the ranges.
 
-    Parameters
-    ==========
+    Refer to :func:`~spb.graphics.functions_3d.surface_spherical` for a full
+    list of keyword arguments to customize the appearances of surfaces.
 
-    args :
-        r: Expr
-            Expression representing the radius. It can be a:
-
-            * Symbolic expression.
-            * Numerical function of two variable, f(theta, phi), supporting
-              vectorization. In this case the following keyword arguments are
-              not supported: ``params``.
-
-        theta: (symbol, min, max)
-            A 3-tuple denoting the range of the polar angle, which is limited
-            in [0, pi]. Consider a sphere:
-
-            * ``theta=0`` indicates the north pole.
-            * ``theta=pi/2`` indicates the equator.
-            * ``theta=pi`` indicates the south pole.
-
-        range_v: (symbol, min, max)
-            A 3-tuple denoting the range of the azimuthal angle, which is
-            limited in [0, 2*pi].
-
-        label : str, optional
-            The label to be shown in the colorbar. If not provided, the string
-            representation of the expression will be used.
-
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of surfaces. Refer to the
-            plotting library (backend) manual for more informations.
-
-        ``**kwargs`` :
-            Keyword arguments are the same as ``plot3d_parametric_surface``.
-            Refer to its documentation for more information.
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
-
-    Note: for documentation purposes, the following examples uses Matplotlib.
-    However, Matplotlib's 3D capabilities are rather limited. Consider running
-    these examples with a different backend (hence, modify the ``rendering_kw``
-    and ``wf_rendering_kw`` to pass the correct options to the backend).
-
 
     .. plot::
        :context: reset
@@ -2399,94 +1414,48 @@ def plot3d_implicit(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - `plot3d_parametric_surface(expr, range_x, range_y, range_z, rendering_kw [optional], **kwargs)`
+    - Plotting a single expression:
 
-    Note that:
+      .. code-block::
 
-    1. it is important to specify the ranges, as they will determine the
-       orientation of the surface.
-    2. the number of discretization points is crucial as the algorithm will
+         plot3d_implicit(
+            expr, range_x, range_y, range_z, rendering_kw [optional], **kwargs)
+
+    - Plotting a multiple expression over the same range:
+
+      .. code-block::
+
+         plot3d_implicit(
+            expr1, expr2, range_x, range_y, range_z,
+            rendering_kw [optional], **kwargs)`
+
+    - Plotting a multiple expression with different range and
+      rendering options:
+
+      .. code-block::
+
+         plot3d_implicit(
+            (expr1, range_x1, range_y1, range_z1, rendering_kw1 [opt]),
+            (expr2, range_x2, range_y2, range_z2, rendering_kw2 [opt]),
+            **kwargs)`
+
+    Refer to :func:`~spb.graphics.functions_3d.implicit_3d` for a full
+    list of keyword arguments to customize the appearances of surfaces.
+
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
+
+    Notes
+    =====
+    1. the number of discretization points is crucial as the algorithm will
        discretize a volume. A high number of discretization points creates a
        smoother mesh, at the cost of a much higher memory consumption and
        slower computation.
+    2. Only ``PlotlyBackend`` and ``K3DBackend`` support 3D implicit plotting.
     3. To plot ``f(x, y, z) = c`` either write ``expr = f(x, y, z) - c`` or
        pass the appropriate keyword to ``rendering_kw``. Read the backends
        documentation to find out the available options.
-    4. Only ``PlotlyBackend`` and ``K3DBackend`` support 3D implicit plotting.
-
-
-    Parameters
-    ==========
-
-    args :
-        expr: Expr
-            Implicit expression.  It can be a:
-
-            * Symbolic expression.
-            * Numerical function of three variable, f(x, y, z), supporting
-              vectorization.
-
-        range_x: (symbol, min, max)
-            A 3-tuple denoting the range of the `x` variable.
-
-        range_y: (symbol, min, max)
-            A 3-tuple denoting the range of the `y` variable.
-
-        range_z: (symbol, min, max)
-            A 3-tuple denoting the range of the `z` variable.
-
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of surfaces. Refer to the
-            plotting library (backend) manual for more informations.
-
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-
-    n1, n2, n3 : int, optional
-        Set the number of discretization points along the x, y and z ranges,
-        respectively. Default value is 60.
-
-    n : int or three-elements tuple (n1, n2, n3), optional
-        If an integer is provided, the x, y and z ranges are sampled uniformly
-        at ``n`` of points. If a tuple is provided, it overrides ``n1``,
-        ``n2`` and ``n3``.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of expressions.
-
-    show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
-        the size will be set by the backend.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel, zlabel : str, optional
-        Labels for the x-axis, y-axis or z-axis, respectively.
-
-    xlim, ylim, zlim : (float, float), optional
-        Denotes the x-axis limits, y-axis limits or z-axis limits,
-        respectively, ``(min, max)``, visible in the chart. Note that the
-        function is still being evaluated over the ``range_x``, ``range_y``
-        and ``range_z``.
-
 
     Examples
     ========
@@ -2554,16 +1523,18 @@ def plot_contour(*args, **kwargs):
     """
     Draws contour plot of a function of two variables.
 
-    This function signature is almost identical to `plot3d`: refer to its
+    This function signature is almost identical to :func:`~plot3d`: refer to its
     documentation for a full list of available argument and keyword arguments.
+
+    Refer to :func:`~spb.graphics.functions_2d.contour` for a full
+    list of keyword arguments to customize the appearances of contours.
+
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Parameters
     ==========
-
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
 
     clabels : bool, optional
         Visualize labels of contour lines. Only works when ``is_filled=False``.
@@ -2692,61 +1663,15 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
     """Generate a surface of revolution by rotating a curve around an axis of
     rotation.
 
-    Parameters
-    ==========
+    Refer to :func:`~spb.graphics.functions_3d.surface_revolution` for a full
+    list of keyword arguments to customize the appearances of surfaces.
 
-    curve : Expr, list/tuple of 2 or 3 elements
-        The curve to be revolved, which can be either:
-
-        * a symbolic expression
-        * a 2-tuple representing a parametric curve in 2D space
-        * a 3-tuple representing a parametric curve in 3D space
-
-    range_t : (symbol, min, max)
-        A 3-tuple denoting the range of the parameter of the curve.
-
-    range_phi : (symbol, min, max)
-        A 3-tuple denoting the range of the azimuthal angle where the curve
-        will be revolved. Default to ``(phi, 0, 2*pi)``.
-
-    axis : (coord1, coord2)
-        A 2-tuple that specifies the position of the rotation axis.
-        Depending on the value of ``parallel_axis``:
-
-        * ``"x"``: the rotation axis intersects the YZ plane at
-          (coord1, coord2).
-        * ``"y"``: the rotation axis intersects the XZ plane at
-          (coord1, coord2).
-        * ``"z"``: the rotation axis intersects the XY plane at
-          (coord1, coord2).
-
-        Default to ``(0, 0)``.
-
-    parallel_axis : str
-        Specify the axis parallel to the axis of rotation. Must be one of the
-        following options: "x", "y" or "z". Default to "z".
-
-    show_curve : bool
-        Add the initial curve to the plot. Default to False.
-
-    curve_kw : dict
-        A dictionary of options that will be passed to
-        ``plot3d_parametric_line`` if ``show_curve=True`` in order to customize
-        the appearance of the initial curve. Refer to its documentation for
-        more information.
-
-    ``**kwargs`` :
-        Keyword arguments are the same as ``plot3d_parametric_surface``.
-        Refer to its documentation for more information.
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
-
-    Note: for documentation purposes, the following examples uses Matplotlib.
-    However, Matplotlib's 3D capabilities are rather limited. Consider running
-    these examples with a different backend (hence, modify the ``curve_kw``,
-    ``rendering_kw`` and ``wf_rendering_kw`` to pass the correct options to
-    the backend).
 
     .. plot::
        :context: reset
@@ -2867,120 +1792,44 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
 def plot_implicit(*args, **kwargs):
     """Plot implicit equations / inequalities.
 
-    plot_implicit, by default, generates a contour using a mesh grid of fixed
-    number of points. The greater the number of points, the greater the memory
-    used. By setting ``adaptive=True``, interval arithmetic will be used to
-    plot functions. If the expression cannot be plotted using interval
-    arithmetic, it defaults to generating a contour using a mesh grid.
-    With interval arithmetic, the line width can become very small; in those
-    cases, it is better to use the mesh grid approach.
+    ``plot_implicit``, by default, generates a contour using a mesh grid of
+    fixednumber of points. The greater the number of points, the better the
+    results, but also the greater the memory used.
+    By setting ``adaptive=True``, interval arithmetic will be used to plot
+    functions. If the expression cannot be plotted using interval arithmetic,
+    it defaults to generating a contour using a mesh grid. With interval
+    arithmetic, the line width can become very small; in those cases, it is
+    better to use the mesh grid approach.
 
-    Parameters
-    ==========
+    Typical usage examples are in the following:
 
-    args :
-        expr : Expr, Relational, BooleanFunction
-            The equation / inequality that is to be plotted.
+    - Plot a single expression:
 
-        ranges : tuples or Symbol
-            Two tuple denoting the discretization domain, for example:
-            ``(x, -10, 10), (y, -10, 10)``
-            To get a correct plot, at least the horizontal range must be
-            provided. If no range is given, then the free symbols in the
-            expression will be assigned in the order they are sorted, which
-            could 'invert' the axis.
+      .. code-block::
 
-            Alternatively, a single Symbol corresponding to the horizontal
-            axis must be provided, which will be internally converted to a
-            range ``(sym, -10, 10)``.
+         plot_implicit(expr, range_x, range_y)
 
-        label : str, optional
-            The label to be shown when multiple expressions are plotted.
-            If not provided, the string representation of the expression
-            will be used.
+    - Plot multiple expressions over the same ranges:
 
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of contours. Refer to the
-            plotting library (backend) manual for more informations.
+      .. code-block::
 
-    adaptive : bool, optional
-        The default value is set to ``False``, meaning that the internal
-        algorithm uses a mesh grid approach. In such case, Boolean
-        combinations of expressions cannot be plotted.
-        If set to ``True``, the internal algorithm uses interval arithmetic.
-        If the expression cannot be plotted with interval arithmetic, it
-        switches to the meshgrid approach.
+         plot_implicit(expr1, expr2, range_x, range_y)
 
-    border_color : str or bool, optional
-        If given, a limiting border will be added when plotting inequalities
-        (<, <=, >, >=).
+    - Plot multiple expressions over different ranges:
 
-    color : str, optional
-        Specify the color of lines/regions. Default to None (automatic
-        coloring by the backend).
+      .. code-block::
 
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. Possible values are ``"auto"`` or
-        ``"equals"``. Default to ``"auto"``.
+         plot_implicit(
+            (expr1, range_x1, range_y1, label1 [opt]),
+            (expr2, range_x2, range_y2, label2 [opt]))
 
-    depth : integer
-        The depth of recursion for adaptive grid. Default value is 0.
-        Takes value in the range (0, 4).
-        Think of the resulting plot as a picture composed by pixels. By
-        increasing ``depth`` we are increasing the number of pixels, thus
-        obtaining a more accurate plot.
+    Refer to :func:`~spb.graphics.functions_2d.implicit_2d` for a full
+    list of keyword arguments to customize the appearances of lines and
+    regions.
 
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of ``expr`` will be used. The number of labels must be
-        equal to the number of expressions.
-
-    legend : bool, optional
-        Show/hide the legend. Default to None (the backend determines when
-        it is appropriate to show it).
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance. If the adaptive algorithm is
-        used, then matplotlib's ``fill`` command will be executed.
-        If ``adaptive=False``, then matplotlib's ``contour`` or ``contourf``
-        commands will be executed.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of expressions.
-
-    n1, n2 : int
-        Number of discretization points in the horizontal and vertical
-        directions when ``adaptive=False``. Default to 100.
-
-    n : int or two-elements tuple (n1, n2), optional
-        If an integer is provided, the x and y ranges are sampled uniformly
-        at ``n`` of points. If a tuple is provided, it overrides
-        ``n1`` and ``n2``.
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
-
-    show : bool
-        Default value is True. If set to False, the plot will not be shown.
-        See `Plot` for further information.
-
-    show_in_legend : bool
-        If True, add a legend entry for the expression being plotted.
-        This option is useful to hide a particular expression when combining
-        together multiple plots. Default to True.
-
-    title : string
-        The title for the plot.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel : string
-        The labels for the x-axis or y-axis, respectively.
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
@@ -3202,8 +2051,37 @@ def plot_polar(*args, **kwargs):
 
     By default, it uses an equal aspect ratio and doesn't apply a colormap.
 
-    This function is going to call ``plot_parametric``: refer to its
-    documentation for the full list of keyword arguments.
+    Typical usage examples are in the followings:
+
+    - Plotting a single polar curve with a range:
+
+      .. code-block::
+
+         plot_polar(expr, range)
+
+    - Plotting multiple polar curves with the same range:
+
+      .. code-block::
+
+         plot_polar(expr1, expr2, ..., range)
+
+    - Plotting multiple curves with different ranges, custom labels and
+      rendering options:
+
+      .. code-block::
+
+         plot_polar(
+            (expr1, range1, label1 [opt], rendering_kw1 [opt]),
+            (expr2, range2, label2 [opt], rendering_kw2 [opt]), ..., **kwargs)
+
+    This function is going to execute
+    :func:`~spb.graphics.functions_2d.line_parametric_2d`. Refer to its
+    documentation for a full list of keyword arguments to customize the
+    appearances of lines.
+
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Parameters
     ==========
@@ -3326,93 +2204,37 @@ def plot_polar(*args, **kwargs):
 def plot_geometry(*args, **kwargs):
     """Plot entities from the sympy.geometry module.
 
-    Parameters
-    ==========
+    Typical usage examples are in the following:
 
-    args :
-        geom : GeometryEntity
-            Represent the geometric entity to be plotted.
+    - Plotting a single geometric entity:
 
-        label : str, optional
-            The name of the geometry entity to be eventually shown on the
-            legend. If not provided, the string representation of `geom`
-            will be used.
+      .. code-block::
 
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of lines or fills. Refer to
-            the plotting library (backend) manual for more informations.
+         plot_geometry(geom, label [opt], rendering_kw [opt])
 
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
+    - Plotting multiple geometric entities:
 
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
+      .. code-block::
 
-    is_filled : boolean
-        Default to True. Fill the polygon/circle/ellipse.
+         plot_geometry(geom1, geom2, ...)
 
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of ``geom`` will be used. The number of labels must be
-        equal to the number of geometric entities.
+    - Plotting multiple geometric entities, setting custom labels and
+      rendering options:
 
-    legend : bool, optional
-        Show/hide the legend. Default to None (the backend determines when
-        it is appropriate to show it).
+      .. code-block::
 
-    params : dict
-        A dictionary in which the keys are symbols, enabling two different
-        modes of operation:
+         plot_geometry(
+            (geom1, label1 [opt], rendering_kw1 [opt]),
+            (geom2, label2 [opt], rendering_kw2 [opt]),
+            **kwargs)
 
-        1. If the values are numbers, the dictionary acts like a substitution
-           dictionary for the provided geometric entities.
+    Refer to :func:`~spb.graphics.functions_2d.geometry` for a full
+    list of keyword arguments to customize the appearances of lines and
+    regions.
 
-        2. If the values are tuples representing parameters, the dictionary
-           enables the interactive-widgets plot, which doesn't support the
-           adaptive algorithm (meaning it will use ``adaptive=False``).
-           Learn more by reading the documentation of the interactive
-           sub-module.
-
-    axis_center : (float, float), optional
-        Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with ``MatplotlibBackend``.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        functions to customize the appearance of lines and/or fills. Refer to
-        the plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of expressions.
-
-    show : bool, optional
-        The default value is set to `True`. Set show to `False` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
-        the size will be set by the backend.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel, zlabel : str, optional
-        Labels for the x-axis, y-axis or z-axis, respectively.
-
-    xlim, ylim, zlim : (float, float), optional
-        Denotes the x-axis limits, y-axis limits or z-axis limits,
-        respectively, ``(min, max)``, visible in the chart.
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
 
     Examples
@@ -3610,101 +2432,28 @@ def plot_list(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting coordinates of a single function.
-        `plot_list(x, y, **kwargs)`
-    - Plotting coordinates of multiple functions adding custom labels.
-        `plot_list((x1, y1, label1), (x2, y2, label2), **kwargs)`
+    - Plotting coordinates of a single function:
 
+      .. code-block::
 
-    Parameters
-    ==========
+         plot_list(x, y, **kwargs)
 
-    args :
-        x : list or tuple
-            x-coordinates
+    - Plotting coordinates of multiple functions, adding custom labels and
+      rendering options:
 
-        y : list or tuple
-            y-coordinates
+      .. code-block::
 
-        label : str, optional
-            The label to be shown in the legend.
+         plot_list(
+            (x1, y1, label1 [opt], rendering_kw1 [opt]),
+            (x2, y2, label2 [opt], rendering_kw2 [opt]),
+            ..., **kwargs)
 
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of lines. Refer to the
-            plotting library (backend) manual for more informations.
+    Refer to :func:`~spb.graphics.functions_2d.list_2d` for a full
+    list of keyword arguments to customize the appearances of lines.
 
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
-
-    axis_center : (float, float), optional
-        Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with MatplotlibBackend.
-
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
-
-    is_point : boolean, optional
-        Default to False, which will render a line connecting all the points.
-        If True, a scatter plot will be generated.
-
-    is_filled : boolean, optional
-        Default to False, which will render empty circular markers. It only
-        works if ``is_point=True``.
-        If True, filled circular markers will be rendered.
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. The number of labels must be
-        equal to the number of expressions.
-
-    legend : bool, optional
-        Show/hide the legend. Default to None (the backend determines when
-        it is appropriate to show it).
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of expressions.
-
-    show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the backend.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel : str, optional
-        Labels for the x-axis or y-axis, respectively.
-
-    xscale, yscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis or y-axis, respectively.
-        Default to ``'linear'``.
-
-    xlim, ylim : (float, float), optional
-        Denotes the x-axis limits or y-axis limits, respectively,
-        ``(min, max)``, visible in the chart.
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
 
     Examples
@@ -3838,100 +2587,28 @@ def plot3d_list(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting coordinates of a single function.
-        `plot3d_list(x, y, **kwargs)`
-    - Plotting coordinates of multiple functions adding custom labels.
-        `plot3d_list((x1, y1, label1), (x2, y2, label2), **kwargs)`
+    - Plotting coordinates of a single function:
 
+      .. code-block::
 
-    Parameters
-    ==========
+         plot3d_list(x, y, **kwargs)
 
-    args :
-        x : list or tuple or 1D NumPy array
-            x-coordinates
+    - Plotting coordinates of multiple functions, adding custom labels and
+      rendering options:
 
-        y : list or tuple or 1D NumPy array
-            y-coordinates
+      .. code-block::
 
-        z : list or tuple or 1D NumPy array
-            z-coordinates
+         plot3d_list(
+            (x1, y1, z1, label1 [opt], rendering_kw1 [opt]),
+            (x2, y2, z1, label2 [opt], rendering_kw2 [opt]),
+            ..., **kwargs)
 
-        label : str, optional
-            The label to be shown in the legend.
+    Refer to :func:`~spb.graphics.functions_3d.list_3d` for a full
+    list of keyword arguments to customize the appearances of lines.
 
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of lines. Refer to the
-            plotting library (backend) manual for more informations.
-
-    backend : Plot, optional
-        A subclass of `Plot`, which will perform the rendering.
-        Default to `MatplotlibBackend`.
-
-    color_func : callable, optional
-        A numerical function of 3 variables, x, y, z defining the line color.
-        Default to None. Requires ``use_cm=True`` in order to be applied.
-
-    is_point : boolean, optional
-        Default to False, which will render a line connecting all the points.
-        If True, a scatter plot will be generated.
-
-    is_filled : boolean, optional
-        Default to True, which will render filled circular markers. It only
-        works if `is_point=True`. If True, filled circular markers will be
-        rendered. Note that some backend might not support this feature.
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. The number of labels must be
-        equal to the number of expressions.
-
-    legend : bool, optional
-        Show/hide the legend. Default to None (the backend determines when
-        it is appropriate to show it).
-
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-        If a list of dictionaries is provided, the number of dictionaries must
-        be equal to the number of expressions.
-
-    show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to `None`, meaning
-        the size will be set by the backend.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    use_cm : boolean, optional
-        If True, apply a color map to the parametric lines.
-        If False, solid colors will be used instead. Default to True.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel, zlabel : str, optional
-        Label for the x-axis, y-axis, z-axis, respectively.
-
-    xlim, ylim, zlim : (float, float), optional
-        Denotes the x-axis limits, y-axis limits or z-axis limits,
-        respectively, ``(min, max)``, visible in the chart.
-
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Examples
     ========
@@ -4046,167 +2723,40 @@ def plot_piecewise(*args, **kwargs):
 
     Typical usage examples are in the followings:
 
-    - Plotting a single expression with a single range.
-        `plot_piecewise(expr, range, **kwargs)`
-    - Plotting a single expression with the default range (-10, 10).
-        `plot_piecewise(expr, **kwargs)`
-    - Plotting multiple expressions with a single range.
-        `plot_piecewise(expr1, expr2, ..., range, **kwargs)`
-    - Plotting multiple expressions with multiple ranges.
-        `plot_piecewise((expr1, range1), (expr2, range2), ..., **kwargs)`
-    - Plotting multiple expressions with multiple ranges and custom labels.
-        `plot_piecewise((expr1, range1, label1), (expr2, range2, label2), ..., **kwargs)`
+    - Plotting a single expression with the default range (-10, 10):
 
+      .. code-block::
+
+         plot_piecewise(expr, **kwargs)
+
+    - Plotting multiple expressions with a single range:
+
+      .. code-block::
+
+         plot_piecewise(expr1, expr2, ..., range, **kwargs)
+
+    - Plotting multiple expressions with multiple ranges, custom labels and
+      rendering options:
+
+      .. code-block::
+
+         plot_piecewise(
+            (expr1, range1, label1 [opt], rendering_kw1 [opt]),
+            (expr2, range2, label2 [opt], rendering_kw2 [opt]),
+            ..., **kwargs)`
+
+    Refer to :func:`~spb.graphics.functions_2d.line` for a full
+    list of keyword arguments to customize the appearances of lines.
+
+    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+    keyword arguments to customize the appearances of the figure (title,
+    axis labels, ...).
 
     Parameters
     ==========
 
-    args :
-        expr : Expr
-            Expression representing the function of one variable to be
-            plotted.
-
-        range: (symbol, min, max)
-            A 3-tuple denoting the range of the x variable. Default values:
-            `min=-10` and `max=10`.
-
-        label : str, optional
-            The label to be shown in the legend. If not provided, the string
-            representation of ``expr`` will be used.
-
-        rendering_kw : dict, optional
-            A dictionary of keywords/values which is passed to the backend's
-            function to customize the appearance of lines. Refer to the
-            plotting library (backend) manual for more informations.
-
-    adaptive : bool, optional
-        Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [#fn5]_ to create smooth plots. Use ``adaptive_goal``
-        and ``loss_fn`` to further customize the output.
-
-        The default value is ``False``, which uses an uniform sampling
-        strategy, where the number of discretization points is specified by
-        the ``n`` keyword argument.
-
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [#fn5]_ for more information.
-
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of the plot. The value depends on the backend
-        being used. Read that backend's documentation to find out the
-        possible values.
-
-    axis_center : (float, float), optional
-        Tuple of two floats denoting the coordinates of the center or
-        {'center', 'auto'}. Only available with ``MatplotlibBackend``.
-
-    backend : Plot, optional
-        A subclass of ``Plot``, which will perform the rendering.
-        Default to ``MatplotlibBackend``.
-
-    detect_poles : boolean or str, optional
-        Chose whether to detect and correctly plot poles. There are two
-        algorithms at work:
-
-        1. based on the gradient of the numerical data, it introduces NaN
-           values at locations where the steepness is greater than some
-           threshold. This splits the line into multiple segments. To improve
-           detection, increase the number of discretization points ``n``
-           and/or change the value of ``eps``.
-        2. a symbolic approach based on the ``continuous_domain`` function
-           from the ``sympy.calculus.util`` module, which computes the
-           locations of discontinuities. If any is found, vertical lines
-           will be shown.
-
-        Possible options:
-
-        * ``True``: activate poles detection computed with the numerical
-          gradient.
-        * ``False``: no poles detection.
-        * ``"symbolic"``: use both numerical and symbolic algorithms.
-
-        Default to ``False``.
-
     dots : boolean
         Wheter to show circular markers at the endpoints. Default to True.
-
-    eps : float, optional
-        An arbitrary small value used by the ``detect_poles`` algorithm.
-        Default value to 0.1. Before changing this value, it is recommended to
-        increase the number of discretization points.
-
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of `expr` will be used. If a list/tuple is provided, the
-        number of labels must be equal to the number of expressions.
-
-    loss_fn : callable or None
-        The loss function to be used by the adaptive learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          ``adaptive`` module.
-        * callable : Refer to [#fn5]_ for more information. Specifically,
-          look at ``adaptive.learner.learner1D`` to find more loss functions.
-
-    n : int, optional
-        Used when the ``adaptive=False``. The function is uniformly
-        sampled at ``n`` number of points. Default value to 1000.
-        If the ``adaptive=True``, this parameter will be ignored.
-
-    show : bool, optional
-        The default value is set to ``True``. Set show to ``False`` and
-        the function will not display the plot. The returned instance of
-        the ``Plot`` class can then be used to save or display the plot
-        by calling the ``save()`` and ``show()`` methods respectively.
-
-    size : (float, float), optional
-        A tuple in the form (width, height) to specify the size of
-        the overall figure. The default value is set to ``None``, meaning
-        the size will be set by the backend.
-
-    title : str, optional
-        Title of the plot. It is set to the latex representation of
-        the expression, if the plot has only one expression.
-
-    tx, ty : callable, optional
-        Apply a numerical function to the discretized domain in the
-        x and y directions, respectively.
-
-    use_latex : boolean, optional
-        Turn on/off the rendering of latex labels. If the backend doesn't
-        support latex, it will render the string representations instead.
-
-    xlabel, ylabel : str, optional
-        Labels for the x-axis or y-axis, respectively.
-
-    xscale, yscale : 'linear' or 'log', optional
-        Sets the scaling of the x-axis or y-axis, respectively.
-        Default to `'linear'`.
-
-    xlim : (float, float), optional
-        Denotes the x-axis limits, ``(min, max)``, visible in the chart.
-        Note that the function is still being evaluated over the specified
-        ``range``.
-
-    ylim : (float, float), optional
-        Denotes the y-axis limits, ``(min, max)``, visible in the chart.
-
 
     Examples
     ========
@@ -4276,13 +2826,6 @@ def plot_piecewise(*args, **kwargs):
        [8]: cartesian line: 1/x for x over (-5.0, 5.0)
        [9]: 2D list plot
        [10]: 2D list plot
-
-
-    References
-    ==========
-
-    .. [#fn5] https://github.com/python-adaptive/adaptive
-
 
     See Also
     ========

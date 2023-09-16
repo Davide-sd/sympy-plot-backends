@@ -157,7 +157,8 @@ def line_abs_arg_colored(expr, range=None, label=None,
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
     **kwargs :
-        Keyword arguments are the same as ``line``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_2d.line`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -215,6 +216,12 @@ def line_abs_arg_colored(expr, range=None, label=None,
                label="Arg(fs)"),
            xlabel="k", yscale="log", ylim=(1e-03, 10), use_latex=False)
 
+    See Also
+    ========
+
+    spb.graphics.functions_2d.line, line_abs_arg, line_real_imag,
+    domain_coloring
+
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
@@ -268,7 +275,8 @@ def line_abs_arg(expr, range=None, label=None, rendering_kw=None,
     arg : boolean, optional
         Show/hide the argument. Default to True (visible).
     **kwargs :
-        Keyword arguments are the same as ``line``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_2d.line`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -328,6 +336,11 @@ def line_abs_arg(expr, range=None, label=None, rendering_kw=None,
                params={u: (0, -1, 2), a: (1, 0, 2)}),
            ylim=(-0.25, 2), use_latex=False)
 
+    See Also
+    ========
+
+    spb.graphics.functions_2d.line, line_real_imag, line_abs_arg_colored
+
     """
     keys = []
     if abs: keys.append("abs")
@@ -361,7 +374,8 @@ def line_real_imag(expr, range=None, label=None, rendering_kw=None,
     imag : boolean, optional
         Show/hide the imaginary part. Default to True (visible).
     **kwargs :
-        Keyword arguments are the same as ``line``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_2d.line`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -369,6 +383,71 @@ def line_real_imag(expr, range=None, label=None, rendering_kw=None,
 
     series : list
         A list containing instances of ``LineOver1DRangeSeries``.
+
+    Notes
+    =====
+
+    Given a symbolic expression, there are two possible way to create a
+    real/imag plot:
+
+    1. Apply Sympy's ``re`` or ``im`` to the symbolic expression, then
+       evaluates it.
+    2. Evaluates the symbolic expression over the provided range in order to
+       get complex values, then extract the real/imaginary parts with Numpy.
+
+    For performance reasons, ``line_real_imag`` implements the second approach.
+    In fact, SymPy's ``re`` and ``im`` functions evaluate their arguments,
+    potentially creating unecessarely long symbolic expressions that requires
+    a lot of time to be evaluated.
+
+    Another thing to be aware of is branch cuts of complex-valued functions.
+    The plotting module attempt to evaluate a symbolic expression using complex
+    numbers. Depending on the evaluation module being used, we might get
+    different results. For example, the following two expressions are equal
+    when ``x > 0``:
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import symbols, im, Rational
+       >>> from spb import *
+       >>> x = symbols('x', positive=True)
+       >>> x_generic = symbols("x")
+       >>> e1 = (1 / x)**(Rational(6, 5))
+       >>> e2 = x**(-Rational(6, 5))
+       >>> e2.equals(e1)
+       True
+       >>> e3 = (1 / x_generic)**(Rational(6, 5))
+       >>> e4 = x_generic**(-Rational(6, 5))
+       >>> e4.equals(e3)
+       False
+       >>> graphics(
+       ...     line_real_imag(e3, label="e3", real=False,
+       ...         detect_poles="symbolic"),
+       ...     line_real_imag(e4, label="e4", real=False,
+       ...         detect_poles="symbolic"),
+       ...     ylim=(-5, 5))
+
+    The result computed by the plotting module might feels off: the two
+    expressions are different, but according to the plot they are the same.
+    Someone could say that the imaginary part of ``e3`` or ``e4`` should be
+    negative when ``x < 0``. We can evaluate the expressions with mpmath:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> graphics(
+       ...     line_real_imag(e3, label="e3", real=False,
+       ...         detect_poles="symbolic", modules="mpmath"),
+       ...     line_real_imag(e4, label="e4", real=False,
+       ...         detect_poles="symbolic", modules="mpmath"),
+       ...     ylim=(-5, 5))
+
+    With mpmath we see that ``e3`` and ``e4`` are indeed different.
 
     Examples
     ========
@@ -414,6 +493,11 @@ def line_real_imag(expr, range=None, label=None, rendering_kw=None,
            line_real_imag((sqrt(x) + u) * exp(-u * x**2), prange(x, -3*a, 3*a),
                params={u: (0, -1, 2), a: (1, 0, 2)}),
            ylim=(-0.25, 2), use_latex=False)
+
+    See Also
+    ========
+
+    spb.graphics.functions_2d.line, line_abs_arg, line_abs_arg_colored
 
     """
     keys = []
@@ -482,7 +566,8 @@ def surface_abs_arg(expr, range=None, label=None, rendering_kw=None,
     arg : boolean, optional
         Show/hide the argument. Default to True (visible).
     **kwargs :
-        Keyword arguments are the same as ``surface``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_3d.surface`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -539,6 +624,12 @@ def surface_abs_arg(expr, range=None, label=None, rendering_kw=None,
                }),
                backend=PB, aspect="cube", use_latex=False)
 
+    See Also
+    ========
+
+    spb.graphics.functions_3d.surface, contour_abs_arg, surface_real_imag,
+    contour_abs_arg
+
     """
     keys = []
     if abs: keys.append("abs")
@@ -573,7 +664,8 @@ def contour_abs_arg(expr, range=None, label=None, rendering_kw=None,
     arg : boolean, optional
         Show/hide the argument. Default to True (visible).
     **kwargs :
-        Keyword arguments are the same as ``contour``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_2d.contour`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -628,6 +720,12 @@ def contour_abs_arg(expr, range=None, label=None, rendering_kw=None,
                }),
            use_latex=False, grid=False)
 
+    See Also
+    ========
+
+    spb.graphics.functions_2d.contour, contour_real_imag, surface_real_imag,
+    surface_abs_arg
+
     """
     keys = []
     if abs: keys.append("abs")
@@ -662,7 +760,8 @@ def surface_real_imag(expr, range=None, label=None, rendering_kw=None,
     imag : boolean, optional
         Show/hide the imaginary part. Default to True (visible).
     **kwargs :
-        Keyword arguments are the same as ``surface``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_3d.surface`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -720,6 +819,12 @@ def surface_real_imag(expr, range=None, label=None, rendering_kw=None,
                }),
                backend=PB, aspect="cube", use_latex=False)
 
+    See Also
+    ========
+
+    spb.graphics.functions_3d.surface, contour_abs_arg, contour_real_imag,
+    surface_abs_arg
+
     """
     keys = []
     if real: keys.append("real")
@@ -754,7 +859,8 @@ def contour_real_imag(expr, range=None, label=None, rendering_kw=None,
     arg : boolean, optional
         Show/hide the imaginary part. Default to True (visible).
     **kwargs :
-        Keyword arguments are the same as ``contour``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_2d.contour`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -809,6 +915,12 @@ def contour_real_imag(expr, range=None, label=None, rendering_kw=None,
                    b: (1, 0, 2)
                }),
            use_latex=False, grid=False)
+
+    See Also
+    ========
+
+    spb.graphics.functions_2d.contour, contour_abs_arg, surface_real_imag,
+    surface_abs_arg
 
     """
     keys = []
@@ -1028,7 +1140,7 @@ def domain_coloring(expr, range=None, label=None, rendering_kw=None,
     A phase of 0 radians corresponds to a normalized phase of 0, which gets
     mapped to the beginning of a colormap.
 
-    .. plot:: ./modules/plot_complex_explanation.py
+    .. plot:: ./modules/graphics/plot_complex_explanation.py
        :context: close-figs
        :include-source: False
 
@@ -1096,6 +1208,11 @@ def domain_coloring(expr, range=None, label=None, rendering_kw=None,
     left to the user because not only it depends on the target audience of
     the visualization, but also on the function being visualized.
 
+    See Also
+    ========
+
+    analytic_landscape, riemann_sphere_2d
+
     """
     kw = kwargs.copy()
     kw["coloring"] = coloring if coloring else cfg["complex"]["coloring"]
@@ -1117,7 +1234,8 @@ def analytic_landscape(expr, range=None, label=None, rendering_kw=None,
     ==========
 
     **kwargs :
-        Keyword arguments are the same as ``domain_coloring``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.complex_analysis.domain_coloring`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -1156,6 +1274,11 @@ def analytic_landscape(expr, range=None, label=None, rendering_kw=None,
                tz=np.log),
            grid=False, backend=KB)
 
+    See Also
+    ========
+
+    domain_coloring
+
     """
     kw = kwargs.copy()
     return _contour_surface_helper(True, ["absarg"], expr, range,
@@ -1165,6 +1288,9 @@ def analytic_landscape(expr, range=None, label=None, rendering_kw=None,
 def riemann_sphere_2d(expr, range=None, label=None, rendering_kw=None,
     at_infinity=False, riemann_mask=True, annotate=True, **kwargs):
     """Visualize stereographic projections of the Riemann sphere.
+
+    Refer to :func:`~spb.graphics.complex.plot_riemann_sphere` to learn more
+    about the Riemann sphere.
 
     Parameters
     ==========
@@ -1187,7 +1313,8 @@ def riemann_sphere_2d(expr, range=None, label=None, rendering_kw=None,
         Turn on/off the unit disk mask representing the Riemann sphere on the
         2D projections. Default to True (mask is active).
     **kwargs :
-        Keyword arguments are the same as ``domain_coloring``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.complex_analysis.domain_coloring`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -1195,6 +1322,15 @@ def riemann_sphere_2d(expr, range=None, label=None, rendering_kw=None,
 
     series : list
         A list containing up two to instance of ``ComplexDomainColoringSeries``.
+
+    Notes
+    =====
+
+    :func:`~spb.ccomplex.complex.plot_riemann_sphere` returns a
+    :func:`~spb.plotgrid.plotgrid` of two visualizations, one with
+    ``at_infinity=True``, the other with ``at_infinity=False``. Read its
+    documentation to learn more about the [Riemann-sphere]_.
+
 
     Examples
     ========
@@ -1227,6 +1363,11 @@ def riemann_sphere_2d(expr, range=None, label=None, rendering_kw=None,
        [0]: complex domain coloring: (-1 + 1/z)/(2 + 1/z + z**(-2)) for re(z) over (-1.25, 1.25) and im(z) over (-1.25, 1.25)
        [1]: parametric cartesian line: (cos(t), sin(t)) for t over (0.0, 6.283185307179586)
 
+    See Also
+    ========
+
+    riemann_sphere_3d, domain_coloring, spb.functions.plot_riemann_sphere
+
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
@@ -1258,7 +1399,8 @@ def riemann_sphere_3d(expr, rendering_kw=None, colorbar=True, **kwargs):
     colorbar : boolean, optional
         Show/hide the colorbar. Default to True (colorbar is visible).
     **kwargs :
-        Keyword arguments are the same as ``analytic_landscape``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.complex_analysis.analytic_landscape`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -1281,6 +1423,11 @@ def riemann_sphere_3d(expr, rendering_kw=None, colorbar=True, **kwargs):
            riemann_sphere_3d(expr, n=150,
                coloring="b"),
            backend=KB, legend=False, grid=False)
+
+    See Also
+    ========
+
+    riemann_sphere_2d, domain_coloring
 
     """
     if kwargs.get("params", dict()):
@@ -1316,7 +1463,8 @@ def complex_vector_field(expr, range=None, **kwargs):
         legend. If none is provided, the string representation of the
         expression will be used.
     **kwargs :
-        Keyword arguments are the same as ``vector_field_2d``.
+        Keyword arguments are the same as
+        :func:`~spb.graphics.vectors.vector_field_2d`.
         Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
@@ -1425,6 +1573,12 @@ def complex_vector_field(expr, range=None, **kwargs):
                    b: (1, 0, 2)
                }, quiver_kw=dict(color="orange", headwidth=4)),
            n=20, grid=False, use_latex=False)
+
+    See Also
+    ========
+
+    spb.graphics.vectors.vector_field_2d
+
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})

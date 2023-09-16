@@ -275,6 +275,11 @@ def vector_field_2d(expr1, expr2=None, range1=None, range2=None, label=None,
            ),
            grid=False, xlabel="x", ylabel="y", use_latex=False)
 
+    See Also
+    ========
+
+    vector_field_3d
+
     """
     if expr2 is None:
         expr1, expr2, _ = _split_vector(expr1)
@@ -578,6 +583,11 @@ def vector_field_3d(expr1, expr2=None, expr3=None, range1=None, range2=None,
                quiver_kw={"scale": 0.5, "pivot": "tail"}
            ),
            backend=KB)
+
+    See Also
+    ========
+
+    vector_field_2d
 
     """
     if ((expr2 is None) and expr3) or ((expr3 is None) and expr2):

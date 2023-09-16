@@ -772,7 +772,7 @@ def plot_bode(*systems, initial_exp=-5, final_exp=5,
         :format: doctest
         :include-source: True
 
-        >>> TransferFunction(1, s**3 + 2*s**2 + s, s)
+        >>> tf = TransferFunction(1, s**3 + 2*s**2 + s, s)
         >>> p1 = plot_bode_phase(tf, unwrap=False, show=False, title="unwrap=False")
         >>> p2 = plot_bode_phase(tf, unwrap=True, show=False, title="unwrap=True")
         >>> plotgrid(p1, p2)
