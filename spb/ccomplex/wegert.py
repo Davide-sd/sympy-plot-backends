@@ -416,7 +416,7 @@ def wegert(coloring, w, phaseres=20, cmap="hsv_r", blevel=0.75, poffset=0,
     if isinstance(cmap, str):
         try:
             cmap = matplotlib.colormaps(cmap)
-        except:
+        except Exception:
             # it might be a plotly colorscale
             from spb.backends.utils import convert_colormap
             cmap = convert_colormap(cmap, "matplotlib")

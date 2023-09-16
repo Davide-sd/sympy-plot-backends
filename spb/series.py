@@ -15,7 +15,6 @@ from sympy.core.relational import Relational
 from sympy.calculus.util import continuous_domain
 from sympy.geometry.entity import GeometryEntity
 from sympy.geometry.line import LinearEntity2D, LinearEntity3D
-from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
@@ -180,7 +179,7 @@ def _adaptive_eval(wrapper_func, free_symbols, expr, bounds, *args,
             simple(learner, goal)
     else:
         # expr is a user-provided lambda function
-        learner = Learner(partial(wrapper_func,expr, *args), bounds=bounds, **d)
+        learner = Learner(partial(wrapper_func, expr, *args), bounds=bounds, **d)
         simple(learner, goal)
 
     if one_d:
@@ -219,12 +218,12 @@ def _uniform_eval(f1, f2, *args, modules=None,
     # mpmath or sympy.
     wrapper_func = np.vectorize(wrapper_func, otypes=[complex])
 
-    def _eval_with_sympy():
+    def _eval_with_sympy(err=None):
         if f2 is None:
             raise RuntimeError(
                 "Impossible to evaluate the provided numerical function "
-                "because the following exception was raised:\n"
-                "{}: {}".format(type(err).__name__, err))
+                "because there is no fall-back numerical function to "
+                "be evaluated with SymPy.")
         return wrapper_func(f2, *args)
 
     # TODO: same message as adaptive_eval... use common function
@@ -638,7 +637,6 @@ class BaseSeries:
                 # update lambda functions
                 self._create_lambda_func()
 
-
     def get_expr(self):
         """Set the expression (or expressions) of the series."""
         warnings.warn("This method is deprecated and will be remove in the "
@@ -657,11 +655,6 @@ class BaseSeries:
 
     def _line_surface_color(self, prop, val):
         """This method enables back-compatibility with old sympy.plotting"""
-        if val:
-            if callable(val) or isinstance(val, Expr):
-                use = "color_func"
-            else:
-                use = "rendering_kw"
         # NOTE: color_func is set inside the init method of the series.
         # If line_color/surface_color is not a callable, then color_func will
         # be set to None.
@@ -995,7 +988,7 @@ class BaseSeries:
         elif (len(args) == 4) and isinstance(self, Parametric3DLineSeries):
             x, y, z, u = args
             return (t(x, self._tx), t(y, self._ty), t(z, self._tz), t(u, self._tp))
-        elif len(args) == 4: # 2D vector plot
+        elif len(args) == 4:  # 2D vector plot
             x, y, u, v = args
             return (
                 t(x, self._tx), t(y, self._ty),
@@ -1004,13 +997,13 @@ class BaseSeries:
         elif (len(args) == 5) and isinstance(self, ParametricSurfaceSeries):
             x, y, z, u, v = args
             return (t(x, self._tx), t(y, self._ty), t(z, self._tz), u, v)
-        elif (len(args) == 6) and self.is_3Dvector: # 3D vector plot
+        elif (len(args) == 6) and self.is_3Dvector:  # 3D vector plot
             x, y, z, u, v, w = args
             return (
                 t(x, self._tx), t(y, self._ty), t(z, self._tz),
                 t(u, self._tx), t(v, self._ty), t(w, self._tz)
             )
-        elif len(args) == 6: # complex plot
+        elif len(args) == 6:  # complex plot
             x, y, _abs, _arg, img, colors = args
             return (
                 x, y, t(_abs, self._tz), _arg, img, colors)
@@ -1048,6 +1041,7 @@ def _detect_poles_numerical_helper(x, y, eps=0.01, expr=None, symb=None, symboli
             yy[i + 1] = np.nan
 
     return x, yy
+
 
 def _detect_poles_symbolic_helper(expr, symb, start, end):
     """Attempts to compute symbolic discontinuities.
@@ -1258,7 +1252,7 @@ class Line2DBaseSeries(BaseSeries):
             return None
         try:
             return self._cast(self.ranges[0][1])
-        except:
+        except Exception:
             return self.ranges[0][1]
 
     @property
@@ -1267,7 +1261,7 @@ class Line2DBaseSeries(BaseSeries):
             return None
         try:
             return self._cast(self.ranges[0][2])
-        except:
+        except Exception:
             return self.ranges[0][2]
 
 
@@ -1387,7 +1381,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
     real range."""
 
     _allowed_keys = ["absarg", "adaptive", "adaptive_goal", "color_func",
-    "detect_poles", "eps","is_complex", "is_filled", "is_point", "line_color",
+    "detect_poles", "eps", "is_complex", "is_filled", "is_point", "line_color",
     "loss_fn", "modules", "n", "only_integers", "rendering_kw", "steps",
     "use_cm", "xscale", "tx", "ty", "tz", "is_polar", "exclude", "unwrap"]
 
@@ -1395,7 +1389,7 @@ class LineOver1DRangeSeries(Line2DBaseSeries):
         if kwargs.get("absarg", False):
             return super().__new__(AbsArgLineSeries)
         cf = kwargs.get("color_func", None)
-        if (callable(cf) or  callable(kwargs.get("line_color", None)) or
+        if (callable(cf) or callable(kwargs.get("line_color", None)) or
             isinstance(cf, Expr)):
             return super().__new__(ColoredLineOver1DRangeSeries)
         return object.__new__(cls)
@@ -1768,8 +1762,8 @@ class SurfaceBaseSeries(BaseSeries):
         is_lambda = (callable(exprs) if not hasattr(exprs, "__iter__")
             else any(callable(e) for e in exprs))
         if is_lambda and (self._label == str(exprs)):
-                self._label = ""
-                self._latex_label = ""
+            self._label = ""
+            self._latex_label = ""
 
 
 class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
@@ -1795,28 +1789,28 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     def start_x(self):
         try:
             return float(self.ranges[0][1])
-        except:
+        except Exception:
             return self.ranges[0][1]
 
     @property
     def end_x(self):
         try:
             return float(self.ranges[0][2])
-        except:
+        except Exception:
             return self.ranges[0][2]
 
     @property
     def start_y(self):
         try:
             return float(self.ranges[1][1])
-        except:
+        except Exception:
             return self.ranges[1][1]
 
     @property
     def end_y(self):
         try:
             return float(self.ranges[1][2])
-        except:
+        except Exception:
             return self.ranges[1][2]
 
     def __str__(self):
@@ -1931,28 +1925,28 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
     def start_u(self):
         try:
             return float(self.ranges[0][1])
-        except:
+        except Exception:
             return self.ranges[0][1]
 
     @property
     def end_u(self):
         try:
             return float(self.ranges[0][2])
-        except:
+        except Exception:
             return self.ranges[0][2]
 
     @property
     def start_v(self):
         try:
             return float(self.ranges[1][1])
-        except:
+        except Exception:
             return self.ranges[1][1]
 
     @property
     def end_v(self):
         try:
             return float(self.ranges[1][2])
-        except:
+        except Exception:
             return self.ranges[1][2]
 
     def __str__(self):
@@ -2080,8 +2074,7 @@ class ImplicitSeries(BaseSeries):
             warnings.warn(f"The provided expression {msg}"
                 "In order to plot the expression, the algorithm "
                 "automatically switched to an adaptive sampling.",
-                stacklevel=1
-            )
+                stacklevel=1)
 
         if isinstance(expr, BooleanFunction):
             self._non_adaptive_expr = None
@@ -2459,7 +2452,7 @@ class ComplexSurfaceBaseSeries(BaseSeries):
     _N = 300
     _allowed_keys = ["absarg", "coloring", "color_func", "modules", "phaseres",
     "is_polar", "n1", "n2", "only_integers", "rendering_kw", "steps", "cmap",
-    "surface_color","use_cm", "xscale", "yscale", "tx", "ty", "tz", "threed",
+    "surface_color", "use_cm", "xscale", "yscale", "tx", "ty", "tz", "threed",
     "blevel", "phaseoffset", "colorbar"]
 
     def __new__(cls, *args, **kwargs):

@@ -533,7 +533,7 @@ def vector_field_3d(expr1, expr2=None, expr3=None, range1=None, range2=None,
                    width=0.025,
                    color_map=k3d.colormaps.matplotlib_color_maps.plasma
                )),
-           title="Rössler \, attractor", xlabel="x", ylabel="y", zlabel="z",
+           title=r"Rössler \, attractor", xlabel="x", ylabel="y", zlabel="z",
            backend=KB, grid=False)
 
     Visually verify the normal vector to a circular cone surface.

@@ -44,7 +44,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
 
     # NOTE: can't use np.linspace because start, end might be
     # symbolic expressions
-    def linspace(start, end , n):
+    def linspace(start, end, n):
         return [start + (end - start) * i / (n - 1) for i in range(n)]
 
     for s in surfaces:

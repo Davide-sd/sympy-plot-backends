@@ -1,9 +1,8 @@
 from spb.defaults import cfg
 from sympy import (
-    Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed, ImageSet, FiniteSet,
-    Basic
+    Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed, ImageSet,
+    FiniteSet, Basic
 )
-from sympy.physics.mechanics import Vector as MechVector
 from sympy.vector import BaseScalar
 from sympy.core.function import AppliedUndef
 from sympy.core.relational import Relational
@@ -581,7 +580,7 @@ def spherical_to_cartesian(r, theta, phi):
         np = import_module('numpy')
         x = lambda t, p: r(t, p) * np.sin(t) * np.cos(p)
         y = lambda t, p: r(t, p) * np.sin(t) * np.sin(p)
-        z = lambda t, p: r (t, p)* np.cos(t)
+        z = lambda t, p: r(t, p) * np.cos(t)
     else:
         x = r * sin(theta) * cos(phi)
         y = r * sin(theta) * sin(phi)

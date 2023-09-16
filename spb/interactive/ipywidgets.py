@@ -1,5 +1,4 @@
 import ipywidgets
-from sympy import latex
 from sympy.external import import_module
 from spb.defaults import TWO_D_B, THREE_D_B
 from spb.interactive import _tuple_to_dict, IPlot
@@ -278,7 +277,7 @@ def iplot(*series, show=True, **kwargs):
            params={
                d: (0.1, 0, 1),
                n: ipywidgets.BoundedIntText(value=2, min=1, max=10, description="$n$"),
-               phi: (0, 0, 2*pi, 50, "$\phi$ [rad]")
+               phi: (0, 0, 2*pi, 50, r"$\phi$ [rad]")
            },
            ylim=(-1.25, 1.25))
 

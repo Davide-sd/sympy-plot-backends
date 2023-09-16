@@ -1,4 +1,4 @@
-from sympy import latex
+from sympy import latex, Symbol
 from spb.defaults import TWO_D_B, THREE_D_B
 from spb.interactive import create_interactive_plot
 from spb.series import (
@@ -210,7 +210,7 @@ def graphics(*args, aspect=None, axis_center=None, is_polar=None, legend=None,
         return create_interactive_plot(*series,
             aspect=aspect, axis_center=axis_center, is_polar=is_polar,
             legend=legend, show=show, size=size, title=title,
-            xlim=xlim, ylim=ylim, zlim=zlim,**kwargs)
+            xlim=xlim, ylim=ylim, zlim=zlim, **kwargs)
 
     is_3D = any(s.is_3D for s in series)
     Backend = kwargs.pop("backend", TWO_D_B if is_3D else THREE_D_B)

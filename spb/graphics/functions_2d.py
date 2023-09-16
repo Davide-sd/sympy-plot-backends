@@ -1,7 +1,6 @@
 from sympy import (
-    pi, Symbol, sin, cos, sqrt, atan2, Tuple, latex, Expr, Plane,
-    Piecewise, Sum, Wild, sign, piecewise_fold, Interval, Union, FiniteSet,
-    Eq, Ne
+    sin, cos, Piecewise, Sum, Wild, sign, piecewise_fold, Interval, Union,
+    FiniteSet, Eq, Ne, Expr
 )
 from sympy.core.relational import Relational
 # NOTE: from sympy import EmptySet is a different thing!!!

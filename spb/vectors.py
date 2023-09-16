@@ -1,24 +1,8 @@
-from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.functions import _set_labels
-from spb.series import (
-    BaseSeries, Vector2DSeries, Vector3DSeries, ContourSeries,
-    SliceVector3DSeries
-)
 from spb.graphics import vector_field_2d, vector_field_3d, graphics
 from spb.graphics.vectors import _split_vector
-from spb.interactive import create_interactive_plot
-from spb.utils import (
-    _plot_sympify, _is_range,
-    _instantiate_backend, _unpack_args
-)
-from sympy import (
-    Tuple, sqrt, Expr, S, Plane, Dummy
-)
-from sympy.external import import_module
-from sympy.physics.mechanics import Vector as MechVector
-from sympy.vector import Vector
-from sympy.vector.operators import _get_coord_systems
-from sympy.matrices.dense import DenseMatrix
+from spb.utils import _plot_sympify, _is_range, _unpack_args
+from sympy import Tuple
 
 
 def _preprocess(*args):
@@ -307,7 +291,7 @@ def plot_vector(*args, **kwargs):
                width=0.025,
                color_map=k3d.colormaps.matplotlib_color_maps.plasma
            ),
-           title="Rössler \, attractor", xlabel="x", ylabel="y", zlabel="z")
+           title=r"Rössler \, attractor", xlabel="x", ylabel="y", zlabel="z")
 
     Visually verify the normal vector to a circular cone surface.
     The following steps are executed:

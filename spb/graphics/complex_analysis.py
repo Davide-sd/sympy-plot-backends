@@ -7,7 +7,7 @@ from spb.series import (
     Parametric2DLineSeries, RiemannSphereSeries
 )
 from spb.utils import (
-    _create_missing_ranges, _preprocess_multiple_ranges, _get_free_symbols,
+    _create_missing_ranges, _get_free_symbols,
     prange
 )
 from sympy import I, cos, sin, symbols, pi, re, im, Dummy, Expr

@@ -2,27 +2,19 @@ from spb.defaults import cfg, TWO_D_B, THREE_D_B
 from spb.functions import (
     _set_labels
 )
-from spb.series import (
-    LineOver1DRangeSeries, ComplexSurfaceBaseSeries,
-    ComplexPointSeries, ComplexDomainColoringSeries,
-    Parametric2DLineSeries, List2DSeries, GenericDataSeries,
-    RiemannSphereSeries
-)
+from spb.series import ComplexPointSeries
 from spb.graphics import (
     complex_points, line_abs_arg, line_abs_arg_colored, line_real_imag,
     surface_abs_arg, surface_real_imag, domain_coloring, analytic_landscape,
     riemann_sphere_2d, riemann_sphere_3d, complex_vector_field, graphics,
     contour_abs_arg, contour_real_imag
 )
-from spb.interactive import create_interactive_plot, IPlot
 from spb.utils import (
-    _unpack_args, _instantiate_backend, _plot_sympify, _check_arguments,
-    _is_range, prange, _get_free_symbols
+    _unpack_args, _plot_sympify, _check_arguments,
+    _is_range, _get_free_symbols
 )
-from spb.vectors import plot_vector
 from spb.plotgrid import plotgrid
-from sympy import (latex, Tuple, sqrt, re, im, arg, Expr, Dummy, symbols, I,
-    sin, cos, pi)
+from sympy import latex, Tuple, im, Expr, symbols, I
 import warnings
 
 

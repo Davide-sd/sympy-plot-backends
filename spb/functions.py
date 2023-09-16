@@ -23,26 +23,12 @@ from spb.graphics import (
     contour, implicit_2d, implicit_3d, list_2d, list_3d, geometry
 )
 from spb.series import (
-    LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
-    SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-    ImplicitSeries, PlaneSeries,
-    List2DSeries, List3DSeries, GeometrySeries, Implicit3DSeries,
-    GenericDataSeries, ComplexParametric3DLineSeries
+    Parametric2DLineSeries, PlaneSeries, GenericDataSeries
 )
-from spb.interactive import create_interactive_plot
 from spb.utils import (
     _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend,
-    spherical_to_cartesian, prange, _is_range
 )
-from sympy import (
-    latex, Tuple, Expr, Symbol, Wild, oo, Sum, sign, Piecewise, piecewise_fold,
-    Plane, FiniteSet, Interval, Union, cos, sin, pi, sympify, atan2, sqrt,
-    Dummy, symbols, I, re, im, Eq, Ne, Indexed
-)
-from sympy.core.function import AppliedUndef
-# NOTE: from sympy import EmptySet is a different thing!!!
-from sympy.sets.sets import EmptySet
-from sympy.vector import BaseScalar
+from sympy import latex, Tuple, Symbol, oo, cos, sin
 from sympy.external import import_module
 
 
@@ -1150,7 +1136,7 @@ def plot3d_parametric_surface(*args, **kwargs):
            "v", {"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
            backend=KB,
            use_cm=True, color_func=lambda u, v: u,
-           title="Möbius \, strip",
+           title=r"Möbius \, strip",
            wireframe=True, wf_n1=20, wf_rendering_kw={"width": 0.004})
 
     Riemann surfaces of the real part of the multivalued function `z**n`,
@@ -1218,7 +1204,7 @@ def plot3d_parametric_surface(*args, **kwargs):
                up: (1, 0, 2),
                vp: (2, 0, 2),
            },
-           title="Catenoid \, to \, Right \, Helicoid \, Transformation")
+           title=r"Catenoid \, to \, Right \, Helicoid \, Transformation")
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. Note that the plot's
@@ -2856,7 +2842,7 @@ def plot_piecewise(*args, **kwargs):
     kwargs["process_piecewise"] = True
 
     labels = kwargs.pop("label", [])
-    rendering_kw = kwargs.pop("rendering_kw", None)
+    kwargs.pop("rendering_kw", None)
     if isinstance(labels, str):
         labels = [labels] * len(plot_expr)
 

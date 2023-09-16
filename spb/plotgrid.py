@@ -1,6 +1,4 @@
 from spb.defaults import cfg
-from sympy.external import import_module
-from spb.backends.base_backend import Plot
 from spb.backends.matplotlib import MB
 from spb.backends.plotly import PB
 from spb.backends.bokeh import BB
@@ -40,12 +38,13 @@ def _are_all_plots_instances_of(plots, Backend):
     """Verify that plots (or interactive plots) are produces with the
     specified backend.
     """
-    return all(isinstance(t, Backend)  or
+    return all(isinstance(t, Backend) or
         (isinstance(t, IPlot) and isinstance(t.backend, Backend))
         for t in plots)
 
 
-def _create_mpl_figure(mapping, imagegrid=False, size=None, is_iplot_panel=False):
+def _create_mpl_figure(mapping, imagegrid=False, size=None,
+    is_iplot_panel=False):
     matplotlib = import_module(
         'matplotlib',
         import_kwargs={'fromlist': ['pyplot', 'gridspec']},
@@ -77,7 +76,7 @@ def _create_mpl_figure(mapping, imagegrid=False, size=None, is_iplot_panel=False
     new_plots = []
     panes_plots = {}
     if imagegrid:
-        gs =list(mapping.keys())[0].get_gridspec()
+        gs = list(mapping.keys())[0].get_gridspec()
         grid = mpl_toolkits.axes_grid1.ImageGrid(
             fig, 111,
             nrows_ncols=(gs.nrows, gs.ncols),
@@ -506,7 +505,7 @@ class PlotGrid:
     def backend(self):
         # TODO: follow sympy doc procedure to create this deprecation
         sympy_deprecation_warning(
-            f"`backend` is deprecated. Use `fig` instead.",
+            "`backend` is deprecated. Use `fig` instead.",
             deprecated_since_version="1.12",
             active_deprecations_target='---')
 
@@ -514,7 +513,7 @@ class PlotGrid:
     def _series(self):
         # TODO: follow sympy doc procedure to create this deprecation
         sympy_deprecation_warning(
-            f"`_series` is deprecated.",
+            "`_series` is deprecated.",
             deprecated_since_version="1.12",
             active_deprecations_target='---')
 
@@ -557,7 +556,7 @@ class PlotGrid:
             self._fig = self.plt.figure()
 
         elif (gs is None):
-            ### First mode of operation
+            # First mode of operation
             nr, nc = self.nrows, self.ncolumns
             gs = GridSpec(nr, nc)
             mapping = {}
@@ -595,7 +594,7 @@ class PlotGrid:
                         mapping, self.panel_kw)
 
         else:
-            ### Second mode of operation
+            # Second mode of operation
             if self.is_matplotlib_fig:
                 self._fig, self._new_plots, self._panes_plots = _create_mpl_figure(
                     gs, self.imagegrid, self.size, is_iplot_panel)

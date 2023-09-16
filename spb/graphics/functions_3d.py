@@ -1,5 +1,5 @@
 from sympy import (
-    sympify, pi, Symbol, sin, cos, sqrt, atan2, Tuple, latex, Expr, Plane
+    pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane
 )
 from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
@@ -668,7 +668,7 @@ def surface_parametric(expr1, expr2, expr3, range1=None, range2=None,
                "v", {"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
                use_cm=True, color_func=lambda u, v: u,
                wireframe=True, wf_n1=20, wf_rendering_kw={"width": 0.004}),
-           backend=KB, title="Möbius \, strip")
+           backend=KB, title=r"Möbius \, strip")
 
     Riemann surfaces of the real part of the multivalued function `z**n`,
     using Plotly:
@@ -736,7 +736,7 @@ def surface_parametric(expr1, expr2, expr3, range1=None, range2=None,
                    vp: (2, 0, 2),
                }),
            backend=KB, grid=False, use_latex=False,
-           title="Catenoid \, to \, Right \, Helicoid \, Transformation"
+           title=r"Catenoid \, to \, Right \, Helicoid \, Transformation"
        )
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
@@ -935,7 +935,7 @@ def surface_spherical(r, range_theta=None, range_phi=None, label=None,
             elif t == ">":
                 if s > threshold:
                     return threshold
-        except:
+        except Exception:
             return a
         return a
 
@@ -1258,7 +1258,7 @@ def surface_revolution(curve, range_t, range_phi=None, axis=(0, 0),
             y = 0
         elif len(curve) == 3:   # curve is a 3D parametric line
             x, y, z = curve
-    else: # curve is an expression
+    else:  # curve is an expression
         x = range_t[0]
         y = 0
         z = curve

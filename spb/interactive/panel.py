@@ -3,7 +3,6 @@ from spb.utils import _validate_kwargs
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from spb.plotgrid import PlotGrid
-from sympy import latex, Tuple
 from sympy.external import import_module
 import warnings
 
@@ -57,7 +56,7 @@ class DynamicParam(param.Parameterized):
             # In case of a logarithm slider, we need to instantiate the
             # custom parameter MyList.
 
-            N = 40 if len(v) <=3 else int(v[3])
+            N = 40 if len(v) <= 3 else int(v[3])
             _min, _max = values[1:3]
             # # divide the range in N steps evenly spaced in a log scale
             options = np.geomspace(_min, _max, N)
@@ -85,7 +84,6 @@ class DynamicParam(param.Parameterized):
         self._name = name
 
         # remove the previous class attributes added by the previous instances
-        cls_name = type(self).__name__
         prev_params = [k for k in type(self).__dict__.keys() if "dyn_param_" in k]
         for p in prev_params:
             delattr(type(self), p)
