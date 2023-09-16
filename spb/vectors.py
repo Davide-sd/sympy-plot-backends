@@ -1,4 +1,4 @@
-from spb.functions import _set_labels
+from spb.plot_functions.functions_2d import _set_labels
 from spb.graphics import vector_field_2d, vector_field_3d, graphics
 from spb.graphics.vectors import _split_vector
 from spb.utils import _plot_sympify, _is_range, _unpack_args
