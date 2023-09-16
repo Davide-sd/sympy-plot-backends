@@ -1,5 +1,37 @@
 import pytest
 from spb.defaults import cfg
+from spb import MB
+
+
+@pytest.fixture
+def p_options():
+    return dict(show=False, backend=MB)
+
+
+@pytest.fixture
+def paf_options(p_options):
+    # paf = plot adaptive false
+    options = p_options.copy()
+    options["adaptive"] = False
+    options["n"] = 100
+    return options
+
+
+@pytest.fixture
+def pat_options(p_options):
+    # pat = plot adaptive true
+    options = p_options.copy()
+    options["adaptive"] = True
+    options["adaptive_goal"] = 0.05
+    return options
+
+
+@pytest.fixture
+def pi_options(paf_options, panel_options):
+    # pi = plot interactive
+    options = paf_options.copy()
+    options["imodule"] = panel_options["imodule"]
+    return options
 
 
 @pytest.fixture
