@@ -8,8 +8,8 @@ differences between plotting functions and the *graphics module*.
 .. toctree::
    :maxdepth: 2
 
-   2d_functions.rst
-   3d_functions.rst
+   functions_2d.rst
+   functions_3d.rst
    vectors.rst
-   ccomplex.rst
+   complex_analysis.rst
    control.rst
