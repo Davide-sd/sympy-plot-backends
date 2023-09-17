@@ -24,7 +24,7 @@ from spb.plot_functions.complex_analysis import (
     plot_complex, plot_complex_list,
     plot_real_imag, plot_complex_vector, plot_riemann_sphere
 )
-from spb.control import (
+from spb.graphics.control import (
     plot_pole_zero, plot_step_response, plot_impulse_response,
     plot_ramp_response, plot_bode_magnitude, plot_bode_phase, plot_bode,
     plot_nyquist, plot_nichols
@@ -42,7 +42,7 @@ from spb.backends.mayavi import MAB
 from spb.graphics.graphics import graphics
 from spb.graphics.functions_2d import (
     line, line_parametric_2d, line_polar, contour, implicit_2d, list_2d,
-    geometry
+    geometry, hline, vline
 )
 from spb.graphics.functions_3d import (
     surface, surface_parametric, surface_revolution, surface_spherical,
@@ -56,6 +56,10 @@ from spb.graphics.complex_analysis import (
     surface_abs_arg, surface_real_imag, domain_coloring, analytic_landscape,
     riemann_sphere_2d, riemann_sphere_3d, complex_vector_field,
     contour_real_imag, contour_abs_arg
+)
+from spb.graphics.control import (
+    control_axis, pole_zero, step_response, impulse_response, ramp_response,
+    bode_magnitude, bode_phase, nyquist, nichols
 )
 
 __all__ = [
@@ -78,5 +82,8 @@ __all__ = [
     "line_abs_arg", "line_real_imag", "surface_abs_arg", "surface_real_imag",
     "domain_coloring", "analytic_landscape", "riemann_sphere_2d",
     "riemann_sphere_3d", "complex_vector_field",
-    "contour_real_imag", "contour_abs_arg", "plane"
+    "contour_real_imag", "contour_abs_arg", "plane",
+    "hline", "vline",
+    "pole_zero", "control_axis", "step_response", "impulse_response",
+    "ramp_response", "bode_magnitude", "bode_phase", "nyquist", "nichols"
 ]

@@ -7,7 +7,7 @@ from sympy.core.relational import Relational
 from sympy.sets.sets import EmptySet
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, ContourSeries,
-    ImplicitSeries, List2DSeries, GeometrySeries
+    ImplicitSeries, List2DSeries, GeometrySeries, HVLineSeries
 )
 from spb.graphics.utils import _plot_sympify
 from spb.utils import (
@@ -1635,3 +1635,157 @@ def geometry(geom, label=None, rendering_kw=None,
     s = GeometrySeries(geom, label=label, rendering_kw=rendering_kw,
         fill=fill, **kwargs)
     return [s]
+
+
+def hline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
+    """Create an horizontal line at a given location in a 2D space.
+
+    Parameters
+    ==========
+    v : float or Expr
+        The y-coordinate where to draw the horizontal line.
+    label : str, optional
+        The label to be shown on the legend.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+    show_in_legend : bool, optional
+        Show/hide the line from the legend. Default to True (line is visible).
+
+    Returns
+    =======
+
+    A list containing one instance of ``HVLineSeries``.
+
+    Examples
+    ========
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import *
+       >>> from spb import *
+       >>> x = symbols("x")
+       >>> graphics(
+       ...     line(cos(x), (x, -pi, pi)),
+       ...     hline(0.5, rendering_kw={"linestyle": ":"}, show_in_legend=False),
+       ...     grid=False
+       ... )
+       Plot object containing:
+       [0]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
+       [1]: horizontal line at y = 0.500000000000000
+
+    Interactive widget plot:
+
+    .. panel-screenshot::
+       :small-size: 800, 625
+
+       from sympy import *
+       from spb import *
+       x, u, v, w = symbols("x u v w")
+       params = {
+           u: (1, 0, 2),
+           v: (1, 0, 2),
+           w: (0.5, -1, 1)
+       }
+       graphics(
+           line(u * cos(v * x), (x, -pi, pi), params=params),
+           hline(
+               w, rendering_kw={"linestyle": ":"},
+               show_in_legend=False, params=params),
+           grid=False, ylim=(-2, 2)
+       )
+
+    See Also
+    ========
+
+    line
+
+    """
+    return [
+        HVLineSeries(
+            v, True, label,
+            rendering_kw=rendering_kw,
+            show_in_legend=show_in_legend, **kwargs)
+    ]
+
+
+def vline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
+    """Create an horizontal line at a given location in a 2D space.
+
+    Parameters
+    ==========
+    v : float or Expr
+        The x-coordinate where to draw the horizontal line.
+    label : str, optional
+        The label to be shown on the legend.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+    show_in_legend : bool, optional
+        Show/hide the line from the legend. Default to True (line is visible).
+
+    Returns
+    =======
+
+    A list containing one instance of ``HVLineSeries``.
+
+    Examples
+    ========
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import *
+       >>> from spb import *
+       >>> x = symbols("x")
+       >>> graphics(
+       ...     line(cos(x), (x, -pi, pi)),
+       ...     vline(1, rendering_kw={"linestyle": ":"}, show_in_legend=False),
+       ...     vline(-1, rendering_kw={"linestyle": ":"}, show_in_legend=False),
+       ...     grid=False
+       ... )
+       Plot object containing:
+       [0]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
+       [1]: horizontal line at y = 0.500000000000000
+
+    Interactive widget plot:
+
+    .. panel-screenshot::
+       :small-size: 800, 625
+
+       from sympy import *
+       from spb import *
+       x, u, v, w = symbols("x u v w")
+       params = {
+           u: (1, 0, 2),
+           v: (1, 0, 2),
+           w: (1, -pi, pi)
+       }
+       graphics(
+           line(u * cos(v * x), (x, -pi, pi), params=params),
+           vline(
+               w, rendering_kw={"linestyle": ":"},
+               show_in_legend=False, params=params),
+           grid=False, ylim=(-2, 2)
+       )
+
+    See Also
+    ========
+
+    line
+
+    """
+    return [
+        HVLineSeries(
+            v, False, label,
+            rendering_kw=rendering_kw,
+            show_in_legend=show_in_legend, **kwargs)
+    ]
+    

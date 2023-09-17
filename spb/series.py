@@ -3514,6 +3514,11 @@ class HVLineSeries(BaseSeries):
             location = self.expr.subs(self.params)
         return float(location)
 
+    def __str__(self):
+        pre = "horizontal" if self.is_horizontal else "vertical"
+        post = "y = " if self.is_horizontal else "x = "
+        return self._str_helper(pre + " line at " + post + str(self.expr))
+
 
 class NyquistLineSeries(Parametric2DLineSeries):
     """Represent a line on a Nyquist plot.

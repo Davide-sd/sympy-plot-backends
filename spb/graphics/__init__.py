@@ -1,7 +1,7 @@
 from spb.graphics.graphics import graphics
 from spb.graphics.functions_2d import (
     line, line_parametric_2d, line_polar, contour, implicit_2d, list_2d,
-    geometry
+    geometry, hline, vline
 )
 from spb.graphics.functions_3d import (
     surface, surface_parametric, surface_revolution, surface_spherical,
@@ -16,6 +16,10 @@ from spb.graphics.complex_analysis import (
     riemann_sphere_2d, riemann_sphere_3d, complex_vector_field,
     contour_real_imag, contour_abs_arg
 )
+from spb.graphics.control import (
+    control_axis, pole_zero, step_response, impulse_response, ramp_response,
+    bode_magnitude, bode_phase, nyquist, nichols
+)
 
 __all__ = [
     "graphics", "line", "line_parametric_2d", "line_polar", "implicit_2d",
@@ -26,5 +30,8 @@ __all__ = [
     "line_abs_arg", "line_real_imag", "surface_abs_arg", "surface_real_imag",
     "domain_coloring", "analytic_landscape", "riemann_sphere_2d",
     "riemann_sphere_3d", "complex_vector_field",
-    "contour_real_imag", "contour_abs_arg", "plane"
+    "contour_real_imag", "contour_abs_arg", "plane",
+    "control_axis", "pole_zero", "step_response", "impulse_response",
+    "ramp_response", "bode_magnitude", "bode_phase", "nyquist", "nichols"
+    "hline", "vline"
 ]
