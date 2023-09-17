@@ -19,7 +19,7 @@ from spb.plot_functions.functions_3d import (
     plot3d_list
 )
 from spb.plot_functions.vectors import plot_vector
-from spb.plot_functions.complex import (
+from spb.plot_functions.complex_analysis import (
     plot_complex, plot_complex_list,
     plot_real_imag, plot_complex_vector, plot_riemann_sphere
 )
