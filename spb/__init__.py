@@ -1,24 +1,26 @@
 from spb._version import __version__
-from spb.functions import (
+from spb.plot_functions.functions_2d import (
     plot,
     plot_parametric,
     plot_parametric_region,
     plot_contour,
+    plot_implicit,
+    plot_polar,
+    plot_geometry,
+    plot_list,
+    plot_piecewise
+)
+from spb.plot_functions.functions_3d import (
     plot3d,
     plot3d_parametric_line,
     plot3d_parametric_surface,
     plot3d_implicit,
     plot3d_spherical,
     plot3d_revolution,
-    plot_implicit,
-    plot_polar,
-    plot_geometry,
-    plot_list,
-    plot3d_list,
-    plot_piecewise
+    plot3d_list
 )
-from spb.vectors import plot_vector
-from spb.ccomplex.complex import (
+from spb.plot_functions.vectors import plot_vector
+from spb.plot_functions.complex import (
     plot_complex, plot_complex_list,
     plot_real_imag, plot_complex_vector, plot_riemann_sphere
 )
@@ -37,10 +39,27 @@ from spb.backends.plotly import PB
 from spb.backends.k3d import KB
 from spb.backends.mayavi import MAB
 
-from spb.graphics import *
+from spb.graphics.graphics import graphics
+from spb.graphics.functions_2d import (
+    line, line_parametric_2d, line_polar, contour, implicit_2d, list_2d,
+    geometry
+)
+from spb.graphics.functions_3d import (
+    surface, surface_parametric, surface_revolution, surface_spherical,
+    line_parametric_3d, list_3d, implicit_3d, wireframes, plane
+)
+from spb.graphics.vectors import (
+    vector_field_2d, vector_field_3d
+)
+from spb.graphics.complex_analysis import (
+    complex_points, line_abs_arg, line_abs_arg_colored, line_real_imag,
+    surface_abs_arg, surface_real_imag, domain_coloring, analytic_landscape,
+    riemann_sphere_2d, riemann_sphere_3d, complex_vector_field,
+    contour_real_imag, contour_abs_arg
+)
 
 __all__ = [
-    "plot", "plot_parametric", "plot_parametric_region",
+    "__version__", "plot", "plot_parametric", "plot_parametric_region",
     "plot_contour", "plot3d", "plot3d_parametric_line",
     "plot3d_parametric_surface", "plot3d_implicit", "plot3d_spherical",
     "plot3d_revolution", "plot_implicit", "plot_polar", "plot_geometry",

@@ -1,5 +1,5 @@
 from inspect import signature
-from spb.ccomplex.wegert import wegert
+from spb.wegert import wegert
 from spb.defaults import cfg
 from spb.utils import (
     _get_free_symbols, unwrap, extract_solution
