@@ -339,7 +339,9 @@ class Plot:
             # are likely going to be symbolic expressions
             if not self._series[0]._interactive_ranges:
                 r = self._series[0].ranges[0]
-                if r[1] > r[2]:
+                # Ranges can be real or complex. Cast them to complex and
+                # look at the real part.
+                if complex(r[1]).real > complex(r[2]).real:
                     self._invert_x_axis = True
 
         # Objects used to render/display the plots, which depends on the
