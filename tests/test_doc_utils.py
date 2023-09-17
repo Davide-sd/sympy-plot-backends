@@ -8,7 +8,11 @@ from spb.doc_utils import _modify_code, _modify_iplot_code
 # However, this is not a problem for final users, as those functions are
 # only used to generate the documentation on readthedocs.
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="requires python3.9 or higher"
+)
 def test_modify_code_1():
     code = """
 from sympy import symbols, sin, cos, pi
@@ -27,7 +31,10 @@ plot3d(
     assert "myplot = plot3d" in s[-2]
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="requires python3.9 or higher"
+)
 def test_modify_code_2():
     code = """
 from sympy import *
@@ -57,7 +64,10 @@ line = plot3d_parametric_line(
     assert s[-1] == "myplot.fig"
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="requires python3.9 or higher"
+)
 def test_modify_iplot_code_do_not_modify():
     # Many plots will be able to be screenshotted without any modifications
     code = """
@@ -85,7 +95,10 @@ plot(
     assert "panelplot" not in s
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="requires python3.9 or higher"
+)
 def test_modify_iplot_code_KB():
     # Verify that interactive plots with backend=KB returns a panel object
     # containing only widgets
@@ -118,7 +131,10 @@ plot3d_parametric_surface(
     assert "layout_controls" in s
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="requires python3.9 or higher"
+)
 def test_modify_iplot_code():
     # Verify that if servable=True, then the modified code contains the
     # variable panelplot and that it returns the template in order to
@@ -167,7 +183,10 @@ plot_polar(
     assert "create_template" in s[-1]
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="requires python3.9 or higher"
+)
 def test_modify_iplot_code_KB_sums():
     # verify that sums of interactive plots with K3DBackends get preprocessed
     # correctly.
@@ -206,7 +225,10 @@ line = plot3d_parametric_line(
     assert "layout_controls" in new_code
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="requires python3.9 or higher"
+)
 def test_modify_graphics_plotly():
     # verify that doc_utils adds `show=false` and `myplot=` to code block
     # containing `graphics(...)`
@@ -230,8 +252,10 @@ graphics(
     assert "myplot = graphics" in new_code
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
-def test_modify_iplot_code():
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+)
+def test_modify_iplot_code_graphics():
     # Verify that if `graphics(..., servable=True), then the modified code
     # contains the variable panelplot and that it returns the template in
     # order to construct the webpage for the screenshot

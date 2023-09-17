@@ -1,19 +1,18 @@
 import numpy as np
 import pytest
-from pytest import raises, warns
 from spb.graphics import (
     line_parametric_3d, list_3d,
     surface, surface_parametric, surface_spherical,
-    surface_revolution, implicit_3d, wireframes, plane
+    implicit_3d, wireframes, plane
 )
 from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
-    Implicit3DSeries, List3DSeries, Vector3DSeries, SliceVector3DSeries,
-    PlaneSeries
+    Implicit3DSeries, List3DSeries
 )
 from sympy import (
-    symbols, cos, sin, pi, sqrt, atan2, Rational, exp, Matrix, tan, Plane
+    symbols, cos, sin, pi, sqrt, exp, Plane
 )
+
 
 p1, p2 = symbols("p1 p2")
 
@@ -29,10 +28,15 @@ def test_line_parametric_3d(default_range, rang, label, rkw, n, params):
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     kwargs = {}
-    if params: kwargs["params"] = params
-    if n: kwargs["n"] = n
-    series = line_parametric_3d(cos(x), sin(x), x, range=r, label=label,
-        rendering_kw=rkw, **kwargs)
+    if params:
+        kwargs["params"] = params
+    if n:
+        kwargs["n"] = n
+
+    series = line_parametric_3d(
+        cos(x), sin(x), x, range=r, label=label,
+        rendering_kw=rkw, **kwargs
+    )
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, Parametric3DLineSeries)
@@ -48,13 +52,13 @@ def test_line_parametric_3d(default_range, rang, label, rkw, n, params):
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
 @pytest.mark.parametrize(
     "range1, range2, label, rkw, n, params, wf, wf_n1, wf_n2", [
-    (None, None, None, None, None, None, False, None, None),
-    ((-2, 3), None, None, None, None, None, False, None, None),
-    (None, (-2, 3), None, None, None, None, False, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, False, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, True, 10, 10),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, False, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, True, 10, 10),
+        (None, None, None, None, None, None, False, None, None),
+        ((-2, 3), None, None, None, None, None, False, None, None),
+        (None, (-2, 3), None, None, None, None, False, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, False, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, True, 10, 10),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, False, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, True, 10, 10),
 ])
 def test_surface(default_range, range1, range2, label, rkw, n, params,
     wf, wf_n1, wf_n2):
@@ -63,10 +67,15 @@ def test_surface(default_range, range1, range2, label, rkw, n, params,
     r1 = (x, *range1) if isinstance(range1, (list, tuple)) else None
     r2 = (y, *range2) if isinstance(range2, (list, tuple)) else None
     kwargs = {"wireframe": wf}
-    if params: kwargs["params"] = params
-    if n: kwargs["n"] = n
-    series = surface(cos(x*y), range1=r1, range2=r2, label=label,
-        rendering_kw=rkw, **kwargs)
+    if params:
+        kwargs["params"] = params
+    if n:
+        kwargs["n"] = n
+
+    series = surface(
+        cos(x*y), range1=r1, range2=r2, label=label,
+        rendering_kw=rkw, **kwargs
+    )
     assert len(series) == 1 + ((wf_n1 + wf_n2) if wf else 0)
     s = series[0]
     assert isinstance(s, SurfaceOver2DRangeSeries)
@@ -86,26 +95,32 @@ def test_surface(default_range, range1, range2, label, rkw, n, params,
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
 @pytest.mark.parametrize(
     "range1, range2, label, rkw, n, params, wf, wf_n1, wf_n2", [
-    (None, None, None, None, None, None, False, None, None),
-    ((-2, 3), None, None, None, None, None, False, None, None),
-    (None, (-2, 3), None, None, None, None, False, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, False, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, True, 10, 10),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, False, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, True, 10, 10),
+        (None, None, None, None, None, None, False, None, None),
+        ((-2, 3), None, None, None, None, None, False, None, None),
+        (None, (-2, 3), None, None, None, None, False, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, False, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, True, 10, 10),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, False, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, True, 10, 10),
 ])
-def test_surface_parametric(default_range, range1, range2, label, rkw, n,
-    params, wf, wf_n1, wf_n2):
+def test_surface_parametric(
+    default_range, range1, range2, label, rkw, n,
+    params, wf, wf_n1, wf_n2
+):
     x, y = symbols("x, y")
 
     r1 = (x, *range1) if isinstance(range1, (list, tuple)) else None
     r2 = (y, *range2) if isinstance(range2, (list, tuple)) else None
     kwargs = {"wireframe": wf}
-    if params: kwargs["params"] = params
-    if n: kwargs["n"] = n
+    if params:
+        kwargs["params"] = params
+    if n:
+        kwargs["n"] = n
+
     series = surface_parametric(
         cos(x*y), sin(x*y), x*y, range1=r1, range2=r2, label=label,
-        rendering_kw=rkw, **kwargs)
+        rendering_kw=rkw, **kwargs
+    )
     assert len(series) == 1 + ((wf_n1 + wf_n2) if wf else 0)
     s = series[0]
     assert isinstance(s, ParametricSurfaceSeries)
@@ -125,16 +140,17 @@ def test_surface_parametric(default_range, range1, range2, label, rkw, n,
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
 @pytest.mark.parametrize(
     "range1, range2, label, rkw, n, params, wf, wf_n1, wf_n2", [
-    (None, None, None, None, None, None, False, None, None),
-    ((-2, 3), None, None, None, None, None, False, None, None),
-    (None, (-2, 3), None, None, None, None, False, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, False, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, True, 10, 10),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, False, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, True, 10, 10),
+        (None, None, None, None, None, None, False, None, None),
+        ((-2, 3), None, None, None, None, None, False, None, None),
+        (None, (-2, 3), None, None, None, None, False, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, False, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, True, 10, 10),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, False, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, True, 10, 10),
 ])
-def test_surface_spherical(range1, range2, label, rkw, n, params,
-    wf, wf_n1, wf_n2):
+def test_surface_spherical(
+    range1, range2, label, rkw, n, params, wf, wf_n1, wf_n2
+):
     theta, phi = symbols("theta, phi")
     default_range_theta = (theta, 0, pi)
     default_range_phi = (theta, 0, 2*pi)
@@ -142,10 +158,15 @@ def test_surface_spherical(range1, range2, label, rkw, n, params,
     r1 = (theta, *range1) if isinstance(range1, (list, tuple)) else None
     r2 = (phi, *range2) if isinstance(range2, (list, tuple)) else None
     kwargs = {"wireframe": wf}
-    if params: kwargs["params"] = params
-    if n: kwargs["n"] = n
-    series = surface_spherical(1, range_theta=r1, range_phi=r2, label=label,
-        rendering_kw=rkw, **kwargs)
+    if params:
+        kwargs["params"] = params
+    if n:
+        kwargs["n"] = n
+
+    series = surface_spherical(
+        1, range_theta=r1, range_phi=r2, label=label,
+        rendering_kw=rkw, **kwargs
+    )
     assert len(series) == 1 + ((wf_n1 + wf_n2) if wf else 0)
     s = series[0]
     assert isinstance(s, ParametricSurfaceSeries)
@@ -157,7 +178,6 @@ def test_surface_spherical(range1, range2, label, rkw, n, params,
     if r2:
         assert (s.ranges[1] == default_range_theta if not range2 else r2) or \
             (s.ranges[1] == default_range_phi if not range2 else r2)
-    lbl = (sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta))
     if not label:
         assert "Dummy" in s.get_label(False)
     else:
@@ -172,13 +192,13 @@ def test_surface_spherical(range1, range2, label, rkw, n, params,
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
 @pytest.mark.parametrize(
     "range1, range2, label, rkw, n, params, wf, wf_n1, wf_n2", [
-    (None, None, None, None, None, None, False, None, None),
-    ((0, pi), None, None, None, None, None, False, None, None),
-    (None, (0, 2*pi), None, None, None, None, False, None, None),
-    ((0, pi), (0, 2*pi), "test", {"color": "r"}, 10, None, False, None, None),
-    ((0, pi), (0, 2*pi), "test", {"color": "r"}, 10, None, True, 10, 10),
-    ((0, pi), (0, 2*pi), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, False, None, None),
-    ((0, pi), (0, 2*pi), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, True, 10, 10),
+        (None, None, None, None, None, None, False, None, None),
+        ((0, pi), None, None, None, None, None, False, None, None),
+        (None, (0, 2*pi), None, None, None, None, False, None, None),
+        ((0, pi), (0, 2*pi), "test", {"color": "r"}, 10, None, False, None, None),
+        ((0, pi), (0, 2*pi), "test", {"color": "r"}, 10, None, True, 10, 10),
+        ((0, pi), (0, 2*pi), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, False, None, None),
+        ((0, pi), (0, 2*pi), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, True, 10, 10),
 ])
 def test_surface_revolution(default_range, range1, range2, label, rkw, n, params,
     wf, wf_n1, wf_n2):
@@ -187,10 +207,15 @@ def test_surface_revolution(default_range, range1, range2, label, rkw, n, params
     r1 = (t, *range1) if isinstance(range1, (list, tuple)) else None
     r2 = (phi, *range2) if isinstance(range2, (list, tuple)) else None
     kwargs = {"wireframe": wf}
-    if params: kwargs["params"] = params
-    if n: kwargs["n"] = n
-    series = surface_spherical(cos(t), range_theta=r1, range_phi=r2,
-        label=label, rendering_kw=rkw, **kwargs)
+    if params:
+        kwargs["params"] = params
+    if n:
+        kwargs["n"] = n
+
+    series = surface_spherical(
+        cos(t), range_theta=r1, range_phi=r2,
+        label=label, rendering_kw=rkw, **kwargs
+    )
     assert len(series) == 1 + ((wf_n1 + wf_n2) if wf else 0)
     s = series[0]
     assert isinstance(s, ParametricSurfaceSeries)
@@ -218,14 +243,14 @@ def test_surface_revolution(default_range, range1, range2, label, rkw, n, params
 @pytest.mark.filterwarnings("ignore:Not enough ranges were provided.")
 @pytest.mark.parametrize(
     "range1, range2, range3, label, rkw, n", [
-    (None, None, None, None, None, None),
-    ((-2, 3), None, None, None, None, None),
-    (None, (-2, 3), None, None, None, None),
-    (None, None, (-2, 3), None, None, None),
-    ((-4, 6), (-2, 3), (1, 5), "test", {"color": "r"}, 10),
-    ((-4, 6), (-2, 3), (1, 5),  "test", {"color": "r"}, 10),
-    ((-4, 6), (-2, 3), (1, 5),  "test", {"color": "r"}, 10),
-    ((-4, 6), (-2, 3), (1, 5),  "test", {"color": "r"}, 10),
+        (None, None, None, None, None, None),
+        ((-2, 3), None, None, None, None, None),
+        (None, (-2, 3), None, None, None, None),
+        (None, None, (-2, 3), None, None, None),
+        ((-4, 6), (-2, 3), (1, 5), "test", {"color": "r"}, 10),
+        ((-4, 6), (-2, 3), (1, 5),  "test", {"color": "r"}, 10),
+        ((-4, 6), (-2, 3), (1, 5),  "test", {"color": "r"}, 10),
+        ((-4, 6), (-2, 3), (1, 5),  "test", {"color": "r"}, 10),
 ])
 def test_implicit_3d(default_range, range1, range2, range3, label, rkw, n):
     x, y, z = symbols("x, y, z")
@@ -234,9 +259,13 @@ def test_implicit_3d(default_range, range1, range2, range3, label, rkw, n):
     r2 = (y, *range2) if isinstance(range2, (list, tuple)) else None
     r3 = (z, *range3) if isinstance(range3, (list, tuple)) else None
     kwargs = {}
-    if n: kwargs["n"] = n
-    series = implicit_3d(x**2 + y**3 - z**2, range1=r1, range2=r2, range3=r3,
-        label=label, rendering_kw=rkw, **kwargs)
+    if n:
+        kwargs["n"] = n
+
+    series = implicit_3d(
+        x**2 + y**3 - z**2, range1=r1, range2=r2, range3=r3,
+        label=label, rendering_kw=rkw, **kwargs
+    )
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, Implicit3DSeries)
@@ -255,9 +284,10 @@ def test_implicit_3d(default_range, range1, range2, range3, label, rkw, n):
     assert s.n[0] == 60 if not n else n
 
 
-@pytest.mark.parametrize("label, rkw", [
-    (None, None),
-    ("test", {"color": "r"})
+@pytest.mark.parametrize(
+    "label, rkw", [
+        (None, None),
+        ("test", {"color": "r"})
 ])
 def test_list_3d(label, rkw):
     zz = np.linspace(0, 6*np.pi, 100)
@@ -271,16 +301,19 @@ def test_list_3d(label, rkw):
     assert s.rendering_kw == {} if not rkw else {"color": "r"}
 
 
-@pytest.mark.parametrize("n1, n2, n, rkw, params", [
-    (10, 10, 1000, None, None),
-    (20, 10, 100, None, None),
-    (10, 25, 10, None, None),
-    (5, 25, 1000, {"color": "r"}, {p1: (1, 0, 2)}),
+@pytest.mark.parametrize(
+    "n1, n2, n, rkw, params", [
+        (10, 10, 1000, None, None),
+        (20, 10, 100, None, None),
+        (10, 25, 10, None, None),
+        (5, 25, 1000, {"color": "r"}, {p1: (1, 0, 2)}),
 ])
 def test_wireframe(n1, n2, n, rkw, params):
     x, y = symbols("x y")
-    s = surface(cos(x*y) * exp(-sqrt(x**2 + y**2) / 3),
-        (x, -pi, pi), (y, -2*pi, 2*pi),)[0]
+    s = surface(
+        cos(x*y) * exp(-sqrt(x**2 + y**2) / 3),
+        (x, -pi, pi), (y, -2*pi, 2*pi)
+    )[0]
 
     series = wireframes(s, n1=n1, n2=n2, n=n, rendering_kw=rkw, params=params)
     assert len(series) == n1 + n2
@@ -288,8 +321,10 @@ def test_wireframe(n1, n2, n, rkw, params):
     s_along_x = [t for t in series if (t.ranges[0][1] == -2*pi)
         and (t.ranges[0][2] == 2*pi)]
     assert len(s_along_x) == n1
-    s_along_y = [t for t in series if (t.ranges[0][1] == -pi)
-        and (t.ranges[0][2] == pi)]
+    s_along_y = [
+        t for t in series if (t.ranges[0][1] == -pi)
+        and (t.ranges[0][2] == pi)
+    ]
     assert len(s_along_y) == n2
     assert all(t.n[0] == n for t in series)
     assert all(t.rendering_kw == {} if not rkw else rkw for t in series)
@@ -297,14 +332,15 @@ def test_wireframe(n1, n2, n, rkw, params):
     assert all(t.params == {} if not params else params for t in series)
 
 
-@pytest.mark.parametrize("label, n1, n2, n3, rkw, params", [
-    (None, None, None, None, None, None),
-    (None, 10, None, None, None, None),
-    (None, None, 10, None, None, None),
-    (None, None, None, 10, None, None),
-    (None, 10, 15, 20, None, None),
-    ("test", 10, 15, 25, {"color": "r"}, None),
-    ("test", 10, 15, 25, {"color": "r"}, {p1: (1, 0, 2)}),
+@pytest.mark.parametrize(
+    "label, n1, n2, n3, rkw, params", [
+        (None, None, None, None, None, None),
+        (None, 10, None, None, None, None),
+        (None, None, 10, None, None, None),
+        (None, None, None, 10, None, None),
+        (None, 10, 15, 20, None, None),
+        ("test", 10, 15, 25, {"color": "r"}, None),
+        ("test", 10, 15, 25, {"color": "r"}, {p1: (1, 0, 2)}),
 ])
 def test_plane(label, n1, n2, n3, rkw, params):
     x, y, z = symbols("x:z")
@@ -313,9 +349,13 @@ def test_plane(label, n1, n2, n3, rkw, params):
     p = Plane((0, 0, 0), (1, 0, 0))
     kwargs = dict(rendering_kw=rkw,)
     if params: kwargs["params"] = params
-    if n1: kwargs["n1"] = n1
-    if n2: kwargs["n2"] = n2
-    if n3: kwargs["n3"] = n3
+    if n1:
+        kwargs["n1"] = n1
+    if n2:
+        kwargs["n2"] = n2
+    if n3:
+        kwargs["n3"] = n3
+
     series = plane(p, *ranges, label=label, **kwargs)
     assert len(series) == 1
     s = series[0]

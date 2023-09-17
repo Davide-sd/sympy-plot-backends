@@ -1,13 +1,9 @@
-from spb.backends.base_backend import Plot
 from spb.series import BaseSeries, HVLineSeries
 from pytest import raises
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
-import plotly.graph_objects as go
-import k3d
-import bokeh
-from .make_tests import *
+from spb import PB, MB, KB, BB, plot, plot3d, prange, plot_vector
+from sympy import sin, cos, pi, exp, symbols
 
 
 KB.skip_notebook_check = True
@@ -76,12 +72,18 @@ def test_plot_sum():
 
     # the choice of the backend dictates the keyword arguments
     # inside rendering_kw
-    p1 = plot(sin(x), backend=PB, rendering_kw=dict(line_color='black'),
-        xlabel="x1", ylabel="y1", **options)
-    p2 = plot(cos(x), backend=PB, rendering_kw=dict(line_dash='dash'),
-        xlabel="x2", ylabel="y2", **options)
-    p3 = plot(sin(x) * cos(x), backend=PB,
-        rendering_kw=dict(line_dash='dot'), **options)
+    p1 = plot(
+        sin(x), backend=PB, rendering_kw=dict(line_color='black'),
+        xlabel="x1", ylabel="y1", **options
+    )
+    p2 = plot(
+        cos(x), backend=PB, rendering_kw=dict(line_dash='dash'),
+        xlabel="x2", ylabel="y2", **options
+    )
+    p3 = plot(
+        sin(x) * cos(x), backend=PB,
+        rendering_kw=dict(line_dash='dot'), **options
+    )
     p4 = p1 + p2 + p3
     assert isinstance(p4, PB)
     assert len(p4.series) == 3
@@ -112,8 +114,10 @@ def test_plot_sum():
     # to `p2` then the backend will use automatic coloring to differentiate
     # the series.
     hex2rgb = lambda h: tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
-    p1 = plot_vector([-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
-        backend=MB, scalar=True, **options)
+    p1 = plot_vector(
+        [-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
+        backend=MB, scalar=True, **options
+    )
     p2 = plot(sin(x), (x, -3, 3), backend=MB, **options)
     p3 = p1 + p2
     assert isinstance(p3, MB)
@@ -143,8 +147,12 @@ def test_plot_sum():
     # summing plots with different backends: fail when backend-specific
     # keyword arguments are used.
     # NOTE: the output plot is of type MB
-    p1 = plot(sin(x), backend=MB, rendering_kw=dict(linestyle=":"), **options)
-    p2 = plot(cos(x), backend=PB, rendering_kw=dict(line_dash="dash"), **options)
+    p1 = plot(
+        sin(x), backend=MB, rendering_kw=dict(linestyle=":"), **options
+    )
+    p2 = plot(
+        cos(x), backend=PB, rendering_kw=dict(line_dash="dash"), **options
+    )
     raises(AttributeError, lambda: (p1 + p2).draw())
 
     # verify that summing up bokeh plots doesn't raise errors
@@ -153,10 +161,14 @@ def test_plot_sum():
     p3 = p1 + p2
 
     # verify that summing up K3D plots doesn't raise errors
-    p1 = plot3d(sin(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), backend=KB,
-        **options)
-    p2 = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), backend=KB,
-        **options)
+    p1 = plot3d(
+        sin(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), backend=KB,
+        **options
+    )
+    p2 = plot3d(
+        cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), backend=KB,
+        **options
+    )
     p3 = p1 + p2
 
 
@@ -170,10 +182,10 @@ def test_xaxis_inverted():
         (-exp(-c * x), "lower limit", {"linestyle": ":"}),
         prange(x, 0, n * pi),
         params={
-            a: (1, 0, 10),     # frequency
-            b: (0, 0, 2 * pi), # phase
-            c: (0.25, 0, 1),   # damping
-            n: (2, 0, 4)       # multiple of pi
+            a: (1, 0, 10),      # frequency
+            b: (0, 0, 2 * pi),  # phase
+            c: (0.25, 0, 1),    # damping
+            n: (2, 0, 4)        # multiple of pi
         },
         ylim=(-1.25, 1.25), backend=MB, use_latex=False, show=False, n=10
     )

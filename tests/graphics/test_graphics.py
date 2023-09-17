@@ -1,22 +1,21 @@
 import numpy as np
 import pytest
-from pytest import raises, warns
 from spb import MB, PB, KB, BB
-from spb.defaults import cfg
 from spb.graphics import (
-    graphics, line, line_polar, line_parametric_2d, line_parametric_3d
+    graphics, line, line_polar,
+    line_parametric_2d, line_parametric_3d,
 )
 from spb.interactive.ipywidgets import InteractivePlot as IpyInteractivePlot
 from spb.interactive.panel import InteractivePlot as PanelInteractivePlot
 from spb.series import (
-    LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries
+    LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
 )
-from sympy import (
-    symbols, cos, sin, pi, sqrt, atan2, Rational, exp, Matrix, tan
-)
+from sympy import symbols, cos, sin, pi, exp
 
 
-@pytest.mark.filterwarnings("ignore:K3DBackend only works properly within Jupyter Notebook")
+@pytest.mark.filterwarnings(
+    "ignore:K3DBackend only works properly within Jupyter Notebook"
+)
 @pytest.mark.parametrize("backend", [MB, PB, KB, BB])
 def test_graphics_single_series(backend):
     x = symbols("x")
@@ -28,7 +27,9 @@ def test_graphics_single_series(backend):
     assert isinstance(g.series[0], LineOver1DRangeSeries)
 
 
-@pytest.mark.filterwarnings("ignore:K3DBackend only works properly within Jupyter Notebook")
+@pytest.mark.filterwarnings(
+    "ignore:K3DBackend only works properly within Jupyter Notebook"
+)
 @pytest.mark.parametrize("backend", [MB, PB, KB, BB])
 def test_graphics_multiple_series(backend):
     x = symbols("x")
@@ -38,7 +39,8 @@ def test_graphics_multiple_series(backend):
         line(cos(x)),
         line_parametric_2d(cos(x), sin(x), (x, 0, pi)),
         line_parametric_3d(cos(x), sin(x), x, (x, 0, pi)),
-        **graphics_options)
+        **graphics_options
+    )
     assert isinstance(g, backend)
     assert len(g.series) == 3
     assert isinstance(g.series[0], LineOver1DRangeSeries)
@@ -46,17 +48,22 @@ def test_graphics_multiple_series(backend):
     assert isinstance(g.series[2], Parametric3DLineSeries)
 
 
-@pytest.mark.filterwarnings("ignore:K3DBackend only works properly within Jupyter Notebook")
-@pytest.mark.parametrize("backend, imodule", [
-    (MB, "panel"),
-    (MB, "ipywidgets"),
-    (PB, "panel"),
-    (PB, "ipywidgets"),
-    (BB, "panel"),
-    (BB, "ipywidgets"),
-    (KB, "panel"),
-    (KB, "ipywidgets"),
-])
+@pytest.mark.filterwarnings(
+    "ignore:K3DBackend only works properly within Jupyter Notebook"
+)
+@pytest.mark.parametrize(
+    "backend, imodule",
+    [
+        (MB, "panel"),
+        (MB, "ipywidgets"),
+        (PB, "panel"),
+        (PB, "ipywidgets"),
+        (BB, "panel"),
+        (BB, "ipywidgets"),
+        (KB, "panel"),
+        (KB, "ipywidgets"),
+    ],
+)
 def test_graphics_single_series_interactive(backend, imodule):
     x, u = symbols("x, u")
     graphics_options = {"show": False, "backend": backend, "imodule": imodule}
@@ -68,17 +75,22 @@ def test_graphics_single_series_interactive(backend, imodule):
     assert len(g.backend.series) == 1
 
 
-@pytest.mark.filterwarnings("ignore:K3DBackend only works properly within Jupyter Notebook")
-@pytest.mark.parametrize("backend, imodule", [
-    (MB, "panel"),
-    (MB, "ipywidgets"),
-    (PB, "panel"),
-    (PB, "ipywidgets"),
-    (BB, "panel"),
-    (BB, "ipywidgets"),
-    (KB, "panel"),
-    (KB, "ipywidgets"),
-])
+@pytest.mark.filterwarnings(
+    "ignore:K3DBackend only works properly within Jupyter Notebook"
+)
+@pytest.mark.parametrize(
+    "backend, imodule",
+    [
+        (MB, "panel"),
+        (MB, "ipywidgets"),
+        (PB, "panel"),
+        (PB, "ipywidgets"),
+        (BB, "panel"),
+        (BB, "ipywidgets"),
+        (KB, "panel"),
+        (KB, "ipywidgets"),
+    ],
+)
 def test_graphics_multiple_series_interactive(backend, imodule):
     # NOTE: these tests mixes 2D and 3D series. Here, they are not going to
     # raise errors because ``show=False``. All I care is to verify that the
@@ -89,9 +101,14 @@ def test_graphics_multiple_series_interactive(backend, imodule):
 
     g = graphics(
         line(cos(u * x), params={u: (1, 0, 2)}),
-        line_parametric_2d(cos(u * x), sin(x), (x, 0, pi), params={u: (1, 0, 2)}),
-        line_parametric_3d(cos(u * x), sin(x), x, (x, 0, pi), params={u: (1, 0, 2)}),
-        **graphics_options)
+        line_parametric_2d(
+            cos(u * x), sin(x), (x, 0, pi), params={u: (1, 0, 2)}
+        ),
+        line_parametric_3d(
+            cos(u * x), sin(x), x, (x, 0, pi), params={u: (1, 0, 2)}
+        ),
+        **graphics_options
+    )
     g_type = PanelInteractivePlot if imodule == "panel" else IpyInteractivePlot
     assert isinstance(g, g_type)
     assert isinstance(g.backend, backend)
@@ -108,12 +125,14 @@ def test_graphics_polar_axis():
     t = symbols("t")
     g1 = graphics(
         line_polar(exp(sin(t)) - 2 * cos(4 * t), (t, 0, 2 * pi)),
-        show=False, polar_axis=False
+        show=False,
+        polar_axis=False,
     )
     d1 = g1[0].get_data()
     g2 = graphics(
         line_polar(exp(sin(t)) - 2 * cos(4 * t), (t, 0, 2 * pi)),
-        show=False, polar_axis=True
+        show=False,
+        polar_axis=True,
     )
     d2 = g2[0].get_data()
     assert not np.allclose(d1, d2)

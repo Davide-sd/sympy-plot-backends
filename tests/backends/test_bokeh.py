@@ -1,10 +1,81 @@
 import bokeh
 from bokeh.models import ColumnDataSource, Span
 import pytest
-from pytest import raises, warns
+from pytest import raises
 import os
 from tempfile import TemporaryDirectory
-from .make_tests import *
+import numpy as np
+from spb import (
+    BB, plot, plot_complex, plot_vector, plot_contour,
+    plot_parametric, plot_geometry,
+)
+from sympy import (
+    sin, cos, I, pi, Circle, Polygon, sqrt, Matrix, Line, latex, symbols
+)
+from sympy.abc import x, y, z, u, t
+from .make_tests import (
+    custom_colorloop_1,
+    make_plot_1,
+    make_plot_parametric_1,
+    make_plot3d_parametric_line_1,
+    make_plot3d_1,
+    make_plot3d_2,
+    make_plot3d_wireframe_1,
+    make_plot3d_wireframe_2,
+    make_plot3d_wireframe_3,
+    make_plot_contour_1,
+    make_plot_vector_2d_quiver,
+    make_plot_vector_2d_streamlines_1,
+    make_plot_vector_2d_streamlines_2,
+    make_plot_vector_3d_quiver,
+    make_plot_vector_3d_streamlines_1,
+    make_plot_vector_2d_normalize_1,
+    make_plot_vector_2d_normalize_2,
+    make_plot_vector_2d_quiver_color_func_1,
+    make_test_plot_implicit_adaptive_true,
+    make_test_plot_implicit_adaptive_false,
+    make_test_plot_complex_1d,
+    make_test_plot_complex_2d,
+    make_test_plot_complex_3d,
+    make_test_plot_list_is_filled_false,
+    make_test_plot_list_is_filled_true,
+    make_test_plot_piecewise_single_series,
+    make_test_plot_piecewise_multiple_series,
+    make_test_plot_geometry_1,
+    make_test_plot_geometry_2,
+    make_test_aspect_ratio_2d_issue_11764,
+    make_test_plot_size,
+    make_test_plot_scale_lin_log,
+    make_test_backend_latex_labels_1,
+    make_test_plot_use_latex,
+    make_test_plot_parametric_use_latex,
+    make_test_plot_contour_use_latex,
+    make_test_plot_vector_2d_quivers_use_latex,
+    make_test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex,
+    make_test_plot_vector_2d_streamlines_custom_scalar_field_use_latex,
+    make_test_plot_vector_2d_use_latex_colorbar,
+    make_test_plot_complex_use_latex_1,
+    make_test_plot_complex_use_latex_2,
+    make_test_plot_real_imag_use_latex,
+    make_test_plot_polar,
+    make_test_plot_polar_use_cm,
+    make_test_plot3d_implicit,
+    make_test_line_interactive_color_func,
+    make_test_line_color_plot,
+    make_test_color_func_expr_1,
+    make_test_legend_plot_sum_1,
+    make_test_legend_plot_sum_2,
+    make_test_domain_coloring_2d,
+    make_test_show_in_legend_2d,
+    make_test_detect_poles,
+    make_test_detect_poles_interactive,
+    make_test_plot_riemann_sphere,
+    make_test_parametric_texts_2d,
+    make_test_line_color_func,
+    make_test_plot_list_color_func,
+    make_test_real_imag
+)
+
 
 # NOTE
 # While BB, PB, KB creates the figure at instantiation, MB creates the figure
@@ -42,7 +113,7 @@ def test_bokeh_tools():
     assert isinstance(f.toolbar.tools[3], bokeh.models.ResetTool)
     assert isinstance(f.toolbar.tools[4], bokeh.models.HoverTool)
     assert isinstance(f.toolbar.tools[5], bokeh.models.SaveTool)
-    assert f.toolbar.tools[4].tooltips == [('x', '$x'), ('y', '$y')]
+    assert f.toolbar.tools[4].tooltips == [("x", "$x"), ("y", "$y")]
 
 
 def test_custom_colorloop():
@@ -55,8 +126,12 @@ def test_custom_colorloop():
     assert len(_p1.series) == len(_p2.series)
     f1 = _p1.fig
     f2 = _p2.fig
-    assert all([isinstance(t.glyph, bokeh.models.glyphs.Line) for t in f1.renderers])
-    assert all([isinstance(t.glyph, bokeh.models.glyphs.Line) for t in f2.renderers])
+    assert all(
+        [isinstance(t.glyph, bokeh.models.glyphs.Line) for t in f1.renderers]
+    )
+    assert all(
+        [isinstance(t.glyph, bokeh.models.glyphs.Line) for t in f2.renderers]
+    )
     # there are 6 unique colors in _p1 and 3 unique colors in _p2
     assert len(set([r.glyph.line_color for r in f1.renderers])) == 6
     assert len(set([r.glyph.line_color for r in f2.renderers])) == 3
@@ -97,7 +172,7 @@ def test_plot_parametric():
     # 1 colorbar
     assert len(f.right) == 1
     assert f.right[0].title == "x"
-    assert f.toolbar.tools[-2].tooltips == [('x', '$x'), ('y', '$y'), ("u", "@us")]
+    assert f.toolbar.tools[-2].tooltips == [("x", "$x"), ("y", "$y"), ("u", "@us")]
 
 
 def test_plot3d_parametric_line():
@@ -106,8 +181,12 @@ def test_plot3d_parametric_line():
     # default line settings
 
     # Bokeh doesn't support 3D plots
-    raises(NotImplementedError, lambda: make_plot3d_parametric_line_1(BB,
-        rendering_kw=dict(line_color="red")).draw())
+    raises(
+        NotImplementedError,
+        lambda: make_plot3d_parametric_line_1(
+            BB, rendering_kw=dict(line_color="red")
+        ).draw(),
+    )
 
 
 def test_plot3d():
@@ -118,8 +197,10 @@ def test_plot3d():
     # Bokeh doesn't support 3D plots
     raises(
         NotImplementedError,
-        lambda: make_plot3d_1(BB, rendering_kw=dict(
-            colorscale=[[0, "cyan"], [1, "cyan"]])).draw())
+        lambda: make_plot3d_1(
+            BB, rendering_kw=dict(colorscale=[[0, "cyan"], [1, "cyan"]])
+        ).draw(),
+    )
 
 
 def test_plot3d_2():
@@ -127,9 +208,7 @@ def test_plot3d_2():
     # with `use_latex=False` and `use_cm=True`
 
     # Bokeh doesn't support 3D plots
-    raises(
-        NotImplementedError,
-        lambda: make_plot3d_2(BB).draw())
+    raises(NotImplementedError, lambda: make_plot3d_2(BB).draw())
 
 
 def test_plot3d_wireframe():
@@ -137,15 +216,15 @@ def test_plot3d_wireframe():
     # data series and that appropriate keyword arguments work as expected
 
     # Bokeh doesn't support 3D plots
+    raises(NotImplementedError, lambda: make_plot3d_wireframe_1(BB).draw())
     raises(
         NotImplementedError,
-        lambda: make_plot3d_wireframe_1(BB).draw())
+        lambda: make_plot3d_wireframe_2(BB, {}).draw()
+    )
     raises(
         NotImplementedError,
-        lambda: make_plot3d_wireframe_2(BB, {}).draw())
-    raises(
-        NotImplementedError,
-        lambda: make_plot3d_wireframe_3(BB, {}).draw())
+        lambda: make_plot3d_wireframe_3(BB, {}).draw()
+    )
 
 
 def test_plot_contour():
@@ -161,7 +240,7 @@ def test_plot_contour():
     assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
     # 1 colorbar
     assert len(f.right) == 1
-    assert f.right[0].title == str(cos(x ** 2 + y ** 2))
+    assert f.right[0].title == str(cos(x**2 + y**2))
 
 
 def test_plot_vector_2d_quivers():
@@ -170,7 +249,8 @@ def test_plot_vector_2d_quivers():
     # default settings
 
     p = make_plot_vector_2d_quiver(
-        BB,contour_kw=dict(), quiver_kw=dict(line_color="red"))
+        BB, contour_kw=dict(), quiver_kw=dict(line_color="red")
+    )
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
@@ -188,7 +268,8 @@ def test_plot_vector_2d_streamlines_custom_scalar_field():
     # default settings
 
     p = make_plot_vector_2d_streamlines_1(
-        BB, stream_kw=dict(line_color="red"), contour_kw=dict())
+        BB, stream_kw=dict(line_color="red"), contour_kw=dict()
+    )
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
@@ -206,7 +287,8 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
     # default settings
 
     p = make_plot_vector_2d_streamlines_2(
-        BB, stream_kw=dict(line_color="red"), contour_kw=dict())
+        BB, stream_kw=dict(line_color="red"), contour_kw=dict()
+    )
     f = p.fig
     assert f.right[0].title == "test"
 
@@ -217,9 +299,11 @@ def test_plot_vector_3d_quivers():
     # default settings
 
     # Bokeh doesn't support 3D plots
-    raises(NotImplementedError,
+    raises(
+        NotImplementedError,
         lambda: make_plot_vector_3d_quiver(
-            BB, quiver_kw=dict(sizeref=5)).draw())
+            BB, quiver_kw=dict(sizeref=5)).draw(),
+    )
 
 
 def test_plot_vector_3d_streamlines():
@@ -230,8 +314,10 @@ def test_plot_vector_3d_streamlines():
     # Bokeh doesn't support 3D plots
     raises(
         NotImplementedError,
-        lambda: make_plot_vector_3d_streamlines_1(BB, stream_kw=dict(
-            colorscale=[[0, "red"], [1, "red"]])).draw())
+        lambda: make_plot_vector_3d_streamlines_1(
+            BB, stream_kw=dict(colorscale=[[0, "red"], [1, "red"]])
+        ).draw(),
+    )
 
 
 def test_plot_vector_2d_normalize():
@@ -294,9 +380,11 @@ def test_plot_implicit_adaptive_true():
     # `plot_implicit()` is called with `adaptive=True`
 
     # BokehBackend doesn't support 2D plots
-    raises(NotImplementedError,
+    raises(
+        NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_true(
-            BB, rendering_kw=dict()).draw())
+            BB, rendering_kw=dict()).draw(),
+    )
 
 
 def test_plot_implicit_adaptive_false():
@@ -305,9 +393,11 @@ def test_plot_implicit_adaptive_false():
     # overrides the default settings
 
     # BokehBackend doesn't support 2D plots
-    raises(NotImplementedError,
+    raises(
+        NotImplementedError,
         lambda: make_test_plot_implicit_adaptive_false(
-            BB, rendering_kw=dict()).draw())
+            BB, rendering_kw=dict()).draw(),
+    )
 
 
 def test_plot_real_imag():
@@ -355,8 +445,12 @@ def test_plot_complex_2d():
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.ImageRGBA)
     assert f.right[0].title == "Argument"
-    assert (f.toolbar.tools[-2].tooltips == [('x', '$x'), ('y', '$y'),
-        ("Abs", "@abs"), ("Arg", "@arg")])
+    assert f.toolbar.tools[-2].tooltips == [
+        ("x", "$x"),
+        ("y", "$y"),
+        ("Abs", "@abs"),
+        ("Arg", "@arg"),
+    ]
 
 
 def test_plot_complex_3d():
@@ -367,7 +461,8 @@ def test_plot_complex_3d():
     # Bokeh doesn't support 3D plots
     raises(
         NotImplementedError,
-        lambda: make_test_plot_complex_3d(BB, rendering_kw=dict()).draw())
+        lambda: make_test_plot_complex_3d(BB, rendering_kw=dict()).draw(),
+    )
 
 
 def test_plot_list_is_filled_false():
@@ -436,7 +531,9 @@ def test_plot_geometry_1():
     assert len(p.series) == 3
     f = p.fig
     assert len(f.renderers) == 3
-    assert all(isinstance(r.glyph, bokeh.models.glyphs.Line) for r in f.renderers)
+    assert all(
+        isinstance(r.glyph, bokeh.models.glyphs.Line) for r in f.renderers
+    )
     assert f.legend[0].items[0].label["value"] == str(Line((1, 2), (5, 4)))
     assert f.legend[0].items[1].label["value"] == str(Circle((0, 0), 4))
     assert f.legend[0].items[2].label["value"] == str(Polygon((2, 2), 3, n=6))
@@ -447,15 +544,78 @@ def test_plot_geometry_2():
     # verify that is_filled works correctly
 
     p = make_test_plot_geometry_2(BB, False)
-    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Line)]) == 4
-    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)]) == 1
-    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Scatter)]) == 1
+    assert (
+        len(
+            [
+                t.glyph
+                for t in p.fig.renderers
+                if isinstance(t.glyph, bokeh.models.glyphs.Line)
+            ]
+        )
+        == 4
+    )
+    assert (
+        len(
+            [
+                t.glyph
+                for t in p.fig.renderers
+                if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)
+            ]
+        )
+        == 1
+    )
+    assert (
+        len(
+            [
+                t.glyph
+                for t in p.fig.renderers
+                if isinstance(t.glyph, bokeh.models.glyphs.Scatter)
+            ]
+        )
+        == 1
+    )
     assert len(p.fig.legend[0].items) == 5
     p = make_test_plot_geometry_2(BB, True)
-    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Line)]) == 1
-    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Patch)]) == 3
-    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)]) == 1
-    assert len([t.glyph for t in p.fig.renderers if isinstance(t.glyph, bokeh.models.glyphs.Scatter)]) == 1
+    assert (
+        len(
+            [
+                t.glyph
+                for t in p.fig.renderers
+                if isinstance(t.glyph, bokeh.models.glyphs.Line)
+            ]
+        )
+        == 1
+    )
+    assert (
+        len(
+            [
+                t.glyph
+                for t in p.fig.renderers
+                if isinstance(t.glyph, bokeh.models.glyphs.Patch)
+            ]
+        )
+        == 3
+    )
+    assert (
+        len(
+            [
+                t.glyph
+                for t in p.fig.renderers
+                if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)
+            ]
+        )
+        == 1
+    )
+    assert (
+        len(
+            [
+                t.glyph
+                for t in p.fig.renderers
+                if isinstance(t.glyph, bokeh.models.glyphs.Scatter)
+            ]
+        )
+        == 1
+    )
     assert len(p.fig.legend[0].items) == 5
 
 
@@ -472,18 +632,12 @@ def test_save(mocker):
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         # Bokeh requires additional libraries to save static pictures.
         # Raise an error because their are not installed.
-        mocker.patch(
-            "bokeh.io.export_png",
-            side_effect=RuntimeError
-        )
+        mocker.patch("bokeh.io.export_png", side_effect=RuntimeError)
         p = plot(sin(x), cos(x), **options)
         filename = "test_bokeh_save_1.png"
         raises(RuntimeError, lambda: p.save(os.path.join(tmpdir, filename)))
 
-        mocker.patch(
-            "bokeh.io.export_svg",
-            side_effect=RuntimeError
-        )
+        mocker.patch("bokeh.io.export_svg", side_effect=RuntimeError)
         p = plot(sin(x), cos(x), **options)
         filename = "test_bokeh_save_2.svg"
         raises(RuntimeError, lambda: p.save(os.path.join(tmpdir, filename)))
@@ -494,7 +648,10 @@ def test_save(mocker):
 
         p = plot(sin(x), cos(x), **options)
         filename = "test_bokeh_save_4.html"
-        p.save(os.path.join(tmpdir, filename), resources=bokeh.resources.INLINE)
+        p.save(
+            os.path.join(tmpdir, filename),
+            resources=bokeh.resources.INLINE
+        )
 
 
 def test_aspect_ratio_2d_issue_11764():
@@ -546,10 +703,10 @@ def test_backend_latex_labels():
 
     p1 = make_test_backend_latex_labels_1(BB, True)
     p2 = make_test_backend_latex_labels_1(BB, False)
-    assert p1.xlabel == p1.fig.xaxis.axis_label == '$x^{2}_{1}$'
-    assert p2.xlabel == p2.fig.xaxis.axis_label == 'x_1^2'
-    assert p1.ylabel == p1.fig.yaxis.axis_label == '$f\\left(x^{2}_{1}\\right)$'
-    assert p2.ylabel == p2.fig.yaxis.axis_label == 'f(x_1^2)'
+    assert p1.xlabel == p1.fig.xaxis.axis_label == "$x^{2}_{1}$"
+    assert p2.xlabel == p2.fig.xaxis.axis_label == "x_1^2"
+    assert p1.ylabel == p1.fig.yaxis.axis_label == "$f\\left(x^{2}_{1}\\right)$"
+    assert p2.ylabel == p2.fig.yaxis.axis_label == "f(x_1^2)"
 
 
 def test_plot_use_latex():
@@ -578,7 +735,7 @@ def test_plot_contour_use_latex():
 
     p = make_test_plot_contour_use_latex(BB)
     f = p.fig
-    assert f.right[0].title == "$%s$" % latex(cos(x ** 2 + y ** 2))
+    assert f.right[0].title == "$%s$" % latex(cos(x**2 + y**2))
 
 
 def test_plot_vector_2d_quivers_use_latex():
@@ -600,7 +757,9 @@ def test_plot_vector_2d_streamlines_custom_scalar_field_use_latex():
 def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex():
     # verify that the colorbar uses latex label
 
-    p = make_test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex(BB)
+    p = make_test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex(
+        BB
+    )
     f = p.fig
     assert f.right[0].title == "test"
 
@@ -627,12 +786,12 @@ def test_plot_complex_use_latex():
     # wheter use_latex is True or False
 
     p = make_test_plot_complex_use_latex_1(BB)
-    assert p.fig.right[0].title == 'Arg(cos(x) + I*sinh(x))'
+    assert p.fig.right[0].title == "Arg(cos(x) + I*sinh(x))"
     assert p.fig.xaxis.axis_label == "Real"
     assert p.fig.yaxis.axis_label == "Abs"
 
     p = make_test_plot_complex_use_latex_2(BB)
-    assert p.fig.right[0].title == 'Argument'
+    assert p.fig.right[0].title == "Argument"
     assert p.fig.xaxis.axis_label == "Re"
     assert p.fig.yaxis.axis_label == "Im"
 
@@ -644,8 +803,8 @@ def test_plot_real_imag_use_latex():
     p = make_test_plot_real_imag_use_latex(BB)
     assert p.fig.xaxis.axis_label == "$x$"
     assert p.fig.yaxis.axis_label == r"$f\left(x\right)$"
-    assert p.fig.legend[0].items[0].label["value"] == 'Re(sqrt(x))'
-    assert p.fig.legend[0].items[1].label["value"] == 'Im(sqrt(x))'
+    assert p.fig.legend[0].items[0].label["value"] == "Re(sqrt(x))"
+    assert p.fig.legend[0].items[1].label["value"] == "Im(sqrt(x))"
 
 
 def test_plot_polar():
@@ -679,8 +838,7 @@ def test_plot_polar_use_cm():
 def test_plot3d_implicit():
     # verify that plot3d_implicit don't raise errors
 
-    raises(NotImplementedError,
-        lambda : make_test_plot3d_implicit(BB).draw())
+    raises(NotImplementedError, lambda: make_test_plot3d_implicit(BB).draw())
 
 
 def test_line_color_func():
@@ -720,60 +878,139 @@ def test_update_interactive():
 
     u, v, x, y, z = symbols("u, v, x:z")
 
-    p = plot(sin(u * x), (x, -pi, pi), adaptive=False, n=5,
-        backend=BB, show=False, params={u: (1, 0, 2)})
+    p = plot(
+        sin(u * x),
+        (x, -pi, pi),
+        adaptive=False,
+        n=5,
+        backend=BB,
+        show=False,
+        params={u: (1, 0, 2)},
+    )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
-    p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
-        n=5, backend=BB, show=False, params={u: (1, 0, 2)},
-        use_cm=True, is_point=False)
+    p = plot_parametric(
+        cos(u * x),
+        sin(u * x),
+        (x, 0, 2 * pi),
+        adaptive=False,
+        n=5,
+        backend=BB,
+        show=False,
+        params={u: (1, 0, 2)},
+        use_cm=True,
+        is_point=False,
+    )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
-    p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
-        n=5, backend=BB, show=False, params={u: (1, 0, 2)},
-        use_cm=True, is_point=True)
+    p = plot_parametric(
+        cos(u * x),
+        sin(u * x),
+        (x, 0, 2 * pi),
+        adaptive=False,
+        n=5,
+        backend=BB,
+        show=False,
+        params={u: (1, 0, 2)},
+        use_cm=True,
+        is_point=True,
+    )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
-    p = plot_parametric(cos(u * x), sin(u * x), (x, 0, 2*pi), adaptive=False,
-        n=5, backend=BB, show=False, params={u: (1, 0, 2)}, use_cm=False)
+    p = plot_parametric(
+        cos(u * x),
+        sin(u * x),
+        (x, 0, 2 * pi),
+        adaptive=False,
+        n=5,
+        backend=BB,
+        show=False,
+        params={u: (1, 0, 2)},
+        use_cm=False,
+    )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
-    p = plot_contour(cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2), backend=BB,
-        show=False, adaptive=False, n=5, params={u: (1, 0, 2)})
+    p = plot_contour(
+        cos(u * x**2 + y**2),
+        (x, -2, 2),
+        (y, -2, 2),
+        backend=BB,
+        show=False,
+        adaptive=False,
+        n=5,
+        params={u: (1, 0, 2)},
+    )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
-    p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
-        backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=True)
+    p = plot_vector(
+        Matrix([-u * y, x]),
+        (x, -5, 5),
+        (y, -4, 4),
+        backend=BB,
+        n=4,
+        show=False,
+        params={u: (1, 0, 2)},
+        streamlines=True,
+    )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
-    p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
-        backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=False,
-        scalar=True)
+    p = plot_vector(
+        Matrix([-u * y, x]),
+        (x, -5, 5),
+        (y, -4, 4),
+        backend=BB,
+        n=4,
+        show=False,
+        params={u: (1, 0, 2)},
+        streamlines=False,
+        scalar=True,
+    )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
-    p = plot_vector(Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
-        backend=BB, n=4, show=False, params={u: (1, 0, 2)}, streamlines=False,
-        scalar=False)
+    p = plot_vector(
+        Matrix([-u * y, x]),
+        (x, -5, 5),
+        (y, -4, 4),
+        backend=BB,
+        n=4,
+        show=False,
+        params={u: (1, 0, 2)},
+        streamlines=False,
+        scalar=False,
+    )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
-    p = plot_complex(sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I), show=False,
-        backend=BB, threed=False, n=5, params={u: (1, 0, 2)})
+    p = plot_complex(
+        sqrt(u * x),
+        (x, -5 - 5 * I, 5 + 5 * I),
+        show=False,
+        backend=BB,
+        threed=False,
+        n=5,
+        params={u: (1, 0, 2)},
+    )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     from sympy.geometry import Line as SymPyLine
+
     p = plot_geometry(
+        SymPyLine((u, 2), (5, 4)),
         Polygon((2, u), 3, n=6),
-        backend=BB, show=False, is_filled=True, use_latex=False,
-        params={u: (1, 0, 2)})
+        backend=BB,
+        show=False,
+        is_filled=True,
+        use_latex=False,
+        params={u: (1, 0, 2)},
+    )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
@@ -785,11 +1022,17 @@ def test_generic_data_series():
     x = symbols("x")
     source = ColumnDataSource(data=dict(x=[0], y=[0], text=["test"]))
 
-    p = plot(x, backend=BB, show=False, adaptive=False, n=5,
+    p = plot(
+        x,
+        backend=BB,
+        show=False,
+        adaptive=False,
+        n=5,
         markers=[{"x": [0, 1], "y": [0, 1], "marker": "square"}],
         annotations=[{"x": "x", "y": "y", "source": source}],
         fill=[{"x": [0, 1, 2, 3], "y1": [0, 1, 2, 3], "y2": [0, 0, 0, 0]}],
-        rectangles=[{"x": 0, "y": -3, "width": 5, "height": 2}])
+        rectangles=[{"x": 0, "y": -3, "width": 5, "height": 2}],
+    )
     p.draw()
 
 
@@ -800,8 +1043,8 @@ def test_color_func_expr():
     p2 = make_test_color_func_expr_1(BB, True)
 
     # compute the original figure: no errors should be raised
-    f1 = p1.fig
-    f2 = p2.fig
+    p1.fig
+    p2.fig
 
     # update the figure with new parameters: no errors should be raised
     p1.backend.update_interactive({u: 0.5})
@@ -840,12 +1083,17 @@ def test_show_hide_colorbar():
     options = dict(use_cm=True, n=5, adaptive=False, backend=BB, show=False)
 
     p = lambda c: plot_parametric(
-        cos(x), sin(x), (x, 0, 2*pi), colorbar=c, **options)
+        cos(x), sin(x), (x, 0, 2 * pi), colorbar=c, **options
+    )
     assert len(p(True).fig.right) == 1
     assert len(p(False).fig.right) == 0
     p = lambda c: plot_parametric(
-        (cos(x), sin(x)), (cos(x) / 2, sin(x) / 2), (x, 0, 2*pi),
-        colorbar=c, **options)
+        (cos(x), sin(x)),
+        (cos(x) / 2, sin(x) / 2),
+        (x, 0, 2 * pi),
+        colorbar=c,
+        **options
+    )
     assert len(p(True).fig.right) == 2
     assert len(p(False).fig.right) == 0
 
@@ -853,22 +1101,26 @@ def test_show_hide_colorbar():
     assert len(p(True).fig.right) == 1
     assert len(p(False).fig.right) == 0
 
-    p = lambda c: plot_contour(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
-        colorbar=c, **options)
+    p = lambda c: plot_contour(
+        cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), colorbar=c, **options
+    )
     assert len(p(True).fig.right) == 1
     assert len(p(False).fig.right) == 0
 
-    p = lambda c: plot_vector([sin(x - y), cos(x + y)], (x, -3, 3), (y, -3, 3),
-        colorbar=c, **options)
+    p = lambda c: plot_vector(
+        [sin(x - y), cos(x + y)], (x, -3, 3), (y, -3, 3),
+        colorbar=c, **options
+    )
     assert len(p(True).fig.right) == 1
     assert len(p(False).fig.right) == 0
 
-    p = lambda c: plot_complex(cos(x) + sin(I * x), "f", (x, -2, 2),
-        colorbar=c, **options)
+    p = lambda c: plot_complex(
+        cos(x) + sin(I * x), "f", (x, -2, 2), colorbar=c, **options
+    )
     assert len(p(True).fig.right) == 1
     assert len(p(False).fig.right) == 0
-    p = lambda c: plot_complex(sin(z), (z, -3-3j, 3+3j),
-        colorbar=c, **options)
+    p = lambda c: plot_complex(
+        sin(z), (z, -3 - 3j, 3 + 3j), colorbar=c, **options)
     assert len(p(True).fig.right) == 1
     assert len(p(False).fig.right) == 0
 
@@ -940,7 +1192,12 @@ def test_detect_poles():
     p = make_test_detect_poles(BB, "symbolic")
     assert len([t for t in p.fig.center if isinstance(t, Span)]) == 6
     assert len([t for t in p.fig.center if isinstance(t, Span) and t.visible]) == 6
-    assert all([t.line_color == "#000000" for t in p.fig.center if isinstance(t, Span)])
+    assert all(
+        [
+            t.line_color == "#000000" for t in p.fig.center
+            if isinstance(t, Span)
+        ]
+    )
 
 
 def test_detect_poles_interactive():
@@ -966,7 +1223,10 @@ def test_detect_poles_interactive():
     assert len(p.fig.renderers) == 1
     assert len([t for t in p.fig.center if isinstance(t, Span)]) == 6
     assert all([t.visible for t in p.fig.center if isinstance(t, Span)])
-    assert all([t.line_color == "#000000" for t in p.fig.center if isinstance(t, Span)])
+    assert all(
+        [t.line_color == "#000000" for t in p.fig.center
+        if isinstance(t, Span)]
+    )
 
     # one more discontinuity is getting into the visible range
     p.update_interactive({y: 1})
@@ -977,7 +1237,11 @@ def test_detect_poles_interactive():
     p.update_interactive({y: -0.8})
     assert len(p.fig.renderers) == 1
     assert len([t for t in p.fig.center if isinstance(t, Span)]) == 7
-    assert len([t for t in p.fig.center if isinstance(t, Span) and not t.visible]) == 1
+    assert (
+        len(
+            [t for t in p.fig.center if isinstance(t, Span) and not t.visible]
+            ) == 1
+    )
 
 
 def test_plot_riemann_sphere():

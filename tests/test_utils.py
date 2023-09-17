@@ -1,16 +1,21 @@
+import pytest
 from pytest import raises, warns
 from spb import (
-    plot, plot3d, plot_implicit, plot_vector, plot_complex, plot_complex_list,
-    MB, plot_geometry
+    plot, plot3d, plot_implicit, plot_vector,
+    plot_complex, plot_complex_list, plot_geometry,
+    MB,
 )
 from spb.utils import (
-    _check_arguments, _create_missing_ranges, _plot_sympify, _validate_kwargs, prange,
-    extract_solution
+    _create_missing_ranges, _plot_sympify,
+    _validate_kwargs, prange, extract_solution,
 )
 from sympy import (
-    symbols, Expr, Tuple, Integer, sin, cos, Matrix, I, Polygon, Dummy, Symbol,
-    solveset, FiniteSet, ImageSet
+    symbols, Expr, Tuple, Integer, sin, cos, Matrix,
+    I, Polygon, solveset, FiniteSet, ImageSet,
 )
+
+
+x, a, b = symbols("x a b")
 
 
 def test_plot_sympify():
@@ -36,7 +41,11 @@ def test_plot_sympify():
     assert isinstance(r[1], Tuple)
     assert isinstance(r[2], str)
     assert isinstance(r[3], Integer)
-    assert isinstance(r[4], dict) and isinstance(r[4][1], int) and isinstance(r[4][2], float)
+    assert (
+        isinstance(r[4], dict)
+        and isinstance(r[4][1], int)
+        and isinstance(r[4][2], float)
+    )
 
     # nested arguments containing strings
     args = ((x + y, (y, 0, 1), "a"), (x + 1, (x, 0, 1), "$f_{1}$"))
@@ -86,7 +95,10 @@ def test_create_missing_ranges():
 
     # too many free symbols
     raises(ValueError, lambda: _create_missing_ranges({x, y}, [], 1))
-    raises(ValueError, lambda: _create_missing_ranges({x, y}, [(x, 0, 5), (y, 0, 1)], 1))
+    raises(
+        ValueError,
+        lambda: _create_missing_ranges({x, y}, [(x, 0, 5), (y, 0, 1)], 1)
+    )
 
 
 def test_raise_warning_keyword_validation():
@@ -108,9 +120,9 @@ def test_raise_warning_keyword_validation():
     kw = dict(adaptive=False, x_label="a")
 
     with warns(
-            UserWarning,
-            match="The following keyword arguments are unused."
-        ):
+        UserWarning,
+        match="The following keyword arguments are unused."
+    ):
         p = plot(sin(x), backend=MB, show=False, **kw)
         do_test(p, kw, ["x_label", "xlabel"])
 
@@ -118,9 +130,9 @@ def test_raise_warning_keyword_validation():
     kw = dict(adapt=False)
 
     with warns(
-            UserWarning,
-            match="The following keyword arguments are unused."
-        ):
+        UserWarning,
+        match="The following keyword arguments are unused."
+    ):
         p = plot(sin(x), backend=MB, show=False, **kw)
         do_test(p, kw, ["adapt", "adaptive"])
 
@@ -128,79 +140,85 @@ def test_raise_warning_keyword_validation():
     # keyword
     kw = dict(surface_colors="r")
     with warns(
-            UserWarning,
-            match="The following keyword arguments are unused."
-        ):
+        UserWarning,
+        match="The following keyword arguments are unused."
+    ):
         p = plot3d(cos(x**2 + y**2), backend=MB, show=False, **kw)
         do_test(p, kw, ["surface_colors", "surface_color"])
 
     # deptt should be depth: this is a ImplicitSeries keyword
     kw = dict(deptt=2)
     with warns(
-            UserWarning,
-            match="The following keyword arguments are unused."
-        ):
+        UserWarning,
+        match="The following keyword arguments are unused."
+    ):
         p = plot_implicit(cos(x), backend=MB, show=False, **kw)
         do_test(p, kw, ["deptt", "depth"])
 
     # streamline should be streamlines: this is a VectorBase keyword
     kw = dict(streamline=True)
     with warns(
-            UserWarning,
-            match="The following keyword arguments are unused."
-        ):
+        UserWarning,
+        match="The following keyword arguments are unused."
+    ):
         p = plot_vector(Matrix([sin(y), cos(x)]), backend=MB, show=False, **kw)
         do_test(p, kw, ["streamline", "streamlines"])
 
     # phase_res should be phaseres
     kw = dict(phase_res=3)
     with warns(
-            UserWarning,
-            match="The following keyword arguments are unused."
-        ):
-        p = plot_complex(z, (z, -2-2j, 2+2j), backend=MB, show=False, **kw)
+        UserWarning,
+        match="The following keyword arguments are unused."
+    ):
+        p = plot_complex(z, (z, -2 - 2j, 2 + 2j), backend=MB, show=False, **kw)
         do_test(p, kw, ["phase_res", "phaseres"])
 
     # render_kw should be rendering_kw
     kw = dict(render_kw={"color": "r"})
     with warns(
-            UserWarning,
-            match="The following keyword arguments are unused."
-        ):
+        UserWarning,
+        match="The following keyword arguments are unused."
+    ):
         p = plot_complex_list(3 + 2 * I, backend=MB, show=False, **kw)
         do_test(p, kw, ["render_kw", "rendering_kw"])
 
     # is_fille should be is_filled
     kw = dict(is_fille=False)
     with warns(
-            UserWarning,
-            match="The following keyword arguments are unused."
-        ):
+        UserWarning,
+        match="The following keyword arguments are unused."
+    ):
         p = plot_geometry(Polygon((4, 0), 4, n=5), backend=MB, show=False)
         do_test(p, kw, ["is_fille", "is_filled"])
 
 
-def test_prange():
+@pytest.mark.parametrize("_sym, _min, _max", [
+    (x, 0, 5),
+    (x, a, 5),
+    (x, 0, b),
+    (x, a, b),
+    (x, a * b, a + b)
+])
+def test_prange_instantiation(_sym, _min, _max):
     # verify that prange raises the necessary errors
 
+    p = prange(_sym, _min, _max)
+    assert isinstance(p, prange)
+
+
+def test_prange_instantiation_errors():
     x, a, b = symbols("x a b")
 
-    p = prange(x, 0, 5)
-    p = prange(x, a, 5)
-    p = prange(x, 0, b)
-    p = prange(x, a, b)
-    p = prange(x, a*b, a+b)
-
     # too many elements
-    raises(ValueError, lambda : prange(x, a, b, 5))
+    raises(ValueError, lambda: prange(x, a, b, 5))
     # too few elements
-    raises(ValueError, lambda : prange(x, a))
+    raises(ValueError, lambda: prange(x, a))
     # first element is not a symbol
-    raises(TypeError, lambda : prange(5, a, b))
+    raises(TypeError, lambda: prange(5, a, b))
     # range symbols is present in the starting position
-    raises(ValueError, lambda : prange(x, x * a, b))
+    raises(ValueError, lambda: prange(x, x * a, b))
     # range symbols is present in the ending position
-    raises(ValueError, lambda : prange(x, a, x * b))
+    raises(ValueError, lambda: prange(x, a, x * b))
 
 
 def test_extract_solution():

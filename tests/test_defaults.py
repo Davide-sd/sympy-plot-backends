@@ -1,28 +1,43 @@
-
 import json
 import os
 from pytest import raises, warns
 from spb.defaults import cfg, set_defaults, reset
-from spb import BB, MB
 from sympy import symbols
 from sympy.external import import_module
 
 
 def test_cfg_keys():
     assert isinstance(cfg, dict)
-    must_have_keys = ["backend_2D", "backend_3D", "matplotlib", "plotly",
-        "k3d", "bokeh", "complex", "interactive", "plot3d", "adaptive",
-        "plot_range", "mayavi"]
+    must_have_keys = [
+        "backend_2D",
+        "backend_3D",
+        "matplotlib",
+        "plotly",
+        "k3d",
+        "bokeh",
+        "complex",
+        "interactive",
+        "plot3d",
+        "adaptive",
+        "plot_range",
+        "mayavi",
+    ]
     for k in must_have_keys:
         assert k in cfg.keys()
 
 
 def test_plot_range_keys():
-    assert ("min" in cfg["plot_range"].keys()) and ("max" in cfg["plot_range"].keys())
+    assert (
+        ("min" in cfg["plot_range"].keys())
+        and ("max" in cfg["plot_range"].keys())
+    )
 
 
 def test_plot3d_keys():
-    assert ("use_cm" in cfg["plot3d"].keys()) and (cfg["plot3d"]["use_cm"] is False)
+    assert (
+        ("use_cm" in cfg["plot3d"].keys())
+        and (cfg["plot3d"]["use_cm"] is False)
+    )
 
 
 def test_adaptive_keys():
@@ -50,8 +65,17 @@ def test_cfg_plotly_keys():
 
 
 def test_cfg_bokeh_keys():
-    bokeh_keys = ["theme", "sizing_mode", "show_minor_grid", "width", "height",
-        "minor_grid_line_alpha", "minor_grid_line_dash", "grid", "use_latex"]
+    bokeh_keys = [
+        "theme",
+        "sizing_mode",
+        "show_minor_grid",
+        "width",
+        "height",
+        "minor_grid_line_alpha",
+        "minor_grid_line_dash",
+        "grid",
+        "use_latex",
+    ]
     for k in bokeh_keys:
         assert k in cfg["bokeh"].keys()
     assert isinstance(cfg["bokeh"]["sizing_mode"], str)
@@ -65,7 +89,12 @@ def test_cfg_bokeh_keys():
 
 
 def test_cfg_k3d_keys():
-    k3d_keys = ["bg_color", "grid_color", "label_color", "use_latex",]
+    k3d_keys = [
+        "bg_color",
+        "grid_color",
+        "label_color",
+        "use_latex",
+    ]
     for k in k3d_keys:
         assert k in cfg["k3d"].keys()
         assert isinstance(cfg["k3d"][k], int)
@@ -95,9 +124,7 @@ def test_cfg_interactive_keys():
 
 
 def test_set_defaults():
-    appdirs = import_module(
-        'appdirs',
-        min_module_version='1.4.4')
+    appdirs = import_module("appdirs", min_module_version="1.4.4")
 
     # NOTE: sadly, it's impossible to run plot commands to test if
     # the changes has been applied, as that requires the kernel to
@@ -121,10 +148,7 @@ def test_set_defaults():
     # changing backends should be a smooth operation
     cfg["backend_2D"] = "bokeh"
     cfg["backend_3D"] = "matplotlib"
-    with warns(
-            UserWarning,
-            match="Successfully written settings"
-        ):
+    with warns(UserWarning, match="Successfully written settings"):
         set_defaults(cfg)
     loaded_cfg = get_current_setting()
     assert loaded_cfg["backend_2D"] == "bokeh"
@@ -132,10 +156,11 @@ def test_set_defaults():
 
     # wrong backends settings -> reset to default settings
     cfg["backend_2D"] = "k3d"
-    with warns(
-            UserWarning,
-            match="Successfully written settings"
-        ):
+    with warns(UserWarning, match="Successfully written settings"):
         raises(ValueError, lambda: set_defaults(cfg))
     loaded_cfg = get_current_setting()
     assert loaded_cfg["backend_2D"] == "matplotlib"
+
+
+def test_reset():
+    reset()

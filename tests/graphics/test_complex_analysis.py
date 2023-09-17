@@ -4,14 +4,15 @@ from pytest import raises
 from spb.graphics import (
     complex_points, line_abs_arg_colored, line_abs_arg, line_real_imag,
     surface_abs_arg, surface_real_imag, domain_coloring, analytic_landscape,
-    complex_vector_field, riemann_sphere_2d, riemann_sphere_3d
+    riemann_sphere_2d, riemann_sphere_3d
 )
 from spb.series import (
     ComplexPointSeries, AbsArgLineSeries, LineOver1DRangeSeries,
     ComplexSurfaceSeries, ComplexDomainColoringSeries,
     ComplexParametric3DLineSeries, RiemannSphereSeries, Parametric2DLineSeries
 )
-from sympy import exp, pi, I, symbols, cos, sin, sqrt, sympify, Tuple, Dummy
+from sympy import exp, pi, I, symbols, cos, sin, sqrt, sympify, Dummy
+
 
 p1 = symbols("p1")
 
@@ -22,8 +23,10 @@ p1 = symbols("p1")
     ("test", {"color": "r"}, True, {p1: (1, 0, 2)}),
 ])
 def test_complex_points(label, rkw, line, params):
-    series = complex_points(3 + 2 * I, 4 * I, 2,
-        line=line, rendering_kw=rkw, label=label)
+    series = complex_points(
+        3 + 2 * I, 4 * I, 2,
+        line=line, rendering_kw=rkw, label=label
+    )
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, ComplexPointSeries)
@@ -68,11 +71,13 @@ def test_line_abs_arg_colored(default_range, rang, label, rkw, params):
     x = symbols("x")
     expr = cos(x) + sin(I * x)
     kwargs = {}
-    if params: kwargs["params"] = params
+    if params:
+        kwargs["params"] = params
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
-    series = line_abs_arg_colored(expr, range=r, label=label,
-        rendering_kw=rkw, **kwargs)
+    series = line_abs_arg_colored(
+        expr, range=r, label=label, rendering_kw=rkw, **kwargs
+    )
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, AbsArgLineSeries)
@@ -96,13 +101,18 @@ def test_line_abs_arg(default_range, rang, label, rkw, abs, arg, params):
     x = symbols("x")
     expr = sqrt(x)
     kwargs = {"n": 10}
-    if params: kwargs["params"] = params
+    if params:
+        kwargs["params"] = params
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
-    series = line_abs_arg(expr, range=r, label=label,
-        rendering_kw=rkw, abs=abs, arg=arg, **kwargs)
-    ref = LineOver1DRangeSeries(expr, r if r else default_range(x),
-        label, rendering_kw=rkw, **kwargs)
+    series = line_abs_arg(
+        expr, range=r, label=label,
+        rendering_kw=rkw, abs=abs, arg=arg, **kwargs
+    )
+    ref = LineOver1DRangeSeries(
+        expr, r if r else default_range(x),
+        label, rendering_kw=rkw, **kwargs
+    )
     assert len(series) == sum([abs, arg])
     for s in series:
         assert isinstance(s, LineOver1DRangeSeries)
@@ -134,13 +144,18 @@ def test_line_real_imag(default_range, rang, label, rkw, real, imag, params):
     x = symbols("x")
     expr = sqrt(x)
     kwargs = {"n": 10}
-    if params: kwargs["params"] = params
+    if params:
+        kwargs["params"] = params
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
-    series = line_real_imag(expr, range=r, label=label,
-        rendering_kw=rkw, real=real, imag=imag, **kwargs)
-    ref = LineOver1DRangeSeries(expr, r if r else default_range(x),
-        label, rendering_kw=rkw, **kwargs)
+    series = line_real_imag(
+        expr, range=r, label=label,
+        rendering_kw=rkw, real=real, imag=imag, **kwargs
+    )
+    ref = LineOver1DRangeSeries(
+        expr, r if r else default_range(x),
+        label, rendering_kw=rkw, **kwargs
+    )
     assert len(series) == sum([real, imag])
     for s in series:
         assert isinstance(s, LineOver1DRangeSeries)
@@ -170,16 +185,21 @@ def test_line_real_imag(default_range, rang, label, rkw, real, imag, params):
     ((-2-2j, 3+3j), "test", {"opacity": "0.5"}, True, True, {p1: (1, 0, 2)}, False, None, None),
     ((-2-2j, 3+3j), "test", {"opacity": "0.5"}, True, True, {p1: (1, 0, 2)}, True, 10, 10),
 ])
-def test_surface_abs_arg(default_complex_range, rang, label, rkw,
-    abs, arg, params, wf, wf_n1, wf_n2):
+def test_surface_abs_arg(
+    default_complex_range, rang, label, rkw,
+    abs, arg, params, wf, wf_n1, wf_n2
+):
     x = symbols("x")
     expr = sqrt(x)
     kwargs = {"wireframe": wf, "wf_n1": wf_n1, "wf_n2": wf_n2}
-    if params: kwargs["params"] = params
+    if params:
+        kwargs["params"] = params
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
-    series = surface_abs_arg(expr, range=r, label=label,
-        rendering_kw=rkw, abs=abs, arg=arg, **kwargs)
+    series = surface_abs_arg(
+        expr, range=r, label=label,
+        rendering_kw=rkw, abs=abs, arg=arg, **kwargs
+    )
     assert len(series) == sum([abs, arg]) * (1 + ((wf_n1 + wf_n2) if wf else 0))
 
     surface_series = [s for s in series if isinstance(s, ComplexSurfaceSeries)]
@@ -194,12 +214,16 @@ def test_surface_abs_arg(default_complex_range, rang, label, rkw,
         assert s.params == {} if not params else params
 
     if abs and arg:
-        assert surface_series[0].get_label(False) == "Abs" if not label else label
-        assert surface_series[1].get_label(False) == "Arg" if not label else label
+        lbl = surface_series[0].get_label(False)
+        assert lbl == "Abs" if not label else label
+        lbl = surface_series[1].get_label(False)
+        assert lbl == "Arg" if not label else label
     elif abs:
-        assert surface_series[0].get_label(False) == "Abs" if not label else label
+        lbl = surface_series[0].get_label(False)
+        assert lbl == "Abs" if not label else label
     elif arg:
-        assert surface_series[0].get_label(False) == "Arg" if not label else label
+        lbl = surface_series[0].get_label(False)
+        assert lbl == "Arg" if not label else label
 
     wf_series = [s for s in series if isinstance(s, ComplexParametric3DLineSeries)]
     assert len(wf_series) == sum([abs, arg]) * ((wf_n1 + wf_n2) if wf else 0)
@@ -215,19 +239,26 @@ def test_surface_abs_arg(default_complex_range, rang, label, rkw,
     ((-2-2j, 3+3j), "test", {"opacity": "0.5"}, True, True, {p1: (1, 0, 2)}, False, None, None),
     ((-2-2j, 3+3j), "test", {"opacity": "0.5"}, True, True, {p1: (1, 0, 2)}, True, 10, 10),
 ])
-def test_surface_real_imag(default_complex_range, rang, label, rkw,
-    real, imag, params, wf, wf_n1, wf_n2):
+def test_surface_real_imag(
+    default_complex_range, rang, label, rkw,
+    real, imag, params, wf, wf_n1, wf_n2
+):
     x = symbols("x")
     expr = sqrt(x)
     kwargs = {"wireframe": wf, "wf_n1": wf_n1, "wf_n2": wf_n2}
-    if params: kwargs["params"] = params
+    if params:
+        kwargs["params"] = params
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
-    series = surface_real_imag(expr, range=r, label=label,
-        rendering_kw=rkw, real=real, imag=imag, **kwargs)
+    series = surface_real_imag(
+        expr, range=r, label=label,
+        rendering_kw=rkw, real=real, imag=imag, **kwargs
+    )
     assert len(series) == sum([real, imag]) * (1 + ((wf_n1 + wf_n2) if wf else 0))
 
-    surface_series = [s for s in series if isinstance(s, ComplexSurfaceSeries)]
+    surface_series = [
+        s for s in series if isinstance(s, ComplexSurfaceSeries)
+    ]
     for s in surface_series:
         assert s.expr == expr
         dcr = default_complex_range(x)
@@ -239,14 +270,21 @@ def test_surface_real_imag(default_complex_range, rang, label, rkw,
         assert s.params == {} if not params else params
 
     if real and imag:
-        assert surface_series[0].get_label(False) == "Re" if not label else label
-        assert surface_series[1].get_label(False) == "Im" if not label else label
+        lbl = surface_series[0].get_label(False)
+        assert lbl == "Re" if not label else label
+        lbl = surface_series[1].get_label(False)
+        assert lbl == "Im" if not label else label
     elif real:
-        assert surface_series[0].get_label(False) == "Re" if not label else label
+        lbl = surface_series[0].get_label(False)
+        assert lbl == "Re" if not label else label
     elif imag:
-        assert surface_series[0].get_label(False) == "Im" if not label else label
+        lbl = surface_series[0].get_label(False)
+        assert lbl == "Im" if not label else label
 
-    wf_series = [s for s in series if isinstance(s, ComplexParametric3DLineSeries)]
+    wf_series = [
+        s for s in series
+        if isinstance(s, ComplexParametric3DLineSeries)
+    ]
     assert len(wf_series) == sum([real, imag]) * ((wf_n1 + wf_n2) if wf else 0)
 
 
@@ -260,7 +298,8 @@ def test_domain_coloring(default_complex_range, rang, coloring, params):
     x = symbols("x")
     expr = sin(x)
     kwargs = {}
-    if params: kwargs["params"] = params
+    if params:
+        kwargs["params"] = params
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     series = domain_coloring(expr, range=r, coloring=coloring, **kwargs)
@@ -288,7 +327,8 @@ def test_analytic_landscape(default_complex_range, rang, coloring, params):
     x = symbols("x")
     expr = sin(x)
     kwargs = {}
-    if params: kwargs["params"] = params
+    if params:
+        kwargs["params"] = params
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     series = analytic_landscape(expr, range=r, coloring=coloring, **kwargs)
@@ -321,11 +361,14 @@ def test_riemann_sphere_2d(rang, coloring, at_infinity, riemann_mask, params):
     expr = (x - 1) / (x**2 + x + 2)
 
     kwargs = {}
-    if params: kwargs["params"] = params
+    if params:
+        kwargs["params"] = params
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
-    series = riemann_sphere_2d(expr, range=r, coloring=coloring,
-        riemann_mask=riemann_mask, at_infinity=at_infinity, **kwargs)
+    series = riemann_sphere_2d(
+        expr, range=r, coloring=coloring,
+        riemann_mask=riemann_mask, at_infinity=at_infinity, **kwargs
+    )
     assert len(series) == 1 + (1 if riemann_mask else 0)
     s = series[0]
     assert isinstance(s, ComplexDomainColoringSeries)

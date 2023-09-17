@@ -1,6 +1,4 @@
-import numpy as np
 import pytest
-from pytest import raises, warns
 from spb.graphics import (
     line, line_parametric_2d, contour, implicit_2d, line_polar, list_2d,
     geometry
@@ -10,9 +8,10 @@ from spb.series import (
     ContourSeries, ImplicitSeries, List2DSeries, GeometrySeries
 )
 from sympy import (
-    symbols, cos, sin, pi, sqrt, atan2, Rational, exp, Matrix, tan,
+    symbols, cos, sin, pi, Rational,
     Circle, Ellipse, Polygon, Curve, Segment, Point2D, Point
 )
+
 
 a, b, c, d, p1, p2 = symbols("a:d p1 p2")
 
@@ -28,8 +27,11 @@ def test_line(default_range, rang, label, rkw, n, params):
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     kwargs = {}
-    if params: kwargs["params"] = params
-    if n: kwargs["n"] = n
+    if params:
+        kwargs["params"] = params
+    if n:
+        kwargs["n"] = n
+
     series = line(cos(x), range=r, label=label, rendering_kw=rkw, **kwargs)
     assert len(series) == 1
     s = series[0]
@@ -54,10 +56,15 @@ def test_line_parametric_2d(default_range, rang, label, rkw, n, params):
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     kwargs = {}
-    if params: kwargs["params"] = params
-    if n: kwargs["n"] = n
-    series = line_parametric_2d(cos(x), sin(x), range=r, label=label,
-        rendering_kw=rkw, **kwargs)
+    if params:
+        kwargs["params"] = params
+    if n:
+        kwargs["n"] = n
+
+    series = line_parametric_2d(
+        cos(x), sin(x), range=r, label=label,
+        rendering_kw=rkw, **kwargs
+    )
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, Parametric2DLineSeries)
@@ -81,10 +88,15 @@ def test_line_polar(default_range, rang, label, rkw, n, params):
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     kwargs = {}
-    if params: kwargs["params"] = params
-    if n: kwargs["n"] = n
-    series = line_polar(3 * sin(2 * x), range=r, label=label,
-        rendering_kw=rkw, **kwargs)
+    if params:
+        kwargs["params"] = params
+    if n:
+        kwargs["n"] = n
+
+    series = line_polar(
+        3 * sin(2 * x), range=r, label=label,
+        rendering_kw=rkw, **kwargs
+    )
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, Parametric2DLineSeries)
@@ -100,17 +112,17 @@ def test_line_polar(default_range, rang, label, rkw, n, params):
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
 @pytest.mark.parametrize(
     "range1, range2, label, rkw, n, color, border_color, params", [
-    (None, None, None, None, None, None, None, None),
-    ((-2, 3), None, None, None, None, None, None, None),
-    (None, (-2, 3), None, None, None, None, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, "gold", None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, "k", None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, "gold", "k", None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, None, {p1: (1, 0, 2), p2: (2, -1, 3)}),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, "gold", None, {p1: (1, 0, 2), p2: (2, -1, 3)}),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, "k", {p1: (1, 0, 2), p2: (2, -1, 3)}),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, "gold", "k", {p1: (1, 0, 2), p2: (2, -1, 3)}),
+        (None, None, None, None, None, None, None, None),
+        ((-2, 3), None, None, None, None, None, None, None),
+        (None, (-2, 3), None, None, None, None, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, "gold", None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, "k", None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, "gold", "k", None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, None, {p1: (1, 0, 2), p2: (2, -1, 3)}),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, "gold", None, {p1: (1, 0, 2), p2: (2, -1, 3)}),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None, "k", {p1: (1, 0, 2), p2: (2, -1, 3)}),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, "gold", "k", {p1: (1, 0, 2), p2: (2, -1, 3)}),
 ])
 def test_implicit_2d(default_range, range1, range2, label, rkw, n,  color,
     border_color, params):
@@ -119,13 +131,18 @@ def test_implicit_2d(default_range, range1, range2, label, rkw, n,  color,
     r1 = (x, *range1) if isinstance(range1, (list, tuple)) else None
     r2 = (y, *range2) if isinstance(range2, (list, tuple)) else None
     kwargs = {}
-    if params: kwargs["params"] = params
-    if n: kwargs["n"] = n
+    if params:
+        kwargs["params"] = params
+    if n:
+        kwargs["n"] = n
+
     expr = (4 * (cos(x) - sin(y) / 5)**2 + 4 * (-cos(x) / 5 + sin(y))**2) <= pi
     expected_expr = -(4 * (cos(x) - sin(y) / 5)**2 + 4 * (-cos(x) / 5 + sin(y))**2) + pi
-    series = implicit_2d(expr, range1=r1, range2=r2,
+    series = implicit_2d(
+        expr, range1=r1, range2=r2,
         label=label, rendering_kw=rkw, color=color,
-        border_color=border_color, **kwargs)
+        border_color=border_color, **kwargs
+    )
     assert len(series) == 1 + (1 if border_color else 0)
     assert all(isinstance(t, ImplicitSeries) for t in series)
     assert all(t.expr == expected_expr for t in series)
@@ -156,11 +173,11 @@ def test_implicit_2d(default_range, range1, range2, label, rkw, n,  color,
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
 @pytest.mark.parametrize(
     "range1, range2, label, rkw, n, params", [
-    (None, None, None, None, None, None),
-    ((-2, 3), None, None, None, None, None),
-    (None, (-2, 3), None, None, None, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None),
-    ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}),
+        (None, None, None, None, None, None),
+        ((-2, 3), None, None, None, None, None),
+        (None, (-2, 3), None, None, None, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, None),
+        ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}),
 ])
 def test_contour(default_range, range1, range2, label, rkw, n, params):
     x, y = symbols("x, y")
@@ -168,10 +185,15 @@ def test_contour(default_range, range1, range2, label, rkw, n, params):
     r1 = (x, *range1) if isinstance(range1, (list, tuple)) else None
     r2 = (y, *range2) if isinstance(range2, (list, tuple)) else None
     kwargs = {}
-    if params: kwargs["params"] = params
-    if n: kwargs["n"] = n
-    series = contour(cos(x*y), range1=r1, range2=r2, label=label,
-        rendering_kw=rkw, **kwargs)
+    if params:
+        kwargs["params"] = params
+    if n:
+        kwargs["n"] = n
+
+    series = contour(
+        cos(x*y), range1=r1, range2=r2, label=label,
+        rendering_kw=rkw, **kwargs
+    )
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, ContourSeries)

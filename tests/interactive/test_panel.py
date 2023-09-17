@@ -1,19 +1,13 @@
 import pytest
 from pytest import raises
-from spb import BB, PB, MB, plot, plot3d, plot_vector
+from spb import BB, PB, MB, plot
 from spb.interactive.panel import (
-    DynamicParam, MyList,
-    InteractivePlot, create_widgets
+    DynamicParam, MyList, InteractivePlot, create_widgets
 )
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from sympy import (
-    sqrt, Integer, Float, Rational, pi, symbols, Tuple,
-    sin, cos, Plane
+    Integer, Float, Rational, pi, symbols, sin, cos
 )
-from spb.series import (VectorBase, ContourSeries, SurfaceOver2DRangeSeries,
-    Parametric3DLineSeries
-)
-from sympy.external import import_module
 import numpy as np
 import param
 import panel as pn
@@ -88,7 +82,9 @@ def test_DynamicParam():
     assert isinstance(t.formatters, dict)
     assert len(t.formatters) == 4
     assert all(t.formatters[k] is None for k in [a, b, d])
-    assert isinstance(t.formatters[c], bokeh.models.formatters.PrintfTickFormatter)
+    assert isinstance(
+        t.formatters[c], bokeh.models.formatters.PrintfTickFormatter
+    )
 
     # test mix tuple and parameters
     t = DynamicParam(
@@ -96,8 +92,12 @@ def test_DynamicParam():
             a: (1, 0, 5),
             b: (1, 1, 10, 10, None, "test3", "log"),
             c: param.Boolean(default=True, label="test4"),
-            d: param.ObjectSelector(default=5, objects=[1, 2, 3, 4, 5], label="test5"),
-            e: param.Number(default=6.1, softbounds=(1.1, 10.1), label="test6"),
+            d: param.ObjectSelector(
+                default=5, objects=[1, 2, 3, 4, 5], label="test5"
+            ),
+            e: param.Number(
+                default=6.1, softbounds=(1.1, 10.1), label="test6"
+            ),
             f: param.Integer(default=6, softbounds=(1, None), label="test7"),
         },
         use_latex=False,
@@ -129,15 +129,18 @@ def test_DynamicParam():
 
     # raise error because of an invalid formatter. The formatter must be None
     # or an instance of bokeh.models.formatters.TickFormatter
-    raises(TypeError, lambda: DynamicParam(
-        params={
-            a: (1, 0, 5),
-            b: (2, 1.5, 4.5, 20),
-            c: (3, 2, 5, 30, True, "test1"),
-            d: (1, 1, 10, 10, None, "test2", "log"),
-        },
-        use_latex=True,
-    ))
+    raises(
+        TypeError,
+        lambda: DynamicParam(
+            params={
+                a: (1, 0, 5),
+                b: (2, 1.5, 4.5, 20),
+                c: (3, 2, 5, 30, True, "test1"),
+                d: (1, 1, 10, 10, None, "test2", "log"),
+            },
+            use_latex=True,
+        ),
+    )
 
 
 def test_DynamicParam_symbolic_parameters():
@@ -151,7 +154,7 @@ def test_DynamicParam_symbolic_parameters():
         params={
             a: (Integer(1), 0, 5),
             b: (2, Float(1.5), 4.5, Integer(20)),
-            c: (3 * pi / 2, Rational(2, 3), Float(5), 30, None, "test1")
+            c: (3 * pi / 2, Rational(2, 3), Float(5), 30, None, "test1"),
         },
         use_latex=False,
     )
@@ -162,7 +165,7 @@ def test_DynamicParam_symbolic_parameters():
     def test_number(p, d, sb):
         assert isinstance(p, param.Number)
         assert np.isclose(p.default, d) and isinstance(p.default, float)
-        assert (p.softbounds == sb)
+        assert p.softbounds == sb
         assert all(isinstance(t, float) for t in p.softbounds)
         assert isinstance(p.step, float)
 
@@ -179,7 +182,8 @@ def test_iplot(panel_options):
     x, y, u, v = symbols("x, y, u, v")
 
     t = plot(
-        (a + b + c + d) * cos(x), (x, -5, 5),
+        (a + b + c + d) * cos(x),
+        (x, -5, 5),
         params={
             a: (2, 1, 3, 5),
             b: (3, 2, 4000, 10, None, "label", "log"),
@@ -224,11 +228,14 @@ def test_iplot(panel_options):
 
     # test that the previous class-attribute associated to the previous
     # parameters are cleared in a new instance
-    current_params = [k for k in InteractivePlot.__dict__.keys() if "dyn_param_" in k]
+    current_params = [
+        k for k in InteractivePlot.__dict__.keys() if "dyn_param_" in k
+    ]
     assert len(current_params) == 7
 
     t = plot(
-        (a + b + c) * cos(x), (x, -5, 5),
+        (a + b + c) * cos(x),
+        (x, -5, 5),
         params={
             a: (2, 1, 3, 5),
             b: (3, 2, 4000, 10),
@@ -253,25 +260,33 @@ def test_iplot(panel_options):
     assert p3.label == "test"
 
     t = plot(
-        (a + b) * cos(x), (x, -5, 5),
+        (a + b) * cos(x),
+        (x, -5, 5),
         params={
             a: (1, 0, 5),
             b: (1, 1, 10, 10, None, "test3", "log"),
         },
-        use_latex=False, **panel_options)
+        use_latex=False,
+        **panel_options
+    )
 
-    new_params = [k for k in InteractivePlot.__dict__.keys() if "dyn_param_" in k]
+    new_params = [
+        k for k in InteractivePlot.__dict__.keys() if "dyn_param_" in k
+    ]
     assert len(new_params) == 2
 
 
 def test_create_widgets():
     x, y, z = symbols("x:z")
 
-    w = create_widgets({
-        x: (2, 0, 4),
-        y: (200, 1, 1000, 10, None, "y", "log"),
-        z: param.Integer(3, softbounds=(3, 10), label="n")
-    }, use_latex = True)
+    w = create_widgets(
+        {
+            x: (2, 0, 4),
+            y: (200, 1, 1000, 10, None, "y", "log"),
+            z: param.Integer(3, softbounds=(3, 10), label="n"),
+        },
+        use_latex=True,
+    )
 
     assert isinstance(w, dict)
     assert len(w) == 3
@@ -283,11 +298,14 @@ def test_create_widgets():
     assert w[z].name == "n"
 
     formatter = bokeh.models.formatters.PrintfTickFormatter(format="%.4f")
-    w = create_widgets({
-        x: (2, 0, 4),
-        y: (200, 1, 1000, 10, formatter, "y", "log"),
-        z: param.Integer(3, softbounds=(3, 10), label="n")
-    }, use_latex = False)
+    w = create_widgets(
+        {
+            x: (2, 0, 4),
+            y: (200, 1, 1000, 10, formatter, "y", "log"),
+            z: param.Integer(3, softbounds=(3, 10), label="n"),
+        },
+        use_latex=False,
+    )
 
     assert isinstance(w, dict)
     assert len(w) == 3
@@ -310,22 +328,37 @@ def test_iplot_sum_1(panel_options):
 
     x, u = symbols("x, u")
 
-    params = {
-        u: (1, 0, 2)
-    }
+    params = {u: (1, 0, 2)}
     p1 = plot(
-        cos(u * x), (x, -5, 5), params = params,
-        backend = MB,
-        xlabel = "x1", ylabel = "y1", title = "title 1",
-        legend=True, pane_kw = {"width": 500}, **panel_options)
+        cos(u * x), (x, -5, 5),
+        params=params,
+        backend=MB,
+        xlabel="x1",
+        ylabel="y1",
+        title="title 1",
+        legend=True,
+        pane_kw={"width": 500},
+        **panel_options
+    )
     p2 = plot(
-        sin(u * x), (x, -5, 5), params = params,
-        backend = MB,
-        xlabel = "x2", ylabel = "y2", title = "title 2", **panel_options)
-    p3 = plot(sin(x)*cos(x), (x, -5, 5), backend=MB,
-        adaptive=False, n=50,
-        is_point=True, is_filled=True,
-        line_kw=dict(marker="^"), **panel_options)
+        sin(u * x), (x, -5, 5),
+        params=params,
+        backend=MB,
+        xlabel="x2",
+        ylabel="y2",
+        title="title 2",
+        **panel_options
+    )
+    p3 = plot(
+        sin(x) * cos(x), (x, -5, 5),
+        backend=MB,
+        adaptive=False,
+        n=50,
+        is_point=True,
+        is_filled=True,
+        line_kw=dict(marker="^"),
+        **panel_options
+    )
     p = p1 + p2 + p3
 
     assert isinstance(p, InteractivePlot)
@@ -348,20 +381,23 @@ def test_iplot_sum_2(panel_options):
 
     p1 = plot(
         cos(u * x), (x, -5, 5),
-        params = {
-            u: (1, 0, 1)
-        },
-        backend = MB,
-        xlabel = "x1", ylabel = "y1", title = "title 1",
-        legend=True, **panel_options)
+        params={u: (1, 0, 1)},
+        backend=MB,
+        xlabel="x1",
+        ylabel="y1",
+        title="title 1",
+        legend=True,
+        **panel_options
+    )
     p2 = plot(
         sin(u * x) + v, (x, -5, 5),
-        params = {
-            u: (1, 0, 1),
-            v: (0, -2, 2)
-        },
-        backend = MB,
-        xlabel = "x2", ylabel = "y2", title = "title 2", **panel_options)
+        params={u: (1, 0, 1), v: (0, -2, 2)},
+        backend=MB,
+        xlabel="x2",
+        ylabel="y2",
+        title="title 2",
+        **panel_options
+    )
     raises(ValueError, lambda: p1 + p2)
 
 
@@ -373,18 +409,26 @@ def test_iplot_sum_3(panel_options):
     x, u = symbols("x, u")
 
     def func(B):
-        params = {
-            u: (1, 0, 2)
-        }
+        params = {u: (1, 0, 2)}
         p1 = plot(
-            cos(u * x), (x, -5, 5), params = params,
-            backend = B,
-            xlabel = "x1", ylabel = "y1", title = "title 1",
-            legend=True, **panel_options)
+            cos(u * x), (x, -5, 5),
+            params=params,
+            backend=B,
+            xlabel="x1",
+            ylabel="y1",
+            title="title 1",
+            legend=True,
+            **panel_options
+        )
         p2 = plot(
-            sin(u * x), (x, -5, 5), params = params,
-            backend = B,
-            xlabel = "x2", ylabel = "y2", title = "title 2", **panel_options)
+            sin(u * x), (x, -5, 5),
+            params=params,
+            backend=B,
+            xlabel="x2",
+            ylabel="y2",
+            title="title 2",
+            **panel_options
+        )
         p = p1 + p2
         assert isinstance(p.backend, B)
 
@@ -404,36 +448,61 @@ def test_template(panel_options):
     x, y = symbols("x, y")
 
     # default template
-    p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
-        servable=True, **panel_options)
+    p = plot(
+        cos(x * y), (x, -5, 5),
+        params={y: (1, 0, 2)},
+        servable=True,
+        **panel_options
+    )
     t = p._create_template()
     assert isinstance(t, SymPyBootstrapTemplate)
 
     # default template with customized settings
-    p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
-        servable=True, template={
+    p = plot(
+        cos(x * y), (x, -5, 5),
+        params={y: (1, 0, 2)},
+        servable=True,
+        template={
             "title": "Test",
             "full_width": False,
             "sidebar_width": "50%",
             "header_no_panning": False,
-            "sidebar_location": "tb"}, **panel_options)
+            "sidebar_location": "tb",
+        },
+        **panel_options
+    )
     t = p._create_template()
     assert isinstance(t, SymPyBootstrapTemplate)
 
     # a different template
-    p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
-        servable=True, template=pn.template.VanillaTemplate, **panel_options)
+    p = plot(
+        cos(x * y), (x, -5, 5),
+        params={y: (1, 0, 2)},
+        servable=True,
+        template=pn.template.VanillaTemplate,
+        **panel_options
+    )
     t = p._create_template()
     assert isinstance(t, pn.template.VanillaTemplate)
 
     # an instance of a different template
     temp = pn.template.MaterialTemplate
-    p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
-        servable=True, template=temp(), **panel_options)
+    p = plot(
+        cos(x * y), (x, -5, 5),
+        params={y: (1, 0, 2)},
+        servable=True,
+        template=temp(),
+        **panel_options
+    )
     t = p._create_template()
     assert isinstance(t, pn.template.MaterialTemplate)
 
     # something not supported
-    p = plot(cos(x * y), (x, -5, 5), params={y: (1, 0, 2)},
-        servable=True, template="str", **panel_options)
-    raises(TypeError, lambda : p._create_template())
+    p = plot(
+        cos(x * y), (x, -5, 5),
+        params={y: (1, 0, 2)},
+        servable=True,
+        template="str",
+        **panel_options
+    )
+    raises(TypeError, lambda: p._create_template())

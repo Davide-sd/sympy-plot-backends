@@ -7,16 +7,16 @@ from sympy.external import import_module
 # plotting library with any other plotting libraries.
 #
 
-import matplotlib
 import matplotlib.cm as cm
 import colorcet as cc
 import k3d
 import numpy as np
 
 _plotly_utils = import_module(
-        '_plotly_utils',
-        import_kwargs={'fromlist': ['basevalidators']},
-        catch=(RuntimeError,))
+    "_plotly_utils",
+    import_kwargs={"fromlist": ["basevalidators"]},
+    catch=(RuntimeError,),
+)
 
 # load color maps
 colorcet_cms = [
@@ -80,7 +80,9 @@ def test_convert_to_plotly():
                 assert isinstance(r, list)
                 assert all([isinstance(t, list) for t in r])
                 assert all([len(t) == 2 for t in r])
-                assert all([isinstance(t[0], (int, float, np.int64)) for t in r])
+                assert all(
+                    [isinstance(t[0], (int, float, np.int64)) for t in r]
+                )
                 assert all(
                     [
                         isinstance(t[1], str)
