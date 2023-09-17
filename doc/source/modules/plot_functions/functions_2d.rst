@@ -10,7 +10,7 @@ too. However, if a specific example uses the ``param`` library, then users
 will have to modify the params dictionary in order to make it work with
 ipywidgets. Refer to :ref:`interactive` module for more information.
 
-.. module:: spb.functions
+.. module:: spb.plot_functions.functions_2d
 
 .. autofunction:: plot
 
