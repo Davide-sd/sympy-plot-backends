@@ -32,3 +32,11 @@ def test_deprecation_ccomplex_complex():
     ):
         from spb.ccomplex.complex import plot_complex
 
+
+def test_deprecation_control():
+    with warns(
+        DeprecationWarning,
+        match="`spb.control` is deprecated"
+    ):
+        from spb.control import plot_bode
+

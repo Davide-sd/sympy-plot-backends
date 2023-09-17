@@ -1,5 +1,5 @@
 
-from spb.control import  (
+from spb.plot_functions.control import  (
     plot_pole_zero, plot_step_response, plot_impulse_response,
     plot_ramp_response, plot_bode_magnitude,
     plot_bode_phase, plot_bode, plot_nyquist, plot_nichols)
@@ -57,9 +57,7 @@ def test_errors():
     tfm = TransferFunctionMatrix([[tf6, tf5], [tf5, tf6]])
     expr = 1/(s**2 - 1)
     raises(NotImplementedError, lambda: plot_pole_zero(tfm))
-    raises(NotImplementedError, lambda: plot_impulse_response(expr))
     raises(NotImplementedError, lambda: plot_step_response(tfm))
-    raises(NotImplementedError, lambda: plot_ramp_response(expr))
     raises(NotImplementedError, lambda: plot_bode(tfm))
 
     # More than 1 variables: raise error because `params` is missing

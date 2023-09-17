@@ -24,7 +24,7 @@ from spb.plot_functions.complex_analysis import (
     plot_complex, plot_complex_list,
     plot_real_imag, plot_complex_vector, plot_riemann_sphere
 )
-from spb.graphics.control import (
+from spb.plot_functions.control import (
     plot_pole_zero, plot_step_response, plot_impulse_response,
     plot_ramp_response, plot_bode_magnitude, plot_bode_phase, plot_bode,
     plot_nyquist, plot_nichols
