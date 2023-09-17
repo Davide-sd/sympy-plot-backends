@@ -11,6 +11,7 @@ will have to modify the params dictionary in order to make it work with
 ipywidgets. Refer to :ref:`interactive` module for more information.
 
 .. module:: spb.functions
+   :noindex:
 
 .. autofunction:: plot3d
 
