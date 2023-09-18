@@ -1,4 +1,3 @@
-.. _functions:
 
 3D general plotting
 -------------------
@@ -10,7 +9,7 @@ too. However, if a specific example uses the ``param`` library, then users
 will have to modify the params dictionary in order to make it work with
 ipywidgets. Refer to :ref:`interactive` module for more information.
 
-.. module:: plot_functions.functions_3d
+.. module:: spb.plot_functions.functions_3d
 
 .. autofunction:: plot3d
 

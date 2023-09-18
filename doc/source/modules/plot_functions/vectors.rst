@@ -8,6 +8,6 @@ too. However, if a specific example uses the ``param`` library, then users
 will have to modify the params dictionary in order to make it work with
 ipywidgets. Refer to :ref:`interactive` module for more information.
 
-.. module:: spb.vectors
+.. module:: spb.plot_functions.vectors
 
 .. autofunction:: plot_vector

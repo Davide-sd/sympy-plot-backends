@@ -7,7 +7,7 @@ from spb.interactive import IPlot
 from spb.series import HVLineSeries
 from spb.backends.matplotlib import unset_show
 from sympy import Dummy, I, Abs, arg, log
-from sympy.abc import s, p, a
+from sympy.abc import s, p, a, b
 from sympy.external import import_module
 from sympy.physics.control.lti import (TransferFunction,
     Series, Parallel, TransferFunctionMatrix)
@@ -31,6 +31,14 @@ ser2 = Series(tf3, TransferFunction(p, p + 2, p))
 
 par1 = Parallel(tf1, tf2)
 
+num1, den1 = p**2 + 1, p**4 + 4*p**3 + 6*p**2 + 5*p + 2
+tf_test1 = TransferFunction(num1, den1, p)
+num2, den2 = p, (p + a) * (p + b)
+tf_test2 = TransferFunction(num2, den2, p)
+test_params = {
+    a: (3, 0, 5),
+    b: (5, 0, 10),
+}
 
 def _to_tuple(a, b):
     return tuple(a), tuple(b)
@@ -318,7 +326,7 @@ def test_interactive_plots():
     do_test(plot_bode_phase)
 
 
-# xfail because tf7... who knows?!?!? locally works fine, on github it's 
+# xfail because tf7... who knows?!?!? locally works fine, on github it's
 # random success
 @pytest.mark.xfail
 def test_plot_nyquist():
@@ -667,7 +675,7 @@ def test_plot_nichols():
 
 def test_plot_nichols_matplotlib():
     tf = TransferFunction(5 * (s - 1), s**2 * (s**2 + s + 4), s)
-    
+
     # with nichols grid lines
     p = plot_nichols(tf, ngrid=True, show=False, n=10)
     ax = p.ax
@@ -679,3 +687,32 @@ def test_plot_nichols_matplotlib():
     ax = p.ax
     assert len(ax.lines) == 1
     assert len(ax.texts) == 0
+
+
+@pytest.mark.parametrize(
+    "func, params",
+    [
+        (plot_pole_zero, test_params),
+        (plot_impulse_response, test_params),
+        (plot_step_response, test_params),
+        (plot_ramp_response, test_params),
+        (plot_bode_magnitude, test_params),
+        (plot_bode_phase, test_params),
+        (plot_nyquist, test_params),
+        (plot_nichols, test_params),
+    ]
+)
+def test_new_ways_of_providing_transfer_function(func, params):
+    kwargs = {"show": False, "n": 10}
+
+    p1 = func(tf_test1, **kwargs)
+    p2 = func((num1, den1), **kwargs)
+    p3 = func((num1, den1, p), **kwargs)
+    d1, d2, d3 = [t[0].get_data() for t in [p1, p2, p3]]
+    assert np.allclose(d1, d2) and np.allclose(d2, d3)
+
+    kwargs["params"] = params
+    p4 = func(tf_test2, **kwargs)
+    p5 = func((num2, den2, p), **kwargs)
+    d4, d5 = [t.backend[0].get_data() for t in [p4, p5]]
+    assert np.allclose(d4, d5)

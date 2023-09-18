@@ -147,7 +147,7 @@ def iplot(*series, show=True, **kwargs):
     """Create an interactive application containing widgets and charts in order
     to study symbolic expressions, using ipywidgets.
 
-    Note: this function is already integrated with many of the usual
+    This function is already integrated with many of the usual
     plotting functions: since their documentation is more specific, it is
     highly recommended to use those instead.
 
@@ -233,26 +233,25 @@ def iplot(*series, show=True, **kwargs):
 
     .. code-block::
 
-       from sympy import (symbols, sqrt, cos, exp, sin, pi, re, im,
-           Matrix, Plane, Polygon, I, log)
+       from sympy import *
        from spb import *
        x, y, z = symbols("x, y, z")
        r = sqrt(x**2 + y**2)
        d = symbols('d')
        expr = 10 * cos(r) * exp(-r * d)
-       plot3d(
-           (expr, (x, -10, 10), (y, -10, 10)),
-           params = { d: (0.15, 0, 1) },
+       graphics(
+           surface(
+               expr, (x, -10, 10), (y, -10, 10), label="z-range",
+               params={d: (0.15, 0, 1)}, n=51, use_cm=True,
+               wireframe = True, wf_n1=15, wf_n2=15,
+               wf_rendering_kw={"line_color": "#003428", "line_width": 0.75}
+           ),
            title = "My Title",
            xlabel = "x axis",
            ylabel = "y axis",
            zlabel = "z axis",
            backend = PB,
-           n = 51,
-           use_cm = True,
-           use_latex=False,
-           wireframe = True, wf_n1=15, wf_n2=15,
-           wf_rendering_kw={"line_color": "#003428", "line_width": 0.75}
+           use_latex=False
        )
 
     A line plot illustrating how to specify widgets. In particular:
@@ -379,19 +378,7 @@ def iplot(*series, show=True, **kwargs):
            name = "Non Circular Planetary Drive - Ring Profile"
        )
 
-    Combine together ``InteractivePlot`` and ``Plot`` instances. The same
-    parameters dictionary must be used for every interactive plot command.
-    Note:
-
-    1. the first plot dictates the labels, title and wheter to show the legend
-       or not.
-    2. Instances of ``Plot`` class must be place on the right side of the ``+``
-       sign.
-    3. ``show=False`` has been set in order for ``iplot`` to return an
-       instance of ``InteractivePlot``, which supports addition.
-    4. Once we are done playing with parameters, we can access the backend
-       with ``p.backend``. Then, we can use the ``p.backend.fig`` attribute
-       to retrieve the figure, or ``p.backend.save()`` to save the figure.
+    Combine together interactive and non interactive plots:
 
     .. code-block:: python
 
@@ -401,30 +388,13 @@ def iplot(*series, show=True, **kwargs):
        params = {
            u: (1, 0, 2)
        }
-       p1 = plot(
-           (cos(u * x), (x, -5, 5)),
-           params = params,
-           backend = MB,
-           xlabel = "x1",
-           ylabel = "y1",
-           title = "title 1",
-           legend = True,
-           show = False
+       graphics(
+           line(cos(u * x), (x, -5, 5), params=params),
+           line(sin(u * x), (x, -5, 5), params=params),
+           line(
+               sin(x)*cos(x), (x, -5, 5),
+               rendering_kw={"marker": "^", "linestyle": ":"}, n=50),
        )
-       p2 = plot(
-           (sin(u * x), (x, -5, 5)),
-           params = params,
-           backend = MB,
-           xlabel = "x2",
-           ylabel = "y2",
-           title = "title 2",
-           show = False
-       )
-       p3 = plot(sin(x)*cos(x), (x, -5, 5), dict(marker="^"), backend=MB,
-           adaptive=False, n=50,
-           is_point=True, is_filled=True, show=False)
-       p = p1 + p2 + p3
-       p.show()
 
     Notes
     =====

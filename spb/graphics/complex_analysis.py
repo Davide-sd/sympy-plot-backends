@@ -1326,8 +1326,8 @@ def riemann_sphere_2d(expr, range=None, label=None, rendering_kw=None,
     Notes
     =====
 
-    :func:`~spb.ccomplex.complex.plot_riemann_sphere` returns a
-    :func:`~spb.plotgrid.plotgrid` of two visualizations, one with
+    :func:`~spb.plot_functions.complex_analysis.plot_riemann_sphere` returns
+    a :func:`~spb.plotgrid.plotgrid` of two visualizations, one with
     ``at_infinity=True``, the other with ``at_infinity=False``. Read its
     documentation to learn more about the [Riemann-sphere]_.
 

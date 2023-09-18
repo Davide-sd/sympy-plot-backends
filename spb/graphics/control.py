@@ -194,7 +194,8 @@ def pole_zero(
     label=None, **kwargs
 ):
     """
-    Computes the Pole-Zero plot (also known as PZ Plot or PZ Map) of a system.
+    Computes the [Pole-Zero]_ plot (also known as PZ Plot or PZ Map) of
+    a system.
 
     A Pole-Zero plot is a graphical representation of a system's poles and
     zeros. It is plotted on a complex plane, with circular markers representing
@@ -209,10 +210,10 @@ def pole_zero(
 
         * a single LTI SISO system.
         * a symbolic expression, which will be converted to an object of
-          type :func:`~sympy.physics.control.TransferFunction`.
+          type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :func:`~sympy.physics.control.TransferFunction`.
+          :class:`~sympy.physics.control.TransferFunction`.
     pole_color : str, tuple, optional
         The color of the pole points on the plot.
     pole_markersize : Number, optional
@@ -253,7 +254,10 @@ def pole_zero(
         >>> from spb import *
         >>> tf1 = TransferFunction(
         ...     s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
-        >>> graphics(pole_zero(tf1))
+        >>> graphics(
+        ...     pole_zero(tf1),
+        ...     xlabel="Real", ylabel="Imaginary"
+        ... )
         Plot object containing:
         [0]: 2D list plot
         [1]: 2D list plot
@@ -278,7 +282,8 @@ def pole_zero(
            control_axis(),
            pole_zero(tf1, label="A"),
            pole_zero(tf2, label="B", params=params),
-           grid=False, xlim=(-4, 1), ylim=(-4, 4), use_latex=False)
+           grid=False, xlim=(-4, 1), ylim=(-4, 4), use_latex=False,
+           xlabel="Real", ylabel="Imaginary")
 
     References
     ==========
@@ -330,10 +335,10 @@ def step_response(
 
         * a single LTI SISO system.
         * a symbolic expression, which will be converted to an object of
-          type :func:`~sympy.physics.control.TransferFunction`.
+          type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :func:`~sympy.physics.control.TransferFunction`.
+          :class:`~sympy.physics.control.TransferFunction`.
     lower_limit : Number, optional
         The lower limit of the plot range. Defaults to 0.
     upper_limit : Number, optional
@@ -370,7 +375,10 @@ def step_response(
         >>> from spb import *
         >>> tf1 = TransferFunction(
         ...     8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
-        >>> graphics(step_response(tf1))   # doctest: +SKIP
+        >>> graphics(
+        ...     step_response(tf1),
+        ...     xlabel="Time [s]", ylabel="Amplitude"
+        ... )   # doctest: +SKIP
 
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
@@ -395,9 +403,11 @@ def step_response(
            g: (10, 0, 25, 50, None, "upper limit"),
        }
        graphics(
-           step_response(tf1, label="A", lower_limit=f, upper_limit=g, params=params),
-           step_response(tf2, label="B", lower_limit=f, upper_limit=g, params=params),
-           use_latex=False
+           step_response(
+               tf1, label="A", lower_limit=f, upper_limit=g, params=params),
+           step_response(
+               tf2, label="B", lower_limit=f, upper_limit=g, params=params),
+           use_latex=False, xlabel="Time [s]", ylabel="Amplitude"
        )
 
     See Also
@@ -462,10 +472,10 @@ def impulse_response(
 
         * a single LTI SISO system.
         * a symbolic expression, which will be converted to an object of
-          type :func:`~sympy.physics.control.TransferFunction`.
+          type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :func:`~sympy.physics.control.TransferFunction`.
+          :class:`~sympy.physics.control.TransferFunction`.
     lower_limit : Number, optional
         The lower limit of the plot range. Defaults to 0.
     upper_limit : Number, optional
@@ -502,7 +512,10 @@ def impulse_response(
         >>> from spb import *
         >>> tf1 = TransferFunction(
         ...     8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
-        >>> graphics(impulse_response(tf1))   # doctest: +SKIP
+        >>> graphics(
+        ...     impulse_response(tf1),
+        ...     xlabel="Time [s]", ylabel="Amplitude"
+        ... )   # doctest: +SKIP
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     Note the use of parametric ``lower_limit`` and ``upper_limit``.
@@ -523,13 +536,15 @@ def impulse_response(
            e: (12.5, 0, 25),
            f: (17.5, 0, 50),
            # NOTE: remove `None` if using ipywidgets
-           g: (0, 0, 10, 50, "lower limit"),
-           h: (8, 0, 25, 50, "upper limit"),
+           g: (0, 0, 10, 50, None, "lower limit"),
+           h: (8, 0, 25, 50, None, "upper limit"),
        }
        graphics(
-           impulse_response(tf1, label="A", lower_limit=g, upper_limit=h, params=params),
-           impulse_response(tf2, label="B", lower_limit=g, upper_limit=h, params=params),
-           use_latex=False
+           impulse_response(
+               tf1, label="A", lower_limit=g, upper_limit=h, params=params),
+           impulse_response(
+               tf2, label="B", lower_limit=g, upper_limit=h, params=params),
+           use_latex=False, xlabel="Time [s]", ylabel="Amplitude"
        )
 
 
@@ -597,10 +612,10 @@ def ramp_response(
 
         * a single LTI SISO system.
         * a symbolic expression, which will be converted to an object of
-          type :func:`~sympy.physics.control.TransferFunction`.
+          type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :func:`~sympy.physics.control.TransferFunction`.
+          :class:`~sympy.physics.control.TransferFunction`.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
@@ -636,9 +651,12 @@ def ramp_response(
 
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import plot_ramp_response
+        >>> from spb import *
         >>> tf1 = TransferFunction(s, (s+4)*(s+8), s)
-        >>> plot_ramp_response(tf1, upper_limit=2)   # doctest: +SKIP
+        >>> graphics(
+        ...     ramp_response(tf1, upper_limit=2),
+        ...     xlabel="Time [s]", ylabel="Amplitude"
+        ... )    # doctest: +SKIP
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     Note the use of parametric ``lower_limit``, ``upper_limit`` and ``slope``.
@@ -648,20 +666,25 @@ def ramp_response(
 
        from sympy.abc import a, b, c, d, e, s
        from sympy.physics.control.lti import TransferFunction
-       from spb import plot_ramp_response
+       from spb import *
        tf1 = TransferFunction(s, (s+4)*(s+8), s)
        tf2 = TransferFunction(s, (s+a)*(s+b), s)
-       plot_ramp_response(
-           (tf1, "A"), (tf2, "B"),
-           slope=c, lower_limit=d, upper_limit=e,
-           params={
-               a: (6, 0, 10),
-               b: (7, 0, 10),
-               # NOTE: remove `None` if using ipywidgets
-               c: (1, 0, 10, 50, None, "slope"),
-               d: (0, 0, 5, 50, None, "lower limit"),
-               e: (5, 2, 10, 50, None, "upper limit"),
-           }, use_latex=False)
+       params = {
+           a: (6, 0, 10),
+           b: (7, 0, 10),
+           # NOTE: remove `None` if using ipywidgets
+           c: (1, 0, 10, 50, None, "slope"),
+           d: (0, 0, 5, 50, None, "lower limit"),
+           e: (5, 2, 10, 50, None, "upper limit"),
+       }
+       graphics(
+           ramp_response(
+               tf1, label="A", slope=c, lower_limit=d, upper_limit=e,
+               params=params),
+           ramp_response(
+               tf2, label="B", slope=c, lower_limit=d, upper_limit=e,
+               params=params),
+           xlabel="Time [s]", ylabel="Amplitude", use_latex=False)
 
     See Also
     ========
@@ -726,10 +749,10 @@ def bode_magnitude(
 
         * a single LTI SISO system.
         * a symbolic expression, which will be converted to an object of
-          type :func:`~sympy.physics.control.TransferFunction`.
+          type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :func:`~sympy.physics.control.TransferFunction`.
+          :class:`~sympy.physics.control.TransferFunction`.
     initial_exp : Number, optional
         The initial exponent of 10 of the semilog plot. Defaults to -5.
     final_exp : Number, optional
@@ -763,6 +786,13 @@ def bode_magnitude(
 
     A list containing one instance of ``LineOver1DRangeSeries``.
 
+    Notes
+    =====
+
+    :func:`~spb.plot_functions.control.plot_bode` returns a
+    :func:`~spb.plotgrid.plotgrid` of two visualizations, one with
+    the Bode magnitude, the other with the Bode phase.
+
     Examples
     ========
 
@@ -778,7 +808,8 @@ def bode_magnitude(
         ...     1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
         >>> graphics(
         ...     bode_magnitude(tf1, initial_exp=0.2, final_exp=0.7),
-        ...     xscale="log", xlabel="Frequency [rad/s]", ylabel="Magnitude [dB]"
+        ...     xscale="log", xlabel="Frequency [rad/s]",
+        ...     ylabel="Magnitude [dB]"
         ... )   # doctest: +SKIP
 
     Interactive-widget plot:
@@ -807,12 +838,14 @@ def bode_magnitude(
     See Also
     ========
 
-    bode_phase, nyquist, nichols
+    bode_phase, nyquist, nichols, spb.plot_functions.control.plot_bode
 
     """
     freq_units = ('rad/sec', 'Hz')
     if freq_unit not in freq_units:
-        raise ValueError('Only "rad/sec" and "Hz" are accepted frequency units.')
+        raise ValueError(
+            'Only "rad/sec" and "Hz" are accepted frequency units.'
+        )
 
     return [
         _bode_magnitude_helper(
@@ -863,10 +896,10 @@ def bode_phase(
 
         * a single LTI SISO system.
         * a symbolic expression, which will be converted to an object of
-          type :func:`~sympy.physics.control.TransferFunction`.
+          type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :func:`~sympy.physics.control.TransferFunction`.
+          :class:`~sympy.physics.control.TransferFunction`.
     initial_exp : Number, optional
         The initial exponent of 10 of the semilog plot. Defaults to -5.
     final_exp : Number, optional
@@ -900,6 +933,13 @@ def bode_phase(
 
     A list containing one instance of ``LineOver1DRangeSeries``.
 
+    Notes
+    =====
+
+    :func:`~spb.plot_functions.control.plot_bode` returns a
+    :func:`~spb.plotgrid.plotgrid` of two visualizations, one with
+    the Bode magnitude, the other with the Bode phase.
+
     Examples
     ========
 
@@ -915,7 +955,8 @@ def bode_phase(
         ...     1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
         >>> graphics(
         ...     bode_phase(tf1, initial_exp=0.2, final_exp=0.7),
-        ...     xscale="log", xlabel="Frequency [rad/s]", ylabel="Magnitude [dB]"
+        ...     xscale="log", xlabel="Frequency [rad/s]",
+        ...     ylabel="Magnitude [dB]"
         ... )   # doctest: +SKIP
 
     Interactive-widget plot:
@@ -1028,10 +1069,10 @@ def nyquist(system, label=None, **kwargs):
 
         * a single LTI SISO system.
         * a symbolic expression, which will be converted to an object of
-          type :func:`~sympy.physics.control.TransferFunction`.
+          type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :func:`~sympy.physics.control.TransferFunction`.
+          :class:`~sympy.physics.control.TransferFunction`.
     label : str, optional
         The label to be shown on the legend.
     arrows : int or 1D/2D array of floats, optional
@@ -1070,8 +1111,8 @@ def nyquist(system, label=None, **kwargs):
         `plt.plot`. If `False` then omit completely.
         Default linestyle is `['--', ':']`.
     m_circles : bool, optional
-        Turn on/off M-circles, which are circles of constant closed loop
-        magnitude. Refer to [#fn1]_ for more information.
+        Turn on/off [M-circles]_, which are circles of constant closed loop
+        magnitude.
     primary_style : [str, str] or [dict, dict] or dict, optional
         Linestyles for primary image of the Nyquist curve. If a list is given,
         the first element is used for unscaled portions of the Nyquist curve,
@@ -1101,7 +1142,7 @@ def nyquist(system, label=None, **kwargs):
     References
     ==========
 
-    .. [#fn1] https://en.wikipedia.org/wiki/Hall_circles
+    .. [1] https://en.wikipedia.org/wiki/Hall_circles
 
     See Also
     ========
@@ -1218,13 +1259,12 @@ def nichols(system, label=None, rendering_kw=None, **kwargs):
 
         * a single LTI SISO system.
         * a symbolic expression, which will be converted to an object of
-          type :func:`~sympy.physics.control.TransferFunction`.
+          type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :func:`~sympy.physics.control.TransferFunction`.
+          :class:`~sympy.physics.control.TransferFunction`.
     ngrid : bool, optional
-        Turn on/off the Nichols grid lines. Refer to [#fn2]_ for
-        more information.
+        Turn on/off the [Nichols]_ grid lines.
     omega_limits : array_like of two values, optional
         Limits to the range of frequencies.
     label : str, optional
@@ -1246,7 +1286,7 @@ def nichols(system, label=None, rendering_kw=None, **kwargs):
     References
     ==========
 
-    .. [#fn2] https://en.wikipedia.org/wiki/Hall_circles
+    .. [1] https://en.wikipedia.org/wiki/Hall_circles
 
     Examples
     ========
@@ -1302,7 +1342,7 @@ def nichols(system, label=None, rendering_kw=None, **kwargs):
            nichols(tf, omega_limits=[1e-03, 1e03], n=1e04, params=params),
            xlabel="Open-Loop Phase [deg]",
            ylabel="Open-Loop Magnitude [dB]",
-           xlim=(-360, 360), grid=False
+           xlim=(-360, 360), grid=False, use_latex=False
        )
 
     See Also

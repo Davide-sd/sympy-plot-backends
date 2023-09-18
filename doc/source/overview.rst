@@ -119,19 +119,21 @@ Interactive-Parametric domain coloring plot of a complex function:
    :small-size: 800, 625
 
    from sympy import symbols, latex
-   from spb import plot_complex
+   from spb import *
    import colorcet
    u, v, w, z = symbols("u, v, w, z")
    expr = (z - 1) / (u * z**2 + v * z + w * 1)
-   plot_complex(
-     expr, (z, -2-2j, 2+2j),
-     params={
-         u: (1, 1e-5, 2),
-         v: (1, 0, 2),
-         w: (1, 0, 2),
-     },
-     coloring="b", cmap=colorcet.CET_C7, n=500,
-     use_latex=False, title="$%s$" % latex(expr), grid=False)
+   params = {
+      u: (1, 1e-5, 2),
+      v: (1, 0, 2),
+      w: (1, 0, 2),
+   }
+   graphics(
+      domain_coloring(
+         expr, (z, -2-2j, 2+2j), coloring="m", cmap=colorcet.CET_C7,
+         n=500, params=params),
+      use_latex=False, title="$%s$" % latex(expr), grid=False
+   )
 
 
 3D plot with K3D-Jupyter and polar discretization. Two identical expressions
@@ -216,6 +218,42 @@ Visualizing a 3D vector field with a random number of streamtubes:
       title="Lorentz \, attractor"
    )
 
+
+Visualizing the surface of a cone with outward pointing normal vectors.
+
+.. k3d-screenshot::
+
+   from sympy import tan, cos, sin, pi, symbols
+   from spb import *
+   from sympy.vector import CoordSys3D, gradient
+
+   u, v = symbols("u, v")
+   N = CoordSys3D("N")
+   i, j, k = N.base_vectors()
+   xn, yn, zn = N.base_scalars()
+
+   t = 0.35    # half-cone angle in radians
+   expr = -xn**2 * tan(t)**2 + yn**2 + zn**2    # cone surface equation
+   g = gradient(expr)
+   n = g / g.magnitude()    # unit normal vector
+   n1, n2 = 10, 20 # number of discretization points for the vector field
+
+   # cone surface to discretize vector field (low numb of discret points)
+   cone_discr = surface_parametric(
+      u / tan(t), u * cos(v), u * sin(v), (u, 0, 1), (v, 0 , 2*pi),
+      n1=n1, n2=n2)[0]
+   graphics(
+      surface_parametric(
+         u / tan(t), u * cos(v), u * sin(v), (u, 0, 1), (v, 0 , 2*pi),
+         rendering_kw={"opacity": 1}, wireframe=True,
+         wf_n1=n1, wf_n2=n2, wf_rendering_kw={"width": 0.004}),
+      vector_field_3d(
+         n, range1=(xn, -5, 5), range2=(yn, -5, 5), range3=(zn, -5, 5),
+         use_cm=False, slice=cone_discr,
+         quiver_kw={"scale": 0.5, "pivot": "tail"}
+      ),
+      backend=KB, grid=False
+   )
 
 
 Differences with sympy.plotting

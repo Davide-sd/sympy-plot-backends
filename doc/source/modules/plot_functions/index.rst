@@ -1,7 +1,7 @@
 Plot functions
 --------------
 
-This is the documentation for all usual plotting functions, whose names
+This is the documentation for the usual plotting functions, whose names
 start with ``plot_``. Make sure to read :ref:`graphics` to understand the
 differences between plotting functions and the *graphics module*.
 

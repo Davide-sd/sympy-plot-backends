@@ -104,7 +104,7 @@ the second expression is evaluated over a 1000 points.
    [1]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
 
 Things gets even better for ``graphics()`` when we combine different kinds
-of visualization:
+of visualization. The usual approach with plotting functions is kind of a mess:
 
 .. plotly::
    :camera: 1.5, 1.5, 0.25, 0, 0, 0, 0, 0, 1
@@ -162,9 +162,13 @@ In the above code block:
   keyword arguments, which illustrates the separation between figure-level
   and data-level.
 * no surface of a half-sphere of unit radius was added to the plot, only
-  wireframe lines. Previously, there was a surface with ``opacity=0``, which
-  explain the difference of the surface colors.
+  wireframe lines. Previously, there were 3 surface, one of which was
+  hidden by setting ``opacity=0``. In the above code block there are only
+  two surfaces. This explains the difference of the surface colors between
+  the two approaches.
 * code is much cleaner and easy to read.
+
+Without further ado, let's explore the *graphics module*.
 
 .. toctree::
    :maxdepth: 2
@@ -174,3 +178,4 @@ In the above code block:
    functions_3d.rst
    vectors.rst
    complex_analysis.rst
+   control.rst

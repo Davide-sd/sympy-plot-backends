@@ -12,3 +12,9 @@ References
 .. [Riemann-sphere] https://en.wikipedia.org/wiki/Riemann_sphere
 
 .. [Stereographic] https://en.wikipedia.org/wiki/Stereographic_projection
+
+.. [Pole-Zero] https://en.wikipedia.org/wiki/Pole%E2%80%93zero_plot
+
+.. [M-circles] https://en.wikipedia.org/wiki/Hall_circles
+
+.. [Nichols] https://en.wikipedia.org/wiki/Hall_circles

@@ -111,7 +111,8 @@ def plot_pole_zero(
     **kwargs
 ):
     """
-    Returns the Pole-Zero plot (also known as PZ Plot or PZ Map) of a system.
+    Returns the [Pole-Zero]_ plot (also known as PZ Plot or PZ Map) of
+    a system.
 
     A Pole-Zero plot is a graphical representation of a system's poles and
     zeros. It is plotted on a complex plane, with circular markers representing
@@ -125,6 +126,11 @@ def plot_pole_zero(
         It can be:
 
         * a single LTI SISO system.
+        * a symbolic expression, which will be converted to an object of
+          type :class:`~sympy.physics.control.TransferFunction`.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``,
+          which will be converted to an object of type
+          :class:`~sympy.physics.control.TransferFunction`.
         * a sequence of LTI SISO systems.
         * a sequence of 2-tuples ``(LTI SISO system, label)``.
         * a dict mapping LTI SISO systems to labels.
@@ -138,17 +144,16 @@ def plot_pole_zero(
     zero_markersize : Number, optional
         The size of the markers used to mark the zeros in the plot.
         Default zero markersize is 7.
-    show_axes : boolean, optional
-        If ``True``, the coordinate axes will be shown. Defaults to False.
     z_rendering_kw : dict
         A dictionary of keyword arguments to further customize the appearance
         of zeros.
     p_rendering_kw : dict
         A dictionary of keyword arguments to further customize the appearance
         of poles.
-    **kwargs :
-        See ``plot`` for a list of keyword arguments to further customize
-        the resulting figure.
+    **kwargs : dict
+        Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+        keyword arguments to customize the appearances of the figure (title,
+        axis labels, ...).
 
     Examples
     ========
@@ -229,6 +234,11 @@ def plot_step_response(
         It can be:
 
         * a single LTI SISO system.
+        * a symbolic expression, which will be converted to an object of
+          type :class:`~sympy.physics.control.TransferFunction`.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``,
+          which will be converted to an object of type
+          :class:`~sympy.physics.control.TransferFunction`.
         * a sequence of LTI SISO systems.
         * a sequence of 2-tuples ``(LTI SISO system, label)``.
         * a dict mapping LTI SISO systems to labels.
@@ -241,9 +251,13 @@ def plot_step_response(
         Defaults to 8.
     show_axes : boolean, optional
         If ``True``, the coordinate axes will be shown. Defaults to False.
-    **kwargs :
-        See ``plot`` for a list of keyword arguments to further customize
-        the resulting figure.
+    **kwargs : dict
+        Refer to :func:`~spb.graphics.control.step_response` for a full list
+        of keyword arguments to customize the appearances of lines.
+
+        Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+        keyword arguments to customize the appearances of the figure (title,
+        axis labels, ...).
 
     Examples
     ========
@@ -335,6 +349,11 @@ def plot_impulse_response(
         It can be:
 
         * a single LTI SISO system.
+        * a symbolic expression, which will be converted to an object of
+          type :class:`~sympy.physics.control.TransferFunction`.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``,
+          which will be converted to an object of type
+          :class:`~sympy.physics.control.TransferFunction`.
         * a sequence of LTI SISO systems.
         * a sequence of 2-tuples ``(LTI SISO system, label)``.
         * a dict mapping LTI SISO systems to labels.
@@ -347,9 +366,13 @@ def plot_impulse_response(
         Defaults to 8.
     show_axes : boolean, optional
         If ``True``, the coordinate axes will be shown. Defaults to False.
-    **kwargs :
-        See ``plot`` for a list of keyword arguments to further customize
-        the resulting figure.
+    **kwargs : dict
+        Refer to :func:`~spb.graphics.control.impulse_response` for a full list
+        of keyword arguments to customize the appearances of lines.
+
+        Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+        keyword arguments to customize the appearances of the figure (title,
+        axis labels, ...).
 
     Examples
     ========
@@ -434,10 +457,9 @@ def plot_ramp_response(
     """
     Returns the ramp response of a continuous-time system.
 
-    Ramp function is defined as the straight line
-    passing through origin ($f(x) = mx$). The slope of
-    the ramp function can be varied by the user and
-    the default value is 1.
+    Ramp function is defined as the straight line passing through origin
+    ($f(x) = mx$). The slope of the ramp function can be varied by the user
+    and the default value is 1.
 
     Parameters
     ==========
@@ -447,6 +469,11 @@ def plot_ramp_response(
         It can be:
 
         * a single LTI SISO system.
+        * a symbolic expression, which will be converted to an object of
+          type :class:`~sympy.physics.control.TransferFunction`.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``,
+          which will be converted to an object of type
+          :class:`~sympy.physics.control.TransferFunction`.
         * a sequence of LTI SISO systems.
         * a sequence of 2-tuples ``(LTI SISO system, label)``.
         * a dict mapping LTI SISO systems to labels.
@@ -461,9 +488,13 @@ def plot_ramp_response(
         Defaults to 8.
     show_axes : boolean, optional
         If ``True``, the coordinate axes will be shown. Defaults to False.
-    **kwargs :
-        See ``plot`` for a list of keyword arguments to further customize
-        the resulting figure.
+    **kwargs : dict
+        Refer to :func:`~spb.graphics.control.ramp_response` for a full list
+        of keyword arguments to customize the appearances of lines.
+
+        Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+        keyword arguments to customize the appearances of the figure (title,
+        axis labels, ...).
 
     Examples
     ========
@@ -627,6 +658,11 @@ def plot_bode(
         It can be:
 
         * a single LTI SISO system.
+        * a symbolic expression, which will be converted to an object of
+          type :class:`~sympy.physics.control.TransferFunction`.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``,
+          which will be converted to an object of type
+          :class:`~sympy.physics.control.TransferFunction`.
         * a sequence of LTI SISO systems.
         * a sequence of 2-tuples ``(LTI SISO system, label)``.
         * a dict mapping LTI SISO systems to labels.
@@ -649,9 +685,13 @@ def plot_bode(
         Depending on the transfer function, there could be discontinuities in
         the phase plot. Set ``unwrap=True`` to get a continuous phase.
         Default to False.
-    **kwargs :
-        See ``plot`` for a list of keyword arguments to further customize
-        the resulting figure.
+    **kwargs : dict
+        Refer to :func:`~spb.graphics.control.bode_magnitude` for a full list
+        of keyword arguments to customize the appearances of lines.
+
+        Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+        keyword arguments to customize the appearances of the figure (title,
+        axis labels, ...).
 
     Examples
     ========
@@ -761,44 +801,41 @@ def plot_nyquist(*systems, **kwargs):
         It can be:
 
         * a single LTI SISO system.
+        * a symbolic expression, which will be converted to an object of
+          type :class:`~sympy.physics.control.TransferFunction`.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``,
+          which will be converted to an object of type
+          :class:`~sympy.physics.control.TransferFunction`.
         * a sequence of LTI SISO systems.
         * a sequence of 2-tuples ``(LTI SISO system, label)``.
         * a dict mapping LTI SISO systems to labels.
-
     arrows : int or 1D/2D array of floats, optional
         Specify the number of arrows to plot on the Nyquist curve.  If an
         integer is passed, that number of equally spaced arrows will be
         plotted on each of the primary segment and the mirror image.  If a 1D
         array is passed, it should consist of a sorted list of floats between
         0 and 1, indicating the location along the curve to plot an arrow.
-
     encirclement_threshold : float, optional
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05.
-
     indent_direction : str, optional
         For poles on the imaginary axis, set the direction of indentation to
         be 'right' (default), 'left', or 'none'.
-
     indent_points : int, optional
         Number of points to insert in the Nyquist contour around poles that
         are at or near the imaginary axis.
-
     indent_radius : float, optional
         Amount to indent the Nyquist contour around poles on or near the
         imaginary axis. Portions of the Nyquist plot corresponding to indented
         portions of the contour are plotted using a different line style.
-
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
         Portions of the Nyquist plot whose magnitude is restricted are
         plotted using a different line style.
-
     max_curve_offset : float, optional
         When plotting scaled portion of the Nyquist plot, increase/decrease
         the magnitude by this fraction of the max_curve_magnitude to allow
         any overlaps between the primary and mirror curves to be avoided.
-
     mirror_style : [str, str] or [dict, dict] or dict or False, optional
         Linestyles for mirror image of the Nyquist curve. If a list is given,
         the first element is used for unscaled portions of the Nyquist curve,
@@ -807,11 +844,9 @@ def plot_nyquist(*systems, **kwargs):
         arguments to be passed to the plotting function, for example to
         `plt.plot`. If `False` then omit completely.
         Default linestyle is `['--', ':']`.
-
     m_circles : bool, optional
-        Turn on/off M-circles, which are circles of constant closed loop
-        magnitude. Refer to [#fn1]_ for more information.
-
+        Turn on/off [M-circles]_, which are circles of constant closed loop
+        magnitude.
     primary_style : [str, str] or [dict, dict] or dict, optional
         Linestyles for primary image of the Nyquist curve. If a list is given,
         the first element is used for unscaled portions of the Nyquist curve,
@@ -819,27 +854,27 @@ def plot_nyquist(*systems, **kwargs):
         (using max_curve_magnitude). `dict` is a dictionary of keyword
         arguments to be passed to the plotting function, for example to
         Matplotlib's `plt.plot`. Default linestyle is `['-', '-.']`.
-
     omega_limits : array_like of two values, optional
         Limits to the range of frequencies.
-
     start_marker : str or dict, optional
         Marker to use to mark the starting point of the Nyquist plot. If
         `dict` is provided, it must containts keyword arguments to be passed
         to the plot function, for example to Matplotlib's `plt.plot`.
-
     warn_encirclements : bool, optional
         If set to 'False', turn off warnings about number of encirclements not
         meeting the Nyquist criterion.
+    **kwargs : dict
+        Refer to :func:`~spb.graphics.control.nyquist` for a full list
+        of keyword arguments to customize the appearances of lines.
 
-    **kwargs :
-        See ``plot_parametric`` for a list of keyword arguments to further
-        customize the resulting figure.
+        Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+        keyword arguments to customize the appearances of the figure (title,
+        axis labels, ...).
 
     References
     ==========
 
-    .. [#fn1] https://en.wikipedia.org/wiki/Hall_circles
+    .. [1] https://en.wikipedia.org/wiki/Hall_circles
 
     See Also
     ========
@@ -950,25 +985,30 @@ def plot_nichols(*systems, **kwargs):
         It can be:
 
         * a single LTI SISO system.
+        * a symbolic expression, which will be converted to an object of
+          type :class:`~sympy.physics.control.TransferFunction`.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``,
+          which will be converted to an object of type
+          :class:`~sympy.physics.control.TransferFunction`.
         * a sequence of LTI SISO systems.
         * a sequence of 2-tuples ``(LTI SISO system, label)``.
         * a dict mapping LTI SISO systems to labels.
-
     ngrid : bool, optional
-        Turn on/off the Nichols grid lines. Refer to [#fn2]_ for
-        more information.
-
+        Turn on/off the [Nichols]_ grid lines.
     omega_limits : array_like of two values, optional
         Limits to the range of frequencies.
+    **kwargs : dict
+        Refer to :func:`~spb.graphics.control.nichols` for a full list
+        of keyword arguments to customize the appearances of lines.
 
-    **kwargs :
-        See ``plot_parametric`` for a list of keyword arguments to further
-        customize the resulting figure.
+        Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
+        keyword arguments to customize the appearances of the figure (title,
+        axis labels, ...).
 
     References
     ==========
 
-    .. [#fn2] https://en.wikipedia.org/wiki/Hall_circles
+    .. [1] https://en.wikipedia.org/wiki/Hall_circles
 
     Examples
     ========

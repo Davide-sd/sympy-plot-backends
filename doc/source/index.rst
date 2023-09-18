@@ -39,6 +39,7 @@ without the knowledge of complicated widget libraries.
    modules/index.rst
    tutorials/index.rst
    changelog.rst
+   references.rst
 
 
 Indices and tables
