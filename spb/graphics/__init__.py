@@ -5,7 +5,7 @@ from spb.graphics.functions_2d import (
 )
 from spb.graphics.functions_3d import (
     surface, surface_parametric, surface_revolution, surface_spherical,
-    line_parametric_3d, list_3d, implicit_3d, wireframes, plane
+    line_parametric_3d, list_3d, implicit_3d, wireframe, plane
 )
 from spb.graphics.vectors import (
     vector_field_2d, vector_field_3d
@@ -25,7 +25,7 @@ __all__ = [
     "graphics", "line", "line_parametric_2d", "line_polar", "implicit_2d",
     "list_2d", "geometry", "contour", "surface", "surface_parametric",
     "surface_spherical", "surface_revolution", "line_parametric_3d",
-    "implicit_3d", "list_3d", "wireframes", "vector_field_2d",
+    "implicit_3d", "list_3d", "wireframe", "vector_field_2d",
     "vector_field_3d", "complex_points", "line_abs_arg_colored",
     "line_abs_arg", "line_real_imag", "surface_abs_arg", "surface_real_imag",
     "domain_coloring", "analytic_landscape", "riemann_sphere_2d",

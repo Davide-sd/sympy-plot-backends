@@ -3,7 +3,7 @@ import pytest
 from spb.graphics import (
     line_parametric_3d, list_3d,
     surface, surface_parametric, surface_spherical,
-    implicit_3d, wireframes, plane
+    implicit_3d, wireframe, plane
 )
 from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
@@ -315,7 +315,7 @@ def test_wireframe(n1, n2, n, rkw, params):
         (x, -pi, pi), (y, -2*pi, 2*pi)
     )[0]
 
-    series = wireframes(s, n1=n1, n2=n2, n=n, rendering_kw=rkw, params=params)
+    series = wireframe(s, n1=n1, n2=n2, n=n, rendering_kw=rkw, params=params)
     assert len(series) == n1 + n2
     assert all(isinstance(t, Parametric3DLineSeries) for t in series)
     s_along_x = [t for t in series if (t.ranges[0][1] == -2*pi)

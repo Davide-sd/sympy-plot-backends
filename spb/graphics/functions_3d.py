@@ -514,7 +514,7 @@ def surface(expr, range1=None, range2=None, label=None, rendering_kw=None,
     ========
 
     spb.graphics.functions_2d.contour, surface_parametric, surface_spherical,
-    surface_revolution, wireframes, plane
+    surface_revolution, wireframe, plane
 
     """
     expr = _plot_sympify(expr)
@@ -766,7 +766,7 @@ def surface_parametric(expr1, expr2, expr3, range1=None, range2=None,
     See Also
     ========
 
-    surface, surface_spherical, surface_revolution, wireframes
+    surface, surface_spherical, surface_revolution, wireframe
 
     """
     expr1, expr2, expr3 = map(_plot_sympify, [expr1, expr2, expr3])
@@ -914,7 +914,7 @@ def surface_spherical(r, range_theta=None, range_phi=None, label=None,
     See Also
     ========
 
-    surface, surface_parametric, surface_revolution, wireframes
+    surface, surface_parametric, surface_revolution, wireframe
 
     """
     r = _plot_sympify(r)
@@ -1241,7 +1241,7 @@ def surface_revolution(curve, range_t, range_phi=None, axis=(0, 0),
     See Also
     ========
 
-    surface, surface_spherical, surface_parametric, wireframes
+    surface, surface_spherical, surface_parametric, wireframe
 
     """
     if parallel_axis.lower() not in ["x", "y", "z"]:
@@ -1399,7 +1399,7 @@ def list_3d(coord_x, coord_y, coord_z, label=None, rendering_kw=None, **kwargs):
            list_3d(x, y, z, point=False),
            list_3d(t * cos(t), t * sin(t), t,
                params={t: (3*pi, 0, 6*pi)}, is_point=True),
-           use_late=False, backend=PB
+           use_latex=False, backend=PB
        )
 
     See Also
@@ -1419,7 +1419,7 @@ def list_3d(coord_x, coord_y, coord_z, label=None, rendering_kw=None, **kwargs):
     return [s]
 
 
-def wireframes(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
+def wireframe(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
     **kwargs):
     """Creates a wireframe of a 3D surface.
 
@@ -1452,7 +1452,7 @@ def wireframes(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
     Examples
     ========
 
-    Provide better code separation between the surface and wireframes:
+    Provide better code separation between the surface and wireframe:
 
     .. plotly::
 
@@ -1466,12 +1466,12 @@ def wireframes(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
        )
        graphics(
            surf_series,
-           wireframes(surf_series[0], n1=11, n2=11),
+           wireframe(surf_series[0], n1=11, n2=11),
            backend=PB, aspect=dict(x=1.5, y=1.5, z=1)
        )
 
-    Show wireframes without showing the actual surface. Here, dotted
-    wireframes represent the half-unit sphere.
+    Show wireframe without showing the actual surface. Here, dotted
+    wireframe represent the half-unit sphere.
 
     .. plotly::
        :camera: 1.5, 1.5, 0.25, 0, 0, 0, 0, 0, 1
@@ -1484,7 +1484,7 @@ def wireframes(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
        t = pi / 3 # half-cone angle
        r_cone = r_sphere * sin(t)
        graphics(
-           wireframes(sphere, n1=13, rendering_kw={"line_dash": "dot"}),
+           wireframe(sphere, n1=13, rendering_kw={"line_dash": "dot"}),
            surface_spherical(1, (theta, pi - t, pi), (phi, pi, 2*pi),
                label="sphere cap", wireframe=True, wf_n1=5),
            surface_parametric(u * cos(v), u * sin(v), -u / tan(t), (u, 0, r_cone), (v, pi , 2*pi),
