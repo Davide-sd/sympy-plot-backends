@@ -1,5 +1,5 @@
-Complex
--------
+Complex Analysis
+----------------
 
 **NOTE:** 
 For technical reasons, all interactive-widgets plots in this documentation are
