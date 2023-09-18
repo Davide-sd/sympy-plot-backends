@@ -901,9 +901,9 @@ class BaseSeries:
     def get_data(self):
         """Compute and returns the numerical data.
 
-        The number of parameters returned by this method depends on the
-        specific instance. If ``s`` is the series, make sure to read
-        ``help(s.get_data)`` to understand what it returns.
+        The number of arrays returned by this method depends on the
+        specific instance. Let ``s`` be an instance of ``BaseSeries``.
+        Make sure to read ``help(s.get_data)`` to understand what it returns.
         """
         raise NotImplementedError
 
