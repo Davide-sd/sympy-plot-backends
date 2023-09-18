@@ -2,7 +2,7 @@ import itertools
 import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from spb.backends.matplotlib.renderers import (
+from spb.backends.plotly.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
     ComplexRenderer, ContourRenderer, SurfaceRenderer, Implicit3DRenderer,
     GeometryRenderer, GenericRenderer, HVLineRenderer

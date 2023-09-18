@@ -1,7 +1,7 @@
 import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from spb.backends.matplotlib.renderers import (
+from spb.backends.k3d.renderers import (
     Line3DRenderer, Vector3DRenderer,
     ComplexRenderer, SurfaceRenderer, Implicit3DRenderer,
     GeometryRenderer

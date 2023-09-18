@@ -1,7 +1,7 @@
 import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from spb.backends.matplotlib.renderers import (
+from spb.backends.bokeh.renderers import (
     Line2DRenderer, Vector2DRenderer, ComplexRenderer, ContourRenderer,
     GeometryRenderer, GenericRenderer, HVLineRenderer
 )
