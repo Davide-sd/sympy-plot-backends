@@ -1,7 +1,5 @@
 from spb.backends.base_renderer import Renderer
-from spb.backends.utils import get_seeds_points
 from sympy.external import import_module
-import warnings
 
 
 def compute_streamlines(x, y, u, v, density=1.0):
@@ -15,25 +13,25 @@ def compute_streamlines(x, y, u, v, density=1.0):
     """
     np = import_module('numpy')
 
-    ## Set up some constants - size of the grid used.
+    # Set up some constants - size of the grid used.
     NGX = len(x)
     NGY = len(y)
 
-    ## Constants used to convert between grid index coords and user coords.
+    # Constants used to convert between grid index coords and user coords.
     DX = x[1] - x[0]
     DY = y[1] - y[0]
     XOFF = x[0]
     YOFF = y[0]
 
-    ## Now rescale velocity onto axes-coordinates
+    # Now rescale velocity onto axes-coordinates
     u = u / (x[-1] - x[0])
     v = v / (y[-1] - y[0])
     speed = np.sqrt(u * u + v * v)
-    ## s (path length) will now be in axes-coordinates, but we must
-    ## rescale u for integrations.
+    # s (path length) will now be in axes-coordinates, but we must
+    # rescale u for integrations.
     u *= NGX
     v *= NGY
-    ## Now u and v in grid-coordinates.
+    # Now u and v in grid-coordinates.
 
     NBX = int(30 * density)
     NBY = int(30 * density)
@@ -64,9 +62,9 @@ def compute_streamlines(x, y, u, v, density=1.0):
         return a0 * (1 - yt) + a1 * yt
 
     def rk4_integrate(x0, y0):
-        ## This function does RK4 forward and back trajectories from
-        ## the initial conditions, with the odd 'blank array'
-        ## termination conditions. TODO tidy the integration loops.
+        # This function does RK4 forward and back trajectories from
+        # the initial conditions, with the odd 'blank array'
+        # termination conditions. TODO tidy the integration loops.
 
         def f(xi, yi):
             dt_ds = 1.0 / value_at(speed, xi, yi)
@@ -85,7 +83,7 @@ def compute_streamlines(x, y, u, v, density=1.0):
         bx_changes = []
         by_changes = []
 
-        ## Integrator function
+        # Integrator function
         def rk4(x0, y0, f):
             ds = 0.01  # min(1./NGX, 1./NGY, 0.01)
             stotal = 0
@@ -137,7 +135,7 @@ def compute_streamlines(x, y, u, v, density=1.0):
         x_traj = xb_traj[::-1] + xf_traj[1:]
         y_traj = yb_traj[::-1] + yf_traj[1:]
 
-        ## Tests to check length of traj. Remember, s in units of axes.
+        # Tests to check length of traj. Remember, s in units of axes.
         if len(x_traj) < 1:
             return None
         if stotal > 0.2:
@@ -149,7 +147,7 @@ def compute_streamlines(x, y, u, v, density=1.0):
                 blank[yb, xb] = 0
             return None
 
-    ## A quick function for integrating trajectories if blank==0.
+    # A quick function for integrating trajectories if blank==0.
     trajectories = []
 
     def traj(xb, yb):
@@ -160,8 +158,8 @@ def compute_streamlines(x, y, u, v, density=1.0):
             if t is not None:
                 trajectories.append(t)
 
-    ## Now we build up the trajectory set. I've found it best to look
-    ## for blank==0 along the edges first, and work inwards.
+    # Now we build up the trajectory set. I've found it best to look
+    # for blank==0 along the edges first, and work inwards.
     for indent in range((max(NBX, NBY)) // 2):
         for xi in range(max(NBX, NBY) - 2 * indent):
             traj(xi + indent, indent)
@@ -195,8 +193,8 @@ def _draw_vector2d_helper(renderer, data):
         u0, v0 = [t.copy() for t in [u, v]]
         if s.normalize:
             u, v = [t / mag for t in [u, v]]
-        data, quiver_kw = p._get_quivers_data(x, y, u, v,
-            **s.rendering_kw.copy())
+        data, quiver_kw = p._get_quivers_data(
+            x, y, u, v, **s.rendering_kw.copy())
         color_val = mag
         if s.color_func is not None:
             color_val = s.eval_color_func(x, y, u0, v0)
@@ -214,8 +212,10 @@ def _draw_vector2d_helper(renderer, data):
             else next(p._cl)
         )
         source = p.bokeh.models.ColumnDataSource(data=data)
-        qkw = dict(line_color=line_color, line_width=1,
-            name=s.get_label(p._use_latex))
+        qkw = dict(
+            line_color=line_color, line_width=1,
+            name=s.get_label(p._use_latex)
+        )
         kw = p.merge({}, qkw, quiver_kw)
         glyph = p.bokeh.models.Segment(
             x0="x0", y0="y0", x1="x1", y1="y1", **kw)
@@ -277,7 +277,6 @@ def _update_vector2d_helper(renderer, data, handle):
                 cb = handle[1]
                 cb.color_mapper.update(
                     low=min(color_val), high=max(color_val))
-
 
 
 class Vector2DRenderer(Renderer):

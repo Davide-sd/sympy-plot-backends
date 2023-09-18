@@ -3,7 +3,7 @@ from spb.backends.base_renderer import Renderer
 
 class MatplotlibRenderer(Renderer):
     """A base class for renderers related to Matplotlib.
-    
+
     Matplotlib is not really great at keeping track of axis limits when
     Collections (LineCollection, PolyCollection, ...). This base class
     implements the code to compute them.
@@ -32,11 +32,12 @@ class MatplotlibRenderer(Renderer):
                 draw_method(self, data))
 
     def update(self, params):
-        s = self.series
         self.series.params = params
         data = self.series.get_data()
         self._set_axis_limits(data)
-        for update_method, handle in zip(self.draw_update_map.values(), self.handles):
+        for update_method, handle in zip(
+            self.draw_update_map.values(), self.handles
+        ):
             update_method(self, data, handle)
 
     def _set_axis_limits(self, data):

@@ -1,5 +1,6 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
 
+
 def _matplotlib_list(interval_list):
     """
     Returns lists for matplotlib `fill` command from a list of bounding
@@ -12,10 +13,16 @@ def _matplotlib_list(interval_list):
             intervalx = intervals[0]
             intervaly = intervals[1]
             xlist.extend(
-                [intervalx.start, intervalx.start, intervalx.end, intervalx.end, None]
+                [
+                    intervalx.start, intervalx.start,
+                    intervalx.end, intervalx.end, None
+                ]
             )
             ylist.extend(
-                [intervaly.start, intervaly.end, intervaly.end, intervaly.start, None]
+                [
+                    intervaly.start, intervaly.end,
+                    intervaly.end, intervaly.start, None
+                ]
             )
     else:
         # XXX Ugly hack. Matplotlib does not accept empty lists for `fill`
@@ -23,17 +30,23 @@ def _matplotlib_list(interval_list):
         ylist.extend([None, None, None, None])
     return xlist, ylist
 
+
 def _draw_implicit2d_helper(renderer, data):
     p, s = renderer.plot, renderer.series
-    color = next(p._cl) if (s.color is None) or isinstance(s.color, bool) else s.color
+    color = (
+        next(p._cl) if (s.color is None) or isinstance(s.color, bool)
+        else s.color
+    )
     if len(data) == 2:
         # interval math plotting
         x, y = _matplotlib_list(data[0])
         fkw = {"color": color, "edgecolor": "None"}
         kw = p.merge({}, fkw, s.rendering_kw)
         c = p._ax.fill(x, y, **kw)
-        proxy_artist = p.Rectangle((0, 0), 1, 1,
-            color=kw["color"], label=s.get_label(p._use_latex))
+        proxy_artist = p.Rectangle(
+            (0, 0), 1, 1,
+            color=kw["color"], label=s.get_label(p._use_latex)
+        )
     else:
         # use contourf or contour depending on whether it is
         # an inequality or equality.
@@ -42,18 +55,24 @@ def _draw_implicit2d_helper(renderer, data):
             colormap = p.ListedColormap([color, color])
             ckw = dict(cmap=colormap)
             kw = p.merge({}, ckw, s.rendering_kw)
-            c = p._ax.contour(xarray, yarray, zarray, [0.0],
-                **kw)
-            proxy_artist = p.Line2D([], [],
-                color=color, label=s.get_label(p._use_latex))
+            c = p._ax.contour(
+                xarray, yarray, zarray, [0.0], **kw)
+            proxy_artist = p.Line2D(
+                [], [],
+                color=color, label=s.get_label(p._use_latex)
+            )
         else:
             colormap = p.ListedColormap(["#ffffff00", color])
-            ckw = dict(cmap=colormap, levels=[-1e-15, 0, 1e-15],
-                extend="both")
+            ckw = dict(
+                cmap=colormap, levels=[-1e-15, 0, 1e-15],
+                extend="both"
+            )
             kw = p.merge({}, ckw, s.rendering_kw)
             c = p._ax.contourf(xarray, yarray, zarray, **kw)
-            proxy_artist = p.Rectangle((0, 0), 1, 1,
-                color=color, label=s.get_label(p._use_latex))
+            proxy_artist = p.Rectangle(
+                (0, 0), 1, 1,
+                color=color, label=s.get_label(p._use_latex)
+            )
 
     if s.show_in_legend:
         p._legend_handles.append(proxy_artist)
@@ -62,7 +81,7 @@ def _draw_implicit2d_helper(renderer, data):
 
 
 def _update_implicit2d_helper(renderer, data, handle):
-    p, s = renderer.plot, renderer.series
+    p = renderer.plot
     if len(data) == 2:
         raise NotImplementedError
     else:

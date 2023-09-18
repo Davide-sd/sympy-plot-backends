@@ -76,13 +76,15 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
                 if xx[0] != _range[1]:
                     correct_list = series if _set.left_open else filled_series
                     correct_list.append(
-                        List2DSeries([xx[0]], [yy[0]], point=True,
+                        List2DSeries(
+                            [xx[0]], [yy[0]], point=True,
                             fill=not _set.left_open, **kwargs)
                     )
                 if xx[-1] != _range[2]:
                     correct_list = series if _set.right_open else filled_series
                     correct_list.append(
-                        List2DSeries([xx[-1]], [yy[-1]], point=True,
+                        List2DSeries(
+                            [xx[-1]], [yy[-1]], point=True,
                             fill=not _set.right_open, **kwargs)
                     )
         elif isinstance(_set, FiniteSet):
@@ -90,8 +92,8 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
             for _loc in _set.args:
                 loc.append(float(_loc))
                 val.append(float(expr.evalf(subs={_range[0]: _loc})))
-            filled_series.append(List2DSeries(loc, val, point=True,
-                fill=True, **kwargs))
+            filled_series.append(
+                List2DSeries(loc, val, point=True, fill=True, **kwargs))
             if not from_union:
                 c += 1
         elif isinstance(_set, Union):
@@ -99,16 +101,16 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
                 c = func(expr, _s, c, from_union=True)
         elif isinstance(_set, EmptySet):
             # in this case, some pieces are outside of the provided range.
-            # don't add any series, but increase the counter nonetheless so that
-            # there is one-to-one correspondance between the expression and
-            # what is plotted.
+            # don't add any series, but increase the counter nonetheless so
+            # that there is one-to-one correspondance between the expression
+            # and what is plotted.
             if not from_union:
                 c += 1
         else:
             raise TypeError(
                 "Unhandle situation:\n" +
-                "expr: {}\ncond: {}\ntype(cond): {}\n".format(str(expr),
-                    _set, type(_set)) +
+                "expr: {}\ncond: {}\ntype(cond): {}\n".format(
+                    str(expr), _set, type(_set)) +
                 "See if you can rewrite the piecewise without "
                 "this type of condition and then plot it again.")
 
@@ -160,8 +162,10 @@ def _process_summations(sum_bound, expr):
         sums_args = list(t.args)
         for i, a in enumerate(sums_args):
             if i > 0:
-                sums_args[i] = (a[0], new_bound(a[1], sum_bound),
-                    new_bound(a[2], sum_bound))
+                sums_args[i] = (
+                    a[0], new_bound(a[1], sum_bound),
+                    new_bound(a[2], sum_bound)
+                )
         s = Sum(*sums_args)
         expr = expr.subs(t, s)
     return expr
@@ -206,8 +210,8 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
         plotting library (backend) manual for more informations.
     adaptive : bool, optional
         Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [python-adaptive]_ to create smooth plots. Use ``adaptive_goal``
-        and ``loss_fn`` to further customize the output.
+        implemented in [python-adaptive]_ to create smooth plots.
+        Use ``adaptive_goal`` and ``loss_fn`` to further customize the output.
 
         The default value is ``False``, which uses an uniform sampling
         strategy, where the number of discretization points is specified by
@@ -221,7 +225,8 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
           evaluation points. This number will be used in the following goal:
           ``lambda l: l.loss() < number``
         * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [python-adaptive]_ for more information.
+          must return a float number. Refer to [python-adaptive]_ for
+          more information.
     color_func : callable or Expr, optional
         Define the line color mapping. It can either be:
 
@@ -279,8 +284,9 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
 
         * ``None`` (default): it will use the ``default_loss`` from the
           adaptive module.
-        * callable : Refer to [python-adaptive]_ for more information. Specifically,
-          look at ``adaptive.learner.learner1D`` to find more loss functions.
+        * callable : Refer to [python-adaptive]_ for more information.
+          Specifically, look at ``adaptive.learner.learner1D`` to find
+          more loss functions.
     n : int, optional
         Used when the ``adaptive=False``: the function is uniformly
         sampled at ``n`` number of points. Default value to 1000.
@@ -515,12 +521,14 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
     params = kwargs.get("params", {})
     range = _create_missing_ranges(
         [expr], [range] if range else [], 1, params)[0]
-    return _build_line_series(expr, range, label, rendering_kw=rendering_kw,
-        **kwargs)
+    return _build_line_series(
+        expr, range, label, rendering_kw=rendering_kw, **kwargs)
 
 
-def line_parametric_2d(expr1, expr2, range=None, label=None, rendering_kw=None,
-    colorbar=True, use_cm=True, **kwargs):
+def line_parametric_2d(
+    expr1, expr2, range=None, label=None, rendering_kw=None,
+    colorbar=True, use_cm=True, **kwargs
+):
     """Plots a 2D parametric curve.
 
     Parameters
@@ -546,8 +554,8 @@ def line_parametric_2d(expr1, expr2, range=None, label=None, rendering_kw=None,
         plotting library (backend) manual for more informations.
     adaptive : bool, optional
         Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [python-adaptive]_ to create smooth plots. Use ``adaptive_goal``
-        and ``loss_fn`` to further customize the output.
+        implemented in [python-adaptive]_ to create smooth plots.
+        Use ``adaptive_goal`` and ``loss_fn`` to further customize the output.
 
         The default value is ``False``, which uses an uniform sampling
         strategy, where the number of discretization points is specified by
@@ -561,7 +569,8 @@ def line_parametric_2d(expr1, expr2, range=None, label=None, rendering_kw=None,
           evaluation points. This number will be used in the following goal:
           ``lambda l: l.loss() < number``
         * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [python-adaptive]_ for more information.
+          must return a float number. Refer to [python-adaptive]_ for
+          more information.
     colorbar : boolean, optional
         Show/hide the colorbar. Default to True (colorbar is visible).
         Only works when ``use_cm=True``.
@@ -594,8 +603,9 @@ def line_parametric_2d(expr1, expr2, range=None, label=None, rendering_kw=None,
 
         * ``None`` (default): it will use the ``default_loss`` from the
           adaptive module.
-        * callable : Refer to [python-adaptive]_ for more information. Specifically,
-          look at ``adaptive.learner.learner1D`` to find more loss functions.
+        * callable : Refer to [python-adaptive]_ for more information.
+          Specifically, look at ``adaptive.learner.learner1D`` to find
+          more loss functions.
     n : int, optional
         Used when the ``adaptive=False``. The function is uniformly sampled
         at ``n`` number of points. Default value to 1000.
@@ -701,7 +711,8 @@ def line_parametric_2d(expr1, expr2, range=None, label=None, rendering_kw=None,
        >>> e1 = log(floor(t))*cos(t)
        >>> e2 = log(floor(t))*sin(t)
        >>> graphics(
-       ...     line_parametric_2d(e1, e2, (t, 1, 4*pi), exclude=list(range(1, 13))),
+       ...     line_parametric_2d(
+       ...         e1, e2, (t, 1, 4*pi), exclude=list(range(1, 13))),
        ...     grid=False
        ... )
        Plot object containing:
@@ -718,7 +729,8 @@ def line_parametric_2d(expr1, expr2, range=None, label=None, rendering_kw=None,
        >>> fx = lambda t: np.sin(t) * (np.exp(np.cos(t)) - 2 * np.cos(4 * t) - np.sin(t / 12)**5)
        >>> fy = lambda t: np.cos(t) * (np.exp(np.cos(t)) - 2 * np.cos(4 * t) - np.sin(t / 12)**5)
        >>> graphics(
-       ...     line_parametric_2d(fx, fy, ("t", 0, 12 * pi), use_cm=False, n=2000),
+       ...     line_parametric_2d(fx, fy, ("t", 0, 12 * pi),
+       ...         use_cm=False, n=2000),
        ...     title="Butterfly Curve",
        ... )  # doctest: +SKIP
 
@@ -757,7 +769,8 @@ def line_parametric_2d(expr1, expr2, range=None, label=None, rendering_kw=None,
     params = kwargs.get("params", {})
     range = _create_missing_ranges(
         [expr1, expr2], [range] if range else [], 1, params)[0]
-    s = Parametric2DLineSeries(expr1, expr2, range, label,
+    s = Parametric2DLineSeries(
+        expr1, expr2, range, label,
         rendering_kw=rendering_kw, colorbar=colorbar,
         use_cm=use_cm, **kwargs)
     return [s]
@@ -867,12 +880,15 @@ def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
     range = _create_missing_ranges(
         [expr], [range] if range else [], 1, params)[0]
     theta = range[0]
-    return line_parametric_2d(expr * cos(theta), expr * sin(theta), range,
+    return line_parametric_2d(
+        expr * cos(theta), expr * sin(theta), range,
         label, rendering_kw, **kwargs)
 
 
-def contour(expr, range1=None, range2=None, label=None, rendering_kw=None,
-    colorbar=True, clabels=True, fill=True, **kwargs):
+def contour(
+    expr, range1=None, range2=None, label=None, rendering_kw=None,
+    colorbar=True, clabels=True, fill=True, **kwargs
+):
     """Plots contour lines or filled contours of a function of two variables.
 
     Parameters
@@ -1041,13 +1057,16 @@ def contour(expr, range1=None, range2=None, label=None, rendering_kw=None,
             "visualization might be flipped."
         )
     ranges = _preprocess_multiple_ranges([expr], [range1, range2], 2, params)
-    s = ContourSeries(expr, *ranges, label, rendering_kw=rendering_kw,
+    s = ContourSeries(
+        expr, *ranges, label, rendering_kw=rendering_kw,
         colorbar=colorbar, fill=fill, clabels=clabels, **kwargs)
     return [s]
 
 
-def implicit_2d(expr, range1=None, range2=None, label=None, rendering_kw=None,
-    color=None, border_color=None, border_kw=None, **kwargs):
+def implicit_2d(
+    expr, range1=None, range2=None, label=None, rendering_kw=None,
+    color=None, border_color=None, border_kw=None, **kwargs
+):
     """
     Plot implicit equations / inequalities.
 
@@ -1189,8 +1208,10 @@ def implicit_2d(expr, range1=None, range2=None, label=None, rendering_kw=None,
        :include-source: True
 
        >>> graphics(
-       ...     implicit_2d(Eq(y, sin(x)) & (y > 0), (x, -2 * pi, 2 * pi), (y, -4, 4)),
-       ...     implicit_2d(Eq(y, sin(x)) & (y < 0), (x, -2 * pi, 2 * pi), (y, -4, 4)),
+       ...     implicit_2d(
+       ...         Eq(y, sin(x)) & (y > 0), (x, -2 * pi, 2 * pi), (y, -4, 4)),
+       ...     implicit_2d(
+       ...         Eq(y, sin(x)) & (y < 0), (x, -2 * pi, 2 * pi), (y, -4, 4)),
        ...     ylim=(-2, 2)
        ... )
        Plot object containing:
@@ -1322,7 +1343,8 @@ def implicit_2d(expr, range1=None, range2=None, label=None, rendering_kw=None,
 
     series = []
     ranges = _preprocess_multiple_ranges([expr], [range1, range2], 2, params)
-    series.append(ImplicitSeries(expr, *ranges, label, color=color,
+    series.append(ImplicitSeries(
+        expr, *ranges, label, color=color,
         rendering_kw=rendering_kw, **kwargs))
 
     if (border_color or border_kw) and (not isinstance(expr, (Expr, Eq, Ne))):
@@ -1449,7 +1471,8 @@ def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
                cos(2 * x) / 2, sin(2 * x) / 2, (x, 0, pi),
                rendering_kw={"linestyle": ":"}, use_cm=False),
            list_2d(
-               cos(t), sin(t), "A", rendering_kw={"marker": "s", "markerfacecolor": None},
+               cos(t), sin(t), "A",
+               rendering_kw={"marker": "s", "markerfacecolor": None},
                params=params, is_point=True),
            list_2d(
                cos(2 * t) / 2, sin(2 * t) / 2, "B",
@@ -1468,13 +1491,12 @@ def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
         coord_x = [coord_x]
     if not hasattr(coord_y, "__iter__"):
         coord_y = [coord_y]
-    s = List2DSeries(coord_x, coord_y, label,
-        rendering_kw=rendering_kw, **kwargs)
+    s = List2DSeries(
+        coord_x, coord_y, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
-def geometry(geom, label=None, rendering_kw=None,
-    fill=True, **kwargs):
+def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
     """Plot entities from the sympy.geometry module.
 
     Parameters
@@ -1598,7 +1620,9 @@ def geometry(geom, label=None, rendering_kw=None,
                 Point3D(0, 0, 0), label="center",
                 rendering_kw={"point_size": 1}, point=True),
             geometry(Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4)), "line"),
-            plane(Plane((0, 0, 0), (1, 1, 1)), (x, -5, 5), (y, -4, 4), (z, -10, 10)),
+            plane(
+                Plane((0, 0, 0), (1, 1, 1)),
+                (x, -5, 5), (y, -4, 4), (z, -10, 10)),
             backend=KB
         )
 
@@ -1632,8 +1656,8 @@ def geometry(geom, label=None, rendering_kw=None,
     line, spb.graphics.functions_3d.plane
 
     """
-    s = GeometrySeries(geom, label=label, rendering_kw=rendering_kw,
-        fill=fill, **kwargs)
+    s = GeometrySeries(
+        geom, label=label, rendering_kw=rendering_kw, fill=fill, **kwargs)
     return [s]
 
 
@@ -1671,7 +1695,9 @@ def hline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
        >>> x = symbols("x")
        >>> graphics(
        ...     line(cos(x), (x, -pi, pi)),
-       ...     hline(0.5, rendering_kw={"linestyle": ":"}, show_in_legend=False),
+       ...     hline(
+       ...         0.5, rendering_kw={"linestyle": ":"},
+       ...         show_in_legend=False),
        ...     grid=False
        ... )
        Plot object containing:
@@ -1788,4 +1814,3 @@ def vline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
             rendering_kw=rendering_kw,
             show_in_legend=show_in_legend, **kwargs)
     ]
-    

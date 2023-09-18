@@ -18,9 +18,13 @@ def _draw_surface_helper(renderer, data):
         cmap = next(p._cm)
         skw["cmap"] = cmap
     else:
-        skw["color"] = next(p._cl) if s.surface_color is None else s.surface_color
-        proxy_artist = p.Rectangle((0, 0), 1, 1,
-            color=skw["color"], label=s.get_label(p._use_latex))
+        color = next(p._cl) if s.surface_color is None else s.surface_color
+        skw["color"] = color
+        proxy_artist = p.Rectangle(
+            (0, 0), 1, 1,
+            color=skw["color"],
+            label=s.get_label(p._use_latex)
+        )
         if s.show_in_legend:
             p._legend_handles.append(proxy_artist)
 
@@ -33,7 +37,12 @@ def _draw_surface_helper(renderer, data):
             cmap = p.cm.get_cmap(cmap)
         kw["facecolors"] = cmap(norm(facecolors))
     c = p._ax.plot_surface(x, y, z, **kw)
-    is_cb_added = p._add_colorbar(c, s.get_label(p._use_latex), s.use_cm and s.colorbar, norm=norm, cmap=cmap)
+    is_cb_added = p._add_colorbar(
+        c, s.get_label(p._use_latex),
+        s.use_cm and s.colorbar,
+        norm=norm,
+        cmap=cmap
+    )
     return [c, kw, is_cb_added, p._fig.axes[-1]]
 
 
@@ -65,7 +74,8 @@ def _update_surface_helper(renderer, data, handle):
         x, y, z, **kw)
 
     if is_cb_added:
-        p._update_colorbar(cax, kw["cmap"], s.get_label(p._use_latex), norm=norm)
+        p._update_colorbar(
+            cax, kw["cmap"], s.get_label(p._use_latex), norm=norm)
 
 
 class SurfaceRenderer(MatplotlibRenderer):

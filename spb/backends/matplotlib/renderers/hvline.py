@@ -4,7 +4,7 @@ from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
 def _draw_hvline_helper(renderer, data):
     p, s = renderer.plot, renderer.series
     rkw = {"color": "k"}
-    if s.label is not None:
+    if s.show_in_legend and (s.label is not None):
         rkw["label"] = s.label
     rkw = p.merge(rkw, s.rendering_kw)
     if s.is_horizontal:

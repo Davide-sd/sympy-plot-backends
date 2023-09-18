@@ -1,4 +1,4 @@
-from spb.defaults import cfg, TWO_D_B, THREE_D_B
+from spb.defaults import cfg
 from spb.plot_functions.functions_2d import (
     _set_labels
 )
@@ -84,15 +84,15 @@ def _build_complex_point_series(*args, allow_lambda=False, pc=False, **kwargs):
             # points are given inside a list, _unpack_args will see them as a
             # range.
             expr = expr or ranges
-            series.extend(complex_points(expr[0], label=label,
-                rendering_kw=rkw, **kwargs))
+            series.extend(complex_points(
+                expr[0], label=label, rendering_kw=rkw, **kwargs))
 
     else:
         expr, ranges, label, rkw = _unpack_args(*args)
         if isinstance(expr, (list, tuple, Tuple)):
             expr = expr[0]
-        series.append(complex_points(expr, label=label,
-            rendering_kw=rkw, **kwargs))
+        series.append(complex_points(
+            expr, label=label, rendering_kw=rkw, **kwargs))
 
     _set_labels(series, global_labels, global_rendering_kw)
     return series
@@ -104,21 +104,6 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
 
-    # apply the proper label.
-    # NOTE: the label is going to wrap the string representation of the
-    # expression. This design choice precludes the ability of setting latex
-    # labels, but this is not a problem as the user has the ability to set
-    # a custom alias for the function to be plotted.
-    mapping = {
-        "real": "Re(%s)",
-        "imag": "Im(%s)",
-        "abs": "Abs(%s)",
-        # NOTE: absarg is used to plot the absolute value colored by the
-        # argument. The colorbar indicates the argument, hence the following
-        # label is "Arg"
-        "absarg": "Arg(%s)",
-        "arg": "Arg(%s)",
-    }
     # option to be used with lambdify with complex functions
     kwargs.setdefault("modules", cfg["complex"]["modules"])
 
@@ -149,7 +134,6 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
         for e in exprs:
             add_series([e, *r, label, rkw])
 
-    params = kwargs.get("params", dict())
     for a in new_args:
         expr, ranges, label, rend_kw = a[0], a[1:-2], a[-2], a[-1]
         if label is None:
@@ -194,12 +178,12 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
                     line_abs_arg_colored(expr, ranges[0], label, **kw))
             if real or imag:
                 series.extend(
-                    line_real_imag(expr, ranges[0], label,
-                    real=real, imag=imag, **kw))
+                    line_real_imag(
+                        expr, ranges[0], label, real=real, imag=imag, **kw))
             if _abs or _arg:
                 series.extend(
-                    line_abs_arg(expr, ranges[0], label,
-                    abs=_abs, arg=_arg, **kw))
+                    line_abs_arg(
+                        expr, ranges[0], label, abs=_abs, arg=_arg, **kw))
         else:
             threed = kw.pop("threed", False)
             if absarg:
@@ -226,7 +210,8 @@ def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
     if not pcl:
         series = _build_series(*args, allow_lambda=allow_lambda, **kwargs)
     else:
-        series = _build_complex_point_series(*args, allow_lambda=allow_lambda, pcl=True, **kwargs)
+        series = _build_complex_point_series(*
+        args, allow_lambda=allow_lambda, pcl=True, **kwargs)
 
     if len(series) == 0:
         warnings.warn("No series found. Check your keyword arguments.")
@@ -267,9 +252,11 @@ def _set_axis_labels(series, kwargs):
             fy = lambda use_latex: wrap(use_latex) % x(use_latex)
             kwargs.setdefault("ylabel", fy)
 
-    if (kwargs.get("aspect", None) is None) and any(
-        (s.is_complex and s.is_domain_coloring and (not s.is_3D)) or s.is_point
-        for s in series):
+    if (
+        kwargs.get("aspect", None) is None) and any(
+            (s.is_complex and s.is_domain_coloring and (not s.is_3D))
+            or s.is_point for s in series
+    ):
         # set aspect equal for 2D domain coloring or complex points
         kwargs.setdefault("aspect", "equal")
 
@@ -384,7 +371,8 @@ def plot_real_imag(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_real_imag(sqrt(x), (x, -3, 3), real=False, imag=False, abs=True, arg=True)
+       >>> plot_real_imag(
+       ...     sqrt(x), (x, -3, 3), real=False, imag=False, abs=True, arg=True)
        Plot object containing:
        [0]: cartesian line: abs(sqrt(x)) for x over (-3.0, 3.0)
        [1]: cartesian line: arg(sqrt(x)) for x over (-3.0, 3.0)
@@ -649,7 +637,8 @@ def plot_complex(*args, **kwargs):
     See Also
     ========
 
-    plot_riemann_sphere, plot_real_imag, plot_complex_list, plot_complex_vector
+    plot_riemann_sphere, plot_real_imag, plot_complex_list,
+    plot_complex_vector
 
     """
     kwargs["absarg"] = True
@@ -913,7 +902,6 @@ def plot_complex_vector(*args, **kwargs):
     global_labels = kwargs.pop("label", [])
 
     args = _plot_sympify(args)
-    params = kwargs.get("params", None)
     series = _build_series(*args, allow_lambda=False, **kwargs)
     multiple_expr = len(series) > 1
 
@@ -927,15 +915,17 @@ def plot_complex_vector(*args, **kwargs):
     new_series = []
     for i, s in enumerate(series):
         new_series.extend(
-            complex_vector_field(s.expr, s.ranges[0], label=get_label(i), **kwargs)
+            complex_vector_field(
+                s.expr, s.ranges[0], label=get_label(i), **kwargs)
         )
     for s, lbl in zip(new_series, global_labels):
         s.label = lbl
     return graphics(*new_series, **kwargs)
 
 
-def plot_riemann_sphere(expr, range=None, annotate=True, riemann_mask=True,
-    **kwargs):
+def plot_riemann_sphere(
+    expr, range=None, annotate=True, riemann_mask=True, **kwargs
+):
     """Visualize stereographic projections of the Riemann sphere.
 
     Note:
@@ -1189,7 +1179,8 @@ def plot_riemann_sphere(expr, range=None, annotate=True, riemann_mask=True,
         template=kwargs.get("template", None),
         ncols=kwargs.get("ncols", 2),
     )
-    pg = plotgrid(p1, p2, nc=2, imagegrid=True, size=size, show=False,
+    pg = plotgrid(
+        p1, p2, nc=2, imagegrid=True, size=size, show=False,
         **pg_interactive_kwargs)
 
     if len(params) == 0:

@@ -38,13 +38,16 @@ def _are_all_plots_instances_of(plots, Backend):
     """Verify that plots (or interactive plots) are produces with the
     specified backend.
     """
-    return all(isinstance(t, Backend) or
+    return all(
+        isinstance(t, Backend) or
         (isinstance(t, IPlot) and isinstance(t.backend, Backend))
-        for t in plots)
+        for t in plots
+    )
 
 
-def _create_mpl_figure(mapping, imagegrid=False, size=None,
-    is_iplot_panel=False):
+def _create_mpl_figure(
+    mapping, imagegrid=False, size=None, is_iplot_panel=False
+):
     matplotlib = import_module(
         'matplotlib',
         import_kwargs={'fromlist': ['pyplot', 'gridspec']},
@@ -174,7 +177,9 @@ def _create_ipywidgets_figure(mapping, panel_kw):
             # let's assume cfg["bokeh"]["height"] is an integer
             min_height = str(cfg["bokeh"]["height"]) + "px"
             new_fig = ipy.Output(layout=ipy.Layout(
-                height='auto', min_height=min_height, width='100%', max_width="100%"))
+                height='auto', min_height=min_height,
+                width='100%', max_width="100%")
+            )
             with new_fig:
                 bokeh.io.show(plot_fig)
             bokeh_outputs_plots.append((new_fig, p))
@@ -577,10 +582,14 @@ class PlotGrid:
                 self._new_plots = self.args
 
                 if self._imodule == "panel":
-                    self.panel_kw.setdefault("width", 800 if not size else size[0])
-                    self.panel_kw.setdefault("height",
-                        nr * self._panel_row_height if not size else size[1])
-                    self._fig, self._panes_plots = _create_panel_figure(mapping, self.panel_kw)
+                    self.panel_kw.setdefault(
+                        "width", 800 if not size else size[0])
+                    self.panel_kw.setdefault(
+                        "height",
+                        nr * self._panel_row_height if not size else size[1]
+                    )
+                    self._fig, self._panes_plots = _create_panel_figure(
+                        mapping, self.panel_kw)
                 else:
                     get_size = lambda t: str(t) + "px" if isinstance(t, int) else t
                     self.panel_kw.setdefault("width", "800px" if not size else get_size(size[0]))
@@ -606,7 +615,8 @@ class PlotGrid:
                         self._new_plots.append(plot)
 
                 if self._imodule == "panel":
-                    self._fig, self._panes_plots = _create_panel_figure(gs, self.panel_kw)
+                    self._fig, self._panes_plots = _create_panel_figure(
+                        gs, self.panel_kw)
                 else:
                     first_element = list(gs.keys())[0]
                     mpl_gs = first_element.get_gridspec()

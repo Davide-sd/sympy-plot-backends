@@ -13,8 +13,10 @@ from spb.graphics.utils import _plot3d_wireframe_helper, _plot_sympify
 import warnings
 
 
-def line_parametric_3d(expr1, expr2, expr3, range=None, label=None,
-    rendering_kw=None, colorbar=True, use_cm=True, **kwargs):
+def line_parametric_3d(
+    expr1, expr2, expr3, range=None, label=None,
+    rendering_kw=None, colorbar=True, use_cm=True, **kwargs
+):
     """Plots a 3D parametric curve.
 
     Parameters
@@ -251,14 +253,17 @@ def line_parametric_3d(expr1, expr2, expr3, range=None, label=None,
     params = kwargs.get("params", {})
     range = _create_missing_ranges(
         [expr1, expr2, expr3], [range] if range else [], 1, params)[0]
-    s = Parametric3DLineSeries(expr1, expr2, expr3, range, label,
+    s = Parametric3DLineSeries(
+        expr1, expr2, expr3, range, label,
         rendering_kw=rendering_kw, colorbar=colorbar,
         use_cm=use_cm, **kwargs)
     return [s]
 
 
-def surface(expr, range1=None, range2=None, label=None, rendering_kw=None,
-    colorbar=True, use_cm=False, **kwargs):
+def surface(
+    expr, range1=None, range2=None, label=None, rendering_kw=None,
+    colorbar=True, use_cm=False, **kwargs
+):
     """Creates the surface of a function of 2 variables.
 
     Parameters
@@ -526,7 +531,8 @@ def surface(expr, range1=None, range2=None, label=None, rendering_kw=None,
             "visualization might be flipped."
         )
     ranges = _preprocess_multiple_ranges([expr], [range1, range2], 2, params)
-    s = SurfaceOver2DRangeSeries(expr, *ranges, label,
+    s = SurfaceOver2DRangeSeries(
+        expr, *ranges, label,
         rendering_kw=rendering_kw, colorbar=colorbar,
         use_cm=use_cm, **kwargs)
     s = [s]
@@ -534,8 +540,10 @@ def surface(expr, range1=None, range2=None, label=None, rendering_kw=None,
     return s
 
 
-def surface_parametric(expr1, expr2, expr3, range1=None, range2=None,
-    label=None, rendering_kw=None, **kwargs):
+def surface_parametric(
+    expr1, expr2, expr3, range1=None, range2=None,
+    label=None, rendering_kw=None, **kwargs
+):
     """Creates a 3D parametric surface.
 
     Parameters
@@ -779,13 +787,16 @@ def surface_parametric(expr1, expr2, expr3, range1=None, range2=None,
         )
     ranges = _preprocess_multiple_ranges(
         [expr1, expr2, expr3], [range1, range2], 2, params)
-    s = ParametricSurfaceSeries(expr1, expr2, expr3, *ranges, label,
+    s = ParametricSurfaceSeries(
+        expr1, expr2, expr3, *ranges, label,
         rendering_kw=rendering_kw, **kwargs)
     return [s] + _plot3d_wireframe_helper([s], **kwargs)
 
 
-def surface_spherical(r, range_theta=None, range_phi=None, label=None,
-    rendering_kw=None, **kwargs):
+def surface_spherical(
+    r, range_theta=None, range_phi=None, label=None,
+    rendering_kw=None, **kwargs
+):
     """Plots a radius as a function of the spherical coordinates theta and phi.
 
     Parameters
@@ -946,18 +957,23 @@ def surface_spherical(r, range_theta=None, range_phi=None, label=None,
     x, y, z = spherical_to_cartesian(r, theta, phi)
 
     # enforce polar and azimuthal condition and convert spherical to cartesian
-    range_theta = prange(theta,
+    range_theta = prange(
+        theta,
         rel("<", range_theta[1], 0, range_theta[1]),
         rel(">", range_theta[2], pi, range_theta[2]))
-    range_phi = prange(phi,
+    range_phi = prange(
+        phi,
         rel("<", range_phi[1], 0, range_phi[1]),
         rel(">", range_phi[2], 2*pi, range_phi[2]))
 
-    return surface_parametric(x, y, z, range_theta, range_phi, label, **kwargs)
+    return surface_parametric(
+        x, y, z, range_theta, range_phi, label, **kwargs)
 
 
-def implicit_3d(expr, range1=None, range2=None, range3=None, label=None,
-    rendering_kw=None, **kwargs):
+def implicit_3d(
+    expr, range1=None, range2=None, range3=None, label=None,
+    rendering_kw=None, **kwargs
+):
     """Plots an isosurface of a function.
 
     Notes
@@ -1059,13 +1075,15 @@ def implicit_3d(expr, range1=None, range2=None, range3=None, label=None,
 
     ranges = _preprocess_multiple_ranges(
         [expr], [range1, range2, range3], 3, params)
-    s = Implicit3DSeries(expr, *ranges, label,
-        rendering_kw=rendering_kw, **kwargs)
+    s = Implicit3DSeries(
+        expr, *ranges, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
-def surface_revolution(curve, range_t, range_phi=None, axis=(0, 0),
-    parallel_axis='z', show_curve=False, curve_kw={}, **kwargs):
+def surface_revolution(
+    curve, range_t, range_phi=None, axis=(0, 0),
+    parallel_axis='z', show_curve=False, curve_kw={}, **kwargs
+):
     """Creates a surface of revolution by rotating a curve around an axis of
     rotation.
 
@@ -1245,7 +1263,8 @@ def surface_revolution(curve, range_t, range_phi=None, axis=(0, 0),
 
     """
     if parallel_axis.lower() not in ["x", "y", "z"]:
-        raise ValueError("`parallel_axis` must be either 'x' 'y' or 'z'. "
+        raise ValueError(
+            "`parallel_axis` must be either 'x' 'y' or 'z'. "
             "Received: %s " % parallel_axis)
 
     params = kwargs.get("params", {})
@@ -1302,7 +1321,9 @@ def surface_revolution(curve, range_t, range_phi=None, axis=(0, 0),
     return surface
 
 
-def list_3d(coord_x, coord_y, coord_z, label=None, rendering_kw=None, **kwargs):
+def list_3d(
+    coord_x, coord_y, coord_z, label=None, rendering_kw=None, **kwargs
+):
     """Plots lists of coordinates in 3D space.
 
     Parameters
@@ -1414,13 +1435,14 @@ def list_3d(coord_x, coord_y, coord_z, label=None, rendering_kw=None, **kwargs):
         coord_y = [coord_y]
     if not hasattr(coord_z, "__iter__"):
         coord_z = [coord_z]
-    s = List3DSeries(coord_x, coord_y, coord_z, label,
-        rendering_kw=rendering_kw, **kwargs)
+    s = List3DSeries(
+        coord_x, coord_y, coord_z, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
-def wireframe(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
-    **kwargs):
+def wireframe(
+    surface_series, n1=10, n2=10, n=None, rendering_kw=None, **kwargs
+):
     """Creates a wireframe of a 3D surface.
 
     Parameters
@@ -1487,7 +1509,8 @@ def wireframe(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
            wireframe(sphere, n1=13, rendering_kw={"line_dash": "dot"}),
            surface_spherical(1, (theta, pi - t, pi), (phi, pi, 2*pi),
                label="sphere cap", wireframe=True, wf_n1=5),
-           surface_parametric(u * cos(v), u * sin(v), -u / tan(t), (u, 0, r_cone), (v, pi , 2*pi),
+           surface_parametric(
+               u * cos(v), u * sin(v), -u / tan(t), (u, 0, r_cone), (v, pi , 2*pi),
                label="cone", wireframe=True, wf_n1=7),
            backend=PB, grid=False
        )
@@ -1498,11 +1521,14 @@ def wireframe(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
     surface, surface_parametric, surface_spherical, surface_revolution
 
     """
-    allowed = (ComplexSurfaceBaseSeries, SurfaceOver2DRangeSeries,
-        ParametricSurfaceSeries)
+    allowed = (
+        ComplexSurfaceBaseSeries, SurfaceOver2DRangeSeries,
+        ParametricSurfaceSeries
+    )
     if not isinstance(surface_series, allowed):
-        raise TypeError("Wireframe lines are supported only for instances of "
-            f"{allowed}. Received: type(surface_series) = {type(surface_series)}")
+        raise TypeError(
+            f"Wireframe lines are supported only for instances of {allowed}. "
+            f"Received: type(surface_series) = {type(surface_series)}")
     if not surface_series.is_3Dsurface:
         # ComplexSurfaceBaseSeries can also be 2D
         raise ValueError("Wireframe lines are supported only for 3D series.")
@@ -1516,8 +1542,10 @@ def wireframe(surface_series, n1=10, n2=10, n=None, rendering_kw=None,
     return _plot3d_wireframe_helper([surface_series], **kw)
 
 
-def plane(p, range1=None, range2=None, range3=None, label=None,
-    rendering_kw=None, **kwargs):
+def plane(
+    p, range1=None, range2=None, range3=None, label=None,
+    rendering_kw=None, **kwargs
+):
     """Plot a plane in a 3D space.
 
     Parameters
@@ -1570,8 +1598,8 @@ def plane(p, range1=None, range2=None, range3=None, label=None,
     """
     p = _plot_sympify(p)
     if not isinstance(p, Plane):
-        raise TypeError("`p` must be an instance of `Plane`. Received "
-            f"type(p)={type(p)}")
+        raise TypeError(
+            f"`p` must be an instance of `Plane`. Received type(p)={type(p)}")
     params = kwargs.get("params", {})
 
     check = [range1 is None, range2 is None, range3 is None]
@@ -1587,6 +1615,6 @@ def plane(p, range1=None, range2=None, range3=None, label=None,
 
     ranges = _preprocess_multiple_ranges(
         [p], [range1, range2, range3], 3, params)
-    s = PlaneSeries(p, *ranges, label,
-        rendering_kw=rendering_kw, **kwargs)
+    s = PlaneSeries(
+        p, *ranges, label, rendering_kw=rendering_kw, **kwargs)
     return [s]

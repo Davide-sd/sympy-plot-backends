@@ -26,8 +26,10 @@ def _modify_plot_expr(expr):
 
     func_name = expr.func.id
     # look for function calls starting with "plot"
-    if (((len(func_name) >= 4) and (func_name[:4] == "plot")) or
-        (func_name == "graphics")):
+    if (
+        ((len(func_name) >= 4) and (func_name[:4] == "plot")) or
+        (func_name == "graphics")
+    ):
         found_show = False
         # loop over kwargs, if "show" is already present, set its
         # value to False
@@ -38,8 +40,8 @@ def _modify_plot_expr(expr):
                 break
         # if "show" is not present, then add it
         if not found_show:
-            expr.keywords.append(ast.keyword(arg='show',
-                value=ast.Constant(value=False)))
+            expr.keywords.append(
+                ast.keyword(arg='show', value=ast.Constant(value=False)))
 
 
 def _modify_code(code):
@@ -101,14 +103,18 @@ def _modify_code(code):
     # last node
     ln = tree.body[-1]
     if isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call):
-        if (isinstance(ln.value.func, ast.Attribute) and
-            (ln.value.func.attr == "show")):
-            tree.body[-1] = ast.Assign(targets=[ast.Name(id="myplot")],
+        if (
+            isinstance(ln.value.func, ast.Attribute) and
+            (ln.value.func.attr == "show")
+        ):
+            tree.body[-1] = ast.Assign(
+                targets=[ast.Name(id="myplot")],
                 value=ln.value.func.value, lineno=ln.lineno)
         else:
             # if the last command is a plot function call (for example,
             # plot(...), modify it to be an assignment: myplot = plot(...)
-            tree.body[-1] = ast.Assign(targets=[ast.Name(id="myplot")],
+            tree.body[-1] = ast.Assign(
+                targets=[ast.Name(id="myplot")],
                 value=ln.value, lineno=ln.lineno)
 
     # finally, append myplot.fig to the ast
@@ -159,10 +165,12 @@ def _modify_iplot_code(code):
     tree = ast.parse(code)
     ln = tree.body[-1]
 
-    if (isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call) and
+    if (
+        isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call) and
         isinstance(ln.value.func, ast.Attribute) and
         (ln.value.func.attr == "show") and
-        (("KB" in code) or ("K3DBackend" in code))):
+        (("KB" in code) or ("K3DBackend" in code))
+    ):
         # something like: (p1 + p2).show()
         # using backend=KB
 
@@ -173,9 +181,11 @@ def _modify_iplot_code(code):
         left_plot_name = ln.value.func.value.left.id
         right_plot_name = ln.value.func.value.right.id
         for node in tree.body:
-            if (isinstance(node, ast.Assign) and
+            if (
+                isinstance(node, ast.Assign) and
                 isinstance(node.targets[0], ast.Name) and
-                (node.targets[0].id in [left_plot_name, right_plot_name])):
+                (node.targets[0].id in [left_plot_name, right_plot_name])
+            ):
                 imodule_node = None
                 for kw in node.value.keywords:
                     if kw.arg == "imodule":
@@ -186,13 +196,16 @@ def _modify_iplot_code(code):
                         ast.keyword(
                             arg='imodule', value=ast.Constant(value="panel")))
 
-        tree.body[-1] = ast.Assign(targets=[ast.Name(id="panelplot")],
+        tree.body[-1] = ast.Assign(
+            targets=[ast.Name(id="panelplot")],
             value=ln.value.func.value, lineno=ln.lineno)
         last_command = ast.parse("panelplot.layout_controls()")
         tree.body.append(last_command.body[-1])
 
-    elif (isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call) and
-        isinstance(ln.value.func, ast.Name)):
+    elif (
+        isinstance(ln, ast.Expr) and isinstance(ln.value, ast.Call) and
+        isinstance(ln.value.func, ast.Name)
+    ):
         # ordinary example: plot_something(expr, range, params={}, ...)
         func_name = tree.body[-1].value.func.id
         if (func_name == "graphics") or (func_name[:4] == "plot"):
@@ -219,7 +232,10 @@ def _modify_iplot_code(code):
             # HACK to deal with ``graphics``
             if (func_name == "graphics") and ("params=" in ast.unparse(tree)):
                 params_node = True
-            if ((params_node is None) or (servable_node is None)) and (not is_KB):
+            if (
+                ((params_node is None) or (servable_node is None))
+                and (not is_KB)
+            ):
                 return ast.unparse(tree)
             if servable_node is None:
                 servable_node = ast.keyword(
@@ -236,23 +252,28 @@ def _modify_iplot_code(code):
             # the default width of the sidebar is good for full screen, but
             # it's too small for demo plots in the docs. Let's increase it.
             tree.body[-1].value.keywords.append(
-                ast.keyword(arg='template', value=ast.Constant(
-                    value={'sidebar_width': '300px'}))
+                ast.keyword(
+                    arg='template', value=ast.Constant(
+                        value={'sidebar_width': '300px'})
+                    )
                 )
-            tree.body[-1] = ast.Assign(targets=[ast.Name(id="panelplot")],
+            tree.body[-1] = ast.Assign(
+                targets=[ast.Name(id="panelplot")],
                 value=ln.value, lineno=ln.lineno)
 
             if is_KB:
                 last_command = ast.parse("panelplot.layout_controls()")
             else:
-                last_command = ast.parse("panelplot._create_template(show=False)")
+                last_command = ast.parse(
+                    "panelplot._create_template(show=False)")
 
             tree.body.append(last_command.body[-1])
     return ast.unparse(tree)
 
 
-def postprocess_KB_interactive_image(ns, size, img, browser, browser_path,
-    driver_path, driver_options=[]):
+def postprocess_KB_interactive_image(
+    ns, size, img, browser, browser_path, driver_path, driver_options=[]
+):
     """This function is meant to be used by sphinx_panel_screenshot.
 
     If the current code block contains an interactive widget plot using

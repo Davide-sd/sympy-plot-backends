@@ -1,8 +1,19 @@
 import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from spb.backends.k3d.renderers import *
-from spb.series import *
+from spb.backends.matplotlib.renderers import (
+    Line3DRenderer, Vector3DRenderer,
+    ComplexRenderer, SurfaceRenderer, Implicit3DRenderer,
+    GeometryRenderer
+)
+from spb.series import (
+    Parametric3DLineSeries, ComplexParametric3DLineSeries,
+    List3DSeries, Vector3DSeries, SliceVector3DSeries,
+    RiemannSphereSeries, Implicit3DSeries,
+    ComplexDomainColoringSeries, ComplexSurfaceSeries,
+    SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
+    PlaneSeries, GeometrySeries
+)
 from sympy.external import import_module
 import warnings
 
@@ -272,8 +283,9 @@ class K3DBackend(Plot):
             else:
                 self._fig.objects[self._title_handle].text = title
 
-    def _build_k3d_vector_data(self, xx, yy, zz, uu, vv, ww, qkw, colormap,
-        normalize, series):
+    def _build_k3d_vector_data(
+        self, xx, yy, zz, uu, vv, ww, qkw, colormap, normalize, series
+    ):
         """Assemble the origins, vectors and colors (if possible) matrices.
         """
         np = import_module('numpy')
@@ -370,10 +382,13 @@ class K3DBackend(Plot):
                 # experience
                 self._fig.camera_auto_fit = False
                 bounds = np.array(self._bounds)
-                bounds = np.dstack(
-                    [np.min(bounds[:, 0::2], axis=0), np.max(bounds[:, 1::2], axis=0)]
-                ).flatten()
-                self._fig.camera = self._fig.get_auto_camera(1.5, 40, 60, bounds)
+                bounds = np.dstack([
+                    np.min(bounds[:, 0::2], axis=0),
+                    np.max(bounds[:, 1::2], axis=0)
+                ]).flatten()
+                self._fig.camera = self._fig.get_auto_camera(
+                    1.5, 40, 60, bounds
+                )
         else:
             # TODO: why on Earth doesn't it work?
             self._fig.camera = self.camera

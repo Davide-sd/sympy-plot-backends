@@ -1,7 +1,6 @@
 from itertools import cycle
 from spb.series import BaseSeries, LineOver1DRangeSeries
 from spb.backends.utils import convert_colormap
-from spb.utils import prange
 from sympy import Symbol
 from sympy.utilities.iterables import is_sequence
 from sympy.external import import_module
@@ -32,7 +31,8 @@ class Plot:
     Please, explore the `MatplotlibBackend` source code to understand how a
     backend should be coded.
 
-    Also note that setting attributes to plot objects or to data series after they have been instantiated is strongly unrecommended, as it is not
+    Also note that setting attributes to plot objects or to data series after
+    they have been instantiated is strongly unrecommended, as it is not
     guaranteed that the figure will be updated.
 
     Notes
@@ -179,10 +179,13 @@ class Plot:
     ranges over [-pi, pi]).
     """
 
-    _allowed_keys = ["aspect", "axis", "axis_center", "backend",
-    "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
-    "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim", "show_axis",
-    "xscale", "yscale", "zscale", "process_piecewise", "polar_axis", "imodule"]
+    _allowed_keys = [
+        "aspect", "axis", "axis_center", "backend",
+        "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
+        "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim", "show_axis",
+        "xscale", "yscale", "zscale", "process_piecewise", "polar_axis",
+        "imodule"
+    ]
     """contains a list of public keyword arguments supported by the series.
     It will be used to validate the user-provided keyword arguments.
     """
@@ -242,8 +245,10 @@ class Plot:
                     "not part of the `params` dictionary:\n"
                     f"{t}.\nWhat are these symbols? {remaining_symbols}"
                 )
-            values = [params[s] if isinstance(s, Symbol) else s.subs(params)
-                for s in t[1:]]
+            values = [
+                params[s] if isinstance(s, Symbol) else s.subs(params)
+                for s in t[1:]
+            ]
             return t[0].format(*values)
         return t
 
@@ -322,9 +327,10 @@ class Plot:
         # better clarity.
         self.legend = kwargs.get("legend", None)
         if self.legend is None:
-            # if len([s for s in self._series if s.show_in_legend]) > 1:
-            if len([s for s in self._series
-                if s.show_in_legend and (not s.use_cm)]) > 1:
+            series_to_show = [
+                s for s in self._series if s.show_in_legend and (not s.use_cm)
+            ]
+            if len(series_to_show) > 1:
                 # don't show the legend if `plot_piecewise` created this
                 # backend
                 if not ("process_piecewise" in kwargs.keys()):
@@ -334,7 +340,10 @@ class Plot:
         # instead of (symbol, min, max).
         # just check the first series.
         self._invert_x_axis = False
-        if ((len(self._series) > 0) and isinstance(self._series[0], LineOver1DRangeSeries)):
+        if (
+            (len(self._series) > 0) and
+            isinstance(self._series[0], LineOver1DRangeSeries)
+        ):
             # elements of parametric ranges can't be compared because they
             # are likely going to be symbolic expressions
             if not self._series[0]._interactive_ranges:
@@ -356,10 +365,10 @@ class Plot:
             if t:
                 if not is_real(t):
                     raise ValueError(
-                        "All numbers from {}={} must be real".format(t_name, t))
+                        f"All numbers from {t_name}={t} must be real")
                 if not is_finite(t):
                     raise ValueError(
-                        "All numbers from {}={} must be finite".format(t_name, t))
+                        f"All numbers from {t_name}={t} must be finite")
                 setattr(self, t_name, (float(t[0]), float(t[1])))
 
         self.xlim = None
@@ -406,7 +415,9 @@ class Plot:
         tb = type(self)
         colorloop = self.colorloop if not tb.colorloop else tb.colorloop
         colormaps = self.colormaps if not tb.colormaps else tb.colormaps
-        cyclic_colormaps = self.cyclic_colormaps if not tb.cyclic_colormaps else tb.cyclic_colormaps
+        cyclic_colormaps = self.cyclic_colormaps
+        if tb.cyclic_colormaps:
+            cyclic_colormaps = tb.cyclic_colormaps
 
         if not isinstance(colorloop, (list, tuple)):
             # assume it is a matplotlib's ListedColormap
@@ -482,7 +493,11 @@ class Plot:
         use_cyclic_cm = False
         if is_complex:
             m, M = np.amin(param), np.amax(param)
-            if (m != M) and (abs(abs(m) - np.pi) < eps) and (abs(abs(M) - np.pi) < eps):
+            if (
+                (m != M) and
+                (abs(abs(m) - np.pi) < eps) and
+                (abs(abs(M) - np.pi) < eps)
+            ):
                 use_cyclic_cm = True
         return use_cyclic_cm
 
@@ -536,7 +551,9 @@ class Plot:
         raise NotImplementedError
 
     def __str__(self):
-        series_strs = [("[%d]: " % i) + str(s) for i, s in enumerate(self._series)]
+        series_strs = [
+            ("[%d]: " % i) + str(s) for i, s in enumerate(self._series)
+        ]
         return "Plot object containing:\n" + "\n".join(series_strs)
 
     def __getitem__(self, index):
@@ -661,7 +678,10 @@ class Plot:
         """
         if isinstance(arg, Plot):
             self._series.extend(arg._series)
-        elif is_sequence(arg) and all([isinstance(a, BaseSeries) for a in arg]):
+        elif (
+            is_sequence(arg) and
+            all([isinstance(a, BaseSeries) for a in arg])
+        ):
             self._series.extend(arg)
         else:
             raise TypeError("Expecting Plot or sequence of BaseSeries")

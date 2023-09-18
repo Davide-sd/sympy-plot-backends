@@ -1,6 +1,7 @@
 from spb.backends.base_renderer import Renderer
-from spb.backends.bokeh.renderers.contour import _draw_contour_helper, _update_contour_helper
-import warnings
+from spb.backends.bokeh.renderers.contour import (
+    _draw_contour_helper, _update_contour_helper
+)
 
 
 def _draw_domain_coloring_helper(renderer, data):
@@ -16,7 +17,9 @@ def _draw_domain_coloring_helper(renderer, data):
         # because source.image is mapped to the fig.x_range, but mag-angle are
         # not... might be a bug.
         img = np.flip(img, axis=0)
-        mag, angle = [np.flip(np.flip(t, axis=0), axis=1) for t in [mag, angle]]
+        mag, angle = [
+            np.flip(np.flip(t, axis=0), axis=1) for t in [mag, angle]
+        ]
     source = p.bokeh.models.ColumnDataSource(
         {
             "image": [img],
@@ -42,19 +45,27 @@ def _draw_domain_coloring_helper(renderer, data):
         labels = ["-π", "-π / 2", "0", "π / 2", "π"]
         colorbar1 = p.bokeh.models.ColorBar(
             color_mapper=cm1,
-            title="Argument" if s.get_label(False) == str(s.expr) else s.get_label(p._use_latex),
+            title=(
+                "Argument" if s.get_label(False) == str(s.expr)
+                else s.get_label(p._use_latex)
+            ),
             ticker=p.bokeh.models.tickers.FixedTicker(ticks=ticks),
             major_label_overrides={k: v for k, v in zip(ticks, labels)})
         p._fig.add_layout(colorbar1, "right")
 
     if s.riemann_mask and s.annotate:
-        options = dict(line_width=2, color="#000000", size=8, marker="circle",
-            level="overlay")
+        options = dict(
+            line_width=2, color="#000000", size=8, marker="circle",
+            level="overlay"
+        )
         # points (1, 0), (0, i), (0, -i)
         p._fig.scatter([1, 0, 0], [0, 1, -1], fill_color="white", **options)
         # center point
-        p._fig.scatter([0], [0],
-            fill_color="white" if s.at_infinity else "black", **options)
+        p._fig.scatter(
+            [0], [0],
+            fill_color="white" if s.at_infinity else "black",
+            **options
+        )
         # annotations
         pixel_offset = 15
         labels = ["0", "i", "-i", "1"]
@@ -91,7 +102,9 @@ def _update_domain_coloring_helper(renderer, data, handle):
         # because source.image is mapped to the fig.x_range, but mag-angle are
         # not... might be a bug.
         img = np.flip(img, axis=0)
-        mag, angle = [np.flip(np.flip(t, axis=0), axis=1) for t in [mag, angle]]
+        mag, angle = [
+            np.flip(np.flip(t, axis=0), axis=1) for t in [mag, angle]
+        ]
     source = {
         "image": [img],
         "abs": [mag],

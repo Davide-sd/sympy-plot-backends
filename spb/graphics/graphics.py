@@ -9,9 +9,11 @@ from spb.series import (
 from spb.utils import _instantiate_backend
 
 
-def graphics(*args, aspect=None, axis_center=None, is_polar=None, legend=None,
+def graphics(
+    *args, aspect=None, axis_center=None, is_polar=None, legend=None,
     show=True, size=None, title=None, xlabel=None, ylabel=None, zlabel=None,
-    xlim=None, ylim=None, zlim=None, **kwargs):
+    xlim=None, ylim=None, zlim=None, **kwargs
+):
     """Plots a collection of data series.
 
     Parameters
@@ -140,7 +142,8 @@ def graphics(*args, aspect=None, axis_center=None, is_polar=None, legend=None,
         elif isinstance(a, BaseSeries):
             series.append(a)
         else:
-            raise TypeError("Only instances of ``BaseSeries`` or lists of "
+            raise TypeError(
+                "Only instances of ``BaseSeries`` or lists of "
                 "instances of ``BaseSeries`` are supported. Received: "
                 f"{type(a)}")
 
@@ -168,9 +171,11 @@ def graphics(*args, aspect=None, axis_center=None, is_polar=None, legend=None,
             for s in series) and all(s.label == "__k__" for s in series
             if isinstance(s, Parametric3DLineSeries)))
         ):
-        free_x = set([s.ranges[0][0] for s in series
+        free_x = set([
+            s.ranges[0][0] for s in series
             if isinstance(s, (ContourSeries, SurfaceOver2DRangeSeries))])
-        free_y = set([s.ranges[1][0] for s in series
+        free_y = set([
+            s.ranges[1][0] for s in series
             if isinstance(s, (ContourSeries, SurfaceOver2DRangeSeries))])
         if all(len(t) == 1 for t in [free_x, free_y]):
             x = free_x.pop() if free_x else Symbol("x")
@@ -202,19 +207,24 @@ def graphics(*args, aspect=None, axis_center=None, is_polar=None, legend=None,
             kwargs.setdefault("xlabel", fx)
             kwargs.setdefault("ylabel", fy)
 
-    if xlabel: kwargs["xlabel"] = xlabel
-    if ylabel: kwargs["ylabel"] = ylabel
-    if zlabel: kwargs["zlabel"] = zlabel
+    if xlabel:
+        kwargs["xlabel"] = xlabel
+    if ylabel:
+        kwargs["ylabel"] = ylabel
+    if zlabel:
+        kwargs["zlabel"] = zlabel
 
     if any(s.is_interactive for s in series):
-        return create_interactive_plot(*series,
+        return create_interactive_plot(
+            *series,
             aspect=aspect, axis_center=axis_center, is_polar=is_polar,
             legend=legend, show=show, size=size, title=title,
             xlim=xlim, ylim=ylim, zlim=zlim, **kwargs)
 
     is_3D = any(s.is_3D for s in series)
     Backend = kwargs.pop("backend", TWO_D_B if is_3D else THREE_D_B)
-    return _instantiate_backend(Backend, *series,
+    return _instantiate_backend(
+        Backend, *series,
         aspect=aspect, axis_center=axis_center,
         is_polar=is_polar, legend=legend, show=show, size=size,
         title=title, xlim=xlim, ylim=ylim, zlim=zlim, **kwargs)

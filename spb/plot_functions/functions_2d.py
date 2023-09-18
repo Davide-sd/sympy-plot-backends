@@ -39,9 +39,10 @@ def _set_labels(series, labels, rendering_kw):
         labels = [labels]
     if len(labels) > 0:
         if len(series) != len(labels):
-            raise ValueError("The number of labels must be equal to the "
+            raise ValueError(
+                "The number of labels must be equal to the "
                 "number of expressions being plotted.\nReceived "
-                "{} expressions and {} labels".format(len(series), len(labels)))
+                f"{len(series)} expressions and {len(labels)} labels")
 
         for s, l in zip(series, labels):
             s.label = l
@@ -52,9 +53,10 @@ def _set_labels(series, labels, rendering_kw):
         if len(rendering_kw) == 1:
             rendering_kw *= len(series)
         elif len(series) != len(rendering_kw):
-            raise ValueError("The number of rendering dictionaries must be "
+            raise ValueError(
+                "The number of rendering dictionaries must be "
                 "equal to the number of expressions being plotted.\nReceived "
-                "{} expressions and {} labels".format(len(series), len(rendering_kw)))
+                f"{len(series)} expressions and {len(rendering_kw)} labels")
         for s, r in zip(series, rendering_kw):
             s.rendering_kw = r
 
@@ -446,8 +448,8 @@ def plot_parametric(*args, **kwargs):
        >>> import numpy as np
        >>> fx = lambda t: np.sin(t) * (np.exp(np.cos(t)) - 2 * np.cos(4 * t) - np.sin(t / 12)**5)
        >>> fy = lambda t: np.cos(t) * (np.exp(np.cos(t)) - 2 * np.cos(4 * t) - np.sin(t / 12)**5)
-       >>> p = plot_parametric(fx, fy, ("t", 0, 12 * pi), title="Butterfly Curve",
-       ...     use_cm=False, n=2000)
+       >>> p = plot_parametric(fx, fy, ("t", 0, 12 * pi),
+       ...     title="Butterfly Curve", use_cm=False, n=2000)
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. This plot illustrates:
@@ -670,10 +672,12 @@ def plot_parametric_region(*args, **kwargs):
         v, vmin, vmax = vrange
         new_pe = []
         for uv in np.linspace(float(umin), float(umax), n1):
-            new_pe.append((fx.subs(u, uv), fy.subs(u, uv),
+            new_pe.append((
+                fx.subs(u, uv), fy.subs(u, uv),
                 (v, vmin, vmax), lbl, rkw if rkw_u is None else rkw_u))
         for vv in np.linspace(float(vmin), float(vmax), n2):
-            new_pe.append((fx.subs(v, vv), fy.subs(v, vv),
+            new_pe.append((
+                fx.subs(v, vv), fy.subs(v, vv),
                 (u, umin, umax), rkw if rkw_v is None else rkw_v))
 
         series += _create_series(Parametric2DLineSeries, new_pe, **kwargs)
@@ -704,8 +708,9 @@ def plot_contour(*args, **kwargs):
     """
     Draws contour plot of a function of two variables.
 
-    This function signature is almost identical to :func:`~plot3d`: refer to its
-    documentation for a full list of available argument and keyword arguments.
+    This function signature is almost identical to :func:`~plot3d`: refer
+    to its documentation for a full list of available argument and keyword
+    arguments.
 
     Refer to :func:`~spb.graphics.functions_2d.contour` for a full
     list of keyword arguments to customize the appearances of contours.
@@ -1060,7 +1065,10 @@ def plot_implicit(*args, **kwargs):
     args = list(args)
     if (len(args) == 2) and isinstance(args[1], Symbol):
         args[1] = Tuple(args[1], -10, 10)
-    elif (len(args) >= 3) and isinstance(args[1], Symbol) and isinstance(args[2], Symbol):
+    elif (
+        (len(args) >= 3) and isinstance(args[1], Symbol)
+        and isinstance(args[2], Symbol)
+    ):
         args[1] = Tuple(args[1], -10, 10)
         args[2] = Tuple(args[2], -10, 10)
 
@@ -1075,8 +1083,10 @@ def plot_implicit(*args, **kwargs):
     # attempt to compute the area that should be visible on the plot.
     xmin, xmax, ymin, ymax = oo, -oo, oo, -oo
     for (expr, r1, r2, label, rendering_kw) in args:
-        series.extend(implicit_2d(expr, r1, r2, label, rendering_kw,
-            color=color, border_color=border_color, **kwargs))
+        series.extend(
+            implicit_2d(
+                expr, r1, r2, label, rendering_kw,
+                color=color, border_color=border_color, **kwargs))
         s = series[-1]
         if (not s.start_x.free_symbols) and (s.start_x < xmin):
             xmin = s.start_x
@@ -1538,7 +1548,8 @@ def plot_list(*args, **kwargs):
        :format: doctest
        :include-source: True
 
-       >>> plot_list(([0], [0], "A"), ([1], [1], "B"), ([2], [0], "C"),
+       >>> plot_list(
+       ...     ([0], [0], "A"), ([1], [1], "B"), ([2], [0], "C"),
        ...     is_point=True, is_filled=True)
        Plot object containing:
        [0]: 2D list plot

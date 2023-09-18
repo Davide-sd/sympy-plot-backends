@@ -43,7 +43,7 @@ def _draw_contour_helper(renderer, data):
 
 
 def _update_contour_helper(renderer, data, handle):
-    p, s = renderer.plot, renderer.series
+    s = renderer.series
     x, y, z = data
     minx, miny, minz = x.min(), y.min(), z.min()
     maxx, maxy, maxz = x.max(), y.max(), z.max()

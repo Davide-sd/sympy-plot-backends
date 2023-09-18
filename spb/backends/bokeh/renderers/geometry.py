@@ -1,5 +1,7 @@
 from spb.backends.base_renderer import Renderer
-from spb.backends.bokeh.renderers.line2d import _draw_line2d_helper, _update_line2d_helper
+from spb.backends.bokeh.renderers.line2d import (
+    _draw_line2d_helper, _update_line2d_helper
+)
 
 
 def _draw_geometry_helper(renderer, data):

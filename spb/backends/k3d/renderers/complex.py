@@ -1,6 +1,7 @@
 from spb.backends.base_renderer import Renderer
-from spb.backends.k3d.renderers.surface import _draw_surface_helper, _update_surface_helper
-import warnings
+from spb.backends.k3d.renderers.surface import (
+    _draw_surface_helper, _update_surface_helper
+)
 
 
 def _draw_domain_coloring_helper(renderer, data):
@@ -50,7 +51,7 @@ def _draw_analytic_landscape_helper(renderer, data):
     kw = p.merge({}, a, s.rendering_kw)
     surf = p.k3d.mesh(vertices, indices, **kw)
     p._fig += surf
-    
+
     return surf
 
 

@@ -13,8 +13,9 @@ from spb.utils import (
 from sympy import I, cos, sin, symbols, pi, re, im, Dummy, Expr
 
 
-def complex_points(*numbers, label=None, rendering_kw=None, line=False,
-    **kwargs):
+def complex_points(
+    *numbers, label=None, rendering_kw=None, line=False, **kwargs
+):
     """Plot complex points.
 
     Parameters
@@ -108,13 +109,14 @@ def complex_points(*numbers, label=None, rendering_kw=None, line=False,
     if len(numbers) == 0:
         raise ValueError("At least one complex number must be provided.")
     if len(numbers) > 1 and any(isinstance(n, (tuple, list)) for n in numbers):
-        raise TypeError("Multiple lists or mixed lists and points were "
+        raise TypeError(
+            "Multiple lists or mixed lists and points were "
             "detected. This behavior is not supperted. Please, provide "
             "only one list at a time, or multiple points as arguments.")
     if len(numbers) == 1 and isinstance(numbers, (list, tuple)):
         numbers = numbers[0]
-    s = ComplexPointSeries(numbers, label, point=not line,
-        rendering_kw=rendering_kw, **kwargs)
+    s = ComplexPointSeries(
+        numbers, label, point=not line, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
@@ -126,6 +128,7 @@ def _create_label(label, pre_wrapper):
     else:
         return _pre_wrappers[pre_wrapper] + "(%s)" % label
 
+
 _pre_wrappers = {
     "real": "Re",
     "imag": "Im",
@@ -135,8 +138,9 @@ _pre_wrappers = {
 }
 
 
-def line_abs_arg_colored(expr, range=None, label=None,
-    rendering_kw=None, **kwargs):
+def line_abs_arg_colored(
+    expr, range=None, label=None, rendering_kw=None, **kwargs
+):
     """Plot the absolute value of a complex function f(x) colored by its
     argument, with x in Reals.
 
@@ -228,8 +232,8 @@ def line_abs_arg_colored(expr, range=None, label=None,
     range = _create_missing_ranges(
         [expr], [range] if range else [], 1, params)[0]
     label = _create_label(label, "absarg")
-    s = AbsArgLineSeries(expr, range, label, rendering_kw=rendering_kw,
-        **kwargs)
+    s = AbsArgLineSeries(
+        expr, range, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
@@ -243,14 +247,17 @@ def _line_helper(keys, expr, range, label, rendering_kw, **kwargs):
         kw = kwargs.copy()
         kw["return"] = k
         series.append(
-            LineOver1DRangeSeries(expr, range,
+            LineOver1DRangeSeries(
+                expr, range,
                 label=_create_label(label, k),
                 rendering_kw=rendering_kw, **kw))
     return series
 
 
-def line_abs_arg(expr, range=None, label=None, rendering_kw=None,
-    abs=True, arg=True, **kwargs):
+def line_abs_arg(
+    expr, range=None, label=None, rendering_kw=None,
+    abs=True, arg=True, **kwargs
+):
     """Plot the absolute value and/or the argument of a complex function
     f(x) with x in Reals.
 
@@ -332,7 +339,8 @@ def line_abs_arg(expr, range=None, label=None, rendering_kw=None,
        x, u = symbols("x, u")
        a = symbols("a", real=True)
        graphics(
-           line_abs_arg((sqrt(x) + u) * exp(-u * x**2), prange(x, -3*a, 3*a),
+           line_abs_arg(
+               (sqrt(x) + u) * exp(-u * x**2), prange(x, -3*a, 3*a),
                params={u: (0, -1, 2), a: (1, 0, 2)}),
            ylim=(-0.25, 2), use_latex=False)
 
@@ -343,13 +351,17 @@ def line_abs_arg(expr, range=None, label=None, rendering_kw=None,
 
     """
     keys = []
-    if abs: keys.append("abs")
-    if arg: keys.append("arg")
+    if abs:
+        keys.append("abs")
+    if arg:
+        keys.append("arg")
     return _line_helper(keys, expr, range, label, rendering_kw, **kwargs)
 
 
-def line_real_imag(expr, range=None, label=None, rendering_kw=None,
-    real=True, imag=True, **kwargs):
+def line_real_imag(
+    expr, range=None, label=None, rendering_kw=None,
+    real=True, imag=True, **kwargs
+):
     """Plot the real and imaginary part of a complex function
     f(x) with x in Reals.
 
@@ -501,13 +513,16 @@ def line_real_imag(expr, range=None, label=None, rendering_kw=None,
 
     """
     keys = []
-    if real: keys.append("real")
-    if imag: keys.append("imag")
+    if real:
+        keys.append("real")
+    if imag:
+        keys.append("imag")
     return _line_helper(keys, expr, range, label, rendering_kw, **kwargs)
 
 
-def _contour_surface_helper(threed, keys, expr, range, label,
-    rendering_kw, **kwargs):
+def _contour_surface_helper(
+    threed, keys, expr, range, label, rendering_kw, **kwargs
+):
     expr = _plot_sympify(expr)
     if threed:
         kwargs["threed"] = True
@@ -528,20 +543,24 @@ def _contour_surface_helper(threed, keys, expr, range, label,
             series += _plot3d_wireframe_helper([series[-1]], **kwargs)
 
     if any(s.is_domain_coloring for s in series):
-        dc_2d_series = [s for s in series if s.is_domain_coloring and not s.is_3D]
+        dc_2d_series = [
+            s for s in series if s.is_domain_coloring and not s.is_3D]
         if ((len(dc_2d_series) > 0) and kwargs.get("riemann_mask", False)):
             # add unit circle: hide it from legend and requests its color
             # to be black
             t = symbols("t")
             series.append(
-                Parametric2DLineSeries(cos(t), sin(t), (t, 0, 2*pi), "__k__",
+                Parametric2DLineSeries(
+                    cos(t), sin(t), (t, 0, 2*pi), "__k__",
                     adaptive=False, n=1000, use_cm=False,
                     show_in_legend=False))
     return series
 
 
-def surface_abs_arg(expr, range=None, label=None, rendering_kw=None,
-    abs=True, arg=True, **kwargs):
+def surface_abs_arg(
+    expr, range=None, label=None, rendering_kw=None,
+    abs=True, arg=True, **kwargs
+):
     """Plot the absolute value and/or the argument of a complex function
     f(x) with x in Complex.
 
@@ -615,7 +634,8 @@ def surface_abs_arg(expr, range=None, label=None, rendering_kw=None,
        from spb import *
        x, u, a, b = symbols("x, u, a, b")
        graphics(
-           surface_abs_arg(sqrt(x) * exp(u * x), prange(x, -3*a-b*3j, 3*a+b*3j),
+           surface_abs_arg(
+               sqrt(x) * exp(u * x), prange(x, -3*a-b*3j, 3*a+b*3j),
                n=25, wireframe=True, wf_rendering_kw={"line_width": 1},
                use_cm=True, params={
                    u: (0.25, 0, 1),
@@ -632,14 +652,18 @@ def surface_abs_arg(expr, range=None, label=None, rendering_kw=None,
 
     """
     keys = []
-    if abs: keys.append("abs")
-    if arg: keys.append("arg")
-    return _contour_surface_helper(True, keys, expr, range,
-        label, rendering_kw, **kwargs)
+    if abs:
+        keys.append("abs")
+    if arg:
+        keys.append("arg")
+    return _contour_surface_helper(
+        True, keys, expr, range, label, rendering_kw, **kwargs)
 
 
-def contour_abs_arg(expr, range=None, label=None, rendering_kw=None,
-    abs=True, arg=True, **kwargs):
+def contour_abs_arg(
+    expr, range=None, label=None, rendering_kw=None,
+    abs=True, arg=True, **kwargs
+):
     """Plot contours of the absolute value and/or the argument of a complex
     function f(x) with x in Complex.
 
@@ -711,7 +735,8 @@ def contour_abs_arg(expr, range=None, label=None, rendering_kw=None,
        from spb import *
        x, u, a, b = symbols("x, u, a, b")
        graphics(
-           contour_abs_arg(sqrt(x) * exp(u * x), prange(x, -3*a-b*3j, 3*a+b*3j),
+           contour_abs_arg(
+               sqrt(x) * exp(u * x), prange(x, -3*a-b*3j, 3*a+b*3j),
                arg=False, use_cm=True,
                params={
                    u: (0.25, 0, 1),
@@ -728,14 +753,18 @@ def contour_abs_arg(expr, range=None, label=None, rendering_kw=None,
 
     """
     keys = []
-    if abs: keys.append("abs")
-    if arg: keys.append("arg")
-    return _contour_surface_helper(False, keys, expr, range,
-        label, rendering_kw, **kwargs)
+    if abs:
+        keys.append("abs")
+    if arg:
+        keys.append("arg")
+    return _contour_surface_helper(
+        False, keys, expr, range, label, rendering_kw, **kwargs)
 
 
-def surface_real_imag(expr, range=None, label=None, rendering_kw=None,
-    real=True, imag=True, **kwargs):
+def surface_real_imag(
+    expr, range=None, label=None, rendering_kw=None,
+    real=True, imag=True, **kwargs
+):
     """Plot the real and imaginary part of a complex function f(x)
     with x in Complex.
 
@@ -827,14 +856,18 @@ def surface_real_imag(expr, range=None, label=None, rendering_kw=None,
 
     """
     keys = []
-    if real: keys.append("real")
-    if imag: keys.append("imag")
-    return _contour_surface_helper(True, keys, expr, range,
-        label, rendering_kw, **kwargs)
+    if real:
+        keys.append("real")
+    if imag:
+        keys.append("imag")
+    return _contour_surface_helper(
+        True, keys, expr, range, label, rendering_kw, **kwargs)
 
 
-def contour_real_imag(expr, range=None, label=None, rendering_kw=None,
-    real=True, imag=True, **kwargs):
+def contour_real_imag(
+    expr, range=None, label=None, rendering_kw=None,
+    real=True, imag=True, **kwargs
+):
     """Plot contours of the real and imaginary parts of a complex
     function f(x) with x in Complex.
 
@@ -924,15 +957,19 @@ def contour_real_imag(expr, range=None, label=None, rendering_kw=None,
 
     """
     keys = []
-    if real: keys.append("real")
-    if imag: keys.append("imag")
-    return _contour_surface_helper(False, keys, expr, range,
-        label, rendering_kw, **kwargs)
+    if real:
+        keys.append("real")
+    if imag:
+        keys.append("imag")
+    return _contour_surface_helper(
+        False, keys, expr, range, label, rendering_kw, **kwargs)
 
 
-def domain_coloring(expr, range=None, label=None, rendering_kw=None,
+def domain_coloring(
+    expr, range=None, label=None, rendering_kw=None,
     coloring=None, cmap=None, phaseres=20, phaseoffset=0, blevel=0.75,
-    colorbar=True, **kwargs):
+    colorbar=True, **kwargs
+):
     """Plot an image of the absolute value of a complex function f(x)
     colored by its argument, with x in Complex.
 
@@ -1221,12 +1258,13 @@ def domain_coloring(expr, range=None, label=None, rendering_kw=None,
     kw["phaseoffset"] = phaseoffset
     kw["blevel"] = blevel
     kw["colorbar"] = colorbar
-    return _contour_surface_helper(False, ["absarg"], expr, range,
-        label, rendering_kw, **kw)
+    return _contour_surface_helper(
+        False, ["absarg"], expr, range, label, rendering_kw, **kw)
 
 
-def analytic_landscape(expr, range=None, label=None, rendering_kw=None,
-    **kwargs):
+def analytic_landscape(
+    expr, range=None, label=None, rendering_kw=None, **kwargs
+):
     """Plot a surface of the absolute value of a complex function f(x)
     colored by its argument, with x in Complex.
 
@@ -1242,7 +1280,8 @@ def analytic_landscape(expr, range=None, label=None, rendering_kw=None,
     =======
 
     series : list
-        A list containing up two to instance of ``ComplexDomainColoringSeries``.
+        A list containing up two to instance of
+        ``ComplexDomainColoringSeries``.
 
     Examples
     ========
@@ -1281,12 +1320,14 @@ def analytic_landscape(expr, range=None, label=None, rendering_kw=None,
 
     """
     kw = kwargs.copy()
-    return _contour_surface_helper(True, ["absarg"], expr, range,
-        label, rendering_kw, **kw)
+    return _contour_surface_helper(
+        True, ["absarg"], expr, range, label, rendering_kw, **kw)
 
 
-def riemann_sphere_2d(expr, range=None, label=None, rendering_kw=None,
-    at_infinity=False, riemann_mask=True, annotate=True, **kwargs):
+def riemann_sphere_2d(
+    expr, range=None, label=None, rendering_kw=None,
+    at_infinity=False, riemann_mask=True, annotate=True, **kwargs
+):
     """Visualize stereographic projections of the Riemann sphere.
 
     Refer to :func:`~spb.graphics.complex.plot_riemann_sphere` to learn more
@@ -1321,7 +1362,8 @@ def riemann_sphere_2d(expr, range=None, label=None, rendering_kw=None,
     =======
 
     series : list
-        A list containing up two to instance of ``ComplexDomainColoringSeries``.
+        A list containing up two to instance of
+        ``ComplexDomainColoringSeries``.
 
     Notes
     =====
@@ -1383,7 +1425,8 @@ def riemann_sphere_2d(expr, range=None, label=None, rendering_kw=None,
     kw["annotate"] = annotate
     kw["at_infinity"] = at_infinity
 
-    series = _contour_surface_helper(False, ["absarg"], expr, range, label,
+    series = _contour_surface_helper(
+        False, ["absarg"], expr, range, label,
         rendering_kw, **kw)
     return series
 
@@ -1431,14 +1474,17 @@ def riemann_sphere_3d(expr, rendering_kw=None, colorbar=True, **kwargs):
 
     """
     if kwargs.get("params", dict()):
-        raise NotImplementedError("Interactive widgets plots over the "
+        raise NotImplementedError(
+            "Interactive widgets plots over the "
             "Riemann sphere is not implemented.")
     t, p = symbols("theta phi")
     # Northen and Southern hemispheres
-    s1 = RiemannSphereSeries(expr, (t, 0, pi/2), (p, 0, 2*pi),
+    s1 = RiemannSphereSeries(
+        expr, (t, 0, pi/2), (p, 0, 2*pi),
         colorbar=False, rendering_kw=rendering_kw,
         **kwargs)
-    s2 = RiemannSphereSeries(expr, (t, pi/2, pi), (p, 0, 2*pi),
+    s2 = RiemannSphereSeries(
+        expr, (t, pi/2, pi), (p, 0, 2*pi),
         colorbar=colorbar, rendering_kw=rendering_kw,
         **kwargs)
     return [s1, s2]
@@ -1566,7 +1612,8 @@ def complex_vector_field(expr, range=None, **kwargs):
        from spb import *
        z, u, a, b = symbols("z u a b")
        graphics(
-           complex_vector_field(log(gamma(u * z)), prange(z, -5*a - b*5j, 5*a + b*5j),
+           complex_vector_field(
+               log(gamma(u * z)), prange(z, -5*a - b*5j, 5*a + b*5j),
                params={
                    u: (1, 0, 2),
                    a: (1, 0, 2),

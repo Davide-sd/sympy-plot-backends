@@ -2,6 +2,7 @@ from spb.backends.base_renderer import Renderer
 from spb.utils import get_vertices_indices
 from spb.series import PlaneSeries
 
+
 def _draw_surface_helper(renderer, data):
     p, s = renderer.plot, renderer.series
     np = p.np
@@ -11,7 +12,11 @@ def _draw_surface_helper(renderer, data):
         x, y, z, u, v = data
         vertices, indices = get_vertices_indices(x, y, z)
         vertices = vertices.astype(np.float32)
-        attribute = s.eval_color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2], u.flatten().astype(np.float32), v.flatten().astype(np.float32))
+        attribute = s.eval_color_func(
+            vertices[:, 0], vertices[:, 1], vertices[:, 2],
+            u.flatten().astype(np.float32),
+            v.flatten().astype(np.float32)
+        )
     else:
         x, y, z = data
         if isinstance(s, PlaneSeries):
@@ -24,14 +29,18 @@ def _draw_surface_helper(renderer, data):
             z = z.flatten()
             vertices = np.vstack([x, y, z]).T.astype(np.float32)
             indices = Triangulation(x, y).triangles.astype(np.uint32)
-        attribute = s.eval_color_func(vertices[:, 0], vertices[:, 1], vertices[:, 2])
+        attribute = s.eval_color_func(
+            vertices[:, 0], vertices[:, 1], vertices[:, 2])
 
     a = dict(
         name=s.get_label(p._use_latex, "%s") if p._show_label else None,
         side="double",
         flat_shading=False,
         wireframe=False,
-        color=p._convert_to_int(next(p._cl)) if s.surface_color is None else s.surface_color,
+        color=(
+            p._convert_to_int(next(p._cl)) if s.surface_color is None
+            else s.surface_color
+        ),
         colorLegend=p.legend or s.use_cm,
     )
     if s.use_cm:
@@ -56,7 +65,9 @@ def _update_surface_helper(renderer, data, handle):
 
     if s.is_parametric:
         x, y, z, u, v = data
-        x, y, z, u, v = [t.flatten().astype(np.float32) for t in [x, y, z, u, v]]
+        x, y, z, u, v = [
+            t.flatten().astype(np.float32) for t in [x, y, z, u, v]
+        ]
         attribute = s.eval_color_func(x, y, z, u, v)
     else:
         x, y, z = data
@@ -69,7 +80,7 @@ def _update_surface_helper(renderer, data, handle):
         handle.attribute = attribute
         handle.color_range = [float(attribute.min()), float(attribute.max())]
     p._high_aspect_ratio(x, y, z)
-    
+
 
 class SurfaceRenderer(Renderer):
     draw_update_map = {

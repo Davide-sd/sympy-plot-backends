@@ -15,8 +15,8 @@ def _draw_line3d_helper(renderer, data):
             x, y, z = data
             param = np.zeros_like(x)
         positions = np.vstack([x, y, z]).T.astype(np.float32)
-        a = dict(point_size=0.2,
-            color=p._convert_to_int(next(p._cl)))
+        a = dict(
+            point_size=0.2, color=p._convert_to_int(next(p._cl)))
         if s.use_cm:
             a["color_map"] = next(p._cm)
             a["attribute"] = param
@@ -39,7 +39,11 @@ def _draw_line3d_helper(renderer, data):
             name=p._get_series_label(s, "%s") if p._show_label else None,
             color=(
                 p.wireframe_color if not s.show_in_legend
-                else (p._convert_to_int(next(p._cl)) if s.line_color is None else s.line_color)),
+                else (
+                    p._convert_to_int(next(p._cl)) if s.line_color is None
+                    else s.line_color
+                )
+            ),
             shader="mesh",
         )
         if s.use_cm:
@@ -50,7 +54,7 @@ def _draw_line3d_helper(renderer, data):
         line = p.k3d.line(vertices, **kw)
         handle = line
         p._fig += line
-    
+
     return handle
 
 
@@ -70,7 +74,7 @@ def _update_line3d_helper(renderer, data, handle):
         x, y, z, _ = data
         vertices = np.vstack([x, y, z]).T.astype(np.float32)
         handle.vertices = vertices
-    
+
 
 class Line3DRenderer(Renderer):
     draw_update_map = {

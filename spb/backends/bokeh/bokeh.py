@@ -1,10 +1,17 @@
 import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
-from spb.series import *
-from spb.backends.bokeh.renderers import *
+from spb.backends.matplotlib.renderers import (
+    Line2DRenderer, Vector2DRenderer, ComplexRenderer, ContourRenderer,
+    GeometryRenderer, GenericRenderer, HVLineRenderer
+)
+from spb.series import (
+    LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
+    ColoredLineOver1DRangeSeries, AbsArgLineSeries, ComplexPointSeries,
+    Vector2DSeries, ComplexDomainColoringSeries, ContourSeries,
+    GeometrySeries, GenericDataSeries, HVLineSeries
+)
 from sympy.external import import_module
-import warnings
 
 
 class BokehBackend(Plot):
@@ -122,7 +129,12 @@ class BokehBackend(Plot):
         self.np = import_module('numpy')
         self.bokeh = import_module(
             'bokeh',
-            import_kwargs={'fromlist': ['models', 'events', 'plotting', 'io', 'palettes', 'embed', 'resources']},
+            import_kwargs={
+                'fromlist': [
+                    'models', 'events', 'plotting', 'io',
+                    'palettes', 'embed', 'resources'
+                ]
+            },
             warn_not_installed=True,
             min_module_version='2.3.0')
         bp = self.bokeh.palettes
@@ -138,7 +150,9 @@ class BokehBackend(Plot):
 
         self.colorloop = bp.Category10[10]
         self.colormaps = [cc.bmy, "aggrnyl", cc.kbc, cc.bjy, "plotly3"]
-        self.cyclic_colormaps = [cm.hsv, cm.twilight, cc.cyclic_mygbm_30_95_c78_s25]
+        self.cyclic_colormaps = [
+            cm.hsv, cm.twilight, cc.cyclic_mygbm_30_95_c78_s25
+        ]
 
         self._init_cyclers()
         super().__init__(*args, **kwargs)
@@ -158,9 +172,11 @@ class BokehBackend(Plot):
             self._run_in_notebook = True
             self.bokeh.io.output_notebook(hide_banner=True)
 
-        if ((len([s for s in self._series if s.is_2Dline]) > 10) and
+        if (
+            (len([s for s in self._series if s.is_2Dline]) > 10) and
             (not type(self).colorloop) and
-            not ("process_piecewise" in kwargs.keys())):
+            not ("process_piecewise" in kwargs.keys())
+        ):
             # add colors if needed
             self.colorloop = bp.Category20[20]
 
@@ -179,11 +195,6 @@ class BokehBackend(Plot):
                 TOOLTIPS += [("Abs", "@abs"), ("Arg", "@arg")]
 
         sizing_mode = cfg["bokeh"]["sizing_mode"]
-        # if any(s.is_complex and s.is_domain_coloring for s in self.series):
-        #     # for complex domain coloring: the idea is to have the colorbar
-        #     # closer to the actual plot, rather than having a lot of white
-        #     # space in between.
-        #     sizing_mode = None
 
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()
         kw = dict(
@@ -265,8 +276,11 @@ class BokehBackend(Plot):
             # add a new legend only showing the appropriate items
             legend_items = []
             for s, r in zip(self.series, self._fig.renderers):
-                if (s.show_in_legend and (s.is_2Dline or s.is_geometry) and
-                    (not s.use_cm)):
+                if (
+                    s.show_in_legend and
+                    (s.is_2Dline or s.is_geometry) and
+                    (not s.use_cm)
+                ):
                     legend_items.append(
                         self.bokeh.models.LegendItem(
                             label=s.get_label(self._use_latex), renderers=[r]))
@@ -296,7 +310,9 @@ class BokehBackend(Plot):
         us = u[:-1]
         return xs, ys, us
 
-    def _create_gradient_line(self, x, y, u, colormap, name, line_kw, is_point=False):
+    def _create_gradient_line(
+        self, x, y, u, colormap, name, line_kw, is_point=False
+    ):
         merge = self.merge
         if not is_point:
             xs, ys, us = self._get_segments(x, y, u)
@@ -404,32 +420,27 @@ class BokehBackend(Plot):
 
         Parameters
         ==========
-            xs : np.ndarray
-                A 2D numpy array representing the discretization in the
-                x-coordinate
-
-            ys : np.ndarray
-                A 2D numpy array representing the discretization in the
-                y-coordinate
-
-            u : np.ndarray
-                A 2D numpy array representing the x-component of the vector
-
-            v : np.ndarray
-                A 2D numpy array representing the x-component of the vector
-
-            kwargs : dict, optional
-                An optional
+        xs : np.ndarray
+            A 2D numpy array representing the discretization in the
+            x-coordinate
+        ys : np.ndarray
+            A 2D numpy array representing the discretization in the
+            y-coordinate
+        u : np.ndarray
+            A 2D numpy array representing the x-component of the vector
+        v : np.ndarray
+            A 2D numpy array representing the x-component of the vector
+        kwargs : dict, optional
+            An optional
 
         Returns
         =======
-            data: dict
-                A dictionary suitable to create a data source to be used with
-                Bokeh's Segment.
-
-            quiver_kw : dict
-                A dictionary containing keywords to customize the appearance
-                of Bokeh's Segment glyph
+        data: dict
+            A dictionary suitable to create a data source to be used with
+            Bokeh's Segment.
+        quiver_kw : dict
+            A dictionary containing keywords to customize the appearance
+            of Bokeh's Segment glyph
         """
         np = import_module('numpy')
         scale = quiver_kw.pop("scale", 1.0)

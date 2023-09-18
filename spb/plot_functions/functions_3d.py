@@ -16,23 +16,17 @@ Simplicity of code takes much greater importance than performance. Don't use
 it if you care at all about performance.
 """
 
-from spb.defaults import TWO_D_B
 from spb.graphics import (
-    graphics, line, line_parametric_2d, line_parametric_3d,
-    surface, surface_parametric, surface_revolution, surface_spherical,
-    contour, implicit_2d, implicit_3d, list_2d, list_3d, geometry
-)
-from spb.series import (
-    Parametric2DLineSeries, PlaneSeries, GenericDataSeries
+    graphics, line_parametric_3d,
+    surface_parametric, surface_revolution, surface_spherical,
+    implicit_3d, list_3d
 )
 from spb.utils import (
-    _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend,
+    _plot_sympify, _check_arguments
 )
 from spb.plot_functions.functions_2d import (
     _set_labels, _plot3d_plot_contour_helper
 )
-from sympy import latex, Tuple, Symbol, oo, cos, sin
-from sympy.external import import_module
 
 
 def plot3d_parametric_line(*args, **kwargs):
@@ -585,7 +579,8 @@ def plot3d_parametric_surface(*args, **kwargs):
         indeces.append(len(surfaces))
         e1, e2, e3, r1, r2, label, rendering_kw = pe
         surfaces.extend(
-            surface_parametric(e1, e2, e3, r1, r2, label, rendering_kw, **kwargs))
+            surface_parametric(
+                e1, e2, e3, r1, r2, label, rendering_kw, **kwargs))
     actual_surfaces = [s for i, s in enumerate(surfaces) if i in indeces]
     _set_labels(actual_surfaces, global_labels, global_rendering_kw)
     return graphics(*surfaces, **kwargs)
@@ -840,8 +835,10 @@ def plot3d_implicit(*args, **kwargs):
     return graphics(*surfaces, **kwargs)
 
 
-def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
-    parallel_axis="z", show_curve=False, curve_kw={}, **kwargs):
+def plot3d_revolution(
+    curve, range_t, range_phi=None, axis=(0, 0),
+    parallel_axis="z", show_curve=False, curve_kw={}, **kwargs
+):
     """Generate a surface of revolution by rotating a curve around an axis of
     rotation.
 
@@ -965,7 +962,8 @@ def plot3d_revolution(curve, range_t, range_phi=None, axis=(0, 0),
     plot3d_spherical, plot3d_implicit, plot3d_list
 
     """
-    surfaces = surface_revolution(curve, range_t, range_phi,
+    surfaces = surface_revolution(
+        curve, range_t, range_phi,
         axis=axis, parallel_axis=parallel_axis, show_curve=show_curve,
         curve_kw=curve_kw, **kwargs)
     return graphics(*surfaces, **kwargs)

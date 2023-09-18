@@ -1,11 +1,23 @@
 import itertools
 from spb.defaults import cfg
-from spb.series import GenericDataSeries, List2DSeries
 from spb.backends.base_backend import Plot
-from spb.backends.utils import compute_streamtubes
-from spb.backends.matplotlib.renderers import *
-from spb.series import *
-from sympy import latex
+from spb.backends.matplotlib.renderers import (
+    Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
+    Implicit2DRenderer, ComplexRenderer, ContourRenderer, SurfaceRenderer,
+    GeometryRenderer, GenericRenderer, HVLineRenderer,
+    NyquistRenderer, NicholsRenderer
+)
+from spb.series import (
+    LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
+    ColoredLineOver1DRangeSeries, AbsArgLineSeries, ComplexPointSeries,
+    Parametric3DLineSeries, ComplexParametric3DLineSeries,
+    List3DSeries, Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
+    ImplicitSeries, RiemannSphereSeries,
+    ComplexDomainColoringSeries, ComplexSurfaceSeries,
+    ContourSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
+    PlaneSeries, GeometrySeries, GenericDataSeries,
+    HVLineSeries, NyquistLineSeries, NicholsLineSeries
+)
 from sympy.external import import_module
 from packaging import version
 
@@ -162,7 +174,9 @@ class MatplotlibBackend(Plot):
     def __init__(self, *args, **kwargs):
         self.matplotlib = import_module(
             'matplotlib',
-            import_kwargs={'fromlist': ['pyplot', 'cm', 'collections', 'colors']},
+            import_kwargs={
+                'fromlist': ['pyplot', 'cm', 'collections', 'colors']
+            },
             warn_not_installed=True,
             min_module_version='1.1.0',
             catch=(RuntimeError,))
@@ -190,18 +204,20 @@ class MatplotlibBackend(Plot):
         # load default colorloop
         self.colorloop = self.plt.rcParams['axes.prop_cycle'].by_key()["color"]
 
-
         self._init_cyclers()
         super().__init__(*args, **kwargs)
 
         # set labels
-        self._use_latex = kwargs.get("use_latex", cfg["matplotlib"]["use_latex"])
+        self._use_latex = kwargs.get(
+            "use_latex", cfg["matplotlib"]["use_latex"])
         self._set_labels()
         self._set_title()
 
-        if ((len([s for s in self._series if s.is_2Dline]) > 10) and
+        if (
+            (len([s for s in self._series if s.is_2Dline]) > 10) and
             (not type(self).colorloop) and
-            not ("process_piecewise" in kwargs.keys())):
+            not ("process_piecewise" in kwargs.keys())
+        ):
             # add colors if needed
             self.colorloop = cm.tab20.colors
 
@@ -213,7 +229,8 @@ class MatplotlibBackend(Plot):
         if self.axis_center is None:
             self.axis_center = cfg["matplotlib"]["axis_center"]
         self.grid = kwargs.get("grid", cfg["matplotlib"]["grid"])
-        self._show_minor_grid = kwargs.get("show_minor_grid", cfg["matplotlib"]["show_minor_grid"])
+        self._show_minor_grid = kwargs.get(
+            "show_minor_grid", cfg["matplotlib"]["show_minor_grid"])
 
         self._legend_handles = []
 
@@ -223,7 +240,6 @@ class MatplotlibBackend(Plot):
         self._imagegrid = kwargs.get("imagegrid", False)
 
         self._create_renderers()
-
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
@@ -246,7 +262,10 @@ class MatplotlibBackend(Plot):
             cm = []
             for i in range(len(colormaps)):
                 c = next(it)
-                cm.append(c if not isinstance(c, np.ndarray) else self.ListedColormap(c))
+                cm.append(
+                    c if not isinstance(c, np.ndarray)
+                    else self.ListedColormap(c)
+                )
             return itertools.cycle(cm)
 
         self._cm = process_iterator(self._cm, self.colormaps)
@@ -272,8 +291,10 @@ class MatplotlibBackend(Plot):
             kwargs = {}
             if any(is_3D):
                 kwargs["projection"] = "3d"
-            elif (self.polar_axis and
-                any(s.is_2Dline or s.is_contour for s in self.series)):
+            elif (
+                self.polar_axis and
+                any(s.is_2Dline or s.is_contour for s in self.series)
+            ):
                 kwargs["projection"] = "polar"
             self._ax = self._fig.add_subplot(1, 1, 1, **kwargs)
 
@@ -358,16 +379,19 @@ class MatplotlibBackend(Plot):
             if isinstance(self._ax, self.Axes3D):
                 self._ax.grid()
             else:
-                self._ax.grid(visible=True, which='major', linestyle='-',
+                self._ax.grid(
+                    visible=True, which='major', linestyle='-',
                     linewidth=0.75, color='0.75')
-                self._ax.grid(visible=True, which='minor', linestyle='--',
+                self._ax.grid(
+                    visible=True, which='minor', linestyle='--',
                     linewidth=0.6, color='0.825')
                 if self._show_minor_grid:
                     self._ax.minorticks_on()
         if self.legend:
             if len(self._legend_handles) > 0:
                 handles, _ = self._ax.get_legend_handles_labels()
-                self._ax.legend(handles=self._legend_handles + handles, loc="best")
+                self._ax.legend(
+                    handles=self._legend_handles + handles, loc="best")
             else:
                 handles, _ = self._ax.get_legend_handles_labels()
                 # Show the legend only if there are legend entries.
@@ -454,7 +478,8 @@ class MatplotlibBackend(Plot):
         np = self.np
         if not isinstance(self._ax, self.Axes3D):
             self._ax.autoscale_view(
-                scalex=self._ax.get_autoscalex_on(), scaley=self._ax.get_autoscaley_on()
+                scalex=self._ax.get_autoscalex_on(),
+                scaley=self._ax.get_autoscaley_on()
             )
 
             # HACK: in order to make interactive contour plots to scale to
@@ -528,8 +553,6 @@ class MatplotlibBackend(Plot):
         label : str
         show_cb : boolean
         """
-        np = self.np
-
         # design choice: instead of showing a legend entry (which
         # would require to work with proxy artists and custom
         # classes in order to create a gradient line), just show a
@@ -554,7 +577,8 @@ class MatplotlibBackend(Plot):
         if norm is None:
             norm = self.Normalize(vmin=np.amin(param), vmax=np.amax(param))
         mappable = self.cm.ScalarMappable(cmap=cmap, norm=norm)
-        self._fig.colorbar(mappable, orientation="vertical", label=label, cax=cax)
+        self._fig.colorbar(
+            mappable, orientation="vertical", label=label, cax=cax)
 
     def get_segments(self, x, y, z=None):
         """
@@ -617,7 +641,9 @@ class MatplotlibBackend(Plot):
 
         References
         ==========
+
         .. [#fn10] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html
+
         """
         if self._fig is None:
             self.draw()

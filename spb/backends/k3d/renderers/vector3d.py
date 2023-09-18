@@ -1,6 +1,5 @@
 from spb.backends.base_renderer import Renderer
-from spb.backends.utils import get_seeds_points, compute_streamtubes
-import warnings
+from spb.backends.utils import compute_streamtubes
 
 
 def _draw_vector3d_helper(renderer, data):
@@ -17,7 +16,9 @@ def _draw_vector3d_helper(renderer, data):
         skw = dict(width=0.1, shader="mesh")
         if s.use_cm:
             skw["color_map"] = stream_kw.get("color", next(p._cm))
-            skw["color_range"] = [float(np.nanmin(color_val)), float(np.nanmax(color_val))]
+            skw["color_range"] = [
+                float(np.nanmin(color_val)), float(np.nanmax(color_val))
+            ]
             skw["attribute"] = color_val
         else:
             col = stream_kw.pop("color", next(p._cl))
@@ -74,7 +75,6 @@ def _draw_vector3d_helper(renderer, data):
 
 def _update_vector3d_helper(renderer, data, handle):
     p, s = renderer.plot, renderer.series
-    np = p.np
 
     if s.is_streamlines:
         raise NotImplementedError
@@ -90,7 +90,7 @@ def _update_vector3d_helper(renderer, data, handle):
     pivot = s.rendering_kw.get("pivot", "mid")
     quivers.origins = origins - vectors * p._qp_offset[pivot]
     quivers.vectors = vectors
-    
+
 
 class Vector3DRenderer(Renderer):
     draw_update_map = {

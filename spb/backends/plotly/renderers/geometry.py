@@ -1,6 +1,10 @@
 from spb.backends.base_renderer import Renderer
-from spb.backends.plotly.renderers.line2d import _draw_line2d_helper, _update_line2d_helper
-from spb.backends.plotly.renderers.line3d import _draw_line3d_helper, _update_line3d_helper
+from spb.backends.plotly.renderers.line2d import (
+    _draw_line2d_helper, _update_line2d_helper
+)
+from spb.backends.plotly.renderers.line3d import (
+    _draw_line3d_helper, _update_line3d_helper
+)
 
 
 def _draw_geometry_helper(renderer, data):
@@ -17,7 +21,7 @@ def _draw_geometry_helper(renderer, data):
 
 
 def _update_geometry_helper(renderer, data, idx):
-    p, s = renderer.plot, renderer.series
+    p = renderer.plot
     handle = p.fig.data[idx]
     x, y = data
     handle["x"] = x

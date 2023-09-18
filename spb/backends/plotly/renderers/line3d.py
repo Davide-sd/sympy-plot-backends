@@ -31,23 +31,29 @@ def _draw_line3d_helper(renderer, data):
             # colorbars is greater than the available figure width.
             # That raises a strange error.
             lkw["line"] = dict(
-                width = 4,
-                colorbar = p._create_colorbar(
+                width=4,
+                colorbar=p._create_colorbar(
                     s.get_label(p._use_latex), p._scale_down_colorbar),
-                colorscale = (
+                colorscale=(
                     next(p._cm) if s.use_cm
                     else p._solid_colorscale(s)
                 ),
-                color = param,
-                showscale = s.colorbar,
+                color=param,
+                showscale=s.colorbar,
             )
         else:
             lkw["line"] = dict(
-                width = 4,
-                color = (
-                    (next(p._cl) if s.line_color is None
-                    else s.line_color) if (s.show_in_legend or s.get_label(p._use_latex) != "__k__")
-                    else p.wireframe_color)
+                width=4,
+                color=(
+                    (
+                        next(p._cl) if s.line_color is None
+                        else s.line_color
+                    ) if (
+                        s.show_in_legend or
+                        s.get_label(p._use_latex) != "__k__"
+                    )
+                    else p.wireframe_color
+                )
             )
     else:
         color = next(p._cl) if s.line_color is None else s.line_color
@@ -60,7 +66,7 @@ def _draw_line3d_helper(renderer, data):
             color=color if not s.use_cm else param,
             size=8,
             colorscale=next(p._cm) if s.use_cm else None,
-            showscale = s.use_cm and s.colorbar,
+            showscale=s.use_cm and s.colorbar,
         )
         if s.use_cm:
             lkw["marker"]["colorbar"] = p._create_colorbar(

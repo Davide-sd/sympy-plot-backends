@@ -52,8 +52,8 @@ class Renderer:
                 draw_method(self, data))
 
     def update(self, params):
-        s = self.series
         self.series.params = params
         data = self.series.get_data()
-        for update_method, handle in zip(self.draw_update_map.values(), self.handles):
+        for update_method, handle in zip(
+          self.draw_update_map.values(), self.handles):
             update_method(self, data, handle)

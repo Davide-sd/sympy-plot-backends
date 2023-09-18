@@ -3,7 +3,6 @@ from spb.backends.base_renderer import Renderer
 
 def _draw_hvline_helper(renderer, data):
     p, s = renderer.plot, renderer.series
-    np = p.np
     handle = []
 
     rkw = {"line_color": "#000000"}
@@ -18,8 +17,6 @@ def _draw_hvline_helper(renderer, data):
 
 
 def _update_hvline_helper(renderer, data, handle):
-    p, s = renderer.plot, renderer.series
-    np = p.np
     handle.location = data
 
 

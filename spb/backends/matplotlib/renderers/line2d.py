@@ -1,7 +1,5 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
-from spb.backends.matplotlib.renderers.hvline import (
-    _draw_hvline_helper, _update_hvline_helper
-)
+
 
 def _draw_line2d_helper(renderer, data):
     p, s = renderer.plot, renderer.series
@@ -27,7 +25,9 @@ def _draw_line2d_helper(renderer, data):
             kw = p.merge({}, lkw, s.rendering_kw)
             c = p._ax.scatter(x, y, **kw)
 
-        is_cb_added = p._add_colorbar(c, s.get_label(p._use_latex), s.use_cm and s.colorbar)
+        is_cb_added = p._add_colorbar(
+            c, s.get_label(p._use_latex), s.use_cm and s.colorbar
+        )
         handle = (c, kw, is_cb_added, p._fig.axes[-1])
     else:
         if s.get_label(False) != "__k__":
@@ -37,7 +37,8 @@ def _draw_line2d_helper(renderer, data):
 
         lkw = dict(
             label=s.get_label(p._use_latex) if s.show_in_legend else "_nolegend_",
-            color=color)
+            color=color
+        )
         if s.is_point:
             lkw["marker"] = "o"
             lkw["linestyle"] = "None"
@@ -90,7 +91,8 @@ def _update_line2d_helper(renderer, data, handles):
         for hvl in hvlines:
             hvl.remove()
         handles[1] = [
-            p._ax.axvline(x_loc, **p.pole_line_kw) for x_loc in s.poles_locations
+            p._ax.axvline(x_loc, **p.pole_line_kw)
+            for x_loc in s.poles_locations
         ]
     elif len(hvlines) > 0:
         for hvl, x_loc in zip(hvlines, s.poles_locations):

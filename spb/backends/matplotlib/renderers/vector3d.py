@@ -32,13 +32,16 @@ def _draw_vector3d_helper(renderer, data):
             streamlines = p.Line3DCollection(segments, **kw)
             p._ax.add_collection(streamlines)
             p._add_colorbar(
-                streamlines, s.get_label(p._use_latex), s.use_cm and s.colorbar)
+                streamlines,
+                s.get_label(p._use_latex),
+                s.use_cm and s.colorbar
+            )
 
         else:
             lkw["label"] = s.get_label(p._use_latex)
             kw = p.merge({}, lkw, stream_kw)
-            streamlines = p._ax.plot(vertices[:, 0], vertices[:, 1],
-                vertices[:, 2], **kw)
+            streamlines = p._ax.plot(
+                vertices[:, 0], vertices[:, 1], vertices[:, 2], **kw)
 
         handle = [streamlines]
     else:
@@ -92,7 +95,8 @@ def _update_vector3d_helper(renderer, data, handle):
     handle[0] = p._ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
 
     if is_cb_added:
-        p._update_colorbar(cax, kw["cmap"], s.get_label(p._use_latex), param=mag)
+        p._update_colorbar(
+            cax, kw["cmap"], s.get_label(p._use_latex), param=mag)
 
 
 class Vector3DRenderer(MatplotlibRenderer):

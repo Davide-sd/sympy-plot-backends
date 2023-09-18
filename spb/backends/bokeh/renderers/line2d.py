@@ -36,8 +36,10 @@ def _draw_line2d_helper(renderer, data):
             color = next(p._cl) if s.line_color is None else s.line_color
         else:
             color = "#000000"
-        lkw = dict(line_width=2, color=color,
-            legend_label=s.get_label(p._use_latex))
+        lkw = dict(
+            line_width=2, color=color,
+            legend_label=s.get_label(p._use_latex)
+        )
         if not s.is_point:
             kw = p.merge({}, lkw, s.rendering_kw)
             handle = [p._fig.line("xs", "ys", source=source, **kw)]
@@ -52,8 +54,8 @@ def _draw_line2d_helper(renderer, data):
     # add vertical lines at discontinuities
     vlines = []
     for x_loc in s.poles_locations:
-        vl = p.bokeh.models.Span(location=float(x_loc),
-            dimension="height", **p.pole_line_kw)
+        vl = p.bokeh.models.Span(
+            location=float(x_loc), dimension="height", **p.pole_line_kw)
         p._fig.add_layout(vl)
         vlines.append(vl)
     return [handle, vlines]
@@ -93,8 +95,8 @@ def _update_line2d_helper(renderer, data, handles):
         # lines or hide the ones that are not needed
         if len(vlines) < len(s.poles_locations):
             for i in range(len(s.poles_locations) - len(vlines)):
-                vl = p.bokeh.models.Span(location=0,
-                    dimension="height", **p.pole_line_kw)
+                vl = p.bokeh.models.Span(
+                    location=0, dimension="height", **p.pole_line_kw)
                 p._fig.add_layout(vl)
                 handles[1].append(vl)
 

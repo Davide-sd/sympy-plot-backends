@@ -1,5 +1,4 @@
 from spb.backends.base_renderer import Renderer
-from spb.backends.utils import get_seeds_points
 import warnings
 
 
@@ -7,13 +6,14 @@ def _draw_vector2d_helper(renderer, data):
     p, s = renderer.plot, renderer.series
     np = p.np
     if s.color_func is not None:
-        warnings.warn("PlotlyBackend doesn't support custom "
+        warnings.warn(
+            "PlotlyBackend doesn't support custom "
             "coloring of 2D/3D quivers or streamlines plots. "
             "`color_func` will not be used.")
 
     xx, yy, uu, vv = data
     if s.normalize:
-        mag = np.sqrt(uu**2 + vv**2 )
+        mag = np.sqrt(uu**2 + vv**2)
         uu, vv = [t / mag for t in [uu, vv]]
     # NOTE: currently, it is not possible to create
     # quivers/streamlines with a color scale:
@@ -48,7 +48,7 @@ def _update_vector2d_helper(renderer, data, handle):
     old_quivers = p.fig.data[idx]
 
     if s.normalize:
-        mag = np.sqrt(u**2 + v**2 )
+        mag = np.sqrt(u**2 + v**2)
         u, v = [t / mag for t in [u, v]]
     if s.is_streamlines:
         # TODO: iplot doesn't work with 2D streamlines.

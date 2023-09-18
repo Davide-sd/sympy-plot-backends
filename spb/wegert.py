@@ -83,14 +83,16 @@ def _apply_riemann_mask(lower_left, upper_right, rgb):
 
     # KISS
     if rangex != rangey:
-        warnings.warn("`riemann_mask` only works for square domains. "
+        warnings.warn(
+            "`riemann_mask` only works for square domains. "
             "Instead, the provided domain is characterized by "
             "%s <= Re(z) <= %s and " % (sx, ex) +
             "%s <= Im(z) <= %s. " % (sy, ey) +
             "Returning image without unit disk.")
         return rgb
     if rgb.shape[0] != rgb.shape[1]:
-        warnings.warn("`riemann_mask` only works when the number of "
+        warnings.warn(
+            "`riemann_mask` only works when the number of "
             "discretization points is the same on real and imaginary "
             "directions. Returning image without unit disk.")
         return rgb
@@ -135,8 +137,9 @@ def domain_coloring(w, phaseres=20, cmap=None, poffset=0, **kwargs):
 
 
 @to_rgb_255
-def enhanced_domain_coloring(w, phaseres=20, cmap=None, blevel=0.75,
-    poffset=0, **kwargs):
+def enhanced_domain_coloring(
+    w, phaseres=20, cmap=None, blevel=0.75, poffset=0, **kwargs
+):
     """Enhanced domain coloring showing iso-lines for magnitude and phase,
     with an optional enhacement to wash poles to white.
     """
@@ -165,8 +168,9 @@ def enhanced_domain_coloring(w, phaseres=20, cmap=None, blevel=0.75,
 
 
 @to_rgb_255
-def enhanced_domain_coloring_phase(w, phaseres=20, cmap=None, blevel=0.75,
-    poffset=0, **kwargs):
+def enhanced_domain_coloring_phase(
+    w, phaseres=20, cmap=None, blevel=0.75, poffset=0, **kwargs
+):
     """Enhanced domain coloring showing iso-lines for phase,
     with an optional enhacement to wash poles to white.
     """
@@ -193,8 +197,9 @@ def enhanced_domain_coloring_phase(w, phaseres=20, cmap=None, blevel=0.75,
 
 
 @to_rgb_255
-def enhanced_domain_coloring_mag(w, phaseres=20, cmap=None, blevel=0.75,
-    poffset=0, **kwargs):
+def enhanced_domain_coloring_mag(
+    w, phaseres=20, cmap=None, blevel=0.75, poffset=0, **kwargs
+):
     """Enhanced domain coloring showing iso-lines for magnitude,
     with an optional enhacement to wash poles to white.
     """
@@ -332,8 +337,10 @@ def create_colorscale(cmap, poffset=0, N=256):
     return colorscale
 
 
-def wegert(coloring, w, phaseres=20, cmap="hsv_r", blevel=0.75, poffset=0,
-    at_infinity=False, riemann_mask=False, N=256, domain=None):
+def wegert(
+    coloring, w, phaseres=20, cmap="hsv_r", blevel=0.75, poffset=0,
+    at_infinity=False, riemann_mask=False, N=256, domain=None
+):
     """ Choose between different domain coloring options.
 
     Parameters
@@ -424,7 +431,9 @@ def wegert(coloring, w, phaseres=20, cmap="hsv_r", blevel=0.75, poffset=0,
     if isinstance(cmap, (list, tuple, np.ndarray)):
         cmap = matplotlib.colors.ListedColormap(cmap)
     elif not isinstance(cmap, matplotlib.colors.Colormap):
-        raise TypeError("`%s` is not a supported type for a colormap" % type(cmap))
+        raise TypeError(
+            "`%s` is not a supported type for a colormap" % type(cmap)
+        )
 
     if coloring not in mapping.keys():
         raise KeyError(
@@ -444,6 +453,8 @@ def wegert(coloring, w, phaseres=20, cmap="hsv_r", blevel=0.75, poffset=0,
 
     func, create_cc = mapping[coloring]
     if create_cc:
-        return [func(w, **kwargs),
-            create_colorscale(cmap, poffset, N)]
+        return [
+            func(w, **kwargs),
+            create_colorscale(cmap, poffset, N)
+        ]
     return func(w, **kwargs), None

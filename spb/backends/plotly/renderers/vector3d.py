@@ -7,9 +7,11 @@ def _draw_vector3d_helper(renderer, data):
     p, s = renderer.plot, renderer.series
     np = p.np
     if s.color_func is not None:
-        warnings.warn("PlotlyBackend doesn't support custom "
+        warnings.warn(
+            "PlotlyBackend doesn't support custom "
             "coloring of 2D/3D quivers or streamlines plots. "
-            "`color_func` will not be used.")
+            "`color_func` will not be used."
+        )
 
     xx, yy, zz, uu, vv, ww = data
     if s.is_streamlines:
@@ -87,8 +89,8 @@ def _update_vector3d_helper(renderer, data, idx):
     handle["u"] = u.flatten()
     handle["v"] = v.flatten()
     handle["w"] = w.flatten()
-    handle["cmin"] = cmin=mag.min()
-    handle["cmax"] = cmin=mag.max()
+    handle["cmin"] = mag.min()
+    handle["cmax"] = mag.max()
 
 
 class Vector3DRenderer(Renderer):

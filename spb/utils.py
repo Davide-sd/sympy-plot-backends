@@ -129,7 +129,8 @@ def _preprocess_multiple_ranges(exprs, ranges, npar, params={}):
     """
     provided_ranges, mapping = _create_ranges_iterable(*ranges)
     # add missing ranges
-    ranges = _create_missing_ranges(exprs, provided_ranges.copy(), npar, params)
+    ranges = _create_missing_ranges(
+        exprs, provided_ranges.copy(), npar, params)
     # sort the ranges in order to get [range1, range2, ranges3 [optional]]
     sorted_ranges = [None] * npar
     for k, v in mapping.items():
@@ -241,8 +242,10 @@ def _check_arguments(args, nexpr, npar, **kwargs):
         labels = [labels] if labels else []
 
         # number of expressions
-        n = (len(ranges) + len(labels) +
-            (len(rendering_kw) if rendering_kw is not None else 0))
+        n = (
+            len(ranges) + len(labels) +
+            (len(rendering_kw) if rendering_kw is not None else 0)
+        )
         new_args = args[:-n] if n > 0 else args
 
         # at this point, new_args might just be [expr]. But I need it to be
@@ -269,7 +272,8 @@ def _check_arguments(args, nexpr, npar, **kwargs):
             arg = [arg[i] for i in range(nexpr)]
             free_symbols = set()
             if all(not callable(a) for a in arg):
-                free_symbols = free_symbols.union(*[a.free_symbols for a in arg])
+                free_symbols = free_symbols.union(*[
+                    a.free_symbols for a in arg])
             if len(r) != npar:
                 r = _create_missing_ranges(arg, r, npar, params)
 
@@ -293,8 +297,12 @@ def _plot_sympify(args):
     for i, a in enumerate(args):
         if isinstance(a, (list, tuple)):
             args[i] = Tuple(*_plot_sympify(a), sympify=False)
-        elif not (isinstance(a, (str, dict)) or callable(a)
-            or ((a.__class__.__name__ == "Vector") and not isinstance(a, Basic))
+        elif not (
+            isinstance(a, (str, dict)) or callable(a)
+            or (
+                (a.__class__.__name__ == "Vector") and
+                not isinstance(a, Basic)
+            )
         ):
             args[i] = sympify(a)
     return args
@@ -359,10 +367,15 @@ class prange(Tuple):
                 "`%s` requires 3 elements. Received " % cls.__name__ +
                 "%s elements: %s" % (len(args), args))
         if not isinstance(args[0], (str, Symbol, BaseScalar, Indexed)):
-            raise TypeError("The first element of a plotting range must "
-                "be a symbol. Received: %s" % type(args[0]))
+            raise TypeError(
+                "The first element of a plotting range must "
+                "be a symbol. Received: %s" % type(args[0])
+            )
         args = [sympify(a) for a in args]
-        if (args[0] in args[1].free_symbols) or (args[0] in args[2].free_symbols):
+        if (
+            (args[0] in args[1].free_symbols) or
+            (args[0] in args[2].free_symbols)
+        ):
             raise ValueError(
                 "Symbol `%s` representing the range can only " % args[0] +
                 "be specified in the first element of %s" % cls.__name__)
@@ -401,7 +414,10 @@ def _unpack_args(*args):
     rendering_kw = None if not rendering_kw else rendering_kw[0]
     # NOTE: why None? because args might have been preprocessed by
     # _check_arguments, so None might represent the rendering_kw
-    results = [not (_is_range(a) or isinstance(a, (str, dict)) or (a is None)) for a in args]
+    results = [
+        not (_is_range(a) or isinstance(a, (str, dict)) or (a is None))
+        for a in args
+    ]
     exprs = [a for a, b in zip(args, results) if b]
     return exprs, ranges, label, rendering_kw
 
@@ -512,9 +528,11 @@ def _validate_kwargs(backend_obj, **kwargs):
     ])
     # params is a keyword argument that is also checked before instantion of
     # Series and Backend.
-    allowed_keys = allowed_keys.union(["params", "layout", "ncols",
+    allowed_keys = allowed_keys.union([
+        "params", "layout", "ncols",
         "use_latex", "throttled", "servable", "custom_css", "pane_kw",
-        "is_iplot", "series", "template"])
+        "is_iplot", "series", "template"
+    ])
     user_provided_keys = set(kwargs.keys())
     unused_keys = user_provided_keys.difference(allowed_keys)
     if len(unused_keys) > 0:
@@ -539,8 +557,8 @@ def levenshtein(s1, s2):
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):
-            # j+1 instead of j since previous_row and current_row are one character longer
-            # than s2
+            # j+1 instead of j since previous_row and current_row are
+            # one character longer than s2
             insertions = previous_row[j + 1] + 1
             deletions = current_row[j] + 1
             substitutions = previous_row[j] + (c1 != c2)
@@ -608,13 +626,13 @@ def unwrap(angle, period=None):
     >>> # Already continuous
     >>> theta1 = np.array([1.0, 1.5, 2.0, 2.5, 3.0]) * np.pi
     >>> theta2 = ct.unwrap(theta1)
-    >>> theta2/np.pi                                            # doctest: +SKIP
+    >>> theta2/np.pi                                          # doctest: +SKIP
     array([1. , 1.5, 2. , 2.5, 3. ])
 
     >>> # Wrapped, discontinuous
     >>> theta1 = np.array([1.0, 1.5, 0.0, 0.5, 1.0]) * np.pi
     >>> theta2 = ct.unwrap(theta1)
-    >>> theta2/np.pi                                            # doctest: +SKIP
+    >>> theta2/np.pi                                          # doctest: +SKIP
     array([1. , 1.5, 2. , 2.5, 3. ])
 
     Notes

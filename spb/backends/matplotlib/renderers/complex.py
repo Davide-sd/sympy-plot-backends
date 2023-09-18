@@ -1,6 +1,12 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
-from spb.backends.matplotlib.renderers.surface import _draw_surface_helper, _update_surface_helper
-from spb.backends.matplotlib.renderers.contour import _draw_contour_helper, _update_contour_helper
+from spb.backends.matplotlib.renderers.surface import (
+    _draw_surface_helper,
+    _update_surface_helper
+)
+from spb.backends.matplotlib.renderers.contour import (
+    _draw_contour_helper,
+    _update_contour_helper
+)
 
 
 def _draw_complex_helper(renderer, data):
@@ -27,11 +33,15 @@ def _draw_complex_helper(renderer, data):
 
             colormap = p.ListedColormap(colors)
             norm = p.Normalize(vmin=-np.pi, vmax=np.pi)
-            method = p._fig.colorbar if not p._imagegrid else p._ax.cax.colorbar
+            method = (
+                p._fig.colorbar if not p._imagegrid else p._ax.cax.colorbar
+            )
             cb2 = method(
                 p.cm.ScalarMappable(norm=norm, cmap=colormap),
-                # orientation="vertical",
-                label="Argument" if s.get_label(False) == str(s.expr) else s.get_label(p._use_latex),
+                label=(
+                    "Argument" if s.get_label(False) == str(s.expr)
+                    else s.get_label(p._use_latex)
+                ),
                 ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
                 ax=p._ax,
             )
@@ -45,10 +55,12 @@ def _draw_complex_helper(renderer, data):
             sign = -1 if s.at_infinity else 1
 
             # plot markers at (1, 0), (0, i), (0, -i)
-            markers, = p._ax.plot([1, 0, 0], [0, 1, -1], linestyle="none",
+            markers, = p._ax.plot(
+                [1, 0, 0], [0, 1, -1], linestyle="none",
                 color="k", markersize=4, marker="o",
                 markerfacecolor=(1, 1, 1), zorder=10)
-            center, = p._ax.plot([0], [0], linestyle="none",
+            center, = p._ax.plot(
+                [0], [0], linestyle="none",
                 color="k", markersize=4, marker="o", zorder=10,
                 markerfacecolor=(1, 1, 1) if s.at_infinity else None)
             a_plus_1 = p._ax.annotate(
@@ -65,7 +77,9 @@ def _draw_complex_helper(renderer, data):
                 xy=(0, 0), xytext=(0, -pixel_offset),
                 textcoords="offset pixels", ha="center", va="center")
 
-            handle += [markers, center, a_plus_1, a_plus_i, a_minus_i, a_center]
+            handle += [
+                markers, center, a_plus_1, a_plus_i, a_minus_i, a_center
+            ]
     else:
         x, y, mag, arg, facecolors, colorscale = data
 
@@ -73,7 +87,8 @@ def _draw_complex_helper(renderer, data):
         if s.use_cm:
             skw["facecolors"] = facecolors / 255
         else:
-            skw["color"] = next(p._cl) if s.surface_color is None else s.surface_color
+            color = next(p._cl) if s.surface_color is None else s.surface_color
+            skw["color"] = color
         kw = p.merge({}, skw, s.rendering_kw)
         c = p._ax.plot_surface(x, y, mag, **kw)
 

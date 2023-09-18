@@ -77,7 +77,12 @@ def _update_vector2d_helper(renderer, data, handle):
 
         if is_cb_added:
             quivers.set_UVC(uu, vv, color_val)
-            p._update_colorbar(cax, kw["cmap"], s.get_label(p._use_latex), color_val)
+            p._update_colorbar(
+                cax,
+                kw["cmap"],
+                s.get_label(p._use_latex),
+                color_val
+            )
         else:
             quivers.set_UVC(uu, vv)
         quivers.set_offsets(p.np.c_[xx.flatten(), yy.flatten()])

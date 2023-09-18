@@ -1,5 +1,5 @@
 from sympy import (
-    sympify, pi, Symbol, sin, cos, sqrt, atan2, Tuple, latex, Expr, Plane
+    sympify, sqrt, Tuple, Expr, Plane
 )
 from sympy.matrices.dense import DenseMatrix
 from sympy.external import import_module
@@ -53,8 +53,10 @@ def _split_vector(expr):
     return xexpr, yexpr, zexpr
 
 
-def vector_field_2d(expr1, expr2=None, range1=None, range2=None, label=None,
-    quiver_kw=None, stream_kw=None, contour_kw=None, **kwargs):
+def vector_field_2d(
+    expr1, expr2=None, range1=None, range2=None, label=None,
+    quiver_kw=None, stream_kw=None, contour_kw=None, **kwargs
+):
     """Plot a 2D vector field.
 
     Parameters
@@ -245,7 +247,8 @@ def vector_field_2d(expr1, expr2=None, range1=None, range2=None, label=None,
        >>> graphics(
        ...     vector_field_2d(fx, fy, ("x", -1, 1), ("y", -1, 1),
        ...         streamlines=True, scalar=False, use_cm=False),
-       ...     aspect="equal", xlabel="x", ylabel="y", grid=False)  # doctest: +SKIP
+       ...     aspect="equal", xlabel="x", ylabel="y", grid=False
+       ... )  # doctest: +SKIP
 
     Interactive-widget 2D vector plot. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
@@ -298,9 +301,11 @@ def vector_field_2d(expr1, expr2=None, range1=None, range2=None, label=None,
     ranges = _preprocess_multiple_ranges(
         [expr1, expr2], [range1, range2], 2, params)
     is_streamlines = kwargs.get("streamlines", False)
-    s = Vector2DSeries(expr1, expr2, *ranges, label,
+    s = Vector2DSeries(
+        expr1, expr2, *ranges, label,
         rendering_kw=quiver_kw if not is_streamlines else stream_kw,
-        **kwargs)
+        **kwargs
+    )
 
     scalar = kwargs.get("scalar", True)
     if scalar is True:
@@ -308,8 +313,8 @@ def vector_field_2d(expr1, expr2=None, range1=None, range2=None, label=None,
             scalar_field = sqrt(expr1**2 + expr2**2)
         else:
             np = import_module("numpy")
-            scalar_field = lambda x, y: (np.sqrt(
-                expr1(x, y)**2 + expr2(x, y)**2))
+            scalar_field = lambda x, y: (
+                np.sqrt(expr1(x, y)**2 + expr2(x, y)**2))
         scalar_label = "Magnitude"
     elif isinstance(scalar, Expr):
         scalar_field = scalar
@@ -343,14 +348,17 @@ def vector_field_2d(expr1, expr2=None, range1=None, range2=None, label=None,
                 cs_kwargs.pop(kw)
         cs_kwargs["n1"] = nc
         cs_kwargs["n2"] = nc
-        cs = ContourSeries(scalar_field, *ranges, scalar_label,
+        cs = ContourSeries(
+            scalar_field, *ranges, scalar_label,
             rendering_kw=contour_kw, **cs_kwargs)
         series = [cs] + series
     return series
 
 
-def vector_field_3d(expr1, expr2=None, expr3=None, range1=None, range2=None,
-    range3=None, label=None, quiver_kw=None, stream_kw=None, **kwargs):
+def vector_field_3d(
+    expr1, expr2=None, expr3=None, range1=None, range2=None,
+    range3=None, label=None, quiver_kw=None, stream_kw=None, **kwargs
+):
     """Plot a 3D vector field.
 
     Parameters
@@ -522,11 +530,13 @@ def vector_field_3d(expr1, expr2=None, expr3=None, range1=None, range2=None,
        s = 10 # length of the cubic discretization volume
        # create an XY plane with n discretization points along each direction
        n = 8
-       p = plane(Plane((0, 0, 0), (0, 0, 1)), (x, -s, s), (y, -s, s), (z, -s, s),
-               n1=n, n2=n)[0]
+       p = plane(
+           Plane((0, 0, 0), (0, 0, 1)), (x, -s, s), (y, -s, s), (z, -s, s),
+           n1=n, n2=n)[0]
        xx, yy, zz = p.get_data()
        graphics(
-           vector_field_3d(u, v, w, (x, -s, s), (y, -s, s), (z, -s, s),
+           vector_field_3d(
+               u, v, w, (x, -s, s), (y, -s, s), (z, -s, s),
                n=40, streamlines=True,
                stream_kw=dict(
                    starts=dict(x=xx, y=yy, z=zz),
@@ -591,7 +601,8 @@ def vector_field_3d(expr1, expr2=None, expr3=None, range1=None, range2=None,
 
     """
     if ((expr2 is None) and expr3) or ((expr3 is None) and expr2):
-        raise ValueError("`expr2` or `expr3` is None. This is not supported. "
+        raise ValueError(
+            "`expr2` or `expr3` is None. This is not supported. "
             "Please, provide all components of the vector field.")
     if (expr2 is None) and (expr3 is None):
         expr1, expr2, expr3 = _split_vector(expr1)
@@ -617,9 +628,11 @@ def vector_field_3d(expr1, expr2=None, expr3=None, range1=None, range2=None,
         [expr1, expr2, expr3], [range1, range2, range3], 3, params)
     is_streamlines = kwargs.get("streamlines", False)
     series = [
-        Vector3DSeries(expr1, expr2, expr3, *ranges, label,
+        Vector3DSeries(
+            expr1, expr2, expr3, *ranges, label,
             rendering_kw=quiver_kw if not is_streamlines else stream_kw,
-            **kwargs)
+            **kwargs
+        )
     ]
 
     _slice = kwargs.pop("slice", None)
@@ -645,6 +658,7 @@ def vector_field_3d(expr1, expr2=None, expr3=None, range1=None, range2=None,
     slice_series = []
     for s in _slice:
         slice_series.append(
-            SliceVector3DSeries(s, expr1, expr2, expr3, *ranges, label,
+            SliceVector3DSeries(
+                s, expr1, expr2, expr3, *ranges, label,
                 rendering_kw=quiver_kw, **kwargs))
     return slice_series

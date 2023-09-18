@@ -18,7 +18,8 @@ def convert_colormap(cm, to, n=256):
         to : str
             Specify the plotting library.
         n : int
-            Number of discretization points in the range [0, 1]. Default to 256.
+            Number of discretization points in the range [0, 1].
+            Default to 256.
             This is only used if `cm` is an instance of Colormap or if `cm` is
             a string with the name of a Plotly color scale.
 
@@ -107,7 +108,10 @@ def convert_colormap(cm, to, n=256):
             # matplotlib color map
             discr = np.linspace(0, 1, n)
             colors = (cm(discr) * 255).astype(int)
-            r = [[loc, "rgb" + str(tuple(c[:-1]))] for loc, c in zip(discr, colors)]
+            r = [
+                [loc, "rgb" + str(tuple(c[:-1]))]
+                for loc, c in zip(discr, colors)
+            ]
         elif isinstance(cm, np.ndarray) or all(
             [isinstance(c, (list, tuple)) for c in cm]
         ):
@@ -223,8 +227,8 @@ def _get_continuous_color(colorscale, intermed):
     Returns
     =======
         color : str
-            An RGB color string in which the components are float numbers in the
-            range [0, 255].
+            An RGB color string in which the components are float numbers in
+            the range [0, 255].
     """
     plotly = import_module(
         'plotly',
@@ -293,7 +297,9 @@ def get_plotly_colors(colorscale_name, loc):
 
     if hasattr(loc, "__iter__"):
         str_colors = [_get_continuous_color(colorscale, x) for x in loc]
-        return [[float(t) / 255 for t in s[4:-1].split(",")] for s in str_colors]
+        return [
+            [float(t) / 255 for t in s[4:-1].split(",")] for s in str_colors
+        ]
 
     str_color = _get_continuous_color(colorscale, loc)
     return [float(t) / 255 for t in str_color[4:-1].split(",")]
@@ -347,11 +353,16 @@ def get_seeds_points_entry_vector(xx, yy, zz, uu, vv, ww):
         }
         # extract coordinates where the vectors are entering the plane
         tmp = np.where(
-            check[sign](vf_plane[i, :, :]), coords, np.nan * np.zeros_like(coords)
+            check[sign](vf_plane[i, :, :]),
+            coords,
+            np.nan * np.zeros_like(coords)
         )
         # reshape the matrix to obtain an [n x 3] array of coordinates
         tmp = np.array(
-            [tmp[0, :, :].flatten(), tmp[1, :, :].flatten(), tmp[2, :, :].flatten()]
+            [
+                tmp[0, :, :].flatten(),
+                tmp[1, :, :].flatten(),
+                tmp[2, :, :].flatten()]
         ).T
         # remove NaN entries
         tmp = [a for a in tmp if not np.all([np.isnan(t) for t in a])]
@@ -423,8 +434,10 @@ def get_seeds_points(xx, yy, zz, uu, vv, ww, to_numpy=True, **kw):
                 + "lists of coordinates."
             )
         x, y, z = starts["x"], starts["y"], starts["z"]
-        x, y, z = [t if not isinstance(t, np.ndarray) else t.flatten()
-            for t in [x, y, z]]
+        x, y, z = [
+            t if not isinstance(t, np.ndarray) else t.flatten()
+            for t in [x, y, z]
+        ]
         points = np.array([x, y, z]).T
 
         if to_numpy:
@@ -549,8 +562,8 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs, color_func=None, ):
     streamer.SetInputData(grid)
     streamer.SetMaximumPropagation(max_prop)
 
-    seeds = get_seeds_points(xx, yy, zz, uu, vv, ww,
-        to_numpy=False, **kwargs)
+    seeds = get_seeds_points(
+        xx, yy, zz, uu, vv, ww, to_numpy=False, **kwargs)
 
     if starts is None:
         streamer.SetSourceData(seeds)

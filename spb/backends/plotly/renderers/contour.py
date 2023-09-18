@@ -14,7 +14,8 @@ def _draw_contour_helper(renderer, data):
             showlabels=True if (not s.is_filled) and s.show_clabels else False,
         ),
         colorscale=next(p._cm),
-        colorbar=p._create_colorbar(s.get_label(p._use_latex), p._show_2D_vectors),
+        colorbar=p._create_colorbar(
+            s.get_label(p._use_latex), p._show_2D_vectors),
         showscale=s.is_filled and s.colorbar,
         zmin=zz.min(), zmax=zz.max()
     )
@@ -25,7 +26,7 @@ def _draw_contour_helper(renderer, data):
 
 
 def _update_contour_helper(renderer, data, idx):
-    p, s = renderer.plot, renderer.series
+    p = renderer.plot
     handle = p.fig.data[idx]
 
     xx, yy, zz = data

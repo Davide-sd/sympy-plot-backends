@@ -18,14 +18,19 @@ def _draw_line3d_helper(renderer, data):
             kw = p.merge({}, lkw, s.rendering_kw)
             c = p.Line3DCollection(segments, **kw)
             p._ax.add_collection(c)
-            p._add_colorbar(c, s.get_label(p._use_latex), s.use_cm and s.colorbar)
+            p._add_colorbar(
+                c, s.get_label(p._use_latex), s.use_cm and s.colorbar)
             handle = (c, kw, p._fig.axes[-1])
         else:
             slabel = s.get_label(p._use_latex)
             lkw["label"] = slabel if s.show_in_legend else "_nolegend_"
-            lkw["color"] = ((next(p._cl) if s.line_color is None
-                else s.line_color) if (s.show_in_legend or (slabel != "__k__"))
-                else p.wireframe_color)
+            lkw["color"] = (
+                (
+                    next(p._cl) if s.line_color is None
+                    else s.line_color
+                ) if (s.show_in_legend or (slabel != "__k__"))
+                else p.wireframe_color
+            )
             kw = p.merge({}, lkw, s.rendering_kw)
             l = p._ax.plot(x, y, z, **kw)
             handle = l
@@ -35,7 +40,8 @@ def _draw_line3d_helper(renderer, data):
             lkw["c"] = param
         else:
             lkw["label"] = s.get_label(p._use_latex)
-            lkw["color"] = next(p._cl) if s.line_color is None else s.line_color
+            color = next(p._cl) if s.line_color is None else s.line_color
+            lkw["color"] = color
 
         if not s.is_filled:
             lkw["facecolors"] = "none"
@@ -44,7 +50,8 @@ def _draw_line3d_helper(renderer, data):
         kw = p.merge({}, lkw, s.rendering_kw)
         l = p._ax.scatter(x, y, z, **kw)
         if s.use_cm:
-            p._add_colorbar(l, s.get_label(p._use_latex), s.use_cm and s.colorbar)
+            p._add_colorbar(
+                l, s.get_label(p._use_latex), s.use_cm and s.colorbar)
             handle = [l, kw, p._fig.axes[-1]]
         else:
             handle = [l]
@@ -77,7 +84,8 @@ def _update_line3d_helper(renderer, data, handle):
     if s.is_parametric and s.use_cm:
         line.set_array(param)
         kw, cax = handle[1:]
-        p._update_colorbar(cax, kw["cmap"], s.get_label(p._use_latex), param=param)
+        p._update_colorbar(
+            cax, kw["cmap"], s.get_label(p._use_latex), param=param)
 
 
 class Line3DRenderer(MatplotlibRenderer):

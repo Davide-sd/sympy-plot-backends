@@ -6,8 +6,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 # NOTE: most of the following code comes from the `python-control` package,
 # specifically the nichols.py module.
+
 
 def _inner_extents(ax, xlim=None, ylim=None):
     # needs to loop over lines (mainly for interactive plots)
@@ -16,10 +18,14 @@ def _inner_extents(ax, xlim=None, ylim=None):
         x, y = l.get_data()
         xm, xM = np.nanmin(x), np.nanmax(x)
         ym, yM = np.nanmin(y), np.nanmax(y)
-        if xm < xmin: xmin = xm
-        if ym < ymin: ymin = ym
-        if xM > xmax: xmax = xM
-        if yM > ymax: ymax = yM
+        if xm < xmin:
+            xmin = xm
+        if ym < ymin:
+            ymin = ym
+        if xM > xmax:
+            xmax = xM
+        if yM > ymax:
+            ymax = yM
 
     if all(not np.isinf(t) for t in [xmin, ymin, xmax, ymax]):
         if xlim:
@@ -88,7 +94,9 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
 
     if ax.has_data():
         # Find extent of intersection the current dataset or view
-        ol_phase_min, ol_mag_min, ol_phase_max, ol_mag_max = _inner_extents(ax, xlim, ylim)
+        ol_phase_min, ol_mag_min, ol_phase_max, ol_mag_max = _inner_extents(
+            ax, xlim, ylim
+        )
 
     # M-circle magnitudes.
     if cl_mags is None:
@@ -125,8 +133,8 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
         raise ValueError('cl_phases must between -360 and 0, exclusive')
 
     # Find the M-contours
-    m = m_circles(cl_mags, phase_min=np.min(cl_phases),
-                  phase_max=np.max(cl_phases))
+    m = m_circles(
+        cl_mags, phase_min=np.min(cl_phases), phase_max=np.max(cl_phases))
     m_mag = 20*np.log10(np.abs(m))
     m_phase = np.mod(np.degrees(np.angle(m)), -360.0)  # Unwrap
 
@@ -151,27 +159,44 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
     for idx, phase_offset in enumerate(phase_offsets):
         # Draw M and N contours
         cl_mag_lines.extend(
-            ax.plot(m_phase + phase_offset, m_mag, color='lightgray',
-                    linestyle=line_style, zorder=0))
+            ax.plot(
+                m_phase + phase_offset,
+                m_mag,
+                color='lightgray',
+                linestyle=line_style,
+                zorder=0)
+            )
         cl_phase_lines.extend(
-            ax.plot(n_phase + phase_offset, n_mag, color='lightgray',
-                    linestyle=line_style, zorder=0))
+            ax.plot(
+                n_phase + phase_offset, n_mag,
+                color='lightgray',
+                linestyle=line_style,
+                zorder=0)
+            )
 
         if idx == len(phase_offsets) - 1:
             # Add magnitude labels
-            for x, y, m in zip(m_phase[:][-1] + phase_offset, m_mag[:][-1],
-                            cl_mags):
+            for x, y, m in zip(
+                m_phase[:][-1] + phase_offset,
+                m_mag[:][-1],
+                cl_mags
+            ):
                 align = 'right' if m < 0.0 else 'left'
                 label = '%s dB' % (m if m != 0 else 0)
                 cl_mag_labels.append(
-                    ax.text(x, y, label, size='small', ha=align,
-                            color='gray', clip_on=True))
+                    ax.text(
+                        x, y, label, size='small', ha=align,
+                        color='gray', clip_on=True
+                    )
+                )
 
             # phase labels
             if label_cl_phases:
-                for x, y, p in zip(n_phase[:][0] + phase_offset,
-                                n_mag[:][0],
-                                cl_phases):
+                for x, y, p in zip(
+                    n_phase[:][0] + phase_offset,
+                    n_mag[:][0],
+                    cl_phases
+                ):
                     if p > -175:
                         align = 'right'
                     elif p > -185:
@@ -179,22 +204,26 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
                     else:
                         align = 'left'
                     cl_phase_labels.append(
-                        ax.text(x, y, f'{round(p)}\N{DEGREE SIGN}',
-                                size='small',
-                                ha=align,
-                                va='bottom',
-                                color='gray',
-                                clip_on=True))
+                        ax.text(
+                            x, y, f'{round(p)}\N{DEGREE SIGN}',
+                            size='small',
+                            ha=align,
+                            va='bottom',
+                            color='gray',
+                            clip_on=True)
+                        )
 
     xm = phase_offsets - 180
-    markers, = ax.plot(xm, np.zeros_like(xm), linestyle="none", marker="+",
-        color="r")
+    markers, = ax.plot(
+        xm, np.zeros_like(xm), linestyle="none", marker="+", color="r")
 
     # Fit axes to generated chart
-    ax.axis([phase_round_min,
-             phase_round_max,
-             np.min(np.concatenate([cl_mags,[ol_mag_min]])),
-             np.max([ol_mag_max, default_ol_mag_max])])
+    ax.axis([
+        phase_round_min,
+        phase_round_max,
+        np.min(np.concatenate([cl_mags, [ol_mag_min]])),
+        np.max([ol_mag_max, default_ol_mag_max])
+    ])
 
     return cl_mag_lines, cl_phase_lines, cl_mag_labels, cl_phase_labels, markers
 

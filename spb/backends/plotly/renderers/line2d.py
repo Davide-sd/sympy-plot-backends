@@ -5,7 +5,10 @@ def _scatter_class(plot, n, polar=False):
     go = plot.go
     if not polar:
         return go.Scatter if n < plot.scattergl_threshold else go.Scattergl
-    return go.Scatterpolar if n < plot.scattergl_threshold else go.Scatterpolargl
+    return (
+        go.Scatterpolar if n < plot.scattergl_threshold
+        else go.Scatterpolargl
+    )
 
 
 def _draw_line2d_helper(renderer, data):
@@ -144,9 +147,11 @@ def _update_line2d_helper(renderer, data, idxs):
         for x_loc in s.poles_locations:
             # TODO: weirdly, add_vline refuses to work here...
             # p._fig.add_vline(x=float(x_loc), **p.pole_line_kw)
-            p._fig.add_shape(type="line", x0=float(x_loc), x1=float(x_loc),
+            p._fig.add_shape(
+                type="line", x0=float(x_loc), x1=float(x_loc),
                 y0=0, y1=1, xref="x", yref="y domain",
-                **p.pole_line_kw)
+                **p.pole_line_kw
+            )
         n = len(p._fig.layout["shapes"])
         m = len(s.poles_locations)
         idxs[1] = list(range(n - m, n))
