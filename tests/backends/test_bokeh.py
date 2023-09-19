@@ -1,5 +1,5 @@
 import bokeh
-from bokeh.models import ColumnDataSource, Span
+from bokeh.models import ColumnDataSource, Span, Arrow
 import pytest
 from pytest import raises
 import os
@@ -73,7 +73,8 @@ from .make_tests import (
     make_test_parametric_texts_2d,
     make_test_line_color_func,
     make_test_plot_list_color_func,
-    make_test_real_imag
+    make_test_real_imag,
+    make_test_arrow_2d
 )
 
 
@@ -1272,3 +1273,11 @@ def test_parametric_texts():
     assert p.fig.title.text == "y=1.5, z=2.000"
     assert p.fig.xaxis.axis_label == "test y+z=3.50"
     assert p.fig.yaxis.axis_label == "test z=2.00"
+
+def test_arrow_2d():
+    p = make_test_arrow_2d(BB, "test", {"line_color": "red"}, True)
+    p.fig
+    assert len(p.fig.center) == 3
+    arrows = [t for t in p.fig.center if isinstance(t, Arrow)]
+    assert len(arrows) == 1
+    assert arrows[0].line_color == "red"

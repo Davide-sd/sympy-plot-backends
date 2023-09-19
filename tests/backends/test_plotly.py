@@ -106,7 +106,8 @@ from .make_tests import (
     make_test_plot3d_use_latex,
     make_test_vectors_3d_update_interactive,
     make_test_plot_list_color_func,
-    make_test_real_imag
+    make_test_real_imag,
+    make_test_arrow_2d
 )
 
 
@@ -1860,3 +1861,17 @@ def test_parametric_texts():
     assert p.fig.layout.scene.xaxis.title.text == "test a=1.50"
     assert p.fig.layout.scene.yaxis.title.text == "test b=2.00"
     assert p.fig.layout.scene.zaxis.title.text == "test a=1.50, b=2.00"
+
+
+def test_arrow_2d():
+    p = make_test_arrow_2d(PB, "test", {"arrowcolor": "red"}, True)
+    p.fig
+    assert len(p.fig.layout.annotations) == 1
+    assert p.fig.layout.annotations[0]["text"] == "test"
+    assert p.fig.layout.annotations[0]["arrowcolor"] == "red"
+
+    p = make_test_arrow_2d(PB, "test", {"arrowcolor": "red"}, False)
+    p.fig
+    assert len(p.fig.layout.annotations) == 1
+    assert p.fig.layout.annotations[0]["text"] == ""
+    assert p.fig.layout.annotations[0]["arrowcolor"] == "red"

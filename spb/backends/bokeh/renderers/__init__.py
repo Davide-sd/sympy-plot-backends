@@ -5,9 +5,10 @@ from spb.backends.bokeh.renderers.vector2d import Vector2DRenderer
 from spb.backends.bokeh.renderers.complex import ComplexRenderer
 from spb.backends.bokeh.renderers.generic import GenericRenderer
 from spb.backends.bokeh.renderers.hvline import HVLineRenderer
+from spb.backends.bokeh.renderers.arrow2d import Arrow2DRenderer
 
 __all__ = [
     "Line2DRenderer", "ContourRenderer", "GeometryRenderer",
     "Vector2DRenderer", "ComplexRenderer", "GenericRenderer",
-    "HVLineRenderer"
+    "HVLineRenderer", "Arrow2DRenderer"
 ]

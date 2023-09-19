@@ -9,9 +9,11 @@ from spb.backends.plotly.renderers.vector3d import Vector3DRenderer
 from spb.backends.plotly.renderers.complex import ComplexRenderer
 from spb.backends.plotly.renderers.generic import GenericRenderer
 from spb.backends.plotly.renderers.hvline import HVLineRenderer
+from spb.backends.plotly.renderers.arrow2d import Arrow2DRenderer
 
 __all__ = [
     "Line2DRenderer", "Line3DRenderer", "ContourRenderer", "SurfaceRenderer",
     "GeometryRenderer", "Implicit3DRenderer", "Vector2DRenderer",
-    "Vector3DRenderer", "ComplexRenderer", "GenericRenderer", "HVLineRenderer"
+    "Vector3DRenderer", "ComplexRenderer", "GenericRenderer", "HVLineRenderer",
+    "Arrow2DRenderer"
 ]

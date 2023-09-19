@@ -3,13 +3,13 @@ from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.bokeh.renderers import (
     Line2DRenderer, Vector2DRenderer, ComplexRenderer, ContourRenderer,
-    GeometryRenderer, GenericRenderer, HVLineRenderer
+    GeometryRenderer, GenericRenderer, HVLineRenderer, Arrow2DRenderer
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
     ColoredLineOver1DRangeSeries, AbsArgLineSeries, ComplexPointSeries,
     Vector2DSeries, ComplexDomainColoringSeries, ContourSeries,
-    GeometrySeries, GenericDataSeries, HVLineSeries
+    GeometrySeries, GenericDataSeries, HVLineSeries, Arrow2DSeries
 )
 from sympy.external import import_module
 
@@ -121,6 +121,7 @@ class BokehBackend(Plot):
         GeometrySeries: GeometryRenderer,
         GenericDataSeries: GenericRenderer,
         HVLineSeries: HVLineRenderer,
+        Arrow2DSeries: Arrow2DRenderer,
     }
 
     pole_line_kw = {"line_color": "#000000", "line_dash": "dotted"}

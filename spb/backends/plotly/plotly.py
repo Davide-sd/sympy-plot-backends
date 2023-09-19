@@ -5,7 +5,7 @@ from spb.backends.base_backend import Plot
 from spb.backends.plotly.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
     ComplexRenderer, ContourRenderer, SurfaceRenderer, Implicit3DRenderer,
-    GeometryRenderer, GenericRenderer, HVLineRenderer
+    GeometryRenderer, GenericRenderer, HVLineRenderer, Arrow2DRenderer
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
@@ -16,7 +16,7 @@ from spb.series import (
     ComplexDomainColoringSeries, ComplexSurfaceSeries,
     ContourSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     PlaneSeries, GeometrySeries, GenericDataSeries,
-    HVLineSeries
+    HVLineSeries, Arrow2DSeries
 )
 from sympy.external import import_module
 
@@ -67,6 +67,7 @@ class PlotlyBackend(Plot):
           ``dict( arrow_scale = 0.15 )``.
         * Refer to [#fn9]_ to customize 3D streamlines plots. Defaul to:
           ``dict( sizeref = 0.3 )``.
+        * Refere to to [#fn19]_ to customize 2D arrow plots.
 
     axis : boolean, optional
         Turns on/off the axis visibility (and associated tick labels).
@@ -127,6 +128,7 @@ class PlotlyBackend(Plot):
     .. [#fn16] https://plotly.com/python/shapes/
     .. [#fn17] https://plotly.com/python/filled-area-plots/
     .. [#fn18] https://plotly.com/python/3d-camera-controls/
+    .. [#fn19] https://plotly.com/python/reference/layout/annotations/
 
 
     Notes
@@ -186,7 +188,8 @@ class PlotlyBackend(Plot):
         PlaneSeries: SurfaceRenderer,
         GeometrySeries: GeometryRenderer,
         GenericDataSeries: GenericRenderer,
-        HVLineSeries: HVLineRenderer
+        HVLineSeries: HVLineRenderer,
+        Arrow2DSeries: Arrow2DRenderer
     }
 
     pole_line_kw = {"line": dict(color='black', dash='dot', width=1)}
@@ -258,6 +261,7 @@ class PlotlyBackend(Plot):
         )
         self._show_2D_vectors = any(s.is_2Dvector for s in self.series)
         self._create_renderers()
+        self._n_annotations = 0
 
     @property
     def fig(self):
