@@ -8,6 +8,7 @@ def _draw_vector2d_helper(renderer, data):
     uu0, vv0 = [t.copy() for t in [uu, vv]]
     if s.normalize:
         uu, vv = [t / mag for t in [uu, vv]]
+    solid_color = None
     if s.is_streamlines:
         skw = dict()
         if (not s.use_quiver_solid_color) and s.use_cm:
@@ -23,6 +24,7 @@ def _draw_vector2d_helper(renderer, data):
         else:
             skw["color"] = next(p._cl)
             kw = p.merge({}, skw, s.rendering_kw)
+            solid_color = kw["color"]
             sp = p._ax.streamplot(xx, yy, uu, vv, **kw)
             is_cb_added = False
         handle = [sp, kw, is_cb_added, p._fig.axes[-1]]
@@ -55,8 +57,18 @@ def _draw_vector2d_helper(renderer, data):
             is_cb_added = False
             qkw["color"] = next(p._cl)
             kw = p.merge({}, qkw, s.rendering_kw)
+            solid_color = kw["color"]
             q = p._ax.quiver(xx, yy, uu, vv, **kw)
         handle = [q, kw, is_cb_added, p._fig.axes[-1]]
+
+    if (not s.use_cm) and s.show_in_legend:
+        # quivers are rendered with solid color: set up a legend handle
+        proxy_artist = p.Line2D(
+            [], [],
+            color=solid_color, label=s.get_label(p._use_latex)
+        )
+        p._legend_handles.append(proxy_artist)
+
     return handle
 
 

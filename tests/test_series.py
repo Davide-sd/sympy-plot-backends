@@ -9,9 +9,10 @@ from spb.series import (
     ComplexPointSeries, GeometrySeries,
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
     _set_discretization_points, ColoredLineOver1DRangeSeries,
-    HVLineSeries
+    HVLineSeries, Arrow2DSeries
 )
 from spb import plot3d_spherical
+from sympy.abc import j, k
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
@@ -3923,3 +3924,34 @@ def test_implicit_2d_series_ne(adaptive):
     expr = Ne(x * y, 1)
     s = ImplicitSeries(expr, (x, -10, 10), (y, -10, 10), adaptive=adaptive)
     s.get_data()
+
+
+@pytest.mark.parametrize(
+    "start, direc, label, rkw, sil, params",
+    [
+        ((1, 2), (3, 4), None, None, True, None),
+        ((1, 2), (3, 4), "test", {"color": "r"}, False, None),
+        (Tuple(j, k), (3, 4), None, None, True, {j: (1, 0, 2), k: (2, 0, 3)}),
+        (Tuple(j, k), (3, 4), "test", {"color": "r"}, False, {j: (1, 0, 2), k: (2, 0, 3)}),
+    ]
+)
+def test_arrow2dserie(start, direc, label, rkw, sil, params):
+    kw = {"rendering_kw": rkw, "show_in_legend": sil}
+    if params:
+        params = {k: v[0] for k, v in params.items()}
+        kw["params"] = params
+    s = Arrow2DSeries(start, direc, label, **kw)
+    assert np.allclose(
+        s.get_data(),
+        [1, 2, 4, 6]
+    )
+    assert s.show_in_legend is sil
+    if not params:
+        assert s.get_label(False) == (
+            "(1.0, 2.0) -> (4.0, 6.0)" if not label else label)
+    else:
+        assert s.get_label(False) == (
+            "(j, k) -> (j + 3, k + 4)" if not label else label)
+    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.is_interactive == (len(s.params) > 0)
+    assert s.params == {} if not params else params

@@ -108,7 +108,8 @@ from .make_tests import (
     make_test_plot3d_use_latex,
     make_test_vectors_3d_update_interactive,
     make_test_plot_list_color_func,
-    make_test_real_imag
+    make_test_real_imag,
+    make_test_arrow_2d
 )
 
 
@@ -2274,3 +2275,17 @@ def test_parametric_texts():
     assert p.backend.ax.get_xlabel() == "test a=1.50"
     assert p.backend.ax.get_ylabel() == "test b=2.00"
     assert p.backend.ax.get_zlabel() == "test a=1.50, b=2.00"
+
+
+def test_arrow_2d():
+    p = make_test_arrow_2d(MB, "test", {"color": "r"}, True)
+    p.fig
+    assert len(p.ax.patches) == 1
+    assert len(p.ax.get_legend().legend_handles) == 1
+    assert p.ax.get_legend().legend_handles[0].get_label() == "$test$"
+    assert p.ax.get_legend().legend_handles[0].get_color() == "r"
+
+    p = make_test_arrow_2d(MB, "test", {"color": "r"}, False)
+    p.fig
+    assert len(p.ax.patches) == 1
+    assert p.ax.get_legend() is None

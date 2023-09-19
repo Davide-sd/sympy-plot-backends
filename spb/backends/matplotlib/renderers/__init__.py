@@ -11,10 +11,14 @@ from spb.backends.matplotlib.renderers.generic import GenericRenderer
 from spb.backends.matplotlib.renderers.hvline import HVLineRenderer
 from spb.backends.matplotlib.renderers.nyquist import NyquistRenderer
 from spb.backends.matplotlib.renderers.nichols import NicholsRenderer
+from spb.backends.matplotlib.renderers.arrow2d import (
+    Arrow2DRendererQuivers, Arrow2DRendererFancyArrowPatch
+)
 
 __all__ = [
     "Line2DRenderer", "Line3DRenderer", "ContourRenderer", "SurfaceRenderer",
     "GeometryRenderer", "Implicit2DRenderer", "Vector2DRenderer",
     "Vector3DRenderer", "ComplexRenderer", "GenericRenderer",
-    "HVLineRenderer", "NyquistRenderer", "NicholsRenderer"
+    "HVLineRenderer", "NyquistRenderer", "NicholsRenderer",
+    "Arrow2DRendererQuivers", "Arrow2DRendererFancyArrowPatch"
 ]

@@ -5,7 +5,7 @@ from sympy.matrices.dense import DenseMatrix
 from sympy.external import import_module
 from spb.series import (
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries, BaseSeries,
-    ContourSeries
+    ContourSeries, Arrow2DSeries
 )
 from spb.utils import _preprocess_multiple_ranges
 import warnings
@@ -662,3 +662,89 @@ def vector_field_3d(
                 s, expr1, expr2, expr3, *ranges, label,
                 rendering_kw=quiver_kw, **kwargs))
     return slice_series
+
+
+def arrow_2d(
+    start, direction, label=None, rendering_kw=None, show_in_legend=True,
+    **kwargs
+):
+    """Draw an arrow in a 2D space.
+
+    Parameters
+    ==========
+    start : (x, y)
+        Coordinates of the start position.
+    direction : (u, v)
+        Componenents of the direction vector.
+    label : str, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of ``expr`` will be used.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+    show_in_legend : bool
+        If True, add a legend entry for the expression being plotted.
+        This option is useful to hide a particular expression when combining
+        together multiple plots. Default to True.
+
+    Returns
+    =======
+
+    A list containing one instance of ``Arrow2DSeries``.
+
+    See Also
+    ========
+
+    vector_field_2d
+
+    Examples
+    ========
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from spb import *
+       >>> graphics(
+       ...     arrow_2d((0, 0), (1, 1)),
+       ...     arrow_2d((0, 0), (-1, 1)),
+       ...     grid=False, aspect="equal"
+       ... )
+
+    Interactive-widget plot of arrows. Refer to the interactive
+    sub-module documentation to learn more about the ``params`` dictionary.
+
+    .. panel-screenshot::
+       :small-size: 800, 610
+
+       from sympy import *
+       from spb import *
+       r, theta = symbols("r, theta")
+       params = {
+           r: (4, 0, 5),
+           theta: (pi/3, 0, 2*pi),
+       }
+       graphics(
+           arrow_2d(
+               (0, 0), (5, 0), show_in_legend=False,
+               rendering_kw={"color": "k"}),
+           arrow_2d(
+               (0, 0), (0, 5), show_in_legend=False,
+               rendering_kw={"color": "k"}),
+           arrow_2d(
+               (0, 0), (r * cos(theta), r * sin(theta)),
+               params=params),
+           arrow_2d(
+               (0, 0), (r * cos(theta + pi/2), r * sin(theta + pi/2)),
+               params=params),
+           xlim=(-6, 6), ylim=(-6, 6), aspect="equal", grid=False
+       )
+
+    """
+    return [
+        Arrow2DSeries(
+            start, direction, label, rendering_kw=rendering_kw,
+            show_in_legend=show_in_legend, **kwargs)
+    ]

@@ -5,7 +5,7 @@ from spb.backends.matplotlib.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
     Implicit2DRenderer, ComplexRenderer, ContourRenderer, SurfaceRenderer,
     GeometryRenderer, GenericRenderer, HVLineRenderer,
-    NyquistRenderer, NicholsRenderer
+    NyquistRenderer, NicholsRenderer, Arrow2DRendererFancyArrowPatch
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
@@ -16,7 +16,8 @@ from spb.series import (
     ComplexDomainColoringSeries, ComplexSurfaceSeries,
     ContourSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     PlaneSeries, GeometrySeries, GenericDataSeries,
-    HVLineSeries, NyquistLineSeries, NicholsLineSeries
+    HVLineSeries, NyquistLineSeries, NicholsLineSeries,
+    Arrow2DSeries
 )
 from sympy.external import import_module
 from packaging import version
@@ -78,6 +79,7 @@ class MatplotlibBackend(Plot):
         * Refer to [#fn6]_ to customize surface plots.
         * Refer to [#fn7]_ to customize stramline plots.
         * Refer to [#fn8]_ to customize 3D scatter plots.
+        * Refer to [#fn11]_ to customize 2D arrows.
 
     axis : boolean, optional
         Turns on/off the axis visibility (and associated tick labels).
@@ -125,7 +127,7 @@ class MatplotlibBackend(Plot):
     .. [#fn7] https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
     .. [#fn8] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
     .. [#fn9] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.view_init
-
+    .. [#fn11] https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrowPatch.html
 
     See also
     ========
@@ -166,7 +168,8 @@ class MatplotlibBackend(Plot):
         GenericDataSeries: GenericRenderer,
         HVLineSeries: HVLineRenderer,
         NyquistLineSeries: NyquistRenderer,
-        NicholsLineSeries: NicholsRenderer
+        NicholsLineSeries: NicholsRenderer,
+        Arrow2DSeries: Arrow2DRendererFancyArrowPatch
     }
 
     pole_line_kw = {"color": "k", "linestyle": ":"}
@@ -175,7 +178,9 @@ class MatplotlibBackend(Plot):
         self.matplotlib = import_module(
             'matplotlib',
             import_kwargs={
-                'fromlist': ['pyplot', 'cm', 'collections', 'colors']
+                'fromlist': [
+                    'pyplot', 'cm', 'collections', 'colors', 'patches'
+                ]
             },
             warn_not_installed=True,
             min_module_version='1.1.0',

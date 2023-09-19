@@ -10,5 +10,6 @@ ipywidgets. Refer to :ref:`interactive` module for more information.
 
 .. module:: spb.graphics.vectors
 
+.. autofunction:: arrow_2d
 .. autofunction:: vector_field_2d
 .. autofunction:: vector_field_3d

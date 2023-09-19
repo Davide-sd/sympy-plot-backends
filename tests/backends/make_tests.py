@@ -3,7 +3,8 @@ from spb import (
     plot_contour, plot_piecewise, plot_geometry,
     plot3d_parametric_line, plot3d, plot3d_list,
     plot3d_implicit, plot3d_parametric_surface,
-    plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere
+    plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
+    graphics, arrow_2d
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries
@@ -1179,4 +1180,12 @@ def make_test_parametric_texts_3d(B):
             ylabel=("test b={:.2f}", b),
             zlabel=("test a={:.2f}, b={:.2f}", a, b),
         ),
+    )
+
+
+def make_test_arrow_2d(B, lbl, rkw, sil):
+    return graphics(
+        arrow_2d(
+            (1, 2), (3, 4), label=lbl, rendering_kw=rkw, show_in_legend=sil),
+        show=False, backend=B, legend=True
     )

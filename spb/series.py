@@ -3889,3 +3889,112 @@ class NicholsLineSeries(Parametric2DLineSeries):
         phase = unwrap(phase)
         phase = np.degrees(phase)
         return phase, mag, omega
+
+
+class Arrow2DSeries(BaseSeries):
+    """Represent an arrow in a 2D space.
+    """
+    def __init__(self, start, direction, label="", **kwargs):
+        super().__init__(**kwargs)
+        np = import_module('numpy')
+        if len(start) != len(direction):
+            raise ValueError(
+                "`start` and `direction` must have the same number of elements.\n"
+                f"Received: len(start) = {len(start)} "
+                f"and len(direction) = {len(direction)}"
+            )
+        self._block_lambda_functions(start, direction)
+        check = lambda l: [
+            isinstance(t, Expr) and (not t.is_number) for t in l
+        ]
+        if any(check(start) + check(direction)) or self.params:
+            if not self.params:
+                raise ValueError(
+                    "Some or all elements of the provided coordinates "
+                    "are symbolic expressions, but the ``params`` dictionary "
+                    "was not provided: those elements can't be evaluated."
+                )
+            self.start = Tuple(*start)
+            self.direction = Tuple(*direction)
+        else:
+            self.start = np.array(start, dtype=np.float64)
+            self.direction = np.array(direction, dtype=np.float64)
+
+        self._expr = (self.start, self.direction)
+        if not any(isinstance(t, np.ndarray) for t in [self.start, self.direction]):
+            self._check_fs()
+        if label:
+            self.label = label
+        else:
+            # label: (from) -> (to)
+            self._label = (
+                "({}) -> ({})".format(
+                    ", ".join([str(t) for t in self.start]),
+                    ", ".join([str(u + v) for u, v in zip(
+                        self.start, self.direction)])
+                )
+            )
+            self._latex_label = (
+                r"\left({}\right) \rightarrow \left({}\right)".format(
+                    ", ".join([latex(t) for t in self.start]),
+                    ", ".join([latex(u + v) for u, v in zip(
+                        self.start, self.direction)])
+                )
+            )
+        self.rdirectionering_kw = kwargs.get("rdirectionering_kw", dict())
+        self.use_quiver_solid_color = not self.use_cm
+        self.normalize = kwargs.get("normalize", False)
+        self.is_streamlines = kwargs.get("streamlines", False)
+
+    def __str__(self):
+        return self._str_helper(
+            f"2D arrow from {self.start} to {self.direction}"
+        )
+
+    def get_label(self, use_latex=False, wrapper="$%s$"):
+        """Return the label to be used to display the expression.
+
+        Parameters
+        ==========
+        use_latex : bool
+            If False, the string representation of the expression is returned.
+            If True, the latex representation is returned.
+        wrapper : str
+            The backend might need the latex representation to be wrapped by
+            some characters. Default to ``"$%s$"``.
+
+        Returns
+        =======
+        label : str
+        """
+        if use_latex is False:
+            return self._label
+        return self._get_wrapped_label(self._latex_label, wrapper)
+
+    def get_data(self):
+        """Return arrays of coordinates for plotting.
+
+        Returns
+        =======
+        x, y : float
+            Coordinates of the start position.
+        u, v : float
+            Coordinates of the end position.
+        """
+        np = import_module('numpy')
+        start, direction = self.start, self.direction
+
+        if not self.is_interactive:
+            start, direction = [
+                np.array(t, dtype=float) for t in [start, direction]
+            ]
+        else:
+            start = np.array(
+                [t.evalf(subs=self.params) for t in start], dtype=float)
+            direction = np.array(
+                [t.evalf(subs=self.params) for t in direction], dtype=float)
+
+        direction += start
+        x, y = start
+        u, v = direction
+        return self._apply_transform(x, y, u, v)
