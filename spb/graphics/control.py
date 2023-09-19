@@ -10,11 +10,20 @@ from sympy import (
     I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt,
     floor, ceiling, frac, pi, fraction, Expr, Tuple
 )
-from sympy.integrals.laplace import _fast_inverse_laplace
 from sympy.physics.control.lti import (
     SISOLinearTimeInvariant, TransferFunctionMatrix, TransferFunction
 )
 from mergedeep import merge
+
+# TODO: remove this and update setup.py
+from packaging import version
+import sympy
+curr_sympy_ver = version.parse(sympy.__version__)
+sympy_1_12 = version.parse("1.12.0")
+if curr_sympy_ver >= sympy_1_12:
+    from sympy.integrals.laplace import _fast_inverse_laplace
+else:
+    from sympy.integrals.transforms import _fast_inverse_laplace
 
 
 __all__ = [
