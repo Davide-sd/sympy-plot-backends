@@ -97,7 +97,7 @@ for `x <= 0`.
 Example - Evaluation modules
 ============================
 
-Plotting an expression that evaluates to huge numbers is no easy task either
+Plotting an expression that evaluates to huge numbers is no easy task either.
 For example:
 
 .. plot::
