@@ -1330,8 +1330,8 @@ def riemann_sphere_2d(
 ):
     """Visualize stereographic projections of the Riemann sphere.
 
-    Refer to :func:`~spb.graphics.complex.plot_riemann_sphere` to learn more
-    about the Riemann sphere.
+    Refer to :func:`~spb.plot_functions.complex_analysis.plot_riemann_sphere`
+    to learn more about the Riemann sphere.
 
     Parameters
     ==========
@@ -1408,7 +1408,8 @@ def riemann_sphere_2d(
     See Also
     ========
 
-    riemann_sphere_3d, domain_coloring, spb.functions.plot_riemann_sphere
+    riemann_sphere_3d, domain_coloring,
+    spb.plot_functions.complex_analysis.plot_riemann_sphere
 
     """
     expr = _plot_sympify(expr)

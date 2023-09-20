@@ -24,7 +24,8 @@ import warnings
 
 warnings.warn(
     "`spb.functions` is deprecated and will be removed in a future release. "
-    "Please, use `spb.plot_functions` or `spb` directly (better option).",
+    "Please, use `spb.plot_functions_2d` or `spb.plot_functions_3d` or "
+    "`spb` directly (better option).",
     DeprecationWarning,
     stacklevel=2
 )

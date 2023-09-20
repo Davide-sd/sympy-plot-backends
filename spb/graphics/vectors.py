@@ -739,7 +739,8 @@ def arrow_2d(
            arrow_2d(
                (0, 0), (r * cos(theta + pi/2), r * sin(theta + pi/2)),
                params=params),
-           xlim=(-6, 6), ylim=(-6, 6), aspect="equal", grid=False
+           xlim=(-6, 6), ylim=(-6, 6), aspect="equal",
+           grid=False, use_latex=False
        )
 
     """
