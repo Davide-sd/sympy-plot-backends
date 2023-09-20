@@ -359,7 +359,7 @@ class BaseSeries:
         # axis, or using a polar discretization if a 3D plot is requested
         self.is_polar = kwargs.get("is_polar", False)
         # If True, the rendering will use points, not lines.
-        self.is_point = kwargs.get("point", kwargs.get("is_point", False))
+        self.is_point = kwargs.get("scatter", kwargs.get("is_point", False))
 
         self._label = self._latex_label = ""
         self._ranges = []
@@ -1111,7 +1111,7 @@ class Line2DBaseSeries(BaseSeries):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.steps = kwargs.get("steps", False)
-        self.is_point = kwargs.get("point", kwargs.get("is_point", False))
+        self.is_point = kwargs.get("scatter", kwargs.get("is_point", False))
         self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.adaptive = kwargs.get(
             "adaptive", cfg["adaptive"]["used_by_default"])
@@ -2480,7 +2480,7 @@ class ComplexPointSeries(Line2DBaseSeries):
             self.expr = expr
         self._block_lambda_functions(*self.expr)
 
-        self.is_point = kwargs.get("point", kwargs.get("is_point", True))
+        self.is_point = kwargs.get("scatter", kwargs.get("is_point", True))
         self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.steps = kwargs.get("steps", False)
         self._label = label

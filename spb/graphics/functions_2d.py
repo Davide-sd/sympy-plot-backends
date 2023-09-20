@@ -77,14 +77,14 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
                     correct_list = series if _set.left_open else filled_series
                     correct_list.append(
                         List2DSeries(
-                            [xx[0]], [yy[0]], point=True,
+                            [xx[0]], [yy[0]], scatter=True,
                             fill=not _set.left_open, **kwargs)
                     )
                 if xx[-1] != _range[2]:
                     correct_list = series if _set.right_open else filled_series
                     correct_list.append(
                         List2DSeries(
-                            [xx[-1]], [yy[-1]], point=True,
+                            [xx[-1]], [yy[-1]], scatter=True,
                             fill=not _set.right_open, **kwargs)
                     )
         elif isinstance(_set, FiniteSet):
@@ -93,7 +93,7 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
                 loc.append(float(_loc))
                 val.append(float(expr.evalf(subs={_range[0]: _loc})))
             filled_series.append(
-                List2DSeries(loc, val, point=True, fill=True, **kwargs))
+                List2DSeries(loc, val, scatter=True, fill=True, **kwargs))
             if not from_union:
                 c += 1
         elif isinstance(_set, Union):
@@ -271,12 +271,12 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
         Set this to True if performance is of paramount importance, but be
         aware that it might produce wrong results. It only works with
         ``adaptive=False``.
-    point : boolean, optional
+    scatter : boolean, optional
         Default to False, which will render a line connecting all the points.
         If True, a scatter plot will be generated.
     fill : boolean, optional
         Default to True, which will render empty circular markers. It only
-        works if ``point=True``.
+        works if ``scatter=True``.
         If False, filled circular markers will be rendered.
     loss_fn : callable or None
         The loss function to be used by the ``adaptive`` learner.
@@ -390,7 +390,7 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
 
        >>> expr = Sum(1 / x, (x, 1, y))
        >>> graphics(
-       ...     line(expr, (y, 2, 10), is_point=True, fill=True),
+       ...     line(expr, (y, 2, 10), scatter=True),
        ...     title="$%s$" % latex(expr)
        ... )
        Plot object containing:
@@ -1372,12 +1372,12 @@ def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
     rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
-    point : boolean, optional
+    scatter : boolean, optional
         Default to False, which will render a line connecting all the points.
         If True, a scatter plot will be generated.
     fill : boolean, optional
         Default to False, which will render empty circular markers. It only
-        works if ``point=True``.
+        works if ``scatter=True``.
         If True, filled circular markers will be rendered.
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
@@ -1424,9 +1424,9 @@ def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
        :include-source: True
 
        >>> graphics(
-       ...     list_2d(0, 0, "A", point=True),
-       ...     list_2d(1, 1, "B", point=True),
-       ...     list_2d(2, 0, "C", point=True),
+       ...     list_2d(0, 0, "A", scatter=True),
+       ...     list_2d(1, 1, "B", scatter=True),
+       ...     list_2d(2, 0, "C", scatter=True),
        ... )
        Plot object containing:
        [0]: 2D list plot
@@ -1445,9 +1445,9 @@ def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
        >>> yy1 = [cos(x).evalf(subs={x: t}) for t in xx]
        >>> yy2 = [sin(x).evalf(subs={x: t}) for t in xx]
        >>> graphics(
-       ...     list_2d(xx, yy1, "cos", point=True),
+       ...     list_2d(xx, yy1, "cos", scatter=True),
        ...     list_2d(xx, yy2, "sin", {"marker": "*", "markerfacecolor": None},
-       ...             point=True),
+       ...             scatter=True),
        ... )
        Plot object containing:
        [0]: 2D list plot
@@ -1473,11 +1473,11 @@ def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
            list_2d(
                cos(t), sin(t), "A",
                rendering_kw={"marker": "s", "markerfacecolor": None},
-               params=params, is_point=True),
+               params=params, scatter=True),
            list_2d(
                cos(2 * t) / 2, sin(2 * t) / 2, "B",
                rendering_kw={"marker": "s", "markerfacecolor": None},
-               params=params, is_point=True),
+               params=params, scatter=True),
            aspect="equal", use_latex=False
        )
 
@@ -1618,7 +1618,7 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
        graphics(
             geometry(
                 Point3D(0, 0, 0), label="center",
-                rendering_kw={"point_size": 1}, point=True),
+                rendering_kw={"point_size": 1}),
             geometry(Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4)), "line"),
             plane(
                 Plane((0, 0, 0), (1, 1, 1)),

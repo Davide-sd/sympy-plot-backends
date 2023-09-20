@@ -244,6 +244,21 @@ def plot3d(*args, **kwargs):
     keyword arguments to customize the appearances of the figure (title,
     axis labels, ...).
 
+    Parameters
+    ==========
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of expr will be used. The number of labels must be
+        equal to the number of expressions.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the plotting
+        library (backend) manual for more informations. If a list of
+        dictionaries is provided, the number of dictionaries must be equal
+        to the number of expressions.
+
     Examples
     ========
 
@@ -418,6 +433,21 @@ def plot3d_parametric_surface(*args, **kwargs):
     Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
     keyword arguments to customize the appearances of the figure (title,
     axis labels, ...).
+
+    Parameters
+    ==========
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of expr will be used. The number of labels must be
+        equal to the number of expressions.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the plotting
+        library (backend) manual for more informations. If a list of
+        dictionaries is provided, the number of dictionaries must be equal
+        to the number of expressions.
 
     Examples
     ========
@@ -622,6 +652,21 @@ def plot3d_spherical(*args, **kwargs):
     Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
     keyword arguments to customize the appearances of the figure (title,
     axis labels, ...).
+
+    Parameters
+    ==========
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of expr will be used. The number of labels must be
+        equal to the number of expressions.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the plotting
+        library (backend) manual for more informations. If a list of
+        dictionaries is provided, the number of dictionaries must be equal
+        to the number of expressions.
 
     Examples
     ========
@@ -849,6 +894,21 @@ def plot3d_revolution(
     keyword arguments to customize the appearances of the figure (title,
     axis labels, ...).
 
+    Parameters
+    ==========
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of expr will be used. The number of labels must be
+        equal to the number of expressions.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the plotting
+        library (backend) manual for more informations. If a list of
+        dictionaries is provided, the number of dictionaries must be equal
+        to the number of expressions.
+
     Examples
     ========
 
@@ -1052,11 +1112,11 @@ def plot3d_list(*args, **kwargs):
        x = z * np.cos(z)
        y = z * np.sin(z)
        p1 = plot3d_list(x, y, z,
-           show=False, is_point=False)
+           show=False, scatter=False)
        p2 = plot3d_list(
            [t * cos(t)], [t * sin(t)], [t],
            params={t: (3*pi, 0, 6*pi)},
-           backend=PB, show=False, is_point=True, use_latex=False,
+           backend=PB, show=False, scatter=True, use_latex=False,
            imodule="panel")
        (p2 + p1).show()
 

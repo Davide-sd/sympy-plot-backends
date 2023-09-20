@@ -187,12 +187,12 @@ def _pole_zero_helper(
     get_label = lambda t: t if label is None else t + " of " + label
     z_series = List2DSeries(
         zeros_re, zeros_im, get_label("zeros"),
-        is_point=True, is_filled=True, rendering_kw=z_rendering_kw,
+        scatter=True, is_filled=True, rendering_kw=z_rendering_kw,
         params=params
     )
     p_series = List2DSeries(
         poles_re, poles_im, get_label("poles"),
-        is_point=True, is_filled=True, rendering_kw=p_rendering_kw,
+        scatter=True, is_filled=True, rendering_kw=p_rendering_kw,
         params=params
     )
     return [p_series, z_series]

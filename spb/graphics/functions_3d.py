@@ -82,7 +82,7 @@ def line_parametric_3d(
         Set this to True if performance is of paramount importance, but be
         aware that it might produce wrong results. It only works with
         ``adaptive=False``.
-    point : boolean, optional
+    scatter : boolean, optional
         Default to False, which will render a line connecting all the points.
         If True, a scatter plot will be generated.
     loss_fn : callable or None
@@ -363,7 +363,7 @@ def surface(
         Number of wireframe lines along the two ranges, respectively.
         Default to 10. Note that increasing this number might considerably
         slow down the plot's creation.
-    wf_npoint : int or None, optional
+    wf_npoints : int or None, optional
         Number of discretization points for the wireframe lines. Default to
         None, meaning that each wireframe line will have ``n1`` or ``n2``
         number of points, depending on the line direction.
@@ -613,7 +613,7 @@ def surface_parametric(
         Number of wireframe lines along the two ranges, respectively.
         Default to 10. Note that increasing this number might considerably
         slow down the plot's creation.
-    wf_npoint : int or None, optional
+    wf_npoints : int or None, optional
         Number of discretization points for the wireframe lines. Default to
         None, meaning that each wireframe line will have ``n1`` or ``n2``
         number of points, depending on the line direction.
@@ -1340,12 +1340,12 @@ def list_3d(
     color_func : callable, optional
         A numerical function of 3 variables, x, y, z defining the line color.
         Default to None. Requires ``use_cm=True`` in order to be applied.
-    point : boolean, optional
+    scatter : boolean, optional
         Default to False, which will render a line connecting all the points.
         If True, a scatter plot will be generated.
     fill : boolean, optional
         Default to True, which will render filled circular markers. It only
-        works if `point=True`. If True, filled circular markers will be
+        works if `scatter=True`. If True, filled circular markers will be
         rendered. Note that some backend might not support this feature.
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
@@ -1417,9 +1417,9 @@ def list_3d(
        x = z * np.cos(z)
        y = z * np.sin(z)
        graphics(
-           list_3d(x, y, z, point=False),
+           list_3d(x, y, z, scatter=False),
            list_3d(t * cos(t), t * sin(t), t,
-               params={t: (3*pi, 0, 6*pi)}, is_point=True),
+               params={t: (3*pi, 0, 6*pi)}, scatter=True),
            use_latex=False, backend=PB
        )
 

@@ -14,7 +14,7 @@ from sympy import I, cos, sin, symbols, pi, re, im, Dummy, Expr
 
 
 def complex_points(
-    *numbers, label=None, rendering_kw=None, line=False, **kwargs
+    *numbers, label=None, rendering_kw=None, scatter=True, **kwargs
 ):
     """Plot complex points.
 
@@ -30,8 +30,9 @@ def complex_points(
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
-    line : boolean, optional
-        Connect the points with a line. Default to False.
+    scatter : boolean, optional
+        Default to True, which renders a scatter plot. If False, a line will
+        connect all the points.
     params : dict
         A dictionary mapping symbols to parameters. This keyword argument
         enables the interactive-widgets plot. Learn more by reading the
@@ -116,7 +117,7 @@ def complex_points(
     if len(numbers) == 1 and isinstance(numbers, (list, tuple)):
         numbers = numbers[0]
     s = ComplexPointSeries(
-        numbers, label, point=not line, rendering_kw=rendering_kw, **kwargs)
+        numbers, label, scatter=scatter, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 

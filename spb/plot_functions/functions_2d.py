@@ -125,6 +125,21 @@ def plot(*args, **kwargs):
     keyword arguments to customize the appearances of the figure (title,
     axis labels, ...).
 
+    Parameters
+    ==========
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of expr will be used. The number of labels must be
+        equal to the number of expressions.
+
+    rendering_kw : dict or list of dicts, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the plotting
+        library (backend) manual for more informations. If a list of
+        dictionaries is provided, the number of dictionaries must be equal
+        to the number of expressions.
+
     Examples
     ========
 
@@ -187,7 +202,7 @@ def plot(*args, **kwargs):
 
        >>> expr = Sum(1 / x, (x, 1, y))
        >>> plot(expr, (y, 2, 10), adaptive=False,
-       ...     is_point=True, is_filled=True, title="$%s$" % latex(expr))
+       ...     scatter=True, is_filled=True, title="$%s$" % latex(expr))
        Plot object containing:
        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
 
@@ -886,6 +901,14 @@ def plot_implicit(*args, **kwargs):
     keyword arguments to customize the appearances of the figure (title,
     axis labels, ...).
 
+    Parameters
+    ==========
+
+    label : str or list/tuple, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of expr will be used. The number of labels must be
+        equal to the number of expressions.
+
     Examples
     ========
 
@@ -1550,7 +1573,7 @@ def plot_list(*args, **kwargs):
 
        >>> plot_list(
        ...     ([0], [0], "A"), ([1], [1], "B"), ([2], [0], "C"),
-       ...     is_point=True, is_filled=True)
+       ...     scatter=True, is_filled=True)
        Plot object containing:
        [0]: 2D list plot
        [1]: 2D list plot
@@ -1570,7 +1593,7 @@ def plot_list(*args, **kwargs):
        >>> plot_list(
        ...     (xx, yy1, "cos"),
        ...     (xx, yy2, "sin", {"marker": "*", "markerfacecolor": None}),
-       ...     is_point=True)
+       ...     scatter=True)
        Plot object containing:
        [0]: 2D list plot
        [1]: 2D list plot
@@ -1596,7 +1619,7 @@ def plot_list(*args, **kwargs):
            ([cos(t)], [sin(t)], "A"),
            ([cos(2 * t) / 2], [sin(2 * t) / 2], "B"),
            rendering_kw={"marker": "s", "markerfacecolor": None},
-           params=params, is_point=True, show=False)
+           params=params, scatter=True, show=False)
        (p1 + p2).show()
 
     See Also

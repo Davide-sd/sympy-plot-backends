@@ -17,44 +17,44 @@ from sympy import exp, pi, I, symbols, cos, sin, sqrt, sympify, Dummy
 p1 = symbols("p1")
 
 
-@pytest.mark.parametrize("label, rkw, line, params", [
+@pytest.mark.parametrize("label, rkw, scatter, params", [
     (None, None, False, None),
     (None, None, True, None),
     ("test", {"color": "r"}, True, {p1: (1, 0, 2)}),
 ])
-def test_complex_points(label, rkw, line, params):
+def test_complex_points(label, rkw, scatter, params):
     series = complex_points(
         3 + 2 * I, 4 * I, 2,
-        line=line, rendering_kw=rkw, label=label
+        scatter=scatter, rendering_kw=rkw, label=label
     )
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, ComplexPointSeries)
     assert s.get_label(False) == label
-    assert s.is_point == (not line)
+    assert s.is_point is scatter
     assert s.rendering_kw == {} if not rkw else rkw
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == {} if not params else params
 
 
-@pytest.mark.parametrize("label, rkw, line, params", [
+@pytest.mark.parametrize("label, rkw, scatter, params", [
     (None, None, False, None),
     (None, None, True, None),
     ("test", {"color": "r"}, True, {p1: (1, 0, 2)}),
 ])
-def test_complex_points_2(label, rkw, line, params):
+def test_complex_points_2(label, rkw, scatter, params):
     z = symbols("z")
     expr1 = z * exp(2 * pi * I * z)
     expr2 = 2 * expr1
     n = 15
     l1 = [expr1.subs(z, t / n) for t in range(n)]
     l2 = [expr2.subs(z, t / n) for t in range(n)]
-    series = complex_points(l1, label=label, line=line, rendering_kw=rkw)
+    series = complex_points(l1, label=label, scatter=scatter, rendering_kw=rkw)
     s = series[0]
     assert len(series) == 1
     assert isinstance(s, ComplexPointSeries)
     assert s.get_label(False) == label
-    assert s.is_point == (not line)
+    assert s.is_point is scatter
     assert s.rendering_kw == {} if not rkw else rkw
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == {} if not params else params
