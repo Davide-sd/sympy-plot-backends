@@ -2,6 +2,63 @@
  Changelog
 ==========
 
+v3.0.0
+======
+
+* Introducing the **graphics module**, which aims to solve the following
+  problems about ordinary plotting function (whose name's start
+  with ``plot_``):
+
+  1. Some functions perform too many tasks, making them difficult and
+     confusing to use.
+  2. The documentation is difficult to maintain because many keywords arguments
+     are repeated on all plotting functions.
+  3. The procedures to combine multiple plots together is far from ideal.
+
+  The *graphics module* implements new functions into appropriate submodules.
+  Each function solves a very specific task and is able to plot only one
+  symbolic expression. Each function returns a list containing one or
+  more data series, depending on the required visualization.
+  In order to render the data series on the screen, they must be passed into
+  the ``graphics`` function. Plenty of examples about its usage are available
+  on the documentation.
+
+* Added ``arrow_2d`` to ``spb.graphics.vectors`` in order to plot a single
+  arrow in a two-dimensional space.
+
+* Reorganized old plotting functions (whose name's start with ``plot_``)
+  into a new submodule: ``spb.plot_functions``. In particular:
+  
+  * Deprecated ``spb.vectors``.  Its content is now into
+    ``spb.plot_functions.vectors``.
+  * Deprecated ``spb.functions``. Its content is now into
+    ``spb.plot_functions.functions_2d`` and
+    ``spb.plot_functions.functions_3d``.
+  * Deprecated ``spb.control``. Its content is now into
+    ``spb.plot_functions.control``.
+  * Deprecated ``spb.ccomplex.complex``. Its content is now into
+    ``spb.plot_functions.complex_analysis``.
+  * Deprecated ``spb.ccomplex.wegert``. Its content is now into ``spb.wegert``.
+
+  Under the hood, many of these plotting functions now uses the
+  *graphics module*.
+
+* Bug fix on ``MatplotlibBackend`` about updating y-axis limits.
+  Thanks to `Chrillebon  <https://github.com/Chrillebon>`_ for the fix.
+
+* Improved performance of the evaluation with ``adaptive=False`` (the default
+  one). Removed ``np.vectorize`` when the evaluation module is NumPy/Scipy in
+  order to take full advantage of Numpy's vectorized operations.
+
+* Keyword argument ``is_point`` now has an alias: ``scatter``. Setting
+  ``scatter=True`` will render a sequence of points as a scatter rather than
+  a line.
+
+* Improved warning messages to provide more useful information.
+
+* Fixed import-related bug with older versions of SymPy.
+
+
 v2.4.3
 ======
 
