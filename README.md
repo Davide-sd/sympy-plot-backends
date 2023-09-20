@@ -12,11 +12,11 @@ The following plotting libraries are supported: [Matplolib](https://matplotlib.o
 
 <div>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/iplot_bokeh.png" width=250/>
-<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/plotly-vectors.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/mpl-streamplot.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/plotly_streamlines_2.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/K3D-spherical-harmonics.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/bokeh_domain_coloring.png" width=250/>
-<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/k3d_domain_coloring.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/K3D-cone-vectors.png" width=250/>
 </div>
 
 
@@ -27,18 +27,13 @@ On top of the usual plotting functions exposed by SymPy (`plot`,
 
 * use a different plotting library.
 * visualize discontinuities on 2D line plots.
-* `plot_vector` to quickly visualize 2D/3D vector fields with quivers
-  or streamlines.
-* `plot_real_imag`, `plot_complex`, `plot_complex_list`, `plot_complex_vector`
-  to visualize complex functions.
-* `plot_geometry` to quickly visualize entities from the `sympy.geometry`
-  module.
-* capability to create parametric-interactive plots using widgets
+* visualize 2D/3D vector fields with quivers or streamlines.
+* visualize complex functions with [domain coloring](https://en.wikipedia.org/wiki/Domain_coloring).
+* visualize entities from the `sympy.geometry` module.
+* visualize control systems' response to input signals, visualize Bode, Nyquist and Nichols plots.
+* create parametric-interactive plots using widgets
   (sliders, buttons, etc.) with *ipywidgets* or *Holoviz's Panel*.
-* `plotgrid` function, which replaces the `PlotGrid` class: it allows to
-  combine multiple plots into a grid-like layout. It works with Matplotlib,
-  Bokeh and Plotly.
-* `plot_bode`, `plot_nyquist`, `plot_nichols`, etc. to visualize control systems.
+* combine multiple plots into a grid-like layout.
 
 Please, read the
 [following documentation page](https://sympy-plot-backends.readthedocs.io/en/latest/overview.html#differences-with-sympy-plotting)
@@ -51,13 +46,13 @@ a PR.
 ## Explore the Capabilities
 
 [Read the documentation](https://sympy-plot-backends.readthedocs.io/) to 
-explore the capabilities before the installation, which is filled with
+explore the capabilities before the installation, which contains plenty of
 examples.
 
 
 ## Installation
 
-SymPy Plotting Backends can be installed with `pip` or `conda`. By default,
+*SymPy Plotting Backends* can be installed with `pip` or `conda`. By default,
 only basic plotting with Matplotlib will be installed:
 
 ```
