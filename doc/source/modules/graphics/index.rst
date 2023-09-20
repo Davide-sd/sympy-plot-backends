@@ -149,7 +149,7 @@ achieve a similar result with the *graphics module*:
    t = pi / 3 # half-cone angle
    r_cone = r_sphere * sin(t)
    graphics(
-       wireframes(sphere, n1=13, rendering_kw={"line_dash": "dot"}),
+       wireframe(sphere, n1=13, rendering_kw={"line_dash": "dot"}),
        surface_spherical(r_sphere, (theta, pi - t, pi), (phi, pi, 2*pi),
            label="sphere cap", wireframe=True, wf_n1=5),
        surface_parametric(u * cos(v), u * sin(v), -u / tan(t), (u, 0, r_cone), (v, pi , 2*pi),

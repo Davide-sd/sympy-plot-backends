@@ -18,4 +18,4 @@ ipywidgets. Refer to :ref:`interactive` module for more information.
 .. autofunction:: surface_spherical
 .. autofunction:: plane
 .. autofunction:: implicit_3d
-.. autofunction:: wireframes
+.. autofunction:: wireframe
