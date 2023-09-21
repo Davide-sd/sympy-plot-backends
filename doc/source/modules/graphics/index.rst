@@ -97,7 +97,7 @@ the second expression is evaluated over a 1000 points.
    :include-source: True
 
    >>> graphics(
-   ...     line(sin(x), (x, 0, pi), label="a", n=20, point=True),
+   ...     line(sin(x), (x, 0, pi), label="a", n=20, scatter=True),
    ...     line(cos(x), (x, -pi, pi), label="b", rendering_kw={"linestyle": "--"}))
    Plot object containing:
    [0]: cartesian line: sin(x) for x over (0.0, 3.141592653589793)

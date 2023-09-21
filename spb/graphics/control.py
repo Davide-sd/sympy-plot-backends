@@ -1194,8 +1194,9 @@ def nyquist(system, label=None, **kwargs):
        >>> tf1 = TransferFunction(
        ...     4 * s**2 + 5 * s + 1, 3 * s**2 + 2 * s + 5, s)
        >>> graphics(
-       ...     nyquist(tf1),
-       ...     xlabel="Real", ylabel="Imaginary"
+       ...     nyquist(tf1, m_circles=True),
+       ...     xlabel="Real", ylabel="Imaginary",
+       ...     grid=False, aspect="equal"
        ... )                                # doctest: +SKIP
 
     Visualizing M-circles:

@@ -875,7 +875,7 @@ def surface_spherical(
        r = re(Ynm(3, 3, theta, phi).expand(func=True).rewrite(sin).expand())
        graphics(
            surface_spherical(
-               abs(r), (theta, 0, pi), (phi, 0, 2 * pi), "radius",
+               abs(r), (theta, 0, pi), (phi, 0, 2 * pi), "real",
                use_cm=True, n2=200,
                color_func=lambdify([theta, phi], r)),
            backend=PB)
@@ -915,6 +915,7 @@ def surface_spherical(
        r = re(Ynm(n, m, theta, phi).expand(func=True).rewrite(sin).expand())
        graphics(
            surface_spherical(abs(r), (theta, 0, pi), (phi, 0, 2*pi),
+               label="real",
                params = {
                    n: param.Integer(2, label="n"),
                    m: param.Integer(0, label="m"),

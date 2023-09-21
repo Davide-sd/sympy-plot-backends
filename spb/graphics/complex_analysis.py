@@ -1594,6 +1594,7 @@ def complex_vector_field(expr, range=None, **kwargs):
        ...     domain_coloring(expr, (z, -2-2j, 2+2j)),
        ...     complex_vector_field(expr, (z, -2-2j, 2+2j),
        ...         n=26, scalar=False, use_cm=False, normalize=True,
+       ...         show_in_legend=False,
        ...         quiver_kw={"color": "k", "pivot": "tip"}),
        ...     grid=False)
        Plot object containing:
