@@ -128,6 +128,10 @@ def vector_field_2d(
           or a numerical function of 2 variables supporting vectorization.
 
         Default to True.
+    show_in_legend : bool
+        If True, add a legend entry for the expression being plotted.
+        This option is useful to hide a particular expression when combining
+        together multiple plots. Default to True.
     streamlines : boolean, optional
         Whether to plot the vector field using streamlines (True) or quivers
         (False). Default to False.
