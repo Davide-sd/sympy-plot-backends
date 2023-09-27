@@ -3955,3 +3955,30 @@ def test_arrow2dserie(start, direc, label, rkw, sil, params):
     assert s.rendering_kw == {} if not rkw else rkw
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == {} if not params else params
+
+
+def test_domain_coloring_k_plus_log():
+    # verify that domain coloring with `coloring="k"` and `coloring="k+log"`
+    # produces different results
+    z = symbols("z")
+    expr = (
+        0.351176005452417 / (0.493390296887743 * z + 1)**8 +
+        3.64807283221185 / (0.973899493572263 * z + 1)**7 +
+        3.55305005674673 / (0.97390632979091 * z + 1)**8 +
+        3.75759485136629 / (0.974408144493035 * z + 1)**6 +
+        3.87452265783084 / (0.975328100372965 * z + 1)**5 +
+        3.98256013950831 / (0.975943004928512 * z + 1)**4 +
+        4.08962026313833 / (0.976651199767166 * z + 1)**3 +
+        4.19610711073318 / (0.977667149308349 * z + 1)**2 +
+        4.39 / (z + 1.02197) - 107.7301
+    )
+    s1 = ComplexDomainColoringSeries(
+        expr, (z, -5-2*1j, 1+2*1j),
+        coloring="k", n1=15, n2=10
+    )
+    s2 = ComplexDomainColoringSeries(
+        expr, (z, -5-2*1j, 1+2*1j),
+        coloring="k+log", n1=15, n2=10
+    )
+    assert np.allclose(s1.get_data()[:3], s2.get_data()[:3])
+    assert not np.allclose(s1.get_data()[-2], s2.get_data()[-2])

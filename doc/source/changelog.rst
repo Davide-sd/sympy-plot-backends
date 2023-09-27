@@ -2,6 +2,15 @@
  Changelog
 ==========
 
+v3.0.1
+======
+
+* Added new coloring option to ``domain_coloring``.
+  Setting ``coloring="k+log"`` will apply a logarithm to the magnitude of the
+  complex function. This improves the visibility of zeros in complex functions
+  that have very steep poles.
+
+
 v3.0.0
 ======
 

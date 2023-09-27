@@ -229,6 +229,8 @@ def enhanced_domain_coloring_mag(
 def bw_magnitude(w, **kwargs):
     """Black and white magnitude: black are the zeros, white are the poles."""
     mag = np.absolute(w)
+    if kwargs.get("apply_log", False):
+        mag = np.log10(mag)
     brightness = mag / (mag + 1)
     return np.dstack([brightness, brightness, brightness])
 
@@ -369,6 +371,9 @@ def wegert(
           will show conformality.
         - ``"k"``: black and white magnitude of the complex function.
           Zeros are black, poles are white.
+        - ``"k+log"``: same as ``"k"`` but apply a base 10 logarithm to the
+          magnitude, which improves the visibility of zeros of functions with
+          steep poles.
         - ``"l"``: enhanced domain coloring showing iso-modulus and iso-phase
           lines, blended with the magnitude: poles are white.
         - ``"m"``: enhanced domain coloring showing iso-modulus lines, blended
@@ -411,6 +416,7 @@ def wegert(
         "i": [cartesian_chessboard, False],
         "j": [polar_chessboard, False],
         "k": [bw_magnitude, False],
+        "k+log": [bw_magnitude, False],
         "l": [domain_coloring, True],
         "m": [enhanced_domain_coloring, True],
         "n": [enhanced_domain_coloring_mag, True],
@@ -448,6 +454,8 @@ def wegert(
         at_infinity=at_infinity, riemann_mask=riemann_mask)
     if coloring in ["l", "m", "n", "o"]:
         kwargs["enhance"] = True
+    if coloring == "k+log":
+        kwargs["apply_log"] = True
     if domain:
         kwargs["domain"] = [complex(t) for t in domain]
 

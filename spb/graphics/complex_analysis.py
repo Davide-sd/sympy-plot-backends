@@ -1023,6 +1023,9 @@ def domain_coloring(
           will show conformality.
         - ``"k"``: black and white magnitude of the complex function.
           Zeros are black, poles are white.
+        - ``"k+log"``: same as ``"k"`` but apply a base 10 logarithm to the
+          magnitude, which improves the visibility of zeros of functions with
+          steep poles.
         - ``"l"``:enhanced domain coloring showing iso-modulus and iso-phase
           lines, blended with the magnitude: white regions indicates greater
           magnitudes. Can be used to distinguish poles from zeros.
