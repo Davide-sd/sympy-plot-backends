@@ -15,6 +15,8 @@ v3.0.1
 
 * Fixed bug with labels of ``plot_implicit``.
 
+* Fixed bug with labels of ``plot_piecewise``.
+
 * Fixed bug with difficult to render labels on Matplotlib. If Matplotlib
   detects an error while parsing legend's entries, the plot won't show
   the legend.

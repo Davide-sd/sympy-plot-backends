@@ -23,7 +23,8 @@ from spb.graphics import (
     contour, implicit_2d, implicit_3d, list_2d, list_3d, geometry
 )
 from spb.series import (
-    Parametric2DLineSeries, PlaneSeries, GenericDataSeries
+    Parametric2DLineSeries, PlaneSeries, GenericDataSeries,
+    LineOver1DRangeSeries
 )
 from spb.utils import (
     _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend,
@@ -1748,7 +1749,8 @@ def plot_piecewise(*args, **kwargs):
        [1]: cartesian line: 1 for x over (1e-06, 10.0)
 
     Plot multiple expressions in which the second piecewise expression has
-    a dotted line style.
+    a dotted line style. Use the ``label`` keyword argument to set the
+    appropriate entries for the legend:
 
     .. plot::
        :context: close-figs
@@ -1761,7 +1763,7 @@ def plot_piecewise(*args, **kwargs):
        ...      (sin(x), x < -5),
        ...      (cos(x), x > 5),
        ...      (1 / x, True)), (x, -8, 8), {"linestyle": ":"}),
-       ...   ylim=(-2, 2), detect_poles=True)
+       ...   ylim=(-2, 2), detect_poles=True, legend=True, label=["A", "B"])
        Plot object containing:
        [0]: cartesian line: 0 for x over (-10.0, 0.0)
        [1]: cartesian line: 1 for x over (1e-06, 10.0)
@@ -1817,7 +1819,15 @@ def plot_piecewise(*args, **kwargs):
         expr, r, lbl, rkw = a
         series = line(expr, r, lbl, rkw, **kwargs)
         if i < len(labels):
-            _set_labels(series, [labels[i]] * len(series), None)
+            # this solve issue 32:
+            # https://github.com/Davide-sd/sympy-plot-backends/issues/32
+            already_set = False
+            for s in series:
+                if isinstance(s, LineOver1DRangeSeries) and not already_set:
+                    s.label = labels[i]
+                    already_set = True
+                else:
+                    s.label = None
         color_series_dict[i] = series
 
     # NOTE: let's overwrite this keyword argument: the dictionary will be used

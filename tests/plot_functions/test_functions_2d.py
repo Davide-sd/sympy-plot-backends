@@ -635,6 +635,23 @@ def test_plot_piecewise_lambda_functions(p_options):
     raises(TypeError, lambda: plot_piecewise(lambda t: t, **p_options))
 
 
+def test_plot_piecewise_multiple_functions(p_options):
+    x = symbols("x")
+    f = Piecewise((x**2, x < 2), (5, Eq(x, 2)), (10 - x, True))
+    g = 20 * Heaviside(x, 0).rewrite(Piecewise)
+
+    # uses didn't set labels
+    p = plot_piecewise(f, g, (x, -5, 5), legend=True, **p_options)
+    assert len(p.series) == 9
+    assert len([s for s in p.series if s.get_label(True)]) == 4
+
+    # uses set labels
+    p = plot_piecewise(f, g, (x, -5, 5), legend=True,
+        label=["A", "B"], **p_options)
+    assert len(p.series) == 9
+    assert len([s for s in p.series if s.get_label(True)]) == 2
+
+
 @pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
 def test_functions_iplot_integration(pi_options):
     # verify the integration between most important plot functions and iplot
