@@ -16,7 +16,7 @@ from sympy.abc import j, k
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
-    Function, dsolve, Eq, Ynm, floor, Ne
+    Function, dsolve, Eq, Ynm, floor, Ne, Piecewise, hyper
 )
 from sympy.vector import CoordSys3D, gradient
 import numpy as np
@@ -3986,3 +3986,16 @@ def test_domain_coloring_k_plus_log():
     )
     assert np.allclose(s1.get_data()[:3], s2.get_data()[:3])
     assert not np.allclose(s1.get_data()[-2], s2.get_data()[-2])
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_line_series_hyper_function():
+    # https://github.com/Davide-sd/sympy-plot-backends/issues/34
+    x = symbols("x")
+    s = LineOver1DRangeSeries(
+        Piecewise(
+            (hyper((1.0331469998003, 9.67916472867169), (10.0,), x), x < 0.6),
+            (7, True)
+        ), (x, 0, 1)
+    )
+    s.get_data()

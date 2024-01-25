@@ -10,6 +10,9 @@ v3.0.1
   complex function. This improves the visibility of zeros in complex functions
   that have very steep poles.
 
+* Added the ``hyper`` function to the list of functions to be evaluated with
+  real numbers. This avoids unexpected errors.
+
 * Fixed bug with labels of ``plot_implicit``.
 
 * Fixed bug with difficult to render labels on Matplotlib. If Matplotlib

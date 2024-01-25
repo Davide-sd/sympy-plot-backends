@@ -9,7 +9,7 @@ from sympy import (
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
     atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Union, Interval, nsimplify, Set, Integral
+    Union, Interval, nsimplify, Set, Integral, hyper
 )
 from sympy.core.relational import Relational
 from sympy.calculus.util import continuous_domain
@@ -636,7 +636,7 @@ class BaseSeries:
 
             # list of sympy functions that when lambdified, the corresponding
             # numpy functions don't like complex-type arguments
-            pf = [ceiling, floor, atan2, frac, zeta, Integral]
+            pf = [ceiling, floor, atan2, frac, zeta, Integral, hyper]
             if self._force_real_eval is not True:
                 check_res = [self._expr.has(f) for f in pf]
                 self._force_real_eval = any(check_res)
