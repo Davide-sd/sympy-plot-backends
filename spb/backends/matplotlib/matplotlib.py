@@ -21,6 +21,7 @@ from spb.series import (
 )
 from sympy.external import import_module
 from packaging import version
+import warnings
 
 # Global variable
 # Set to False when running tests / doctests so that the plots don't show.
@@ -634,8 +635,27 @@ class MatplotlibBackend(Plot):
         """
         self.draw()
         if _show:
-            self._fig.tight_layout()
-            self.plt.show(**kwargs)
+            try:
+                self._fig.tight_layout()
+                self.plt.show(**kwargs)
+            except ValueError as err:
+                # solve issue 34:
+                # https://github.com/Davide-sd/sympy-plot-backends/issues/34
+                if self.legend:
+                    self.legend = False
+                    self._ax.legend(handles=[])
+                warnings.warn(
+                    "The picture could not be shown. The following " +
+                    "error was raised:\n" +
+                    "{}: {}\n".format(type(err).__name__, err) +
+                    "This is probably caused by Matplotlib's inability to " +
+                    "render a legend entry. Hence, the legend has been turned "
+                    "off in order to visualize the plot. If you need a legend "
+                    "you have to manually provide labels for each symbolic "
+                    "expression."
+                )
+                self._fig.tight_layout()
+                self.plt.show(**kwargs)            
         else:
             self.close()
 
