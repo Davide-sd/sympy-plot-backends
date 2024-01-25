@@ -10,6 +10,8 @@ v3.0.1
   complex function. This improves the visibility of zeros in complex functions
   that have very steep poles.
 
+* Fixed bug with labels of ``plot_implicit``.
+
 
 v3.0.0
 ======

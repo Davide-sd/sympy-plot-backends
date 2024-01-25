@@ -2404,7 +2404,10 @@ class ImplicitSeries(BaseSeries):
         """
         if use_latex is False:
             return self._label
-        if self._label == str(self._adaptive_expr):
+        if (
+            (self._label == str(self._adaptive_expr)) or
+            ("Eq(%s, 0)" % self._label == str(self._adaptive_expr))
+        ):
             return self._get_wrapped_label(self._latex_label, wrapper)
         return self._latex_label
 

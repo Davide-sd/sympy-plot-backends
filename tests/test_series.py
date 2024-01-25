@@ -2277,6 +2277,10 @@ def test_series_labels():
     assert s1.get_label(True) == wrapper % latex(expr)
     assert s2.get_label(False) == "test"
     assert s2.get_label(True) == "test"
+    expr = x**2 + y**2 - 5
+    s3 = ImplicitSeries(expr, (x, -10, 10), (y, -10, 10), None)
+    assert s3.get_label(False) == str(expr)
+    assert s3.get_label(True) == wrapper % latex(expr)
 
     expr = (-sin(y), cos(x))
     s1 = Vector2DSeries(*expr, (x, -2, 2), (y, -2, 2), None)
