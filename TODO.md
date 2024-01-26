@@ -19,6 +19,11 @@
 - [ ] implement parametric-widgets support for `xlim, ylim, zlim` and
   `xlabel, ylabel, zlabel`.
 
+- [ ] Create an Animation class.
+
+- [ ] Create a way to apply rotation/translation/scaling transformation to 3D
+  entities (obviously, with interactive plotting in mind).
+
 - [ ] custom legend position with keyword argument.
 
 - [ ] wireframe lines for iso-modulus, iso-phase on `analytic_landscape`.
