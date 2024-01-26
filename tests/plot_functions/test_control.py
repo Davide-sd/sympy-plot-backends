@@ -6,7 +6,7 @@ from spb.plot_functions.control import  (
 from spb.interactive import IPlot
 from spb.series import HVLineSeries
 from spb.backends.matplotlib import unset_show
-from sympy import Dummy, I, Abs, arg, log
+from sympy import Dummy, I, Abs, arg, log, symbols, exp
 from sympy.abc import s, p, a, b
 from sympy.external import import_module
 from sympy.physics.control.lti import (TransferFunction,
@@ -144,6 +144,43 @@ def test_bode():
     assert test_bode_data(tf3)
     assert test_bode_data(tf4)
     assert test_bode_data(tf5)
+
+
+def test_plot_bode_phase_unwrap():
+    s = symbols("s")
+    G = 1 / (s * (s + 1) * (s + 10))
+    p1 = plot_bode_phase(G, phase_unit="deg", initial_exp=-2, final_exp=1,
+        n=1000, show=False)
+    p2 = plot_bode_phase(G, phase_unit="deg", initial_exp=-2, final_exp=1,
+        n=1000, show=False, unwrap=True)
+    p3 = plot_bode_phase(G, phase_unit="deg", initial_exp=-2, final_exp=1,
+        n=1000, show=False, unwrap=False)
+    s1 = p1.series[0]
+    s2 = p2.series[0]
+    s3 = p3.series[0]
+    _, y1 = s1.get_data()
+    _, y2 = s2.get_data()
+    _, y3 = s3.get_data()
+    assert np.allclose(y1, y2)
+    assert not np.allclose(y1, y3)
+    assert y1[0] < 0 and y1[-1] < y1[1]
+    assert y3[0] < 0 and y3[-1] > 0
+
+
+def test_bode_plot_delay():
+    s = symbols("s")
+    G1 = 1 / (s * (s + 1) * (s + 10))
+    G2 = G1 * exp(-5*s)
+    p1 = plot_bode_magnitude(G1, G2, initial_exp=-2, final_exp=1,
+        n=1000, show=False)
+    p2 = plot_bode_phase(G1, G2, phase_unit="deg",
+        initial_exp=-2, final_exp=1, n=1000, show=False)
+    _, y1 = p1[0].get_data()
+    _, y2 = p1[1].get_data()
+    assert np.allclose(y1, y2)
+    _, y3 = p2[0].get_data()
+    _, y4 = p2[1].get_data()
+    assert not np.allclose(y3, y4)
 
 
 def check_point_accuracy(a, b):

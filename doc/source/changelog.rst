@@ -13,6 +13,11 @@ v3.0.1
 * Added the ``hyper`` function to the list of functions to be evaluated with
   real numbers. This avoids unexpected errors.
 
+* Set ``unwrap=True`` as defaul option for ``plot_bode``: this helps to get
+  a continous phase plot.
+
+* Enabled ``plot_bode`` to deal with system containing time delays.
+
 * Fixed bug with labels of ``plot_implicit``.
 
 * Fixed bug with labels of ``plot_piecewise``.

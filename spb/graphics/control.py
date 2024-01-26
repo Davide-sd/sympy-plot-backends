@@ -80,14 +80,14 @@ def _preprocess_system(system, **kwargs):
     raise TypeError(f"type(system) = {type(system)} not recognized.")
 
 
-def _check_system(system):
+def _check_system(system, bypass_delay_check=False):
     """Function to check whether the dynamical system passed for plots is
     compatible or not."""
     if not isinstance(system, SISOLinearTimeInvariant):
         raise NotImplementedError(
             "Only SISO LTI systems are currently supported.")
     sys = system.to_expr()
-    if sys.has(exp):
+    if not bypass_delay_check and sys.has(exp):
         # Should test that exp is not part of a constant, in which case
         # no exception is required, compare exp(s) with s*exp(1)
         raise NotImplementedError("Time delay terms are not supported.")
@@ -725,7 +725,7 @@ def _bode_magnitude_helper(
     system, label, initial_exp, final_exp, freq_unit, **kwargs
 ):
     system = _preprocess_system(system, **kwargs)
-    _check_system(system)
+    _check_system(system, bypass_delay_check=True)
 
     expr = system.to_expr()
     _w = Dummy("w", real=True)
@@ -772,13 +772,6 @@ def bode_magnitude(
     freq_unit : string, optional
         User can choose between ``'rad/sec'`` (radians/second) and ``'Hz'``
         (Hertz) as frequency units.
-    phase_unit : string, optional
-        User can choose between ``'rad'`` (radians) and ``'deg'`` (degree)
-        as phase units.
-    unwrap : bool, optional
-        Depending on the transfer function, there could be discontinuities in
-        the phase plot. Set ``unwrap=True`` to get a continuous phase.
-        Default to False.
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
@@ -865,10 +858,11 @@ def bode_magnitude(
 
 
 def _bode_phase_helper(
-    system, label, initial_exp, final_exp, freq_unit, phase_unit, **kwargs
+    system, label, initial_exp, final_exp, freq_unit, phase_unit,
+    unwrap, **kwargs
 ):
     system = _preprocess_system(system, **kwargs)
-    _check_system(system)
+    _check_system(system, bypass_delay_check=True)
 
     expr = system.to_expr()
     _w = Dummy("w", real=True)
@@ -885,13 +879,13 @@ def _bode_phase_helper(
 
     return LineOver1DRangeSeries(
         phase, prange(_w, 10**initial_exp, 10**final_exp),
-        label, xscale='log', **kwargs
+        label, xscale='log', unwrap=unwrap, **kwargs
     )
 
 
 def bode_phase(
     system, initial_exp=-5, final_exp=5, freq_unit='rad/sec',
-    phase_unit='rad', label=None, rendering_kw=None, **kwargs
+    phase_unit='rad', label=None, rendering_kw=None, unwrap=True, **kwargs
 ):
     """
     Returns the Bode phase plot of a continuous-time system.
@@ -923,9 +917,10 @@ def bode_phase(
         User can choose between ``'rad'`` (radians) and ``'deg'`` (degree)
         as phase units.
     unwrap : bool, optional
-        Depending on the transfer function, there could be discontinuities in
-        the phase plot. Set ``unwrap=True`` to get a continuous phase.
-        Default to False.
+        Depending on the transfer function, the computed phase could contain
+        discontinuities of 2*pi. ``unwrap=True`` post-process the numerical
+        data in order to get a continuous phase.
+        Default to True.
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
@@ -1005,7 +1000,8 @@ def bode_phase(
     return [
         _bode_phase_helper(
             system, label, initial_exp, final_exp,
-            freq_unit, phase_unit, rendering_kw=rendering_kw, **kwargs
+            freq_unit, phase_unit, rendering_kw=rendering_kw, 
+            unwrap=unwrap, **kwargs
         )
     ]
 

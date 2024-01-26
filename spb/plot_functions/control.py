@@ -26,14 +26,14 @@ __all__ = [
 ]
 
 
-def _check_system(system):
+def _check_system(system, bypass_delay_check=False):
     """Function to check whether the dynamical system passed for plots is
     compatible or not."""
     if not isinstance(system, SISOLinearTimeInvariant):
         raise NotImplementedError(
             "Only SISO LTI systems are currently supported.")
     sys = system.to_expr()
-    if sys.has(exp):
+    if not bypass_delay_check and sys.has(exp):
         # Should test that exp is not part of a constant, in which case
         # no exception is required, compare exp(s) with s*exp(1)
         raise NotImplementedError("Time delay terms are not supported.")
@@ -608,7 +608,8 @@ bode_magnitude_plot = plot_bode_magnitude
 
 def plot_bode_phase(
     *systems, initial_exp=-5, final_exp=5,
-    freq_unit='rad/sec', phase_unit='rad', show_axes=False, **kwargs
+    freq_unit='rad/sec', phase_unit='rad', show_axes=False,
+    unwrap=True, **kwargs
 ):
     """
     Returns the Bode phase plot of a continuous-time system.
@@ -628,7 +629,7 @@ def plot_bode_phase(
     series = [
         _bode_phase_helper(
             s, l, initial_exp, final_exp,
-            freq_unit, phase_unit, **kwargs
+            freq_unit, phase_unit, unwrap, **kwargs
         ) for s, l in systems
     ]
 
@@ -645,7 +646,8 @@ bode_phase_plot = plot_bode_phase
 
 def plot_bode(
     *systems, initial_exp=-5, final_exp=5,
-    freq_unit='rad/sec', phase_unit='rad', show_axes=False, **kwargs
+    freq_unit='rad/sec', phase_unit='rad', show_axes=False,
+    unwrap=True, **kwargs
 ):
     """
     Returns the Bode phase and magnitude plots of a continuous-time system.
@@ -682,9 +684,10 @@ def plot_bode(
         User can choose between ``'rad'`` (radians) and ``'deg'`` (degree)
         as phase units.
     unwrap : bool, optional
-        Depending on the transfer function, there could be discontinuities in
-        the phase plot. Set ``unwrap=True`` to get a continuous phase.
-        Default to False.
+        Depending on the transfer function, the computed phase could contain
+        discontinuities of 2*pi. ``unwrap=True`` post-process the numerical
+        data in order to get a continuous phase.
+        Default to True.
     **kwargs : dict
         Refer to :func:`~spb.graphics.control.bode_magnitude` for a full list
         of keyword arguments to customize the appearances of lines.
@@ -697,30 +700,47 @@ def plot_bode(
     ========
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> from sympy.abc import s
-        >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import plot_bode, plot_bode_phase, plotgrid
-        >>> tf1 = TransferFunction(
-        ...     1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
-        >>> plot_bode(tf1, initial_exp=0.2, final_exp=0.7)   # doctest: +SKIP
+       >>> from sympy.abc import s
+       >>> from sympy.physics.control.lti import TransferFunction
+       >>> from spb import plot_bode, plot_bode_phase, plotgrid
+       >>> tf1 = TransferFunction(
+       ...     1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
+       >>> plot_bode(tf1, initial_exp=0.2, final_exp=0.7)   # doctest: +SKIP
 
-    In this example it is necessary to unwrap the phase:
+    This example shows how the phase is actually computed (with
+    ``unwrap=False``) and how it is post-processed (with ``unwrap=True``).
 
     .. plot::
-        :context: close-figs
-        :format: doctest
-        :include-source: True
+       :context: close-figs
+       :format: doctest
+       :include-source: True
 
-        >>> tf = TransferFunction(1, s**3 + 2*s**2 + s, s)
-        >>> p1 = plot_bode_phase(
-        ...     tf, unwrap=False, show=False, title="unwrap=False")
-        >>> p2 = plot_bode_phase(
-        ...     tf, unwrap=True, show=False, title="unwrap=True")
-        >>> plotgrid(p1, p2)
+       >>> tf = TransferFunction(1, s**3 + 2*s**2 + s, s)
+       >>> p1 = plot_bode_phase(
+       ...     tf, unwrap=False, show=False, title="unwrap=False")
+       >>> p2 = plot_bode_phase(
+       ...     tf, unwrap=True, show=False, title="unwrap=True")
+       >>> plotgrid(p1, p2)
+    
+    ``plot_bode`` also works with time delays. However, for the post-processing
+    of the phase to work as expected, the frequency range must be sufficiently
+    small, and the number of discretization points must be sufficiently high.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import symbols
+       >>> s = symbols("s")
+       >>> G1 = 1 / (s * (s + 1) * (s + 10))
+       >>> G2 = G1 * exp(-5*s)
+       >>> plot_bode(G1, G2, phase_unit="deg",
+       ...     initial_exp=-2, final_exp=1, n=1e04)
 
     Interactive-widget plot:
 
