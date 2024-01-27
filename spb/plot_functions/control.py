@@ -3,7 +3,8 @@ from spb.graphics.control import (
     _preprocess_system, _pole_zero_helper,
     _nichols_helper, _nyquist_helper, _step_response_helper,
     _ramp_response_helper, _impulse_response_helper,
-    _bode_magnitude_helper, _bode_phase_helper
+    _bode_magnitude_helper, _bode_phase_helper,
+    control_axis
 )
 from spb.interactive import create_interactive_plot
 from spb.plotgrid import plotgrid
@@ -26,31 +27,9 @@ __all__ = [
 ]
 
 
-def _check_system(system, bypass_delay_check=False):
-    """Function to check whether the dynamical system passed for plots is
-    compatible or not."""
-    if not isinstance(system, SISOLinearTimeInvariant):
-        raise NotImplementedError(
-            "Only SISO LTI systems are currently supported.")
-    sys = system.to_expr()
-    if not bypass_delay_check and sys.has(exp):
-        # Should test that exp is not part of a constant, in which case
-        # no exception is required, compare exp(s) with s*exp(1)
-        raise NotImplementedError("Time delay terms are not supported.")
-
-
-def _create_axes_series():
-    """Create two data series representing straight lines for the axes,
-    crossing at (0, 0).
-    """
-    hor = HVLineSeries(0, True, show_in_legend=False)
-    ver = HVLineSeries(0, False, show_in_legend=False)
-    return [hor, ver]
-
-
 def _create_plot_helper(series, show_axes, **kwargs):
     if show_axes:
-        series = _create_axes_series() + series
+        series = control_axis() + series
 
     Backend = kwargs.pop("backend", TWO_D_B)
     if kwargs.get("params", None):
