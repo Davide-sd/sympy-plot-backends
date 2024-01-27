@@ -15,7 +15,7 @@ pn = import_module(
     min_module_version='0.12.0',
     warn_not_installed=True)
 
-pn.extension("plotly", sizing_mode="stretch_width")
+pn.extension("mathjax", "plotly", sizing_mode="stretch_width")
 
 
 class MyList(param.ObjectSelector):

@@ -18,6 +18,9 @@ v3.0.1
 
 * Enabled ``plot_bode`` to deal with system containing time delays.
 
+* Enabled panel's interactive applications to render Latex labels on widgets
+  when served on a new window.
+
 * Fixed bug with labels of ``plot_implicit``.
 
 * Fixed bug with labels of ``plot_piecewise``.
