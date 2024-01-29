@@ -29,6 +29,9 @@ v3.0.1
   detects an error while parsing legend's entries, the plot won't show
   the legend.
 
+* Fixed bug with ``plot_bode_phase`` when ``phase_units="deg"`` and
+  ``unwrap=True``.
+
 
 v3.0.0
 ======

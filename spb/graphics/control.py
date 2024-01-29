@@ -874,6 +874,8 @@ def _bode_phase_helper(
 
     if phase_unit == 'deg':
         phase = arg(w_expr)*180/pi
+        if unwrap is True:
+            unwrap = {"period": 360}
     else:
         phase = arg(w_expr)
 

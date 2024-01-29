@@ -146,7 +146,7 @@ def test_bode():
     assert test_bode_data(tf5)
 
 
-def test_plot_bode_phase_unwrap():
+def test_plot_bode_phase_unwrap_1():
     s = symbols("s")
     G = 1 / (s * (s + 1) * (s + 10))
     p1 = plot_bode_phase(G, phase_unit="deg", initial_exp=-2, final_exp=1,
@@ -165,6 +165,62 @@ def test_plot_bode_phase_unwrap():
     assert not np.allclose(y1, y3)
     assert y1[0] < 0 and y1[-1] < y1[1]
     assert y3[0] < 0 and y3[-1] > 0
+
+
+def test_plot_bode_phase_unwrap_2():
+    # verify that unwrap produces the correct results
+    s = symbols("s")
+    G = 1 / (s+5) / (s+20) / (s+50)
+    p1 = plot_bode_phase(G, phase_unit="rad", initial_exp=0, final_exp=3,
+        unwrap=False, n=10)
+    p2 = plot_bode_phase(G, phase_unit="rad", initial_exp=0, final_exp=3,
+        unwrap=True, n=10)
+    p3 = plot_bode_phase(G, phase_unit="deg", initial_exp=0, final_exp=3,
+        unwrap=False, n=10)
+    p4 = plot_bode_phase(G, phase_unit="deg", initial_exp=0, final_exp=3,
+        unwrap=True, n=10)
+    x, y1 = p1[0].get_data()
+    _, y2 = p2[0].get_data()
+    _, y3 = p3[0].get_data()
+    _, y4 = p4[0].get_data()
+    assert np.allclose(
+        x,
+        [
+            1., 2.15443469, 4.64158883, 10., 21.5443469, 46.41588834, 100.,
+            215.443469, 464.15888336, 1000.
+        ]
+    )
+    assert np.allclose(
+        y1,
+        [
+            -0.26735129, -0.55721635, -1.06885075, -1.76819189, -2.57215473,
+            2.90750513, 2.28179789, 1.91460904, 1.73193809, 1.64575201
+        ]
+    )
+    assert np.allclose(
+        y2,
+        [
+            -0.26735129, -0.55721635, -1.06885075, -1.76819189, -2.57215473,
+            -3.37568017, -4.00138742, -4.36857627, -4.55124722, -4.63743329
+        ]
+    )
+    assert np.allclose(
+        y3,
+        [
+            -15.31810054,  -31.92614531,  -61.24063705, -101.30993247,
+            -147.37361045, 166.58777301, 130.73738888, 109.69901745,
+            99.23274267, 94.29464457
+        ]
+    )
+    assert np.allclose(
+        y4,
+        [
+            -15.31810054, -31.92614531, -61.24063705, -101.30993247,
+            -147.37361045, -193.41222699, -229.26261112, -250.30098255,
+            -260.76725733, -265.70535543
+        ]
+    )
+
 
 
 def test_bode_plot_delay():
