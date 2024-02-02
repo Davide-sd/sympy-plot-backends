@@ -6,7 +6,7 @@ from spb.plot_functions.control import  (
 from spb.interactive import IPlot
 from spb.series import HVLineSeries
 from spb.backends.matplotlib import unset_show
-from sympy import Dummy, I, Abs, arg, log, symbols, exp
+from sympy import Dummy, I, Abs, arg, log, symbols, exp, latex
 from sympy.abc import s, p, a, b
 from sympy.external import import_module
 from sympy.physics.control.lti import (TransferFunction,
@@ -809,3 +809,24 @@ def test_new_ways_of_providing_transfer_function(func, params):
     p5 = func((num2, den2, p), **kwargs)
     d4, d5 = [t.backend[0].get_data() for t in [p4, p5]]
     assert np.allclose(d4, d5)
+
+
+def test_plot_bode_title():
+    G1 = (s+5)/(s+2)**2
+    G2 = 1/s**2
+    
+    p = plot_bode(G1, show=False)
+    assert p.args[0].title == f"Bode Plot of ${latex(G1)}$"
+    assert p.args[1].title == ""
+
+    p = plot_bode(G1, show=False, title="Test")
+    assert p.args[0].title == "Test"
+    assert p.args[1].title == ""
+
+    p = plot_bode(G1, G2, show=False)
+    assert p.args[0].title == "Bode Plot"
+    assert p.args[1].title == ""
+
+    p = plot_bode(G1, G2, show=False, title="Test")
+    assert p.args[0].title == "Test"
+    assert p.args[1].title == ""

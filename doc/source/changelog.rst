@@ -21,6 +21,8 @@ v3.0.1
 * Enabled panel's interactive applications to render Latex labels on widgets
   when served on a new window.
 
+* Fixed bug with evaluation of user-defined python's function.
+
 * Fixed bug with labels of ``plot_implicit``.
 
 * Fixed bug with labels of ``plot_piecewise``.
@@ -31,6 +33,8 @@ v3.0.1
 
 * Fixed bug with ``plot_bode_phase`` when ``phase_units="deg"`` and
   ``unwrap=True``.
+
+* Fixed bug with title of Bode plots.
 
 
 v3.0.0

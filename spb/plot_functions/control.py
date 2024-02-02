@@ -752,6 +752,8 @@ def plot_bode(
     """
     show = kwargs.pop("show", True)
     kwargs["show"] = False
+    title = kwargs.get("title", None)
+    kwargs["title"] = ""
     p1 = plot_bode_magnitude(
         *systems, show_axes=show_axes,
         initial_exp=initial_exp, final_exp=final_exp,
@@ -761,13 +763,14 @@ def plot_bode(
         *systems, show_axes=show_axes,
         initial_exp=initial_exp, final_exp=final_exp,
         freq_unit=freq_unit, phase_unit=phase_unit,
-        title="", **kwargs.copy()
+        **kwargs.copy()
     )
 
     systems = _unpack_systems(systems)
-    title = "Bode Plot"
-    if len(systems) == 1:
-        title = f'Bode Plot of ${latex(systems[0][0])}$'
+    if title is None:
+        title = 'Bode Plot'
+        if len(systems) == 1:
+            title += f' of ${latex(systems[0][0])}$'
     p1.title = title
     p = plotgrid(p1, p2, **kwargs)
 
