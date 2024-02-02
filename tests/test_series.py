@@ -16,7 +16,7 @@ from sympy.abc import j, k
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
-    Function, dsolve, Eq, Ynm, floor, Ne, Piecewise, hyper
+    Function, dsolve, Eq, Ynm, floor, Ne, Piecewise, hyper, nsolve
 )
 from sympy.vector import CoordSys3D, gradient
 import numpy as np
@@ -3999,3 +3999,62 @@ def test_line_series_hyper_function():
         ), (x, 0, 1)
     )
     s.get_data()
+
+
+def test_eval_adaptive_false_lambda_functions():
+    # verify that evaluation with adaptive=False is able to deal with
+    # user-defined Python functions.
+
+    # what is going to happen?
+    # 1. f is evaluated with an array of numbers. Because the comparison
+    #    `if x < 0`` requires x to be a number, the evaluation fails
+    #    with ValueError.
+    # 2. The module detects the failure and attempt a different strategy,
+    #    vectorizing the function. So, the function will be evaluated for
+    #    each element of the array `x`.
+    # 3. The expected output will be created.
+    def f(x):
+        if x < 0:
+            return -x
+        else:
+            return x
+    t = symbols("t")
+    s = LineOver1DRangeSeries(f, (t, -2, 2), adaptive=False, n=5,
+        force_real_eval=True)
+    x, y = s.get_data()
+    assert np.allclose(x, [-2., -1.,  0.,  1.,  2.])
+    assert np.allclose(y, [2., 1.,  0.,  1.,  2.])
+
+    # using numpy vectorization:
+    # 1. f is evaluated with an array of numbers. The function is coded to
+    #    use numpy's vectorization, so no error will be raised.
+    # 2. The expected output will be created.
+    def f(x):
+        y = x.copy()
+        idx = x < 0
+        y[idx] = -y[idx]
+        return y
+    s = LineOver1DRangeSeries(f, (t, -2, 2), adaptive=False, n=5,
+        force_real_eval=True)
+    x, y = s.get_data()
+    assert np.allclose(x, [-2., -1.,  0.,  1.,  2.])
+    assert np.allclose(y, [2., 1.,  0.,  1.,  2.])
+
+    # this user-defined function uses sympy's `nsolve`:
+    # 1. f is evaluated with an array of numbers. `nsolve` receives an array
+    #    of numbers, it thinks it is dealing with N equations. Hence, it
+    #    expects `t` to be a list of N symbols. But `t` is just one symbol.
+    #    Hence, this error is raised:
+    #    TypeError: object of type 'Symbol' has no len()
+    # 2. The module detects the failure and attempt a different strategy,
+    #    vectorizing the function. So, the function will be evaluated for
+    #    each element of the array `x`.
+    # 3. The expected output will be created.
+    t = symbols("t")
+    def g(x):
+        return nsolve(sin(t) - x, t, 0)
+    s = LineOver1DRangeSeries(g, (t, -1, 1), adaptive=False, n=5)
+    x, y = s.get_data()
+    assert np.allclose(x, [-1. , -0.5,  0. ,  0.5,  1. ])
+    assert np.allclose(y, [-1.57079581, -0.52359878,  0.,  0.52359878,  1.57079583])
+    

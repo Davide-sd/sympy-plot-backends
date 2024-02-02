@@ -251,7 +251,7 @@ def _uniform_eval(
         try:
             # attempt to use numpy/numexpr native vectorized operation
             return f1(*args)
-        except ValueError:
+        except (ValueError, TypeError):
             # attempt to use numpy/numexpr with numpy.vectorize
             return wrapper_func(f1, *args)
         except Exception as err:
