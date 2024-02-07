@@ -305,7 +305,7 @@ def plot_step_response(
     kwargs.setdefault("xlabel", "Time [s]")
     kwargs.setdefault("ylabel", "Amplitude")
     kwargs.setdefault("title", _create_title_helper(
-        systems, "Unit Response"))
+        systems, "Step Response"))
     return _create_plot_helper(series, show_axes, **kwargs)
 
 
