@@ -1,4 +1,3 @@
-# setuptools # for Python 3.12, which doesn't have distutils
 packaging
 appdirs>=1.4.4
 numpy>=1.21.1
