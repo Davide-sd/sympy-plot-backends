@@ -16,7 +16,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11"]
+        # NOTE: Python 3.12 doesn't come with distutils. distutils is supposed
+        # to be into setuptools, which can be installed with requirements.txt
+        # It gets installed, however it still complains about missing distutils.
+        # I tested locally for Python 3.12, installing setuptools.
+        # Everything is ok.
 
     steps:
     - uses: actions/checkout@v2
