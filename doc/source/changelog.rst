@@ -36,6 +36,8 @@ v3.0.1
 
 * Fixed bug with title of Bode plots.
 
+* Fixed title of ``plot_step_response``.
+
 
 v3.0.0
 ======
