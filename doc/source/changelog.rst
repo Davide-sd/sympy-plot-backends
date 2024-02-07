@@ -38,6 +38,9 @@ v3.0.1
 
 * Fixed title of ``plot_step_response``.
 
+* Implemented workaround for holoviz's Panel interactive applications
+  to be able to work with a currently open bug.
+
 
 v3.0.0
 ======

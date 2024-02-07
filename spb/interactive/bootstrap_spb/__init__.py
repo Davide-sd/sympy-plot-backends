@@ -36,8 +36,83 @@ class SymPyBootstrapTemplate(BootstrapTemplate):
 
     _template = pathlib.Path(__file__).parent / 'bootstrap.html'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    # TODO: uncomment this and remove the bigger __init__ when this
+    # issue gets resolved:
+    # https://github.com/holoviz/panel/issues/6275
+    
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self.add_variable("sidebar_location", self.sidebar_location)
+    #     self.add_variable("full_width", self.full_width)
+    #     self.add_variable("header_no_panning", self.header_no_panning)
+    #     self.add_variable("show_header", self.show_header)
+
+    def __init__(self, *args, **params):
+        from panel.io.resources import _env, parse_template
+        from panel.io.state import state
+        from pathlib import Path
+        import jinja2
+        from panel.layout import ListLike
+        from panel.theme.base import THEMES
+        from panel.config import config
+        from panel.template.base import BaseTemplate
+        from panel.pane import HTML
+
+        tmpl_string = self._template.read_text(encoding='utf-8')
+        try:
+            template = _env.get_template(str(self._template.relative_to(Path(__file__).parent)))
+        except (jinja2.exceptions.TemplateNotFound, ValueError):
+            template = parse_template(tmpl_string)
+
+        if 'header' not in params:
+            params['header'] = ListLike()
+        else:
+            params['header'] = self._get_params(params['header'], self.param.header.class_)
+        if 'main' not in params:
+            params['main'] = ListLike()
+        else:
+            params['main'] = self._get_params(params['main'], self.param.main.class_)
+        if 'sidebar' not in params:
+            params['sidebar'] = ListLike()
+        else:
+            params['sidebar'] = self._get_params(params['sidebar'], self.param.sidebar.class_)
+        if 'modal' not in params:
+            params['modal'] = ListLike()
+        else:
+            params['modal'] = self._get_params(params['modal'], self.param.modal.class_)
+        if 'theme' in params:
+            if isinstance(params['theme'], str):
+                params['theme'] = THEMES[params['theme']]
+        else:
+            params['theme'] = THEMES[config.theme]
+        if 'favicon' in params and isinstance(params['favicon'], PurePath):
+            params['favicon'] = str(params['favicon'])
+        if 'notifications' not in params and config.notifications:
+            params['notifications'] = state.notifications if state.curdoc else NotificationArea()
+
+        BaseTemplate.__init__(self, template=template, **params)
+        self._js_area = HTML(margin=0, width=0, height=0)
+        state_roots = '{% block state_roots %}' in tmpl_string
+        if state_roots or 'embed(roots.js_area)' in tmpl_string:
+            self._render_items['js_area'] = (self._js_area, [])
+        if state_roots or 'embed(roots.actions)' in tmpl_string:
+            self._render_items['actions'] = (self._actions, [])
+        if (state_roots or 'embed(roots.notifications)' in tmpl_string) and self.notifications:
+            self._render_items['notifications'] = (self.notifications, [])
+            self._render_variables['notifications'] = True
+        if config.browser_info and ('embed(roots.browser_info)' in tmpl_string or state_roots) and state.browser_info:
+            self._render_items['browser_info'] = (state.browser_info, [])
+            self._render_variables['browser_info'] = True
+        self._update_busy()
+        self.main.param.watch(self._update_render_items, ['objects'])
+        self.modal.param.watch(self._update_render_items, ['objects'])
+        self.sidebar.param.watch(self._update_render_items, ['objects'])
+        self.header.param.watch(self._update_render_items, ['objects'])
+        self.main.param.trigger('objects')
+        self.sidebar.param.trigger('objects')
+        self.header.param.trigger('objects')
+        self.modal.param.trigger('objects')
+
         self.add_variable("sidebar_location", self.sidebar_location)
         self.add_variable("full_width", self.full_width)
         self.add_variable("header_no_panning", self.header_no_panning)
