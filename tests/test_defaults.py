@@ -21,6 +21,7 @@ def test_cfg_keys():
         "adaptive",
         "plot_range",
         "mayavi",
+        "bode",
     ]
     for k in must_have_keys:
         assert k in cfg.keys()
@@ -113,6 +114,16 @@ def test_cfg_mayavi_keys():
 
 
 def test_cfg_interactive_keys():
+    must_have_keys = ["phase_unit", "freq_unit"]
+    for k in must_have_keys:
+        assert k in cfg["bode"].keys()
+    assert isinstance(cfg["bode"]["phase_unit"], str)
+    assert isinstance(cfg["bode"]["freq_unit"], str)
+    assert cfg["bode"]["phase_unit"] == "rad"
+    assert cfg["bode"]["freq_unit"] == "rad/sec"
+
+
+def test_cfg_bode_keys():
     must_have_keys = ["use_latex", "throttled", "servable", "theme", "module"]
     for k in must_have_keys:
         assert k in cfg["interactive"].keys()

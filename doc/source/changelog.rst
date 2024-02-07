@@ -34,6 +34,9 @@ v3.0.1
 * Fixed bug with ``plot_bode_phase`` when ``phase_units="deg"`` and
   ``unwrap=True``.
 
+* Added settings for bode plot's ``phase_unit`` and ``freq_unit`` to the
+  ``defaults`` submodule.
+
 * Fixed bug with title of Bode plots.
 
 * Fixed title of ``plot_step_response``.

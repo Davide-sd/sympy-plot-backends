@@ -120,6 +120,10 @@ def _hardcoded_defaults():
             # Wheter to use a color map on a 3D surface
             "use_cm": False
         },
+        bode={
+            "phase_unit": "rad",
+            "freq_unit": "rad/sec"
+        },
 
         # settings that will be passed to the adaptive library:
         # https://github.com/python-adaptive/adaptive/

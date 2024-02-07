@@ -1,4 +1,4 @@
-from spb.defaults import TWO_D_B
+from spb.defaults import TWO_D_B, cfg
 from spb.graphics.control import (
     _preprocess_system, _pole_zero_helper,
     _nichols_helper, _nyquist_helper, _step_response_helper,
@@ -555,7 +555,7 @@ ramp_response_plot = plot_ramp_response
 
 def plot_bode_magnitude(
     *systems, initial_exp=-5, final_exp=5,
-    freq_unit='rad/sec', show_axes=False, **kwargs
+    freq_unit=None, show_axes=False, **kwargs
 ):
     """
     Returns the Bode magnitude plot of a continuous-time system.
@@ -563,6 +563,7 @@ def plot_bode_magnitude(
     See ``plot_bode`` for all the parameters.
     """
     freq_units = ('rad/sec', 'Hz')
+    freq_unit = cfg["bode"]["freq_unit"] if freq_unit is None else freq_unit
     if freq_unit not in freq_units:
         raise ValueError('Only "rad/sec" and "Hz" are accepted frequency units.')
 
@@ -587,7 +588,7 @@ bode_magnitude_plot = plot_bode_magnitude
 
 def plot_bode_phase(
     *systems, initial_exp=-5, final_exp=5,
-    freq_unit='rad/sec', phase_unit='rad', show_axes=False,
+    freq_unit=None, phase_unit=None, show_axes=False,
     unwrap=True, **kwargs
 ):
     """
@@ -597,6 +598,8 @@ def plot_bode_phase(
     """
     freq_units = ('rad/sec', 'Hz')
     phase_units = ('rad', 'deg')
+    freq_unit = cfg["bode"]["freq_unit"] if freq_unit is None else freq_unit
+    phase_unit = cfg["bode"]["phase_unit"] if phase_unit is None else phase_unit
     if freq_unit not in freq_units:
         raise ValueError(
             'Only "rad/sec" and "Hz" are accepted frequency units.'
@@ -625,7 +628,7 @@ bode_phase_plot = plot_bode_phase
 
 def plot_bode(
     *systems, initial_exp=-5, final_exp=5,
-    freq_unit='rad/sec', phase_unit='rad', show_axes=False,
+    freq_unit=None, phase_unit=None, show_axes=False,
     unwrap=True, **kwargs
 ):
     """
