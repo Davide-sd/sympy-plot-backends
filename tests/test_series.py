@@ -4051,10 +4051,11 @@ def test_eval_adaptive_false_lambda_functions():
     #    each element of the array `x`.
     # 3. The expected output will be created.
     t = symbols("t")
+
     def g(x):
         return nsolve(sin(t) - x, t, 0)
+
     s = LineOver1DRangeSeries(g, (t, -1, 1), adaptive=False, n=5)
     x, y = s.get_data()
-    assert np.allclose(x, [-1. , -0.5,  0. ,  0.5,  1. ])
-    assert np.allclose(y, [-1.57079581, -0.52359878,  0.,  0.52359878,  1.57079583])
-    
+    assert np.allclose(x, [-1., -0.5,  0.,  0.5,  1.])
+    assert np.allclose(y, [-1.57079581, -0.52359878,  0.,  0.52359878, 1.57079583])

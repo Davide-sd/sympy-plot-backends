@@ -39,7 +39,6 @@ class SymPyBootstrapTemplate(BootstrapTemplate):
     # TODO: uncomment this and remove the bigger __init__ when this
     # issue gets resolved:
     # https://github.com/holoviz/panel/issues/6275
-    
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)
     #     self.add_variable("sidebar_location", self.sidebar_location)
@@ -48,9 +47,10 @@ class SymPyBootstrapTemplate(BootstrapTemplate):
     #     self.add_variable("show_header", self.show_header)
 
     def __init__(self, *args, **params):
+        from panel.io.notifications import NotificationArea
         from panel.io.resources import _env, parse_template
         from panel.io.state import state
-        from pathlib import Path
+        from pathlib import Path, PurePath
         import jinja2
         from panel.layout import ListLike
         from panel.theme.base import THEMES
