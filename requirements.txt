@@ -1,3 +1,4 @@
+setuptools # for Python 3.12, which doesn't have distutils
 packaging
 appdirs>=1.4.4
 numpy>=1.21.1,<1.24.0
@@ -17,4 +18,3 @@ vtk
 adaptive>=0.13.1
 # mayavi>=4.8.0
 # PyQt5>=5.15.7
-setuptools # for Python 3.12
