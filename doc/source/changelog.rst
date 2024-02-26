@@ -9,7 +9,8 @@ v3.1.0
 * User can now specify an existing figure over which symbolic expressions
   will be plotted. Just use the ``ax=`` or ``fig=`` keyword argument.
 
-* 
+* Added ``arrow_3d`` to ``spb.graphics.vectors`` in order to plot a single
+  arrow in a three-dimensional space.
 
 
 v3.0.1

@@ -5,7 +5,7 @@ from sympy.matrices.dense import DenseMatrix
 from sympy.external import import_module
 from spb.series import (
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries, BaseSeries,
-    ContourSeries, Arrow2DSeries
+    ContourSeries, Arrow2DSeries, Arrow3DSeries
 )
 from spb.utils import _preprocess_multiple_ranges
 import warnings
@@ -750,6 +750,97 @@ def arrow_2d(
     """
     return [
         Arrow2DSeries(
+            start, direction, label, rendering_kw=rendering_kw,
+            show_in_legend=show_in_legend, **kwargs)
+    ]
+
+
+def arrow_3d(
+    start, direction, label=None, rendering_kw=None, show_in_legend=True,
+    **kwargs
+):
+    """Draw an arrow in a 2D space.
+
+    Parameters
+    ==========
+    start : (x, y, z)
+        Coordinates of the start position.
+    direction : (u, v, w)
+        Componenents of the direction vector.
+    label : str, optional
+        The label to be shown in the legend. If not provided, the string
+        representation of ``expr`` will be used.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+    show_in_legend : bool
+        If True, add a legend entry for the expression being plotted.
+        This option is useful to hide a particular expression when combining
+        together multiple plots. Default to True.
+
+    Returns
+    =======
+
+    A list containing one instance of ``Arrow3DSeries``.
+
+    See Also
+    ========
+
+    arrow_2d, vector_field_3d
+
+    Examples
+    ========
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from spb import *
+       >>> graphics(
+       ...     arrow_3d((0, 0, 0), (1, 0, 0)),
+       ...     arrow_3d((0, 0, 0), (0, 1, 0)),
+       ...     arrow_3d((0, 0, 0), (0, 0, 1), show_in_legend=False,
+       ...              rendering_kw={
+       ...                  "mutation_scale": 20,
+       ...                  "arrowstyle": "-|>",
+       ...                  "linestyle": 'dashed',
+       ...              }),
+       ...     xlabel="x", ylabel="y", zlabel="z")
+
+    Interactive-widget plot of arrows. Refer to the interactive
+    sub-module documentation to learn more about the ``params`` dictionary.
+
+    .. panel-screenshot::
+       :small-size: 800, 610
+
+       from sympy import *
+       from spb import *
+       phi, theta = symbols("phi, theta")
+       r = 0.75
+       params = {
+           phi: (-pi/2, -pi, pi),
+           theta: (2*pi/3, -pi, pi),
+       }
+       graphics(
+           arrow_3d((0, 0, 0), (1, 0, 0), rendering_kw={"color": "k"},
+               show_in_legend=False),
+           arrow_3d((0, 0, 0), (0, 1, 0), rendering_kw={"color": "k"},
+               show_in_legend=False),
+           arrow_3d((0, 0, 0), (0, 0, 1), rendering_kw={"color": "k"},
+               show_in_legend=False),
+           arrow_3d(
+               (0, 0, 0),
+               (r*sin(theta)*cos(phi), r*sin(theta)*sin(phi), r*cos(theta)),
+               params=params),
+           xlabel="x", ylabel="y", zlabel="z",
+           xlim=(-1.5, 1.5), ylim=(-1.5, 1.5), zlim=(-1.5, 1.5), aspect="equal"
+       )
+
+    """
+    return [
+        Arrow3DSeries(
             start, direction, label, rendering_kw=rendering_kw,
             show_in_legend=show_in_legend, **kwargs)
     ]

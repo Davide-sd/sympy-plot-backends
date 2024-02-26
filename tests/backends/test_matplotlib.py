@@ -109,7 +109,8 @@ from .make_tests import (
     make_test_vectors_3d_update_interactive,
     make_test_plot_list_color_func,
     make_test_real_imag,
-    make_test_arrow_2d
+    make_test_arrow_2d,
+    make_test_arrow_3d
 )
 
 
@@ -2333,3 +2334,17 @@ def test_existing_figure_surfaces():
         ax.collections[0].get_facecolors()[0],
         ax.collections[1].get_facecolors()[0]
     )
+
+
+def test_arrow_3d():
+    p = make_test_arrow_3d(MB, "test", {"color": "r"}, True)
+    p.fig
+    assert len(p.ax.patches) == 1
+    assert len(p.ax.get_legend().legend_handles) == 1
+    assert p.ax.get_legend().legend_handles[0].get_label() == "$test$"
+    assert p.ax.get_legend().legend_handles[0].get_color() == "r"
+
+    p = make_test_arrow_3d(MB, "test", {"color": "r"}, False)
+    p.fig
+    assert len(p.ax.patches) == 1
+    assert p.ax.get_legend() is None

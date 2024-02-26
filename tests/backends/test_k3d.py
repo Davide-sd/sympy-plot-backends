@@ -66,7 +66,8 @@ from .make_tests import (
     make_test_plot3d_use_latex,
     make_test_vectors_3d_update_interactive,
     make_test_plot_list_color_func,
-    make_test_real_imag
+    make_test_real_imag,
+    make_test_arrow_3d
 )
 
 
@@ -946,4 +947,12 @@ def test_existing_figure_surfaces():
     assert p.fig is fig
     assert len(fig.objects) == 2
     assert fig.objects[0].color != fig.objects[1].color
-    
+
+
+def test_arrow_3d():
+    p = make_test_arrow_3d(KB, "test",
+        {"head_color": 0xff0000, "origin_color": 0xff0000}, True)
+    p.fig
+    assert len(p.fig.objects) == 1
+    assert p.fig.objects[0].origin_color == 0xff0000
+    assert p.fig.objects[0].head_color == 0xff0000

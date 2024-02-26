@@ -3973,7 +3973,7 @@ class Arrow2DSeries(BaseSeries):
         if use_latex is False:
             return self._label
         return self._get_wrapped_label(self._latex_label, wrapper)
-
+    
     def get_data(self):
         """Return arrays of coordinates for plotting.
 
@@ -3998,6 +3998,28 @@ class Arrow2DSeries(BaseSeries):
                 [t.evalf(subs=self.params) for t in direction], dtype=float)
 
         direction += start
-        x, y = start
-        u, v = direction
-        return self._apply_transform(x, y, u, v)
+        return self._apply_transform(*start, *direction)
+
+
+class Arrow3DSeries(Arrow2DSeries):
+    """Represent an arrow in a 2D space.
+    """
+
+    is_3Dline = True
+
+    def get_data(self):
+        """Return arrays of coordinates for plotting.
+
+        Returns
+        =======
+        x, y, z : float
+            Coordinates of the start position.
+        u, v, w : float
+            Coordinates of the end position.
+        """
+        return super().get_data()
+
+    def __str__(self):
+        return self._str_helper(
+            f"3D arrow from {self.start} to {self.direction}"
+        )

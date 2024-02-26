@@ -4,7 +4,7 @@ from spb.backends.base_backend import Plot
 from spb.backends.k3d.renderers import (
     Line3DRenderer, Vector3DRenderer,
     ComplexRenderer, SurfaceRenderer, Implicit3DRenderer,
-    GeometryRenderer
+    GeometryRenderer, Arrow3DRenderer
 )
 from spb.series import (
     Parametric3DLineSeries, ComplexParametric3DLineSeries,
@@ -12,7 +12,7 @@ from spb.series import (
     RiemannSphereSeries, Implicit3DSeries,
     ComplexDomainColoringSeries, ComplexSurfaceSeries,
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
-    PlaneSeries, GeometrySeries
+    PlaneSeries, GeometrySeries, Arrow3DSeries
 )
 from sympy.external import import_module
 import warnings
@@ -125,6 +125,7 @@ class K3DBackend(Plot):
         ParametricSurfaceSeries: SurfaceRenderer,
         PlaneSeries: SurfaceRenderer,
         GeometrySeries: GeometryRenderer,
+        Arrow3DSeries: Arrow3DRenderer
     }
 
     def __init__(self, *args, **kwargs):

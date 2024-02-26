@@ -4,8 +4,10 @@ from spb.backends.k3d.renderers.implicit3d import Implicit3DRenderer
 from spb.backends.k3d.renderers.vector3d import Vector3DRenderer
 from spb.backends.k3d.renderers.complex import ComplexRenderer
 from spb.backends.k3d.renderers.geometry import GeometryRenderer
+from spb.backends.k3d.renderers.arrow3d import Arrow3DRenderer
 
 __all__ = [
     "Line3DRenderer", "SurfaceRenderer", "Implicit3DRenderer",
-    "Vector3DRenderer", "ComplexRenderer", "GeometryRenderer"
+    "Vector3DRenderer", "ComplexRenderer", "GeometryRenderer",
+    "Arrow3DRenderer"
 ]

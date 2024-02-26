@@ -4,7 +4,7 @@ from spb import (
     plot3d_parametric_line, plot3d, plot3d_list,
     plot3d_implicit, plot3d_parametric_surface,
     plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
-    graphics, arrow_2d
+    graphics, arrow_2d, arrow_3d
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries
@@ -1187,5 +1187,13 @@ def make_test_arrow_2d(B, lbl, rkw, sil):
     return graphics(
         arrow_2d(
             (1, 2), (3, 4), label=lbl, rendering_kw=rkw, show_in_legend=sil),
+        show=False, backend=B, legend=True
+    )
+
+
+def make_test_arrow_3d(B, lbl, rkw, sil):
+    return graphics(
+        arrow_3d(
+            (1, 2, 3), (4, 5, 6), label=lbl, rendering_kw=rkw, show_in_legend=sil),
         show=False, backend=B, legend=True
     )

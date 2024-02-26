@@ -9,10 +9,10 @@ from spb.series import (
     ComplexPointSeries, GeometrySeries,
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
     _set_discretization_points, ColoredLineOver1DRangeSeries,
-    HVLineSeries, Arrow2DSeries
+    HVLineSeries, Arrow2DSeries, Arrow3DSeries
 )
 from spb import plot3d_spherical
-from sympy.abc import j, k
+from sympy.abc import j, k, l
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
@@ -3956,6 +3956,37 @@ def test_arrow2dserie(start, direc, label, rkw, sil, params):
     else:
         assert s.get_label(False) == (
             "(j, k) -> (j + 3, k + 4)" if not label else label)
+    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.is_interactive == (len(s.params) > 0)
+    assert s.params == {} if not params else params
+
+
+@pytest.mark.parametrize(
+    "start, direc, label, rkw, sil, params",
+    [
+        ((1, 2, 3), (4, 5, 6), None, None, True, None),
+        ((1, 2, 3), (4, 5, 6), "test", {"color": "r"}, False, None),
+        (Tuple(j, k, l), (4, 5, 6), None, None, True, {j: (1, 0, 2), k: (2, 0, 3), l: (3, 0, 4)}),
+        (Tuple(j, k, l), (4, 5, 6), "test", {"color": "r"}, False, {j: (1, 0, 2), k: (2, 0, 3), l: (3, 0, 4)}),
+    ]
+)
+def test_arrow3dserie(start, direc, label, rkw, sil, params):
+    kw = {"rendering_kw": rkw, "show_in_legend": sil}
+    if params:
+        params = {k: v[0] for k, v in params.items()}
+        kw["params"] = params
+    s = Arrow3DSeries(start, direc, label, **kw)
+    assert np.allclose(
+        s.get_data(),
+        [1, 2, 3, 5, 7, 9]
+    )
+    assert s.show_in_legend is sil
+    if not params:
+        assert s.get_label(False) == (
+            "(1.0, 2.0, 3.0) -> (5.0, 7.0, 9.0)" if not label else label)
+    else:
+        assert s.get_label(False) == (
+            "(j, k, l) -> (j + 4, k + 5, l + 6)" if not label else label)
     assert s.rendering_kw == {} if not rkw else rkw
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == {} if not params else params

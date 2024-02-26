@@ -5,7 +5,8 @@ from spb.backends.matplotlib.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
     Implicit2DRenderer, ComplexRenderer, ContourRenderer, SurfaceRenderer,
     GeometryRenderer, GenericRenderer, HVLineRenderer,
-    NyquistRenderer, NicholsRenderer, Arrow2DRendererFancyArrowPatch
+    NyquistRenderer, NicholsRenderer, Arrow2DRendererFancyArrowPatch,
+    Arrow3DRendererFancyArrowPatch
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
@@ -17,7 +18,7 @@ from spb.series import (
     ContourSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     PlaneSeries, GeometrySeries, GenericDataSeries,
     HVLineSeries, NyquistLineSeries, NicholsLineSeries,
-    Arrow2DSeries
+    Arrow2DSeries, Arrow3DSeries
 )
 from sympy.external import import_module
 from packaging import version
@@ -170,7 +171,8 @@ class MatplotlibBackend(Plot):
         HVLineSeries: HVLineRenderer,
         NyquistLineSeries: NyquistRenderer,
         NicholsLineSeries: NicholsRenderer,
-        Arrow2DSeries: Arrow2DRendererFancyArrowPatch
+        Arrow2DSeries: Arrow2DRendererFancyArrowPatch,
+        Arrow3DSeries: Arrow3DRendererFancyArrowPatch
     }
 
     pole_line_kw = {"color": "k", "linestyle": ":"}
