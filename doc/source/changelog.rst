@@ -12,6 +12,10 @@ v3.1.0
 * Added ``arrow_3d`` to ``spb.graphics.vectors`` in order to plot a single
   arrow in a three-dimensional space.
 
+* Enhanced capabilities of line plots with the ``steps`` keyword argument.
+  Possible values are ``"pre", "post", "mid"``, mimicking Matplotlib's
+  ``step`` function.
+
 
 v3.0.1
 ======

@@ -1175,6 +1175,29 @@ def test_steps():
     do_test(s1, s2)
 
 
+def test_steps_2():
+    # verify that steps="pre", steps="post", steps="middle" creates
+    # different data.
+    x = symbols("x")
+    s1 = LineOver1DRangeSeries(x, (x, -10, 10), n=21, steps=True)
+    s2 = LineOver1DRangeSeries(x, (x, -10, 10), n=21, steps="pre")
+    s3 = LineOver1DRangeSeries(x, (x, -10, 10), n=21, steps="post")
+    s4 = LineOver1DRangeSeries(x, (x, -10, 10), n=21, steps="mid")
+    d1 = s1.get_data()
+    d2 = s2.get_data()
+    d3 = s3.get_data()
+    d4 = s4.get_data()
+    assert len(d1[0]) == len(d2[0]) == len(d3[0]) == len(d4[0]) - 1
+    assert np.allclose(d1, d2)
+    assert not np.allclose(d1, d3)
+
+    with warns(
+        UserWarning,
+        match="``steps`` not recognized.",
+    ):
+        LineOver1DRangeSeries(x, (x, -10, 10), n=21, steps="a")
+
+
 def test_interactive():
     u, x, y, z = symbols("u, x:z")
 

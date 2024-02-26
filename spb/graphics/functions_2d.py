@@ -301,9 +301,9 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
         enables the interactive-widgets plot, which doesn't support the
         adaptive algorithm (meaning it will use ``adaptive=False``).
         Learn more by reading the documentation of the interactive sub-module.
-    steps : boolean, optional
-        Default to ``False``. If ``True``, connects consecutive points with
-        steps rather than straight segments.
+    steps : {'pre', 'post', 'mid', False}, default: False, optional
+        If set, it connects consecutive points with steps rather than
+        straight segments.
     sum_bound : int, optional
         When plotting sums, the expression will be pre-processed in order
         to replace lower/upper bounds set to +/- infinity with this +/-
@@ -430,6 +430,23 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
        ... )
        Plot object containing:
        [0]: cartesian line: floor(x)/x for x over (-3.25, 3.25)
+
+    Creating a step plot:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> graphics(
+       ...     line(x, (x, 0, 10), only_integers=True, steps="pre", label="pre"),
+       ...     line(x, (x, 0, 10), only_integers=True, steps="mid", label="mid"),
+       ...     line(x, (x, 0, 10), only_integers=True, steps="post", label="post"),
+       ... )
+       Plot object containing:
+       [0]: cartesian line: x for x over (0.0, 10.0)
+       [1]: cartesian line: x for x over (0.0, 10.0)
+       [2]: cartesian line: x for x over (0.0, 10.0)
 
     Advanced example showing:
 

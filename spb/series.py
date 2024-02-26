@@ -22,6 +22,9 @@ from sympy.physics.control.lti import TransferFunction
 from sympy.printing.pycode import PythonCodePrinter
 from sympy.printing.precedence import precedence
 from sympy.core.sorting import default_sort_key
+from matplotlib.cbook import (
+    pts_to_prestep, pts_to_poststep, pts_to_midstep
+)
 import warnings
 
 
@@ -1102,6 +1105,17 @@ def _detect_poles_symbolic_helper(expr, symb, start, end):
     return poles
 
 
+def _check_steps(steps):
+    if isinstance(steps, str):
+        steps = steps.lower()
+    possible_values = ["pre", "post", "mid", True, False, None]
+    if not (steps in possible_values):
+        warnings.warn(
+            "``steps`` not recognized. Possible values are: " % possible_values
+        )
+    return steps
+
+
 class Line2DBaseSeries(BaseSeries):
     """A base class for 2D lines."""
 
@@ -1110,7 +1124,7 @@ class Line2DBaseSeries(BaseSeries):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.steps = kwargs.get("steps", False)
+        self.steps = _check_steps(kwargs.get("steps", False))
         self.is_point = kwargs.get("scatter", kwargs.get("is_point", False))
         self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.adaptive = kwargs.get(
@@ -1198,23 +1212,12 @@ class Line2DBaseSeries(BaseSeries):
                     y = np.unwrap(y, **kw)
                     points = (x, y, p)
 
-        if self.steps is True:
-            if self.is_2Dline:
-                x, y = points[0], points[1]
-                x = np.array((x, x)).T.flatten()[1:]
-                y = np.array((y, y)).T.flatten()[:-1]
-                if self.is_parametric:
-                    points = (x, y, points[2])
-                else:
-                    points = (x, y)
-            elif self.is_3Dline:
-                x = np.repeat(points[0], 3)[2:]
-                y = np.repeat(points[1], 3)[:-2]
-                z = np.repeat(points[2], 3)[1:-1]
-                if len(points) > 3:
-                    points = (x, y, z, points[3])
-                else:
-                    points = (x, y, z)
+        if (self.steps is True) or (self.steps == "pre"):
+            points = pts_to_prestep(*points)
+        elif self.steps == "post":
+            points = pts_to_poststep(*points)
+        elif self.steps == "mid":
+            points = pts_to_midstep(*points)
 
         points = self._insert_exclusions(points)
         return points
@@ -2485,7 +2488,7 @@ class ComplexPointSeries(Line2DBaseSeries):
 
         self.is_point = kwargs.get("scatter", kwargs.get("is_point", True))
         self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
-        self.steps = kwargs.get("steps", False)
+        self.steps = _check_steps(kwargs.get("steps", False))
         self._label = label
         self._latex_label = label
         self.rendering_kw = kwargs.get("rendering_kw", dict())
@@ -3973,7 +3976,7 @@ class Arrow2DSeries(BaseSeries):
         if use_latex is False:
             return self._label
         return self._get_wrapped_label(self._latex_label, wrapper)
-    
+
     def get_data(self):
         """Return arrays of coordinates for plotting.
 
