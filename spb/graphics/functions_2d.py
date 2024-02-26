@@ -439,9 +439,9 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
        :include-source: True
 
        >>> graphics(
-       ...     line(x, (x, 0, 10), only_integers=True, steps="pre", label="pre"),
+       ...     line(x-2, (x, 0, 10), only_integers=True, steps="pre", label="pre"),
        ...     line(x, (x, 0, 10), only_integers=True, steps="mid", label="mid"),
-       ...     line(x, (x, 0, 10), only_integers=True, steps="post", label="post"),
+       ...     line(x+2, (x, 0, 10), only_integers=True, steps="post", label="post"),
        ... )
        Plot object containing:
        [0]: cartesian line: x for x over (0.0, 10.0)
