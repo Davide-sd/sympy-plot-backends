@@ -187,7 +187,12 @@ class K3DBackend(Plot):
         if cfg["k3d"]["camera_mode"]:
             kw["camera_mode"] = cfg["k3d"]["camera_mode"]
 
-        self._fig = k3d.plot(**kw)
+        self._use_existing_figure = kwargs.get("fig", False)
+        if self._use_existing_figure:
+            self._fig = kwargs["fig"]
+            self._use_existing_figure = True
+        else:
+            self._fig = k3d.plot(**kw)
         if (self.xscale == "log") or (self.yscale == "log"):
             warnings.warn(
                 "K3D-Jupyter doesn't support log scales. We will "
@@ -254,9 +259,11 @@ class K3DBackend(Plot):
     def _process_renderers(self):
         self._init_cyclers()
         self._fig.auto_rendering = False
-        # clear data
-        for o in self._fig.objects:
-            self._fig.remove_class(o)
+
+        if not self._use_existing_figure:
+            # clear data
+            for o in self._fig.objects:
+                self._fig.remove_class(o)
 
         for r, s in zip(self.renderers, self.series):
             self._check_supported_series(r, s)

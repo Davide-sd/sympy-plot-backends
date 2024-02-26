@@ -210,6 +210,18 @@ class MatplotlibBackend(Plot):
         # load default colorloop
         self.colorloop = self.plt.rcParams['axes.prop_cycle'].by_key()["color"]
 
+        # plotgrid() can provide its figure and axes to be populated with
+        # the data from the series. These attributes will also be populated
+        # with user-provided figure.
+        self._plotgrid_fig = kwargs.pop("fig", None)
+        self._plotgrid_ax = kwargs.pop("ax", None)
+        self._use_existing_figure = any([self._plotgrid_fig, self._plotgrid_ax])
+        # allow users to provide only `fig=` or `ax=`
+        if self._use_existing_figure and (self._plotgrid_fig is None):
+            self._plotgrid_fig = self._plotgrid_ax.get_figure()
+        if self._use_existing_figure and (self._plotgrid_ax is None):
+            self._plotgrid_ax = self._plotgrid_fig.get_axes()[0]
+
         self._init_cyclers()
         super().__init__(*args, **kwargs)
 
@@ -226,11 +238,6 @@ class MatplotlibBackend(Plot):
         ):
             # add colors if needed
             self.colorloop = cm.tab20.colors
-
-        # plotgrid() can provide its figure and axes to be populated with
-        # the data from the series.
-        self._plotgrid_fig = kwargs.pop("fig", None)
-        self._plotgrid_ax = kwargs.pop("ax", None)
 
         if self.axis_center is None:
             self.axis_center = cfg["matplotlib"]["axis_center"]
@@ -258,7 +265,19 @@ class MatplotlibBackend(Plot):
         return p1._copy_kwargs()
 
     def _init_cyclers(self):
-        super()._init_cyclers()
+        start_index_cl, start_index_cm = None, None
+        if self._use_existing_figure and (self._plotgrid_ax is not None):
+            # attempt to determine how many lines or surfaces are plotted
+            # on the user-provided figure
+
+            # assume user plotted 3d surfaces using solid colors
+            count_meshes = sum([
+                "Poly" in type(c).__name__ for c in self._plotgrid_ax.collections
+            ])
+            start_index_cl = len(self._plotgrid_ax.lines) + count_meshes
+            start_index_cm = len(self._plotgrid_ax.collections)
+        super()._init_cyclers(start_index_cl, start_index_cm)
+
         np = import_module('numpy')
 
         # For flexibily, spb.backends.utils.convert_colormap returns numpy
@@ -332,7 +351,16 @@ class MatplotlibBackend(Plot):
         # https://github.com/matplotlib/matplotlib/issues/17130
         xlims, ylims, zlims = [], [], []
 
-        self._ax.cla()
+        if not self._use_existing_figure:
+            # If this instance visualizes only symbolic expressions,
+            # I want to clear axes so that each time `.show()` is called there
+            # won't be repeated handles.
+            # On the other hand:
+            # 1. If the current axes is created by plotgrid, the axes will
+            #    already be empty.
+            # 2. If the current axes is provided by the user, we don't want
+            #    to erase its content.
+            self._ax.cla()
         self._init_cyclers()
         self._legend_handles = []
 
@@ -655,7 +683,7 @@ class MatplotlibBackend(Plot):
                     "expression."
                 )
                 self._fig.tight_layout()
-                self.plt.show(**kwargs)            
+                self.plt.show(**kwargs)
         else:
             self.close()
 

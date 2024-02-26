@@ -2289,3 +2289,47 @@ def test_arrow_2d():
     p.fig
     assert len(p.ax.patches) == 1
     assert p.ax.get_legend() is None
+
+
+def test_existing_figure_lines():
+    # verify that user can provide an existing figure containing lines
+    # and plot over it
+
+    fig, ax = matplotlib.pyplot.subplots()
+    xx = np.linspace(-np.pi, np.pi, 10)
+    yy = np.cos(xx)
+    ax.plot(xx, yy, label="l1")
+    assert len(ax.lines) == 1
+
+    t = symbols("t")
+    p = plot(sin(t), (t, -pi, pi), "l2", n=10,
+        backend=MB, show=False, ax=ax)
+    assert p.ax is ax
+    assert len(ax.lines) == 2
+    assert ax.lines[0].get_label() == "l1"
+    assert ax.lines[0].get_color() == '#1f77b4'
+    assert ax.lines[1].get_label() == "l2"
+    assert ax.lines[1].get_color() == '#ff7f0e'
+
+
+def test_existing_figure_surfaces():
+    # verify that user can provide an existing figure containing surfaces
+    # and plot over it
+
+    fig = matplotlib.pyplot.figure()
+    ax = fig.add_subplot(projection="3d")
+    xx, yy = np.mgrid[-3:3:10j, -3:3:10j]
+    ax.plot_surface(xx, yy, xx*yy)
+    assert len(ax.collections) == 1
+
+    x, y = symbols("x, y")
+    p = plot3d(x*y, (x, -3, 3), (y, -3, 3), n=10, backend=MB,
+        ax=ax, use_cm=False, show=False)
+    assert p.ax is ax
+    assert len(ax.collections) == 2
+    # the two surfaces are identical. Here, I'm just interested to see
+    # different colors
+    assert not np.allclose(
+        ax.collections[0].get_facecolors()[0],
+        ax.collections[1].get_facecolors()[0]
+    )

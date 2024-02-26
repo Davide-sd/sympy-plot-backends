@@ -1,4 +1,4 @@
-from itertools import cycle
+from itertools import cycle, islice
 from spb.series import BaseSeries, LineOver1DRangeSeries
 from spb.backends.utils import convert_colormap
 from sympy import Symbol
@@ -409,7 +409,7 @@ class Plot:
             axis=self.axis,
         )
 
-    def _init_cyclers(self):
+    def _init_cyclers(self, start_index_cl=None, start_index_cm=None):
         """Create infinite loop iterators over the provided color maps."""
 
         tb = type(self)
@@ -430,6 +430,11 @@ class Plot:
             convert_colormap(cm, self._library) for cm in cyclic_colormaps
         ]
         self._cyccm = cycle(cyclic_colormaps)
+
+        if start_index_cl is not None:
+            self._cl = islice(self._cl, start_index_cl, None)
+        if start_index_cm is not None:
+            self._cm = islice(self._cm, start_index_cm, None)
 
     def _create_renderers(self):
         """Connect data series to appropriate renderers."""

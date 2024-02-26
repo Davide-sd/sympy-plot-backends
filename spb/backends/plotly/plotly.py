@@ -222,8 +222,19 @@ class PlotlyBackend(Plot):
             "magenta", "crimson", "darkorange", "dodgerblue", "wheat",
             "slategrey", "white", "black", "darkred", "indigo"]
 
+        # _init_cyclers needs to know if an existing figure was provided
+        self._use_existing_figure = kwargs.get("fig", False)
+        self._fig = None
         self._init_cyclers()
         super().__init__(*series, **kwargs)
+        if self._use_existing_figure:
+            self._fig = self._use_existing_figure
+            self._use_existing_figure = True
+        else:
+            if self.is_iplot and (self.imodule == "ipywidgets"):
+                self._fig = self.go.FigureWidget()
+            else:
+                self._fig = self.go.Figure()
 
         # NOTE: Plotly 3D currently doesn't support latex labels
         # https://github.com/plotly/plotly.js/issues/608
@@ -248,12 +259,8 @@ class PlotlyBackend(Plot):
 
         self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
         self.grid = kwargs.get("grid", cfg["plotly"]["grid"])
-        if self.is_iplot and (self.imodule == "ipywidgets"):
-            self._fig = self.go.FigureWidget()
-        else:
-            self._fig = self.go.Figure()
-        self._colorbar_counter = 0
 
+        self._colorbar_counter = 0
         self._scale_down_colorbar = (
             self.legend and
             any(s.use_cm for s in self.series) and
@@ -297,7 +304,19 @@ class PlotlyBackend(Plot):
         return kw
 
     def _init_cyclers(self):
-        super()._init_cyclers()
+        start_index_cl, start_index_cm = None, None
+        if self._use_existing_figure:
+            fig = self._use_existing_figure if self._fig is None else self._fig
+            # attempt to determine how many lines or surfaces are plotted
+            # on the user-provided figure
+
+            # assume user plotted 3d surfaces using solid colors
+            count_meshes = sum([
+                isinstance(c, self.go.Surface) for c in fig.data])
+            count_lines = sum([
+                isinstance(c, self.go.Scatter) for c in fig.data])
+            start_index_cl = count_lines + count_meshes
+        super()._init_cyclers(start_index_cl, 0)
         tb = type(self)
         quivers_colors = (
             self.quivers_colors if not tb.quivers_colors
@@ -340,7 +359,13 @@ class PlotlyBackend(Plot):
 
     def _process_renderers(self):
         self._init_cyclers()
-        self._fig.data = []
+        if not self._use_existing_figure:
+            # If this instance visualizes only symbolic expressions,
+            # I want to clear axes so that each time `.show()` is called there
+            # won't be repeated handles.
+            # On the other hand, if the current axes is provided by the user,
+            # we don't want to erase its content.
+            self._fig.data = []
 
         for r, s in zip(self.renderers, self.series):
             self._check_supported_series(r, s)

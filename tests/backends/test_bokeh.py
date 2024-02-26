@@ -1274,6 +1274,7 @@ def test_parametric_texts():
     assert p.fig.xaxis.axis_label == "test y+z=3.50"
     assert p.fig.yaxis.axis_label == "test z=2.00"
 
+
 def test_arrow_2d():
     p = make_test_arrow_2d(BB, "test", {"line_color": "red"}, True)
     p.fig
@@ -1281,3 +1282,25 @@ def test_arrow_2d():
     arrows = [t for t in p.fig.center if isinstance(t, Arrow)]
     assert len(arrows) == 1
     assert arrows[0].line_color == "red"
+
+
+def test_existing_figure_lines():
+    # verify that user can provide an existing figure containing lines
+    # and plot over it
+
+    from bokeh.plotting import figure
+    fig = figure()
+    xx = np.linspace(-np.pi, np.pi, 10)
+    yy = np.cos(xx)
+    fig.line(xx, yy, legend_label="l1")
+    assert len(fig.renderers) == 1
+
+    t = symbols("t")
+    p = plot(sin(t), (t, -pi, pi), "l2", n=10,
+        backend=BB, show=False, fig=fig, legend=True)
+    assert p.fig is fig
+    assert len(fig.renderers) == 2
+    assert fig.right[0].items[0].label.value == "l1"
+    assert fig.renderers[0].glyph.line_color == '#1f77b4'
+    assert fig.right[0].items[1].label.value == "l2"
+    assert fig.renderers[1].glyph.line_color == '#ff7f0e'

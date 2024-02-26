@@ -12,7 +12,7 @@ from spb.utils import _instantiate_backend
 def graphics(
     *args, aspect=None, axis_center=None, is_polar=None, legend=None,
     show=True, size=None, title=None, xlabel=None, ylabel=None, zlabel=None,
-    xlim=None, ylim=None, zlim=None, **kwargs
+    xlim=None, ylim=None, zlim=None, fig=None, ax=None, **kwargs
 ):
     """Plots a collection of data series.
 
@@ -21,6 +21,9 @@ def graphics(
 
     *args :
         Instances of ``BaseSeries`` or lists of instances of ``BaseSeries``.
+    ax : matplotlib.axes.Axes
+        An existing Matplotlib's Axes over which the symbolic expressions will
+        be plotted.
     aspect : (float, float) or str, optional
         Set the aspect ratio of the plot. The value depends on the backend
         being used. Read that backend's documentation to find out the
@@ -31,6 +34,8 @@ def graphics(
     backend : Plot, optional
         A subclass of ``Plot``, which will perform the rendering.
         Default to ``MatplotlibBackend``.
+    fig :
+        An existing figure. Be sure to also specify the proper ``backend=``.
     is_polar : boolean, optional
         Default to False. If True, requests the backend to use a 2D polar
         chart, if implemented.
@@ -94,6 +99,69 @@ def graphics(
        [0]: cartesian line: cos(x) for x over (-10.0, 10.0)
        [1]: cartesian line: sin(x) for x over (-3.141592653589793, 3.141592653589793)
        [2]: cartesian line: log(x) for x over (-10.0, 10.0)
+
+
+    Combining together multiple data series of the different types:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import *
+       >>> from spb import *
+       >>> x = symbols("x")
+       >>> graphics(
+       ...     line((cos(x)+1)/2, (x, -pi, pi), label="a"),
+       ...     line(-(cos(x)+1)/2, (x, -pi, pi), label="b"),
+       ...     line_parametric_2d(cos(x), sin(x), (x, 0, 2*pi), label="c", use_cm=False),
+       ...     title="My title", ylabel="y", aspect="equal"
+       ... )
+       Plot object containing:
+       [0]: cartesian line: cos(x)/2 + 1/2 for x over (-3.141592653589793, 3.141592653589793)
+       [1]: cartesian line: -cos(x)/2 - 1/2 for x over (-3.141592653589793, 3.141592653589793)
+       [2]: parametric cartesian line: (cos(x), sin(x)) for x over (0.0, 6.283185307179586)
+
+
+    Plot over an existing figure. Note that:
+
+    * If an existing Matplotlib's figure is available, users can specify one
+      of the following keyword arguments:
+
+      * ``fig=`` to provide the existing figure. The module will then plot the
+        symbolic expressions over the first Matplotlib's axes.
+      * ``ax=`` to provide the Matplotlib's axes over which symbolic
+        expressions will be plotted. This is useful if users have a figure with
+        multiple subplots.
+    * If an existing Bokeh/Plotly/K3D's figure is available, user should
+      pass the following keyword arguments: ``fig=`` for the existing figure
+      and ``backend=`` to specify which backend should be used.
+    * This module will override axis labels, title, and grid.
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import symbols, cos, pi
+       >>> from spb import *
+       >>> import numpy as np
+       >>> import matplotlib.pyplot as plt
+       >>> # plot some numerical data
+       >>> fig, ax = plt.subplots()
+       >>> xx = np.linspace(-np.pi, np.pi, 20)
+       >>> yy = np.cos(xx)
+       >>> noise = (np.random.random_sample(len(xx)) - 0.5) / 5
+       >>> yy = yy * (1+noise)
+       >>> ax.scatter(xx, yy, marker="*", color="m")
+       >>> # plot a symbolic expression
+       >>> x = symbols("x")
+       >>> graphics(
+       ...     line(cos(x), (x, -pi, pi), rendering_kw={"ls": "--", "lw": 0.8}),
+       ...     ax=ax)
+       Plot object containing:
+       [0]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
+
 
     Interactive-widget plot combining together data series of different types:
 
@@ -219,7 +287,7 @@ def graphics(
             *series,
             aspect=aspect, axis_center=axis_center, is_polar=is_polar,
             legend=legend, show=show, size=size, title=title,
-            xlim=xlim, ylim=ylim, zlim=zlim, **kwargs)
+            xlim=xlim, ylim=ylim, zlim=zlim, ax=ax, fig=fig, **kwargs)
 
     is_3D = any(s.is_3D for s in series)
     Backend = kwargs.pop("backend", TWO_D_B if is_3D else THREE_D_B)
@@ -227,4 +295,4 @@ def graphics(
         Backend, *series,
         aspect=aspect, axis_center=axis_center,
         is_polar=is_polar, legend=legend, show=show, size=size,
-        title=title, xlim=xlim, ylim=ylim, zlim=zlim, **kwargs)
+        title=title, xlim=xlim, ylim=ylim, zlim=zlim, ax=ax, fig=fig, **kwargs)

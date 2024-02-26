@@ -923,3 +923,27 @@ def test_parametric_texts():
     assert yl == "test b=2.00"
     assert zl == "test a=1.50, b=2.00"
     assert len(p.fig.objects) == 2
+
+
+def test_existing_figure_surfaces():
+    # verify that user can provide an existing figure containing surfaces
+    # and plot over it
+
+    from matplotlib.tri import Triangulation
+
+    fig = k3d.plot()
+    xx, yy = np.mgrid[-3:3:10j, -3:3:10j]
+    zz = np.cos(xx**2 + yy**2)
+    xx, yy, zz = [t.flatten() for t in [xx, yy, zz]]
+    vertices = np.vstack([xx, yy, zz]).T.astype(np.float32)
+    indices = Triangulation(xx, yy).triangles.astype(np.uint32)
+    fig += k3d.mesh(vertices, indices, side="double")
+    assert len(fig.objects) == 1
+
+    x, y = symbols("x, y")
+    p = plot3d(-cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), n=10,
+        backend=KB, fig=fig, show=False)
+    assert p.fig is fig
+    assert len(fig.objects) == 2
+    assert fig.objects[0].color != fig.objects[1].color
+    

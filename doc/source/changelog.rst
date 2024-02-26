@@ -2,6 +2,16 @@
  Changelog
 ==========
 
+
+v3.1.0
+======
+
+* User can now specify an existing figure over which symbolic expressions
+  will be plotted. Just use the ``ax=`` or ``fig=`` keyword argument.
+
+* 
+
+
 v3.0.1
 ======
 

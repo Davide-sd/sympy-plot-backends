@@ -1875,3 +1875,42 @@ def test_arrow_2d():
     assert len(p.fig.layout.annotations) == 1
     assert p.fig.layout.annotations[0]["text"] == ""
     assert p.fig.layout.annotations[0]["arrowcolor"] == "red"
+
+
+def test_existing_figure_lines():
+    # verify that user can provide an existing figure containing lines
+    # and plot over it
+
+    fig = go.Figure()
+    xx = np.linspace(-np.pi, np.pi, 10)
+    yy = np.cos(xx)
+    fig.add_trace(go.Scatter(x=xx, y=yy, name="l1"))
+    assert len(fig.data) == 1
+
+    t = symbols("t")
+    p = plot(sin(t), (t, -pi, pi), "l2", n=10,
+        backend=PB, show=False, fig=fig)
+    assert p.fig is fig
+    assert len(fig.data) == 2
+    assert fig.data[0].name == "l1"
+    assert fig.data[0].line.color is None
+    assert fig.data[1].name == "l2"
+    assert fig.data[1].line.color == '#EF553B'
+
+
+def test_existing_figure_surfaces():
+    # verify that user can provide an existing figure containing surfaces
+    # and plot over it
+
+    fig = go.Figure()
+    xx, yy = np.mgrid[-3:3:10j, -3:3:10j]
+    fig.add_trace(go.Surface(x=xx, y=yy, z=xx*yy, name="s1"))
+    assert len(fig.data) == 1
+
+    x, y = symbols("x, y")
+    p = plot3d(x*y, (x, -3, 3), (y, -3, 3), n=10, backend=PB,
+        fig=fig, use_cm=False, show=False)
+    assert p.fig is fig
+    assert len(fig.data) == 2
+    assert fig.data[0].colorscale is None
+    assert fig.data[1].colorscale[0][1] == "#EF553B"

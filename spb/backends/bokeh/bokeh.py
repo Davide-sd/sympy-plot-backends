@@ -155,6 +155,9 @@ class BokehBackend(Plot):
             cm.hsv, cm.twilight, cc.cyclic_mygbm_30_95_c78_s25
         ]
 
+        # _init_cyclers needs to know if an existing figure was provided
+        self._use_existing_figure = kwargs.get("fig", False)
+        self._fig = None
         self._init_cyclers()
         super().__init__(*args, **kwargs)
 
@@ -217,7 +220,11 @@ class BokehBackend(Plot):
             kw["x_axis_type"] = self.xscale
         if self.yscale:
             kw["y_axis_type"] = self.yscale
-        self._fig = self.bokeh.plotting.figure(**kw)
+        if self._use_existing_figure:
+            self._fig = self._use_existing_figure
+            self._use_existing_figure = True
+        else:
+            self._fig = self.bokeh.plotting.figure(**kw)
         self._fig.axis.visible = self.axis
         self.grid = kwargs.get("grid", cfg["bokeh"]["grid"])
         self._fig.grid.visible = self.grid
@@ -229,6 +236,15 @@ class BokehBackend(Plot):
             self._fig.x_range.flipped = True
 
         self._create_renderers()
+
+    def _init_cyclers(self):
+        start_index_cl, start_index_cm = None, None
+        if self._use_existing_figure:
+            fig = self._use_existing_figure if self._fig is None else self._fig
+            # attempt to determine how many lines are plotted
+            # on the user-provided figure
+            start_index_cl = len(fig.renderers)
+        super()._init_cyclers(start_index_cl, 0)
 
     @property
     def fig(self):
@@ -262,10 +278,18 @@ class BokehBackend(Plot):
 
     def _process_renderers(self):
         self._init_cyclers()
-        # clear figure. Must clear both the renderers as well as the
-        # colorbars which are added to the right side.
-        self._fig.renderers = []
-        self._fig.right = []
+
+        if not self._use_existing_figure:
+            # If this instance visualizes only symbolic expressions,
+            # I want to clear axes so that each time `.show()` is called there
+            # won't be repeated handles.
+            # On the other hand, if the current axes is provided by the user,
+            # we don't want to erase its content.
+
+            # Must clear both the renderers as well as the
+            # colorbars which are added to the right side.
+            self._fig.renderers = []
+            self._fig.right = []
 
         for r, s in zip(self.renderers, self.series):
             self._check_supported_series(r, s)
@@ -276,15 +300,27 @@ class BokehBackend(Plot):
             self._fig.legend.visible = False
             # add a new legend only showing the appropriate items
             legend_items = []
-            for s, r in zip(self.series, self._fig.renderers):
-                if (
-                    s.show_in_legend and
-                    (s.is_2Dline or s.is_geometry) and
-                    (not s.use_cm)
-                ):
-                    legend_items.append(
-                        self.bokeh.models.LegendItem(
-                            label=s.get_label(self._use_latex), renderers=[r]))
+            end = 0
+            if self._use_existing_figure:
+                legend_items = self._fig.legend.items
+                # keep existing legend entries if we are dealing with a
+                # user-provided figure
+                end = len(legend_items) - len(self.series)
+                legend_items = legend_items[:end]
+            # if user-provided figures, self.series and self._fig.renderers
+            # are not "synchronized"
+            start = end if self._use_existing_figure else 0
+            for i, s in enumerate(self.series):
+                if (start+i) < len(self._fig.renderers):
+                    r = self._fig.renderers[start+i]
+                    if (
+                        s.show_in_legend and
+                        (s.is_2Dline or s.is_geometry) and
+                        (not s.use_cm)
+                    ):
+                        legend_items.append(
+                            self.bokeh.models.LegendItem(
+                                label=s.get_label(self._use_latex), renderers=[r]))
             if self.legend and (len(legend_items) > 0):
                 legend = self.bokeh.models.Legend(items=legend_items)
                 # interactive legend
