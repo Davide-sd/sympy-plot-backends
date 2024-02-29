@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v3.2.0
+======
+
+* Added ``plot_root_locus`` to the control submodule. This uses the
+  ``python-control`` package to generate the numerical data for the plot.
+
 
 v3.1.0
 ======

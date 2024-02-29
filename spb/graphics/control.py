@@ -1,14 +1,14 @@
 from spb.defaults import TWO_D_B
 from spb.series import (
     List2DSeries, LineOver1DRangeSeries, HVLineSeries, NyquistLineSeries,
-    NicholsLineSeries
+    NicholsLineSeries, RootLocusSeries, SGridLineSeries
 )
 from spb.utils import prange
 import numpy as np
 from sympy import (
-    roots, exp, Poly, degree, re, im, apart, Dummy,
-    I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt,
-    floor, ceiling, frac, pi, fraction, Expr, Tuple
+    roots, exp, Poly, degree, re, im, apart, Dummy, symbols,
+    I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt, cos, acos, sin,
+    floor, ceiling, frac, pi, fraction, Expr, Tuple, Float, Integer, Rational
 )
 from sympy.physics.control.lti import (
     SISOLinearTimeInvariant, TransferFunctionMatrix, TransferFunction
@@ -34,7 +34,9 @@ __all__ = [
     'bode_magnitude',
     'bode_phase',
     'nyquist',
-    'nichols'
+    'nichols',
+    'root_locus',
+    'sgrid'
 ]
 
 
@@ -1002,7 +1004,7 @@ def bode_phase(
     return [
         _bode_phase_helper(
             system, label, initial_exp, final_exp,
-            freq_unit, phase_unit, rendering_kw=rendering_kw, 
+            freq_unit, phase_unit, rendering_kw=rendering_kw,
             unwrap=unwrap, **kwargs
         )
     ]
@@ -1364,3 +1366,186 @@ def nichols(system, label=None, rendering_kw=None, **kwargs):
             system, label, rendering_kw=rendering_kw, **kwargs.copy()
         )
     ]
+
+
+def root_locus(system, label=None, rendering_kw=None, rl_kw={},
+    sgrid=True, **kwargs):
+    """Root Locus plot for a system.
+
+    Parameters
+    ==========
+
+    system : SISOLinearTimeInvariant type systems
+        The system for which the pole-zero plot is to be computed.
+        It can be:
+
+        * a single LTI SISO system.
+        * a symbolic expression, which will be converted to an object of
+          type :class:`~sympy.physics.control.TransferFunction`.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``,
+          which will be converted to an object of type
+          :class:`~sympy.physics.control.TransferFunction`.
+    label : str, optional
+        The label to be shown on the legend.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+    rl_kw : dict
+        A dictionary of keyword arguments to be passed to
+        ``control.root_locus``.
+    sgrid : bool, optional
+        Generates a grid of constant damping factors and natural frequencies
+        for pole-zero and root locus plots. Default to True.
+    **kwargs :
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_2d.line`.
+        Refer to its documentation for a for a full list of keyword arguments.
+
+    Returns
+    =======
+
+    A list containing one instance of ``RootLocusSeries`` and possibly one
+    instance of ``SGridLineSeries``.
+
+    Examples
+    ========
+
+    Shows the default grid lines, as well as a custom damping ratio line and
+    a root locus plot.
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy.abc import s
+       >>> from spb import *
+       >>> G = (s**2 - 4) / (s**3 + 2*s - 3)
+       >>> graphics(
+       ...     root_locus(G),
+       ...     sgrid(xi=0.92, wn=False, rendering_kw={"color": "r"}),
+       ...     grid=False)
+
+    See Also
+    ========
+
+    sgrid, zgrid
+    """
+    if kwargs.get("params", None):
+        raise ValueError(
+            "Parametric interactive root locus plots are not supported.")
+    system = _preprocess_system(system, **kwargs)
+    _check_system(system)
+
+    rls = RootLocusSeries(
+        system, label=label, rendering_kw=rendering_kw, rl_kw=rl_kw,
+        **kwargs.copy())
+
+    sgrid_series = []
+    if sgrid:
+        sgrid_series = sgrid_function(show_control_axis=True, series=rls)
+
+    return sgrid_series + [rls]
+
+
+def sgrid(xi=None, wn=None, xlim=None, ylim=None, show_control_axis=True,
+    **kwargs):
+    """Create the s-grid of constant damping ratios and natural frequencies.
+
+    Parameters
+    ==========
+
+    xi : iterable or float
+        A list of damping ratios.
+    wn : iterable or float
+        A list of natural frequencies.
+    show_control_axis : bool, optional
+        Shows an horizontal and vertical grid lines crossing at the origin.
+        Default to True.
+    xlim, ylim : 2-elements tuple
+        If provided, compute damping ratios and natural frequencies in order
+        to display "evenly" distributed grid lines on the plane.
+
+    Examples
+    ========
+
+    Shows the default grid lines, as well as a custom damping ratio line.
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from spb import *
+       >>> graphics(
+       ...     sgrid(),
+       ...     sgrid(xi=0.85, wn=False,
+       ...         rendering_kw={"color": "r", "linestyle": "-"},
+       ...         show_control_axis=False),
+       ...     grid=False, xlim=(-8.5, 1), ylim=(-5, 5)
+       ... )
+
+    Auto-compute damping ratios and natural frequencies to produce "evenly"
+    distributed grid lines:
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> xlim = (-5.5, 1)
+       >>> ylim = (-3, 3)
+       >>> graphics(
+       ...     sgrid(xlim=xlim, ylim=ylim),
+       ...     grid=False, xlim=xlim, ylim=ylim
+       ... )
+
+    """
+    if (xi is not None) and (wn is False):
+        # If we are showing a specific value of damping ratio, don't show
+        # control axis. They are likely already shown by some other
+        # SGridLineSeries.
+        show_control_axis = False
+
+    if xi is None:
+        xi = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99, 1]
+        if show_control_axis:
+            # `xi` and `wn` lines also show an annotation with their
+            # respective values. When `show_control_axis=True` it is easier
+            # to plot horizontal and vertical lines (xi=1 and xi=0,
+            # respectively). Also, this allows me not to show annotations
+            # for these two values which would make things confusing.
+            # For example, the annotation for `xi=1` could be confused
+            # with an `wn` annotation.
+            xi = xi[1:-1]
+    elif xi is False:
+        xi = []
+    elif not hasattr(xi, "__iter__"):
+        xi = [xi]
+
+    if wn is None:
+        wn = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    elif wn is False:
+        wn = []
+    elif not hasattr(wn, "__iter__"):
+        wn = [wn]
+
+    if any(isinstance(t, Expr) and (len(t.free_symbols) > 0) for t in xi):
+        raise TypeError(
+            f"Damping ratios must be numeric.\nReceived: %s" % xi
+        )
+    if any(isinstance(t, Expr) and (len(t.free_symbols) > 0) for t in wn):
+        raise TypeError(
+            f"Natural frequencies must be numeric.\nReceived: %s" % wn
+        )
+    xi = np.array(xi, dtype=float)
+    wn = np.array(wn, dtype=float)
+
+    return [
+        SGridLineSeries(xi, wn, xlim=xlim, ylim=ylim,
+        show_control_axis=show_control_axis, **kwargs)
+    ]
+
+
+sgrid_function = sgrid

@@ -4,7 +4,7 @@ from spb.graphics.control import (
     _nichols_helper, _nyquist_helper, _step_response_helper,
     _ramp_response_helper, _impulse_response_helper,
     _bode_magnitude_helper, _bode_phase_helper,
-    control_axis
+    control_axis, root_locus, sgrid as sgrid_function
 )
 from spb.interactive import create_interactive_plot
 from spb.plotgrid import plotgrid
@@ -23,7 +23,7 @@ __all__ = [
     'bode_phase_plot', 'plot_bode_phase',
     'bode_plot', 'plot_bode',
     'nyquist_plot', 'plot_nyquist',
-    'nichols_plot', 'plot_nichols'
+    'nichols_plot', 'plot_nichols', 'plot_root_locus'
 ]
 
 
@@ -707,7 +707,7 @@ def plot_bode(
        >>> p2 = plot_bode_phase(
        ...     tf, unwrap=True, show=False, title="unwrap=True")
        >>> plotgrid(p1, p2)
-    
+
     ``plot_bode`` also works with time delays. However, for the post-processing
     of the phase to work as expected, the frequency range must be sufficiently
     small, and the number of discretization points must be sufficiently high.
@@ -1089,3 +1089,80 @@ def plot_nichols(*systems, **kwargs):
 
 
 nichols_plot = plot_nichols
+
+
+def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
+    """Root Locus plot for one or multiple systems.
+
+    Notes
+    =====
+
+    This function uses the ``python-control`` module to generate the numerical
+    data.
+
+    Parameters
+    ==========
+
+    system : SISOLinearTimeInvariant type systems
+        The system for which the pole-zero plot is to be computed.
+        It can be:
+
+        * a single LTI SISO system.
+        * a symbolic expression, which will be converted to an object of
+          type :class:`~sympy.physics.control.TransferFunction`.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``,
+          which will be converted to an object of type
+          :class:`~sympy.physics.control.TransferFunction`.
+    label : str, optional
+        The label to be shown on the legend.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+    rl_kw : dict
+        A dictionary of keyword arguments to be passed to
+        ``control.root_locus``.
+    sgrid : bool, optional
+        Generates a grid of constant damping factors and natural frequencies
+        for pole-zero and root locus plots. Default to True.
+    **kwargs :
+        Keyword arguments are the same as
+        :func:`~spb.graphics.functions_2d.line`.
+        Refer to its documentation for a for a full list of keyword arguments.
+
+    Example
+    =======
+
+    Plotting a single transfer function:
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy.abc import s
+       >>> from spb import plot_root_locus
+       >>> G1 = (s**2 - 4) / (s**3 + 2*s - 3)
+       >>> plot_root_locus(G1)                                 # doctest: +SKIP
+
+    Plotting multiple transfer functions:
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy.abc import s
+       >>> from spb import plot_root_locus
+       >>> G2 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
+       >>> plot_root_locus(G1, G2)                             # doctest: +SKIP
+
+    """
+    systems = _unpack_systems(systems)
+    kwargs.setdefault("grid", False)
+    rls = [root_locus(s, l, sgrid=False, zgrid=False, **kwargs)[0]
+        for s, l in systems]
+    sgrid_series = []
+    if sgrid:
+        sgrid_series = sgrid_function(series=rls)
+    return _create_plot_helper(sgrid_series + rls, False, **kwargs)

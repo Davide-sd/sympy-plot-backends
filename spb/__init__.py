@@ -27,7 +27,7 @@ from spb.plot_functions.complex_analysis import (
 from spb.plot_functions.control import (
     plot_pole_zero, plot_step_response, plot_impulse_response,
     plot_ramp_response, plot_bode_magnitude, plot_bode_phase, plot_bode,
-    plot_nyquist, plot_nichols
+    plot_nyquist, plot_nichols, plot_root_locus
 )
 from spb.utils import prange
 
@@ -59,7 +59,7 @@ from spb.graphics.complex_analysis import (
 )
 from spb.graphics.control import (
     control_axis, pole_zero, step_response, impulse_response, ramp_response,
-    bode_magnitude, bode_phase, nyquist, nichols
+    bode_magnitude, bode_phase, nyquist, nichols, root_locus, sgrid
 )
 
 __all__ = [
@@ -86,5 +86,5 @@ __all__ = [
     "hline", "vline",
     "pole_zero", "control_axis", "step_response", "impulse_response",
     "ramp_response", "bode_magnitude", "bode_phase", "nyquist", "nichols",
-    "arrow_2d", "arrow_3d"
+    "arrow_2d", "arrow_3d", "root_locus", "sgrid", "plot_root_locus"
 ]

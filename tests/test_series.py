@@ -9,7 +9,8 @@ from spb.series import (
     ComplexPointSeries, GeometrySeries,
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
     _set_discretization_points, ColoredLineOver1DRangeSeries,
-    HVLineSeries, Arrow2DSeries, Arrow3DSeries
+    HVLineSeries, Arrow2DSeries, Arrow3DSeries, RootLocusSeries,
+    SGridLineSeries
 )
 from spb import plot3d_spherical
 from sympy.abc import j, k, l
@@ -18,6 +19,7 @@ from sympy import (
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
     Function, dsolve, Eq, Ynm, floor, Ne, Piecewise, hyper, nsolve
 )
+from sympy.physics.control import TransferFunction
 from sympy.vector import CoordSys3D, gradient
 import numpy as np
 
@@ -4113,3 +4115,48 @@ def test_eval_adaptive_false_lambda_functions():
     x, y = s.get_data()
     assert np.allclose(x, [-1., -0.5,  0.,  0.5,  1.])
     assert np.allclose(y, [-1.57079581, -0.52359878,  0.,  0.52359878, 1.57079583])
+
+
+def test_root_locus_series():
+    s = symbols("s")
+    G = (s**2 - 4) / (s**3 + 2*s - 3)
+    r = RootLocusSeries(G)
+    assert isinstance(r.expr, TransferFunction)
+    assert r.label == ""
+    assert r.rendering_kw == {}
+    data = r.get_data()
+    # quick way to verify that I'm using ct.root_locus for data generation
+    assert len(data) == 2
+    # the following tests that there are 3 "branches" on the root locus plot
+    assert data[0].shape[1] == 3
+
+    r = RootLocusSeries(G, label="a", rendering_kw={0: 1})
+    assert isinstance(r.expr, TransferFunction)
+    assert r.label == "a"
+    assert r.rendering_kw == {0: 1}
+
+
+def test_sgrid_line_series():
+    xi = [0, 0.2, 0.5, 1]
+    wn = [1, 2, 3]
+    s = SGridLineSeries(xi, wn)
+    data = s.get_data()
+    assert data[0] == xi
+    assert data[1] == wn
+
+    s = symbols("s")
+    G1 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
+    r1 = RootLocusSeries(G1)
+    g1 = SGridLineSeries(xi, wn, series=r1)
+    assert g1.associated_rl_series == [r1]
+    data1 = [list(t) for t in g1.get_data()]
+    assert data1[0] != xi
+    assert data1[1] != wn
+
+    G2 = (s**2 - 4) / (s**3 + 2*s - 3)
+    r2 = RootLocusSeries(G2)
+    g2 = SGridLineSeries(xi, wn, series=[r1, r2])
+    assert g2.associated_rl_series == [r1, r2]
+    data2 = [list(t) for t in g2.get_data()]
+    assert data2[0] != xi and data2[0] != data1[0]
+    assert data2[1] != wn and data2[1] != data1[1]

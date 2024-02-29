@@ -31,3 +31,5 @@ ipywidgets. Refer to :ref:`interactive` module for more information.
 
 .. autofunction:: plot_nichols
 
+.. autofunction:: plot_root_locus
+

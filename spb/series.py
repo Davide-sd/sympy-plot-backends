@@ -9,7 +9,7 @@ from sympy import (
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
     atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Union, Interval, nsimplify, Set, Integral, hyper
+    Union, Interval, nsimplify, Set, Integral, hyper, fraction
 )
 from sympy.core.relational import Relational
 from sympy.calculus.util import continuous_domain
@@ -4026,3 +4026,308 @@ class Arrow3DSeries(Arrow2DSeries):
         return self._str_helper(
             f"3D arrow from {self.start} to {self.direction}"
         )
+
+
+class RootLocusSeries(Line2DBaseSeries):
+    _allowed_keys = ["sgrid"]
+
+    def __init__(self, tf, label="", **kwargs):
+        super().__init__(**kwargs)
+        from sympy.physics.control import TransferFunction
+        np = import_module('numpy')
+
+        if isinstance(tf, (Expr, TransferFunction)):
+            self._control_tf = self._sympy_to_control(tf)
+            if isinstance(tf, Expr):
+                n, d = fraction(tf)
+                tf = TransferFunction(n, d, tf.free_symbols.pop())
+            self._expr = tf
+            num = [float(t) for t in Poly(tf.num, tf.var).all_coeffs()]
+            den = [float(t) for t in Poly(tf.den, tf.var).all_coeffs()]
+            self._num = np.poly1d(np.array(num))
+            self._den = np.poly1d(np.array(den))
+        else:
+            self._control_tf = tf
+            self._num = np.poly1d(tf.num[0][0])
+            self._den = np.poly1d(tf.den[0][0])
+
+        self._label = str(self.expr) if label is None else label
+        self._latex_label = latex(self.expr) if label is None else label
+        self._xlim = None
+        self._ylim = None
+        self._zeros = None
+        self._poles = None
+
+        self._rl_kw = kwargs.get("rl_kw", {})
+        if self._rl_kw is None:
+            self._rl_kw = {}
+        self._rl_kw["plot"] = False
+        self._zeros_rk = kwargs.get("zeros_rk", dict())
+        self._poles_rk = kwargs.get("poles_rk", dict())
+
+    def _get_axis_limits(self):
+        if self._xlim is None:
+            np = import_module("numpy")
+            tf = self._expr
+            if isinstance(tf, (Expr, TransferFunction)):
+                self._bp = self._break_points(self._num, self._den)[1]
+                self._zeros = np.array([complex(t) for t in tf.zeros()])
+                self._poles = np.array([complex(t) for t in tf.poles()])
+            else:
+                self._bp = self._break_points(self._num, self._den)[1]
+                self._zeros = tf.zeros()
+                self._poles = tf.poles()
+            important_points = np.concatenate([self._zeros, self._poles, self._bp])
+            _min_x = min(important_points.real)
+            _max_x = max(important_points.real)
+            _min_y = min(important_points.imag)
+            _max_y = max(important_points.imag)
+            offset = 0.25
+            _min_x = _min_x - offset if np.isclose(_min_x, 0) else _min_x
+            _max_x = _max_x + offset if np.isclose(_max_x, 0) else _max_x
+            _min_y = _min_y - offset if np.isclose(_min_y, 0) else _min_y
+            _max_y = _max_y + offset if np.isclose(_max_y, 0) else _max_y
+            _xlim = [_min_x * 1.5, _max_x * 1.25]
+            _ylim = [_min_y * 1.5, _max_y * 1.5]
+            if np.isclose(*_xlim):
+                _xlim[0] -= 1
+                _xlim[1] += 1
+            if np.isclose(*_ylim):
+                _ylim[0] -= 1
+                _ylim[1] += 1
+            self._xlim = _xlim
+            self._ylim = _ylim
+        return self._xlim, self._ylim
+
+
+    @property
+    def zeros(self):
+        if self._zeros is None:
+            self._get_axis_limits()
+        return self._zeros
+
+    @property
+    def poles(self):
+        if self._poles is None:
+            self._get_axis_limits()
+        return self._poles
+
+    @property
+    def xlim(self):
+        if self._xlim is None:
+            self._get_axis_limits()
+        return self._xlim
+
+    @property
+    def ylim(self):
+        if self._ylim is None:
+            self._get_axis_limits()
+        return self._ylim
+
+    def _break_points(self, num, den):
+        """Extract break points over real axis and gains given these locations"""
+        # type: (np.poly1d, np.poly1d) -> (np.array, np.array)
+        dnum = num.deriv(m=1)
+        dden = den.deriv(m=1)
+        polynom = den * dnum - num * dden
+        real_break_pts = polynom.r
+        # don't care about infinite break points
+        real_break_pts = real_break_pts[num(real_break_pts) != 0]
+        k_break = -den(real_break_pts) / num(real_break_pts)
+        idx = k_break >= int(0)   # only positives gains
+        k_break = k_break[idx]
+        real_break_pts = real_break_pts[idx]
+        if len(k_break) == 0:
+            k_break = [0]
+            real_break_pts = den.roots
+        return k_break, real_break_pts
+
+    def _sympy_to_control(self, tf):
+        """Convert a sympy transfer function to a ``control.TransferFunction``.
+        """
+        from sympy.physics.control import TransferFunction
+        import control as ct
+
+        def _from_sympy_to_ct(tf):
+            if len(tf.free_symbols) != 1:
+                raise ValueError(
+                    "SymPy trasfer function must contain only one free-symbol.\n"
+                    "Received: %s" % tf.free_symbols
+                )
+            s = tf.free_symbols.pop()
+            n, d = [Poly(t, s).all_coeffs() for t in fraction(tf)]
+            n = [float(t) for t in n]
+            d = [float(t) for t in d]
+            return ct.tf(n, d)
+
+        if isinstance(tf, Expr):
+            return _from_sympy_to_ct(tf)
+        elif isinstance(tf, TransferFunction):
+            tf = tf.num / tf.den
+            return _from_sympy_to_ct(tf)
+        else:
+            raise TypeError(
+                "Transfer function's type not recognized.\n" +
+                "Received: type(tf) = %s\n" % type(tf) +
+                "Expected: Expr or sympy.physics.control.TransferFunction"
+            )
+
+    def get_data(self):
+        import control as ct
+        return ct.root_locus(self._control_tf, **self._rl_kw)
+
+
+class SGridLineSeries(BaseSeries):
+    """Represent a grid of damping ratio lines and natural frequency lines
+    on the s-plane. This data series implements two modes of operation:
+
+    1. User can provide xi, wn.
+    2. User can provide dummy xi, wn, and a list of associated RootLocusSeries.
+       When ``get_data()`` will be called, it first loops over the associated
+       root locus series in order to determine the axis limits of the visible
+       area. Then, it computes new values of xi, wn in order to get grid lines
+       "evenly" distributed on the available space.
+    """
+    def __init__(self, xi, wn, series=[], **kwargs):
+        super().__init__(**kwargs)
+        self.xi = xi
+        self.wn = wn
+        xlim = kwargs.get("xlim", None)
+        ylim = kwargs.get("ylim", None)
+        # Jupyter lab + "from sympy import *" convert all numbers to
+        # sympy's types. The algorithm expectes them to be `float`.
+        self._xlim = [float(t) for t in xlim] if xlim else None
+        self._ylim = [float(t) for t in ylim] if ylim else None
+        self.show_control_axis = kwargs.get("show_control_axis", False)
+        self.show_in_legend = kwargs.get("show_in_legend", False)
+
+        if not hasattr(series, "__iter__"):
+            series = [series]
+        if any(not isinstance(s, RootLocusSeries) for s in series):
+            raise TypeError(
+                "``SGridLineSeries`` only works with ``RootLocusSeries``."
+            )
+        self.associated_rl_series = series
+
+    def _get_axis_limits(self):
+        if self._xlim is None or self._ylim is None:
+            np = import_module("numpy")
+            xlims, ylims = [], []
+            for s in self.associated_rl_series:
+                xl, yl = s._get_axis_limits()
+                xlims.append(xl)
+                ylims.append(yl)
+
+            xlims = np.array(xlims)
+            ylims = np.array(ylims)
+            if (len(xlims) > 0) and (len(ylims) > 0):
+                _xlim = [np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1])]
+                _ylim = [np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1])]
+                if np.isclose(*_xlim):
+                    _xlim[0] -= 1
+                    _xlim[1] += 1
+                if np.isclose(*_ylim):
+                    _ylim[0] -= 1
+                    _ylim[1] += 1
+                self._xlim = _xlim
+                self._ylim = _ylim
+        return self._xlim, self._ylim
+
+    @property
+    def xlim(self):
+        if self._xlim is None:
+            self._get_axis_limits()
+        return self._xlim
+
+    @property
+    def ylim(self):
+        if self._ylim is None:
+            self._get_axis_limits()
+        return self._ylim
+
+    def _sgrid_default_xi(self, xlim, ylim):
+        """Return default list of damping coefficients
+
+        This function computes a list of damping coefficients based on the limits
+        of the graph.  A set of 4 damping coefficients are computed for the x-axis
+        and a set of three damping coefficients are computed for the y-axis
+        (corresponding to the normal 4:3 plot aspect ratio in `matplotlib`?).
+
+        Parameters
+        ----------
+        xlim : array_like
+            List of x-axis limits [min, max]
+        ylim : array_like
+            List of y-axis limits [min, max]
+
+        Returns
+        -------
+        zeta : list
+            List of default damping coefficients for the plot
+
+        """
+        np = import_module("numpy")
+
+        # Damping coefficient lines that intersect the x-axis
+        sep1 = -xlim[0] / 4
+        ang1 = [np.arctan((sep1*i)/ylim[1]) for i in np.arange(1, 4, 1)]
+
+        # Damping coefficient lines that intersection the y-axis
+        sep2 = ylim[1] / 3
+        ang2 = [np.arctan(-xlim[0]/(ylim[1]-sep2*i)) for i in np.arange(1, 3, 1)]
+
+        # Put the lines together and add one at -pi/2 (negative real axis)
+        angles = np.concatenate((ang1, ang2))
+
+        # Return the damping coefficients corresponding to these angles
+        zeta = np.sin(angles).tolist()
+        if not self.show_control_axis:
+            zeta += [0, 1]
+        return zeta
+
+    def _sgrid_default_wn(self, xlim, ylim, max_lines=7):
+        """Return default wn for root locus plot
+
+        This function computes a list of natural frequencies based on the grid
+        parameters of the graph.
+
+        Parameters
+        ----------
+        xloc : array_like
+            List of x-axis tick values
+        ylim : array_like
+            List of y-axis limits [min, max]
+        max_lines : int, optional
+            Maximum number of frequencies to generate (default = 7)
+
+        Returns
+        -------
+        wn : list
+            List of default natural frequencies for the plot
+
+        """
+        np = import_module("numpy")
+        available_width = 0 - xlim[0]
+        wn = np.linspace(0, abs(xlim[0]), max_lines)[1:-1]
+        return wn
+
+    def get_data(self):
+        """
+        Returns
+        =======
+        xi : list/array
+            Iterable containing the values of damping ratio lines.
+        wn : list/array
+            Iterable containing the values of natural frequency lines.
+        """
+        if (self.xlim is not None) and (self.ylim is not None):
+            xi = self._sgrid_default_xi(self.xlim, self.ylim)
+            wn = self._sgrid_default_wn(self.xlim, self.ylim)
+            return xi, wn
+
+        if len(self.associated_rl_series) > 0:
+            xlim, ylim = self._get_axis_limits()
+            xi = self._sgrid_default_xi(xlim, ylim)
+            wn = self._sgrid_default_wn(xlim, ylim)
+            return xi, wn
+        return self.xi, self.wn

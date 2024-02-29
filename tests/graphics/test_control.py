@@ -2,11 +2,11 @@ import numpy as np
 import pytest
 from spb import (
     control_axis, pole_zero, step_response, impulse_response, ramp_response,
-    bode_magnitude, bode_phase, nyquist, nichols
+    bode_magnitude, bode_phase, nyquist, nichols, sgrid, root_locus
 )
 from spb.series import (
     LineOver1DRangeSeries, HVLineSeries, List2DSeries, NyquistLineSeries,
-    NicholsLineSeries
+    NicholsLineSeries, SGridLineSeries, RootLocusSeries
 )
 from sympy.abc import a, b, c, d, e, s
 from sympy.physics.control.lti import TransferFunction
@@ -318,3 +318,87 @@ def test_nichols(tf, label, rkw, params):
     assert s.rendering_kw == {} if not rkw else rkw
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == {} if not params else params
+
+
+def test_sgrid():
+    series = sgrid()
+    assert len(series) == 1
+    d = series[0].get_data()
+    assert np.allclose(d[0], [.1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99])
+    assert np.allclose(d[1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+    series = sgrid(show_control_axis=False)
+    assert len(series) == 1
+    d = series[0].get_data()
+    assert np.allclose(d[0], [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99, 1])
+    assert np.allclose(d[1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+    series = sgrid(show_control_axis=True)
+    assert len(series) == 1
+    d = series[0].get_data()
+    assert np.allclose(d[0], [.1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99])
+    assert np.allclose(d[1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+    series = sgrid(xi=False, show_control_axis=False)
+    assert len(series) == 1
+    d = series[0].get_data()
+    assert len(d[0]) == 0
+    assert np.allclose(d[1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+    series = sgrid(wn=False, show_control_axis=False)
+    assert len(series) == 1
+    d = series[0].get_data()
+    assert np.allclose(d[0], [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99, 1])
+    assert len(d[1]) == 0
+
+    series = sgrid(xlim=(-11, 1), ylim=(-10, 10), show_control_axis=False)
+    assert len(series) == 1
+    d = series[0].get_data()
+    assert np.allclose(d[0], [
+        0.26515648302104233, 0.48191874977215593, 0.6363829547955636,
+        0.855197831554018, 0.9570244044334736, 0, 1])
+    assert np.allclose(d[1], [1.83333333, 3.66666667, 5.5, 7.33333333, 9.16666667])
+
+    series = sgrid(xlim=(-11, 1), ylim=(-10, 10), show_control_axis=True)
+    assert len(series) == 1
+    d = series[0].get_data()
+    assert np.allclose(d[0], [
+        0.26515648302104233, 0.48191874977215593, 0.6363829547955636,
+        0.855197831554018, 0.9570244044334736])
+    assert np.allclose(d[1], [1.83333333, 3.66666667, 5.5, 7.33333333, 9.16666667])
+
+
+def test_root_locus():
+    G1 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
+
+    series = root_locus(G1)
+    assert len(series) == 2
+    assert isinstance(series[0], SGridLineSeries)
+    assert isinstance(series[1], RootLocusSeries)
+    assert series[0].get_label() == ""
+    assert series[0].rendering_kw == {}
+
+    series = root_locus(G1, label="a", rendering_kw={"color": "k"})
+    assert len(series) == 2
+    assert isinstance(series[0], SGridLineSeries)
+    assert isinstance(series[1], RootLocusSeries)
+    assert series[1].get_label() == "a"
+    assert series[1].rendering_kw == {"color": "k"}
+
+    series = root_locus(G1, sgrid=True)
+    assert len(series) == 2
+    assert isinstance(series[0], SGridLineSeries)
+    assert isinstance(series[1], RootLocusSeries)
+
+    series1 = root_locus(G1, sgrid=False)
+    assert len(series1) == 1
+    assert isinstance(series1[0], RootLocusSeries)
+    data1 = series1[0].get_data()
+
+    series2 = root_locus(
+        G1, rl_kw={
+            "kvect": np.linspace(1e-03, 1000, 10)
+        }, sgrid=False)
+    assert len(series2) == 1
+    data2 = series2[0].get_data()
+    assert data1[0].shape != data2[0].shape

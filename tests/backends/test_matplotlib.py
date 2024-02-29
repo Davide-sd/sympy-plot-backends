@@ -13,6 +13,7 @@ from spb import (
     plot_parametric, plot_implicit, plot_list, plot_geometry,
     plot_complex_list
 )
+from spb.series import RootLocusSeries, SGridLineSeries
 from spb.series import SurfaceOver2DRangeSeries
 from sympy import (
     sin, cos, I, pi, Eq, exp, Circle, Polygon, sqrt, Matrix, Line, Segment,
@@ -110,7 +111,9 @@ from .make_tests import (
     make_test_plot_list_color_func,
     make_test_real_imag,
     make_test_arrow_2d,
-    make_test_arrow_3d
+    make_test_arrow_3d,
+    make_test_root_locus_1,
+    make_test_root_locus_2
 )
 
 
@@ -2348,3 +2351,34 @@ def test_arrow_3d():
     p.fig
     assert len(p.ax.patches) == 1
     assert p.ax.get_legend() is None
+
+
+def test_plot_root_locus_1():
+    p = make_test_root_locus_1(MB)
+    assert isinstance(p, MB)
+    assert len(p.series) == 2
+    assert isinstance(p[0], SGridLineSeries)
+    assert isinstance(p[1], RootLocusSeries)
+    ax = p.ax
+    assert len(ax.lines) == 20
+    assert ax.get_legend() is None
+    assert len(p.ax.texts) == 10 # number of sgrid labels on the plot
+    line_colors = {'#1f77b4', '0.75'}
+    assert all(l.get_color() in line_colors for l in ax.lines)
+
+
+def test_plot_root_locus_2():
+    p = make_test_root_locus_2(MB)
+    assert isinstance(p, MB)
+    assert len(p.series) == 3
+    assert isinstance(p[0], SGridLineSeries)
+    assert isinstance(p[1], RootLocusSeries)
+    assert isinstance(p[2], RootLocusSeries)
+    ax = p.ax
+    assert len(ax.lines) == 23
+    assert len(ax.get_legend().texts) == 2
+    assert p.ax.get_legend().texts[0].get_text() == "a"
+    assert p.ax.get_legend().texts[1].get_text() == "b"
+    assert len(p.ax.texts) == 10 # number of sgrid labels on the plot
+    line_colors = {'#1f77b4', '#ff7f0e', '0.75'}
+    assert all(l.get_color() in line_colors for l in ax.lines)

@@ -24,3 +24,5 @@ ipywidgets. Refer to :ref:`interactive` module for more information.
 .. autofunction:: nyquist
 .. autofunction:: nichols
 .. autofunction:: control_axis
+.. autofunction:: sgrid
+.. autofunction:: root_locus
