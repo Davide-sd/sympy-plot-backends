@@ -1333,6 +1333,11 @@ class List2DSeries(Line2DBaseSeries):
             self.list_x = np.array(list_x, dtype=np.float64)
             self.list_y = np.array(list_y, dtype=np.float64)
 
+        # used to store appropriate axis limits based on the data stored by
+        # this series.
+        self._xlim = None
+        self._ylim = None
+
         self._expr = (self.list_x, self.list_y)
         if not any(isinstance(t, np.ndarray) for t in [self.list_x, self.list_y]):
             self._check_fs()
@@ -1360,6 +1365,30 @@ class List2DSeries(Line2DBaseSeries):
         lx = np.array([t.evalf(subs=self.params) for t in lx], dtype=float)
         ly = np.array([t.evalf(subs=self.params) for t in ly], dtype=float)
         return self._eval_color_func_and_return(lx, ly)
+
+    def _get_axis_limits(self):
+        """Compute axis limits for this data series.
+        """
+        np = import_module("numpy")
+        lx, ly = self.get_data()
+        min_x, max_x = min(lx), max(lx)
+        min_y, max_y = min(ly), max(ly)
+        offset = 0.25
+        min_x = min_x - offset if np.isclose(min_x, 0) else min_x
+        max_x = max_x + offset if np.isclose(max_x, 0) else max_x
+        min_y = min_y - offset if np.isclose(min_y, 0) else min_y
+        max_y = max_y + offset if np.isclose(max_y, 0) else max_y
+        xlim = [min_x * 1.2, max_x * 1.2]
+        ylim = [min_y * 1.2, max_y * 1.2]
+        if np.isclose(*xlim):
+            xlim[0] -= 1
+            xlim[1] += 1
+        if np.isclose(*ylim):
+            ylim[0] -= 1
+            ylim[1] += 1
+        self._xlim = xlim
+        self._ylim = ylim
+        return xlim, ylim
 
     def _eval_color_func_and_return(self, *data):
         if self.use_cm and callable(self.color_func):
@@ -4057,6 +4086,7 @@ class RootLocusSeries(Line2DBaseSeries):
         self._ylim = None
         self._zeros = None
         self._poles = None
+        self._data = None
 
         self._rl_kw = kwargs.get("rl_kw", {})
         if self._rl_kw is None:
@@ -4066,6 +4096,9 @@ class RootLocusSeries(Line2DBaseSeries):
         self._poles_rk = kwargs.get("poles_rk", dict())
 
     def _get_axis_limits(self):
+        """Attempt to compute appropriate axis limits so that the plot
+        visualizes the important parts of the root locus.
+        """
         if self._xlim is None:
             np = import_module("numpy")
             tf = self._expr
@@ -4077,7 +4110,22 @@ class RootLocusSeries(Line2DBaseSeries):
                 self._bp = self._break_points(self._num, self._den)[1]
                 self._zeros = tf.zeros()
                 self._poles = tf.poles()
-            important_points = np.concatenate([self._zeros, self._poles, self._bp])
+
+            # root locus branches starts from poles and goes to zeros or
+            # infinity. Look for the branches that goes to zeros, find the
+            # maximum imaginary part. This will be used to compute ylim.
+            roots_array = self.get_data()[0]
+            max_heights = []
+            for p in self._poles:
+                for c in roots_array.T:
+                    if abs(p - c[0]) < 1e-03:
+                        if any(abs(z - c[-1]) < 1e-03 for z in self._zeros):
+                            i = np.argmax(np.abs(c.imag))
+                            max_heights.append(c[i])
+            min_heights = [-t for t in max_heights]
+
+            important_points = np.concatenate(
+                [self._zeros, self._poles, self._bp, max_heights, min_heights])
             _min_x = min(important_points.real)
             _max_x = max(important_points.real)
             _min_y = min(important_points.imag)
@@ -4087,8 +4135,8 @@ class RootLocusSeries(Line2DBaseSeries):
             _max_x = _max_x + offset if np.isclose(_max_x, 0) else _max_x
             _min_y = _min_y - offset if np.isclose(_min_y, 0) else _min_y
             _max_y = _max_y + offset if np.isclose(_max_y, 0) else _max_y
-            _xlim = [_min_x * 1.5, _max_x * 1.25]
-            _ylim = [_min_y * 1.5, _max_y * 1.5]
+            _xlim = [_min_x * 1.5, _max_x * 1.2]
+            _ylim = [_min_y * 1.2, _max_y * 1.2]
             if np.isclose(*_xlim):
                 _xlim[0] -= 1
                 _xlim[1] += 1
@@ -4173,8 +4221,10 @@ class RootLocusSeries(Line2DBaseSeries):
             )
 
     def get_data(self):
-        import control as ct
-        return ct.root_locus(self._control_tf, **self._rl_kw)
+        if self._data is None:
+            ct = import_module("control")
+            self._data = ct.root_locus(self._control_tf, **self._rl_kw)
+        return self._data
 
 
 class SGridLineSeries(BaseSeries):
@@ -4203,9 +4253,10 @@ class SGridLineSeries(BaseSeries):
 
         if not hasattr(series, "__iter__"):
             series = [series]
-        if any(not isinstance(s, RootLocusSeries) for s in series):
+        if any(not hasattr(s, "_get_axis_limits") for s in series):
             raise TypeError(
-                "``SGridLineSeries`` only works with ``RootLocusSeries``."
+                "``SGridLineSeries`` only works with data series exposing the "
+                "``_get_axis_limits`` method."
             )
         self.associated_rl_series = series
 
@@ -4331,3 +4382,132 @@ class SGridLineSeries(BaseSeries):
             wn = self._sgrid_default_wn(xlim, ylim)
             return xi, wn
         return self.xi, self.wn
+
+
+class ZGridLineSeries(BaseSeries):
+    """Represent a grid of damping ratio lines and natural frequency lines
+    on the z-plane.
+    """
+    def __init__(self, xi, wn, tp, ts, **kwargs):
+        super().__init__(**kwargs)
+        T = kwargs.get("T", None)
+        self.sampling_period = T if T is None else float(T)
+        self.xi = xi
+        self.wn = wn
+        self.tp = tp
+        self.ts = ts
+        self.show_control_axis = kwargs.get("show_control_axis", False)
+        self.show_in_legend = kwargs.get("show_in_legend", False)
+
+    def get_data(self):
+        """
+        Returns
+        =======
+        xi, wn, tp, ts : dict
+            Dictionaries containing the required numerical data to create
+            lines and annotations.
+        """
+        np = import_module("numpy")
+        if self.is_interactive:
+            xi = np.array([
+                t.evalf(subs=self.params) if isinstance(t, Expr) else t
+                for t in self.xi], dtype=float)
+            wn = np.array([
+                t.evalf(subs=self.params) if isinstance(t, Expr) else t
+                for t in self.wn], dtype=float)
+            tp = np.array([
+                t.evalf(subs=self.params) if isinstance(t, Expr) else t
+                for t in self.tp], dtype=float)
+            ts = np.array([
+                t.evalf(subs=self.params) if isinstance(t, Expr) else t
+                for t in self.ts], dtype=float)
+        else:
+            xi = np.array(self.xi, dtype=float)
+            wn = np.array(self.wn, dtype=float)
+            tp = np.array(self.tp, dtype=float)
+            ts = np.array(self.ts, dtype=float)
+
+        T = self.sampling_period
+        xi_dict = {k: {} for k in xi}
+        wn_dict = {k: {} for k in wn}
+        tp_dict = {k: {} for k in tp}
+        ts_dict = {k: {} for k in ts}
+
+        # damping ratio lines
+        for zeta in xi:
+            # Calculate in polar coordinates
+            factor = zeta/np.sqrt(1-zeta**2)
+            x = np.linspace(0, np.sqrt(1-zeta**2), 200)
+            ang = np.pi*x
+            mag = np.exp(-np.pi*factor*x)
+            # Draw upper part in retangular coordinates
+            xret = mag*np.cos(ang)
+            yret = mag*np.sin(ang)
+            xi_dict[zeta]["x1"] = xret
+            xi_dict[zeta]["y1"] = yret
+            # Draw lower part in retangular coordinates
+            xret = mag*np.cos(-ang)
+            yret = mag*np.sin(-ang)
+            xi_dict[zeta]["x2"] = xret
+            xi_dict[zeta]["y2"] = yret
+            # Annotation
+            an_i = int(len(xret)/2.5)
+            an_x = xret[an_i]
+            an_y = yret[an_i]
+            xi_dict[zeta]["lx"] = xret[an_i]
+            xi_dict[zeta]["ly"] = yret[an_i]
+            xi_dict[zeta]["label"] = str(round(zeta, 2))
+
+        # natural frequency lines
+        r_an = 1.075
+        fmt = '{:1.1f}' if len(wn) > 1 else '{:1.2f}'
+        for a in wn:
+            # Calculate in polar coordinates
+            x = np.linspace(-np.pi/2, np.pi/2, 200)
+            ang = np.pi*a*np.sin(x)
+            mag = np.exp(-np.pi*a*np.cos(x))
+            # Draw in retangular coordinates
+            xret = mag*np.cos(ang)
+            yret = mag*np.sin(ang)
+            wn_dict[a]["x"] = xret
+            wn_dict[a]["y"] = yret
+            # Annotation
+            angle = np.arctan2(yret[-1], xret[-1])
+            wn_dict[a]["lx"] = r_an * np.cos(angle)
+            wn_dict[a]["ly"] = r_an * np.sin(angle)
+            if T is None:
+                num = fmt.format(a)
+                an = r"$\frac{"+num+r"\pi}{T}$"
+            else:
+                an = "%.2f" % (a * np.pi * T)
+            wn_dict[a]["label"] = an
+
+        # peak time lines
+        angles = np.pi / tp
+        for _tp, a in zip(tp, angles):
+            tp_dict[_tp]["x"] = [0, np.cos(a)]
+            tp_dict[_tp]["y"] = [0, np.sin(a)]
+            # Annotation
+            tp_dict[_tp]["lx"] = r_an * np.cos(a)
+            tp_dict[_tp]["ly"] = r_an * np.sin(a)
+            an = _tp if not T else _tp * T
+            an = "%.2f" % an if not T else "%.2f s" % an
+            tp_dict[_tp]["label"] = an
+
+        # settling time lines
+        radius = np.exp(-4 / ts)
+        theta = np.linspace(0, 2*np.pi, 400)
+        ct = np.cos(theta)
+        st = np.sin(theta)
+        for _ts, r in zip(ts, radius):
+            ts_dict[_ts]["x"] = r * ct
+            ts_dict[_ts]["y"] = r * st
+            # Annotation
+            an_i = int(len(theta)*0.75)
+            ts_dict[_ts]["lx"] = ts_dict[_ts]["x"][an_i]
+            ts_dict[_ts]["ly"] = ts_dict[_ts]["y"][an_i]
+            an = _ts if not T else _ts * T
+            an = "%.2f" % an if not T else "%.2f s" % an
+            ts_dict[_ts]["label"] = an
+
+        return xi_dict, wn_dict, tp_dict, ts_dict

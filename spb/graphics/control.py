@@ -1,19 +1,20 @@
 from spb.defaults import TWO_D_B
 from spb.series import (
     List2DSeries, LineOver1DRangeSeries, HVLineSeries, NyquistLineSeries,
-    NicholsLineSeries, RootLocusSeries, SGridLineSeries
+    NicholsLineSeries, RootLocusSeries, SGridLineSeries, ZGridLineSeries
 )
-from spb.utils import prange
+from spb.utils import prange, is_number
 import numpy as np
 from sympy import (
     roots, exp, Poly, degree, re, im, apart, Dummy, symbols,
     I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt, cos, acos, sin,
-    floor, ceiling, frac, pi, fraction, Expr, Tuple, Float, Integer, Rational
+    floor, ceiling, frac, pi, fraction, Expr, Tuple
 )
 from sympy.physics.control.lti import (
     SISOLinearTimeInvariant, TransferFunctionMatrix, TransferFunction
 )
 from mergedeep import merge
+import warnings
 
 # TODO: remove this and update setup.py
 from packaging import version
@@ -36,7 +37,8 @@ __all__ = [
     'nyquist',
     'nichols',
     'root_locus',
-    'sgrid'
+    'sgrid',
+    'zgrid'
 ]
 
 
@@ -202,7 +204,7 @@ def _pole_zero_helper(
 
 def pole_zero(
     system, pole_markersize=10, zero_markersize=7, show_axes=False,
-    label=None, **kwargs
+    label=None, sgrid=False, zgrid=False, **kwargs
 ):
     """
     Computes the [Pole-Zero]_ plot (also known as PZ Plot or PZ Map) of
@@ -243,6 +245,12 @@ def pole_zero(
         of poles.
     label : str, optional
         The label to be shown on the legend.
+    sgrid : bool, optional
+        Generates a grid of constant damping ratios and natural frequencies
+        on the s-plane. Default to False.
+    zgrid : bool, optional
+        Generates a grid of constant damping ratios and natural frequencies
+        on the z-plane. Default to False.
     **kwargs :
         See ``plot`` for a list of keyword arguments to further customize
         the resulting figure.
@@ -266,8 +274,8 @@ def pole_zero(
         >>> tf1 = TransferFunction(
         ...     s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
         >>> graphics(
-        ...     pole_zero(tf1),
-        ...     xlabel="Real", ylabel="Imaginary"
+        ...     pole_zero(tf1, sgrid=True),
+        ...     grid=False, xlabel="Real", ylabel="Imaginary"
         ... )
         Plot object containing:
         [0]: 2D list plot
@@ -305,7 +313,22 @@ def pole_zero(
         system, label, False,
         pole_markersize, zero_markersize, **kwargs.copy()
     )
-    return series
+    grid = _get_grid_series(sgrid, zgrid, series)
+    return grid + series
+
+
+def _get_grid_series(sgrid, zgrid, existing_series):
+    grid = []
+    if sgrid and zgrid:
+        warnings.warn(
+            "``sgrid=True`` and ``zgrid=True`` is not supported. "
+            "Automatically setting ``zgrid=False``.")
+        zgrid = False
+    if sgrid:
+        grid = sgrid_function(series=existing_series)
+    if zgrid:
+        grid = zgrid_function()
+    return grid
 
 
 def _step_response_helper(
@@ -1369,7 +1392,7 @@ def nichols(system, label=None, rendering_kw=None, **kwargs):
 
 
 def root_locus(system, label=None, rendering_kw=None, rl_kw={},
-    sgrid=True, **kwargs):
+    sgrid=True, zgrid=False, **kwargs):
     """Root Locus plot for a system.
 
     Parameters
@@ -1395,8 +1418,12 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
         A dictionary of keyword arguments to be passed to
         ``control.root_locus``.
     sgrid : bool, optional
-        Generates a grid of constant damping factors and natural frequencies
-        for pole-zero and root locus plots. Default to True.
+        Generates a grid of constant damping ratios and natural frequencies
+        on the s-plane. Default to True.
+    zgrid : bool, optional
+        Generates a grid of constant damping ratios and natural frequencies
+        on the z-plane. Default to False. If ``zgrid=True``, then it will
+        automatically sets ``sgrid=False``.
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line`.
@@ -1411,8 +1438,8 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     Examples
     ========
 
-    Shows the default grid lines, as well as a custom damping ratio line and
-    a root locus plot.
+    Plot the root locus of a system on the s-plane, also showing a custom
+    damping ratio line.
 
     .. plot::
        :context: reset
@@ -1425,7 +1452,7 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
        >>> graphics(
        ...     root_locus(G),
        ...     sgrid(xi=0.92, wn=False, rendering_kw={"color": "r"}),
-       ...     grid=False)
+       ...     grid=False, xlabel="Real", ylabel="Imaginary")
 
     See Also
     ========
@@ -1442,11 +1469,14 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
         system, label=label, rendering_kw=rendering_kw, rl_kw=rl_kw,
         **kwargs.copy())
 
-    sgrid_series = []
+    grid_series = []
+    if zgrid:
+        sgrid = False
+        grid_series = zgrid_function(show_control_axis=True)
     if sgrid:
-        sgrid_series = sgrid_function(show_control_axis=True, series=rls)
+        grid_series = sgrid_function(show_control_axis=True, series=rls)
 
-    return sgrid_series + [rls]
+    return grid_series + [rls]
 
 
 def sgrid(xi=None, wn=None, xlim=None, ylim=None, show_control_axis=True,
@@ -1470,7 +1500,8 @@ def sgrid(xi=None, wn=None, xlim=None, ylim=None, show_control_axis=True,
     Examples
     ========
 
-    Shows the default grid lines, as well as a custom damping ratio line.
+    Shows the default grid lines, as well as a custom damping ratio line and
+    a custom natural frequency line.
 
     .. plot::
        :context: reset
@@ -1483,14 +1514,18 @@ def sgrid(xi=None, wn=None, xlim=None, ylim=None, show_control_axis=True,
        ...     sgrid(xi=0.85, wn=False,
        ...         rendering_kw={"color": "r", "linestyle": "-"},
        ...         show_control_axis=False),
+       ...     sgrid(xi=False, wn=4.5,
+       ...         rendering_kw={"color": "b", "linestyle": "-"},
+       ...         show_control_axis=False),
        ...     grid=False, xlim=(-8.5, 1), ylim=(-5, 5)
        ... )
 
-    Auto-compute damping ratios and natural frequencies to produce "evenly"
-    distributed grid lines:
+    In order to auto-generate grid lines over a specified area of of the
+    s-plane, the ``xlim`` and ``ylim`` keyword arguments must be provided also
+    to the ``sgrid`` function:
 
     .. plot::
-       :context: reset
+       :context: close-figs
        :format: doctest
        :include-source: True
 
@@ -1500,6 +1535,10 @@ def sgrid(xi=None, wn=None, xlim=None, ylim=None, show_control_axis=True,
        ...     sgrid(xlim=xlim, ylim=ylim),
        ...     grid=False, xlim=xlim, ylim=ylim
        ... )
+
+    See Also
+    ========
+    zgrid
 
     """
     if (xi is not None) and (wn is False):
@@ -1549,3 +1588,141 @@ def sgrid(xi=None, wn=None, xlim=None, ylim=None, show_control_axis=True,
 
 
 sgrid_function = sgrid
+
+
+def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
+    show_control_axis=True, rendering_kw=None, **kwargs):
+    """Create the s-grid of constant damping ratios and natural frequencies.
+
+    Parameters
+    ==========
+
+    xi : iterable or float, optional
+        Damping ratios. Must be ``0 <= xi <= 1``.
+        If ``None``, default damping ratios will be used. If ``False``,
+        no damping ratios will be visualized.
+    wn : iterable or float, optional
+        Normalized natural frequencies.
+        If ``None``, default natural frequencies will be used. If ``False``,
+        no natural frequencies will be visualized.
+    tp : iterable or float, optional
+        Normalized peak times.
+    ts : iterable or float, optional
+        Normalized settling times.
+    T : float or None, optional
+        Sampling period.
+    show_control_axis : bool, optional
+        Shows an horizontal and vertical grid lines crossing at the origin.
+        Default to True.
+
+    Examples
+    ========
+
+    Shows the default grid lines, as well as a custom damping ratio line and
+    natural frequency line.
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from spb import *
+       >>> graphics(
+       ...     zgrid(),
+       ...     zgrid(xi=0.05, wn=False, rendering_kw={"color": "r", "linestyle": "-"}),
+       ...     zgrid(xi=False, wn=0.25, rendering_kw={"color": "b", "linestyle": "-"}),
+       ...     grid=False, aspect="equal", xlim=(-1.2, 1.2), ylim=(-1.2, 1.2))
+
+    Shows a grid of settling times and peak times:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> graphics(
+       ...     zgrid(xi=False, wn=False, tp=[3, 5, 7, 10, 20], ts=[2, 3, 5, 10, 20]),
+       ...     zgrid(xi=False, wn=False, tp=4, rendering_kw={"color": "r"}),
+       ...     zgrid(xi=False, wn=False, ts=7, rendering_kw={"color": "b"}),
+       ...     grid=False, aspect="equal", xlim=(-1.2, 1.2), ylim=(-1.2, 1.2))
+
+    Interactive-widgets plot of z-grid lines:
+
+    .. panel-screenshot::
+       :small-size: 800, 725
+
+       from sympy import symbols
+       from spb import *
+       xi, wn, Tp, Ts = symbols("xi, omega_n, T_p, T_s")
+       graphics(
+           zgrid(),
+           zgrid(xi=xi, wn=False, rendering_kw={"color": "r", "linestyle": "-"}, params={xi: (0.05, 0, 1)}),
+           zgrid(wn=wn, xi=False, rendering_kw={"color": "g", "linestyle": "-"}, params={wn: (0.45, 0, 1)}),
+           zgrid(wn=False, xi=False, tp=Tp, rendering_kw={"color": "b", "linestyle": "-"}, params={Tp: (3, 0, 20)}),
+           zgrid(wn=False, xi=False, ts=Ts, rendering_kw={"color": "m", "linestyle": "-"}, params={Ts: (5, 0, 20)}),
+           grid=False, aspect="equal", xlabel="Real", ylabel="Imaginary")
+
+    See Also
+    ========
+    sgrid
+
+    """
+    if (
+        ((xi is not None) and (wn is False)) or
+        ((wn is not None) and (xi is False))
+    ):
+        # If we are showing a specific value of damping ratio or natural
+        # frequency, don't show control axis. They are likely already shown
+        # by some other ZGridLineSeries.
+        show_control_axis = False
+
+    if xi is None:
+        xi = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9]
+    elif xi is False:
+        xi = []
+    elif not hasattr(xi, "__iter__"):
+        xi = [xi]
+        if any(is_number(t) and t > 1 for t in xi):
+            raise ValueError(
+                "Damping ratios must be: 0 <= xi <= 1."
+            )
+
+    if wn is None:
+        wn = [.1, .2, .3, .4, .5, .6, .7, .8, .9, 1]
+    elif wn is False:
+        wn = []
+    elif not hasattr(wn, "__iter__"):
+        wn = [wn]
+        if any(is_number(t) and t > 1 for t in wn):
+            raise ValueError(
+                "Natural frequencies must be normalized: 0 <= wn <= 1."
+            )
+
+    if not tp:
+        tp = []
+    elif not hasattr(tp, "__iter__"):
+        tp = [tp]
+
+    if not ts:
+        ts = []
+    elif not hasattr(ts, "__iter__"):
+        ts = [ts]
+
+    params = kwargs.get("params", None)
+    if (
+        any(isinstance(t, Expr) and (not is_number(t)) for t in xi + wn) and
+        (params is None)
+    ):
+        raise ValueError(
+            "The provided natural frequencies or damping ratios "
+            "contains symbolic expressions, but ``params`` was not "
+            "provided. Cannot continue."
+        )
+
+    return [
+        ZGridLineSeries(xi, wn, tp, ts, T=T, rendering_kw=rendering_kw,
+            show_control_axis=show_control_axis, **kwargs)
+    ]
+
+
+zgrid_function = zgrid

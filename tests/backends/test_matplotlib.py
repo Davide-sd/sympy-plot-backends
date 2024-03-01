@@ -13,7 +13,7 @@ from spb import (
     plot_parametric, plot_implicit, plot_list, plot_geometry,
     plot_complex_list
 )
-from spb.series import RootLocusSeries, SGridLineSeries
+from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
 from spb.series import SurfaceOver2DRangeSeries
 from sympy import (
     sin, cos, I, pi, Eq, exp, Circle, Polygon, sqrt, Matrix, Line, Segment,
@@ -2354,7 +2354,7 @@ def test_arrow_3d():
 
 
 def test_plot_root_locus_1():
-    p = make_test_root_locus_1(MB)
+    p = make_test_root_locus_1(MB, True, False)
     assert isinstance(p, MB)
     assert len(p.series) == 2
     assert isinstance(p[0], SGridLineSeries)
@@ -2363,6 +2363,18 @@ def test_plot_root_locus_1():
     assert len(ax.lines) == 20
     assert ax.get_legend() is None
     assert len(p.ax.texts) == 10 # number of sgrid labels on the plot
+    line_colors = {'#1f77b4', '0.75'}
+    assert all(l.get_color() in line_colors for l in ax.lines)
+
+    p = make_test_root_locus_1(MB, False, True)
+    assert isinstance(p, MB)
+    assert len(p.series) == 2
+    assert isinstance(p[0], ZGridLineSeries)
+    assert isinstance(p[1], RootLocusSeries)
+    ax = p.ax
+    assert len(ax.lines) == 35
+    assert ax.get_legend() is None
+    assert len(p.ax.texts) == 20 # number of sgrid labels on the plot
     line_colors = {'#1f77b4', '0.75'}
     assert all(l.get_color() in line_colors for l in ax.lines)
 

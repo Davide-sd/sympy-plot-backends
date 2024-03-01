@@ -1199,10 +1199,11 @@ def make_test_arrow_3d(B, lbl, rkw, sil):
     )
 
 
-def make_test_root_locus_1(B):
+def make_test_root_locus_1(B, sgrid, zgrid):
     s = symbols("s")
     G = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
-    return plot_root_locus(G, backend=B, show=False)
+    return plot_root_locus(G, backend=B, show=False,
+        sgrid=sgrid, zgrid=zgrid)
 
 
 def make_test_root_locus_2(B):

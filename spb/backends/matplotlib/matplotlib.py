@@ -6,7 +6,8 @@ from spb.backends.matplotlib.renderers import (
     Implicit2DRenderer, ComplexRenderer, ContourRenderer, SurfaceRenderer,
     GeometryRenderer, GenericRenderer, HVLineRenderer,
     NyquistRenderer, NicholsRenderer, Arrow2DRendererFancyArrowPatch,
-    Arrow3DRendererFancyArrowPatch, RootLocusRenderer, SGridLineRenderer
+    Arrow3DRendererFancyArrowPatch, RootLocusRenderer, SGridLineRenderer,
+    ZGridLineRenderer
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
@@ -18,7 +19,8 @@ from spb.series import (
     ContourSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     PlaneSeries, GeometrySeries, GenericDataSeries,
     HVLineSeries, NyquistLineSeries, NicholsLineSeries,
-    Arrow2DSeries, Arrow3DSeries, RootLocusSeries, SGridLineSeries
+    Arrow2DSeries, Arrow3DSeries, RootLocusSeries, SGridLineSeries,
+    ZGridLineSeries
 )
 from sympy.external import import_module
 from packaging import version
@@ -174,7 +176,8 @@ class MatplotlibBackend(Plot):
         Arrow2DSeries: Arrow2DRendererFancyArrowPatch,
         Arrow3DSeries: Arrow3DRendererFancyArrowPatch,
         RootLocusSeries: RootLocusRenderer,
-        SGridLineSeries: SGridLineRenderer
+        SGridLineSeries: SGridLineRenderer,
+        ZGridLineSeries: ZGridLineRenderer
     }
 
     pole_line_kw = {"color": "k", "linestyle": ":"}
@@ -527,7 +530,7 @@ class MatplotlibBackend(Plot):
                 any(s.is_contour for s in self.series)
                 or any(s.is_vector and (not s.is_3D) for s in self.series)
                 or any(s.is_2Dline and s.is_parametric for s in self.series)
-                or any(isinstance(s, RootLocusSeries) for s in self.series)
+                or any(hasattr(s, "_get_axis_limits") for s in self.series)
             ):
                 xlims = np.array(xlims)
                 xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
@@ -536,7 +539,7 @@ class MatplotlibBackend(Plot):
                 any(s.is_contour for s in self.series)
                 or any(s.is_vector and (not s.is_3D) for s in self.series)
                 or any(s.is_2Dline and s.is_parametric for s in self.series)
-                or any(isinstance(s, RootLocusSeries) for s in self.series)
+                or any(hasattr(s, "_get_axis_limits") for s in self.series)
             ):
                 ylims = np.array(ylims)
                 ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))

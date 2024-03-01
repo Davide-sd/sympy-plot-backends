@@ -10,7 +10,7 @@ from spb.series import (
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
     _set_discretization_points, ColoredLineOver1DRangeSeries,
     HVLineSeries, Arrow2DSeries, Arrow3DSeries, RootLocusSeries,
-    SGridLineSeries
+    SGridLineSeries, ZGridLineSeries
 )
 from spb import plot3d_spherical
 from sympy.abc import j, k, l
@@ -4160,3 +4160,31 @@ def test_sgrid_line_series():
     data2 = [list(t) for t in g2.get_data()]
     assert data2[0] != xi and data2[0] != data1[0]
     assert data2[1] != wn and data2[1] != data1[1]
+
+
+def test_zgrid_line_series():
+    xi = [0, 0.2, 0.5, 1]
+    wn = [1, 2, 3]
+    s = ZGridLineSeries(xi, wn, [], [])
+    data = s.get_data()
+    assert len(data) == 4
+    assert all(isinstance(d, dict) for d in data)
+    assert np.allclose(list(data[0].keys()), xi)
+    assert np.allclose(list(data[1].keys()), wn)
+    assert all(len(d) == 0 for d in data[2:])
+
+    tp = [2, 3, 5, 10]
+    ts = [3, 7, 9, 11]
+    s = ZGridLineSeries(xi, wn, tp, ts)
+    data = s.get_data()
+    assert np.allclose(list(data[2].keys()), tp)
+    assert np.allclose(list(data[3].keys()), ts)
+
+    assert all(k in list(data[0].values())[0].keys()
+        for k in ["x1", "x2", "y1", "y2", "label", "lx", "ly"])
+    assert all(k in list(data[1].values())[0].keys()
+        for k in ["x", "y", "label", "lx", "ly"])
+    assert all(k in list(data[2].values())[0].keys()
+        for k in ["x", "y", "label", "lx", "ly"])
+    assert all(k in list(data[3].values())[0].keys()
+        for k in ["x", "y", "label", "lx", "ly"])

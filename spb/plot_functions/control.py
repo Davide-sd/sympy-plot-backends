@@ -4,7 +4,8 @@ from spb.graphics.control import (
     _nichols_helper, _nyquist_helper, _step_response_helper,
     _ramp_response_helper, _impulse_response_helper,
     _bode_magnitude_helper, _bode_phase_helper,
-    control_axis, root_locus, sgrid as sgrid_function
+    control_axis, root_locus, sgrid as sgrid_function,
+    _get_grid_series
 )
 from spb.interactive import create_interactive_plot
 from spb.plotgrid import plotgrid
@@ -87,7 +88,7 @@ def _create_title_helper(systems, base):
 
 def plot_pole_zero(
     *systems, pole_markersize=10, zero_markersize=7, show_axes=False,
-    **kwargs
+    sgrid=False, zgrid=False, **kwargs
 ):
     """
     Returns the [Pole-Zero]_ plot (also known as PZ Plot or PZ Map) of
@@ -129,6 +130,12 @@ def plot_pole_zero(
     p_rendering_kw : dict
         A dictionary of keyword arguments to further customize the appearance
         of poles.
+    sgrid : bool, optional
+        Generates a grid of constant damping ratios and natural frequencies
+        on the s-plane. Default to False.
+    zgrid : bool, optional
+        Generates a grid of constant damping ratios and natural frequencies
+        on the z-plane. Default to False.
     **kwargs : dict
         Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
         keyword arguments to customize the appearances of the figure (title,
@@ -187,11 +194,14 @@ def plot_pole_zero(
             pole_markersize, zero_markersize, **kwargs.copy()
         ))
 
+    grid = _get_grid_series(sgrid, zgrid, series)
+    if sgrid or zgrid:
+        kwargs.setdefault("grid", False)
     kwargs.setdefault("xlabel", "Real axis")
     kwargs.setdefault("ylabel", "Imaginary axis")
     kwargs.setdefault("title", _create_title_helper(
         systems, "Poles and Zeros"))
-    return _create_plot_helper(series, show_axes, **kwargs)
+    return _create_plot_helper(grid + series, show_axes, **kwargs)
 
 
 pole_zero_plot = plot_pole_zero
@@ -1123,8 +1133,12 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
         A dictionary of keyword arguments to be passed to
         ``control.root_locus``.
     sgrid : bool, optional
-        Generates a grid of constant damping factors and natural frequencies
-        for pole-zero and root locus plots. Default to True.
+        Generates a grid of constant damping ratios and natural frequencies
+        on the s-plane. Default to True.
+    zgrid : bool, optional
+        Generates a grid of constant damping ratios and natural frequencies
+        on the z-plane. Default to False. If ``zgrid=True``, then it will
+        automatically sets ``sgrid=False``.
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line`.
@@ -1133,7 +1147,7 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
     Example
     =======
 
-    Plotting a single transfer function:
+    Plotting a single transfer function on the s-plane:
 
     .. plot::
        :context: reset
@@ -1145,24 +1159,40 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
        >>> G1 = (s**2 - 4) / (s**3 + 2*s - 3)
        >>> plot_root_locus(G1)                                 # doctest: +SKIP
 
+     Plotting a single transfer function on the z-plane:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> G2 = (s**2 + 1) / (s**4 + 4*s**3 + 6*s**2 + 5*s + 2)
+       >>> plot_root_locus(G2, zgrid=True)                     # doctest: +SKIP
+
+
     Plotting multiple transfer functions:
 
     .. plot::
-       :context: reset
+       :context: close-figs
        :format: doctest
        :include-source: True
 
        >>> from sympy.abc import s
        >>> from spb import plot_root_locus
-       >>> G2 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
-       >>> plot_root_locus(G1, G2)                             # doctest: +SKIP
+       >>> G3 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
+       >>> plot_root_locus(G1, G3)                             # doctest: +SKIP
 
     """
     systems = _unpack_systems(systems)
     kwargs.setdefault("grid", False)
+    kwargs.setdefault("xlabel", "Real")
+    kwargs.setdefault("ylabel", "Imaginary")
     rls = [root_locus(s, l, sgrid=False, zgrid=False, **kwargs)[0]
         for s, l in systems]
-    sgrid_series = []
-    if sgrid:
-        sgrid_series = sgrid_function(series=rls)
-    return _create_plot_helper(sgrid_series + rls, False, **kwargs)
+    if sgrid and zgrid:
+        # user has explicetly types zgrid=True. Disable sgrid.
+        sgrid = False
+    grid = _get_grid_series(sgrid, zgrid, rls)
+    if sgrid or zgrid:
+        kwargs.setdefault("grid", False)
+    return _create_plot_helper(grid + rls, False, **kwargs)

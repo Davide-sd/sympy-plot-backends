@@ -17,6 +17,7 @@ from spb.backends.matplotlib.renderers.arrow2d import (
 )
 from spb.backends.matplotlib.renderers.arrow3d import Arrow3DRendererFancyArrowPatch
 from spb.backends.matplotlib.renderers.sgrid import SGridLineRenderer
+from spb.backends.matplotlib.renderers.zgrid import ZGridLineRenderer
 
 __all__ = [
     "Line2DRenderer", "Line3DRenderer", "ContourRenderer", "SurfaceRenderer",
@@ -24,5 +25,6 @@ __all__ = [
     "Vector3DRenderer", "ComplexRenderer", "GenericRenderer",
     "HVLineRenderer", "NyquistRenderer", "NicholsRenderer",
     "Arrow2DRendererQuivers", "Arrow2DRendererFancyArrowPatch",
-    "Arrow3DRendererFancyArrowPatch", "RootLocusRenderer", "SGridLineRenderer"
+    "Arrow3DRendererFancyArrowPatch", "RootLocusRenderer", "SGridLineRenderer",
+    "ZGridLineRenderer"
 ]

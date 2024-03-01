@@ -106,7 +106,7 @@ class Line2DRenderer(MatplotlibRenderer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.series.use_cm:
+        if self.series.use_cm or hasattr(self.series, "_xlim"):
             self._sal = True
 
     def draw(self):
@@ -116,6 +116,9 @@ class Line2DRenderer(MatplotlibRenderer):
         # LineCollection is present, so no need to compute them here.
         if not self.series.is_2Dline:
             self._set_axis_limits(data)
+
+        if hasattr(self.series, "_xlim") and (self.series._xlim is not None):
+            self._set_axis_limits([self.series._xlim, self.series._ylim])
 
         for draw_method in self.draw_update_map.keys():
             self.handles.append(

@@ -6,7 +6,7 @@ from spb import (
 )
 from spb.series import (
     LineOver1DRangeSeries, HVLineSeries, List2DSeries, NyquistLineSeries,
-    NicholsLineSeries, SGridLineSeries, RootLocusSeries
+    NicholsLineSeries, SGridLineSeries, RootLocusSeries, ZGridLineSeries
 )
 from sympy.abc import a, b, c, d, e, s
 from sympy.physics.control.lti import TransferFunction
@@ -402,3 +402,12 @@ def test_root_locus():
     assert len(series2) == 1
     data2 = series2[0].get_data()
     assert data1[0].shape != data2[0].shape
+
+    series = root_locus(G1, sgrid=False)
+    assert len(series) == 1
+    assert isinstance(series[0], RootLocusSeries)
+
+    series = root_locus(G1, sgrid=False, zgrid=True)
+    assert len(series) == 2
+    assert isinstance(series[0], ZGridLineSeries)
+    assert isinstance(series[1], RootLocusSeries)
