@@ -144,8 +144,10 @@ def plot_pole_zero(
     Examples
     ========
 
+    Plotting poles and zeros on the s-plane:
+
     .. plot::
-        :context: close-figs
+        :context: reset
         :format: doctest
         :include-source: True
 
@@ -154,7 +156,19 @@ def plot_pole_zero(
         >>> from spb import plot_pole_zero
         >>> tf1 = TransferFunction(
         ...     s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
-        >>> plot_pole_zero(tf1)
+        >>> plot_pole_zero(tf1, sgrid=True)
+        Plot object containing:
+        [0]: 2D list plot
+        [1]: 2D list plot
+
+    Plotting poles and zeros on the z-plane:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> plot_pole_zero(tf1, zgrid=True)
         Plot object containing:
         [0]: 2D list plot
         [1]: 2D list plot
@@ -1144,8 +1158,8 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
         :func:`~spb.graphics.functions_2d.line`.
         Refer to its documentation for a for a full list of keyword arguments.
 
-    Example
-    =======
+    Examples
+    ========
 
     Plotting a single transfer function on the s-plane:
 
@@ -1159,7 +1173,7 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
        >>> G1 = (s**2 - 4) / (s**3 + 2*s - 3)
        >>> plot_root_locus(G1)                                 # doctest: +SKIP
 
-     Plotting a single transfer function on the z-plane:
+    Plotting a single transfer function on the z-plane:
 
     .. plot::
        :context: close-figs

@@ -1479,29 +1479,42 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     return grid_series + [rls]
 
 
-def sgrid(xi=None, wn=None, xlim=None, ylim=None, show_control_axis=True,
-    **kwargs):
+def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None, show_control_axis=True,
+    rendering_kw=None, **kwargs):
     """Create the s-grid of constant damping ratios and natural frequencies.
 
     Parameters
     ==========
 
-    xi : iterable or float
-        A list of damping ratios.
-    wn : iterable or float
-        A list of natural frequencies.
+    xi : iterable or float, optional
+        Damping ratios. Must be ``0 <= xi <= 1``.
+        If ``None``, default damping ratios will be used. If ``False``,
+        no damping ratios will be visualized.
+    wn : iterable or float, optional
+        Natural frequencies.
+        If ``None``, default natural frequencies will be used. If ``False``,
+        no natural frequencies will be visualized.
+    tp : iterable or float, optional
+        Peak times.
+    ts : iterable or float, optional
+        Settling times.
     show_control_axis : bool, optional
         Shows an horizontal and vertical grid lines crossing at the origin.
         Default to True.
     xlim, ylim : 2-elements tuple
         If provided, compute damping ratios and natural frequencies in order
         to display "evenly" distributed grid lines on the plane.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
 
     Examples
     ========
 
-    Shows the default grid lines, as well as a custom damping ratio line and
-    a custom natural frequency line.
+    Shows the default grid lines, as well as a custom damping ratio line,
+    a custom natural frequency line, a custom peak time line and a custom
+    settling time line.
 
     .. plot::
        :context: reset
@@ -1515,10 +1528,15 @@ def sgrid(xi=None, wn=None, xlim=None, ylim=None, show_control_axis=True,
        ...         rendering_kw={"color": "r", "linestyle": "-"},
        ...         show_control_axis=False),
        ...     sgrid(xi=False, wn=4.5,
+       ...         rendering_kw={"color": "g", "linestyle": "-"},
+       ...         show_control_axis=False),
+       ...     sgrid(xi=False, wn=False, tp=1,
        ...         rendering_kw={"color": "b", "linestyle": "-"},
        ...         show_control_axis=False),
-       ...     grid=False, xlim=(-8.5, 1), ylim=(-5, 5)
-       ... )
+       ...     sgrid(xi=False, wn=False, ts=1,
+       ...         rendering_kw={"color": "m", "linestyle": "-"},
+       ...         show_control_axis=False),
+       ...     grid=False, xlim=(-8.5, 1), ylim=(-5, 5))
 
     In order to auto-generate grid lines over a specified area of of the
     s-plane, the ``xlim`` and ``ylim`` keyword arguments must be provided also
@@ -1570,20 +1588,31 @@ def sgrid(xi=None, wn=None, xlim=None, ylim=None, show_control_axis=True,
     elif not hasattr(wn, "__iter__"):
         wn = [wn]
 
-    if any(isinstance(t, Expr) and (len(t.free_symbols) > 0) for t in xi):
-        raise TypeError(
-            f"Damping ratios must be numeric.\nReceived: %s" % xi
+    if not tp:
+        tp = []
+    elif not hasattr(tp, "__iter__"):
+        tp = [tp]
+
+    if not ts:
+        ts = []
+    elif not hasattr(ts, "__iter__"):
+        ts = [ts]
+
+    params = kwargs.get("params", None)
+    if (
+        any(isinstance(t, Expr) and (not is_number(t)) for t in xi+wn+tp+ts)
+        and (params is None)
+    ):
+        raise ValueError(
+            "The provided natural frequencies or damping ratios "
+            "contains symbolic expressions, but ``params`` was not "
+            "provided. Cannot continue."
         )
-    if any(isinstance(t, Expr) and (len(t.free_symbols) > 0) for t in wn):
-        raise TypeError(
-            f"Natural frequencies must be numeric.\nReceived: %s" % wn
-        )
-    xi = np.array(xi, dtype=float)
-    wn = np.array(wn, dtype=float)
 
     return [
-        SGridLineSeries(xi, wn, xlim=xlim, ylim=ylim,
-        show_control_axis=show_control_axis, **kwargs)
+        SGridLineSeries(xi, wn, tp, ts, xlim=xlim, ylim=ylim,
+            show_control_axis=show_control_axis,
+            rendering_kw=rendering_kw, **kwargs)
     ]
 
 
@@ -1614,6 +1643,10 @@ def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
     show_control_axis : bool, optional
         Shows an horizontal and vertical grid lines crossing at the origin.
         Default to True.
+    rendering_kw : dict, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
 
     Examples
     ========
@@ -1710,8 +1743,8 @@ def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
 
     params = kwargs.get("params", None)
     if (
-        any(isinstance(t, Expr) and (not is_number(t)) for t in xi + wn) and
-        (params is None)
+        any(isinstance(t, Expr) and (not is_number(t)) for t in xi+wn+tp+ts)
+        and (params is None)
     ):
         raise ValueError(
             "The provided natural frequencies or damping ratios "

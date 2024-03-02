@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from spb import (
     control_axis, pole_zero, step_response, impulse_response, ramp_response,
-    bode_magnitude, bode_phase, nyquist, nichols, sgrid, root_locus
+    bode_magnitude, bode_phase, nyquist, nichols, sgrid, root_locus, zgrid
 )
 from spb.series import (
     LineOver1DRangeSeries, HVLineSeries, List2DSeries, NyquistLineSeries,
@@ -323,49 +323,82 @@ def test_nichols(tf, label, rkw, params):
 def test_sgrid():
     series = sgrid()
     assert len(series) == 1
-    d = series[0].get_data()
-    assert np.allclose(d[0], [.1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99])
-    assert np.allclose(d[1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    assert isinstance(series[0], SGridLineSeries)
+    assert series[0].show_control_axis
+    xi_dict, wn_dict, tp_dict, ts_dict = series[0].get_data()
+    xi_ret = [k[0] for k in xi_dict.keys()]
+    wn_ret = list(wn_dict.keys())
+    assert np.allclose(xi_ret, [.1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99])
+    assert np.allclose(wn_ret, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    assert (len(tp_dict) == 0) and (len(ts_dict) == 0)
 
     series = sgrid(show_control_axis=False)
     assert len(series) == 1
-    d = series[0].get_data()
-    assert np.allclose(d[0], [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99, 1])
-    assert np.allclose(d[1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    assert not series[0].show_control_axis
+    xi_dict, wn_dict, tp_dict, ts_dict = series[0].get_data()
+    xi_ret = [k[0] for k in xi_dict.keys()]
+    wn_ret = list(wn_dict.keys())
+    assert np.allclose(xi_ret, [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99, 1])
+    assert np.allclose(wn_ret, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-    series = sgrid(show_control_axis=True)
+    series = sgrid(show_control_axis=True, rendering_kw={"color": "r"})
     assert len(series) == 1
-    d = series[0].get_data()
-    assert np.allclose(d[0], [.1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99])
-    assert np.allclose(d[1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    assert series[0].show_control_axis
+    assert series[0].rendering_kw == {"color": "r"}
 
     series = sgrid(xi=False, show_control_axis=False)
     assert len(series) == 1
-    d = series[0].get_data()
-    assert len(d[0]) == 0
-    assert np.allclose(d[1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    xi_dict, wn_dict, tp_dict, ts_dict = series[0].get_data()
+    wn_ret = list(wn_dict.keys())
+    assert len(xi_dict) == 0
+    assert np.allclose(wn_ret, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
     series = sgrid(wn=False, show_control_axis=False)
     assert len(series) == 1
-    d = series[0].get_data()
-    assert np.allclose(d[0], [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99, 1])
-    assert len(d[1]) == 0
+    xi_dict, wn_dict, tp_dict, ts_dict = series[0].get_data()
+    xi_ret = [k[0] for k in xi_dict.keys()]
+    assert np.allclose(xi_ret, [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99, 1])
+    assert len(wn_dict) == 0
 
+    # verify that by setting axis limits, the series computes appropriate
+    # values to distribute the grid evenly over the specified space.
     series = sgrid(xlim=(-11, 1), ylim=(-10, 10), show_control_axis=False)
     assert len(series) == 1
-    d = series[0].get_data()
-    assert np.allclose(d[0], [
+    xi_dict, wn_dict, tp_dict, ts_dict = series[0].get_data()
+    xi_ret = [k[0] for k in xi_dict.keys()]
+    wn_ret = list(wn_dict.keys())
+    assert np.allclose(xi_ret, [
         0.26515648302104233, 0.48191874977215593, 0.6363829547955636,
         0.855197831554018, 0.9570244044334736, 0, 1])
-    assert np.allclose(d[1], [1.83333333, 3.66666667, 5.5, 7.33333333, 9.16666667])
+    assert np.allclose(wn_ret, [1.83333333, 3.66666667, 5.5, 7.33333333, 9.16666667])
 
     series = sgrid(xlim=(-11, 1), ylim=(-10, 10), show_control_axis=True)
     assert len(series) == 1
-    d = series[0].get_data()
-    assert np.allclose(d[0], [
+    xi_dict, wn_dict, tp_dict, ts_dict = series[0].get_data()
+    xi_ret = [k[0] for k in xi_dict.keys()]
+    wn_ret = list(wn_dict.keys())
+    assert np.allclose(xi_ret, [
         0.26515648302104233, 0.48191874977215593, 0.6363829547955636,
         0.855197831554018, 0.9570244044334736])
-    assert np.allclose(d[1], [1.83333333, 3.66666667, 5.5, 7.33333333, 9.16666667])
+    assert np.allclose(wn_ret, [1.83333333, 3.66666667, 5.5, 7.33333333, 9.16666667])
+
+
+def test_zgrid():
+    series = zgrid()
+    assert len(series) == 1
+    assert isinstance(series[0], ZGridLineSeries)
+    assert series[0].show_control_axis
+    xi_dict, wn_dict, tp_dict, ts_dict = series[0].get_data()
+    xi_ret = list(xi_dict.keys())
+    wn_ret = list(wn_dict.keys())
+    assert np.allclose(xi_ret, [0, .1, .2, .3, .4, .5, .6, .7, .8, .9])
+    assert np.allclose(wn_ret, [.1, .2, .3, .4, .5, .6, .7, .8, .9, 1])
+    assert (len(tp_dict) == 0) and (len(ts_dict) == 0)
+
+    series = sgrid(show_control_axis=False, rendering_kw={"color": "r"})
+    assert len(series) == 1
+    assert not series[0].show_control_axis
+    assert series[0].rendering_kw == {"color": "r"}
 
 
 def test_root_locus():

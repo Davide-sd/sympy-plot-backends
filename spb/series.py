@@ -4238,10 +4238,12 @@ class SGridLineSeries(BaseSeries):
        area. Then, it computes new values of xi, wn in order to get grid lines
        "evenly" distributed on the available space.
     """
-    def __init__(self, xi, wn, series=[], **kwargs):
+    def __init__(self, xi, wn, tp, ts, series=[], **kwargs):
         super().__init__(**kwargs)
         self.xi = xi
         self.wn = wn
+        self.tp = tp
+        self.ts = ts
         xlim = kwargs.get("xlim", None)
         ylim = kwargs.get("ylim", None)
         # Jupyter lab + "from sympy import *" convert all numbers to
@@ -4371,17 +4373,75 @@ class SGridLineSeries(BaseSeries):
         wn : list/array
             Iterable containing the values of natural frequency lines.
         """
-        if (self.xlim is not None) and (self.ylim is not None):
-            xi = self._sgrid_default_xi(self.xlim, self.ylim)
-            wn = self._sgrid_default_wn(self.xlim, self.ylim)
-            return xi, wn
+        np = import_module("numpy")
 
-        if len(self.associated_rl_series) > 0:
-            xlim, ylim = self._get_axis_limits()
-            xi = self._sgrid_default_xi(xlim, ylim)
-            wn = self._sgrid_default_wn(xlim, ylim)
-            return xi, wn
-        return self.xi, self.wn
+        if self.is_interactive:
+            xi = np.array([
+                t.evalf(subs=self.params) if isinstance(t, Expr) else t
+                for t in self.xi], dtype=float)
+            if any(xi > 1) or any(xi < 0):
+                # Enforce this condition
+                raise ValueError("It must be ``0 <= xi <= 1. "
+                    "Computed: %s" % xi)
+            wn = np.array([
+                t.evalf(subs=self.params) if isinstance(t, Expr) else t
+                for t in self.wn], dtype=float)
+            tp = np.array([
+                t.evalf(subs=self.params) if isinstance(t, Expr) else t
+                for t in self.tp], dtype=float)
+            ts = np.array([
+                t.evalf(subs=self.params) if isinstance(t, Expr) else t
+                for t in self.ts], dtype=float)
+        else:
+            if (self.xlim is not None) and (self.ylim is not None):
+                xi = self._sgrid_default_xi(self.xlim, self.ylim)
+                wn = self._sgrid_default_wn(self.xlim, self.ylim)
+            elif len(self.associated_rl_series) > 0:
+                xlim, ylim = self._get_axis_limits()
+                xi = self._sgrid_default_xi(xlim, ylim)
+                wn = self._sgrid_default_wn(xlim, ylim)
+            else:
+                xi = np.array(self.xi, dtype=float)
+                wn = np.array(self.wn, dtype=float)
+            tp = np.array(self.tp, dtype=float)
+            ts = np.array(self.ts, dtype=float)
+
+
+        angles = np.pi - np.arccos(xi)
+        y_over_x = np.tan(angles)
+        r = max(1000, max(wn)) if len(wn) > 0 else 1000
+
+        xi_dict = {k: {} for k in zip(xi, angles, y_over_x)}
+        wn_dict = {k: {} for k in wn}
+        tp_dict = {k: {} for k in tp}
+        ts_dict = {k: {} for k in ts}
+
+        # damping ratio lines
+        for k in zip(xi, angles, y_over_x):
+            x, a, yp = k
+            xi_dict[k]["x"] = np.array([0, r * np.cos(a)])
+            xi_dict[k]["y"] = np.array([0, r * np.sin(a)])
+            xi_dict[k]["label"] = "%.2f" % x
+
+        # natural frequency lines
+        t = np.linspace(np.pi/2, 3*np.pi/2, 100)
+        ct = np.cos(t)
+        st = np.sin(t)
+        ylim = self.ylim
+        y_offset = 0 if ylim is None else 0.015 * abs(ylim[1] - ylim[0])
+        for w in wn:
+            wn_dict[w]["x"] = w * ct
+            wn_dict[w]["y"] = w * st
+            wn_dict[w]["label"] = "%.2f" % w
+            wn_dict[w]["lx"] = -w
+            wn_dict[w]["ly"] = y_offset
+
+        # peak time lines
+        y_tp = np.pi / tp
+        # settling time lines
+        x_ts = -4 / ts
+
+        return xi_dict, wn_dict, y_tp, x_ts
 
 
 class ZGridLineSeries(BaseSeries):

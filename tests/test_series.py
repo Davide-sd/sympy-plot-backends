@@ -4139,27 +4139,63 @@ def test_root_locus_series():
 def test_sgrid_line_series():
     xi = [0, 0.2, 0.5, 1]
     wn = [1, 2, 3]
-    s = SGridLineSeries(xi, wn)
-    data = s.get_data()
-    assert data[0] == xi
-    assert data[1] == wn
+    s = SGridLineSeries(xi, wn, [], [])
+    xi_dict, wn_dict, y_tp, x_ts = s.get_data()
+    xi_ret = [k[0] for k in xi_dict.keys()]
+    assert np.allclose(xi_ret, xi)
+    assert all(k in list(xi_dict.values())[0].keys()
+        for k in ["x", "y", "label"])
+    assert np.allclose(list(wn_dict.keys()), wn)
+    assert all(k in list(wn_dict.values())[0].keys()
+        for k in ["x", "y", "label", "lx", "ly"])
+    assert len(y_tp) == 0
+    assert len(x_ts) == 0
 
     s = symbols("s")
     G1 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
     r1 = RootLocusSeries(G1)
-    g1 = SGridLineSeries(xi, wn, series=r1)
+    g1 = SGridLineSeries(xi, wn, [], [], series=r1)
     assert g1.associated_rl_series == [r1]
-    data1 = [list(t) for t in g1.get_data()]
-    assert data1[0] != xi
-    assert data1[1] != wn
+    xi_dict, wn_dict, y_tp, x_ts = g1.get_data()
+    xi_ret = [k[0] for k in xi_dict.keys()]
+    assert len(xi_ret) != len(xi)
+    assert len(wn_dict) != len(wn)
 
     G2 = (s**2 - 4) / (s**3 + 2*s - 3)
     r2 = RootLocusSeries(G2)
-    g2 = SGridLineSeries(xi, wn, series=[r1, r2])
+    g2 = SGridLineSeries(xi, wn, [], [], series=[r1, r2])
     assert g2.associated_rl_series == [r1, r2]
-    data2 = [list(t) for t in g2.get_data()]
-    assert data2[0] != xi and data2[0] != data1[0]
-    assert data2[1] != wn and data2[1] != data1[1]
+    xi_dict2, wn_dict2, y_tp2, x_ts2 = g2.get_data()
+    xi_ret2 = [k[0] for k in xi_dict2.keys()]
+    assert not np.allclose(xi_ret, xi_ret2)
+    assert not np.allclose(list(wn_dict.keys()), list(wn_dict2.keys()))
+
+    s = SGridLineSeries(xi, wn, [1, np.pi], [1, 4])
+    xi_dict, wn_dict, y_tp, x_ts = s.get_data()
+    assert np.allclose(y_tp, [np.pi, 1])
+    assert np.allclose(x_ts, [-4, -1])
+
+
+def test_sgrid_line_series_interactive():
+    a, b, c, d = symbols("a:d")
+    params = {a: 0.5, b: 2, c: 2*pi, d: 8}
+    xi = [0.1, 0.2, a]
+    wn = [1, b]
+    tp = [1, pi, c]
+    ts = [1, 4, d]
+    s = SGridLineSeries(xi, wn, tp, ts, params=params)
+    assert s.is_interactive
+    xi_dict, wn_dict, y_tp, x_ts = s.get_data()
+    xi_ret = [k[0] for k in xi_dict.keys()]
+    assert np.allclose(xi_ret, [0.1, 0.2, 0.5])
+    assert np.allclose(list(wn_dict.keys()), [1, 2])
+    assert np.allclose(y_tp, [np.pi, 1, 0.5])
+    assert np.allclose(x_ts, [-4, -1, -0.5])
+
+    # xi > 1 -> ValueError
+    params = {a: 1.5, b: 2, c: 2*pi, d: 8}
+    s = SGridLineSeries(xi, wn, tp, ts, params=params)
+    raises(ValueError, lambda: s.get_data())
 
 
 def test_zgrid_line_series():
@@ -4188,3 +4224,17 @@ def test_zgrid_line_series():
         for k in ["x", "y", "label", "lx", "ly"])
     assert all(k in list(data[3].values())[0].keys()
         for k in ["x", "y", "label", "lx", "ly"])
+
+def test_zgrid_line_series_interactive():
+    a, b, c, d = symbols("a:d")
+    params = {a: 0.5, b: 2, c: 0.3, d: 0.8}
+    xi = [0.1, 0.2, a]
+    wn = [1, b]
+    tp = [0.1, 0.2, c]
+    ts = [0.3, 0.5, d]
+    s = ZGridLineSeries(xi, wn, tp, ts, params=params)
+    xi_dict, wn_dict, tp_dict, ts_dict = s.get_data()
+    assert np.allclose(list(xi_dict.keys()), [0.1, 0.2, 0.5])
+    assert np.allclose(list(wn_dict.keys()), [1, 2])
+    assert np.allclose(list(tp_dict.keys()), [0.1, 0.2, 0.3])
+    assert np.allclose(list(ts_dict.keys()), [0.3, 0.5, 0.8])
