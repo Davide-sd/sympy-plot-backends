@@ -1454,14 +1454,27 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
        ...     sgrid(xi=0.92, wn=False, rendering_kw={"color": "r"}),
        ...     grid=False, xlabel="Real", ylabel="Imaginary")
 
+    Interactive-widgets root locus plot:
+
+    .. panel-screenshot::
+       :small-size: 800, 675
+
+       from sympy import symbols
+       from spb import *
+       a, s, xi = symbols("a, s, xi")
+       G = (s**2 + a) / (s**3 + 2*s**2 + 3*s + 4)
+       params={a: (-0.5, -4, 4), xi: (0.8, 0, 1)}
+       graphics(
+           sgrid(xi, wn=False, params=params, rendering_kw={"color": "r"}),
+           root_locus(G, params=params),
+           grid=False, xlim=(-4, 1), ylim=(-2.5, 2.5),
+           xlabel="Real", ylabel="Imaginary")
+
     See Also
     ========
 
     sgrid, zgrid
     """
-    if kwargs.get("params", None):
-        raise ValueError(
-            "Parametric interactive root locus plots are not supported.")
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
@@ -1553,6 +1566,36 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None, show_control
        ...     sgrid(xlim=xlim, ylim=ylim),
        ...     grid=False, xlim=xlim, ylim=ylim
        ... )
+
+    Interactive-widgets plot of custom s-grid lines:
+
+    .. panel-screenshot::
+       :small-size: 800, 750
+
+       from sympy import symbols
+       from spb import *
+       xi, wn, Tp, Ts = symbols("xi omega_n T_p T_s")
+       params = {
+           xi: (0.85, 0, 1),
+           wn: (6.5, 2, 8),
+           Tp: (1, 0.2, 4),
+           Ts: (1, 0.2, 4),
+       }
+       graphics(
+           sgrid(),
+           sgrid(xi=xi, wn=False, params=params,
+               rendering_kw={"color": "r", "linestyle": "-"},
+               show_control_axis=False),
+           sgrid(xi=False, wn=wn, params=params,
+               rendering_kw={"color": "g", "linestyle": "-"},
+               show_control_axis=False),
+           sgrid(xi=False, wn=False, tp=Tp, params=params,
+               rendering_kw={"color": "b", "linestyle": "-"},
+               show_control_axis=False),
+           sgrid(xi=False, wn=False, ts=Ts, params=params,
+               rendering_kw={"color": "m", "linestyle": "-"},
+               show_control_axis=False),
+           grid=False, xlim=(-8.5, 1), ylim=(-5, 5))
 
     See Also
     ========

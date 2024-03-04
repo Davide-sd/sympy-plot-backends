@@ -1196,6 +1196,18 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
        >>> G3 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
        >>> plot_root_locus(G1, G3)                             # doctest: +SKIP
 
+    Interactive-widgets root locus plot:
+
+    .. panel-screenshot::
+       :small-size: 800, 675
+
+       from sympy import symbols
+       from spb import *
+       a, s = symbols("a, s")
+       G = (s**2 + a) / (s**3 + 2*s**2 + 3*s + 4)
+       params={a: (-0.5, -4, 4)}
+       plot_root_locus(G, params=params, xlim=(-4, 1))
+
     """
     systems = _unpack_systems(systems)
     kwargs.setdefault("grid", False)

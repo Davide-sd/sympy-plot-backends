@@ -2360,7 +2360,7 @@ def test_plot_root_locus_1():
     assert isinstance(p[0], SGridLineSeries)
     assert isinstance(p[1], RootLocusSeries)
     ax = p.ax
-    assert len(ax.lines) == 20
+    assert len(ax.lines) == 18
     assert ax.get_legend() is None
     assert len(p.ax.texts) == 10 # number of sgrid labels on the plot
     line_colors = {'#1f77b4', '0.75'}
@@ -2372,7 +2372,7 @@ def test_plot_root_locus_1():
     assert isinstance(p[0], ZGridLineSeries)
     assert isinstance(p[1], RootLocusSeries)
     ax = p.ax
-    assert len(ax.lines) == 35
+    assert len(ax.lines) == 33
     assert ax.get_legend() is None
     assert len(p.ax.texts) == 20 # number of sgrid labels on the plot
     line_colors = {'#1f77b4', '0.75'}
@@ -2387,7 +2387,7 @@ def test_plot_root_locus_2():
     assert isinstance(p[1], RootLocusSeries)
     assert isinstance(p[2], RootLocusSeries)
     ax = p.ax
-    assert len(ax.lines) == 23
+    assert len(ax.lines) == 19
     assert len(ax.get_legend().texts) == 2
     assert p.ax.get_legend().texts[0].get_text() == "a"
     assert p.ax.get_legend().texts[1].get_text() == "b"

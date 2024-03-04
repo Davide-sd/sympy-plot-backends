@@ -4058,35 +4058,76 @@ class Arrow3DSeries(Arrow2DSeries):
 
 
 class RootLocusSeries(Line2DBaseSeries):
+    """Generates numerical data for root locus plot using the ``control``
+    module.
+
+    Symbolic expressions or SymPy's transfer functions are converted to
+    ``control.TransferFunction``. If a interactive-widget plot is created,
+    at each widget's state-change the updated symbolic transfer function
+    will be converted to ``control.TransferFunction``.
+
+    It has been shown that numpy.roots() produces inaccurate results in
+    comparison to sympy.roots(). https://github.com/sympy/sympy/issues/25234
+    However, we are dealing with a root locus plot, where branches start from
+    poles and goes to zeros (or to infinity). Hence, these errors are
+    likely to be irrelevant on a practical case. This data series uses
+    ``control`` (hence numpy) for performace.
+
+    References
+    ==========
+
+    https://github.com/python-control/python-control
+
+    """
     _allowed_keys = ["sgrid"]
 
     def __init__(self, tf, label="", **kwargs):
         super().__init__(**kwargs)
         from sympy.physics.control import TransferFunction
         np = import_module('numpy')
+        sp = import_module('scipy')
+        ct = import_module('control')
 
         if isinstance(tf, (Expr, TransferFunction)):
-            self._control_tf = self._sympy_to_control(tf)
             if isinstance(tf, Expr):
+                params_fs = set(self.params.keys())
+                fs = tf.free_symbols.difference(params_fs)
                 n, d = fraction(tf)
-                tf = TransferFunction(n, d, tf.free_symbols.pop())
+                tf = TransferFunction(n, d, fs.pop())
             self._expr = tf
-            num = [float(t) for t in Poly(tf.num, tf.var).all_coeffs()]
-            den = [float(t) for t in Poly(tf.den, tf.var).all_coeffs()]
-            self._num = np.poly1d(np.array(num))
-            self._den = np.poly1d(np.array(den))
+            self._control_tf = None
+            if not self.is_interactive:
+                self._control_tf = self._sympy_to_control(tf)
+            self._label = str(self.expr) if label is None else label
+            self._latex_label = latex(self.expr) if label is None else label
+        elif isinstance(tf, (sp.signal.TransferFunction, ct.TransferFunction)):
+            self._expr = None
+            self._label = label
+            self._latex_label = label
+            if label is None:
+                s = symbols("s" if tf.dt is None else "z")
+                n = tf.num[0][0] if isinstance(ct.TransferFunction) else tf.num
+                d = tf.den[0][0] if isinstance(ct.TransferFunction) else tf.den
+                expr = Poly.from_list(n, s) / Poly.from_list(d, s)
+                self._label = str(expr)
+                self._latex_label = latex(expr)
+            if isinstance(tf, sp.signal.TransferFunction):
+                self._control_tf = ct.tf(tf.num, tf.den, dt=0 if tf.dt is None else tf.dt)
+            else:
+                self._control_tf = tf
         else:
-            self._control_tf = tf
-            self._num = np.poly1d(tf.num[0][0])
-            self._den = np.poly1d(tf.den[0][0])
+            raise TypeError(
+                "Transfer function's type not recognized. "
+                "Received: " + str(type(tf))
+            )
 
-        self._label = str(self.expr) if label is None else label
-        self._latex_label = latex(self.expr) if label is None else label
+        # compute appropriate axis limits from the transfer function
+        # associated to this data series.
         self._xlim = None
         self._ylim = None
+        # zeros and poles are necessary in order to show appropriate markers.
         self._zeros = None
         self._poles = None
-        self._data = None
 
         self._rl_kw = kwargs.get("rl_kw", {})
         if self._rl_kw is None:
@@ -4095,82 +4136,76 @@ class RootLocusSeries(Line2DBaseSeries):
         self._zeros_rk = kwargs.get("zeros_rk", dict())
         self._poles_rk = kwargs.get("poles_rk", dict())
 
-    def _get_axis_limits(self):
+    def _compute_axis_limits(self, roots_array):
         """Attempt to compute appropriate axis limits so that the plot
         visualizes the important parts of the root locus.
         """
+        np = import_module("numpy")
+
+        tf = self._control_tf
+        _bp = self._break_points(
+            np.poly1d(tf.num[0][0]),
+            np.poly1d(tf.den[0][0])
+        )[1]
+
+        # root locus branches starts from poles and goes to zeros or
+        # infinity. Look for the branches that goes to zeros, find the
+        # maximum imaginary part. This will be used to compute ylim.
+        max_heights = []
+        for p in self._poles:
+            for c in roots_array.T:
+                if abs(p - c[0]) < 1e-03:
+                    if any(abs(z - c[-1]) < 1e-03 for z in self._zeros):
+                        i = np.argmax(np.abs(c.imag))
+                        max_heights.append(c[i])
+        min_heights = [-t for t in max_heights]
+
+        important_points = np.concatenate(
+            [self._zeros, self._poles, _bp, max_heights, min_heights])
+        _min_x = min(important_points.real)
+        _max_x = max(important_points.real)
+        _min_y = min(important_points.imag)
+        _max_y = max(important_points.imag)
+        offset = 0.25
+        _min_x = _min_x - offset if np.isclose(_min_x, 0) else _min_x
+        _max_x = _max_x + offset if np.isclose(_max_x, 0) else _max_x
+        _min_y = _min_y - offset if np.isclose(_min_y, 0) else _min_y
+        _max_y = _max_y + offset if np.isclose(_max_y, 0) else _max_y
+        _xlim = [_min_x * 1.5, _max_x * 1.2]
+        _ylim = [_min_y * 1.2, _max_y * 1.2]
+        if np.isclose(*_xlim):
+            _xlim[0] -= 1
+            _xlim[1] += 1
+        if np.isclose(*_ylim):
+            _ylim[0] -= 1
+            _ylim[1] += 1
+        self._xlim = _xlim
+        self._ylim = _ylim
+
+    def _get_axis_limits(self):
         if self._xlim is None:
-            np = import_module("numpy")
-            tf = self._expr
-            if isinstance(tf, (Expr, TransferFunction)):
-                self._bp = self._break_points(self._num, self._den)[1]
-                self._zeros = np.array([complex(t) for t in tf.zeros()])
-                self._poles = np.array([complex(t) for t in tf.poles()])
-            else:
-                self._bp = self._break_points(self._num, self._den)[1]
-                self._zeros = tf.zeros()
-                self._poles = tf.poles()
-
-            # root locus branches starts from poles and goes to zeros or
-            # infinity. Look for the branches that goes to zeros, find the
-            # maximum imaginary part. This will be used to compute ylim.
-            roots_array = self.get_data()[0]
-            max_heights = []
-            for p in self._poles:
-                for c in roots_array.T:
-                    if abs(p - c[0]) < 1e-03:
-                        if any(abs(z - c[-1]) < 1e-03 for z in self._zeros):
-                            i = np.argmax(np.abs(c.imag))
-                            max_heights.append(c[i])
-            min_heights = [-t for t in max_heights]
-
-            important_points = np.concatenate(
-                [self._zeros, self._poles, self._bp, max_heights, min_heights])
-            _min_x = min(important_points.real)
-            _max_x = max(important_points.real)
-            _min_y = min(important_points.imag)
-            _max_y = max(important_points.imag)
-            offset = 0.25
-            _min_x = _min_x - offset if np.isclose(_min_x, 0) else _min_x
-            _max_x = _max_x + offset if np.isclose(_max_x, 0) else _max_x
-            _min_y = _min_y - offset if np.isclose(_min_y, 0) else _min_y
-            _max_y = _max_y + offset if np.isclose(_max_y, 0) else _max_y
-            _xlim = [_min_x * 1.5, _max_x * 1.2]
-            _ylim = [_min_y * 1.2, _max_y * 1.2]
-            if np.isclose(*_xlim):
-                _xlim[0] -= 1
-                _xlim[1] += 1
-            if np.isclose(*_ylim):
-                _ylim[0] -= 1
-                _ylim[1] += 1
-            self._xlim = _xlim
-            self._ylim = _ylim
+            self.get_data()
         return self._xlim, self._ylim
-
 
     @property
     def zeros(self):
         if self._zeros is None:
-            self._get_axis_limits()
+            self.get_data()
         return self._zeros
 
     @property
     def poles(self):
         if self._poles is None:
-            self._get_axis_limits()
+            self.get_data()
         return self._poles
 
     @property
     def xlim(self):
-        if self._xlim is None:
-            self._get_axis_limits()
-        return self._xlim
+        return self._get_axis_limits()[0]
 
     @property
     def ylim(self):
-        if self._ylim is None:
-            self._get_axis_limits()
-        return self._ylim
+        return self._get_axis_limits()[1]
 
     def _break_points(self, num, den):
         """Extract break points over real axis and gains given these locations"""
@@ -4221,10 +4256,25 @@ class RootLocusSeries(Line2DBaseSeries):
             )
 
     def get_data(self):
-        if self._data is None:
-            ct = import_module("control")
-            self._data = ct.root_locus(self._control_tf, **self._rl_kw)
-        return self._data
+        """
+        Returns
+        =======
+        roots : ndarray
+            Closed-loop root locations, arranged in which each row corresponds
+            to a gain in gains
+        gains : ndarray
+            Gains used.  Same as kvect keyword argument if provided.
+        """
+        if self.is_interactive:
+            tf = self._expr.subs(self.params)
+            self._control_tf = self._sympy_to_control(tf)
+
+        ct = import_module("control")
+        self._zeros = self._control_tf.zeros()
+        self._poles = self._control_tf.poles()
+        roots_array, gains = ct.root_locus(self._control_tf, **self._rl_kw)
+        self._compute_axis_limits(roots_array)
+        return roots_array, gains
 
 
 class SGridLineSeries(BaseSeries):
@@ -4368,10 +4418,10 @@ class SGridLineSeries(BaseSeries):
         """
         Returns
         =======
-        xi : list/array
-            Iterable containing the values of damping ratio lines.
-        wn : list/array
-            Iterable containing the values of natural frequency lines.
+        xi_dict : dict
+        wn_dict : dict
+        y_tp : np.ndarray
+        x_ts : np.ndarray
         """
         np = import_module("numpy")
 

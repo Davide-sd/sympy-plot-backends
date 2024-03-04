@@ -1,9 +1,26 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
-import numpy as np
+from sympy.external import import_module
 
+
+def _get_x_y_coords(roots):
+    """Create one single line, where branches are separated by NaNs.
+    this makes it easier to deal with widget's update, because with
+    interactive widgets plot the number of roots/poles can vary.
+    """
+    np = import_module("numpy")
+    x, y = [], []
+    for col in roots.T:
+        x.append(np.real(col))
+        x.append(np.array([np.nan]))
+        y.append(np.imag(col))
+        y.append(np.array([np.nan]))
+    x = np.concatenate(x)
+    y = np.concatenate(y)
+    return x, y
 
 def _draw_root_locus_helper(renderer, data):
     p, s = renderer.plot, renderer.series
+    np = p.np
     roots, gains = data
 
     color = next(p._cl) if s.line_color is None else s.line_color
@@ -18,9 +35,8 @@ def _draw_root_locus_helper(renderer, data):
 
     handles = []
     kw = p.merge({}, lkw, s.rendering_kw)
-    for i, col in enumerate(roots.T):
-        handles.append(
-            p._ax.plot(p.np.real(col), p.np.imag(col), **kw)[0])
+    x, y = _get_x_y_coords(roots)
+    handles.append(p._ax.plot(x, y, **kw)[0])
 
     if s.show_in_legend:
         proxy_artist = p.Line2D(
@@ -33,14 +49,22 @@ def _draw_root_locus_helper(renderer, data):
     prk =  p.merge({},
         dict(marker="x", color=color),
         s._poles_rk)
-    p._ax.scatter(s.zeros.real, s.zeros.imag, **zrk)
-    p._ax.scatter(s.poles.real, s.poles.imag, **prk)
+    hz = p._ax.scatter(s.zeros.real, s.zeros.imag, **zrk)
+    hp = p._ax.scatter(s.poles.real, s.poles.imag, **prk)
 
-    return [handles]
+    return handles + [hz, hp]
 
 
 def _update_root_locus_helper(renderer, data, handles):
-    pass
+    p, s = renderer.plot, renderer.series
+    np = p.np
+    roots, gains = data
+
+    x, y = _get_x_y_coords(roots)
+    handles[0].set_data(x, y)
+
+    handles[-2].set_offsets(np.c_[s.zeros.real, s.zeros.imag])
+    handles[-1].set_offsets(np.c_[s.poles.real, s.poles.imag])
 
 
 class RootLocusRenderer(MatplotlibRenderer):
@@ -58,3 +82,12 @@ class RootLocusRenderer(MatplotlibRenderer):
         for draw_method in self.draw_update_map.keys():
             self.handles.append(
                 draw_method(self, data))
+
+    def update(self, params):
+        self.series.params = params
+        data = self.series.get_data()
+        self._set_axis_limits([self.series.xlim, self.series.ylim])
+        for update_method, handle in zip(
+            self.draw_update_map.values(), self.handles
+        ):
+            update_method(self, data, handle)
