@@ -2,7 +2,7 @@ from inspect import signature
 from spb.wegert import wegert
 from spb.defaults import cfg
 from spb.utils import (
-    _get_free_symbols, unwrap, extract_solution
+    _get_free_symbols, unwrap, extract_solution, tf_to_control
 )
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
@@ -2880,7 +2880,8 @@ def _set_discretization_points(kwargs, pt):
     if pt in [
         LineOver1DRangeSeries, Parametric2DLineSeries,
         Parametric3DLineSeries, AbsArgLineSeries, ColoredLineOver1DRangeSeries,
-        ComplexParametric3DLineSeries, NyquistLineSeries, NicholsLineSeries
+        ComplexParametric3DLineSeries, NyquistLineSeries, NicholsLineSeries,
+        SystemResponseSeries
     ]:
         if "n" in kwargs.keys():
             kwargs["n1"] = kwargs["n"]
@@ -4097,7 +4098,7 @@ class RootLocusSeries(Line2DBaseSeries):
             self._expr = tf
             self._control_tf = None
             if not self.is_interactive:
-                self._control_tf = self._sympy_to_control(tf)
+                self._control_tf = tf_to_control(tf)
             self._label = str(self.expr) if label is None else label
             self._latex_label = latex(self.expr) if label is None else label
         elif isinstance(tf, (sp.signal.TransferFunction, ct.TransferFunction)):
@@ -4112,7 +4113,7 @@ class RootLocusSeries(Line2DBaseSeries):
                 self._label = str(expr)
                 self._latex_label = latex(expr)
             if isinstance(tf, sp.signal.TransferFunction):
-                self._control_tf = ct.tf(tf.num, tf.den, dt=0 if tf.dt is None else tf.dt)
+                self._control_tf = tf_to_control(tf)
             else:
                 self._control_tf = tf
         else:
@@ -4225,36 +4226,6 @@ class RootLocusSeries(Line2DBaseSeries):
             real_break_pts = den.roots
         return k_break, real_break_pts
 
-    def _sympy_to_control(self, tf):
-        """Convert a sympy transfer function to a ``control.TransferFunction``.
-        """
-        from sympy.physics.control import TransferFunction
-        import control as ct
-
-        def _from_sympy_to_ct(tf):
-            if len(tf.free_symbols) != 1:
-                raise ValueError(
-                    "SymPy trasfer function must contain only one free-symbol.\n"
-                    "Received: %s" % tf.free_symbols
-                )
-            s = tf.free_symbols.pop()
-            n, d = [Poly(t, s).all_coeffs() for t in fraction(tf)]
-            n = [float(t) for t in n]
-            d = [float(t) for t in d]
-            return ct.tf(n, d)
-
-        if isinstance(tf, Expr):
-            return _from_sympy_to_ct(tf)
-        elif isinstance(tf, TransferFunction):
-            tf = tf.num / tf.den
-            return _from_sympy_to_ct(tf)
-        else:
-            raise TypeError(
-                "Transfer function's type not recognized.\n" +
-                "Received: type(tf) = %s\n" % type(tf) +
-                "Expected: Expr or sympy.physics.control.TransferFunction"
-            )
-
     def get_data(self):
         """
         Returns
@@ -4267,7 +4238,7 @@ class RootLocusSeries(Line2DBaseSeries):
         """
         if self.is_interactive:
             tf = self._expr.subs(self.params)
-            self._control_tf = self._sympy_to_control(tf)
+            self._control_tf = tf_to_control(tf)
 
         ct = import_module("control")
         self._zeros = self._control_tf.zeros()
@@ -4621,3 +4592,149 @@ class ZGridLineSeries(BaseSeries):
             ts_dict[_ts]["label"] = an
 
         return xi_dict, wn_dict, tp_dict, ts_dict
+
+
+class SystemResponseSeries(Line2DBaseSeries):
+    """Represent a system response computed with the ``control`` module.
+
+    Computing the inverse laplace transform of a system with SymPy is not
+    trivial: sometimes it works fine, other times it produces wrong results,
+    other times it just consumes to much memory even for trivial transfer
+    functions. This is true for both the public ``inverse_laplace_transform``
+    as well as the private ``_fast_inverse_laplace`` used in
+    ``spb.graphics.control``.
+
+    In order to address these issues, let's evaluate the system with the
+    ``control`` module. Sure, it relies on numerical integration, hence errors.
+    But, at least it doesn't crash the machine and it is reliable.
+    """
+    def __init__(self, tf, var_start_end, label="", **kwargs):
+        super().__init__(**kwargs)
+        from sympy.physics.control import TransferFunction
+        np = import_module('numpy')
+        sp = import_module('scipy')
+        ct = import_module('control')
+
+        if isinstance(tf, (Expr, TransferFunction)):
+            if isinstance(tf, Expr):
+                params_fs = set(self.params.keys())
+                fs = tf.free_symbols.difference(params_fs)
+                tf = TransferFunction.from_rational_expression(tf, fs.pop())
+            self._expr = tf
+            self._control_tf = None
+            if not self.is_interactive:
+                self._control_tf = tf_to_control(tf)
+            self._label = str(self.expr) if label is None else label
+            self._latex_label = latex(self.expr) if label is None else label
+        elif isinstance(tf, (sp.signal.TransferFunction, ct.TransferFunction)):
+            self._expr = None
+            self._label = label
+            self._latex_label = label
+            if label is None:
+                s = symbols("s" if tf.dt is None else "z")
+                n = tf.num[0][0] if isinstance(ct.TransferFunction) else tf.num
+                d = tf.den[0][0] if isinstance(ct.TransferFunction) else tf.den
+                expr = Poly.from_list(n, s) / Poly.from_list(d, s)
+                self._label = str(expr)
+                self._latex_label = latex(expr)
+            if isinstance(tf, sp.signal.TransferFunction):
+                self._control_tf = tf_to_control(tf)
+            else:
+                self._control_tf = tf
+        else:
+            raise TypeError(
+                "Transfer function's type not recognized. "
+                "Received: " + str(type(tf))
+            )
+
+        self.ranges = [var_start_end]
+        self._check_fs()
+
+        rt = kwargs.get("response_type", "step")
+        rt = rt.lower() if isinstance(rt, str) else rt
+        allowed_response_types = ["impulse", "step", "ramp"]
+        if (not isinstance(rt, str)) or (rt not in allowed_response_types):
+            raise ValueError(
+                "``response_type`` must be one of the following: %s\n"
+                "Received: %s" % (rt, allowed_response_types)
+            )
+        self._response_type = rt
+        self._control_kw = kwargs.get("control_kw", {})
+        if self._control_kw is None:
+            self._control_kw = {}
+
+    def _check_fs(self):
+        """ Checks if there are enogh parameters and free symbols.
+        """
+        fs = {}
+        if self._expr:
+            fs = {self._expr.var}
+        ranges, params = self.ranges, self.params
+
+        # from the expression's free symbols, remove the ones used in
+        # the parameters and the ranges
+        fs = fs.difference(params.keys())
+        if ranges is not None:
+            fs = fs.difference([r[0] for r in ranges])
+
+        if len(fs) > 1:
+            raise ValueError(
+                "Incompatible expression and parameters.\n"
+                + "Expression: {}\n".format(
+                    (exprs, ranges, label) if ranges is not None else (exprs, label))
+                + "params: {}\n".format(params)
+                + "Specify what these symbols represent: {}\n".format(fs)
+                + "Are they ranges or parameters?"
+            )
+
+        # verify that all symbols are known (they either represent plotting
+        # ranges or parameters)
+        range_symbols = [r[0] for r in ranges]
+        for r in ranges:
+            fs = set().union(*[e.free_symbols for e in r[1:]])
+            if any(t in fs for t in range_symbols):
+                raise ValueError("Range symbols can't be included into "
+                    "minimum and maximum of a range. "
+                    "Received range: %s" % str(r))
+            if len(fs) > 0:
+                self._interactive_ranges = True
+            remaining_fs = fs.difference(params.keys())
+            if len(remaining_fs) > 0:
+                raise ValueError(
+                    "Unkown symbols found in plotting range: %s. " % (r,) +
+                    "Are the following parameters? %s" % remaining_fs)
+
+    def get_data(self):
+        """
+        Returns
+        =======
+        x : ndarray
+        y : ndarray
+        """
+        ct = import_module("control")
+        mergedeep = import_module('mergedeep')
+
+        if self.is_interactive:
+            tf = self._expr.subs(self.params)
+            self._control_tf = tf_to_control(tf)
+
+        # create (or update) the discretized domain
+        if (not self._discretized_domain) or self._interactive_ranges:
+            self._create_discretized_domain()
+        time = self._discretized_domain[self.ranges[0][0]]
+        control_kw = {"T": time}
+
+        if self._response_type == "step":
+            ckw = mergedeep.merge({}, control_kw, self._control_kw)
+            x, y = ct.step_response(self._control_tf, **ckw)
+        elif self._response_type == "impulse":
+            ckw = mergedeep.merge({}, control_kw, self._control_kw)
+            x, y = ct.impulse_response(self._control_tf, **ckw)
+        elif self._response_type == "ramp":
+            ramp = time
+            control_kw["U"] = ramp
+            ckw = mergedeep.merge({}, control_kw, self._control_kw)
+            x, y = ct.forced_response(self._control_tf, **ckw)
+        else:
+            raise NotImplementedError
+        return x, y

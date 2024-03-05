@@ -1,12 +1,14 @@
 import numpy as np
 import pytest
+from pytest import warns
 from spb import (
     control_axis, pole_zero, step_response, impulse_response, ramp_response,
     bode_magnitude, bode_phase, nyquist, nichols, sgrid, root_locus, zgrid
 )
 from spb.series import (
     LineOver1DRangeSeries, HVLineSeries, List2DSeries, NyquistLineSeries,
-    NicholsLineSeries, SGridLineSeries, RootLocusSeries, ZGridLineSeries
+    NicholsLineSeries, SGridLineSeries, RootLocusSeries, ZGridLineSeries,
+    SystemResponseSeries
 )
 from sympy.abc import a, b, c, d, e, s
 from sympy.physics.control.lti import TransferFunction
@@ -127,14 +129,51 @@ def test_step_response(tf, label, rkw, params):
         params = {k: v[0] for k, v in params.items()}
         kwargs["params"] = params
 
-    series = step_response(tf, label=label, rendering_kw=rkw, **kwargs)
+    # evaluate with sympy
+    series = step_response(tf, label=label, rendering_kw=rkw,
+        control=False, prec=16, **kwargs.copy())
     assert len(series) == 1
-    s = series[0]
-    assert isinstance(s, LineOver1DRangeSeries)
-    s.get_data()
-    assert s.rendering_kw == {} if not rkw else rkw
-    assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    s1 = series[0]
+    assert isinstance(s1, LineOver1DRangeSeries)
+    d1 = s1.get_data()
+    assert s1.rendering_kw == {} if not rkw else rkw
+    assert s1.is_interactive == (len(s1.params) > 0)
+    assert s1.params == {} if not params else params
+
+    # evaluate with control
+    series = step_response(tf, label=label, rendering_kw=rkw,
+        control=True, prec=16, **kwargs.copy())
+    assert len(series) == 1
+    s2 = series[0]
+    assert isinstance(s2, SystemResponseSeries)
+    d2 = s2.get_data()
+    assert s2.rendering_kw == {} if not rkw else rkw
+    assert s2.is_interactive == (len(s2.params) > 0)
+    assert s2.params == {} if not params else params
+
+    assert np.allclose(d1, d2)
+
+
+@pytest.mark.parametrize(
+    "func, lower_limit, params",
+    [
+        (step_response, 1, {}),
+        (step_response, a, {a: 2}),
+        (impulse_response, 1, {}),
+        (impulse_response, a, {a: 2}),
+        (ramp_response, 1, {}),
+        (ramp_response, a, {a: 2}),
+    ]
+)
+def test_lower_limit_user_warning(func, lower_limit, params):
+    # verify that a UserWarning is emitted when ``control=True`` and
+    # ``lower_limit != 0`` is detected.
+
+    with warns(
+        UserWarning,
+        match="You are evaluating a transfer function using the ``control``",
+    ):
+        func(tf1, lower_limit=lower_limit, params=params)
 
 
 @pytest.mark.parametrize(
@@ -157,14 +196,29 @@ def test_impulse_response(tf, label, rkw, params):
         params = {k: v[0] for k, v in params.items()}
         kwargs["params"] = params
 
-    series = impulse_response(tf, label=label, rendering_kw=rkw, **kwargs)
+    # evaluate with sympy
+    series = impulse_response(tf, label=label, rendering_kw=rkw,
+        control=False, prec=16, **kwargs.copy())
     assert len(series) == 1
-    s = series[0]
-    assert isinstance(s, LineOver1DRangeSeries)
-    s.get_data()
-    assert s.rendering_kw == {} if not rkw else rkw
-    assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    s1 = series[0]
+    assert isinstance(s1, LineOver1DRangeSeries)
+    d1 = s1.get_data()
+    assert s1.rendering_kw == {} if not rkw else rkw
+    assert s1.is_interactive == (len(s1.params) > 0)
+    assert s1.params == {} if not params else params
+
+    # evaluate with control
+    series = impulse_response(tf, label=label, rendering_kw=rkw,
+        control=True, prec=16, **kwargs)
+    assert len(series) == 1
+    s2 = series[0]
+    assert isinstance(s2, SystemResponseSeries)
+    d2 = s2.get_data()
+    assert s2.rendering_kw == {} if not rkw else rkw
+    assert s2.is_interactive == (len(s2.params) > 0)
+    assert s2.params == {} if not params else params
+
+    assert np.allclose(d1, d2)
 
 
 @pytest.mark.parametrize(
@@ -187,14 +241,29 @@ def test_ramp_response(tf, label, rkw, params):
         params = {k: v[0] for k, v in params.items()}
         kwargs["params"] = params
 
-    series = ramp_response(tf, label=label, rendering_kw=rkw, **kwargs)
+    # evaluate with sympy
+    series = ramp_response(tf, label=label, rendering_kw=rkw,
+        control=False, prec=16, **kwargs)
     assert len(series) == 1
-    s = series[0]
-    assert isinstance(s, LineOver1DRangeSeries)
-    s.get_data()
-    assert s.rendering_kw == {} if not rkw else rkw
-    assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    s1 = series[0]
+    assert isinstance(s1, LineOver1DRangeSeries)
+    d1 = s1.get_data()
+    assert s1.rendering_kw == {} if not rkw else rkw
+    assert s1.is_interactive == (len(s1.params) > 0)
+    assert s1.params == {} if not params else params
+
+    # evaluate with control
+    series = ramp_response(tf, label=label, rendering_kw=rkw,
+        control=True, prec=16, **kwargs)
+    assert len(series) == 1
+    s2 = series[0]
+    assert isinstance(s2, SystemResponseSeries)
+    d2 = s2.get_data()
+    assert s2.rendering_kw == {} if not rkw else rkw
+    assert s2.is_interactive == (len(s2.params) > 0)
+    assert s2.params == {} if not params else params
+
+    assert np.allclose(d1, d2)
 
 
 @pytest.mark.parametrize(
@@ -217,7 +286,7 @@ def test_bode_magnitude(tf, label, rkw, params):
         params = {k: v[0] for k, v in params.items()}
         kwargs["params"] = params
 
-    series = bode_magnitude(tf, label=label, rendering_kw=rkw, **kwargs)
+    series = bode_magnitude(tf, label=label, rendering_kw=rkw, **kwargs.copy())
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, LineOver1DRangeSeries)

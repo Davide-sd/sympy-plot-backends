@@ -1,8 +1,8 @@
 from spb.defaults import TWO_D_B, cfg
 from spb.graphics.control import (
     _preprocess_system, _pole_zero_helper,
-    _nichols_helper, _nyquist_helper, _step_response_helper,
-    _ramp_response_helper, _impulse_response_helper,
+    _nichols_helper, _nyquist_helper, step_response,
+    ramp_response, impulse_response,
     _bode_magnitude_helper, _bode_phase_helper,
     control_axis, root_locus, sgrid as sgrid_function,
     _get_grid_series
@@ -223,7 +223,7 @@ pole_zero_plot = plot_pole_zero
 
 def plot_step_response(
     *systems, lower_limit=0, upper_limit=10,
-    prec=8, show_axes=False, **kwargs
+    prec=8, show_axes=False, control=True, **kwargs
 ):
     """
     Returns the unit step response of a continuous-time system. It is
@@ -246,7 +246,9 @@ def plot_step_response(
         * a sequence of 2-tuples ``(LTI SISO system, label)``.
         * a dict mapping LTI SISO systems to labels.
     lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0.
+        The lower limit of the plot range. Defaults to 0. If a different value
+        is to be used, also set ``control=False`` (see examples in order to
+        understand why).
     upper_limit : Number, optional
         The upper limit of the plot range. Defaults to 10.
     prec : int, optional
@@ -254,6 +256,11 @@ def plot_step_response(
         Defaults to 8.
     show_axes : boolean, optional
         If ``True``, the coordinate axes will be shown. Defaults to False.
+    control : bool
+        If True, computes the step response with the ``control``
+        module, which uses numerical integration. If False, computes the
+        step response with ``sympy``, which uses the inverse Laplace transform.
+        Default to True.
     **kwargs : dict
         Refer to :func:`~spb.graphics.control.step_response` for a full list
         of keyword arguments to customize the appearances of lines.
@@ -278,7 +285,14 @@ def plot_step_response(
 
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
-    Note the use of parametric ``lower_limit`` and ``upper_limit``.
+    A few observations:
+
+    1. Both systems are evaluated with the ``control`` module.
+    2. Note the use of parametric ``lower_limit`` and ``upper_limit``.
+    3. By moving the "lower limit" slider, both systems always start from
+       zero amplitude. That's because the numerical integration's initial
+       condition is 0. Hence, if ``lower_limit`` is to be used, please
+       set ``control=False``.
 
     .. panel-screenshot::
        :small-size: 800, 700
@@ -321,9 +335,9 @@ def plot_step_response(
 
     systems = _unpack_systems(systems)
     series = [
-        _step_response_helper(
-            s, l, lower_limit, upper_limit, prec, **kwargs
-        ) for s, l in systems
+        step_response(
+            s, lower_limit, upper_limit, prec, l, control=control, **kwargs
+        )[0] for s, l in systems
     ]
 
     kwargs.setdefault("xlabel", "Time [s]")
@@ -338,7 +352,7 @@ step_response_plot = plot_step_response
 
 def plot_impulse_response(
     *systems, prec=8, lower_limit=0,
-    upper_limit=10, show_axes=False, **kwargs
+    upper_limit=10, show_axes=False, control=True, **kwargs
 ):
     """
     Returns the unit impulse response (Input is the Dirac-Delta Function) of a
@@ -361,7 +375,9 @@ def plot_impulse_response(
         * a sequence of 2-tuples ``(LTI SISO system, label)``.
         * a dict mapping LTI SISO systems to labels.
     lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0.
+        The lower limit of the plot range. Defaults to 0. If a different value
+        is to be used, also set ``control=False`` (see examples in order to
+        understand why).
     upper_limit : Number, optional
         The upper limit of the plot range. Defaults to 10.
     prec : int, optional
@@ -369,6 +385,11 @@ def plot_impulse_response(
         Defaults to 8.
     show_axes : boolean, optional
         If ``True``, the coordinate axes will be shown. Defaults to False.
+    control : bool
+        If True, computes the step response with the ``control``
+        module, which uses numerical integration. If False, computes the
+        step response with ``sympy``, which uses the inverse Laplace transform.
+        Default to True.
     **kwargs : dict
         Refer to :func:`~spb.graphics.control.impulse_response` for a full list
         of keyword arguments to customize the appearances of lines.
@@ -393,7 +414,14 @@ def plot_impulse_response(
         >>> plot_impulse_response(tf1)   # doctest: +SKIP
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
-    Note the use of parametric ``lower_limit`` and ``upper_limit``.
+    A few observations:
+
+    1. Both systems are evaluated with the ``control`` module.
+    2. Note the use of parametric ``lower_limit`` and ``upper_limit``.
+    3. By moving the "lower limit" slider, both systems always start from
+       zero amplitude. That's because the numerical integration's initial
+       condition is 0. Hence, if ``lower_limit`` is to be used, please
+       set ``control=False``.
 
     .. panel-screenshot::
        :small-size: 800, 700
@@ -438,9 +466,9 @@ def plot_impulse_response(
 
     systems = _unpack_systems(systems)
     series = [
-        _impulse_response_helper(
-            s, l, lower_limit, upper_limit, prec, **kwargs
-        ) for s, l in systems
+        impulse_response(
+            s, prec, lower_limit, upper_limit, l, control=control, **kwargs
+        )[0] for s, l in systems
     ]
 
     kwargs.setdefault("xlabel", "Time [s]")
@@ -455,7 +483,7 @@ impulse_response_plot = plot_impulse_response
 
 def plot_ramp_response(
     *systems, slope=1, prec=8,
-    lower_limit=0, upper_limit=10, show_axes=False, **kwargs
+    lower_limit=0, upper_limit=10, show_axes=False, control=True, **kwargs
 ):
     """
     Returns the ramp response of a continuous-time system.
@@ -483,7 +511,9 @@ def plot_ramp_response(
     slope : Number, optional
         The slope of the input ramp function. Defaults to 1.
     lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0.
+        The lower limit of the plot range. Defaults to 0. If a different value
+        is to be used, also set ``control=False`` (see examples in order to
+        understand why).
     upper_limit : Number, optional
         The upper limit of the plot range. Defaults to 10.
     prec : int, optional
@@ -491,6 +521,11 @@ def plot_ramp_response(
         Defaults to 8.
     show_axes : boolean, optional
         If ``True``, the coordinate axes will be shown. Defaults to False.
+    control : bool
+        If True, computes the step response with the ``control``
+        module, which uses numerical integration. If False, computes the
+        step response with ``sympy``, which uses the inverse Laplace transform.
+        Default to True.
     **kwargs : dict
         Refer to :func:`~spb.graphics.control.ramp_response` for a full list
         of keyword arguments to customize the appearances of lines.
@@ -510,31 +545,40 @@ def plot_ramp_response(
         >>> from sympy.abc import s
         >>> from sympy.physics.control.lti import TransferFunction
         >>> from spb import plot_ramp_response
-        >>> tf1 = TransferFunction(s, (s+4)*(s+8), s)
-        >>> plot_ramp_response(tf1, upper_limit=2)   # doctest: +SKIP
+        >>> tf1 = TransferFunction(1, (s+1), s)
+        >>> plot_ramp_response(tf1)   # doctest: +SKIP
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
-    Note the use of parametric ``lower_limit``, ``upper_limit`` and ``slope``.
+    A few observations:
+
+    1. Both systems are evaluated with the ``control`` module.
+    2. Note the use of parametric ``lower_limit`` and ``upper_limit``.
+    3. By moving the "lower limit" slider, both systems always start from
+       zero amplitude. That's because the numerical integration's initial
+       condition is 0. Hence, if ``lower_limit`` is to be used, please
+       set ``control=False``.
 
     .. panel-screenshot::
        :small-size: 800, 675
 
-       from sympy.abc import a, b, c, d, e, s
+       from sympy import symbols
        from sympy.physics.control.lti import TransferFunction
        from spb import plot_ramp_response
-       tf1 = TransferFunction(s, (s+4)*(s+8), s)
-       tf2 = TransferFunction(s, (s+a)*(s+b), s)
+       a, b, c, xi, wn, s, t = symbols("a, b, c, xi, omega_n, s, t")
+       tf1 = TransferFunction(25, s**2 + 10*s + 25, s)
+       tf2 = TransferFunction(wn**2, s**2 + 2*xi*wn*s + wn**2, s)
+       params = {
+           xi: (6, 0, 10),
+           wn: (25, 0, 50),
+           # NOTE: remove `None` if using ipywidgets
+           a: (1, 0, 10, 50, None, "slope"),
+           b: (0, 0, 5, 50, None, "lower limit"),
+           c: (5, 2, 10, 50, None, "upper limit"),
+       }
        plot_ramp_response(
            (tf1, "A"), (tf2, "B"),
-           slope=c, lower_limit=d, upper_limit=e,
-           params={
-               a: (6, 0, 10),
-               b: (7, 0, 10),
-               # NOTE: remove `None` if using ipywidgets
-               c: (1, 0, 10, 50, None, "slope"),
-               d: (0, 0, 5, 50, None, "lower limit"),
-               e: (5, 2, 10, 50, None, "upper limit"),
-           }, use_latex=False)
+           slope=a, lower_limit=b, upper_limit=c,
+           params=params, use_latex=False)
 
     See Also
     ========
@@ -562,9 +606,10 @@ def plot_ramp_response(
 
     systems = _unpack_systems(systems)
     series = [
-        _ramp_response_helper(
-            s, l, lower_limit, upper_limit, prec, slope, **kwargs
-        ) for s, l in systems
+        ramp_response(
+            s, prec, slope, lower_limit, upper_limit, l,
+            control=control, **kwargs
+        )[0] for s, l in systems
     ]
 
     kwargs.setdefault("xlabel", "Time [s]")

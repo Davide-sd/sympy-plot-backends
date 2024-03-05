@@ -22,6 +22,8 @@ from sympy import (
 from sympy.physics.control import TransferFunction
 from sympy.vector import CoordSys3D, gradient
 import numpy as np
+import control as ct
+import scipy.signal as signal
 
 # NOTE:
 #
@@ -4118,6 +4120,9 @@ def test_eval_adaptive_false_lambda_functions():
 
 
 def test_root_locus_series():
+    # verify that RootLocusSeries is able to deal with symbolic
+    # transfer functions
+
     s = symbols("s")
     G = (s**2 - 4) / (s**3 + 2*s - 3)
     r = RootLocusSeries(G)
@@ -4134,6 +4139,33 @@ def test_root_locus_series():
     assert isinstance(r.expr, TransferFunction)
     assert r.label == "a"
     assert r.rendering_kw == {0: 1}
+
+    G = TransferFunction(s**2 - 4, s**3 + 2*s - 3, s)
+    r = RootLocusSeries(G)
+    assert isinstance(r.expr, TransferFunction)
+    assert r.label == ""
+    assert r.rendering_kw == {}
+    data = r.get_data()
+    # quick way to verify that I'm using ct.root_locus for data generation
+    assert len(data) == 2
+    # the following tests that there are 3 "branches" on the root locus plot
+    assert data[0].shape[1] == 3
+
+
+def test_root_locus_series_2():
+    # verify that RootLocusSeries is able to deal with transfer functions
+    # from the ``control`` module and from ``scipy.signal``.
+    G1 = ct.tf([1, 0, -0.5], [1, 2, 3, 4])
+    s1 = RootLocusSeries(G1)
+    assert s1.expr is None
+    assert isinstance(s1._control_tf, ct.TransferFunction)
+    assert len(s1.get_data()) == 2
+
+    G2 = signal.TransferFunction([1, 0, -0.5], [1, 2, 3, 4])
+    s2 = RootLocusSeries(G2)
+    assert s2.expr is None
+    assert isinstance(s2._control_tf, ct.TransferFunction)
+    assert len(s2.get_data()) == 2
 
 
 def test_sgrid_line_series():

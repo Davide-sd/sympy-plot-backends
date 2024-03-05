@@ -1,7 +1,7 @@
 from spb.defaults import cfg
 from sympy import (
     Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed, ImageSet,
-    FiniteSet, Basic, Float, Integer, Rational
+    FiniteSet, Basic, Float, Integer, Rational, Poly, fraction
 )
 from sympy.vector import BaseScalar
 from sympy.core.function import AppliedUndef
@@ -679,3 +679,55 @@ def is_number(t, allow_complex=True):
     else:
         number_types = (Float, Integer, Rational, float, int)
     return isinstance(t, number_types)
+
+
+def tf_to_control(tf, gen=None):
+    """Convert a transfer function to a ``control.TransferFunction``.
+
+    Parameters
+    ==========
+    tf : Expr, sympy.physics.control.TransferFunction, scipy.signal.TransferFunction
+        If the transfer function is a symbolic expression, it must be a
+        rational expression.
+    gen : Symbol or None
+        The s or z variable. It is only used if ``tf`` is a symbolic
+        expression containing multiple free symbols.
+
+    Returns
+    =======
+    tf : ct.TransferFunction
+    """
+    ct = import_module("control")
+    sp = import_module("scipy")
+    sympy = import_module("sympy")
+
+    def _from_sympy_to_ct(num, den):
+        fs = num.free_symbols.union(den.free_symbols)
+        if len(fs) != 1:
+            raise ValueError(
+                "In order to convert a SymPy trasfer function to a "
+                "``control`` transfer function, there must only be "
+                "one free-symbol.\nReceived: %s" % fs
+            )
+        s = fs.pop()
+        n, d = [Poly(t, s).all_coeffs() for t in [num, den]]
+        n = [float(t) for t in n]
+        d = [float(t) for t in d]
+        return ct.tf(n, d)
+
+    if isinstance(tf, Expr):
+        if gen is None:
+            gen = tf.free_symbols.pop()
+        tf = sympy.physics.control.TransferFunction.from_rational_expression(
+            tf, gen)
+        return _from_sympy_to_ct(tf.num, tf.den)
+    elif isinstance(tf, sympy.physics.control.TransferFunction):
+        return _from_sympy_to_ct(tf.num, tf.den)
+    elif isinstance(tf, sp.signal.TransferFunction):
+        return ct.tf(tf.num, tf.den, dt=0 if tf.dt is None else tf.dt)
+    else:
+        raise TypeError(
+            "Transfer function's type not recognized.\n" +
+            "Received: type(tf) = %s\n" % type(tf) +
+            "Expected: Expr or sympy.physics.control.TransferFunction"
+        )

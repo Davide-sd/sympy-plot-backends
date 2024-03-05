@@ -1,14 +1,15 @@
 from spb.defaults import TWO_D_B
 from spb.series import (
     List2DSeries, LineOver1DRangeSeries, HVLineSeries, NyquistLineSeries,
-    NicholsLineSeries, RootLocusSeries, SGridLineSeries, ZGridLineSeries
+    NicholsLineSeries, RootLocusSeries, SGridLineSeries, ZGridLineSeries,
+    SystemResponseSeries
 )
 from spb.utils import prange, is_number
 import numpy as np
 from sympy import (
     roots, exp, Poly, degree, re, im, apart, Dummy, symbols,
     I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt, cos, acos, sin,
-    floor, ceiling, frac, pi, fraction, Expr, Tuple
+    floor, ceiling, frac, pi, fraction, Expr, Tuple, inverse_laplace_transform
 )
 from sympy.physics.control.lti import (
     SISOLinearTimeInvariant, TransferFunctionMatrix, TransferFunction
@@ -331,6 +332,18 @@ def _get_grid_series(sgrid, zgrid, existing_series):
     return grid
 
 
+def _ilt(expr, s, t):
+    """_fast_inverse_laplace and inverse_laplace_transform are not on-par
+    feature wise. First attempt the fast approach, if it fails go for the
+    slow approach.
+    """
+    try:
+        y = _fast_inverse_laplace(expr, s, t)
+    except NotImplementedError:
+        y = inverse_laplace_transform(expr, s, t)
+    return y
+
+
 def _step_response_helper(
     system, label, lower_limit, upper_limit, prec, **kwargs
 ):
@@ -341,7 +354,7 @@ def _step_response_helper(
     expr = apart(expr, system.var, full=True)
 
     _x = Dummy("x")
-    _y = _fast_inverse_laplace(expr, system.var, _x).evalf(prec)
+    _y = _ilt(expr, system.var, _x).evalf(prec)
     # if `params` is given, _y might contain RootSum, which is not implemented
     # in Numpy. `doit()` is going to expand it, so that Numpy can be used.
     _y = _y.doit()
@@ -352,9 +365,42 @@ def _step_response_helper(
     )
 
 
+def _step_response_with_control_helper(
+    system, label, lower_limit, upper_limit, prec, **kwargs
+):
+    system = _preprocess_system(system, **kwargs)
+    _check_system(system)
+
+    expr = system.to_expr()
+    _x = Dummy("x")
+    return SystemResponseSeries(
+        expr, prange(_x, lower_limit, upper_limit),
+        label, force_real_eval=True, response_type="step", **kwargs
+    )
+
+
+def _check_lower_limit_and_control(lower_limit, control):
+    # allows parametric lower_limit
+    lower_limit = sympify(lower_limit)
+    if lower_limit.is_Number and lower_limit < 0:
+        raise ValueError(
+            "Lower limit of time must be greater than or equal to zero."
+        )
+    if (
+        (lower_limit.is_Number and lower_limit > 0) or
+        (len(lower_limit.free_symbols) > 0)
+    ):
+        warnings.warn(
+            "You are evaluating a transfer function using the ``control`` "
+            "module, but you also set ``lower_limit != 0``. This is likely "
+            "going to produce incorrect results. Please, consider "
+            "setting ``control=False`` when using ``lower_limit != 0``."
+        )
+
+
 def step_response(
     system, lower_limit=0, upper_limit=10, prec=8,
-    label=None, rendering_kw=None, **kwargs
+    label=None, rendering_kw=None, control=True, **kwargs
 ):
     """
     Returns the unit step response of a continuous-time system. It is
@@ -374,7 +420,9 @@ def step_response(
           which will be converted to an object of type
           :class:`~sympy.physics.control.TransferFunction`.
     lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0.
+        The lower limit of the plot range. Defaults to 0. If a different value
+        is to be used, also set ``control=False`` (see examples in order to
+        understand why).
     upper_limit : Number, optional
         The upper limit of the plot range. Defaults to 10.
     prec : int, optional
@@ -386,6 +434,13 @@ def step_response(
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
+    control : bool
+        If True, computes the step response with the ``control``
+        module, which uses numerical integration. If False, computes the
+        step response with ``sympy``, which uses the inverse Laplace transform.
+        Default to True.
+    control_kw : dict
+        A dictionary of keyword arguments passed to ``control.step_response``.
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line`.
@@ -404,24 +459,39 @@ def step_response(
         :format: doctest
         :include-source: True
 
-        >>> from sympy.abc import s
+        >>> from sympy.abc import s, t
+        >>> from sympy import Heaviside
         >>> from sympy.physics.control.lti import TransferFunction
         >>> from spb import *
         >>> tf1 = TransferFunction(
         ...     8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
         >>> graphics(
-        ...     step_response(tf1),
+        ...     line(Heaviside(t), (t, -1, 10), label="step"),
+        ...     step_response(tf1, label="response"),
         ...     xlabel="Time [s]", ylabel="Amplitude"
         ... )   # doctest: +SKIP
 
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
-    Note the use of parametric ``lower_limit`` and ``upper_limit``.
+    A few observations:
+
+    1. The first system's response will be computed with SymPy because
+       ``control=False`` was set.
+    2. The second system's response will be computed with the ``control``
+       module, because ``control=True`` was set.
+    3. Note the use of parametric ``lower_limit`` and ``upper_limit``.
+    4. By moving the "lower limit" slider, the first system (evaluated with
+       SymPy) will start from some amplitude value. However, on the second
+       system (evaluated with the ``control`` module), the amplitude always
+       starts from 0. That's because the numerical integration's initial
+       condition is 0. Hence, if ``lower_limit`` is to be used, please
+       set ``control=False``.
 
     .. panel-screenshot::
        :small-size: 800, 700
 
-       from sympy.abc import a, b, c, d, e, f, g, s
+       from sympy.abc import a, b, c, d, e, f, g, s, t
+       from sympy import Heaviside
        from sympy.physics.control.lti import TransferFunction
        from spb import *
        tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
@@ -437,10 +507,13 @@ def step_response(
            g: (10, 0, 25, 50, None, "upper limit"),
        }
        graphics(
+           line(Heaviside(t), (t, -1, 10), label="step"),
            step_response(
-               tf1, label="A", lower_limit=f, upper_limit=g, params=params),
+               tf1, label="A", lower_limit=f, upper_limit=g, params=params,
+               control=False),
            step_response(
-               tf2, label="B", lower_limit=f, upper_limit=g, params=params),
+               tf2, label="B", lower_limit=f, upper_limit=g, params=params,
+               control=True),
            use_latex=False, xlabel="Time [s]", ylabel="Amplitude"
        )
 
@@ -455,15 +528,11 @@ def step_response(
     .. [1] https://www.mathworks.com/help/control/ref/lti.step.html
 
     """
-    # allows parametric lower_limit
-    lower_limit = sympify(lower_limit)
-    if lower_limit.is_Number and lower_limit < 0:
-        raise ValueError(
-            "Lower limit of time must be greater than or equal to zero."
-        )
+    _check_lower_limit_and_control(lower_limit, control)
 
+    func = _step_response_with_control_helper if control else _step_response_helper
     series = [
-        _step_response_helper(
+        func(
             system, label, lower_limit, upper_limit, prec,
             rendering_kw=rendering_kw, **kwargs
         )
@@ -480,7 +549,7 @@ def _impulse_response_helper(
     _x = Dummy("x")
     expr = system.to_expr()
     expr = apart(expr, system.var, full=True)
-    _y = _fast_inverse_laplace(expr, system.var, _x).evalf(prec)
+    _y = _ilt(expr, system.var, _x).evalf(prec)
     _y = _y.doit()
 
     return LineOver1DRangeSeries(
@@ -489,9 +558,24 @@ def _impulse_response_helper(
     )
 
 
+def _impulse_response_with_control_helper(
+    system, label, lower_limit, upper_limit, prec, **kwargs
+):
+    system = _preprocess_system(system, **kwargs)
+    _check_system(system)
+
+    _x = Dummy("x")
+    expr = system.to_expr()
+
+    return SystemResponseSeries(
+        expr, prange(_x, lower_limit, upper_limit),
+        label, force_real_eval=True, response_type="impulse", **kwargs
+    )
+
+
 def impulse_response(
     system, prec=8, lower_limit=0, upper_limit=10,
-    label=None, rendering_kw=None, **kwargs
+    label=None, rendering_kw=None, control=True, **kwargs
 ):
     """
     Returns the unit impulse response (Input is the Dirac-Delta Function) of a
@@ -511,7 +595,9 @@ def impulse_response(
           which will be converted to an object of type
           :class:`~sympy.physics.control.TransferFunction`.
     lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0.
+        The lower limit of the plot range. Defaults to 0. If a different value
+        is to be used, also set ``control=False`` (see examples in order to
+        understand why).
     upper_limit : Number, optional
         The upper limit of the plot range. Defaults to 10.
     prec : int, optional
@@ -523,6 +609,13 @@ def impulse_response(
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
+    control : bool
+        If True, computes the step response with the ``control``
+        module, which uses numerical integration. If False, computes the
+        step response with ``sympy``, which uses the inverse Laplace transform.
+        Default to True.
+    control_kw : dict
+        A dictionary of keyword arguments passed to ``control.step_response``.
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line`.
@@ -552,7 +645,19 @@ def impulse_response(
         ... )   # doctest: +SKIP
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
-    Note the use of parametric ``lower_limit`` and ``upper_limit``.
+    A few observations:
+
+    1. The first system's response will be computed with SymPy because
+       ``control=False`` was set.
+    2. The second system's response will be computed with the ``control``
+       module, because ``control=True`` was set.
+    3. Note the use of parametric ``lower_limit`` and ``upper_limit``.
+    4. By moving the "lower limit" slider, the first system (evaluated with
+       SymPy) will start from some amplitude value. However, on the second
+       system (evaluated with the ``control`` module), the amplitude always
+       starts from 0. That's because the numerical integration's initial
+       condition is 0. Hence, if ``lower_limit`` is to be used, please
+       set ``control=False``.
 
     .. panel-screenshot::
        :small-size: 800, 700
@@ -575,9 +680,11 @@ def impulse_response(
        }
        graphics(
            impulse_response(
-               tf1, label="A", lower_limit=g, upper_limit=h, params=params),
+               tf1, label="A", lower_limit=g, upper_limit=h, params=params,
+               control=True),
            impulse_response(
-               tf2, label="B", lower_limit=g, upper_limit=h, params=params),
+               tf2, label="B", lower_limit=g, upper_limit=h, params=params,
+               control=False),
            use_latex=False, xlabel="Time [s]", ylabel="Amplitude"
        )
 
@@ -593,15 +700,11 @@ def impulse_response(
     .. [1] https://www.mathworks.com/help/control/ref/lti.impulse.html
 
     """
-    # allows parametric lower_limit
-    lower_limit = sympify(lower_limit)
-    if lower_limit.is_Number and lower_limit < 0:
-        raise ValueError(
-            "Lower limit of time must be greater than or equal to zero."
-        )
+    _check_lower_limit_and_control(lower_limit, control)
 
+    func = _impulse_response_with_control_helper if control else _impulse_response_helper
     return [
-        _impulse_response_helper(
+        func(
             system, label, lower_limit, upper_limit, prec,
             rendering_kw=rendering_kw, **kwargs
         )
@@ -617,7 +720,7 @@ def _ramp_response_helper(
     _x = Dummy("x")
     expr = (slope*system.to_expr()) / ((system.var)**2)
     expr = apart(expr, system.var, full=True)
-    _y = _fast_inverse_laplace(expr, system.var, _x).evalf(prec)
+    _y = _ilt(expr, system.var, _x).evalf(prec)
     _y = _y.doit()
 
     return LineOver1DRangeSeries(
@@ -626,9 +729,24 @@ def _ramp_response_helper(
     )
 
 
+def _ramp_response_with_control_helper(
+    system, label, lower_limit, upper_limit, prec, slope, **kwargs
+):
+    system = _preprocess_system(system, **kwargs)
+    _check_system(system)
+
+    _x = Dummy("x")
+    expr = slope*system.to_expr()
+
+    return SystemResponseSeries(
+        expr, prange(_x, lower_limit, upper_limit),
+        label, force_real_eval=True, response_type="ramp", **kwargs
+    )
+
+
 def ramp_response(
     system, prec=8, slope=1, lower_limit=0, upper_limit=10,
-    label=None, rendering_kw=None, **kwargs
+    label=None, rendering_kw=None, control=True, **kwargs
 ):
     """
     Returns the ramp response of a continuous-time system.
@@ -656,7 +774,9 @@ def ramp_response(
     slope : Number, optional
         The slope of the input ramp function. Defaults to 1.
     lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0.
+        The lower limit of the plot range. Defaults to 0. If a different value
+        is to be used, also set ``control=False`` (see examples in order to
+        understand why).
     upper_limit : Number, optional
         The upper limit of the plot range. Defaults to 10.
     label : str, optional
@@ -665,6 +785,13 @@ def ramp_response(
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
+    control : bool
+        If True, computes the step response with the ``control``
+        module, which uses numerical integration. If False, computes the
+        step response with ``sympy``, which uses the inverse Laplace transform.
+        Default to True.
+    control_kw : dict
+        A dictionary of keyword arguments passed to ``control.step_response``.
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line`.
@@ -683,42 +810,58 @@ def ramp_response(
         :format: doctest
         :include-source: True
 
-        >>> from sympy.abc import s
+        >>> from sympy.abc import s, t
         >>> from sympy.physics.control.lti import TransferFunction
         >>> from spb import *
-        >>> tf1 = TransferFunction(s, (s+4)*(s+8), s)
+        >>> tf1 = TransferFunction(1, (s+1), s)
+        >>> ul = 10
         >>> graphics(
-        ...     ramp_response(tf1, upper_limit=2),
+        ...     line(t, (t, 0, ul), label="ramp"),
+        ...     ramp_response(tf1, upper_limit=ul, label="response"),
         ...     xlabel="Time [s]", ylabel="Amplitude"
         ... )    # doctest: +SKIP
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
-    Note the use of parametric ``lower_limit``, ``upper_limit`` and ``slope``.
+    A few observations:
+
+    1. The first system's response will be computed with SymPy because
+       ``control=False`` was set.
+    2. The second system's response will be computed with the ``control``
+       module, because ``control=True`` was set.
+    3. Note the use of parametric ``lower_limit`` and ``upper_limit``.
+    4. By moving the "lower limit" slider, the first system (evaluated with
+       SymPy) will start from some amplitude value. However, on the second
+       system (evaluated with the ``control`` module), the amplitude always
+       starts from 0. That's because the numerical integration's initial
+       condition is 0. Hence, if ``lower_limit`` is to be used, please
+       set ``control=False``.
 
     .. panel-screenshot::
        :small-size: 800, 675
 
-       from sympy.abc import a, b, c, d, e, s
+       from sympy import symbols
        from sympy.physics.control.lti import TransferFunction
        from spb import *
-       tf1 = TransferFunction(s, (s+4)*(s+8), s)
-       tf2 = TransferFunction(s, (s+a)*(s+b), s)
+       a, b, c, xi, wn, s, t = symbols("a, b, c, xi, omega_n, s, t")
+       tf1 = TransferFunction(25, s**2 + 10*s + 25, s)
+       tf2 = TransferFunction(wn**2, s**2 + 2*xi*wn*s + wn**2, s)
        params = {
-           a: (6, 0, 10),
-           b: (7, 0, 10),
+           xi: (6, 0, 10),
+           wn: (25, 0, 50),
            # NOTE: remove `None` if using ipywidgets
-           c: (1, 0, 10, 50, None, "slope"),
-           d: (0, 0, 5, 50, None, "lower limit"),
-           e: (5, 2, 10, 50, None, "upper limit"),
+           a: (1, 0, 10, 50, None, "slope"),
+           b: (0, 0, 5, 50, None, "lower limit"),
+           c: (5, 2, 10, 50, None, "upper limit"),
        }
        graphics(
+           line(a*t, (t, 0, c), params=params, label="ramp"),
            ramp_response(
-               tf1, label="A", slope=c, lower_limit=d, upper_limit=e,
-               params=params),
+               tf1, label="A", slope=a, lower_limit=b, upper_limit=c,
+               params=params, control=False),
            ramp_response(
-               tf2, label="B", slope=c, lower_limit=d, upper_limit=e,
-               params=params),
-           xlabel="Time [s]", ylabel="Amplitude", use_latex=False)
+               tf2, label="B", slope=a, lower_limit=b, upper_limit=c,
+               params=params, control=True),
+           xlabel="Time [s]", ylabel="Amplitude", use_latex=False, imodule="panel")
 
     See Also
     ========
@@ -731,15 +874,11 @@ def ramp_response(
     .. [1] https://en.wikipedia.org/wiki/Ramp_function
 
     """
-    # allows parametric lower_limit
-    lower_limit = sympify(lower_limit)
-    if lower_limit.is_Number and lower_limit < 0:
-        raise ValueError(
-            "Lower limit of time must be greater than or equal to zero."
-        )
+    _check_lower_limit_and_control(lower_limit, control)
 
+    func = _ramp_response_with_control_helper if control else _ramp_response_helper
     return [
-        _ramp_response_helper(
+        func(
             system, label, lower_limit, upper_limit, prec, slope,
             rendering_kw=rendering_kw, **kwargs
         )

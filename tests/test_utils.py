@@ -7,13 +7,16 @@ from spb import (
 )
 from spb.utils import (
     _create_missing_ranges, _plot_sympify,
-    _validate_kwargs, prange, extract_solution,
+    _validate_kwargs, prange, extract_solution, tf_to_control
 )
 from sympy import (
     symbols, Expr, Tuple, Integer, sin, cos, Matrix,
     I, Polygon, solveset, FiniteSet, ImageSet,
 )
-
+from sympy.physics.control import TransferFunction
+import numpy as np
+import control as ct
+import scipy.signal as signal
 
 x, a, b = symbols("x a b")
 
@@ -233,3 +236,58 @@ def test_extract_solution():
     res = extract_solution(sol, 20)
     assert len(res) == 40
     assert isinstance(res, FiniteSet)
+
+
+def _is_control_tf_equals(A, B):
+    assert isinstance(A, ct.TransferFunction)
+    assert isinstance(B, ct.TransferFunction)
+    assert A.ninputs == B.ninputs
+    assert A.noutputs == B.noutputs
+    for n1, n2 in zip(A.num, B.num):
+        assert np.allclose(n1, n2)
+    for d1, d2 in zip(A.den, B.den):
+        assert np.allclose(d1, d2)
+    assert A.dt == B.dt
+
+
+def test_tf_to_control_1():
+    # symbolic expressions to ct.TransferFunction
+    s = symbols("s")
+
+    G = s / (s+4) / (s+8)
+    _is_control_tf_equals(
+        tf_to_control(G),
+        ct.tf([1., 0.], [1., 12., 32.])
+    )
+
+    _is_control_tf_equals(
+        tf_to_control(2 * G),
+        ct.tf([2., 0.], [1., 12., 32.])
+    )
+
+
+def test_tf_to_control_2():
+    # sympy.physics.control.TransferFunction to ct.TransferFunction
+    s = symbols("s")
+
+    G = TransferFunction(25, s**2 + 10*s + 25, s)
+    _is_control_tf_equals(
+        tf_to_control(G),
+        ct.tf([25.], [1., 10., 25.])
+    )
+
+    G = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
+    _is_control_tf_equals(
+        tf_to_control(G),
+        ct.tf([8., 18., 32], [1., 6, 14., 24.])
+    )
+
+
+def test_tf_to_control_3():
+    # scipy.signal.TransferFunction to ct.TransferFunction
+
+    G = signal.TransferFunction([1, 3, 3], [1, 2, 1])
+    _is_control_tf_equals(
+        tf_to_control(G),
+        ct.tf([1., 3., 3.], [1., 2., 1.])
+    )

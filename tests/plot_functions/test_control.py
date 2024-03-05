@@ -246,7 +246,8 @@ def check_point_accuracy(a, b):
 def test_impulse_response():
 
     def impulse_res_tester(sys, expected_value):
-        p = plot_impulse_response(sys, show_axes=False, show=False, n=10)
+        p = plot_impulse_response(sys,
+            control=False, show_axes=False, show=False, n=10, prec=16)
         x, y = p[0].get_data()
         x_check = check_point_accuracy(x, expected_value[0])
         y_check = check_point_accuracy(y, expected_value[1])
@@ -295,7 +296,8 @@ def test_impulse_response():
 def test_step_response():
 
     def step_res_tester(sys, expected_value):
-        p = plot_step_response(sys, show_axes=False, show=False, n=10)
+        p = plot_step_response(sys,
+            control=False, show_axes=False, show=False, n=10)
         x, y = p[0].get_data()
         x_check = check_point_accuracy(x, expected_value[0])
         y_check = check_point_accuracy(y, expected_value[1])
@@ -341,7 +343,8 @@ def test_step_response():
 def test_ramp_response():
 
     def ramp_res_tester(sys, num_points, expected_value, slope=1):
-        p = plot_ramp_response(sys, show_axes=False, show=False,
+        p = plot_ramp_response(sys,
+            control=False, show_axes=False, show=False,
             slope=slope, n=num_points)
         x, y = p[0].get_data()
         x_check = check_point_accuracy(x, expected_value[0])
@@ -814,7 +817,7 @@ def test_new_ways_of_providing_transfer_function(func, params):
 def test_plot_bode_title():
     G1 = (s+5)/(s+2)**2
     G2 = 1/s**2
-    
+
     p = plot_bode(G1, show=False)
     assert p.args[0].title == f"Bode Plot of ${latex(G1)}$"
     assert p.args[1].title == ""

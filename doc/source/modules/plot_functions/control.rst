@@ -2,7 +2,8 @@ Control
 -------
 
 This module contains plotting functions for some of the common plots used
-in control system.
+in control system. Refer to :ref:`graphicscontrol` for a general explanation
+about the underlying working principles.
 
 **NOTE:** 
 For technical reasons, all interactive-widgets plots in this documentation are
