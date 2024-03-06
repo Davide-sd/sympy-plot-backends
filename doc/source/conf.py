@@ -221,7 +221,12 @@ epub_exclude_files = ['search.html']
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'sympy': ('https://docs.sympy.org/latest/', None),
+    'control': ('https://python-control.readthedocs.io/en/latest/', None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+}
 
 
 def linkcode_resolve(domain, info):
