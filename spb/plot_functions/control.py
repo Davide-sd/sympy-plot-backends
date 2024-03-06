@@ -12,7 +12,8 @@ from spb.plotgrid import plotgrid
 from spb.series import HVLineSeries
 from spb.utils import _instantiate_backend
 from sympy import exp, latex, sympify, Expr
-from sympy.physics.control.lti import SISOLinearTimeInvariant
+from sympy.external import import_module
+from sympy.physics.control.lti import SISOLinearTimeInvariant, TransferFunction
 
 
 __all__ = [
@@ -39,7 +40,7 @@ def _create_plot_helper(series, show_axes, **kwargs):
     return _instantiate_backend(Backend, *series, **kwargs)
 
 
-def _unpack_systems(systems):
+def _unpack_systems(systems, **kwargs):
     """Unpack `systems` into `[(sys1, label1), (sys2, label2), ...]`.
     """
     if (len(systems) > 1) and isinstance(systems[0], dict):
@@ -65,7 +66,11 @@ def _unpack_systems(systems):
                 ns if not isinstance(s[-1], str) else (ns, s[-1]))
         systems = new_systems.copy()
     if not isinstance(systems[0], (list, tuple)):
-        labels = [f"System {i+1}" for i in range(len(systems))]
+        provided_label = kwargs.get("label", None)
+        if isinstance(provided_label, str):
+            labels = [provided_label] * len(systems)
+        else:
+            labels = [f"System {i+1}" for i in range(len(systems))]
         systems = [(system, label) for system, label in zip(systems, labels)]
     return systems
 
@@ -74,11 +79,24 @@ def _create_title_helper(systems, base):
     """Create a suitable title depending on the number of systems being shown
     and wheter the backend supports latex or not.
     """
+    def _is_siso_system(sys):
+        ct = import_module("control")
+        sp = import_module("scipy")
+        if isinstance(sys, (TransferFunction, sp.signal.TransferFunction)):
+            return True
+        if isinstance(sys, ct.TransferFunction):
+            if (sys.ninputs == 1) and (sys.noutputs == 1):
+                return True
+            return False
+        return False
+
     def func(wrapper, use_latex):
         title = base
         if len(systems) == 1:
             label = systems[0][1]
-            if label == "System 1":
+            # MIMO systems are difficult to render on titles/legends.
+            # Only show SISO systems on title.
+            if label == "System 1" and _is_siso_system(systems[0][0]):
                 print_func = latex if use_latex else str
                 label = wrapper % f"{print_func(systems[0][0])}"
             title = base + f" of {label}"
@@ -106,8 +124,8 @@ def plot_pole_zero(
         It can be:
 
         * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * a symbolic expression in rational form, which will be converted to
+          an object of type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
           :class:`~sympy.physics.control.TransferFunction`.
@@ -223,7 +241,8 @@ pole_zero_plot = plot_pole_zero
 
 def plot_step_response(
     *systems, lower_limit=0, upper_limit=10,
-    prec=8, show_axes=False, control=True, **kwargs
+    prec=8, show_axes=False, control=True,
+    input=None, output=None, **kwargs
 ):
     """
     Returns the unit step response of a continuous-time system. It is
@@ -232,19 +251,23 @@ def plot_step_response(
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type
-        The LTI SISO system for which the Step Response is to be computed.
+    system : LTI system type
+        The LTI system for which the step response is to be computed.
         It can be:
 
-        * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form, which will be converted to
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
-        * a sequence of LTI SISO systems.
-        * a sequence of 2-tuples ``(LTI SISO system, label)``.
-        * a dict mapping LTI SISO systems to labels.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
+        * a sequence of LTI systems.
+        * a sequence of 2-tuples ``(LTI system, label)``.
+        * a dict mapping LTI systems to labels.
     lower_limit : Number, optional
         The lower limit of the plot range. Defaults to 0. If a different value
         is to be used, also set ``control=False`` (see examples in order to
@@ -261,6 +284,16 @@ def plot_step_response(
         module, which uses numerical integration. If False, computes the
         step response with ``sympy``, which uses the inverse Laplace transform.
         Default to True.
+    control_kw : dict
+        A dictionary of keyword arguments passed to
+        :py:func:`control.step_response`.
+    input : int, optional
+        Only compute the step response for the listed input.  If not
+        specified, the step responses for each independent input are
+        computed (as separate traces).
+    output : int, optional
+        Only compute the step response for the listed output. If not
+        specified, all outputs are reported.
     **kwargs : dict
         Refer to :func:`~spb.graphics.control.step_response` for a full list
         of keyword arguments to customize the appearances of lines.
@@ -272,8 +305,10 @@ def plot_step_response(
     Examples
     ========
 
+    Plotting a SISO system:
+
     .. plot::
-        :context: close-figs
+        :context: reset
         :format: doctest
         :include-source: True
 
@@ -282,6 +317,21 @@ def plot_step_response(
         >>> from spb import plot_step_response
         >>> tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
         >>> plot_step_response(tf1)   # doctest: +SKIP
+
+    Plotting a MIMO system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> from sympy.physics.control.lti import TransferFunctionMatrix
+        >>> tf1 = TransferFunction(1, s + 2, s)
+        >>> tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
+        >>> tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
+        >>> tfm = TransferFunctionMatrix(
+        ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
+        >>> plot_step_response(tfm)
 
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
@@ -333,17 +383,21 @@ def plot_step_response(
             "Lower limit of time must be greater than or equal to zero."
         )
 
-    systems = _unpack_systems(systems)
-    series = [
-        step_response(
-            s, lower_limit, upper_limit, prec, l, control=control, **kwargs
-        )[0] for s, l in systems
-    ]
+    systems = _unpack_systems(systems, **kwargs)
+    series = []
+    for s, l in systems:
+        kw = kwargs.copy()
+        kw["label"] = l
+        series.extend(
+            step_response(
+                s, lower_limit, upper_limit, prec, control=control,
+                input=input, output=output, **kw
+            )
+        )
 
     kwargs.setdefault("xlabel", "Time [s]")
     kwargs.setdefault("ylabel", "Amplitude")
-    kwargs.setdefault("title", _create_title_helper(
-        systems, "Step Response"))
+    kwargs.setdefault("title", "Step Response")
     return _create_plot_helper(series, show_axes, **kwargs)
 
 
@@ -352,7 +406,8 @@ step_response_plot = plot_step_response
 
 def plot_impulse_response(
     *systems, prec=8, lower_limit=0,
-    upper_limit=10, show_axes=False, control=True, **kwargs
+    upper_limit=10, show_axes=False, control=True,
+    input=None, output=None, **kwargs
 ):
     """
     Returns the unit impulse response (Input is the Dirac-Delta Function) of a
@@ -361,19 +416,23 @@ def plot_impulse_response(
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type
-        The LTI SISO system for which the Impulse Response is to be computed.
+    system : LTI system type
+        The LTI system for which the impulse response is to be computed.
         It can be:
 
-        * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form, which will be converted to
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
-        * a sequence of LTI SISO systems.
-        * a sequence of 2-tuples ``(LTI SISO system, label)``.
-        * a dict mapping LTI SISO systems to labels.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
+        * a sequence of LTI systems.
+        * a sequence of 2-tuples ``(LTI system, label)``.
+        * a dict mapping LTI systems to labels.
     lower_limit : Number, optional
         The lower limit of the plot range. Defaults to 0. If a different value
         is to be used, also set ``control=False`` (see examples in order to
@@ -390,6 +449,16 @@ def plot_impulse_response(
         module, which uses numerical integration. If False, computes the
         step response with ``sympy``, which uses the inverse Laplace transform.
         Default to True.
+    control_kw : dict
+        A dictionary of keyword arguments passed to
+        :py:func:`control.impulse_response`.
+    input : int, optional
+        Only compute the impulse response for the listed input.  If not
+        specified, the impulse responses for each independent input are
+        computed (as separate traces).
+    output : int, optional
+        Only compute the impulse response for the listed output. If not
+        specified, all outputs are reported.
     **kwargs : dict
         Refer to :func:`~spb.graphics.control.impulse_response` for a full list
         of keyword arguments to customize the appearances of lines.
@@ -401,8 +470,10 @@ def plot_impulse_response(
     Examples
     ========
 
+    Plotting a SISO system:
+
     .. plot::
-        :context: close-figs
+        :context: reset
         :format: doctest
         :include-source: True
 
@@ -412,6 +483,21 @@ def plot_impulse_response(
         >>> tf1 = TransferFunction(
         ...     8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
         >>> plot_impulse_response(tf1)   # doctest: +SKIP
+
+    Plotting a MIMO system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> from sympy.physics.control.lti import TransferFunctionMatrix
+        >>> tf1 = TransferFunction(1, s + 2, s)
+        >>> tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
+        >>> tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
+        >>> tfm = TransferFunctionMatrix(
+        ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
+        >>> plot_impulse_response(tfm)
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     A few observations:
@@ -464,17 +550,21 @@ def plot_impulse_response(
             "Lower limit of time must be greater than or equal to zero."
         )
 
-    systems = _unpack_systems(systems)
-    series = [
-        impulse_response(
-            s, prec, lower_limit, upper_limit, l, control=control, **kwargs
-        )[0] for s, l in systems
-    ]
+    systems = _unpack_systems(systems, **kwargs)
+    series = []
+    for s, l in systems:
+        kw = kwargs.copy()
+        kw["label"] = l
+        series.extend(
+            impulse_response(
+                s, prec, lower_limit, upper_limit, control=control,
+                input=input, output=output, **kw
+            )
+        )
 
     kwargs.setdefault("xlabel", "Time [s]")
     kwargs.setdefault("ylabel", "Amplitude")
-    kwargs.setdefault("title", _create_title_helper(
-        systems, "Impulse Response"))
+    kwargs.setdefault("title", "Impulse Response")
     return _create_plot_helper(series, show_axes, **kwargs)
 
 
@@ -483,7 +573,8 @@ impulse_response_plot = plot_impulse_response
 
 def plot_ramp_response(
     *systems, slope=1, prec=8,
-    lower_limit=0, upper_limit=10, show_axes=False, control=True, **kwargs
+    lower_limit=0, upper_limit=10, show_axes=False, control=True,
+    input=None, output=None, **kwargs
 ):
     """
     Returns the ramp response of a continuous-time system.
@@ -495,19 +586,23 @@ def plot_ramp_response(
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type
-        The LTI SISO system for which the Ramp Response is to be computed.
+    system : LTI system type
+        The LTI system for which the ramp response is to be computed.
         It can be:
 
-        * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form, which will be converted to
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
-        * a sequence of LTI SISO systems.
-        * a sequence of 2-tuples ``(LTI SISO system, label)``.
-        * a dict mapping LTI SISO systems to labels.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
+        * a sequence of LTI systems.
+        * a sequence of 2-tuples ``(LTI system, label)``.
+        * a dict mapping LTI systems to labels.
     slope : Number, optional
         The slope of the input ramp function. Defaults to 1.
     lower_limit : Number, optional
@@ -526,6 +621,16 @@ def plot_ramp_response(
         module, which uses numerical integration. If False, computes the
         step response with ``sympy``, which uses the inverse Laplace transform.
         Default to True.
+    control_kw : dict
+        A dictionary of keyword arguments passed to
+        :py:func:`control.forced_response`.
+    input : int, optional
+        Only compute the ramp response for the listed input.  If not
+        specified, the ramp responses for each independent input are
+        computed (as separate traces).
+    output : int, optional
+        Only compute the ramp response for the listed output. If not
+        specified, all outputs are reported.
     **kwargs : dict
         Refer to :func:`~spb.graphics.control.ramp_response` for a full list
         of keyword arguments to customize the appearances of lines.
@@ -537,8 +642,10 @@ def plot_ramp_response(
     Examples
     ========
 
+    Plotting a SISO system:
+
     .. plot::
-        :context: close-figs
+        :context: reset
         :format: doctest
         :include-source: True
 
@@ -547,6 +654,21 @@ def plot_ramp_response(
         >>> from spb import plot_ramp_response
         >>> tf1 = TransferFunction(1, (s+1), s)
         >>> plot_ramp_response(tf1)   # doctest: +SKIP
+
+    Plotting a MIMO system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> from sympy.physics.control.lti import TransferFunctionMatrix
+        >>> tf1 = TransferFunction(1, s + 2, s)
+        >>> tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
+        >>> tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
+        >>> tfm = TransferFunctionMatrix(
+        ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
+        >>> plot_ramp_response(tfm)
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     A few observations:
@@ -604,18 +726,21 @@ def plot_ramp_response(
             "Lower limit of time must be greater than or equal to zero."
         )
 
-    systems = _unpack_systems(systems)
-    series = [
-        ramp_response(
-            s, prec, slope, lower_limit, upper_limit, l,
-            control=control, **kwargs
-        )[0] for s, l in systems
-    ]
+    systems = _unpack_systems(systems, **kwargs)
+    series = []
+    for s, l in systems:
+        kw = kwargs.copy()
+        kw["label"] = l
+        series.extend(
+                ramp_response(
+                s, prec, slope, lower_limit, upper_limit,
+                control=control, input=input, output=output, **kw
+            )
+        )
 
     kwargs.setdefault("xlabel", "Time [s]")
     kwargs.setdefault("ylabel", "Amplitude")
-    kwargs.setdefault("title", _create_title_helper(
-        systems, "Ramp Response"))
+    kwargs.setdefault("title", "Ramp Response")
     return _create_plot_helper(series, show_axes, **kwargs)
 
 
@@ -711,8 +836,8 @@ def plot_bode(
         It can be:
 
         * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * a symbolic expression in rational form, which will be converted to
+          an object of type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
           :class:`~sympy.physics.control.TransferFunction`.
@@ -875,8 +1000,8 @@ def plot_nyquist(*systems, **kwargs):
         It can be:
 
         * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * a symbolic expression in rational form, which will be converted to
+          an object of type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
           :class:`~sympy.physics.control.TransferFunction`.
@@ -1059,8 +1184,8 @@ def plot_nichols(*systems, **kwargs):
         It can be:
 
         * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * a symbolic expression in rational form, which will be converted to
+          an object of type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
           :class:`~sympy.physics.control.TransferFunction`.
@@ -1177,8 +1302,8 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
         It can be:
 
         * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * a symbolic expression in rational form, which will be converted to
+          an object of type :class:`~sympy.physics.control.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
           :class:`~sympy.physics.control.TransferFunction`.

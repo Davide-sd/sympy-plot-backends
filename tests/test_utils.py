@@ -7,13 +7,14 @@ from spb import (
 )
 from spb.utils import (
     _create_missing_ranges, _plot_sympify,
-    _validate_kwargs, prange, extract_solution, tf_to_control
+    _validate_kwargs, prange, extract_solution,
+    tf_to_control, tf_to_sympy
 )
 from sympy import (
     symbols, Expr, Tuple, Integer, sin, cos, Matrix,
     I, Polygon, solveset, FiniteSet, ImageSet,
 )
-from sympy.physics.control import TransferFunction
+from sympy.physics.control import TransferFunction, TransferFunctionMatrix
 import numpy as np
 import control as ct
 import scipy.signal as signal
@@ -291,3 +292,91 @@ def test_tf_to_control_3():
         tf_to_control(G),
         ct.tf([1., 3., 3.], [1., 2., 1.])
     )
+
+
+def test_tf_to_sympy_1():
+    # symbolic expressions to TransferFunction
+
+    s = symbols("s")
+    G = s / (s+4) / (s+8)
+    assert tf_to_sympy(G).args == TransferFunction(s, (s+4) * (s+8), s).args
+
+
+def test_tf_to_sympy_2():
+    # SISO ct.TransferFunction to TransferFunction
+
+    G = ct.tf([1, 0], [1, 12, 32])
+    s = symbols("s")
+    assert tf_to_sympy(G).args == TransferFunction(s, s**2 + 12*s + 32, s).args
+
+
+def test_tf_to_sympy_3():
+    # SISO scipy.signal.TransferFunction to TransferFunction
+
+    G = signal.TransferFunction([1, 0], [1, 12, 32])
+    s = symbols("s")
+    assert tf_to_sympy(G).args == TransferFunction(
+        1.0*s, 1.0*s**2 + 12.0*s + 32.0, s).args
+
+
+def test_tf_to_sympy_4():
+    # MIMO ct.TransferFunction to TransferFunctionMatrix
+    G = ct.TransferFunction(
+        [[[1], [-1]], [[1, 1], [-1, -1]], [[1, 1], [-1, -1]]],
+        [[[1, 2], [1, 2]], [[1, 1, 1], [1, 1, 1]], [[1, 1, 1.5], [1, 1, 1.5]]]
+    )
+    H = tf_to_sympy(G)
+    assert isinstance(H, TransferFunctionMatrix)
+    s = symbols("s")
+    tf1 = TransferFunction(1, s + 2, s)
+    tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
+    tf3 = TransferFunction(s + 1, 1.0*s**2 + 1.0*s + 1.5, s)
+    assert H[0, 0].args == tf1.args
+    assert H[0, 1].args == (-tf1).args
+    assert H[1, 0].args == tf2.args
+    assert H[1, 1].args == (-tf2).args
+    assert H[2, 0].args == tf3.args
+    assert H[2, 1].args == (-tf3).args
+
+
+def test_tf_to_sympy_5():
+    # raise TypeError
+    raises(TypeError, lambda: tf_to_sympy(1))
+    raises(TypeError, lambda: tf_to_sympy([1, 2, 3]))
+    raises(TypeError, lambda: tf_to_sympy([[1, 2, 3], [1, 2, 3, 4]]))
+
+
+def test_tf_to_sympy_6():
+    # raise warnings caused by the lack of discrete-time transfer function
+    # in sympy
+
+    z = symbols("z")
+
+    G1 = ct.tf([1, 0], [1, 12, 32], dt=0.2)
+    with warns(
+        UserWarning,
+        match="At the time of writing this message, SymPy "
+    ):
+        H = tf_to_sympy(G1)
+        assert H.var == z
+
+
+    G2 = signal.TransferFunction([1, 0], [1, 12, 32], dt=0.2)
+    with warns(
+        UserWarning,
+        match="At the time of writing this message, SymPy "
+    ):
+        H = tf_to_sympy(G2)
+        assert H.var == z
+
+    G3 = ct.TransferFunction(
+        [[[1], [-1]], [[1, 1], [-1, -1]], [[1, 1], [-1, -1]]],
+        [[[1, 2], [1, 2]], [[1, 1, 1], [1, 1, 1]], [[1, 1, 1.5], [1, 1, 1.5]]],
+        dt=0.2
+    )
+    with warns(
+        UserWarning,
+        match="At the time of writing this message, SymPy "
+    ):
+        H = tf_to_sympy(G3)
+        assert H.var == z

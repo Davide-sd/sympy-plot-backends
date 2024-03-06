@@ -4619,7 +4619,8 @@ class SystemResponseSeries(Line2DBaseSeries):
             if isinstance(tf, Expr):
                 params_fs = set(self.params.keys())
                 fs = tf.free_symbols.difference(params_fs)
-                tf = TransferFunction.from_rational_expression(tf, fs.pop())
+                fs = fs.pop() if len(fs) > 0 else symbols("s")
+                tf = TransferFunction.from_rational_expression(tf, fs)
             self._expr = tf
             self._control_tf = None
             if not self.is_interactive:
@@ -4666,7 +4667,7 @@ class SystemResponseSeries(Line2DBaseSeries):
     def _check_fs(self):
         """ Checks if there are enogh parameters and free symbols.
         """
-        fs = {}
+        fs = set()
         if self._expr:
             fs = {self._expr.var}
         ranges, params = self.ranges, self.params

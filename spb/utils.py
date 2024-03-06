@@ -731,3 +731,81 @@ def tf_to_control(tf, gen=None):
             "Received: type(tf) = %s\n" % type(tf) +
             "Expected: Expr or sympy.physics.control.TransferFunction"
         )
+
+
+def tf_to_sympy(tf):
+    """Convert a transfer function from the control module or from scipy.signal
+    to a sympy ``TransferFunction`` or ``TransferFunctionMatrix``.
+
+    Parameters
+    ==========
+    tf : control.TransferFunction, scipy.signal.TransferFunction
+
+    Returns
+    =======
+    tf : TransferFunction or TransferFunctionMatrix
+    """
+    ct = import_module("control")
+    sp = import_module("scipy")
+    sympy = import_module("sympy")
+
+    def _is_discrete_time(system):
+        if isinstance(system, (ct.TransferFunction,
+            sp.signal.TransferFunction)):
+            return system.dt
+        return False
+
+    gen = Symbol("z") if _is_discrete_time(tf) else Symbol("s")
+    TransferFunction = sympy.physics.control.lti.TransferFunction
+    TransferFunctionMatrix = sympy.physics.control.lti.TransferFunctionMatrix
+    Series = sympy.physics.control.lti.Series
+    Parallel = sympy.physics.control.lti.Parallel
+
+    def _check_dt(system):
+        if system.dt:
+            warnings.warn(
+                "At the time of writing this message, SymPy doesn't "
+                "implement discrete-time transfer functions. Returning "
+                "a continuous-time transfer function."
+            )
+
+    if isinstance(tf, (TransferFunction, TransferFunctionMatrix)):
+        return tf
+
+    elif isinstance(tf, Expr):
+        return TransferFunction.from_rational_expression(tf)
+
+    elif isinstance(tf, (Series, Parallel)):
+        return tf.doit()
+
+    if isinstance(tf, ct.TransferFunction):
+        if (tf.ninputs == 1) and (tf.noutputs == 1):
+            n, d = tf.num[0][0], tf.den[0][0]
+            n = Poly.from_list(n, gen).as_expr()
+            d = Poly.from_list(d, gen).as_expr()
+            _check_dt(tf)
+            return TransferFunction(n, d, gen)
+        rows = []
+        for o in range(tf.noutputs):
+            row = []
+            for i in range(tf.ninputs):
+                n = tf.num[o][i]
+                d = tf.den[o][i]
+                new_tf = tf_to_sympy(ct.tf(n, d, dt=tf.dt))
+                row.append(new_tf)
+            rows.append(row)
+        return TransferFunctionMatrix(rows)
+
+    elif isinstance(tf, sp.signal.TransferFunction):
+        n = Poly.from_list(tf.num, gen).as_expr()
+        d = Poly.from_list(tf.den, gen).as_expr()
+        _check_dt(tf)
+        return TransferFunction(n, d, gen)
+
+    else:
+        raise TypeError(
+            "Transfer function's type not recognized.\n" +
+            "Received: type(tf) = %s\n" % type(tf) +
+            "Expected: Expr or sympy.physics.control.TransferFunction"
+        )
+    

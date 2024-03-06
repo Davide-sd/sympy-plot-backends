@@ -11,7 +11,9 @@ from spb.series import (
     SystemResponseSeries
 )
 from sympy.abc import a, b, c, d, e, s
-from sympy.physics.control.lti import TransferFunction
+from sympy.physics.control.lti import TransferFunction, TransferFunctionMatrix
+import control as ct
+import scipy.signal as signal
 
 
 n1, d1 = s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2
@@ -28,14 +30,23 @@ ee2 = tf2.to_expr()
 mod_params = {
     a: (1, 0, 8),
     b: (6, 0, 8),
-    c: (5, 0, 8),
-    d: (2, 0, 8),
-    e: (1, 0, 8),
 }
-mod_params = {
-    a: (1, 0, 8),
-    b: (6, 0, 8),
-}
+
+tf_1 = TransferFunction(1, s + 2, s)
+tf_2 = TransferFunction(s + 1, s**2 + s + 1, s)
+tf_3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
+tf_mimo_sympy = TransferFunctionMatrix([
+    [tf_1, -tf_1],
+    [tf_2, -tf_2],
+    [tf_3, -tf_3]
+])
+tf_mimo_control = ct.TransferFunction(
+    [[[1], [-1]], [[1, 1], [-1, -1]], [[1, 1], [-1, -1]]],
+    [[[1, 2], [1, 2]], [[1, 1, 1], [1, 1, 1]], [[1, 1, 1.5], [1, 1, 1.5]]]
+)
+tf_siso_sympy = TransferFunction(s + 1, s**2 + s + 1, s)
+tf_siso_control = ct.tf([1, 1], [1, 1, 1])
+tf_siso_scipy = signal.TransferFunction([1, 1], [1, 1, 1])
 
 
 @pytest.mark.parametrize(
@@ -513,3 +524,98 @@ def test_root_locus():
     assert len(series) == 2
     assert isinstance(series[0], ZGridLineSeries)
     assert isinstance(series[1], RootLocusSeries)
+
+
+@pytest.mark.parametrize(
+    "tf_siso, func",
+    [
+        (tf_siso_sympy, step_response),
+        (tf_siso_sympy, impulse_response),
+        (tf_siso_sympy, ramp_response),
+        (tf_siso_control, step_response),
+        (tf_siso_control, impulse_response),
+        (tf_siso_control, ramp_response),
+        (tf_siso_scipy, step_response),
+        (tf_siso_scipy, impulse_response),
+        (tf_siso_scipy, ramp_response)
+    ]
+)
+def test_siso_responses(tf_siso, func):
+    # verify that the module is able to deal with SISO systems from the
+    # sympy, control and scipy, both when inverse laplace transform is to
+    # be used, as well as when numerical integration is to be used.
+
+    series = func(tf_siso, prec=16, n=10, control=True)
+    assert len(series) == 1
+    s1 = series[0]
+    d1 = s1.get_data()
+
+    series = func(tf_siso, prec=16, n=10, control=False)
+    assert len(series) == 1
+    s2 = series[0]
+    d2 = s2.get_data()
+
+    assert np.allclose(d1, d2)
+
+
+@pytest.mark.parametrize(
+    "tf_mimo, func, use_control",
+    [
+        (tf_mimo_sympy, step_response, True),
+        (tf_mimo_sympy, impulse_response, True),
+        (tf_mimo_sympy, ramp_response, True),
+        (tf_mimo_sympy, step_response, False),
+        (tf_mimo_sympy, impulse_response, False),
+        (tf_mimo_sympy, ramp_response, False),
+        (tf_mimo_control, step_response, True),
+        (tf_mimo_control, impulse_response, True),
+        (tf_mimo_control, ramp_response, True),
+        (tf_mimo_control, step_response, False),
+        (tf_mimo_control, impulse_response, False),
+        (tf_mimo_control, ramp_response, False),
+    ]
+)
+def test_mimo_responses(tf_mimo, func, use_control):
+    # verify that a MIMO system gets unpacked into several SISO systems
+
+    series = func(tf_mimo, prec=16, n=10, control=use_control)
+    assert len(series) == 6
+    test_series = SystemResponseSeries if use_control else LineOver1DRangeSeries
+    assert all(isinstance(s, test_series) for s in series)
+
+    s1 = func(tf_1, prec=16, n=10, control=use_control)[0]
+    s2 = func(tf_2, prec=16, n=10, control=use_control)[0]
+    s3 = func(tf_3, prec=16, n=10, control=use_control)[0]
+    s4 = func(-tf_1, prec=16, n=10, control=use_control)[0]
+    s5 = func(-tf_2, prec=16, n=10, control=use_control)[0]
+    s6 = func(-tf_3, prec=16, n=10, control=use_control)[0]
+    assert np.allclose(s1.get_data(), series[0].get_data())
+    assert np.allclose(s2.get_data(), series[1].get_data())
+    assert np.allclose(s3.get_data(), series[2].get_data())
+    assert np.allclose(s4.get_data(), series[3].get_data())
+    assert np.allclose(s5.get_data(), series[4].get_data())
+    assert np.allclose(s6.get_data(), series[5].get_data())
+
+
+@pytest.mark.parametrize(
+    "tf_mimo, func, inp, out",
+    [
+        (tf_mimo_sympy, step_response, 1, 2),
+        (tf_mimo_sympy, impulse_response, 1, 2),
+        (tf_mimo_sympy, ramp_response, 1, 2),
+        (tf_mimo_control, step_response, 1, 2),
+        (tf_mimo_control, impulse_response, 1, 2),
+        (tf_mimo_control, ramp_response, 1, 2),
+    ]
+)
+def test_mimo_responses_2(tf_mimo, func, inp, out):
+    # verify that input-output keyword arguments work as expected
+
+    series = func(tf_mimo, prec=16, n=10, control=True, input=inp, output=out)
+    assert len(series) == 1
+    d1 = series[0].get_data()
+
+    s6 = func(-tf_3, prec=16, n=10, control=True)[0]
+    d6 = s6.get_data()
+
+    assert np.allclose(d1, d6)

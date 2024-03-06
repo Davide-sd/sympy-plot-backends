@@ -65,7 +65,6 @@ def test_errors():
     tfm = TransferFunctionMatrix([[tf6, tf5], [tf5, tf6]])
     expr = 1/(s**2 - 1)
     raises(NotImplementedError, lambda: plot_pole_zero(tfm))
-    raises(NotImplementedError, lambda: plot_step_response(tfm))
     raises(NotImplementedError, lambda: plot_bode(tfm))
 
     # More than 1 variables: raise error because `params` is missing
