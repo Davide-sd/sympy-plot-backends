@@ -20,7 +20,7 @@ from spb.series import (
     PlaneSeries, GeometrySeries, GenericDataSeries,
     HVLineSeries, NyquistLineSeries, NicholsLineSeries,
     Arrow2DSeries, Arrow3DSeries, RootLocusSeries, SGridLineSeries,
-    ZGridLineSeries, SystemResponseSeries
+    ZGridLineSeries, SystemResponseSeries, PoleZeroSeries
 )
 from sympy.external import import_module
 from packaging import version
@@ -178,7 +178,8 @@ class MatplotlibBackend(Plot):
         RootLocusSeries: RootLocusRenderer,
         SGridLineSeries: SGridLineRenderer,
         ZGridLineSeries: ZGridLineRenderer,
-        SystemResponseSeries: Line2DRenderer
+        SystemResponseSeries: Line2DRenderer,
+        PoleZeroSeries: Line2DRenderer
     }
 
     pole_line_kw = {"color": "k", "linestyle": ":"}

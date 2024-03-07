@@ -113,7 +113,8 @@ from .make_tests import (
     make_test_arrow_2d,
     make_test_arrow_3d,
     make_test_root_locus_1,
-    make_test_root_locus_2
+    make_test_root_locus_2,
+    make_test_poles_zeros_sgrid
 )
 
 
@@ -2394,3 +2395,31 @@ def test_plot_root_locus_2():
     assert len(p.ax.texts) == 10 # number of sgrid labels on the plot
     line_colors = {'#1f77b4', '#ff7f0e', '0.75'}
     assert all(l.get_color() in line_colors for l in ax.lines)
+
+
+def test_plot_poles_zeros_sgrid():
+    # verify that SGridLineSeries is rendered with "proper" axis limits
+
+    p = make_test_poles_zeros_sgrid(MB)
+    ax = p.ax
+    xlim = p.ax.get_xlim()
+    ylim = p.ax.get_ylim()
+    assert (xlim is not None) and (ylim is not None)
+    # these are eyeball numbers, it should allows a little bit of tweeking at
+    # the code for better positioning the grid...
+    assert xlim[0] > -5 and xlim[1] < 2
+    assert ylim[0] > -5 and ylim[1] < 5
+
+
+def test_plot_root_locus_sgrid():
+    # verify that SGridLineSeries is rendered with "proper" axis limits
+
+    p = make_test_root_locus_1(MB, True, False)
+    ax = p.ax
+    xlim = p.ax.get_xlim()
+    ylim = p.ax.get_ylim()
+    assert (xlim is not None) and (ylim is not None)
+    # these are eyeball numbers, it should allows a little bit of tweeking at
+    # the code for better positioning the grid...
+    assert xlim[0] > -5 and xlim[1] < 2
+    assert ylim[0] > -5 and ylim[1] < 5

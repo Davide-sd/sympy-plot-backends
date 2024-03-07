@@ -711,8 +711,18 @@ def tf_to_control(tf, gen=None):
             )
         s = fs.pop()
         n, d = [Poly(t, s).all_coeffs() for t in [num, den]]
-        n = [float(t) for t in n]
-        d = [float(t) for t in d]
+        try:
+            n = [float(t) for t in n]
+            d = [float(t) for t in d]
+        except TypeError as err:
+            raise TypeError(
+                str(err) + "\nYou are trying to convert a transfer function to "
+                "``control.TransferFunction``. It appears like some of the "
+                "coefficients are complex. At the time of coding this "
+                "message, the ``control`` module doesn't support complex "
+                "coefficents. You might still be able to achieve your goal "
+                "by setting ``control=False`` in your function call."
+            )
         return ct.tf(n, d)
 
     if isinstance(tf, Expr):
@@ -808,4 +818,3 @@ def tf_to_sympy(tf):
             "Received: type(tf) = %s\n" % type(tf) +
             "Expected: Expr or sympy.physics.control.TransferFunction"
         )
-    

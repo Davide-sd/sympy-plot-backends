@@ -2,7 +2,7 @@ from spb.defaults import TWO_D_B
 from spb.series import (
     List2DSeries, LineOver1DRangeSeries, HVLineSeries, NyquistLineSeries,
     NicholsLineSeries, RootLocusSeries, SGridLineSeries, ZGridLineSeries,
-    SystemResponseSeries
+    SystemResponseSeries, PoleZeroSeries
 )
 from spb.utils import prange, is_number, tf_to_sympy
 import numpy as np
@@ -12,7 +12,8 @@ from sympy import (
     floor, ceiling, frac, pi, fraction, Expr, Tuple, inverse_laplace_transform
 )
 from sympy.physics.control.lti import (
-    SISOLinearTimeInvariant, TransferFunctionMatrix, TransferFunction
+    SISOLinearTimeInvariant, TransferFunctionMatrix, TransferFunction,
+    Series, Parallel
 )
 from sympy.external import import_module
 from mergedeep import merge
@@ -66,6 +67,10 @@ def _preprocess_system(system, **kwargs):
     """
     ct = import_module("control")
     sp = import_module("scipy")
+
+    if isinstance(system, (Series, Parallel)):
+        return system.doit()
+
     if isinstance(system, (SISOLinearTimeInvariant, TransferFunctionMatrix,
         ct.TransferFunction, sp.signal.TransferFunction)):
         return system
@@ -181,19 +186,16 @@ def _get_zeros_poles_from_symbolic_tf(system):
     s = system.var
     num_poly = Poly(system.num, s)
     den_poly = Poly(system.den, s)
-
-    zeros = roots(num_poly, s)
-    if sum(zeros.values()) != degree(num_poly, s):
+    zeros = roots(num_poly, s, multiple=True)
+    if len(zeros) != degree(num_poly, s):
         raise ValueError(
             "Coult not compute all the roots of the numerator of the "
             "transfer function.")
-    poles = roots(den_poly, s)
-    if sum(poles.values()) != degree(den_poly, s):
+    poles = roots(den_poly, s, multiple=True)
+    if len(poles) != degree(den_poly, s):
         raise ValueError(
             "Coult not compute all the roots of the denominator of the "
             "transfer function.")
-    zeros = list(zeros.keys())
-    poles = list(poles.keys())
     return zeros, poles
 
 
@@ -228,31 +230,53 @@ def control_axis(hor=True, ver=True, rendering_kw=None, **kwargs):
 
 
 def _pole_zero_helper(
-    system, label, multiple_systems, pole_markersize, zero_markersize,
+    system, pole_markersize, zero_markersize,
     **kwargs
 ):
-    system = _preprocess_system(system, **kwargs)
-    _check_system(system)
-    system = system.doit()  # Get the equivalent TransferFunction object.
+    if not isinstance(system, TransferFunction):
+        system = tf_to_sympy(system)
 
-    if len(system.free_symbols) == 1:
-        s = system.var
-        num_poly = Poly(system.num, s)
-        den_poly = Poly(system.den, s)
-        num_poly = np.array(num_poly.all_coeffs(), dtype=np.complex128)
-        den_poly = np.array(den_poly.all_coeffs(), dtype=np.complex128)
-        zeros = np.roots(num_poly)
-        poles = np.roots(den_poly)
-        zeros_re, zeros_im = np.real(zeros), np.imag(zeros)
-        poles_re, poles_im = np.real(poles), np.imag(poles)
-    else:
-        zeros, poles = _get_zeros_poles_from_symbolic_tf(system)
-        zeros_re, zeros_im = [re(z) for z in zeros], [im(z) for z in zeros]
-        poles_re, poles_im = [re(p) for p in poles], [im(p) for p in poles]
+    zeros, poles = _get_zeros_poles_from_symbolic_tf(system)
+    zeros_re, zeros_im = [re(z) for z in zeros], [im(z) for z in zeros]
+    poles_re, poles_im = [re(p) for p in poles], [im(p) for p in poles]
 
+    prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(
+        pole_markersize, zero_markersize, **kwargs
+    )
+    z_series = List2DSeries(
+        zeros_re, zeros_im, z_label,
+        scatter=True, is_filled=True, rendering_kw=zrk,
+        **kwargs
+    )
+    p_series = List2DSeries(
+        poles_re, poles_im, p_label,
+        scatter=True, is_filled=True, rendering_kw=prk,
+        **kwargs
+    )
+    return [p_series, z_series]
+
+
+def _pole_zero_with_control_helper(
+    system, pole_markersize, zero_markersize,
+    **kwargs
+):
     params = kwargs.get("params", {})
-    Backend = kwargs.get("backend", TWO_D_B)
+    prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(
+        pole_markersize, zero_markersize, **kwargs
+    )
+    return [
+        PoleZeroSeries(system, p_label, return_poles=True,
+            rendering_kw=prk, params=params),
+        PoleZeroSeries(system, z_label, return_poles=False,
+            rendering_kw=zrk, params=params),
+    ]
 
+
+def _pole_zero_common_keyword_arguments(
+    pole_markersize, zero_markersize, **kwargs
+):
+    label = kwargs.get("label", None)
+    Backend = kwargs.get("backend", TWO_D_B)
     z_rendering_kw = kwargs.pop("z_rendering_kw", {})
     p_rendering_kw = kwargs.pop("p_rendering_kw", {})
     z_kw, p_kw = {}, {}
@@ -267,24 +291,16 @@ def _pole_zero_helper(
             z_kw["color"] = pole_color
     z_rendering_kw = merge(z_kw, z_rendering_kw)
     p_rendering_kw = merge(p_kw, p_rendering_kw)
-
-    get_label = lambda t: t if label is None else t + " of " + label
-    z_series = List2DSeries(
-        zeros_re, zeros_im, get_label("zeros"),
-        scatter=True, is_filled=True, rendering_kw=z_rendering_kw,
-        params=params
-    )
-    p_series = List2DSeries(
-        poles_re, poles_im, get_label("poles"),
-        scatter=True, is_filled=True, rendering_kw=p_rendering_kw,
-        params=params
-    )
-    return [p_series, z_series]
+    get_label = lambda t: t + " of " + label if label else t
+    z_label = get_label("zeros")
+    p_label = get_label("poles")
+    return p_rendering_kw, z_rendering_kw, p_label, z_label
 
 
 def pole_zero(
     system, pole_markersize=10, zero_markersize=7, show_axes=False,
-    label=None, sgrid=False, zgrid=False, **kwargs
+    label=None, sgrid=False, zgrid=False, control=True,
+    input=None, output=None, **kwargs
 ):
     """
     Computes the [Pole-Zero]_ plot (also known as PZ Plot or PZ Map) of
@@ -297,16 +313,20 @@ def pole_zero(
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type systems
+    system : LTI system type
         The system for which the pole-zero plot is to be computed.
         It can be:
 
-        * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form, which will be converted to
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
     pole_color : str, tuple, optional
         The color of the pole points on the plot.
     pole_markersize : Number, optional
@@ -331,6 +351,17 @@ def pole_zero(
     zgrid : bool, optional
         Generates a grid of constant damping ratios and natural frequencies
         on the z-plane. Default to False.
+    control : bool, optional
+        If True, computes the poles/zeros with the ``control`` module,
+        which uses numerical integration. If False, computes them
+        with ``sympy``. Default to True.
+    input : int, optional
+        Only compute the poles/zeros for the listed input. If not specified,
+        the poles/zeros for each independent input are computed (as
+        separate traces).
+    output : int, optional
+        Only compute the poles/zeros for the listed output.
+        If not specified, all outputs are reported.
     **kwargs :
         See ``plot`` for a list of keyword arguments to further customize
         the resulting figure.
@@ -338,17 +369,21 @@ def pole_zero(
     Returns
     =======
 
-    A list containing two instances of ``List2DSeries``.
+    A list containing one or more instances of:
+
+    * ``List2DSeries`` if ``control=False``.
+    * ``PoleZeroSeries`` if ``control=True``.
 
     Examples
     ========
 
     .. plot::
-        :context: close-figs
+        :context: reset
         :format: doctest
         :include-source: True
 
         >>> from sympy.abc import s
+        >>> from sympy import I
         >>> from sympy.physics.control.lti import TransferFunction
         >>> from spb import *
         >>> tf1 = TransferFunction(
@@ -358,8 +393,45 @@ def pole_zero(
         ...     grid=False, xlabel="Real", ylabel="Imaginary"
         ... )
         Plot object containing:
-        [0]: 2D list plot
-        [1]: 2D list plot
+        [0]: s-grid
+        [1]: pole of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+        [2]: zeros of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+
+    Plotting poles and zeros on the z-plane:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> graphics(
+        ...     pole_zero(tf1, zgrid=True),
+        ...     grid=False, xlabel="Real", ylabel="Imaginary"
+        ... )
+        Plot object containing:
+        [0]: s-grid
+        [1]: pole of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+        [2]: zeros of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+
+    If a transfer function has complex coefficients, make sure to request
+    the evaluation using ``sympy`` instead of the ``control`` module:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> tf = TransferFunction(s + 2, s**2 + (2+I)*s + 10, s)
+        >>> graphics(
+        ...     control_axis(),
+        ...     pole_zero(tf, control=False),
+        ...     grid=False, xlabel="Real", ylabel="Imaginary"
+        ... )
+        Plot object containing:
+        [0]: horizontal line at y = 0
+        [1]: vertical line at x = 0
+        [2]: 2D list plot
+        [3]: 2D list plot
 
     Interactive-widgets plot of multiple systems, one of which is parametric:
 
@@ -389,10 +461,23 @@ def pole_zero(
 
     .. [1] https://en.wikipedia.org/wiki/Pole%E2%80%93zero_plot
     """
-    series = _pole_zero_helper(
-        system, label, False,
-        pole_markersize, zero_markersize, **kwargs.copy()
+    systems = _unpack_mimo_systems(
+        system,
+        "" if label is None else label,
+        input, output
     )
+    func = _pole_zero_with_control_helper if control else _pole_zero_helper
+    series = []
+    for s, l in systems:
+        kw = kwargs.copy()
+        kw["label"] = l
+        s = _preprocess_system(s, **kw)
+        _check_system(s)
+        # s = s.doit()  # Get the equivalent TransferFunction object.
+        series.extend(
+            func(s, pole_markersize, zero_markersize, **kwargs.copy())
+        )
+
     grid = _get_grid_series(sgrid, zgrid, series)
     return grid + series
 
@@ -521,7 +606,7 @@ def step_response(
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
-    control : bool
+    control : bool, optional
         If True, computes the step response with the ``control``
         module, which uses numerical integration. If False, computes the
         step response with ``sympy``, which uses the inverse Laplace transform.
@@ -741,7 +826,7 @@ def impulse_response(
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
-    control : bool
+    control : bool, optional
         If True, computes the impulse response with the ``control``
         module, which uses numerical integration. If False, computes the
         impulse response with ``sympy``, which uses the inverse Laplace
@@ -975,7 +1060,7 @@ def ramp_response(
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
-    control : bool
+    control : bool, optional
         If True, computes the ramp response with the ``control``
         module, which uses numerical integration. If False, computes the
         ramp response with ``sympy``, which uses the inverse Laplace transform.

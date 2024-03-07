@@ -1,6 +1,6 @@
 from spb.defaults import TWO_D_B, cfg
 from spb.graphics.control import (
-    _preprocess_system, _pole_zero_helper,
+    _preprocess_system, pole_zero,
     _nichols_helper, _nyquist_helper, step_response,
     ramp_response, impulse_response,
     _bode_magnitude_helper, _bode_phase_helper,
@@ -106,7 +106,7 @@ def _create_title_helper(systems, base):
 
 def plot_pole_zero(
     *systems, pole_markersize=10, zero_markersize=7, show_axes=False,
-    sgrid=False, zgrid=False, **kwargs
+    sgrid=False, zgrid=False, control=True, input=None, output=None, **kwargs
 ):
     """
     Returns the [Pole-Zero]_ plot (also known as PZ Plot or PZ Map) of
@@ -154,6 +154,17 @@ def plot_pole_zero(
     zgrid : bool, optional
         Generates a grid of constant damping ratios and natural frequencies
         on the z-plane. Default to False.
+    control : bool, optional
+        If True, computes the poles/zeros with the ``control`` module,
+        which uses numerical integration. If False, computes them
+        with ``sympy``. Default to True.
+    input : int, optional
+        Only compute the poles/zeros for the listed input. If not specified,
+        the poles/zeros for each independent input are computed (as
+        separate traces).
+    output : int, optional
+        Only compute the poles/zeros for the listed output.
+        If not specified, all outputs are reported.
     **kwargs : dict
         Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
         keyword arguments to customize the appearances of the figure (title,
@@ -170,14 +181,17 @@ def plot_pole_zero(
         :include-source: True
 
         >>> from sympy.abc import s
+        >>> from sympy import I
         >>> from sympy.physics.control.lti import TransferFunction
         >>> from spb import plot_pole_zero
         >>> tf1 = TransferFunction(
         ...     s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
         >>> plot_pole_zero(tf1, sgrid=True)
         Plot object containing:
-        [0]: 2D list plot
-        [1]: 2D list plot
+        [0]: s-grid
+        [1]: pole of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+        [2]: zeros of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+
 
     Plotting poles and zeros on the z-plane:
 
@@ -188,8 +202,27 @@ def plot_pole_zero(
 
         >>> plot_pole_zero(tf1, zgrid=True)
         Plot object containing:
-        [0]: 2D list plot
-        [1]: 2D list plot
+        [0]: z-grid
+        [1]: pole of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+        [2]: zeros of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+
+
+    If a transfer function has complex coefficients, make sure to request
+    the evaluation using ``sympy`` instead of the ``control`` module:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> tf = TransferFunction(s + 2, s**2 + (2+I)*s + 10, s)
+        >>> plot_pole_zero(tf, control=False, grid=False, show_axes=True)
+        Plot object containing:
+        [0]: horizontal line at y = 0
+        [1]: vertical line at x = 0
+        [2]: 2D list plot
+        [3]: 2D list plot
+
 
     Interactive-widgets plot of multiple systems, one of which is parametric:
 
@@ -221,9 +254,11 @@ def plot_pole_zero(
     ms = len(systems) > 1
     series = []
     for system, label in systems:
-        series.extend(_pole_zero_helper(
-            system, label, ms,
-            pole_markersize, zero_markersize, **kwargs.copy()
+        series.extend(pole_zero(
+            system, label=label,
+            pole_markersize=pole_markersize,
+            zero_markersize=zero_markersize,
+            control=control, **kwargs.copy()
         ))
 
     grid = _get_grid_series(sgrid, zgrid, series)
@@ -231,8 +266,7 @@ def plot_pole_zero(
         kwargs.setdefault("grid", False)
     kwargs.setdefault("xlabel", "Real axis")
     kwargs.setdefault("ylabel", "Imaginary axis")
-    kwargs.setdefault("title", _create_title_helper(
-        systems, "Poles and Zeros"))
+    kwargs.setdefault("title", "Poles and Zeros")
     return _create_plot_helper(grid + series, show_axes, **kwargs)
 
 
@@ -288,7 +322,7 @@ def plot_step_response(
         A dictionary of keyword arguments passed to
         :py:func:`control.step_response`.
     input : int, optional
-        Only compute the step response for the listed input.  If not
+        Only compute the step response for the listed input. If not
         specified, the step responses for each independent input are
         computed (as separate traces).
     output : int, optional

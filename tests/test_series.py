@@ -10,7 +10,7 @@ from spb.series import (
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
     _set_discretization_points, ColoredLineOver1DRangeSeries,
     HVLineSeries, Arrow2DSeries, Arrow3DSeries, RootLocusSeries,
-    SGridLineSeries, ZGridLineSeries
+    SGridLineSeries, ZGridLineSeries, PoleZeroSeries
 )
 from spb import plot3d_spherical
 from sympy.abc import j, k, l
@@ -4270,3 +4270,54 @@ def test_zgrid_line_series_interactive():
     assert np.allclose(list(wn_dict.keys()), [1, 2])
     assert np.allclose(list(tp_dict.keys()), [0.1, 0.2, 0.3])
     assert np.allclose(list(ts_dict.keys()), [0.3, 0.5, 0.8])
+
+
+def test_pole_zero_series():
+    def do_test(tf):
+        s1 = PoleZeroSeries(tf, return_poles=True)
+        x, y = s1.get_data()
+        assert np.allclose(x, [-2, -0.5, -0.5, -1])
+        assert np.allclose(y, [0, 0.8660254, -0.8660254, 0])
+
+        s2 = PoleZeroSeries(tf, return_poles=False)
+        x, y = s2.get_data()
+        assert np.allclose(x, [0, 0])
+        assert np.allclose(y, [1, -1])
+
+    s = symbols("s")
+    tf1 = TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+    tf2 = ct.TransferFunction([1, 0, 1], [1, 4, 6, 5, 2])
+    tf3 = signal.TransferFunction([1, 0, 1], [1, 4, 6, 5, 2])
+    do_test(tf1)
+    do_test(tf2)
+    do_test(tf3)
+
+
+def test_pole_zero_series_interactive():
+    a, b, c, d, s = symbols("a, b, c, d, s")
+    tf1 = TransferFunction(a * s**2 + b, s**4 + c*s**3 + d*s**2 + 5*s + 2, s)
+    params = {a: 1, b: 1, c: 4, d: 6}
+
+    s1 = PoleZeroSeries(tf1, params=params, return_poles=True)
+    assert s1.is_interactive
+    x, y = s1.get_data()
+    assert np.allclose(x, [-2, -0.5, -0.5, -1])
+    assert np.allclose(y, [0, 0.8660254, -0.8660254, 0])
+
+    s2 = PoleZeroSeries(tf1, params=params, return_poles=False)
+    assert s2.is_interactive
+    x, y = s2.get_data()
+    assert np.allclose(x, [0, 0])
+    assert np.allclose(y, [1, -1])
+
+    new_params = {a: 4, b: 1, c: 5, d: 7}
+    s1.params = new_params
+    s2.params = new_params
+    x, y = s1.get_data()
+    assert np.allclose(x,
+        [-3.26953084208114, -1, -0.365234578959429, -0.365234578959429 ])
+    assert np.allclose(y, [0, 0, 0.691601229992822, -0.691601229992822])
+
+    x, y = s2.get_data()
+    assert np.allclose(x, [0, 0])
+    assert np.allclose(y, [0.5, -0.5])

@@ -8,7 +8,7 @@ from spb import (
 from spb.series import (
     LineOver1DRangeSeries, HVLineSeries, List2DSeries, NyquistLineSeries,
     NicholsLineSeries, SGridLineSeries, RootLocusSeries, ZGridLineSeries,
-    SystemResponseSeries
+    SystemResponseSeries, PoleZeroSeries
 )
 from sympy.abc import a, b, c, d, e, s
 from sympy.physics.control.lti import TransferFunction, TransferFunctionMatrix
@@ -67,20 +67,29 @@ def test_control_axis(hor, ver, rkw):
 
 
 @pytest.mark.parametrize(
-    "tf, label, pkw, zkw, params",
+    "tf, label, pkw, zkw, params, use_control",
     [
-        (tf1, None, None, None, None),
-        ((n1, d1), None, None, None, None),
-        (n1 / d1, None, None, None, None),
-        (tf1, "test", {"color": "r"}, {"color": "k"}, None),
-        ((n1, d1), "test", {"color": "r"}, {"color": "k"}, None),
-        (n1 / d1, "test", {"color": "r"}, {"color": "k"}, None),
-        (tf1, "test", {"color": "r"}, {"color": "k"}, mod_params),
-        ((n1, d1), "test", {"color": "r"}, {"color": "k"}, mod_params),
-        (n1 / d1, "test", {"color": "r"}, {"color": "k"}, mod_params),
+        (tf1, None, None, None, None, False),
+        ((n1, d1), None, None, None, None, False),
+        (n1 / d1, None, None, None, None, False),
+        (tf1, "test", {"color": "r"}, {"color": "k"}, None, False),
+        ((n1, d1), "test", {"color": "r"}, {"color": "k"}, None, False),
+        (n1 / d1, "test", {"color": "r"}, {"color": "k"}, None, False),
+        (tf1, "test", {"color": "r"}, {"color": "k"}, mod_params, False),
+        ((n1, d1), "test", {"color": "r"}, {"color": "k"}, mod_params, False),
+        (n1 / d1, "test", {"color": "r"}, {"color": "k"}, mod_params, False),
+        (tf1, None, None, None, None, True),
+        ((n1, d1), None, None, None, None, True),
+        (n1 / d1, None, None, None, None, True),
+        (tf1, "test", {"color": "r"}, {"color": "k"}, None, True),
+        ((n1, d1), "test", {"color": "r"}, {"color": "k"}, None, True),
+        (n1 / d1, "test", {"color": "r"}, {"color": "k"}, None, True),
+        (tf1, "test", {"color": "r"}, {"color": "k"}, mod_params, True),
+        ((n1, d1), "test", {"color": "r"}, {"color": "k"}, mod_params, True),
+        (n1 / d1, "test", {"color": "r"}, {"color": "k"}, mod_params, True),
     ]
 )
-def test_pole_zero(tf, label, pkw, zkw, params):
+def test_pole_zero(tf, label, pkw, zkw, params, use_control):
     kwargs = {"n": 10}
     if params:
         params = {k: v[0] for k, v in params.items()}
@@ -90,34 +99,72 @@ def test_pole_zero(tf, label, pkw, zkw, params):
     if zkw:
         kwargs["z_rendering_kw"] = zkw
 
-    series = pole_zero(tf, label=label, **kwargs)
+    series = pole_zero(tf, label=label, control=use_control, **kwargs)
     assert len(series) == 2
-    assert all(isinstance(s, List2DSeries) for s in series)
+    test_series = List2DSeries if not use_control else PoleZeroSeries
+    assert all(isinstance(s, test_series) for s in series)
+    assert "poles" in series[0].get_label(True)
+    assert "zeros" in series[1].get_label(True)
     d1 = series[0].get_data()
-    assert np.allclose(
-        d1,
-        [
-            np.array([-2. , -0.5, -1. , -0.5]),
-            np.array([
-                4.44089210e-16,  8.66025404e-01,
-                -6.76185784e-16, -8.66025404e-01
-            ])
-        ]
-    )
+    assert len(d1) == 2
+    # use np.sort because sympy and numpy results of roots are
+    # sorted differently
+    assert np.allclose(np.sort(d1[0]), np.array([-2., -1., -0.5, -0.5]))
+    assert np.allclose(np.sort(d1[1]), np.array([
+        -8.66025404e-01, -6.76185784e-16, 4.44089210e-16, 8.66025404e-01
+    ]))
     d2 = series[1].get_data()
-    assert np.allclose(
-        d2,
-        [
-            np.array([0.00000000e+00, 2.77555756e-17]),
-            np.array([ 1., -1.])
-        ]
-    )
+    assert len(d1) == 2
+    assert np.allclose(np.sort(d2[0]), np.array([0, 0]))
+    assert np.allclose(np.sort(d2[1]), np.array([
+        -1, 1
+    ]))
     if pkw:
         assert series[0].rendering_kw.get("color", None) == pkw["color"]
     if zkw:
         assert series[1].rendering_kw.get("color", None) == zkw["color"]
     assert all(s.is_interactive == (len(s.params) > 0) for s in series)
     assert all(s.params == {} if not params else params for s in series)
+
+
+@pytest.mark.parametrize(
+    "tf, use_control",
+    [
+        (tf_mimo_sympy, True),
+        (tf_mimo_sympy, False),
+        (tf_mimo_control, True),
+        (tf_mimo_control, False),
+    ]
+)
+def test_pole_zero_mimo_1(tf, use_control):
+    series = pole_zero(tf, control=use_control)
+    assert len(series) == 12
+    test_series = List2DSeries if not use_control else PoleZeroSeries
+    assert all(isinstance(s, test_series) for s in series)
+
+
+@pytest.mark.parametrize(
+    "use_control", [True, False]
+)
+def test_pole_zero_grids(use_control):
+    # verify that grid line series works with pole_zero
+
+    tf = TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+    test_series = List2DSeries if not use_control else PoleZeroSeries
+
+    series = pole_zero(tf, sgrid=False, zgrid=False, control=use_control)
+    assert len(series) == 2
+    assert all(isinstance(t, test_series) for t in series)
+
+    series = pole_zero(tf, sgrid=True, zgrid=False, control=use_control)
+    assert len(series) == 3
+    assert isinstance(series[0], SGridLineSeries)
+    assert all(isinstance(t, test_series) for t in series[1:])
+
+    series = pole_zero(tf, sgrid=False, zgrid=True, control=use_control)
+    assert len(series) == 3
+    assert isinstance(series[0], ZGridLineSeries)
+    assert all(isinstance(t, test_series) for t in series[1:])
 
 
 @pytest.mark.parametrize(

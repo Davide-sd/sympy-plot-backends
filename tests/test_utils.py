@@ -294,6 +294,14 @@ def test_tf_to_control_3():
     )
 
 
+def test_tf_to_control_4():
+    # verify the error message is raised.
+    s = symbols("s")
+    tf = TransferFunction(5, s**2 + (2+I)*s + 10, s)
+
+    raises(TypeError, lambda: tf_to_control(tf))
+
+
 def test_tf_to_sympy_1():
     # symbolic expressions to TransferFunction
 

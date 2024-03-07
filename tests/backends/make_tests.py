@@ -4,7 +4,7 @@ from spb import (
     plot3d_parametric_line, plot3d, plot3d_list,
     plot3d_implicit, plot3d_parametric_surface,
     plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
-    graphics, arrow_2d, arrow_3d, plot_root_locus
+    graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries
@@ -1211,3 +1211,9 @@ def make_test_root_locus_2(B):
     G1 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
     G2 = (s**2 - 4) / (s**3 + 2*s - 3)
     return plot_root_locus((G1, "a"), (G2, "b"), backend=B, show=False)
+
+
+def make_test_poles_zeros_sgrid(B):
+    s = symbols("s")
+    G = (s**2 + 1) / (s**4 + 4*s**3 + 6*s**2 + 5*s + 2)
+    return plot_pole_zero(G, sgrid=True, show=False, backend=B)

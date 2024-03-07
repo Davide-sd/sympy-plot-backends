@@ -64,7 +64,6 @@ def test_errors():
     # Invalid `system` check
     tfm = TransferFunctionMatrix([[tf6, tf5], [tf5, tf6]])
     expr = 1/(s**2 - 1)
-    raises(NotImplementedError, lambda: plot_pole_zero(tfm))
     raises(NotImplementedError, lambda: plot_bode(tfm))
 
     # More than 1 variables: raise error because `params` is missing
@@ -88,17 +87,23 @@ def test_errors():
     raises(ValueError, lambda: plot_bode(tf1,phase_unit = 'degree'))
 
 
-def test_pole_zero():
+@pytest.mark.parametrize("use_control", [True, False])
+def test_pole_zero(use_control):
 
     def pz_tester(sys, expected_value):
-        plot = plot_pole_zero(sys, show_axes=False, show=False)
+        plot = plot_pole_zero(sys, control=use_control,
+            show_axes=False, show=False)
         xxp, yyp = plot[0].get_data()
         xxz, yyz = plot[1].get_data()
-        p = xxp + 1j * yyp
-        z = xxz + 1j * yyz
-        z_check = np.allclose(z, expected_value[0])
-        p_check = np.allclose(p, expected_value[1])
-        return p_check and z_check
+        # sort because sympy and numpy computed roots are ordered differently
+        assert np.allclose(
+            np.sort(xxz), np.sort(np.real(expected_value[0])))
+        assert np.allclose(
+            np.sort(yyz), np.sort(np.imag(expected_value[0])))
+        assert np.allclose(
+            np.sort(xxp), np.sort(np.real(expected_value[1])))
+        assert np.allclose(
+            np.sort(yyp), np.sort(np.imag(expected_value[1])))
 
     exp1 = [[], [-0.24999999999999994+1.3919410907075054j, -0.24999999999999994-1.3919410907075054j]]
     exp2 = [[0.0], [-0.25+0.3227486121839514j, -0.25-0.3227486121839514j]]
@@ -112,12 +117,15 @@ def test_pole_zero():
     exp6 = [[], [-1.1641600331447917-3.545808351896439j,
           -0.8358399668552097+2.5458083518964383j]]
 
-    assert pz_tester(tf1, exp1)
-    assert pz_tester(tf2, exp2)
-    assert pz_tester(tf3, exp3)
-    assert pz_tester(ser1, exp4)
-    assert pz_tester(par1, exp5)
-    assert pz_tester(tf8, exp6)
+    pz_tester(tf1, exp1)
+    pz_tester(tf2, exp2)
+    pz_tester(tf3, exp3)
+    pz_tester(ser1, exp4)
+    pz_tester(par1, exp5)
+    if not use_control:
+        pz_tester(tf8, exp6)
+    else:
+        raises(TypeError, lambda: pz_tester(tf8, exp6))
 
 
 def test_bode():

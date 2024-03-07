@@ -4,6 +4,7 @@ from spb.defaults import cfg
 from spb.utils import (
     _get_free_symbols, unwrap, extract_solution, tf_to_control
 )
+import sympy
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
@@ -18,7 +19,6 @@ from sympy.geometry.line import LinearEntity2D, LinearEntity3D
 from sympy.logic.boolalg import BooleanFunction
 from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
-from sympy.physics.control.lti import TransferFunction
 from sympy.printing.pycode import PythonCodePrinter
 from sympy.printing.precedence import precedence
 from sympy.core.sorting import default_sort_key
@@ -1368,27 +1368,11 @@ class List2DSeries(Line2DBaseSeries):
 
     def _get_axis_limits(self):
         """Compute axis limits for this data series.
+
+        This is used by SGridLineSeries when using pole_zero().
         """
-        np = import_module("numpy")
-        lx, ly = self.get_data()
-        min_x, max_x = min(lx), max(lx)
-        min_y, max_y = min(ly), max(ly)
-        offset = 0.25
-        min_x = min_x - offset if np.isclose(min_x, 0) else min_x
-        max_x = max_x + offset if np.isclose(max_x, 0) else max_x
-        min_y = min_y - offset if np.isclose(min_y, 0) else min_y
-        max_y = max_y + offset if np.isclose(max_y, 0) else max_y
-        xlim = [min_x * 1.2, max_x * 1.2]
-        ylim = [min_y * 1.2, max_y * 1.2]
-        if np.isclose(*xlim):
-            xlim[0] -= 1
-            xlim[1] += 1
-        if np.isclose(*ylim):
-            ylim[0] -= 1
-            ylim[1] += 1
-        self._xlim = xlim
-        self._ylim = ylim
-        return xlim, ylim
+        self._xlim, self._ylim = _get_axis_limits_for_2D_lines(self)
+        return self._xlim, self._ylim
 
     def _eval_color_func_and_return(self, *data):
         if self.use_cm and callable(self.color_func):
@@ -3662,6 +3646,7 @@ class NyquistLineSeries(Parametric2DLineSeries):
     specifically the `freqplot.py` module
     """
     def __init__(self, tf, omega_range, label="", **kwargs):
+        TransferFunction = sympy.physics.control.lti.TransferFunction
         self.tf = tf
         tf_expr = self.tf.to_expr()
         # NOTE/TODO: this might be fragile, it might results in something
@@ -4084,7 +4069,7 @@ class RootLocusSeries(Line2DBaseSeries):
 
     def __init__(self, tf, label="", **kwargs):
         super().__init__(**kwargs)
-        from sympy.physics.control import TransferFunction
+        TransferFunction = sympy.physics.control.lti.TransferFunction
         np = import_module('numpy')
         sp = import_module('scipy')
         ct = import_module('control')
@@ -4283,6 +4268,9 @@ class SGridLineSeries(BaseSeries):
             )
         self.associated_rl_series = series
 
+    def __str__(self):
+        return "s-grid"
+
     def _get_axis_limits(self):
         if self._xlim is None or self._ylim is None:
             np = import_module("numpy")
@@ -4480,6 +4468,9 @@ class ZGridLineSeries(BaseSeries):
         self.show_control_axis = kwargs.get("show_control_axis", False)
         self.show_in_legend = kwargs.get("show_in_legend", False)
 
+    def __str__(self):
+        return "z-grid"
+
     def get_data(self):
         """
         Returns
@@ -4594,26 +4585,19 @@ class ZGridLineSeries(BaseSeries):
         return xi_dict, wn_dict, tp_dict, ts_dict
 
 
-class SystemResponseSeries(Line2DBaseSeries):
-    """Represent a system response computed with the ``control`` module.
-
-    Computing the inverse laplace transform of a system with SymPy is not
-    trivial: sometimes it works fine, other times it produces wrong results,
-    other times it just consumes to much memory even for trivial transfer
-    functions. This is true for both the public ``inverse_laplace_transform``
-    as well as the private ``_fast_inverse_laplace`` used in
-    ``spb.graphics.control``.
-
-    In order to address these issues, let's evaluate the system with the
-    ``control`` module. Sure, it relies on numerical integration, hence errors.
-    But, at least it doesn't crash the machine and it is reliable.
+class ControlBaseSeries(Line2DBaseSeries):
+    """A base series for classes that are going to produce numerical
+    data using the ``control`` module for control-system plotting.
     """
-    def __init__(self, tf, var_start_end, label="", **kwargs):
+
+    def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)
-        from sympy.physics.control import TransferFunction
+        TransferFunction = sympy.physics.control.lti.TransferFunction
         np = import_module('numpy')
         sp = import_module('scipy')
         ct = import_module('control')
+        label = kwargs.get("label", "")
+        tf = args[0]
 
         if isinstance(tf, (Expr, TransferFunction)):
             if isinstance(tf, Expr):
@@ -4647,22 +4631,6 @@ class SystemResponseSeries(Line2DBaseSeries):
                 "Transfer function's type not recognized. "
                 "Received: " + str(type(tf))
             )
-
-        self.ranges = [var_start_end]
-        self._check_fs()
-
-        rt = kwargs.get("response_type", "step")
-        rt = rt.lower() if isinstance(rt, str) else rt
-        allowed_response_types = ["impulse", "step", "ramp"]
-        if (not isinstance(rt, str)) or (rt not in allowed_response_types):
-            raise ValueError(
-                "``response_type`` must be one of the following: %s\n"
-                "Received: %s" % (rt, allowed_response_types)
-            )
-        self._response_type = rt
-        self._control_kw = kwargs.get("control_kw", {})
-        if self._control_kw is None:
-            self._control_kw = {}
 
     def _check_fs(self):
         """ Checks if there are enogh parameters and free symbols.
@@ -4705,6 +4673,40 @@ class SystemResponseSeries(Line2DBaseSeries):
                     "Unkown symbols found in plotting range: %s. " % (r,) +
                     "Are the following parameters? %s" % remaining_fs)
 
+
+class SystemResponseSeries(ControlBaseSeries):
+    """Represent a system response computed with the ``control`` module.
+
+    Computing the inverse laplace transform of a system with SymPy is not
+    trivial: sometimes it works fine, other times it produces wrong results,
+    other times it just consumes to much memory even for trivial transfer
+    functions. This is true for both the public ``inverse_laplace_transform``
+    as well as the private ``_fast_inverse_laplace`` used in
+    ``spb.graphics.control``.
+
+    In order to address these issues, let's evaluate the system with the
+    ``control`` module. Sure, it relies on numerical integration, hence errors.
+    But, at least it doesn't crash the machine and it is reliable.
+    """
+    def __init__(self, tf, var_start_end, label="", **kwargs):
+        super().__init__(tf, label=label, **kwargs)
+
+        self.ranges = [var_start_end]
+        self._check_fs()
+
+        rt = kwargs.get("response_type", "step")
+        rt = rt.lower() if isinstance(rt, str) else rt
+        allowed_response_types = ["impulse", "step", "ramp"]
+        if (not isinstance(rt, str)) or (rt not in allowed_response_types):
+            raise ValueError(
+                "``response_type`` must be one of the following: %s\n"
+                "Received: %s" % (rt, allowed_response_types)
+            )
+        self._response_type = rt
+        self._control_kw = kwargs.get("control_kw", {})
+        if self._control_kw is None:
+            self._control_kw = {}
+
     def get_data(self):
         """
         Returns
@@ -4738,4 +4740,86 @@ class SystemResponseSeries(Line2DBaseSeries):
             x, y = ct.forced_response(self._control_tf, **ckw)
         else:
             raise NotImplementedError
-        return x, y
+        return self._apply_transform(x, y)
+
+
+def _get_axis_limits_for_2D_lines(series):
+    """Compute axis limits for the specified data series.
+
+    This functions is indirectly used by SGridLineSeries, which needs to
+    know where to put grid lines.
+    """
+    np = import_module("numpy")
+    lx, ly = series.get_data()
+    min_x, max_x = min(lx), max(lx)
+    min_y, max_y = min(ly), max(ly)
+    offset = 0.25
+    min_x = min_x - offset if np.isclose(min_x, 0) else min_x
+    max_x = max_x + offset if np.isclose(max_x, 0) else max_x
+    min_y = min_y - offset if np.isclose(min_y, 0) else min_y
+    max_y = max_y + offset if np.isclose(max_y, 0) else max_y
+    xlim = [min_x * 1.2, max_x * 1.2]
+    ylim = [min_y * 1.2, max_y * 1.2]
+    if np.isclose(*xlim):
+        xlim[0] -= 1
+        xlim[1] += 1
+    if np.isclose(*ylim):
+        ylim[0] -= 1
+        ylim[1] += 1
+    return xlim, ylim
+
+
+class PoleZeroSeries(ControlBaseSeries):
+    """Represent a the pole-zero of an LTI SISO system computed
+    with the ``control`` module.
+
+    This series represents either poles or zeros, not both at the same time.
+    In some sense, it behaves like a List2DSeries. So, to represents both
+    poles and zeros of a transfer function, we need to instatiate two
+    different series passing in the same transfer function.
+
+    While computationally less efficient, this design choice have been made
+    in order to reuse the existing BaseBackend architecture, that sets up
+    the number of colors based on the number of data series, as well as the
+    logic to show or hide the legend.
+    """
+    def __init__(self, tf, label="", **kwargs):
+        super().__init__(tf, label=label, **kwargs)
+        self._check_fs()
+        self.is_point = True
+        # used to store appropriate axis limits based on the data stored by
+        # this series.
+        self._xlim, self._ylim = None, None
+        self._control_kw = kwargs.get("control_kw", {})
+        self._return_poles = kwargs.get("return_poles", True)
+
+    def __str__(self):
+        pre = "pole of " if self._return_poles else "zeros of "
+        expr = self._expr if self._expr is not None else self._control_tf
+        return pre + str(expr)
+
+    def _get_axis_limits(self):
+        """Compute axis limits for this data series.
+
+        This is used by SGridLineSeries when using pole_zero().
+        """
+        self._xlim, self._ylim = _get_axis_limits_for_2D_lines(self)
+        return self._xlim, self._ylim
+
+    def get_data(self):
+        """
+        Returns
+        =======
+        x : np.ndarray
+        y : np.ndarray
+        """
+        np = import_module("numpy")
+        if self.is_interactive:
+            tf = self._expr.subs(self.params)
+            self._control_tf = tf_to_control(tf)
+        if self._return_poles:
+            points = self._control_tf.poles()
+        else:
+            points = self._control_tf.zeros()
+        x, y = np.real(points), np.imag(points)
+        return self._apply_transform(x, y)
