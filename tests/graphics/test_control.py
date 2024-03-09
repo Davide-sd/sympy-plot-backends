@@ -8,7 +8,7 @@ from spb import (
 from spb.series import (
     LineOver1DRangeSeries, HVLineSeries, List2DSeries, NyquistLineSeries,
     NicholsLineSeries, SGridLineSeries, RootLocusSeries, ZGridLineSeries,
-    SystemResponseSeries, PoleZeroSeries
+    SystemResponseSeries, PoleZeroSeries, NGridLineSeries
 )
 from sympy.abc import a, b, c, d, e, s
 from sympy.physics.control.lti import TransferFunction, TransferFunctionMatrix
@@ -438,9 +438,10 @@ def test_nichols(tf, label, rkw, params):
         kwargs["params"] = params
 
     series = nichols(tf, label=label, rendering_kw=rkw, **kwargs)
-    assert len(series) == 1
-    s = series[0]
-    assert isinstance(s, NicholsLineSeries)
+    assert len(series) == 2
+    assert isinstance(series[0], NGridLineSeries)
+    assert isinstance(series[1], NicholsLineSeries)
+    s = series[1]
     s.get_data()
     assert s.rendering_kw == {} if not rkw else rkw
     assert s.is_interactive == (len(s.params) > 0)
@@ -487,9 +488,11 @@ def test_sgrid():
     assert np.allclose(xi_ret, [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .96, .99, 1])
     assert len(wn_dict) == 0
 
-    # verify that by setting axis limits, the series computes appropriate
-    # values to distribute the grid evenly over the specified space.
-    series = sgrid(xlim=(-11, 1), ylim=(-10, 10), show_control_axis=False)
+    # verify that by setting axis limits and `auto=True`, the series
+    # computes appropriate values to distribute the grid evenly over
+    # the specified space.
+    series = sgrid(
+        xlim=(-11, 1), ylim=(-10, 10), auto=True, show_control_axis=False)
     assert len(series) == 1
     xi_dict, wn_dict, tp_dict, ts_dict = series[0].get_data()
     xi_ret = [k[0] for k in xi_dict.keys()]
@@ -499,7 +502,8 @@ def test_sgrid():
         0.855197831554018, 0.9570244044334736, 0, 1])
     assert np.allclose(wn_ret, [1.83333333, 3.66666667, 5.5, 7.33333333, 9.16666667])
 
-    series = sgrid(xlim=(-11, 1), ylim=(-10, 10), show_control_axis=True)
+    series = sgrid(
+        xlim=(-11, 1), ylim=(-10, 10), auto=True, show_control_axis=True)
     assert len(series) == 1
     xi_dict, wn_dict, tp_dict, ts_dict = series[0].get_data()
     xi_ret = [k[0] for k in xi_dict.keys()]

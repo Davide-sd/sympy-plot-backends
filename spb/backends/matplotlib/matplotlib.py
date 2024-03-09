@@ -5,9 +5,9 @@ from spb.backends.matplotlib.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
     Implicit2DRenderer, ComplexRenderer, ContourRenderer, SurfaceRenderer,
     GeometryRenderer, GenericRenderer, HVLineRenderer,
-    NyquistRenderer, NicholsRenderer, Arrow2DRendererFancyArrowPatch,
+    NyquistRenderer, Arrow2DRendererFancyArrowPatch,
     Arrow3DRendererFancyArrowPatch, RootLocusRenderer, SGridLineRenderer,
-    ZGridLineRenderer
+    ZGridLineRenderer, NGridLineRenderer
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
@@ -20,7 +20,7 @@ from spb.series import (
     PlaneSeries, GeometrySeries, GenericDataSeries,
     HVLineSeries, NyquistLineSeries, NicholsLineSeries,
     Arrow2DSeries, Arrow3DSeries, RootLocusSeries, SGridLineSeries,
-    ZGridLineSeries, SystemResponseSeries, PoleZeroSeries
+    ZGridLineSeries, SystemResponseSeries, PoleZeroSeries, NGridLineSeries
 )
 from sympy.external import import_module
 from packaging import version
@@ -172,18 +172,23 @@ class MatplotlibBackend(Plot):
         GenericDataSeries: GenericRenderer,
         HVLineSeries: HVLineRenderer,
         NyquistLineSeries: NyquistRenderer,
-        NicholsLineSeries: NicholsRenderer,
+        NicholsLineSeries: Line2DRenderer,
         Arrow2DSeries: Arrow2DRendererFancyArrowPatch,
         Arrow3DSeries: Arrow3DRendererFancyArrowPatch,
         RootLocusSeries: RootLocusRenderer,
         SGridLineSeries: SGridLineRenderer,
         ZGridLineSeries: ZGridLineRenderer,
         SystemResponseSeries: Line2DRenderer,
-        PoleZeroSeries: Line2DRenderer
+        PoleZeroSeries: Line2DRenderer,
+        NGridLineSeries: NGridLineRenderer
     }
 
     pole_line_kw = {"color": "k", "linestyle": ":"}
     grid_line_kw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75}
+    sgrid_line_kw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75,
+        "zorder": 0}
+    ngrid_line_kw = {"color": 'lightgray', "linestyle": ':',
+        "zorder": 0}
 
     def __init__(self, *args, **kwargs):
         self.matplotlib = import_module(
@@ -484,7 +489,9 @@ class MatplotlibBackend(Plot):
 
         xlims, ylims, zlims = [], [], []
         for r in self.renderers:
-            if r.series.is_interactive:
+            # when using interactive-widgets, grids series needs to be updated
+            # constantly
+            if r.series.is_interactive or r.series.is_grid:
                 r.update(params)
             xlims.extend(r._xlims)
             ylims.extend(r._ylims)
@@ -525,14 +532,13 @@ class MatplotlibBackend(Plot):
                 scalex=self._ax.get_autoscalex_on(),
                 scaley=self._ax.get_autoscaley_on()
             )
-
             # HACK: in order to make interactive contour plots to scale to
             # the appropriate range
             if xlims and (
                 any(s.is_contour for s in self.series)
                 or any(s.is_vector and (not s.is_3D) for s in self.series)
                 or any(s.is_2Dline and s.is_parametric for s in self.series)
-                or any(hasattr(s, "_get_axis_limits") for s in self.series)
+                or any(s.is_grid for s in self.series)
             ):
                 xlims = np.array(xlims)
                 xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
@@ -541,7 +547,7 @@ class MatplotlibBackend(Plot):
                 any(s.is_contour for s in self.series)
                 or any(s.is_vector and (not s.is_3D) for s in self.series)
                 or any(s.is_2Dline and s.is_parametric for s in self.series)
-                or any(hasattr(s, "_get_axis_limits") for s in self.series)
+                or any(s.is_grid for s in self.series)
             ):
                 ylims = np.array(ylims)
                 ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))

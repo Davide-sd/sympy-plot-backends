@@ -308,8 +308,12 @@ class Plot:
 
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.
-        self._series = []
-        self._series.extend(args)
+        grid_series = [s for s in args if s.is_grid]
+        non_grid_series = [s for s in args if not s.is_grid]
+        # grid series must be the last to be rendered: they need to know
+        # the extension of the area to cover with grids, which can be obtained
+        # after plotting all other series.
+        self._series = non_grid_series + grid_series
         if "process_piecewise" in kwargs.keys():
             # if the backend was called by plot_piecewise, each piecewise
             # function must use the same color. Here we preprocess each

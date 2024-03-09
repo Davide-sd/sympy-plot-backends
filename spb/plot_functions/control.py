@@ -1,7 +1,7 @@
 from spb.defaults import TWO_D_B, cfg
 from spb.graphics.control import (
     _preprocess_system, pole_zero,
-    _nichols_helper, _nyquist_helper, step_response,
+    nichols, _nyquist_helper, step_response,
     ramp_response, impulse_response,
     _bode_magnitude_helper, _bode_phase_helper,
     control_axis, root_locus, sgrid as sgrid_function,
@@ -261,7 +261,7 @@ def plot_pole_zero(
             control=control, **kwargs.copy()
         ))
 
-    grid = _get_grid_series(sgrid, zgrid, series)
+    grid = _get_grid_series(sgrid, zgrid)
     if sgrid or zgrid:
         kwargs.setdefault("grid", False)
     kwargs.setdefault("xlabel", "Real axis")
@@ -1306,12 +1306,13 @@ def plot_nichols(*systems, **kwargs):
 
     """
     systems = _unpack_systems(systems)
-    series = [_nichols_helper(s, l, **kwargs.copy()) for s, l in systems]
+    series = []
+    for s, l in systems:
+        series.extend(nichols(s, l, **kwargs.copy()))
     kwargs.setdefault("ngrid", True)
     kwargs.setdefault("xlabel", "Open-Loop Phase [deg]")
     kwargs.setdefault("ylabel", "Open-Loop Magnitude [dB]")
-    kwargs.setdefault("title", _create_title_helper(
-        systems, "Nichols Plot"))
+    kwargs.setdefault("title", "Nichols Plot")
     kwargs.setdefault("grid", not kwargs.get("ngrid", False))
     return _create_plot_helper(series, False, **kwargs)
 
@@ -1422,7 +1423,7 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
     if sgrid and zgrid:
         # user has explicetly types zgrid=True. Disable sgrid.
         sgrid = False
-    grid = _get_grid_series(sgrid, zgrid, rls)
+    grid = _get_grid_series(sgrid, zgrid)
     if sgrid or zgrid:
         kwargs.setdefault("grid", False)
     return _create_plot_helper(grid + rls, False, **kwargs)

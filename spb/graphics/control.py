@@ -2,7 +2,7 @@ from spb.defaults import TWO_D_B
 from spb.series import (
     List2DSeries, LineOver1DRangeSeries, HVLineSeries, NyquistLineSeries,
     NicholsLineSeries, RootLocusSeries, SGridLineSeries, ZGridLineSeries,
-    SystemResponseSeries, PoleZeroSeries
+    SystemResponseSeries, PoleZeroSeries, NGridLineSeries
 )
 from spb.utils import prange, is_number, tf_to_sympy
 import numpy as np
@@ -41,7 +41,8 @@ __all__ = [
     'nichols',
     'root_locus',
     'sgrid',
-    'zgrid'
+    'zgrid',
+    'ngrid'
 ]
 
 
@@ -369,10 +370,12 @@ def pole_zero(
     Returns
     =======
 
-    A list containing one or more instances of:
+    A list containing:
 
-    * ``List2DSeries`` if ``control=False``.
-    * ``PoleZeroSeries`` if ``control=True``.
+    * one instance of ``SGridLineSeries`` if ``sgrid=True``.
+    * one instance of ``ZGridLineSeries`` if ``zgrid=True``.
+    * one or more instances of ``List2DSeries`` if ``control=False``.
+    * one or more instances of ``PoleZeroSeries`` if ``control=True``.
 
     Examples
     ========
@@ -460,6 +463,12 @@ def pole_zero(
     ==========
 
     .. [1] https://en.wikipedia.org/wiki/Pole%E2%80%93zero_plot
+
+    See Also
+    ========
+
+    sgrid, zgrid
+
     """
     systems = _unpack_mimo_systems(
         system,
@@ -478,11 +487,11 @@ def pole_zero(
             func(s, pole_markersize, zero_markersize, **kwargs.copy())
         )
 
-    grid = _get_grid_series(sgrid, zgrid, series)
+    grid = _get_grid_series(sgrid, zgrid)
     return grid + series
 
 
-def _get_grid_series(sgrid, zgrid, existing_series):
+def _get_grid_series(sgrid, zgrid):
     grid = []
     if sgrid and zgrid:
         warnings.warn(
@@ -490,7 +499,7 @@ def _get_grid_series(sgrid, zgrid, existing_series):
             "Automatically setting ``zgrid=False``.")
         zgrid = False
     if sgrid:
-        grid = sgrid_function(series=existing_series)
+        grid = sgrid_function(auto=True)
     if zgrid:
         grid = zgrid_function()
     return grid
@@ -1733,7 +1742,7 @@ def _nichols_helper(system, label, **kwargs):
         arg(system_expr), Abs(system_expr), _range, label, **kwargs)
 
 
-def nichols(system, label=None, rendering_kw=None, **kwargs):
+def nichols(system, label=None, rendering_kw=None, ngrid=True, **kwargs):
     """Nichols plot for a system over a (optional) frequency range.
 
     Parameters
@@ -1767,7 +1776,10 @@ def nichols(system, label=None, rendering_kw=None, **kwargs):
     Returns
     =======
 
-    A list containing one instance of ``NicholsLineSeries``.
+    A list containing:
+
+    * one instance of ``NGridLineSeries`` if ``ngrid=True``.
+    * one instance of ``NicholsLineSeries``.
 
     References
     ==========
@@ -1834,14 +1846,18 @@ def nichols(system, label=None, rendering_kw=None, **kwargs):
     See Also
     ========
 
-    bode_magnitude, bode_phase, nyquist
+    bode_magnitude, bode_phase, nyquist, ngrid
 
     """
-    return [
+    nichols_series = [
         _nichols_helper(
             system, label, rendering_kw=rendering_kw, **kwargs.copy()
         )
     ]
+    grid = []
+    if ngrid:
+        grid = ngrid_function(series=nichols_series)
+    return grid + nichols_series
 
 
 def root_locus(system, label=None, rendering_kw=None, rl_kw={},
@@ -1885,8 +1901,11 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     Returns
     =======
 
-    A list containing one instance of ``RootLocusSeries`` and possibly one
-    instance of ``SGridLineSeries``.
+    A list containing:
+
+    * one instance of ``SGridLineSeries`` if ``sgrid=True``.
+    * one instance of ``ZGridLineSeries`` if ``zgrid=True``.
+    * one or more instances of ``RootLocusSeries``.
 
     Examples
     ========
@@ -1934,19 +1953,13 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     rls = RootLocusSeries(
         system, label=label, rendering_kw=rendering_kw, rl_kw=rl_kw,
         **kwargs.copy())
+    grid = _get_grid_series(sgrid, zgrid)
 
-    grid_series = []
-    if zgrid:
-        sgrid = False
-        grid_series = zgrid_function(show_control_axis=True)
-    if sgrid:
-        grid_series = sgrid_function(show_control_axis=True, series=rls)
-
-    return grid_series + [rls]
+    return grid + [rls]
 
 
-def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None, show_control_axis=True,
-    rendering_kw=None, **kwargs):
+def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
+    show_control_axis=True, rendering_kw=None, auto=False, **kwargs):
     """Create the s-grid of constant damping ratios and natural frequencies.
 
     Parameters
@@ -1964,6 +1977,9 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None, show_control
         Peak times.
     ts : iterable or float, optional
         Settling times.
+    auto : bool, optional
+        If True, automatically compute damping ratio and natural frequencies
+        in order to obtain a "evenly" distributed grid.
     show_control_axis : bool, optional
         Shows an horizontal and vertical grid lines crossing at the origin.
         Default to True.
@@ -2004,9 +2020,7 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None, show_control
        ...         show_control_axis=False),
        ...     grid=False, xlim=(-8.5, 1), ylim=(-5, 5))
 
-    In order to auto-generate grid lines over a specified area of of the
-    s-plane, the ``xlim`` and ``ylim`` keyword arguments must be provided also
-    to the ``sgrid`` function:
+    Auto-generate grid lines over a specified area of of the s-plane:
 
     .. plot::
        :context: close-figs
@@ -2016,7 +2030,7 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None, show_control
        >>> xlim = (-5.5, 1)
        >>> ylim = (-3, 3)
        >>> graphics(
-       ...     sgrid(xlim=xlim, ylim=ylim),
+       ...     sgrid(auto=True),
        ...     grid=False, xlim=xlim, ylim=ylim
        ... )
 
@@ -2035,7 +2049,7 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None, show_control
            Ts: (1, 0.2, 4),
        }
        graphics(
-           sgrid(),
+           sgrid(auto=True),
            sgrid(xi=xi, wn=False, params=params,
                rendering_kw={"color": "r", "linestyle": "-"},
                show_control_axis=False),
@@ -2052,7 +2066,7 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None, show_control
 
     See Also
     ========
-    zgrid
+    zgrid, pole_zero, root_locus
 
     """
     if (xi is not None) and (wn is False):
@@ -2108,7 +2122,7 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None, show_control
     return [
         SGridLineSeries(xi, wn, tp, ts, xlim=xlim, ylim=ylim,
             show_control_axis=show_control_axis,
-            rendering_kw=rendering_kw, **kwargs)
+            rendering_kw=rendering_kw, auto=auto, **kwargs)
     ]
 
 
@@ -2193,7 +2207,7 @@ def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
 
     See Also
     ========
-    sgrid
+    sgrid, pole_zero, root_locus
 
     """
     if (
@@ -2255,3 +2269,94 @@ def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
 
 
 zgrid_function = zgrid
+
+
+def ngrid(
+    cl_mags=None, cl_phases=None, label_cl_phases=False,
+    rendering_kw=None, **kwargs
+):
+    """Create the n-grid (Nichols grid) of constant closed-loop magnitudes
+    and phases.
+
+    Parameters
+    ==========
+
+    cl_mags : float or array-like (dB), optional
+        Array of closed-loop magnitudes defining the iso-gain lines.
+        If False, hide closed-loop magnitude lines.
+    cl_phases : float or array-like (degrees), optional
+        Array of closed-loop phases defining the iso-phase lines.
+        Must be in the range -360 < cl_phases < 0.
+        If False, hide closed-loop phase lines.
+    label_cl_phases: bool, optional
+        If True, closed-loop phase lines will be labelled. Default to False.
+    rendering_kw : dict or None, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+
+    Returns
+    =======
+
+    A list containing one instance of ``NGridLineSeries``.
+
+    Examples
+    ========
+
+    Default N-grid:
+
+    .. plot::
+       :context: reset
+       :format: doctest
+       :include-source: True
+
+       >>> from spb import *
+       >>> graphics(
+       ...     ngrid(),
+       ...     grid=False
+       ... )
+
+    Highlight specific values of closed-loop magnitude and closed-loop phase:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> graphics(
+       ...     ngrid(label_cl_phases=False),
+       ...     ngrid(cl_mags=-30, cl_phases=False, rendering_kw={"color": "r", "linestyle": "-"}),
+       ...     ngrid(cl_mags=False, cl_phases=-200, rendering_kw={"color": "g", "linestyle": "-"}),
+       ...     grid=False
+       ... )
+
+    See Also
+    ========
+
+    nichols
+
+    """
+
+    show_cl_mags = True
+    show_cl_phases = True
+    if cl_mags is False:
+        cl_mags = None
+        show_cl_mags = False
+    elif (cl_mags is not None) and (not hasattr(cl_mags, "__iter__")):
+        cl_mags = [cl_mags]
+
+    if cl_phases is False:
+        cl_phases = None
+        show_cl_phases = False
+    elif (cl_phases is not None) and (not hasattr(cl_phases, "__iter__")):
+        cl_phases = [cl_phases]
+
+    return [
+        NGridLineSeries(cl_mags, cl_phases, label_cl_phases,
+            rendering_kw=rendering_kw,
+            show_cl_mags=show_cl_mags, show_cl_phases=show_cl_phases,
+            **kwargs)
+    ]
+
+
+ngrid_function = ngrid

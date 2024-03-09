@@ -114,7 +114,10 @@ from .make_tests import (
     make_test_arrow_3d,
     make_test_root_locus_1,
     make_test_root_locus_2,
-    make_test_poles_zeros_sgrid
+    make_test_poles_zeros_sgrid,
+    make_test_ngrid,
+    make_test_sgrid,
+    make_test_zgrid
 )
 
 
@@ -2358,35 +2361,39 @@ def test_plot_root_locus_1():
     p = make_test_root_locus_1(MB, True, False)
     assert isinstance(p, MB)
     assert len(p.series) == 2
-    assert isinstance(p[0], SGridLineSeries)
-    assert isinstance(p[1], RootLocusSeries)
+    # NOTE: the backend is going to reorder data series such that grid
+    # series are placed at the end.
+    assert isinstance(p[0], RootLocusSeries)
+    assert isinstance(p[1], SGridLineSeries)
     ax = p.ax
     assert len(ax.lines) == 18
     assert ax.get_legend() is None
     assert len(p.ax.texts) == 10 # number of sgrid labels on the plot
     line_colors = {'#1f77b4', '0.75'}
     assert all(l.get_color() in line_colors for l in ax.lines)
+    p.update_interactive({})
 
     p = make_test_root_locus_1(MB, False, True)
     assert isinstance(p, MB)
     assert len(p.series) == 2
-    assert isinstance(p[0], ZGridLineSeries)
-    assert isinstance(p[1], RootLocusSeries)
+    assert isinstance(p[0], RootLocusSeries)
+    assert isinstance(p[1], ZGridLineSeries)
     ax = p.ax
     assert len(ax.lines) == 33
     assert ax.get_legend() is None
     assert len(p.ax.texts) == 20 # number of sgrid labels on the plot
     line_colors = {'#1f77b4', '0.75'}
     assert all(l.get_color() in line_colors for l in ax.lines)
+    p.update_interactive({})
 
 
 def test_plot_root_locus_2():
     p = make_test_root_locus_2(MB)
     assert isinstance(p, MB)
     assert len(p.series) == 3
-    assert isinstance(p[0], SGridLineSeries)
+    assert isinstance(p[0], RootLocusSeries)
     assert isinstance(p[1], RootLocusSeries)
-    assert isinstance(p[2], RootLocusSeries)
+    assert isinstance(p[2], SGridLineSeries)
     ax = p.ax
     assert len(ax.lines) == 19
     assert len(ax.get_legend().texts) == 2
@@ -2395,6 +2402,7 @@ def test_plot_root_locus_2():
     assert len(p.ax.texts) == 10 # number of sgrid labels on the plot
     line_colors = {'#1f77b4', '#ff7f0e', '0.75'}
     assert all(l.get_color() in line_colors for l in ax.lines)
+    p.update_interactive({})
 
 
 def test_plot_poles_zeros_sgrid():
@@ -2409,6 +2417,7 @@ def test_plot_poles_zeros_sgrid():
     # the code for better positioning the grid...
     assert xlim[0] > -5 and xlim[1] < 2
     assert ylim[0] > -5 and ylim[1] < 5
+    p.update_interactive({})
 
 
 def test_plot_root_locus_sgrid():
@@ -2423,3 +2432,86 @@ def test_plot_root_locus_sgrid():
     # the code for better positioning the grid...
     assert xlim[0] > -5 and xlim[1] < 2
     assert ylim[0] > -5 and ylim[1] < 5
+    p.update_interactive({})
+
+
+@pytest.mark.parametrize(
+    "cl_mags, cl_phases, label_cl_phases, n_lines, n_texts",
+    [
+        (None, None, False, 26, 16),
+        (None, None, True, 26, 25),
+        (-30, False, False, 2, 1),
+        (False, -200, False, 2, 0),
+    ]
+)
+def test_ngrid(cl_mags, cl_phases, label_cl_phases, n_lines, n_texts):
+    p = make_test_ngrid(MB, cl_mags, cl_phases, label_cl_phases)
+    ax = p.ax
+    assert len(ax.lines) == n_lines
+    assert len(ax.texts) == n_texts
+
+
+@pytest.mark.parametrize(
+    "xi, wn, tp, ts, auto, show_control_axis, params, n_lines, n_texts",
+    [
+        (None, None, None, None, False, True, None, 34, 21),
+        (None, None, None, None, False, False, None, 35, 21),
+        (None, None, None, None, True, True, None, 17, 10),
+        (None, None, None, None, True, False, None, 18, 10),
+        (0.5, False, None, None, False, False, None, 2, 1),
+        ([0.5, 0.75], False, None, None, False, False, None, 4, 2),
+        (False, 2, None, None, False, False, None, 1, 1),
+        (False, [2, 3], None, None, False, False, None, 2, 2),
+        (False, False, 2, None, False, False, None, 1, 0),
+        (False, False, None, 3, False, False, None, 1, 0),
+        (False, False, 2, 3, False, False, None, 2, 0),
+        (False, False, [2, 3], 3, False, False, None, 3, 0),
+        (False, False, [2, 3], [3, 4], False, False, None, 4, 0),
+        (x, y, z, x+y, False, False,
+            {x:(0.5, 0, 1), y:(2, 0, 4), z: (3, 0, 5)},
+            5, 2)
+    ]
+)
+def test_sgrid(xi, wn, tp, ts, auto, show_control_axis, params, n_lines, n_texts):
+    kw = {}
+    if params:
+        kw["params"] = params
+
+    p = make_test_sgrid(MB, xi, wn, tp, ts, auto, show_control_axis, **kw)
+    ax = p._backend.ax if params else p.ax
+    assert len(ax.lines) == n_lines
+    assert len(ax.texts) == n_texts
+    if params:
+        p._backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
+
+
+@pytest.mark.parametrize(
+    "xi, wn, tp, ts, show_control_axis, params, n_lines, n_texts",
+    [
+        (None, None, None, None, True, None, 32, 20),
+        (None, None, None, None, False, None, 30, 20),
+        (0.5, False, None, None, False, None, 2, 1),
+        ([0.5, 0.75], False, None, None, False, None, 4, 2),
+        (False, 2/3, None, None, False, None, 1, 1),
+        (False, [2/3, 3/4], None, None, False, None, 2, 2),
+        (False, False, 2, None, False, None, 1, 1),
+        (False, False, None, 3, False, None, 1, 1),
+        (False, False, 2, 3, False, None, 2, 2),
+        (False, False, [2, 3], 3, False, None, 3, 3),
+        (False, False, [2, 3], [3, 4], False, None, 4, 4),
+        (x, y, z, x+y, False,
+            {x:(0.5, 0, 1), y:(0.75, 0, 4), z: (0.8, 0, 5)},
+            5, 4)
+    ]
+)
+def test_zgrid(xi, wn, tp, ts, show_control_axis, params, n_lines, n_texts):
+    kw = {}
+    if params:
+        kw["params"] = params
+
+    p = make_test_zgrid(MB, xi, wn, tp, ts, show_control_axis, **kw)
+    ax = p._backend.ax if params else p.ax
+    assert len(ax.lines) == n_lines
+    assert len(ax.texts) == n_texts
+    if params:
+        p._backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})

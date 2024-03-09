@@ -4,7 +4,8 @@ from spb import (
     plot3d_parametric_line, plot3d, plot3d_list,
     plot3d_implicit, plot3d_parametric_surface,
     plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
-    graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero
+    graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero,
+    ngrid, sgrid, zgrid
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries
@@ -1217,3 +1218,26 @@ def make_test_poles_zeros_sgrid(B):
     s = symbols("s")
     G = (s**2 + 1) / (s**4 + 4*s**3 + 6*s**2 + 5*s + 2)
     return plot_pole_zero(G, sgrid=True, show=False, backend=B)
+
+
+def make_test_ngrid(B, cl_mags, cl_phases, label_cl_phases):
+    return graphics(
+        ngrid(cl_mags, cl_phases, label_cl_phases),
+        grid=False, show=False, backend=B
+    )
+
+
+def make_test_sgrid(B, xi, wn, tp, ts, auto, show_control_axis, **kwargs):
+    return graphics(
+        sgrid(xi, wn, tp, ts, auto=auto,
+            show_control_axis=show_control_axis, **kwargs),
+        grid=False, show=False, backend=B
+    )
+
+
+def make_test_zgrid(B, xi, wn, tp, ts, show_control_axis, **kwargs):
+    return graphics(
+        zgrid(xi, wn, tp, ts,
+            show_control_axis=show_control_axis, **kwargs),
+        grid=False, show=False, backend=B
+    )

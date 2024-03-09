@@ -71,6 +71,7 @@ ipywidgets. Refer to :ref:`interactive` module for more information.
 .. autofunction:: bode_magnitude
 .. autofunction:: bode_phase
 .. autofunction:: nyquist
+.. autofunction:: ngrid
 .. autofunction:: nichols
 .. autofunction:: control_axis
 .. autofunction:: sgrid

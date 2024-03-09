@@ -333,6 +333,9 @@ class BaseSeries:
     # Implement back-compatibility with sympy.plotting <= 1.11
     # Please, read NOTE section on GenericDataSeries
 
+    is_grid = False
+    # Represents grids like s-grid, z-grid, n-grid, ...
+
     _allowed_keys = []
     # contains a list of keyword arguments supported by the series. It will be
     # used to validate the user-provided keyword arguments.
@@ -1149,6 +1152,10 @@ class Line2DBaseSeries(BaseSeries):
             exclude = [exclude]
         exclude = [float(e) for e in exclude]
         self.exclude = sorted(exclude)
+        # some data series will be used together with *GridLineSeries,
+        # which requires the knowledge of available plot-area in order
+        # to properly visualize grid lines.
+        self._xlim, self._ylim, self._zlim = None, None, None
 
     def get_data(self):
         """Return coordinates for plotting the line.
@@ -1220,7 +1227,34 @@ class Line2DBaseSeries(BaseSeries):
             points = pts_to_midstep(*points)
 
         points = self._insert_exclusions(points)
+        self._compute_axis_limits(points)
         return points
+
+    def _compute_axis_limits(self, points):
+        """Compute axis limits for each coordinate of points.
+        """
+        np = import_module("numpy")
+
+        def _helper(x):
+            min_x, max_x = np.nanmin(x), np.nanmax(x)
+            # this offset allows to have a little bit of empty space on the
+            # LHP of root locus plot
+            offset = 0.25
+            min_x = min_x - offset if np.isclose(min_x, 0) else min_x
+            max_x = max_x + offset if np.isclose(max_x, 0) else max_x
+            # provide a little bit of margin
+            lim = [min_x * 1.2, max_x * 1.2]
+            if np.isclose(*lim):
+                # prevent axis limits to be the same
+                lim[0] -= 1
+                lim[1] += 1
+            return lim
+
+        if len(points[0]) > 0:
+            self._xlim = _helper(points[0])
+            self._ylim = _helper(points[1])
+            if self.is_3Dline:
+                self._zlim = _helper(points[2])
 
     def _insert_exclusions(self, points):
         """Add NaN to each of the exclusion point. Practically, this adds a
@@ -1365,14 +1399,6 @@ class List2DSeries(Line2DBaseSeries):
         lx = np.array([t.evalf(subs=self.params) for t in lx], dtype=float)
         ly = np.array([t.evalf(subs=self.params) for t in ly], dtype=float)
         return self._eval_color_func_and_return(lx, ly)
-
-    def _get_axis_limits(self):
-        """Compute axis limits for this data series.
-
-        This is used by SGridLineSeries when using pole_zero().
-        """
-        self._xlim, self._ylim = _get_axis_limits_for_2D_lines(self)
-        return self._xlim, self._ylim
 
     def _eval_color_func_and_return(self, *data):
         if self.use_cm and callable(self.color_func):
@@ -3898,10 +3924,6 @@ class NyquistLineSeries(Parametric2DLineSeries):
 class NicholsLineSeries(Parametric2DLineSeries):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ngrid = kwargs.get("ngrid", True)
-        self.label_cl_phases = kwargs.get("label_cl_phases", False)
-        self.cl_line_style = kwargs.get("cl_line_style", None)
-        self._allowed_keys += ["ngrid", "label_cl_phases", "cl_line_style"]
 
     def get_data(self):
         np = import_module('numpy')
@@ -3909,6 +3931,7 @@ class NicholsLineSeries(Parametric2DLineSeries):
         mag = 20 * np.log10(mag)
         phase = unwrap(phase)
         phase = np.degrees(phase)
+        self._compute_axis_limits([phase, mag])
         return phase, mag, omega
 
 
@@ -4043,197 +4066,49 @@ class Arrow3DSeries(Arrow2DSeries):
         )
 
 
-class RootLocusSeries(Line2DBaseSeries):
-    """Generates numerical data for root locus plot using the ``control``
-    module.
+class GridBase:
+    """
+    *GridLineSeries may cover the entire visible area. Hence, they need to
+    know the axis limits.
 
-    Symbolic expressions or SymPy's transfer functions are converted to
-    ``control.TransferFunction``. If a interactive-widget plot is created,
-    at each widget's state-change the updated symbolic transfer function
-    will be converted to ``control.TransferFunction``.
+    Axis limits can be:
+    1. provided by the user in the plot function call. For example:
+       ``plot(..., xlim=(a, b), ylim=(c, d))``
+    2. computed from the data that has already be plotted.
+    3. provided in some function call that generates data series. For example:
+       ``graphics(sgrid(xlim=(a, b), ylim=(c, d)))``
 
-    It has been shown that numpy.roots() produces inaccurate results in
-    comparison to sympy.roots(). https://github.com/sympy/sympy/issues/25234
-    However, we are dealing with a root locus plot, where branches start from
-    poles and goes to zeros (or to infinity). Hence, these errors are
-    likely to be irrelevant on a practical case. This data series uses
-    ``control`` (hence numpy) for performace.
+    Either way, the appropriate renderer will:
 
-    References
-    ==========
-
-    https://github.com/python-control/python-control
+    1. figure it out the axis limits.
+    2. Let the grid series knows about this limits by calling
+       ``series.set_axis_limits(xlim, ylim)``.
+    3. Compute the numerical data for the specified grid that cover the
+       specified area, with ``series.get_data()``.
 
     """
-    _allowed_keys = ["sgrid"]
+    def _init_axis_limits(self, **kwargs):
+        xlim = kwargs.get("xlim", None)
+        ylim = kwargs.get("ylim", None)
+        # Jupyter lab + "from sympy import *" convert all numbers to
+        # sympy's types. The algorithm expectes them to be `float`.
+        self._xlim = [float(t) for t in xlim] if xlim else None
+        self._ylim = [float(t) for t in ylim] if ylim else None
 
-    def __init__(self, tf, label="", **kwargs):
-        super().__init__(**kwargs)
-        TransferFunction = sympy.physics.control.lti.TransferFunction
-        np = import_module('numpy')
-        sp = import_module('scipy')
-        ct = import_module('control')
-
-        if isinstance(tf, (Expr, TransferFunction)):
-            if isinstance(tf, Expr):
-                params_fs = set(self.params.keys())
-                fs = tf.free_symbols.difference(params_fs)
-                n, d = fraction(tf)
-                tf = TransferFunction(n, d, fs.pop())
-            self._expr = tf
-            self._control_tf = None
-            if not self.is_interactive:
-                self._control_tf = tf_to_control(tf)
-            self._label = str(self.expr) if label is None else label
-            self._latex_label = latex(self.expr) if label is None else label
-        elif isinstance(tf, (sp.signal.TransferFunction, ct.TransferFunction)):
-            self._expr = None
-            self._label = label
-            self._latex_label = label
-            if label is None:
-                s = symbols("s" if tf.dt is None else "z")
-                n = tf.num[0][0] if isinstance(ct.TransferFunction) else tf.num
-                d = tf.den[0][0] if isinstance(ct.TransferFunction) else tf.den
-                expr = Poly.from_list(n, s) / Poly.from_list(d, s)
-                self._label = str(expr)
-                self._latex_label = latex(expr)
-            if isinstance(tf, sp.signal.TransferFunction):
-                self._control_tf = tf_to_control(tf)
-            else:
-                self._control_tf = tf
-        else:
-            raise TypeError(
-                "Transfer function's type not recognized. "
-                "Received: " + str(type(tf))
-            )
-
-        # compute appropriate axis limits from the transfer function
-        # associated to this data series.
-        self._xlim = None
-        self._ylim = None
-        # zeros and poles are necessary in order to show appropriate markers.
-        self._zeros = None
-        self._poles = None
-
-        self._rl_kw = kwargs.get("rl_kw", {})
-        if self._rl_kw is None:
-            self._rl_kw = {}
-        self._rl_kw["plot"] = False
-        self._zeros_rk = kwargs.get("zeros_rk", dict())
-        self._poles_rk = kwargs.get("poles_rk", dict())
-
-    def _compute_axis_limits(self, roots_array):
-        """Attempt to compute appropriate axis limits so that the plot
-        visualizes the important parts of the root locus.
-        """
-        np = import_module("numpy")
-
-        tf = self._control_tf
-        _bp = self._break_points(
-            np.poly1d(tf.num[0][0]),
-            np.poly1d(tf.den[0][0])
-        )[1]
-
-        # root locus branches starts from poles and goes to zeros or
-        # infinity. Look for the branches that goes to zeros, find the
-        # maximum imaginary part. This will be used to compute ylim.
-        max_heights = []
-        for p in self._poles:
-            for c in roots_array.T:
-                if abs(p - c[0]) < 1e-03:
-                    if any(abs(z - c[-1]) < 1e-03 for z in self._zeros):
-                        i = np.argmax(np.abs(c.imag))
-                        max_heights.append(c[i])
-        min_heights = [-t for t in max_heights]
-
-        important_points = np.concatenate(
-            [self._zeros, self._poles, _bp, max_heights, min_heights])
-        _min_x = min(important_points.real)
-        _max_x = max(important_points.real)
-        _min_y = min(important_points.imag)
-        _max_y = max(important_points.imag)
-        offset = 0.25
-        _min_x = _min_x - offset if np.isclose(_min_x, 0) else _min_x
-        _max_x = _max_x + offset if np.isclose(_max_x, 0) else _max_x
-        _min_y = _min_y - offset if np.isclose(_min_y, 0) else _min_y
-        _max_y = _max_y + offset if np.isclose(_max_y, 0) else _max_y
-        _xlim = [_min_x * 1.5, _max_x * 1.2]
-        _ylim = [_min_y * 1.2, _max_y * 1.2]
-        if np.isclose(*_xlim):
-            _xlim[0] -= 1
-            _xlim[1] += 1
-        if np.isclose(*_ylim):
-            _ylim[0] -= 1
-            _ylim[1] += 1
-        self._xlim = _xlim
-        self._ylim = _ylim
-
-    def _get_axis_limits(self):
-        if self._xlim is None:
-            self.get_data()
-        return self._xlim, self._ylim
-
-    @property
-    def zeros(self):
-        if self._zeros is None:
-            self.get_data()
-        return self._zeros
-
-    @property
-    def poles(self):
-        if self._poles is None:
-            self.get_data()
-        return self._poles
+    def set_axis_limits(self, xlim, ylim):
+        self._xlim = xlim
+        self._ylim = ylim
 
     @property
     def xlim(self):
-        return self._get_axis_limits()[0]
+        return self._xlim
 
     @property
     def ylim(self):
-        return self._get_axis_limits()[1]
-
-    def _break_points(self, num, den):
-        """Extract break points over real axis and gains given these locations"""
-        # type: (np.poly1d, np.poly1d) -> (np.array, np.array)
-        dnum = num.deriv(m=1)
-        dden = den.deriv(m=1)
-        polynom = den * dnum - num * dden
-        real_break_pts = polynom.r
-        # don't care about infinite break points
-        real_break_pts = real_break_pts[num(real_break_pts) != 0]
-        k_break = -den(real_break_pts) / num(real_break_pts)
-        idx = k_break >= int(0)   # only positives gains
-        k_break = k_break[idx]
-        real_break_pts = real_break_pts[idx]
-        if len(k_break) == 0:
-            k_break = [0]
-            real_break_pts = den.roots
-        return k_break, real_break_pts
-
-    def get_data(self):
-        """
-        Returns
-        =======
-        roots : ndarray
-            Closed-loop root locations, arranged in which each row corresponds
-            to a gain in gains
-        gains : ndarray
-            Gains used.  Same as kvect keyword argument if provided.
-        """
-        if self.is_interactive:
-            tf = self._expr.subs(self.params)
-            self._control_tf = tf_to_control(tf)
-
-        ct = import_module("control")
-        self._zeros = self._control_tf.zeros()
-        self._poles = self._control_tf.poles()
-        roots_array, gains = ct.root_locus(self._control_tf, **self._rl_kw)
-        self._compute_axis_limits(roots_array)
-        return roots_array, gains
+        return self._ylim
 
 
-class SGridLineSeries(BaseSeries):
+class SGridLineSeries(BaseSeries, GridBase):
     """Represent a grid of damping ratio lines and natural frequency lines
     on the s-plane. This data series implements two modes of operation:
 
@@ -4244,68 +4119,23 @@ class SGridLineSeries(BaseSeries):
        area. Then, it computes new values of xi, wn in order to get grid lines
        "evenly" distributed on the available space.
     """
+    is_grid = True
+
     def __init__(self, xi, wn, tp, ts, series=[], **kwargs):
         super().__init__(**kwargs)
+        self._init_axis_limits(**kwargs)
         self.xi = xi
         self.wn = wn
         self.tp = tp
         self.ts = ts
-        xlim = kwargs.get("xlim", None)
-        ylim = kwargs.get("ylim", None)
-        # Jupyter lab + "from sympy import *" convert all numbers to
-        # sympy's types. The algorithm expectes them to be `float`.
-        self._xlim = [float(t) for t in xlim] if xlim else None
-        self._ylim = [float(t) for t in ylim] if ylim else None
+        # computes xi/wn in order to evenly distribute lines over
+        # the available plot-area
+        self.auto = kwargs.get("auto", False)
         self.show_control_axis = kwargs.get("show_control_axis", False)
         self.show_in_legend = kwargs.get("show_in_legend", False)
 
-        if not hasattr(series, "__iter__"):
-            series = [series]
-        if any(not hasattr(s, "_get_axis_limits") for s in series):
-            raise TypeError(
-                "``SGridLineSeries`` only works with data series exposing the "
-                "``_get_axis_limits`` method."
-            )
-        self.associated_rl_series = series
-
     def __str__(self):
         return "s-grid"
-
-    def _get_axis_limits(self):
-        if self._xlim is None or self._ylim is None:
-            np = import_module("numpy")
-            xlims, ylims = [], []
-            for s in self.associated_rl_series:
-                xl, yl = s._get_axis_limits()
-                xlims.append(xl)
-                ylims.append(yl)
-
-            xlims = np.array(xlims)
-            ylims = np.array(ylims)
-            if (len(xlims) > 0) and (len(ylims) > 0):
-                _xlim = [np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1])]
-                _ylim = [np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1])]
-                if np.isclose(*_xlim):
-                    _xlim[0] -= 1
-                    _xlim[1] += 1
-                if np.isclose(*_ylim):
-                    _ylim[0] -= 1
-                    _ylim[1] += 1
-                self._xlim = _xlim
-                self._ylim = _ylim
-        return self._xlim, self._ylim
-
-    @property
-    def xlim(self):
-        if self._xlim is None:
-            self._get_axis_limits()
-        return self._xlim
-
-    @property
-    def ylim(self):
-        if self._ylim is None:
-            self._get_axis_limits()
-        return self._ylim
 
     def _sgrid_default_xi(self, xlim, ylim):
         """Return default list of damping coefficients
@@ -4330,13 +4160,19 @@ class SGridLineSeries(BaseSeries):
         """
         np = import_module("numpy")
 
+        x_lower_lim = xlim[0] if xlim else -10
+        y_upper_lim = ylim[1] if ylim else 10
+
         # Damping coefficient lines that intersect the x-axis
-        sep1 = -xlim[0] / 4
-        ang1 = [np.arctan((sep1*i)/ylim[1]) for i in np.arange(1, 4, 1)]
+        sep1 = -x_lower_lim / 4
+        ang1 = [np.arctan((sep1*i)/y_upper_lim) for i in np.arange(1, 4, 1)]
 
         # Damping coefficient lines that intersection the y-axis
-        sep2 = ylim[1] / 3
-        ang2 = [np.arctan(-xlim[0]/(ylim[1]-sep2*i)) for i in np.arange(1, 3, 1)]
+        sep2 = y_upper_lim / 3
+        ang2 = [
+            np.arctan(-x_lower_lim/(y_upper_lim-sep2*i))
+            for i in np.arange(1, 3, 1)
+        ]
 
         # Put the lines together and add one at -pi/2 (negative real axis)
         angles = np.concatenate((ang1, ang2))
@@ -4368,9 +4204,10 @@ class SGridLineSeries(BaseSeries):
             List of default natural frequencies for the plot
 
         """
+        lower_lim = xlim[0] if xlim else -10
         np = import_module("numpy")
-        available_width = 0 - xlim[0]
-        wn = np.linspace(0, abs(xlim[0]), max_lines)[1:-1]
+        available_width = 0 - lower_lim
+        wn = np.linspace(0, abs(lower_lim), max_lines)[1:-1]
         return wn
 
     def get_data(self):
@@ -4384,7 +4221,10 @@ class SGridLineSeries(BaseSeries):
         """
         np = import_module("numpy")
 
-        if self.is_interactive:
+        if self.auto:
+            xi = self._sgrid_default_xi(self.xlim, self.ylim)
+            wn = self._sgrid_default_wn(self.xlim, self.ylim)
+        else:
             xi = np.array([
                 t.evalf(subs=self.params) if isinstance(t, Expr) else t
                 for t in self.xi], dtype=float)
@@ -4395,26 +4235,12 @@ class SGridLineSeries(BaseSeries):
             wn = np.array([
                 t.evalf(subs=self.params) if isinstance(t, Expr) else t
                 for t in self.wn], dtype=float)
-            tp = np.array([
-                t.evalf(subs=self.params) if isinstance(t, Expr) else t
-                for t in self.tp], dtype=float)
-            ts = np.array([
-                t.evalf(subs=self.params) if isinstance(t, Expr) else t
-                for t in self.ts], dtype=float)
-        else:
-            if (self.xlim is not None) and (self.ylim is not None):
-                xi = self._sgrid_default_xi(self.xlim, self.ylim)
-                wn = self._sgrid_default_wn(self.xlim, self.ylim)
-            elif len(self.associated_rl_series) > 0:
-                xlim, ylim = self._get_axis_limits()
-                xi = self._sgrid_default_xi(xlim, ylim)
-                wn = self._sgrid_default_wn(xlim, ylim)
-            else:
-                xi = np.array(self.xi, dtype=float)
-                wn = np.array(self.wn, dtype=float)
-            tp = np.array(self.tp, dtype=float)
-            ts = np.array(self.ts, dtype=float)
-
+        tp = np.array([
+            t.evalf(subs=self.params) if isinstance(t, Expr) else t
+            for t in self.tp], dtype=float)
+        ts = np.array([
+            t.evalf(subs=self.params) if isinstance(t, Expr) else t
+            for t in self.ts], dtype=float)
 
         angles = np.pi - np.arccos(xi)
         y_over_x = np.tan(angles)
@@ -4436,7 +4262,7 @@ class SGridLineSeries(BaseSeries):
         t = np.linspace(np.pi/2, 3*np.pi/2, 100)
         ct = np.cos(t)
         st = np.sin(t)
-        ylim = self.ylim
+        ylim = self._ylim
         y_offset = 0 if ylim is None else 0.015 * abs(ylim[1] - ylim[0])
         for w in wn:
             wn_dict[w]["x"] = w * ct
@@ -4453,12 +4279,15 @@ class SGridLineSeries(BaseSeries):
         return xi_dict, wn_dict, y_tp, x_ts
 
 
-class ZGridLineSeries(BaseSeries):
+class ZGridLineSeries(BaseSeries, GridBase):
     """Represent a grid of damping ratio lines and natural frequency lines
     on the z-plane.
     """
+    is_grid = True
+
     def __init__(self, xi, wn, tp, ts, **kwargs):
         super().__init__(**kwargs)
+        self._init_axis_limits(**kwargs)
         T = kwargs.get("T", None)
         self.sampling_period = T if T is None else float(T)
         self.xi = xi
@@ -4674,6 +4503,159 @@ class ControlBaseSeries(Line2DBaseSeries):
                     "Are the following parameters? %s" % remaining_fs)
 
 
+class RootLocusSeries(ControlBaseSeries):
+    """Generates numerical data for root locus plot using the ``control``
+    module.
+
+    Symbolic expressions or SymPy's transfer functions are converted to
+    ``control.TransferFunction``. If a interactive-widget plot is created,
+    at each widget's state-change the updated symbolic transfer function
+    will be converted to ``control.TransferFunction``.
+
+    It has been shown that numpy.roots() produces inaccurate results in
+    comparison to sympy.roots(). https://github.com/sympy/sympy/issues/25234
+    However, we are dealing with a root locus plot, where branches start from
+    poles and goes to zeros (or to infinity). Hence, these errors are
+    likely to be irrelevant on a practical case. This data series uses
+    ``control`` (hence numpy) for performace.
+
+    References
+    ==========
+
+    https://github.com/python-control/python-control
+
+    """
+    _allowed_keys = ["sgrid"]
+
+    def __init__(self, tf, label="", **kwargs):
+        super().__init__(tf, label=label, **kwargs)
+        self._check_fs()
+
+        # compute appropriate axis limits from the transfer function
+        # associated to this data series.
+        self._xlim = None
+        self._ylim = None
+        # zeros and poles are necessary in order to show appropriate markers.
+        self._zeros = None
+        self._poles = None
+
+        self._rl_kw = kwargs.get("rl_kw", {})
+        if self._rl_kw is None:
+            self._rl_kw = {}
+        self._rl_kw["plot"] = False
+        self._zeros_rk = kwargs.get("zeros_rk", dict())
+        self._poles_rk = kwargs.get("poles_rk", dict())
+
+    def __str__(self):
+        expr = self._expr if self._expr else self._control_tf
+        return "root locus of " + str(expr)
+
+    def _compute_axis_limits(self, roots_array):
+        """Attempt to compute appropriate axis limits so that the plot
+        visualizes the important parts of the root locus.
+        """
+        np = import_module("numpy")
+
+        tf = self._control_tf
+        _bp = self._break_points(
+            np.poly1d(tf.num[0][0]),
+            np.poly1d(tf.den[0][0])
+        )[1]
+
+        # root locus branches starts from poles and goes to zeros or
+        # infinity. Look for the branches that goes to zeros, find the
+        # maximum imaginary part. This will be used to compute ylim.
+        max_heights = []
+        for p in self._poles:
+            for c in roots_array.T:
+                if abs(p - c[0]) < 1e-03:
+                    if any(abs(z - c[-1]) < 1e-03 for z in self._zeros):
+                        i = np.argmax(np.abs(c.imag))
+                        max_heights.append(c[i])
+        min_heights = [-t for t in max_heights]
+
+        important_points = np.concatenate(
+            [self._zeros, self._poles, _bp, max_heights, min_heights])
+        _min_x = min(important_points.real)
+        _max_x = max(important_points.real)
+        _min_y = min(important_points.imag)
+        _max_y = max(important_points.imag)
+        offset = 0.25
+        _min_x = _min_x - offset if np.isclose(_min_x, 0) else _min_x
+        _max_x = _max_x + offset if np.isclose(_max_x, 0) else _max_x
+        _min_y = _min_y - offset if np.isclose(_min_y, 0) else _min_y
+        _max_y = _max_y + offset if np.isclose(_max_y, 0) else _max_y
+        _xlim = [_min_x * 1.5, _max_x * 1.2]
+        _ylim = [_min_y * 1.2, _max_y * 1.2]
+        if np.isclose(*_xlim):
+            _xlim[0] -= 1
+            _xlim[1] += 1
+        if np.isclose(*_ylim):
+            _ylim[0] -= 1
+            _ylim[1] += 1
+        self._xlim = _xlim
+        self._ylim = _ylim
+
+    @property
+    def zeros(self):
+        if self._zeros is None:
+            self.get_data()
+        return self._zeros
+
+    @property
+    def poles(self):
+        if self._poles is None:
+            self.get_data()
+        return self._poles
+
+    @property
+    def xlim(self):
+        return self._xlim
+
+    @property
+    def ylim(self):
+        return self._ylim
+
+    def _break_points(self, num, den):
+        """Extract break points over real axis and gains given these locations"""
+        # type: (np.poly1d, np.poly1d) -> (np.array, np.array)
+        dnum = num.deriv(m=1)
+        dden = den.deriv(m=1)
+        polynom = den * dnum - num * dden
+        real_break_pts = polynom.r
+        # don't care about infinite break points
+        real_break_pts = real_break_pts[num(real_break_pts) != 0]
+        k_break = -den(real_break_pts) / num(real_break_pts)
+        idx = k_break >= int(0)   # only positives gains
+        k_break = k_break[idx]
+        real_break_pts = real_break_pts[idx]
+        if len(k_break) == 0:
+            k_break = [0]
+            real_break_pts = den.roots
+        return k_break, real_break_pts
+
+    def get_data(self):
+        """
+        Returns
+        =======
+        roots : ndarray
+            Closed-loop root locations, arranged in which each row corresponds
+            to a gain in gains
+        gains : ndarray
+            Gains used.  Same as kvect keyword argument if provided.
+        """
+        if self.is_interactive:
+            tf = self._expr.subs(self.params)
+            self._control_tf = tf_to_control(tf)
+
+        ct = import_module("control")
+        self._zeros = self._control_tf.zeros()
+        self._poles = self._control_tf.poles()
+        roots_array, gains = ct.root_locus(self._control_tf, **self._rl_kw)
+        self._compute_axis_limits(roots_array)
+        return roots_array, gains
+
+
 class SystemResponseSeries(ControlBaseSeries):
     """Represent a system response computed with the ``control`` module.
 
@@ -4743,32 +4725,6 @@ class SystemResponseSeries(ControlBaseSeries):
         return self._apply_transform(x, y)
 
 
-def _get_axis_limits_for_2D_lines(series):
-    """Compute axis limits for the specified data series.
-
-    This functions is indirectly used by SGridLineSeries, which needs to
-    know where to put grid lines.
-    """
-    np = import_module("numpy")
-    lx, ly = series.get_data()
-    min_x, max_x = min(lx), max(lx)
-    min_y, max_y = min(ly), max(ly)
-    offset = 0.25
-    min_x = min_x - offset if np.isclose(min_x, 0) else min_x
-    max_x = max_x + offset if np.isclose(max_x, 0) else max_x
-    min_y = min_y - offset if np.isclose(min_y, 0) else min_y
-    max_y = max_y + offset if np.isclose(max_y, 0) else max_y
-    xlim = [min_x * 1.2, max_x * 1.2]
-    ylim = [min_y * 1.2, max_y * 1.2]
-    if np.isclose(*xlim):
-        xlim[0] -= 1
-        xlim[1] += 1
-    if np.isclose(*ylim):
-        ylim[0] -= 1
-        ylim[1] += 1
-    return xlim, ylim
-
-
 class PoleZeroSeries(ControlBaseSeries):
     """Represent a the pole-zero of an LTI SISO system computed
     with the ``control`` module.
@@ -4798,14 +4754,6 @@ class PoleZeroSeries(ControlBaseSeries):
         expr = self._expr if self._expr is not None else self._control_tf
         return pre + str(expr)
 
-    def _get_axis_limits(self):
-        """Compute axis limits for this data series.
-
-        This is used by SGridLineSeries when using pole_zero().
-        """
-        self._xlim, self._ylim = _get_axis_limits_for_2D_lines(self)
-        return self._xlim, self._ylim
-
     def get_data(self):
         """
         Returns
@@ -4822,4 +4770,183 @@ class PoleZeroSeries(ControlBaseSeries):
         else:
             points = self._control_tf.zeros()
         x, y = np.real(points), np.imag(points)
+        self._compute_axis_limits([x, y])
         return self._apply_transform(x, y)
+
+
+class NGridLineSeries(BaseSeries, GridBase):
+    """ The code of this class comes from the ``control`` package, which has
+    been rearranged to work with the architecture of this module.
+    """
+    is_grid = True
+
+    def __init__(self, cl_mags=None, cl_phases=None, label_cl_phases=False,
+        series=[], **kwargs):
+        super().__init__(**kwargs)
+        self._init_axis_limits(**kwargs)
+        np = import_module("numpy")
+        self.cl_mags = cl_mags if cl_mags is None else np.array(cl_mags)
+        self.cl_phases = cl_phases if cl_phases is None else np.array(cl_phases)
+        self.label_cl_phases = label_cl_phases
+        self.show_in_legend = kwargs.get("show_in_legend", False)
+        self.show_cl_mags = kwargs.get("show_cl_mags", True)
+        self.show_cl_phases = kwargs.get("show_cl_phases", True)
+        self._xlim = None
+        self._ylim = None
+
+    @staticmethod
+    def closed_loop_contours(Gcl_mags, Gcl_phases):
+        """Contours of the function Gcl = Gol/(1+Gol), where
+        Gol is an open-loop transfer function, and Gcl is a corresponding
+        closed-loop transfer function.
+
+        Parameters
+        ----------
+        Gcl_mags : array-like
+            Array of magnitudes of the contours
+        Gcl_phases : array-like
+            Array of phases in radians of the contours
+
+        Returns
+        -------
+        contours : complex array
+            Array of complex numbers corresponding to the contours.
+        """
+        # Compute the contours in Gcl-space. Since we're given closed-loop
+        # magnitudes and phases, this is just a case of converting them into
+        # a complex number.
+        np = import_module("numpy")
+        Gcl = Gcl_mags*np.exp(1.j*Gcl_phases)
+
+        # Invert Gcl = Gol/(1+Gol) to map the contours into the open-loop space
+        return Gcl/(1.0 - Gcl)
+
+    @staticmethod
+    def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
+        """Constant-magnitude contours of the function Gcl = Gol/(1+Gol), where
+        Gol is an open-loop transfer function, and Gcl is a corresponding
+        closed-loop transfer function.
+
+        Parameters
+        ----------
+        mags : array-like
+            Array of magnitudes in dB of the M-circles
+        phase_min : degrees
+            Minimum phase in degrees of the N-circles
+        phase_max : degrees
+            Maximum phase in degrees of the N-circles
+
+        Returns
+        -------
+        contours : complex array
+            Array of complex numbers corresponding to the contours.
+        """
+        # Convert magnitudes and phase range into a grid suitable for
+        # building contours
+        np = import_module("numpy")
+        phases = np.radians(np.linspace(phase_min, phase_max, 2000))
+        Gcl_mags, Gcl_phases = np.meshgrid(10.0**(mags/20.0), phases)
+        return NGridLineSeries.closed_loop_contours(Gcl_mags, Gcl_phases)
+
+    @staticmethod
+    def n_circles(phases, mag_min=-40.0, mag_max=12.0):
+        """Constant-phase contours of the function Gcl = Gol/(1+Gol), where
+        Gol is an open-loop transfer function, and Gcl is a corresponding
+        closed-loop transfer function.
+
+        Parameters
+        ----------
+        phases : array-like
+            Array of phases in degrees of the N-circles
+        mag_min : dB
+            Minimum magnitude in dB of the N-circles
+        mag_max : dB
+            Maximum magnitude in dB of the N-circles
+
+        Returns
+        -------
+        contours : complex array
+            Array of complex numbers corresponding to the contours.
+        """
+        # Convert phases and magnitude range into a grid suitable for
+        # building contours
+        np = import_module("numpy")
+        mags = np.linspace(10**(mag_min/20.0), 10**(mag_max/20.0), 2000)
+        Gcl_phases, Gcl_mags = np.meshgrid(np.radians(phases), mags)
+        return NGridLineSeries.closed_loop_contours(Gcl_mags, Gcl_phases)
+
+    def get_data(self):
+        np = import_module("numpy")
+
+        # Default chart size
+        ol_phase_min = -359.99
+        ol_phase_max = 0.0
+        ol_mag_min = -40.0
+        ol_mag_max = default_ol_mag_max = 50.0
+
+        cl_mags = self.cl_mags
+        cl_phases = self.cl_phases
+        label_cl_phases = self.label_cl_phases
+
+        # Find extent of intersection the current dataset or view
+        ol_phase_min, ol_phase_max = self._xlim
+        ol_mag_min, ol_mag_max = self._ylim
+
+        # M-circle magnitudes.
+        if cl_mags is None:
+            # Default chart magnitudes
+            # The key set of magnitudes are always generated, since this
+            # guarantees a recognizable Nichols chart grid.
+            key_cl_mags = np.array([
+                -40.0, -20.0, -12.0, -6.0, -3.0, -1.0, -0.5,
+                0.0, 0.25, 0.5, 1.0, 3.0, 6.0, 12.0
+            ])
+
+            # Extend the range of magnitudes if necessary. The extended arange
+            # will end up empty if no extension is required. Assumes that
+            # closed-loop magnitudes are approximately aligned with open-loop
+            # magnitudes beyond the value of np.min(key_cl_mags)
+            cl_mag_step = -20.0  # dB
+            extended_cl_mags = np.arange(
+                np.min(key_cl_mags), ol_mag_min + cl_mag_step, cl_mag_step)
+            cl_mags = np.concatenate((extended_cl_mags, key_cl_mags))
+
+        # a minimum 360deg extent containing the phases
+        phase_round_max = 360.0*np.ceil(ol_phase_max/360.0)
+        phase_round_min = min(phase_round_max-360,
+                            360.0*np.floor(ol_phase_min/360.0))
+
+        # N-circle phases (should be in the range -360 to 0)
+        if cl_phases is None:
+            # aim for 9 lines, but always show (-360+eps, -180, -eps)
+            # smallest spacing is 45, biggest is 180
+            phase_span = phase_round_max - phase_round_min
+            spacing = np.clip(round(phase_span / 8 / 45) * 45, 45, 180)
+            key_cl_phases = np.array([-0.25, -359.75])
+            other_cl_phases = np.arange(-spacing, -360.0, -spacing)
+            cl_phases = np.unique(np.concatenate((key_cl_phases, other_cl_phases)))
+        elif not ((-360 < np.min(cl_phases)) and (np.max(cl_phases) < 0.0)):
+            raise ValueError('cl_phases must between -360 and 0, exclusive')
+
+        self.cl_mags = cl_mags
+        self.cl_phases = cl_phases
+
+        # Find the M-contours
+        m = self.m_circles(
+            cl_mags, phase_min=np.min(cl_phases), phase_max=np.max(cl_phases))
+        m_mag = 20*np.log10(np.abs(m))
+        m_phase = np.mod(np.degrees(np.angle(m)), -360.0)  # Unwrap
+
+        # Find the N-contours
+        n = self.n_circles(cl_phases, mag_min=np.min(cl_mags), mag_max=np.max(cl_mags))
+        n_mag = 20*np.log10(np.abs(n))
+        n_phase = np.mod(np.degrees(np.angle(n)), -360.0)  # Unwrap
+
+        # Plot the contours behind other plot elements.
+        # The "phase offset" is used to produce copies of the chart that cover
+        # the entire range of the plotted data, starting from a base chart computed
+        # over the range -360 < phase < 0. Given the range
+        # the base chart is computed over, the phase offset should be 0
+        # for -360 < ol_phase_min < 0.
+        phase_offsets = 360 + np.arange(phase_round_min, phase_round_max, 360.0)
+        return m_mag, m_phase, n_mag, n_phase, phase_offsets

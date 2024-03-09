@@ -4183,11 +4183,16 @@ def test_sgrid_line_series():
     assert len(y_tp) == 0
     assert len(x_ts) == 0
 
+    # when one or more data series (RootLocusSeries or PoleZeroSeries or
+    # List2DSeries) are associated to a SGridLineSeries, it autocomputes
+    # the damping ratios and natural frequencies
     s = symbols("s")
     G1 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
     r1 = RootLocusSeries(G1)
-    g1 = SGridLineSeries(xi, wn, [], [], series=r1)
-    assert g1.associated_rl_series == [r1]
+    g1 = SGridLineSeries(xi, wn, [], [], auto=True)
+    # need to set data limits (this is usually done by renderers)
+    r1.get_data()
+    g1.set_axis_limits(r1.xlim, r1.ylim)
     xi_dict, wn_dict, y_tp, x_ts = g1.get_data()
     xi_ret = [k[0] for k in xi_dict.keys()]
     assert len(xi_ret) != len(xi)
@@ -4195,8 +4200,9 @@ def test_sgrid_line_series():
 
     G2 = (s**2 - 4) / (s**3 + 2*s - 3)
     r2 = RootLocusSeries(G2)
-    g2 = SGridLineSeries(xi, wn, [], [], series=[r1, r2])
-    assert g2.associated_rl_series == [r1, r2]
+    g2 = SGridLineSeries(xi, wn, [], [], auto=True)
+    r2.get_data()
+    g2.set_axis_limits(r2.xlim, r2.ylim)
     xi_dict2, wn_dict2, y_tp2, x_ts2 = g2.get_data()
     xi_ret2 = [k[0] for k in xi_dict2.keys()]
     assert not np.allclose(xi_ret, xi_ret2)

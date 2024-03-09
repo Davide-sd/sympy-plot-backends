@@ -1,36 +1,23 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
 from spb.series import SGridLineSeries
-import numpy as np
+from sympy.external import import_module
 
-def _get_axis_limits(p, s):
-    """There could be multiple sgrid series on the plot. For example, one for
-    the actual sgrid, another one to indicate a particular damping ratio...
-    In the latter case, it is very likely that xlim/ylim are None. Need to
-    find the problem axis limits in order to place the annotation.
-    Priority is given to the plot object axis limits. If not set, look for
-    already existing sgrid series, select the one associated to root locus
-    series and get their axis limits.
+
+def _text_position_limits(r, p, s):
+    """Computes the limits for text-annotations.
 
     Parameters
     ==========
+    r : Renderer
     p : BaseBackend
-    s : BaseSeries
+    s : SGridLineSeries
     """
-    xlim, ylim = s._get_axis_limits()
+    xlim = p.xlim if p.xlim else s.xlim
+    ylim = p.ylim if p.ylim else s.ylim
 
-    if p.xlim and p.ylim:
-        xlim = p.xlim if p.xlim else xlim
-        ylim = p.ylim if p.ylim else ylim
     if (xlim is None) and (ylim is None):
-        other_sgrid_series = [t for t in p.series
-            if (isinstance(t, SGridLineSeries) and (t is not s)
-            and len(t.associated_rl_series) > 0)
-        ]
-        if len(other_sgrid_series) > 0:
-            xlim, ylim = other_sgrid_series[0]._get_axis_limits()
-        else:
-            xlim = [-11, 1]
-            ylim = [-5, 5]
+        xlim = r.default_xlim
+        ylim = r.default_ylim
     xtext_pos_lim = xlim[0] + (xlim[1] - xlim[0]) * 0.0 if xlim else -1
     ytext_pos_lim = ylim[1] - (ylim[1] - ylim[0]) * 0.03 if ylim else 1
     return xlim, ylim, xtext_pos_lim, ytext_pos_lim
@@ -38,12 +25,14 @@ def _get_axis_limits(p, s):
 
 def _draw_sgrid_helper(renderer, data):
     p, s = renderer.plot, renderer.series
+    np = p.np
     xi_dict, wn_dict, y_tp, x_ts = data
 
-    lkw = p.grid_line_kw
+    lkw = p.sgrid_line_kw
     kw = p.merge({}, lkw, s.rendering_kw)
 
-    xlim, ylim, xtext_pos_lim, ytext_pos_lim = _get_axis_limits(p, s)
+    xlim, ylim, xtext_pos_lim, ytext_pos_lim = _text_position_limits(
+        renderer, p, s)
 
     if s.show_control_axis:
         p._ax.axhline(0, **kw)
@@ -92,10 +81,12 @@ def _draw_sgrid_helper(renderer, data):
 
 def _update_sgrid_helper(renderer, data, handles):
     p, s = renderer.plot, renderer.series
+    np = p.np
     xi_dict, wn_dict, y_tp, x_ts = data
     xi_handles, wn_handles, tp_handles, ts_handles = handles
 
-    xlim, ylim, xtext_pos_lim, ytext_pos_lim = _get_axis_limits(p, s)
+    xlim, ylim, xtext_pos_lim, ytext_pos_lim = _text_position_limits(
+        renderer, p, s)
 
     # damping ratio lines
     for (k, v), handles in zip(xi_dict.items(), xi_handles):
@@ -133,6 +124,48 @@ def _update_sgrid_helper(renderer, data, handles):
 
 
 class SGridLineRenderer(MatplotlibRenderer):
+    default_xlim = [-11, 1]
+    default_ylim = [-5, 5]
+    _sal = True
     draw_update_map = {
         _draw_sgrid_helper: _update_sgrid_helper
     }
+
+    def _set_axis_limits_before_compute_data(self):
+        np = import_module("numpy")
+        # loop over the renderers and find appropriate axis limits
+        xlims, ylims = [], []
+        for s, r in zip(self.plot.series, self.plot.renderers):
+            if not s.is_grid:
+                xlims.extend(r._xlims)
+                ylims.extend(r._ylims)
+        if len(xlims) > 0:
+            xlims = np.array(xlims)
+            ylims = np.array(ylims)
+            xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
+            ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
+        else:
+            xlim = self.plot.xlim if self.plot.xlim else self.default_xlim
+            ylim = self.plot.ylim if self.plot.ylim else self.default_ylim
+        self.series.set_axis_limits(xlim, ylim)
+
+    def draw(self):
+        if (self.series._xlim is None) and (self.series._ylim is None):
+            # if user didn't set xlim/ylim in sgrid() function call
+            self._set_axis_limits_before_compute_data()
+
+        data = self.series.get_data()
+        self._set_axis_limits([self.series.xlim, self.series.ylim])
+        for draw_method in self.draw_update_map.keys():
+            self.handles.append(
+                draw_method(self, data))
+
+    def update(self, params):
+        self.series.params = params
+        self._set_axis_limits_before_compute_data()
+        data = self.series.get_data()
+        self._set_axis_limits([self.series.xlim, self.series.ylim])
+        for update_method, handle in zip(
+            self.draw_update_map.values(), self.handles
+        ):
+            update_method(self, data, handle)
