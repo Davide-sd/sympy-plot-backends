@@ -652,7 +652,6 @@ def test_plot_nyquist_matplotlib():
     p = plot_nyquist(tf1, show=False, n=10)
     ax = p.ax
     assert len(ax.lines) == 6
-    assert len(ax.collections) == 0
     assert len(ax.patches) == 4
     assert len(ax.texts) == 0
 
@@ -660,15 +659,13 @@ def test_plot_nyquist_matplotlib():
     p = plot_nyquist(tf1, show=False, n=10, mirror_style=False)
     ax = p.ax
     assert len(ax.lines) == 4
-    assert len(ax.collections) == 0
     assert len(ax.patches) == 2
     assert len(ax.texts) == 0
 
     # m-circles + custom number of arrows
     p = plot_nyquist(tf1, show=False, n=10, arrows=3, m_circles=True)
     ax = p.ax
-    assert len(ax.lines) == 6
-    assert len(ax.collections) > 0
+    assert len(ax.lines) == 17
     assert len(ax.patches) == 6
     assert len(ax.texts) > 0
 
@@ -676,7 +673,6 @@ def test_plot_nyquist_matplotlib():
     p = plot_nyquist(tf1, show=False, n=10, start_marker=False)
     ax = p.ax
     assert len(ax.lines) == 5
-    assert len(ax.collections) == 0
     assert len(ax.patches) == 4
     assert len(ax.texts) == 0
 

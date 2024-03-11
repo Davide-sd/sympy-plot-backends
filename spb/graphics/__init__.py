@@ -19,7 +19,7 @@ from spb.graphics.complex_analysis import (
 from spb.graphics.control import (
     control_axis, pole_zero, step_response, impulse_response, ramp_response,
     bode_magnitude, bode_phase, nyquist, nichols, root_locus, sgrid, zgrid,
-    ngrid
+    ngrid, mcircles
 )
 
 __all__ = [
@@ -35,5 +35,5 @@ __all__ = [
     "control_axis", "pole_zero", "step_response", "impulse_response",
     "ramp_response", "bode_magnitude", "bode_phase", "nyquist", "nichols"
     "hline", "vline", "arrow_2d", "arrow_3d", "root_locus", "sgrid", "zgrid",
-    "ngrid"
+    "ngrid", "mcircles"
 ]

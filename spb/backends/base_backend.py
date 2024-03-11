@@ -332,7 +332,8 @@ class Plot:
         self.legend = kwargs.get("legend", None)
         if self.legend is None:
             series_to_show = [
-                s for s in self._series if s.show_in_legend and (not s.use_cm)
+                s for s in self._series if (s.show_in_legend and (not s.use_cm)
+                and (not s.is_grid))
             ]
             if len(series_to_show) > 1:
                 # don't show the legend if `plot_piecewise` created this
@@ -641,7 +642,7 @@ class Plot:
         if isinstance(arg, BaseSeries):
             self._series.append(arg)
             # auto legend
-            if len(self._series) > 1:
+            if len([not s.is_grid for s in self._series]) > 1:
                 self.legend = True
         else:
             raise TypeError("Must specify element of plot to append.")
@@ -695,7 +696,7 @@ class Plot:
         else:
             raise TypeError("Expecting Plot or sequence of BaseSeries")
         # auto legend
-        if len(self._series) > 1:
+        if len([not s.is_grid for s in self._series]) > 1:
             self.legend = True
         # recreate renderers
         self._create_renderers()

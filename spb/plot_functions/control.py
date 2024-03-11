@@ -1,7 +1,7 @@
 from spb.defaults import TWO_D_B, cfg
 from spb.graphics.control import (
     _preprocess_system, pole_zero,
-    nichols, _nyquist_helper, step_response,
+    nichols, nyquist, step_response,
     ramp_response, impulse_response,
     _bode_magnitude_helper, _bode_phase_helper,
     control_axis, root_locus, sgrid as sgrid_function,
@@ -1016,51 +1016,39 @@ bode_plot = plot_bode
 
 
 def plot_nyquist(*systems, **kwargs):
-    """Nyquist plot for a system
-
-    Plots a Nyquist plot for the system over a (optional) frequency range.
-    The curve is computed by evaluating the Nyqist segment along the positive
+    """Plots a Nyquist plot for the system over a (optional) frequency range.
+    The curve is computed by evaluating the Nyquist segment along the positive
     imaginary axis, with a mirror image generated to reflect the negative
-    imaginary axis.  Poles on or near the imaginary axis are avoided using a
-    small indentation.  The portion of the Nyquist contour at infinity is not
+    imaginary axis. Poles on or near the imaginary axis are avoided using a
+    small indentation. The portion of the Nyquist contour at infinity is not
     explicitly computed (since it maps to a constant value for any system with
     a proper transfer function).
 
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type
-        The LTI SISO system for which the Bode Plot is to be computed.
+    system : LTI system type
+        The system for which the step response plot is to be computed.
         It can be:
 
-        * a single LTI SISO system.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
         * a symbolic expression in rational form, which will be converted to
-          an object of type :class:`~sympy.physics.control.TransferFunction`.
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
-        * a sequence of LTI SISO systems.
-        * a sequence of 2-tuples ``(LTI SISO system, label)``.
-        * a dict mapping LTI SISO systems to labels.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
+    label : str, optional
+        The label to be shown on the legend.
     arrows : int or 1D/2D array of floats, optional
         Specify the number of arrows to plot on the Nyquist curve.  If an
         integer is passed, that number of equally spaced arrows will be
         plotted on each of the primary segment and the mirror image.  If a 1D
         array is passed, it should consist of a sorted list of floats between
         0 and 1, indicating the location along the curve to plot an arrow.
-    encirclement_threshold : float, optional
-        Define the threshold for generating a warning if the number of net
-        encirclements is a non-integer value.  Default value is 0.05.
-    indent_direction : str, optional
-        For poles on the imaginary axis, set the direction of indentation to
-        be 'right' (default), 'left', or 'none'.
-    indent_points : int, optional
-        Number of points to insert in the Nyquist contour around poles that
-        are at or near the imaginary axis.
-    indent_radius : float, optional
-        Amount to indent the Nyquist contour around poles on or near the
-        imaginary axis. Portions of the Nyquist plot corresponding to indented
-        portions of the contour are plotted using a different line style.
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
         Portions of the Nyquist plot whose magnitude is restricted are
@@ -1077,9 +1065,10 @@ def plot_nyquist(*systems, **kwargs):
         arguments to be passed to the plotting function, for example to
         `plt.plot`. If `False` then omit completely.
         Default linestyle is `['--', ':']`.
-    m_circles : bool, optional
-        Turn on/off [M-circles]_, which are circles of constant closed loop
-        magnitude.
+    m_circles : bool or float or iterable, optional
+        Turn on/off M-circles, which are circles of constant closed loop
+        magnitude. If float or iterable (of floats), represents specific
+        magnitudes in dB.
     primary_style : [str, str] or [dict, dict] or dict, optional
         Linestyles for primary image of the Nyquist curve. If a list is given,
         the first element is used for unscaled portions of the Nyquist curve,
@@ -1093,9 +1082,9 @@ def plot_nyquist(*systems, **kwargs):
         Marker to use to mark the starting point of the Nyquist plot. If
         `dict` is provided, it must containts keyword arguments to be passed
         to the plot function, for example to Matplotlib's `plt.plot`.
-    warn_encirclements : bool, optional
-        If set to 'False', turn off warnings about number of encirclements not
-        meeting the Nyquist criterion.
+    control_kw : dict, optional
+        A dictionary of keyword arguments passed to
+        :py:func:`control.nyquist_plot`
     **kwargs : dict
         Refer to :func:`~spb.graphics.control.nyquist` for a full list
         of keyword arguments to customize the appearances of lines.
@@ -1151,16 +1140,7 @@ def plot_nyquist(*systems, **kwargs):
        ...     4 * s**2 + 5 * s + 1, 3 * s**2 + 2 * s + 5, s)
        >>> plot_nyquist(tf1)                                # doctest: +SKIP
 
-    Visualizing M-circles:
-
-    .. plot::
-       :context: close-figs
-       :format: doctest
-       :include-source: True
-
-    >>> plot_nyquist(tf1, m_circles=True)                   # doctest: +SKIP
-
-    Plotting multiple transfer functions:
+    Plotting multiple transfer functions and visualizing M-circles:
 
     .. plot::
        :context: close-figs
@@ -1168,7 +1148,9 @@ def plot_nyquist(*systems, **kwargs):
        :include-source: True
 
        >>> tf2 = TransferFunction(1, s + Rational(1, 3), s)
-       >>> plot_nyquist(tf1, tf2)                           # doctest: +SKIP
+       >>> plot_nyquist(tf1, tf2,
+       ...     m_circles=[-20, -10, -6, -4, -2, 0])           # doctest: +SKIP
+
 
     Interactive-widgets plot of a systems:
 
@@ -1195,11 +1177,12 @@ def plot_nyquist(*systems, **kwargs):
 
     """
     systems = _unpack_systems(systems)
-    series = [_nyquist_helper(s, l, **kwargs.copy()) for s, l in systems]
+    series = []
+    for s, l in systems:
+        series.extend(nyquist(s, label=l, **kwargs.copy()))
     kwargs.setdefault("xlabel", "Real axis")
     kwargs.setdefault("ylabel", "Imaginary axis")
-    kwargs.setdefault("title", _create_title_helper(
-        systems, "Nyquist Plot"))
+    kwargs.setdefault("title", "Nyquist Plot")
     kwargs.setdefault("grid", not kwargs.get("m_circles", False))
     return _create_plot_helper(series, False, **kwargs)
 

@@ -3,12 +3,13 @@ import pytest
 from pytest import warns
 from spb import (
     control_axis, pole_zero, step_response, impulse_response, ramp_response,
-    bode_magnitude, bode_phase, nyquist, nichols, sgrid, root_locus, zgrid
+    bode_magnitude, bode_phase, nyquist, nichols, sgrid, root_locus, zgrid,
+    mcircles
 )
 from spb.series import (
     LineOver1DRangeSeries, HVLineSeries, List2DSeries, NyquistLineSeries,
     NicholsLineSeries, SGridLineSeries, RootLocusSeries, ZGridLineSeries,
-    SystemResponseSeries, PoleZeroSeries, NGridLineSeries
+    SystemResponseSeries, PoleZeroSeries, NGridLineSeries, MCirclesSeries
 )
 from sympy.abc import a, b, c, d, e, s
 from sympy.physics.control.lti import TransferFunction, TransferFunctionMatrix
@@ -385,36 +386,53 @@ def test_bode_phase(tf, label, rkw, params):
 
 
 @pytest.mark.parametrize(
-    "tf, label, rkw, params",
+    "tf, label, rkw, params, mcircles",
     [
-        (tf3, None, None, None),
-        ((n3, d3), None, None, None),
-        (n3 / d3, None, None, None),
-        (tf3, "test", None, None),
-        ((n3, d3), "test", None, None),
-        (n3 / d3, "test", None, None),
-        # TODO: these fails...
-        # (tf3, "test", None, mod_params),
-        # ((n3, d3), "test", None, mod_params),
-        # (n3 / d3, "test", None, mod_params),
+        (tf3, None, None, None, False),
+        ((n3, d3), None, None, None, False),
+        (n3 / d3, None, None, None, False),
+        (tf3, None, None, None, True),
+        ((n3, d3), None, None, None, True),
+        (n3 / d3, None, None, None, True),
+        (tf3, "test", None, None, False),
+        ((n3, d3), "test", None, None, False),
+        (n3 / d3, "test", None, None, False),
+        (tf3, "test", None, mod_params, False),
+        ((n3, d3), "test", None, mod_params, False),
+        (n3 / d3, "test", None, mod_params, False),
     ]
 )
-def test_nyquist(tf, label, rkw, params):
+def test_nyquist(tf, label, rkw, params, mcircles):
     kwargs = {"n": 10}
     if params:
-        params = {k: v[0] for k, v in params.items()}
+        # params = {k: v[0] for k, v in params.items()}
         kwargs["params"] = params
 
-    print(type(tf), tf)
-
-    series = nyquist(tf, label=label, rendering_kw=rkw, **kwargs)
-    assert len(series) == 1
+    series = nyquist(tf, label=label, rendering_kw=rkw,
+        m_circles=mcircles, **kwargs)
+    assert len(series) == 1 if not mcircles else 2
     s = series[0]
-    assert isinstance(s, NyquistLineSeries)
+    if not mcircles:
+        assert isinstance(s, NyquistLineSeries)
+    else:
+        assert isinstance(s, MCirclesSeries)
     s.get_data()
     assert s.rendering_kw == {} if not rkw else rkw
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == {} if not params else params
+
+
+@pytest.mark.parametrize(
+    "mcircles", [False, True]
+)
+def test_nyquist_mimo(mcircles):
+    series = nyquist(tf_mimo_sympy, m_circles=mcircles)
+    assert len(series) == 6 if not mcircles else 7
+    if not mcircles:
+        assert all(isinstance(s, NyquistLineSeries) for s in series)
+    else:
+        assert isinstance(series[0], MCirclesSeries)
+        assert all(isinstance(s, NyquistLineSeries) for s in series[1:])
 
 
 @pytest.mark.parametrize(
@@ -670,3 +688,27 @@ def test_mimo_responses_2(tf_mimo, func, inp, out):
     d6 = s6.get_data()
 
     assert np.allclose(d1, d6)
+
+
+@pytest.mark.parametrize(
+    "arg, n_series, params",
+    [
+        (None, 11, None),
+        (-20, 1, None),
+        ([-20, -10, -6, -4, -2, 0], 6, None),
+        (a, 1, {a: 1}),
+        ([a, b, c], 3, {a: 1, b: 2, c: 3}),
+    ]
+)
+def test_mcircles(arg, n_series, params):
+    kwargs = {}
+    if params:
+        kwargs["params"] = params
+
+    series = mcircles(arg, **kwargs)
+    assert len(series) == 1
+    assert isinstance(series[0], MCirclesSeries)
+    d = series[0].get_data()
+    assert len(d) == n_series
+    assert all(len(t) == 3 for t in d)
+    assert series[0].is_interactive == (True if params else False)

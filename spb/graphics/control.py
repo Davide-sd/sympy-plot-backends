@@ -2,14 +2,15 @@ from spb.defaults import TWO_D_B
 from spb.series import (
     List2DSeries, LineOver1DRangeSeries, HVLineSeries, NyquistLineSeries,
     NicholsLineSeries, RootLocusSeries, SGridLineSeries, ZGridLineSeries,
-    SystemResponseSeries, PoleZeroSeries, NGridLineSeries
+    SystemResponseSeries, PoleZeroSeries, NGridLineSeries, MCirclesSeries
 )
-from spb.utils import prange, is_number, tf_to_sympy
+from spb.utils import prange, is_number, tf_to_sympy, tf_to_control
 import numpy as np
 from sympy import (
     roots, exp, Poly, degree, re, im, apart, Dummy, symbols,
     I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt, cos, acos, sin,
-    floor, ceiling, frac, pi, fraction, Expr, Tuple, inverse_laplace_transform
+    floor, ceiling, frac, pi, fraction, Expr, Tuple, inverse_laplace_transform,
+    Integer, Float
 )
 from sympy.physics.control.lti import (
     SISOLinearTimeInvariant, TransferFunctionMatrix, TransferFunction,
@@ -42,7 +43,8 @@ __all__ = [
     'root_locus',
     'sgrid',
     'zgrid',
-    'ngrid'
+    'ngrid',
+    'mcircles'
 ]
 
 
@@ -620,7 +622,7 @@ def step_response(
         module, which uses numerical integration. If False, computes the
         step response with ``sympy``, which uses the inverse Laplace transform.
         Default to True.
-    control_kw : dict
+    control_kw : dict, optional
         A dictionary of keyword arguments passed to
         :py:func:`control.step_response`
     input : int, optional
@@ -840,7 +842,7 @@ def impulse_response(
         module, which uses numerical integration. If False, computes the
         impulse response with ``sympy``, which uses the inverse Laplace
         transform. Default to True.
-    control_kw : dict
+    control_kw : dict, optional
         A dictionary of keyword arguments passed to
         :py:func:`control.impulse_response`
     input : int, optional
@@ -1074,7 +1076,7 @@ def ramp_response(
         module, which uses numerical integration. If False, computes the
         ramp response with ``sympy``, which uses the inverse Laplace transform.
         Default to True.
-    control_kw : dict
+    control_kw : dict, optional
         A dictionary of keyword arguments passed to
         :py:func:`control.forced_response`
     input : int, optional
@@ -1533,40 +1535,33 @@ def _compute_range_helper(system, **kwargs):
     return _range, omega_limits
 
 
-def _nyquist_helper(system, label, **kwargs):
-    system = _preprocess_system(system, **kwargs)
-    _check_system(system)
-    _range, omega_limits = _compute_range_helper(system, **kwargs)
-    kwargs.setdefault("xscale", "log")
-    kwargs.setdefault("use_cm", False)
-    kwargs.setdefault("omega_range_given", not (omega_limits is None))
-    return NyquistLineSeries(system, _range, label, **kwargs)
-
-
-def nyquist(system, label=None, **kwargs):
-    """Nyquist plot for a system
-
-    Plots a Nyquist plot for the system over a (optional) frequency range.
-    The curve is computed by evaluating the Nyqist segment along the positive
+def nyquist(system, omega_limits=None, input=None, output=None,
+    label=None, rendering_kw=None, m_circles=False, **kwargs):
+    """Plots a Nyquist plot for the system over a (optional) frequency range.
+    The curve is computed by evaluating the Nyquist segment along the positive
     imaginary axis, with a mirror image generated to reflect the negative
-    imaginary axis.  Poles on or near the imaginary axis are avoided using a
-    small indentation.  The portion of the Nyquist contour at infinity is not
+    imaginary axis. Poles on or near the imaginary axis are avoided using a
+    small indentation. The portion of the Nyquist contour at infinity is not
     explicitly computed (since it maps to a constant value for any system with
     a proper transfer function).
 
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type systems
-        The system for which the pole-zero plot is to be computed.
+    system : LTI system type
+        The system for which the step response plot is to be computed.
         It can be:
 
-        * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form, which will be converted to
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
     label : str, optional
         The label to be shown on the legend.
     arrows : int or 1D/2D array of floats, optional
@@ -1575,19 +1570,6 @@ def nyquist(system, label=None, **kwargs):
         plotted on each of the primary segment and the mirror image.  If a 1D
         array is passed, it should consist of a sorted list of floats between
         0 and 1, indicating the location along the curve to plot an arrow.
-    encirclement_threshold : float, optional
-        Define the threshold for generating a warning if the number of net
-        encirclements is a non-integer value.  Default value is 0.05.
-    indent_direction : str, optional
-        For poles on the imaginary axis, set the direction of indentation to
-        be 'right' (default), 'left', or 'none'.
-    indent_points : int, optional
-        Number of points to insert in the Nyquist contour around poles that
-        are at or near the imaginary axis.
-    indent_radius : float, optional
-        Amount to indent the Nyquist contour around poles on or near the
-        imaginary axis. Portions of the Nyquist plot corresponding to indented
-        portions of the contour are plotted using a different line style.
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
         Portions of the Nyquist plot whose magnitude is restricted are
@@ -1604,9 +1586,10 @@ def nyquist(system, label=None, **kwargs):
         arguments to be passed to the plotting function, for example to
         `plt.plot`. If `False` then omit completely.
         Default linestyle is `['--', ':']`.
-    m_circles : bool, optional
-        Turn on/off [M-circles]_, which are circles of constant closed loop
-        magnitude.
+    m_circles : bool or float or iterable, optional
+        Turn on/off M-circles, which are circles of constant closed loop
+        magnitude. If float or iterable (of floats), represents specific
+        magnitudes in dB.
     primary_style : [str, str] or [dict, dict] or dict, optional
         Linestyles for primary image of the Nyquist curve. If a list is given,
         the first element is used for unscaled portions of the Nyquist curve,
@@ -1620,18 +1603,17 @@ def nyquist(system, label=None, **kwargs):
         Marker to use to mark the starting point of the Nyquist plot. If
         `dict` is provided, it must containts keyword arguments to be passed
         to the plot function, for example to Matplotlib's `plt.plot`.
-    warn_encirclements : bool, optional
-        If set to 'False', turn off warnings about number of encirclements not
-        meeting the Nyquist criterion.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_2d.line_parametric_2d`.
-        Refer to its documentation for a for a full list of keyword arguments.
+    control_kw : dict, optional
+        A dictionary of keyword arguments passed to
+        :py:func:`control.nyquist_plot`
 
     Returns
     =======
 
-    A list containing one instance of ``NyquistLineSeries``.
+    A list containing:
+
+    * one instance of ``MCirclesSeries`` if ``mcircles=True``.
+    * one instance of ``NyquistLineSeries``.
 
     References
     ==========
@@ -1641,7 +1623,7 @@ def nyquist(system, label=None, **kwargs):
     See Also
     ========
 
-    bode, nichols
+    bode, nichols, mcircles
 
     Notes
     =====
@@ -1720,9 +1702,46 @@ def nyquist(system, label=None, **kwargs):
        )
 
     """
-    return [
-        _nyquist_helper(system, label, **kwargs.copy())
-    ]
+    systems = _unpack_mimo_systems(
+        system,
+        "" if label is None else label,
+        input, output
+    )
+
+    params = kwargs.get("params", None)
+    if params:
+        initial_params = {k: v[0] for k, v in params.items()}
+
+    omega = symbols("omega")
+    series = []
+    for sys, lbl in systems:
+        ol = omega_limits
+        sys = _preprocess_system(sys, **kwargs)
+
+        if params:
+            ctrl_sys = tf_to_control(sys.subs(initial_params))
+        else:
+            ctrl_sys = tf_to_control(sys)
+
+        if ol is None:
+            exponens = _default_frequency_exponent_range(ctrl_sys,
+                feature_periphery_decades=2)
+            ol = (omega, *exponens)
+        else:
+            ol = prange(omega, *omega_limits)
+
+        series.append(
+            NyquistLineSeries(
+                sys, ol, lbl, rendering_kw=rendering_kw, **kwargs
+            )
+        )
+    grid = []
+    if m_circles is True:
+        grid = mcircles_func()
+    elif hasattr(m_circles, "__iter__"):
+        grid = mcircles_func(m_circles)
+
+    return grid + series
 
 
 def _nichols_helper(system, label, **kwargs):
@@ -2360,3 +2379,178 @@ def ngrid(
 
 
 ngrid_function = ngrid
+
+
+def _default_frequency_exponent_range(
+    syslist, Hz=None, number_of_samples=None, feature_periphery_decades=None
+):
+    """Compute the exponents to be used with ``numpy.logspace`` in order
+    to get a reasonable default frequency range for frequency domain plots.
+
+    This code looks at the poles and zeros of all of the systems that
+    we are plotting and sets the frequency range to be one decade above
+    and below the min and max feature frequencies, rounded to the nearest
+    integer.  If no features are found, it returns logspace(-1, 1).
+
+    This function is a modified form of
+    ``control.freqplot._default_frequency_range``.
+
+    Parameters
+    ----------
+    syslist : list of LTI
+        List of linear input/output systems (single system is OK)
+    Hz : bool, optional
+        If True, the limits (first and last value) of the frequencies
+        are set to full decades in Hz so it fits plotting with logarithmic
+        scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
+    number_of_samples : int, optional
+        Number of samples to generate.  The default value is read from
+        ``config.defaults['freqplot.number_of_samples'].  If None, then the
+        default from `numpy.logspace` is used.
+    feature_periphery_decades : float, optional
+        Defines how many decades shall be included in the frequency range on
+        both sides of features (poles, zeros).  The default value is read from
+        ``config.defaults['freqplot.feature_periphery_decades']``.
+
+    Returns
+    -------
+    lsp_min, lsp_max : int
+        Lower and upper exponents to be used with numpy.logspace.
+
+    Examples
+    --------
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> omega_range = _default_frequency_exponent_range(G)
+    >>> omega_range
+    (-1.0, 2.0)
+
+    """
+    np = import_module("numpy")
+
+    if number_of_samples is None:
+        number_of_samples = 1000
+    if feature_periphery_decades is None:
+        feature_periphery_decades = 1
+
+    # Find the list of all poles and zeros in the systems
+    features = np.array(())
+    freq_interesting = []
+
+    # detect if single sys passed by checking if it is sequence-like
+    if not hasattr(syslist, '__iter__'):
+        syslist = (syslist,)
+
+    for sys in syslist:
+        try:
+            # Add new features to the list
+            if sys.isctime():
+                features_ = np.concatenate(
+                    (np.abs(sys.poles()), np.abs(sys.zeros())))
+                # Get rid of poles and zeros at the origin
+                toreplace = np.isclose(features_, 0.0)
+                if np.any(toreplace):
+                    features_ = features_[~toreplace]
+            elif sys.isdtime(strict=True):
+                fn = math.pi * 1. / sys.dt
+                # TODO: What distance to the Nyquist frequency is appropriate?
+                freq_interesting.append(fn * 0.9)
+
+                features_ = np.concatenate((sys.poles(), sys.zeros()))
+                # Get rid of poles and zeros on the real axis (imag==0)
+               # * origin and real < 0
+                # * at 1.: would result in omega=0. (logaritmic plot!)
+                toreplace = np.isclose(features_.imag, 0.0) & (
+                                    (features_.real <= 0.) |
+                                    (np.abs(features_.real - 1.0) < 1.e-10))
+                if np.any(toreplace):
+                    features_ = features_[~toreplace]
+                # TODO: improve
+                features_ = np.abs(np.log(features_) / (1.j * sys.dt))
+            else:
+                # TODO
+                raise NotImplementedError(
+                    "type of system in not implemented now")
+            features = np.concatenate((features, features_))
+        except NotImplementedError:
+            pass
+
+    # Make sure there is at least one point in the range
+    if features.shape[0] == 0:
+        features = np.array([1.])
+
+    if Hz:
+        features /= 2. * math.pi
+    features = np.log10(features)
+    lsp_min = np.rint(np.min(features) - feature_periphery_decades)
+    lsp_max = np.rint(np.max(features) + feature_periphery_decades)
+    if Hz:
+        lsp_min += np.log10(2. * math.pi)
+        lsp_max += np.log10(2. * math.pi)
+
+    if freq_interesting:
+        lsp_min = min(lsp_min, np.log10(min(freq_interesting)))
+        lsp_max = max(lsp_max, np.log10(max(freq_interesting)))
+
+    return lsp_min, lsp_max
+
+
+def mcircles(magnitudes_db=None, rendering_kw=None, **kwargs):
+    """Draw M-circles of constant closed-loop magnitude.
+
+    Parameters
+    ==========
+    magnitudes_db : float, iterable or None
+        Specify the magnitudes in dB.
+        If None, a list of default magnitudes will be used.
+    rendering_kw : dict or None, optional
+        A dictionary of keywords/values which is passed to the backend's
+        function to customize the appearance of lines. Refer to the
+        plotting library (backend) manual for more informations.
+
+    Returns
+    =======
+
+    A list containing one instance of ``MCirclesSeries``.
+
+    Examples
+    ========
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> from spb import *
+       >>> graphics(
+       ...     mcircles(),
+       ...     mcircles(-3, rendering_kw={"color": "r"}),
+       ...     grid=False, aspect="equal")
+
+    Interactive-widgets plot of m-circles:
+
+    .. panel-screenshot::
+       :small-size: 800, 675
+
+       from spb import *
+       from sympy.abc import m
+       graphics(
+           mcircles(),
+           mcircles(m, rendering_kw={"color": "r"}, params={m: (-3, -15, 15)}),
+           grid=False, aspect="equal")
+
+    """
+    math = import_module("math")
+    if magnitudes_db is None:
+        dbs = [-20, -10, -6, -4, -2, 0, 2, 4, 6, 10, 20]
+    elif not hasattr(magnitudes_db, "__iter__"):
+        dbs = [magnitudes_db]
+    else:
+        dbs = magnitudes_db
+
+    magnitudes = [10**(t / 20) for t in dbs]
+    return [
+        MCirclesSeries(dbs, magnitudes,
+            rendering_kw=rendering_kw, **kwargs)
+    ]
+
+mcircles_func = mcircles

@@ -3662,265 +3662,6 @@ class HVLineSeries(BaseSeries):
         return self._str_helper(pre + " line at " + post + str(self.expr))
 
 
-class NyquistLineSeries(Parametric2DLineSeries):
-    """Represent a line on a Nyquist plot.
-
-    Differently from Parametric2DLineSeries, which returns real `x, y, param`,
-    this class returns real `x, y` but complex `param`.
-
-    This class incorporates code from the `python-control` package,
-    specifically the `freqplot.py` module
-    """
-    def __init__(self, tf, omega_range, label="", **kwargs):
-        TransferFunction = sympy.physics.control.lti.TransferFunction
-        self.tf = tf
-        tf_expr = self.tf.to_expr()
-        # NOTE/TODO: this might be fragile, it might results in something
-        # different then a fraction, creating a wrong denominator which
-        # causes wrong poles to be computed, which trigger warnings.
-        # Maybe it's better to adopt `python-control` approach to compute
-        # the feedback system transfer function
-        tf_cl_expr = tf_expr / (1 + tf_expr).together()
-        num, den = tf_cl_expr.as_numer_denom()
-        self.tf_cl = TransferFunction(num, den, self.tf.var)
-
-        super().__init__(
-            re(tf_expr), im(tf_expr), omega_range, label, **kwargs)
-
-        self.omega_range_given = kwargs.get("omega_range_given", False)
-        self.m_circles = kwargs.get("m_circles", False)
-        self.clabels_to_top = kwargs.get("clabels_to_top", True)
-        self.arrows_loc = kwargs.get("arrows", 2)
-        self.indent_points = kwargs.get("indent_points", 50)
-        self.indent_radius = kwargs.get("indent_radius", 1e-04)
-        self.indent_direction = kwargs.get("indent_direction", 'right')
-        self.max_curve_magnitude = kwargs.get("max_curve_magnitude", 20)
-        self.max_curve_offset = kwargs.get("max_curve_offset", 0.02)
-        self.encirclement_threshold = kwargs.get(
-            "encirclement_threshold", 0.05)
-        self.warn_encirclements = kwargs.get("warn_encirclements", True)
-        self.start_marker = kwargs.get("start_marker", True)
-        self.primary_style = kwargs.get("primary_style", None)
-        self.mirror_style = kwargs.get("mirror_style", None)
-        self._update_poles()
-
-        self._allowed_keys += [
-            "m_circles", "clabels_to_top", "arrows", "indent_points",
-            "indent_radius", "indent_direction",
-            "max_curve_magnitude", "max_curve_offset",
-            "encirclement_threshold", "omega_range_given", "start_marker",
-            "primary_style", "mirror_style"]
-
-    def _update_poles(self):
-        """Computes the poles of the open-loop transfer function as well as
-        the closed-loop transfer function, which will be used to raise
-        appropriate warnings, if necessary.
-        """
-        np = import_module('numpy')
-
-        # NOTE: at instantiation, `self.params` contains the tuples provided
-        # by user. Can't proceed in that case.
-        go_on = True
-        if len(self.params) > 0:
-            first_param = list(self.params.values())[0]
-            if isinstance(first_param, (list, tuple)):
-                go_on = False
-
-        if go_on:
-            s = self.tf.var
-            den_tf_poly = Poly(self.tf.den.subs(self.params), s)
-            den_tf_poly = np.array(
-                den_tf_poly.all_coeffs(), dtype=np.complex128)
-            self._poles = np.roots(den_tf_poly)
-
-            den_tf_cl_poly = Poly(self.tf_cl.den.subs(self.params), s)
-            den_tf_cl_poly = np.array(
-                den_tf_cl_poly.all_coeffs(), dtype=np.complex128)
-            self._poles_cl = np.roots(den_tf_cl_poly)
-
-    @property
-    def arrows_loc(self):
-        return self._arrows_loc
-
-    @arrows_loc.setter
-    def arrows_loc(self, v):
-        """Set arrows position."""
-        np = import_module('numpy')
-
-        # from:
-        # https://github.com/python-control/python-control/blob/main/control/freqplot.py
-        if not v:
-            self._arrows_loc = []
-        elif isinstance(v, int):
-            N = v
-            # Space arrows out, starting midway along each "region"
-            self._arrows_loc = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
-        elif isinstance(v, (list, np.ndarray)):
-            self._arrows_loc = np.sort(np.atleast_1d(v))
-        else:
-            raise ValueError("unknown or unsupported arrow location")
-
-    def _create_discretized_domain(self):
-        """Discretize the ranges for uniform meshing strategy.
-        """
-        np = import_module('numpy')
-
-        r = self.ranges[0]
-        discr_symbols = [r[0]]
-
-        c_start = self._update_range_value(r[1])
-        c_end = self._update_range_value(r[2])
-        start = c_start.real if c_start.imag == c_end.imag == 0 else c_start
-        end = c_end.real if c_start.imag == c_end.imag == 0 else c_end
-
-        # NOTE: here we generate n points. However, depending on the input
-        # arguments and/or on the transfer function, the final number of points
-        # will be greater!
-        omega = BaseSeries._discretize(
-            start, end, self.n[0], scale=self.scales[0])
-
-        if not self.omega_range_given:
-            omega[0] = 0
-            # TODO: the following should be better, but is it really necessary?
-            # it makes testing more difficult...
-            # d = np.concatenate((
-            #         np.linspace(0, d[0], self.indent_points), d[1:]))
-
-        omega = 1j * omega
-        omega = self._modify_discretization(omega)
-        discretizations = [omega]
-        self._create_discretized_domain_helper(discr_symbols, discretizations)
-
-    @property
-    def params(self):
-        """Get or set the current parameters dictionary.
-
-        Parameters
-        ==========
-
-        p : dict
-
-            * key: symbol associated to the parameter
-            * val: the numeric value
-        """
-        return self._params
-
-    @params.setter
-    def params(self, p):
-        self._params = p
-        self._update_poles()
-
-    def _modify_discretization(self, splane_contour):
-        # from:
-        # https://github.com/python-control/python-control/blob/main/control/freqplot.py
-
-        np = import_module('numpy')
-        splane_poles = self._poles
-        splane_cl_poles = self._poles_cl
-        indent_points = self.indent_points
-        indent_radius = self.indent_radius
-        indent_direction = self.indent_direction
-        warn_encirclements = self.warn_encirclements
-
-        #
-        # Check to make sure indent radius is small enough
-        #
-        # If there is a closed loop pole that is near the imaginary axis
-        # at a point that is near an open loop pole, it is possible that
-        # indentation might skip or create an extraneous encirclement.
-        # We check for that situation here and generate a warning if that
-        # could happen.
-        #
-        for p_cl in splane_cl_poles:
-            # See if any closed loop poles are near the imaginary axis
-            if abs(p_cl.real) <= indent_radius:
-                # See if any open loop poles are close to closed loop poles
-                if len(splane_poles) > 0:
-                    p_ol = splane_poles[
-                        (np.abs(splane_poles - p_cl)).argmin()]
-
-                    if abs(p_ol - p_cl) <= indent_radius and \
-                            warn_encirclements:
-                        warnings.warn(
-                            "indented contour may miss closed loop pole; "
-                            "consider reducing indent_radius to below "
-                            f"{abs(p_ol - p_cl):5.2g}", stacklevel=2)
-
-        #
-        # See if we should add some frequency points near imaginary poles
-        #
-        for p in splane_poles:
-            # See if we need to process this pole (skip if on the negative
-            # imaginary axis or not near imaginary axis + user override)
-            if p.imag < 0 or abs(p.real) > indent_radius:
-                continue
-
-            # Find the frequencies before the pole frequency
-            below_points = np.argwhere(
-                splane_contour.imag - abs(p.imag) < -indent_radius)
-            if below_points.size > 0:
-                first_point = below_points[-1].item()
-                start_freq = p.imag - indent_radius
-            else:
-                # Add the points starting at the beginning of the contour
-                assert splane_contour[0] == 0
-                first_point = 0
-                start_freq = 0
-
-            # Find the frequencies after the pole frequency
-            above_points = np.argwhere(
-                splane_contour.imag - abs(p.imag) > indent_radius)
-            last_point = above_points[0].item()
-
-            # Add points for half/quarter circle around pole frequency
-            # (these will get indented left or right below)
-            splane_contour = np.concatenate((
-                splane_contour[0:first_point+1],
-                (1j * np.linspace(
-                    start_freq, p.imag + indent_radius, indent_points)),
-                splane_contour[last_point:]))
-
-        # Indent points that are too close to a pole
-        if len(splane_poles) > 0: # accomodate no splane poles if dtime sys
-            for i, s in enumerate(splane_contour):
-                # Find the nearest pole
-                p = splane_poles[(np.abs(splane_poles - s)).argmin()]
-
-                # See if we need to indent around it
-                if abs(s - p) < indent_radius:
-                    # Figure out how much to offset (simple trigonometry)
-                    offset = np.sqrt(indent_radius ** 2 - (s - p).imag ** 2) \
-                        - (s - p).real
-
-                    # Figure out which way to offset the contour point
-                    if p.real < 0 or (p.real == 0 and
-                                    indent_direction == 'right'):
-                        # Indent to the right
-                        splane_contour[i] += offset
-
-                    elif p.real > 0 or (p.real == 0 and
-                                        indent_direction == 'left'):
-                        # Indent to the left
-                        splane_contour[i] -= offset
-
-                    else:
-                        raise ValueError("unknown value for indent_direction")
-
-        return splane_contour
-
-    def _uniform_sampling(self):
-        """Returns coordinates that needs to be postprocessed."""
-        np = import_module('numpy')
-
-        results = self._evaluate(cast_to_real=False)
-        for i, r in enumerate(results):
-            if i != 0:
-                _re, _im = np.real(r), np.imag(r)
-                _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
-                results[i] = _re
-        return [*results[1:], results[0]]
-
-
 class NicholsLineSeries(Parametric2DLineSeries):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -4503,6 +4244,199 @@ class ControlBaseSeries(Line2DBaseSeries):
                     "Are the following parameters? %s" % remaining_fs)
 
 
+class NyquistLineSeries(ControlBaseSeries):
+    """Generates numerical data for Nyquist plot using the ``control``
+    module.
+    """
+
+    def _copy_from_dict(self, d, k):
+        if k in d.keys():
+            setattr(self, k, d[k])
+
+    def __init__(self, tf, var_start_end, label="", **kwargs):
+        super().__init__(tf, label=label, **kwargs)
+        self.ranges = [var_start_end]
+        self._check_fs()
+        self._control_kw = kwargs.get("control_kw", {})
+
+        # these attributes are used by ``control`` in the rendering step,
+        # not in the data generation step. I need them here in order to
+        # control the rendering in each backend.
+        self.arrows = kwargs.get("arrows", 2)
+        self.max_curve_magnitude = kwargs.get("max_curve_magnitude", 20)
+        self.max_curve_offset = kwargs.get("max_curve_offset", 0.02)
+        self.start_marker = kwargs.get("start_marker", True)
+        self.primary_style = kwargs.get("primary_style", None)
+        self.mirror_style = kwargs.get("mirror_style", None)
+        for k in ["arrows", "max_curve_magnitude", "max_curve_offset",
+            "start_marker", "primary_style", "mirror_style"]:
+            self._copy_from_dict(self._control_kw, k)
+
+        # Parse the arrows keyword
+        np = import_module("numpy")
+        if not self.arrows:
+            self.arrow_locs = []
+        elif isinstance(self.arrows, int):
+            N = self.arrows
+            # Space arrows out, starting midway along each "region"
+            self.arrow_locs = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
+        elif isinstance(self.arrows, (list, np.ndarray)):
+            self.arrow_locs = np.sort(np.atleast_1d(arrows))
+        else:
+            raise ValueError("unknown or unsupported arrow location")
+
+    def _create_discretized_domain(self):
+        np = import_module("numpy")
+        sym, start, end = self.ranges[0]
+        start = self._update_range_value(start).real
+        end = self._update_range_value(end).real
+        self._discretized_domain = {
+            sym: np.logspace(start, end, self.n[0], endpoint=True)
+        }
+
+    def get_data(self):
+        """
+        Returns
+        =======
+        x_reg, y_reg : np.ndarray
+        x_scl, y_scl : np.ndarray
+        x_inv1, y_inv1 : np.ndarray
+        x_inv2, y_inv2 : np.ndarray
+        curve_offset : np.ndarray
+        """
+        np = import_module("numpy")
+        ct = import_module("control")
+        mergedeep = import_module('mergedeep')
+
+        if self.is_interactive:
+            tf = self._expr.subs(self.params)
+            self._control_tf = tf_to_control(tf)
+
+        # create (or update) the discretized domain
+        if (not self._discretized_domain) or self._interactive_ranges:
+            self._create_discretized_domain()
+
+        omega = self._discretized_domain[self.ranges[0][0]]
+
+        control_kw = {"omega": omega}
+        ckw = mergedeep.merge({}, control_kw, self._control_kw)
+        ckw["plot"] = False
+        ckw["return_contour"] = True
+        _, contour = ct.nyquist_plot(self._control_tf, **ckw)
+
+        resp = self._control_tf(contour)
+
+        #
+        # NOTE: the following is adapted from:
+        # ``control.freqplot.plot_nyquist()``
+        #
+
+        max_curve_magnitude = self.max_curve_magnitude
+        max_curve_offset = self.max_curve_offset
+        splane_contour = 1j * omega
+
+        # Find the different portions of the curve (with scaled pts marked)
+        reg_mask = np.logical_or(
+            np.abs(resp) > max_curve_magnitude,
+            splane_contour.real != 0)
+
+        scale_mask = ~reg_mask \
+            & np.concatenate((~reg_mask[1:], ~reg_mask[-1:])) \
+            & np.concatenate((~reg_mask[0:1], ~reg_mask[:-1]))
+
+        # Rescale the points with large magnitude
+        rescale = np.logical_and(
+            reg_mask, abs(resp) > max_curve_magnitude)
+        resp[rescale] *= max_curve_magnitude / abs(resp[rescale])
+
+        # Plot the regular portions of the curve (and grab the color)
+        x_reg = np.ma.masked_where(reg_mask, resp.real)
+        y_reg = np.ma.masked_where(reg_mask, resp.imag)
+
+        # Figure out how much to offset the curve: the offset goes from
+        # zero at the start of the scaled section to max_curve_offset as
+        # we move along the curve
+        curve_offset = self._compute_curve_offset(
+            resp, scale_mask, max_curve_offset)
+
+        # Plot the scaled sections of the curve (changing linestyle)
+        x_scl = np.ma.masked_where(scale_mask, resp.real)
+        y_scl = np.ma.masked_where(scale_mask, resp.imag)
+
+        # the primary curve (invisible) for setting arrows
+        x_inv1, y_inv1 = resp.real.copy(), resp.imag.copy()
+        x_inv1[reg_mask] *= (1 + curve_offset[reg_mask])
+        y_inv1[reg_mask] *= (1 + curve_offset[reg_mask])
+
+        # Add the arrows to the mirror image (on top of an invisible contour)
+        x_inv2, y_inv2 = resp.real.copy(), resp.imag.copy()
+        x_inv2[reg_mask] *= (1 - curve_offset[reg_mask])
+        y_inv2[reg_mask] *= (1 - curve_offset[reg_mask])
+
+        return x_reg, y_reg, x_scl, y_scl, x_inv1, y_inv1, x_inv2, y_inv2, curve_offset
+
+    @staticmethod
+    def _compute_curve_offset(resp, mask, max_offset):
+        """
+            Function to compute Nyquist curve offsets
+
+        This function computes a smoothly varying offset that starts and ends at
+        zero at the ends of a scaled segment.
+
+        This function comes from ``control/freqplot.py``.
+        """
+        np = import_module("numpy")
+
+        # Compute the arc length along the curve
+        s_curve = np.cumsum(
+            np.sqrt(np.diff(resp.real) ** 2 + np.diff(resp.imag) ** 2))
+
+        # Initialize the offset
+        offset = np.zeros(resp.size)
+        arclen = np.zeros(resp.size)
+
+        # Walk through the response and keep track of each continous component
+        i, nsegs = 0, 0
+        while i < resp.size:
+            # Skip the regular segment
+            while i < resp.size and mask[i]:
+                i += 1              # Increment the counter
+                if i == resp.size:
+                    break
+                # Keep track of the arclength
+                arclen[i] = arclen[i-1] + np.abs(resp[i] - resp[i-1])
+
+            nsegs += 0.5
+            if i == resp.size:
+                break
+
+            # Save the starting offset of this segment
+            seg_start = i
+
+            # Walk through the scaled segment
+            while i < resp.size and not mask[i]:
+                i += 1
+                if i == resp.size:  # See if we are done with this segment
+                    break
+                # Keep track of the arclength
+                arclen[i] = arclen[i-1] + np.abs(resp[i] - resp[i-1])
+
+            nsegs += 0.5
+            if i == resp.size:
+                break
+
+            # Save the ending offset of this segment
+            seg_end = i
+
+            # Now compute the scaling for this segment
+            s_segment = arclen[seg_end-1] - arclen[seg_start]
+            offset[seg_start:seg_end] = max_offset * s_segment/s_curve[-1] * \
+                np.sin(np.pi * (arclen[seg_start:seg_end]
+                                - arclen[seg_start])/s_segment)
+
+        return offset
+
+
 class RootLocusSeries(ControlBaseSeries):
     """Generates numerical data for root locus plot using the ``control``
     module.
@@ -4525,7 +4459,6 @@ class RootLocusSeries(ControlBaseSeries):
     https://github.com/python-control/python-control
 
     """
-    _allowed_keys = ["sgrid"]
 
     def __init__(self, tf, label="", **kwargs):
         super().__init__(tf, label=label, **kwargs)
@@ -4950,3 +4883,45 @@ class NGridLineSeries(BaseSeries, GridBase):
         # for -360 < ol_phase_min < 0.
         phase_offsets = 360 + np.arange(phase_round_min, phase_round_max, 360.0)
         return m_mag, m_phase, n_mag, n_phase, phase_offsets
+
+
+class MCirclesSeries(BaseSeries, GridBase):
+    is_grid = True
+
+    def __init__(self, magnitudes_db, magnitudes, **kwargs):
+        super().__init__(**kwargs)
+        self.magnitudes_db = Tuple(*magnitudes_db)
+        self.magnitudes = self._expr = Tuple(*magnitudes)
+
+    def get_data(self):
+        """
+        Returns
+        =======
+
+        data : list
+            Each element of the list has the form:
+            ``[magnitude_db, x_coords, y_coords]``.
+        """
+        np = import_module("numpy")
+        data = []
+        magnitudes = self.magnitudes
+        magnitudes_db = self.magnitudes_db
+        if self.is_interactive:
+            magnitudes = magnitudes.subs(self.params)
+            magnitudes_db = magnitudes_db.subs(self.params)
+        magnitudes = np.array(magnitudes, dtype=float)
+        magnitudes_db = np.array(magnitudes_db, dtype=float)
+
+        theta = np.linspace(0, 2*np.pi, 400)
+        ct = np.cos(theta)
+        st = np.sin(theta)
+        for mdb, m in zip(magnitudes_db, magnitudes):
+            if not np.isclose(mdb, 0):
+                r = m / (1 - m**2)
+                x = m**2 / (1 - m**2) + r * ct
+                y = r * st
+            else:
+                x = [-0.5]
+                y = [0]
+            data.append([mdb, x, y])
+        return data

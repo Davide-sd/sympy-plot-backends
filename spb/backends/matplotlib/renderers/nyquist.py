@@ -8,115 +8,6 @@ import matplotlib.text as text
 import warnings
 
 
-# taken from matplotlib
-def _get_label_width(ax, val, fs):
-    """Return the width of the label, in pixels."""
-    fig = ax.figure
-    renderer = fig.canvas.get_renderer()
-    return (
-        text.Text(
-            0, 0,
-            val,
-            figure=fig,
-            size=fs,
-            fontproperties=font_manager.FontProperties())
-        .get_window_extent(renderer).width)
-
-
-def _draw_m_circles(
-    ax, xlim=None, ylim=None, x=None, y=None, clabels_to_top=True
-):
-    # TODO: maybe it's easier and cleaner to plot lines instead of contours,
-    # especially the labels positioning. And it would be faster too on
-    # interactive updates.
-
-    # get limits for computing m-circles
-    axis_limits = {k: None for k in ["xmin", "xmax", "ymin", "ymax"]}
-    if xlim:
-        axis_limits["xmin"], axis_limits["xmax"] = xlim
-    if ylim:
-        axis_limits["ymin"], axis_limits["ymax"] = ylim
-
-    mx, my = ax.margins()
-    if axis_limits["xmin"] is None:
-        if x is not None:
-            _min = min(x.min(), -1)  # there is a marker at (-1, 0)
-            dx = x.max() - _min
-            axis_limits["xmin"] = _min - mx * dx
-            axis_limits["xmax"] = x.max() + mx * dx
-        else:
-            axis_limits["xmin"] = -1
-            axis_limits["xmax"] = 1
-    if axis_limits["ymin"] is None:
-        if y is not None:
-            y = np.concatenate([y, -np.flip(y)])
-            dy = y.max() - y.min()
-            axis_limits["ymin"] = y.min() - my * dy
-            axis_limits["ymax"] = y.max() + my * dy
-        else:
-            axis_limits["ymin"] = -1
-            axis_limits["ymax"] = 1
-
-    dbs = [-20, -10, -6, -4, -2, 0, 2, 4, 6, 10, 20]
-    magnitudes = [10**(t / 20) for t in dbs]
-    magnitudes[5] = -0.5
-    labels = [str(t) + " dB" for t in dbs]
-    # M-circles when M != 0 dB
-    f1 = lambda x, y, M: (x - M**2 / (1 - M**2))**2 + y**2 - (M / (1 - M**2))**2
-    # M-circles when M == 0 dB
-    f2 = lambda x, y, M: x + 0.5
-
-    dx = axis_limits["xmax"] - axis_limits["xmin"]
-    dy = axis_limits["ymax"] - axis_limits["ymin"]
-    n1 = 200
-    n2 = int(dy / dx * n1)
-    x, y = np.mgrid[
-        axis_limits["xmin"]:axis_limits["xmax"]:n1*1j,
-        axis_limits["ymin"]:axis_limits["ymax"]:n2*1j]
-
-    contours = []
-    clabels = []
-    for m, l in zip(magnitudes, labels):
-        f = f1 if not np.isclose(m, -0.5) else f2
-        c = ax.contour(
-            x, y, f(x, y, m), levels=[0.0],
-            linestyles=":", colors="darkgray",
-            linewidths=1
-        )
-        contours.extend(c.collections)
-
-        locations = False
-        if clabels_to_top:
-            # computes position for contour labels.
-            # Circles intersecting the bounding box will show a label
-            # somewhere near the top border.
-            locations = []
-            for coll in c.collections:
-                for path in coll.get_paths():
-                    vert = path.vertices.copy()
-                    # exclude regions too close to top and bottom
-                    idx1 = vert[:, 1] > axis_limits["ymax"] - my * dy
-                    idx2 = vert[:, 1] < axis_limits["ymin"] + my * dy
-                    vert[(idx1 | idx2)] = np.nan
-                    # exclude regions too close to left and right
-                    # TODO: it would be nice to use label size... but, how to
-                    # convert from pixel size to data coordinates?
-                    idx1 = vert[:, 0] > axis_limits["xmax"] - mx * dx
-                    idx2 = vert[:, 0] < axis_limits["xmin"] + mx * dx
-                    vert[(idx1 | idx2)] = np.nan
-                    if not np.isnan(vert).all():
-                        idx = np.nanargmax(vert[:, 1])
-                        locations.append(vert[idx, :])
-
-        texts = ax.clabel(c, fontsize=9, colors="k", manual=locations)
-        clabels.extend(texts)
-        for t in texts:
-            t.set_rotation(0)
-            t.set_text(l)
-
-    return contours, clabels
-
-
 def _draw_arrows_helper(
     ax, line, arrow_locs=[0.2, 0.4, 0.6, 0.8], arrowstyle='-|>', dir=1
 ):
@@ -190,158 +81,6 @@ def _draw_arrows_helper(
     return arrows
 
 
-#
-# Function to compute Nyquist curve offsets
-#
-# This function computes a smoothly varying offset that starts and ends at
-# zero at the ends of a scaled segment.
-#
-def _compute_curve_offset(resp, mask, max_offset):
-    # from:
-    # https://github.com/python-control/python-control/blob/main/control/freqplot.py
-
-    # Compute the arc length along the curve
-    s_curve = np.cumsum(
-        np.sqrt(np.diff(resp.real) ** 2 + np.diff(resp.imag) ** 2))
-
-    # Initialize the offset
-    offset = np.zeros(resp.size)
-    arclen = np.zeros(resp.size)
-
-    # Walk through the response and keep track of each continous component
-    i, nsegs = 0, 0
-    while i < resp.size:
-        # Skip the regular segment
-        while i < resp.size and mask[i]:
-            i += 1              # Increment the counter
-            if i == resp.size:
-                break
-            # Keep track of the arclength
-            arclen[i] = arclen[i-1] + np.abs(resp[i] - resp[i-1])
-
-        nsegs += 0.5
-        if i == resp.size:
-            break
-
-        # Save the starting offset of this segment
-        seg_start = i
-
-        # Walk through the scaled segment
-        while i < resp.size and not mask[i]:
-            i += 1
-            if i == resp.size:  # See if we are done with this segment
-                break
-            # Keep track of the arclength
-            arclen[i] = arclen[i-1] + np.abs(resp[i] - resp[i-1])
-
-        nsegs += 0.5
-        if i == resp.size:
-            break
-
-        # Save the ending offset of this segment
-        seg_end = i
-
-        # Now compute the scaling for this segment
-        s_segment = arclen[seg_end-1] - arclen[seg_start]
-        offset[seg_start:seg_end] = max_offset * s_segment/s_curve[-1] * \
-            np.sin(np.pi * (arclen[seg_start:seg_end]
-                            - arclen[seg_start])/s_segment)
-
-    return offset
-
-
-def _process_data_helper(
-    data, max_curve_magnitude, max_curve_offset,
-    encirclement_threshold, indent_direction, tf_poles, tf_cl_poles
-):
-    resp = data[0] + 1j * data[1]
-    splane_contour = data[2]
-
-    # from:
-    # https://github.com/python-control/python-control/blob/main/control/freqplot.py
-
-    # Compute CW encirclements of -1 by integrating the (unwrapped) angle
-    phase = -unwrap(np.angle(resp + 1))
-    encirclements = np.sum(np.diff(phase)) / np.pi
-    count = int(np.round(encirclements, 0))
-
-    # Let the user know if the count might not make sense
-    if abs(encirclements - count) > encirclement_threshold:
-        warnings.warn(
-            "number of encirclements was a non-integer value; this can"
-            " happen is contour is not closed, possibly based on a"
-            " frequency range that does not include zero.")
-
-    #
-    # Make sure that the enciriclements match the Nyquist criterion
-    #
-    # If the user specifies the frequency points to use, it is possible
-    # to miss enciriclements, so we check here to make sure that the
-    # Nyquist criterion is actually satisfied.
-    #
-    # Count the number of open/closed loop RHP poles
-    if indent_direction == 'right':
-        P = (tf_poles.real > 0).sum()
-    else:
-        P = (tf_poles.real >= 0).sum()
-    Z = (tf_cl_poles.real >= 0).sum()
-
-    # Check to make sure the results make sense; warn if not
-    if Z != count + P:
-        warnings.warn(
-            "number of encirclements does not match Nyquist criterion;"
-            " check frequency range and indent radius/direction",
-            UserWarning, stacklevel=2)
-    elif indent_direction == 'none' and any(tf_poles.real == 0):
-        warnings.warn(
-            "system has pure imaginary poles but indentation is"
-            " turned off; results may be meaningless",
-            RuntimeWarning, stacklevel=2)
-
-    # Find the different portions of the curve (with scaled pts marked)
-    reg_mask = np.logical_or(
-        np.abs(resp) > max_curve_magnitude,
-        splane_contour.real != 0)
-    # reg_mask = np.logical_or(
-    #     np.abs(resp.real) > max_curve_magnitude,
-    #     np.abs(resp.imag) > max_curve_magnitude)
-
-    scale_mask = ~reg_mask \
-        & np.concatenate((~reg_mask[1:], ~reg_mask[-1:])) \
-        & np.concatenate((~reg_mask[0:1], ~reg_mask[:-1]))
-
-    # Rescale the points with large magnitude
-    rescale = np.logical_and(
-        reg_mask, abs(resp) > max_curve_magnitude)
-    resp[rescale] *= max_curve_magnitude / abs(resp[rescale])
-
-    # the regular portions of the curve
-    x_reg = np.ma.masked_where(reg_mask, resp.real)
-    y_reg = np.ma.masked_where(reg_mask, resp.imag)
-
-    # Figure out how much to offset the curve: the offset goes from
-    # zero at the start of the scaled section to max_curve_offset as
-    # we move along the curve
-    curve_offset = _compute_curve_offset(
-        resp, scale_mask, max_curve_offset)
-
-    # the scaled sections of the curve
-    x_scl = np.ma.masked_where(scale_mask, resp.real)
-    y_scl = np.ma.masked_where(scale_mask, resp.imag)
-
-    # the primary curve (invisible) for setting arrows
-    x_inv1, y_inv1 = resp.real.copy(), resp.imag.copy()
-    x_inv1[reg_mask] *= (1 + curve_offset[reg_mask])
-    y_inv1[reg_mask] *= (1 + curve_offset[reg_mask])
-
-    # Add the arrows to the mirror image (on top of an invisible contour)
-    x_inv2, y_inv2 = resp.real.copy(), resp.imag.copy()
-    x_inv2[reg_mask] *= (1 - curve_offset[reg_mask])
-    y_inv2[reg_mask] *= (1 - curve_offset[reg_mask])
-
-    return x_reg, y_reg, x_scl, y_scl, x_inv1, y_inv1, x_inv2, y_inv2, curve_offset
-
-
 def _create_line_style(
     plot_obj, user_provided_style, default_style, name, color
 ):
@@ -387,19 +126,7 @@ def _draw_nyquist_helper(renderer, data):
     color = next(p._cl)
     ax = p.ax
 
-    # from:
-    # https://github.com/python-control/python-control/blob/main/control/freqplot.py
-
-    m_handles = None
-    if s.m_circles:
-        m_handles = _draw_m_circles(
-            p.ax, p.xlim, p.ylim, data[0], data[1], s.clabels_to_top)
-
-    new_data = _process_data_helper(
-        data, s.max_curve_magnitude, s.max_curve_offset,
-        s.encirclement_threshold, s.indent_direction,
-        s._poles, s._poles_cl)
-    x_reg, y_reg, x_scl, y_scl, x_inv1, y_inv1, x_inv2, y_inv2, curve_offset = new_data
+    x_reg, y_reg, x_scl, y_scl, x_inv1, y_inv1, x_inv2, y_inv2, curve_offset = data
 
     primary_style = ['-', '-.']
     mirror_style = ['--', ':']
@@ -432,7 +159,7 @@ def _draw_nyquist_helper(renderer, data):
     arrows_handles = []
     arrows1 = _draw_arrows_helper(
         ax, invisible_primary_line,
-        s.arrows_loc,
+        s.arrow_locs,
         arrowstyle=arrow_style,
         dir=1
     )
@@ -455,7 +182,7 @@ def _draw_nyquist_helper(renderer, data):
         arrows2 = _draw_arrows_helper(
             ax,
             invisible_secondary_line,
-            s.arrows_loc,
+            s.arrow_locs,
             arrowstyle=arrow_style,
             dir=-1
         )
@@ -475,7 +202,6 @@ def _draw_nyquist_helper(renderer, data):
     ax.plot([-1], [0], 'r+')
 
     handles = [
-        m_handles,
         primary_line, scl_primary_line, invisible_primary_line,
         secondary_line, scl_secondary_line, invisible_secondary_line,
         start_marker_handle, arrows_handles
@@ -484,21 +210,15 @@ def _draw_nyquist_helper(renderer, data):
 
 
 def _update_nyquist_helper(renderer, data, handles):
-    # TODO: remove and recompute m-circles if prange is used.
-
     p, s = renderer.plot, renderer.series
     ax = p.ax
-    primary_line, scl_primary_line, invisible_primary_line = handles[1:4]
-    secondary_line, scl_secondary_line, invisible_secondary_line = handles[4:7]
+    primary_line, scl_primary_line, invisible_primary_line = handles[:3]
+    secondary_line, scl_secondary_line, invisible_secondary_line = handles[3:6]
     start_marker_handle = handles[-2]
     arrows_handles = handles[-1]
     arrow_style = mpl.patches.ArrowStyle('simple', head_width=6, head_length=6)
 
-    new_data = _process_data_helper(
-        data, s.max_curve_magnitude, s.max_curve_offset,
-        s.encirclement_threshold, s.indent_direction,
-        s._poles, s._poles_cl)
-    x_reg, y_reg, x_scl, y_scl, x_inv1, y_inv1, x_inv2, y_inv2, curve_offset = new_data
+    x_reg, y_reg, x_scl, y_scl, x_inv1, y_inv1, x_inv2, y_inv2, curve_offset = data
 
     # remove previous arrows
     for a in arrows_handles:
@@ -514,7 +234,7 @@ def _update_nyquist_helper(renderer, data, handles):
     arrows1 = _draw_arrows_helper(
         ax,
         invisible_primary_line,
-        s.arrows_loc,
+        s.arrow_locs,
         arrowstyle=arrow_style,
         dir=1
     )
@@ -529,7 +249,7 @@ def _update_nyquist_helper(renderer, data, handles):
         invisible_secondary_line.set_data(x_inv2, -y_inv2)
         arrows2 = _draw_arrows_helper(
             ax, invisible_secondary_line,
-            s.arrows_loc,
+            s.arrow_locs,
             arrowstyle=arrow_style,
             dir=-1
         )
