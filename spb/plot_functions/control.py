@@ -75,35 +75,6 @@ def _unpack_systems(systems, **kwargs):
     return systems
 
 
-def _create_title_helper(systems, base):
-    """Create a suitable title depending on the number of systems being shown
-    and wheter the backend supports latex or not.
-    """
-    def _is_siso_system(sys):
-        ct = import_module("control")
-        sp = import_module("scipy")
-        if isinstance(sys, (TransferFunction, sp.signal.TransferFunction)):
-            return True
-        if isinstance(sys, ct.TransferFunction):
-            if (sys.ninputs == 1) and (sys.noutputs == 1):
-                return True
-            return False
-        return False
-
-    def func(wrapper, use_latex):
-        title = base
-        if len(systems) == 1:
-            label = systems[0][1]
-            # MIMO systems are difficult to render on titles/legends.
-            # Only show SISO systems on title.
-            if label == "System 1" and _is_siso_system(systems[0][0]):
-                print_func = latex if use_latex else str
-                label = wrapper % f"{print_func(systems[0][0])}"
-            title = base + f" of {label}"
-        return title
-    return func
-
-
 def plot_pole_zero(
     *systems, pole_markersize=10, zero_markersize=7, show_axes=False,
     sgrid=False, zgrid=False, control=True, input=None, output=None, **kwargs
@@ -805,8 +776,7 @@ def plot_bode_magnitude(
 
     kwargs.setdefault("xlabel", 'Frequency [%s]' % freq_unit)
     kwargs.setdefault("ylabel", 'Magnitude (dB)')
-    kwargs.setdefault("title", _create_title_helper(
-        systems, "Bode Plot (Magnitude)"))
+    kwargs.setdefault("title", "Bode Plot (Magnitude)")
     kwargs.setdefault("xscale", "log")
     return _create_plot_helper(series, show_axes, **kwargs)
 
@@ -845,8 +815,7 @@ def plot_bode_phase(
 
     kwargs.setdefault("xlabel", 'Frequency [%s]' % freq_unit)
     kwargs.setdefault("ylabel", 'Phase [%s]' % phase_unit)
-    kwargs.setdefault("title", _create_title_helper(
-        systems, "Bode Plot (Phase)"))
+    kwargs.setdefault("title", "Bode Plot (Phase)")
     kwargs.setdefault("xscale", "log")
     return _create_plot_helper(series, show_axes, **kwargs)
 
