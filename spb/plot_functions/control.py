@@ -381,13 +381,6 @@ def plot_step_response(
     .. [1] https://www.mathworks.com/help/control/ref/lti.step.html
 
     """
-    # allows parametric lower_limit
-    lower_limit = sympify(lower_limit)
-    if lower_limit.is_Number and lower_limit < 0:
-        raise ValueError(
-            "Lower limit of time must be greater than or equal to zero."
-        )
-
     systems = _unpack_systems(systems, **kwargs)
     series = []
     for s, l in systems:
@@ -548,13 +541,6 @@ def plot_impulse_response(
     .. [1] https://www.mathworks.com/help/control/ref/lti.impulse.html
 
     """
-    # allows parametric lower_limit
-    lower_limit = sympify(lower_limit)
-    if lower_limit.is_Number and lower_limit < 0:
-        raise ValueError(
-            "Lower limit of time must be greater than or equal to zero."
-        )
-
     systems = _unpack_systems(systems, **kwargs)
     series = []
     for s, l in systems:
@@ -718,19 +704,6 @@ def plot_ramp_response(
     .. [1] https://en.wikipedia.org/wiki/Ramp_function
 
     """
-    # allows parametric slope
-    slope = sympify(slope)
-    if slope.is_Number and slope < 0:
-        raise ValueError(
-            "Slope must be greater than or equal to zero."
-        )
-    # allows parametric lower_limit
-    lower_limit = sympify(lower_limit)
-    if lower_limit.is_Number and lower_limit < 0:
-        raise ValueError(
-            "Lower limit of time must be greater than or equal to zero."
-        )
-
     systems = _unpack_systems(systems, **kwargs)
     series = []
     for s, l in systems:

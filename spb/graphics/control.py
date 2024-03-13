@@ -1201,6 +1201,20 @@ def ramp_response(
         input, output
     )
 
+    non_symbolic_systems = any([
+        not isinstance(s[0], (Expr, SISOLinearTimeInvariant)) for s in systems])
+    if (
+        isinstance(slope, Expr) and
+        (len(slope.free_symbols) > 0) and
+        non_symbolic_systems
+    ):
+        raise ValueError(
+            "You are using a symbolic `slope` with a non-symbolic "
+            "transfer function. This mode of operation is not supported. "
+            "Please, consider converting the transfer function to a "
+            "transfer function from `sympy.physics.control`."
+        )
+
     func = _ramp_response_with_control_helper if control else _ramp_response_helper
     series = []
     for sys, lbl in systems:

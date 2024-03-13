@@ -74,9 +74,6 @@ def test_errors():
     raises(ValueError, lambda: plot_step_response(tf1, lower_limit=-0.1))
     raises(ValueError, lambda: plot_ramp_response(tf1, lower_limit=-4/3))
 
-    # slope in plot_ramp_response() is negative
-    raises(ValueError, lambda: plot_ramp_response(tf1, slope=-0.1))
-
     # incorrect frequency or phase unit
     raises(ValueError, lambda: plot_bode(tf1,freq_unit = 'hz'))
     raises(ValueError, lambda: plot_bode(tf1,phase_unit = 'degree'))

@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pytest import warns
+from pytest import warns, raises
 from spb import (
     control_axis, pole_zero, step_response, impulse_response, ramp_response,
     bode_magnitude, bode_phase, nyquist, nichols, sgrid, root_locus, zgrid,
@@ -327,6 +327,18 @@ def test_ramp_response(tf, label, rkw, params):
     assert s2.params == {} if not params else params
 
     assert np.allclose(d1, d2)
+
+
+def test_ramp_response_symbolic_slope_non_symbolic_tf():
+    # with a symbolic transfer function and a symbolic slope,
+    # everything works fine.
+    G1 = TransferFunction(s, (s+4)*(s+8), s)
+    series = ramp_response(G1, slope=a, params={a: 1})
+    assert len(series) == 1
+    assert isinstance(series[0], SystemResponseSeries)
+
+    G2 = ct.tf([1, 0], [1, 12, 32])
+    raises(ValueError, lambda: ramp_response(G2, slope=a, params={a: 1}))
 
 
 @pytest.mark.parametrize(
