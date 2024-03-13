@@ -61,11 +61,6 @@ def y_coordinate_equality(plot_data_func, evalf_func, system):
 
 def test_errors():
 
-    # Invalid `system` check
-    tfm = TransferFunctionMatrix([[tf6, tf5], [tf5, tf6]])
-    expr = 1/(s**2 - 1)
-    raises(NotImplementedError, lambda: plot_bode(tfm))
-
     # More than 1 variables: raise error because `params` is missing
     tf_a = TransferFunction(a, s + a, s)
     raises(ValueError, lambda: plot_pole_zero(tf_a))
@@ -822,7 +817,7 @@ def test_plot_bode_title():
     G2 = 1/s**2
 
     p = plot_bode(G1, show=False)
-    assert p.args[0].title == f"Bode Plot of ${latex(G1)}$"
+    assert p.args[0].title == f"Bode Plot"
     assert p.args[1].title == ""
 
     p = plot_bode(G1, show=False, title="Test")

@@ -3,7 +3,7 @@ from spb.graphics.control import (
     _preprocess_system, pole_zero,
     nichols, nyquist, step_response,
     ramp_response, impulse_response,
-    _bode_magnitude_helper, _bode_phase_helper,
+    bode_magnitude, bode_phase,
     control_axis, root_locus, sgrid as sgrid_function,
     _get_grid_series
 )
@@ -753,7 +753,7 @@ ramp_response_plot = plot_ramp_response
 
 
 def plot_bode_magnitude(
-    *systems, initial_exp=-5, final_exp=5,
+    *systems, initial_exp=None, final_exp=None,
     freq_unit=None, show_axes=False, **kwargs
 ):
     """
@@ -767,12 +767,14 @@ def plot_bode_magnitude(
         raise ValueError('Only "rad/sec" and "Hz" are accepted frequency units.')
 
     systems = _unpack_systems(systems)
-    series = [
-        _bode_magnitude_helper(
-            s, l, initial_exp, final_exp,
-            freq_unit, **kwargs
-        ) for s, l in systems
-    ]
+    series = []
+    for s, l in systems:
+        series.extend(
+            bode_magnitude(
+                s, label=l, initial_exp=initial_exp, final_exp=final_exp,
+                freq_unit=freq_unit, **kwargs
+            )
+        )
 
     kwargs.setdefault("xlabel", 'Frequency [%s]' % freq_unit)
     kwargs.setdefault("ylabel", 'Magnitude (dB)')
@@ -785,7 +787,7 @@ bode_magnitude_plot = plot_bode_magnitude
 
 
 def plot_bode_phase(
-    *systems, initial_exp=-5, final_exp=5,
+    *systems, initial_exp=None, final_exp=None,
     freq_unit=None, phase_unit=None, show_axes=False,
     unwrap=True, **kwargs
 ):
@@ -806,12 +808,15 @@ def plot_bode_phase(
         raise ValueError('Only "rad" and "deg" are accepted phase units.')
 
     systems = _unpack_systems(systems)
-    series = [
-        _bode_phase_helper(
-            s, l, initial_exp, final_exp,
-            freq_unit, phase_unit, unwrap, **kwargs
-        ) for s, l in systems
-    ]
+    series = []
+    for s, l in systems:
+        series.extend(
+                bode_phase(
+                s, label=l, initial_exp=initial_exp, final_exp=final_exp,
+                freq_unit=freq_unit, phase_unit=phase_unit,
+                unwrap=unwrap, **kwargs
+            )
+        )
 
     kwargs.setdefault("xlabel", 'Frequency [%s]' % freq_unit)
     kwargs.setdefault("ylabel", 'Phase [%s]' % phase_unit)
@@ -824,7 +829,7 @@ bode_phase_plot = plot_bode_phase
 
 
 def plot_bode(
-    *systems, initial_exp=-5, final_exp=5,
+    *systems, initial_exp=None, final_exp=None,
     freq_unit=None, phase_unit=None, show_axes=False,
     unwrap=True, **kwargs
 ):
@@ -834,23 +839,26 @@ def plot_bode(
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type
-        The LTI SISO system for which the Bode Plot is to be computed.
+    system : LTI system type
+        The system for which the step response plot is to be computed.
         It can be:
 
-        * a single LTI SISO system.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
         * a symbolic expression in rational form, which will be converted to
-          an object of type :class:`~sympy.physics.control.TransferFunction`.
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
-        * a sequence of LTI SISO systems.
-        * a sequence of 2-tuples ``(LTI SISO system, label)``.
-        * a dict mapping LTI SISO systems to labels.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
     initial_exp : Number, optional
-        The initial exponent of 10 of the semilog plot. Defaults to -5.
+        The initial exponent of 10 of the semilog plot. Default to None, which
+        will autocompute the appropriate value.
     final_exp : Number, optional
-        The final exponent of 10 of the semilog plot. Defaults to 5.
+        The final exponent of 10 of the semilog plot. Default to None, which
+        will autocompute the appropriate value.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
@@ -866,6 +874,13 @@ def plot_bode(
         Depending on the transfer function, the computed phase could contain
         discontinuities of 2*pi. ``unwrap=True`` post-process the numerical
         data in order to get a continuous phase.
+    input : int, optional
+        Only compute the poles/zeros for the listed input. If not specified,
+        the poles/zeros for each independent input are computed (as
+        separate traces).
+    output : int, optional
+        Only compute the poles/zeros for the listed output.
+        If not specified, all outputs are reported.
         Default to True.
     **kwargs : dict
         Refer to :func:`~spb.graphics.control.bode_magnitude` for a full list
@@ -879,7 +894,7 @@ def plot_bode(
     ========
 
     .. plot::
-       :context: close-figs
+       :context: reset
        :format: doctest
        :include-source: True
 
@@ -888,7 +903,7 @@ def plot_bode(
        >>> from spb import plot_bode, plot_bode_phase, plotgrid
        >>> tf1 = TransferFunction(
        ...     1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
-       >>> plot_bode(tf1, initial_exp=0.2, final_exp=0.7)   # doctest: +SKIP
+       >>> plot_bode(tf1)   # doctest: +SKIP
 
     This example shows how the phase is actually computed (with
     ``unwrap=False``) and how it is post-processed (with ``unwrap=True``).
@@ -914,12 +929,22 @@ def plot_bode(
        :format: doctest
        :include-source: True
 
-       >>> from sympy import symbols
+       >>> from sympy import symbols, exp
        >>> s = symbols("s")
        >>> G1 = 1 / (s * (s + 1) * (s + 10))
        >>> G2 = G1 * exp(-5*s)
-       >>> plot_bode(G1, G2, phase_unit="deg",
-       ...     initial_exp=-2, final_exp=1, n=1e04)
+       >>> plot_bode(G1, G2, phase_unit="deg", n=1e04)
+
+    Bode plot of a discrete-time system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> import control as ct
+        >>> tf = ct.tf([1], [1, 2, 3], dt=0.05)
+        >>> plot_bode(tf)   # doctest: +SKIP
 
     Interactive-widget plot:
 
@@ -969,8 +994,6 @@ def plot_bode(
     systems = _unpack_systems(systems)
     if title is None:
         title = 'Bode Plot'
-        if len(systems) == 1:
-            title += f' of ${latex(systems[0][0])}$'
     p1.title = title
     p = plotgrid(p1, p2, **kwargs)
 

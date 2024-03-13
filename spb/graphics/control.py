@@ -4,7 +4,10 @@ from spb.series import (
     NicholsLineSeries, RootLocusSeries, SGridLineSeries, ZGridLineSeries,
     SystemResponseSeries, PoleZeroSeries, NGridLineSeries, MCirclesSeries
 )
-from spb.utils import prange, is_number, tf_to_sympy, tf_to_control
+from spb.utils import (
+    prange, is_number, tf_to_sympy, tf_to_control, _get_initial_params,
+    is_discrete_time, tf_find_time_delay
+)
 import numpy as np
 from sympy import (
     roots, exp, Poly, degree, re, im, apart, Dummy, symbols,
@@ -1210,30 +1213,75 @@ def ramp_response(
     return series
 
 
-def _bode_magnitude_helper(
-    system, label, initial_exp, final_exp, freq_unit, **kwargs
-):
-    system = _preprocess_system(system, **kwargs)
+def _bode_common(system, label, initial_exp, final_exp, freq_unit, **kwargs):
+    # NOTE: why use ``sympy`` and not ``control`` to compute bode plots?
+    # Because I can easily deal with time delays.
+
+    original_system = _preprocess_system(system, **kwargs)
+    system = tf_to_sympy(original_system, skip_check_dt=True)
     _check_system(system, bypass_delay_check=True)
 
     expr = system.to_expr()
     _w = Dummy("w", real=True)
-    if freq_unit == 'Hz':
-        repl = I*_w*2*pi
-    else:
-        repl = I*_w
-    w_expr = expr.subs({system.var: repl})
+    params = kwargs.get("params", None)
 
+    nyquistfrq = None
+    if is_discrete_time(original_system):
+        if freq_unit == 'Hz':
+            repl = exp(I * _w * 2*pi * original_system.dt)
+        else:
+            repl = exp(I * _w * original_system.dt)
+
+        nyquistfrq = pi / original_system.dt
+    else:
+        if freq_unit == 'Hz':
+            repl = I*_w*2*pi
+        else:
+            repl = I*_w
+
+    if (initial_exp is None) or (final_exp is None):
+        if params:
+            initial_params = _get_initial_params(params)
+            new_system = system.subs(initial_params)
+            # assume any time delay is in cascade, so that only the phase is
+            # affected by it.
+            for d in tf_find_time_delay(new_system):
+                new_system = new_system.subs({d: 1})
+            tf = tf_to_control(new_system)
+        else:
+            new_system = system
+            # assume any time delay is in cascade, so that only the phase is
+            # affected by it.
+            for d in tf_find_time_delay(new_system):
+                new_system = new_system.subs({d: 1})
+            tf = tf_to_control(new_system)
+        i, f = _default_frequency_exponent_range(tf, freq_unit == 'Hz', 1)
+        initial_exp = i if initial_exp is None else initial_exp
+        final_exp = f if final_exp is None else final_exp
+
+    w_expr = expr.subs({system.var: repl})
+    _range = prange(
+        _w,
+        10**initial_exp,
+        10**final_exp if nyquistfrq is None else nyquistfrq
+    )
+    return w_expr, _range
+
+
+def _bode_magnitude_helper(
+    system, label, initial_exp, final_exp, freq_unit, **kwargs
+):
+    w_expr, _range = _bode_common(
+        system, label, initial_exp, final_exp, freq_unit, **kwargs)
     mag = 20*log(Abs(w_expr), 10)
     return LineOver1DRangeSeries(
-        mag, prange(_w, 10**initial_exp, 10**final_exp),
-        label, xscale='log', **kwargs
-    )
+        mag, _range, label, xscale='log', **kwargs)
 
 
 def bode_magnitude(
-    system, initial_exp=-5, final_exp=5, freq_unit='rad/sec',
-    phase_unit='rad', label=None, rendering_kw=None, **kwargs
+    system, initial_exp=None, final_exp=None, freq_unit='rad/sec',
+    phase_unit='rad', label=None, rendering_kw=None,
+    input=None, output=None, **kwargs
 ):
     """
     Returns the Bode magnitude plot of a continuous-time system.
@@ -1241,20 +1289,26 @@ def bode_magnitude(
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type systems
-        The system for which the pole-zero plot is to be computed.
+    system : LTI system type
+        The system for which the step response plot is to be computed.
         It can be:
 
-        * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form, which will be converted to
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
     initial_exp : Number, optional
-        The initial exponent of 10 of the semilog plot. Defaults to -5.
+        The initial exponent of 10 of the semilog plot. Default to None, which
+        will autocompute the appropriate value.
     final_exp : Number, optional
-        The final exponent of 10 of the semilog plot. Defaults to 5.
+        The final exponent of 10 of the semilog plot. Default to None, which
+        will autocompute the appropriate value.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
@@ -1267,6 +1321,13 @@ def bode_magnitude(
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
+    input : int, optional
+        Only compute the poles/zeros for the listed input. If not specified,
+        the poles/zeros for each independent input are computed (as
+        separate traces).
+    output : int, optional
+        Only compute the poles/zeros for the listed output.
+        If not specified, all outputs are reported.
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line`.
@@ -1287,8 +1348,10 @@ def bode_magnitude(
     Examples
     ========
 
+    Bode magnitude plot of a continuous-time system:
+
     .. plot::
-        :context: close-figs
+        :context: reset
         :format: doctest
         :include-source: True
 
@@ -1298,7 +1361,22 @@ def bode_magnitude(
         >>> tf1 = TransferFunction(
         ...     1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
         >>> graphics(
-        ...     bode_magnitude(tf1, initial_exp=0.2, final_exp=0.7),
+        ...     bode_magnitude(tf1),
+        ...     xscale="log", xlabel="Frequency [rad/s]",
+        ...     ylabel="Magnitude [dB]"
+        ... )   # doctest: +SKIP
+
+    Bode magnitude plot of a discrete-time system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> import control as ct
+        >>> tf2 = ct.tf([1], [1, 2, 3], dt=0.05)
+        >>> graphics(
+        ...     bode_magnitude(tf2),
         ...     xscale="log", xlabel="Frequency [rad/s]",
         ...     ylabel="Magnitude [dB]"
         ... )   # doctest: +SKIP
@@ -1338,28 +1416,30 @@ def bode_magnitude(
             'Only "rad/sec" and "Hz" are accepted frequency units.'
         )
 
-    return [
-        _bode_magnitude_helper(
-            system, label, initial_exp, final_exp,
-            freq_unit, rendering_kw=rendering_kw, **kwargs
+    systems = _unpack_mimo_systems(
+        system,
+        "" if label is None else label,
+        input, output
+    )
+
+    series = []
+    for sys, lbl in systems:
+        series.append(
+            _bode_magnitude_helper(
+                sys, lbl, initial_exp, final_exp,
+                freq_unit, rendering_kw=rendering_kw, **kwargs
+            )
         )
-    ]
+
+    return series
 
 
 def _bode_phase_helper(
     system, label, initial_exp, final_exp, freq_unit, phase_unit,
     unwrap, **kwargs
 ):
-    system = _preprocess_system(system, **kwargs)
-    _check_system(system, bypass_delay_check=True)
-
-    expr = system.to_expr()
-    _w = Dummy("w", real=True)
-    if freq_unit == 'Hz':
-        repl = I*_w*2*pi
-    else:
-        repl = I*_w
-    w_expr = expr.subs({system.var: repl})
+    w_expr, _range = _bode_common(
+        system, label, initial_exp, final_exp, freq_unit, **kwargs)
 
     if phase_unit == 'deg':
         phase = arg(w_expr)*180/pi
@@ -1369,14 +1449,13 @@ def _bode_phase_helper(
         phase = arg(w_expr)
 
     return LineOver1DRangeSeries(
-        phase, prange(_w, 10**initial_exp, 10**final_exp),
-        label, xscale='log', unwrap=unwrap, **kwargs
-    )
+        phase, _range, label, xscale='log', unwrap=unwrap, **kwargs)
 
 
 def bode_phase(
-    system, initial_exp=-5, final_exp=5, freq_unit='rad/sec',
-    phase_unit='rad', label=None, rendering_kw=None, unwrap=True, **kwargs
+    system, initial_exp=None, final_exp=None, freq_unit='rad/sec',
+    phase_unit='rad', label=None, rendering_kw=None, unwrap=True,
+    input=None, output=None, **kwargs
 ):
     """
     Returns the Bode phase plot of a continuous-time system.
@@ -1384,20 +1463,26 @@ def bode_phase(
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type systems
-        The system for which the pole-zero plot is to be computed.
+    system : LTI system type
+        The system for which the step response plot is to be computed.
         It can be:
 
-        * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form, which will be converted to
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
     initial_exp : Number, optional
-        The initial exponent of 10 of the semilog plot. Defaults to -5.
+        The initial exponent of 10 of the semilog plot. Default to None, which
+        will autocompute the appropriate value.
     final_exp : Number, optional
-        The final exponent of 10 of the semilog plot. Defaults to 5.
+        The final exponent of 10 of the semilog plot. Default to None, which
+        will autocompute the appropriate value.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
@@ -1418,6 +1503,13 @@ def bode_phase(
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
+    input : int, optional
+        Only compute the poles/zeros for the listed input. If not specified,
+        the poles/zeros for each independent input are computed (as
+        separate traces).
+    output : int, optional
+        Only compute the poles/zeros for the listed output.
+        If not specified, all outputs are reported.
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line`.
@@ -1438,6 +1530,8 @@ def bode_phase(
     Examples
     ========
 
+    Bode phase plot of a continuous-time system:
+
     .. plot::
         :context: close-figs
         :format: doctest
@@ -1450,6 +1544,21 @@ def bode_phase(
         ...     1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
         >>> graphics(
         ...     bode_phase(tf1, initial_exp=0.2, final_exp=0.7),
+        ...     xscale="log", xlabel="Frequency [rad/s]",
+        ...     ylabel="Magnitude [dB]"
+        ... )   # doctest: +SKIP
+
+    Bode phase plot of a discrete-time system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> import control as ct
+        >>> tf2 = ct.tf([1], [1, 2, 3], dt=0.05)
+        >>> graphics(
+        ...     bode_phase(tf2),
         ...     xscale="log", xlabel="Frequency [rad/s]",
         ...     ylabel="Magnitude [dB]"
         ... )   # doctest: +SKIP
@@ -1488,13 +1597,23 @@ def bode_phase(
         raise ValueError(
             'Only "rad/sec" and "Hz" are accepted frequency units.')
 
-    return [
-        _bode_phase_helper(
-            system, label, initial_exp, final_exp,
-            freq_unit, phase_unit, rendering_kw=rendering_kw,
-            unwrap=unwrap, **kwargs
+    systems = _unpack_mimo_systems(
+        system,
+        "" if label is None else label,
+        input, output
+    )
+
+    series = []
+    for sys, lbl in systems:
+        series.append(
+            _bode_phase_helper(
+                sys, lbl, initial_exp, final_exp,
+                freq_unit, phase_unit, rendering_kw=rendering_kw,
+                unwrap=unwrap, **kwargs
+            )
         )
-    ]
+
+    return series
 
 
 def _compute_range_helper(system, **kwargs):
@@ -1709,8 +1828,9 @@ def nyquist(system, omega_limits=None, input=None, output=None,
     )
 
     params = kwargs.get("params", None)
+    initial_params = None
     if params:
-        initial_params = {k: v[0] for k, v in params.items()}
+        initial_params = _get_initial_params(params)
 
     omega = symbols("omega")
     series = []
@@ -1724,9 +1844,13 @@ def nyquist(system, omega_limits=None, input=None, output=None,
             ctrl_sys = tf_to_control(sys)
 
         if ol is None:
-            exponens = _default_frequency_exponent_range(ctrl_sys,
-                feature_periphery_decades=2)
-            ol = (omega, *exponens)
+            # NOTE: I could use _default_frequency_exponent_range to compute
+            # the omega_limits, however there is some bugs in
+            # ``control.nyquist_plot`` that would make horrible plots in case
+            # of discrete time systems. Hence, I set the exponents to be the
+            # same: I can catch the case where they are different inside
+            # NyquistLineSeries.
+            ol = (omega, -1, -1)
         else:
             ol = prange(omega, *omega_limits)
 
@@ -2381,119 +2505,6 @@ def ngrid(
 ngrid_function = ngrid
 
 
-def _default_frequency_exponent_range(
-    syslist, Hz=None, number_of_samples=None, feature_periphery_decades=None
-):
-    """Compute the exponents to be used with ``numpy.logspace`` in order
-    to get a reasonable default frequency range for frequency domain plots.
-
-    This code looks at the poles and zeros of all of the systems that
-    we are plotting and sets the frequency range to be one decade above
-    and below the min and max feature frequencies, rounded to the nearest
-    integer.  If no features are found, it returns logspace(-1, 1).
-
-    This function is a modified form of
-    ``control.freqplot._default_frequency_range``.
-
-    Parameters
-    ----------
-    syslist : list of LTI
-        List of linear input/output systems (single system is OK)
-    Hz : bool, optional
-        If True, the limits (first and last value) of the frequencies
-        are set to full decades in Hz so it fits plotting with logarithmic
-        scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
-    number_of_samples : int, optional
-        Number of samples to generate.  The default value is read from
-        ``config.defaults['freqplot.number_of_samples'].  If None, then the
-        default from `numpy.logspace` is used.
-    feature_periphery_decades : float, optional
-        Defines how many decades shall be included in the frequency range on
-        both sides of features (poles, zeros).  The default value is read from
-        ``config.defaults['freqplot.feature_periphery_decades']``.
-
-    Returns
-    -------
-    lsp_min, lsp_max : int
-        Lower and upper exponents to be used with numpy.logspace.
-
-    Examples
-    --------
-    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
-    >>> omega_range = _default_frequency_exponent_range(G)
-    >>> omega_range
-    (-1.0, 2.0)
-
-    """
-    np = import_module("numpy")
-
-    if number_of_samples is None:
-        number_of_samples = 1000
-    if feature_periphery_decades is None:
-        feature_periphery_decades = 1
-
-    # Find the list of all poles and zeros in the systems
-    features = np.array(())
-    freq_interesting = []
-
-    # detect if single sys passed by checking if it is sequence-like
-    if not hasattr(syslist, '__iter__'):
-        syslist = (syslist,)
-
-    for sys in syslist:
-        try:
-            # Add new features to the list
-            if sys.isctime():
-                features_ = np.concatenate(
-                    (np.abs(sys.poles()), np.abs(sys.zeros())))
-                # Get rid of poles and zeros at the origin
-                toreplace = np.isclose(features_, 0.0)
-                if np.any(toreplace):
-                    features_ = features_[~toreplace]
-            elif sys.isdtime(strict=True):
-                fn = math.pi * 1. / sys.dt
-                # TODO: What distance to the Nyquist frequency is appropriate?
-                freq_interesting.append(fn * 0.9)
-
-                features_ = np.concatenate((sys.poles(), sys.zeros()))
-                # Get rid of poles and zeros on the real axis (imag==0)
-               # * origin and real < 0
-                # * at 1.: would result in omega=0. (logaritmic plot!)
-                toreplace = np.isclose(features_.imag, 0.0) & (
-                                    (features_.real <= 0.) |
-                                    (np.abs(features_.real - 1.0) < 1.e-10))
-                if np.any(toreplace):
-                    features_ = features_[~toreplace]
-                # TODO: improve
-                features_ = np.abs(np.log(features_) / (1.j * sys.dt))
-            else:
-                # TODO
-                raise NotImplementedError(
-                    "type of system in not implemented now")
-            features = np.concatenate((features, features_))
-        except NotImplementedError:
-            pass
-
-    # Make sure there is at least one point in the range
-    if features.shape[0] == 0:
-        features = np.array([1.])
-
-    if Hz:
-        features /= 2. * math.pi
-    features = np.log10(features)
-    lsp_min = np.rint(np.min(features) - feature_periphery_decades)
-    lsp_max = np.rint(np.max(features) + feature_periphery_decades)
-    if Hz:
-        lsp_min += np.log10(2. * math.pi)
-        lsp_max += np.log10(2. * math.pi)
-
-    if freq_interesting:
-        lsp_min = min(lsp_min, np.log10(min(freq_interesting)))
-        lsp_max = max(lsp_max, np.log10(max(freq_interesting)))
-
-    return lsp_min, lsp_max
-
-
 def mcircles(magnitudes_db=None, rendering_kw=None, **kwargs):
     """Draw M-circles of constant closed-loop magnitude.
 
@@ -2554,3 +2565,109 @@ def mcircles(magnitudes_db=None, rendering_kw=None, **kwargs):
     ]
 
 mcircles_func = mcircles
+
+def _default_frequency_exponent_range(
+    syslist, Hz=None, feature_periphery_decades=None
+):
+    """Compute the exponents to be used with ``numpy.logspace`` in order
+    to get a reasonable default frequency range for frequency domain plots.
+
+    This code looks at the poles and zeros of all of the systems that
+    we are plotting and sets the frequency range to be one decade above
+    and below the min and max feature frequencies, rounded to the nearest
+    integer.  If no features are found, it returns logspace(-1, 1).
+
+    This function is a modified form of
+    ``control.freqplot._default_frequency_range``.
+
+    Parameters
+    ----------
+    syslist : list of LTI
+        List of linear input/output systems (single system is OK)
+    Hz : bool, optional
+        If True, the limits (first and last value) of the frequencies
+        are set to full decades in Hz so it fits plotting with logarithmic
+        scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
+    feature_periphery_decades : float, optional
+        Defines how many decades shall be included in the frequency range on
+        both sides of features (poles, zeros).  The default value is read from
+        ``config.defaults['freqplot.feature_periphery_decades']``.
+
+    Returns
+    -------
+    lsp_min, lsp_max : int
+        Lower and upper exponents to be used with numpy.logspace.
+
+    Examples
+    --------
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> omega_range = _default_frequency_exponent_range(G)
+    >>> omega_range
+    (-1.0, 2.0)
+
+    """
+    np = import_module("numpy")
+
+    if feature_periphery_decades is None:
+        feature_periphery_decades = 1
+
+    # Find the list of all poles and zeros in the systems
+    features = np.array(())
+    freq_interesting = []
+
+    # detect if single sys passed by checking if it is sequence-like
+    if not hasattr(syslist, '__iter__'):
+        syslist = (syslist,)
+
+    for sys in syslist:
+        try:
+            # Add new features to the list
+            if sys.isctime():
+                features_ = np.concatenate(
+                    (np.abs(sys.poles()), np.abs(sys.zeros())))
+                # Get rid of poles and zeros at the origin
+                toreplace = np.isclose(features_, 0.0)
+                if np.any(toreplace):
+                    features_ = features_[~toreplace]
+            elif sys.isdtime(strict=True):
+                fn = np.pi * 1. / sys.dt
+                # TODO: What distance to the Nyquist frequency is appropriate?
+                freq_interesting.append(fn * 0.9)
+
+                features_ = np.concatenate((sys.poles(), sys.zeros()))
+                # Get rid of poles and zeros on the real axis (imag==0)
+               # * origin and real < 0
+                # * at 1.: would result in omega=0. (logaritmic plot!)
+                toreplace = np.isclose(features_.imag, 0.0) & (
+                                    (features_.real <= 0.) |
+                                    (np.abs(features_.real - 1.0) < 1.e-10))
+                if np.any(toreplace):
+                    features_ = features_[~toreplace]
+                # TODO: improve
+                features_ = np.abs(np.log(features_) / (1.j * sys.dt))
+            else:
+                # TODO
+                raise NotImplementedError(
+                    "type of system in not implemented now")
+            features = np.concatenate((features, features_))
+        except NotImplementedError:
+            pass
+
+    # Make sure there is at least one point in the range
+    if features.shape[0] == 0:
+        features = np.array([1.])
+
+    if Hz:
+        features /= 2. * np.pi
+    features = np.log10(features)
+    lsp_min = np.rint(np.min(features) - feature_periphery_decades)
+    lsp_max = np.rint(np.max(features) + feature_periphery_decades)
+    if Hz:
+        lsp_min += np.log10(2. * np.pi)
+        lsp_max += np.log10(2. * np.pi)
+
+    if freq_interesting:
+        lsp_min = min(lsp_min, np.log10(min(freq_interesting)))
+        lsp_max = max(lsp_max, np.log10(max(freq_interesting)))
+
+    return lsp_min, lsp_max

@@ -1,7 +1,7 @@
 from spb.defaults import cfg
 from sympy import (
     Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed, ImageSet,
-    FiniteSet, Basic, Float, Integer, Rational, Poly, fraction
+    FiniteSet, Basic, Float, Integer, Rational, Poly, fraction, exp
 )
 from sympy.vector import BaseScalar
 from sympy.core.function import AppliedUndef
@@ -710,6 +710,16 @@ def tf_to_control(tf, gen=None):
                 "one free-symbol.\nReceived: %s" % fs
             )
         s = fs.pop()
+
+        delays = tf_find_time_delay(num / den)
+        if len(delays) > 0:
+            raise ValueError(
+                "The symbolic transfer function contains the following "
+                "time delays: %s. "
+                "Time delays are not supported by the ``control`` module. "
+                "Consider applying a Padé approximation." % delays
+            )
+
         n, d = [Poly(t, s).all_coeffs() for t in [num, den]]
         try:
             n = [float(t) for t in n]
@@ -725,6 +735,8 @@ def tf_to_control(tf, gen=None):
             )
         return ct.tf(n, d)
 
+    if isinstance(tf, ct.TransferFunction):
+        return tf
     if isinstance(tf, Expr):
         if gen is None:
             gen = tf.free_symbols.pop()
@@ -743,13 +755,18 @@ def tf_to_control(tf, gen=None):
         )
 
 
-def tf_to_sympy(tf):
+def tf_to_sympy(tf, var=None, skip_check_dt=False):
     """Convert a transfer function from the control module or from scipy.signal
     to a sympy ``TransferFunction`` or ``TransferFunctionMatrix``.
 
     Parameters
     ==========
     tf : control.TransferFunction, scipy.signal.TransferFunction
+    var : Symbol or None
+        The s-variable (or z-variable).
+    skip_check_dt : bool
+        If True, don't raise a warning about sympy not supporting discrete-time
+        systems.
 
     Returns
     =======
@@ -759,20 +776,14 @@ def tf_to_sympy(tf):
     sp = import_module("scipy")
     sympy = import_module("sympy")
 
-    def _is_discrete_time(system):
-        if isinstance(system, (ct.TransferFunction,
-            sp.signal.TransferFunction)):
-            return system.dt
-        return False
-
-    gen = Symbol("z") if _is_discrete_time(tf) else Symbol("s")
+    gen = Symbol("z") if is_discrete_time(tf) else Symbol("s")
     TransferFunction = sympy.physics.control.lti.TransferFunction
     TransferFunctionMatrix = sympy.physics.control.lti.TransferFunctionMatrix
     Series = sympy.physics.control.lti.Series
     Parallel = sympy.physics.control.lti.Parallel
 
     def _check_dt(system):
-        if system.dt:
+        if system.dt and (not skip_check_dt):
             warnings.warn(
                 "At the time of writing this message, SymPy doesn't "
                 "implement discrete-time transfer functions. Returning "
@@ -783,7 +794,19 @@ def tf_to_sympy(tf):
         return tf
 
     elif isinstance(tf, Expr):
-        return TransferFunction.from_rational_expression(tf)
+        if var is None:
+            fs = list(tf.free_symbols)
+            if len(fs) > 1:
+                warnings.warn(
+                    "Multiple free symbols found in transfer function: %s. "
+                    "Selecting the first as the s-variable "
+                    "(or z-variable). Use the ``var=`` keyword argument "
+                    "to specify the appropriate symbol." % fs
+                )
+                var = fs[0]
+            else:
+                var = tf.free_symbols.pop() if len(tf.free_symbols) > 0 else Symbol("s")
+        return TransferFunction.from_rational_expression(tf, var)
 
     elif isinstance(tf, (Series, Parallel)):
         return tf.doit()
@@ -818,3 +841,48 @@ def tf_to_sympy(tf):
             "Received: type(tf) = %s\n" % type(tf) +
             "Expected: Expr or sympy.physics.control.TransferFunction"
         )
+
+
+def _get_initial_params(params):
+    """Extract the initial values of parameters from the ``params`` dictionary
+    used on interactive-widget plots.
+    """
+    return {
+        k: (v[0] if hasattr(v, "__iter__") else v) for k, v in params.items()
+    }
+
+
+def is_discrete_time(system):
+    """Verify if ``system`` is a discrete-time control system.
+    """
+    ct = import_module("control")
+    sp = import_module("scipy")
+    sy = import_module("sympy")
+
+    if isinstance(system, sy.physics.control.lti.SISOLinearTimeInvariant):
+        return False
+    if isinstance(system, sp.signal.TransferFunction):
+        return False if system.dt is None else True
+    if isinstance(system, ct.TransferFunction):
+        return False if system.dt == 0 else True
+    return False
+
+
+def tf_find_time_delay(tf, var=None):
+    """Find time delays contained in a symbolic TransferFunction.
+    """
+    sympy = import_module("sympy")
+
+    if isinstance(tf, Expr):
+        tf = tf_to_sympy(tf, var=var)
+
+    if not isinstance(tf, sympy.physics.control.TransferFunction):
+        raise TypeError(
+            "``tf_find_time_delay`` only works with instances of "
+            "sympy.physics.control.lti.TransferFunction."
+        )
+
+    num, den, s = tf.args
+    exp_num = [t for t in num.find(exp) if t.has(s)]
+    exp_den = [t for t in den.find(exp) if t.has(s)]
+    return exp_num + exp_den

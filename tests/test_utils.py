@@ -8,11 +8,11 @@ from spb import (
 from spb.utils import (
     _create_missing_ranges, _plot_sympify,
     _validate_kwargs, prange, extract_solution,
-    tf_to_control, tf_to_sympy
+    tf_to_control, tf_to_sympy, is_discrete_time, tf_find_time_delay
 )
 from sympy import (
     symbols, Expr, Tuple, Integer, sin, cos, Matrix,
-    I, Polygon, solveset, FiniteSet, ImageSet,
+    I, Polygon, solveset, FiniteSet, ImageSet, exp
 )
 from sympy.physics.control import TransferFunction, TransferFunctionMatrix
 import numpy as np
@@ -302,6 +302,25 @@ def test_tf_to_control_4():
     raises(TypeError, lambda: tf_to_control(tf))
 
 
+def test_tf_to_control_5():
+    tf = ct.TransferFunction([1], [1, 2, 3], dt=0.1)
+    assert tf_to_control(tf) is tf
+
+
+def test_tf_to_control_6():
+    # raise error with time delays
+    s = symbols("s")
+    G1 = s / (s**2 + exp(2*s) + exp(3))
+    raises(ValueError, lambda: tf_to_control(G1))
+
+    # works ok with exponentials in coefficients
+    G2 = s / (s**2 + 2*s + exp(3))
+    _is_control_tf_equals(
+        tf_to_control(G2),
+        ct.tf([1., 0.], [1., 2., 20.08553692])
+    )
+
+
 def test_tf_to_sympy_1():
     # symbolic expressions to TransferFunction
 
@@ -388,3 +407,60 @@ def test_tf_to_sympy_6():
     ):
         H = tf_to_sympy(G3)
         assert H.var == z
+
+
+def test_is_discrete_time():
+    a, s = symbols("a, s")
+    G1 = s / (s**2 + 2*s + 3)
+    G2 = s / (s**2 + a*s + 3)
+    G3 = TransferFunction(s, s**2 + 2*s + 3, s)
+    G4 = TransferFunction(s, s**2 + a*s + 3, s)
+    G5 = ct.tf([1], [1, 2, 3])
+    G6 = ct.tf([1], [1, 2, 3], dt=0.05)
+    G7 = signal.TransferFunction([1], [1, 2, 3])
+    G8 = signal.TransferFunction([1], [1, 2, 3], dt=0.05)
+
+    def do_test(G, expected):
+        assert is_discrete_time(G) is expected
+
+    do_test(G1, False)
+    do_test(G2, False)
+    do_test(G3, False)
+    do_test(G4, False)
+    do_test(G5, False)
+    do_test(G6, True)
+    do_test(G7, False)
+    do_test(G8, True)
+
+
+def test_tf_find_time_delay():
+    a, s = symbols("a, s")
+    G1 = s / (s**2 + 2*s + 3)
+    G2 = (s / (s**2 + 2*s + 3)) * exp(2*s)
+    G3 = s / (s**2 + exp(2*s) + 3)
+    G4 = s / (s**2 + exp(2*s) + exp(3))
+    G5 = s / (s**2 + exp(2*s) + exp(3*s))
+    G6 = s / (s**2 + exp(a*s) + 3)
+
+    assert tf_find_time_delay(G1) == []
+    assert tf_find_time_delay(G2) == [exp(2*s)]
+    assert tf_find_time_delay(G3) == [exp(2*s)]
+    assert tf_find_time_delay(G4) == [exp(2*s)]
+    delays = tf_find_time_delay(G5)
+    assert (delays == [exp(2*s), exp(3*s)]) or (delays == [exp(3*s), exp(2*s)])
+    assert tf_find_time_delay(G6, a) == [exp(a*s)]
+
+    G7 = TransferFunction(s, s**2 + 2*s + 3, s)
+    G8 = TransferFunction(exp(2*s) * s, s**2 + 2*s + 3, s)
+    G9 = TransferFunction(s, s**2 + exp(2*s) + 3, s)
+    G10 = TransferFunction(s, s**2 + exp(2*s) + exp(3), s)
+    G11 = TransferFunction(s, s**2 + exp(2*s) + exp(3*s), s)
+    G12 = TransferFunction(s, s**2 + exp(a*s) + 3, s)
+
+    assert tf_find_time_delay(G7) == []
+    assert tf_find_time_delay(G8) == [exp(2*s)]
+    assert tf_find_time_delay(G9) == [exp(2*s)]
+    assert tf_find_time_delay(G10) == [exp(2*s)]
+    delays = tf_find_time_delay(G11)
+    assert (delays == [exp(2*s), exp(3*s)]) or (delays == [exp(3*s), exp(2*s)])
+    assert tf_find_time_delay(G12, a) == [exp(a*s)]

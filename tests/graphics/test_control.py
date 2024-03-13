@@ -12,6 +12,7 @@ from spb.series import (
     SystemResponseSeries, PoleZeroSeries, NGridLineSeries, MCirclesSeries
 )
 from sympy.abc import a, b, c, d, e, s
+from sympy import exp
 from sympy.physics.control.lti import TransferFunction, TransferFunctionMatrix
 import control as ct
 import scipy.signal as signal
@@ -48,6 +49,9 @@ tf_mimo_control = ct.TransferFunction(
 tf_siso_sympy = TransferFunction(s + 1, s**2 + s + 1, s)
 tf_siso_control = ct.tf([1, 1], [1, 1, 1])
 tf_siso_scipy = signal.TransferFunction([1, 1], [1, 1, 1])
+
+tf_dt_control = ct.tf([1], [1, 2, 3], dt=0.05)
+tf_dt_scipy = signal.TransferFunction([1], [1, 2, 3], dt=0.05)
 
 
 @pytest.mark.parametrize(
@@ -356,6 +360,68 @@ def test_bode_magnitude(tf, label, rkw, params):
 
 
 @pytest.mark.parametrize(
+    "tf", [tf_dt_control, tf_dt_scipy]
+)
+def test_bode_magnitude_discrete_time(tf):
+    series = bode_magnitude(tf, n=20)
+    assert len(series) == 1
+    s = series[0]
+    assert isinstance(s, LineOver1DRangeSeries)
+    omega, mag = s.get_data()
+    assert np.allclose(
+        omega,
+        [
+            0.1, 0.14036945853331978, 0.1970358488893738, 0.27657815420254417,
+            0.3882312574755614, 0.5449581139755442, 0.7649547538208629,
+            1.0737628459632347, 1.507235092810557, 2.115697738602358,
+            2.969793459877822, 4.168682999188442, 5.8515577539313695,
+            8.213799934957954, 11.529666493710657, 16.18413042791924,
+            22.717576249996483, 31.88853877401411, 44.76176921127132,
+            62.83185307179586
+        ]
+    )
+    assert np.allclose(
+        mag,
+        [
+            -15.562964688927812, -15.562906157993359, -15.562790830700457,
+            -15.562563593155973, -15.56211584816428, -15.561233608406162,
+            -15.559495195899126, -15.55606957427346, -15.54931860667977,
+            -15.536011868372333, -15.509773745388479, -15.458001107539891,
+            -15.35570220427156, -15.153014496678725, -14.74927194903147,
+            -13.936730078489857, -12.271576540423327, -8.824474065020741,
+            -4.304122587254962, -6.020599913279624
+        ]
+    )
+
+
+@pytest.mark.parametrize(
+    "tf, input, output, n_series, func",
+    [
+        (tf_mimo_sympy, None, None, 6, bode_magnitude),
+        (tf_mimo_sympy, 1, None, 3, bode_magnitude),
+        (tf_mimo_sympy, None, 1, 2, bode_magnitude),
+        (tf_mimo_sympy, 1, 1, 1, bode_magnitude),
+        (tf_mimo_control, None, None, 6, bode_magnitude),
+        (tf_mimo_control, 1, None, 3, bode_magnitude),
+        (tf_mimo_control, None, 1, 2, bode_magnitude),
+        (tf_mimo_control, 1, 1, 1, bode_magnitude),
+        (tf_mimo_sympy, None, None, 6, bode_phase),
+        (tf_mimo_sympy, 1, None, 3, bode_phase),
+        (tf_mimo_sympy, None, 1, 2, bode_phase),
+        (tf_mimo_sympy, 1, 1, 1, bode_phase),
+        (tf_mimo_control, None, None, 6, bode_phase),
+        (tf_mimo_control, 1, None, 3, bode_phase),
+        (tf_mimo_control, None, 1, 2, bode_phase),
+        (tf_mimo_control, 1, 1, 1, bode_phase),
+    ]
+)
+def test_bode_magnitude_phase_mimo(tf, input, output, n_series, func):
+    series = func(tf, input=input, output=output)
+    assert len(series) == n_series
+    assert all(isinstance(t, LineOver1DRangeSeries) for t in series)
+
+
+@pytest.mark.parametrize(
     "tf, label, rkw, params",
     [
         (tf1, None, None, None),
@@ -383,6 +449,53 @@ def test_bode_phase(tf, label, rkw, params):
     assert s.rendering_kw == {} if not rkw else rkw
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == {} if not params else params
+
+
+@pytest.mark.parametrize(
+    "tf", [tf_dt_control, tf_dt_scipy]
+)
+def test_bode_phase_discrete_time(tf):
+    series = bode_phase(tf, n=20)
+    assert len(series) == 1
+    s = series[0]
+    assert isinstance(s, LineOver1DRangeSeries)
+    omega, phase = s.get_data()
+    assert np.allclose(
+        omega,
+        [
+            0.1, 0.14036945853331978, 0.1970358488893738, 0.27657815420254417,
+            0.3882312574755614, 0.5449581139755442, 0.7649547538208629,
+            1.0737628459632347, 1.507235092810557, 2.115697738602358,
+            2.969793459877822, 4.168682999188442, 5.8515577539313695,
+            8.213799934957954, 11.529666493710657, 16.18413042791924,
+            22.717576249996483, 31.88853877401411, 44.76176921127132,
+            62.83185307179586
+        ]
+    )
+    assert np.allclose(
+        phase,
+        [
+            -0.003333327932077868, -0.004678967012361904, -0.006567820312024576,
+            -0.009219157529571666, -0.01294072584105985, -0.01816439622255212,
+            -0.02549607355839771, -0.03578540508403212, -0.050222659270990996,
+            -0.07047201825044286, -0.09885115861230633, -0.1385621707492224,
+            -0.19395520911160205, -0.27072012891745806, -0.3755968033794409,
+            -0.5140165555432296, -0.6785159725865778, -0.7849727242513563,
+            -0.37341667572023984, -0.0
+        ]
+    )
+
+
+def test_bode_time_delay():
+    G1 = 1 / (s * (s + 1) * (s + 10))
+    G2 = G1 * exp(-5*s)
+    s1 = bode_magnitude(G1, n=10)[0]
+    s2 = bode_magnitude(G2, n=10)[0]
+    s3 = bode_phase(G1, n=10)[0]
+    s4 = bode_phase(G2, n=10)[0]
+    d1, d2, d3, d4 = [t.get_data() for t in [s1, s2, s3, s4]]
+    assert np.allclose(d1, d2)
+    assert not np.allclose(d3, d4)
 
 
 @pytest.mark.parametrize(
