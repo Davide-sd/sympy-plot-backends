@@ -688,6 +688,20 @@ def step_response(
         ...     xlabel="Time [s]", ylabel="Amplitude"
         ... )
 
+    Plotting a discrete-time system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> import control as ct
+        >>> G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+        >>> graphics(
+        ...     step_response(G, upper_limit=15),
+        ...     xlabel="Time [s]", ylabel="Amplitude"
+        ... )
+
     Interactive-widgets plot of multiple systems, one of which is parametric.
     A few observations:
 
@@ -903,6 +917,20 @@ def impulse_response(
         ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
         >>> graphics(
         ...     impulse_response(tfm),
+        ...     xlabel="Time [s]", ylabel="Amplitude"
+        ... )
+
+    Plotting a discrete-time system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> import control as ct
+        >>> G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+        >>> graphics(
+        ...     impulse_response(G, upper_limit=15),
         ...     xlabel="Time [s]", ylabel="Amplitude"
         ... )
 
@@ -1138,6 +1166,20 @@ def ramp_response(
         ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
         >>> graphics(
         ...     ramp_response(tfm),
+        ...     xlabel="Time [s]", ylabel="Amplitude"
+        ... )
+
+    Plotting a discrete-time system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> import control as ct
+        >>> G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+        >>> graphics(
+        ...     ramp_response(G, upper_limit=15),
         ...     xlabel="Time [s]", ylabel="Amplitude"
         ... )
 

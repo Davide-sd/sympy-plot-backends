@@ -864,7 +864,7 @@ def is_discrete_time(system):
     if isinstance(system, sp.signal.TransferFunction):
         return False if system.dt is None else True
     if isinstance(system, ct.TransferFunction):
-        return False if system.dt == 0 else True
+        return system.isdtime()
     return False
 
 

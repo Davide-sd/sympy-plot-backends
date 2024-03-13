@@ -338,6 +338,16 @@ def plot_step_response(
         ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
         >>> plot_step_response(tfm)
 
+    Plotting a discrete-time system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> import control as ct
+        >>> G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+        >>> plot_step_response(G, upper_limit=15)
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     A few observations:
@@ -496,6 +506,17 @@ def plot_impulse_response(
         >>> tfm = TransferFunctionMatrix(
         ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
         >>> plot_impulse_response(tfm)
+
+    Plotting a discrete-time system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> import control as ct
+        >>> G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+        >>> plot_impulse_response(G, upper_limit=15)
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     A few observations:
@@ -660,6 +681,17 @@ def plot_ramp_response(
         >>> tfm = TransferFunctionMatrix(
         ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
         >>> plot_ramp_response(tfm)
+
+    Plotting a discrete-time system:
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> import control as ct
+        >>> G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+        >>> plot_ramp_response(G, upper_limit=15)
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     A few observations:

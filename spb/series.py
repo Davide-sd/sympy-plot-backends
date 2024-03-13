@@ -4612,6 +4612,15 @@ class SystemResponseSeries(ControlBaseSeries):
         if self._control_kw is None:
             self._control_kw = {}
 
+        steps = kwargs.get("steps", None)
+        if steps is None:
+            if self._expr is None:
+                self.steps = self._control_tf.isdtime()
+            else:
+                self.steps = False
+        else:
+            self.steps = steps
+
     def get_data(self):
         """
         Returns
@@ -4620,6 +4629,7 @@ class SystemResponseSeries(ControlBaseSeries):
         y : ndarray
         """
         ct = import_module("control")
+        np = import_module("numpy")
         mergedeep = import_module('mergedeep')
 
         if self.is_interactive:
@@ -4628,9 +4638,19 @@ class SystemResponseSeries(ControlBaseSeries):
 
         # create (or update) the discretized domain
         if (not self._discretized_domain) or self._interactive_ranges:
-            self._create_discretized_domain()
+            if not self._control_tf.isdtime():
+                self._create_discretized_domain()
+            else:
+                sym, start, end = self.ranges[0]
+                if self._interactive_ranges:
+                    start = self._update_range_value(start).real
+                    end = self._update_range_value(end).real
+                else:
+                    start, end = float(start), float(end)
+                n = int((end - start) / self._control_tf.dt) + 1
+                self._discretized_domain = {sym: np.linspace(start, end, n)}
         time = self._discretized_domain[self.ranges[0][0]]
-        control_kw = {"T": time}
+        control_kw = {"T": time, "squeeze": True}
 
         if self._response_type == "step":
             ckw = mergedeep.merge({}, control_kw, self._control_kw)
@@ -4645,7 +4665,16 @@ class SystemResponseSeries(ControlBaseSeries):
             x, y = ct.forced_response(self._control_tf, **ckw)
         else:
             raise NotImplementedError
-        return self._apply_transform(x, y)
+
+        # postprocessing
+        x, y = self._apply_transform(x, y)
+        if (self.steps is True) or (self.steps == "pre"):
+            x, y = pts_to_prestep(x, y)
+        elif self.steps == "post":
+            x, y = pts_to_poststep(x, y)
+        elif self.steps == "mid":
+            x, y = pts_to_midstep(x, y)
+        return x, y
 
 
 class PoleZeroSeries(ControlBaseSeries):

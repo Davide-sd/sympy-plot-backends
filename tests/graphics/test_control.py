@@ -53,6 +53,13 @@ tf_siso_scipy = signal.TransferFunction([1, 1], [1, 1, 1])
 tf_dt_control = ct.tf([1], [1, 2, 3], dt=0.05)
 tf_dt_scipy = signal.TransferFunction([1], [1, 2, 3], dt=0.05)
 
+tf_cont_control_2 = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236])
+tf_cont_scipy_2 = signal.TransferFunction(
+    [0.0244, 0.0236], [1.1052, -2.0807, 1.0236])
+tf_dt_control_2 = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+tf_dt_scipy_2 = signal.TransferFunction(
+    [0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+
 
 @pytest.mark.parametrize(
     "hor, ver, rkw", [
@@ -813,6 +820,34 @@ def test_mimo_responses_2(tf_mimo, func, inp, out):
     d6 = s6.get_data()
 
     assert np.allclose(d1, d6)
+
+
+@pytest.mark.parametrize(
+    "tf_cont, tf_dt, func",
+    [
+        (tf_cont_control_2, tf_dt_control_2, impulse_response),
+        (tf_cont_scipy_2, tf_dt_scipy_2, impulse_response),
+        (tf_cont_control_2, tf_dt_control_2, step_response),
+        (tf_cont_scipy_2, tf_dt_scipy_2, step_response),
+        (tf_cont_control_2, tf_dt_control_2, ramp_response),
+        (tf_cont_scipy_2, tf_dt_scipy_2, ramp_response),
+    ]
+)
+def test_discrete_responses(tf_cont, tf_dt, func):
+    # verify that discrete-time systems produce different data than
+    # continuous time systems.
+
+    series1 = func(tf_cont, upper_limit=10, n=10, control=True)
+    assert len(series1) == 1
+    assert isinstance(series1[0], SystemResponseSeries)
+    d1 = series1[0].get_data()
+    assert (len(d1) == 2) and all(len(t) == 10 for t in d1)
+
+    series2 = func(tf_dt, upper_limit=10, n=10, control=True)
+    assert len(series2) == 1
+    assert isinstance(series2[0], SystemResponseSeries)
+    d2 = series2[0].get_data()
+    assert (len(d2) == 2) and all(len(t) != 10 for t in d2)
 
 
 @pytest.mark.parametrize(
