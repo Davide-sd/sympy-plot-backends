@@ -4285,15 +4285,6 @@ class NyquistLineSeries(ControlBaseSeries):
         else:
             raise ValueError("unknown or unsupported arrow location")
 
-    def _create_discretized_domain(self):
-        np = import_module("numpy")
-        sym, start, end = self.ranges[0]
-        start = self._update_range_value(start).real
-        end = self._update_range_value(end).real
-        self._discretized_domain = {
-            sym: np.logspace(start, end, self.n[0], endpoint=True)
-        }
-
     def get_data(self):
         """
         Returns
@@ -4312,13 +4303,13 @@ class NyquistLineSeries(ControlBaseSeries):
             tf = self._expr.subs(self.params)
             self._control_tf = tf_to_control(tf)
 
-        # create (or update) the discretized domain
-        if (not self._discretized_domain) or self._interactive_ranges:
-            self._create_discretized_domain()
+        control_kw = {}
+        sym, start, end = self.ranges[0]
+        if (start != end) or self._interactive_ranges:
+            start = self._update_range_value(start).real
+            end = self._update_range_value(end).real
+            control_kw["omega_limits"] = [10**start, 10**end]
 
-        omega = self._discretized_domain[self.ranges[0][0]]
-
-        control_kw = {"omega": omega}
         ckw = mergedeep.merge({}, control_kw, self._control_kw)
         ckw["plot"] = False
         ckw["return_contour"] = True
@@ -4329,16 +4320,15 @@ class NyquistLineSeries(ControlBaseSeries):
         #
         # NOTE: the following is adapted from:
         # ``control.freqplot.plot_nyquist()``
+        # Because that function doesn't return ``splane_contour`` and it is
+        # very difficult to rebuild it, I removed it from the following code.
+        # Finger crossed.
         #
 
         max_curve_magnitude = self.max_curve_magnitude
         max_curve_offset = self.max_curve_offset
-        splane_contour = 1j * omega
 
-        # Find the different portions of the curve (with scaled pts marked)
-        reg_mask = np.logical_or(
-            np.abs(resp) > max_curve_magnitude,
-            splane_contour.real != 0)
+        reg_mask = np.abs(resp) > max_curve_magnitude
 
         scale_mask = ~reg_mask \
             & np.concatenate((~reg_mask[1:], ~reg_mask[-1:])) \
