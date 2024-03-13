@@ -387,59 +387,43 @@ def pole_zero(
 
     .. plot::
         :context: reset
-        :format: doctest
         :include-source: True
 
-        >>> from sympy.abc import s
-        >>> from sympy import I
-        >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import *
-        >>> tf1 = TransferFunction(
-        ...     s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
-        >>> graphics(
-        ...     pole_zero(tf1, sgrid=True),
-        ...     grid=False, xlabel="Real", ylabel="Imaginary"
-        ... )
-        Plot object containing:
-        [0]: s-grid
-        [1]: pole of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
-        [2]: zeros of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+        from sympy.abc import s
+        from sympy import I
+        from sympy.physics.control.lti import TransferFunction
+        from spb import *
+        tf1 = TransferFunction(
+            s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+        graphics(
+            pole_zero(tf1, sgrid=True),
+            grid=False, xlabel="Real", ylabel="Imaginary"
+        )
 
     Plotting poles and zeros on the z-plane:
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> graphics(
-        ...     pole_zero(tf1, zgrid=True),
-        ...     grid=False, xlabel="Real", ylabel="Imaginary"
-        ... )
-        Plot object containing:
-        [0]: s-grid
-        [1]: pole of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
-        [2]: zeros of TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
+        graphics(
+            pole_zero(tf1, zgrid=True),
+            grid=False, xlabel="Real", ylabel="Imaginary"
+        )
 
     If a transfer function has complex coefficients, make sure to request
     the evaluation using ``sympy`` instead of the ``control`` module:
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> tf = TransferFunction(s + 2, s**2 + (2+I)*s + 10, s)
-        >>> graphics(
-        ...     control_axis(),
-        ...     pole_zero(tf, control=False),
-        ...     grid=False, xlabel="Real", ylabel="Imaginary"
-        ... )
-        Plot object containing:
-        [0]: horizontal line at y = 0
-        [1]: vertical line at x = 0
-        [2]: 2D list plot
-        [3]: 2D list plot
+        tf = TransferFunction(s + 2, s**2 + (2+I)*s + 10, s)
+        graphics(
+            control_axis(),
+            pole_zero(tf, control=False),
+            grid=False, xlabel="Real", ylabel="Imaginary"
+        )
 
     Interactive-widgets plot of multiple systems, one of which is parametric:
 
@@ -655,52 +639,49 @@ def step_response(
 
     .. plot::
         :context: reset
-        :format: doctest
         :include-source: True
 
-        >>> from sympy.abc import s, t
-        >>> from sympy import Heaviside
-        >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import *
-        >>> tf1 = TransferFunction(
-        ...     8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
-        >>> graphics(
-        ...     line(Heaviside(t), (t, -1, 10), label="step"),
-        ...     step_response(tf1, label="response"),
-        ...     xlabel="Time [s]", ylabel="Amplitude"
-        ... )   # doctest: +SKIP
+        from sympy.abc import s, t
+        from sympy import Heaviside
+        from sympy.physics.control.lti import TransferFunction
+        from spb import *
+        tf1 = TransferFunction(
+            8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
+        graphics(
+            line(Heaviside(t), (t, -1, 10), label="step"),
+            step_response(tf1, label="response"),
+            xlabel="Time [s]", ylabel="Amplitude"
+        )   # doctest: +SKIP
 
     Plotting a MIMO system:
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> from sympy.physics.control.lti import TransferFunctionMatrix
-        >>> tf1 = TransferFunction(1, s + 2, s)
-        >>> tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
-        >>> tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
-        >>> tfm = TransferFunctionMatrix(
-        ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
-        >>> graphics(
-        ...     step_response(tfm),
-        ...     xlabel="Time [s]", ylabel="Amplitude"
-        ... )
+        from sympy.physics.control.lti import TransferFunctionMatrix
+        tf1 = TransferFunction(1, s + 2, s)
+        tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
+        tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
+        tfm = TransferFunctionMatrix(
+            [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
+        graphics(
+            step_response(tfm),
+            xlabel="Time [s]", ylabel="Amplitude"
+        )
 
     Plotting a discrete-time system:
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> import control as ct
-        >>> G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
-        >>> graphics(
-        ...     step_response(G, upper_limit=15),
-        ...     xlabel="Time [s]", ylabel="Amplitude"
-        ... )
+        import control as ct
+        G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+        graphics(
+            step_response(G, upper_limit=15),
+            xlabel="Time [s]", ylabel="Amplitude"
+        )
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     A few observations:
@@ -889,50 +870,47 @@ def impulse_response(
 
     .. plot::
         :context: reset
-        :format: doctest
         :include-source: True
 
-        >>> from sympy.abc import s
-        >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import *
-        >>> tf1 = TransferFunction(
-        ...     8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
-        >>> graphics(
-        ...     impulse_response(tf1),
-        ...     xlabel="Time [s]", ylabel="Amplitude"
-        ... )   # doctest: +SKIP
+        from sympy.abc import s
+        from sympy.physics.control.lti import TransferFunction
+        from spb import *
+        tf1 = TransferFunction(
+            8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
+        graphics(
+            impulse_response(tf1),
+            xlabel="Time [s]", ylabel="Amplitude"
+        )   # doctest: +SKIP
 
     Plotting a MIMO system:
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> from sympy.physics.control.lti import TransferFunctionMatrix
-        >>> tf1 = TransferFunction(1, s + 2, s)
-        >>> tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
-        >>> tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
-        >>> tfm = TransferFunctionMatrix(
-        ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
-        >>> graphics(
-        ...     impulse_response(tfm),
-        ...     xlabel="Time [s]", ylabel="Amplitude"
-        ... )
+        from sympy.physics.control.lti import TransferFunctionMatrix
+        tf1 = TransferFunction(1, s + 2, s)
+        tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
+        tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
+        tfm = TransferFunctionMatrix(
+            [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
+        graphics(
+            impulse_response(tfm),
+            xlabel="Time [s]", ylabel="Amplitude"
+        )
 
     Plotting a discrete-time system:
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> import control as ct
-        >>> G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
-        >>> graphics(
-        ...     impulse_response(G, upper_limit=15),
-        ...     xlabel="Time [s]", ylabel="Amplitude"
-        ... )
+        import control as ct
+        G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+        graphics(
+            impulse_response(G, upper_limit=15),
+            xlabel="Time [s]", ylabel="Amplitude"
+        )
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     A few observations:
@@ -1137,51 +1115,48 @@ def ramp_response(
 
     .. plot::
         :context: reset
-        :format: doctest
         :include-source: True
 
-        >>> from sympy.abc import s, t
-        >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import *
-        >>> tf1 = TransferFunction(1, (s+1), s)
-        >>> ul = 10
-        >>> graphics(
-        ...     line(t, (t, 0, ul), label="ramp"),
-        ...     ramp_response(tf1, upper_limit=ul, label="response"),
-        ...     xlabel="Time [s]", ylabel="Amplitude"
-        ... )    # doctest: +SKIP
+        from sympy.abc import s, t
+        from sympy.physics.control.lti import TransferFunction
+        from spb import *
+        tf1 = TransferFunction(1, (s+1), s)
+        ul = 10
+        graphics(
+            line(t, (t, 0, ul), label="ramp"),
+            ramp_response(tf1, upper_limit=ul, label="response"),
+            xlabel="Time [s]", ylabel="Amplitude"
+        )    # doctest: +SKIP
 
     Plotting a MIMO system:
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> from sympy.physics.control.lti import TransferFunctionMatrix
-        >>> tf1 = TransferFunction(1, s + 2, s)
-        >>> tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
-        >>> tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
-        >>> tfm = TransferFunctionMatrix(
-        ...     [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
-        >>> graphics(
-        ...     ramp_response(tfm),
-        ...     xlabel="Time [s]", ylabel="Amplitude"
-        ... )
+        from sympy.physics.control.lti import TransferFunctionMatrix
+        tf1 = TransferFunction(1, s + 2, s)
+        tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
+        tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
+        tfm = TransferFunctionMatrix(
+            [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
+        graphics(
+            ramp_response(tfm),
+            xlabel="Time [s]", ylabel="Amplitude"
+        )
 
     Plotting a discrete-time system:
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> import control as ct
-        >>> G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
-        >>> graphics(
-        ...     ramp_response(G, upper_limit=15),
-        ...     xlabel="Time [s]", ylabel="Amplitude"
-        ... )
+        import control as ct
+        G = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
+        graphics(
+            ramp_response(G, upper_limit=15),
+            xlabel="Time [s]", ylabel="Amplitude"
+        )
 
     Interactive-widgets plot of multiple systems, one of which is parametric.
     A few observations:
@@ -1408,34 +1383,32 @@ def bode_magnitude(
 
     .. plot::
         :context: reset
-        :format: doctest
         :include-source: True
 
-        >>> from sympy.abc import s
-        >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import *
-        >>> tf1 = TransferFunction(
-        ...     1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
-        >>> graphics(
-        ...     bode_magnitude(tf1),
-        ...     xscale="log", xlabel="Frequency [rad/s]",
-        ...     ylabel="Magnitude [dB]"
-        ... )   # doctest: +SKIP
+        from sympy.abc import s
+        from sympy.physics.control.lti import TransferFunction
+        from spb import *
+        tf1 = TransferFunction(
+            1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
+        graphics(
+            bode_magnitude(tf1),
+            xscale="log", xlabel="Frequency [rad/s]",
+            ylabel="Magnitude [dB]"
+        )   # doctest: +SKIP
 
     Bode magnitude plot of a discrete-time system:
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> import control as ct
-        >>> tf2 = ct.tf([1], [1, 2, 3], dt=0.05)
-        >>> graphics(
-        ...     bode_magnitude(tf2),
-        ...     xscale="log", xlabel="Frequency [rad/s]",
-        ...     ylabel="Magnitude [dB]"
-        ... )   # doctest: +SKIP
+        import control as ct
+        tf2 = ct.tf([1], [1, 2, 3], dt=0.05)
+        graphics(
+            bode_magnitude(tf2),
+            xscale="log", xlabel="Frequency [rad/s]",
+            ylabel="Magnitude [dB]"
+        )   # doctest: +SKIP
 
     Interactive-widget plot:
 
@@ -1590,34 +1563,32 @@ def bode_phase(
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> from sympy.abc import s
-        >>> from sympy.physics.control.lti import TransferFunction
-        >>> from spb import *
-        >>> tf1 = TransferFunction(
-        ...     1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
-        >>> graphics(
-        ...     bode_phase(tf1, initial_exp=0.2, final_exp=0.7),
-        ...     xscale="log", xlabel="Frequency [rad/s]",
-        ...     ylabel="Magnitude [dB]"
-        ... )   # doctest: +SKIP
+        from sympy.abc import s
+        from sympy.physics.control.lti import TransferFunction
+        from spb import *
+        tf1 = TransferFunction(
+            1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
+        graphics(
+            bode_phase(tf1, initial_exp=0.2, final_exp=0.7),
+            xscale="log", xlabel="Frequency [rad/s]",
+            ylabel="Magnitude [dB]"
+        )   # doctest: +SKIP
 
     Bode phase plot of a discrete-time system:
 
     .. plot::
         :context: close-figs
-        :format: doctest
         :include-source: True
 
-        >>> import control as ct
-        >>> tf2 = ct.tf([1], [1, 2, 3], dt=0.05)
-        >>> graphics(
-        ...     bode_phase(tf2),
-        ...     xscale="log", xlabel="Frequency [rad/s]",
-        ...     ylabel="Magnitude [dB]"
-        ... )   # doctest: +SKIP
+        import control as ct
+        tf2 = ct.tf([1], [1, 2, 3], dt=0.05)
+        graphics(
+            bode_phase(tf2),
+            xscale="log", xlabel="Frequency [rad/s]",
+            ylabel="Magnitude [dB]"
+        )   # doctest: +SKIP
 
     Interactive-widget plot:
 
@@ -1826,32 +1797,30 @@ def nyquist(system, omega_limits=None, input=None, output=None,
 
     .. plot::
        :context: reset
-       :format: doctest
        :include-source: True
 
-       >>> from sympy import Rational
-       >>> from sympy.abc import s
-       >>> from sympy.physics.control.lti import TransferFunction
-       >>> from spb import *
-       >>> tf1 = TransferFunction(
-       ...     4 * s**2 + 5 * s + 1, 3 * s**2 + 2 * s + 5, s)
-       >>> graphics(
-       ...     nyquist(tf1, m_circles=True),
-       ...     xlabel="Real", ylabel="Imaginary",
-       ...     grid=False, aspect="equal"
-       ... )                                # doctest: +SKIP
+       from sympy import Rational
+       from sympy.abc import s
+       from sympy.physics.control.lti import TransferFunction
+       from spb import *
+       tf1 = TransferFunction(
+           4 * s**2 + 5 * s + 1, 3 * s**2 + 2 * s + 5, s)
+       graphics(
+           nyquist(tf1, m_circles=True),
+           xlabel="Real", ylabel="Imaginary",
+           grid=False, aspect="equal"
+       )                                # doctest: +SKIP
 
     Visualizing M-circles:
 
     .. plot::
        :context: close-figs
-       :format: doctest
        :include-source: True
 
-    >>> graphics(
-    ...     nyquist(tf1, m_circles=True),
-    ...     xlabel="Real", ylabel="Imaginary"
-    ... )
+       graphics(
+           nyquist(tf1, m_circles=True),
+           xlabel="Real", ylabel="Imaginary"
+       )
 
     Interactive-widgets plot of a systems:
 
@@ -1992,33 +1961,31 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True, **kwargs):
 
     .. plot::
        :context: reset
-       :format: doctest
        :include-source: True
 
-       >>> from sympy.abc import s
-       >>> from sympy.physics.control.lti import TransferFunction
-       >>> from spb import *
-       >>> tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
-       >>> graphics(
-       ...     nichols(tf),
-       ...     xlabel="Open-Loop Phase [deg]",
-       ...     ylabel="Open-Loop Magnitude [dB]",
-       ...     grid=False
-       ... )    # doctest: +SKIP
+       from sympy.abc import s
+       from sympy.physics.control.lti import TransferFunction
+       from spb import *
+       tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
+       graphics(
+           nichols(tf),
+           xlabel="Open-Loop Phase [deg]",
+           ylabel="Open-Loop Magnitude [dB]",
+           grid=False
+       )    # doctest: +SKIP
 
     Turning off the Nichols grid lines:
 
     .. plot::
        :context: close-figs
-       :format: doctest
        :include-source: True
 
-       >>> graphics(
-       ...     nichols(tf, ngrid=False),
-       ...     xlabel="Open-Loop Phase [deg]",
-       ...     ylabel="Open-Loop Magnitude [dB]",
-       ...     grid=False
-       ... )    # doctest: +SKIP
+       graphics(
+           nichols(tf, ngrid=False),
+           xlabel="Open-Loop Phase [deg]",
+           ylabel="Open-Loop Magnitude [dB]",
+           grid=False
+       )    # doctest: +SKIP
 
     Interactive-widgets plot of a systems. For these kind of plots, it is
     recommended to set both ``omega_limits`` and ``xlim``:
@@ -2114,16 +2081,15 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
 
     .. plot::
        :context: reset
-       :format: doctest
        :include-source: True
 
-       >>> from sympy.abc import s
-       >>> from spb import *
-       >>> G = (s**2 - 4) / (s**3 + 2*s - 3)
-       >>> graphics(
-       ...     root_locus(G),
-       ...     sgrid(xi=0.92, wn=False, rendering_kw={"color": "r"}),
-       ...     grid=False, xlabel="Real", ylabel="Imaginary")
+       from sympy.abc import s
+       from spb import *
+       G = (s**2 - 4) / (s**3 + 2*s - 3)
+       graphics(
+           root_locus(G),
+           sgrid(xi=0.92, wn=False, rendering_kw={"color": "r"}),
+           grid=False, xlabel="Real", ylabel="Imaginary")
 
     Interactive-widgets root locus plot:
 
@@ -2199,39 +2165,37 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
 
     .. plot::
        :context: reset
-       :format: doctest
        :include-source: True
 
-       >>> from spb import *
-       >>> graphics(
-       ...     sgrid(),
-       ...     sgrid(xi=0.85, wn=False,
-       ...         rendering_kw={"color": "r", "linestyle": "-"},
-       ...         show_control_axis=False),
-       ...     sgrid(xi=False, wn=4.5,
-       ...         rendering_kw={"color": "g", "linestyle": "-"},
-       ...         show_control_axis=False),
-       ...     sgrid(xi=False, wn=False, tp=1,
-       ...         rendering_kw={"color": "b", "linestyle": "-"},
-       ...         show_control_axis=False),
-       ...     sgrid(xi=False, wn=False, ts=1,
-       ...         rendering_kw={"color": "m", "linestyle": "-"},
-       ...         show_control_axis=False),
-       ...     grid=False, xlim=(-8.5, 1), ylim=(-5, 5))
+       from spb import *
+       graphics(
+           sgrid(),
+           sgrid(xi=0.85, wn=False,
+               rendering_kw={"color": "r", "linestyle": "-"},
+               show_control_axis=False),
+           sgrid(xi=False, wn=4.5,
+               rendering_kw={"color": "g", "linestyle": "-"},
+               show_control_axis=False),
+           sgrid(xi=False, wn=False, tp=1,
+               rendering_kw={"color": "b", "linestyle": "-"},
+               show_control_axis=False),
+           sgrid(xi=False, wn=False, ts=1,
+               rendering_kw={"color": "m", "linestyle": "-"},
+               show_control_axis=False),
+           grid=False, xlim=(-8.5, 1), ylim=(-5, 5))
 
     Auto-generate grid lines over a specified area of of the s-plane:
 
     .. plot::
        :context: close-figs
-       :format: doctest
        :include-source: True
 
-       >>> xlim = (-5.5, 1)
-       >>> ylim = (-3, 3)
-       >>> graphics(
-       ...     sgrid(auto=True),
-       ...     grid=False, xlim=xlim, ylim=ylim
-       ... )
+       xlim = (-5.5, 1)
+       ylim = (-3, 3)
+       graphics(
+           sgrid(auto=True),
+           grid=False, xlim=xlim, ylim=ylim
+       )
 
     Interactive-widgets plot of custom s-grid lines:
 
@@ -2365,28 +2329,26 @@ def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
 
     .. plot::
        :context: reset
-       :format: doctest
        :include-source: True
 
-       >>> from spb import *
-       >>> graphics(
-       ...     zgrid(),
-       ...     zgrid(xi=0.05, wn=False, rendering_kw={"color": "r", "linestyle": "-"}),
-       ...     zgrid(xi=False, wn=0.25, rendering_kw={"color": "b", "linestyle": "-"}),
-       ...     grid=False, aspect="equal", xlim=(-1.2, 1.2), ylim=(-1.2, 1.2))
+       from spb import *
+       graphics(
+           zgrid(),
+           zgrid(xi=0.05, wn=False, rendering_kw={"color": "r", "linestyle": "-"}),
+           zgrid(xi=False, wn=0.25, rendering_kw={"color": "b", "linestyle": "-"}),
+           grid=False, aspect="equal", xlim=(-1.2, 1.2), ylim=(-1.2, 1.2))
 
     Shows a grid of settling times and peak times:
 
     .. plot::
        :context: close-figs
-       :format: doctest
        :include-source: True
 
-       >>> graphics(
-       ...     zgrid(xi=False, wn=False, tp=[3, 5, 7, 10, 20], ts=[2, 3, 5, 10, 20]),
-       ...     zgrid(xi=False, wn=False, tp=4, rendering_kw={"color": "r"}),
-       ...     zgrid(xi=False, wn=False, ts=7, rendering_kw={"color": "b"}),
-       ...     grid=False, aspect="equal", xlim=(-1.2, 1.2), ylim=(-1.2, 1.2))
+       graphics(
+           zgrid(xi=False, wn=False, tp=[3, 5, 7, 10, 20], ts=[2, 3, 5, 10, 20]),
+           zgrid(xi=False, wn=False, tp=4, rendering_kw={"color": "r"}),
+           zgrid(xi=False, wn=False, ts=7, rendering_kw={"color": "b"}),
+           grid=False, aspect="equal", xlim=(-1.2, 1.2), ylim=(-1.2, 1.2))
 
     Interactive-widgets plot of z-grid lines:
 
@@ -2506,28 +2468,26 @@ def ngrid(
 
     .. plot::
        :context: reset
-       :format: doctest
        :include-source: True
 
-       >>> from spb import *
-       >>> graphics(
-       ...     ngrid(),
-       ...     grid=False
-       ... )
+       from spb import *
+       graphics(
+           ngrid(),
+           grid=False
+       )
 
     Highlight specific values of closed-loop magnitude and closed-loop phase:
 
     .. plot::
        :context: close-figs
-       :format: doctest
        :include-source: True
 
-       >>> graphics(
-       ...     ngrid(label_cl_phases=False),
-       ...     ngrid(cl_mags=-30, cl_phases=False, rendering_kw={"color": "r", "linestyle": "-"}),
-       ...     ngrid(cl_mags=False, cl_phases=-200, rendering_kw={"color": "g", "linestyle": "-"}),
-       ...     grid=False
-       ... )
+       graphics(
+           ngrid(label_cl_phases=False),
+           ngrid(cl_mags=-30, cl_phases=False, rendering_kw={"color": "r", "linestyle": "-"}),
+           ngrid(cl_mags=False, cl_phases=-200, rendering_kw={"color": "g", "linestyle": "-"}),
+           grid=False
+       )
 
     See Also
     ========
@@ -2584,14 +2544,13 @@ def mcircles(magnitudes_db=None, rendering_kw=None, **kwargs):
 
     .. plot::
        :context: close-figs
-       :format: doctest
        :include-source: True
 
-       >>> from spb import *
-       >>> graphics(
-       ...     mcircles(),
-       ...     mcircles(-3, rendering_kw={"color": "r"}),
-       ...     grid=False, aspect="equal")
+       from spb import *
+       graphics(
+           mcircles(),
+           mcircles(-3, rendering_kw={"color": "r"}),
+           grid=False, aspect="equal")
 
     Interactive-widgets plot of m-circles:
 
@@ -2656,9 +2615,9 @@ def _default_frequency_exponent_range(
 
     Examples
     --------
-    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
-    >>> omega_range = _default_frequency_exponent_range(G)
-    >>> omega_range
+    G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    omega_range = _default_frequency_exponent_range(G)
+    omega_range
     (-1.0, 2.0)
 
     """
