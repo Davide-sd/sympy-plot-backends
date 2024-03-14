@@ -4,24 +4,22 @@ Control
 -------
 
 This module contains plotting functions for some of the common plots used
-in control system.
-
-Note that the functions from ``spb.plot_functions.control``:
-
-1. use the functions defined in the following module.
-2. set axis labels to sensible choices.
+in control system. It works with transfer functions from SymPy, SciPy and the
+`control module <https://github.com/python-control/python-control/>`_.
+To achieve this seamlessly user experience, the *control module* must be
+installed, which solves some critical issues related to
+SymPy but also comes with it's own quirks.
 
 In particular, ``impulse_response``, ``step_response`` and ``ramp_response``
 provide two modes of operation:
 
 1. ``control=True`` (default value): the symbolic transfer function is
-   converted to a transfer function of the
-   `control module <https://github.com/python-control/python-control/>`_ .
-   The response is computed with numerical integration.
-2. ``control=False`` computes the inverse Laplace transform of the symbolic
-   output signal. This step is not trivial: sometimes it works fine, other
-   times it produces wrong results, other times it consumes too much
-   memory, potentially crashing the machine.
+   converted to a transfer function of the *control module*.
+   The responses are computed with numerical integration.
+2. ``control=False`` the responses are computed with the inverse Laplace
+   transform of the symbolic output signal. This step is not trivial:
+   sometimes it works fine, other times it produces wrong results,
+   other times it consumes too much memory, potentially crashing the machine.
 
 These functions exposes the ``lower_limit=0`` keyword argument, which is the
 lower value of the time axis. If the default value (zero) is used, the

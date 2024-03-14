@@ -5,8 +5,31 @@
 v3.2.0
 ======
 
-* Added ``plot_root_locus`` to the control submodule. This uses the
-  ``python-control`` package to generate the numerical data for the plot.
+* ``spb.graphics.control`` sub-module now depends on the
+  `python-control module <https://python-control.readthedocs.io/en/0.9.4/>`_.
+  This dependency allows the implementation of new plotting functions and to
+  seamlessly deal with transfer functions from ``sympy``, ``control`` and
+  ``scipy.signal``, supporting both continous-time and discrete-time systems.
+
+* Added support for MIMO systems.
+
+* Created ``sgrid, zgrid, ngrid, mcircles`` functions to easily create grids
+  for control system plots. Appropriate keyword arguments have been created
+  on all major plot functions in order to activate these grids.
+
+* Added ``plot_root_locus`` to the control submodule.
+
+* ``plot_bode`` now auto-computes an appropriate frequency range.
+
+* Removed the transfer function's Latex representation from the title of
+  plots related to control systems. This decision is motivated from practical
+  experience, where most of the transfer functions have floating point
+  coefficients, which makes their Latex representation too big to fit into
+  the small width of a plot.
+
+* Breaking: refactoring of ``NyquistLineSeries`` in order to use the
+  ``control`` module. In particular, the ``get_data`` method now returns
+  many more arrays.
 
 
 v3.1.0

@@ -2,7 +2,12 @@ Control
 -------
 
 This module contains plotting functions for some of the common plots used
-in control system. Refer to :ref:`graphicscontrol` for a general explanation
+in control system. In particular, the following functions:
+
+1. make use of the functions defined in ``spb.graphics.control``.
+2. set axis labels to sensible choices.
+
+Refer to :ref:`graphicscontrol` for a general explanation
 about the underlying working principles.
 
 **NOTE:** 
