@@ -233,16 +233,22 @@ def linkcode_resolve(domain, info):
     return None
 
 
+# -- Options for matplotlib plot_directive ------------------------------------
+
+plot_formats = ["png"]
+
+
 # -- Options for sphinx_plotly_directive --------------------------------------
 
 plotly_include_source = True
 plotly_include_directive_source = False
 plotly_iframe_height = "375px"
-plotly_formats = ["png", "pdf", "html"]
+plotly_formats = ["png"]
+# plotly_formats = ["png", "pdf", "html"]
 plotly_intercept_code = _modify_code
 
 
-# # -- Options for sphinx_panel_screenshot --------------------------------------
+# -- Options for sphinx_panel_screenshot --------------------------------------
 
 browser = "chrome"
 home_folder = os.path.expanduser("~")
