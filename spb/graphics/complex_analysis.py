@@ -442,6 +442,9 @@ def line_real_imag(
        ...     line_real_imag(e4, label="e4", real=False,
        ...         detect_poles="symbolic"),
        ...     ylim=(-5, 5))
+       Plot object containing:
+       [0]: cartesian line: im((1/x)**(6/5)) for x over (-10.0, 10.0)
+       [1]: cartesian line: im(x**(-6/5)) for x over (-10.0, 10.0)
 
     The result computed by the plotting module might feels off: the two
     expressions are different, but according to the plot they are the same.
@@ -459,6 +462,9 @@ def line_real_imag(
        ...     line_real_imag(e4, label="e4", real=False,
        ...         detect_poles="symbolic", modules="mpmath"),
        ...     ylim=(-5, 5))
+       Plot object containing:
+       [0]: cartesian line: im((1/x)**(6/5)) for x over (-10.0, 10.0)
+       [1]: cartesian line: im(x**(-6/5)) for x over (-10.0, 10.0)
 
     With mpmath we see that ``e3`` and ``e4`` are indeed different.
 

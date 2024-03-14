@@ -852,7 +852,7 @@ def plot_complex_vector(*args, **kwargs):
 
        >>> expr = z * log(2 * z) + 3
        >>> p1 = plot_complex(expr, (z, -2-2j, 2+2j), grid=False, show=False,
-       >>>     legend=False)
+       ...     legend=False)
        >>> p2 = plot_complex_vector(expr, (z, -2-2j, 2+2j),
        ...      n=26, grid=False, scalar=False, use_cm=False, normalize=True,
        ...      quiver_kw={"color": "k", "pivot": "tip"}, show=False)

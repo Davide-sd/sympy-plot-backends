@@ -90,19 +90,23 @@ def plot_pole_zero(
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type systems
+    systems : one or more LTI system type
         The system for which the pole-zero plot is to be computed.
         It can be:
 
-        * a single LTI SISO system.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
         * a symbolic expression in rational form, which will be converted to
-          an object of type :class:`~sympy.physics.control.TransferFunction`.
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
-        * a sequence of LTI SISO systems.
-        * a sequence of 2-tuples ``(LTI SISO system, label)``.
-        * a dict mapping LTI SISO systems to labels.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
+        * a sequence of LTI systems.
+        * a sequence of 2-tuples ``(LTI system, label)``.
+        * a dict mapping LTI systems to labels.
     pole_color : str, tuple, optional
         The color of the pole points on the plot.
     pole_markersize : Number, optional
@@ -203,7 +207,6 @@ def plot_pole_zero(
     .. [1] https://en.wikipedia.org/wiki/Pole%E2%80%93zero_plot
     """
     systems = _unpack_systems(systems)
-    ms = len(systems) > 1
     series = []
     for system, label in systems:
         series.extend(pole_zero(
@@ -237,7 +240,7 @@ def plot_step_response(
     Parameters
     ==========
 
-    system : LTI system type
+    systems : LTI system type
         The LTI system for which the step response is to be computed.
         It can be:
 
@@ -301,7 +304,7 @@ def plot_step_response(
         from sympy.physics.control.lti import TransferFunction
         from spb import plot_step_response
         tf1 = TransferFunction(8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
-        plot_step_response(tf1)   # doctest: +SKIP
+        plot_step_response(tf1)
 
     Plotting a MIMO system:
 
@@ -402,7 +405,7 @@ def plot_impulse_response(
     Parameters
     ==========
 
-    system : LTI system type
+    systems : LTI system type
         The LTI system for which the impulse response is to be computed.
         It can be:
 
@@ -467,7 +470,7 @@ def plot_impulse_response(
         from spb import plot_impulse_response
         tf1 = TransferFunction(
             8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
-        plot_impulse_response(tf1)   # doctest: +SKIP
+        plot_impulse_response(tf1)
 
     Plotting a MIMO system:
 
@@ -573,7 +576,7 @@ def plot_ramp_response(
     Parameters
     ==========
 
-    system : LTI system type
+    systems : LTI system type
         The LTI system for which the ramp response is to be computed.
         It can be:
 
@@ -639,7 +642,7 @@ def plot_ramp_response(
         from sympy.physics.control.lti import TransferFunction
         from spb import plot_ramp_response
         tf1 = TransferFunction(1, (s+1), s)
-        plot_ramp_response(tf1)   # doctest: +SKIP
+        plot_ramp_response(tf1)
 
     Plotting a MIMO system:
 
@@ -816,8 +819,8 @@ def plot_bode(
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the step response plot is to be computed.
+    systems : LTI system type
+        The LTI system for which the ramp response is to be computed.
         It can be:
 
         * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
@@ -830,6 +833,9 @@ def plot_bode(
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
           :py:class:`sympy.physics.control.lti.TransferFunction`.
+        * a sequence of LTI systems.
+        * a sequence of 2-tuples ``(LTI system, label)``.
+        * a dict mapping LTI systems to labels.
     initial_exp : Number, optional
         The initial exponent of 10 of the semilog plot. Default to None, which
         will autocompute the appropriate value.
@@ -879,7 +885,7 @@ def plot_bode(
        from spb import plot_bode, plot_bode_phase, plotgrid
        tf1 = TransferFunction(
            1*s**2 + 0.1*s + 7.5, 1*s**4 + 0.12*s**3 + 9*s**2, s)
-       plot_bode(tf1)   # doctest: +SKIP
+       plot_bode(tf1)
 
     This example shows how the phase is actually computed (with
     ``unwrap=False``) and how it is post-processed (with ``unwrap=True``).
@@ -917,7 +923,7 @@ def plot_bode(
 
         import control as ct
         tf = ct.tf([1], [1, 2, 3], dt=0.05)
-        plot_bode(tf)   # doctest: +SKIP
+        plot_bode(tf)
 
     Interactive-widget plot:
 
@@ -992,8 +998,8 @@ def plot_nyquist(*systems, **kwargs):
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the step response plot is to be computed.
+    systems : LTI system type
+        The LTI system for which the ramp response is to be computed.
         It can be:
 
         * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
@@ -1006,6 +1012,9 @@ def plot_nyquist(*systems, **kwargs):
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
           :py:class:`sympy.physics.control.lti.TransferFunction`.
+        * a sequence of LTI systems.
+        * a sequence of 2-tuples ``(LTI system, label)``.
+        * a dict mapping LTI systems to labels.
     label : str, optional
         The label to be shown on the legend.
     arrows : int or 1D/2D array of floats, optional
@@ -1102,7 +1111,7 @@ def plot_nyquist(*systems, **kwargs):
        from spb import plot_nyquist
        tf1 = TransferFunction(
            4 * s**2 + 5 * s + 1, 3 * s**2 + 2 * s + 5, s)
-       plot_nyquist(tf1)                                # doctest: +SKIP
+       plot_nyquist(tf1)
 
     Plotting multiple transfer functions and visualizing M-circles:
 
@@ -1112,7 +1121,7 @@ def plot_nyquist(*systems, **kwargs):
 
        tf2 = TransferFunction(1, s + Rational(1, 3), s)
        plot_nyquist(tf1, tf2,
-           m_circles=[-20, -10, -6, -4, -2, 0])           # doctest: +SKIP
+           m_circles=[-20, -10, -6, -4, -2, 0])
 
 
     Interactive-widgets plot of a systems:
@@ -1159,19 +1168,23 @@ def plot_nichols(*systems, **kwargs):
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type
-        The LTI SISO system for which the Bode Plot is to be computed.
+    systems : LTI system type
+        The LTI system for which the ramp response is to be computed.
         It can be:
 
-        * a single LTI SISO system.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
         * a symbolic expression in rational form, which will be converted to
-          an object of type :class:`~sympy.physics.control.TransferFunction`.
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
-        * a sequence of LTI SISO systems.
-        * a sequence of 2-tuples ``(LTI SISO system, label)``.
-        * a dict mapping LTI SISO systems to labels.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
+        * a sequence of LTI systems.
+        * a sequence of 2-tuples ``(LTI system, label)``.
+        * a dict mapping LTI systems to labels.
     ngrid : bool, optional
         Turn on/off the [Nichols]_ grid lines.
     omega_limits : array_like of two values, optional
@@ -1202,7 +1215,7 @@ def plot_nichols(*systems, **kwargs):
        from sympy.physics.control.lti import TransferFunction
        from spb import plot_nichols
        tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
-       plot_nichols(tf)                                 # doctest: +SKIP
+       plot_nichols(tf)
 
     Turning off the Nichols grid lines:
 
@@ -1210,7 +1223,7 @@ def plot_nichols(*systems, **kwargs):
        :context: close-figs
        :include-source: True
 
-       plot_nichols(tf, ngrid=False)                    # doctest: +SKIP
+       plot_nichols(tf, ngrid=False)
 
     Plotting multiple transfer functions:
 
@@ -1220,7 +1233,7 @@ def plot_nichols(*systems, **kwargs):
 
        tf1 = TransferFunction(1, s**2 + 2*s + 1, s)
        tf2 = TransferFunction(1, s**2 - 2*s + 1, s)
-       plot_nichols(tf1, tf2, xlim=(-360, 360))         # doctest: +SKIP
+       plot_nichols(tf1, tf2, xlim=(-360, 360))
 
     Interactive-widgets plot of a systems. For these kind of plots, it is
     recommended to set both ``omega_limits`` and ``xlim``:
@@ -1279,25 +1292,32 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type systems
-        The system for which the pole-zero plot is to be computed.
+    systems : LTI system type
+        The LTI system for which the ramp response is to be computed.
         It can be:
 
-        * a single LTI SISO system.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
         * a symbolic expression in rational form, which will be converted to
-          an object of type :class:`~sympy.physics.control.TransferFunction`.
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
+        * a sequence of LTI systems.
+        * a sequence of 2-tuples ``(LTI system, label)``.
+        * a dict mapping LTI systems to labels.
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
-    rl_kw : dict
+    control_kw : dict
         A dictionary of keyword arguments to be passed to
-        ``control.root_locus``.
+        :py:func:`control.root_locus`.
     sgrid : bool, optional
         Generates a grid of constant damping ratios and natural frequencies
         on the s-plane. Default to True.
@@ -1305,6 +1325,13 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
         Generates a grid of constant damping ratios and natural frequencies
         on the z-plane. Default to False. If ``zgrid=True``, then it will
         automatically sets ``sgrid=False``.
+    input : int, optional
+        Only compute the poles/zeros for the listed input. If not specified,
+        the poles/zeros for each independent input are computed (as
+        separate traces).
+    output : int, optional
+        Only compute the poles/zeros for the listed output.
+        If not specified, all outputs are reported.
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line`.
@@ -1322,7 +1349,7 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
        from sympy.abc import s
        from spb import plot_root_locus
        G1 = (s**2 - 4) / (s**3 + 2*s - 3)
-       plot_root_locus(G1)                                 # doctest: +SKIP
+       plot_root_locus(G1)
 
     Plotting a single transfer function on the z-plane:
 
@@ -1331,8 +1358,7 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
        :include-source: True
 
        G2 = (s**2 + 1) / (s**4 + 4*s**3 + 6*s**2 + 5*s + 2)
-       plot_root_locus(G2, zgrid=True)                     # doctest: +SKIP
-
+       plot_root_locus(G2, zgrid=True)
 
     Plotting multiple transfer functions:
 
@@ -1343,7 +1369,7 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
        from sympy.abc import s
        from spb import plot_root_locus
        G3 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
-       plot_root_locus(G1, G3)                             # doctest: +SKIP
+       plot_root_locus(G1, G3)
 
     Interactive-widgets root locus plot:
 

@@ -1410,8 +1410,8 @@ def plot_geometry(*args, **kwargs):
        ...      (Polygon((a + 2, b + 3), c, n=d + 1), "square"),
        ...      params = {a: 0, b: 1, c: 2, d: 3})
        Plot object containing:
-       [0]: interactive geometry entity: RegularPolygon(Point2D(a, b), c, d, 0) and parameters (a, b, c, d)
-       [1]: interactive geometry entity: RegularPolygon(Point2D(a + 2, b + 3), c, d + 1, 0) and parameters (a, b, c, d)
+       [0]: geometry entity: RegularPolygon(Point2D(0, 1), 2, 3, 0)
+       [1]: geometry entity: RegularPolygon(Point2D(2, 4), 2, 4, 0)
 
     Plot 3D geometric entities. Note: when plotting a Plane, we must always
     provide the x/y/z ranges:

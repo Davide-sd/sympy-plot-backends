@@ -444,9 +444,9 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
        ...     line(x+2, (x, 0, 10), only_integers=True, steps="post", label="post"),
        ... )
        Plot object containing:
-       [0]: cartesian line: x for x over (0.0, 10.0)
+       [0]: cartesian line: x - 2 for x over (0.0, 10.0)
        [1]: cartesian line: x for x over (0.0, 10.0)
-       [2]: cartesian line: x for x over (0.0, 10.0)
+       [2]: cartesian line: x + 2 for x over (0.0, 10.0)
 
     Advanced example showing:
 

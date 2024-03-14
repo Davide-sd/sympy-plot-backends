@@ -153,7 +153,7 @@ def graphics(
        >>> yy = np.cos(xx)
        >>> noise = (np.random.random_sample(len(xx)) - 0.5) / 5
        >>> yy = yy * (1+noise)
-       >>> ax.scatter(xx, yy, marker="*", color="m")
+       >>> ax.scatter(xx, yy, marker="*", color="m")  # doctest: +SKIP
        >>> # plot a symbolic expression
        >>> x = symbols("x")
        >>> graphics(
