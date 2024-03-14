@@ -35,6 +35,12 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    
+    - name: Set up SLYCOT build tools
+      run: |
+        sudo apt-get install build-essential
+        sudo apt-get install python3-dev gcc gfortran libopenblas-dev python3-pip cmake
+        sudo apt-get install libopenblas-dev
   
     - name: Install dependencies
       run: |

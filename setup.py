@@ -21,6 +21,7 @@ _all_deps = [
     "colorcet",
     "k3d>=2.9.7",
     "vtk",  # needed for streamlines in k3d
+    "control>=0.9.4"
     # mayavi-related
     # "mayavi>=4.8.0",
     # "PyQt5>=5.15.7",
