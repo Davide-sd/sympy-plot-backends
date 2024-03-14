@@ -1243,7 +1243,8 @@ class Line2DBaseSeries(BaseSeries):
             min_x = min_x - offset if np.isclose(min_x, 0) else min_x
             max_x = max_x + offset if np.isclose(max_x, 0) else max_x
             # provide a little bit of margin
-            lim = [min_x * 1.2, max_x * 1.2]
+            delta = abs(max_x - min_x)
+            lim = [min_x - delta * 0.05, max_x + delta * 0.05]
             if np.isclose(*lim):
                 # prevent axis limits to be the same
                 lim[0] -= 1

@@ -4,7 +4,7 @@ from spb.graphics.control import (
     nichols, nyquist, step_response,
     ramp_response, impulse_response,
     bode_magnitude, bode_phase,
-    control_axis, root_locus, sgrid as sgrid_function,
+    control_axis, root_locus, ngrid as ngrid_function,
     _get_grid_series
 )
 from spb.interactive import create_interactive_plot
@@ -1249,15 +1249,19 @@ def plot_nichols(*systems, **kwargs):
 
     """
     systems = _unpack_systems(systems)
-    series = []
+    series, grid = [], []
+    show_ngrid = kwargs.get("ngrid", True)
+    kw = kwargs.copy()
+    kw["ngrid"] = False
     for s, l in systems:
-        series.extend(nichols(s, l, **kwargs.copy()))
-    kwargs.setdefault("ngrid", True)
+        series.extend(nichols(s, l, **kw.copy()))
+    if show_ngrid:
+        grid.extend(ngrid_function())
     kwargs.setdefault("xlabel", "Open-Loop Phase [deg]")
     kwargs.setdefault("ylabel", "Open-Loop Magnitude [dB]")
     kwargs.setdefault("title", "Nichols Plot")
-    kwargs.setdefault("grid", not kwargs.get("ngrid", False))
-    return _create_plot_helper(series, False, **kwargs)
+    kwargs.setdefault("grid", not show_ngrid)
+    return _create_plot_helper(grid + series, False, **kwargs)
 
 
 nichols_plot = plot_nichols
