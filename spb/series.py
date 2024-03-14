@@ -4222,9 +4222,6 @@ class ControlBaseSeries(Line2DBaseSeries):
         if len(fs) > 1:
             raise ValueError(
                 "Incompatible expression and parameters.\n"
-                + "Expression: {}\n".format(
-                    (exprs, ranges, label) if ranges is not None else (exprs, label))
-                + "params: {}\n".format(params)
                 + "Specify what these symbols represent: {}\n".format(fs)
                 + "Are they ranges or parameters?"
             )
@@ -4283,7 +4280,7 @@ class NyquistLineSeries(ControlBaseSeries):
             # Space arrows out, starting midway along each "region"
             self.arrow_locs = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
         elif isinstance(self.arrows, (list, np.ndarray)):
-            self.arrow_locs = np.sort(np.atleast_1d(arrows))
+            self.arrow_locs = np.sort(np.atleast_1d(self.arrows))
         else:
             raise ValueError("unknown or unsupported arrow location")
 
