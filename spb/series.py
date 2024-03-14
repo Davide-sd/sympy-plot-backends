@@ -4498,27 +4498,26 @@ class RootLocusSeries(ControlBaseSeries):
                         max_heights.append(c[i])
         min_heights = [-t for t in max_heights]
 
+        def _helper(x, margin_factor_lower, margin_factor_upper):
+            min_x, max_x = np.nanmin(x), np.nanmax(x)
+            # this offset allows to have a little bit of empty space on the
+            # LHP of root locus plot
+            offset = 0.25
+            min_x = min_x - offset if np.isclose(min_x, 0) else min_x
+            max_x = max_x + offset if np.isclose(max_x, 0) else max_x
+            # provide a little bit of margin
+            delta = abs(max_x - min_x)
+            lim = [min_x - delta * margin_factor_lower, max_x + delta * margin_factor_upper]
+            if np.isclose(*lim):
+                # prevent axis limits to be the same
+                lim[0] -= 1
+                lim[1] += 1
+            return lim
+
         important_points = np.concatenate(
             [self._zeros, self._poles, _bp, max_heights, min_heights])
-        _min_x = min(important_points.real)
-        _max_x = max(important_points.real)
-        _min_y = min(important_points.imag)
-        _max_y = max(important_points.imag)
-        offset = 0.25
-        _min_x = _min_x - offset if np.isclose(_min_x, 0) else _min_x
-        _max_x = _max_x + offset if np.isclose(_max_x, 0) else _max_x
-        _min_y = _min_y - offset if np.isclose(_min_y, 0) else _min_y
-        _max_y = _max_y + offset if np.isclose(_max_y, 0) else _max_y
-        _xlim = [_min_x * 1.5, _max_x * 1.2]
-        _ylim = [_min_y * 1.2, _max_y * 1.2]
-        if np.isclose(*_xlim):
-            _xlim[0] -= 1
-            _xlim[1] += 1
-        if np.isclose(*_ylim):
-            _ylim[0] -= 1
-            _ylim[1] += 1
-        self._xlim = _xlim
-        self._ylim = _ylim
+        self._xlim = _helper(important_points.real, 0.15, 0.05)
+        self._ylim = _helper(important_points.imag, 0.05, 0.05)
 
     @property
     def zeros(self):
