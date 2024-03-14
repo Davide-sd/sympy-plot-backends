@@ -98,11 +98,11 @@ def test_control_axis(hor, ver, rkw):
         (n1 / d1, "test", {"color": "r"}, {"color": "k"}, None, True),
         (tf1, "test", {"color": "r"}, {"color": "k"}, mod_params, True),
         ((n1, d1), "test", {"color": "r"}, {"color": "k"}, mod_params, True),
-        (n1 / d1, "test", {"color": "r"}, {"color": "k"}, mod_params, True),
+        (n1 / d1, "test", {"color": "r"}, {"color": "k"}, mod_params, True)
     ]
 )
 def test_pole_zero(tf, label, pkw, zkw, params, use_control):
-    kwargs = {"n": 10}
+    kwargs = {}
     if params:
         params = {k: v[0] for k, v in params.items()}
         kwargs["params"] = params
@@ -137,6 +137,32 @@ def test_pole_zero(tf, label, pkw, zkw, params, use_control):
         assert series[1].rendering_kw.get("color", None) == zkw["color"]
     assert all(s.is_interactive == (len(s.params) > 0) for s in series)
     assert all(s.params == {} if not params else params for s in series)
+
+
+@pytest.mark.parametrize(
+    "tf, use_control",
+    [
+        (tf_siso_control, False),
+        (tf_siso_control, True),
+        (tf_siso_scipy, False),
+        (tf_siso_scipy, True)
+    ]
+)
+def test_pole_zero_control_scipy(tf, use_control):
+    series = pole_zero(tf, control=use_control)
+    assert len(series) == 2
+    test_series = List2DSeries if not use_control else PoleZeroSeries
+    assert all(isinstance(s, test_series) for s in series)
+    assert "poles" in series[0].get_label(True)
+    assert "zeros" in series[1].get_label(True)
+    d0 = series[0].get_data()
+    assert np.allclose(d0[0], [-0.5, -0.5])
+    # use np.sort because sympy and numpy results of roots are
+    # sorted differently
+    assert np.allclose(np.sort(d0[1]), np.sort([0.8660254, -0.8660254]))
+    d1 = series[1].get_data()
+    assert np.allclose(d1[0], [-1])
+    assert np.allclose(d1[1], [0])
 
 
 @pytest.mark.parametrize(
@@ -191,6 +217,8 @@ def test_pole_zero_grids(use_control):
         (tf4, "test", {"color": "r"}, mod_params),
         ((n4, d4, s), "test", {"color": "r"}, mod_params),
         (n4 / d4, "test", {"color": "r"}, mod_params),
+        (tf_siso_control, None, None, None),
+        (tf_siso_scipy, None, None, None),
     ]
 )
 def test_step_response(tf, label, rkw, params):
@@ -258,6 +286,8 @@ def test_lower_limit_user_warning(func, lower_limit, params):
         (tf4, "test", {"color": "r"}, mod_params),
         ((n4, d4, s), "test", {"color": "r"}, mod_params),
         (n4 / d4, "test", {"color": "r"}, mod_params),
+        (tf_siso_control, None, None, None),
+        (tf_siso_scipy, None, None, None),
     ]
 )
 def test_impulse_response(tf, label, rkw, params):
@@ -303,6 +333,8 @@ def test_impulse_response(tf, label, rkw, params):
         (tf4, "test", {"color": "r"}, mod_params),
         ((n4, d4, s), "test", {"color": "r"}, mod_params),
         (n4 / d4, "test", {"color": "r"}, mod_params),
+        (tf_siso_control, None, None, None),
+        (tf_siso_scipy, None, None, None),
     ]
 )
 def test_ramp_response(tf, label, rkw, params):
@@ -360,6 +392,8 @@ def test_ramp_response_symbolic_slope_non_symbolic_tf():
         (tf4, "test", {"color": "r"}, mod_params),
         ((n4, d4, s), "test", {"color": "r"}, mod_params),
         (n4 / d4, "test", {"color": "r"}, mod_params),
+        (tf_siso_control, None, None, None),
+        (tf_siso_scipy, None, None, None),
     ]
 )
 def test_bode_magnitude(tf, label, rkw, params):
@@ -452,6 +486,8 @@ def test_bode_magnitude_phase_mimo(tf, input, output, n_series, func):
         (tf4, "test", {"color": "r"}, mod_params),
         ((n4, d4, s), "test", {"color": "r"}, mod_params),
         (n4 / d4, "test", {"color": "r"}, mod_params),
+        (tf_siso_control, None, None, None),
+        (tf_siso_scipy, None, None, None),
     ]
 )
 def test_bode_phase(tf, label, rkw, params):
@@ -532,6 +568,8 @@ def test_bode_time_delay():
         (tf3, "test", None, mod_params, False),
         ((n3, d3), "test", None, mod_params, False),
         (n3 / d3, "test", None, mod_params, False),
+        (tf_siso_control, None, None, None, False),
+        (tf_siso_scipy, None, None, None, False),
     ]
 )
 def test_nyquist(tf, label, rkw, params, mcircles):
@@ -579,6 +617,8 @@ def test_nyquist_mimo(mcircles):
         (tf4, "test", {"color": "r"}, mod_params),
         ((n4, d4, s), "test", {"color": "r"}, mod_params),
         (n4 / d4, "test", {"color": "r"}, mod_params),
+        (tf_siso_control, None, None, None),
+        (tf_siso_scipy, None, None, None),
     ]
 )
 def test_nichols(tf, label, rkw, params):
@@ -596,6 +636,16 @@ def test_nichols(tf, label, rkw, params):
     assert s.rendering_kw == {} if not rkw else rkw
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == {} if not params else params
+
+
+@pytest.mark.parametrize(
+    "tf", [tf_mimo_sympy, tf_mimo_control]
+)
+def test_nichols_mimo(tf):
+    series = nichols(tf, n=10)
+    assert len(series) == 7
+    assert isinstance(series[0], NGridLineSeries)
+    assert all(isinstance(t, NicholsLineSeries) for t in series[1:])
 
 
 def test_sgrid():
@@ -710,7 +760,7 @@ def test_root_locus():
     data1 = series1[0].get_data()
 
     series2 = root_locus(
-        G1, rl_kw={
+        G1, control_kw={
             "kvect": np.linspace(1e-03, 1000, 10)
         }, sgrid=False)
     assert len(series2) == 1
@@ -725,6 +775,31 @@ def test_root_locus():
     assert len(series) == 2
     assert isinstance(series[0], ZGridLineSeries)
     assert isinstance(series[1], RootLocusSeries)
+
+
+@pytest.mark.parametrize(
+    "tf", [tf_siso_sympy, tf_siso_control, tf_siso_scipy]
+)
+def test_root_locus_different_modules(tf):
+    series = root_locus(tf)
+    assert len(series) == 2
+    assert isinstance(series[0], SGridLineSeries)
+    assert isinstance(series[1], RootLocusSeries)
+    assert series[0].get_label() == ""
+    assert series[0].rendering_kw == {}
+
+
+@pytest.mark.parametrize(
+    "tf", [tf_mimo_sympy, tf_mimo_control]
+)
+def test_root_locus_mimo(tf):
+    series = root_locus(tf)
+    assert len(series) == 7
+    assert isinstance(series[0], SGridLineSeries)
+    assert all(isinstance(t, RootLocusSeries) for t in series[1:])
+    assert series[0].get_label() == ""
+    assert series[0].rendering_kw == {}
+    assert all(t.get_label() != "" for t in series[1:])
 
 
 @pytest.mark.parametrize(

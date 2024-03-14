@@ -1230,7 +1230,7 @@ class Line2DBaseSeries(BaseSeries):
         self._compute_axis_limits(points)
         return points
 
-    def _compute_axis_limits(self, points):
+    def _compute_axis_limits(self, points, margin=0.05):
         """Compute axis limits for each coordinate of points.
         """
         np = import_module("numpy")
@@ -1244,7 +1244,7 @@ class Line2DBaseSeries(BaseSeries):
             max_x = max_x + offset if np.isclose(max_x, 0) else max_x
             # provide a little bit of margin
             delta = abs(max_x - min_x)
-            lim = [min_x - delta * 0.05, max_x + delta * 0.05]
+            lim = [min_x - delta * margin, max_x + delta * margin]
             if np.isclose(*lim):
                 # prevent axis limits to be the same
                 lim[0] -= 1
@@ -4203,6 +4203,8 @@ class ControlBaseSeries(Line2DBaseSeries):
                 "Received: " + str(type(tf))
             )
 
+        self._control_kw = kwargs.get("control_kw", {})
+
     def _check_fs(self):
         """ Checks if there are enogh parameters and free symbols.
         """
@@ -4258,7 +4260,6 @@ class NyquistLineSeries(ControlBaseSeries):
         super().__init__(tf, label=label, **kwargs)
         self.ranges = [var_start_end]
         self._check_fs()
-        self._control_kw = kwargs.get("control_kw", {})
 
         # these attributes are used by ``control`` in the rendering step,
         # not in the data generation step. I need them here in order to
@@ -4463,10 +4464,7 @@ class RootLocusSeries(ControlBaseSeries):
         self._zeros = None
         self._poles = None
 
-        self._rl_kw = kwargs.get("rl_kw", {})
-        if self._rl_kw is None:
-            self._rl_kw = {}
-        self._rl_kw["plot"] = False
+        self._control_kw["plot"] = False
         self._zeros_rk = kwargs.get("zeros_rk", dict())
         self._poles_rk = kwargs.get("poles_rk", dict())
 
@@ -4574,7 +4572,7 @@ class RootLocusSeries(ControlBaseSeries):
         ct = import_module("control")
         self._zeros = self._control_tf.zeros()
         self._poles = self._control_tf.poles()
-        roots_array, gains = ct.root_locus(self._control_tf, **self._rl_kw)
+        roots_array, gains = ct.root_locus(self._control_tf, **self._control_kw)
         self._compute_axis_limits(roots_array)
         return roots_array, gains
 
@@ -4608,9 +4606,6 @@ class SystemResponseSeries(ControlBaseSeries):
                 "Received: %s" % (rt, allowed_response_types)
             )
         self._response_type = rt
-        self._control_kw = kwargs.get("control_kw", {})
-        if self._control_kw is None:
-            self._control_kw = {}
 
         steps = kwargs.get("steps", None)
         if steps is None:
@@ -4698,7 +4693,6 @@ class PoleZeroSeries(ControlBaseSeries):
         # used to store appropriate axis limits based on the data stored by
         # this series.
         self._xlim, self._ylim = None, None
-        self._control_kw = kwargs.get("control_kw", {})
         self._return_poles = kwargs.get("return_poles", True)
 
     def __str__(self):
@@ -4733,7 +4727,7 @@ class NGridLineSeries(BaseSeries, GridBase):
     is_grid = True
 
     def __init__(self, cl_mags=None, cl_phases=None, label_cl_phases=False,
-        series=[], **kwargs):
+        **kwargs):
         super().__init__(**kwargs)
         self._init_axis_limits(**kwargs)
         np = import_module("numpy")
@@ -4745,6 +4739,9 @@ class NGridLineSeries(BaseSeries, GridBase):
         self.show_cl_phases = kwargs.get("show_cl_phases", True)
         self._xlim = None
         self._ylim = None
+
+    def __str__(self):
+        return "n-grid"
 
     @staticmethod
     def closed_loop_contours(Gcl_mags, Gcl_phases):

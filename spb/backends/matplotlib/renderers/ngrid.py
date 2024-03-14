@@ -2,6 +2,7 @@ from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
 from spb.backends.matplotlib.renderers.sgrid import (
     SGridLineRenderer, _text_position_limits)
 from spb.series import NGridLineSeries
+from sympy.external import import_module
 
 
 def _draw_ngrid_helper(renderer, data):
@@ -98,6 +99,31 @@ class NGridLineRenderer(SGridLineRenderer):
     # -60dB so that there will be a magnitude line, which in turn it is used
     # to set the y-position of phase labels (if label_cl_phases=True).
     default_ylim = [-60, 50]
+
+    def _set_axis_limits_before_compute_data(self):
+        np = import_module("numpy")
+        # loop over the renderers and find appropriate axis limits
+        xlims, ylims = [], []
+        for s, r in zip(self.plot.series, self.plot.renderers):
+            if not s.is_grid:
+                xlims.extend(r._xlims)
+                ylims.extend(r._ylims)
+        if len(xlims) > 0:
+            xlims = np.array(xlims)
+            ylims = np.array(ylims)
+            xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
+            ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
+        else:
+            xlim = self.plot.xlim if self.plot.xlim else self.default_xlim
+            ylim = self.plot.ylim if self.plot.ylim else self.default_ylim
+
+        # need to do this otherwise grid labels would be difficult to place.
+        non_grid_series = [s for s in self.plot.series if not s.is_grid]
+        if len(non_grid_series) > 0:
+            xlim = list(xlim)
+            xlim[0] = xlim[0] - (xlim[0] % 360)
+            xlim[1] = xlim[1] + (360 - (xlim[1] % 360))
+        self.series.set_axis_limits(xlim, ylim)
 
     draw_update_map = {
         _draw_ngrid_helper: _update_ngrid_helper

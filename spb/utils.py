@@ -524,7 +524,8 @@ def _validate_kwargs(backend_obj, **kwargs):
         "slice", "threed", "sum_bound", "n",
         "phaseres", "is_polar", "label",
         "wireframe", "wf_n1", "wf_n2", "wf_npoints", "wf_rendering_kw",
-        "dots", "show_in_legend", "fig", "ax"
+        "dots", "show_in_legend", "fig", "ax",
+        "sgrid", "ngrid", "zgrid", "m_circles"
     ])
     # params is a keyword argument that is also checked before instantion of
     # Series and Backend.

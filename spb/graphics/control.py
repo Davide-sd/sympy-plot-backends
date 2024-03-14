@@ -471,7 +471,6 @@ def pole_zero(
         kw["label"] = l
         s = _preprocess_system(s, **kw)
         _check_system(s)
-        # s = s.doit()  # Get the equivalent TransferFunction object.
         series.extend(
             func(s, pole_markersize, zero_markersize, **kwargs.copy())
         )
@@ -651,7 +650,7 @@ def step_response(
             line(Heaviside(t), (t, -1, 10), label="step"),
             step_response(tf1, label="response"),
             xlabel="Time [s]", ylabel="Amplitude"
-        )   # doctest: +SKIP
+        )
 
     Plotting a MIMO system:
 
@@ -880,7 +879,7 @@ def impulse_response(
         graphics(
             impulse_response(tf1),
             xlabel="Time [s]", ylabel="Amplitude"
-        )   # doctest: +SKIP
+        )
 
     Plotting a MIMO system:
 
@@ -1126,7 +1125,7 @@ def ramp_response(
             line(t, (t, 0, ul), label="ramp"),
             ramp_response(tf1, upper_limit=ul, label="response"),
             xlabel="Time [s]", ylabel="Amplitude"
-        )    # doctest: +SKIP
+        )
 
     Plotting a MIMO system:
 
@@ -1394,7 +1393,7 @@ def bode_magnitude(
             bode_magnitude(tf1),
             xscale="log", xlabel="Frequency [rad/s]",
             ylabel="Magnitude [dB]"
-        )   # doctest: +SKIP
+        )
 
     Bode magnitude plot of a discrete-time system:
 
@@ -1408,7 +1407,7 @@ def bode_magnitude(
             bode_magnitude(tf2),
             xscale="log", xlabel="Frequency [rad/s]",
             ylabel="Magnitude [dB]"
-        )   # doctest: +SKIP
+        )
 
     Interactive-widget plot:
 
@@ -1574,7 +1573,7 @@ def bode_phase(
             bode_phase(tf1, initial_exp=0.2, final_exp=0.7),
             xscale="log", xlabel="Frequency [rad/s]",
             ylabel="Magnitude [dB]"
-        )   # doctest: +SKIP
+        )
 
     Bode phase plot of a discrete-time system:
 
@@ -1588,7 +1587,7 @@ def bode_phase(
             bode_phase(tf2),
             xscale="log", xlabel="Frequency [rad/s]",
             ylabel="Magnitude [dB]"
-        )   # doctest: +SKIP
+        )
 
     Interactive-widget plot:
 
@@ -1809,7 +1808,7 @@ def nyquist(system, omega_limits=None, input=None, output=None,
            nyquist(tf1, m_circles=True),
            xlabel="Real", ylabel="Imaginary",
            grid=False, aspect="equal"
-       )                                # doctest: +SKIP
+       )
 
     Visualizing M-circles:
 
@@ -1896,6 +1895,7 @@ def nyquist(system, omega_limits=None, input=None, output=None,
 def _nichols_helper(system, label, **kwargs):
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
+    system = tf_to_sympy(system)
     s = system.var
     omega = Dummy("omega")
     _range, omega_limits = _compute_range_helper(system, **kwargs)
@@ -1910,22 +1910,27 @@ def _nichols_helper(system, label, **kwargs):
         arg(system_expr), Abs(system_expr), _range, label, **kwargs)
 
 
-def nichols(system, label=None, rendering_kw=None, ngrid=True, **kwargs):
+def nichols(system, label=None, rendering_kw=None, ngrid=True,
+    input=None, output=None, **kwargs):
     """Nichols plot for a system over a (optional) frequency range.
 
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type systems
+    system : LTI system type
         The system for which the pole-zero plot is to be computed.
         It can be:
 
-        * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form, which will be converted to
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
     ngrid : bool, optional
         Turn on/off the [Nichols]_ grid lines.
     omega_limits : array_like of two values, optional
@@ -1936,6 +1941,13 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True, **kwargs):
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
+    input : int, optional
+        Only compute the poles/zeros for the listed input. If not specified,
+        the poles/zeros for each independent input are computed (as
+        separate traces).
+    output : int, optional
+        Only compute the poles/zeros for the listed output.
+        If not specified, all outputs are reported.
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line_parametric_2d`.
@@ -1972,7 +1984,7 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True, **kwargs):
            xlabel="Open-Loop Phase [deg]",
            ylabel="Open-Loop Magnitude [dB]",
            grid=False
-       )    # doctest: +SKIP
+       )
 
     Turning off the Nichols grid lines:
 
@@ -1985,7 +1997,7 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True, **kwargs):
            xlabel="Open-Loop Phase [deg]",
            ylabel="Open-Loop Magnitude [dB]",
            grid=False
-       )    # doctest: +SKIP
+       )
 
     Interactive-widgets plot of a systems. For these kind of plots, it is
     recommended to set both ``omega_limits`` and ``xlim``:
@@ -2015,43 +2027,56 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True, **kwargs):
     bode_magnitude, bode_phase, nyquist, ngrid
 
     """
-    nichols_series = [
-        _nichols_helper(
-            system, label, rendering_kw=rendering_kw, **kwargs.copy()
+    systems = _unpack_mimo_systems(
+        system,
+        "" if label is None else label,
+        input, output
+    )
+
+    series = []
+    for s, l in systems:
+        s = _preprocess_system(s, **kwargs)
+        _check_system(s)
+        series.append(
+            _nichols_helper(s, l, rendering_kw=rendering_kw, **kwargs.copy())
         )
-    ]
+
     grid = []
     if ngrid:
-        grid = ngrid_function(series=nichols_series)
-    return grid + nichols_series
+        grid = ngrid_function()
+    return grid + series
 
 
 def root_locus(system, label=None, rendering_kw=None, rl_kw={},
-    sgrid=True, zgrid=False, **kwargs):
+    sgrid=True, zgrid=False, input=None, output=None, **kwargs):
     """Root Locus plot for a system.
 
     Parameters
     ==========
 
-    system : SISOLinearTimeInvariant type systems
+    system : LTI system type
         The system for which the pole-zero plot is to be computed.
         It can be:
 
-        * a single LTI SISO system.
-        * a symbolic expression, which will be converted to an object of
-          type :class:`~sympy.physics.control.TransferFunction`.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form, which will be converted to
+          an object of type
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :class:`~sympy.physics.control.TransferFunction`.
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
-    rl_kw : dict
+    control_kw : dict
         A dictionary of keyword arguments to be passed to
-        ``control.root_locus``.
+        :py:func:`control.root_locus`.
     sgrid : bool, optional
         Generates a grid of constant damping ratios and natural frequencies
         on the s-plane. Default to True.
@@ -2059,6 +2084,13 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
         Generates a grid of constant damping ratios and natural frequencies
         on the z-plane. Default to False. If ``zgrid=True``, then it will
         automatically sets ``sgrid=False``.
+    input : int, optional
+        Only compute the poles/zeros for the listed input. If not specified,
+        the poles/zeros for each independent input are computed (as
+        separate traces).
+    output : int, optional
+        Only compute the poles/zeros for the listed output.
+        If not specified, all outputs are reported.
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line`.
@@ -2112,15 +2144,23 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
 
     sgrid, zgrid
     """
-    system = _preprocess_system(system, **kwargs)
-    _check_system(system)
+    systems = _unpack_mimo_systems(
+        system,
+        "" if label is None else label,
+        input, output
+    )
+    series = []
+    for s, l in systems:
+        s = _preprocess_system(s, **kwargs)
+        _check_system(s)
+        series.append(
+            RootLocusSeries(
+                s, label=l, rendering_kw=rendering_kw, rl_kw=rl_kw,
+                **kwargs.copy())
+        )
 
-    rls = RootLocusSeries(
-        system, label=label, rendering_kw=rendering_kw, rl_kw=rl_kw,
-        **kwargs.copy())
     grid = _get_grid_series(sgrid, zgrid)
-
-    return grid + [rls]
+    return grid + series
 
 
 def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
