@@ -20,7 +20,8 @@ from spb.series import (
     PlaneSeries, GeometrySeries, GenericDataSeries,
     HVLineSeries, NyquistLineSeries, NicholsLineSeries,
     Arrow2DSeries, Arrow3DSeries, RootLocusSeries, SGridLineSeries,
-    ZGridLineSeries, SystemResponseSeries, PoleZeroSeries, NGridLineSeries,
+    ZGridLineSeries, SystemResponseSeries, ColoredSystemResponseSeries,
+    PoleZeroSeries, NGridLineSeries,
     MCirclesSeries
 )
 from sympy.external import import_module
@@ -180,6 +181,7 @@ class MatplotlibBackend(Plot):
         SGridLineSeries: SGridLineRenderer,
         ZGridLineSeries: ZGridLineRenderer,
         SystemResponseSeries: Line2DRenderer,
+        ColoredSystemResponseSeries: Line2DRenderer,
         PoleZeroSeries: Line2DRenderer,
         NGridLineSeries: NGridLineRenderer,
         MCirclesSeries: MCirclesRenderer

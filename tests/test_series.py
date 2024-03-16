@@ -10,14 +10,16 @@ from spb.series import (
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
     _set_discretization_points, ColoredLineOver1DRangeSeries,
     HVLineSeries, Arrow2DSeries, Arrow3DSeries, RootLocusSeries,
-    SGridLineSeries, ZGridLineSeries, PoleZeroSeries
+    SGridLineSeries, ZGridLineSeries, PoleZeroSeries, SystemResponseSeries,
+    ColoredSystemResponseSeries, NyquistLineSeries, Ellipse
 )
 from spb import plot3d_spherical
 from sympy.abc import j, k, l
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
-    Function, dsolve, Eq, Ynm, floor, Ne, Piecewise, hyper, nsolve
+    Function, dsolve, Eq, Ynm, floor, Ne, Piecewise, hyper, nsolve,
+    Polygon, Line, Segment, Point3D, Line3D
 )
 from sympy.physics.control import TransferFunction
 from sympy.vector import CoordSys3D, gradient
@@ -325,15 +327,17 @@ def test_list2dseries():
     # same number of elements: everything is fine
     s = List2DSeries(xx, yy1)
     assert not s.is_parametric
+    assert s.get_label() == ""
     # different number of elements: error
     raises(ValueError, lambda: List2DSeries(xx, yy2))
 
     # no color func: returns only x, y components and s in not parametric
-    s = List2DSeries(xx, yy1)
+    s = List2DSeries(xx, yy1, label="test")
     xxs, yys = s.get_data()
     assert np.allclose(xx, xxs)
     assert np.allclose(yy1, yys)
     assert not s.is_parametric
+    assert s.get_label() == "test"
 
 
 def test_list3dseries():
@@ -345,16 +349,18 @@ def test_list3dseries():
     # same number of elements: everything is fine
     s = List3DSeries(xx, yy, zz1)
     assert not s.is_parametric
+    assert s.get_label() == ""
     # different number of elements: error
     raises(ValueError, lambda: List3DSeries(xx, yy, zz2))
 
     # no color func: returns only x, y components and s in not parametric
-    s = List3DSeries(xx, yy, zz1)
+    s = List3DSeries(xx, yy, zz1, label="test")
     xxs, yys, zzs = s.get_data()
     assert np.allclose(xx, xxs)
     assert np.allclose(yy, yys)
     assert np.allclose(zz1, zzs)
     assert not s.is_parametric
+    assert s.get_label() == "test"
 
 
 def test_complexpointseries():
@@ -823,12 +829,14 @@ def test_data_shape():
         n1=10, n2=10, modules=None
     )
     xx, yy, zz = s.get_data()
+    assert (len(xx.shape) == 2)
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
 
     s = ComplexSurfaceSeries(
         1, (x, -5 - 2 * I, 5 + 2 * I), n1=10, n2=10, modules="mpmath"
     )
+    assert (len(xx.shape) == 2)
     xx, yy, zz = s.get_data()
     assert (xx.shape == yy.shape) and (xx.shape == zz.shape)
     assert np.all(zz == 1)
@@ -837,6 +845,7 @@ def test_data_shape():
         1, (x, -5 - 2 * I, 5 + 2 * I), n1=10, n2=10, modules=None
     )
     rr, ii, mag, arg, colors, _ = s.get_data()
+    assert (len(rr.shape) == 2)
     assert (rr.shape == ii.shape) and (rr.shape[:2] == colors.shape[:2])
     assert (rr.shape == mag.shape) and (rr.shape == arg.shape)
 
@@ -844,6 +853,7 @@ def test_data_shape():
         1, (x, -5 - 2 * I, 5 + 2 * I), n1=10, n2=10, modules="mpmath"
     )
     rr, ii, mag, arg, colors, _ = s.get_data()
+    assert (len(rr.shape) == 2)
     assert (rr.shape == ii.shape) and (rr.shape[:2] == colors.shape[:2])
     assert (rr.shape == mag.shape) and (rr.shape == arg.shape)
 
@@ -2029,7 +2039,7 @@ def test_absargline():
 def test_apply_transforms():
     # verify that transformation functions get applied to the output
     # of data series
-    x, y, z, u, v = symbols("x:z, u, v")
+    s, t, x, y, z, u, v = symbols("s, t, x:z, u, v")
 
     s1 = LineOver1DRangeSeries(
         cos(x), (x, -2 * pi, 2 * pi),
@@ -2159,6 +2169,17 @@ def test_apply_transforms():
     assert np.allclose(y1, y2 / 2)
     assert np.allclose(z1, z2 / 3)
 
+    plane = Plane((-1, 0, 0), (1, 1, 1))
+    s1 = PlaneSeries(plane, (x, -2, 2), (y, -2, 2), (z, -2, 2))
+    s2 = PlaneSeries(
+        plane, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        tx=lambda x: x*2, ty=lambda y: y*3, tz=lambda z: z*4)
+    x1, y1, z1 = s1.get_data()
+    x2, y2, z2 = s2.get_data()
+    assert np.allclose(x2, x1*2)
+    assert np.allclose(y2, y1*3)
+    assert np.allclose(z2, z1*4, equal_nan=True)
+
     s1 = ParametricSurfaceSeries(
         u + v, u - v, u * v,
         (u, 0, 2 * pi), (v, 0, pi),
@@ -2217,6 +2238,25 @@ def test_apply_transforms():
     assert np.allclose(v1, v2 / 2)
     assert np.allclose(w1, w2 / 3)
 
+    s1 = ComplexPointSeries([1 + 2 * I, 3 + 4 * I])
+    s2 = ComplexPointSeries(
+        [1 + 2 * I, 3 + 4 * I],
+        tx=lambda x: x*2, ty=lambda y: y*3)
+    x1, y1 = s1.get_data()
+    x2, y2 = s2.get_data()
+    assert np.allclose(x2, x1*2)
+    assert np.allclose(y2, y1*3)
+
+    s1 = ComplexSurfaceSeries(sqrt(x), (x, -2-2j, 2+2j), n1=10, n2=10)
+    s2 = ComplexSurfaceSeries(
+        sqrt(x), (x, -2-2j, 2+2j), n1=10, n2=10,
+        tx=lambda x: x*2, ty=lambda y: y*3, tz=lambda z: z*4)
+    x1, y1, z1 = s1.get_data()
+    x2, y2, z2 = s2.get_data()
+    assert np.allclose(x2, x1*2)
+    assert np.allclose(y2, y1*3)
+    assert np.allclose(z2, z1*4)
+
     s1 = ComplexDomainColoringSeries(
         (z**2 + 1) / (z**2 - 1), (z, -3 - 4 * I, 3 + 4 * I),
         n1=10, n2=10, n3=10
@@ -2225,16 +2265,84 @@ def test_apply_transforms():
         (z**2 + 1) / (z**2 - 1),
         (z, -3 - 4 * I, 3 + 4 * I),
         n1=10, n2=10, n3=10,
-        tz=lambda t: t / 10,
+        tx=lambda t: t*2,
+        ty=lambda t: t*3,
+        tz=lambda t: t*4,
     )
     x1, y1, z1, a1, b1, c1 = s1.get_data()
     x2, y2, z2, a2, b2, c2 = s2.get_data()
-    assert np.allclose(x1, x2)
-    assert np.allclose(y1, y2)
-    assert np.allclose(z1, z2 * 10)
+    assert np.allclose(x1*2, x2)
+    assert np.allclose(y1*3, y2)
+    assert np.allclose(z1*4, z2)
     assert np.allclose(a1, a2)
     assert np.allclose(b1, b2)
     assert np.allclose(c1, c2)
+
+    G = (8*s**2 + 18*s + 32) / (s**3 + 6*s**2 + 14*s + 24)
+    s1 = SystemResponseSeries(G, (t, 0, 10), n=10)
+    s2 = SystemResponseSeries(
+        G, (t, 0, 10), n=10, tx=lambda x: x+1, ty=lambda y: y-1)
+    x1, y1 = s1.get_data()
+    x2, y2 = s2.get_data()
+    assert np.allclose(x2, x1 + 1)
+    assert np.allclose(y2, y1 - 1)
+
+    s1 = ColoredSystemResponseSeries(
+        G, (t, 0, 10), n=10, color_func=lambda x: x+1)
+    s2 = ColoredSystemResponseSeries(
+        G, (t, 0, 10), n=10, color_func=lambda x: x+1,
+        tx=lambda x: x+1, ty=lambda y: y-1, tp=lambda p: 2*p)
+    x1, y1, p1 = s1.get_data()
+    x2, y2, p2 = s2.get_data()
+    assert np.allclose(x2, x1 + 1)
+    assert np.allclose(y2, y1 - 1)
+    assert np.allclose(p2, 2*p1)
+
+    s1 = PoleZeroSeries(G, return_poles=True)
+    s2 = PoleZeroSeries(
+        G, return_poles=True, tx=lambda x: x+1, ty=lambda y: y-1)
+    x1, y1 = s1.get_data()
+    x2, y2 = s2.get_data()
+    assert np.allclose(x2, x1 + 1)
+    assert np.allclose(y2, y1 - 1)
+
+
+@pytest.mark.parametrize(
+    "g",
+    [
+        Circle(Point(0, 0), 5),
+        Ellipse(Point(0, 0), 5, 1),
+        Segment(Point(4, 3), Point(1, 1)),
+        Line(Point(2,3), Point(3,5)),
+        Point(1, 1),
+        Polygon((0,0), 1, n=3),
+    ]
+)
+def test_apply_transforms_geometry_2d(g):
+    s1 = GeometrySeries(g)
+    s2 = GeometrySeries(g, tx=lambda x: x*2, ty=lambda y: y*3)
+    x1, y1 = s1.get_data()
+    x2, y2 = s2.get_data()
+    assert np.allclose(x2, x1*2)
+    assert np.allclose(y2, y1*3)
+
+
+@pytest.mark.parametrize(
+    "g",
+    [
+        Point3D(2, 3, 4),
+        Line3D(Point3D(2, 3, 4), Point3D(3, 5, 1)),
+    ]
+)
+def test_apply_transforms_geometry_2d(g):
+    s1 = GeometrySeries(g)
+    s2 = GeometrySeries(
+        g, tx=lambda x: x*2, ty=lambda y: y*3, tz=lambda z: z*4)
+    x1, y1, z1 = s1.get_data()
+    x2, y2, z2 = s2.get_data()
+    assert np.allclose(x2, x1*2)
+    assert np.allclose(y2, y1*3)
+    assert np.allclose(z2, z1*4)
 
 
 def test_series_labels():
@@ -3468,11 +3576,11 @@ def test_symbolic_plotting_ranges():
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
     # missing a parameter
-    raises(
+    with raises(
         ValueError,
-        lambda: LineOver1DRangeSeries(
-            sin(x), (x, a, b), params={a: 1}, n=10),
-    )
+        match="Unkown symbols found in plotting range"
+    ):
+        LineOver1DRangeSeries(sin(x), (x, a, b), params={a: 1}, n=10)
 
     s1 = Parametric2DLineSeries(
         cos(x), sin(x), (x, 0, 1), adaptive=False, n=10)
@@ -3482,12 +3590,12 @@ def test_symbolic_plotting_ranges():
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
     # missing a parameter
-    raises(
+    with raises(
         ValueError,
-        lambda: Parametric2DLineSeries(
-            cos(x), sin(x), (x, a, b), params={a: 0}, adaptive=False, n=10
-        ),
-    )
+        match="Unkown symbols found in plotting range"
+    ):
+        Parametric2DLineSeries(
+            cos(x), sin(x), (x, a, b), params={a: 0}, adaptive=False, n=10)
 
     s1 = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, 0, 1), adaptive=False, n=10)
@@ -3499,14 +3607,14 @@ def test_symbolic_plotting_ranges():
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
     # missing a parameter
-    raises(
+    with raises(
         ValueError,
-        lambda: Parametric3DLineSeries(
+        match="Unkown symbols found in plotting range"
+    ):
+        Parametric3DLineSeries(
             cos(x), sin(x), x, (x, a, b),
             params={a: 0},
-            adaptive=False, n=10
-        ),
-    )
+            adaptive=False, n=10)
 
     s1 = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
@@ -3520,23 +3628,24 @@ def test_symbolic_plotting_ranges():
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
     # missing a parameter
-    raises(
+    with raises(
         ValueError,
-        lambda: SurfaceOver2DRangeSeries(
+        match="Unkown symbols found in plotting range"
+    ):
+        SurfaceOver2DRangeSeries(
             cos(x**2 + y**2), (x, -pi * a, pi * a), (y, -pi * b, pi * b),
             params={a: 1},
-            adaptive=False, n1=5, n2=5,
-        ),
-    )
+            adaptive=False, n1=5, n2=5)
+
     # one range symbol is included into another range's minimum or maximum val
-    raises(
+    with raises(
         ValueError,
-        lambda: SurfaceOver2DRangeSeries(
+        match="Range symbols can't be included into"
+    ):
+        SurfaceOver2DRangeSeries(
             cos(x**2 + y**2), (x, -pi * a + y, pi * a), (y, -pi * b, pi * b),
             params={a: 1},
-            adaptive=False, n1=5, n2=5,
-        ),
-    )
+            adaptive=False, n1=5, n2=5)
 
     s1 = ParametricSurfaceSeries(
         cos(x - y), sin(x + y), x - y, (x, -2, 2), (y, -2, 2), n1=5, n2=5
@@ -3550,15 +3659,15 @@ def test_symbolic_plotting_ranges():
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
     # missing a parameter
-    raises(
+    with raises(
         ValueError,
-        lambda: ParametricSurfaceSeries(
+        match="Unkown symbols found in plotting range"
+    ):
+        ParametricSurfaceSeries(
             cos(x - y), sin(x + y), x - y,
             (x, -2 * a, 2), (y, -2, 2 * b),
             params={a: 1},
-            n1=5, n2=5,
-        ),
-    )
+            n1=5, n2=5)
 
     s1 = ComplexSurfaceSeries(sin(x), (x, -2 - 2j, 2 + 2j), n1=5, n2=5)
     s2 = ComplexSurfaceSeries(
@@ -3566,13 +3675,12 @@ def test_symbolic_plotting_ranges():
     )
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
-    # missing a parameter
-    raises(
+    with raises(
         ValueError,
-        lambda: ComplexSurfaceSeries(
-            sin(x), (x, -2 * a - 2j, 2 + 2j * b), n1=5, n2=5, params={a: 1}
-        ),
-    )
+        match="Unkown symbols found in plotting range"
+    ):
+        ComplexSurfaceSeries(
+            sin(x), (x, -2 * a - 2j, 2 + 2j * b), n1=5, n2=5, params={a: 1})
 
     s1 = ComplexDomainColoringSeries(sin(x), (x, -2 - 2j, 2 + 2j), n1=5, n2=5)
     s2 = ComplexDomainColoringSeries(
@@ -3589,12 +3697,12 @@ def test_symbolic_plotting_ranges():
         assert not np.allclose(u, v)
 
     # missing a parameter
-    raises(
+    with raises(
         ValueError,
-        lambda: ComplexDomainColoringSeries(
-            sin(x), (x, -2 * a - 2j, 2 + 2j * b), n1=5, n2=5, params={a: 1}
-        ),
-    )
+        match="Unkown symbols found in plotting range"
+    ):
+        ComplexDomainColoringSeries(
+            sin(x), (x, -2 * a - 2j, 2 + 2j * b), n1=5, n2=5, params={a: 1})
 
     s1 = Vector2DSeries(-cos(y), sin(x), (x, -5, 4), (y, -3, 2), n1=4, n2=4)
     s2 = Vector2DSeries(
@@ -3607,16 +3715,16 @@ def test_symbolic_plotting_ranges():
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
     # missing a parameter
-    raises(
+    with raises(
         ValueError,
-        lambda: Vector2DSeries(
+        match="Unkown symbols found in plotting range"
+    ):
+        Vector2DSeries(
             -cos(y), sin(x),
             (x, -5 * a, 4 * b),
             (y, -3 * b, 2 * a),
             n1=4, n2=4,
-            params={a: 1},
-        ),
-    )
+            params={a: 1})
 
     s1 = Vector3DSeries(
         -cos(y), sin(x), sin(z),
@@ -3634,17 +3742,17 @@ def test_symbolic_plotting_ranges():
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
     # missing a parameter
-    raises(
+    with raises(
         ValueError,
-        lambda: Vector3DSeries(
+        match="Unkown symbols found in plotting range"
+    ):
+        Vector3DSeries(
             -cos(y), sin(x), sin(z),
             (x, -5 * a, 4 * b),
             (y, -3 * b, 2 * a),
             (z, -6 * a, 7 * b),
             n1=4, n2=4,
-            params={a: 1},
-        ),
-    )
+            params={a: 1})
 
 
 def test_color_func_expression():

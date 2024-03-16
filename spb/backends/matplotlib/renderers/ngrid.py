@@ -1,7 +1,9 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
 from spb.backends.matplotlib.renderers.sgrid import (
-    SGridLineRenderer, _text_position_limits)
-from spb.series import NGridLineSeries
+    SGridLineRenderer, _text_position_limits, _find_data_axis_limits,
+    _modify_axis_limits
+)
+from spb.series import NGridLineSeries, NicholsLineSeries
 from sympy.external import import_module
 
 
@@ -102,12 +104,10 @@ class NGridLineRenderer(SGridLineRenderer):
 
     def _set_axis_limits_before_compute_data(self):
         np = import_module("numpy")
-        # loop over the renderers and find appropriate axis limits
-        xlims, ylims = [], []
-        for s, r in zip(self.plot.series, self.plot.renderers):
-            if not s.is_grid:
-                xlims.extend(r._xlims)
-                ylims.extend(r._ylims)
+        # loop over the data already present on the plot and find
+        # appropriate axis limits
+        xlims, ylims = _find_data_axis_limits(self.plot.ax)
+
         if len(xlims) > 0:
             xlims = np.array(xlims)
             ylims = np.array(ylims)
@@ -123,6 +123,7 @@ class NGridLineRenderer(SGridLineRenderer):
             xlim = list(xlim)
             xlim[0] = xlim[0] - (xlim[0] % 360)
             xlim[1] = xlim[1] + (360 - (xlim[1] % 360))
+        ylim = _modify_axis_limits(ylim, 0.05, 0.05)
         self.series.set_axis_limits(xlim, ylim)
 
     draw_update_map = {

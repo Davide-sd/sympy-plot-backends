@@ -3,7 +3,7 @@ from spb.graphics.utils import _plot3d_wireframe_helper, _plot_sympify
 from spb.graphics.vectors import vector_field_2d
 from spb.series import (
     ComplexPointSeries, AbsArgLineSeries, LineOver1DRangeSeries,
-    ComplexSurfaceBaseSeries, ComplexDomainColoringSeries,
+    ComplexDomainColoringSeries, ComplexSurfaceSeries,
     Parametric2DLineSeries, RiemannSphereSeries
 )
 from spb.utils import (
@@ -540,7 +540,7 @@ def _contour_surface_helper(
     for k in keys:
         kw = kwargs.copy()
         kw["return"] = k
-        cls = ComplexSurfaceBaseSeries if k != "absarg" else ComplexDomainColoringSeries
+        cls = ComplexSurfaceSeries if k != "absarg" else ComplexDomainColoringSeries
         series.append(
             cls(expr, range,
                 label=label if k == "absarg" else _create_label(label, k),

@@ -1,5 +1,5 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
-from spb.series import SGridLineSeries
+from spb.series import SGridLineSeries, RootLocusSeries
 from sympy.external import import_module
 
 
@@ -123,6 +123,48 @@ def _update_sgrid_helper(renderer, data, handles):
         h.set_xdata([x, x])
 
 
+def _find_data_axis_limits(ax):
+    """Loop over the lines in order to find their minimum and
+    maximum coordinates.
+    """
+    np = import_module("numpy")
+    xlims, ylims = [], []
+    for line in ax.lines:
+        x, y = line.get_data()
+        xlims.append([np.nanmin(x), np.nanmax(x)])
+        ylims.append([np.nanmin(y), np.nanmax(y)])
+    for line in ax.collections:
+        seg = line._get_segments()
+        xmin, ymin = np.min(np.vstack(seg), axis=0)
+        xmax, ymax = np.max(np.vstack(seg), axis=0)
+        xlims.append([xmin, xmax])
+        ylims.append([ymin, ymax])
+    return xlims, ylims
+
+
+def _modify_axis_limits(lim, margin_factor_lower, margin_factor_upper):
+    """Modify the provided axis limits and add appropriate margins.
+    """
+    np = import_module("numpy")
+    min_t, max_t = lim
+    # this offset allows to have a little bit of empty space on the
+    # LHP of root locus plot
+    offset = 0.25
+    min_t = min_t - offset if np.isclose(min_t, 0) else min_t
+    max_t = max_t + offset if np.isclose(max_t, 0) else max_t
+    # provide a little bit of margin
+    delta = abs(max_t - min_t)
+    lim = [
+        min_t - delta * margin_factor_lower,
+        max_t + delta * margin_factor_upper
+    ]
+    if np.isclose(*lim):
+        # prevent axis limits to be the same
+        lim[0] -= 1
+        lim[1] += 1
+    return lim
+
+
 class SGridLineRenderer(MatplotlibRenderer):
     default_xlim = [-11, 1]
     default_ylim = [-5, 5]
@@ -133,12 +175,18 @@ class SGridLineRenderer(MatplotlibRenderer):
 
     def _set_axis_limits_before_compute_data(self):
         np = import_module("numpy")
-        # loop over the renderers and find appropriate axis limits
-        xlims, ylims = [], []
-        for s, r in zip(self.plot.series, self.plot.renderers):
-            if not s.is_grid:
-                xlims.extend(r._xlims)
-                ylims.extend(r._ylims)
+        # loop over the data already present on the plot and find
+        # appropriate axis limits
+        root_locus_series = [
+            s for s in self.plot.series if isinstance(s, RootLocusSeries)]
+        if len(root_locus_series) > 0:
+            xlims, ylims = [], []
+            for s in root_locus_series:
+                xlims.append(s.xlim)
+                ylims.append(s.ylim)
+        else:
+            xlims, ylims = _find_data_axis_limits(self.plot.ax)
+
         if len(xlims) > 0:
             xlims = np.array(xlims)
             ylims = np.array(ylims)
@@ -147,6 +195,9 @@ class SGridLineRenderer(MatplotlibRenderer):
         else:
             xlim = self.plot.xlim if self.plot.xlim else self.default_xlim
             ylim = self.plot.ylim if self.plot.ylim else self.default_ylim
+
+        xlim = _modify_axis_limits(xlim, 0.15, 0.05)
+        ylim = _modify_axis_limits(ylim, 0.05, 0.05)
         self.series.set_axis_limits(xlim, ylim)
 
     def draw(self):

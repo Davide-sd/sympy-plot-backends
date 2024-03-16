@@ -2438,8 +2438,8 @@ def test_plot_root_locus_sgrid():
 @pytest.mark.parametrize(
     "cl_mags, cl_phases, label_cl_phases, n_lines, n_texts",
     [
-        (None, None, False, 26, 16),
-        (None, None, True, 26, 25),
+        (None, None, False, 27, 17),
+        (None, None, True, 27, 26),
         (-30, False, False, 2, 1),
         (False, -200, False, 2, 0),
     ]
