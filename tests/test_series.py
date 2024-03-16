@@ -14,7 +14,7 @@ from spb.series import (
     ColoredSystemResponseSeries, NyquistLineSeries, Ellipse
 )
 from spb import plot3d_spherical
-from sympy.abc import j, k, l
+from sympy.abc import j, k, l, d, s, x, y
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
@@ -38,6 +38,9 @@ import scipy.signal as signal
 # If your issue is related to a particular keyword affecting a backend
 # behaviour, consider adding tests to tests/backends/test_*.py
 #
+
+tf1 = (s**2 - 4) / (s**3 + 2*s - 3)
+tf2 = TransferFunction.from_rational_expression(tf1)
 
 
 def test_adaptive():
@@ -2334,7 +2337,7 @@ def test_apply_transforms_geometry_2d(g):
         Line3D(Point3D(2, 3, 4), Point3D(3, 5, 1)),
     ]
 )
-def test_apply_transforms_geometry_2d(g):
+def test_apply_transforms_geometry_3d(g):
     s1 = GeometrySeries(g)
     s2 = GeometrySeries(
         g, tx=lambda x: x*2, ty=lambda y: y*3, tz=lambda z: z*4)
@@ -2508,34 +2511,23 @@ def test_series_labels():
     assert s2.get_label(True) == "test"
 
 
-def test_surface_use_cm():
+@pytest.mark.parametrize(
+    "use_cm", [None, True, False]
+)
+def test_surface_use_cm(use_cm):
     # verify that SurfaceOver2DRangeSeries and ParametricSurfaceSeries get
     # the same value for use_cm
 
     x, y, u, v = symbols("x, y, u, v")
+    kwargs = {}
+    if use_cm is not None:
+        kwargs["use_cm"] = use_cm
 
     # they read the same value from default settings
-    s1 = SurfaceOver2DRangeSeries(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2))
-    s2 = ParametricSurfaceSeries(
-        u * cos(v), u * sin(v), u, (u, 0, 1), (v, 0, 2 * pi))
-    assert s1.use_cm == s2.use_cm
-
-    # they get the same value
     s1 = SurfaceOver2DRangeSeries(
-        cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), use_cm=False
-    )
+        cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), **kwargs)
     s2 = ParametricSurfaceSeries(
-        u * cos(v), u * sin(v), u, (u, 0, 1), (v, 0, 2 * pi), use_cm=False
-    )
-    assert s1.use_cm == s2.use_cm
-
-    # they get the same value
-    s1 = SurfaceOver2DRangeSeries(
-        cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), use_cm=True
-    )
-    s2 = ParametricSurfaceSeries(
-        u * cos(v), u * sin(v), u, (u, 0, 1), (v, 0, 2 * pi), use_cm=True
-    )
+        u * cos(v), u * sin(v), u, (u, 0, 1), (v, 0, 2 * pi), **kwargs)
     assert s1.use_cm == s2.use_cm
 
 
@@ -3934,31 +3926,26 @@ def test_riemann_sphere_series():
     assert d[0].shape == (5, 15)
 
 
-def test_hvline_series():
-    x, y = symbols("x y")
-
-    s = HVLineSeries(4.5, True)
-    assert s.is_horizontal
-    assert not s.is_interactive
+@pytest.mark.parametrize(
+    "val, horizontal, label, params",
+    [
+        (4.5, True, "", None),
+        (4.5, False, "test", None),
+        (x + y, True, "", {x: 1, y: 2}),
+        (x + y, True, "test", {x: 1, y: 2}),
+    ]
+)
+def test_hvline_series(val, horizontal, label, params):
+    kwargs = {}
+    if params:
+        kwargs["params"] = params
+    s = HVLineSeries(val, horizontal, label=label, **kwargs)
+    assert s.is_horizontal is horizontal
+    assert s.is_interactive is (params is not None)
+    assert s.get_label(False) == label
     loc = s.get_data()
     assert isinstance(loc, float)
-    assert np.isclose(loc, 4.5)
-    assert s.get_label(False) == ""
-
-    s = HVLineSeries(4.5, False, "test")
-    assert not s.is_horizontal
-    assert not s.is_interactive
-    loc = s.get_data()
-    assert isinstance(loc, float)
-    assert np.isclose(loc, 4.5)
-    assert s.get_label(False) == "test"
-
-    s = HVLineSeries(x + y, True, params={x: 2, y: 3.5})
-    assert s.is_horizontal
-    assert s.is_interactive
-    loc = s.get_data()
-    assert isinstance(loc, float)
-    assert np.isclose(loc, 5.5)
+    assert np.isclose(loc, val if not params else 3)
 
 
 def test_complex_surface_contour():
@@ -4227,32 +4214,23 @@ def test_eval_adaptive_false_lambda_functions():
     assert np.allclose(y, [-1.57079581, -0.52359878,  0.,  0.52359878, 1.57079583])
 
 
-def test_root_locus_series():
+@pytest.mark.parametrize(
+    "tf, label, rendering_kw",
+    [
+        (tf1, None, None),
+        (tf1, "a", {"color": "r"}),
+        (tf2, None, None),
+        (tf2, "a", {"color": "r"})
+    ]
+)
+def test_root_locus_series(tf, label, rendering_kw):
     # verify that RootLocusSeries is able to deal with symbolic
     # transfer functions
 
-    s = symbols("s")
-    G = (s**2 - 4) / (s**3 + 2*s - 3)
-    r = RootLocusSeries(G)
+    r = RootLocusSeries(tf, label=label, rendering_kw=rendering_kw)
     assert isinstance(r.expr, TransferFunction)
-    assert r.label == ""
-    assert r.rendering_kw == {}
-    data = r.get_data()
-    # quick way to verify that I'm using ct.root_locus for data generation
-    assert len(data) == 2
-    # the following tests that there are 3 "branches" on the root locus plot
-    assert data[0].shape[1] == 3
-
-    r = RootLocusSeries(G, label="a", rendering_kw={0: 1})
-    assert isinstance(r.expr, TransferFunction)
-    assert r.label == "a"
-    assert r.rendering_kw == {0: 1}
-
-    G = TransferFunction(s**2 - 4, s**3 + 2*s - 3, s)
-    r = RootLocusSeries(G)
-    assert isinstance(r.expr, TransferFunction)
-    assert r.label == ""
-    assert r.rendering_kw == {}
+    assert r.label == (label if label else str(tf2))
+    assert r.rendering_kw == (rendering_kw if rendering_kw else {})
     data = r.get_data()
     # quick way to verify that I'm using ct.root_locus for data generation
     assert len(data) == 2
