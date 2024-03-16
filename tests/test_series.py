@@ -4345,7 +4345,7 @@ def test_sgrid_line_series_interactive():
 
 
 def test_zgrid_line_series():
-    xi = [0, 0.2, 0.5, 1]
+    xi = [0, 0.2, 0.5, 0.9]
     wn = [1, 2, 3]
     s = ZGridLineSeries(xi, wn, [], [])
     data = s.get_data()

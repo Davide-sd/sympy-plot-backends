@@ -344,6 +344,12 @@ class BaseSeries:
     # default number of discretization points for uniform sampling. Each
     # subclass can set its number.
 
+    _allowed_keys = [
+        "show_in_legend", "colorbar", "use_cm", "scatter", "label",
+        "n1", "n2", "n3", "xscale", "yscale", "zscale", "params",
+        "rendering_kw", "tx", "ty", "tz", "tp", "color_func"
+    ]
+
     def __init__(self, *args, **kwargs):
         kwargs = _set_discretization_points(kwargs.copy(), type(self))
 
@@ -827,6 +833,10 @@ class CommonAdaptiveEvaluation:
     """If a data series uses the python-adaptive module, it should
     inherith from this mixin.
     """
+    _allowed_keys = [
+        "adaptive", "adaptive_goal", "loss_fn"
+    ]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.adaptive = kwargs.get(
@@ -870,6 +880,11 @@ class CommonUniformEvaluation:
     Note: it's not mandatory to use this class. For example, control system
     related data series don't need this machinery.
     """
+
+    _allowed_keys = [
+        "force_real_eval", "only_integers", "modules", "is_polar"
+    ]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)# list of numerical functions representing the expressions to evaluate
         self._functions = []
@@ -1391,13 +1406,6 @@ class Line2DBaseSeries(BaseSeries):
 class List2DSeries(Line2DBaseSeries):
     """Representation for a line consisting of list of points."""
 
-    _allowed_keys = [
-            "adaptive", "adaptive_goal", "color_func", "is_filled",
-        "is_point", "is_polar", "line_color", "loss_fn", "modules", "n",
-        "only_integers", "rendering_kw", "steps", "use_cm", "xscale",
-        "tx", "ty", "tz", "use_cm"
-    ]
-
     def __init__(self, list_x, list_y, label="", **kwargs):
         super().__init__(label=label, **kwargs)
         np = import_module('numpy')
@@ -1505,11 +1513,7 @@ class LineOver1DRangeSeries(
     real range."""
 
     _allowed_keys = [
-        "absarg", "adaptive", "adaptive_goal", "color_func",
-        "detect_poles", "eps", "is_complex", "is_filled", "is_point",
-        "line_color", "loss_fn", "modules", "n", "only_integers",
-        "rendering_kw", "steps", "use_cm", "xscale", "tx", "ty", "tz",
-        "is_polar", "exclude", "unwrap"
+        "absarg", "is_complex", "is_polar"
     ]
 
     def __new__(cls, *args, **kwargs):
@@ -1686,12 +1690,6 @@ class ParametricLineBaseSeries(
     CommonAdaptiveEvaluation, CommonUniformEvaluation, Line2DBaseSeries
 ):
     is_parametric = True
-    _allowed_keys = [
-        "adaptive", "adaptive_goal", "color_func", "is_filled",
-        "is_point", "line_color", "loss_fn", "modules", "n", "only_integers",
-        "rendering_kw", "use_cm", "xscale", "tx", "ty", "tz", "tp", "colorbar",
-        "exclude"
-    ]
 
     def _set_parametric_line_label(self, label):
         """Logic to set the correct label to be shown on the plot.
@@ -1867,12 +1865,7 @@ class SurfaceBaseSeries(BaseSeries):
     """A base class for 3D surfaces."""
 
     is_3Dsurface = True
-    _allowed_keys = [
-        "adaptive", "adaptive_goal", "color_func", "is_polar",
-        "loss_fn", "modules", "n1", "n2", "only_integers", "rendering_kw",
-        "surface_color", "use_cm", "xscale", "yscale", "tx", "ty", "tz",
-        "colorbar"
-    ]
+    _allowed_keys = ["surface_color", "is_polar"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)
@@ -2137,11 +2130,11 @@ class ContourSeries(SurfaceOver2DRangeSeries):
 
     is_3Dsurface = False
     is_contour = True
+    _allowed_keys = [
+        "contour_kw", "is_filled", "fill", "clabels"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._allowed_keys += [
-            "contour_kw", "is_filled", "clabels", "colorbar"]
         self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.show_clabels = kwargs.get("clabels", True)
 
@@ -2169,8 +2162,7 @@ class ImplicitSeries(
 
     is_implicit = True
     use_cm = False
-    _allowed_keys = ["adaptive", "depth", "n1", "n2", "rendering_kw",
-    "xscale", "yscale", "color"]
+    _allowed_keys = ["adaptive", "depth", "color"]
     _N = 100
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
@@ -2518,7 +2510,6 @@ class Implicit3DSeries(
         if isinstance(self.expr, Plane):
             self.expr = self.expr.equation(self.var_x, self.var_y, self.var_z)
         self._set_surface_label(label)
-        self._allowed_keys += ["n3", "zscale"]
 
     def __str__(self):
         var_x, start_x, end_x = self.ranges[0]
@@ -2560,11 +2551,6 @@ class ComplexPointSeries(Line2DBaseSeries):
     """Representation for a line in the complex plane consisting of
     list of points."""
 
-    _allowed_keys = [
-        "color_func", "is_filled", "is_point", "line_color",
-        "rendering_kw", "steps", "tx", "ty", "tz", "use_cm"
-    ]
-
     def __init__(self, expr, label="", **kwargs):
         super().__init__(label=label, **kwargs)
         if isinstance(expr, (list, tuple)):
@@ -2598,20 +2584,9 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
     """Represent a complex function."""
     is_complex = True
     _N = 300
-    _allowed_keys = [
-        "absarg", "coloring", "color_func", "modules", "phaseres",
-        "is_polar", "n1", "n2", "only_integers", "rendering_kw", "steps",
-        "cmap", "surface_color", "use_cm", "xscale", "yscale",
-        "tx", "ty", "tz", "threed", "blevel", "phaseoffset", "colorbar"
-    ]
-
 
     def __init__(self, expr, r, label="", **kwargs):
         super().__init__(**kwargs)
-        if kwargs.get("threed", False):
-            self.is_3Dsurface = True
-            self.is_contour = False
-
         self.ranges = [r]
         self._label = str(expr) if label is None else label
         self._latex_label = latex(expr) if label is None else label
@@ -2681,6 +2656,7 @@ class ComplexSurfaceSeries(
     is_3Dsurface = True
     is_contour = False
     is_domain_coloring = False
+    _allowed_keys = ["threed", "is_filled", "clabels"]
 
     def __init__(self, expr, r, label="", **kwargs):
         super().__init__(expr, r, label, **kwargs)
@@ -2694,7 +2670,6 @@ class ComplexSurfaceSeries(
             self.is_3Dsurface = False
         self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.show_clabels = kwargs.get("clabels", True)
-        self._allowed_keys += ["is_filled", "clabels"]
         self._post_init()
 
     def _create_discretized_domain(self):
@@ -2743,9 +2718,10 @@ class ComplexDomainColoringSeries(
     """
     is_3Dsurface = False
     is_domain_coloring = True
-
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls)
+    _allowed_keys = [
+        "threed", "coloring", "phaseres", "cmap", "blevel", "phaseoffset",
+        "colorbar", "at_infinity", "riemann_mask", "annotate"
+    ]
 
     def __init__(self, expr, r, label="", **kwargs):
         super().__init__(expr, r, label, **kwargs)
@@ -2775,7 +2751,6 @@ class ComplexDomainColoringSeries(
 
         self.annotate = kwargs.get("annotate", True)
         self.riemann_mask = kwargs.get("riemann_mask", False)
-        self._allowed_keys += ["at_infinity", "riemann_mask", "annotate"]
         self._post_init()
 
     def _init_domain_coloring_kw(self, **kwargs):
@@ -2959,11 +2934,7 @@ class VectorBase(CommonUniformEvaluation, BaseSeries):
     is_slice = False
     is_streamlines = False
     _allowed_keys = [
-        "n1", "n2", "n3", "modules", "only_integers",
-        "streamlines", "use_cm", "xscale", "yscale", "zscale", "quiver_kw",
-        "stream_kw", "rendering_kw", "tx", "ty", "tz", "normalize",
-        "color_func", "colorbar"
-    ]
+        "streamlines", "quiver_kw", "stream_kw", "normalize"]
 
     def __init__(self, exprs, ranges, label, **kwargs):
         super().__init__(**kwargs)
@@ -3051,10 +3022,10 @@ class Vector2DSeries(VectorBase):
     is_2Dvector = True
     # default number of discretization points
     _N = 25
+    _allowed_keys = ["scalar"]
 
     def __init__(self, u, v, range1, range2, label="", **kwargs):
         super().__init__((u, v), (range1, range2), label, **kwargs)
-        self._allowed_keys += ["scalar"]
         self._set_use_quiver_solid_color(**kwargs)
 
     def _set_use_quiver_solid_color(self, **kwargs):
@@ -3266,7 +3237,6 @@ class PlaneSeries(SurfaceBaseSeries):
         self.z_range = sympify(z_range)
         self.ranges = [self.x_range, self.y_range, self.z_range]
         self._set_surface_label(label)
-        self.surface_color = kwargs.get("surface_color", None)
         if self.params and not self.plane.free_symbols:
             self.params = dict()
             self.is_interactive = False
@@ -3378,10 +3348,6 @@ class GeometrySeries(Line2DBaseSeries):
     """
 
     is_geometry = True
-    _allowed_keys = [
-        "is_filled", "use_cm", "color_func", "line_color",
-        "rendering_kw", "colorbar"
-    ]
 
     def __new__(cls, *args, **kwargs):
         if isinstance(args[0], Plane):
@@ -3580,8 +3546,7 @@ class RiemannSphereSeries(BaseSeries):
     is_3Dsurface = True
     _N = 150
     _allowed_keys = [
-        "n1", "n2", "cmap", "coloring", "blevel", "phaseres", "phaseoffset"
-    ]
+        "cmap", "coloring", "blevel", "phaseres", "phaseoffset"]
 
     def __init__(self, f, range_t, range_p, **kwargs):
         self._block_lambda_functions(f)
@@ -3682,6 +3647,9 @@ class HVLineSeries(BaseSeries):
 class Arrow2DSeries(BaseSeries):
     """Represent an arrow in a 2D space.
     """
+
+    _allowed_keys = ["normalize"]
+
     def __init__(self, start, direction, label="", **kwargs):
         super().__init__(**kwargs)
         np = import_module('numpy')
@@ -4175,6 +4143,8 @@ class ControlBaseSeries(Line2DBaseSeries):
     Those series represent a SISO system.
     """
 
+    _allowed_keys = ["control_kw"]
+
     def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)
         TransferFunction = sympy.physics.control.lti.TransferFunction
@@ -4260,6 +4230,11 @@ class NyquistLineSeries(ControlBaseSeries):
     """Generates numerical data for Nyquist plot using the ``control``
     module.
     """
+
+    _allowed_keys = [
+        "arrows", "max_curve_magnitude", "max_curve_offset",
+        "start_marker", "primary_style", "mirror_style"
+    ]
 
     def _copy_from_dict(self, d, k):
         if k in d.keys():

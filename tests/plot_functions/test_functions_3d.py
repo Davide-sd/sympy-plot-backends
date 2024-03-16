@@ -669,6 +669,7 @@ def test_plot3d_parametric_surface_wireframe(pi_options):
     # verify that wireframe=True produces the expected data series
     x, y, u = symbols("x, y, u")
     pi_options["n"] = 10
+    pi_options.pop("adaptive")
 
     _plot3d_ps = lambda wf: plot3d_parametric_surface(
         u * x * cos(y), x * sin(y), x * cos(4 * y) / 2,

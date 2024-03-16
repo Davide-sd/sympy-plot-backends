@@ -189,6 +189,8 @@ def make_plot3d_parametric_surface_wireframe_1(B, wf):
     x = (1 + v / 2 * cos(u / 2)) * cos(u)
     y = (1 + v / 2 * cos(u / 2)) * sin(u)
     z = v / 2 * sin(u / 2)
+    opts = options()
+    opts.pop("adaptive")
     return plot3d_parametric_surface(
         x, y, z,
         (u, 0, 2 * pi), (v, -1, 1),
@@ -198,7 +200,7 @@ def make_plot3d_parametric_surface_wireframe_1(B, wf):
         wf_n1=5,
         wf_n2=6,
         wf_rendering_kw=wf,
-        **options()
+        **opts
     )
 
 
@@ -206,6 +208,8 @@ def make_plot3d_parametric_surface_wireframe_2(B, wf):
     x = lambda u, v: v * np.cos(u)
     y = lambda u, v: v * np.sin(u)
     z = lambda u, v: np.sin(4 * u)
+    opts = options()
+    opts.pop("adaptive")
     return plot3d_parametric_surface(
         x, y, z,
         ("u", 0, 2 * np.pi), ("v", -1, 0),
@@ -214,7 +218,7 @@ def make_plot3d_parametric_surface_wireframe_2(B, wf):
         wireframe=wf,
         wf_n1=5,
         wf_n2=6,
-        **options()
+        **opts
     )
 
 
@@ -823,6 +827,7 @@ def make_test_plot_polar_use_cm(B, pa=False, ucm=False, cf=None):
 def make_test_plot3d_implicit(B, show=False):
     opts = options()
     opts["show"] = show
+    opts.pop("adaptive")
     return plot3d_implicit(
         x**2 + y**3 - z**2,
         (x, -2, 2), (y, -2, 2), (z, -2, 2),
@@ -845,6 +850,7 @@ def make_test_surface_color_func_1(B, col, show=False):
 def make_test_surface_color_func_2(B, col, show=False):
     opts = options()
     opts["show"] = show
+    opts.pop("adaptive")
     r = 2 + sin(7 * u + 5 * v)
     expr = (r * cos(u) * sin(v), r * sin(u) * sin(v), r * cos(v))
     return plot3d_parametric_surface(

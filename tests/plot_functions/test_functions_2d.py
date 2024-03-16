@@ -935,8 +935,10 @@ def test_plot_and_save_2(paf_options, adaptive):
         p.close()
 
         # Single Parametric 3D plot
+        paf_options2 = paf_options.copy()
+        paf_options2.pop("adaptive")
         p = plot3d_parametric_surface(
-            sin(x + y), cos(x - y), x - y, **paf_options)
+            sin(x + y), cos(x - y), x - y, **paf_options2)
         filename = "test_parametric_surface.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -945,7 +947,7 @@ def test_plot_and_save_2(paf_options, adaptive):
         p = plot3d_parametric_surface(
             (x * sin(z), x * cos(z), z, (x, -5, 5), (z, -5, 5)),
             (sin(x + y), cos(x - y), x - y, (x, -5, 5), (y, -5, 5)),
-            **paf_options
+            **paf_options2
         )
         filename = "test_parametric_surface.png"
         p.save(os.path.join(tmpdir, filename))

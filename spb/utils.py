@@ -9,6 +9,7 @@ from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 from sympy.external import import_module
 import warnings
+import inspect
 
 
 def _create_missing_ranges(exprs, ranges, npar, params=None, imaginary=False):
@@ -516,23 +517,27 @@ def _validate_kwargs(backend_obj, **kwargs):
     # spelling errors and inform the user of possible alternatives.
     allowed_keys = set(backend_obj._allowed_keys)
     for s in backend_obj.series:
-        allowed_keys = allowed_keys.union(s._allowed_keys)
+        for c in inspect.getmro(type(s)):
+            if hasattr(c, "_allowed_keys"):
+                allowed_keys = allowed_keys.union(getattr(c, "_allowed_keys"))
     # some functions injects the following keyword arguments that will be
     # processed by other functions before instantion of Series and Backend.
     allowed_keys = allowed_keys.union([
         "abs", "absarg", "arg", "real", "imag", "force_real_eval",
         "slice", "threed", "sum_bound", "n",
-        "phaseres", "is_polar", "label",
+        "phaseres", "is_point", "is_polar", "label",
         "wireframe", "wf_n1", "wf_n2", "wf_npoints", "wf_rendering_kw",
         "dots", "show_in_legend", "fig", "ax",
         "sgrid", "ngrid", "zgrid", "m_circles"
     ])
-    # params is a keyword argument that is also checked before instantion of
-    # Series and Backend.
+    # from interactive sub-module
     allowed_keys = allowed_keys.union([
-        "params", "layout", "ncols",
-        "use_latex", "throttled", "servable", "custom_css", "pane_kw",
-        "is_iplot", "series", "template"
+        "layout", "ncols", "use_latex", "throttled", "servable",
+        "custom_css", "pane_kw", "is_iplot", "series", "template"
+    ])
+    # from graphics.control sub-module
+    allowed_keys = allowed_keys.union([
+        "omega_limits", "input", "output"
     ])
     user_provided_keys = set(kwargs.keys())
     unused_keys = user_provided_keys.difference(allowed_keys)
