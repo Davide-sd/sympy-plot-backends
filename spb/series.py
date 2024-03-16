@@ -1527,7 +1527,9 @@ class LineOver1DRangeSeries(
         self._label = str(self.expr) if label is None else label
         self._latex_label = latex(self.expr) if label is None else label
         self.ranges = [var_start_end]
-        # this is used to cast the values of ranges
+        # this is used to cast the values of ranges when self.start/self.end
+        # are called. Used for back-compatibility with old sympy.plotting,
+        # it is now difficult to remove.
         self._cast = complex
         # for complex-related data series, this determines what data to return
         # on the y-axis
