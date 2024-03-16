@@ -11,7 +11,7 @@ def _draw_vector2d_helper(renderer, data):
     solid_color = None
     if s.is_streamlines:
         skw = dict()
-        if (not s.use_quiver_solid_color) and s.use_cm:
+        if s.use_cm:
             color_val = mag
             if s.color_func is not None:
                 color_val = s.eval_color_func(xx, yy, uu0, vv0)
@@ -42,7 +42,7 @@ def _draw_vector2d_helper(renderer, data):
             # in the contour to hide the quivers. Setting
             # zorder appears to fix the problem.
             qkw["zorder"] = 1
-        if (not s.use_quiver_solid_color) and s.use_cm:
+        if s.use_cm:
             # don't use color map if a scalar field is
             # visible or if use_cm=False
             color_val = mag

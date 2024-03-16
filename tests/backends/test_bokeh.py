@@ -1108,9 +1108,12 @@ def test_show_hide_colorbar():
     assert len(p(True).fig.right) == 1
     assert len(p(False).fig.right) == 0
 
+    # in plot_vector, use_cm is not set by default.
+    mod_options = options.copy()
+    mod_options.pop("use_cm")
     p = lambda c: plot_vector(
         [sin(x - y), cos(x + y)], (x, -3, 3), (y, -3, 3),
-        colorbar=c, **options
+        colorbar=c, **mod_options
     )
     assert len(p(True).fig.right) == 1
     assert len(p(False).fig.right) == 0

@@ -208,7 +208,7 @@ def _draw_vector2d_helper(renderer, data):
         # use_cm=False
         line_color = (
             {"field": "color_val", "transform": color_mapper}
-            if ((not s.use_quiver_solid_color) and s.use_cm)
+            if s.use_cm
             else next(p._cl)
         )
         source = p.bokeh.models.ColumnDataSource(data=data)
@@ -258,7 +258,7 @@ def _update_vector2d_helper(renderer, data, handle):
         handle[0].data_source.data.update(data)
 
         line_color = handle[0].glyph.line_color
-        if (not s.use_quiver_solid_color) and s.use_cm:
+        if s.use_cm:
             # update the colorbar
             cmap = line_color["transform"].palette
             color_val = data["color_val"]

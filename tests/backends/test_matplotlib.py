@@ -3,6 +3,7 @@ import mpl_toolkits
 import numpy as np
 import pytest
 from pytest import raises, warns
+from matplotlib.axes import Axes
 from sympy import Symbol, symbols
 import os
 from tempfile import TemporaryDirectory
@@ -11,7 +12,7 @@ from spb import (
     plot_vector, plot3d_revolution, plot3d_spherical,
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
     plot_parametric, plot_implicit, plot_list, plot_geometry,
-    plot_complex_list
+    plot_complex_list, graphics, vector_field_2d
 )
 from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
 from spb.series import SurfaceOver2DRangeSeries
@@ -387,19 +388,21 @@ def test_plot_vector_2d_matplotlib():
     # a colorbar
 
     x, y = symbols("x, y")
-    _plot_vector_1 = lambda scalar, streamlines, use_cm=True: plot_vector(
-        Matrix([x, y]),
-        (x, -5, 5),
-        (y, -4, 4),
-        backend=MB,
-        scalar=scalar,
-        streamlines=streamlines,
-        use_cm=use_cm,
-        show=False,
-        use_latex=False,
-        n1=5,
-        n2=8,
-    )
+    def _plot_vector_1(scalar, streamlines, use_cm=None):
+        kwargs = {"scalar": scalar, "streamlines": streamlines}
+        if use_cm is not None:
+            kwargs["use_cm"] = use_cm
+        return plot_vector(
+            Matrix([x, y]),
+            (x, -5, 5),
+            (y, -4, 4),
+            backend=MB,
+            show=False,
+            use_latex=False,
+            n1=5,
+            n2=8,
+            **kwargs
+        )
 
     # contours + quivers: 1 colorbar for the contours
     p = _plot_vector_1(True, False)
@@ -440,6 +443,25 @@ def test_plot_vector_2d_matplotlib():
     assert len(p.series) == 1
     assert len(p.fig.axes) == 1
     assert len(p.fig.axes[0].collections) == 1
+
+
+def test_vector_2d_multiple_series():
+    # In the following example there is one contour series and 2 vector series
+    # using solid colors. There should be two entries on the legend.
+
+    x, y = symbols("x, y")
+    scalar_expr = sqrt((-sin(y))**2 + cos(x)**2)
+
+    g = graphics(
+        vector_field_2d(-sin(y), cos(x), (x, -5, 5), (y, -3, 3), n=10, nc=10,
+            scalar=[scalar_expr, "$%s$" % latex(scalar_expr)],
+            contour_kw={"cmap": "summer"},
+            quiver_kw={"color": "k"}),
+        vector_field_2d(2 * y, x, (x, -5, 5), (y, -3, 3), n=10,
+            scalar=False, quiver_kw={"color": "r"}, use_cm=False),
+        aspect="equal", grid=False, xlabel="x", ylabel="y", show=False)
+
+    assert len(g.ax.get_legend().legend_handles) == 2
 
 
 def test_plot_vector_3d_quivers():
@@ -2072,9 +2094,12 @@ def test_show_hide_colorbar():
     assert len(p(True).fig.axes) == 2
     assert len(p(False).fig.axes) == 1
 
+    # in plot_vector, use_cm is not set by default.
+    mod_options = options.copy()
+    mod_options.pop("use_cm")
     p = lambda c: plot_vector(
         [sin(x - y), cos(x + y)], (x, -3, 3), (y, -3, 3),
-        colorbar=c, **options
+        colorbar=c, **mod_options
     )
     assert len(p(True).fig.axes) == 2
     assert len(p(False).fig.axes) == 1
@@ -2084,7 +2109,7 @@ def test_show_hide_colorbar():
         (y, -3, 3),
         scalar=False,
         colorbar=c,
-        **options
+        **mod_options
     )
     assert len(p(True).fig.axes) == 2
     assert len(p(False).fig.axes) == 1
@@ -2102,7 +2127,7 @@ def test_show_hide_colorbar():
 
     p = lambda c: plot_vector(
         [z, y, x], (x, -10, 10), (y, -10, 10), (z, -10, 10),
-        colorbar=c, **options
+        colorbar=c, **mod_options
     )
     assert len(p(True).fig.axes) == 2
     assert len(p(False).fig.axes) == 1
@@ -2288,6 +2313,7 @@ def test_parametric_texts():
 def test_arrow_2d():
     p = make_test_arrow_2d(MB, "test", {"color": "r"}, True)
     p.fig
+    assert isinstance(p.ax, Axes)
     assert len(p.ax.patches) == 1
     assert len(p.ax.get_legend().legend_handles) == 1
     assert p.ax.get_legend().legend_handles[0].get_label() == "$test$"
@@ -2346,6 +2372,7 @@ def test_existing_figure_surfaces():
 def test_arrow_3d():
     p = make_test_arrow_3d(MB, "test", {"color": "r"}, True)
     p.fig
+    assert isinstance(p.ax, mpl_toolkits.mplot3d.axes3d.Axes3D)
     assert len(p.ax.patches) == 1
     assert len(p.ax.get_legend().legend_handles) == 1
     assert p.ax.get_legend().legend_handles[0].get_label() == "$test$"

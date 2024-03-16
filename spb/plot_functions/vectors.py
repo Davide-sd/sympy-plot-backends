@@ -163,11 +163,11 @@ def plot_vector(*args, **kwargs):
        >>> scalar_expr = sqrt((-sin(y))**2 + cos(x)**2)
        >>> plot_vector([-sin(y), cos(x)], [2 * y, x], (x, -5, 5), (y, -3, 3),
        ...     n=20, legend=True, grid=False, xlabel="x", ylabel="y",
-       ...     scalar=[scalar_expr, "$%s$" % latex(scalar_expr)],
+       ...     scalar=[scalar_expr, "$%s$" % latex(scalar_expr)], use_cm=False,
        ...     rendering_kw=[
        ...         {"cmap": "summer"}, # to the contour
        ...         {"color": "k"},     # to the first quiver
-       ...         {"color": "w"}      # to the second quiver
+       ...         {"color": "r"}      # to the second quiver
        ... ])
        Plot object containing:
        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)

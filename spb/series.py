@@ -3026,22 +3026,13 @@ class Vector2DSeries(VectorBase):
 
     def __init__(self, u, v, range1, range2, label="", **kwargs):
         super().__init__((u, v), (range1, range2), label, **kwargs)
-        self._set_use_quiver_solid_color(**kwargs)
-
-    def _set_use_quiver_solid_color(self, **kwargs):
-        # NOTE: this attribute will inform the backend whether to use a
-        # color map or a solid color for the quivers. It is placed here
-        # because it simplifies the backend logic when dealing with
-        # plot sums.
-        self.use_quiver_solid_color = (
-            True
-            if ("scalar" not in kwargs.keys())
-            else (
-                False
-                if (not kwargs["scalar"]) or (kwargs["scalar"] is None)
-                else True
-            )
-        )
+        if "scalar" not in kwargs.keys():
+            use_cm = False
+        elif (not kwargs["scalar"]) or (kwargs["scalar"] is None):
+            use_cm = True
+        else:
+            use_cm = False
+        self.use_cm = kwargs.get("use_cm", use_cm)
 
     def __str__(self):
         ranges = []
@@ -3648,6 +3639,7 @@ class Arrow2DSeries(BaseSeries):
     """Represent an arrow in a 2D space.
     """
 
+    is_2Dvector = True
     _allowed_keys = ["normalize"]
 
     def __init__(self, start, direction, label="", **kwargs):
@@ -3755,8 +3747,11 @@ class Arrow2DSeries(BaseSeries):
 
 
 class Arrow3DSeries(Arrow2DSeries):
-    """Represent an arrow in a 2D space.
+    """Represent an arrow in a 3D space.
     """
+    is_3D = True
+    is_2Dvector = False
+    is_3Dvector = True
 
     def get_data(self):
         """Return arrays of coordinates for plotting.

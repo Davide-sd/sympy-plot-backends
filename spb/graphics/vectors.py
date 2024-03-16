@@ -229,7 +229,7 @@ def vector_field_2d(
        ...         contour_kw={"cmap": "summer"},
        ...         quiver_kw={"color": "k"}),
        ...     vector_field_2d(2 * y, x, (x, -5, 5), (y, -3, 3), n=20,
-       ...         scalar=False, quiver_kw={"color": "w"}, use_cm=False),
+       ...         scalar=False, quiver_kw={"color": "r"}, use_cm=False),
        ...     aspect="equal", grid=False, xlabel="x", ylabel="y")
        Plot object containing:
        [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)
@@ -334,13 +334,13 @@ def vector_field_2d(
     else:
         raise ValueError(
             "`scalar` must be either:\n"
-            + "1. True, in which case the magnitude of the vector field "
-            + "will be plotted.\n"
-            + "2. a symbolic expression representing a scalar field.\n"
-            + "3. None/False: do not plot any scalar field.\n"
-            + "4. list/tuple of two elements, [scalar_expr, label].\n"
-            + "5. a numerical function of 2 variables supporting "
-            + "vectorization."
+            "1. True, in which case the magnitude of the vector field "
+            "will be plotted.\n"
+            "2. a symbolic expression representing a scalar field.\n"
+            "3. None/False: do not plot any scalar field.\n"
+            "4. list/tuple of two elements, [scalar_expr, label].\n"
+            "5. a numerical function of 2 variables supporting "
+            "vectorization."
         )
 
     series = [s]

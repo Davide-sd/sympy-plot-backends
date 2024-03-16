@@ -708,17 +708,6 @@ def test_rendering_kw():
     assert isinstance(s.rendering_kw, dict)
 
 
-def test_use_quiver_solid_color():
-    # verify that the attribute `use_quiver_solid_color` is present
-
-    u, x, y = symbols("u, x, y")
-
-    s = Vector2DSeries(-y, x, (x, -3, 3), (y, -4, 4))
-    assert isinstance(s.rendering_kw, dict)
-    assert hasattr(s, "use_quiver_solid_color")
-    assert s.use_quiver_solid_color
-
-
 def test_data_shape():
     # Verify that the series produces the correct data shape when the input
     # expression is a number.
