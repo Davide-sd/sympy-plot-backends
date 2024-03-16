@@ -824,8 +824,8 @@ class BaseSeries:
 
 
 class CommonAdaptiveEvaluation:
-    """If a data series implements some kind of adaptive evaluation, it should
-    inherith from mixin.
+    """If a data series uses the python-adaptive module, it should
+    inherith from this mixin.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2153,7 +2153,7 @@ class ContourSeries(SurfaceOver2DRangeSeries):
 
 
 class ImplicitSeries(
-    CommonAdaptiveEvaluation, CommonUniformEvaluation, BaseSeries
+    CommonUniformEvaluation, BaseSeries
 ):
     """Representation for Implicit plot
 
@@ -2228,7 +2228,8 @@ class ImplicitSeries(
             self._is_equality = False
         else:
             # these are needed for uniform meshing evaluation
-            expr, is_equality = self._preprocess_meshgrid_expression(expr, self.adaptive)
+            expr, is_equality = self._preprocess_meshgrid_expression(
+                expr, self.adaptive)
             self._non_adaptive_expr = expr
             self._is_equality = is_equality
 
@@ -2309,7 +2310,6 @@ class ImplicitSeries(
             data = self._adaptive_eval()
             if data is not None:
                 return data
-
         return self._get_meshes_grid()
 
     def _adaptive_eval(self):
