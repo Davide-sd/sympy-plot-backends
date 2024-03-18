@@ -2115,12 +2115,24 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
        :context: reset
        :include-source: True
 
-       from sympy.abc import s
+       from sympy.abc import s, z
        from spb import *
        G = (s**2 - 4) / (s**3 + 2*s - 3)
        graphics(
            root_locus(G),
            sgrid(xi=0.92, wn=False, rendering_kw={"color": "r"}),
+           grid=False, xlabel="Real", ylabel="Imaginary")
+
+    Plot the root locus of a discrete system on the z-plane:
+
+    .. plot::
+       :context: close-figs
+       :include-source: True
+
+       G = (0.038*z + 0.031) / (9.11*z**2 - 13.77*z + 5.0)
+       graphics(
+           root_locus(G, sgrid=False, aspect="equal"),
+           zgrid(T=0.2),
            grid=False, xlabel="Real", ylabel="Imaginary")
 
     Interactive-widgets root locus plot:

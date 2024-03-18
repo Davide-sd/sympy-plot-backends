@@ -8,7 +8,8 @@ in control system. In particular, the following functions:
 2. set axis labels to sensible choices.
 
 Refer to :ref:`graphicscontrol` for a general explanation
-about the underlying working principles.
+about the underlying working principles, or if you are interested in a finer
+customization of what is shown on the plot.
 
 **NOTE:** 
 For technical reasons, all interactive-widgets plots in this documentation are

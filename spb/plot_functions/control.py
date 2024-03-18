@@ -1346,19 +1346,19 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
        :context: reset
        :include-source: True
 
-       from sympy.abc import s
+       from sympy.abc import s, z
        from spb import plot_root_locus
        G1 = (s**2 - 4) / (s**3 + 2*s - 3)
        plot_root_locus(G1)
 
-    Plotting a single transfer function on the z-plane:
+    Plotting a discrete transfer function on the z-plane:
 
     .. plot::
        :context: close-figs
        :include-source: True
 
-       G2 = (s**2 + 1) / (s**4 + 4*s**3 + 6*s**2 + 5*s + 2)
-       plot_root_locus(G2, zgrid=True)
+       G2 = (0.038*z + 0.031)/(9.11*z**2 - 13.77*z + 5.0)
+       plot_root_locus(G2, zgrid=True, aspect="equal")
 
     Plotting multiple transfer functions:
 

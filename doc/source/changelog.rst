@@ -2,36 +2,6 @@
  Changelog
 ==========
 
-v3.2.0
-======
-
-* ``spb.graphics.control`` sub-module now depends on the
-  `python-control module <https://python-control.readthedocs.io/en/0.9.4/>`_.
-  This dependency allows the implementation of new plotting functions and to
-  seamlessly deal with transfer functions from ``sympy``, ``control`` and
-  ``scipy.signal``, supporting both continous-time and discrete-time systems.
-
-* Added support for MIMO systems.
-
-* Created ``sgrid, zgrid, ngrid, mcircles`` functions to easily create grids
-  for control system plots. Appropriate keyword arguments have been created
-  on all major plot functions in order to activate these grids.
-
-* Added ``plot_root_locus`` to the control submodule.
-
-* ``plot_bode`` now auto-computes an appropriate frequency range.
-
-* Removed the transfer function's Latex representation from the title of
-  plots related to control systems. This decision is motivated from practical
-  experience, where most of the transfer functions have floating point
-  coefficients, which makes their Latex representation too big to fit into
-  the small width of a plot.
-
-* Breaking: refactoring of ``NyquistLineSeries`` in order to use the
-  ``control`` module. In particular, the ``get_data`` method now returns
-  many more arrays.
-
-
 v3.1.0
 ======
 
@@ -44,6 +14,49 @@ v3.1.0
 * Enhanced capabilities of line plots with the ``steps`` keyword argument.
   Possible values are ``"pre", "post", "mid"``, mimicking Matplotlib's
   ``step`` function.
+
+* New features on the ``spb.graphics.control`` sub-module:
+
+  * It now depends on the
+    `python-control module <https://python-control.readthedocs.io/en/0.9.4/>`_.
+    This dependency allows the implementation of new plotting functions and to
+    seamlessly deal with transfer functions from ``sympy``, ``control`` and
+    ``scipy.signal``, supporting both continous-time and discrete-time systems.
+
+  * Added support for MIMO systems.
+
+  * Created ``sgrid, zgrid, ngrid, mcircles`` functions to easily create grids
+    for control system plots. Appropriate keyword arguments have been created
+    on all major plot functions in order to activate these grids.
+
+  * Added ``plot_root_locus`` to the control submodule.
+
+  * ``plot_bode`` now auto-computes an appropriate frequency range.
+
+  * Removed the transfer function's Latex representation from the title of
+    plots related to control systems. This decision is motivated from practical
+    experience, where most of the transfer functions have floating point
+    coefficients, which makes their Latex representation too big to fit into
+    the small width of a plot.
+
+* Refactoring of the ``series.py`` sub-module:
+
+  * code has been re-organized to make extensibility easier and
+    slightly improve performance. In particular, the mixin class
+    ``CommonUniformEvaluation`` has been introduced, which handles all the
+    machinery necessary to evaluate symbolic expressions. Series classes
+    may or may not inherit from it. ``CommonUniformEvaluation`` allows for a 
+    better separation of scopes: data series that don't need that code are
+    faster to instantiate. 
+
+  * Breaking: refactoring of ``NyquistLineSeries`` in order to use the
+    ``control`` module. In particular, the ``get_data`` method now returns
+    many more arrays.
+
+  * Breaking: removed attribute ``use_quiver_solid_color`` from
+    ``Vector2DSeries``.
+
+* Fixed bug with labels of 2D vector fields.
 
 
 v3.0.1
