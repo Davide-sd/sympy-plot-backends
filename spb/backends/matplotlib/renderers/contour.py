@@ -1,5 +1,5 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
-
+from sympy.external import import_module
 
 def _draw_contour_helper(renderer, data):
     p, s = renderer.plot, renderer.series
@@ -31,11 +31,21 @@ def _update_contour_helper(renderer, data, handle):
     p, s = renderer.plot, renderer.series
     x, y, z = data
     kw, cax, clabels = handle[1:]
-    for c in handle[0].collections:
-        c.remove()
-    if (not s.is_filled) and s.show_clabels:
-        for cl in clabels:
-            cl.remove()
+
+    # TODO: remove this and update setup.py
+    packaging = import_module("packaging")
+    matplotlib = import_module("matplotlib")
+    curr_mpl_ver = packaging.version.parse(matplotlib.__version__)
+    mpl_3_8 = packaging.version.parse("3.8.0")
+    if curr_mpl_ver >= mpl_3_8:
+        handle[0].remove()
+    else:
+        for c in handle[0].collections:
+            c.remove()
+        if (not s.is_filled) and s.show_clabels:
+            for cl in clabels:
+                cl.remove()
+
     func = p._ax.contourf if s.is_filled else p._ax.contour
     handle[0] = func(x, y, z, **kw)
 
