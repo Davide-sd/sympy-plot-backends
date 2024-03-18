@@ -12,8 +12,6 @@ from spb.plotgrid import plotgrid
 from spb.series import HVLineSeries
 from spb.utils import _instantiate_backend
 from sympy import exp, latex, sympify, Expr
-from sympy.external import import_module
-from sympy.physics.control.lti import SISOLinearTimeInvariant, TransferFunction
 
 
 __all__ = [

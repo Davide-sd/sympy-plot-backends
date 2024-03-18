@@ -9,15 +9,12 @@ from spb.utils import (
     is_discrete_time, tf_find_time_delay
 )
 import numpy as np
+import sympy as sm
 from sympy import (
     roots, exp, Poly, degree, re, im, apart, Dummy, symbols,
     I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt, cos, acos, sin,
     floor, ceiling, frac, pi, fraction, Expr, Tuple, inverse_laplace_transform,
     Integer, Float
-)
-from sympy.physics.control.lti import (
-    SISOLinearTimeInvariant, TransferFunctionMatrix, TransferFunction,
-    Series, Parallel
 )
 from sympy.external import import_module
 from mergedeep import merge
@@ -74,11 +71,17 @@ def _preprocess_system(system, **kwargs):
     ct = import_module("control")
     sp = import_module("scipy")
 
-    if isinstance(system, (Series, Parallel)):
+    if isinstance(system, (
+        sm.physics.control.lti.Series,
+        sm.physics.control.lti.Parallel
+    )):
         return system.doit()
 
-    if isinstance(system, (SISOLinearTimeInvariant, TransferFunctionMatrix,
-        ct.TransferFunction, sp.signal.TransferFunction)):
+    if isinstance(system, (
+        sm.physics.control.lti.SISOLinearTimeInvariant,
+        sm.physics.control.lti.TransferFunctionMatrix,
+        ct.TransferFunction, sp.signal.TransferFunction
+    )):
         return system
 
     if isinstance(system, (list, tuple)):
@@ -86,7 +89,7 @@ def _preprocess_system(system, **kwargs):
             if all(isinstance(e, Expr) for e in system):
                 num, den = system
                 fs = Tuple(num, den).free_symbols.pop()
-                return TransferFunction(num, den, fs)
+                return sm.physics.control.lti.TransferFunction(num, den, fs)
             else:
                 num, den = system
                 num = [float(t) for t in num]
@@ -94,7 +97,7 @@ def _preprocess_system(system, **kwargs):
                 return ct.tf(num, den)
         elif len(system) == 3:
             num, den, fs = system
-            return TransferFunction(num, den, fs)
+            return sm.physics.control.lti.TransferFunction(num, den, fs)
         else:
             raise ValueError(
                 "If a tuple/list is provided, it must have "
@@ -110,7 +113,7 @@ def _preprocess_system(system, **kwargs):
         elif len(fs) == 0:
             raise ValueError(
                 "An expression with one free symbol is required.")
-        return TransferFunction.from_rational_expression(system, fs.pop())
+        return sm.physics.control.lti.TransferFunction.from_rational_expression(system, fs.pop())
 
     raise TypeError(f"type(system) = {type(system)} not recognized.")
 
@@ -118,7 +121,7 @@ def _preprocess_system(system, **kwargs):
 def _is_siso(system):
     ct = import_module("control")
     sp = import_module("scipy")
-    if isinstance(system, SISOLinearTimeInvariant):
+    if isinstance(system, sm.physics.control.lti.SISOLinearTimeInvariant):
         return True
     if isinstance(system, sp.signal.TransferFunction):
         return True
@@ -138,7 +141,7 @@ def _check_system(system, bypass_delay_check=False):
         raise NotImplementedError(
             "Only SISO LTI systems are currently supported.")
 
-    if isinstance(system, TransferFunction):
+    if isinstance(system, sm.physics.control.lti.TransferFunction):
         sys = system.to_expr()
         if not bypass_delay_check and sys.has(exp):
             # Should test that exp is not part of a constant, in which case
@@ -164,7 +167,7 @@ def _unpack_mimo_systems(system, label, input, output):
             return True
         return False
 
-    if isinstance(system, TransferFunctionMatrix):
+    if isinstance(system, sm.physics.control.lti.TransferFunctionMatrix):
         for i in range(system.num_inputs):
             for o in range(system.num_outputs):
                 if _check_condition(i, o):
@@ -239,7 +242,7 @@ def _pole_zero_helper(
     system, pole_markersize, zero_markersize,
     **kwargs
 ):
-    if not isinstance(system, TransferFunction):
+    if not isinstance(system, sm.physics.control.lti.TransferFunction):
         system = tf_to_sympy(system)
 
     zeros, poles = _get_zeros_poles_from_symbolic_tf(system)
@@ -511,7 +514,7 @@ def _step_response_helper(
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
-    if not isinstance(system, TransferFunction):
+    if not isinstance(system, sm.physics.control.lti.TransferFunction):
         system = tf_to_sympy(system)
 
     expr = system.to_expr() / system.var
@@ -535,7 +538,8 @@ def _step_response_with_control_helper(
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
-    expr = system.to_expr() if isinstance(system, TransferFunction) else system
+    expr = (system.to_expr() if isinstance(
+        system, sm.physics.control.lti.TransferFunction) else system)
     _x = Dummy("x")
     return SystemResponseSeries(
         expr, prange(_x, lower_limit, upper_limit),
@@ -763,7 +767,7 @@ def _impulse_response_helper(
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
-    if not isinstance(system, TransferFunction):
+    if not isinstance(system, sm.physics.control.lti.TransferFunction):
         system = tf_to_sympy(system)
 
     _x = Dummy("x")
@@ -785,7 +789,8 @@ def _impulse_response_with_control_helper(
     _check_system(system)
 
     _x = Dummy("x")
-    expr = system.to_expr() if isinstance(system, TransferFunction) else system
+    expr = (system.to_expr() if isinstance(
+        system, sm.physics.control.lti.TransferFunction) else system)
 
     return SystemResponseSeries(
         expr, prange(_x, lower_limit, upper_limit),
@@ -992,7 +997,7 @@ def _ramp_response_helper(
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
-    if not isinstance(system, TransferFunction):
+    if not isinstance(system, sm.physics.control.lti.TransferFunction):
         system = tf_to_sympy(system)
 
     _x = Dummy("x")
@@ -1021,7 +1026,7 @@ def _ramp_response_with_control_helper(
         if system.dt is not None:
             kw["dt"] = system.dt
         expr = sp.signal.TransferFunction(n, d, **kw)
-    elif isinstance(system, TransferFunction):
+    elif isinstance(system, sm.physics.control.lti.TransferFunction):
         expr = slope * system.to_expr()
     else:
         expr = slope * system
@@ -1218,7 +1223,9 @@ def ramp_response(
     )
 
     non_symbolic_systems = any([
-        not isinstance(s[0], (Expr, SISOLinearTimeInvariant)) for s in systems])
+        not isinstance(s[0], (
+            Expr, sm.physics.control.lti.SISOLinearTimeInvariant)
+        ) for s in systems])
     if (
         isinstance(slope, Expr) and
         (len(slope.free_symbols) > 0) and
