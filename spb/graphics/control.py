@@ -9,7 +9,6 @@ from spb.utils import (
     is_discrete_time, tf_find_time_delay
 )
 import numpy as np
-import sympy as sm
 from sympy import (
     roots, exp, Poly, degree, re, im, apart, Dummy, symbols,
     I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt, cos, acos, sin,
@@ -48,6 +47,23 @@ __all__ = [
 ]
 
 
+def _check_if_control_is_installed(use_control=None, force_stop=False):
+    ct = import_module("control")
+    if use_control is not None:
+        if ct is None:
+            warnings.warn(
+                "The ``control`` module is not installed. Proceeding the "
+                "evaluation with SymPy."
+            )
+            return False
+    if force_stop and (ct is None):
+        raise RuntimeError(
+            "The ``control`` module is not installed. Can't proceed with "
+            "the evaluation."
+        )
+    return use_control
+
+
 def _preprocess_system(system, **kwargs):
     """Allow users to provide a transfer function with the following form:
 
@@ -70,18 +86,24 @@ def _preprocess_system(system, **kwargs):
     """
     ct = import_module("control")
     sp = import_module("scipy")
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
 
     if isinstance(system, (
-        sm.physics.control.lti.Series,
-        sm.physics.control.lti.Parallel
+        sm.control.lti.Series,
+        sm.control.lti.Parallel
     )):
         return system.doit()
 
-    if isinstance(system, (
-        sm.physics.control.lti.SISOLinearTimeInvariant,
-        sm.physics.control.lti.TransferFunctionMatrix,
-        ct.TransferFunction, sp.signal.TransferFunction
-    )):
+    allowed_types = [
+        sm.control.lti.SISOLinearTimeInvariant,
+        sm.control.lti.TransferFunctionMatrix,
+    ]
+    if ct is not None:
+        allowed_types.append(ct.TransferFunction)
+    if sp is not None:
+        allowed_types.append(sp.signal.TransferFunction)
+
+    if isinstance(system, tuple(allowed_types)):
         return system
 
     if isinstance(system, (list, tuple)):
@@ -89,7 +111,7 @@ def _preprocess_system(system, **kwargs):
             if all(isinstance(e, Expr) for e in system):
                 num, den = system
                 fs = Tuple(num, den).free_symbols.pop()
-                return sm.physics.control.lti.TransferFunction(num, den, fs)
+                return sm.control.lti.TransferFunction(num, den, fs)
             else:
                 num, den = system
                 num = [float(t) for t in num]
@@ -97,7 +119,7 @@ def _preprocess_system(system, **kwargs):
                 return ct.tf(num, den)
         elif len(system) == 3:
             num, den, fs = system
-            return sm.physics.control.lti.TransferFunction(num, den, fs)
+            return sm.control.lti.TransferFunction(num, den, fs)
         else:
             raise ValueError(
                 "If a tuple/list is provided, it must have "
@@ -113,7 +135,7 @@ def _preprocess_system(system, **kwargs):
         elif len(fs) == 0:
             raise ValueError(
                 "An expression with one free symbol is required.")
-        return sm.physics.control.lti.TransferFunction.from_rational_expression(system, fs.pop())
+        return sm.control.lti.TransferFunction.from_rational_expression(system, fs.pop())
 
     raise TypeError(f"type(system) = {type(system)} not recognized.")
 
@@ -121,7 +143,8 @@ def _preprocess_system(system, **kwargs):
 def _is_siso(system):
     ct = import_module("control")
     sp = import_module("scipy")
-    if isinstance(system, sm.physics.control.lti.SISOLinearTimeInvariant):
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    if isinstance(system, sm.control.lti.SISOLinearTimeInvariant):
         return True
     if isinstance(system, sp.signal.TransferFunction):
         return True
@@ -141,7 +164,9 @@ def _check_system(system, bypass_delay_check=False):
         raise NotImplementedError(
             "Only SISO LTI systems are currently supported.")
 
-    if isinstance(system, sm.physics.control.lti.TransferFunction):
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+
+    if isinstance(system, sm.control.lti.TransferFunction):
         sys = system.to_expr()
         if not bypass_delay_check and sys.has(exp):
             # Should test that exp is not part of a constant, in which case
@@ -153,6 +178,7 @@ def _unpack_mimo_systems(system, label, input, output):
     """Unpack MIMO `system` into `[(sys1, label1), (sys2, label2), ...]`.
     """
     ct = import_module("control")
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
     systems = []
     pre = " - " if len(label) > 0 else ""
 
@@ -167,7 +193,7 @@ def _unpack_mimo_systems(system, label, input, output):
             return True
         return False
 
-    if isinstance(system, sm.physics.control.lti.TransferFunctionMatrix):
+    if isinstance(system, sm.control.lti.TransferFunctionMatrix):
         for i in range(system.num_inputs):
             for o in range(system.num_outputs):
                 if _check_condition(i, o):
@@ -175,7 +201,7 @@ def _unpack_mimo_systems(system, label, input, output):
                     systems.append([system[o, i], lbl])
         return systems
 
-    elif isinstance(system, ct.TransferFunction):
+    elif (ct is not None) and isinstance(system, ct.TransferFunction):
         if (system.ninputs == 1) and (system.noutputs == 1):
             return [[system, label]]
         systems = []
@@ -242,7 +268,8 @@ def _pole_zero_helper(
     system, pole_markersize, zero_markersize,
     **kwargs
 ):
-    if not isinstance(system, sm.physics.control.lti.TransferFunction):
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    if not isinstance(system, sm.control.lti.TransferFunction):
         system = tf_to_sympy(system)
 
     zeros, poles = _get_zeros_poles_from_symbolic_tf(system)
@@ -462,6 +489,7 @@ def pole_zero(
     sgrid, zgrid
 
     """
+    control = _check_if_control_is_installed(use_control=control)
     systems = _unpack_mimo_systems(
         system,
         "" if label is None else label,
@@ -511,10 +539,11 @@ def _ilt(expr, s, t):
 def _step_response_helper(
     system, label, lower_limit, upper_limit, prec, **kwargs
 ):
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
-    if not isinstance(system, sm.physics.control.lti.TransferFunction):
+    if not isinstance(system, sm.control.lti.TransferFunction):
         system = tf_to_sympy(system)
 
     expr = system.to_expr() / system.var
@@ -535,11 +564,12 @@ def _step_response_helper(
 def _step_response_with_control_helper(
     system, label, lower_limit, upper_limit, prec, **kwargs
 ):
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
     expr = (system.to_expr() if isinstance(
-        system, sm.physics.control.lti.TransferFunction) else system)
+        system, sm.control.lti.TransferFunction) else system)
     _x = Dummy("x")
     return SystemResponseSeries(
         expr, prange(_x, lower_limit, upper_limit),
@@ -742,6 +772,7 @@ def step_response(
     .. [1] https://www.mathworks.com/help/control/ref/lti.step.html
 
     """
+    control = _check_if_control_is_installed(use_control=control)
     _check_lower_limit_and_control(lower_limit, control)
     systems = _unpack_mimo_systems(
         system,
@@ -764,10 +795,11 @@ def step_response(
 def _impulse_response_helper(
     system, label, lower_limit, upper_limit, prec, **kwargs
 ):
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
-    if not isinstance(system, sm.physics.control.lti.TransferFunction):
+    if not isinstance(system, sm.control.lti.TransferFunction):
         system = tf_to_sympy(system)
 
     _x = Dummy("x")
@@ -785,12 +817,13 @@ def _impulse_response_helper(
 def _impulse_response_with_control_helper(
     system, label, lower_limit, upper_limit, prec, **kwargs
 ):
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
     _x = Dummy("x")
     expr = (system.to_expr() if isinstance(
-        system, sm.physics.control.lti.TransferFunction) else system)
+        system, sm.control.lti.TransferFunction) else system)
 
     return SystemResponseSeries(
         expr, prange(_x, lower_limit, upper_limit),
@@ -972,6 +1005,7 @@ def impulse_response(
     .. [1] https://www.mathworks.com/help/control/ref/lti.impulse.html
 
     """
+    control = _check_if_control_is_installed(use_control=control)
     _check_lower_limit_and_control(lower_limit, control)
     systems = _unpack_mimo_systems(
         system,
@@ -994,10 +1028,11 @@ def impulse_response(
 def _ramp_response_helper(
     system, label, lower_limit, upper_limit, prec, slope, **kwargs
 ):
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
-    if not isinstance(system, sm.physics.control.lti.TransferFunction):
+    if not isinstance(system, sm.control.lti.TransferFunction):
         system = tf_to_sympy(system)
 
     _x = Dummy("x")
@@ -1015,6 +1050,7 @@ def _ramp_response_helper(
 def _ramp_response_with_control_helper(
     system, label, lower_limit, upper_limit, prec, slope, **kwargs
 ):
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
     sp = import_module("scipy")
@@ -1026,7 +1062,7 @@ def _ramp_response_with_control_helper(
         if system.dt is not None:
             kw["dt"] = system.dt
         expr = sp.signal.TransferFunction(n, d, **kw)
-    elif isinstance(system, sm.physics.control.lti.TransferFunction):
+    elif isinstance(system, sm.control.lti.TransferFunction):
         expr = slope * system.to_expr()
     else:
         expr = slope * system
@@ -1215,6 +1251,8 @@ def ramp_response(
     .. [1] https://en.wikipedia.org/wiki/Ramp_function
 
     """
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    control = _check_if_control_is_installed(use_control=control)
     _check_lower_limit_and_control(lower_limit, control)
     systems = _unpack_mimo_systems(
         system,
@@ -1224,7 +1262,7 @@ def ramp_response(
 
     non_symbolic_systems = any([
         not isinstance(s[0], (
-            Expr, sm.physics.control.lti.SISOLinearTimeInvariant)
+            Expr, sm.control.lti.SISOLinearTimeInvariant)
         ) for s in systems])
     if (
         isinstance(slope, Expr) and
@@ -1852,6 +1890,7 @@ def nyquist(system, omega_limits=None, input=None, output=None,
        )
 
     """
+    control = _check_if_control_is_installed(force_stop=True)
     systems = _unpack_mimo_systems(
         system,
         "" if label is None else label,
@@ -2163,6 +2202,7 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
 
     sgrid, zgrid
     """
+    control = _check_if_control_is_installed(force_stop=True)
     systems = _unpack_mimo_systems(
         system,
         "" if label is None else label,
