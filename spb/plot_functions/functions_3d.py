@@ -182,7 +182,7 @@ def plot3d_parametric_line(*args, **kwargs):
            a * sin(t) - b * sin(3 * t),
            c * sin(2 * t), prange(t, s*pi, e*pi),
            {"color_map": k3d.matplotlib_color_maps.Summer}, params=params,
-           backend=KB, show=False, use_latex=False)
+           backend=KB, show=False)
        (line + sphere).show()
 
     See Also
@@ -382,7 +382,7 @@ def plot3d(*args, **kwargs):
                d: (0.25, 0, 1),
            },
            backend=PB, use_cm=True, n=100, aspect=dict(x=1.5, y=1.5, z=0.75),
-           wireframe=True, wf_n1=15, wf_n2=15, throttled=True, use_latex=False)
+           wireframe=True, wf_n1=15, wf_n2=15, throttled=True)
 
     See Also
     ========
@@ -557,7 +557,7 @@ def plot3d_parametric_surface(*args, **kwargs):
            color_func=lambda u, v: v,
            rendering_kw={"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
            wireframe=True, wf_n2=15, wf_rendering_kw={"width": 0.005},
-           grid=False, n=50, use_latex=False,
+           grid=False, n=50,
            params={
                alpha: (0, 0, pi),
                up: (1, 0, 2),
@@ -1012,8 +1012,7 @@ def plot3d_revolution(
            }, n=50, backend=KB, force_real_eval=True,
            wireframe=True, wf_n1=15, wf_n2=15,
            wf_rendering_kw={"width": 0.004},
-           show_curve=True, curve_kw={"rendering_kw": {"width": 0.025}},
-           use_latex=False)
+           show_curve=True, curve_kw={"rendering_kw": {"width": 0.025}})
 
     See Also
     ========
@@ -1116,7 +1115,7 @@ def plot3d_list(*args, **kwargs):
        p2 = plot3d_list(
            [t * cos(t)], [t * sin(t)], [t],
            params={t: (3*pi, 0, 6*pi)},
-           backend=PB, show=False, scatter=True, use_latex=False,
+           backend=PB, show=False, scatter=True,
            imodule="panel")
        (p2 + p1).show()
 

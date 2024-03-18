@@ -280,7 +280,7 @@ def vector_field_2d(
                quiver_kw=dict(color="black", scale=30, headwidth=5),
                contour_kw={"cmap": "Blues_r", "levels": 15}
            ),
-           grid=False, xlabel="x", ylabel="y", use_latex=False)
+           grid=False, xlabel="x", ylabel="y")
 
     See Also
     ========
@@ -747,7 +747,7 @@ def arrow_2d(
                (0, 0), (r * cos(theta + pi/2), r * sin(theta + pi/2)),
                params=params),
            xlim=(-6, 6), ylim=(-6, 6), aspect="equal",
-           grid=False, use_latex=False
+           grid=False
        )
 
     """

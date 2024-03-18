@@ -240,7 +240,7 @@ def line_parametric_3d(
                rendering_kw={"color_map": k3d.matplotlib_color_maps.Summer},
                params=params
            ),
-           backend=KB, use_latex=False
+           backend=KB
        )
 
     See Also
@@ -512,8 +512,7 @@ def surface(
                    d: (0.25, 0, 1),
                },
                wireframe=True, wf_n1=15, wf_n2=15),
-           backend=PB, aspect=dict(x=1.5, y=1.5, z=0.75),
-           use_latex=False)
+           backend=PB, aspect=dict(x=1.5, y=1.5, z=0.75))
 
     See Also
     ========
@@ -743,7 +742,7 @@ def surface_parametric(
                    up: (1, 0, 2),
                    vp: (2, 0, 2),
                }),
-           backend=KB, grid=False, use_latex=False,
+           backend=KB, grid=False,
            title=r"Catenoid \, to \, Right \, Helicoid \, Transformation"
        )
 
@@ -1255,7 +1254,7 @@ def surface_revolution(
                    v: (2, 0, 3),
                    w: (2, 0, 2)
                }),
-           backend=KB, force_real_eval=True, use_latex=False)
+           backend=KB, force_real_eval=True)
 
     See Also
     ========
@@ -1421,7 +1420,7 @@ def list_3d(
            list_3d(x, y, z, scatter=False),
            list_3d(t * cos(t), t * sin(t), t,
                params={t: (3*pi, 0, 6*pi)}, scatter=True),
-           use_latex=False, backend=PB
+           backend=PB
        )
 
     See Also

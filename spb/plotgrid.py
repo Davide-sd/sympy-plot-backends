@@ -395,7 +395,7 @@ def plotgrid(*args, **kwargs):
        from sympy.abc import a, b, c, d, x
        imodule = "panel"
        options = dict(
-           imodule=imodule, show=False, use_latex=False, params={
+           imodule=imodule, show=False, params={
                a: (1, 0, 2),
                b: (5, 0, 10),
                c: (0, 0, 2*pi),
@@ -404,7 +404,7 @@ def plotgrid(*args, **kwargs):
 
        p1 = plot(sin(x*a + c) * exp(-abs(x) / b), prange(x, -d, d), **options)
        p2 = plot(cos(x*a + c) * exp(-abs(x) / b), (x, -10, 10), **options)
-       plotgrid(p1, p2, imodule=imodule, use_latex=False)
+       plotgrid(p1, p2, imodule=imodule)
 
     References
     ==========

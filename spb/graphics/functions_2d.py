@@ -523,7 +523,7 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
                rendering_kw={"linestyle": ":"}, params=params),
            line(-exp(-c * x), prange(x, 0, n * pi), label="lower limit",
                rendering_kw={"linestyle": ":"}, params=params),
-           ylim=(-1.25, 1.25), use_latex=False,
+           ylim=(-1.25, 1.25),
            title=("Frequency = {:.2f} Hz", a)
        )
 
@@ -772,7 +772,7 @@ def line_parametric_2d(
                    s: (0, 0, 2),
                    e: (2, 0, 2),
                }),
-           aspect="equal", use_latex=False,
+           aspect="equal",
            xlim=(-1.25, 1.25), ylim=(-1.25, 1.25)
        )
 
@@ -880,7 +880,6 @@ def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
            title="Guilloché Pattern Explorer",
            backend=BB,
            legend=False,
-           use_latex=False,
            servable=True,
            imodule="panel"
        )
@@ -1056,7 +1055,7 @@ def contour(
                params={
                    a: (1, 0, 2), b: (1, 0, 2),
                    xp: (1, 0, 2), yp: (2, 0, 2)}),
-           grid=False, use_latex=False
+           grid=False
        )
 
     See Also
@@ -1340,7 +1339,7 @@ def implicit_2d(
                    d: (2, -15, 15),
                    e: (10, 1, 15),
                }, n=150),
-           use_latex=False, ylim=(-10, 10))
+           ylim=(-10, 10))
 
     See Also
     ========
@@ -1495,7 +1494,7 @@ def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
                cos(2 * t) / 2, sin(2 * t) / 2, "B",
                rendering_kw={"marker": "s", "markerfacecolor": None},
                params=params, scatter=True),
-           aspect="equal", use_latex=False
+           aspect="equal"
        )
 
     See Also
@@ -1664,7 +1663,7 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
            geometry(
                Polygon((a + 2, b + 3), c, n=d + 1), "b",
                params=params, fill=False),
-           aspect="equal", use_latex=False,
+           aspect="equal",
            xlim=(-2.5, 5.5), ylim=(-3, 6.5), imodule="panel")
 
     See Also

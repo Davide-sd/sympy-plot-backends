@@ -104,7 +104,7 @@ def complex_points(
        graphics(
            complex_points(l1, label="f1", params=params),
            complex_points(l2, label="f2", params=params),
-           use_latex=False, legend=True, xlim=(-1.5, 2), ylim=(-2, 1))
+           legend=True, xlim=(-1.5, 2), ylim=(-2, 1))
 
     """
     if len(numbers) == 0:
@@ -219,7 +219,7 @@ def line_abs_arg_colored(
            line_abs_arg_colored(fs, prange(k, -c, c),
                params={a: (1, -2, 2), b: (-2, -2, 2), c: (4, 0.5, 4)},
                label="Arg(fs)"),
-           xlabel="k", yscale="log", ylim=(1e-03, 10), use_latex=False)
+           xlabel="k", yscale="log", ylim=(1e-03, 10))
 
     See Also
     ========
@@ -343,7 +343,7 @@ def line_abs_arg(
            line_abs_arg(
                (sqrt(x) + u) * exp(-u * x**2), prange(x, -3*a, 3*a),
                params={u: (0, -1, 2), a: (1, 0, 2)}),
-           ylim=(-0.25, 2), use_latex=False)
+           ylim=(-0.25, 2))
 
     See Also
     ========
@@ -511,7 +511,7 @@ def line_real_imag(
        graphics(
            line_real_imag((sqrt(x) + u) * exp(-u * x**2), prange(x, -3*a, 3*a),
                params={u: (0, -1, 2), a: (1, 0, 2)}),
-           ylim=(-0.25, 2), use_latex=False)
+           ylim=(-0.25, 2))
 
     See Also
     ========
@@ -649,7 +649,7 @@ def surface_abs_arg(
                    a: (1, 0, 2),
                    b: (1, 0, 2)
                }),
-               backend=PB, aspect="cube", use_latex=False)
+               backend=PB, aspect="cube")
 
     See Also
     ========
@@ -750,7 +750,7 @@ def contour_abs_arg(
                    a: (1, 0, 2),
                    b: (1, 0, 2)
                }),
-           use_latex=False, grid=False)
+           grid=False)
 
     See Also
     ========
@@ -853,7 +853,7 @@ def surface_real_imag(
                    a: (1, 0, 2),
                    b: (1, 0, 2)
                }),
-               backend=PB, aspect="cube", use_latex=False)
+               backend=PB, aspect="cube")
 
     See Also
     ========
@@ -954,7 +954,7 @@ def contour_real_imag(
                    a: (1, 0, 2),
                    b: (1, 0, 2)
                }),
-           use_latex=False, grid=False)
+           grid=False)
 
     See Also
     ========
@@ -1129,7 +1129,7 @@ def domain_coloring(
                    a: (pi, 0, 2*pi),
                    b: (pi, 0, 2*pi),
                }),
-           use_latex=False, grid=False
+           grid=False
        )
 
     Notes
@@ -1631,7 +1631,7 @@ def complex_vector_field(expr, range=None, **kwargs):
                    a: (1, 0, 2),
                    b: (1, 0, 2)
                }, quiver_kw=dict(color="orange", headwidth=4)),
-           n=20, grid=False, use_latex=False)
+           n=20, grid=False)
 
     See Also
     ========

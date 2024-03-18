@@ -193,7 +193,7 @@ def graphics(
                rendering_kw={"color_map": k3d.matplotlib_color_maps.Summer},
                params=params
            ),
-           backend=KB, use_latex=False
+           backend=KB
        )
 
     See Also

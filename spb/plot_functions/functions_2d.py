@@ -321,7 +321,7 @@ def plot(*args, **kwargs):
                c: (0.25, 0, 1),   # damping
                n: (2, 0, 4)       # multiple of pi
            },
-           ylim=(-1.25, 1.25), use_latex=False,
+           ylim=(-1.25, 1.25),
            title=("Frequency = {:.2f} Hz", a)
        )
 
@@ -487,7 +487,7 @@ def plot_parametric(*args, **kwargs):
                s: (0, 0, 2),
                e: (2, 0, 2),
            },
-           aspect="equal", use_latex=False,
+           aspect="equal",
            xlim=(-1.25, 1.25), ylim=(-1.25, 1.25)
        )
 
@@ -848,7 +848,7 @@ def plot_contour(*args, **kwargs):
        expr = (cos(x) + a * sin(x) * sin(y) - b * sin(x) * cos(y))**2
        plot_contour(expr, prange(x, 0, xp*pi), prange(y, 0, yp * pi),
            params={a: (1, 0, 2), b: (1, 0, 2), xp: (1, 0, 2), yp: (2, 0, 2)},
-           grid=False, use_latex=False)
+           grid=False)
 
     See Also
     ========
@@ -1074,7 +1074,7 @@ def plot_implicit(*args, **kwargs):
                c: (3, -15, 15),
                d: (2, -15, 15),
                e: (10, 1, 15),
-           }, n=150, use_latex=False, ylim=(-10, 10))
+           }, n=150, ylim=(-10, 10))
 
     See Also
     ========
@@ -1247,7 +1247,6 @@ def plot_polar(*args, **kwargs):
            title="Guilloché Pattern Explorer",
            backend=BB,
            legend=False,
-           use_latex=False,
            servable=True,
            imodule="panel"
        )
@@ -1450,7 +1449,7 @@ def plot_geometry(*args, **kwargs):
                c: (2, 1, 2),
                d: param.Integer(3, softbounds=(3, 8), label="n")
            },
-           aspect="equal", is_filled=False, use_latex=False,
+           aspect="equal", is_filled=False,
            xlim=(-2.5, 5.5), ylim=(-3, 6.5), imodule="panel")
 
     See Also
@@ -1613,7 +1612,7 @@ def plot_list(*args, **kwargs):
        p1 = plot_parametric(
            (cos(x), sin(x), (x, 0, 2*pi), {"linestyle": ":"}),
            (cos(2 * x) / 2, sin(2 * x) / 2, (x, 0, pi), {"linestyle": ":"}),
-           use_cm=False, aspect="equal", show=False, use_latex=False,
+           use_cm=False, aspect="equal", show=False,
            params=params, imodule="panel")
        # plot points
        p2 = plot_list(

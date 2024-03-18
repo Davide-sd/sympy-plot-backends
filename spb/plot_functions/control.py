@@ -197,7 +197,7 @@ def plot_pole_zero(
                d: (3, 0, 5),
            },
            xlim=(-4, 1), ylim=(-4, 4),
-           show_axes=True, use_latex=False)
+           show_axes=True)
 
     References
     ==========
@@ -357,7 +357,7 @@ def plot_step_response(
                # NOTE: remove `None` if using ipywidgets
                f: (0, 0, 10, 50, None, "lower limit"),
                g: (10, 0, 25, 50, None, "upper limit"),
-           }, use_latex=False)
+           })
 
     See Also
     ========
@@ -524,7 +524,7 @@ def plot_impulse_response(
                # NOTE: remove `None` if using ipywidgets
                g: (0, 0, 10, 50, None, "lower limit"),
                h: (8, 0, 25, 50, None, "upper limit"),
-           }, use_latex=False)
+           })
 
 
     See Also
@@ -696,7 +696,7 @@ def plot_ramp_response(
        plot_ramp_response(
            (tf1, "A"), (tf2, "B"),
            slope=a, lower_limit=b, upper_limit=c,
-           params=params, use_latex=False)
+           params=params)
 
     See Also
     ========
@@ -943,7 +943,7 @@ def plot_bode(
                e: (0.1, -1, 1),
                f: (1, -10, 10),
            },
-           imodule="panel", ncols=3, use_latex=False
+           imodule="panel", ncols=3
        )
 
     See Also
@@ -1141,7 +1141,7 @@ def plot_nyquist(*systems, **kwargs):
                e: (2, 0, 10),
                f: (3, 0, 10),
            },
-           m_circles=False, use_latex=False,
+           m_circles=False
            xlim=(-1, 4), ylim=(-2.5, 2.5), aspect="equal"
        )
 

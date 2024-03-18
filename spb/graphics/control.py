@@ -448,7 +448,7 @@ def pole_zero(
            control_axis(),
            pole_zero(tf1, label="A"),
            pole_zero(tf2, label="B", params=params),
-           grid=False, xlim=(-4, 1), ylim=(-4, 4), use_latex=False,
+           grid=False, xlim=(-4, 1), ylim=(-4, 4),
            xlabel="Real", ylabel="Imaginary")
 
     References
@@ -728,7 +728,7 @@ def step_response(
            step_response(
                tf2, label="B", lower_limit=f, upper_limit=g, params=params,
                control=True),
-           use_latex=False, xlabel="Time [s]", ylabel="Amplitude"
+           xlabel="Time [s]", ylabel="Amplitude"
        )
 
     See Also
@@ -957,7 +957,7 @@ def impulse_response(
            impulse_response(
                tf2, label="B", lower_limit=g, upper_limit=h, params=params,
                control=False),
-           use_latex=False, xlabel="Time [s]", ylabel="Amplitude"
+           xlabel="Time [s]", ylabel="Amplitude"
        )
 
 
@@ -1202,7 +1202,7 @@ def ramp_response(
            ramp_response(
                tf2, label="B", slope=a, lower_limit=b, upper_limit=c,
                params=params, control=True),
-           xlabel="Time [s]", ylabel="Amplitude", use_latex=False, imodule="panel")
+           xlabel="Time [s]", ylabel="Amplitude", imodule="panel")
 
     See Also
     ========
@@ -1435,7 +1435,7 @@ def bode_magnitude(
        }
        graphics(
            bode_magnitude(tf1, initial_exp=-2, final_exp=2, params=params),
-           imodule="panel", ncols=3, use_latex=False,
+           imodule="panel", ncols=3,
            xscale="log", xlabel="Frequency [rad/s]", ylabel="Magnitude [dB]"
        )
 
@@ -1615,7 +1615,7 @@ def bode_phase(
        }
        graphics(
            bode_phase(tf1, initial_exp=-2, final_exp=2, params=params),
-           imodule="panel", ncols=3, use_latex=False,
+           imodule="panel", ncols=3,
            xscale="log", xlabel="Frequency [rad/s]", ylabel="Magnitude [dB]"
        )
 
@@ -1847,7 +1847,7 @@ def nyquist(system, omega_limits=None, input=None, output=None,
        }
        graphics(
            nyquist(tf, params=params),
-           xlabel="Real", ylabel="Imaginary", use_latex=False,
+           xlabel="Real", ylabel="Imaginary",
            xlim=(-1, 4), ylim=(-2.5, 2.5), aspect="equal"
        )
 
@@ -2025,7 +2025,7 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True,
            nichols(tf, omega_limits=[1e-03, 1e03], n=1e04, params=params),
            xlabel="Open-Loop Phase [deg]",
            ylabel="Open-Loop Magnitude [dB]",
-           xlim=(-360, 360), grid=False, use_latex=False
+           xlim=(-360, 360), grid=False,
        )
 
     See Also

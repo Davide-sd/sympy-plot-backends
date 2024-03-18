@@ -213,7 +213,7 @@ def plot_vector(*args, **kwargs):
            },
            quiver_kw=dict(color="black", scale=30, headwidth=5),
            contour_kw={"cmap": "Blues_r", "levels": 15},
-           grid=False, xlabel="x", ylabel="y", use_latex=False)
+           grid=False, xlabel="x", ylabel="y")
 
     3D vector field.
 

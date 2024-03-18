@@ -394,7 +394,7 @@ def plot_real_imag(*args, **kwargs):
        a = symbols("a", real=True)
        plot_real_imag(sqrt(x) * exp(-u * x**2), prange(x, -3*a, 3*a),
            params={u: (1, 0, 2), a: (1, 0, 2)},
-           ylim=(-0.25, 2), use_latex=False)
+           ylim=(-0.25, 2))
 
     3D plot of the real and imaginary part of the principal branch of a
     function over a complex range. Note the jump in the imaginary part: that's
@@ -447,7 +447,7 @@ def plot_real_imag(*args, **kwargs):
                u: (0.25, 0, 1),
                a: (1, 0, 2),
                b: (1, 0, 2)
-           }, n=25, threed=True, use_latex=False, use_cm=True)
+           }, n=25, threed=True, use_cm=True)
 
     See Also
     ========
@@ -551,8 +551,7 @@ def plot_complex(*args, **kwargs):
        fs = fourier_transform(f, x, k)
        plot_complex(fs, prange(k, -c, c),
                params={a: (1, -2, 2), b: (-2, -2, 2), c: (4, 0.5, 4)},
-               label="Arg(fs)", xlabel="k", yscale="log", ylim=(1e-03, 10),
-               use_latex=False)
+               label="Arg(fs)", xlabel="k", yscale="log", ylim=(1e-03, 10))
 
     Domain coloring plot. To improve the smoothness of the results, increase
     the number of discretization points and/or apply an interpolation (if the
@@ -600,7 +599,7 @@ def plot_complex(*args, **kwargs):
        z, u, a, b = symbols("z, u, a, b")
        plot_complex(
            sin(u * z), prange(z, -a - b*I, a + b*I),
-           cmap=colorcet.colorwheel, blevel=0.85, use_latex=False,
+           cmap=colorcet.colorwheel, blevel=0.85,
            coloring="b", n=250, grid=False,
            params={
                u: (0.5, 0, 2),
@@ -741,7 +740,7 @@ def plot_complex_list(*args, **kwargs):
        l2 = [expr2.subs(z, t / n) for t in range(n)]
        plot_complex_list(
            (l1, "f1"), (l2, "f2"),
-           params={u: (0.5, 0, 2)}, use_latex=False,
+           params={u: (0.5, 0, 2)},
            xlim=(-1.5, 2), ylim=(-2, 1))
 
 
@@ -881,7 +880,7 @@ def plot_complex_vector(*args, **kwargs):
                u: (1, 0, 2),
                a: (1, 0, 2),
                b: (1, 0, 2)
-           }, n=20, grid=False, use_latex=False,
+           }, n=20, grid=False,
            quiver_kw=dict(color="orange", headwidth=4))
 
     See Also
@@ -1108,8 +1107,7 @@ def plot_riemann_sphere(
                a: (1, -2, 2),
                b: (1, -2, 2),
                c: (2, -10, 10),
-           },
-           use_latex=False
+           }
        )
 
     3D plot of a complex function on the Riemann sphere. Note, the higher the
