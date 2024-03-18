@@ -14,7 +14,8 @@ Or::
     conda install -c conda-forge sympy_plot_backends 
 
 To install the complete requirements in order to get adaptive algorithm,
-interactive plots, bokeh, plotly, k3d, vtk, execute the following command::
+interactive plots, bokeh, plotly, k3d, vtk, control ,execute the
+following command::
 
     pip install sympy_plot_backends[all]
 
@@ -45,6 +46,8 @@ To install the complete requirements with conda::
     conda install -c plotly plotly
     # to enable 3D streamlines plots with matplotlib and K3D-Jupyter
     conda install -c conda-forge vtk
+    # to install the python-control module, for control system plotting
+    conda install -c conda-forge control slycot
 
 
 
