@@ -23,9 +23,13 @@ from sympy import (
 )
 from sympy.physics.control import TransferFunction
 from sympy.vector import CoordSys3D, gradient
+from sympy.external import import_module
 import numpy as np
-import control as ct
-import scipy.signal as signal
+
+ct = import_module("control")
+scipy = import_module("scipy")
+adaptive = import_module("adaptive")
+plotly = import_module("plotly")
 
 # NOTE:
 #
@@ -43,6 +47,7 @@ tf1 = (s**2 - 4) / (s**3 + 2*s - 3)
 tf2 = TransferFunction.from_rational_expression(tf1)
 
 
+@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
 def test_adaptive():
     # verify that adaptive-related keywords produces the expected results
 
@@ -125,6 +130,7 @@ def test_adaptive():
     assert n1 < n2
 
 
+@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
 def test_adaptive_zerodivisionerror():
     # adaptive should be able to catch ZeroDivisionError
 
@@ -1453,7 +1459,8 @@ def test_list3dseries_interactive():
     assert not s.is_parametric
 
 
-def test_mpmath():
+@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
+def test_mpmath_adaptive_true():
     # test that the argument of complex functions evaluated with mpmath
     # might be different than the one computed with Numpy (different
     # behaviour at branch cuts)
@@ -1473,6 +1480,13 @@ def test_mpmath():
         xx2, yy2 = s2.get_data()
         assert np.all(yy1 < 0)
         assert np.all(yy2 > 0)
+
+
+def test_mpmath_adaptive_false():
+    # test that the argument of complex functions evaluated with mpmath
+    # might be different than the one computed with Numpy (different
+    # behaviour at branch cuts)
+    z, u = symbols("z, u")
 
     with warns(
         UserWarning,
@@ -1966,7 +1980,7 @@ def test_use_cm(use_cm):
     assert s.use_cm is use_cm
 
 
-def test_sums():
+def test_sums_adaptive_false():
     # test that data series are able to deal with sums
     x, y, u = symbols("x, y, u")
 
@@ -1996,6 +2010,12 @@ def test_sums():
     xx2 = xx2.astype(float)
     do_test([xx1, yy1], [xx2, yy2])
 
+
+@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
+def test_sums_adaptive_true():
+    # test that data series are able to deal with sums
+    x, y = symbols("x, y")
+
     s = LineOver1DRangeSeries(Sum(1 / x, (x, 1, y)), (y, 2, 10), adaptive=True)
     with warns(
         UserWarning,
@@ -2004,7 +2024,7 @@ def test_sums():
         raises(TypeError, lambda: s.get_data())
 
 
-def test_absargline():
+def test_absargline_adaptive_false():
     # verify that AbsArgLineSeries produces the correct results
     x, u = symbols("x, u")
 
@@ -2021,6 +2041,12 @@ def test_absargline():
     # there shouldn't be nan values
     assert np.invert(np.isnan(data1[1])).all()
     assert np.invert(np.isnan(data1[2])).all()
+
+
+@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
+def test_absargline_adaptive_false():
+    # verify that AbsArgLineSeries produces the correct results
+    x = symbols("x")
 
     s3 = AbsArgLineSeries(sqrt(x), (x, -5, 5), adaptive=True)
     data3 = s3.get_data()
@@ -2269,6 +2295,11 @@ def test_apply_transforms():
     assert np.allclose(a1, a2)
     assert np.allclose(b1, b2)
     assert np.allclose(c1, c2)
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+def test_apply_transforms_control():
+    s, t = symbols("s, t")
 
     G = (8*s**2 + 18*s + 32) / (s**3 + 6*s**2 + 14*s + 24)
     s1 = SystemResponseSeries(G, (t, 0, 10), n=10)
@@ -3073,6 +3104,7 @@ def test_complex_adaptive_false():
     assert (not np.allclose(data1[1], 0)) and (not np.allclose(data2[1], 0))
 
 
+@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_complex_adaptive_true():
     # verify that series with adaptive=True is evaluated with discretized
@@ -3110,7 +3142,8 @@ def test_complex_adaptive_true():
     assert np.isnan(data1[-1]).any()
 
 
-def test_expr_is_lambda_function():
+@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
+def test_expr_is_lambda_function_adaptive_true():
     # verify that when a numpy function is provided, the series will be able
     # to evaluate it. Also, label should be empty in order to prevent some
     # backend from crashing.
@@ -3119,10 +3152,7 @@ def test_expr_is_lambda_function():
     s1 = LineOver1DRangeSeries(
         f, ("x", -5, 5), adaptive=True, adaptive_goal=0.1)
     s1.get_data()
-    s2 = LineOver1DRangeSeries(
-        f, ("x", -5, 5), adaptive=False, n=10)
-    s2.get_data()
-    assert s1.label == s2.label == ""
+    assert s1.label == ""
 
     fx = lambda x: np.cos(x)
     fy = lambda x: np.sin(x)
@@ -3131,11 +3161,7 @@ def test_expr_is_lambda_function():
         adaptive=True, adaptive_goal=0.1
     )
     s1.get_data()
-    s2 = Parametric2DLineSeries(
-        fx, fy, ("x", 0, 2 * pi),
-        adaptive=False, n=10)
-    s2.get_data()
-    assert s1.label == s2.label == ""
+    assert s1.label == ""
 
     fz = lambda x: x
     s1 = Parametric3DLineSeries(
@@ -3143,11 +3169,40 @@ def test_expr_is_lambda_function():
         adaptive=True, adaptive_goal=0.1
     )
     s1.get_data()
+    assert s1.label == ""
+
+    raises(
+        TypeError,
+        lambda: ImplicitSeries(
+            lambda t: np.sin(t), ("x", -5, 5), ("y", -6, 6), adaptive=True),
+    )
+
+
+def test_expr_is_lambda_function_adaptive_false():
+    # verify that when a numpy function is provided, the series will be able
+    # to evaluate it. Also, label should be empty in order to prevent some
+    # backend from crashing.
+
+    f = lambda x: np.cos(x)
+    s2 = LineOver1DRangeSeries(
+        f, ("x", -5, 5), adaptive=False, n=10)
+    s2.get_data()
+    assert s2.label == ""
+
+    fx = lambda x: np.cos(x)
+    fy = lambda x: np.sin(x)
+    s2 = Parametric2DLineSeries(
+        fx, fy, ("x", 0, 2 * pi),
+        adaptive=False, n=10)
+    s2.get_data()
+    assert s2.label == ""
+
+    fz = lambda x: x
     s2 = Parametric3DLineSeries(
         fx, fy, fz, ("x", 0, 2 * pi),
         adaptive=False, n=10)
     s2.get_data()
-    assert s1.label == s2.label == ""
+    assert s2.label == ""
 
     f = lambda x, y: np.cos(x**2 + y**2)
     s1 = SurfaceOver2DRangeSeries(
@@ -3344,14 +3399,16 @@ def test_particular_case_1():
     xn = (n**3 + n**2) ** (S(1) / 3) - (n**3 - n**2) ** (S(1) / 3)
     expr = Abs(xn - a) - epsilon
     math_func = lambdify([n], expr)
-    s1 = LineOver1DRangeSeries(
-        expr, (n, -10, 10), "",
-        adaptive=True, adaptive_goal=0.2)
-    s2 = LineOver1DRangeSeries(
-        math_func, ("n", -10, 10), "",
-        adaptive=True, adaptive_goal=0.2
-    )
-    do_test(s1, s2)
+
+    if adaptive:
+        s1 = LineOver1DRangeSeries(
+            expr, (n, -10, 10), "",
+            adaptive=True, adaptive_goal=0.2)
+        s2 = LineOver1DRangeSeries(
+            math_func, ("n", -10, 10), "",
+            adaptive=True, adaptive_goal=0.2
+        )
+        do_test(s1, s2)
 
     s3 = LineOver1DRangeSeries(
         expr, (n, -10, 10), "",
@@ -3435,6 +3492,7 @@ def test_complex_params_number_eval():
     assert not np.isnan(y).any()
 
 
+@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
 def test_complex_range_line_plot_1():
     # verify that univariate functions are evaluated with a complex
     # data range (with zero imaginary part). There shouln't be any
@@ -3460,6 +3518,7 @@ def test_complex_range_line_plot_1():
         np.allclose(data2[0], data3[0]) and np.allclose(data2[1], data3[1]))
 
 
+@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
 def test_complex_range_line_plot_2():
     # verify that univariate functions are evaluated with a complex
     # data range (with non-zero imaginary part). There shouln't be any
@@ -3830,6 +3889,7 @@ def test_2d_complex_domain_coloring_schemes():
             assert not np.allclose(imgs[i], imgs[j])
 
 
+@pytest.mark.skipif(plotly is None, reason="plotly is not installed")
 def test_2d_complex_domain_coloring_cmap_blevel():
     # verify that complex domain coloring is applying colormap and black level
 
@@ -4203,6 +4263,7 @@ def test_eval_adaptive_false_lambda_functions():
     assert np.allclose(y, [-1.57079581, -0.52359878,  0.,  0.52359878, 1.57079583])
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 @pytest.mark.parametrize(
     "tf, label, rendering_kw",
     [
@@ -4227,6 +4288,8 @@ def test_root_locus_series(tf, label, rendering_kw):
     assert data[0].shape[1] == 3
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+@pytest.mark.skipif(scipy is None, reason="scipy is not installed")
 def test_root_locus_series_2():
     # verify that RootLocusSeries is able to deal with transfer functions
     # from the ``control`` module and from ``scipy.signal``.
@@ -4236,7 +4299,7 @@ def test_root_locus_series_2():
     assert isinstance(s1._control_tf, ct.TransferFunction)
     assert len(s1.get_data()) == 2
 
-    G2 = signal.TransferFunction([1, 0, -0.5], [1, 2, 3, 4])
+    G2 = scipy.signal.TransferFunction([1, 0, -0.5], [1, 2, 3, 4])
     s2 = RootLocusSeries(G2)
     assert s2.expr is None
     assert isinstance(s2._control_tf, ct.TransferFunction)
@@ -4258,6 +4321,11 @@ def test_sgrid_line_series():
     assert len(y_tp) == 0
     assert len(x_ts) == 0
 
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+def test_sgrid_line_series():
+    xi = [0, 0.2, 0.5, 1]
+    wn = [1, 2, 3]
     # when one or more data series (RootLocusSeries or PoleZeroSeries or
     # List2DSeries) are associated to a SGridLineSeries, it autocomputes
     # the damping ratios and natural frequencies
@@ -4338,6 +4406,7 @@ def test_zgrid_line_series():
     assert all(k in list(data[3].values())[0].keys()
         for k in ["x", "y", "label", "lx", "ly"])
 
+
 def test_zgrid_line_series_interactive():
     a, b, c, d = symbols("a:d")
     params = {a: 0.5, b: 2, c: 0.3, d: 0.8}
@@ -4353,6 +4422,7 @@ def test_zgrid_line_series_interactive():
     assert np.allclose(list(ts_dict.keys()), [0.3, 0.5, 0.8])
 
 
+@pytest.mark.skipif(scipy is None, reason="scipy is not installed")
 def test_pole_zero_series():
     def do_test(tf):
         s1 = PoleZeroSeries(tf, return_poles=True)
@@ -4368,12 +4438,13 @@ def test_pole_zero_series():
     s = symbols("s")
     tf1 = TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
     tf2 = ct.TransferFunction([1, 0, 1], [1, 4, 6, 5, 2])
-    tf3 = signal.TransferFunction([1, 0, 1], [1, 4, 6, 5, 2])
+    tf3 = scipy.signal.TransferFunction([1, 0, 1], [1, 4, 6, 5, 2])
     do_test(tf1)
     do_test(tf2)
     do_test(tf3)
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_pole_zero_series_interactive():
     a, b, c, d, s = symbols("a, b, c, d, s")
     tf1 = TransferFunction(a * s**2 + b, s**4 + c*s**3 + d*s**2 + 5*s + 2, s)

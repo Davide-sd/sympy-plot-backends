@@ -1,10 +1,13 @@
 from spb.series import BaseSeries, HVLineSeries
+import pytest
 from pytest import raises
 import matplotlib
 import numpy as np
 from spb import PB, MB, KB, BB, plot, plot3d, prange, plot_vector
 from sympy import sin, cos, pi, exp, symbols
+from sympy.external import import_module
 
+pn = import_module("panel")
 
 KB.skip_notebook_check = True
 
@@ -19,17 +22,19 @@ def test_unsupported_series():
     raises(
         NotImplementedError,
         lambda: MB(*series).draw())
-    raises(
-        NotImplementedError,
-        lambda: PB(*series).draw())
-    raises(
-        NotImplementedError,
-        lambda: BB(*series).draw())
-    raises(
-        NotImplementedError,
-        lambda: KB(*series).draw())
+    if pn is not None:
+        raises(
+            NotImplementedError,
+            lambda: PB(*series).draw())
+        raises(
+            NotImplementedError,
+            lambda: BB(*series).draw())
+        raises(
+            NotImplementedError,
+            lambda: KB(*series).draw())
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 def test_common_keywords():
     # TODO: here I didn't test axis_center, autoscale, margin
     kw = dict(
@@ -65,6 +70,7 @@ def test_common_keywords():
     assert p.size == (5, 10)
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 def test_plot_sum():
     x, y = symbols("x, y")
 
@@ -172,6 +178,7 @@ def test_plot_sum():
     p3 = p1 + p2
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 def test_xaxis_inverted():
     # verify that no errors are raised when parametric ranges are used
 
@@ -212,8 +219,9 @@ def test_number_of_renderers():
         assert len(p.series) == len(p.renderers) == 4
 
     do_test(MB)
-    do_test(PB)
-    do_test(BB)
+    if pn is not None:
+        do_test(PB)
+        do_test(BB)
 
 
 def test_axis_scales():

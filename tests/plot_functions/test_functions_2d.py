@@ -1,5 +1,6 @@
 import os
 from pytest import raises, warns
+import spb
 from spb.plot_functions.functions_2d import (
     plot, plot_parametric, plot_implicit, plot_contour,
     plot_piecewise, plot_list, plot_parametric_region, plot_geometry
@@ -8,7 +9,6 @@ from spb.plot_functions.functions_3d import (
     # for old sympy.plotting tests
     plot3d, plot3d_parametric_line, plot3d_parametric_surface
 )
-from spb.interactive.panel import InteractivePlot
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries,
     Parametric2DLineSeries, ImplicitSeries
@@ -28,6 +28,9 @@ from sympy.testing.tmpfiles import TmpFileManager
 from tempfile import TemporaryDirectory, NamedTemporaryFile, mkdtemp
 import pytest
 import numpy as np
+
+ipy = import_module("ipywidgets")
+adaptive_module = import_module("adaptive")
 
 
 # NOTE:
@@ -64,19 +67,6 @@ def test_plot_geometry(pi_options):
     assert all(not s.is_interactive for s in p.series)
     assert all(not s.is_3D for s in p.series)
 
-    # symbolic geometric entities
-    a, b, c, d = symbols("a, b, c, d")
-    p = plot_geometry(
-        (Polygon((a, b), c, n=d), "triangle"),
-        (Polygon((a + 2, b + 3), c, n=d + 1), "square"),
-        params={a: 0, b: 1, c: 2, d: 3},
-        **pi_options
-    )
-    assert isinstance(p, MB)
-    assert len(p.series) == 2
-    assert all(not s.is_interactive for s in p.series)
-    assert all(not s.is_3D for s in p.series)
-
     # 3d geometric entities
     p = plot_geometry(
         (Point3D(5, 5, 5), "center"),
@@ -89,7 +79,22 @@ def test_plot_geometry(pi_options):
     assert all(not s.is_interactive for s in p.series)
     assert all(s.is_3D for s in p.series)
 
-    # interactive widget plot
+
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+@pytest.mark.filterwarnings("ignore:The following")
+def test_plot_geometry_interactive(pi_options):
+    a, b, c, d = symbols("a, b, c, d")
+    p = plot_geometry(
+        (Polygon((a, b), c, n=d), "triangle"),
+        (Polygon((a + 2, b + 3), c, n=d + 1), "square"),
+        params={a: 0, b: 1, c: 2, d: 3},
+        **pi_options
+    )
+    assert isinstance(p, MB)
+    assert len(p.series) == 2
+    assert all(not s.is_interactive for s in p.series)
+    assert all(not s.is_3D for s in p.series)
+
     p = plot_geometry(
         (Polygon((a, b), c, n=d), "a"),
         (Polygon((a + 2, b + 3), c, n=d + 1), "b"),
@@ -101,7 +106,7 @@ def test_plot_geometry(pi_options):
         ylim=(-3, 6.5),
         **pi_options
     )
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
     assert len(p.backend.series) == 2
     assert all(s.is_interactive for s in p.backend.series)
     assert all(not s.is_3D for s in p.backend.series)
@@ -406,7 +411,12 @@ def test_plot_parametric_region(p_options, pi_options):
     assert sum(
         (s.var, s.start, s.end) == (y, 0, float(pi)) for s in p.series) == 3
 
-    # parametric interactive plot
+
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+def test_plot_parametric_region_interactive(p_options, pi_options):
+    # verify that plot_parametric_region creates the correct data series
+
+    u, v, x, y = symbols("u, v, x, y")
     p = lambda: plot_parametric_region(
         u * cos(x * v), u * sin(v),
         (u, 1, 2), (v, 0, 2 * pi / 3),
@@ -652,21 +662,22 @@ def test_plot_piecewise_multiple_functions(p_options):
     assert len([s for s in p.series if s.get_label(True)]) == 2
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 @pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
 def test_functions_iplot_integration(pi_options):
     # verify the integration between most important plot functions and iplot
 
     x, y, u, v = symbols("x, y, u, v")
     p = plot(cos(u * x), params={u: (1, 0, 2)}, **pi_options)
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
 
     p = plot_parametric(
         cos(u * x), sin(x), params={u: (1, 0, 2)}, **pi_options)
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
 
     p = plot_contour(
         cos(u * x**2 + y**2), params={u: (1, 0, 2)}, **pi_options)
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
 
     # non-boolean expression -> works fine
     p = plot_implicit(
@@ -675,7 +686,7 @@ def test_functions_iplot_integration(pi_options):
         params={u: (1, 0, 2)},
         **pi_options
     )
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
     p.backend.update_interactive({u: 2})
 
     # boolean expression -> raise error on update
@@ -693,10 +704,10 @@ def test_functions_iplot_integration(pi_options):
         raises(NotImplementedError, p)
 
     p = plot_geometry(Circle((u, 0), 4), params={u: (1, 0, 2)}, **pi_options)
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
 
     p = plot_list([1, 2, 3], [4, 5, 6], params={u: (1, 0, 2)}, **pi_options)
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
 
     p = lambda: plot_piecewise(
         u * Heaviside(x, 0).rewrite(Piecewise),
@@ -710,7 +721,7 @@ def test_functions_iplot_integration(pi_options):
 def test_plot_label_rendering_kw(p_options, pi_options):
     # verify that label and rendering_kw keyword arguments gets applied
     # witht the plot function
-    u, x, y = symbols("u, x, y")
+    x = symbols("x")
 
     t = plot(
         sin(x), cos(x), (x, -5, 5),
@@ -724,6 +735,14 @@ def test_plot_label_rendering_kw(p_options, pi_options):
     assert t.series[0].rendering_kw == {"color": "r"}
     assert t.series[1].rendering_kw == {"linestyle": ":"}
 
+
+
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+def test_plot_label_rendering_kw_interactive(p_options, pi_options):
+    # verify that label and rendering_kw keyword arguments gets applied
+    # witht the plot function
+    u, x = symbols("u, x")
+
     t = plot(
         sin(u * x), cos(u * x), (x, -5, 5),
         params={
@@ -733,7 +752,7 @@ def test_plot_label_rendering_kw(p_options, pi_options):
         rendering_kw=[{"color": "r"}, {"linestyle": ":"}],
         **pi_options
     )
-    assert isinstance(t, InteractivePlot)
+    assert isinstance(t, spb.interactive.panel.InteractivePlot)
     assert (
         len(t.backend.series) == 2 and
         all(s.is_2Dline for s in t.backend.series)
@@ -753,6 +772,9 @@ def test_plot_label_rendering_kw(p_options, pi_options):
 
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_plot_and_save_1(paf_options, adaptive):
+    if adaptive and (adaptive_module is None):
+        return
+
     x, y, z = symbols("x, y, z")
     pa_options = paf_options.copy()
     pa_options.update({"adaptive": adaptive, "n": 10})
@@ -810,6 +832,9 @@ def test_plot_and_save_1(paf_options, adaptive):
 
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_issue_7471(paf_options, adaptive):
+    if adaptive and (adaptive_module is None):
+        return
+
     x = symbols("x")
     paf_options.update({"adaptive": adaptive, "n": 10})
 
@@ -824,6 +849,9 @@ def test_issue_7471(paf_options, adaptive):
 
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_issue_10925(paf_options, adaptive):
+    if adaptive and (adaptive_module is None):
+        return
+
     x = symbols("x")
     paf_options.update({"adaptive": adaptive, "n": 10})
 
@@ -843,6 +871,9 @@ def test_issue_10925(paf_options, adaptive):
 @pytest.mark.filterwarnings("ignore:.*does not support adaptive algorithm.")
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_plot_and_save_2(paf_options, adaptive):
+    if adaptive and (adaptive_module is None):
+        return
+
     x, y, z = symbols("x, y, z")
     paf_options.update({"adaptive": adaptive, "n": 10})
 
@@ -879,14 +910,6 @@ def test_plot_and_save_2(paf_options, adaptive):
         # No adaptive sampling.
         p = plot_parametric(cos(x), sin(x), **paf_options)
         filename = "test_adaptive_false.png"
-        p.save(os.path.join(tmpdir, filename))
-        p.close()
-
-        # With adaptive sampling.
-        p = plot_parametric(
-            cos(x), sin(x), adaptive=True, adaptive_goal=0.1, show=False
-        )
-        filename = "test_adaptive_true.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
@@ -982,6 +1005,9 @@ def test_plot_and_save_2(paf_options, adaptive):
 @pytest.mark.filterwarnings("ignore:The evaluation with NumPy/SciPy failed.")
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_plot_and_save_4(paf_options, adaptive):
+    if adaptive and (adaptive_module is None):
+        return
+
     x, y = symbols("x, y")
     paf_options.update({"adaptive": adaptive, "n": 10})
 
@@ -1003,6 +1029,9 @@ def test_plot_and_save_4(paf_options, adaptive):
 
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_plot_and_save_5a(paf_options, adaptive):
+    if adaptive and (adaptive_module is None):
+        return
+
     x, y = symbols("x, y")
     paf_options.update({"adaptive": adaptive, "n": 10})
 
@@ -1032,6 +1061,9 @@ def test_plot_and_save_5b(paf_options):
 @pytest.mark.filterwarnings("ignore:The evaluation with NumPy/SciPy failed.")
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_plot_and_save_6(paf_options, adaptive):
+    if adaptive and (adaptive_module is None):
+        return
+
     x = symbols("x")
     paf_options.update({"adaptive": adaptive, "n": 10})
 

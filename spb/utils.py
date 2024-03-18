@@ -817,7 +817,7 @@ def tf_to_sympy(tf, var=None, skip_check_dt=False):
     elif isinstance(tf, (Series, Parallel)):
         return tf.doit()
 
-    if isinstance(tf, ct.TransferFunction):
+    if (ct is not None) and isinstance(tf, ct.TransferFunction):
         if (tf.ninputs == 1) and (tf.noutputs == 1):
             n, d = tf.num[0][0], tf.den[0][0]
             n = Poly.from_list(n, gen).as_expr()
@@ -835,7 +835,7 @@ def tf_to_sympy(tf, var=None, skip_check_dt=False):
             rows.append(row)
         return TransferFunctionMatrix(rows)
 
-    elif isinstance(tf, sp.signal.TransferFunction):
+    elif (sp is not None) and isinstance(tf, sp.signal.TransferFunction):
         n = Poly.from_list(tf.num, gen).as_expr()
         d = Poly.from_list(tf.den, gen).as_expr()
         _check_dt(tf)
@@ -867,9 +867,9 @@ def is_discrete_time(system):
 
     if isinstance(system, sy.physics.control.lti.SISOLinearTimeInvariant):
         return False
-    if isinstance(system, sp.signal.TransferFunction):
+    if (sp is not None) and isinstance(system, sp.signal.TransferFunction):
         return False if system.dt is None else True
-    if isinstance(system, ct.TransferFunction):
+    if (ct is not None) and isinstance(system, ct.TransferFunction):
         return system.isdtime()
     return False
 

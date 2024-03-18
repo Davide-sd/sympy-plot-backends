@@ -1,9 +1,9 @@
 import pytest
 from pytest import raises
+ipywidgets = pytest.importorskip("ipywidgets")
 from spb import BB, PB, MB, plot
 from spb.interactive.ipywidgets import _build_widgets, InteractivePlot
 from sympy import symbols, cos, sin, exp, pi, Float, Integer, Rational
-import ipywidgets
 import numpy as np
 
 

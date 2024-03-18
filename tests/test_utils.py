@@ -14,10 +14,12 @@ from sympy import (
     symbols, Expr, Tuple, Integer, sin, cos, Matrix,
     I, Polygon, solveset, FiniteSet, ImageSet, exp
 )
+from sympy.external import import_module
 from sympy.physics.control import TransferFunction, TransferFunctionMatrix
 import numpy as np
-import control as ct
-import scipy.signal as signal
+
+ct = import_module("control")
+scipy = import_module("scipy")
 
 x, a, b = symbols("x a b")
 
@@ -251,6 +253,7 @@ def _is_control_tf_equals(A, B):
     assert A.dt == B.dt
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_tf_to_control_1():
     # symbolic expressions to ct.TransferFunction
     s = symbols("s")
@@ -267,6 +270,7 @@ def test_tf_to_control_1():
     )
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_tf_to_control_2():
     # sympy.physics.control.TransferFunction to ct.TransferFunction
     s = symbols("s")
@@ -284,16 +288,18 @@ def test_tf_to_control_2():
     )
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_tf_to_control_3():
     # scipy.signal.TransferFunction to ct.TransferFunction
 
-    G = signal.TransferFunction([1, 3, 3], [1, 2, 1])
+    G = scipy.signal.TransferFunction([1, 3, 3], [1, 2, 1])
     _is_control_tf_equals(
         tf_to_control(G),
         ct.tf([1., 3., 3.], [1., 2., 1.])
     )
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_tf_to_control_4():
     # verify the error message is raised.
     s = symbols("s")
@@ -302,11 +308,13 @@ def test_tf_to_control_4():
     raises(TypeError, lambda: tf_to_control(tf))
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_tf_to_control_5():
     tf = ct.TransferFunction([1], [1, 2, 3], dt=0.1)
     assert tf_to_control(tf) is tf
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_tf_to_control_6():
     # raise error with time delays
     s = symbols("s")
@@ -329,6 +337,7 @@ def test_tf_to_sympy_1():
     assert tf_to_sympy(G).args == TransferFunction(s, (s+4) * (s+8), s).args
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_tf_to_sympy_2():
     # SISO ct.TransferFunction to TransferFunction
 
@@ -337,15 +346,17 @@ def test_tf_to_sympy_2():
     assert tf_to_sympy(G).args == TransferFunction(s, s**2 + 12*s + 32, s).args
 
 
+@pytest.mark.skipif(scipy is None, reason="scipy is not installed")
 def test_tf_to_sympy_3():
     # SISO scipy.signal.TransferFunction to TransferFunction
 
-    G = signal.TransferFunction([1, 0], [1, 12, 32])
+    G = scipy.signal.TransferFunction([1, 0], [1, 12, 32])
     s = symbols("s")
     assert tf_to_sympy(G).args == TransferFunction(
         1.0*s, 1.0*s**2 + 12.0*s + 32.0, s).args
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_tf_to_sympy_4():
     # MIMO ct.TransferFunction to TransferFunctionMatrix
     G = ct.TransferFunction(
@@ -373,6 +384,7 @@ def test_tf_to_sympy_5():
     raises(TypeError, lambda: tf_to_sympy([[1, 2, 3], [1, 2, 3, 4]]))
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_tf_to_sympy_6():
     # raise warnings caused by the lack of discrete-time transfer function
     # in sympy
@@ -388,7 +400,7 @@ def test_tf_to_sympy_6():
         assert H.var == z
 
 
-    G2 = signal.TransferFunction([1, 0], [1, 12, 32], dt=0.2)
+    G2 = scipy.signal.TransferFunction([1, 0], [1, 12, 32], dt=0.2)
     with warns(
         UserWarning,
         match="At the time of writing this message, SymPy "
@@ -409,6 +421,7 @@ def test_tf_to_sympy_6():
         assert H.var == z
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_is_discrete_time():
     a, s = symbols("a, s")
     G1 = s / (s**2 + 2*s + 3)
@@ -417,8 +430,8 @@ def test_is_discrete_time():
     G4 = TransferFunction(s, s**2 + a*s + 3, s)
     G5 = ct.tf([1], [1, 2, 3])
     G6 = ct.tf([1], [1, 2, 3], dt=0.05)
-    G7 = signal.TransferFunction([1], [1, 2, 3])
-    G8 = signal.TransferFunction([1], [1, 2, 3], dt=0.05)
+    G7 = scipy.signal.TransferFunction([1], [1, 2, 3])
+    G8 = scipy.signal.TransferFunction([1], [1, 2, 3], dt=0.05)
 
     def do_test(G, expected):
         assert is_discrete_time(G) is expected

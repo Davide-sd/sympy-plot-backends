@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 from pytest import warns, raises
+ct = pytest.importorskip("control")
+scipy = pytest.importorskip("scipy")
 from spb import (
     control_axis, pole_zero, step_response, impulse_response, ramp_response,
     bode_magnitude, bode_phase, nyquist, nichols, sgrid, root_locus, zgrid,
@@ -14,9 +16,7 @@ from spb.series import (
 from sympy.abc import a, b, c, d, e, s
 from sympy import exp
 from sympy.physics.control.lti import TransferFunction, TransferFunctionMatrix
-import control as ct
-import scipy.signal as signal
-
+from sympy.external import import_module
 
 n1, d1 = s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2
 n2, d2 = s**2 + e, s**4 + a*s**3 + b*s**2 + c*s + d
@@ -48,16 +48,16 @@ tf_mimo_control = ct.TransferFunction(
 )
 tf_siso_sympy = TransferFunction(s + 1, s**2 + s + 1, s)
 tf_siso_control = ct.tf([1, 1], [1, 1, 1])
-tf_siso_scipy = signal.TransferFunction([1, 1], [1, 1, 1])
+tf_siso_scipy = scipy.signal.TransferFunction([1, 1], [1, 1, 1])
 
 tf_dt_control = ct.tf([1], [1, 2, 3], dt=0.05)
-tf_dt_scipy = signal.TransferFunction([1], [1, 2, 3], dt=0.05)
+tf_dt_scipy = scipy.signal.TransferFunction([1], [1, 2, 3], dt=0.05)
 
 tf_cont_control_2 = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236])
-tf_cont_scipy_2 = signal.TransferFunction(
+tf_cont_scipy_2 = scipy.signal.TransferFunction(
     [0.0244, 0.0236], [1.1052, -2.0807, 1.0236])
 tf_dt_control_2 = ct.tf([0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
-tf_dt_scipy_2 = signal.TransferFunction(
+tf_dt_scipy_2 = scipy.signal.TransferFunction(
     [0.0244, 0.0236], [1.1052, -2.0807, 1.0236], dt=0.2)
 
 

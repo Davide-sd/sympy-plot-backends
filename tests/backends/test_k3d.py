@@ -1,8 +1,8 @@
-from spb.series import Parametric3DLineSeries
-import k3d
-import numpy as np
 import pytest
 from pytest import raises
+k3d = pytest.importorskip("k3d")
+from spb.series import Parametric3DLineSeries
+import numpy as np
 import os
 from tempfile import TemporaryDirectory
 from spb import (

@@ -21,6 +21,7 @@ from sympy import (
     latex, log
 )
 from sympy.abc import x, y, z, u, t, a, b, c
+from sympy.external import import_module
 from .make_tests import (
     custom_colorloop_1,
     make_plot_1,
@@ -120,6 +121,11 @@ from .make_tests import (
     make_test_sgrid,
     make_test_zgrid
 )
+
+ct = import_module("control")
+ipy = import_module("ipywidgets")
+scipy = import_module("scipy")
+vtk = import_module("vtk", catch=(RuntimeError,))
 
 
 # NOTE
@@ -500,6 +506,7 @@ def test_plot_vector_3d_quivers():
     p.close()
 
 
+@pytest.mark.skipif(vtk is None, reason="vtk is not installed")
 def test_plot_vector_3d_streamlines():
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `stream_kw` overrides the
@@ -556,7 +563,13 @@ def test_plot_vector_2d_normalize():
     assert not np.allclose(np.sqrt(uu1**2 + vv1**2), 1)
     assert np.allclose(np.sqrt(uu2**2 + vv2**2), 1)
 
-    # interactive plots
+
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+def test_plot_vector_2d_normalize_interactive():
+    # verify that backends are capable of normalizing a vector field before
+    # plotting it. Since all backend are different from each other, let's test
+    # that data in the figures is different in the two cases normalize=True
+    # and normalize=False
     p1 = make_plot_vector_2d_normalize_2(MB, False)
     p1.backend.update_interactive({u: 1.5})
     p2 = make_plot_vector_2d_normalize_2(MB, True)
@@ -585,7 +598,15 @@ def test_plot_vector_3d_normalize():
     # TODO: how can I test that these two quivers are different?
     # assert not np.allclose(seg1, seg2)
 
-    # interactive plots
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+def test_plot_vector_3d_normalize_interactive():
+    # verify that backends are capable of normalizing a vector field before
+    # plotting it. Since all backend are different from each other, let's test
+    # that data in the figures is different in the two cases normalize=True
+    # and normalize=False
+
     p1 = make_plot_vector_3d_normalize_2(MB, False)
     p1.backend.update_interactive({u: 1.5})
     p2 = make_plot_vector_3d_normalize_2(MB, True)
@@ -604,6 +625,11 @@ def test_plot_vector_2d_quiver_color_func():
     a1 = p1.fig.axes[0].collections[0].get_array()
     a2 = p2.fig.axes[0].collections[0].get_array()
     assert not np.allclose(a1, a2)
+
+
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+def test_plot_vector_2d_quiver_color_func_interactive():
+    # verify that color_func gets applied to 2D quivers
 
     x, y, a = symbols("x y a")
     _pv2 = lambda B, cf: plot_vector(
@@ -666,6 +692,11 @@ def test_plot_vector_3d_quivers_color_func():
     p1.draw()
     p2.draw()
 
+
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+def test_plot_vector_3d_quivers_color_func_interactive():
+    # verify that color_func gets applied to 3D quivers
+
     p1 = make_plot_vector_3d_quiver_color_func_2(MB, None)
     p2 = make_plot_vector_3d_quiver_color_func_2(
         MB, lambda x, y, z, u, v, w: np.cos(u))
@@ -676,6 +707,7 @@ def test_plot_vector_3d_quivers_color_func():
     p3.backend.update_interactive({a: 2})
 
 
+@pytest.mark.skipif(vtk is None, reason="vtk is not installed")
 def test_plot_vector_3d_streamlines_color_func():
     # verify that color_func gets applied to 3D quivers
 
@@ -955,6 +987,7 @@ def test_save():
         p.close()
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_vectors_3d_update_interactive():
     # Some backends do not support streamlines with iplot. Test that the
     # backends raise error.
@@ -1180,6 +1213,7 @@ def test_plot_vector_3d_quivers_use_latex():
     p.close()
 
 
+@pytest.mark.skipif(vtk is None, reason="vtk is not installed")
 def test_plot_vector_3d_streamlines_use_latex():
     # verify that the colorbar uses latex label
 
@@ -1189,7 +1223,7 @@ def test_plot_vector_3d_streamlines_use_latex():
 
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_plot_complex_use_latex():
+def test_plot_complex_use_latex_1():
     # complex plot function should return the same result (for axis labels)
     # wheter use_latex is True or False
 
@@ -1198,6 +1232,13 @@ def test_plot_complex_use_latex():
     assert p.fig.axes[0].get_ylabel() == "Abs"
     assert p.fig.axes[1].get_ylabel() == "Arg(cos(x) + I*sinh(x))"
     p.close()
+
+
+@pytest.mark.skipif(scipy is None, reason="scipy is not installed")
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+def test_plot_complex_use_latex_2():
+    # complex plot function should return the same result (for axis labels)
+    # wheter use_latex is True or False
 
     p = make_test_plot_complex_use_latex_2(MB)
     assert p.fig.axes[0].get_xlabel() == "Re"
@@ -1440,6 +1481,7 @@ def test_label_after_plot_instantiation():
     assert f.axes[0].lines[1].get_label() == "$b^{2}$"
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_update_interactive():
     # quick round down of test to verify that _update_interactive doesn't
     # raise errors
@@ -1818,6 +1860,7 @@ def test_plot3d_list_use_cm_color_func():
     assert not np.allclose(c1, c2)
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_plot3d_list_interactive():
     # verify that no errors are raises while updating a plot3d_list
 
@@ -1923,6 +1966,7 @@ def test_plot_implicit_legend_artists():
     assert len(p.ax.get_legend().get_patches()) == 2
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_color_func_expr():
     # verify that passing an expression to color_func is supported
 
@@ -2235,6 +2279,7 @@ def test_detect_poles():
     assert all(l.get_color() == "k" for l in p.ax.lines[1:])
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_detect_poles_interactive():
     # no detection: only one line is visible
     ip = make_test_detect_poles_interactive(MB, False)
@@ -2287,6 +2332,7 @@ def test_plot_riemann_sphere():
     assert len(ax1.texts) == len(ax2.texts) == 0
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_parametric_texts():
     # verify that xlabel, ylabel, zlabel, title accepts parametric texts
     x, y, p = make_test_parametric_texts_2d(MB)
@@ -2384,6 +2430,7 @@ def test_arrow_3d():
     assert p.ax.get_legend() is None
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_plot_root_locus_1():
     p = make_test_root_locus_1(MB, True, False)
     assert isinstance(p, MB)
@@ -2414,6 +2461,7 @@ def test_plot_root_locus_1():
     p.update_interactive({})
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_plot_root_locus_2():
     p = make_test_root_locus_2(MB)
     assert isinstance(p, MB)
@@ -2432,6 +2480,7 @@ def test_plot_root_locus_2():
     p.update_interactive({})
 
 
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_poles_zeros_sgrid():
     # verify that SGridLineSeries is rendered with "proper" axis limits
 
@@ -2447,6 +2496,7 @@ def test_plot_poles_zeros_sgrid():
     p.update_interactive({})
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_plot_root_locus_sgrid():
     # verify that SGridLineSeries is rendered with "proper" axis limits
 
@@ -2502,6 +2552,8 @@ def test_ngrid(cl_mags, cl_phases, label_cl_phases, n_lines, n_texts):
 def test_sgrid(xi, wn, tp, ts, auto, show_control_axis, params, n_lines, n_texts):
     kw = {}
     if params:
+        if ipy is None:
+            return
         kw["params"] = params
 
     p = make_test_sgrid(MB, xi, wn, tp, ts, auto, show_control_axis, **kw)
@@ -2534,6 +2586,8 @@ def test_sgrid(xi, wn, tp, ts, auto, show_control_axis, params, n_lines, n_texts
 def test_zgrid(xi, wn, tp, ts, show_control_axis, params, n_lines, n_texts):
     kw = {}
     if params:
+        if ipy is None:
+            return
         kw["params"] = params
 
     p = make_test_zgrid(MB, xi, wn, tp, ts, show_control_axis, **kw)

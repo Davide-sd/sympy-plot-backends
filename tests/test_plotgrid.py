@@ -8,15 +8,16 @@ from spb import (
 from spb.interactive import IPlot
 from spb.plotgrid import _nrows_ncols
 from sympy import symbols, sin, cos, tan, exp, pi, Piecewise
-import bokeh
-import ipywidgets
+from sympy.external import import_module
+bokeh = import_module("bokeh")
+ipywidgets = import_module("ipywidgets")
+pn = import_module("panel")
+plotly = import_module("plotly")
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import mpl_toolkits
 import numpy as np
-import panel as pn
-import plotly.graph_objects as go
 import os
 from tempfile import TemporaryDirectory
 
@@ -65,7 +66,7 @@ def test_empty_plotgrid():
 
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_plotgrid_mode_1():
+def test_plotgrid_mode_1_matplotlib():
     x, y, z = symbols("x, y, z")
     options = dict(adaptive=False, n=10, backend=MB, show=False)
 
@@ -117,8 +118,14 @@ def test_plotgrid_mode_1():
     assert p.fig.axes[1].get_ylabel() == "f(x)"
     assert len(p.fig.axes[1].get_lines()) == 2
 
-    # mix different backends
-    options["imodule"] = "panel"
+
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_plotgrid_mode_1_different_backends():
+    x, y, z = symbols("x, y, z")
+    options = dict(adaptive=False, n=10, backend=MB,
+        show=False, imodule="panel")
+
     p1 = plot(cos(x), (x, -3, 3), **options)
     p2 = plot_contour(
         cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
@@ -143,6 +150,7 @@ def test_plotgrid_mode_1():
     assert isinstance(p.fig.objects[(1, 1, 2, 2)], pn.pane.plot.Bokeh)
 
 
+@pytest.mark.skipif(ipywidgets is None, reason="ipywidgets is not installed")
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_plotgrid_mode_1_interactive_ipywidgets():
     # verify the correct behavior when providing interactive widget plots.
@@ -182,6 +190,7 @@ def test_plotgrid_mode_1_interactive_ipywidgets():
     # plots grid
     assert res.children[1].n_rows == 3
     assert res.children[1].n_columns == 1
+    go = plotly.graph_objects
     assert all(
         isinstance(res.children[1][i, 0].children[0], go.FigureWidget)
         for i in range(3)
@@ -202,6 +211,7 @@ def test_plotgrid_mode_1_interactive_ipywidgets():
     # res.children[0][0, 0].value = 2
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 def test_plotgrid_mode_1_interactive_panel():
     # verify the correct behavior when providing interactive widget plots.
 
@@ -265,7 +275,7 @@ def test_plotgrid_mode_1_interactive_panel():
 
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_plotgrid_mode_2():
+def test_plotgrid_mode_2_matplotlib():
     from matplotlib.gridspec import GridSpec
 
     x, y, z = symbols("x, y, z")
@@ -322,6 +332,13 @@ def test_plotgrid_mode_2():
     test_line_axes(p.fig.axes[3])
     test_3d_axes(p.fig.axes[4])
 
+
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_plotgrid_mode_2_different_backends():
+    from matplotlib.gridspec import GridSpec
+
+    x, y, z = symbols("x, y, z")
     # Mixture of different backends
     options = dict(
         adaptive=False, n=100, show=False, use_latex=False, imodule="panel"
@@ -366,6 +383,7 @@ def test_plotgrid_mode_2():
     assert isinstance(p.fig.objects[(0, 1, 2, 3)], pn.pane.ipywidget.IPyWidget)
 
 
+@pytest.mark.skipif(ipywidgets is None, reason="ipywidgets is not installed")
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_plotgrid_mode_2_interactive_ipywidgets():
     # verify the correct behavior when providing interactive widget plots.
@@ -434,6 +452,7 @@ def test_plotgrid_mode_2_interactive_ipywidgets():
     # plots grid
     assert res.children[1].n_rows == 3
     assert res.children[1].n_columns == 3
+    go = plotly.graph_objects
     assert isinstance(res.children[1][0, 0].children[0], go.FigureWidget)
     assert isinstance(res.children[1][1, 0].children[0], go.FigureWidget)
     assert isinstance(res.children[1][2, 0].children[0], go.FigureWidget)
@@ -441,6 +460,7 @@ def test_plotgrid_mode_2_interactive_ipywidgets():
     assert isinstance(res.children[1][0:2, 1:].children[0], go.FigureWidget)
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_plotgrid_mode_2_interactive_panel():
     # verify the correct behavior when providing interactive widget plots.
@@ -525,6 +545,7 @@ def test_plotgrid_mode_2_interactive_panel():
     )
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_panel_kw_imodule_panel():
     x = symbols("x")
@@ -563,7 +584,7 @@ def test_plotgrid_mode_1_polar_axis():
 
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_plot_size():
+def test_plot_size_matplotlib():
     # verify that the `size` keyword argument works fine
 
     x = symbols("x")
@@ -573,6 +594,13 @@ def test_plot_size():
     p = plotgrid(p1, p2, size=(5, 7.5), show=False)
     assert np.allclose(p.fig.get_size_inches(), [5, 7.5])
 
+
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_plot_size_matplotlib():
+    # verify that the `size` keyword argument works fine
+
+    x = symbols("x")
     options = dict(adaptive=False, n=100, backend=PB, show=False)
     p1 = plot(sin(x), **options)
     p2 = plot(cos(x), **options)
@@ -655,22 +683,24 @@ def test_save():
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        # holoviz's panel objects
-        p1, p2, p3, p4, p5, p6, p7 = _create_plots(PB)
+        if pn is not None:
+            # holoviz's panel objects
+            p1, p2, p3, p4, p5, p6, p7 = _create_plots(PB)
 
-        # symmetric grid
-        p = PlotGrid(2, 2, p1, p2, p3, p4, show=False, imodule="panel")
-        p.save("test_1.html")
+            # symmetric grid
+            p = PlotGrid(2, 2, p1, p2, p3, p4, show=False, imodule="panel")
+            p.save("test_1.html")
 
-        # grid size greater than the number of subplots
-        p = PlotGrid(3, 4, p1, p2, p3, p4, show=False, imodule="panel")
-        p.save("test_2.html")
+            # grid size greater than the number of subplots
+            p = PlotGrid(3, 4, p1, p2, p3, p4, show=False, imodule="panel")
+            p.save("test_2.html")
 
-        # unsymmetric grid (subplots in one line)
-        p = PlotGrid(1, 3, p5, p6, p7, show=False, imodule="panel")
-        p.save("test_3.html")
+            # unsymmetric grid (subplots in one line)
+            p = PlotGrid(1, 3, p5, p6, p7, show=False, imodule="panel")
+            p.save("test_3.html")
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_plotgrid_interactive_mixed_modules():
     def build_plots(imodule1, imodule2):

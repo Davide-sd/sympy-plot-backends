@@ -1,5 +1,6 @@
 import pytest
 from pytest import raises
+pn = pytest.importorskip("panel")
 from spb import BB, PB, MB, plot
 from spb.interactive.panel import (
     DynamicParam, MyList, InteractivePlot, create_widgets
@@ -10,7 +11,6 @@ from sympy import (
 )
 import numpy as np
 import param
-import panel as pn
 import bokeh
 
 

@@ -1,7 +1,7 @@
-import bokeh
-from bokeh.models import ColumnDataSource, Span, Arrow
 import pytest
 from pytest import raises
+bokeh = pytest.importorskip("bokeh")
+from bokeh.models import ColumnDataSource, Span, Arrow
 import os
 from tempfile import TemporaryDirectory
 import numpy as np

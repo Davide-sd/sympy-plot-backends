@@ -1,8 +1,8 @@
-from spb.series import Parametric3DLineSeries
-import numpy as np
-import plotly.graph_objects as go
 import pytest
 from pytest import raises, warns
+go = pytest.importorskip("plotly").graph_objects
+from spb.series import Parametric3DLineSeries
+import numpy as np
 import os
 from sympy import Symbol
 from tempfile import TemporaryDirectory

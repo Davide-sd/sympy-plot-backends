@@ -1,18 +1,21 @@
 import numpy as np
 import pytest
+import spb
 from spb import MB, PB, KB, BB
 from spb.graphics import (
     graphics, line, line_polar,
     line_parametric_2d, line_parametric_3d,
 )
-from spb.interactive.ipywidgets import InteractivePlot as IpyInteractivePlot
-from spb.interactive.panel import InteractivePlot as PanelInteractivePlot
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
 )
 from sympy import symbols, cos, sin, pi, exp
+from sympy.external import import_module
+
+pn = import_module("panel")
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 @pytest.mark.filterwarnings(
     "ignore:K3DBackend only works properly within Jupyter Notebook"
 )
@@ -27,6 +30,7 @@ def test_graphics_single_series(backend):
     assert isinstance(g.series[0], LineOver1DRangeSeries)
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 @pytest.mark.filterwarnings(
     "ignore:K3DBackend only works properly within Jupyter Notebook"
 )
@@ -48,6 +52,7 @@ def test_graphics_multiple_series(backend):
     assert isinstance(g.series[2], Parametric3DLineSeries)
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 @pytest.mark.filterwarnings(
     "ignore:K3DBackend only works properly within Jupyter Notebook"
 )
@@ -69,12 +74,16 @@ def test_graphics_single_series_interactive(backend, imodule):
     graphics_options = {"show": False, "backend": backend, "imodule": imodule}
 
     g = graphics(line(cos(u * x), params={u: (1, 0, 2)}), **graphics_options)
-    g_type = PanelInteractivePlot if imodule == "panel" else IpyInteractivePlot
+    if imodule == "panel":
+        g_type = spb.interactive.panel.InteractivePlot
+    else:
+        g_type = spb.interactive.ipywidgets.InteractivePlot
     assert isinstance(g, g_type)
     assert isinstance(g.backend, backend)
     assert len(g.backend.series) == 1
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 @pytest.mark.filterwarnings(
     "ignore:K3DBackend only works properly within Jupyter Notebook"
 )
@@ -109,7 +118,7 @@ def test_graphics_multiple_series_interactive(backend, imodule):
         ),
         **graphics_options
     )
-    g_type = PanelInteractivePlot if imodule == "panel" else IpyInteractivePlot
+    g_type = spb.interactive.panel.InteractivePlot if imodule == "panel" else spb.interactive.ipywidgets.InteractivePlot
     assert isinstance(g, g_type)
     assert isinstance(g.backend, backend)
     assert len(g.backend.series) == 3

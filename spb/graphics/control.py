@@ -52,8 +52,8 @@ def _check_if_control_is_installed(use_control=None, force_stop=False):
     if use_control is not None:
         if ct is None:
             warnings.warn(
-                "The ``control`` module is not installed. Proceeding the "
-                "evaluation with SymPy."
+                "``control=True`` was provided, but the ``control`` module "
+                "is not installed. The evaluation will be performed by SymPy."
             )
             return False
     if force_stop and (ct is None):

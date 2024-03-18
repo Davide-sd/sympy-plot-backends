@@ -15,6 +15,9 @@ from sympy.testing.pytest import raises, skip
 import numpy as np
 import pytest
 
+ct = import_module("control")
+ipy = import_module("ipywidgets")
+
 unset_show()
 
 tf1 = TransferFunction(1, p**2 + 0.5*p + 2, p)
@@ -59,6 +62,7 @@ def y_coordinate_equality(plot_data_func, evalf_func, system):
     return all(Abs(y_exp_i - y_i) < 1e-8 for y_exp_i, y_i in zip(y_exp, y))
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_errors():
 
     # More than 1 variables: raise error because `params` is missing
@@ -117,9 +121,11 @@ def test_pole_zero(use_control):
     if not use_control:
         pz_tester(tf8, exp6)
     else:
-        raises(TypeError, lambda: pz_tester(tf8, exp6))
+        if ct is not None:
+            raises(TypeError, lambda: pz_tester(tf8, exp6))
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_bode():
 
     def bode_phase_evalf(system, point):
@@ -381,6 +387,7 @@ def test_ramp_response():
     assert ramp_res_tester(tf6, 10, exp6)
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_show_axes():
     def do_test(plot_func, sys, expected_num_series):
         p1 = plot_func(sys, show=False, show_axes=False)
@@ -407,6 +414,7 @@ def test_show_axes():
     do_test(plot_bode_phase, tf1, 1)
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_interactive_plots():
     tf_a = TransferFunction(a, s + a, s)
     def do_test(plot_func):
@@ -424,6 +432,7 @@ def test_interactive_plots():
 # xfail because tf7... who knows?!?!? locally works fine, on github it's
 # random success
 @pytest.mark.xfail
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_plot_nyquist():
     exp1 = (
         [ 5.00000000e-01,  5.00169418e-01,  5.01314254e-01,  5.10328032e-01,
@@ -637,6 +646,7 @@ def test_plot_nyquist():
     assert nyquist_res_tester(tf8, 10, exp8)
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_plot_nyquist_matplotlib():
     # verify that plot_nyquist adds the necessary objects to the plot
 
@@ -669,6 +679,7 @@ def test_plot_nyquist_matplotlib():
     assert len(ax.texts) == 0
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_plot_nyquist_matplotlib_linestyles():
 
     # standard plot, custom line styles. Verify that no errors are raised
@@ -697,6 +708,7 @@ def test_plot_nyquist_matplotlib_linestyles():
     raises(ValueError, lambda: p.ax)
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_plot_nyquist_matplotlib_interactive():
     # verify that interactive update doesn't raise errors
 
@@ -711,6 +723,7 @@ def test_plot_nyquist_matplotlib_interactive():
     pl.backend.update_interactive({a: 2}) # update with new value
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_plot_nyquist_omega_limits():
     # verify that `omega_limits` works as expected
 
@@ -793,6 +806,7 @@ def test_plot_nichols_matplotlib():
         (plot_nichols, test_params),
     ]
 )
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_new_ways_of_providing_transfer_function(func, params):
     kwargs = {"show": False, "n": 10}
 
@@ -809,6 +823,7 @@ def test_new_ways_of_providing_transfer_function(func, params):
     assert np.allclose(d4, d5)
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_plot_bode_title():
     G1 = (s+5)/(s+2)**2
     G2 = 1/s**2

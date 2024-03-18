@@ -1,11 +1,11 @@
 from pytest import raises
+import spb
 from spb import prange
 from spb.plot_functions.functions_3d import (
     plot3d, plot3d_parametric_line, plot3d_parametric_surface,
     plot3d_revolution, plot3d_spherical, plot3d_implicit
 )
 from spb.plot_functions.functions_2d import plot_contour
-from spb.interactive.panel import InteractivePlot
 from spb.series import (
     ParametricSurfaceSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries
@@ -13,8 +13,12 @@ from spb.series import (
 from spb.backends.matplotlib import MB
 from sympy import symbols, sin, cos, pi, IndexedBase
 from sympy.vector import CoordSys3D
+from sympy.external import import_module
 import pytest
 import numpy as np
+
+pn = import_module("panel")
+adaptive_module = import_module("adaptive")
 
 
 # NOTE:
@@ -440,6 +444,16 @@ def test_plot3d_revolution(paf_options, pi_options):
     assert len(p.series) > 2
     assert all(isinstance(t, Parametric3DLineSeries) for t in p.series[1:])
 
+
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
+@pytest.mark.filterwarnings("ignore:The following")
+@pytest.mark.filterwarnings("ignore:NumPy is unable to evaluate")
+def test_plot3d_revolution_interactive(paf_options, pi_options):
+    # plot3d_revolution is going to call plot3d_parametric_surface and
+    # plot3d_parametric_line: let's check that the data series are correct.
+
+    t, phi = symbols("t, phi")
+
     options = pi_options.copy()
     options["n"] = 5
     # interactive widget plot
@@ -452,7 +466,7 @@ def test_plot3d_revolution(paf_options, pi_options):
         show_curve=False,
         **options
     )
-    assert isinstance(p1, InteractivePlot)
+    assert isinstance(p1, spb.interactive.panel.InteractivePlot)
     assert len(p1.backend.series) == 1
     s = p1.backend[0]
     assert isinstance(s, ParametricSurfaceSeries) and s.is_interactive
@@ -465,7 +479,7 @@ def test_plot3d_revolution(paf_options, pi_options):
         show_curve=False,
         **options
     )
-    assert isinstance(p2, InteractivePlot)
+    assert isinstance(p2, spb.interactive.panel.InteractivePlot)
     assert p2.backend[0].expr != p1.backend[0].expr
 
     p3 = plot3d_revolution(
@@ -476,7 +490,7 @@ def test_plot3d_revolution(paf_options, pi_options):
         show_curve=False,
         **options
     )
-    assert isinstance(p3, InteractivePlot)
+    assert isinstance(p3, spb.interactive.panel.InteractivePlot)
     assert p3.backend[0].expr != p1.backend[0].expr
     assert p3.backend[0].expr != p2.backend[0].expr
 
@@ -492,7 +506,7 @@ def test_plot3d_revolution(paf_options, pi_options):
         curve_kw={"rendering_kw": {"color": "g"}},
         **options
     )
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
     assert len(p.backend.series) == 2
     assert (
         isinstance(p.backend[0], ParametricSurfaceSeries)
@@ -515,7 +529,7 @@ def test_plot3d_revolution(paf_options, pi_options):
         wireframe=True,
         **options
     )
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
     assert len(p.backend.series) > 2
     assert all(
         isinstance(t, Parametric3DLineSeries) and t.is_interactive
@@ -585,6 +599,7 @@ def test_plot3d_plot_contour_base_scalars(paf_options):
     plot3d(cos(x * y), (x, -2, 2), (y, -2, 2), use_latex=False, **options)
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 @pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
 def test_functions_iplot_integration(pi_options):
     # verify the integration between most important plot functions and iplot
@@ -594,20 +609,20 @@ def test_functions_iplot_integration(pi_options):
     p = plot3d_parametric_line(
         cos(u * x), sin(x), u * x, params={u: (1, 0, 2)}, **pi_options
     )
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
 
     p = plot3d(cos(u * x**2 + y**2), params={u: (1, 0, 2)}, **pi_options)
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
 
     p = plot_contour(cos(u * x**2 + y**2), params={u: (1, 0, 2)}, **pi_options)
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
 
     r = 2 + sin(7 * u + 5 * v)
     expr = (r * cos(x * u) * sin(v), r * sin(x * u) * sin(v), r * cos(v))
     p = plot3d_parametric_surface(
         *expr, (u, 0, 2 * pi), (v, 0, pi), params={x: (1, 0, 2)}, **pi_options
     )
-    assert isinstance(p, InteractivePlot)
+    assert isinstance(p, spb.interactive.panel.InteractivePlot)
 
     p = lambda: plot3d_implicit(
         u * x**2 + y**3 - z**2,
@@ -618,6 +633,7 @@ def test_functions_iplot_integration(pi_options):
     raises(NotImplementedError, p)
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 def test_plot3d_wireframe(pi_options):
     # verify that wireframe=True produces the expected data series
     x, y, u = symbols("x, y, u")
@@ -631,11 +647,11 @@ def test_plot3d_wireframe(pi_options):
         **pi_options
     )
     t = _plot3d(False)
-    assert isinstance(t, InteractivePlot)
+    assert isinstance(t, spb.interactive.panel.InteractivePlot)
     assert len(t.backend.series) == 1
 
     t = _plot3d(True)
-    assert isinstance(t, InteractivePlot)
+    assert isinstance(t, spb.interactive.panel.InteractivePlot)
     assert len(t.backend.series) == 1 + 10 + 10
     assert isinstance(t.backend.series[0], SurfaceOver2DRangeSeries)
     assert all(
@@ -665,6 +681,7 @@ def test_plot3d_wireframe(pi_options):
         assert not np.allclose(s, t)
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 def test_plot3d_parametric_surface_wireframe(pi_options):
     # verify that wireframe=True produces the expected data series
     x, y, u = symbols("x, y, u")
@@ -679,11 +696,11 @@ def test_plot3d_parametric_surface_wireframe(pi_options):
         **pi_options
     )
     t = _plot3d_ps(False)
-    assert isinstance(t, InteractivePlot)
+    assert isinstance(t, spb.interactive.panel.InteractivePlot)
     assert len(t.backend.series) == 1
 
     t = _plot3d_ps(True)
-    assert isinstance(t, InteractivePlot)
+    assert isinstance(t, spb.interactive.panel.InteractivePlot)
     assert len(t.backend.series) == 1 + 10 + 10
     assert isinstance(t.backend.series[0], ParametricSurfaceSeries)
     assert all(
@@ -713,6 +730,7 @@ def test_plot3d_parametric_surface_wireframe(pi_options):
         assert not np.allclose(s, t)
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 def test_plot3d_wireframe_and_labels(pi_options):
     # verify that `wireframe=True` produces the expected data series even when
     # `label` is set
@@ -727,7 +745,7 @@ def test_plot3d_wireframe_and_labels(pi_options):
         label="test",
         **pi_options
     )
-    assert isinstance(t, InteractivePlot)
+    assert isinstance(t, spb.interactive.panel.InteractivePlot)
     assert len(t.backend.series) == 1 + 10 + 10
     assert isinstance(t.backend.series[0], SurfaceOver2DRangeSeries)
     assert t.backend.series[0].get_label(False) == "test"
@@ -744,7 +762,7 @@ def test_plot3d_wireframe_and_labels(pi_options):
         label=["a", "b"],
         **pi_options
     )
-    assert isinstance(t, InteractivePlot)
+    assert isinstance(t, spb.interactive.panel.InteractivePlot)
     assert len(t.backend.series) == 2 + (10 + 10) * 2
     surfaces = [
         s for s in t.backend.series if isinstance(s, SurfaceOver2DRangeSeries)]
@@ -928,6 +946,9 @@ def test_indexed_objects():
 
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_plot3d_parametric_line_limits(paf_options, adaptive):
+    if adaptive and (adaptive_module is None):
+        return
+
     x = symbols("x")
     paf_options.update({"adaptive": adaptive, "n": 60})
 
