@@ -1102,19 +1102,21 @@ def test_issue_11461(paf_options, pat_options):
     d = p[0].get_data()
     assert not np.isnan(d[1]).all()
 
-    p = plot(expr, **pat_options)
-    # Random number of segments, probably more than 100, but we want to see
-    # that there are segments generated, as opposed to when the bug was present
-    d = p[0].get_data()
-    assert len(d[0]) >= 30
-    assert not np.isnan(d[1]).all()
+    if adaptive_module is not None:
+        p = plot(expr, **pat_options)
+        # Random number of segments, probably more than 100, but we want to see
+        # that there are segments generated, as opposed to when the bug was present
+        d = p[0].get_data()
+        assert len(d[0]) >= 30
+        assert not np.isnan(d[1]).all()
 
     # plot_piecewise is not able to deal with ConditionSet
     raises(TypeError, lambda: plot_piecewise(expr, backend=MB, show=False))
 
 
+@pytest.mark.skipif(adaptive_module is None, reason="adaptive is not installed")
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_issue_11865(paf_options, pat_options):
+def test_issue_11865(pat_options):
     k = symbols("k", integer=True)
     f = Piecewise(
         (-I * exp(I * pi * k) / k + I * exp(-I * pi * k) / k, Ne(k, 0)),
@@ -1134,6 +1136,9 @@ def test_issue_11865(paf_options, pat_options):
 
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_issue_16572(paf_options, adaptive):
+    if (adaptive_module is None) and adaptive:
+        return
+
     x = symbols("x")
     paf_options.update({"adaptive": adaptive})
     p = plot(LambertW(x), **paf_options)
@@ -1146,6 +1151,9 @@ def test_issue_16572(paf_options, adaptive):
 
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_logplot_PR_16796(paf_options, adaptive):
+    if (adaptive_module is None) and adaptive:
+        return
+
     x = symbols("x")
     paf_options.update({"adaptive": adaptive})
     p = plot(x, (x, 0.001, 100), xscale="log", **paf_options)
@@ -1160,6 +1168,9 @@ def test_logplot_PR_16796(paf_options, adaptive):
 
 @pytest.mark.parametrize("adaptive", [True, False])
 def test_issue_17405(paf_options, adaptive):
+    if (adaptive_module is None) and adaptive:
+        return
+
     x = symbols("x")
     paf_options.update({"adaptive": adaptive})
     f = x**0.3 - 10 * x**3 + x**2
