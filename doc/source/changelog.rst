@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v3.1.1
+======
+
+* Fix incorrect behavior of "arrow_3d".
+
+
 v3.1.0
 ======
 
