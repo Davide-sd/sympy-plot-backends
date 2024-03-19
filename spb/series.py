@@ -3695,8 +3695,11 @@ class Arrow2DSeries(BaseSeries):
         self.is_streamlines = kwargs.get("streamlines", False)
 
     def __str__(self):
+        pre = "3D " if self.is_3D else "2D "
+        start = tuple(self.start)
+        end = tuple(s + d for s, d in zip(start, self.direction))
         return self._str_helper(
-            f"2D arrow from {self.start} to {self.direction}"
+            pre + f"arrow from {start} to {end}"
         )
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
@@ -3724,9 +3727,9 @@ class Arrow2DSeries(BaseSeries):
 
         Returns
         =======
-        x, y : float
+        x1, y1, z1 [optional] : float
             Coordinates of the start position.
-        u, v : float
+        x2, y2, z2 [optional] : float
             Coordinates of the end position.
         """
         np = import_module('numpy')
@@ -3742,8 +3745,8 @@ class Arrow2DSeries(BaseSeries):
             direction = np.array(
                 [t.evalf(subs=self.params) for t in direction], dtype=float)
 
-        direction += start
-        return self._apply_transform(*start, *direction)
+        end = start + direction
+        return self._apply_transform(*start, *end)
 
 
 class Arrow3DSeries(Arrow2DSeries):
@@ -3764,11 +3767,6 @@ class Arrow3DSeries(Arrow2DSeries):
             Coordinates of the end position.
         """
         return super().get_data()
-
-    def __str__(self):
-        return self._str_helper(
-            f"3D arrow from {self.start} to {self.direction}"
-        )
 
 
 class GridBase:

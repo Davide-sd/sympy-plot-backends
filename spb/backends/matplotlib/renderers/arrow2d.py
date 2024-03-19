@@ -11,7 +11,7 @@ class Arrow2DRendererQuivers(MatplotlibRenderer):
 
 def _draw_arrow_2d(renderer, data):
     p, s = renderer.plot, renderer.series
-    xx, yy, uu, vv = data
+    x1, y1, x2, y2 = data
     mpatches = p.matplotlib.patches
 
     arrowstyle = mpatches.ArrowStyle(
@@ -23,7 +23,7 @@ def _draw_arrow_2d(renderer, data):
         color=next(p._cl)
     )
     kw = p.merge({}, pkw, s.rendering_kw)
-    arrow = mpatches.FancyArrowPatch((xx, yy), (uu, vv), **kw)
+    arrow = mpatches.FancyArrowPatch((x1, y1), (x2, y2), **kw)
     p._ax.add_patch(arrow)
 
     if s.show_in_legend:
@@ -36,9 +36,9 @@ def _draw_arrow_2d(renderer, data):
 
 
 def _update_arrow2d(renderer, data, handle):
-    xx, yy, uu, vv = data
+    x1, y1, x2, y2 = data
     arrow = handle[0]
-    arrow.set_positions((xx, yy), (uu, vv))
+    arrow.set_positions((x1, y1), (x2, y2))
 
 
 class Arrow2DRendererFancyArrowPatch(MatplotlibRenderer):

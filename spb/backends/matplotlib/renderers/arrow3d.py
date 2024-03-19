@@ -46,7 +46,8 @@ class Arrow3D(FancyArrowPatch):
 
 def _draw_arrow_3d(renderer, data):
     p, s = renderer.plot, renderer.series
-    xx, yy, zz, uu, vv, ww = data
+    x1, y1, z1, x2, y2, z2 = data
+    dx, dy, dz = x2 - x1, y2 - y1, z2 - z1
     mpatches = p.matplotlib.patches
 
     arrowstyle = mpatches.ArrowStyle(
@@ -58,7 +59,7 @@ def _draw_arrow_3d(renderer, data):
         color=next(p._cl)
     )
     kw = p.merge({}, pkw, s.rendering_kw)
-    arrow = Arrow3D(xx, yy, zz, uu, vv, ww, **kw)
+    arrow = Arrow3D(x1, y1, z1, dx, dy, dz, **kw)
     p._ax.add_patch(arrow)
 
     if s.show_in_legend:
@@ -77,10 +78,11 @@ def _update_arrow3d(renderer, data, handle):
     arrow and add a new one.
     """
     p = renderer.plot
-    xx, yy, zz, uu, vv, ww = data
+    x1, y1, z1, x2, y2, z2 = data
+    dx, dy, dz = x2 - x1, y2 - y1, z2 - z1
     handle[0].remove()
     kw = handle[1]
-    arrow = Arrow3D(xx, yy, zz, uu, vv, ww, **kw)
+    arrow = Arrow3D(x1, y1, z1, dx, dy, dz, **kw)
     p._ax.add_patch(arrow)
     handle[0] = arrow
 

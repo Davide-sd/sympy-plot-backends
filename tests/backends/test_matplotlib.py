@@ -2423,11 +2423,17 @@ def test_arrow_3d():
     assert len(p.ax.get_legend().legend_handles) == 1
     assert p.ax.get_legend().legend_handles[0].get_label() == "$test$"
     assert p.ax.get_legend().legend_handles[0].get_color() == "r"
+    # only way to test if it renders what it's supposed to
+    assert np.allclose(p.ax.patches[0]._xyz, [1, 2, 3])
+    assert np.allclose(p.ax.patches[0]._dxdydz, [4, 5, 6])
 
     p = make_test_arrow_3d(MB, "test", {"color": "r"}, False)
     p.fig
     assert len(p.ax.patches) == 1
     assert p.ax.get_legend() is None
+    # only way to test if it renders what it's supposed to
+    assert np.allclose(p.ax.patches[0]._xyz, [1, 2, 3])
+    assert np.allclose(p.ax.patches[0]._dxdydz, [4, 5, 6])
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
