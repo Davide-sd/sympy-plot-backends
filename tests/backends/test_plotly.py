@@ -1914,3 +1914,34 @@ def test_existing_figure_surfaces():
     assert len(fig.data) == 2
     assert fig.data[0].colorscale is None
     assert fig.data[1].colorscale[0][1] == "#EF553B"
+
+
+@pytest.mark.parametrize("update_event, fig_type", [
+    (False, go.Figure),
+    (True, go.FigureWidget)
+])
+def test_plotly_update_ranges(update_event, fig_type):
+    # verify that `update_event` doesn't raise errors
+
+    x, y = symbols("x, y")
+    p = plot(cos(x), (x, -pi, pi), n=10, backend=PB,
+        show=False, update_event=update_event)
+    assert isinstance(p.fig, fig_type)
+
+    if update_event:
+        assert len(p.fig.layout._change_callbacks) == 1
+        f = list(p.fig.layout._change_callbacks.values())[0][0]
+        f(None, (-5, 4), (-3, 2))
+    else:
+        assert len(p.fig.layout._change_callbacks) == 0
+
+    p = plot_contour(cos(x**2+y**2), (x, -pi, pi), (y, -pi, pi),
+        n=10, backend=PB, show=False, update_event=update_event)
+    assert isinstance(p.fig, fig_type)
+
+    if update_event:
+        assert len(p.fig.layout._change_callbacks) == 1
+        f = list(p.fig.layout._change_callbacks.values())[0][0]
+        f(None, (-5, 4), (-3, 2))
+    else:
+        assert len(p.fig.layout._change_callbacks) == 0

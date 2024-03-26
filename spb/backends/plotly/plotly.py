@@ -77,9 +77,10 @@ class PlotlyBackend(Plot):
         Set the theme. Default to ``"plotly_dark"``. Find more Plotly themes at
         [#fn10]_ .
 
-    use_cm : boolean, optional
-        If True, apply a color map to the meshes/surface. If False, solid
-        colors will be used instead. Default to True.
+    update_event : bool, optional
+        If True, it binds pan/zoom events in order to automatically compute
+        new data as the user interact with the plot.
+        Default to False.
 
     annotations : list, optional
         A list of dictionaries specifying the type the markers required.
@@ -231,7 +232,10 @@ class PlotlyBackend(Plot):
             self._fig = self._use_existing_figure
             self._use_existing_figure = True
         else:
-            if self.is_iplot and (self.imodule == "ipywidgets"):
+            if (
+                (self.is_iplot and (self.imodule == "ipywidgets"))
+                or self._update_event
+            ):
                 self._fig = self.go.FigureWidget()
             else:
                 self._fig = self.go.Figure()
@@ -269,6 +273,24 @@ class PlotlyBackend(Plot):
         self._show_2D_vectors = any(s.is_2Dvector for s in self.series)
         self._create_renderers()
         self._n_annotations = 0
+
+        if self._update_event:
+            self._fig.layout.on_change(
+                lambda obj, xrange, yrange: self._update_axis_limits(xrange, yrange),
+                ('xaxis', 'range'), ('yaxis', 'range'))
+
+    def _update_axis_limits(self, *limits):
+        """Update the ranges of data series in order to implement pan/zoom
+        update events.
+
+        Parameters
+        ==========
+        limits : iterable
+            Tuples of (min, max) values.
+        """
+
+        params = self._update_series_ranges(*limits)
+        self.update_interactive(params)
 
     @property
     def fig(self):

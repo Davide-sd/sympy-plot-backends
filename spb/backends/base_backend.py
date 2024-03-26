@@ -184,7 +184,7 @@ class Plot:
         "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
         "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim", "show_axis",
         "xscale", "yscale", "zscale", "process_piecewise", "polar_axis",
-        "imodule"
+        "imodule", "update_events"
     ]
     """contains a list of public keyword arguments supported by the series.
     It will be used to validate the user-provided keyword arguments.
@@ -385,6 +385,7 @@ class Plot:
         self.size = None
         check_and_set("size", kwargs.get("size", None))
         self.axis = kwargs.get("show_axis", kwargs.get("axis", True))
+        self._update_event = kwargs.get("update_event", False)
 
     def _copy_kwargs(self):
         """Copy the values of the plot attributes into a dictionary which will
@@ -514,6 +515,31 @@ class Plot:
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series of a piecewise function."""
         raise NotImplementedError
+
+    def _update_series_ranges(self, *limits):
+        """Update the ranges of data series in order to implement pan/zoom
+        update events.
+
+        Parameters
+        ==========
+        limits : iterable
+            Each element is a tuple (min, max).
+
+        Returns
+        =======
+        all_params : dict
+            A dictionary containing all the parameters used by the series
+        """
+        all_params = {}
+        for s in self._series:
+            new_ranges = []
+            for r, l in zip(s.ranges, limits):
+                new_ranges.append((r[0], *l))
+            s.ranges = new_ranges
+            s._interactive_ranges = True
+            s.is_interactive = True
+            all_params = self.merge({}, all_params)
+        return all_params
 
     @property
     def fig(self):

@@ -91,9 +91,10 @@ class MatplotlibBackend(Plot):
         Turns on/off the axis visibility (and associated tick labels).
         Default to True (axis are visible).
 
-    use_cm : boolean, optional
-        If True, apply a color map to the mesh/surface or parametric lines.
-        If False, solid colors will be used instead. Default to True.
+    update_event : bool, optional
+        If True, it binds pan/zoom events in order to automatically compute
+        new data as the user interact with the plot.
+        Default to False.
 
     annotations : list, optional
         A list of dictionaries specifying the type of annotation
@@ -343,6 +344,12 @@ class MatplotlibBackend(Plot):
             ):
                 kwargs["projection"] = "polar"
             self._ax = self._fig.add_subplot(1, 1, 1, **kwargs)
+
+        if self._update_event:
+            self._fig.canvas.mpl_connect(
+                'button_release_event', self._update_axis_limits)
+            self._fig.canvas.mpl_connect(
+                'resize_event', self._update_axis_limits)
 
     def _create_ax_if_not_available(self):
         if (not hasattr(self, "_ax")):
@@ -600,6 +607,15 @@ class MatplotlibBackend(Plot):
             self._ax.set_ylim(self.ylim)
         if self.zlim:
             self._ax.set_zlim(self.zlim)
+
+    def _update_axis_limits(self, event):
+        xlim = self._ax.get_xlim()
+        ylim = self._ax.get_ylim()
+        limits = [xlim, ylim]
+        if isinstance(self._ax, self.Axes3D):
+            limits += self._ax.get_zlim()
+        params = self._update_series_ranges(*limits)
+        self.update_interactive(params)
 
     def _add_colorbar(self, c, label, show_cb, norm=None, cmap=None):
         """Add a colorbar for the specificied collection

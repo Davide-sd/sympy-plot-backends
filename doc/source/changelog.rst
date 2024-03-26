@@ -2,6 +2,13 @@
  Changelog
 ==========
 
+v3.2.0
+======
+
+* add `update_event` keyword argument to enable/disable auto-update on
+  panning for plots created with `MatplotlibBackend`, `PlotlyBackend`.
+
+
 v3.1.1
 ======
 

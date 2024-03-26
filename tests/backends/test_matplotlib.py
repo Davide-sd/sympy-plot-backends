@@ -2602,3 +2602,26 @@ def test_zgrid(xi, wn, tp, ts, show_control_axis, params, n_lines, n_texts):
     assert len(ax.texts) == n_texts
     if params:
         p._backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
+
+
+@pytest.mark.parametrize("update_event, num_callbacks", [
+    (False, 2),
+    (True, 3)
+])
+def test_plotly_update_ranges(update_event, num_callbacks):
+    # verify that `update_event` doesn't raise errors
+
+    x, y = symbols("x, y")
+    p = plot(cos(x), (x, -pi, pi), n=10, backend=MB,
+        show=False, update_event=update_event)
+    assert len(p.fig._canvas_callbacks.callbacks["button_release_event"]) == num_callbacks
+
+    if update_event:
+        p._update_axis_limits("button_release_event")
+
+    p = plot_contour(cos(x**2+y**2), (x, -pi, pi), (y, -pi, pi),
+        n=10, backend=MB, show=False, update_event=update_event)
+    assert len(p.fig._canvas_callbacks.callbacks["button_release_event"]) == num_callbacks
+
+    if update_event:
+        p._update_axis_limits("button_release_event")
