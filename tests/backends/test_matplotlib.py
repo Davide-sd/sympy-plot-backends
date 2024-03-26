@@ -2608,7 +2608,7 @@ def test_zgrid(xi, wn, tp, ts, show_control_axis, params, n_lines, n_texts):
     (False, 2),
     (True, 3)
 ])
-def test_plotly_update_ranges(update_event, num_callbacks):
+def test_matplotlib_update_ranges(update_event, num_callbacks):
     # verify that `update_event` doesn't raise errors
 
     x, y = symbols("x, y")

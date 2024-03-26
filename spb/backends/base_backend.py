@@ -184,7 +184,7 @@ class Plot:
         "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
         "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim", "show_axis",
         "xscale", "yscale", "zscale", "process_piecewise", "polar_axis",
-        "imodule", "update_events"
+        "imodule", "update_event"
     ]
     """contains a list of public keyword arguments supported by the series.
     It will be used to validate the user-provided keyword arguments.
@@ -538,7 +538,7 @@ class Plot:
             s.ranges = new_ranges
             s._interactive_ranges = True
             s.is_interactive = True
-            all_params = self.merge({}, all_params)
+            all_params = self.merge({}, all_params, s.params)
         return all_params
 
     @property

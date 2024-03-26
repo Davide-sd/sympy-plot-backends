@@ -1307,3 +1307,31 @@ def test_existing_figure_lines():
     assert fig.renderers[0].glyph.line_color == '#1f77b4'
     assert fig.right[0].items[1].label.value == "l2"
     assert fig.renderers[1].glyph.line_color == '#ff7f0e'
+
+
+@pytest.mark.parametrize("update_event", [
+    False,
+    True
+])
+def test_bokeh_update_ranges(update_event):
+    # verify that `update_event` doesn't raise errors
+
+    class Event:
+        def __init__(self, x0, x1, y0, y1):
+            self.x0 = x0
+            self.x1 = x1
+            self.y0 = y0
+            self.y1 = y1
+
+    x, y = symbols("x, y")
+    p = plot(cos(x), (x, -pi, pi), n=10, backend=BB,
+        show=False, update_event=update_event)
+
+    if update_event:
+        p._ranges_update(Event(-1, 1, -2, 2))
+
+    p = plot_contour(cos(x**2+y**2), (x, -pi, pi), (y, -pi, pi),
+        n=10, backend=BB, show=False, update_event=update_event)
+
+    if update_event:
+        p._ranges_update(Event(-1, 1, -2, 2))

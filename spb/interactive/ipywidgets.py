@@ -4,6 +4,7 @@ from spb.defaults import TWO_D_B, THREE_D_B
 from spb.interactive import _tuple_to_dict, IPlot
 from spb import BB, MB, PlotGrid
 from IPython.display import clear_output
+import warnings
 
 
 def _build_widgets(params, use_latex=True):
@@ -117,6 +118,14 @@ class InteractivePlot(IPlot):
                     self._backend.fig.tight_layout()
             self._output_figure = ipywidgets.Box([self._backend.fig.canvas])
         elif isinstance(self._backend, BB):
+            if self._backend._update_event:
+                warnings.warn(
+                    "You are trying to generate an interactive plot with "
+                    "Bokeh using `update_event=True`. This mode of operation "
+                    "is not supported. However, setting "
+                    "`imodule='panel', servable=True` "
+                    "with BokehBackend works just fine."
+                )
             self._output_figure = ipywidgets.Output()
             bokeh = import_module(
                 'bokeh',

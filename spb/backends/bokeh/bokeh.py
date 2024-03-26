@@ -235,7 +235,16 @@ class BokehBackend(Plot):
         if self._invert_x_axis:
             self._fig.x_range.flipped = True
 
+        if self._update_event:
+            self._fig.on_event(self.bokeh.events.RangesUpdate, self._ranges_update)
+
         self._create_renderers()
+
+    def _ranges_update(self, event):
+        xlim = (event.x0, event.x1)
+        ylim = (event.y0, event.y1)
+        params = self._update_series_ranges(xlim, ylim)
+        self.update_interactive(params)
 
     def _init_cyclers(self):
         start_index_cl, start_index_cm = None, None
@@ -441,16 +450,52 @@ class BokehBackend(Plot):
             self._fig.output_backend = "canvas"
             self.bokeh.io.export_png(self._fig, filename=path)
 
+    def _pan_update(self):
+        rend = self.fig.renderers
+        for i, s in enumerate(self.series):
+            if s.is_2Dline and not s.is_parametric:
+                s.start = self._fig.x_range.start
+                s.end = self._fig.x_range.end
+                x, y = s.get_data()
+                x, y, _ = self._detect_poles(x, y)
+                source = {"xs": x, "ys": y}
+                rend[i].data_source.data.update(source)
+            elif s.is_complex and s.is_2Dline and s.is_parametric and self._use_cm:
+                # this is when absarg=True
+                s.start = complex(self._fig.x_range.start)
+                s.end = complex(self._fig.x_range.end)
+                x, y, param = s.get_data()
+                xs, ys, us = self._get_segments(x, y, param)
+                rend[i].data_source.data.update(
+                    {'xs': xs, 'ys': ys, 'us': us})
+                if i in self._handles.keys():
+                    cb = self._handles[i]
+                    cb.color_mapper.update(low = min(us), high = max(us))
+
+    def _launch_server(self, doc):
+        """ By launching a server application, we can use Python callbacks
+        associated to events.
+        """
+        doc.theme = self._theme
+        doc.add_root(self._fig)
+
     def show(self):
         """Visualize the plot on the screen."""
         if len(self._fig.renderers) != len(self.series):
             self._process_renderers()
-        # if the backend it running from a python interpreter, the server
-        # wont' work. Hence, launch a static figure, which doesn't listen
-        # to events (no pan-auto-update).
-        curdoc = self.bokeh.io.curdoc
-        curdoc().theme = self._theme
-        self.bokeh.plotting.show(self._fig)
+
+        if self._update_event:
+            # TODO: the current way we are launching the server only works within
+            # Jupyter Notebook. Is there another way of launching it so that it can
+            # run from any Python interpreter?
+            self.bokeh.plotting.show(self._launch_server)
+        else:
+            # if the backend it running from a python interpreter, the server
+            # wont' work. Hence, launch a static figure, which doesn't listen
+            # to events (no pan-auto-update).
+            curdoc = self.bokeh.io.curdoc
+            curdoc().theme = self._theme
+            self.bokeh.plotting.show(self._fig)
 
     def _get_quivers_data(self, xs, ys, u, v, **quiver_kw):
         """Compute the segments coordinates to plot quivers.
