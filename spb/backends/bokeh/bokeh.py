@@ -60,6 +60,11 @@ class BokehBackend(Plot):
     theme : str, optional
         Set the theme. Find more Bokeh themes at [#fn2]_ .
 
+    update_event : bool, optional
+        If True, it binds pan/zoom events in order to automatically compute
+        new data as the user interact with the plot.
+        Default to False.
+
     annotations : list, optional
         A list of dictionaries specifying the type of annotation
         required. The keys in the dictionary should be equivalent
@@ -235,6 +240,9 @@ class BokehBackend(Plot):
         if self._invert_x_axis:
             self._fig.x_range.flipped = True
 
+
+        self._update_event = kwargs.get(
+            "update_event", cfg["bokeh"]["update_event"])
         if self._update_event:
             self._fig.on_event(self.bokeh.events.RangesUpdate, self._ranges_update)
 

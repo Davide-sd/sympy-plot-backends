@@ -25,6 +25,8 @@ def _hardcoded_defaults():
             "grid": True,
             # Render latex with Plotly
             "use_latex": False,
+            # automatically compute new data when zoom/pan are used
+            "update_event": False,
         },
         bokeh={
             # More themes at:
@@ -46,6 +48,8 @@ def _hardcoded_defaults():
             "minor_grid_line_dash": [2, 2],
             # Render latex with Bokeh
             "use_latex": False,
+            # automatically compute new data when zoom/pan are used
+            "update_event": False,
         },
         k3d={
             # Background color
@@ -75,6 +79,8 @@ def _hardcoded_defaults():
             "show_minor_grid": False,
             # Render latex with Matplotlib
             "use_latex": True,
+            # automatically compute new data when zoom/pan are used
+            "update_event": False,
         },
         mayavi={
             "size": (800, 500),

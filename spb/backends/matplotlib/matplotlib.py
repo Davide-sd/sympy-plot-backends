@@ -273,6 +273,8 @@ class MatplotlibBackend(Plot):
         # use ImageGrid, which is suited to create equal aspect ratio axes
         # sharing colorbar
         self._imagegrid = kwargs.get("imagegrid", False)
+        self._update_event = kwargs.get(
+            "update_event", cfg["matplotlib"]["update_event"])
 
         self._create_renderers()
 

@@ -50,19 +50,22 @@ def test_adaptive_keys():
 
 
 def test_cfg_matplotlib_keys():
-    matplotlib_keys = ["axis_center", "grid", "show_minor_grid", "use_latex"]
+    matplotlib_keys = [
+        "axis_center", "grid", "show_minor_grid", "use_latex", "update_event"]
     for k in matplotlib_keys:
         assert k in cfg["matplotlib"].keys()
     assert isinstance(cfg["matplotlib"]["grid"], bool)
     assert isinstance(cfg["matplotlib"]["show_minor_grid"], bool)
+    assert isinstance(cfg["matplotlib"]["update_event"], bool)
 
 
 def test_cfg_plotly_keys():
-    must_have_keys = ["theme", "grid", "use_latex"]
+    must_have_keys = ["theme", "grid", "use_latex", "update_event"]
     for k in must_have_keys:
         assert k in cfg["plotly"].keys()
     assert isinstance(cfg["plotly"]["theme"], str)
     assert isinstance(cfg["plotly"]["grid"], bool)
+    assert isinstance(cfg["plotly"]["update_event"], bool)
 
 
 def test_cfg_bokeh_keys():
@@ -76,6 +79,7 @@ def test_cfg_bokeh_keys():
         "minor_grid_line_dash",
         "grid",
         "use_latex",
+        "update_event"
     ]
     for k in bokeh_keys:
         assert k in cfg["bokeh"].keys()
@@ -87,6 +91,7 @@ def test_cfg_bokeh_keys():
     assert isinstance(cfg["bokeh"]["show_minor_grid"], bool)
     assert isinstance(cfg["bokeh"]["minor_grid_line_alpha"], (float, int))
     assert isinstance(cfg["bokeh"]["minor_grid_line_dash"], (list, tuple))
+    assert isinstance(cfg["bokeh"]["update_event"], bool)
 
 
 def test_cfg_k3d_keys():

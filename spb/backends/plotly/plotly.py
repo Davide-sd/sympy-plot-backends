@@ -223,6 +223,9 @@ class PlotlyBackend(Plot):
             "magenta", "crimson", "darkorange", "dodgerblue", "wheat",
             "slategrey", "white", "black", "darkred", "indigo"]
 
+        self._update_event = kwargs.get(
+            "update_event", cfg["plotly"]["update_event"])
+
         # _init_cyclers needs to know if an existing figure was provided
         self._use_existing_figure = kwargs.get("fig", False)
         self._fig = None

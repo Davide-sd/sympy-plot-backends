@@ -385,7 +385,6 @@ class Plot:
         self.size = None
         check_and_set("size", kwargs.get("size", None))
         self.axis = kwargs.get("show_axis", kwargs.get("axis", True))
-        self._update_event = kwargs.get("update_event", False)
 
     def _copy_kwargs(self):
         """Copy the values of the plot attributes into a dictionary which will
