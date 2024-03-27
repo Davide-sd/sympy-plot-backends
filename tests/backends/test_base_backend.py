@@ -5,7 +5,7 @@ import matplotlib
 import numpy as np
 from spb import (
     PB, MB, KB, BB, plot, plot3d, prange, plot_vector, plot_contour,
-    plot_complex
+    plot_complex, plot_parametric
 )
 from sympy import sin, cos, pi, exp, symbols, I
 from sympy.external import import_module
@@ -289,6 +289,13 @@ def test_update_event_numeric_ranges(backend):
     assert (p[0].ranges[0][1] - (-10 - 5*I)).nsimplify() == 0
     assert (p[0].ranges[0][2] - (10 + 6*I)).nsimplify() == 0
 
+    # parametric plot must not update the range
+    p = plot_parametric(cos(x), sin(x), (x, 0, 2*pi),
+        show=False, backend=PB, n=10)
+    assert p[0].ranges == [(x, 0, 2*pi)]
+    p._update_series_ranges((-10, 10), (-5, 6))
+    assert p[0].ranges == [(x, 0, 2*pi)]
+
 
 @pytest.mark.parametrize(
     "backend", [MB, PB, BB]
@@ -336,3 +343,11 @@ def test_update_event_parametric_ranges(backend):
     assert p[0].ranges[0][0] == x
     assert (p[0].ranges[0][1] - (-y - 2*I)).nsimplify() == 0
     assert (p[0].ranges[0][2] - (2 + 2*I)).nsimplify() == 0
+
+    # parametric plot must not update the range
+    ip = plot_parametric(cos(x), sin(x), prange(x, y, 2*pi),
+        show=False, backend=PB, n=10, params={y: (1, 0, 2)})
+    p = ip._backend
+    assert p[0].ranges == [(x, y, 2*pi)]
+    p._update_series_ranges((-10, 10), (-5, 6))
+    assert p[0].ranges == [(x, y, 2*pi)]

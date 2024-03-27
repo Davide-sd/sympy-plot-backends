@@ -543,7 +543,8 @@ class Plot:
         for s in ncss:
             # skip the ones that don't use `ranges`, like
             # List2D/List3D/Arrow2D/Arrow3D
-            if len(s.ranges) > 0:
+            # as well as the parametric series
+            if (len(s.ranges) > 0) and (not s.is_parametric):
                 new_ranges = []
                 for r, l in zip(s.ranges, limits):
                     if any(len(t.free_symbols) > 0 for t in r[1:]):
