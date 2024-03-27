@@ -36,7 +36,7 @@ def _draw_domain_coloring_helper(renderer, data):
         dh=y.max() - y.min(),
     )
     p._fig.add_tools(p.bokeh.models.HoverTool(
-        tooltips=[("x", "$x"), ("y", "$y"), ("abs", "@abs"), ("arg", "@arg")],
+        tooltips=[("x", "$x"), ("y", "$y"), ("Abs", "@abs"), ("Arg", "@arg")],
         renderers=[handle]
     ))
 
