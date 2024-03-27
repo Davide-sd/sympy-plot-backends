@@ -3,8 +3,11 @@ import pytest
 from pytest import raises
 import matplotlib
 import numpy as np
-from spb import PB, MB, KB, BB, plot, plot3d, prange, plot_vector
-from sympy import sin, cos, pi, exp, symbols
+from spb import (
+    PB, MB, KB, BB, plot, plot3d, prange, plot_vector, plot_contour,
+    plot_complex
+)
+from sympy import sin, cos, pi, exp, symbols, I
 from sympy.external import import_module
 
 pn = import_module("panel")
@@ -243,3 +246,93 @@ def test_axis_scales():
     p = plot(sin(x), backend=MB, show=False, n=5, zscale="linear")
     assert p.zscale == "linear"
     assert all(t is None for t in [p.xscale, p.yscale])
+
+
+@pytest.mark.parametrize(
+    "backend", [MB, PB, BB]
+)
+def test_update_event_numeric_ranges(backend):
+    # verify that the code responsible for updating the ranges works as
+    # expected.
+
+    x, y = symbols("x, y")
+    p = plot(sin(x), (x, -pi, pi), show=False, n=10, backend=backend)
+    assert p[0].ranges == [(x, -pi, pi)]
+    p._update_series_ranges((-10, 10))
+    assert p[0].ranges == [(x, -10, 10)]
+
+    p = plot_contour(
+        cos(x**2 + y**2) * exp(-(x**2 + y**2) / 5), (x, -pi, pi), (y, -pi, pi),
+        show=False, n=10, backend=backend
+    )
+    assert p[0].ranges == [(x, -pi, pi), (y, -pi, pi)]
+    p._update_series_ranges((-10, 10), (-5, 6))
+    assert p[0].ranges == [(x, -10, 10), (y, -5, 6)]
+
+    p = plot_vector(
+        [-sin(y), cos(x)], (x, -pi, pi), (y, -pi, pi),
+        backend=backend, scalar=True, n=10, show=False
+    )
+    assert p[0].ranges == [(x, -pi, pi), (y, -pi, pi)]
+    assert p[1].ranges == [(x, -pi, pi), (y, -pi, pi)]
+    p._update_series_ranges((-10, 10), (-5, 6))
+    assert p[1].ranges == [(x, -10, 10), (y, -5, 6)]
+    assert p[0].ranges == [(x, -10, 10), (y, -5, 6)]
+
+    p = plot_complex(sin(x), (x, -2-2j, 2+2j),
+        show=False, n=10, backend=backend)
+    assert p[0].ranges[0][0] == x
+    assert (p[0].ranges[0][1] - (-2 - 2*I)).nsimplify() == 0
+    assert (p[0].ranges[0][2] - (2 + 2*I)).nsimplify() == 0
+    p._update_series_ranges((-10, 10), (-5, 6))
+    assert p[0].ranges[0][0] == x
+    assert (p[0].ranges[0][1] - (-10 - 5*I)).nsimplify() == 0
+    assert (p[0].ranges[0][2] - (10 + 6*I)).nsimplify() == 0
+
+
+@pytest.mark.parametrize(
+    "backend", [MB, PB, BB]
+)
+def test_update_event_parametric_ranges(backend):
+    # verify that the code responsible for updating the ranges works as
+    # expected.
+
+    x, y, z = symbols("x, y, z")
+    ip = plot(sin(x), prange(x, -y*pi, pi), show=False, n=10, backend=backend,
+        params={y: (1, 0, 2)})
+    p = ip._backend
+    assert p[0].ranges == [(x, -y*pi, pi)]
+    p._update_series_ranges((-10, 10))
+    assert p[0].ranges == [(x, -y*pi, pi)]
+
+    ip = plot_contour(
+        cos(x**2 + y**2) * exp(-(x**2 + y**2) / 5),
+        prange(x, -z*pi, pi), (y, -pi, pi),
+        show=False, n=10, backend=backend, params={z: (1, 0, 2)}
+    )
+    p = ip._backend
+    assert p[0].ranges == [(x, -z*pi, pi), (y, -pi, pi)]
+    p._update_series_ranges((-10, 10), (-5, 6))
+    assert p[0].ranges == [(x, -z*pi, pi), (y, -5, 6)]
+
+    ip = plot_vector(
+        [-sin(y), cos(x)], prange(x, -z*pi, pi), (y, -pi, pi),
+        backend=backend, scalar=True, n=10, show=False, params={z: (1, 0, 2)}
+    )
+    p = ip._backend
+    assert p[0].ranges == [(x, -z*pi, pi), (y, -pi, pi)]
+    assert p[1].ranges == [(x, -z*pi, pi), (y, -pi, pi)]
+    p._update_series_ranges((-10, 10), (-5, 6))
+    assert p[1].ranges == [(x, -z*pi, pi), (y, -5, 6)]
+    assert p[0].ranges == [(x, -z*pi, pi), (y, -5, 6)]
+
+    ip = plot_complex(sin(x), prange(x, -y-2j, 2+2j),
+        show=False, n=10, backend=backend, params={y: (1, 0, 2)})
+    p = ip._backend
+    assert p[0].ranges[0][0] == x
+    assert (p[0].ranges[0][1] - (-y - 2*I)).nsimplify() == 0
+    assert (p[0].ranges[0][2] - (2 + 2*I)).nsimplify() == 0
+    p._update_series_ranges((-10, 10), (-5, 6))
+    assert p[0].ranges[0][0] == x
+    assert (p[0].ranges[0][1] - (-y - 2*I)).nsimplify() == 0
+    assert (p[0].ranges[0][2] - (2 + 2*I)).nsimplify() == 0

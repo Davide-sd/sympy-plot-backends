@@ -1,5 +1,7 @@
 from itertools import cycle, islice
-from spb.series import BaseSeries, LineOver1DRangeSeries
+from spb.series import (
+    BaseSeries, LineOver1DRangeSeries, ComplexSurfaceBaseSeries
+)
 from spb.backends.utils import convert_colormap
 from sympy import Symbol
 from sympy.utilities.iterables import is_sequence
@@ -385,6 +387,7 @@ class Plot:
         self.size = None
         check_and_set("size", kwargs.get("size", None))
         self.axis = kwargs.get("show_axis", kwargs.get("axis", True))
+        self._update_event = kwargs.get("update_event", False)
 
     def _copy_kwargs(self):
         """Copy the values of the plot attributes into a dictionary which will
@@ -530,14 +533,42 @@ class Plot:
             A dictionary containing all the parameters used by the series
         """
         all_params = {}
-        for s in self._series:
-            new_ranges = []
-            for r, l in zip(s.ranges, limits):
-                new_ranges.append((r[0], *l))
-            s.ranges = new_ranges
-            s._interactive_ranges = True
-            s.is_interactive = True
+        # TODO: can ComplexSurfaceBaseSeries be modified such that it has
+        # two ranges instead of one? It would allow to simplify this code...
+        css = [s for s in self._series
+            if isinstance(s, ComplexSurfaceBaseSeries)]
+        ncss = [s for s in self._series
+            if not isinstance(s, ComplexSurfaceBaseSeries)]
+
+        for s in ncss:
+            # skip the ones that don't use `ranges`, like
+            # List2D/List3D/Arrow2D/Arrow3D
+            if len(s.ranges) > 0:
+                new_ranges = []
+                for r, l in zip(s.ranges, limits):
+                    if any(len(t.free_symbols) > 0 for t in r[1:]):
+                        # design choice: interactive ranges should not
+                        # be modified
+                        new_ranges.append(r)
+                    else:
+                        new_ranges.append((r[0], *l))
+                s.ranges = new_ranges
+                s._interactive_ranges = True
+                s.is_interactive = True
             all_params = self.merge({}, all_params, s.params)
+
+        if len(css) > 0:
+            xlim, ylim = limits[:2]
+            lim = (xlim[0] + 1j * ylim[0], xlim[1] + 1j * ylim[1])
+            for s in css:
+                if all(len(t.free_symbols) == 0 for t in s.ranges[0][1:]):
+                    # design choice: interactive ranges should not
+                    # be modified
+                    s.ranges = [(s.ranges[0][0], *lim)]
+                    s._interactive_ranges = True
+                    s.is_interactive = True
+                all_params = self.merge({}, all_params, s.params)
+
         return all_params
 
     @property
