@@ -124,6 +124,10 @@ def _update_complex_helper(renderer, data, handle):
         x, y, _, _, img, colors = data
         if s.at_infinity:
             img = np.flip(np.flip(img, axis=0), axis=1)
+            extent = [np.amax(x), np.amin(x), np.amin(y), np.amax(y)]
+        else:
+            extent = [np.amin(x), np.amax(x), np.amin(y), np.amax(y)]
+        handle[0].set_extent(extent)
         handle[0].set_data(img)
     else:
         x, y, mag, arg, facecolors, colorscale = data
