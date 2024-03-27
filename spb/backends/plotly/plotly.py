@@ -19,6 +19,7 @@ from spb.series import (
     HVLineSeries, Arrow2DSeries
 )
 from sympy.external import import_module
+import warnings
 
 
 class PlotlyBackend(Plot):
@@ -225,6 +226,13 @@ class PlotlyBackend(Plot):
 
         self._update_event = kwargs.get(
             "update_event", cfg["plotly"]["update_event"])
+        if (self._update_event and any(isinstance(s, Vector2DSeries) for
+            s in series)):
+            warnings.warn(
+                "You are trying to use `update_event=True` with a 2D quiver "
+                "plot. This is likely going to cause a render-loop. You might "
+                "need to interrupt the kernel."
+            )
 
         # _init_cyclers needs to know if an existing figure was provided
         self._use_existing_figure = kwargs.get("fig", False)
