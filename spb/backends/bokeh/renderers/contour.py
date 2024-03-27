@@ -29,6 +29,10 @@ def _draw_contour_helper(renderer, data):
         **kw
     )
     handle.append(h)
+    p._fig.add_tools(p.bokeh.models.HoverTool(
+        tooltips=[("x", "$x"), ("y", "$y"), ("z", "@image")],
+        renderers=[handle[0]]
+    ))
 
     if s.colorbar:
         colormapper = p.bokeh.models.LinearColorMapper(

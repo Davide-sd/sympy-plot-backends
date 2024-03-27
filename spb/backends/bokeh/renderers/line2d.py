@@ -18,6 +18,7 @@ def _draw_line2d_helper(renderer, data):
             s.rendering_kw, s.is_point)
         h = p._fig.add_glyph(ds, line)
         handle.append(h)
+        tooltips = [("x", "@xs"), ("y", "@ys"), ("u", "@us")]
         if s.colorbar:
             handle.append(cb)
             p._fig.add_layout(cb, "right")
@@ -25,12 +26,14 @@ def _draw_line2d_helper(renderer, data):
         if s.is_parametric:
             x, y, param = data
             source = {"xs": x, "ys": y, "us": param}
+            tooltips = [("x", "@xs"), ("y", "@ys"), ("u", "@us")]
         else:
             x, y = data
             source = {
                 "xs": x if not s.is_polar else y * np.cos(x),
                 "ys": y if not s.is_polar else y * np.sin(x)
             }
+            tooltips=[("x", "@xs"), ("y", "@ys")]
 
         if s.get_label(False) != "__k__":
             color = next(p._cl) if s.line_color is None else s.line_color
@@ -50,6 +53,11 @@ def _draw_line2d_helper(renderer, data):
                 lkw["fill_color"] = "white"
             kw = p.merge({}, lkw, s.rendering_kw)
             handle = [p._fig.scatter("xs", "ys", source=source, **kw)]
+
+    p._fig.add_tools(p.bokeh.models.HoverTool(
+        tooltips=tooltips,
+        renderers=[handle[0]]
+    ))
 
     # add vertical lines at discontinuities
     vlines = []

@@ -107,14 +107,12 @@ def test_bokeh_tools():
     # might have different tooltips, tested later on)
 
     f = plot(backend=BB, show=False).fig
-    assert len(f.toolbar.tools) == 6
+    assert len(f.toolbar.tools) == 5
     assert isinstance(f.toolbar.tools[0], bokeh.models.PanTool)
     assert isinstance(f.toolbar.tools[1], bokeh.models.WheelZoomTool)
     assert isinstance(f.toolbar.tools[2], bokeh.models.BoxZoomTool)
     assert isinstance(f.toolbar.tools[3], bokeh.models.ResetTool)
-    assert isinstance(f.toolbar.tools[4], bokeh.models.HoverTool)
-    assert isinstance(f.toolbar.tools[5], bokeh.models.SaveTool)
-    assert f.toolbar.tools[4].tooltips == [("x", "$x"), ("y", "$y")]
+    assert isinstance(f.toolbar.tools[4], bokeh.models.SaveTool)
 
 
 def test_custom_colorloop():
@@ -173,7 +171,7 @@ def test_plot_parametric():
     # 1 colorbar
     assert len(f.right) == 1
     assert f.right[0].title == "x"
-    assert f.toolbar.tools[-2].tooltips == [("x", "$x"), ("y", "$y"), ("u", "@us")]
+    assert f.toolbar.tools[-1].tooltips == [("x", "@xs"), ("y", "@ys"), ("u", "@us")]
 
 
 def test_plot3d_parametric_line():
@@ -446,7 +444,7 @@ def test_plot_complex_2d():
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.ImageRGBA)
     assert f.right[0].title == "Argument"
-    assert f.toolbar.tools[-2].tooltips == [
+    assert f.toolbar.tools[-1].tooltips == [
         ("x", "$x"),
         ("y", "$y"),
         ("Abs", "@abs"),
@@ -546,76 +544,41 @@ def test_plot_geometry_2():
 
     p = make_test_plot_geometry_2(BB, False)
     assert (
-        len(
-            [
-                t.glyph
-                for t in p.fig.renderers
-                if isinstance(t.glyph, bokeh.models.glyphs.Line)
-            ]
-        )
+        len([t.glyph for t in p.fig.renderers
+            if isinstance(t.glyph, bokeh.models.glyphs.Line)])
         == 4
     )
     assert (
-        len(
-            [
-                t.glyph
-                for t in p.fig.renderers
-                if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)
-            ]
-        )
+        len([t.glyph for t in p.fig.renderers
+            if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)])
         == 1
     )
     assert (
-        len(
-            [
-                t.glyph
-                for t in p.fig.renderers
-                if isinstance(t.glyph, bokeh.models.glyphs.Scatter)
-            ]
-        )
+        len([t.glyph for t in p.fig.renderers
+            if isinstance(t.glyph, bokeh.models.glyphs.Scatter)])
         == 1
     )
     assert len(p.fig.legend[0].items) == 5
     p = make_test_plot_geometry_2(BB, True)
     assert (
-        len(
-            [
-                t.glyph
-                for t in p.fig.renderers
-                if isinstance(t.glyph, bokeh.models.glyphs.Line)
-            ]
-        )
+        len([t.glyph for t in p.fig.renderers
+            if isinstance(t.glyph, bokeh.models.glyphs.Line)])
         == 1
     )
     assert (
-        len(
-            [
-                t.glyph
-                for t in p.fig.renderers
-                if isinstance(t.glyph, bokeh.models.glyphs.Patch)
-            ]
-        )
+        len([t.glyph for t in p.fig.renderers
+            if isinstance(t.glyph, bokeh.models.glyphs.Patch)])
         == 3
     )
     assert (
-        len(
-            [
-                t.glyph
-                for t in p.fig.renderers
-                if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)
-            ]
-        )
+        len([t.glyph for t in p.fig.renderers
+            if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)])
         == 1
     )
     assert (
-        len(
-            [
-                t.glyph
-                for t in p.fig.renderers
-                if isinstance(t.glyph, bokeh.models.glyphs.Scatter)
-            ]
-        )
-        == 1
+        len([t.glyph for t in p.fig.renderers
+            if isinstance(t.glyph, bokeh.models.glyphs.Scatter)])
+        == 4
     )
     assert len(p.fig.legend[0].items) == 5
 

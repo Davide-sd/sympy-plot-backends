@@ -35,6 +35,10 @@ def _draw_domain_coloring_helper(renderer, data):
         dw=x.max() - x.min(),
         dh=y.max() - y.min(),
     )
+    p._fig.add_tools(p.bokeh.models.HoverTool(
+        tooltips=[("x", "$x"), ("y", "$y"), ("abs", "@abs"), ("arg", "@arg")],
+        renderers=[handle]
+    ))
 
     if (colors is not None) and s.colorbar:
         # chroma/phase-colorbar

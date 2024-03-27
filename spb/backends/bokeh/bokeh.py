@@ -190,21 +190,7 @@ class BokehBackend(Plot):
             self.colorloop = bp.Category20[20]
 
         self._handles = dict()
-
-        # empty plots (len(series)==0) should only have x, y tooltips
-        TOOLTIPS = [("x", "$x"), ("y", "$y")]
-        if len(self.series) > 0:
-            if all([s.is_parametric for s in self.series]):
-                # with parametric plots, also visualize the parameter
-                TOOLTIPS += [("u", "@us")]
-            if any([s.is_complex and s.is_domain_coloring for s
-                    in self.series]):
-                # with complex domain coloring, shows the magnitude and phase
-                # in the tooltip
-                TOOLTIPS += [("Abs", "@abs"), ("Arg", "@arg")]
-
         sizing_mode = cfg["bokeh"]["sizing_mode"]
-
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()
         kw = dict(
             title=title,
@@ -213,8 +199,7 @@ class BokehBackend(Plot):
             sizing_mode="fixed" if self.size else sizing_mode,
             width=int(self.size[0]) if self.size else cfg["bokeh"]["width"],
             height=int(self.size[1]) if self.size else cfg["bokeh"]["height"],
-            tools="pan,wheel_zoom,box_zoom,reset,hover,save",
-            tooltips=TOOLTIPS,
+            tools="pan,wheel_zoom,box_zoom,reset,save",
             match_aspect=True if self.aspect == "equal" else False,
         )
         if self.xlim:
@@ -239,7 +224,6 @@ class BokehBackend(Plot):
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
         if self._invert_x_axis:
             self._fig.x_range.flipped = True
-
 
         self._update_event = kwargs.get(
             "update_event", cfg["bokeh"]["update_event"])
