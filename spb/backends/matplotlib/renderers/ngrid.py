@@ -1,4 +1,3 @@
-from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
 from spb.backends.matplotlib.renderers.sgrid import (
     SGridLineRenderer, _text_position_limits, _find_data_axis_limits,
     _modify_axis_limits

@@ -1,7 +1,6 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
 from spb.utils import unwrap
-
-import numpy as np
+from sympy.external import import_module
 import matplotlib as mpl
 import matplotlib.font_manager as font_manager
 import matplotlib.text as text
@@ -35,6 +34,7 @@ def _draw_arrows_helper(
     Based on:
     https://github.com/python-control/python-control/blob/main/control/freqplot.py
     """
+    np = import_module("numpy")
     if not isinstance(line, mpl.lines.Line2D):
         raise ValueError("expected a matplotlib.lines.Line2D object")
     x, y = line.get_xdata(), line.get_ydata()
