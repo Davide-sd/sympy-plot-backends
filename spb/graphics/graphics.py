@@ -12,7 +12,8 @@ from spb.utils import _instantiate_backend
 def graphics(
     *args, aspect=None, axis_center=None, is_polar=None, legend=None,
     show=True, size=None, title=None, xlabel=None, ylabel=None, zlabel=None,
-    xlim=None, ylim=None, zlim=None, fig=None, ax=None, **kwargs
+    xlim=None, ylim=None, zlim=None, fig=None, ax=None,
+    update_event=None, **kwargs
 ):
     """Plots a collection of data series.
 
@@ -53,6 +54,9 @@ def graphics(
         the size will be set by the backend.
     title : str, optional
         Title of the plot.
+    update_event : bool
+        If True, enable auto-update on panning. Default to False.
+        Some backend may not implement this feature.
     use_latex : boolean, optional
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.
@@ -79,7 +83,8 @@ def graphics(
     Examples
     ========
 
-    Combining together multiple data series of the same type:
+    Combining together multiple data series of the same type, enabling
+    auto-update on pan:
 
     .. plot::
        :context: close-figs
@@ -93,7 +98,7 @@ def graphics(
        ...     line(cos(x), label="a"),
        ...     line(sin(x), (x, -pi, pi), label="b"),
        ...     line(log(x), rendering_kw={"linestyle": "--"}),
-       ...     title="My title", ylabel="y"
+       ...     title="My title", ylabel="y", update_event=True
        ... )
        Plot object containing:
        [0]: cartesian line: cos(x) for x over (-10.0, 10.0)
@@ -158,7 +163,7 @@ def graphics(
        >>> x = symbols("x")
        >>> graphics(
        ...     line(cos(x), (x, -pi, pi), rendering_kw={"ls": "--", "lw": 0.8}),
-       ...     ax=ax)
+       ...     ax=ax, update_event=True)
        Plot object containing:
        [0]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
 
@@ -287,7 +292,8 @@ def graphics(
             *series,
             aspect=aspect, axis_center=axis_center, is_polar=is_polar,
             legend=legend, show=show, size=size, title=title,
-            xlim=xlim, ylim=ylim, zlim=zlim, ax=ax, fig=fig, **kwargs)
+            xlim=xlim, ylim=ylim, zlim=zlim, ax=ax, fig=fig,
+            update_event=update_event, **kwargs)
 
     is_3D = any(s.is_3D for s in series)
     Backend = kwargs.pop("backend", TWO_D_B if is_3D else THREE_D_B)
@@ -295,4 +301,5 @@ def graphics(
         Backend, *series,
         aspect=aspect, axis_center=axis_center,
         is_polar=is_polar, legend=legend, show=show, size=size,
-        title=title, xlim=xlim, ylim=ylim, zlim=zlim, ax=ax, fig=fig, **kwargs)
+        title=title, xlim=xlim, ylim=ylim, zlim=zlim, ax=ax, fig=fig,
+        update_event=update_event, **kwargs)
