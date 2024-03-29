@@ -4674,6 +4674,8 @@ class ColoredSystemResponseSeries(SystemResponseSeries):
 class PoleZeroCommon:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.is_point = True
+        self.return_poles = kwargs.get("return_poles", True)
         self.pole_color = kwargs.get("pole_color", None)
         self.zero_color = kwargs.get("zero_color", None)
         self.pole_markersize = kwargs.get("pole_markersize", 10)
@@ -4702,11 +4704,9 @@ class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
     def __init__(self, tf, label="", **kwargs):
         super().__init__(tf, label=label, **kwargs)
         self._check_fs()
-        self.is_point = True
-        self._return_poles = kwargs.get("return_poles", True)
 
     def __str__(self):
-        pre = "pole of " if self._return_poles else "zeros of "
+        pre = "pole of " if self.return_poles else "zeros of "
         expr = self._expr if self._expr is not None else self._control_tf
         return pre + str(expr)
 
@@ -4721,7 +4721,7 @@ class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
         if self.is_interactive:
             tf = self._expr.subs(self.params)
             self._control_tf = tf_to_control(tf)
-        if self._return_poles:
+        if self.return_poles:
             points = self._control_tf.poles()
         else:
             points = self._control_tf.zeros()

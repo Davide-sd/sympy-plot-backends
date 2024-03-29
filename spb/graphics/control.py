@@ -279,12 +279,12 @@ def _pole_zero_helper(
 
     prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(**kwargs)
     z_series = PoleZeroWithSympySeries(
-        zeros_re, zeros_im, z_label,
+        zeros_re, zeros_im, z_label, return_poles=False,
         scatter=True, is_filled=True, rendering_kw=zrk,
         zero_markersize=zero_markersize, **kwargs
     )
     p_series = PoleZeroWithSympySeries(
-        poles_re, poles_im, p_label,
+        poles_re, poles_im, p_label, return_poles=True,
         scatter=True, is_filled=True, rendering_kw=prk,
         pole_markersize=pole_markersize, **kwargs
     )
@@ -467,7 +467,7 @@ def pole_zero(
     See Also
     ========
 
-    sgrid, zgrid
+    sgrid, zgrid, root_locus
 
     """
     control = _check_if_control_is_installed(use_control=control)
@@ -2181,7 +2181,7 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     See Also
     ========
 
-    sgrid, zgrid
+    sgrid, zgrid, pole_zero
     """
     control = _check_if_control_is_installed(force_stop=True)
     systems = _unpack_mimo_systems(

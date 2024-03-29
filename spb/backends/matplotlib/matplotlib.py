@@ -7,7 +7,7 @@ from spb.backends.matplotlib.renderers import (
     GeometryRenderer, GenericRenderer, HVLineRenderer,
     NyquistRenderer, Arrow2DRendererFancyArrowPatch,
     Arrow3DRendererFancyArrowPatch, RootLocusRenderer, SGridLineRenderer,
-    ZGridLineRenderer, NGridLineRenderer, MCirclesRenderer
+    ZGridLineRenderer, NGridLineRenderer, MCirclesRenderer, PoleZeroRenderer
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
@@ -21,7 +21,7 @@ from spb.series import (
     HVLineSeries, NyquistLineSeries, NicholsLineSeries,
     Arrow2DSeries, Arrow3DSeries, RootLocusSeries, SGridLineSeries,
     ZGridLineSeries, SystemResponseSeries, ColoredSystemResponseSeries,
-    PoleZeroSeries, NGridLineSeries,
+    PoleZeroSeries, NGridLineSeries, PoleZeroWithSympySeries,
     MCirclesSeries
 )
 from sympy.external import import_module
@@ -183,9 +183,10 @@ class MatplotlibBackend(Plot):
         ZGridLineSeries: ZGridLineRenderer,
         SystemResponseSeries: Line2DRenderer,
         ColoredSystemResponseSeries: Line2DRenderer,
-        PoleZeroSeries: Line2DRenderer,
         NGridLineSeries: NGridLineRenderer,
-        MCirclesSeries: MCirclesRenderer
+        MCirclesSeries: MCirclesRenderer,
+        PoleZeroSeries: PoleZeroRenderer,
+        PoleZeroWithSympySeries: PoleZeroRenderer,
     }
 
     pole_line_kw = {"color": "k", "linestyle": ":"}
