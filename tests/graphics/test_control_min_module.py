@@ -1,6 +1,6 @@
 import pytest
 from pytest import warns, raises
-from spb.series import LineOver1DRangeSeries, List2DSeries
+from spb.series import LineOver1DRangeSeries, PoleZeroWithSympySeries
 from spb.graphics.control import (
     step_response, impulse_response, ramp_response, pole_zero,
     root_locus, nyquist
@@ -20,7 +20,7 @@ ct = import_module("control")
         (step_response, LineOver1DRangeSeries),
         (impulse_response, LineOver1DRangeSeries),
         (ramp_response, LineOver1DRangeSeries),
-        (pole_zero, List2DSeries)
+        (pole_zero, PoleZeroWithSympySeries)
     ]
 )
 def test_functions(func, series_type):

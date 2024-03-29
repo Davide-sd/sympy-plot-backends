@@ -1,6 +1,7 @@
 from spb.defaults import TWO_D_B
 from spb.series import (
-    List2DSeries, LineOver1DRangeSeries, HVLineSeries, NyquistLineSeries,
+    PoleZeroWithSympySeries, LineOver1DRangeSeries, HVLineSeries,
+    NyquistLineSeries,
     NicholsLineSeries, RootLocusSeries, SGridLineSeries, ZGridLineSeries,
     SystemResponseSeries, PoleZeroSeries, NGridLineSeries, MCirclesSeries
 )
@@ -276,18 +277,16 @@ def _pole_zero_helper(
     zeros_re, zeros_im = [re(z) for z in zeros], [im(z) for z in zeros]
     poles_re, poles_im = [re(p) for p in poles], [im(p) for p in poles]
 
-    prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(
-        pole_markersize, zero_markersize, **kwargs
-    )
-    z_series = List2DSeries(
+    prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(**kwargs)
+    z_series = PoleZeroWithSympySeries(
         zeros_re, zeros_im, z_label,
         scatter=True, is_filled=True, rendering_kw=zrk,
-        **kwargs
+        zero_markersize=zero_markersize, **kwargs
     )
-    p_series = List2DSeries(
+    p_series = PoleZeroWithSympySeries(
         poles_re, poles_im, p_label,
         scatter=True, is_filled=True, rendering_kw=prk,
-        **kwargs
+        pole_markersize=pole_markersize, **kwargs
     )
     return [p_series, z_series]
 
@@ -296,37 +295,19 @@ def _pole_zero_with_control_helper(
     system, pole_markersize, zero_markersize,
     **kwargs
 ):
-    params = kwargs.get("params", {})
-    prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(
-        pole_markersize, zero_markersize, **kwargs
-    )
+    prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(**kwargs)
     return [
         PoleZeroSeries(system, p_label, return_poles=True,
-            rendering_kw=prk, params=params),
+            rendering_kw=prk, pole_markersize=pole_markersize, **kwargs),
         PoleZeroSeries(system, z_label, return_poles=False,
-            rendering_kw=zrk, params=params),
+            rendering_kw=zrk, zero_markersize=zero_markersize, **kwargs),
     ]
 
 
-def _pole_zero_common_keyword_arguments(
-    pole_markersize, zero_markersize, **kwargs
-):
+def _pole_zero_common_keyword_arguments(**kwargs):
     label = kwargs.get("label", None)
-    Backend = kwargs.get("backend", TWO_D_B)
     z_rendering_kw = kwargs.pop("z_rendering_kw", {})
     p_rendering_kw = kwargs.pop("p_rendering_kw", {})
-    z_kw, p_kw = {}, {}
-    if hasattr(Backend, "_library") and (Backend._library == "matplotlib"):
-        z_kw = dict(marker="o", markersize=zero_markersize)
-        p_kw = dict(marker="x", markersize=pole_markersize)
-        zero_color = kwargs.pop("zero_color", None)
-        if zero_color:
-            z_kw["color"] = zero_color
-        pole_color = kwargs.pop("pole_color", None)
-        if pole_color:
-            z_kw["color"] = pole_color
-    z_rendering_kw = merge(z_kw, z_rendering_kw)
-    p_rendering_kw = merge(p_kw, p_rendering_kw)
     get_label = lambda t: t + " of " + label if label else t
     z_label = get_label("zeros")
     p_label = get_label("poles")
@@ -409,7 +390,7 @@ def pole_zero(
 
     * one instance of ``SGridLineSeries`` if ``sgrid=True``.
     * one instance of ``ZGridLineSeries`` if ``zgrid=True``.
-    * one or more instances of ``List2DSeries`` if ``control=False``.
+    * one or more instances of ``PoleZeroWithSympySeries`` if ``control=False``.
     * one or more instances of ``PoleZeroSeries`` if ``control=True``.
 
     Examples
@@ -2637,6 +2618,11 @@ def mcircles(magnitudes_db=None, rendering_kw=None, **kwargs):
     =======
 
     A list containing one instance of ``MCirclesSeries``.
+
+    See Also
+    ========
+
+    nyquist
 
     Examples
     ========

@@ -4063,6 +4063,12 @@ class ZGridLineSeries(GridBase, BaseSeries):
         # natural frequency lines
         r_an = 1.075
         fmt = '{:1.1f}' if len(wn) > 1 else '{:1.2f}'
+        def get_label(num):
+            def func(use_latex=True):
+                if use_latex:
+                    return r"$\frac{"+num+r"\pi}{T}$"
+                return str(num) + " π/T"
+            return func
         for a in wn:
             # Calculate in polar coordinates
             x = np.linspace(-np.pi/2, np.pi/2, 200)
@@ -4080,8 +4086,10 @@ class ZGridLineSeries(GridBase, BaseSeries):
             if T is None:
                 num = fmt.format(a)
                 an = r"$\frac{"+num+r"\pi}{T}$"
+                an = get_label(num)
             else:
-                an = "%.2f" % (a * np.pi * T)
+                func = lambda a, T: lambda use_latex: "%.2f" % (a * np.pi * T)
+                an = func(a, T)
             wn_dict[a]["label"] = an
 
         # peak time lines
@@ -4663,7 +4671,21 @@ class ColoredSystemResponseSeries(SystemResponseSeries):
         return x, y, self.eval_color_func(x, y)
 
 
-class PoleZeroSeries(ControlBaseSeries):
+class PoleZeroCommon:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pole_color = kwargs.get("pole_color", None)
+        self.zero_color = kwargs.get("zero_color", None)
+        self.pole_markersize = kwargs.get("pole_markersize", 10)
+        self.zero_markersize = kwargs.get("zero_markersize", 7)
+
+
+class PoleZeroWithSympySeries(PoleZeroCommon, List2DSeries):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
     """Represent a the pole-zero of an LTI SISO system computed
     with the ``control`` module.
 

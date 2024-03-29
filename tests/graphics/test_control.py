@@ -9,7 +9,7 @@ from spb import (
     mcircles
 )
 from spb.series import (
-    LineOver1DRangeSeries, HVLineSeries, List2DSeries, NyquistLineSeries,
+    LineOver1DRangeSeries, HVLineSeries, PoleZeroWithSympySeries, NyquistLineSeries,
     NicholsLineSeries, SGridLineSeries, RootLocusSeries, ZGridLineSeries,
     SystemResponseSeries, PoleZeroSeries, NGridLineSeries, MCirclesSeries
 )
@@ -113,7 +113,7 @@ def test_pole_zero(tf, label, pkw, zkw, params, use_control):
 
     series = pole_zero(tf, label=label, control=use_control, **kwargs)
     assert len(series) == 2
-    test_series = List2DSeries if not use_control else PoleZeroSeries
+    test_series = PoleZeroWithSympySeries if not use_control else PoleZeroSeries
     assert all(isinstance(s, test_series) for s in series)
     assert "poles" in series[0].get_label(True)
     assert "zeros" in series[1].get_label(True)
@@ -151,7 +151,7 @@ def test_pole_zero(tf, label, pkw, zkw, params, use_control):
 def test_pole_zero_control_scipy(tf, use_control):
     series = pole_zero(tf, control=use_control)
     assert len(series) == 2
-    test_series = List2DSeries if not use_control else PoleZeroSeries
+    test_series = PoleZeroWithSympySeries if not use_control else PoleZeroSeries
     assert all(isinstance(s, test_series) for s in series)
     assert "poles" in series[0].get_label(True)
     assert "zeros" in series[1].get_label(True)
@@ -177,7 +177,7 @@ def test_pole_zero_control_scipy(tf, use_control):
 def test_pole_zero_mimo_1(tf, use_control):
     series = pole_zero(tf, control=use_control)
     assert len(series) == 12
-    test_series = List2DSeries if not use_control else PoleZeroSeries
+    test_series = PoleZeroWithSympySeries if not use_control else PoleZeroSeries
     assert all(isinstance(s, test_series) for s in series)
 
 
@@ -188,7 +188,7 @@ def test_pole_zero_grids(use_control):
     # verify that grid line series works with pole_zero
 
     tf = TransferFunction(s**2 + 1, s**4 + 4*s**3 + 6*s**2 + 5*s + 2, s)
-    test_series = List2DSeries if not use_control else PoleZeroSeries
+    test_series = PoleZeroWithSympySeries if not use_control else PoleZeroSeries
 
     series = pole_zero(tf, sgrid=False, zgrid=False, control=use_control)
     assert len(series) == 2
