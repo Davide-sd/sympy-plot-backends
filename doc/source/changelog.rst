@@ -5,8 +5,23 @@
 v3.2.0
 ======
 
-* add `update_event` keyword argument to enable/disable auto-update on
-  panning for plots created with `MatplotlibBackend`, `PlotlyBackend`.
+* add ``update_event`` keyword argument to enable/disable auto-update on
+  panning for plots created with ``MatplotlibBackend``, ``PlotlyBackend`` and
+  ``BokehBackend``. By default, this functionality is turned off,
+  ``update_event=False``.
+
+* Added ``arrows=`` keyword argument to ``nichols`` and ``plot_nichols``.
+
+* Added ``show_minus_one=`` keyword argument to ``mcircles``.
+
+* Implemented renderers for Bokeh in order to deal with control
+  system plotting.
+
+* Improved tooltips in ``BokehBackend``.
+
+* Breaking: refactoring of ``NicholsLineSeries``. Previously, it returned data
+  about the open-loop transfer function. Now, it also returns data about the
+  closed-loop transfer function, which can be used on tooltips.
 
 
 v3.1.1

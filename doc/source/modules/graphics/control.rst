@@ -52,12 +52,17 @@ because the integration starts with a zero initial condition.
 The plotting module will warn the user if the first mode of operation is being
 used with a ``lower_limit`` different than zero.
 
-**NOTE:** 
-For technical reasons, all interactive-widgets plots in this documentation are
-created using Holoviz's Panel. Often, they will ran just fine with ipywidgets
-too. However, if a specific example uses the ``param`` library, then users
-will have to modify the params dictionary in order to make it work with
-ipywidgets. Refer to :ref:`interactive` module for more information.
+**NOTES:**
+
+* All the following examples are generated using Matplotlib. However, Bokeh
+  can be used too, which allows for a better data exploration thanks to useful
+  tooltips. Set ``backend=BB`` in the function call to use Bokeh.
+
+* For technical reasons, all interactive-widgets plots in this documentation are
+  created using Holoviz's Panel. Often, they will ran just fine with ipywidgets
+  too. However, if a specific example uses the ``param`` library, then users
+  will have to modify the params dictionary in order to make it work with
+  ipywidgets. Refer to :ref:`interactive` module for more information.
 
 
 .. module:: spb.graphics.control
@@ -71,6 +76,7 @@ ipywidgets. Refer to :ref:`interactive` module for more information.
 .. autofunction:: nyquist
 .. autofunction:: ngrid
 .. autofunction:: nichols
+.. autofunction:: mcircles
 .. autofunction:: control_axis
 .. autofunction:: sgrid
 .. autofunction:: zgrid

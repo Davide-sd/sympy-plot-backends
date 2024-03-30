@@ -82,7 +82,8 @@ function:
        xscale = "log",
        xlabel = "Frequency, omega, [rad/s]",
        ylabel = "Magnitude [dB]",
-       use_latex = False
+       use_latex = False,
+       update_event=True
    )
 
 
@@ -132,7 +133,8 @@ Interactive-Parametric domain coloring plot of a complex function:
       domain_coloring(
          expr, (z, -2-2j, 2+2j), coloring="m", cmap=colorcet.CET_C7,
          n=500, params=params),
-      use_latex=False, title="$%s$" % latex(expr), grid=False
+      use_latex=False, title="$%s$" % latex(expr), grid=False,
+      update_event=True
    )
 
 
