@@ -100,13 +100,13 @@ class NGridLineRenderer(SGridLineRenderer):
     # up to 12dB. If needed, more values are added at the bottom. Here, I set
     # -60dB so that there will be a magnitude line, which in turn it is used
     # to set the y-position of phase labels (if label_cl_phases=True).
-    default_ylim = [-60, 50]
+    default_ylim = [-60, 55]
 
     def _set_axis_limits_before_compute_data(self):
         np = import_module("numpy")
         # loop over the data already present on the plot and find
         # appropriate axis limits
-        xlims, ylims = _find_data_axis_limits(self.plot._fig)
+        xlims, ylims = _find_data_axis_limits(self.plot._fig, "ol_p", "ol_m")
 
         if len(xlims) > 0:
             xlims = np.array(xlims)

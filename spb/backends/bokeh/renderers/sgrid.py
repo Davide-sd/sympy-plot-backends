@@ -167,7 +167,7 @@ def _update_sgrid_helper(renderer, data, handles):
         h.location = x
 
 
-def _find_data_axis_limits(fig):
+def _find_data_axis_limits(fig, x_key="x", y_key="y"):
     """Loop over the lines in order to find their minimum and
     maximum coordinates.
     """
@@ -177,14 +177,9 @@ def _find_data_axis_limits(fig):
     for line in fig.renderers:
         if isinstance(line.glyph, (bokeh.models.Line, bokeh.models.Scatter)):
             data = line.data_source.data
-            x, y = None, None
-            if ("x" in data.keys()) and ("y" in data.keys()):
-                x = data["x"]
-                y = data["y"]
-            elif ("xs" in data.keys()) and ("ys" in data.keys()):
-                x = data["xs"]
-                y = data["ys"]
-            if x is not None:
+            if (x_key in data.keys()) and (y_key in data.keys()):
+                x = data[x_key]
+                y = data[y_key]
                 xlims.append([np.nanmin(x), np.nanmax(x)])
                 ylims.append([np.nanmin(y), np.nanmax(y)])
     return xlims, ylims
