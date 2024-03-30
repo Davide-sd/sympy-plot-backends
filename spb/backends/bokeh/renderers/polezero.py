@@ -34,7 +34,7 @@ def _get_source_tooltips(plot, x, y):
         xi[x == 0] = 0
         source = {"x": x, "y": y, "tp": tp, "ts": ts, "wn": wn, "xi": xi}
         tooltips = [
-            ("x", "@x"), ("y", "@y"), ("wn", "@wn"), ("xi", "@xi"),
+            ("Real", "@x"), ("Imag", "@y"), ("wn", "@wn"), ("xi", "@xi"),
             ("Tp [s]", "@tp"), ("Ts [s]", "@ts")
         ]
     elif is_zgrid:
@@ -62,7 +62,7 @@ def _get_source_tooltips(plot, x, y):
                 "wn": wnt * T, "xi": xi
             }
             tooltips = [
-                ("x", "@x"), ("y", "@y"),
+                ("Real", "@x"), ("Imag", "@y"),
                 ("wn [rad/s]", "@wn"), ("xi", "@xi"),
                 ("Ts [s]", "@ts"), ("Tp [s]", "@tp")
             ]
@@ -71,12 +71,12 @@ def _get_source_tooltips(plot, x, y):
                 "x": x, "y": y, "ts": ts_t, "tp": tp_t, "wn": wnt / np.pi, "xi": xi
             }
             tooltips = [
-                ("x", "@x"), ("y", "@y"),
+                ("Real", "@x"), ("Imag", "@y"),
                 ("wn", "@wn π/T"), ("xi", "@xi"),
                 ("Ts/T", "@ts"), ("Tp/T", "@tp")
             ]
     else:
-        source = {"x": x, "y": y}
+        source = {"Real": x, "Imag": y}
         tooltips = [("x", "@x"), ("y", "@y")]
 
     return source, tooltips
