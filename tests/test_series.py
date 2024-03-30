@@ -1894,6 +1894,10 @@ def test_str():
         == "implicit surface series: x**2 + y**3 - z**2 for x over (-2.0, 2.0) and y over (-3.0, 3.0) and z over (-4.0, 4.0)"
     )
 
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+def test_str_control_system():
+
     s, o = symbols("s, o")
     tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
     G = tf.to_expr()
