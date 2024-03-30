@@ -717,8 +717,8 @@ def arrow_2d(
        ...     grid=False, aspect="equal"
        ... )
        Plot object containing:
-       [0]: 2D arrow from [0. 0.] to [1. 1.]
-       [1]: 2D arrow from [0. 0.] to [-1.  1.]
+       [0]: 2D arrow from (0.0, 0.0) to (1.0, 1.0)
+       [1]: 2D arrow from (0.0, 0.0) to (-1.0, 1.0)
 
     Interactive-widget plot of arrows. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
@@ -812,9 +812,9 @@ def arrow_3d(
        ...              }),
        ...     xlabel="x", ylabel="y", zlabel="z")
        Plot object containing:
-       [0]: 3D arrow from [0. 0. 0.] to [1. 0. 0.]
-       [1]: 3D arrow from [0. 0. 0.] to [0. 1. 0.]
-       [2]: 3D arrow from [0. 0. 0.] to [0. 0. 1.]
+       [0]: 3D arrow from (0.0, 0.0, 0.0) to (1.0, 0.0, 0.0)
+       [1]: 3D arrow from (0.0, 0.0, 0.0) to (0.0, 1.0, 0.0)
+       [2]: 3D arrow from (0.0, 0.0, 0.0) to (0.0, 0.0, 1.0)
 
     Interactive-widget plot of arrows. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
