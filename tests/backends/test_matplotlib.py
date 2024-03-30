@@ -2745,6 +2745,7 @@ def test_plot_nichols_arrows(arrows, n_arrows):
     assert len(ax.patches) == n_arrows
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_plot_step_response():
     # this should not raise any errors during updates
 

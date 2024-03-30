@@ -11,6 +11,7 @@ from sympy import sin, cos, pi, exp, symbols, I
 from sympy.external import import_module
 
 pn = import_module("panel")
+ipy = import_module("ipywidgets")
 
 KB.skip_notebook_check = True
 
@@ -255,6 +256,10 @@ def test_update_event_numeric_ranges(backend):
     # verify that the code responsible for updating the ranges works as
     # expected.
 
+    if pn is None:
+        # bokeh and plotly are not installed
+        return
+
     x, y = symbols("x, y")
     p = plot(sin(x), (x, -pi, pi), show=False, n=10, backend=backend)
     assert p[0].ranges == [(x, -pi, pi)]
@@ -291,7 +296,7 @@ def test_update_event_numeric_ranges(backend):
 
     # parametric plot must not update the range
     p = plot_parametric(cos(x), sin(x), (x, 0, 2*pi),
-        show=False, backend=PB, n=10)
+        show=False, backend=backend, n=10)
     assert p[0].ranges == [(x, 0, 2*pi)]
     p._update_series_ranges((-10, 10), (-5, 6))
     assert p[0].ranges == [(x, 0, 2*pi)]
@@ -303,6 +308,10 @@ def test_update_event_numeric_ranges(backend):
 def test_update_event_parametric_ranges(backend):
     # verify that the code responsible for updating the ranges works as
     # expected.
+
+    if pn is None:
+        # bokeh and plotly are not installed
+        return
 
     x, y, z = symbols("x, y, z")
     ip = plot(sin(x), prange(x, -y*pi, pi), show=False, n=10, backend=backend,
