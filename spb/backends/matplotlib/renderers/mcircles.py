@@ -42,6 +42,10 @@ def _draw_mcircles_helper(renderer, data):
                 )
             )
         handles.append([h1, h2])
+
+    # Mark the -1 point
+    p._ax.plot([-1], [0], 'r+')
+
     return handles
 
 

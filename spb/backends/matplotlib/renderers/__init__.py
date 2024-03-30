@@ -19,6 +19,8 @@ from spb.backends.matplotlib.renderers.sgrid import SGridLineRenderer
 from spb.backends.matplotlib.renderers.zgrid import ZGridLineRenderer
 from spb.backends.matplotlib.renderers.ngrid import NGridLineRenderer
 from spb.backends.matplotlib.renderers.mcircles import MCirclesRenderer
+from spb.backends.matplotlib.renderers.polezero import PoleZeroRenderer
+from spb.backends.matplotlib.renderers.nichols import NicholsLineRenderer
 
 __all__ = [
     "Line2DRenderer", "Line3DRenderer", "ContourRenderer", "SurfaceRenderer",
@@ -27,5 +29,6 @@ __all__ = [
     "HVLineRenderer", "NyquistRenderer",
     "Arrow2DRendererQuivers", "Arrow2DRendererFancyArrowPatch",
     "Arrow3DRendererFancyArrowPatch", "RootLocusRenderer", "SGridLineRenderer",
-    "ZGridLineRenderer", "NGridLineRenderer", "MCirclesRenderer"
+    "ZGridLineRenderer", "NGridLineRenderer", "MCirclesRenderer",
+    "PoleZeroRenderer", "NicholsLineRenderer"
 ]

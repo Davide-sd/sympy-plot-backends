@@ -7,7 +7,8 @@ from spb.backends.matplotlib.renderers import (
     GeometryRenderer, GenericRenderer, HVLineRenderer,
     NyquistRenderer, Arrow2DRendererFancyArrowPatch,
     Arrow3DRendererFancyArrowPatch, RootLocusRenderer, SGridLineRenderer,
-    ZGridLineRenderer, NGridLineRenderer, MCirclesRenderer, PoleZeroRenderer
+    ZGridLineRenderer, NGridLineRenderer, MCirclesRenderer, PoleZeroRenderer,
+    NicholsLineRenderer
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
@@ -175,7 +176,7 @@ class MatplotlibBackend(Plot):
         GenericDataSeries: GenericRenderer,
         HVLineSeries: HVLineRenderer,
         NyquistLineSeries: NyquistRenderer,
-        NicholsLineSeries: Line2DRenderer,
+        NicholsLineSeries: NicholsLineRenderer,
         Arrow2DSeries: Arrow2DRendererFancyArrowPatch,
         Arrow3DSeries: Arrow3DRendererFancyArrowPatch,
         RootLocusSeries: RootLocusRenderer,

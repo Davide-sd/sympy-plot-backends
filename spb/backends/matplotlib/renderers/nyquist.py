@@ -1,9 +1,6 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
 from spb.utils import unwrap
 from sympy.external import import_module
-import matplotlib as mpl
-import matplotlib.font_manager as font_manager
-import matplotlib.text as text
 import warnings
 
 
@@ -35,6 +32,7 @@ def _draw_arrows_helper(
     https://github.com/python-control/python-control/blob/main/control/freqplot.py
     """
     np = import_module("numpy")
+    mpl = import_module("matplotlib")
     if not isinstance(line, mpl.lines.Line2D):
         raise ValueError("expected a matplotlib.lines.Line2D object")
     x, y = line.get_xdata(), line.get_ydata()
@@ -122,6 +120,7 @@ def _create_line_style(
 
 
 def _draw_nyquist_helper(renderer, data):
+    mpl = import_module("matplotlib")
     p, s = renderer.plot, renderer.series
     color = next(p._cl)
     ax = p.ax
@@ -198,9 +197,6 @@ def _draw_nyquist_helper(renderer, data):
             smkw = p.merge({}, s.start_marker)
         start_marker_handle, = ax.plot(x_reg[0], y_reg[0], **smkw)
 
-    # Mark the -1 point
-    ax.plot([-1], [0], 'r+')
-
     handles = [
         primary_line, scl_primary_line, invisible_primary_line,
         secondary_line, scl_secondary_line, invisible_secondary_line,
@@ -210,6 +206,7 @@ def _draw_nyquist_helper(renderer, data):
 
 
 def _update_nyquist_helper(renderer, data, handles):
+    mpl = import_module("matplotlib")
     p, s = renderer.plot, renderer.series
     ax = p.ax
     primary_line, scl_primary_line, invisible_primary_line = handles[:3]

@@ -5,7 +5,7 @@ from spb import (
     plot3d_implicit, plot3d_parametric_surface,
     plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
     graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero,
-    ngrid, sgrid, zgrid
+    ngrid, sgrid, zgrid, mcircles
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries
@@ -1246,4 +1246,10 @@ def make_test_zgrid(B, xi, wn, tp, ts, show_control_axis, **kwargs):
         zgrid(xi, wn, tp, ts,
             show_control_axis=show_control_axis, **kwargs),
         grid=False, show=False, backend=B
+    )
+
+
+def make_test_mcircles(B, mag):
+    return graphics(
+        mcircles(mag), backend=B, show=False, grid=False
     )

@@ -886,7 +886,8 @@ class CommonUniformEvaluation:
     ]
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)# list of numerical functions representing the expressions to evaluate
+        super().__init__(*args, **kwargs)
+        # list of numerical functions representing the expressions to evaluate
         self._functions = []
         # signature of for the numerical functions
         self._signature = []
@@ -4123,19 +4124,67 @@ class ZGridLineSeries(GridBase, BaseSeries):
         return xi_dict, wn_dict, tp_dict, ts_dict
 
 
-class NicholsLineSeries(Parametric2DLineSeries):
-    """Represent a Nichols line in control system plotting.
-    """
+class ArrowsMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.arrows = kwargs.get("arrows", 3)
+
+        # Parse the arrows keyword
+        np = import_module("numpy")
+        if not self.arrows:
+            self.arrow_locs = []
+        elif isinstance(self.arrows, int):
+            N = 3 if self.arrows is True else self.arrows
+            # Space arrows out, starting midway along each "region"
+            self.arrow_locs = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
+        elif isinstance(self.arrows, (list, np.ndarray)):
+            self.arrow_locs = np.sort(np.atleast_1d(self.arrows))
+        else:
+            raise ValueError("unknown or unsupported arrow location")
+
+
+class NicholsLineSeries(ArrowsMixin, CommonUniformEvaluation, Line2DBaseSeries):
+    """Represent a Nichols line in control system plotting.
+    """
+    _allowed_keys = ["arrows"]
+
+    def __init__(
+        self, ol_phase, ol_mag, cl_phase, cl_mag, omega_range, label="", **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.expr = Tuple(ol_phase, ol_mag, cl_phase, cl_mag)
+        self.ranges = [omega_range]
+        self.label = label
+        self._force_real_eval = True
 
     def get_data(self):
+        """
+        Returns
+        =======
+        omega : np.ndarray
+        ol_phase : np.ndarray
+        ol_mag : np.ndarray
+        cl_phase : np.ndarray
+        cl_mag : np.ndarray
+        """
         np = import_module('numpy')
-        phase, mag, omega = super().get_data()
-        mag = 20 * np.log10(mag)
-        phase = unwrap(phase)
-        phase = np.degrees(phase)
-        return phase, mag, omega
+
+        results = self._evaluate()
+        for i, r in enumerate(results):
+            _re, _im = np.real(r), np.imag(r)
+            _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
+            results[i] = _re
+
+        omega, ol_phase, ol_mag, cl_phase, cl_mag = results
+        ol_mag = 20 * np.log10(ol_mag)
+        ol_phase = np.degrees(unwrap(ol_phase))
+        cl_mag = 20 * np.log10(cl_mag)
+        # TODO: if the nichols line passes through the point (-180 deg, 0 dB)
+        # (in open loop), then the resulting closed-loop phase is wrong. Why?
+        # For example, test with this system:
+        # tf = (5 * (s - 1)) / (s**2 * (s**2 + s + 4))
+        cl_phase = np.degrees(unwrap(cl_phase))
+        return omega, ol_phase, ol_mag, cl_phase, cl_mag
 
 
 class ControlBaseSeries(Line2DBaseSeries):
@@ -4227,7 +4276,7 @@ class ControlBaseSeries(Line2DBaseSeries):
                     "Are the following parameters? %s" % remaining_fs)
 
 
-class NyquistLineSeries(ControlBaseSeries):
+class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
     """Generates numerical data for Nyquist plot using the ``control``
     module.
     """
@@ -4249,7 +4298,6 @@ class NyquistLineSeries(ControlBaseSeries):
         # these attributes are used by ``control`` in the rendering step,
         # not in the data generation step. I need them here in order to
         # control the rendering in each backend.
-        self.arrows = kwargs.get("arrows", 2)
         self.max_curve_magnitude = kwargs.get("max_curve_magnitude", 20)
         self.max_curve_offset = kwargs.get("max_curve_offset", 0.02)
         self.start_marker = kwargs.get("start_marker", True)
@@ -4258,19 +4306,6 @@ class NyquistLineSeries(ControlBaseSeries):
         for k in ["arrows", "max_curve_magnitude", "max_curve_offset",
             "start_marker", "primary_style", "mirror_style"]:
             self._copy_from_dict(self._control_kw, k)
-
-        # Parse the arrows keyword
-        np = import_module("numpy")
-        if not self.arrows:
-            self.arrow_locs = []
-        elif isinstance(self.arrows, int):
-            N = self.arrows
-            # Space arrows out, starting midway along each "region"
-            self.arrow_locs = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
-        elif isinstance(self.arrows, (list, np.ndarray)):
-            self.arrow_locs = np.sort(np.atleast_1d(self.arrows))
-        else:
-            raise ValueError("unknown or unsupported arrow location")
 
     def get_data(self):
         """
@@ -4910,6 +4945,7 @@ class MCirclesSeries(GridBase, BaseSeries):
         super().__init__(**kwargs)
         self.magnitudes_db = Tuple(*magnitudes_db)
         self.magnitudes = self._expr = Tuple(*magnitudes)
+        self.show_minus_one = kwargs.get("show_minus_one", False)
 
     def get_data(self):
         """

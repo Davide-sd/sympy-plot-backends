@@ -1929,15 +1929,20 @@ def _nichols_helper(system, label, **kwargs):
     _range = prange(omega, *_range[1:])
 
     system_expr = system.to_expr()
+    # closed loop system is used to generate data for tooltips
+    cl_system_expr = (system_expr / (1 + system_expr)).simplify().expand().together()
+
     system_expr = system_expr.subs(s, I * omega)
+    cl_system_expr = cl_system_expr.subs(s, I * omega)
 
     kwargs.setdefault("use_cm", False)
     kwargs.setdefault("xscale", "log")
     return NicholsLineSeries(
-        arg(system_expr), Abs(system_expr), _range, label, **kwargs)
+        arg(system_expr), Abs(system_expr),
+        arg(cl_system_expr), Abs(cl_system_expr), _range, label, **kwargs)
 
 
-def nichols(system, label=None, rendering_kw=None, ngrid=True,
+def nichols(system, label=None, rendering_kw=None, ngrid=True, arrows=True,
     input=None, output=None, **kwargs):
     """Nichols plot for a system over a (optional) frequency range.
 
@@ -1958,6 +1963,14 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True,
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
           :py:class:`sympy.physics.control.lti.TransferFunction`.
+    arrows : bol, int or 1D array of floats, optional
+        Specify the number of arrows to plot on the Nichols curve.  If an
+        integer is passed, that number of equally spaced arrows will be
+        plotted on each of the primary segment and the mirror image.  If a 1D
+        array is passed, it should consist of a sorted list of floats between
+        0 and 1, indicating the location along the curve to plot an arrow.
+        If True, a default number of arrows is shown. If False, no arrows
+        are shown.
     ngrid : bool, optional
         Turn on/off the [Nichols]_ grid lines.
     omega_limits : array_like of two values, optional
@@ -2065,8 +2078,8 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True,
         s = _preprocess_system(s, **kwargs)
         _check_system(s)
         series.append(
-            _nichols_helper(s, l, rendering_kw=rendering_kw, **kwargs.copy())
-        )
+            _nichols_helper(s, l, rendering_kw=rendering_kw,
+                arrows=arrows,**kwargs.copy()))
 
     grid = []
     if ngrid:
@@ -2601,7 +2614,9 @@ def ngrid(
 ngrid_function = ngrid
 
 
-def mcircles(magnitudes_db=None, rendering_kw=None, **kwargs):
+def mcircles(
+    magnitudes_db=None, rendering_kw=None, show_minus_one=True, **kwargs
+):
     """Draw M-circles of constant closed-loop magnitude.
 
     Parameters
@@ -2613,6 +2628,8 @@ def mcircles(magnitudes_db=None, rendering_kw=None, **kwargs):
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
+    show_minus_one : bool
+        Show a marker at (x, y) = (-1, 0).
 
     Returns
     =======
@@ -2661,7 +2678,7 @@ def mcircles(magnitudes_db=None, rendering_kw=None, **kwargs):
     magnitudes = [10**(t / 20) for t in dbs]
     return [
         MCirclesSeries(dbs, magnitudes,
-            rendering_kw=rendering_kw, **kwargs)
+            rendering_kw=rendering_kw, show_minus_one=show_minus_one, **kwargs)
     ]
 
 mcircles_func = mcircles

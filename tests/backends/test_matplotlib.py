@@ -12,7 +12,7 @@ from spb import (
     plot_vector, plot3d_revolution, plot3d_spherical,
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
     plot_parametric, plot_implicit, plot_list, plot_geometry,
-    plot_complex_list, graphics, vector_field_2d
+    plot_complex_list, graphics, vector_field_2d, plot_nyquist, plot_nichols
 )
 from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
 from spb.series import SurfaceOver2DRangeSeries
@@ -119,7 +119,8 @@ from .make_tests import (
     make_test_poles_zeros_sgrid,
     make_test_ngrid,
     make_test_sgrid,
-    make_test_zgrid
+    make_test_zgrid,
+    make_test_mcircles
 )
 
 ct = import_module("control")
@@ -2625,3 +2626,119 @@ def test_matplotlib_update_ranges(update_event, num_callbacks):
 
     if update_event:
         p._update_axis_limits("button_release_event")
+
+
+@pytest.mark.parametrize(
+    "mag, n_lines, n_labels",
+    [
+        (None, 12, 11),
+        (-3, 2, 1),
+        (0, 2, 1),
+    ]
+)
+def test_mcircles(mag, n_lines, n_labels):
+    p = make_test_mcircles(MB, mag)
+    ax = p.ax
+    assert len(ax.lines) == n_lines
+    assert len(ax.texts) == n_labels
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+@pytest.mark.parametrize(
+    "m_circles, start_marker, mirror_style, arrows, n_lines, n_patches, n_texts",
+    [
+        (False, "+", None, None, 5, 0, 0),  # no m-circles, no arrows
+        (False, None, None, None, 4, 0, 0), # no m-circles, no arrows, no start marker
+        (False, "+", None, 2, 5, 4, 0),     # no m-circles
+        (False, "+", False, 2, 3, 2, 0),    # no m-circles, no mirror image
+        (True, "+", None, 3, 17, 6, 11),    # m-circles, mirror image, arrows, start marker
+    ]
+)
+def test_plot_nyquist_matplotlib(
+    m_circles, start_marker, mirror_style, arrows, n_lines, n_patches, n_texts
+):
+    # verify that plot_nyquist adds the necessary objects to the plot
+
+    s = symbols("s")
+    tf1 = 1 / (s**2 + 0.5*s + 2)
+
+    p = plot_nyquist(tf1, show=False, n=10, m_circles=m_circles, arrows=arrows,
+        mirror_style=mirror_style, start_marker=start_marker)
+    ax = p.ax
+    assert len(ax.lines) == n_lines
+    assert len(ax.patches) == n_patches
+    assert len(ax.texts) == n_texts
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+@pytest.mark.parametrize(
+    "primary_style, mirror_style",
+    [
+        ("-", ":"),
+        (["-", "-."], ["--", ":"]),
+        ({"linestyle": "-"}, {"linestyle": ":"}),
+        ([{"linestyle": "-"}, {"linestyle": ":"}], [{"linestyle": "--"}, {"linestyle": "-."}]),
+        (2, 2),
+    ]
+)
+def test_plot_nyquist_matplotlib_linestyles(primary_style, mirror_style):
+    s = symbols("s")
+    tf1 = 1 / (s**2 + 0.5*s + 2)
+
+    p = plot_nyquist(tf1, show=False, n=10,
+        primary_style=primary_style, mirror_style=mirror_style)
+    if not isinstance(primary_style, int):
+        ax = p.ax
+    else:
+        raises(ValueError, lambda: p.ax)
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+def test_plot_nyquist_matplotlib_interactive():
+    # verify that interactive update doesn't raise errors
+
+    a, s = symbols("a, s")
+    tf = 1 / (s + a)
+    pl = plot_nyquist(
+        tf, xlim=(-2, 1), ylim=(-1, 1),
+        aspect="equal", m_circles=True,
+        params={a: (1, 0, 2)},
+        arrows=4, n=10, show=False
+    )
+    ax = pl.backend.ax # force first draw
+    pl.backend.update_interactive({a: 2}) # update with new value
+
+
+def test_plot_nichols_matplotlib():
+    s = symbols("s")
+    tf = (5 * (s - 1)) / (s**2 * (s**2 + s + 4))
+
+    # with nichols grid lines
+    p = plot_nichols(tf, ngrid=True, show=False, n=10)
+    ax = p.ax
+    assert len(ax.lines) > 2
+    assert len(ax.texts) > 0
+
+    # no nichols grid lines
+    p = plot_nichols(tf, ngrid=False, show=False, n=10)
+    ax = p.ax
+    assert len(ax.lines) == 1
+    assert len(ax.texts) == 0
+
+
+@pytest.mark.parametrize(
+    "arrows, n_arrows",
+    [
+        (True, 3),
+        (False, 0),
+        (None, 0),
+        (4, 4),
+        ([0.2, 0.5, 0.8], 3)
+    ]
+)
+def test_plot_nichols_arrows(arrows, n_arrows):
+    s = symbols("s")
+    tf = (5 * (s - 1)) / (s**2 * (s**2 + s + 4))
+    p = plot_nichols(tf, ngrid=False, show=False, n=10, arrows=arrows)
+    ax = p.ax
+    assert len(ax.patches) == n_arrows
