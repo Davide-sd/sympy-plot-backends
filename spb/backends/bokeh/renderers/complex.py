@@ -90,7 +90,7 @@ def _draw_domain_coloring_helper(renderer, data):
                 text_font_style="bold", text_color="#000000"
             ))
 
-    return handle
+    return [handle]
 
 
 def _update_domain_coloring_helper(renderer, data, handle):
@@ -114,11 +114,11 @@ def _update_domain_coloring_helper(renderer, data, handle):
         "abs": [mag],
         "arg": [angle],
     }
-    handle.data_source.data.update(source)
-    handle.glyph.x = minx
-    handle.glyph.y = miny
-    handle.glyph.dw = abs(maxx - minx)
-    handle.glyph.dh = abs(maxy - miny)
+    handle[0].data_source.data.update(source)
+    handle[0].glyph.x = minx
+    handle[0].glyph.y = miny
+    handle[0].glyph.dw = abs(maxx - minx)
+    handle[0].glyph.dh = abs(maxy - miny)
 
 
 def _draw_3d_helper(renderer, data):

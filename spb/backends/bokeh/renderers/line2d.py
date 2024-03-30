@@ -8,13 +8,16 @@ def _draw_line2d_helper(renderer, data):
 
     if s.is_parametric and s.use_cm:
         x, y, param = data
+        if not s.is_point:
+            x, y, param = p._get_segments(x, y, param)
         colormap = (
             next(p._cyccm)
             if p._use_cyclic_cm(param, s.is_complex)
             else next(p._cm)
         )
+        source = {"xs": x, "ys": y, "us": param}
         ds, line, cb, kw = p._create_gradient_line(
-            x, y, param, colormap, s.get_label(p._use_latex),
+            "xs", "ys", "us", source, colormap, s.get_label(p._use_latex),
             s.rendering_kw, s.is_point)
         h = p._fig.add_glyph(ds, line)
         handle.append(h)
