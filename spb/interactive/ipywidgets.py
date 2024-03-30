@@ -12,15 +12,24 @@ def _build_widgets(params, use_latex=True):
     for s, v in params.items():
         if hasattr(v, "__iter__") and (not isinstance(v, str)):
             d = _tuple_to_dict(s, v, use_latex=use_latex)
+            formatter = d.pop("formatter")
+            if formatter and not isinstance(formatter, str):
+                warnings.warn(
+                    "`ipywidgets` requires ``formatter`` to be of type str.\n"
+                    "Received: %s\nFor example, try '.5f'" % type(formatter)
+                )
             if d.pop("type") == "linear":
-                widgets.append(ipywidgets.FloatSlider(**d))
+                d2 = d.copy()
+                if formatter and isinstance(formatter, str):
+                    d2["readout_format"] = formatter
+                widgets.append(ipywidgets.FloatSlider(**d2))
             else:
                 widgets.append(ipywidgets.FloatLogSlider(**d))
         elif isinstance(v, ipywidgets.Widget):
             widgets.append(v)
         else:
-            raise ValueError("Cannot build a widget with the provided input:"
-                "%s" % v)
+            raise ValueError(
+                "Cannot build a widget with the provided input: %s" % v)
     return widgets
 
 
@@ -184,6 +193,9 @@ def iplot(*series, show=True, **kwargs):
                 respectively. Must be finite numbers.
            - N : int, optional
                 Number of steps of the slider.
+           - tick_format : str or None, optional
+                Provide a formatter for the tick value of the slider.
+                Default to ``".2f"``.
            - label: str, optional
                 Custom text associated to the slider.
            - spacing : str, optional

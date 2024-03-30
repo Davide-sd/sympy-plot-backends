@@ -1,7 +1,8 @@
 from spb.defaults import cfg
 from sympy import (
     Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed, ImageSet,
-    FiniteSet, Basic, Float, Integer, Rational, Poly, fraction, exp
+    FiniteSet, Basic, Float, Integer, Rational, Poly, fraction, exp,
+    NumberSymbol
 )
 from sympy.vector import BaseScalar
 from sympy.core.function import AppliedUndef
@@ -681,10 +682,11 @@ def extract_solution(set_sol, n=10):
 
 def is_number(t, allow_complex=True):
     if allow_complex:
-        number_types = (Float, Integer, Rational, float, int, complex)
+        number_types = (NumberSymbol, Float, Integer, Rational,
+            float, int, complex)
     else:
-        number_types = (Float, Integer, Rational, float, int)
-    return isinstance(t, number_types)
+        number_types = (NumberSymbol, Float, Integer, Rational, float, int)
+    return isinstance(t, number_types) or (isinstance(t, Expr) and t.is_number)
 
 
 def tf_to_control(tf, gen=None):

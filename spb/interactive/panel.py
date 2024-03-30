@@ -46,29 +46,28 @@ class DynamicParam(param.Parameterized):
     # overall update.
     check_val = param.Integer(default=0)
 
-    def _tuple_to_dict_panel(self, k, v):
+    def _dict_to_panel_dict(self, d):
         np = import_module('numpy')
+        _min, _max, default = d["min"], d["max"], d["value"]
+        step, label, _type = d["step"], d["description"], d["type"]
 
-        d = _tuple_to_dict(k, v, self._use_latex, "$$%s$$")
-        values = list(d.values())
-
-        if values[-1] == "log":
+        if _type == "log":
             # In case of a logarithm slider, we need to instantiate the
             # custom parameter MyList.
+            N = int((_max - _min) / step)
 
-            N = 40 if len(v) <= 3 else int(v[3])
-            _min, _max = values[1:3]
-            # # divide the range in N steps evenly spaced in a log scale
+            # divide the range in N steps evenly spaced in a log scale
             options = np.geomspace(_min, _max, N)
             # the provided default value may not be in the computed options.
             # If that's the case, I chose the closest value
-            default = values[0]
             if default not in options:
                 default = min(options, key=lambda x: abs(x - default))
-            return MyList(default=default, objects=list(options), label=values[4])
+            return MyList(
+                default=default, objects=list(options),
+                label=label)
 
         defaults_keys = ["default", "softbounds", "step", "label", "type"]
-        values = [values[0], tuple(values[1:3]), *values[3:]]
+        values = [default, (_min, _max), step, label, _type]
         return {k: v for k, v in zip(defaults_keys, values)}
 
     def __init__(self, *args, name="", params=None, **kwargs):
@@ -110,25 +109,23 @@ class DynamicParam(param.Parameterized):
         # create and attach the params to the class
         for i, (k, v) in enumerate(params.items()):
             # store the formatter
-            formatter = None
-            if isinstance(v, (list, tuple)) and (len(v) >= 5):
-                if (v[4] is not None) and (not isinstance(v[4], TickFormatter)):
-                    raise TypeError(
-                        "To format the tick value of the widget associated " +
-                        "to the symbol {}, an instance of ".format(k) +
-                        "bokeh.models.formatters.TickFormatter is expected. " +
-                        "Instead, an instance of {} was given.".format(
-                            type(v[4])))
-                formatter = v[4]
-            self.formatters[k] = formatter
+            self.formatters[k] = None
 
             if not isinstance(v, param.parameterized.Parameter):
-                if len(v) >= 5:
-                    # remove tick_format, as it won't be used for the creation
-                    # of the parameter. Its value has already been stored.
-                    v = list(v)
-                    v.pop(4)
-                v = self._tuple_to_dict_panel(k, v)
+                d = _tuple_to_dict(k, v, self._use_latex, "$$%s$$")
+                if (
+                    (d["formatter"] is not None) and
+                    (not isinstance(d["formatter"], TickFormatter))
+                ):
+                    raise TypeError(
+                        "To format the tick value of the widget associated "
+                        "to the symbol %s, an instance of "
+                        "bokeh.models.formatters.TickFormatter is expected. "
+                        "Instead, an instance of %s was given." % (
+                            k, type(d["formatter"])))
+                self.formatters[k] = d["formatter"]
+                v = self._dict_to_panel_dict(d)
+
                 # at this stage, v could be a dictionary representing a number,
                 # or a MyList parameter, representing a log slider
                 if not isinstance(v, param.parameterized.Parameter):
@@ -955,7 +952,7 @@ def create_widgets(params, **kwargs):
        formatter = PrintfTickFormatter(format="%.4f")
        r = create_widgets({
            x: (0.035, -0.035, 0.035, 100, formatter),
-           y: (200, 1, 1000, 10, None, "test", "log"),
+           y: (200, 1, 1000, 10, "test", "log"),
            z: param.Integer(3, softbounds=(3, 10), label="n")
        })
 

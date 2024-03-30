@@ -8,11 +8,12 @@ from spb import (
 from spb.utils import (
     _create_missing_ranges, _plot_sympify,
     _validate_kwargs, prange, extract_solution,
-    tf_to_control, tf_to_sympy, is_discrete_time, tf_find_time_delay
+    tf_to_control, tf_to_sympy, is_discrete_time, tf_find_time_delay,
+    is_number
 )
 from sympy import (
     symbols, Expr, Tuple, Integer, sin, cos, Matrix,
-    I, Polygon, solveset, FiniteSet, ImageSet, exp
+    I, Polygon, solveset, FiniteSet, ImageSet, exp, Rational, Float, pi
 )
 from sympy.external import import_module
 from sympy.physics.control import TransferFunction, TransferFunctionMatrix
@@ -477,3 +478,22 @@ def test_tf_find_time_delay():
     delays = tf_find_time_delay(G11)
     assert (delays == [exp(2*s), exp(3*s)]) or (delays == [exp(3*s), exp(2*s)])
     assert tf_find_time_delay(G12, a) == [exp(a*s)]
+
+
+@pytest.mark.parametrize(
+    "num, expected",
+    [
+        (4, True),
+        (4.5, True),
+        (Integer(4), True),
+        (Float(4), True),
+        (Rational(5, 2), True),
+        (np.pi, True),
+        (pi, True),
+        (2 * pi, True),
+        (x, False),
+        (x + a, False),
+    ]
+)
+def test_is_number(num, expected):
+    assert is_number(num) is expected

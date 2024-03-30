@@ -566,8 +566,9 @@ def _check_lower_limit_and_control(lower_limit, control):
             "Lower limit of time must be greater than or equal to zero."
         )
     if (
-        (lower_limit.is_Number and lower_limit > 0) or
-        (len(lower_limit.free_symbols) > 0)
+        control and
+        ((lower_limit.is_Number and lower_limit > 0) or
+        (len(lower_limit.free_symbols) > 0))
     ):
         warnings.warn(
             "You are evaluating a transfer function using the ``control`` "
@@ -727,9 +728,8 @@ def step_response(
            c: (7, 0, 8),
            d: (6, 0, 25),
            e: (16, 0, 25),
-           # NOTE: remove `None` if using ipywidgets
-           f: (0, 0, 10, 50, None, "lower limit"),
-           g: (10, 0, 25, 50, None, "upper limit"),
+           f: (0, 0, 10, 50, "lower limit"),
+           g: (10, 0, 25, 50, "upper limit"),
        }
        graphics(
            line(Heaviside(t), (t, -1, 10), label="step"),
@@ -960,9 +960,8 @@ def impulse_response(
            d: (3, 0, 25),
            e: (12.5, 0, 25),
            f: (17.5, 0, 50),
-           # NOTE: remove `None` if using ipywidgets
-           g: (0, 0, 10, 50, None, "lower limit"),
-           h: (8, 0, 25, 50, None, "upper limit"),
+           g: (0, 0, 10, 50, "lower limit"),
+           h: (8, 0, 25, 50, "upper limit"),
        }
        graphics(
            impulse_response(
@@ -1206,10 +1205,9 @@ def ramp_response(
        params = {
            xi: (6, 0, 10),
            wn: (25, 0, 50),
-           # NOTE: remove `None` if using ipywidgets
-           a: (1, 0, 10, 50, None, "slope"),
-           b: (0, 0, 5, 50, None, "lower limit"),
-           c: (5, 2, 10, 50, None, "upper limit"),
+           a: (1, 0, 10, 50, "slope"),
+           b: (0, 0, 5, 50, "lower limit"),
+           c: (5, 2, 10, 50, "upper limit"),
        }
        graphics(
            line(a*t, (t, 0, c), params=params, label="ramp"),

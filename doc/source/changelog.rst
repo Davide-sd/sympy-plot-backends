@@ -10,6 +10,11 @@ v3.2.0
   ``BokehBackend``. By default, this functionality is turned off,
   ``update_event=False``.
 
+* Improved the logic handling the creation of sliders on interactive-widget
+  plots. Consider this code: ``params = {k: (1, 0, 5, formatter, label)``.
+  It now works both with `ipywidgets` as well as `panel`. Previously,
+  ``formatter`` was not supported by ``ipywidgets``.
+
 * Added ``arrows=`` keyword argument to ``nichols`` and ``plot_nichols``.
 
 * Added ``show_minus_one=`` keyword argument to ``mcircles``.

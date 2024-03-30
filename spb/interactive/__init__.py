@@ -1,4 +1,7 @@
+from collections import Counter
+import math
 from spb.defaults import cfg
+from spb.utils import is_number
 from sympy import latex
 from sympy.external import import_module
 
@@ -37,26 +40,70 @@ def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
                 Discretization spacing. Can be "linear" or "log".
                 Default to "linear".
     """
+    bokeh = import_module("bokeh", import_kwargs={'fromlist': ['models']})
+    TickFormatter = bokeh.models.formatters.TickFormatter if bokeh else None
+
     if not hasattr(v, "__iter__"):
         raise TypeError(
             "Provide a tuple or list for the parameter {}".format(k))
+    if len(v) < 3:
+        raise ValueError(
+            "The parameter-tuple must have at least 3 elements: "
+            "value, min, max. Received: %s" % v)
+    if any(not is_number(t) for t in v[:3]):
+        raise TypeError(
+            "The first three elements of the parameter-tuple must be numbers. "
+            "Received: %s" % v[:3])
 
-    N = 40
-    defaults_keys = ["value", "min", "max", "step", "description", "type"]
-    defaults_values = [1, 0, 2, N,
+    defaults_keys = [
+        "value", "min", "max", "step", "formatter", "description", "type"]
+    defaults_values = [1, 0, 2, 0.1, None,
         latex_wrapper % latex(k) if use_latex else str(k),
         "linear",
     ]
-    values = defaults_values.copy()
-    values[: len(v)] = v
-    values[:3] = [float(t) for t in values[:3]]
-    # set the step increment for the slider
-    _min, _max = float(values[1]), float(values[2])
-    if values[3] > 0:
-        N = int(values[3])
-        values[3] = (_max - _min) / N
+
+    # find min, max, value from what the user provided.
+    n1, n2, n3 = [float(t) for t in v[:3]]
+    _min = min(n1, n2, n3)
+    _max = max(n1, n2, n3)
+    if math.isclose(_min, _max):
+        raise ValueError(
+            "The minimum value of the slider must be different from the "
+            "maximum value.")
+    c = Counter([n1, n2, n3])
+    if c[_min] == 2:
+        _val = _min
+    elif c[_max] == 2:
+        _val = _max
     else:
-        values[3] = 1
+        _val = set([n1, n2, n3]).difference([_min, _max]).pop()
+
+    N, formatter, label, spacing = None, None, None, None
+    for a in v[3:]:
+        if is_number(a):
+            N = int(a)
+        elif TickFormatter and isinstance(a, TickFormatter):
+            formatter = a
+        elif isinstance(a, str):
+            b = a.lower()
+            if b in ["linear", "log"]:
+                spacing = b
+            elif b[0] == ".":
+                formatter = a
+            else:
+                label = a
+
+    N = N if N else 40
+    step = (_max - _min) / N
+
+    values = defaults_values.copy()
+    values[:4] = [_val, _min, _max, step]
+    if formatter:
+        values[4] = formatter
+    if label:
+        values[5] = label
+    if spacing:
+        values[6] = spacing
 
     return {k: v for k, v in zip(defaults_keys, values)}
 
