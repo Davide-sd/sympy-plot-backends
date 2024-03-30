@@ -4664,7 +4664,7 @@ class SystemResponseSeries(ControlBaseSeries):
         else:
             start, end = float(start), float(end)
 
-        if (not self._time_array) or self._interactive_ranges:
+        if (self._time_array is None) or self._interactive_ranges:
             if not self._control_tf.isdtime():
                 n = self.n[0]
             else:

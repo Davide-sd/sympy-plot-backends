@@ -12,7 +12,8 @@ from spb import (
     plot_vector, plot3d_revolution, plot3d_spherical,
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
     plot_parametric, plot_implicit, plot_list, plot_geometry,
-    plot_complex_list, graphics, vector_field_2d, plot_nyquist, plot_nichols
+    plot_complex_list, graphics, vector_field_2d, plot_nyquist, plot_nichols,
+    plot_step_response
 )
 from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
 from spb.series import SurfaceOver2DRangeSeries
@@ -2742,3 +2743,29 @@ def test_plot_nichols_arrows(arrows, n_arrows):
     p = plot_nichols(tf, ngrid=False, show=False, n=10, arrows=arrows)
     ax = p.ax
     assert len(ax.patches) == n_arrows
+
+
+def test_plot_step_response():
+    # this should not raise any errors during updates
+
+    a, b, c, d, e, f, g, s = symbols("a, b, c, d, e, f, g, s")
+    tf1 = (8*s**2 + 18*s + 32) / (s**3 + 6*s**2 + 14*s + 24)
+    tf2 = (s**2 + a*s + b) / (s**3 + c*s**2 + d*s + e)
+    p = plot_step_response(
+        (tf1, "A"), (tf2, "B"), lower_limit=f, upper_limit=g,
+        control=True,
+        params={
+            a: (3.7, 0, 5),
+            b: (10, 0, 20),
+            c: (7, 0, 8),
+            d: (6, 0, 25),
+            e: (16, 0, 25),
+            f: (0, 0, 10, 50, "lower limit"),
+            g: (10, 0, 25, 50, "upper limit"),
+        },
+        backend=MB, n=10, show=False
+    )
+    fig = p.fig
+    p._backend.update_interactive({
+        a: 4, b: 11, c:6, d: 8, e: 18, f: 5, g: 20
+    })
