@@ -1,6 +1,7 @@
+import pytest
+bokeh = pytest.importorskip("bokeh")
 from bokeh.models.formatters import PrintfTickFormatter
 import math
-import pytest
 from spb.interactive import _tuple_to_dict
 from sympy import symbols, pi, Rational, Integer
 
