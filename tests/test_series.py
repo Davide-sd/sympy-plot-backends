@@ -11,7 +11,8 @@ from spb.series import (
     _set_discretization_points, ColoredLineOver1DRangeSeries,
     HVLineSeries, Arrow2DSeries, Arrow3DSeries, RootLocusSeries,
     SGridLineSeries, ZGridLineSeries, PoleZeroSeries, SystemResponseSeries,
-    ColoredSystemResponseSeries, NyquistLineSeries, Ellipse
+    ColoredSystemResponseSeries, NyquistLineSeries, Ellipse,
+    NicholsLineSeries, NyquistLineSeries, SystemResponseSeries
 )
 from spb import plot3d_spherical
 from sympy.abc import j, k, l, d, s, x, y
@@ -1891,6 +1892,61 @@ def test_str():
     assert (
         str(s)
         == "implicit surface series: x**2 + y**3 - z**2 for x over (-2.0, 2.0) and y over (-3.0, 3.0) and z over (-4.0, 4.0)"
+    )
+
+    s, o = symbols("s, o")
+    tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
+    G = tf.to_expr()
+    H = (G / (1 + G)).simplify().expand().together()
+    ser = NicholsLineSeries(tf, arg(G), Abs(G), arg(H), Abs(H), (o, 0.01, 100))
+    assert (
+        str(ser)
+        == "nichols line of TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)"
+    )
+
+    a, b, c = symbols("a:c")
+    tf = TransferFunction(a*s**2 + b*s + c, s**3 + 10*s**2 + 5 * s + 1, s)
+    G = tf.to_expr()
+    H = (G / (1 + G)).simplify().expand().together()
+    ser = NicholsLineSeries(
+        tf, arg(G), Abs(G), arg(H), Abs(H), (o, 0.01, 100),
+        params={a: 1, b: 2, c: 3})
+    assert (
+        str(ser)
+        == "interactive nichols line of TransferFunction(a*s**2 + b*s + c, s**3 + 10*s**2 + 5*s + 1, s) and parameters (a, b, c)"
+    )
+
+    tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
+    ser = NyquistLineSeries(tf, (o, 0.01, 100))
+    assert (
+        str(ser)
+        == "nyquist line of TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)"
+    )
+
+    tf = TransferFunction(a*s**2 + b*s + c, s**3 + 10*s**2 + 5 * s + 1, s)
+    ser = NyquistLineSeries(tf, (o, 0.01, 100), params={a: 1, b: 2, c: 3})
+    assert (
+        str(ser)
+        == "interactive nyquist line of TransferFunction(a*s**2 + b*s + c, s**3 + 10*s**2 + 5*s + 1, s) and parameters (a, b, c)"
+    )
+
+    tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
+    ser = SystemResponseSeries(tf, (o, 0.01, 100), response_type="step")
+    assert (
+        str(ser)
+        == "step response of TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)"
+    )
+
+    ser = SystemResponseSeries(tf, (o, 0.01, 100), response_type="impulse")
+    assert (
+        str(ser)
+        == "impulse response of TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)"
+    )
+
+    ser = SystemResponseSeries(tf, (o, 0.01, 100), response_type="ramp")
+    assert (
+        str(ser)
+        == "ramp response of TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)"
     )
 
 

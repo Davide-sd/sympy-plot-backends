@@ -1936,7 +1936,7 @@ def _nichols_helper(system, label, **kwargs):
     kwargs.setdefault("use_cm", False)
     kwargs.setdefault("xscale", "log")
     return NicholsLineSeries(
-        arg(system_expr), Abs(system_expr),
+        system, arg(system_expr), Abs(system_expr),
         arg(cl_system_expr), Abs(cl_system_expr), _range, label, **kwargs)
 
 

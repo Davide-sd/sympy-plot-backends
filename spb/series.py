@@ -4149,13 +4149,18 @@ class NicholsLineSeries(ArrowsMixin, CommonUniformEvaluation, Line2DBaseSeries):
     _allowed_keys = ["arrows"]
 
     def __init__(
-        self, ol_phase, ol_mag, cl_phase, cl_mag, omega_range, label="", **kwargs
+        self, tf, ol_phase, ol_mag, cl_phase, cl_mag, omega_range,
+        label="", **kwargs
     ):
         super().__init__(**kwargs)
+        self._tf = tf
         self.expr = Tuple(ol_phase, ol_mag, cl_phase, cl_mag)
         self.ranges = [omega_range]
         self.label = label
         self._force_real_eval = True
+
+    def __str__(self):
+        return self._str_helper("nichols line of %s" % self._tf)
 
     def get_data(self):
         """
@@ -4306,6 +4311,11 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
         for k in ["arrows", "max_curve_magnitude", "max_curve_offset",
             "start_marker", "primary_style", "mirror_style"]:
             self._copy_from_dict(self._control_kw, k)
+
+    def __str__(self):
+        return self._str_helper(
+            "nyquist line of %s" % (
+                self._expr if self._expr else self._control_tf))
 
     def get_data(self):
         """
@@ -4647,6 +4657,12 @@ class SystemResponseSeries(ControlBaseSeries):
         # time values over which the evaluation will be performed
         self._time_array = None
 
+    def __str__(self):
+        return self._str_helper(
+            "%s response of %s" % (
+                self._response_type,
+                self._expr if self._expr else self._control_tf))
+
     def _get_data_helper(self):
         ct = import_module("control")
         np = import_module("numpy")
@@ -4716,6 +4732,9 @@ class PoleZeroCommon:
         self.pole_markersize = kwargs.get("pole_markersize", 10)
         self.zero_markersize = kwargs.get("zero_markersize", 7)
 
+    def __str__(self):
+        return self._str_helper("poles" if self.return_poles else "zeros ")
+
 
 class PoleZeroWithSympySeries(PoleZeroCommon, List2DSeries):
     def __init__(self, *args, **kwargs):
@@ -4741,7 +4760,7 @@ class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
         self._check_fs()
 
     def __str__(self):
-        pre = "pole of " if self.return_poles else "zeros of "
+        pre = "poles of " if self.return_poles else "zeros of "
         expr = self._expr if self._expr is not None else self._control_tf
         return pre + str(expr)
 
