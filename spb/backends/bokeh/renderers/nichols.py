@@ -108,7 +108,7 @@ def _update_nichols_helper(renderer, data, handles):
             "ol_p": ol_phase, "ol_m": ol_mag,
             "cl_p": cl_phase, "cl_m": cl_mag, "o": omega
         }
-        handle[0].data_source.data.update(source)
+        handles[0].data_source.data.update(source)
         if len(handles) > 1:
             cb = handles[1]
             cb.color_mapper.update(low=min(omega), high=max(omega))
