@@ -1,18 +1,22 @@
 import pytest
 from pytest import raises
 bokeh = pytest.importorskip("bokeh")
-from bokeh.models import ColumnDataSource, Span, Arrow
+from bokeh.models import (
+    ColumnDataSource, Span, Arrow, LabelSet, Label, Line as BLine, Scatter
+)
 import os
 from tempfile import TemporaryDirectory
 import numpy as np
 from spb import (
     BB, plot, plot_complex, plot_vector, plot_contour,
-    plot_parametric, plot_geometry,
+    plot_parametric, plot_geometry, plot_nyquist, plot_nichols
 )
+from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
 from sympy import (
     sin, cos, I, pi, Circle, Polygon, sqrt, Matrix, Line, latex, symbols
 )
 from sympy.abc import x, y, z, u, t
+from sympy.external import import_module
 from .make_tests import (
     custom_colorloop_1,
     make_plot_1,
@@ -74,8 +78,17 @@ from .make_tests import (
     make_test_line_color_func,
     make_test_plot_list_color_func,
     make_test_real_imag,
-    make_test_arrow_2d
+    make_test_arrow_2d,
+    make_test_root_locus_1,
+    make_test_root_locus_2,
+    make_test_poles_zeros_sgrid,
+    make_test_zgrid,
+    make_test_sgrid,
+    make_test_ngrid,
+    make_test_mcircles
 )
+ipy = import_module("ipywidgets")
+ct = import_module("control")
 
 
 # NOTE
@@ -1298,3 +1311,305 @@ def test_bokeh_update_ranges(update_event):
 
     if update_event:
         p._ranges_update(Event(-1, 1, -2, 2))
+
+
+@pytest.mark.parametrize(
+    "xi, wn, tp, ts, show_control_axis, params, n_lines, n_hvlines, n_lblsets, n_texts",
+    [
+        (None, None, None, None, True, None, 30, 2, 4, [10, 10, 0, 0]),
+        (None, None, None, None, False, None, 30, 0, 4, [10, 10, 0, 0]),
+        (0.5, False, None, None, False, None, 2, 0, 4, [1, 0, 0, 0]),
+        ([0.5, 0.75], False, None, None, False, None, 4, 0, 4, [2, 0, 0, 0]),
+        (False, 2/3, None, None, False, None, 1, 0, 4, [0, 1, 0, 0]),
+        (False, [2/3, 3/4], None, None, False, None, 2, 0, 4, [0, 2, 0, 0]),
+        (False, False, 2, None, False, None, 1, 0, 4, [0, 0, 1, 0]),
+        (False, False, None, 3, False, None, 1, 0, 4, [0, 0, 0, 1]),
+        (False, False, 2, 3, False, None, 2, 0, 4, [0, 0, 1, 1]),
+        (False, False, [2, 3], 3, False, None, 3, 0, 4, [0, 0, 2, 1]),
+        (False, False, [2, 3], [3, 4], False, None, 4, 0, 4, [0, 0, 2, 2]),
+        (x, y, z, x+y, False,
+            {x:(0.5, 0, 1), y:(0.75, 0, 4), z: (0.8, 0, 5)},
+            5, 0, 4, [1, 1, 1, 1])
+    ]
+)
+def test_zgrid(
+    xi, wn, tp, ts, show_control_axis, params, n_lines, n_hvlines, n_lblsets, n_texts
+):
+    kw = {}
+    if params:
+        if ipy is None:
+            return
+        kw["params"] = params
+
+    p = make_test_zgrid(BB, xi, wn, tp, ts, show_control_axis, **kw)
+    fig = p._backend.fig if params else p.fig
+    assert len(fig.renderers) == n_lines
+    assert len([t for t in fig.center if isinstance(t, Span)]) == n_hvlines
+    assert len([t for t in fig.center if isinstance(t, LabelSet)]) == n_lblsets
+    assert np.allclose(
+        [len(t.source.data["x"]) for t in fig.center if isinstance(t, LabelSet)],
+        n_texts
+    )
+    if params:
+        p._backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
+
+
+@pytest.mark.parametrize(
+    "xi, wn, tp, ts, auto, show_control_axis, params, n_lines, n_hvlines, n_lblsets, n_texts",
+    [
+        (None, None, None, None, False, True, None, 32, 2, 2, [11, 10]),
+        (None, None, None, None, False, False, None, 35, 0, 2, [11, 10]),
+        (None, None, None, None, True, True, None, 15, 2, 2, [5, 5]),
+        (None, None, None, None, True, False, None, 18, 0, 2, [5, 5]),
+        (0.5, False, None, None, False, False, None, 2, 0, 2, [1, 0]),
+        ([0.5, 0.75], False, None, None, False, False, None, 4, 0, 2, [2, 0]),
+        (False, 2, None, None, False, False, None, 1, 0, 2, [0, 1]),
+        (False, [2, 3], None, None, False, False, None, 2, 0, 2, [0, 2]),
+        (False, False, 2, None, False, False, None, 0, 1, 2, [0, 0]),
+        (False, False, None, 3, False, False, None, 0, 1, 2, [0, 0]),
+        (False, False, 2, 3, False, False, None, 0, 2, 2, [0, 0]),
+        (False, False, [2, 3], 3, False, False, None, 0, 3, 2, [0, 0]),
+        (False, False, [2, 3], [3, 4], False, False, None, 0, 4, 2, [0, 0]),
+        (x, y, z, x+y, False, False,
+            {x:(0.5, 0, 1), y:(2, 0, 4), z: (3, 0, 5)},
+            3, 2, 2, [1, 1])
+    ]
+)
+def test_sgrid(
+    xi, wn, tp, ts, auto, show_control_axis, params, n_lines, n_hvlines,
+    n_lblsets, n_texts
+):
+    kw = {}
+    if params:
+        if ipy is None:
+            return
+        kw["params"] = params
+
+    p = make_test_sgrid(BB, xi, wn, tp, ts, auto, show_control_axis, **kw)
+    fig = p._backend.fig if params else p.fig
+    assert len(fig.renderers) == n_lines
+    assert len([t for t in fig.center if isinstance(t, Span)]) == n_hvlines
+    assert len([t for t in fig.center if isinstance(t, LabelSet)]) == n_lblsets
+    assert np.allclose(
+        [len(t.source.data["x"]) for t in fig.center if isinstance(t, LabelSet)],
+        n_texts
+    )
+    if params:
+        p._backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
+
+
+@pytest.mark.parametrize(
+    "cl_mags, cl_phases, label_cl_phases, n_lines, n_texts",
+    [
+        (None, None, False, 27, 17),
+        (None, None, True, 27, 26),
+        (-30, False, False, 2, 1),
+        (False, -200, False, 2, 0),
+    ]
+)
+def test_ngrid(cl_mags, cl_phases, label_cl_phases, n_lines, n_texts):
+    p = make_test_ngrid(BB, cl_mags, cl_phases, label_cl_phases)
+    fig = p.fig
+    assert len(fig.renderers) == n_lines
+    assert len([t for t in fig.center if isinstance(t, Label)]) == n_texts
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_plot_poles_zeros_sgrid():
+    # verify that SGridLineSeries is rendered with "proper" axis limits
+
+    p = make_test_poles_zeros_sgrid(BB)
+    xlim = p.fig.x_range.start, p.fig.x_range.end
+    ylim = p.fig.y_range.start, p.fig.y_range.end
+    assert (xlim is not None) and (ylim is not None)
+    # these are eyeball numbers, it should allows a little bit of tweeking at
+    # the code for better positioning the grid...
+    assert xlim[0] > -5 and xlim[1] < 2
+    assert ylim[0] > -5 and ylim[1] < 5
+    p.update_interactive({})
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+def test_plot_root_locus_1():
+    p = make_test_root_locus_1(BB, True, False)
+    assert isinstance(p, BB)
+    assert len(p.series) == 2
+    # NOTE: the backend is going to reorder data series such that grid
+    # series are placed at the end.
+    assert isinstance(p[0], RootLocusSeries)
+    assert isinstance(p[1], SGridLineSeries)
+    fig = p.fig
+    assert len(fig.renderers) == 18
+    assert len([t for t in fig.renderers if isinstance(t.glyph, BLine)]) == 16
+    assert len([t for t in fig.renderers if isinstance(t.glyph, Scatter)]) == 2
+    assert len([t for t in fig.center if isinstance(t, LabelSet)]) == 2
+    assert len([t for t in fig.center if isinstance(t, Span)]) == 2
+    line_colors = {'#1f77b4', '#aaa'}
+    assert all(t.glyph.line_color in line_colors for t in fig.renderers)
+    p.update_interactive({})
+
+    p = make_test_root_locus_1(BB, False, True)
+    assert isinstance(p, BB)
+    assert len(p.series) == 2
+    assert isinstance(p[0], RootLocusSeries)
+    assert isinstance(p[1], ZGridLineSeries)
+    fig = p.fig
+    assert len(fig.renderers) == 33
+    assert len([t for t in fig.renderers if isinstance(t.glyph, BLine)]) == 31
+    assert len([t for t in fig.renderers if isinstance(t.glyph, Scatter)]) == 2
+    assert len([t for t in fig.center if isinstance(t, LabelSet)]) == 4
+    assert len([t for t in fig.center if isinstance(t, Span)]) == 2
+    line_colors = {'#1f77b4', '#aaa'}
+    assert all(t.glyph.line_color in line_colors for t in fig.renderers)
+    p.update_interactive({})
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+def test_plot_root_locus_2():
+    p = make_test_root_locus_2(BB)
+    assert isinstance(p, BB)
+    assert len(p.series) == 3
+    assert isinstance(p[0], RootLocusSeries)
+    assert isinstance(p[1], RootLocusSeries)
+    assert isinstance(p[2], SGridLineSeries)
+    fig = p.fig
+    assert len(fig.renderers) == 21
+    assert len([t for t in fig.renderers if isinstance(t.glyph, BLine)]) == 17
+    assert len([t for t in fig.renderers if isinstance(t.glyph, Scatter)]) == 4
+    assert len([t for t in fig.center if isinstance(t, LabelSet)]) == 2
+    assert len([t for t in fig.center if isinstance(t, Span)]) == 2
+    line_colors = {'#1f77b4', '#ff7f0e', '#aaa'}
+    assert all(t.glyph.line_color in line_colors for t in fig.renderers)
+    assert fig.legend[0].items[0].label["value"] == "a"
+    assert fig.legend[0].items[1].label["value"] == "b"
+    p.update_interactive({})
+
+
+@pytest.mark.parametrize(
+    "mag, n_lines, n_vlines, n_labels",
+    [
+        (None, 11, 1, 11),
+        (-3, 2, 0, 1),
+        (0, 1, 1, 1),
+    ]
+)
+def test_mcircles(mag, n_lines, n_vlines, n_labels):
+    p = make_test_mcircles(BB, mag)
+    fig = p.fig
+    assert len(fig.renderers) == n_lines
+    assert len([t for t in fig.center if isinstance(t, Span)]) == n_vlines
+    assert len([t for t in fig.center if isinstance(t, Label)]) == n_labels
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+@pytest.mark.parametrize(
+    "m_circles, start_marker, mirror_style, arrows, n_lines, n_vlines, "
+    "n_arrows_sets, n_arrows, n_texts",
+    [
+        (False, "+", None, None, 3, 0, 2, 0, 0),  # no m-circles, no arrows
+        (False, None, None, None, 2, 0, 2, 0, 0), # no m-circles, no arrows, no start marker
+        (False, "+", None, 2, 3, 0, 2, 2, 0),     # no m-circles
+        (False, "+", False, 2, 2, 0, 1, 2, 0),    # no m-circles, no mirror image
+        (True, "+", None, 3, 14, 1, 2, 3, 11),    # m-circles, mirror image, arrows, start marker
+    ]
+)
+def test_plot_nyquist_bokeh(
+    m_circles, start_marker, mirror_style, arrows, n_lines, n_vlines,
+    n_arrows_sets, n_arrows, n_texts
+):
+    # verify that plot_nyquist adds the necessary objects to the plot
+
+    s = symbols("s")
+    tf1 = 1 / (s**2 + 0.5*s + 2)
+
+    p = plot_nyquist(tf1, show=False, n=10, m_circles=m_circles, arrows=arrows,
+        mirror_style=mirror_style, start_marker=start_marker, backend=BB)
+    fig = p.fig
+    assert len(p.fig.renderers) == n_lines
+    assert len([t for t in p.fig.center if isinstance(t, Span)]) == n_vlines
+    assert len([t for t in p.fig.center if isinstance(t, Arrow)]) == n_arrows_sets
+    ad = [t for t in p.fig.center if isinstance(t, Arrow)][0].source.data
+    assert len(ad["x_start"]) == n_arrows
+    assert len([t for t in p.fig.center if isinstance(t, Label)]) == n_texts
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+@pytest.mark.parametrize(
+    "primary_style, mirror_style",
+    [
+        ("solid", "dotted"),
+        (["solid", "dashdot"], ["dashed", "dotted"]),
+        ({"line_dash": "solid"}, {"line_dash": "dotted"}),
+        (
+            [{"line_dash": "solid"}, {"line_dash": "dotted"}],
+            [{"line_dash": "dashed"}, {"line_dash": "dashdot"}]
+        ),
+        (2, 2),
+    ]
+)
+def test_plot_nyquist_bokeh_linestyles(primary_style, mirror_style):
+    s = symbols("s")
+    tf1 = 1 / (s**2 + 0.5*s + 2)
+
+    p = plot_nyquist(tf1, show=False, n=10,
+        primary_style=primary_style, mirror_style=mirror_style, backend=BB)
+    if not isinstance(primary_style, int):
+        fig = p.fig
+    else:
+        raises(ValueError, lambda: p.fig)
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+def test_plot_nyquist_bokeh_interactive():
+    # verify that interactive update doesn't raise errors
+
+    a, s = symbols("a, s")
+    tf = 1 / (s + a)
+    pl = plot_nyquist(
+        tf, xlim=(-2, 1), ylim=(-1, 1),
+        aspect="equal", m_circles=True,
+        params={a: (1, 0, 2)},
+        arrows=4, n=10, show=False, backend=BB
+    )
+    fig = pl.backend.fig # force first draw
+    pl.backend.update_interactive({a: 2}) # update with new value
+
+
+def test_plot_nichols_bokeh():
+    s = symbols("s")
+    tf = (5 * (s - 1)) / (s**2 * (s**2 + s + 4))
+
+    # with nichols grid lines
+    p = plot_nichols(tf, ngrid=True, show=False, n=10, backend=BB)
+    fig = p.fig
+    assert len(p.fig.renderers) > 2
+    assert len([t for t in p.fig.center if isinstance(t, Label)]) > 0
+
+    # no nichols grid lines
+    p = plot_nichols(tf, ngrid=False, show=False, n=10, backend=BB)
+    fig = p.fig
+    assert len(p.fig.renderers) == 1
+    assert len([t for t in p.fig.center if isinstance(t, Label)]) == 0
+
+
+@pytest.mark.parametrize(
+    "arrows, n_arrows",
+    [
+        (True, 3),
+        (False, 0),
+        (None, 0),
+        (4, 4),
+        ([0.2, 0.5, 0.8], 3)
+    ]
+)
+def test_plot_nichols_arrows(arrows, n_arrows):
+    s = symbols("s")
+    tf = (5 * (s - 1)) / (s**2 * (s**2 + s + 4))
+    p = plot_nichols(tf, ngrid=False, show=False, n=10,
+        backend=BB, arrows=arrows)
+    fig = p.fig
+    arrows_glyphs = [t for t in p.fig.center if isinstance(t, Arrow)]
+    assert len(arrows_glyphs) == 1
+    data = arrows_glyphs[0].source.data
+    k = list(data.keys())[0]
+    assert len(data[k]) == n_arrows

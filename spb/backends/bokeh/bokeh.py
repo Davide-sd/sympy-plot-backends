@@ -3,13 +3,20 @@ from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.bokeh.renderers import (
     Line2DRenderer, Vector2DRenderer, ComplexRenderer, ContourRenderer,
-    GeometryRenderer, GenericRenderer, HVLineRenderer, Arrow2DRenderer
+    GeometryRenderer, GenericRenderer, HVLineRenderer, Arrow2DRenderer,
+    ZGridLineRenderer, SGridLineRenderer, NGridLineRenderer,
+    MCirclesRenderer, PoleZeroRenderer, RootLocusRenderer, NyquistRenderer,
+    NicholsLineRenderer
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
     ColoredLineOver1DRangeSeries, AbsArgLineSeries, ComplexPointSeries,
     Vector2DSeries, ComplexDomainColoringSeries, ContourSeries,
-    GeometrySeries, GenericDataSeries, HVLineSeries, Arrow2DSeries
+    GeometrySeries, GenericDataSeries, HVLineSeries, Arrow2DSeries,
+    ZGridLineSeries, SGridLineSeries, NGridLineSeries, NicholsLineSeries,
+    MCirclesSeries, PoleZeroSeries, PoleZeroWithSympySeries,
+    SystemResponseSeries, ColoredSystemResponseSeries, RootLocusSeries,
+    NyquistLineSeries
 )
 from sympy.external import import_module
 
@@ -127,9 +134,24 @@ class BokehBackend(Plot):
         GenericDataSeries: GenericRenderer,
         HVLineSeries: HVLineRenderer,
         Arrow2DSeries: Arrow2DRenderer,
+        RootLocusSeries: RootLocusRenderer,
+        SGridLineSeries: SGridLineRenderer,
+        ZGridLineSeries: ZGridLineRenderer,
+        SystemResponseSeries: Line2DRenderer,
+        ColoredSystemResponseSeries: Line2DRenderer,
+        PoleZeroSeries: PoleZeroRenderer,
+        PoleZeroWithSympySeries: PoleZeroRenderer,
+        NGridLineSeries: NGridLineRenderer,
+        NicholsLineSeries: NicholsLineRenderer,
+        MCirclesSeries: MCirclesRenderer,
+        NyquistLineSeries: NyquistRenderer,
     }
 
     pole_line_kw = {"line_color": "#000000", "line_dash": "dotted"}
+    grid_line_kw = {"line_color": "#aaa", "line_dash": "dotted"}
+    sgrid_line_kw = {"line_color": "#aaa", "line_dash": "dotted"}
+    ngrid_line_kw = {"line_color": "#aaa", "line_dash": "dotted"}
+    mcircles_line_kw = {"line_color": "#aaa", "line_dash": "dotted"}
 
     def __init__(self, *args, **kwargs):
         self.np = import_module('numpy')
@@ -142,7 +164,8 @@ class BokehBackend(Plot):
                 ]
             },
             warn_not_installed=True,
-            min_module_version='2.3.0')
+            min_module_version='2.3.0'
+        )
         bp = self.bokeh.palettes
         cc = import_module(
             'colorcet',
@@ -292,9 +315,23 @@ class BokehBackend(Plot):
             self._fig.renderers = []
             self._fig.right = []
 
+        xlims, ylims = [], []
         for r, s in zip(self.renderers, self.series):
             self._check_supported_series(r, s)
             r.draw()
+            if hasattr(r, "_xlims"):
+                xlims.extend(r._xlims)
+                ylims.extend(r._ylims)
+
+        if (len(xlims) > 0) and (self.xlim is None):
+            # this is used in order to properly visualized some *GridSeries
+            np = import_module("numpy")
+            xlims = np.array(xlims)
+            xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
+            ylims = np.array(ylims)
+            ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
+            self._fig.x_range = self.bokeh.models.Range1d(*xlim)
+            self._fig.y_range = self.bokeh.models.Range1d(*ylim)
 
         if len(self._fig.legend) > 0:
             # hide default legend
@@ -308,20 +345,21 @@ class BokehBackend(Plot):
                 # user-provided figure
                 end = len(legend_items) - len(self.series)
                 legend_items = legend_items[:end]
-            # if user-provided figures, self.series and self._fig.renderers
-            # are not "synchronized"
-            start = end if self._use_existing_figure else 0
-            for i, s in enumerate(self.series):
-                if (start+i) < len(self._fig.renderers):
-                    r = self._fig.renderers[start+i]
-                    if (
-                        s.show_in_legend and
-                        (s.is_2Dline or s.is_geometry) and
-                        (not s.use_cm)
-                    ):
-                        legend_items.append(
-                            self.bokeh.models.LegendItem(
-                                label=s.get_label(self._use_latex), renderers=[r]))
+            for s, r in zip(self.series, self.renderers):
+                if (
+                    s.show_in_legend and
+                    (s.is_2Dline or s.is_geometry) and
+                    (not s.use_cm)
+                ):
+                    if hasattr(r.handles[0][0], "__iter__"):
+                        bokeh_renderer = r.handles[0][0][0]
+                    else:
+                        bokeh_renderer = r.handles[0][0]
+                    legend_items.append(
+                        self.bokeh.models.LegendItem(
+                            label=s.get_label(self._use_latex),
+                            renderers=[bokeh_renderer])
+                    )
             if self.legend and (len(legend_items) > 0):
                 legend = self.bokeh.models.Legend(items=legend_items)
                 # interactive legend
@@ -337,7 +375,7 @@ class BokehBackend(Plot):
                 pixel[j, i] = [*img[j, i], 255]
         return new_img
 
-    def _get_segments(self, x, y, u):
+    def _get_segments(self, x, y, *others):
         # MultiLine works with line segments, not with line points! :|
         xs = [x[i - 1 : i + 1] for i in range(1, len(x))]
         ys = [y[i - 1 : i + 1] for i in range(1, len(y))]
@@ -345,32 +383,30 @@ class BokehBackend(Plot):
         # will be (n - 1). Therefore, we remove one parameter. If n is
         # sufficiently high, there shouldn't be any noticeable problem in
         # the visualization.
-        us = u[:-1]
-        return xs, ys, us
+        others = list(others)
+        for i, o in enumerate(others):
+            others[i] = o[:-1]
+        return [xs, ys, *others]
 
     def _create_gradient_line(
-        self, x, y, u, colormap, name, line_kw, is_point=False
+        self, x_key, y_key, p_key, source, colormap, name, line_kw,
+        is_point=False
     ):
-        merge = self.merge
-        if not is_point:
-            xs, ys, us = self._get_segments(x, y, u)
-        else:
-            xs, ys, us = x, y, u
+        param = source[p_key]
         color_mapper = self.bokeh.models.LinearColorMapper(
-            palette=colormap, low=min(us), high=max(us))
-        data_source = self.bokeh.models.ColumnDataSource(
-            dict(xs=xs, ys=ys, us=us))
+            palette=colormap, low=min(param), high=max(param))
+        data_source = self.bokeh.models.ColumnDataSource(source)
 
         lkw = dict(
             line_width=2,
             name=name,
-            line_color={"field": "us", "transform": color_mapper},
+            line_color={"field": p_key, "transform": color_mapper},
         )
-        kw = merge({}, lkw, line_kw)
+        kw = self.merge({}, lkw, line_kw)
         if not is_point:
-            glyph = self.bokeh.models.MultiLine(xs="xs", ys="ys", **kw)
+            glyph = self.bokeh.models.MultiLine(xs=x_key, ys=y_key, **kw)
         else:
-            glyph = self.bokeh.models.Scatter(x="xs", y="ys", **kw)
+            glyph = self.bokeh.models.Scatter(x=x_key, y=y_key, **kw)
         colorbar = self.bokeh.models.ColorBar(
             color_mapper=color_mapper, title=name, width=8)
         return data_source, glyph, colorbar, kw
