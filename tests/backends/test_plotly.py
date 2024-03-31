@@ -107,7 +107,8 @@ from .make_tests import (
     make_test_vectors_3d_update_interactive,
     make_test_plot_list_color_func,
     make_test_real_imag,
-    make_test_arrow_2d
+    make_test_arrow_2d,
+    make_test_hvlines
 )
 
 
@@ -1864,17 +1865,19 @@ def test_parametric_texts():
 
 
 def test_arrow_2d():
+    a, b = symbols("a, b")
     p = make_test_arrow_2d(PB, "test", {"arrowcolor": "red"}, True)
-    p.fig
-    assert len(p.fig.layout.annotations) == 1
-    assert p.fig.layout.annotations[0]["text"] == "test"
-    assert p.fig.layout.annotations[0]["arrowcolor"] == "red"
+    fig = p.fig
+    assert len(fig.layout.annotations) == 1
+    assert fig.layout.annotations[0]["text"] == "test"
+    assert fig.layout.annotations[0]["arrowcolor"] == "red"
+    p._backend.update_interactive({a: 4, b: 5})
 
     p = make_test_arrow_2d(PB, "test", {"arrowcolor": "red"}, False)
-    p.fig
-    assert len(p.fig.layout.annotations) == 1
-    assert p.fig.layout.annotations[0]["text"] == ""
-    assert p.fig.layout.annotations[0]["arrowcolor"] == "red"
+    fig = p.fig
+    assert len(fig.layout.annotations) == 1
+    assert fig.layout.annotations[0]["text"] == ""
+    assert fig.layout.annotations[0]["arrowcolor"] == "red"
 
 
 def test_existing_figure_lines():
@@ -1945,3 +1948,18 @@ def test_plotly_update_ranges(update_event, fig_type):
         f(None, (-5, 4), (-3, 2))
     else:
         assert len(p.fig.layout._change_callbacks) == 0
+
+
+def test_hvlines():
+    a, b = symbols("a, b")
+    p = make_test_hvlines(PB)
+    fig = p._backend.fig
+    assert len(fig.layout.shapes) == 2
+    l1, l2 = fig.layout.shapes
+    assert l1["xref"] == "x domain"
+    assert l2["yref"] == "y domain"
+    assert not np.allclose(
+        [l1.x0, l1.x1, l1.y0, l1.y1],
+        [l2.x0, l2.x1, l2.y0, l2.y1]
+    )
+    p._backend.update_interactive({a: 3, b: 4})

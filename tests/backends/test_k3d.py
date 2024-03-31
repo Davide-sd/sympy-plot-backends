@@ -950,9 +950,11 @@ def test_existing_figure_surfaces():
 
 
 def test_arrow_3d():
+    a, b, c = symbols("a, b, c")
     p = make_test_arrow_3d(KB, "test",
         {"head_color": 0xff0000, "origin_color": 0xff0000}, True)
-    p.fig
-    assert len(p.fig.objects) == 1
-    assert p.fig.objects[0].origin_color == 0xff0000
-    assert p.fig.objects[0].head_color == 0xff0000
+    fig = p.fig
+    assert len(fig.objects) == 1
+    assert fig.objects[0].origin_color == 0xff0000
+    assert fig.objects[0].head_color == 0xff0000
+    p._backend.update_interactive({a: 4, b: 5, c: 6})

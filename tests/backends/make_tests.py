@@ -8,14 +8,15 @@ from spb import (
     ngrid, sgrid, zgrid, mcircles
 )
 from spb.series import (
-    SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries
+    SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries,
+    HVLineSeries
 )
 from sympy import (
     symbols, sin, cos, pi, exp, Matrix, sqrt, Heaviside, Piecewise, Eq, I,
     Circle, Line, Polygon, Ellipse, Curve, Point2D, Segment, Rational,
     Point3D, Line3D, Plane, log, gamma, tan
 )
-from sympy.abc import a, b, c, x, y, z, u, v, t
+from sympy.abc import a, b, c, x, y, z, u, v, s, t
 import numpy as np
 
 
@@ -1191,39 +1192,48 @@ def make_test_parametric_texts_3d(B):
 
 
 def make_test_arrow_2d(B, lbl, rkw, sil):
+    params = {a: (3, 0, 5), b: (4, 0, 5)}
     return graphics(
         arrow_2d(
-            (1, 2), (3, 4), label=lbl, rendering_kw=rkw, show_in_legend=sil),
+            (1, 2), (a, b), label=lbl, rendering_kw=rkw,
+            show_in_legend=sil, params=params),
         show=False, backend=B, legend=True
     )
 
 
 def make_test_arrow_3d(B, lbl, rkw, sil):
+    params = {a: (4, 0, 6), b: (5, 0, 6), c: (6, 0, 6)}
     return graphics(
         arrow_3d(
-            (1, 2, 3), (4, 5, 6), label=lbl, rendering_kw=rkw, show_in_legend=sil),
+            (1, 2, 3), (a, b, c), label=lbl, rendering_kw=rkw,
+            show_in_legend=sil, params=params),
         show=False, backend=B, legend=True
     )
 
 
 def make_test_root_locus_1(B, sgrid, zgrid):
-    s = symbols("s")
-    G = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
+    G = (a * s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
     return plot_root_locus(G, backend=B, show=False,
-        sgrid=sgrid, zgrid=zgrid)
+        sgrid=sgrid, zgrid=zgrid, params={a: (1, 0, 2)})
 
 
 def make_test_root_locus_2(B):
-    s = symbols("s")
     G1 = (s**2 + 1) / (s**3 + 2*s**2 + 3*s + 4)
     G2 = (s**2 - 4) / (s**3 + 2*s - 3)
     return plot_root_locus((G1, "a"), (G2, "b"), backend=B, show=False)
 
 
+def make_test_plot_pole_zero(B, sgrid, zgrid, T, is_filled):
+    G = (a * s**2 + 1) / (s**4 + 4*s**3 + 6*s**2 + 5*s + 2)
+    return plot_pole_zero(G, show=False, backend=B,
+        params={a: (1, 0, 2)}, T=T, sgrid=sgrid, zgrid=zgrid,
+        is_filled=is_filled)
+
+
 def make_test_poles_zeros_sgrid(B):
-    s = symbols("s")
-    G = (s**2 + 1) / (s**4 + 4*s**3 + 6*s**2 + 5*s + 2)
-    return plot_pole_zero(G, sgrid=True, show=False, backend=B)
+    G = (a * s**2 + 1) / (s**4 + 4*s**3 + 6*s**2 + 5*s + 2)
+    return plot_pole_zero(G, sgrid=True, show=False, backend=B,
+        params={a: (1, 0, 2)})
 
 
 def make_test_ngrid(B, cl_mags, cl_phases, label_cl_phases):
@@ -1252,4 +1262,13 @@ def make_test_zgrid(B, xi, wn, tp, ts, show_control_axis, **kwargs):
 def make_test_mcircles(B, mag):
     return graphics(
         mcircles(mag), backend=B, show=False, grid=False
+    )
+
+
+def make_test_hvlines(B):
+    p = {a: (1, 0, 5), b: (2, 0, 5)}
+    return graphics(
+        HVLineSeries(a, horizontal=True, params=p),
+        HVLineSeries(b, horizontal=False, params=p),
+        backend=B, show=False
     )

@@ -478,28 +478,6 @@ class BokehBackend(Plot):
             self._fig.output_backend = "canvas"
             self.bokeh.io.export_png(self._fig, filename=path)
 
-    def _pan_update(self):
-        rend = self.fig.renderers
-        for i, s in enumerate(self.series):
-            if s.is_2Dline and not s.is_parametric:
-                s.start = self._fig.x_range.start
-                s.end = self._fig.x_range.end
-                x, y = s.get_data()
-                x, y, _ = self._detect_poles(x, y)
-                source = {"xs": x, "ys": y}
-                rend[i].data_source.data.update(source)
-            elif s.is_complex and s.is_2Dline and s.is_parametric and self._use_cm:
-                # this is when absarg=True
-                s.start = complex(self._fig.x_range.start)
-                s.end = complex(self._fig.x_range.end)
-                x, y, param = s.get_data()
-                xs, ys, us = self._get_segments(x, y, param)
-                rend[i].data_source.data.update(
-                    {'xs': xs, 'ys': ys, 'us': us})
-                if i in self._handles.keys():
-                    cb = self._handles[i]
-                    cb.color_mapper.update(low = min(us), high = max(us))
-
     def _launch_server(self, doc):
         """ By launching a server application, we can use Python callbacks
         associated to events.
@@ -576,6 +554,9 @@ class BokehBackend(Plot):
         elif pivot == "tail":
             nxoff, pxoff = xoffsets * 2, 0
             nyoff, pyoff = yoffsets * 2, 0
+        else:
+            raise ValueError(
+                "`pivot` must be one of ['mid', 'tip', 'tail']")
         x0s, x1s = (xs + nxoff, xs - pxoff)
         y0s, y1s = (ys + nyoff, ys - pyoff)
 

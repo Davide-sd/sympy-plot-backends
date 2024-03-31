@@ -269,5 +269,3 @@ class SGridLineRenderer(Renderer):
         # NOTE: axis limits cannot be NaN or Inf
         self._xlims = [[np.nanmin(data[0]), np.nanmax(data[0])]]
         self._ylims = [[np.nanmin(data[1]), np.nanmax(data[1])]]
-        if self.series.is_3D:
-            self._zlims = [[np.nanmin(data[2]), np.nanmax(data[2])]]

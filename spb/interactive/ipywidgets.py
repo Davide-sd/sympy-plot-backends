@@ -81,7 +81,9 @@ class InteractivePlot(IPlot):
             # assure that each series has the correct values associated
             # to parameters
             for s in series:
-                s.params = {k: v.value for k, v in self._params_widgets.items()}
+                if s.is_interactive:
+                    s.params = {
+                        k: v.value for k, v in self._params_widgets.items()}
 
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)

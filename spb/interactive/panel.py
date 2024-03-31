@@ -464,7 +464,8 @@ class InteractivePlot(DynamicParam, PanelLayout, IPlot):
             # to parameters
             series = list(series)
             for s in series:
-                s.params = self.read_parameters()
+                if s.is_interactive:
+                    s.params = self.read_parameters()
 
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)

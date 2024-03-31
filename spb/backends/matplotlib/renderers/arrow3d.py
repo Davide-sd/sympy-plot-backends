@@ -23,26 +23,6 @@ class Arrow3D(FancyArrowPatch):
         mpl_toolkits = import_module("mpl_toolkits")
         self.proj_transform = mpl_toolkits.mplot3d.proj3d.proj_transform
 
-    def draw(self, renderer):
-        x1, y1, z1 = self._xyz
-        dx, dy, dz = self._dxdydz
-        x2, y2, z2 = (x1 + dx, y1 + dy, z1 + dz)
-
-        xs, ys, zs = self.proj_transform((x1, x2), (y1, y2), (z1, z2), self.axes.M)
-        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
-        super().draw(renderer)
-
-    def do_3d_projection(self, renderer=None):
-        np = import_module("numpy")
-        x1, y1, z1 = self._xyz
-        dx, dy, dz = self._dxdydz
-        x2, y2, z2 = (x1 + dx, y1 + dy, z1 + dz)
-
-        xs, ys, zs = self.proj_transform((x1, x2), (y1, y2), (z1, z2), self.axes.M)
-        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
-
-        return np.min(zs)
-
 
 def _draw_arrow_3d(renderer, data):
     p, s = renderer.plot, renderer.series

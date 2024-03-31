@@ -16,8 +16,12 @@ def _draw_hvline_helper(renderer, data):
 
 def _update_hvline_helper(renderer, data, idx):
     p, s = renderer.plot, renderer.series
-    prop = "y" if s.is_horizontal else "x"
-    p._fig.layout.shapes[idx][prop] = data
+    if s.is_horizontal:
+        p._fig.layout.shapes[idx]["y0"] = data
+        p._fig.layout.shapes[idx]["y1"] = data
+    else:
+        p._fig.layout.shapes[idx]["x0"] = data
+        p._fig.layout.shapes[idx]["x1"] = data
 
 
 class HVLineRenderer(Renderer):

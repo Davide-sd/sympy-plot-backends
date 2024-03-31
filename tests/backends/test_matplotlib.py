@@ -117,11 +117,13 @@ from .make_tests import (
     make_test_arrow_3d,
     make_test_root_locus_1,
     make_test_root_locus_2,
+    make_test_plot_pole_zero,
     make_test_poles_zeros_sgrid,
     make_test_ngrid,
     make_test_sgrid,
     make_test_zgrid,
-    make_test_mcircles
+    make_test_mcircles,
+    make_test_hvlines
 )
 
 ct = import_module("control")
@@ -2359,18 +2361,20 @@ def test_parametric_texts():
 
 
 def test_arrow_2d():
+    a, b = symbols("a, b")
     p = make_test_arrow_2d(MB, "test", {"color": "r"}, True)
-    p.fig
-    assert isinstance(p.ax, Axes)
-    assert len(p.ax.patches) == 1
-    assert len(p.ax.get_legend().legend_handles) == 1
-    assert p.ax.get_legend().legend_handles[0].get_label() == "$test$"
-    assert p.ax.get_legend().legend_handles[0].get_color() == "r"
+    ax = p._backend.ax
+    assert isinstance(ax, Axes)
+    assert len(ax.patches) == 1
+    assert len(ax.get_legend().legend_handles) == 1
+    assert ax.get_legend().legend_handles[0].get_label() == "$test$"
+    assert ax.get_legend().legend_handles[0].get_color() == "r"
+    p._backend.update_interactive({a: 4, b: 5})
 
     p = make_test_arrow_2d(MB, "test", {"color": "r"}, False)
-    p.fig
-    assert len(p.ax.patches) == 1
-    assert p.ax.get_legend() is None
+    ax = p._backend.ax
+    assert len(ax.patches) == 1
+    assert ax.get_legend() is None
 
 
 def test_existing_figure_lines():
@@ -2418,55 +2422,51 @@ def test_existing_figure_surfaces():
 
 
 def test_arrow_3d():
+    a, b, c = symbols("a, b, c")
     p = make_test_arrow_3d(MB, "test", {"color": "r"}, True)
-    p.fig
-    assert isinstance(p.ax, mpl_toolkits.mplot3d.axes3d.Axes3D)
-    assert len(p.ax.patches) == 1
-    assert len(p.ax.get_legend().legend_handles) == 1
-    assert p.ax.get_legend().legend_handles[0].get_label() == "$test$"
-    assert p.ax.get_legend().legend_handles[0].get_color() == "r"
+    ax = p._backend.ax
+    assert isinstance(ax, mpl_toolkits.mplot3d.axes3d.Axes3D)
+    assert len(ax.patches) == 1
+    assert len(ax.get_legend().legend_handles) == 1
+    assert ax.get_legend().legend_handles[0].get_label() == "$test$"
+    assert ax.get_legend().legend_handles[0].get_color() == "r"
     # only way to test if it renders what it's supposed to
-    assert np.allclose(p.ax.patches[0]._xyz, [1, 2, 3])
-    assert np.allclose(p.ax.patches[0]._dxdydz, [4, 5, 6])
+    assert np.allclose(ax.patches[0]._xyz, [1, 2, 3])
+    assert np.allclose(ax.patches[0]._dxdydz, [4, 5, 6])
+    p._backend.update_interactive({a: 4, b: 5, c: 6})
 
     p = make_test_arrow_3d(MB, "test", {"color": "r"}, False)
-    p.fig
-    assert len(p.ax.patches) == 1
-    assert p.ax.get_legend() is None
+    ax = p._backend.ax
+    assert len(ax.patches) == 1
+    assert ax.get_legend() is None
     # only way to test if it renders what it's supposed to
-    assert np.allclose(p.ax.patches[0]._xyz, [1, 2, 3])
-    assert np.allclose(p.ax.patches[0]._dxdydz, [4, 5, 6])
+    assert np.allclose(ax.patches[0]._xyz, [1, 2, 3])
+    assert np.allclose(ax.patches[0]._dxdydz, [4, 5, 6])
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
-def test_plot_root_locus_1():
-    p = make_test_root_locus_1(MB, True, False)
-    assert isinstance(p, MB)
-    assert len(p.series) == 2
+@pytest.mark.parametrize(
+    "sgrid, zgrid, n_lines, n_texts, instance", [
+        (True, False, 18, 10, SGridLineSeries),
+        (False, True, 33, 20, ZGridLineSeries),
+    ]
+)
+def test_plot_root_locus_1(sgrid, zgrid, n_lines, n_texts, instance):
+    a = symbols("a")
+    p = make_test_root_locus_1(MB, sgrid, zgrid)
+    assert isinstance(p._backend, MB)
+    assert len(p._backend.series) == 2
     # NOTE: the backend is going to reorder data series such that grid
     # series are placed at the end.
-    assert isinstance(p[0], RootLocusSeries)
-    assert isinstance(p[1], SGridLineSeries)
-    ax = p.ax
-    assert len(ax.lines) == 18
+    assert isinstance(p._backend[0], RootLocusSeries)
+    assert isinstance(p._backend[1], instance)
+    ax = p._backend.ax
+    assert len(ax.lines) == n_lines
     assert ax.get_legend() is None
-    assert len(p.ax.texts) == 10 # number of sgrid labels on the plot
+    assert len(ax.texts) == n_texts # number of sgrid labels on the plot
     line_colors = {'#1f77b4', '0.75'}
     assert all(l.get_color() in line_colors for l in ax.lines)
-    p.update_interactive({})
-
-    p = make_test_root_locus_1(MB, False, True)
-    assert isinstance(p, MB)
-    assert len(p.series) == 2
-    assert isinstance(p[0], RootLocusSeries)
-    assert isinstance(p[1], ZGridLineSeries)
-    ax = p.ax
-    assert len(ax.lines) == 33
-    assert ax.get_legend() is None
-    assert len(p.ax.texts) == 20 # number of sgrid labels on the plot
-    line_colors = {'#1f77b4', '0.75'}
-    assert all(l.get_color() in line_colors for l in ax.lines)
-    p.update_interactive({})
+    p._backend.update_interactive({a: 2})
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -2488,20 +2488,39 @@ def test_plot_root_locus_2():
     p.update_interactive({})
 
 
+
+@pytest.mark.parametrize(
+    "sgrid, zgrid, T, is_filled", [
+        (True, False, None, True),
+        (False, True, None, True),
+        (True, False, 0.05, True),
+        (False, True, 0.05, True),
+        (False, False, None, False),
+    ]
+)
+def test_plot_pole_zero(sgrid, zgrid, T, is_filled):
+    a = symbols("a")
+    p = make_test_plot_pole_zero(MB, sgrid=sgrid, zgrid=zgrid, T=T,
+        is_filled=is_filled)
+    fig = p.fig
+    p._backend.update_interactive({a: 2})
+
+
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_poles_zeros_sgrid():
     # verify that SGridLineSeries is rendered with "proper" axis limits
 
+    a = symbols("a")
     p = make_test_poles_zeros_sgrid(MB)
-    ax = p.ax
-    xlim = p.ax.get_xlim()
-    ylim = p.ax.get_ylim()
+    ax = p._backend.ax
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
     assert (xlim is not None) and (ylim is not None)
     # these are eyeball numbers, it should allows a little bit of tweeking at
     # the code for better positioning the grid...
     assert xlim[0] > -5 and xlim[1] < 2
     assert ylim[0] > -5 and ylim[1] < 5
-    p.update_interactive({})
+    p._backend.update_interactive({a: 2})
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -2509,15 +2528,14 @@ def test_plot_root_locus_sgrid():
     # verify that SGridLineSeries is rendered with "proper" axis limits
 
     p = make_test_root_locus_1(MB, True, False)
-    ax = p.ax
-    xlim = p.ax.get_xlim()
-    ylim = p.ax.get_ylim()
+    ax = p._backend.ax
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
     assert (xlim is not None) and (ylim is not None)
     # these are eyeball numbers, it should allows a little bit of tweeking at
     # the code for better positioning the grid...
     assert xlim[0] > -5 and xlim[1] < 2
     assert ylim[0] > -5 and ylim[1] < 5
-    p.update_interactive({})
 
 
 @pytest.mark.parametrize(
@@ -2713,7 +2731,7 @@ def test_plot_nyquist_matplotlib_interactive():
     pl.backend.update_interactive({a: 2}) # update with new value
 
 
-def test_plot_nichols_matplotlib():
+def test_plot_nichols():
     s = symbols("s")
     tf = (5 * (s - 1)) / (s**2 * (s**2 + s + 4))
 
@@ -2748,6 +2766,28 @@ def test_plot_nichols_arrows(arrows, n_arrows):
     assert len(ax.patches) == n_arrows
 
 
+@pytest.mark.parametrize(
+    "scatter, use_cm, n_lines, n_collections", [
+        (False, False, 1, 0),
+        (False, True, 0, 1),
+        (True, False, 1, 0),
+        (True, True, 0, 1),
+    ]
+)
+def test_plot_nichols_lines_scatter(scatter, use_cm, n_lines, n_collections):
+    # no errors are raised with different types of line
+    a, s = symbols("a, s")
+    tf = (a * (s - 1)) / (s**2 * (s**2 + s + 4))
+
+    # with nichols grid lines
+    p = plot_nichols(tf, ngrid=False, show=False, n=10, backend=MB,
+        scatter=scatter, use_cm=use_cm, params={a: (5, 0, 10)})
+    ax = p._backend.ax
+    assert len(ax.lines) == n_lines
+    assert len(ax.collections) == n_collections
+    p._backend.update_interactive({a: 6})
+
+
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_plot_step_response():
     # this should not raise any errors during updates
@@ -2773,3 +2813,14 @@ def test_plot_step_response():
     p._backend.update_interactive({
         a: 4, b: 11, c:6, d: 8, e: 18, f: 5, g: 20
     })
+
+
+def test_hvlines():
+    a, b = symbols("a, b")
+    p = make_test_hvlines(MB)
+    ax = p._backend.ax
+    assert len(ax.lines) == 2
+    assert not np.allclose(
+        ax.lines[0].get_data(), ax.lines[1].get_data()
+    )
+    p._backend.update_interactive({a: 3, b: 4})

@@ -49,11 +49,11 @@ def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
     if len(v) < 3:
         raise ValueError(
             "The parameter-tuple must have at least 3 elements: "
-            "value, min, max. Received: %s" % v)
+            "value, min, max. Received: %s" % list(v))
     if any(not is_number(t) for t in v[:3]):
         raise TypeError(
             "The first three elements of the parameter-tuple must be numbers. "
-            "Received: %s" % v[:3])
+            "Received: %s" % list(v[:3]))
 
     defaults_keys = [
         "value", "min", "max", "step", "formatter", "description", "type"]

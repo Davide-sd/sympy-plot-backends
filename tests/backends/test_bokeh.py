@@ -2,7 +2,8 @@ import pytest
 from pytest import raises
 bokeh = pytest.importorskip("bokeh")
 from bokeh.models import (
-    ColumnDataSource, Span, Arrow, LabelSet, Label, Line as BLine, Scatter
+    ColumnDataSource, Span, Arrow, LabelSet, Label, Line as BLine, Scatter,
+    MultiLine
 )
 import os
 from tempfile import TemporaryDirectory
@@ -81,11 +82,13 @@ from .make_tests import (
     make_test_arrow_2d,
     make_test_root_locus_1,
     make_test_root_locus_2,
+    make_test_plot_pole_zero,
     make_test_poles_zeros_sgrid,
     make_test_zgrid,
     make_test_sgrid,
     make_test_ngrid,
-    make_test_mcircles
+    make_test_mcircles,
+    make_test_hvlines
 )
 ipy = import_module("ipywidgets")
 ct = import_module("control")
@@ -255,23 +258,34 @@ def test_plot_contour():
     assert f.right[0].title == str(cos(x**2 + y**2))
 
 
-def test_plot_vector_2d_quivers():
+@pytest.mark.parametrize(
+    "pivot, success", [
+        ("mid", True),
+        ("tip", True),
+        ("tail", True),
+        ("asd", False),
+    ]
+)
+def test_plot_vector_2d_quivers(pivot, success):
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `contour_kw`/`quiver_kw` overrides the
     # default settings
 
     p = make_plot_vector_2d_quiver(
-        BB, contour_kw=dict(), quiver_kw=dict(line_color="red")
+        BB, contour_kw=dict(), quiver_kw=dict(line_color="red", pivot=pivot)
     )
-    assert len(p.series) == 2
-    f = p.fig
-    assert len(f.renderers) == 2
-    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
-    assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.Segment)
-    # 1 colorbar
-    assert len(f.right) == 1
-    assert f.right[0].title == "Magnitude"
-    assert f.renderers[1].glyph.line_color == "red"
+    if success:
+        assert len(p.series) == 2
+        f = p.fig
+        assert len(f.renderers) == 2
+        assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
+        assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.Segment)
+        # 1 colorbar
+        assert len(f.right) == 1
+        assert f.right[0].title == "Magnitude"
+        assert f.renderers[1].glyph.line_color == "red"
+    else:
+        raises(ValueError, lambda: p.fig)
 
 
 def test_plot_vector_2d_streamlines_custom_scalar_field():
@@ -1255,12 +1269,14 @@ def test_parametric_texts():
 
 
 def test_arrow_2d():
+    a, b = symbols("a, b")
     p = make_test_arrow_2d(BB, "test", {"line_color": "red"}, True)
-    p.fig
-    assert len(p.fig.center) == 3
+    fig = p.fig
+    assert len(fig.center) == 3
     arrows = [t for t in p.fig.center if isinstance(t, Arrow)]
     assert len(arrows) == 1
     assert arrows[0].line_color == "red"
+    p._backend.update_interactive({a: 4, b: 5})
 
 
 def test_existing_figure_lines():
@@ -1414,54 +1430,67 @@ def test_ngrid(cl_mags, cl_phases, label_cl_phases, n_lines, n_texts):
     assert len([t for t in fig.center if isinstance(t, Label)]) == n_texts
 
 
+@pytest.mark.parametrize(
+    "sgrid, zgrid, T, is_filled", [
+        (True, False, None, True),
+        (False, True, None, True),
+        (True, False, 0.05, True),
+        (False, True, 0.05, True),
+        (False, False, None, False),
+    ]
+)
+def test_plot_pole_zero(sgrid, zgrid, T, is_filled):
+    a = symbols("a")
+    p = make_test_plot_pole_zero(BB, sgrid=sgrid, zgrid=zgrid, T=T,
+        is_filled=is_filled)
+    fig = p.fig
+    p._backend.update_interactive({a: 2})
+
+
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_poles_zeros_sgrid():
     # verify that SGridLineSeries is rendered with "proper" axis limits
 
+    a = symbols("a")
     p = make_test_poles_zeros_sgrid(BB)
-    xlim = p.fig.x_range.start, p.fig.x_range.end
-    ylim = p.fig.y_range.start, p.fig.y_range.end
+    fig = p._backend.fig
+    xlim = fig.x_range.start, fig.x_range.end
+    ylim = fig.y_range.start, fig.y_range.end
     assert (xlim is not None) and (ylim is not None)
     # these are eyeball numbers, it should allows a little bit of tweeking at
     # the code for better positioning the grid...
     assert xlim[0] > -5 and xlim[1] < 2
     assert ylim[0] > -5 and ylim[1] < 5
-    p.update_interactive({})
+    p._backend.update_interactive({a: 2})
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
-def test_plot_root_locus_1():
-    p = make_test_root_locus_1(BB, True, False)
-    assert isinstance(p, BB)
-    assert len(p.series) == 2
+@pytest.mark.parametrize(
+    "sgrid, zgrid, n_renderers, n_lines, n_texts, instance", [
+        (True, False, 18, 16, 2, SGridLineSeries),
+        (False, True, 33, 31, 4, ZGridLineSeries),
+    ]
+)
+def test_plot_root_locus_1(
+    sgrid, zgrid, n_renderers, n_lines, n_texts, instance
+):
+    a = symbols("a")
+    p = make_test_root_locus_1(BB, sgrid, zgrid)
+    assert isinstance(p._backend, BB)
+    assert len(p._backend.series) == 2
     # NOTE: the backend is going to reorder data series such that grid
     # series are placed at the end.
-    assert isinstance(p[0], RootLocusSeries)
-    assert isinstance(p[1], SGridLineSeries)
-    fig = p.fig
-    assert len(fig.renderers) == 18
-    assert len([t for t in fig.renderers if isinstance(t.glyph, BLine)]) == 16
+    assert isinstance(p._backend[0], RootLocusSeries)
+    assert isinstance(p._backend[1], instance)
+    fig = p._backend.fig
+    assert len(fig.renderers) == n_renderers
+    assert len([t for t in fig.renderers if isinstance(t.glyph, BLine)]) == n_lines
     assert len([t for t in fig.renderers if isinstance(t.glyph, Scatter)]) == 2
-    assert len([t for t in fig.center if isinstance(t, LabelSet)]) == 2
+    assert len([t for t in fig.center if isinstance(t, LabelSet)]) == n_texts
     assert len([t for t in fig.center if isinstance(t, Span)]) == 2
     line_colors = {'#1f77b4', '#aaa'}
     assert all(t.glyph.line_color in line_colors for t in fig.renderers)
-    p.update_interactive({})
-
-    p = make_test_root_locus_1(BB, False, True)
-    assert isinstance(p, BB)
-    assert len(p.series) == 2
-    assert isinstance(p[0], RootLocusSeries)
-    assert isinstance(p[1], ZGridLineSeries)
-    fig = p.fig
-    assert len(fig.renderers) == 33
-    assert len([t for t in fig.renderers if isinstance(t.glyph, BLine)]) == 31
-    assert len([t for t in fig.renderers if isinstance(t.glyph, Scatter)]) == 2
-    assert len([t for t in fig.center if isinstance(t, LabelSet)]) == 4
-    assert len([t for t in fig.center if isinstance(t, Span)]) == 2
-    line_colors = {'#1f77b4', '#aaa'}
-    assert all(t.glyph.line_color in line_colors for t in fig.renderers)
-    p.update_interactive({})
+    p._backend.update_interactive({a: 2})
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -1575,7 +1604,8 @@ def test_plot_nyquist_bokeh_interactive():
     pl.backend.update_interactive({a: 2}) # update with new value
 
 
-def test_plot_nichols_bokeh():
+
+def test_plot_nichols():
     s = symbols("s")
     tf = (5 * (s - 1)) / (s**2 * (s**2 + s + 4))
 
@@ -1613,3 +1643,36 @@ def test_plot_nichols_arrows(arrows, n_arrows):
     data = arrows_glyphs[0].source.data
     k = list(data.keys())[0]
     assert len(data[k]) == n_arrows
+
+
+@pytest.mark.parametrize(
+    "scatter, use_cm, instance", [
+        (False, False, BLine),
+        (False, True, MultiLine),
+        (True, False, Scatter),
+        (True, True, Scatter),
+    ]
+)
+def test_plot_nichols_lines_scatter(scatter, use_cm, instance):
+    # no errors are raised with different types of line
+    a, s = symbols("a, s")
+    tf = (a * (s - 1)) / (s**2 * (s**2 + s + 4))
+
+    # with nichols grid lines
+    p = plot_nichols(tf, ngrid=False, show=False, n=10, backend=BB,
+        scatter=scatter, use_cm=use_cm, params={a: (5, 0, 10)})
+    fig = p._backend.fig
+    assert len(fig.renderers) == 1
+    assert isinstance(fig.renderers[0].glyph, instance)
+    p._backend.update_interactive({a: 6})
+
+
+def test_hvlines():
+    a, b = symbols("a, b")
+    p = make_test_hvlines(BB)
+    p.fig
+    lines = [t for t in p.fig.center if isinstance(t, Span)]
+    assert len(lines) == 2
+    assert lines[0].dimension == "width"
+    assert lines[1].dimension == "height"
+    p._backend.update_interactive({a: 3, b: 4})
