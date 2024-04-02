@@ -16,34 +16,29 @@ from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
 from sympy import (
     sin, cos, I, pi, Circle, Polygon, sqrt, Matrix, Line, latex, symbols
 )
-from sympy.abc import x, y, z, u, t
+from sympy.abc import a, b, c, x, y, z, u, t
 from sympy.external import import_module
 from .make_tests import (
     custom_colorloop_1,
-    make_plot_1,
-    make_plot_parametric_1,
-    make_plot3d_parametric_line_1,
-    make_plot3d_1,
-    make_plot3d_2,
+    make_test_plot,
+    make_test_plot_parametric,
+    make_test_plot3d_parametric_line,
+    make_test_plot3d,
     make_plot3d_wireframe_1,
     make_plot3d_wireframe_2,
     make_plot3d_wireframe_3,
-    make_plot_contour_1,
-    make_plot_vector_2d_quiver,
-    make_plot_vector_2d_streamlines_1,
-    make_plot_vector_2d_streamlines_2,
-    make_plot_vector_3d_quiver,
-    make_plot_vector_3d_streamlines_1,
-    make_plot_vector_2d_normalize_1,
-    make_plot_vector_2d_normalize_2,
-    make_plot_vector_2d_quiver_color_func_1,
+    make_test_plot_contour,
+    make_test_plot_vector_2d_quiver,
+    make_test_plot_vector_2d_streamlines,
+    make_test_plot_vector_3d_quiver_streamlines,
+    make_test_plot_vector_2d_normalize,
+    make_test_plot_vector_2d_color_func,
     make_test_plot_implicit_adaptive_true,
     make_test_plot_implicit_adaptive_false,
     make_test_plot_complex_1d,
     make_test_plot_complex_2d,
     make_test_plot_complex_3d,
-    make_test_plot_list_is_filled_false,
-    make_test_plot_list_is_filled_true,
+    make_test_plot_list_is_filled,
     make_test_plot_piecewise_single_series,
     make_test_plot_piecewise_multiple_series,
     make_test_plot_geometry_1,
@@ -52,20 +47,9 @@ from .make_tests import (
     make_test_plot_size,
     make_test_plot_scale_lin_log,
     make_test_backend_latex_labels_1,
-    make_test_plot_use_latex,
-    make_test_plot_parametric_use_latex,
-    make_test_plot_contour_use_latex,
-    make_test_plot_vector_2d_quivers_use_latex,
-    make_test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex,
-    make_test_plot_vector_2d_streamlines_custom_scalar_field_use_latex,
-    make_test_plot_vector_2d_use_latex_colorbar,
-    make_test_plot_complex_use_latex_1,
-    make_test_plot_complex_use_latex_2,
-    make_test_plot_real_imag_use_latex,
     make_test_plot_polar,
     make_test_plot_polar_use_cm,
     make_test_plot3d_implicit,
-    make_test_line_interactive_color_func,
     make_test_line_color_plot,
     make_test_color_func_expr_1,
     make_test_legend_plot_sum_1,
@@ -84,9 +68,9 @@ from .make_tests import (
     make_test_root_locus_2,
     make_test_plot_pole_zero,
     make_test_poles_zeros_sgrid,
-    make_test_zgrid,
-    make_test_sgrid,
     make_test_ngrid,
+    make_test_sgrid,
+    make_test_zgrid,
     make_test_mcircles,
     make_test_hvlines
 )
@@ -106,16 +90,6 @@ ct = import_module("control")
 
 class BBchild(BB):
     colorloop = ["red", "green", "blue"]
-
-
-def test_colorloop_colormaps():
-    # verify that backends exposes important class attributes enabling
-    # automatic coloring
-
-    assert hasattr(BB, "colorloop")
-    assert isinstance(BB.colorloop, (list, tuple))
-    assert hasattr(BB, "colormaps")
-    assert isinstance(BB.colormaps, (list, tuple))
 
 
 def test_bokeh_tools():
@@ -152,25 +126,31 @@ def test_custom_colorloop():
     assert len(set([r.glyph.line_color for r in f2.renderers])) == 3
 
 
-def test_plot():
+@pytest.mark.parametrize(
+    "use_latex, xlabel, ylabel", [
+        (False, "x", "f(x)"),
+        (True, "$x$", "$f\\left(x\\right)$")
+    ]
+)
+def test_plot_1(use_latex, xlabel, ylabel, label_func):
     # verify that the backends produce the expected results when `plot()`
     # is called and `rendering_kw` overrides the default line settings
 
-    p = make_plot_1(BB, rendering_kw=dict(line_color="red"))
-    assert len(p.series) == 2
+    p = make_test_plot(BB, rendering_kw=dict(line_color="red"),
+        use_latex=use_latex)
+    assert len(p.backend.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
     assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Line)
-    assert f.legend[0].items[0].label["value"] == "sin(x)"
+    assert f.legend[0].items[0].label["value"] == label_func(use_latex, sin(a * x))
     assert f.renderers[0].glyph.line_color == "red"
     assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.Line)
-    assert f.legend[0].items[1].label["value"] == "cos(x)"
+    assert f.legend[0].items[1].label["value"] == label_func(use_latex, cos(b * x))
     assert f.renderers[1].glyph.line_color == "red"
     assert f.legend[0].visible is True
-
-    p = make_plot_1(BB, rendering_kw=dict(line_color="red"), use_latex=True)
-    f = p.fig
-    assert f.legend[0].items[0].label["value"] == "$\\sin{\\left(x \\right)}$"
+    assert f.xaxis.axis_label == xlabel
+    assert f.yaxis.axis_label == ylabel
+    p.backend.update_interactive({a: 2, b: 2})
 
 
 def test_plot_parametric():
@@ -178,12 +158,23 @@ def test_plot_parametric():
     # `plot_parametric()` is called and `rendering_kw` overrides the default
     # line settings
 
-    p = make_plot_parametric_1(BB, rendering_kw=dict(line_color="red"))
-    assert len(p.series) == 1
+    p = make_test_plot_parametric(BB, rendering_kw=dict(line_color="red"),
+        use_cm=False)
+    assert len(p.backend.series) == 1
+    f = p.fig
+    assert len(f.renderers) == 1
+    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Line)
+    assert f.renderers[0].glyph.line_color == "red"
+    p.backend.update_interactive({a: 2, b: 2})
+
+    # TODO: would love to pass in a colormap, but it's not possible :(
+    # Hence, test just a line color
+    p = make_test_plot_parametric(BB, rendering_kw=dict(line_color="red"),
+        use_cm=True)
+    assert len(p.backend.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.MultiLine)
-    assert f.renderers[0].glyph.line_color == "red"
     # 1 colorbar
     assert len(f.right) == 1
     assert f.right[0].title == "x"
@@ -196,34 +187,23 @@ def test_plot3d_parametric_line():
     # default line settings
 
     # Bokeh doesn't support 3D plots
-    raises(
-        NotImplementedError,
-        lambda: make_plot3d_parametric_line_1(
-            BB, rendering_kw=dict(line_color="red")
-        ).draw(),
+    p = make_test_plot3d_parametric_line(
+        BB, dict(line_color="red"), False, False
     )
+    raises(NotImplementedError, lambda: p.fig)
 
 
-def test_plot3d():
+def test_plot3d_1():
     # verify that the backends produce the expected results when
     # `plot3d()` is called and `rendering_kw` overrides the default surface
     # settings
 
     # Bokeh doesn't support 3D plots
-    raises(
-        NotImplementedError,
-        lambda: make_plot3d_1(
-            BB, rendering_kw=dict(colorscale=[[0, "cyan"], [1, "cyan"]])
-        ).draw(),
+    p = make_test_plot3d(
+        BB, dict(colorscale=[[0, "cyan"], [1, "cyan"]]),
+        False, False
     )
-
-
-def test_plot3d_2():
-    # verify that the backends uses string labels when `plot3d()` is called
-    # with `use_latex=False` and `use_cm=True`
-
-    # Bokeh doesn't support 3D plots
-    raises(NotImplementedError, lambda: make_plot3d_2(BB).draw())
+    raises(NotImplementedError, lambda: p.fig)
 
 
 def test_plot3d_wireframe():
@@ -242,20 +222,28 @@ def test_plot3d_wireframe():
     )
 
 
-def test_plot_contour():
+@pytest.mark.parametrize(
+    "use_latex, xl, yl", [
+        (False, "x", "y"),
+        (True, "$x$", "$y$")
+    ]
+)
+def test_plot_contour(use_latex, xl, yl, label_func):
     # verify that the backends produce the expected results when
     # `plot_contour()` is called and `rendering_kw` overrides the default
     # surface settings
 
     # Bokeh doesn't use rendering_kw dictionary. Nothing to customize yet.
-    p = make_plot_contour_1(BB, rendering_kw=dict())
-    assert len(p.series) == 1
+    p = make_test_plot_contour(BB, rendering_kw=dict(), use_latex=use_latex)
+    assert len(p.backend.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
     # 1 colorbar
     assert len(f.right) == 1
-    assert f.right[0].title == str(cos(x**2 + y**2))
+    assert f.right[0].title == label_func(use_latex, cos(a*x**2 + y**2))
+    assert f.xaxis.axis_label == xl
+    assert f.yaxis.axis_label == yl
 
 
 @pytest.mark.parametrize(
@@ -271,11 +259,11 @@ def test_plot_vector_2d_quivers(pivot, success):
     # `plot_vector()` is called and `contour_kw`/`quiver_kw` overrides the
     # default settings
 
-    p = make_plot_vector_2d_quiver(
+    p = make_test_plot_vector_2d_quiver(
         BB, contour_kw=dict(), quiver_kw=dict(line_color="red", pivot=pivot)
     )
     if success:
-        assert len(p.series) == 2
+        assert len(p.backend.series) == 2
         f = p.fig
         assert len(f.renderers) == 2
         assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
@@ -288,62 +276,64 @@ def test_plot_vector_2d_quivers(pivot, success):
         raises(ValueError, lambda: p.fig)
 
 
-def test_plot_vector_2d_streamlines_custom_scalar_field():
+@pytest.mark.parametrize(
+    "scalar, use_latex, expected_label", [
+        (True, False, "Magnitude"),
+        (True, True, "Magnitude"),
+        (x + y, False, "x + y"),
+        (x + y, True, "$x + y$"),
+        ([(x + y), "test"], False, "test"),
+        ([(x + y), "test"], True, "test")
+    ]
+)
+def test_plot_vector_2d_streamlines_custom_scalar_field(
+    scalar, use_latex, expected_label
+):
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `contour_kw`/`stream_kw` overrides the
     # default settings
 
-    p = make_plot_vector_2d_streamlines_1(
-        BB, stream_kw=dict(line_color="red"), contour_kw=dict()
+    p = make_test_plot_vector_2d_streamlines(
+        BB, stream_kw=dict(line_color="red"), contour_kw=dict(),
+        scalar=scalar, use_latex=use_latex
     )
-    assert len(p.series) == 2
+    assert len(p.backend.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
     assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
     assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.MultiLine)
     # 1 colorbar
     assert len(f.right) == 1
-    assert f.right[0].title == "x + y"
+    assert f.right[0].title == expected_label
     assert f.renderers[1].glyph.line_color == "red"
 
 
-def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
-    # verify that the backends produce the expected results when
-    # `plot_vector()` is called and `contour_kw`/`stream_kw` overrides the
-    # default settings
-
-    p = make_plot_vector_2d_streamlines_2(
-        BB, stream_kw=dict(line_color="red"), contour_kw=dict()
-    )
-    f = p.fig
-    assert f.right[0].title == "test"
-
-
-def test_plot_vector_3d_quivers():
+@pytest.mark.parametrize(
+    "use_latex", [True, False]
+)
+def test_plot_vector_3d_quivers(use_latex):
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `quiver_kw` overrides the
     # default settings
 
     # Bokeh doesn't support 3D plots
-    raises(
-        NotImplementedError,
-        lambda: make_plot_vector_3d_quiver(
-            BB, quiver_kw=dict(sizeref=5)).draw(),
-    )
+    p = make_test_plot_vector_3d_quiver_streamlines(
+            BB, False, quiver_kw=dict(sizeref=5), use_latex=use_latex)
+    raises(NotImplementedError, lambda: p.fig)
 
 
-def test_plot_vector_3d_streamlines():
+@pytest.mark.parametrize(
+    "use_latex", [True, False]
+)
+def test_plot_vector_3d_streamlines(use_latex):
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `stream_kw` overrides the
     # default settings
 
     # Bokeh doesn't support 3D plots
-    raises(
-        NotImplementedError,
-        lambda: make_plot_vector_3d_streamlines_1(
-            BB, stream_kw=dict(colorscale=[[0, "red"], [1, "red"]])
-        ).draw(),
-    )
+    p = make_test_plot_vector_3d_quiver_streamlines(
+            BB, True, quiver_kw=dict(sizeref=5), use_latex=use_latex)
+    raises(NotImplementedError, lambda: p.fig)
 
 
 def test_plot_vector_2d_normalize():
@@ -352,27 +342,9 @@ def test_plot_vector_2d_normalize():
     # that data in the figures is different in the two cases normalize=True
     # and normalize=False
 
-    p1 = make_plot_vector_2d_normalize_1(BB, False)
-    p2 = make_plot_vector_2d_normalize_1(BB, True)
-    x01 = p1.fig.renderers[0].data_source.data["x0"]
-    x11 = p1.fig.renderers[0].data_source.data["x1"]
-    y01 = p1.fig.renderers[0].data_source.data["y0"]
-    y11 = p1.fig.renderers[0].data_source.data["y1"]
-    m1 = p1.fig.renderers[0].data_source.data["color_val"]
-    x02 = p2.fig.renderers[0].data_source.data["x0"]
-    x12 = p2.fig.renderers[0].data_source.data["x1"]
-    y02 = p2.fig.renderers[0].data_source.data["y0"]
-    y12 = p2.fig.renderers[0].data_source.data["y1"]
-    m2 = p2.fig.renderers[0].data_source.data["color_val"]
-    assert not np.allclose(x01, x02)
-    assert not np.allclose(x11, x12)
-    assert not np.allclose(y01, y02)
-    assert not np.allclose(y11, y12)
-    assert np.allclose(m1, m2)
-
-    p1 = make_plot_vector_2d_normalize_2(BB, False)
+    p1 = make_test_plot_vector_2d_normalize(BB, False)
     p1.backend.update_interactive({u: 1.5})
-    p2 = make_plot_vector_2d_normalize_2(BB, True)
+    p2 = make_test_plot_vector_2d_normalize(BB, True)
     p2.backend.update_interactive({u: 1.5})
     x01 = p1.fig.renderers[0].data_source.data["x0"]
     x11 = p1.fig.renderers[0].data_source.data["x1"]
@@ -394,11 +366,14 @@ def test_plot_vector_2d_normalize():
 def test_plot_vector_2d_quiver_color_func():
     # verify that color_func gets applied to 2D quivers
 
-    p1 = make_plot_vector_2d_quiver_color_func_1(BB, None)
-    p2 = make_plot_vector_2d_quiver_color_func_1(BB, lambda x, y, u, v: x)
+    p1 = make_test_plot_vector_2d_color_func(BB, False, None)
+    p2 = make_test_plot_vector_2d_color_func(BB, False, lambda x, y, u, v: u)
+    p3 = make_test_plot_vector_2d_color_func(BB, False, lambda x, y, u, v: u)
+    p3.backend.update_interactive({a: 1.5})
     a1 = p1.fig.renderers[0].data_source.data["color_val"]
     a2 = p2.fig.renderers[0].data_source.data["color_val"]
-    assert not np.allclose(a1, a2)
+    a3 = p3.fig.renderers[0].data_source.data["color_val"]
+    assert (not np.allclose(a1, a2)) and (not np.allclose(a2, a3))
 
 
 def test_plot_implicit_adaptive_true():
@@ -426,12 +401,16 @@ def test_plot_implicit_adaptive_false():
     )
 
 
-def test_plot_real_imag():
+@pytest.mark.parametrize(
+    "use_latex", [True, False]
+)
+def test_plot_real_imag(use_latex, label_func):
     # verify that the backends produce the expected results when
     # `plot_real_imag()` is called and `rendering_kw` overrides the default
     # settings
 
-    p = make_test_real_imag(BB, rendering_kw=dict(line_color="red"))
+    p = make_test_real_imag(BB, rendering_kw=dict(line_color="red"),
+        use_latex=use_latex)
     assert len(p.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
@@ -442,14 +421,20 @@ def test_plot_real_imag():
     assert f.legend[0].items[1].label["value"] == "Im(sqrt(x))"
     assert f.renderers[1].glyph.line_color == "red"
     assert f.legend[0].visible is True
+    assert f.xaxis.axis_label == label_func(use_latex, x)
+    assert f.yaxis.axis_label == r"$f\left(x\right)$" if use_latex else "f(x)"
 
 
-def test_plot_complex_1d():
+@pytest.mark.parametrize(
+    "use_latex", [True, False]
+)
+def test_plot_complex_1d(use_latex):
     # verify that the backends produce the expected results when
     # `plot_complex()` is called and `rendering_kw` overrides the default
     # settings
 
-    p = make_test_plot_complex_1d(BB, rendering_kw=dict(line_color="red"))
+    p = make_test_plot_complex_1d(BB, rendering_kw=dict(line_color="red"),
+        use_latex=use_latex)
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
@@ -458,19 +443,27 @@ def test_plot_complex_1d():
     # 1 colorbar
     assert len(f.right) == 1
     assert f.right[0].title == "Arg(sqrt(x))"
+    assert f.xaxis.axis_label == "Real"
+    assert f.yaxis.axis_label == "Abs"
 
 
-def test_plot_complex_2d():
+@pytest.mark.parametrize(
+    "use_latex", [True, False]
+)
+def test_plot_complex_2d(use_latex):
     # verify that the backends produce the expected results when
     # `plot_complex()` is called and `rendering_kw` overrides the default
     # settings
 
-    p = make_test_plot_complex_2d(BB, rendering_kw=dict())
+    p = make_test_plot_complex_2d(BB, rendering_kw=dict(),
+        use_latex=use_latex)
     assert len(p.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
     assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.ImageRGBA)
     assert f.right[0].title == "Argument"
+    assert f.xaxis.axis_label == "Re"
+    assert f.yaxis.axis_label == "Im"
     assert f.toolbar.tools[-1].tooltips == [
         ("x", "$x"),
         ("y", "$y"),
@@ -491,26 +484,19 @@ def test_plot_complex_3d():
     )
 
 
-def test_plot_list_is_filled_false():
+@pytest.mark.parametrize(
+    "is_filled", [True, False]
+)
+def test_plot_list_is_filled(is_filled):
     # verify that the backends produce the expected results when
     # `plot_list()` is called with `is_filled=False`
 
-    p = make_test_plot_list_is_filled_false(BB)
+    p = make_test_plot_list_is_filled(BB, is_filled)
     assert len(p.series) == 1
     f = p.fig
     assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Scatter)
-    assert f.renderers[0].glyph.line_color != f.renderers[0].glyph.fill_color
-
-
-def test_plot_list_is_filled_true():
-    # verify that the backends produce the expected results when
-    # `plot_list()` is called with `is_filled=True`
-
-    p = make_test_plot_list_is_filled_true(BB)
-    assert len(p.series) == 1
-    f = p.fig
-    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Scatter)
-    assert f.renderers[0].glyph.line_color == f.renderers[0].glyph.fill_color
+    test = f.renderers[0].glyph.line_color == f.renderers[0].glyph.fill_color
+    assert test is is_filled
 
 
 def test_plot_list_color_func():
@@ -566,48 +552,39 @@ def test_plot_geometry_1():
     assert len(f.legend[0].items) == 3
 
 
-def test_plot_geometry_2():
+@pytest.mark.parametrize(
+    "is_filled, n_lines, n_multiline, n_patches, n_scatt, n_legend", [
+        (False, 4, 1, 0, 1, 5),
+        (True, 1, 1, 3, 4, 5),
+    ]
+)
+def test_plot_geometry_2(
+    is_filled, n_lines, n_multiline, n_patches, n_scatt, n_legend
+):
     # verify that is_filled works correctly
 
-    p = make_test_plot_geometry_2(BB, False)
+    p = make_test_plot_geometry_2(BB, is_filled)
     assert (
         len([t.glyph for t in p.fig.renderers
             if isinstance(t.glyph, bokeh.models.glyphs.Line)])
-        == 4
+        == n_lines
     )
     assert (
         len([t.glyph for t in p.fig.renderers
             if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)])
-        == 1
-    )
-    assert (
-        len([t.glyph for t in p.fig.renderers
-            if isinstance(t.glyph, bokeh.models.glyphs.Scatter)])
-        == 1
-    )
-    assert len(p.fig.legend[0].items) == 5
-    p = make_test_plot_geometry_2(BB, True)
-    assert (
-        len([t.glyph for t in p.fig.renderers
-            if isinstance(t.glyph, bokeh.models.glyphs.Line)])
-        == 1
+        == n_multiline
     )
     assert (
         len([t.glyph for t in p.fig.renderers
             if isinstance(t.glyph, bokeh.models.glyphs.Patch)])
-        == 3
-    )
-    assert (
-        len([t.glyph for t in p.fig.renderers
-            if isinstance(t.glyph, bokeh.models.glyphs.MultiLine)])
-        == 1
+        == n_patches
     )
     assert (
         len([t.glyph for t in p.fig.renderers
             if isinstance(t.glyph, bokeh.models.glyphs.Scatter)])
-        == 4
+        == n_scatt
     )
-    assert len(p.fig.legend[0].items) == 5
+    assert len(p.fig.legend[0].items) == n_legend
 
 
 def test_save(mocker):
@@ -700,104 +677,6 @@ def test_backend_latex_labels():
     assert p2.ylabel == p2.fig.yaxis.axis_label == "f(x_1^2)"
 
 
-def test_plot_use_latex():
-    # verify that the backends produce the expected results when `plot()`
-    # is called and `rendering_kw` overrides the default line settings
-
-    p = make_test_plot_use_latex(BB)
-    f = p.fig
-    assert f.legend[0].items[0].label["value"] == "$\\sin{\\left(x \\right)}$"
-    assert f.legend[0].items[1].label["value"] == "$\\cos{\\left(x \\right)}$"
-    assert f.legend[0].visible is True
-
-
-def test_plot_parametric_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_parametric_use_latex(BB)
-    f = p.fig
-    # 1 colorbar
-    assert len(f.right) == 1
-    assert f.right[0].title == "$x$"
-
-
-def test_plot_contour_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_contour_use_latex(BB)
-    f = p.fig
-    assert f.right[0].title == "$%s$" % latex(cos(x**2 + y**2))
-
-
-def test_plot_vector_2d_quivers_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_vector_2d_quivers_use_latex(BB)
-    f = p.fig
-    assert f.right[0].title == "Magnitude"
-
-
-def test_plot_vector_2d_streamlines_custom_scalar_field_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_vector_2d_streamlines_custom_scalar_field_use_latex(BB)
-    f = p.fig
-    assert f.right[0].title == "$x + y$"
-
-
-def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex(
-        BB
-    )
-    f = p.fig
-    assert f.right[0].title == "test"
-
-
-def test_plot_vector_2d_use_latex_colorbar():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_vector_2d_use_latex_colorbar(BB, True, False)
-    assert p.fig.right[0].title == "Magnitude"
-
-    p = make_test_plot_vector_2d_use_latex_colorbar(BB, True, True)
-    assert p.fig.right[0].title == "Magnitude"
-
-    p = make_test_plot_vector_2d_use_latex_colorbar(BB, False, False)
-    assert p.fig.right[0].title == "$\\left( x, \\  y\\right)$"
-
-    # Bokeh doesn't support gradient streamlines, hence no colorbar
-    p = make_test_plot_vector_2d_use_latex_colorbar(BB, False, True)
-
-
-@pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_plot_complex_use_latex():
-    # complex plot function should return the same result (for axis labels)
-    # wheter use_latex is True or False
-
-    p = make_test_plot_complex_use_latex_1(BB)
-    assert p.fig.right[0].title == "Arg(cos(x) + I*sinh(x))"
-    assert p.fig.xaxis.axis_label == "Real"
-    assert p.fig.yaxis.axis_label == "Abs"
-
-    p = make_test_plot_complex_use_latex_2(BB)
-    assert p.fig.right[0].title == "Argument"
-    assert p.fig.xaxis.axis_label == "Re"
-    assert p.fig.yaxis.axis_label == "Im"
-
-
-def test_plot_real_imag_use_latex():
-    # real/imag plot function should return the same result (for axis labels)
-    # wheter use_latex is True or False
-
-    p = make_test_plot_real_imag_use_latex(BB)
-    assert p.fig.xaxis.axis_label == "$x$"
-    assert p.fig.yaxis.axis_label == r"$f\left(x\right)$"
-    assert p.fig.legend[0].items[0].label["value"] == "Re(sqrt(x))"
-    assert p.fig.legend[0].items[1].label["value"] == "Im(sqrt(x))"
-
-
 def test_plot_polar():
     # verify that 2D polar plot can create plots with cartesian axis and
     #  polar axis
@@ -833,21 +712,11 @@ def test_plot3d_implicit():
 
 
 def test_line_color_func():
-    # Verify that backends do not raise errors when plotting lines and that
-    # the color function is applied.
-
-    p1 = make_test_line_color_func(BB, None)
-    p2 = make_test_line_color_func(BB, lambda x, y: np.cos(x))
-    assert isinstance(p1.fig.renderers[0].glyph, bokeh.models.glyphs.Line)
-    assert isinstance(p2.fig.renderers[0].glyph, bokeh.models.glyphs.MultiLine)
-
-
-def test_line_interactive_color_func():
     # Verify that backends do not raise errors when updating lines and a
     # color function is applied.
 
-    p = make_test_line_interactive_color_func(BB)
-    p.update_interactive({t: 2})
+    p = make_test_line_color_func(BB)
+    p.backend.update_interactive({t: 2})
     assert isinstance(p.fig.renderers[0].glyph, bokeh.models.glyphs.Line)
     assert isinstance(p.fig.renderers[1].glyph, bokeh.models.glyphs.MultiLine)
 
@@ -870,25 +739,16 @@ def test_update_interactive():
     u, v, x, y, z = symbols("u, v, x:z")
 
     p = plot(
-        sin(u * x),
-        (x, -pi, pi),
-        adaptive=False,
-        n=5,
-        backend=BB,
-        show=False,
+        sin(u * x), (x, -pi, pi),
+        adaptive=False, n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
     )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
 
     p = plot_parametric(
-        cos(u * x),
-        sin(u * x),
-        (x, 0, 2 * pi),
-        adaptive=False,
-        n=5,
-        backend=BB,
-        show=False,
+        cos(u * x), sin(u * x), (x, 0, 2 * pi),
+        adaptive=False, n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=True,
         is_point=False,
@@ -897,13 +757,8 @@ def test_update_interactive():
     p.backend.update_interactive({u: 2})
 
     p = plot_parametric(
-        cos(u * x),
-        sin(u * x),
-        (x, 0, 2 * pi),
-        adaptive=False,
-        n=5,
-        backend=BB,
-        show=False,
+        cos(u * x), sin(u * x), (x, 0, 2 * pi),
+        adaptive=False, n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=True,
         is_point=True,
@@ -912,13 +767,8 @@ def test_update_interactive():
     p.backend.update_interactive({u: 2})
 
     p = plot_parametric(
-        cos(u * x),
-        sin(u * x),
-        (x, 0, 2 * pi),
-        adaptive=False,
-        n=5,
-        backend=BB,
-        show=False,
+        cos(u * x), sin(u * x), (x, 0, 2 * pi),
+        adaptive=False, n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=False,
     )
@@ -926,12 +776,8 @@ def test_update_interactive():
     p.backend.update_interactive({u: 2})
 
     p = plot_contour(
-        cos(u * x**2 + y**2),
-        (x, -2, 2),
-        (y, -2, 2),
-        backend=BB,
-        show=False,
-        adaptive=False,
+        cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        backend=BB, show=False, adaptive=False,
         n=5,
         params={u: (1, 0, 2)},
     )
@@ -939,12 +785,8 @@ def test_update_interactive():
     p.backend.update_interactive({u: 2})
 
     p = plot_vector(
-        Matrix([-u * y, x]),
-        (x, -5, 5),
-        (y, -4, 4),
-        backend=BB,
-        n=4,
-        show=False,
+        Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
+        backend=BB, n=4, show=False,
         params={u: (1, 0, 2)},
         streamlines=True,
     )
@@ -952,12 +794,8 @@ def test_update_interactive():
     p.backend.update_interactive({u: 2})
 
     p = plot_vector(
-        Matrix([-u * y, x]),
-        (x, -5, 5),
-        (y, -4, 4),
-        backend=BB,
-        n=4,
-        show=False,
+        Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
+        backend=BB, n=4, show=False,
         params={u: (1, 0, 2)},
         streamlines=False,
         scalar=True,
@@ -966,12 +804,8 @@ def test_update_interactive():
     p.backend.update_interactive({u: 2})
 
     p = plot_vector(
-        Matrix([-u * y, x]),
-        (x, -5, 5),
-        (y, -4, 4),
-        backend=BB,
-        n=4,
-        show=False,
+        Matrix([-u * y, x]), (x, -5, 5), (y, -4, 4),
+        backend=BB, n=4, show=False,
         params={u: (1, 0, 2)},
         streamlines=False,
         scalar=False,
@@ -1276,7 +1110,7 @@ def test_arrow_2d():
     arrows = [t for t in p.fig.center if isinstance(t, Arrow)]
     assert len(arrows) == 1
     assert arrows[0].line_color == "red"
-    p._backend.update_interactive({a: 4, b: 5})
+    p.backend.update_interactive({a: 4, b: 5})
 
 
 def test_existing_figure_lines():
@@ -1358,7 +1192,7 @@ def test_zgrid(
         kw["params"] = params
 
     p = make_test_zgrid(BB, xi, wn, tp, ts, show_control_axis, **kw)
-    fig = p._backend.fig if params else p.fig
+    fig = p.backend.fig if params else p.fig
     assert len(fig.renderers) == n_lines
     assert len([t for t in fig.center if isinstance(t, Span)]) == n_hvlines
     assert len([t for t in fig.center if isinstance(t, LabelSet)]) == n_lblsets
@@ -1367,7 +1201,7 @@ def test_zgrid(
         n_texts
     )
     if params:
-        p._backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
+        p.backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
 
 
 @pytest.mark.parametrize(
@@ -1402,7 +1236,7 @@ def test_sgrid(
         kw["params"] = params
 
     p = make_test_sgrid(BB, xi, wn, tp, ts, auto, show_control_axis, **kw)
-    fig = p._backend.fig if params else p.fig
+    fig = p.backend.fig if params else p.fig
     assert len(fig.renderers) == n_lines
     assert len([t for t in fig.center if isinstance(t, Span)]) == n_hvlines
     assert len([t for t in fig.center if isinstance(t, LabelSet)]) == n_lblsets
@@ -1411,7 +1245,7 @@ def test_sgrid(
         n_texts
     )
     if params:
-        p._backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
+        p.backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
 
 
 @pytest.mark.parametrize(
@@ -1444,7 +1278,7 @@ def test_plot_pole_zero(sgrid, zgrid, T, is_filled):
     p = make_test_plot_pole_zero(BB, sgrid=sgrid, zgrid=zgrid, T=T,
         is_filled=is_filled)
     fig = p.fig
-    p._backend.update_interactive({a: 2})
+    p.backend.update_interactive({a: 2})
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
@@ -1453,7 +1287,7 @@ def test_plot_poles_zeros_sgrid():
 
     a = symbols("a")
     p = make_test_poles_zeros_sgrid(BB)
-    fig = p._backend.fig
+    fig = p.backend.fig
     xlim = fig.x_range.start, fig.x_range.end
     ylim = fig.y_range.start, fig.y_range.end
     assert (xlim is not None) and (ylim is not None)
@@ -1461,7 +1295,7 @@ def test_plot_poles_zeros_sgrid():
     # the code for better positioning the grid...
     assert xlim[0] > -5 and xlim[1] < 2
     assert ylim[0] > -5 and ylim[1] < 5
-    p._backend.update_interactive({a: 2})
+    p.backend.update_interactive({a: 2})
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -1476,13 +1310,13 @@ def test_plot_root_locus_1(
 ):
     a = symbols("a")
     p = make_test_root_locus_1(BB, sgrid, zgrid)
-    assert isinstance(p._backend, BB)
-    assert len(p._backend.series) == 2
+    assert isinstance(p.backend, BB)
+    assert len(p.backend.series) == 2
     # NOTE: the backend is going to reorder data series such that grid
     # series are placed at the end.
-    assert isinstance(p._backend[0], RootLocusSeries)
-    assert isinstance(p._backend[1], instance)
-    fig = p._backend.fig
+    assert isinstance(p.backend[0], RootLocusSeries)
+    assert isinstance(p.backend[1], instance)
+    fig = p.backend.fig
     assert len(fig.renderers) == n_renderers
     assert len([t for t in fig.renderers if isinstance(t.glyph, BLine)]) == n_lines
     assert len([t for t in fig.renderers if isinstance(t.glyph, Scatter)]) == 2
@@ -1490,7 +1324,7 @@ def test_plot_root_locus_1(
     assert len([t for t in fig.center if isinstance(t, Span)]) == 2
     line_colors = {'#1f77b4', '#aaa'}
     assert all(t.glyph.line_color in line_colors for t in fig.renderers)
-    p._backend.update_interactive({a: 2})
+    p.backend.update_interactive({a: 2})
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -1661,10 +1495,10 @@ def test_plot_nichols_lines_scatter(scatter, use_cm, instance):
     # with nichols grid lines
     p = plot_nichols(tf, ngrid=False, show=False, n=10, backend=BB,
         scatter=scatter, use_cm=use_cm, params={a: (5, 0, 10)})
-    fig = p._backend.fig
+    fig = p.backend.fig
     assert len(fig.renderers) == 1
     assert isinstance(fig.renderers[0].glyph, instance)
-    p._backend.update_interactive({a: 6})
+    p.backend.update_interactive({a: 6})
 
 
 def test_hvlines():
@@ -1675,4 +1509,4 @@ def test_hvlines():
     assert len(lines) == 2
     assert lines[0].dimension == "width"
     assert lines[1].dimension == "height"
-    p._backend.update_interactive({a: 3, b: 4})
+    p.backend.update_interactive({a: 3, b: 4})

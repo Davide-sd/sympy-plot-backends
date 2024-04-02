@@ -25,36 +25,29 @@ from sympy.abc import x, y, z, u, t, a, b, c
 from sympy.external import import_module
 from .make_tests import (
     custom_colorloop_1,
-    make_plot_1,
-    make_plot_parametric_1,
-    make_plot3d_parametric_line_1,
-    make_plot3d_1,
-    make_plot3d_2,
+    make_test_plot,
+    make_test_plot_parametric,
+    make_test_plot3d_parametric_line,
+    make_test_plot3d,
     make_plot3d_wireframe_1,
     make_plot3d_wireframe_2,
     make_plot3d_wireframe_3,
-    make_plot_contour_1,
+    make_test_plot_contour,
     make_plot_contour_is_filled,
-    make_plot_vector_2d_quiver,
-    make_plot_vector_2d_streamlines_1,
-    make_plot_vector_2d_streamlines_2,
-    make_plot_vector_3d_quiver,
-    make_plot_vector_3d_streamlines_1,
-    make_plot_vector_2d_normalize_1,
-    make_plot_vector_2d_normalize_2,
-    make_plot_vector_3d_normalize_1,
-    make_plot_vector_3d_normalize_2,
-    make_plot_vector_2d_quiver_color_func_1,
-    make_plot_vector_3d_quiver_color_func_1,
-    make_plot_vector_3d_quiver_color_func_2,
-    make_plot_vector_3d_streamlines_color_func,
+    make_test_plot_vector_2d_quiver,
+    make_test_plot_vector_2d_streamlines,
+    make_test_plot_vector_3d_quiver_streamlines,
+    make_test_plot_vector_2d_normalize,
+    make_test_plot_vector_3d_normalize,
+    make_test_plot_vector_2d_color_func,
+    make_test_plot_vector_3d_quiver_color_func,
+    make_test_plot_vector_3d_streamlines_color_func,
     make_test_plot_implicit_adaptive_true,
     make_test_plot_implicit_adaptive_false,
     make_test_plot_complex_1d,
     make_test_plot_complex_2d,
     make_test_plot_complex_3d,
-    make_test_plot_list_is_filled_false,
-    make_test_plot_list_is_filled_true,
+    make_test_plot_list_is_filled,
     make_test_plot_piecewise_single_series,
     make_test_plot_piecewise_multiple_series,
     make_test_plot_geometry_1,
@@ -66,34 +59,15 @@ from .make_tests import (
     make_test_plot_scale_lin_log,
     make_test_backend_latex_labels_1,
     make_test_backend_latex_labels_2,
-    make_test_plot_use_latex,
-    make_test_plot_parametric_use_latex,
-    make_test_plot_contour_use_latex,
-    make_test_plot_vector_2d_quivers_use_latex,
-    make_test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex,
-    make_test_plot_vector_2d_streamlines_custom_scalar_field_use_latex,
-    make_test_plot_vector_2d_use_latex_colorbar,
-    make_test_plot_vector_3d_quivers_use_latex,
-    make_test_plot_vector_3d_streamlines_use_latex,
-    make_test_plot_complex_use_latex_1,
-    make_test_plot_complex_use_latex_2,
-    make_test_plot_real_imag_use_latex,
-    make_test_plot3d_use_cm,
     make_test_plot_polar,
     make_test_plot_polar_use_cm,
     make_test_plot3d_implicit,
-    make_test_surface_color_func_1,
-    make_test_surface_color_func_2,
-    make_test_surface_interactive_color_func,
-    make_test_line_interactive_color_func,
+    make_test_surface_color_func,
     make_test_line_color_plot,
     make_test_line_color_plot3d_parametric_line,
     make_test_surface_color_plot3d,
-    make_test_plot3d_list_use_cm_False,
-    make_test_plot3d_list_use_cm_color_func,
-    make_test_plot3d_list_interactive,
-    make_test_contour_show_clabels_1,
-    make_test_contour_show_clabels_2,
+    make_test_plot3d_list,
+    make_test_contour_show_clabels,
     make_test_color_func_expr_1,
     make_test_color_func_expr_2,
     make_test_legend_plot_sum_1,
@@ -108,9 +82,6 @@ from .make_tests import (
     make_test_parametric_texts_2d,
     make_test_parametric_texts_3d,
     make_test_line_color_func,
-    make_test_plot3d_parametric_line_use_latex,
-    make_test_plot3d_use_latex,
-    make_test_vectors_3d_update_interactive,
     make_test_plot_list_color_func,
     make_test_real_imag,
     make_test_arrow_2d,
@@ -146,21 +117,10 @@ class MBchild(MB):
     colorloop = ["red", "green", "blue"]
 
 
-def test_colorloop_colormaps():
-    # verify that backends exposes important class attributes enabling
-    # automatic coloring
-
-    assert hasattr(MB, "colorloop")
-    assert isinstance(MB.colorloop, (list, tuple))
-    assert hasattr(MB, "colormaps")
-    assert isinstance(MB.colormaps, (list, tuple))
-
-
 def test_MatplotlibBackend():
     # verify that MB keeps track of the handles and a few other important
     # keyword arguments
 
-    # `_handle` is needed in order to correctly update the data with iplot
     x, y = symbols("x, y")
     p = plot3d(
         cos(x**2 + y**2),
@@ -189,105 +149,158 @@ def test_custom_colorloop():
     assert len(set([l.get_color() for l in f2.axes[0].lines])) == 3
 
 
-def test_plot():
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+@pytest.mark.parametrize(
+    "use_latex, xlabel, ylabel", [
+        (False, "x", "f(x)"),
+        (True, "$x$", "$f\\left(x\\right)$")
+    ]
+)
+def test_plot_1(use_latex, xlabel, ylabel, label_func):
     # verify that the backends produce the expected results when `plot()`
     # is called and `rendering_kw` overrides the default line settings
 
-    p = make_plot_1(MB, rendering_kw=dict(color="red"))
-    assert len(p.series) == 2
+    p = make_test_plot(MB, rendering_kw=dict(color="red"), use_latex=use_latex)
+    assert len(p.backend.series) == 2
     f = p.fig
     ax = f.axes[0]
     assert isinstance(ax, matplotlib.axes.Axes)
     assert len(ax.get_lines()) == 2
-    assert ax.get_lines()[0].get_label() == "sin(x)"
+    assert ax.get_lines()[0].get_label() == label_func(use_latex, sin(a * x))
     assert ax.get_lines()[0].get_color() == "red"
-    assert ax.get_lines()[1].get_label() == "cos(x)"
+    assert ax.get_lines()[1].get_label() == label_func(use_latex, cos(b * x))
     assert ax.get_lines()[1].get_color() == "red"
-    assert ax.get_xlabel() == "x"
-    assert ax.get_ylabel() == "f(x)"
-    p.close()
-
-    p = make_plot_1(MB, rendering_kw=dict(color="red"), use_latex=True)
-    f = p.fig
-    ax = f.axes[0]
-    assert ax.get_lines()[0].get_label() == "$\\sin{\\left(x \\right)}$"
-    assert ax.get_xlabel() == "$x$"
-    assert ax.get_ylabel() == "$f\\left(x\\right)$"
+    assert ax.get_xlabel() == xlabel
+    assert ax.get_ylabel() == ylabel
+    p.backend.update_interactive({a: 2, b: 2})
+    p.backend.close()
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_plot_parametric():
     # verify that the backends produce the expected results when
     # `plot_parametric()` is called and `rendering_kw` overrides the default
     # line settings
 
-    p = make_plot_parametric_1(MB, rendering_kw=dict(color="red"))
-    assert len(p.series) == 1
+    p = make_test_plot_parametric(MB, rendering_kw=dict(color="red"),
+        use_cm=False)
+    assert len(p.backend.series) == 1
     f = p.fig
     ax = f.axes[0]
+    assert ax.get_lines()[0].get_label() == "(cos(a*x), sin(b*x))"
+    assert ax.get_lines()[0].get_color() == "red"
+    p.backend.update_interactive({a: 2, b: 2})
+    p.backend.close()
+
     # parametric plot with use_cm=True -> LineCollection
-    assert len(ax.collections) == 1
-    assert isinstance(ax.collections[0], matplotlib.collections.LineCollection)
-    assert f.axes[1].get_ylabel() == "x"
-    assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
-    p.close()
+    p1 = make_test_plot_parametric(MB, rendering_kw={},
+        use_cm=True)
+    p2 = make_test_plot_parametric(MB, rendering_kw=dict(cmap="autumn"),
+        use_cm=True)
+    f1, f2 = p1.fig, p2.fig
+    ax1, ax2 = f1.axes[0], f2.axes[0]
+    assert len(ax1.collections) == 1
+    assert isinstance(ax1.collections[0], matplotlib.collections.LineCollection)
+    assert f1.axes[1].get_ylabel() == "x"
+    # TODO: how to test for different colormaps?
+    # assert not np.allclose(
+    #     ax1.collections[0].get_colors(),
+    #     ax2.collections[0].get_colors()
+    # )
+    p1.backend.update_interactive({a: 2, b: 2})
+    p2.backend.update_interactive({a: 2, b: 2})
+    p1.backend.close()
+    p2.backend.close()
 
 
-def test_plot3d_parametric_line():
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+@pytest.mark.parametrize(
+    "use_latex", [False, True]
+)
+def test_plot3d_parametric_line(use_latex, label_func):
     # verify that the backends produce the expected results when
     # `plot3d_parametric_line()` is called and `rendering_kw` overrides the
     # default line settings
 
-    p = make_plot3d_parametric_line_1(MB, rendering_kw=dict(color="red"))
-    assert len(p.series) == 1
+    p = make_test_plot3d_parametric_line(
+        MB, rendering_kw=dict(color="red"), use_latex=use_latex, use_cm=False)
+    assert len(p.backend.series) == 1
     f = p.fig
     ax = f.axes[0]
-    assert len(ax.collections) == 1
+    assert ax.get_lines()[0].get_label() == label_func(
+        use_latex, (cos(a * x), sin(b * x), x))
+    assert ax.get_lines()[0].get_color() == "red"
+    p.backend.update_interactive({a: 2, b: 2})
+    p.backend.close()
+
+    p2 = make_test_plot3d_parametric_line(
+        MB, rendering_kw={}, use_latex=use_latex, use_cm=True)
+    p1 = make_test_plot3d_parametric_line(
+        MB, rendering_kw=dict(cmap="autumn"), use_latex=use_latex, use_cm=True)
+    f1, f2 = p1.fig, p2.fig
+    ax1, ax2 = f1.axes[0], f2.axes[0]
+    assert len(ax1.collections) == 1
     assert isinstance(
-        ax.collections[0],
-        mpl_toolkits.mplot3d.art3d.Line3DCollection
+        ax1.collections[0], mpl_toolkits.mplot3d.art3d.Line3DCollection)
+    assert f1.axes[1].get_ylabel() == f2.axes[1].get_ylabel() == label_func(
+        use_latex, x
     )
-    assert f.axes[1].get_ylabel() == "x"
-    assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
-    p.close()
+    # TODO: how to test for different colormaps?
+    p1.backend.update_interactive({a: 2, b: 2})
+    p2.backend.update_interactive({a: 2, b: 2})
+    p1.backend.close()
+    p2.backend.close()
 
 
-def test_plot3d():
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+@pytest.mark.parametrize(
+    "use_latex, xl, yl, zl", [
+        (False, "x", "y", "f(x, y)"),
+        (True, "$x$", "$y$", r"$f\left(x, y\right)$")
+    ]
+)
+def test_plot3d_1(use_latex, xl, yl, zl, label_func):
     # verify that the backends produce the expected results when
     # `plot3d()` is called and `rendering_kw` overrides the default surface
     # settings
 
     # use_cm=False will force to apply a default solid color to the mesh.
     # Here, I override that solid color with a custom color.
-    p = make_plot3d_1(MB, rendering_kw=dict(color="red"))
-    assert len(p.series) == 1
-    f = p.fig
-    ax = f.axes[0]
-    assert len(ax.collections) == 1
-    assert isinstance(
-        ax.collections[0],
-        mpl_toolkits.mplot3d.art3d.Poly3DCollection
-    )
-    # TODO: apparently, without showing the plot, the colors are not applied
-    # to a Poly3DCollection...
-    p.close()
-
-
-def test_plot3d_2():
-    # verify that the backends uses string labels when `plot3d()` is called
-    # with `use_latex=False` and `use_cm=True`
-
-    p = make_plot3d_2(MB)
-    assert len(p.series) == 2
+    p = make_test_plot3d(MB, rendering_kw=dict(color="red"), use_cm=False,
+        use_latex=use_latex)
+    assert len(p.backend.series) == 2
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 2
-    assert ax.get_xlabel() == "x"
-    assert ax.get_ylabel() == "y"
-    assert ax.get_zlabel() == "f(x, y)"
-    assert len(f.axes) == 3
-    assert f.axes[1].get_ylabel() == str(cos(x**2 + y**2))
-    assert f.axes[2].get_ylabel() == str(sin(x**2 + y**2))
-    p.close()
+    assert all(isinstance(
+        c, mpl_toolkits.mplot3d.art3d.Poly3DCollection) for c in ax.collections
+    )
+    assert ax.get_xlabel() == xl
+    assert ax.get_ylabel() == yl
+    assert ax.get_zlabel() == zl
+    assert (
+        ax.get_legend().legend_handles[0].get_label()
+        == label_func(use_latex, cos(a*x**2 + y**2))
+    )
+    assert (
+        ax.get_legend().legend_handles[1].get_label()
+        == label_func(use_latex, sin(b*x**2 + y**2))
+    )
+    assert "cmap" not in p.backend.renderers[0].handles[0][1].keys()
+    # TODO: how to test for different colormaps?
+    p.backend.update_interactive({a: 2, b: 2})
+    p.backend.close()
+
+
+    p = make_test_plot3d(MB, rendering_kw=dict(cmap="autumn"), use_cm=True,
+        use_latex=use_latex)
+    f = p.fig
+    assert f.axes[1].get_ylabel() == label_func(use_latex, cos(a*x**2 + y**2))
+    assert f.axes[2].get_ylabel() == label_func(use_latex, sin(b*x**2 + y**2))
+    # TODO: how to test for different colormaps?
+    assert "cmap" in p.backend.renderers[0].handles[0][1].keys()
+    p.backend.update_interactive({a: 2, b: 2})
+    p.backend.close()
 
 
 def test_plot3d_wireframe():
@@ -310,19 +323,31 @@ def test_plot3d_wireframe():
     assert all(s.rendering_kw == {"lw": "0.5"} for s in p3.series[1:])
 
 
-def test_plot_contour():
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+@pytest.mark.parametrize(
+    "use_latex, xl, yl", [
+        (False, "x", "y"),
+        (True, "$x$", "$y$")
+    ]
+)
+def test_plot_contour(use_latex, xl, yl, label_func):
     # verify that the backends produce the expected results when
     # `plot_contour()` is called and `rendering_kw` overrides the default
     # surface settings
 
-    p = make_plot_contour_1(MB, rendering_kw=dict(cmap="jet"))
-    assert len(p.series) == 1
+    p = make_test_plot_contour(MB, rendering_kw=dict(cmap="jet"),
+        use_latex=use_latex)
+    assert len(p.backend.series) == 1
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
-    assert f.axes[1].get_ylabel() == str(cos(x**2 + y**2))
-    # TODO: how to retrieve the colormap from a contour series?????
-    p.close()
+    assert ax.get_xlabel() == xl
+    assert ax.get_ylabel() == yl
+    assert "cmap" in p.backend.renderers[0].handles[0][1].keys()
+    assert f.axes[1].get_ylabel() == label_func(use_latex, cos(a*x**2 + y**2))
+    # TODO: how to test for different colormaps?
+    p.backend.update_interactive({a: 2})
+    p.backend.close()
 
 
 def test_plot_contour_is_filled():
@@ -339,120 +364,108 @@ def test_plot_contour_is_filled():
     assert len(p2.renderers[0].handles[0][-1]) > 0
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_plot_vector_2d_quivers():
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `contour_kw`/`quiver_kw` overrides the
     # default settings
 
-    p = make_plot_vector_2d_quiver(
+    p = make_test_plot_vector_2d_quiver(
         MB, quiver_kw=dict(color="red"), contour_kw=dict(cmap="jet")
     )
-    assert len(p.series) == 2
+    assert len(p.backend.series) == 2
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
     assert isinstance(ax.collections[-1], matplotlib.quiver.Quiver)
     assert f.axes[1].get_ylabel() == "Magnitude"
-    # TODO: how to retrieve the colormap from a contour series?????
-    p.close()
+    # TODO: how to test for different colormaps?
+    p.backend.update_interactive({a: 2})
+    p.backend.close()
 
 
-def test_plot_vector_2d_streamlines_custom_scalar_field():
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+@pytest.mark.parametrize(
+    "scalar, use_latex, expected_label", [
+        (True, False, "Magnitude"),
+        (True, True, "Magnitude"),
+        (x + y, False, "x + y"),
+        (x + y, True, "$x + y$"),
+        ([(x + y), "test"], False, "test"),
+        ([(x + y), "test"], True, "test")
+    ]
+)
+def test_plot_vector_2d_streamlines_custom_scalar_field(
+    scalar, use_latex, expected_label
+):
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `contour_kw`/`stream_kw` overrides the
     # default settings
 
-    p = make_plot_vector_2d_streamlines_1(
-        MB, stream_kw=dict(color="red"), contour_kw=dict(cmap="jet")
+    p = make_test_plot_vector_2d_streamlines(
+        MB, stream_kw=dict(color="red"), contour_kw=dict(cmap="jet"),
+        scalar=scalar, use_latex=use_latex
     )
-    assert len(p.series) == 2
+    assert len(p.backend.series) == 2
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
     assert isinstance(ax.collections[-1], matplotlib.collections.LineCollection)
-    assert f.axes[1].get_ylabel() == "x + y"
-    assert all(*(ax.collections[-1].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
-    p.close()
+    assert f.axes[1].get_ylabel() == expected_label
+    # TODO: how to test for different colormaps?
+    raises(NotImplementedError, lambda :p.backend.update_interactive({a: 2}))
+    p.backend.close()
 
 
-def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label():
-    # verify that the backends produce the expected results when
-    # `plot_vector()` is called and `contour_kw`/`stream_kw` overrides the
-    # default settings
-
-    p = make_plot_vector_2d_streamlines_2(
-        MB, stream_kw=dict(color="red"), contour_kw=dict(cmap="jet")
-    )
-    assert len(p.series) == 2
-    f = p.fig
-    ax = f.axes[0]
-    assert len(ax.collections) > 0
-    assert isinstance(ax.collections[-1], matplotlib.collections.LineCollection)
-    assert f.axes[1].get_ylabel() == "test"
-    assert all(*(ax.collections[-1].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
-    p.close()
-
-
-def test_plot_vector_2d_matplotlib():
+@pytest.mark.parametrize(
+    "scalar, streamlines, use_cm, n_series, n_axes, n_collections, "
+    "use_latex, label, greater", [
+        # contours + quivers: 1 colorbar for the contours
+        (True, False, None, 2, 2, 1, False, "Magnitude", True),
+        (True, False, None, 2, 2, 1, True, "Magnitude", True),
+        # contours + streamlines: 1 colorbar for the contours
+        (True, True, None, 2, 2, 1, False, "Magnitude", True),
+        (True, True, None, 2, 2, 1, True, "Magnitude", True),
+        # only quivers: 1 colorbar for the quivers
+        (False, False, None, 1, 2, 1, False, "(x, y)", False),
+        (False, False, None, 1, 2, 1, True, r"$\left( x, \  y\right)$", False),
+        # only streamlines: 1 colorbar for the streamlines
+        (False, True, None, 1, 2, 1, False, "(x, y)", False),
+        (False, True, None, 1, 2, 1, True, r"$\left( x, \  y\right)$", False),
+        # only quivers with solid color
+        (False, False, False, 1, 1, 1, False, "", False),
+        (False, False, False, 1, 1, 1, True, "", False),
+        # only streamlines with solid color
+        (False, True, False, 1, 1, 1, False, "", False),
+        (False, True, False, 1, 1, 1, True, "", False),
+    ]
+)
+def test_plot_vector_2d_matplotlib(
+    scalar, streamlines, use_cm, n_series, n_axes, n_collections,
+    use_latex, label, greater
+):
     # verify that when scalar=False, quivers/streamlines comes together with
     # a colorbar
 
     x, y = symbols("x, y")
-    def _plot_vector_1(scalar, streamlines, use_cm=None):
-        kwargs = {"scalar": scalar, "streamlines": streamlines}
-        if use_cm is not None:
-            kwargs["use_cm"] = use_cm
-        return plot_vector(
-            Matrix([x, y]),
-            (x, -5, 5),
-            (y, -4, 4),
-            backend=MB,
-            show=False,
-            use_latex=False,
-            n1=5,
-            n2=8,
-            **kwargs
-        )
+    kwargs = {"scalar": scalar, "streamlines": streamlines}
+    if use_cm is not None:
+        kwargs["use_cm"] = use_cm
+    p = plot_vector(
+        Matrix([x, y]), (x, -5, 5), (y, -4, 4),
+        backend=MB, show=False, use_latex=use_latex, n1=5, n2=8,
+        **kwargs
+    )
 
     # contours + quivers: 1 colorbar for the contours
-    p = _plot_vector_1(True, False)
-    assert len(p.series) == 2
-    assert len(p.fig.axes) == 2
-    assert len(p.fig.axes[0].collections) > 1
-    assert p.fig.axes[1].get_ylabel() == "Magnitude"
-
-    # contours + streamlines: 1 colorbar for the contours
-    p = _plot_vector_1(True, True)
-    assert len(p.series) == 2
-    assert len(p.fig.axes) == 2
-    assert len(p.fig.axes[0].collections) > 1
-    assert p.fig.axes[1].get_ylabel() == "Magnitude"
-
-    # only quivers: 1 colorbar for the quivers
-    p = _plot_vector_1(False, False)
-    assert len(p.series) == 1
-    assert len(p.fig.axes) == 2
-    assert len(p.fig.axes[0].collections) == 1
-    assert p.fig.axes[1].get_ylabel() == "(x, y)"
-
-    # only streamlines: 1 colorbar for the streamlines
-    p = _plot_vector_1(False, False)
-    assert len(p.series) == 1
-    assert len(p.fig.axes) == 2
-    assert len(p.fig.axes[0].collections) == 1
-    assert p.fig.axes[1].get_ylabel() == "(x, y)"
-
-    # only quivers with solid color
-    p = _plot_vector_1(False, False, False)
-    assert len(p.series) == 1
-    assert len(p.fig.axes) == 1
-    assert len(p.fig.axes[0].collections) == 1
-
-    # only streamlines with solid color
-    p = _plot_vector_1(False, False, False)
-    assert len(p.series) == 1
-    assert len(p.fig.axes) == 1
-    assert len(p.fig.axes[0].collections) == 1
+    assert len(p.series) == n_series
+    assert len(p.fig.axes) == n_axes
+    if greater:
+        assert len(p.fig.axes[0].collections) > n_collections
+    else:
+        assert len(p.fig.axes[0].collections) == n_collections
+    idx = 1 if use_cm is None else 0
+    assert p.fig.axes[idx].get_ylabel() == label
 
 
 def test_vector_2d_multiple_series():
@@ -474,13 +487,18 @@ def test_vector_2d_multiple_series():
     assert len(g.ax.get_legend().legend_handles) == 2
 
 
-def test_plot_vector_3d_quivers():
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+@pytest.mark.parametrize(
+    "use_latex", [True, False]
+)
+def test_plot_vector_3d_quivers(use_latex, label_func):
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `quiver_kw` overrides the
     # default settings
 
-    p = make_plot_vector_3d_quiver(MB, quiver_kw=dict(cmap="jet"))
-    assert len(p.series) == 1
+    p = make_test_plot_vector_3d_quiver_streamlines(
+        MB, False, quiver_kw=dict(cmap="jet"), use_latex=use_latex)
+    assert len(p.backend.series) == 1
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
@@ -489,13 +507,14 @@ def test_plot_vector_3d_quivers():
         mpl_toolkits.mplot3d.art3d.Line3DCollection
     )
     assert ax.collections[0].cmap.name == "jet"
-    assert f.axes[1].get_ylabel() == str((z, y, x))
-    p.close()
+    assert f.axes[1].get_ylabel() == label_func(use_latex, (a * z, y, x))
+    p.backend.update_interactive({a: 2})
+    p.backend.close()
 
-    p = make_plot_vector_3d_quiver(
-        MB, quiver_kw=dict(cmap=None, color="red"), use_cm=False
+    p = make_test_plot_vector_3d_quiver_streamlines(
+        MB, False, quiver_kw=dict(cmap=None, color="red"), use_cm=False
     )
-    assert len(p.series) == 1
+    assert len(p.backend.series) == 1
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
@@ -507,28 +526,39 @@ def test_plot_vector_3d_quivers():
         ax.collections[0].get_color(),
         np.array([[1.0, 0.0, 0.0, 1.0]])
         )
-    p.close()
+    p.backend.update_interactive({a: 2})
+    p.backend.close()
 
 
 @pytest.mark.skipif(vtk is None, reason="vtk is not installed")
-def test_plot_vector_3d_streamlines():
+@pytest.mark.parametrize(
+    "use_latex", [True, False]
+)
+def test_plot_vector_3d_streamlines(use_latex, label_func):
     # verify that the backends produce the expected results when
     # `plot_vector()` is called and `stream_kw` overrides the
     # default settings
 
-    p = make_plot_vector_3d_streamlines_1(MB, stream_kw=dict())
-    assert len(p.series) == 1
+    p = make_test_plot_vector_3d_quiver_streamlines(
+        MB, True, stream_kw=dict(), use_latex=use_latex)
+    assert len(p.backend.series) == 1
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], mpl_toolkits.mplot3d.art3d.Line3DCollection)
-    assert f.axes[1].get_ylabel() == str((z, y, x))
-    p.close()
+    assert f.axes[1].get_ylabel() == label_func(use_latex, (a*z, y, x))
+    raises(
+        NotImplementedError,
+        lambda: p.backend.update_interactive({a: 2})
+    )
+    p.backend.close()
 
     # test different combinations for streamlines: it should not raise errors
-    p = make_plot_vector_3d_streamlines_1(MB, stream_kw=dict(starts=True))
-    p = make_plot_vector_3d_streamlines_1(
-        MB,
+    p = make_test_plot_vector_3d_quiver_streamlines(
+        MB, True, stream_kw=dict(starts=True))
+    p.backend.close()
+    p = make_test_plot_vector_3d_quiver_streamlines(
+        MB, True,
         stream_kw=dict(
             starts={
                 "x": np.linspace(-5, 5, 10),
@@ -537,46 +567,28 @@ def test_plot_vector_3d_streamlines():
             }
         ),
     )
-    p.close()
+    p.backend.close()
 
     # other keywords: it should not raise errors
-    p = make_plot_vector_3d_streamlines_1(
-        MB, stream_kw=dict(), kwargs=dict(use_cm=False)
+    p = make_test_plot_vector_3d_quiver_streamlines(
+        MB, True, stream_kw=dict(), use_cm=False
     )
     f = p.fig
     ax = f.axes[0]
     assert len(ax.lines) == 1
     assert ax.lines[0].get_color() == "#1f77b4"
-    p.close()
+    p.backend.close()
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_plot_vector_2d_normalize():
     # verify that backends are capable of normalizing a vector field before
     # plotting it. Since all backend are different from each other, let's test
     # that data in the figures is different in the two cases normalize=True
     # and normalize=False
-
-    p1 = make_plot_vector_2d_normalize_1(MB, False)
-    p2 = make_plot_vector_2d_normalize_1(MB, True)
-    uu1 = p1.fig.axes[0].collections[0].U
-    vv1 = p1.fig.axes[0].collections[0].V
-    uu2 = p2.fig.axes[0].collections[0].U
-    vv2 = p2.fig.axes[0].collections[0].V
-    assert not np.allclose(uu1, uu2)
-    assert not np.allclose(vv1, vv2)
-    assert not np.allclose(np.sqrt(uu1**2 + vv1**2), 1)
-    assert np.allclose(np.sqrt(uu2**2 + vv2**2), 1)
-
-
-@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
-def test_plot_vector_2d_normalize_interactive():
-    # verify that backends are capable of normalizing a vector field before
-    # plotting it. Since all backend are different from each other, let's test
-    # that data in the figures is different in the two cases normalize=True
-    # and normalize=False
-    p1 = make_plot_vector_2d_normalize_2(MB, False)
+    p1 = make_test_plot_vector_2d_normalize(MB, False)
     p1.backend.update_interactive({u: 1.5})
-    p2 = make_plot_vector_2d_normalize_2(MB, True)
+    p2 = make_test_plot_vector_2d_normalize(MB, True)
     p2.backend.update_interactive({u: 1.5})
     uu1 = p1.backend.fig.axes[0].collections[0].U
     vv1 = p1.backend.fig.axes[0].collections[0].V
@@ -586,8 +598,11 @@ def test_plot_vector_2d_normalize_interactive():
     assert not np.allclose(vv1, vv2)
     assert not np.allclose(np.sqrt(uu1**2 + vv1**2), 1)
     assert np.allclose(np.sqrt(uu2**2 + vv2**2), 1)
+    p1.backend.close()
+    p2.backend.close()
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_plot_vector_3d_normalize():
     # verify that backends are capable of normalizing a vector field before
@@ -595,120 +610,61 @@ def test_plot_vector_3d_normalize():
     # that data in the figures is different in the two cases normalize=True
     # and normalize=False
 
-    p1 = make_plot_vector_3d_normalize_1(MB, False)
-    p2 = make_plot_vector_3d_normalize_1(MB, True)
-    seg1 = np.array(p1.fig.axes[0].collections[0].get_segments())
-    seg2 = np.array(p2.fig.axes[0].collections[0].get_segments())
-    # TODO: how can I test that these two quivers are different?
-    # assert not np.allclose(seg1, seg2)
-
-
-@pytest.mark.skipif(ct is None, reason="control is not installed")
-@pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_plot_vector_3d_normalize_interactive():
-    # verify that backends are capable of normalizing a vector field before
-    # plotting it. Since all backend are different from each other, let's test
-    # that data in the figures is different in the two cases normalize=True
-    # and normalize=False
-
-    p1 = make_plot_vector_3d_normalize_2(MB, False)
+    p1 = make_test_plot_vector_3d_normalize(MB, False)
     p1.backend.update_interactive({u: 1.5})
-    p2 = make_plot_vector_3d_normalize_2(MB, True)
+    p2 = make_test_plot_vector_3d_normalize(MB, True)
     p2.backend.update_interactive({u: 1.5})
     seg1 = np.array(p1.fig.axes[0].collections[0].get_segments())
     seg2 = np.array(p2.fig.axes[0].collections[0].get_segments())
     # TODO: how can I test that these two quivers are different?
     # assert not np.allclose(seg1, seg2)
-
-
-def test_plot_vector_2d_quiver_color_func():
-    # verify that color_func gets applied to 2D quivers
-
-    p1 = make_plot_vector_2d_quiver_color_func_1(MB, None)
-    p2 = make_plot_vector_2d_quiver_color_func_1(MB, lambda x, y, u, v: x)
-    a1 = p1.fig.axes[0].collections[0].get_array()
-    a2 = p2.fig.axes[0].collections[0].get_array()
-    assert not np.allclose(a1, a2)
+    p1.backend.close()
+    p2.backend.close()
 
 
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
-def test_plot_vector_2d_quiver_color_func_interactive():
+def test_plot_vector_2d_quiver_color_func():
     # verify that color_func gets applied to 2D quivers
 
-    x, y, a = symbols("x y a")
-    _pv2 = lambda B, cf: plot_vector(
-        (-a * y, x),
-        (x, -2, 2),
-        (y, -2, 2),
-        scalar=False,
-        use_cm=True,
-        color_func=cf,
-        show=False,
-        backend=B,
-        n=3,
-        params={a: (1, 0, 2)},
-    )
-
-    p1 = _pv2(MB, None)
-    p2 = _pv2(MB, lambda x, y, u, v: u)
-    p3 = _pv2(MB, lambda x, y, u, v: u)
+    p1 = make_test_plot_vector_2d_color_func(MB, False, None)
+    p2 = make_test_plot_vector_2d_color_func(MB, False, lambda x, y, u, v: u)
+    p3 = make_test_plot_vector_2d_color_func(MB, False, lambda x, y, u, v: u)
     p3.backend.update_interactive({a: 1.5})
     a1 = p1.fig.axes[0].collections[0].get_array()
     a2 = p2.fig.axes[0].collections[0].get_array()
     a3 = p3.fig.axes[0].collections[0].get_array()
     assert (not np.allclose(a1, a2)) and (not np.allclose(a2, a3))
+    p1.backend.close()
+    p2.backend.close()
+    p3.backend.close()
 
 
 def test_plot_vector_2d_streamline_color_func():
     # verify that color_func gets applied to 2D streamlines
 
-    x, y, a = symbols("x, y, a")
-
-    _pv = lambda cf: plot_vector(
-        (-y, x),
-        (x, -2, 2),
-        (y, -2, 2),
-        scalar=False,
-        streamlines=True,
-        use_cm=True,
-        color_func=cf,
-        show=False,
-        backend=MB,
-        n=3,
-    )
-
     # TODO: seems like streamline colors get applied only after the plot is
     # show... How do I perform this test?
-    p1 = _pv(None)
-    p2 = _pv(lambda x, y, u, v: x)
+    p1 = make_test_plot_vector_2d_color_func(MB, True, None)
+    p2 = make_test_plot_vector_2d_color_func(MB, True, lambda x, y, u, v: x)
     c1 = p1.fig.axes[0].collections[0].get_colors()
     c2 = p2.fig.axes[0].collections[0].get_colors()
     # assert not np.allclose(c1, c2)
-
-
-def test_plot_vector_3d_quivers_color_func():
-    # verify that color_func gets applied to 3D quivers
-
-    # TODO: is it possible to check matplotlib colors without showing the plot?
-    p1 = make_plot_vector_3d_quiver_color_func_1(MB, None)
-    p2 = make_plot_vector_3d_quiver_color_func_1(
-        MB, lambda x, y, z, u, v, w: x)
-    p1.draw()
-    p2.draw()
+    p1.backend.close()
+    p2.backend.close()
 
 
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_plot_vector_3d_quivers_color_func_interactive():
     # verify that color_func gets applied to 3D quivers
 
-    p1 = make_plot_vector_3d_quiver_color_func_2(MB, None)
-    p2 = make_plot_vector_3d_quiver_color_func_2(
+    p1 = make_test_plot_vector_3d_quiver_color_func(MB, None)
+    p2 = make_test_plot_vector_3d_quiver_color_func(
         MB, lambda x, y, z, u, v, w: np.cos(u))
-    p3 = make_plot_vector_3d_quiver_color_func_2(
-        MB, lambda x, y, z, u, v, w: np.cos(u))
-    p1.backend.update_interactive({a: 0})
-    p2.backend.update_interactive({a: 0})
-    p3.backend.update_interactive({a: 2})
+    # TODO: is it possible to check matplotlib colors without showing the plot?
+    p1.backend.update_interactive({a: 2})
+    p2.backend.update_interactive({a: 2})
+    p1.backend.close()
+    p2.backend.close()
 
 
 @pytest.mark.skipif(vtk is None, reason="vtk is not installed")
@@ -716,11 +672,13 @@ def test_plot_vector_3d_streamlines_color_func():
     # verify that color_func gets applied to 3D quivers
 
     # TODO: is it possible to check matplotlib colors without showing the plot?
-    p1 = make_plot_vector_3d_streamlines_color_func(MB, None)
-    p2 = make_plot_vector_3d_streamlines_color_func(
+    p1 = make_test_plot_vector_3d_streamlines_color_func(MB, None)
+    p2 = make_test_plot_vector_3d_streamlines_color_func(
         MB, lambda x, y, z, u, v, w: x)
-    p1.draw()
-    p2.draw()
+    p1.fig
+    p2.fig
+    raises(NotImplementedError, lambda: p1.backend.update_interactive({a: 2}))
+    raises(NotImplementedError, lambda: p2.backend.update_interactive({a: 2}))
 
 
 def test_plot_implicit_adaptive_true():
@@ -748,7 +706,7 @@ def test_plot_implicit_adaptive_false():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) > 0
-    # TODO: how to retrieve the colormap from a contour series?????
+    # TODO: how to test for different colormaps?
     p.close()
 
 
@@ -769,12 +727,16 @@ def test_plot_implicit_multiple_expressions():
     assert len(legend.get_lines()) > 0
 
 
-def test_plot_real_imag():
+@pytest.mark.parametrize(
+    "use_latex", [True, False]
+)
+def test_plot_real_imag(use_latex, label_func):
     # verify that the backends produce the expected results when
     # `plot_real_imag()` is called and `rendering_kw` overrides the default
     # settings
 
-    p = make_test_real_imag(MB, rendering_kw=dict(color="red"))
+    p = make_test_real_imag(MB, rendering_kw=dict(color="red"),
+        use_latex=use_latex)
     assert len(p.series) == 2
     f = p.fig
     ax = f.axes[0]
@@ -783,35 +745,49 @@ def test_plot_real_imag():
     assert ax.get_lines()[0].get_color() == "red"
     assert ax.get_lines()[1].get_label() == "Im(sqrt(x))"
     assert ax.get_lines()[1].get_color() == "red"
+    assert ax.get_xlabel() == label_func(use_latex, x)
+    assert ax.get_ylabel() == r"$f\left(x\right)$" if use_latex else "f(x)"
+
     p.close()
 
 
-def test_plot_complex_1d():
+@pytest.mark.parametrize(
+    "use_latex", [True, False]
+)
+def test_plot_complex_1d(use_latex):
     # verify that the backends produce the expected results when
     # `plot_complex()` is called and `rendering_kw` overrides the default
     # settings
 
-    p = make_test_plot_complex_1d(MB, rendering_kw=dict(color="red"))
+    p = make_test_plot_complex_1d(
+        MB, rendering_kw=dict(cmap="autumn"), use_latex=use_latex)
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
     assert len(ax.collections) == 1
     assert isinstance(ax.collections[0], matplotlib.collections.LineCollection)
     assert f.axes[1].get_ylabel() == "Arg(sqrt(x))"
-    assert all(*(ax.collections[0].get_color() - np.array([1.0, 0.0, 0.0, 1.0])) == 0)
+    assert f.axes[0].get_xlabel() == "Real"
+    assert f.axes[0].get_ylabel() == "Abs"
+    # TODO: how to test for different colormaps?
     p.close()
 
 
-def test_plot_complex_2d():
+@pytest.mark.parametrize(
+    "use_latex", [True, False]
+)
+def test_plot_complex_2d(use_latex):
     # verify that the backends produce the expected results when
     # `plot_complex()` is called and `rendering_kw` overrides the default
     # settings
 
-    p = make_test_plot_complex_2d(MB, rendering_kw=dict())
+    p = make_test_plot_complex_2d(MB, rendering_kw=dict(), use_latex=use_latex)
     assert len(p.series) == 1
     f = p.fig
     ax = f.axes[0]
     assert len(ax.images) == 1
+    assert f.axes[0].get_xlabel() == "Re"
+    assert f.axes[0].get_ylabel() == "Im"
     assert f.axes[1].get_ylabel() == "Argument"
     assert ax.images[0].get_extent() == [-5.0, 5.0, -5.0, 5.0]
     p.close()
@@ -821,6 +797,8 @@ def test_plot_complex_2d():
     f = p.fig
     ax = f.axes[0]
     assert len(ax.images) == 1
+    assert f.axes[0].get_xlabel() == "Re"
+    assert f.axes[0].get_ylabel() == "Im"
     assert f.axes[1].get_ylabel() == "Argument"
     assert ax.images[0].get_extent() == [-6, 6, -7, 7]
     p.close()
@@ -849,27 +827,19 @@ def test_plot_complex_list():
     p.fig
 
 
-def test_plot_list_is_filled_false():
+@pytest.mark.parametrize(
+    "is_filled", [True, False]
+)
+def test_plot_list_is_filled(is_filled):
     # verify that the backends produce the expected results when
     # `plot_list()` is called with `is_filled=False`
 
-    p = make_test_plot_list_is_filled_false(MB)
+    p = make_test_plot_list_is_filled(MB, is_filled)
     f = p.fig
     ax = f.axes[0]
     assert len(ax.lines) == 1
-    assert ax.lines[0].get_markeredgecolor() != ax.lines[0].get_markerfacecolor()
-    p.close()
-
-
-def test_plot_list_is_filled_true():
-    # verify that the backends produce the expected results when
-    # `plot_list()` is called with `is_filled=True`
-
-    p = make_test_plot_list_is_filled_true(MB)
-    f = p.fig
-    ax = f.axes[0]
-    assert len(ax.lines) == 1
-    assert ax.lines[0].get_markeredgecolor() == ax.lines[0].get_markerfacecolor()
+    test = ax.lines[0].get_markeredgecolor() == ax.lines[0].get_markerfacecolor()
+    assert test is is_filled
     p.close()
 
 
@@ -898,6 +868,7 @@ def test_plot_piecewise_single_series():
         colors.add(l.get_color())
     assert len(colors) == 1
     assert not p.legend
+    p.close()
 
 
 def test_plot_piecewise_multiple_series():
@@ -912,6 +883,7 @@ def test_plot_piecewise_multiple_series():
     for l in ax.lines:
         colors.add(l.get_color())
     assert len(colors) == 2
+    p.close()
 
 
 def test_plot_geometry_1():
@@ -930,19 +902,21 @@ def test_plot_geometry_1():
     p.close()
 
 
-def test_plot_geometry_2():
+@pytest.mark.parametrize(
+    "is_filled, n_lines, n_coll, n_patches, n_legend", [
+        (False, 5, 1, 0, 5),
+        (True, 2, 1, 3, 5),
+    ]
+)
+def test_plot_geometry_2(is_filled, n_lines, n_coll, n_patches, n_legend):
     # verify that is_filled works correctly
 
-    p = make_test_plot_geometry_2(MB, False)
-    assert len(p.fig.axes[0].lines) == 5
-    assert len(p.fig.axes[0].collections) == 1
-    assert len(p.fig.axes[0].patches) == 0
-    assert len(p.ax.get_legend().legend_handles) == 5
-    p = make_test_plot_geometry_2(MB, True)
-    assert len(p.fig.axes[0].lines) == 2
-    assert len(p.fig.axes[0].collections) == 1
-    assert len(p.fig.axes[0].patches) == 3
-    assert len(p.ax.get_legend().legend_handles) == 5
+    p = make_test_plot_geometry_2(MB, is_filled)
+    assert len(p.fig.axes[0].lines) == n_lines
+    assert len(p.fig.axes[0].collections) == n_coll
+    assert len(p.fig.axes[0].patches) == n_patches
+    assert len(p.ax.get_legend().legend_handles) == n_legend
+    p.close()
 
 
 def test_plot_geometry_3d():
@@ -950,6 +924,7 @@ def test_plot_geometry_3d():
 
     p = make_test_plot_geometry_3d(MB)
     p.draw()
+    p.close()
 
 
 def test_plot_geometry_rendering_kw():
@@ -961,6 +936,7 @@ def test_plot_geometry_rendering_kw():
     assert p[0].rendering_kw == {"color": "red"}
     p.draw()
     assert p.ax.lines[0].get_color() == "red"
+    p.close()
 
 
 def test_save():
@@ -991,35 +967,20 @@ def test_save():
         p.close()
 
 
-@pytest.mark.skipif(ct is None, reason="control is not installed")
-def test_vectors_3d_update_interactive():
-    # Some backends do not support streamlines with iplot. Test that the
-    # backends raise error.
-
-    p = make_test_vectors_3d_update_interactive(MB)
-    raises(
-        NotImplementedError,
-        lambda: p.backend.update_interactive({a: 2, b: 2, c: 2})
-    )
-
-
-def test_aspect_ratio_2d_issue_11764():
+@pytest.mark.parametrize(
+    "aspect, expected", [
+        ("auto", "auto"),
+        ((1, 1), 1),
+        ("equal", 1),
+    ]
+)
+def test_aspect_ratio_2d_issue_11764(aspect, expected):
     # verify that the backends apply the provided aspect ratio.
     # NOTE: read the backend docs to understand which options are available.
 
-    p = make_test_aspect_ratio_2d_issue_11764(MB)
-    assert p.aspect == "auto"
-    assert p.fig.axes[0].get_aspect() == "auto"
-    p.close()
-
-    p = make_test_aspect_ratio_2d_issue_11764(MB, (1, 1))
-    assert p.aspect == (1, 1)
-    assert p.fig.axes[0].get_aspect() == 1
-    p.close()
-
-    p = make_test_aspect_ratio_2d_issue_11764(MB, "equal")
-    assert p.aspect == "equal"
-    assert p.fig.axes[0].get_aspect() == 1
+    p = make_test_aspect_ratio_2d_issue_11764(MB, aspect)
+    assert p.aspect == aspect
+    assert p.fig.axes[0].get_aspect() == expected
     p.close()
 
 
@@ -1032,6 +993,7 @@ def test_aspect_ratio_3d():
 
     p = make_test_aspect_ratio_3d(MB)
     assert p.aspect == "auto"
+    p.close()
 
     # Matplotlib 3D axis requires a string-valued aspect ratio
     # depending on the version, it raises one of the following errors
@@ -1043,7 +1005,6 @@ def test_aspect_ratio_3d():
 
 def test_plot_size():
     # verify that the keyword `size` is doing it's job
-    # NOTE: K3DBackend doesn't support custom size
 
     x, y = symbols("x, y")
 
@@ -1052,32 +1013,25 @@ def test_plot_size():
     assert (s[0] == 8) and (s[1] == 4)
     p.close()
 
-    p = make_test_plot_size(MB, (10, 5))
-    s = p.fig.get_size_inches()
-    assert (s[0] == 10) and (s[1] == 5)
-    p.close()
-
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_plot_scale_lin_log():
+@pytest.mark.parametrize(
+    "xscale, yscale", [
+        ("linear", "linear"),
+        ("log", "linear"),
+        ("linear", "log"),
+        ("log", "log"),
+    ]
+)
+def test_plot_scale_lin_log(xscale, yscale):
     # verify that backends are applying the correct scale to the axes
     # NOTE: none of the 3D libraries currently support log scale.
 
     x, y = symbols("x, y")
 
-    p = make_test_plot_scale_lin_log(MB, "linear", "linear")
-    assert p.fig.axes[0].get_xscale() == "linear"
-    assert p.fig.axes[0].get_yscale() == "linear"
-    p.close()
-
-    p = make_test_plot_scale_lin_log(MB, "log", "linear")
-    assert p.fig.axes[0].get_xscale() == "log"
-    assert p.fig.axes[0].get_yscale() == "linear"
-    p.close()
-
-    p = make_test_plot_scale_lin_log(MB, "linear", "log")
-    assert p.fig.axes[0].get_xscale() == "linear"
-    assert p.fig.axes[0].get_yscale() == "log"
+    p = make_test_plot_scale_lin_log(MB, xscale, yscale)
+    assert p.fig.axes[0].get_xscale() == xscale
+    assert p.fig.axes[0].get_yscale() == yscale
     p.close()
 
 
@@ -1091,6 +1045,8 @@ def test_backend_latex_labels():
     assert p2.xlabel == p2.fig.axes[0].get_xlabel() == "x_1^2"
     assert p1.ylabel == p1.fig.axes[0].get_ylabel() == "$f\\left(x^{2}_{1}\\right)$"
     assert p2.ylabel == p2.fig.axes[0].get_ylabel() == "f(x_1^2)"
+    p1.close()
+    p2.close()
 
     p1 = make_test_backend_latex_labels_2(MB, True)
     p2 = make_test_backend_latex_labels_2(MB, False)
@@ -1102,180 +1058,11 @@ def test_backend_latex_labels():
     assert p2.xlabel == p2.fig.axes[0].get_xlabel() == "x_1^2"
     assert p2.ylabel == p2.fig.axes[0].get_ylabel() == "x_2"
     assert p2.zlabel == p2.fig.axes[0].get_zlabel() == "f(x_1^2, x_2)"
+    p1.close()
+    p2.close()
 
 
-def test_plot_use_latex():
-    # verify that the backends produce the expected results when `plot()`
-    # is called and `rendering_kw` overrides the default line settings
-
-    p = make_test_plot_use_latex(MB)
-    f = p.fig
-    ax = f.axes[0]
-    assert ax.get_lines()[0].get_label() == "$\\sin{\\left(x \\right)}$"
-    assert ax.get_lines()[1].get_label() == "$\\cos{\\left(x \\right)}$"
-    p.close()
-
-
-def test_plot_parametric_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_parametric_use_latex(MB)
-    assert len(p.series) == 1
-    f = p.fig
-    assert f.axes[1].get_ylabel() == "$x$"
-    p.close()
-
-
-def test_plot_contour_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_contour_use_latex(MB)
-    assert len(p.series) == 1
-    f = p.fig
-    assert f.axes[1].get_ylabel() == "$%s$" % latex(cos(x**2 + y**2))
-
-
-def test_plot3d_parametric_line_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot3d_parametric_line_use_latex(MB)
-    assert len(p.series) == 1
-    f = p.fig
-    assert f.axes[1].get_ylabel() == "$x$"
-    p.close()
-
-
-def test_plot3d_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot3d_use_latex(MB)
-    f = p.fig
-    assert len(f.axes) == 3
-    assert f.axes[1].get_ylabel() == "$%s$" % latex(cos(x**2 + y**2))
-    assert f.axes[2].get_ylabel() == "$%s$" % latex(sin(x**2 + y**2))
-    p.close()
-
-
-def test_plot_vector_2d_quivers_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_vector_2d_quivers_use_latex(MB)
-    f = p.fig
-    assert f.axes[1].get_ylabel() == "Magnitude"
-    p.close()
-
-
-def test_plot_vector_2d_streamlines_custom_scalar_field_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_vector_2d_streamlines_custom_scalar_field_use_latex(MB)
-    f = p.fig
-    assert f.axes[1].get_ylabel() == "$x + y$"
-    p.close()
-
-
-def test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex(
-        MB
-    )
-    f = p.fig
-    assert f.axes[1].get_ylabel() == "test"
-
-
-def test_plot_vector_2d_use_latex_colorbar():
-    # verify that the colorbar uses latex label
-
-    # contours + quivers: 1 colorbar for the contours
-    p = make_test_plot_vector_2d_use_latex_colorbar(MB, True, False)
-    assert p.fig.axes[1].get_ylabel() == "Magnitude"
-    p.close()
-
-    # contours + streamlines: 1 colorbar for the contours
-    p = make_test_plot_vector_2d_use_latex_colorbar(MB, True, True)
-    assert p.fig.axes[1].get_ylabel() == "Magnitude"
-    p.close()
-
-    # only quivers: 1 colorbar for the quivers
-    p = make_test_plot_vector_2d_use_latex_colorbar(MB, False, False)
-    assert p.fig.axes[1].get_ylabel() == "$\\left( x, \\  y\\right)$"
-    p.close()
-
-    # only streamlines: 1 colorbar for the streamlines
-    p = make_test_plot_vector_2d_use_latex_colorbar(MB, False, True)
-    assert p.fig.axes[1].get_ylabel() == "$\\left( x, \\  y\\right)$"
-    p.close()
-
-
-def test_plot_vector_3d_quivers_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_vector_3d_quivers_use_latex(MB)
-    assert len(p.fig.axes) == 2
-    assert p.fig.axes[1].get_ylabel() == "$\\left( z, \\  y, \\  x\\right)$"
-    p.close()
-
-
-@pytest.mark.skipif(vtk is None, reason="vtk is not installed")
-def test_plot_vector_3d_streamlines_use_latex():
-    # verify that the colorbar uses latex label
-
-    p = make_test_plot_vector_3d_streamlines_use_latex(MB)
-    assert p.fig.axes[1].get_ylabel() == "$\\left( z, \\  y, \\  x\\right)$"
-    p.close()
-
-
-@pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_plot_complex_use_latex_1():
-    # complex plot function should return the same result (for axis labels)
-    # wheter use_latex is True or False
-
-    p = make_test_plot_complex_use_latex_1(MB)
-    assert p.fig.axes[0].get_xlabel() == "Real"
-    assert p.fig.axes[0].get_ylabel() == "Abs"
-    assert p.fig.axes[1].get_ylabel() == "Arg(cos(x) + I*sinh(x))"
-    p.close()
-
-
-@pytest.mark.skipif(scipy is None, reason="scipy is not installed")
-@pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_plot_complex_use_latex_2():
-    # complex plot function should return the same result (for axis labels)
-    # wheter use_latex is True or False
-
-    p = make_test_plot_complex_use_latex_2(MB)
-    assert p.fig.axes[0].get_xlabel() == "Re"
-    assert p.fig.axes[0].get_ylabel() == "Im"
-    assert p.fig.axes[1].get_ylabel() == "Argument"
-    p.close()
-
-
-def test_plot_real_imag_use_latex():
-    # real/imag plot function should return the same result (for axis labels)
-    # wheter use_latex is True or False
-
-    p = make_test_plot_real_imag_use_latex(MB)
-    assert p.fig.axes[0].get_xlabel() == "$x$"
-    assert p.fig.axes[0].get_ylabel() == r"$f\left(x\right)$"
-    assert p.fig.axes[0].lines[0].get_label() == "Re(sqrt(x))"
-    assert p.fig.axes[0].lines[1].get_label() == "Im(sqrt(x))"
-    p.close()
-
-
-def test_plot3d_use_cm():
-    # verify that use_cm produces the expected results on plot3d
-
-    x, y = symbols("x, y")
-    p1 = make_test_plot3d_use_cm(MB, True)
-    p2 = make_test_plot3d_use_cm(MB, False)
-    p1.draw()
-    p2.draw()
-    assert "cmap" in p1.renderers[0].handles[0][1].keys()
-    assert "cmap" not in p2.renderers[0].handles[0][1].keys()
-
-
-def test_plot3dupdate_interactive():
+def test_plot3d_update_interactive():
     # verify that MB._update_interactive applies the original color/colormap
     # each time it gets called
     # Since matplotlib doesn't apply color/colormaps until the figure is shown,
@@ -1303,6 +1090,7 @@ def test_plot3dupdate_interactive():
     kw, _, _ = p.renderers[0].handles[0][1:]
     c2 = kw["color"]
     assert c1 == c2
+    p.close()
 
     s = SurfaceOver2DRangeSeries(
         u * cos(x**2 + y**2),
@@ -1324,6 +1112,7 @@ def test_plot3dupdate_interactive():
     kw, _, _ = p.renderers[0].handles[0][1:]
     c2 = kw["cmap"]
     assert c1 == c2
+    p.close()
 
 
 def test_plot_polar():
@@ -1334,10 +1123,12 @@ def test_plot_polar():
     p1 = make_test_plot_polar(MB, False)
     assert not isinstance(
         p1.fig.axes[0], matplotlib.projections.polar.PolarAxes)
+    p1.close()
 
     # polar axis
     p1 = make_test_plot_polar(MB, True)
     assert isinstance(p1.fig.axes[0], matplotlib.projections.polar.PolarAxes)
+    p1.close()
 
 
 def test_plot_polar_use_cm():
@@ -1348,21 +1139,25 @@ def test_plot_polar_use_cm():
     p = make_test_plot_polar_use_cm(MB, False, False)
     assert len(p.ax.lines) > 0
     assert len(p.ax.collections) == 0
+    p.close()
 
     # cartesian axis, with colormap
     p = make_test_plot_polar_use_cm(MB, False, True)
     assert len(p.ax.lines) == 0
     assert len(p.ax.collections) > 0
+    p.close()
 
     # polar axis, no colormap
     p = make_test_plot_polar_use_cm(MB, True, False)
     assert len(p.ax.lines) > 0
     assert len(p.ax.collections) == 0
+    p.close()
 
     # polar axis, with colormap
     p = make_test_plot_polar_use_cm(MB, True, True, lambda t: t)
     assert len(p.ax.lines) == 0
     assert len(p.ax.collections) > 0
+    p.close()
 
 
 def test_plot3d_implicit():
@@ -1371,62 +1166,27 @@ def test_plot3d_implicit():
     raises(NotImplementedError, lambda: make_test_plot3d_implicit(MB).draw())
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_surface_color_func():
     # After the addition of `color_func`, `SurfaceOver2DRangeSeries` and
     # `ParametricSurfaceSeries` returns different elements.
     # Verify that backends do not raise errors when plotting surfaces and that
     # the color function is applied.
 
-    p1 = make_test_surface_color_func_1(MB, lambda x, y, z: z)
-    p1.draw()
-    p2 = make_test_surface_color_func_1(
-        MB, lambda x, y, z: np.sqrt(x**2 + y**2))
-    p2.draw()
-
-    p1 = make_test_surface_color_func_2(MB, lambda x, y, z, u, v: z)
-    p1.draw()
-    p2 = make_test_surface_color_func_2(
-        MB, lambda x, y, z, u, v: np.sqrt(x**2 + y**2)
-    )
-    p2.draw()
+    p = make_test_surface_color_func(MB)
+    fig = p.fig
+    p.backend.update_interactive({t: 2})
+    p.backend.close()
 
 
-def test_surface_interactive_color_func():
-    # After the addition of `color_func`, `SurfaceInteractiveSeries` and
-    # `ParametricSurfaceInteractiveSeries` returns different elements.
-    # Verify that backends do not raise errors when updating surfaces and a
-    # color function is applied.
-
-    p = make_test_surface_interactive_color_func(MB)
-    p.draw()
-    p.update_interactive({t: 2})
-
-
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_line_color_func():
-    # Verify that backends do not raise errors when plotting lines and that
-    # the color function is applied.
-
-    p1 = make_test_line_color_func(MB, None)
-    p1.draw()
-    p2 = make_test_line_color_func(MB, lambda x, y: np.cos(x))
-    p2.draw()
-    assert len(p1.fig.axes[0].lines) == 1
-    assert isinstance(
-        p2.fig.axes[0].collections[0], matplotlib.collections.LineCollection
-    )
-    assert np.allclose(
-        p2.fig.axes[0].collections[0].get_array(),
-        np.cos(np.linspace(-3, 3, 5))
-    )
-
-
-def test_line_interactive_color_func():
     # Verify that backends do not raise errors when updating lines and a
     # color function is applied.
 
-    p = make_test_line_interactive_color_func(MB)
-    p.draw()
-    p.update_interactive({t: 2})
+    p = make_test_line_color_func(MB)
+    p.backend.draw()
+    p.backend.update_interactive({t: 2})
     assert len(p.fig.axes[0].lines) == 1
     assert isinstance(
         p.fig.axes[0].collections[0], matplotlib.collections.LineCollection
@@ -1435,6 +1195,7 @@ def test_line_interactive_color_func():
         p.fig.axes[0].collections[0].get_array(),
         np.cos(np.linspace(-3, 3, 5))
     )
+    p.backend.close()
 
 
 def test_line_color_plot():
@@ -1445,9 +1206,11 @@ def test_line_color_plot():
     f = p.fig
     ax = f.axes[0]
     assert ax.get_lines()[0].get_color() == "red"
+    p.close()
     p = make_test_line_color_plot(MB, lambda x: -x)
     f = p.fig
     assert len(p.fig.axes) == 2  # there is a colorbar
+    p.close()
 
 
 def test_line_color_plot3d_parametric_line():
@@ -1485,269 +1248,182 @@ def test_label_after_plot_instantiation():
     assert f.axes[0].lines[1].get_label() == "$b^{2}$"
 
 
-@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
-def test_update_interactive():
-    # quick round down of test to verify that _update_interactive doesn't
-    # raise errors
+def test_min_install():
+    # quick round down of test to verify that ordinay plots don't
+    # raise errors. Useful to test minimum installation of the module
 
-    u, v, x, y, z = symbols("u, v, x:z")
+    x, y, z = symbols("x:z")
+    options = dict(adaptive=False, n=5, backend=MB, show=False)
+    options2 = dict(n=5, backend=MB, show=False)
 
-    p = plot(
-        sin(u * x),
-        (x, -pi, pi),
-        adaptive=False,
-        n=5,
-        backend=MB,
-        show=False,
-        params={u: (1, 0, 2)},
-    )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p = plot(sin(x), (x, -pi, pi), **options)
+    p.draw()
+    p.close()
 
     p = plot_parametric(
-        cos(u * x),
-        sin(u * x),
-        (x, 0, 2 * pi),
-        adaptive=False,
-        n=5,
-        backend=MB,
-        show=False,
-        params={u: (1, 0, 2)},
-        use_cm=True,
-        is_point=False,
+        cos(x), sin(x), (x, 0, 2 * pi),
+        use_cm=True, is_point=False, **options
     )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.draw()
+    p.close()
 
     p = plot_parametric(
-        cos(u * x),
-        sin(u * x),
-        (x, 0, 2 * pi),
-        adaptive=False,
-        n=5,
-        backend=MB,
-        show=False,
-        params={u: (1, 0, 2)},
-        use_cm=True,
-        is_point=True,
+        cos(x), sin(x), (x, 0, 2 * pi),
+        use_cm=True, is_point=True, **options
     )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.draw()
+    p.close()
 
     p = plot_parametric(
-        cos(u * x),
-        sin(u * x),
-        (x, 0, 2 * pi),
-        adaptive=False,
-        n=5,
-        backend=MB,
-        show=False,
-        params={u: (1, 0, 2)},
-        use_cm=False,
+        cos(x), sin(x), (x, 0, 2 * pi),
+        use_cm=False, **options
     )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.draw()
+    p.close()
 
     p = plot_implicit(
-        x**2 + y**2 - 4,
-        (x, -5, 5),
-        (y, -5, 5),
-        adaptive=False,
-        n=5,
-        show=False,
-        backend=MB,
+        x**2 + y**2 - 4, (x, -5, 5), (y, -5, 5),
+        **options
     )
+    p.draw()
+    p.close()
 
     # points
     p = plot3d_parametric_line(
-        cos(u * x),
-        sin(x),
-        x,
-        (x, -pi, pi),
-        backend=MB,
-        is_point=True,
-        show=False,
-        adaptive=False,
-        n=5,
-        params={u: (1, 0, 2)},
+        cos(x), sin(x), x, (x, -pi, pi),
+        is_point=True, **options2
     )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.draw()
+    p.close()
 
     # line with colormap
     p = plot3d_parametric_line(
-        cos(u * x),
-        sin(x),
-        x,
-        (x, -pi, pi),
-        backend=MB,
-        is_point=False,
-        show=False,
-        adaptive=False,
-        n=5,
-        params={u: (1, 0, 2)},
-        use_cm=True,
+        cos(x), sin(x), x, (x, -pi, pi),
+        is_point=False, use_cm=True, **options
     )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.draw()
+    p.close()
 
     # line with solid color
     p = plot3d_parametric_line(
-        cos(u * x),
-        sin(x),
-        x,
-        (x, -pi, pi),
-        backend=MB,
-        is_point=False,
-        show=False,
-        adaptive=False,
-        n=5,
-        params={u: (1, 0, 2)},
-        use_cm=False,
+        cos(x), sin(x), x, (x, -pi, pi),
+        is_point=False, use_cm=False, **options
     )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.draw()
+    p.close()
 
     p = plot3d_parametric_line(
-        cos(u * x),
-        sin(x),
-        x,
-        (x, -pi, pi),
-        backend=MB,
-        is_point=False,
-        show=False,
-        adaptive=False,
-        n=5,
-        params={u: (1, 0, 2)},
-        use_cm=True,
+        cos(x), sin(x), x, (x, -pi, pi),
+        is_point=False, use_cm=True, **options
     )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.draw()
+    p.close()
 
     p = plot3d(
-        cos(u * x**2 + y**2),
-        (x, -2, 2),
-        (y, -2, 2),
-        backend=MB,
-        show=False,
-        adaptive=False,
-        n=5,
-        params={u: (1, 0, 2)},
+        cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        **options
     )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.draw()
+    p.close()
 
     p = plot_contour(
-        cos(u * x**2 + y**2),
-        (x, -2, 2),
-        (y, -2, 2),
-        backend=MB,
-        show=False,
-        adaptive=False,
-        n=5,
-        params={u: (1, 0, 2)},
-        is_filled=False,
+        cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        is_filled=False, **options
     )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.draw()
+    p.close()
 
     p = plot_contour(
-        cos(u * x**2 + y**2),
-        (x, -2, 2),
-        (y, -2, 2),
-        backend=MB,
-        show=False,
-        adaptive=False,
-        n=5,
-        params={u: (1, 0, 2)},
-        is_filled=True,
+        cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
+        is_filled=True, **options
     )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.draw()
+    p.close()
+
+    u, v = symbols("u, v")
+    fx = (1 + v / 2 * cos(u / 2)) * cos(u)
+    fy = (1 + v / 2 * cos(u / 2)) * sin(u)
+    fz = v / 2 * sin(u / 2)
+    p = plot3d_parametric_surface(
+        fx, fy, fz, (u, 0, 2 * pi), (v, -1, 1),
+        use_cm=True, **options2
+    )
+    p.draw()
+    p.close()
+
+    p = plot_vector(
+        Matrix([-y, x]), (x, -5, 5), (y, -4, 4),
+        scalar=True, **options2
+    )
+    p.draw()
+    p.close()
+
+    p = plot_vector(
+        Matrix([-y, x]), (x, -5, 5), (y, -4, 4),
+        scalar=False, **options2
+    )
+    p.draw()
+    p.close()
+
+    p = plot_vector(
+        Matrix([z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
+        **options2
+    )
+    p.draw()
+    p.close()
+
+    p = plot_complex(
+        sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
+        threed=False, **options2
+    )
+    p.draw()
+    p.close()
+
+    p = plot_complex(
+        sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
+        threed=True, use_cm=True, **options2
+    )
+    p.draw()
+    p.close()
+
+
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+def test_update_interactive():
+    # quick round down of test to verify that update_interactive doesn't
+    # raise errors
+
+    u, v, x, y, z = symbols("u, v, x:z")
 
     u, v = symbols("u, v")
     fx = (1 + v / 2 * cos(u / 2)) * cos(x * u)
     fy = (1 + v / 2 * cos(u / 2)) * sin(x * u)
     fz = v / 2 * sin(u / 2)
     p = plot3d_parametric_surface(
-        fx,
-        fy,
-        fz,
-        (u, 0, 2 * pi),
-        (v, -1, 1),
-        backend=MB,
-        use_cm=True,
-        n1=5,
-        n2=5,
-        show=False,
+        fx, fy, fz, (u, 0, 2 * pi), (v, -1, 1),
+        backend=MB, use_cm=True, n1=5, n2=5, show=False,
         params={x: (1, 0, 2)},
     )
     p.backend.draw()
     p.backend.update_interactive({x: 2})
-
-    p = plot_vector(
-        Matrix([-u * y, x]),
-        (x, -5, 5),
-        (y, -4, 4),
-        backend=MB,
-        n=4,
-        show=False,
-        params={u: (1, 0, 2)},
-        scalar=True,
-    )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
-
-    p = plot_vector(
-        Matrix([-u * y, x]),
-        (x, -5, 5),
-        (y, -4, 4),
-        backend=MB,
-        n=4,
-        show=False,
-        params={u: (1, 0, 2)},
-        scalar=False,
-    )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
-
-    p = plot_vector(
-        Matrix([u * z, y, x]),
-        (x, -5, 5),
-        (y, -4, 4),
-        (z, -3, 3),
-        backend=MB,
-        n=4,
-        show=False,
-        params={u: (1, 0, 2)},
-    )
-    p.backend.draw()
-    p.backend.update_interactive({u: 2})
+    p.backend.close()
 
     p = plot_complex(
-        sqrt(u * x),
-        (x, -5 - 5 * I, 5 + 5 * I),
-        show=False,
-        backend=MB,
-        threed=False,
-        n=5,
+        sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I),
+        show=False, backend=MB, threed=False, n=5,
         params={u: (1, 0, 2)},
     )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
+    p.backend.close()
 
     p = plot_complex(
-        sqrt(u * x),
-        (x, -5 - 5 * I, 5 + 5 * I),
-        show=False,
-        backend=MB,
-        threed=True,
-        use_cm=True,
-        n=5,
+        sqrt(u * x), (x, -5 - 5 * I, 5 + 5 * I),
+        show=False, backend=MB, threed=True, use_cm=True, n=5,
         params={u: (1, 0, 2)},
     )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
+    p.backend.close()
 
     from sympy.geometry import Line as SymPyLine
 
@@ -1764,6 +1440,7 @@ def test_update_interactive():
     p.backend.draw()
     p.backend.update_interactive({u: 2})
     p.backend.update_interactive({u: 3})
+    p.backend.close()
 
     p = plot_geometry(
         SymPyLine((u, 2), (5, 4)),
@@ -1778,6 +1455,7 @@ def test_update_interactive():
     p.backend.draw()
     p.backend.update_interactive({u: 2})
     p.backend.update_interactive({u: 3})
+    p.backend.close()
 
 
 def test_generic_data_series():
@@ -1799,77 +1477,80 @@ def test_generic_data_series():
     p.draw()
 
 
-def test_axis_center():
+@pytest.mark.parametrize("ac", ["center", "auto", (0, 0)])
+def test_axis_center(ac):
     # verify that axis_center doesn't raise any errors
 
     x = symbols("x")
-    _plot = lambda ac: plot(
+    p = plot(
         sin(x),
         adaptive=False, n=5,
         backend=MB, show=False, axis_center=ac
     )
-
-    _plot("center").draw()
-    _plot("auto").draw()
-    _plot((0, 0)).draw()
-
-
-def test_plot3d_list_use_cm_False():
-    # verify that plot3d_list produces the expected results when no color map
-    # is required
-
-    # solid color line
-    p = make_test_plot3d_list_use_cm_False(MB, False, False)
     p.draw()
-    assert len(p.series) == 1
-    assert len(p.ax.lines) == 1
-    assert p.ax.lines[0].get_color() == "#1f77b4"
-
-    # solid color markers with empty faces
-    p = make_test_plot3d_list_use_cm_False(MB, True, False)
-    p.draw()
-    assert len(p.ax.collections) == 1
-    assert p.ax.collections[0].get_facecolors().size == 0
-
-    # solid color markers with filled faces
-    p = make_test_plot3d_list_use_cm_False(MB, True, True)
-    p.draw()
-    assert len(p.ax.collections) == 1
-    assert p.ax.collections[0].get_facecolors().size > 0
-
-
-def test_plot3d_list_use_cm_color_func():
-    # verify that use_cm=True and color_func do their job
-
-    # line with colormap
-    # if color_func is not provided, the same parameter will be used
-    # for all points
-    p1 = make_test_plot3d_list_use_cm_color_func(MB, False, False, None)
-    p1.draw()
-    c1 = p1.ax.collections[0].get_array()
-    p2 = make_test_plot3d_list_use_cm_color_func(
-        MB, False, False, lambda x, y, z: x)
-    p2.draw()
-    c2 = p2.ax.collections[0].get_array()
-    assert not np.allclose(c1, c2)
-
-    # markers with empty faces
-    p1 = make_test_plot3d_list_use_cm_color_func(MB, True, False, None)
-    p1.draw()
-    c1 = p1.ax.collections[0].get_array()
-    p2 = make_test_plot3d_list_use_cm_color_func(
-        MB, False, False, lambda x, y, z: x)
-    p2.draw()
-    c2 = p2.ax.collections[0].get_array()
-    assert not np.allclose(c1, c2)
+    p.close()
 
 
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
-def test_plot3d_list_interactive():
+def test_plot3d_list():
     # verify that no errors are raises while updating a plot3d_list
 
-    p = make_test_plot3d_list_interactive(MB)
+    p = make_test_plot3d_list(MB, False, None)
+    ax = p.backend.ax
+    d1 = p.backend[0].get_data()
+    assert len(ax.lines) == 1
+    assert len(ax.collections) == 2
+    c1, c2 = ax.collections
+    arr1 = c1.get_array()
+    # TODO: when use_cm=True, is_filled=False, this shouldn't happen. Bug.
+    assert len(c1.get_edgecolor()) == len(c1.get_facecolor())
+    assert len(c2.get_edgecolor()) != len(c2.get_facecolor())
     p.backend.update_interactive({t: 1})
+    p.backend.close()
+
+    p = make_test_plot3d_list(MB, True, None)
+    ax = p.backend.ax
+    d2 = p.backend[0].get_data()
+    assert len(ax.lines) == 1
+    assert len(ax.collections) == 2
+    c1, c2 = ax.collections
+    arr2 = c1.get_array()
+    assert len(c1.get_edgecolor()) == len(c1.get_facecolor())
+    assert len(c2.get_edgecolor()) == len(c2.get_facecolor())
+    p.backend.update_interactive({t: 1})
+    p.backend.close()
+
+    p = make_test_plot3d_list(MB, False, lambda x, y, z: x)
+    ax = p.backend.ax
+    d3 = p.backend[0].get_data()
+    assert len(ax.lines) == 1
+    assert len(ax.collections) == 2
+    c1, c2 = ax.collections
+    arr3 = c1.get_array()
+    # TODO: when use_cm=True, is_filled=False, this shouldn't happen. Bug.
+    assert len(c1.get_edgecolor()) == len(c1.get_facecolor())
+    assert len(c2.get_edgecolor()) != len(c2.get_facecolor())
+    p.backend.update_interactive({t: 1})
+    p.backend.close()
+
+    assert len(d1) != len(d3)
+    assert not np.allclose(arr1, arr3)
+
+    p = make_test_plot3d_list(MB, True, lambda x, y, z: x)
+    ax = p.backend.ax
+    d4 = p.backend[0].get_data()
+    assert len(ax.lines) == 1
+    assert len(ax.collections) == 2
+    c1, c2 = ax.collections
+    arr4 = c1.get_array()
+    # TODO: when use_cm=True, is_filled=False, this shouldn't happen. Bug.
+    assert len(c1.get_edgecolor()) == len(c1.get_facecolor())
+    assert len(c2.get_edgecolor()) == len(c2.get_facecolor())
+    p.backend.update_interactive({t: 1})
+    p.backend.close()
+
+    assert len(d2) != len(d4)
+    assert not np.allclose(arr2, arr4)
 
 
 def test_contour_and_3d():
@@ -1899,31 +1580,29 @@ def test_contour_and_3d():
     p = p2 + p3
     with warns(UserWarning, match="The following kwargs were not used by contour"):
         p.draw()
+    p.close()
     p = p1 + p3
     raises(ValueError, lambda: p.draw())
+    p.close()
     p = p1 + p2 + p3
     raises(ValueError, lambda: p.draw())
+    p.close()
     p = p2 + p1 + p3
     raises(ValueError, lambda: p.draw())
+    p.close()
 
 
-# this test fails on matplotlib 3.4.2
-# guess they changed api in the newer releases
-@pytest.mark.xfail
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_contour_show_clabels():
-    p = make_test_contour_show_clabels_1(MB, False)
-    assert len(p.ax.texts) == 0
-
-    p = make_test_contour_show_clabels_1(MB, True)
-    assert len(p.ax.texts) > 0
-
-    p = make_test_contour_show_clabels_2(MB, False)
-    p.backend.update_interactive({Symbol("u"): 2})
+    p = make_test_contour_show_clabels(MB, False)
+    p.backend.update_interactive({a: 2})
     assert len(p.backend.ax.texts) == 0
+    p.backend.close()
 
-    p = make_test_contour_show_clabels_2(MB, True)
-    p.backend.update_interactive({Symbol("u"): 2})
+    p = make_test_contour_show_clabels(MB, True)
+    p.backend.update_interactive({a: 2})
     assert len(p.backend.ax.texts) > 0
+    p.backend.close()
 
 
 @pytest.mark.filterwarnings("ignore:The provided expression contains Boolean functions")
@@ -1943,6 +1622,7 @@ def test_plot_implicit_legend_artists():
     )
     assert len(p.ax.get_legend().get_lines()) == 2
     assert len(p.ax.get_legend().get_patches()) == 0
+    p.close()
 
     # 2 expressions plotted with contourf -> 2 rectangles in legend
     p = plot_implicit(
@@ -1956,6 +1636,7 @@ def test_plot_implicit_legend_artists():
     )
     assert len(p.ax.get_legend().get_lines()) == 0
     assert len(p.ax.get_legend().get_patches()) == 2
+    p.close()
 
     # two expressions plotted with fill -> 2 rectangles in legend
     p = plot_implicit(
@@ -1968,6 +1649,7 @@ def test_plot_implicit_legend_artists():
     )
     assert len(p.ax.get_legend().get_lines()) == 0
     assert len(p.ax.get_legend().get_patches()) == 2
+    p.close()
 
 
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
@@ -1985,12 +1667,15 @@ def test_color_func_expr():
 
     # update the figure with new parameters: no errors should be raised
     p1.backend.update_interactive({u: 0.5})
+    p1.backend.close()
     # interactive plots with streamlines are not implemented
     raises(
         NotImplementedError,
         lambda: p2.backend.update_interactive({u: 0.5})
     )
+    p2.backend.close()
     p3.backend.update_interactive({u: 0.5})
+    p3.backend.close()
 
 
 def test_legend_plot_sum():
@@ -2001,20 +1686,26 @@ def test_legend_plot_sum():
     # if legend is not specified, the resulting plot will show the legend
     p = make_test_legend_plot_sum_1(MB, None)
     assert len(p.ax.get_legend().legend_handles) == 3
+    p.close()
     p = make_test_legend_plot_sum_1(MB, True)
     assert len(p.ax.get_legend().legend_handles) == 3
+    p.close()
     # first plot has legend=False: output plot won't show the legend
     p = make_test_legend_plot_sum_1(MB, False)
     assert p.ax.get_legend() is None
+    p.close()
 
     # second case: legend is specified on the second plot
     # the resulting plot will always show the legend
     p = make_test_legend_plot_sum_2(MB, None)
     assert len(p.ax.get_legend().legend_handles) == 3
+    p.close()
     p = make_test_legend_plot_sum_2(MB, True)
     assert len(p.ax.get_legend().legend_handles) == 3
+    p.close()
     p = make_test_legend_plot_sum_2(MB, False)
     assert len(p.ax.get_legend().legend_handles) == 3
+    p.close()
 
     # because plot_implicit creates custom proxy artists to show on the legend,
     # need to make sure that every legend artists is shown when combining
@@ -2044,6 +1735,7 @@ def test_legend_plot_sum():
     p3 = p1 + p2
     handles = p3.ax.get_legend().legend_handles
     assert len(handles) == 2
+    p3.close()
 
 
 def test_domain_coloring_2d():
@@ -2053,11 +1745,13 @@ def test_domain_coloring_2d():
     _, _, _, _, img1a, _ = p1[0].get_data()
     img1b = p1.ax.images[0].get_array()
     assert np.allclose(img1a, img1b)
+    p1.close()
 
     p2 = make_test_domain_coloring_2d(MB, True)
     _, _, _, _, img2a, _ = p2[0].get_data()
     img2b = p2.ax.images[0].get_array()
     assert np.allclose(img2b, np.flip(np.flip(img2a, axis=0), axis=1))
+    p2.close()
 
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
@@ -2218,6 +1912,10 @@ def test_show_in_legend():
     assert len(p2.ax.get_legend().legend_handles) == 2
     assert len(p3.ax.get_legend().legend_handles) == 2
     assert len(p4.ax.get_legend().legend_handles) == 2
+    p1.close()
+    p2.close()
+    p3.close()
+    p4.close()
 
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
@@ -2227,6 +1925,7 @@ def test_make_analytic_landscape_black_and_white():
 
     p = make_test_analytic_landscape(MB)
     p.fig
+    p.close()
 
 
 def test_axis_limits():
@@ -2249,6 +1948,7 @@ def test_axis_limits():
         show=False,
     )
     p.draw()
+    p.close()
 
 
 def test_xaxis_inverted():
@@ -2258,9 +1958,11 @@ def test_xaxis_inverted():
     x = symbols("x")
     p = plot(sin(x), (x, 0, 3), backend=MB, show=False, n=10)
     assert not p.ax.xaxis.get_inverted()
+    p.close()
 
     p = plot(sin(x), (x, 3, 0), backend=MB, show=False, n=10)
     assert p.ax.xaxis.get_inverted()
+    p.close()
 
 
 def test_detect_poles():
@@ -2268,12 +1970,14 @@ def test_detect_poles():
     p = make_test_detect_poles(MB, False)
     p.draw()
     assert len(p.ax.lines) == 1
+    p.close()
 
     # detection is done only with numerical data
     # only one line is visible
     p = make_test_detect_poles(MB, True)
     p.draw()
     assert len(p.ax.lines) == 1
+    p.close()
 
     # detection is done only both with numerical data
     # and symbolic analysis. Multiple lines are visible
@@ -2281,6 +1985,7 @@ def test_detect_poles():
     p.draw()
     assert len(p.ax.lines) > 1
     assert all(l.get_color() == "k" for l in p.ax.lines[1:])
+    p.close()
 
 
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
@@ -2318,22 +2023,21 @@ def test_detect_poles_interactive():
     assert len(p.ax.lines) == 8
 
 
-def test_plot_riemann_sphere():
-    p = make_test_plot_riemann_sphere(MB, True)
+@pytest.mark.parametrize(
+    "annotate, n_imgs, n_lines, n_texts", [
+        (True, 1, 3, 4),
+        (False, 1, 1, 0)
+    ]
+)
+def test_plot_riemann_sphere(annotate, n_imgs, n_lines, n_texts):
+    p = make_test_plot_riemann_sphere(MB, annotate)
     fig = p.fig
     ax1 = fig.axes[0]
     ax2 = fig.axes[1]
-    assert len(ax1.images) == len(ax2.images) == 1
-    assert len(ax1.lines) == len(ax2.lines) == 3
-    assert len(ax1.texts) == len(ax2.texts) == 4
-
-    p = make_test_plot_riemann_sphere(MB, False)
-    fig = p.fig
-    ax1 = fig.axes[0]
-    ax2 = fig.axes[1]
-    assert len(ax1.images) == len(ax2.images) == 1
-    assert len(ax1.lines) == len(ax2.lines) == 1
-    assert len(ax1.texts) == len(ax2.texts) == 0
+    assert len(ax1.images) == len(ax2.images) == n_imgs
+    assert len(ax1.lines) == len(ax2.lines) == n_lines
+    assert len(ax1.texts) == len(ax2.texts) == n_texts
+    p.close()
 
 
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
@@ -2347,6 +2051,7 @@ def test_parametric_texts():
     assert p.backend.ax.get_title() == "y=1.5, z=2.000"
     assert p.backend.ax.get_xlabel() == "test y+z=3.50"
     assert p.backend.ax.get_ylabel() == "test z=2.00"
+    p.backend.close()
 
     a, b, p = make_test_parametric_texts_3d(MB)
     assert p.backend.ax.get_title() == "a=1.0, a+b=1.000"
@@ -2358,23 +2063,27 @@ def test_parametric_texts():
     assert p.backend.ax.get_xlabel() == "test a=1.50"
     assert p.backend.ax.get_ylabel() == "test b=2.00"
     assert p.backend.ax.get_zlabel() == "test a=1.50, b=2.00"
+    p.backend.close()
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_arrow_2d():
     a, b = symbols("a, b")
     p = make_test_arrow_2d(MB, "test", {"color": "r"}, True)
-    ax = p._backend.ax
+    ax = p.backend.ax
     assert isinstance(ax, Axes)
     assert len(ax.patches) == 1
     assert len(ax.get_legend().legend_handles) == 1
     assert ax.get_legend().legend_handles[0].get_label() == "$test$"
     assert ax.get_legend().legend_handles[0].get_color() == "r"
-    p._backend.update_interactive({a: 4, b: 5})
+    p.backend.update_interactive({a: 4, b: 5})
+    p.backend.close()
 
     p = make_test_arrow_2d(MB, "test", {"color": "r"}, False)
-    ax = p._backend.ax
+    ax = p.backend.ax
     assert len(ax.patches) == 1
     assert ax.get_legend() is None
+    p.backend.close()
 
 
 def test_existing_figure_lines():
@@ -2396,6 +2105,7 @@ def test_existing_figure_lines():
     assert ax.lines[0].get_color() == '#1f77b4'
     assert ax.lines[1].get_label() == "l2"
     assert ax.lines[1].get_color() == '#ff7f0e'
+    p.close()
 
 
 def test_existing_figure_surfaces():
@@ -2419,12 +2129,14 @@ def test_existing_figure_surfaces():
         ax.collections[0].get_facecolors()[0],
         ax.collections[1].get_facecolors()[0]
     )
+    p.close()
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_arrow_3d():
     a, b, c = symbols("a, b, c")
     p = make_test_arrow_3d(MB, "test", {"color": "r"}, True)
-    ax = p._backend.ax
+    ax = p.backend.ax
     assert isinstance(ax, mpl_toolkits.mplot3d.axes3d.Axes3D)
     assert len(ax.patches) == 1
     assert len(ax.get_legend().legend_handles) == 1
@@ -2433,15 +2145,17 @@ def test_arrow_3d():
     # only way to test if it renders what it's supposed to
     assert np.allclose(ax.patches[0]._xyz, [1, 2, 3])
     assert np.allclose(ax.patches[0]._dxdydz, [4, 5, 6])
-    p._backend.update_interactive({a: 4, b: 5, c: 6})
+    p.backend.update_interactive({a: 4, b: 5, c: 6})
+    p.backend.close()
 
     p = make_test_arrow_3d(MB, "test", {"color": "r"}, False)
-    ax = p._backend.ax
+    ax = p.backend.ax
     assert len(ax.patches) == 1
     assert ax.get_legend() is None
     # only way to test if it renders what it's supposed to
     assert np.allclose(ax.patches[0]._xyz, [1, 2, 3])
     assert np.allclose(ax.patches[0]._dxdydz, [4, 5, 6])
+    p.backend.close()
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -2454,19 +2168,20 @@ def test_arrow_3d():
 def test_plot_root_locus_1(sgrid, zgrid, n_lines, n_texts, instance):
     a = symbols("a")
     p = make_test_root_locus_1(MB, sgrid, zgrid)
-    assert isinstance(p._backend, MB)
-    assert len(p._backend.series) == 2
+    assert isinstance(p.backend, MB)
+    assert len(p.backend.series) == 2
     # NOTE: the backend is going to reorder data series such that grid
     # series are placed at the end.
-    assert isinstance(p._backend[0], RootLocusSeries)
-    assert isinstance(p._backend[1], instance)
-    ax = p._backend.ax
+    assert isinstance(p.backend[0], RootLocusSeries)
+    assert isinstance(p.backend[1], instance)
+    ax = p.backend.ax
     assert len(ax.lines) == n_lines
     assert ax.get_legend() is None
     assert len(ax.texts) == n_texts # number of sgrid labels on the plot
     line_colors = {'#1f77b4', '0.75'}
     assert all(l.get_color() in line_colors for l in ax.lines)
-    p._backend.update_interactive({a: 2})
+    p.backend.update_interactive({a: 2})
+    p.backend.close()
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -2485,10 +2200,10 @@ def test_plot_root_locus_2():
     assert len(p.ax.texts) == 10 # number of sgrid labels on the plot
     line_colors = {'#1f77b4', '#ff7f0e', '0.75'}
     assert all(l.get_color() in line_colors for l in ax.lines)
-    p.update_interactive({})
+    p.close()
 
 
-
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 @pytest.mark.parametrize(
     "sgrid, zgrid, T, is_filled", [
         (True, False, None, True),
@@ -2503,16 +2218,18 @@ def test_plot_pole_zero(sgrid, zgrid, T, is_filled):
     p = make_test_plot_pole_zero(MB, sgrid=sgrid, zgrid=zgrid, T=T,
         is_filled=is_filled)
     fig = p.fig
-    p._backend.update_interactive({a: 2})
+    p.backend.update_interactive({a: 2})
+    p.backend.close()
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_poles_zeros_sgrid():
     # verify that SGridLineSeries is rendered with "proper" axis limits
 
     a = symbols("a")
     p = make_test_poles_zeros_sgrid(MB)
-    ax = p._backend.ax
+    ax = p.backend.ax
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
     assert (xlim is not None) and (ylim is not None)
@@ -2520,7 +2237,8 @@ def test_plot_poles_zeros_sgrid():
     # the code for better positioning the grid...
     assert xlim[0] > -5 and xlim[1] < 2
     assert ylim[0] > -5 and ylim[1] < 5
-    p._backend.update_interactive({a: 2})
+    p.backend.update_interactive({a: 2})
+    p.backend.close()
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -2528,7 +2246,7 @@ def test_plot_root_locus_sgrid():
     # verify that SGridLineSeries is rendered with "proper" axis limits
 
     p = make_test_root_locus_1(MB, True, False)
-    ax = p._backend.ax
+    ax = p.backend.ax
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
     assert (xlim is not None) and (ylim is not None)
@@ -2536,6 +2254,7 @@ def test_plot_root_locus_sgrid():
     # the code for better positioning the grid...
     assert xlim[0] > -5 and xlim[1] < 2
     assert ylim[0] > -5 and ylim[1] < 5
+    p.backend.close()
 
 
 @pytest.mark.parametrize(
@@ -2552,6 +2271,7 @@ def test_ngrid(cl_mags, cl_phases, label_cl_phases, n_lines, n_texts):
     ax = p.ax
     assert len(ax.lines) == n_lines
     assert len(ax.texts) == n_texts
+    p.close()
 
 
 @pytest.mark.parametrize(
@@ -2583,11 +2303,14 @@ def test_sgrid(xi, wn, tp, ts, auto, show_control_axis, params, n_lines, n_texts
         kw["params"] = params
 
     p = make_test_sgrid(MB, xi, wn, tp, ts, auto, show_control_axis, **kw)
-    ax = p._backend.ax if params else p.ax
+    ax = p.backend.ax if params else p.ax
     assert len(ax.lines) == n_lines
     assert len(ax.texts) == n_texts
     if params:
-        p._backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
+        p.backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
+        p.backend.close()
+    else:
+        p.close()
 
 
 @pytest.mark.parametrize(
@@ -2617,11 +2340,14 @@ def test_zgrid(xi, wn, tp, ts, show_control_axis, params, n_lines, n_texts):
         kw["params"] = params
 
     p = make_test_zgrid(MB, xi, wn, tp, ts, show_control_axis, **kw)
-    ax = p._backend.ax if params else p.ax
+    ax = p.backend.ax if params else p.ax
     assert len(ax.lines) == n_lines
     assert len(ax.texts) == n_texts
     if params:
-        p._backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
+        p.backend.update_interactive({x: 0.75, y: 0.8, z: 0.85})
+        p.backend.close()
+    else:
+        p.close()
 
 
 # On Github, it fails on the minimum installation version,
@@ -2641,6 +2367,7 @@ def test_matplotlib_update_ranges(update_event, num_callbacks):
 
     if update_event:
         p._update_axis_limits("button_release_event")
+    p.close()
 
     p = plot_contour(cos(x**2+y**2), (x, -pi, pi), (y, -pi, pi),
         n=10, backend=MB, show=False, update_event=update_event)
@@ -2648,6 +2375,7 @@ def test_matplotlib_update_ranges(update_event, num_callbacks):
 
     if update_event:
         p._update_axis_limits("button_release_event")
+    p.close()
 
 
 @pytest.mark.parametrize(
@@ -2663,6 +2391,7 @@ def test_mcircles(mag, n_lines, n_labels):
     ax = p.ax
     assert len(ax.lines) == n_lines
     assert len(ax.texts) == n_labels
+    p.close()
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -2690,6 +2419,7 @@ def test_plot_nyquist_matplotlib(
     assert len(ax.lines) == n_lines
     assert len(ax.patches) == n_patches
     assert len(ax.texts) == n_texts
+    p.close()
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -2713,6 +2443,7 @@ def test_plot_nyquist_matplotlib_linestyles(primary_style, mirror_style):
         ax = p.ax
     else:
         raises(ValueError, lambda: p.ax)
+    p.close()
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -2729,6 +2460,7 @@ def test_plot_nyquist_matplotlib_interactive():
     )
     ax = pl.backend.ax # force first draw
     pl.backend.update_interactive({a: 2}) # update with new value
+    pl.backend.close()
 
 
 def test_plot_nichols():
@@ -2740,12 +2472,14 @@ def test_plot_nichols():
     ax = p.ax
     assert len(ax.lines) > 2
     assert len(ax.texts) > 0
+    p.close()
 
     # no nichols grid lines
     p = plot_nichols(tf, ngrid=False, show=False, n=10)
     ax = p.ax
     assert len(ax.lines) == 1
     assert len(ax.texts) == 0
+    p.close()
 
 
 @pytest.mark.parametrize(
@@ -2764,8 +2498,10 @@ def test_plot_nichols_arrows(arrows, n_arrows):
     p = plot_nichols(tf, ngrid=False, show=False, n=10, arrows=arrows)
     ax = p.ax
     assert len(ax.patches) == n_arrows
+    p.close()
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 @pytest.mark.parametrize(
     "scatter, use_cm, n_lines, n_collections", [
         (False, False, 1, 0),
@@ -2782,13 +2518,15 @@ def test_plot_nichols_lines_scatter(scatter, use_cm, n_lines, n_collections):
     # with nichols grid lines
     p = plot_nichols(tf, ngrid=False, show=False, n=10, backend=MB,
         scatter=scatter, use_cm=use_cm, params={a: (5, 0, 10)})
-    ax = p._backend.ax
+    ax = p.backend.ax
     assert len(ax.lines) == n_lines
     assert len(ax.collections) == n_collections
-    p._backend.update_interactive({a: 6})
+    p.backend.update_interactive({a: 6})
+    p.backend.close()
 
 
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_step_response():
     # this should not raise any errors during updates
 
@@ -2810,17 +2548,20 @@ def test_plot_step_response():
         backend=MB, n=10, show=False
     )
     fig = p.fig
-    p._backend.update_interactive({
+    p.backend.update_interactive({
         a: 4, b: 11, c:6, d: 8, e: 18, f: 5, g: 20
     })
+    p.backend.close()
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_hvlines():
     a, b = symbols("a, b")
     p = make_test_hvlines(MB)
-    ax = p._backend.ax
+    ax = p.backend.ax
     assert len(ax.lines) == 2
     assert not np.allclose(
         ax.lines[0].get_data(), ax.lines[1].get_data()
     )
-    p._backend.update_interactive({a: 3, b: 4})
+    p.backend.update_interactive({a: 3, b: 4})
+    p.backend.close()

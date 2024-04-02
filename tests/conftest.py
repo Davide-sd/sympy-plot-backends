@@ -1,6 +1,16 @@
 import pytest
 from spb.defaults import cfg
 from spb import MB
+from sympy import latex
+
+
+@pytest.fixture
+def label_func():
+    def wrapper(use_latex, expr):
+        if use_latex:
+            return "$%s$" % latex(expr)
+        return str(expr)
+    return wrapper
 
 
 @pytest.fixture

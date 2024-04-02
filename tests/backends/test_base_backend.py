@@ -74,6 +74,19 @@ def test_common_keywords():
     assert p.size == (5, 10)
 
 
+@pytest.mark.parametrize(
+    "Backend", [MB, PB, KB, BB]
+)
+def test_colorloop_colormaps(Backend):
+    # verify that backends exposes important class attributes enabling
+    # automatic coloring
+
+    assert hasattr(Backend, "colorloop")
+    assert isinstance(Backend.colorloop, (list, tuple))
+    assert hasattr(Backend, "colormaps")
+    assert isinstance(Backend.colormaps, (list, tuple))
+
+
 @pytest.mark.skipif(pn is None, reason="panel is not installed")
 def test_plot_sum():
     x, y = symbols("x, y")

@@ -5,7 +5,7 @@ from spb import (
     plot3d_implicit, plot3d_parametric_surface,
     plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
     graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero,
-    ngrid, sgrid, zgrid, mcircles
+    ngrid, sgrid, zgrid, mcircles, surface, surface_parametric, line
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries,
@@ -53,65 +53,59 @@ def custom_colorloop_2(B, show=False):
     )
 
 
-def make_plot_1(B, rendering_kw, use_latex=False):
+def make_test_plot(B, rendering_kw, use_latex=False):
     return plot(
-        sin(x),
-        cos(x),
+        sin(a * x),
+        cos(b * x),
         rendering_kw=rendering_kw,
         backend=B,
         legend=True,
         use_latex=use_latex,
+        params={a: (1, 0, 2), b: (1, 0, 2)},
         **options()
     )
 
 
-def make_plot_parametric_1(B, rendering_kw):
+def make_test_plot_parametric(B, use_cm, rendering_kw={}):
     return plot_parametric(
-        cos(x), sin(x),
+        cos(a * x), sin(b * x),
         (x, 0, 1.5 * pi),
+        use_cm=use_cm,
         backend=B,
         rendering_kw=rendering_kw,
         use_latex=False,
+        params={a: (1, 0, 2), b: (1, 0, 2)},
         **options()
     )
 
 
-def make_plot3d_parametric_line_1(B, rendering_kw, show=False):
+def make_test_plot3d_parametric_line(B, rendering_kw, use_latex, use_cm, show=False):
     opts = options()
     opts["show"] = show
     return plot3d_parametric_line(
-        cos(x), sin(x), x,
+        cos(a * x), sin(b * x), x,
         (x, -pi, pi),
         backend=B,
         rendering_kw=rendering_kw,
-        use_latex=False,
+        use_latex=use_latex,
+        use_cm=use_cm,
+        params={a: (1, 0, 2), b: (1, 0, 2)},
         **opts
     )
 
 
-def make_plot3d_1(B, rendering_kw, show=False):
+def make_test_plot3d(B, rendering_kw, use_cm, use_latex, show=False):
     opts = options()
     opts["show"] = show
     return plot3d(
-        cos(x**2 + y**2),
+        cos(a * x**2 + y**2),
+        sin(b * x**2 + y**2),
         (x, -3, 3), (y, -3, 3),
-        use_cm=False,
+        use_latex=use_latex,
+        use_cm=use_cm,
         backend=B,
         rendering_kw=rendering_kw,
-        **opts
-    )
-
-
-def make_plot3d_2(B, show=False):
-    opts = options()
-    opts["show"] = show
-    return plot3d(
-        cos(x**2 + y**2),
-        sin(x**2 + y**2),
-        (x, -3, 3), (y, -3, 3),
-        use_cm=True,
-        backend=B,
-        use_latex=False,
+        params={a: (1, 0, 2), b: (1, 0, 2)},
         **opts
     )
 
@@ -223,12 +217,13 @@ def make_plot3d_parametric_surface_wireframe_2(B, wf):
     )
 
 
-def make_plot_contour_1(B, rendering_kw):
+def make_test_plot_contour(B, rendering_kw, use_latex):
     return plot_contour(
-        cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
+        cos(a * x**2 + y**2), (x, -3, 3), (y, -3, 3),
         backend=B,
         rendering_kw=rendering_kw,
-        use_latex=False,
+        use_latex=use_latex,
+        params={a: (1, 0, 2)},
         **options()
     )
 
@@ -243,92 +238,56 @@ def make_plot_contour_is_filled(B, is_filled):
     )
 
 
-def make_plot_vector_2d_quiver(B, contour_kw, quiver_kw):
+def make_test_plot_vector_2d_quiver(B, contour_kw, quiver_kw):
     return plot_vector(
-        Matrix([x, y]),
+        Matrix([a * x, y]),
         (x, -5, 5), (y, -4, 4),
         backend=B,
         quiver_kw=quiver_kw,
         contour_kw=contour_kw,
         use_latex=False,
+        params={a: (1, 0, 2)},
         **options()
     )
 
 
-def make_plot_vector_2d_streamlines_1(B, stream_kw, contour_kw):
+def make_test_plot_vector_2d_streamlines(
+    B, stream_kw, contour_kw, scalar, use_latex=False
+):
     return plot_vector(
-        Matrix([x, y]),
+        Matrix([a * x, y]),
         (x, -5, 5), (y, -4, 4),
         backend=B,
         stream_kw=stream_kw,
         contour_kw=contour_kw,
-        scalar=(x + y),
+        scalar=scalar,
         streamlines=True,
-        use_latex=False,
+        use_latex=use_latex,
+        params={a: (1, 0, 2)},
         **options()
     )
 
 
-def make_plot_vector_2d_streamlines_2(B, stream_kw, contour_kw):
-    return plot_vector(
-        Matrix([x, y]),
-        (x, -5, 5), (y, -4, 4),
-        backend=B,
-        stream_kw=stream_kw,
-        contour_kw=contour_kw,
-        scalar=[(x + y), "test"],
-        streamlines=True,
-        use_latex=False,
-        **options()
-    )
-
-
-def make_plot_vector_3d_quiver(B, quiver_kw, show=False, **kwargs):
+def make_test_plot_vector_3d_quiver_streamlines(
+    B, streamlines, quiver_kw={}, stream_kw={}, show=False, **kwargs
+):
     opts = options()
     opts["show"] = show
     opts.pop("adaptive")
     return plot_vector(
-        Matrix([z, y, x]),
+        Matrix([a * z, y, x]),
         (x, -5, 5), (y, -4, 4), (z, -3, 3),
         backend=B,
         quiver_kw=quiver_kw,
-        use_latex=False,
-        **opts,
-        **kwargs
-    )
-
-
-def make_plot_vector_3d_streamlines_1(B, stream_kw, show=False, kwargs=dict()):
-    opts = options()
-    opts["show"] = show
-    opts.pop("adaptive")
-    return plot_vector(
-        Matrix([z, y, x]),
-        (x, -5, 5), (y, -4, 4), (z, -3, 3),
-        backend=B,
         stream_kw=stream_kw,
-        streamlines=True,
-        use_latex=False,
+        streamlines=streamlines,
+        params={a: (1, 0, 2)},
         **opts,
         **kwargs
     )
 
 
-def make_plot_vector_2d_normalize_1(B, norm):
-    opts = options()
-    opts.pop("adaptive")
-    return plot_vector(
-        [-sin(y), cos(x)],
-        (x, -2, 2), (y, -2, 2),
-        backend=B,
-        normalize=norm,
-        scalar=False,
-        use_cm=False,
-        **opts
-    )
-
-
-def make_plot_vector_2d_normalize_2(B, norm):
+def make_test_plot_vector_2d_normalize(B, norm):
     opts = options()
     opts.pop("adaptive")
     return plot_vector(
@@ -343,20 +302,7 @@ def make_plot_vector_2d_normalize_2(B, norm):
     )
 
 
-def make_plot_vector_3d_normalize_1(B, norm):
-    opts = options()
-    opts.pop("adaptive")
-    return plot_vector(
-        [z, -x, y],
-        (x, -2, 2), (y, -2, 2), (z, -2, 2),
-        backend=B,
-        normalize=norm,
-        use_cm=False,
-        **opts
-    )
-
-
-def make_plot_vector_3d_normalize_2(B, norm):
+def make_test_plot_vector_3d_normalize(B, norm):
     opts = options()
     opts.pop("adaptive")
     return plot_vector(
@@ -370,32 +316,21 @@ def make_plot_vector_3d_normalize_2(B, norm):
     )
 
 
-def make_plot_vector_2d_quiver_color_func_1(B, cf):
-    opts = options()
-    opts.pop("adaptive")
+def make_test_plot_vector_2d_color_func(B, streamlines, cf):
     return plot_vector(
-        (-y, x), (x, -2, 2), (y, -2, 2),
+        (-a * y, x), (x, -2, 2), (y, -2, 2),
         scalar=False,
+        streamlines=streamlines,
         use_cm=True,
         color_func=cf,
+        show=False,
         backend=B,
-        **opts
+        n=3,
+        params={a: (1, 0, 2)},
     )
 
 
-def make_plot_vector_3d_quiver_color_func_1(B, cf):
-    opts = options()
-    opts.pop("adaptive")
-    return plot_vector(
-        Matrix([z, y, x]),
-        (x, -2, 2), (y, -2, 2), (z, -2, 2),
-        backend=B,
-        color_func=cf,
-        **opts
-    )
-
-
-def make_plot_vector_3d_quiver_color_func_2(B, cf):
+def make_test_plot_vector_3d_quiver_color_func(B, cf):
     opts = options()
     opts.pop("adaptive")
     return plot_vector(
@@ -408,16 +343,17 @@ def make_plot_vector_3d_quiver_color_func_2(B, cf):
     )
 
 
-def make_plot_vector_3d_streamlines_color_func(B, cf):
+def make_test_plot_vector_3d_streamlines_color_func(B, cf):
     # NOTE: better keep a decent number of discretization points in order to
     # be sure to have streamlines
     return plot_vector(
-        Matrix([z, y, x]),
+        Matrix([a*z, y, x]),
         (x, -2, 2), (y, -2, 2), (z, -2, 2),
         streamlines=True,
         show=False,
         backend=B,
         color_func=cf,
+        params={a: (1, 0, 2)},
         n=7,
     )
 
@@ -445,25 +381,25 @@ def make_test_plot_implicit_adaptive_false(B, rendering_kw):
     )
 
 
-def make_test_real_imag(B, rendering_kw):
+def make_test_real_imag(B, rendering_kw, use_latex):
     return plot_real_imag(
         sqrt(x), (x, -5, 5),
         backend=B,
         rendering_kw=rendering_kw,
-        use_latex=False,
+        use_latex=use_latex,
         **options()
     )
 
 
-def make_test_plot_complex_1d(B, rendering_kw):
+def make_test_plot_complex_1d(B, rendering_kw, use_latex):
     return plot_complex(
         sqrt(x), (x, -5, 5),
-        backend=B, rendering_kw=rendering_kw,
+        backend=B, rendering_kw=rendering_kw, use_latex=use_latex,
         **options()
     )
 
 
-def make_test_plot_complex_2d(B, rendering_kw):
+def make_test_plot_complex_2d(B, rendering_kw, use_latex=False):
     opts = options()
     opts.pop("adaptive")
     return plot_complex(
@@ -471,6 +407,7 @@ def make_test_plot_complex_2d(B, rendering_kw):
         backend=B,
         coloring="a",
         rendering_kw=rendering_kw,
+        use_latex=use_latex,
         **opts
     )
 
@@ -488,25 +425,13 @@ def make_test_plot_complex_3d(B, rendering_kw):
     )
 
 
-def make_test_plot_list_is_filled_false(B):
+def make_test_plot_list_is_filled(B, is_filled):
     return plot_list(
         [1, 2, 3],
         [1, 2, 3],
         backend=B,
         is_point=True,
-        is_filled=False,
-        show=False,
-        use_latex=False,
-    )
-
-
-def make_test_plot_list_is_filled_true(B):
-    return plot_list(
-        [1, 2, 3],
-        [1, 2, 3],
-        backend=B,
-        is_point=True,
-        is_filled=True,
+        is_filled=is_filled,
         show=False,
         use_latex=False,
     )
@@ -588,18 +513,6 @@ def make_test_plot_geometry_3d(B):
     )
 
 
-def make_test_vectors_3d_update_interactive(B):
-    return plot_vector(
-        [a * z, b * y, c * x],
-        (x, -5, 5), (y, -5, 5), (z, -5, 5),
-        params={a: (1, 0, 2), b: (1, 0, 2), c: (1, 0, 2)},
-        streamlines=True,
-        n=5,
-        backend=B,
-        show=False,
-    )
-
-
 def make_test_aspect_ratio_2d_issue_11764(B, aspect="auto"):
     return plot_parametric(
         cos(x), sin(x), (x, 0, 2 * pi), backend=B, aspect=aspect, **options()
@@ -646,163 +559,6 @@ def make_test_backend_latex_labels_2(B, use_latex, show=False):
     )
 
 
-def make_test_plot_use_latex(B):
-    return plot(
-        sin(x), cos(x),
-        backend=B, legend=True, use_latex=True,
-        **options()
-    )
-
-
-def make_test_plot_parametric_use_latex(B):
-    return plot_parametric(
-        cos(x), sin(x), (x, 0, 1.5 * pi),
-        backend=B, use_latex=True,
-        **options()
-    )
-
-
-def make_test_plot_contour_use_latex(B):
-    return plot_contour(
-        cos(x**2 + y**2),
-        (x, -3, 3), (y, -3, 3),
-        backend=B,
-        use_latex=True,
-        **options()
-    )
-
-
-def make_test_plot3d_parametric_line_use_latex(B, show=False):
-    opts = options()
-    opts["show"] = show
-    return plot3d_parametric_line(
-        cos(x), sin(x), x, (x, -pi, pi), backend=B, use_latex=True, **opts
-    )
-
-
-def make_test_plot3d_use_latex(B, show=False):
-    opts = options()
-    opts["show"] = show
-    return plot3d(
-        cos(x**2 + y**2),
-        sin(x**2 + y**2),
-        (x, -3, 3), (y, -3, 3),
-        use_cm=True,
-        backend=B,
-        use_latex=True,
-        **opts
-    )
-
-
-def make_test_plot_vector_2d_quivers_use_latex(B):
-    return plot_vector(
-        Matrix([x, y]), (x, -5, 5), (y, -4, 4),
-        backend=B, **options()
-    )
-
-
-def make_test_plot_vector_2d_streamlines_custom_scalar_field_use_latex(B):
-    return plot_vector(
-        Matrix([x, y]),
-        (x, -5, 5), (y, -4, 4),
-        backend=B,
-        scalar=(x + y),
-        streamlines=True,
-        use_latex=True,
-        **options()
-    )
-
-
-def make_test_plot_vector_2d_streamlines_custom_scalar_field_custom_label_use_latex(B):
-    return plot_vector(
-        Matrix([x, y]),
-        (x, -5, 5), (y, -4, 4),
-        backend=B,
-        scalar=[(x + y), "test"],
-        streamlines=True,
-        use_latex=True,
-        **options()
-    )
-
-
-def make_test_plot_vector_2d_use_latex_colorbar(B, scalar, streamlines):
-    opts = options()
-    opts.pop("adaptive")
-    return plot_vector(
-        Matrix([x, y]),
-        (x, -5, 5), (y, -4, 4),
-        backend=B,
-        scalar=scalar,
-        streamlines=streamlines,
-        use_cm=True,
-        use_latex=True,
-        **opts
-    )
-
-
-def make_test_plot_vector_3d_quivers_use_latex(B, show=False):
-    opts = options()
-    opts["show"] = show
-    opts.pop("adaptive")
-    return plot_vector(
-        Matrix([z, y, x]),
-        (x, -5, 5), (y, -4, 4), (z, -3, 3),
-        backend=B,
-        use_cm=True,
-        use_latex=True,
-        **opts
-    )
-
-
-def make_test_plot_vector_3d_streamlines_use_latex(B, show=False):
-    opts = options()
-    opts["show"] = show
-    opts.pop("adaptive")
-    return plot_vector(
-        Matrix([z, y, x]),
-        (x, -5, 5), (y, -4, 4), (z, -3, 3),
-        backend=B,
-        streamlines=True,
-        use_latex=True,
-        **opts
-    )
-
-
-def make_test_plot_complex_use_latex_1(B):
-    return plot_complex(
-        cos(x) + sin(I * x), (x, -2, 2),
-        use_latex=True, backend=B,
-        **options()
-    )
-
-
-def make_test_plot_complex_use_latex_2(B):
-    opts = options()
-    opts.pop("adaptive")
-    return plot_complex(
-        gamma(z), (z, -3 - 3 * I, 3 + 3 * I),
-        use_latex=True, backend=B,
-        **opts
-    )
-
-
-def make_test_plot_real_imag_use_latex(B):
-    return plot_real_imag(
-        sqrt(x), (x, -3, 3),
-        backend=B, use_latex=True,
-        **options()
-    )
-
-
-def make_test_plot3d_use_cm(B, use_cm, show=False):
-    opts = options()
-    opts["show"] = show
-    return plot3d(
-        cos(x**2 + y**2), (x, -1, 1), (y, -1, 1),
-        backend=B, use_cm=use_cm, **opts
-    )
-
-
 def make_test_plot_polar(B, pa=False):
     return plot_polar(
         1 + sin(10 * x) / 10, (x, 0, 2 * pi),
@@ -836,87 +592,50 @@ def make_test_plot3d_implicit(B, show=False):
     )
 
 
-def make_test_surface_color_func_1(B, col, show=False):
-    opts = options()
-    opts["show"] = show
-    return plot3d(
-        cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
-        backend=B,
-        color_func=col,
-        use_cm=True,
-        **opts
-    )
-
-
-def make_test_surface_color_func_2(B, col, show=False):
-    opts = options()
-    opts["show"] = show
-    opts.pop("adaptive")
-    r = 2 + sin(7 * u + 5 * v)
-    expr = (r * cos(u) * sin(v), r * sin(u) * sin(v), r * cos(v))
-    return plot3d_parametric_surface(
-        *expr, (u, 0, 2 * pi), (v, 0, pi),
-        use_cm=True,
-        backend=B,
-        color_func=col,
-        **opts
-    )
-
-
-def make_test_surface_interactive_color_func(B):
+def make_test_surface_color_func(B):
     expr1 = t * cos(x**2 + y**2)
     r = 2 + sin(7 * u + 5 * v)
     expr2 = (t * r * cos(u) * sin(v), r * sin(u) * sin(v), r * cos(v))
+    params = {t: (1, 0, 2)}
 
-    s1 = SurfaceOver2DRangeSeries(
-        expr1, (x, -5, 5), (y, -5, 5),
-        n1=5, n2=5,
-        params={t: 1},
-        use_cm=True,
-        color_func=lambda x, y, z: z,
-    )
-    s2 = SurfaceOver2DRangeSeries(
-        expr1, (x, -5, 5), (y, -5, 5),
-        n1=5, n2=5,
-        params={t: 1},
-        use_cm=True,
-        color_func=lambda x, y, z: np.sqrt(x**2 + y**2),
-    )
-    s3 = ParametricSurfaceSeries(
-        *expr2, (u, -5, 5), (v, -5, 5),
-        n1=5, n2=5,
-        params={t: 1},
-        use_cm=True,
-        color_func=lambda x, y, z, u, v: z
-    )
-    s4 = ParametricSurfaceSeries(
-        *expr2, (u, -5, 5), (v, -5, 5),
-        n1=5, n2=5,
-        params={t: 1},
-        use_cm=True,
-        color_func=lambda x, y, z, u, v: np.sqrt(x**2 + y**2)
-    )
-    return B(s1, s2, s3, s4)
-
-
-def make_test_line_color_func(B, col):
-    return plot(
-        cos(x), (x, -3, 3),
-        backend=B, color_func=col, legend=True,
-        **options()
+    return graphics(
+        surface(expr1, (x, -5, 5), (y, -5, 5),
+            n1=5, n2=5,
+            params=params,
+            use_cm=True,
+            color_func=lambda x, y, z: z),
+        surface(expr1, (x, -5, 5), (y, -5, 5),
+            n1=5, n2=5,
+            params=params,
+            use_cm=True,
+            color_func=lambda x, y, z: np.sqrt(x**2 + y**2)),
+        surface_parametric(
+            *expr2, (u, -5, 5), (v, -5, 5),
+            n1=5, n2=5,
+            params=params,
+            use_cm=True,
+            color_func=lambda x, y, z, u, v: z
+        ),
+        surface_parametric(
+            *expr2, (u, -5, 5), (v, -5, 5),
+            n1=5, n2=5,
+            params=params,
+            use_cm=True,
+            color_func=lambda x, y, z, u, v: np.sqrt(x**2 + y**2)
+        ),
+        backend=B, show=False
     )
 
 
-def make_test_line_interactive_color_func(B):
+def make_test_line_color_func(B):
     expr = t * cos(x * t)
-    s1 = LineOver1DRangeSeries(
-        expr, (x, -3, 3), n=5, params={t: 1}, color_func=None
+    params = {t: (1, 0, 2)}
+    return graphics(
+        line(expr, (x, -3, 3), n=5, params=params, color_func=None),
+        line(expr, (x, -3, 3), n=5, params=params,
+            color_func=lambda x, y: np.cos(x)),
+        backend=B, show=False
     )
-    s2 = LineOver1DRangeSeries(
-        expr, (x, -3, 3), n=5, params={t: 1},
-        color_func=lambda x, y: np.cos(x)
-    )
-    return B(s1, s2)
 
 
 def make_test_line_color_plot(B, lc):
@@ -948,70 +667,36 @@ def make_test_surface_color_plot3d(B, sc, use_cm, show=False):
     )
 
 
-def make_test_plot3d_list_use_cm_False(B, is_point, is_filled=False):
-    x = [0, 1, 2, 3, 4, 5]
-    y = [5, 4, 3, 2, 1, 0]
-    z = [1, 3, 2, 4, 6, 5]
-
-    return plot3d_list(
-        x, y, z,
-        backend=B,
-        is_point=is_point,
-        is_filled=is_filled,
-        use_cm=False,
-        show=False,
-    )
-
-
-def make_test_plot3d_list_use_cm_color_func(
-    B, is_point, is_filled=False, cf=None
-):
-    x = [0, 1, 2, 3, 4, 5]
-    y = [5, 4, 3, 2, 1, 0]
-    z = [1, 3, 2, 4, 6, 5]
-
-    return plot3d_list(
-        (x, y, z),
-        (z, y, x),
-        backend=B,
-        is_point=is_point,
-        is_filled=is_filled,
-        use_cm=True,
-        show=False,
-        color_func=cf,
-    )
-
-
-def make_test_plot3d_list_interactive(B):
+def make_test_plot3d_list(B, is_filled, cf):
     z1 = np.linspace(0, 6 * np.pi, 10)
-    x1 = z1 * np.cos(z1)
-    y1 = z1 * np.sin(z1)
+    c = np.cos(z1)
+    s = np.sin(z1)
+    x1 = z1 * c
+    y1 = z1 * s
 
-    p1 = plot3d_list(x1, y1, z1, show=False, backend=B, is_point=False)
-    p2 = plot3d_list(
-        [t * cos(t)], [t * sin(t)], [t],
-        params={t: (0, 0, 6 * pi)},
+    p1 = plot3d_list(x1, y1, z1, show=False, backend=B, is_point=False,
+        use_cm=False)
+    p2 = plot3d_list(x1, y1, z1, show=False, backend=B, is_point=True,
+        is_filled=is_filled, use_cm=False)
+    p3 = plot3d_list(
+        [t * coeff1*coeff2 for coeff1, coeff2 in zip(c, z1)],
+        [t * coeff1*coeff2 for coeff1, coeff2 in zip(s, z1)],
+        [t * coeff for coeff in z1],
+        params={t: (1, 0, 6 * pi)},
         backend=B,
         show=False,
         is_point=True,
+        is_filled=is_filled,
+        use_cm=True,
+        color_func=cf,
     )
-    return p2 + p1
+    return p3 + p2 + p1
 
 
-def make_test_contour_show_clabels_1(B, clabels):
+def make_test_contour_show_clabels(B, clabels):
     return plot_contour(
-        cos(x * y), (x, -2, 2), (y, -2, 2),
-        backend=B,
-        is_filled=False,
-        clabels=clabels,
-        **options()
-    )
-
-
-def make_test_contour_show_clabels_2(B, clabels):
-    return plot_contour(
-        cos(u * x * y), (x, -2, 2), (y, -2, 2),
-        params={u: (1, 0, 1)},
+        cos(a * x * y), (x, -2, 2), (y, -2, 2),
+        params={a: (1, 0, 1)},
         backend=B,
         is_filled=False,
         clabels=clabels,
@@ -1042,6 +727,15 @@ def make_test_color_func_expr_2(B):
         color_func=sqrt(x**2 + y**2),
         params={u: (1, 0, 1)},
         **options()
+    )
+
+
+def make_test_plot3d_use_cm(B, use_cm, show=False):
+    opts = options()
+    opts["show"] = show
+    return plot3d(
+        cos(x**2 + y**2), (x, -1, 1), (y, -1, 1),
+        backend=B, use_cm=use_cm, **opts
     )
 
 
