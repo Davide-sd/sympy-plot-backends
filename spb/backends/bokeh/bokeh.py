@@ -273,7 +273,13 @@ class BokehBackend(Plot):
     @property
     def fig(self):
         """Returns the figure."""
-        if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
+        if (
+            (len(self.renderers) > 0) and
+            (
+                (self.renderers[0] and len(self.renderers[0].handles) == 0)
+                or (self.renderers[0] is None)
+            )
+        ):
             # if the backend was created without showing it
             self.draw()
         return self._fig
