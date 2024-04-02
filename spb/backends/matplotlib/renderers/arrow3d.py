@@ -39,6 +39,7 @@ class Arrow3D(FancyArrowPatch):
         super().draw(renderer)
 
     def do_3d_projection(self, renderer=None):
+        np = import_module("numpy")
         x1, y1, z1 = self._xyz
         dx, dy, dz = self._dxdydz
         x2, y2, z2 = (x1 + dx, y1 + dy, z1 + dz)
