@@ -639,6 +639,7 @@ def test_plot_vector_2d_quiver_color_func():
     p3.backend.close()
 
 
+@pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
 def test_plot_vector_2d_streamline_color_func():
     # verify that color_func gets applied to 2D streamlines
 
