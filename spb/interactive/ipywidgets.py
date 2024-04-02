@@ -89,6 +89,7 @@ class InteractivePlot(IPlot):
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
             kwargs["is_iplot"] = True
             kwargs["imodule"] = "ipywidgets"
+            kwargs["use_latex"] = self._use_latex
             self._backend = Backend(*series, **kwargs)
 
     def _get_iplot_kw(self):
