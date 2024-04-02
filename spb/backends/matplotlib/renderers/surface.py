@@ -34,7 +34,7 @@ def _draw_surface_helper(renderer, data):
         # might have its own cmap
         cmap = kw["cmap"]
         if isinstance(cmap, str):
-            cmap = p.cm.get_cmap(cmap)
+            cmap = p.matplotlib.colormaps[cmap]
         kw["facecolors"] = cmap(norm(facecolors))
     c = p._ax.plot_surface(x, y, z, **kw)
     is_cb_added = p._add_colorbar(
@@ -67,7 +67,7 @@ def _update_surface_helper(renderer, data, handle):
         norm = p.Normalize(vmin=vmin, vmax=vmax)
         cmap = kw["cmap"]
         if isinstance(cmap, str):
-            cmap = p.cm.get_cmap(cmap)
+            cmap = p.matplotlib.colormaps[cmap]
         kw["facecolors"] = cmap(norm(facecolors))
     handle[0].remove()
     handle[0] = p._ax.plot_surface(
