@@ -4343,24 +4343,19 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
             control_kw["omega_limits"] = [10**start, 10**end]
 
         ckw = mergedeep.merge({}, control_kw, self._control_kw)
-        ckw["plot"] = False
-        ckw["return_contour"] = True
-        _, contour = ct.nyquist_plot(self._control_tf, **ckw)
-
-        resp = self._control_tf(contour)
-
-        #
-        # NOTE: the following is adapted from:
-        # ``control.freqplot.plot_nyquist()``
-        # Because that function doesn't return ``splane_contour`` and it is
-        # very difficult to rebuild it, I removed it from the following code.
-        # Finger crossed.
-        #
+        response_obj = ct.nyquist_response(self._control_tf, **ckw)
+        resp = response_obj.response
+        if response_obj.dt in [0, None]:
+            splane_contour = response_obj.contour
+        else:
+            splane_contour = np.log(response_obj.contour) / response_obj.dt
 
         max_curve_magnitude = self.max_curve_magnitude
         max_curve_offset = self.max_curve_offset
 
-        reg_mask = np.abs(resp) > max_curve_magnitude
+        reg_mask = np.logical_or(
+            np.abs(resp) > max_curve_magnitude,
+            splane_contour.real != 0)
 
         scale_mask = ~reg_mask \
             & np.concatenate((~reg_mask[1:], ~reg_mask[-1:])) \
@@ -4494,58 +4489,12 @@ class RootLocusSeries(ControlBaseSeries):
         self._zeros = None
         self._poles = None
 
-        self._control_kw["plot"] = False
         self._zeros_rk = kwargs.get("zeros_rk", dict())
         self._poles_rk = kwargs.get("poles_rk", dict())
 
     def __str__(self):
         expr = self._expr if self._expr else self._control_tf
         return "root locus of " + str(expr)
-
-    def _compute_axis_limits(self, roots_array):
-        """Attempt to compute appropriate axis limits so that the plot
-        visualizes the important parts of the root locus.
-        """
-        np = import_module("numpy")
-
-        tf = self._control_tf
-        _bp = self._break_points(
-            np.poly1d(tf.num[0][0]),
-            np.poly1d(tf.den[0][0])
-        )[1]
-
-        # root locus branches starts from poles and goes to zeros or
-        # infinity. Look for the branches that goes to zeros, find the
-        # maximum imaginary part. This will be used to compute ylim.
-        max_heights = []
-        for p in self._poles:
-            for c in roots_array.T:
-                if abs(p - c[0]) < 1e-03:
-                    if any(abs(z - c[-1]) < 1e-03 for z in self._zeros):
-                        i = np.argmax(np.abs(c.imag))
-                        max_heights.append(c[i])
-        min_heights = [-t for t in max_heights]
-
-        def _helper(x, margin_factor_lower, margin_factor_upper):
-            min_x, max_x = np.nanmin(x), np.nanmax(x)
-            # this offset allows to have a little bit of empty space on the
-            # LHP of root locus plot
-            offset = 0.25
-            min_x = min_x - offset if np.isclose(min_x, 0) else min_x
-            max_x = max_x + offset if np.isclose(max_x, 0) else max_x
-            # provide a little bit of margin
-            delta = abs(max_x - min_x)
-            lim = [min_x - delta * margin_factor_lower, max_x + delta * margin_factor_upper]
-            if np.isclose(*lim):
-                # prevent axis limits to be the same
-                lim[0] -= 1
-                lim[1] += 1
-            return lim
-
-        important_points = np.concatenate(
-            [self._zeros, self._poles, _bp, max_heights, min_heights])
-        self._xlim = _helper(important_points.real, 0.15, 0.05)
-        self._ylim = _helper(important_points.imag, 0.05, 0.05)
 
     @property
     def zeros(self):
@@ -4567,24 +4516,6 @@ class RootLocusSeries(ControlBaseSeries):
     def ylim(self):
         return self._ylim
 
-    def _break_points(self, num, den):
-        """Extract break points over real axis and gains given these locations"""
-        # type: (np.poly1d, np.poly1d) -> (np.array, np.array)
-        dnum = num.deriv(m=1)
-        dden = den.deriv(m=1)
-        polynom = den * dnum - num * dden
-        real_break_pts = polynom.r
-        # don't care about infinite break points
-        real_break_pts = real_break_pts[num(real_break_pts) != 0]
-        k_break = -den(real_break_pts) / num(real_break_pts)
-        idx = k_break >= int(0)   # only positives gains
-        k_break = k_break[idx]
-        real_break_pts = real_break_pts[idx]
-        if len(k_break) == 0:
-            k_break = [0]
-            real_break_pts = den.roots
-        return k_break, real_break_pts
-
     def get_data(self):
         """
         Returns
@@ -4595,16 +4526,23 @@ class RootLocusSeries(ControlBaseSeries):
         gains : ndarray
             Gains used.  Same as kvect keyword argument if provided.
         """
+        ct = import_module("control")
+        # TODO: open PR on control and implement a method inside the object
+        # returned by root_locus_map, so that we don't have to deal with
+        # private methods.
+        from control.pzmap import _compute_root_locus_limits
+
         if self.is_interactive:
             tf = self._expr.subs(self.params)
             self._control_tf = tf_to_control(tf)
 
-        ct = import_module("control")
         self._zeros = self._control_tf.zeros()
         self._poles = self._control_tf.poles()
-        roots_array, gains = ct.root_locus(self._control_tf, **self._control_kw)
-        self._compute_axis_limits(roots_array)
-        return roots_array, gains
+        data = ct.root_locus_map(
+            self._control_tf, **self._control_kw)
+        self._xlim, self._ylim = _compute_root_locus_limits(data)
+        return data.loci, data.gains
+
 
 
 class SystemResponseSeries(ControlBaseSeries):
@@ -4692,19 +4630,19 @@ class SystemResponseSeries(ControlBaseSeries):
 
         if self._response_type == "step":
             ckw = mergedeep.merge({}, control_kw, self._control_kw)
-            x, y = ct.step_response(self._control_tf, **ckw)
+            response = ct.step_response(self._control_tf, **ckw)
         elif self._response_type == "impulse":
             ckw = mergedeep.merge({}, control_kw, self._control_kw)
-            x, y = ct.impulse_response(self._control_tf, **ckw)
+            response = ct.impulse_response(self._control_tf, **ckw)
         elif self._response_type == "ramp":
             ramp = self._time_array
             control_kw["U"] = ramp
             ckw = mergedeep.merge({}, control_kw, self._control_kw)
-            x, y = ct.forced_response(self._control_tf, **ckw)
+            response = ct.forced_response(self._control_tf, **ckw)
         else:
             raise NotImplementedError
 
-        return x, y
+        return response.time, response.y.flatten()
 
 
 class ColoredSystemResponseSeries(SystemResponseSeries):

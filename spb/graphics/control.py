@@ -1774,7 +1774,7 @@ def nyquist(system, omega_limits=None, input=None, output=None,
         to the plot function, for example to Matplotlib's `plt.plot`.
     control_kw : dict, optional
         A dictionary of keyword arguments passed to
-        :py:func:`control.nyquist_plot`
+        :py:func:`control.nyquist_response`
 
     Returns
     =======
@@ -2114,7 +2114,7 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
         plotting library (backend) manual for more informations.
     control_kw : dict
         A dictionary of keyword arguments to be passed to
-        :py:func:`control.root_locus`.
+        :py:func:`control.root_locus_map`.
     sgrid : bool, optional
         Generates a grid of constant damping ratios and natural frequencies
         on the s-plane. Default to True.
