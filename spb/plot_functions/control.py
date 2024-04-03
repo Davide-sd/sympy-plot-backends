@@ -1383,10 +1383,11 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
     kwargs.setdefault("grid", False)
     kwargs.setdefault("xlabel", "Real")
     kwargs.setdefault("ylabel", "Imaginary")
+    kwargs.setdefault("title", "Root Locus")
     rls = [root_locus(s, l, sgrid=False, zgrid=False, **kwargs)[0]
         for s, l in systems]
     if sgrid and zgrid:
-        # user has explicetly types zgrid=True. Disable sgrid.
+        # user has explicetly typed zgrid=True. Disable sgrid.
         sgrid = False
     grid = _get_grid_series(sgrid, zgrid)
     if sgrid or zgrid:

@@ -2,7 +2,7 @@
 from spb.plot_functions.control import  (
     plot_pole_zero, plot_step_response, plot_impulse_response,
     plot_ramp_response, plot_bode_magnitude,
-    plot_bode_phase, plot_bode, plot_nyquist, plot_nichols)
+    plot_bode_phase, plot_bode, plot_nyquist, plot_nichols, plot_root_locus)
 from spb.interactive import IPlot
 from spb.series import HVLineSeries
 from spb.backends.matplotlib import unset_show
@@ -746,8 +746,8 @@ def test_new_ways_of_providing_transfer_function(func, params):
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_plot_bode_title():
-    G1 = (s+5)/(s+2)**2
-    G2 = 1/s**2
+    G1 = (s + 5) / (s + 2)**2
+    G2 = 1 / s**2
 
     p = plot_bode(G1, show=False)
     assert p.args[0].title == f"Bode Plot"
@@ -764,3 +764,37 @@ def test_plot_bode_title():
     p = plot_bode(G1, G2, show=False, title="Test")
     assert p.args[0].title == "Test"
     assert p.args[1].title == ""
+
+
+@pytest.mark.parametrize(
+    "func, title, expected", [
+        (plot_step_response, None, "Step Response"),
+        (plot_ramp_response, None, "Ramp Response"),
+        (plot_impulse_response, None, "Impulse Response"),
+        (plot_pole_zero, None, "Poles and Zeros"),
+        (plot_nichols, None, "Nichols Plot"),
+        (plot_nyquist, None, "Nyquist Plot"),
+        (plot_root_locus, None, "Root Locus"),
+        (plot_bode_magnitude, None, "Bode Plot (Magnitude)"),
+        (plot_bode_phase, None, "Bode Plot (Phase)"),
+        (plot_step_response, "Test", "Test"),
+        (plot_ramp_response, "Test", "Test"),
+        (plot_impulse_response, "Test", "Test"),
+        (plot_pole_zero, "Test", "Test"),
+        (plot_nichols, "Test", "Test"),
+        (plot_nyquist, "Test", "Test"),
+        (plot_root_locus, "Test", "Test"),
+        (plot_bode_magnitude, "Test", "Test"),
+        (plot_bode_phase, "Test", "Test"),
+    ]
+)
+def test_plot_title(func, title, expected):
+    G1 = (s + 5) / (s + 2)**2
+    G2 = 1 / s**2
+    kwargs = {"show": False}
+    if title:
+        kwargs["title"] = title
+    p1 = func(G1, **kwargs)
+    assert p1.title == expected
+    p2 = func(G1, G2, **kwargs)
+    assert p2.title == expected
