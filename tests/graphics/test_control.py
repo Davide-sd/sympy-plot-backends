@@ -761,7 +761,7 @@ def test_root_locus():
 
     series2 = root_locus(
         G1, control_kw={
-            "kvect": np.linspace(1e-03, 1000, 10)
+            "gains": np.linspace(1e-03, 1000, 10)
         }, sgrid=False)
     assert len(series2) == 1
     data2 = series2[0].get_data()
