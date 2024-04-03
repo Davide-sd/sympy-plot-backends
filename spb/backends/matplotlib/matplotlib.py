@@ -339,15 +339,20 @@ class MatplotlibBackend(Plot):
                     raise ValueError(
                         "MatplotlibBackend can not mix 2D and 3D.")
 
-            kwargs = {}
-            if any(is_3D):
-                kwargs["projection"] = "3d"
-            elif (
-                self.polar_axis and
-                any(s.is_2Dline or s.is_contour for s in self.series)
-            ):
-                kwargs["projection"] = "polar"
-            self._ax = self._fig.add_subplot(1, 1, 1, **kwargs)
+            if not any([isinstance(s, SGridLineSeries) and s.auto
+                for s in self.series]):
+                kwargs = {}
+                if any(is_3D):
+                    kwargs["projection"] = "3d"
+                elif (
+                    self.polar_axis and
+                    any(s.is_2Dline or s.is_contour for s in self.series)
+                ):
+                    kwargs["projection"] = "polar"
+                self._ax = self._fig.add_subplot(1, 1, 1, **kwargs)
+            else:
+                from spb.backends.matplotlib.renderers._sgrid_helper import sgrid_auto
+                self._ax = sgrid_auto()
 
         if self._update_event:
             self._fig.canvas.mpl_connect(
@@ -382,17 +387,6 @@ class MatplotlibBackend(Plot):
         # XXX Workaround for matplotlib issue
         # https://github.com/matplotlib/matplotlib/issues/17130
         xlims, ylims, zlims = [], [], []
-
-        if not self._use_existing_figure:
-            # If this instance visualizes only symbolic expressions,
-            # I want to clear axes so that each time `.show()` is called there
-            # won't be repeated handles.
-            # On the other hand:
-            # 1. If the current axes is created by plotgrid, the axes will
-            #    already be empty.
-            # 2. If the current axes is provided by the user, we don't want
-            #    to erase its content.
-            self._ax.cla()
         self._init_cyclers()
         self._legend_handles = []
 

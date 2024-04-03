@@ -88,6 +88,7 @@ from .make_tests import (
     make_test_arrow_3d,
     make_test_root_locus_1,
     make_test_root_locus_2,
+    make_test_root_locus_3,
     make_test_plot_pole_zero,
     make_test_poles_zeros_sgrid,
     make_test_ngrid,
@@ -2162,13 +2163,41 @@ def test_arrow_3d():
 @pytest.mark.skipif(ct is None, reason="control is not installed")
 @pytest.mark.parametrize(
     "sgrid, zgrid, n_lines, n_texts, instance", [
-        (True, False, 18, 10, SGridLineSeries),
+        # the grid is drawn by some kind of matplotlib's grid locator
+        (True, False, 1, 0, SGridLineSeries),
+        # the grid is drawn manually, line by line
         (False, True, 33, 20, ZGridLineSeries),
     ]
 )
 def test_plot_root_locus_1(sgrid, zgrid, n_lines, n_texts, instance):
     a = symbols("a")
     p = make_test_root_locus_1(MB, sgrid, zgrid)
+    assert isinstance(p.backend, MB)
+    assert len(p.backend.series) == 2
+    # NOTE: the backend is going to reorder data series such that grid
+    # series are placed at the end.
+    assert isinstance(p.backend[0], RootLocusSeries)
+    assert isinstance(p.backend[1], instance)
+    ax = p.backend.ax
+    assert len(ax.lines) == n_lines
+    assert ax.get_legend() is None
+    assert len(ax.texts) == n_texts # number of sgrid labels on the plot
+    line_colors = {'#1f77b4', '0.75'}
+    assert all(l.get_color() in line_colors for l in ax.lines)
+    p.backend.update_interactive({a: 2})
+    p.backend.close()
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+@pytest.mark.parametrize(
+    "sgrid, zgrid, n_lines, n_texts, instance", [
+        (True, False, 35, 21, SGridLineSeries),
+        (False, True, 33, 20, ZGridLineSeries),
+    ]
+)
+def test_plot_root_locus_3(sgrid, zgrid, n_lines, n_texts, instance):
+    a = symbols("a")
+    p = make_test_root_locus_3(MB, sgrid, zgrid)
     assert isinstance(p.backend, MB)
     assert len(p.backend.series) == 2
     # NOTE: the backend is going to reorder data series such that grid
@@ -2194,12 +2223,12 @@ def test_plot_root_locus_2():
     assert isinstance(p[1], RootLocusSeries)
     assert isinstance(p[2], SGridLineSeries)
     ax = p.ax
-    assert len(ax.lines) == 19
+    assert len(ax.lines) == 2
+    assert len(ax.texts) == 0
     assert len(ax.get_legend().texts) == 2
     assert p.ax.get_legend().texts[0].get_text() == "a"
     assert p.ax.get_legend().texts[1].get_text() == "b"
-    assert len(p.ax.texts) == 10 # number of sgrid labels on the plot
-    line_colors = {'#1f77b4', '#ff7f0e', '0.75'}
+    line_colors = {'#1f77b4', '#ff7f0e'}
     assert all(l.get_color() in line_colors for l in ax.lines)
     p.close()
 
@@ -2280,8 +2309,8 @@ def test_ngrid(cl_mags, cl_phases, label_cl_phases, n_lines, n_texts):
     [
         (None, None, None, None, False, True, None, 34, 21),
         (None, None, None, None, False, False, None, 35, 21),
-        (None, None, None, None, True, True, None, 17, 10),
-        (None, None, None, None, True, False, None, 18, 10),
+        (None, None, None, None, True, True, None, 0, 0),
+        (None, None, None, None, True, False, None, 0, 0),
         (0.5, False, None, None, False, False, None, 2, 1),
         ([0.5, 0.75], False, None, None, False, False, None, 4, 2),
         (False, 2, None, None, False, False, None, 1, 1),

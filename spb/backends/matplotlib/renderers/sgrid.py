@@ -25,6 +25,10 @@ def _text_position_limits(r, p, s):
 
 def _draw_sgrid_helper(renderer, data):
     p, s = renderer.plot, renderer.series
+
+    if s.auto:
+        return []
+
     np = p.np
     xi_dict, wn_dict, y_tp, x_ts = data
 
@@ -81,6 +85,10 @@ def _draw_sgrid_helper(renderer, data):
 
 def _update_sgrid_helper(renderer, data, handles):
     p, s = renderer.plot, renderer.series
+
+    if s.auto:
+        return
+
     np = p.np
     xi_dict, wn_dict, y_tp, x_ts = data
     xi_handles, wn_handles, tp_handles, ts_handles = handles
