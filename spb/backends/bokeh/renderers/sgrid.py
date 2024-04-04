@@ -232,11 +232,14 @@ class SGridLineRenderer(Renderer):
 
         if len(xlims) > 0:
             xlims = np.array(xlims)
-            ylims = np.array(ylims)
             xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
-            ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
         else:
             xlim = self.plot.xlim if self.plot.xlim else self.default_xlim
+
+        if len(ylims) > 0:
+            ylims = np.array(ylims)
+            ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
+        else:
             ylim = self.plot.ylim if self.plot.ylim else self.default_ylim
 
         xlim = _modify_axis_limits(xlim, 0.15, 0.05)

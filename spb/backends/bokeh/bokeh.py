@@ -331,12 +331,16 @@ class BokehBackend(Plot):
 
         if (len(xlims) > 0) and (self.xlim is None):
             # this is used in order to properly visualized some *GridSeries
-            np = import_module("numpy")
+            np = self.np
             xlims = np.array(xlims)
             xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
+            self._fig.x_range = self.bokeh.models.Range1d(*xlim)
+
+        if (len(ylims) > 0) and (self.ylim is None):
+            # this is used in order to properly visualized some *GridSeries
+            np = self.np
             ylims = np.array(ylims)
             ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
-            self._fig.x_range = self.bokeh.models.Range1d(*xlim)
             self._fig.y_range = self.bokeh.models.Range1d(*ylim)
 
         if len(self._fig.legend) > 0:
@@ -430,9 +434,27 @@ class BokehBackend(Plot):
         if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
             self.draw()
 
+        xlims, ylims = [], []
         for r in self.renderers:
             if r.series.is_interactive:
                 r.update(params)
+                if hasattr(r, "_xlims"):
+                    xlims.extend(r._xlims)
+                    ylims.extend(r._ylims)
+
+        if (len(xlims) > 0) and (self.xlim is None):
+            # this is used in order to properly visualized some *GridSeries
+            np = self.np
+            xlims = np.array(xlims)
+            xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
+            self._fig.x_range.update(start=xlim[0], end=xlim[1])
+
+        if (len(ylims) > 0) and (self.ylim is None):
+            # this is used in order to properly visualized some *GridSeries
+            np = self.np
+            ylims = np.array(ylims)
+            ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
+            self._fig.y_range.update(start=ylim[0], end=ylim[1])
 
         self._set_axes_texts()
 
