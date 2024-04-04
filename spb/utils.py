@@ -694,9 +694,14 @@ def tf_to_control(tf, gen=None):
 
     Parameters
     ==========
-    tf : Expr, sympy.physics.control.TransferFunction, scipy.signal.TransferFunction
-        If the transfer function is a symbolic expression, it must be a
-        rational expression.
+    tf :
+        The transfer function's type can be:
+
+        * Expr: it must be a rational expression.
+        * sympy.physics.control.TransferFunction
+        * sympy.physics.control.TransferFunctionMatrix
+        * scipy.signal.TransferFunction
+
     gen : Symbol or None
         The s or z variable. It is only used if ``tf`` is a symbolic
         expression containing multiple free symbols.
@@ -753,13 +758,25 @@ def tf_to_control(tf, gen=None):
         return _from_sympy_to_ct(tf.num, tf.den)
     elif isinstance(tf, sympy.physics.control.TransferFunction):
         return _from_sympy_to_ct(tf.num, tf.den)
+    elif isinstance(tf, sympy.physics.control.TransferFunctionMatrix):
+        num, den = [], []
+        for i in range(tf.num_outputs):
+            row_num, row_den = [], []
+            for j in range(tf.num_inputs):
+                tmp = _from_sympy_to_ct(tf[i, j].num, tf[i, j].den)
+                row_num.append(list(tmp.num[0][0]))
+                row_den.append(list(tmp.den[0][0]))
+            num.append(row_num)
+            den.append(row_den)
+        return ct.tf(num, den)
     elif isinstance(tf, sp.signal.TransferFunction):
         return ct.tf(tf.num, tf.den, dt=0 if tf.dt is None else tf.dt)
     else:
         raise TypeError(
             "Transfer function's type not recognized.\n" +
             "Received: type(tf) = %s\n" % type(tf) +
-            "Expected: Expr or sympy.physics.control.TransferFunction"
+            "Expected: Expr or sympy.physics.control.TransferFunction or " +
+            "sympy.physics.control.TransferFunctionMatrix"
         )
 
 

@@ -330,6 +330,23 @@ def test_tf_to_control_6():
     )
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+def test_tf_to_control_7():
+    # MIMO systems
+    s = symbols("s")
+
+    tf1 = TransferFunction(1, s + 2, s)
+    tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
+    tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
+    tfm = TransferFunctionMatrix(
+        [[tf1, -tf1], [tf2, -tf2], [tf3, -tf3]])
+
+    num = [[[1.0], [-1.0]], [[1.0, 1.0], [-1.0, -1.0]], [[1.0, 1.0], [-1.0, -1.0]]]
+    den = [[[1.0, 2.0], [1.0, 2.0]], [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], [[1.0, 1.0, 1.5], [1.0, 1.0, 1.5]]]
+    tfm_expected = ct.tf(num, den)
+    _is_control_tf_equals(tf_to_control(tfm), tfm_expected)
+
+
 def test_tf_to_sympy_1():
     # symbolic expressions to TransferFunction
 
