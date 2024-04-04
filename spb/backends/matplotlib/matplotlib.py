@@ -545,21 +545,19 @@ class MatplotlibBackend(Plot):
             )
             # HACK: in order to make interactive contour plots to scale to
             # the appropriate range
-            if xlims and (
-                any(s.is_contour for s in self.series)
+            # TODO: do I still need cond?
+            cond = (
+                any(isinstance(s, (ContourSeries, RootLocusSeries))
+                    for s in self.series)
                 or any(s.is_vector and (not s.is_3D) for s in self.series)
                 or any(s.is_2Dline and s.is_parametric for s in self.series)
                 or any(s.is_grid for s in self.series)
-            ):
+            )
+            if xlims and cond:
                 xlims = np.array(xlims)
                 xlim = (np.nanmin(xlims[:, 0]), np.nanmax(xlims[:, 1]))
                 self._ax.set_xlim(xlim)
-            if ylims and (
-                any(s.is_contour for s in self.series)
-                or any(s.is_vector and (not s.is_3D) for s in self.series)
-                or any(s.is_2Dline and s.is_parametric for s in self.series)
-                or any(s.is_grid for s in self.series)
-            ):
+            if ylims and cond:
                 ylims = np.array(ylims)
                 ylim = (np.nanmin(ylims[:, 0]), np.nanmax(ylims[:, 1]))
                 self._ax.set_ylim(ylim)

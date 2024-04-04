@@ -89,6 +89,7 @@ from .make_tests import (
     make_test_root_locus_1,
     make_test_root_locus_2,
     make_test_root_locus_3,
+    make_test_root_locus_4,
     make_test_plot_pole_zero,
     make_test_poles_zeros_sgrid,
     make_test_ngrid,
@@ -2272,10 +2273,17 @@ def test_plot_poles_zeros_sgrid():
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
-def test_plot_root_locus_sgrid():
-    # verify that SGridLineSeries is rendered with "proper" axis limits
+@pytest.mark.parametrize(
+    "sgrid, zgrid", [
+        (True, False),
+        (False, True),
+        (False, False)
+    ]
+)
+def test_plot_root_locus_axis_limits(sgrid, zgrid):
+    # verify that root locus is renderered with appropriate axis limits
 
-    p = make_test_root_locus_1(MB, True, False)
+    p = make_test_root_locus_4(MB, sgrid, zgrid)
     ax = p.backend.ax
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()

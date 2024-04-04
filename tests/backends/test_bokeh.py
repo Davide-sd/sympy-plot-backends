@@ -66,6 +66,7 @@ from .make_tests import (
     make_test_arrow_2d,
     make_test_root_locus_1,
     make_test_root_locus_2,
+    make_test_root_locus_4,
     make_test_plot_pole_zero,
     make_test_poles_zeros_sgrid,
     make_test_ngrid,
@@ -1346,6 +1347,28 @@ def test_plot_root_locus_2():
     assert fig.legend[0].items[0].label["value"] == "a"
     assert fig.legend[0].items[1].label["value"] == "b"
     p.update_interactive({})
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+@pytest.mark.parametrize(
+    "sgrid, zgrid", [
+        (True, False),
+        (False, True),
+        (False, False)
+    ]
+)
+def test_plot_root_locus_axis_limits(sgrid, zgrid):
+    # verify that root locus is renderered with appropriate axis limits
+
+    p = make_test_root_locus_4(BB, sgrid, zgrid)
+    fig = p.backend.fig
+    xlim = [fig.x_range.start, fig.x_range.end]
+    ylim = [fig.y_range.start, fig.y_range.end]
+    assert (xlim is not None) and (ylim is not None)
+    # these are eyeball numbers, it should allows a little bit of tweeking at
+    # the code for better positioning the grid...
+    assert xlim[0] > -5 and xlim[1] < 2
+    assert ylim[0] > -5 and ylim[1] < 5
 
 
 @pytest.mark.parametrize(

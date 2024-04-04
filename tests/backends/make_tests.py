@@ -944,6 +944,13 @@ def make_test_poles_zeros_sgrid(B):
         params={a: (1, 0, 2)})
 
 
+def make_test_root_locus_4(B, sgrid, zgrid):
+    G1 = 1 / (s + 2)
+    G2 = (a * s**2 + 1) / (s**4 + 4*s**3 + 6*s**2 + 5*s + 2)
+    return plot_root_locus(G1, G2, show=False,
+        backend=B, sgrid=sgrid, zgrid=zgrid, params={a: (1, 0, 2)})
+
+
 def make_test_ngrid(B, cl_mags, cl_phases, label_cl_phases):
     return graphics(
         ngrid(cl_mags, cl_phases, label_cl_phases),
