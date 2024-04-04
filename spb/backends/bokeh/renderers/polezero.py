@@ -76,8 +76,8 @@ def _get_source_tooltips(plot, x, y):
                 ("Ts/T", "@ts"), ("Tp/T", "@tp")
             ]
     else:
-        source = {"Real": x, "Imag": y}
-        tooltips = [("x", "@x"), ("y", "@y")]
+        source = {"x": x, "y": y}
+        tooltips = [("Real", "@x"), ("Imag", "@y")]
 
     return source, tooltips
 
