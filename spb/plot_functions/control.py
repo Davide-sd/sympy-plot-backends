@@ -10,7 +10,7 @@ from spb.graphics.control import (
 from spb.interactive import create_interactive_plot
 from spb.plotgrid import plotgrid
 from spb.series import HVLineSeries
-from spb.utils import _instantiate_backend
+from spb.utils import _instantiate_backend, is_siso
 from sympy import exp, latex, sympify, Expr
 
 
@@ -68,7 +68,14 @@ def _unpack_systems(systems, **kwargs):
         if isinstance(provided_label, str):
             labels = [provided_label] * len(systems)
         else:
-            labels = [f"System {i+1}" for i in range(len(systems))]
+            # add "System #num" only if multiple mimo systems are plotted
+            # at the same time
+            n = len(systems)
+            if (n == 1) and (not is_siso(systems[0])):
+                labels = [""]
+            else:
+                labels = [f"System {i+1}" for i in range(n)]
+
         systems = [(system, label) for system, label in zip(systems, labels)]
     return systems
 
@@ -1384,12 +1391,18 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
     kwargs.setdefault("xlabel", "Real")
     kwargs.setdefault("ylabel", "Imaginary")
     kwargs.setdefault("title", "Root Locus")
-    rls = [root_locus(s, l, sgrid=False, zgrid=False, **kwargs)[0]
-        for s, l in systems]
+
+    series = []
+    for s, l in systems:
+        kw = kwargs.copy()
+        kw["label"] = l
+        series.extend(
+            root_locus(s, sgrid=False, zgrid=False, **kw)
+        )
     if sgrid and zgrid:
         # user has explicetly typed zgrid=True. Disable sgrid.
         sgrid = False
     grid = _get_grid_series(sgrid, zgrid)
     if sgrid or zgrid:
         kwargs.setdefault("grid", False)
-    return _create_plot_helper(grid + rls, False, **kwargs)
+    return _create_plot_helper(grid + series, False, **kwargs)

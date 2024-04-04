@@ -911,3 +911,23 @@ def tf_find_time_delay(tf, var=None):
     exp_num = [t for t in num.find(exp) if t.has(s)]
     exp_den = [t for t in den.find(exp) if t.has(s)]
     return exp_num + exp_den
+
+
+def is_siso(system):
+    """Check if a control system is SISO or not.
+    """
+    ct = import_module("control")
+    sp = import_module("scipy")
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    if isinstance(system, sm.control.lti.SISOLinearTimeInvariant):
+        return True
+    if isinstance(system, sp.signal.TransferFunction):
+        return True
+    if (
+        isinstance(system, ct.TransferFunction) and
+        (system.ninputs == 1) and (system.noutputs == 1)
+    ):
+        return True
+    if isinstance(system, Expr):
+        return True
+    return False

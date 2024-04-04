@@ -43,6 +43,15 @@ test_params = {
     b: (5, 0, 10),
 }
 
+_tf1 = TransferFunction(1, s + 2, s)
+_tf2 = TransferFunction(s + 1, s**2 + s + 1, s)
+_tf3 = TransferFunction(s + 1, s**2 + s + 1.5, s)
+tfm1 = TransferFunctionMatrix(
+    [[_tf1, -_tf1], [_tf2, -_tf2], [_tf3, -_tf3]])
+tfm2 = TransferFunctionMatrix(
+    [[_tf1*_tf1, -_tf1*_tf1], [_tf2*_tf1, -_tf2*_tf1], [_tf3*_tf1, -_tf3*_tf1]])
+
+
 def _to_tuple(a, b):
     return tuple(a), tuple(b)
 
@@ -390,8 +399,8 @@ def test_ramp_response():
 @pytest.mark.skipif(ct is None, reason="control is not installed")
 def test_show_axes():
     def do_test(plot_func, sys, expected_num_series):
-        p1 = plot_func(sys, show=False, show_axes=False)
-        p2 = plot_func(sys, show=False, show_axes=True)
+        p1 = plot_func(sys, show=False, show_axes=False, legend=True)
+        p2 = plot_func(sys, show=False, show_axes=True, legend=True)
         assert len(p1.series) == expected_num_series
         assert len(p2.series) == expected_num_series + 2
         assert all(not isinstance(t, HVLineSeries) for t in p1.series)
@@ -766,6 +775,7 @@ def test_plot_bode_title():
     assert p.args[1].title == ""
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 @pytest.mark.parametrize(
     "func, title, expected", [
         (plot_step_response, None, "Step Response"),
@@ -798,3 +808,44 @@ def test_plot_title(func, title, expected):
     assert p1.title == expected
     p2 = func(G1, G2, **kwargs)
     assert p2.title == expected
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+@pytest.mark.parametrize(
+    "func", [
+        plot_step_response, plot_ramp_response, plot_impulse_response,
+        plot_root_locus
+    ]
+)
+def test_label_mimo(func):
+    kwargs = {"show": False}
+    if func is plot_root_locus:
+        kwargs["sgrid"] = False
+        kwargs["zgrid"] = False
+    p1 = func(tfm1, **kwargs)
+    assert all("System 1" not in s.get_label(False) for s in p1.series)
+    assert p1[0].get_label(False) == "u[0] to y[0]"
+    assert p1[-1].get_label(False) == "u[1] to y[2]"
+
+    p2 = func(tfm1, tfm2, **kwargs)
+    n = int(len(p2.series) / 2)
+    assert all("System 1" in s.get_label(False) for s in p2.series[:n])
+    assert all("System 2" in s.get_label(False) for s in p2.series[n:])
+    assert p2[0].get_label(False) == "System 1 - u[0] to y[0]"
+    assert p2[n].get_label(False) == "System 2 - u[0] to y[0]"
+
+
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+def test_label_mimo_plot_pole_zero():
+    kwargs = {"show": False, "sgrid": False, "zgrid": False}
+    p1 = plot_pole_zero(tfm1, **kwargs)
+    assert all("System 1" not in s.get_label(False) for s in p1.series)
+    assert p1[0].get_label(False) == "poles of u[0] to y[0]"
+    assert p1[-1].get_label(False) == "zeros of u[1] to y[2]"
+
+    p2 = plot_pole_zero(tfm1, tfm2, **kwargs)
+    n = int(len(p2.series) / 2)
+    assert all("System 1" in s.get_label(False) for s in p2.series[:n])
+    assert all("System 2" in s.get_label(False) for s in p2.series[n:])
+    assert p2[0].get_label(False) == "poles of System 1 - u[0] to y[0]"
+    assert p2[n].get_label(False) == "poles of System 2 - u[0] to y[0]"

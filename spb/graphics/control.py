@@ -7,7 +7,7 @@ from spb.series import (
 )
 from spb.utils import (
     prange, is_number, tf_to_sympy, tf_to_control, _get_initial_params,
-    is_discrete_time, tf_find_time_delay
+    is_discrete_time, tf_find_time_delay, is_siso
 )
 import numpy as np
 from sympy import (
@@ -141,27 +141,11 @@ def _preprocess_system(system, **kwargs):
     raise TypeError(f"type(system) = {type(system)} not recognized.")
 
 
-def _is_siso(system):
-    ct = import_module("control")
-    sp = import_module("scipy")
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
-    if isinstance(system, sm.control.lti.SISOLinearTimeInvariant):
-        return True
-    if isinstance(system, sp.signal.TransferFunction):
-        return True
-    if (
-        isinstance(system, ct.TransferFunction) and
-        (system.ninputs == 1) and (system.noutputs == 1)
-    ):
-        return True
-    return False
-
-
 def _check_system(system, bypass_delay_check=False):
     """Function to check whether the dynamical system passed for plots is
     compatible or not."""
 
-    if not _is_siso(system):
+    if not is_siso(system):
         raise NotImplementedError(
             "Only SISO LTI systems are currently supported.")
 
@@ -198,7 +182,7 @@ def _unpack_mimo_systems(system, label, input, output):
         for i in range(system.num_inputs):
             for o in range(system.num_outputs):
                 if _check_condition(i, o):
-                    lbl = label + pre + f"inp{i} -> out{o}"
+                    lbl = label + pre + f"u[{i}] to y[{o}]"
                     systems.append([system[o, i], lbl])
         return systems
 
@@ -211,7 +195,7 @@ def _unpack_mimo_systems(system, label, input, output):
                 if _check_condition(i, o):
                     n = system.num[o][i]
                     d = system.den[o][i]
-                    lbl = label + pre + f"inp{i} -> out{o}"
+                    lbl = label + pre + f"u[{i}] to y[{o}]"
                     systems.append([ct.tf(n, d, dt=system.dt), lbl])
         return systems
 
@@ -277,7 +261,7 @@ def _pole_zero_helper(
     zeros_re, zeros_im = [re(z) for z in zeros], [im(z) for z in zeros]
     poles_re, poles_im = [re(p) for p in poles], [im(p) for p in poles]
 
-    prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(**kwargs)
+    prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(kwargs)
     z_series = PoleZeroWithSympySeries(
         zeros_re, zeros_im, z_label, return_poles=False,
         scatter=True, is_filled=True, rendering_kw=zrk,
@@ -295,7 +279,7 @@ def _pole_zero_with_control_helper(
     system, pole_markersize, zero_markersize,
     **kwargs
 ):
-    prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(**kwargs)
+    prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(kwargs)
     return [
         PoleZeroSeries(system, p_label, return_poles=True,
             rendering_kw=prk, pole_markersize=pole_markersize, **kwargs),
@@ -304,8 +288,8 @@ def _pole_zero_with_control_helper(
     ]
 
 
-def _pole_zero_common_keyword_arguments(**kwargs):
-    label = kwargs.get("label", None)
+def _pole_zero_common_keyword_arguments(kwargs):
+    label = kwargs.pop("label", None)
     z_rendering_kw = kwargs.pop("z_rendering_kw", {})
     p_rendering_kw = kwargs.pop("p_rendering_kw", {})
     get_label = lambda t: t + " of " + label if label else t
@@ -484,7 +468,7 @@ def pole_zero(
         s = _preprocess_system(s, **kw)
         _check_system(s)
         series.extend(
-            func(s, pole_markersize, zero_markersize, **kwargs.copy())
+            func(s, pole_markersize, zero_markersize, **kw)
         )
 
     grid = _get_grid_series(sgrid, zgrid)
