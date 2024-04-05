@@ -352,7 +352,7 @@ class MatplotlibBackend(Plot):
                 self._ax = self._fig.add_subplot(1, 1, 1, **kwargs)
             else:
                 from spb.backends.matplotlib.renderers._sgrid_helper import sgrid_auto
-                self._ax = sgrid_auto()
+                self._ax = sgrid_auto(self._fig)
 
         if self._update_event:
             self._fig.canvas.mpl_connect(
