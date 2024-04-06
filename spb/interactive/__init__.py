@@ -88,7 +88,7 @@ def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
             b = a.lower()
             if b in ["linear", "log"]:
                 spacing = b
-            elif b[0] == ".":
+            elif b[0] in [".", "%"]:
                 formatter = a
             else:
                 label = a
@@ -116,10 +116,15 @@ def create_interactive_plot(*series, **kwargs):
         imodule = cfg["interactive"]["module"]
     imodule = imodule.lower()
 
+    # NOTE: Holoviz's Panel is really slow to load, so let's load it only when
+        # it is necessary
     if imodule == "panel":
+        from spb.interactive.panel import iplot
+        return iplot(*series, **kwargs)
+    elif imodule == "panel_bind":
         # NOTE: Holoviz's Panel is really slow to load, so let's load it only when
         # it is necessary
-        from spb.interactive.panel import iplot
+        from spb.interactive.panel_bind import iplot
         return iplot(*series, **kwargs)
     elif imodule == "ipywidgets":
         from spb.interactive.ipywidgets import iplot

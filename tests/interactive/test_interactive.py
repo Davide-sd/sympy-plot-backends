@@ -26,9 +26,11 @@ tf = PrintfTickFormatter(format="%.3f")
         ((0, 5, 1), 1, 0, 5, 0.125, None, "x", "linear"),
         ((0, 0, 1), 0, 0, 1, 0.025, None, "x", "linear"),
         ((1, 0, 1), 1, 0, 1, 0.025, None, "x", "linear"),
+        # if symbolic numbers are provided, they'll get casted to floats
         ((pi, Rational(1, 2), Integer(15)), math.pi, 0.5, 15, 0.3625, None, "x", "linear"),
         ((1, 0, 5, 50), 1, 0, 5, 0.1, None, "x", "linear"),
         ((1, 0, 5, 50, ".5f"), 1, 0, 5, 0.1, ".5f", "x", "linear"),
+        ((1, 0, 5, 50, "%.4f"), 1, 0, 5, 0.1, "%.4f", "x", "linear"),
         ((1, 0, 5, 50, ".5f", "test"), 1, 0, 5, 0.1, ".5f", "test", "linear"),
         ((1, 0, 5, 50, ".5f", "test", "log"), 1, 0, 5, 0.1, ".5f", "test", "log"),
         ((1, 0, 5, 50, "log"), 1, 0, 5, 0.1, None, "x", "log"),
