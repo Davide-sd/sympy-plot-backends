@@ -754,7 +754,7 @@ def surface_parametric(
 
        from sympy import *
        from spb import *
-       import param
+       import panel as pn
        n, u, v = symbols("n, u, v")
        x = v * cos(u)
        y = v * sin(u)
@@ -762,7 +762,7 @@ def surface_parametric(
        graphics(
            surface_parametric(x, y, z, (u, 0, 2*pi), (v, -1, 0),
                params = {
-                   n: param.Integer(3, label="n")
+                   n: pn.widgets.IntInput(value=3, name="n")
                },
                use_cm=True, wireframe=True, wf_n1=75, wf_n2=6),
            backend=PB,
@@ -908,7 +908,7 @@ def surface_spherical(
 
        from sympy import *
        from spb import *
-       import param
+       import panel as pn
        n, m = symbols("n, m")
        phi, theta = symbols("phi, theta", real=True)
        r = re(Ynm(n, m, theta, phi).expand(func=True).rewrite(sin).expand())
@@ -916,8 +916,8 @@ def surface_spherical(
            surface_spherical(abs(r), (theta, 0, pi), (phi, 0, 2*pi),
                label="real",
                params = {
-                   n: param.Integer(2, label="n"),
-                   m: param.Integer(0, label="m"),
+                   n: pn.widgets.IntInput(value=2, name="n"),
+                   m: pn.widgets.IntInput(value=0, name="m"),
                },
                use_cm=True, color_func=r, force_real_eval=True),
            backend=PB, imodule="panel")

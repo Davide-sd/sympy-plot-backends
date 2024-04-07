@@ -573,7 +573,7 @@ def plot3d_parametric_surface(*args, **kwargs):
 
        from sympy import *
        from spb import *
-       import param
+       import panel as pn
        n, u, v = symbols("n, u, v")
        x = v * cos(u)
        y = v * sin(u)
@@ -581,7 +581,7 @@ def plot3d_parametric_surface(*args, **kwargs):
        plot3d_parametric_surface(
            (x, y, z, (u, 0, 2*pi), (v, -1, 0)),
            params = {
-               n: param.Integer(3, label="n")
+               n: pn.widgets.IntInput(value=3, name="n")
            },
            backend=KB,
            use_cm=True,
@@ -731,15 +731,15 @@ def plot3d_spherical(*args, **kwargs):
 
        from sympy import *
        from spb import *
-       import param
+       import panel as pn
        n, m = symbols("n, m")
        phi, theta = symbols("phi, theta", real=True)
        r = re(Ynm(n, m, theta, phi).expand(func=True).rewrite(sin).expand())
        plot3d_spherical(
            abs(r), (theta, 0, pi), (phi, 0, 2*pi),
            params = {
-               n: param.Integer(2, label="n"),
-               m: param.Integer(0, label="m"),
+               n: pn.widgets.IntInput(value=2, name="n"),
+               m: pn.widgets.IntInput(value=0, name="m"),
            },
            force_real_eval=True,
            use_cm=True, color_func=r,

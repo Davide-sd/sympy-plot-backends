@@ -851,7 +851,7 @@ def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
 
        from sympy import *
        from spb import *
-       import param
+       import panel as pn
        a, b, c, d, e, f, theta, tp = symbols("a:f theta tp")
        def func(n):
            t1 = (c + sin(a * theta + d))
@@ -859,9 +859,9 @@ def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
            t3 = (f + sin(a * theta + n / pi))
            return t1 + t2 * t3 / 2
        params = {
-           a: param.Integer(6, label="a"),
-           b: param.Integer(12, label="b"),
-           c: param.Integer(18, label="c"),
+           a: pn.widgets.IntInput(value=6, name="a"),
+           b: pn.widgets.IntInput(value=12, name="b"),
+           c: pn.widgets.IntInput(value=18, name="c"),
            d: (4.7, 0, 2*pi),
            e: (1.8, 0, 2*pi),
            f: (3, 0, 5),
@@ -1650,13 +1650,13 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
 
        from sympy import *
        from spb import *
-       import param
+       import panel as pn
        a, b, c, d = symbols("a, b, c, d")
        params = {
            a: (0, -1, 1),
            b: (1, -1, 1),
            c: (2, 1, 2),
-           d: param.Integer(3, softbounds=(3, 8), label="n")
+           d: pn.widgets.IntInput(value=6, start=3, end=8, name="n")
        }
        graphics(
            geometry(Polygon((a, b), c, n=d), "a", params=params),

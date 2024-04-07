@@ -1222,7 +1222,7 @@ def plot_polar(*args, **kwargs):
 
        from sympy import *
        from spb import *
-       import param
+       import panel as pn
        a, b, c, d, e, f, theta, tp = symbols("a:f theta tp")
        def func(n):
            t1 = (c + sin(a * theta + d))
@@ -1234,9 +1234,9 @@ def plot_polar(*args, **kwargs):
            *exprs, prange(theta, 0, tp*pi),
            {"line_color": "black", "line_width": 0.5},
            params={
-               a: param.Integer(6, label="a"),
-               b: param.Integer(12, label="b"),
-               c: param.Integer(18, label="c"),
+               a: pn.widgets.IntInput(value=6, name="a"),
+               b: pn.widgets.IntInput(value=12, name="b"),
+               c: pn.widgets.IntInput(value=18, name="c"),
                d: (4.7, 0, 2*pi),
                e: (1.8, 0, 2*pi),
                f: (3, 0, 5),
@@ -1438,7 +1438,7 @@ def plot_geometry(*args, **kwargs):
 
        from sympy import *
        from spb import *
-       import param
+       import panel as pn
        a, b, c, d = symbols("a, b, c, d")
        plot_geometry(
            (Polygon((a, b), c, n=d), "a"),
@@ -1447,7 +1447,7 @@ def plot_geometry(*args, **kwargs):
                a: (0, -1, 1),
                b: (1, -1, 1),
                c: (2, 1, 2),
-               d: param.Integer(3, softbounds=(3, 8), label="n")
+               d: pn.widgets.IntInput(value=3, start=3, end=8, name="n")
            },
            aspect="equal", is_filled=False,
            xlim=(-2.5, 5.5), ylim=(-3, 6.5), imodule="panel")
