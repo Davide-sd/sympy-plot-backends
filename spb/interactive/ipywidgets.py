@@ -180,16 +180,18 @@ def iplot(*series, show=True, **kwargs):
     ==========
 
     series : BaseSeries
-        Instances of BaseSeries, representing the symbolic expression to be
-        plotted.
+        Instances of :py:class:`spb.series.BaseSeries`, representing the
+        symbolic expression to be plotted.
 
     params : dict
         A dictionary mapping the symbols to a parameter. The parameter can be:
 
         1. a widget.
         2. a tuple of the form:
-           `(default, min, max, N, tick_format, label, spacing)`
-           where:
+           `(default, min, max, N, tick_format, label, spacing)`,
+           which will instantiate a :py:class:`ipywidgets.FloatSlider` or
+           a :py:class:`ipywidgets.FloatLogSlider`, depending on the
+           spacing strategy. In particular:
 
            - default, min, max : float
                 Default value, minimum value and maximum value of the slider,
@@ -251,9 +253,9 @@ def iplot(*series, show=True, **kwargs):
     NOTE: the following examples use the ordinary plotting function because
     ``iplot`` is already integrated with them.
 
-    Surface plot between -10 <= x, y <= 10 with a damping parameter varying
-    from 0 to 1, with a default value of 0.15, discretized with 50 points
-    on both directions.
+    Surface plot between -10 <= x, y <= 10 discretized with 50 points
+    on both directions, with a damping parameter varying from 0 to 1, and a
+    default value of 0.15:
 
     .. code-block::
 
@@ -280,7 +282,8 @@ def iplot(*series, show=True, **kwargs):
 
     A line plot illustrating how to specify widgets. In particular:
 
-    1. the parameter ``d`` will be rendered as a slider.
+    1. the parameter ``d`` will be rendered as a slider, with a custom
+       formatter showing 3 decimal places.
     2. the parameter ``n`` is a spinner.
     3. the parameter ``phi`` will be rendered as a slider: note the custom
        number of steps and the custom label.
@@ -298,7 +301,7 @@ def iplot(*series, show=True, **kwargs):
        plot(
            cos(x * n - phi) * exp(-abs(x) * d), (x, -5*pi, 5*pi),
            params={
-               d: (0.1, 0, 1),
+               d: (0.1, 0, 1, ".3f"),
                n: ipywidgets.BoundedIntText(value=2, min=1, max=10, description="$n$"),
                phi: (0, 0, 2*pi, 50, r"$\phi$ [rad]")
            },
@@ -321,7 +324,6 @@ def iplot(*series, show=True, **kwargs):
        # Fourier Series of a sawtooth wave
        fs = S(1) / 2 - (1 / pi) * Sum(sin(2 * n * pi * x / T) / n, (n, 1, m))
 
-       formatter = PrintfTickFormatter(format="%.3f")
        plot(
            (sawtooth, (x, 0, 10), "f", {"line_dash": "dotted"}),
            (fs, (x, 0, 10), "approx"),
@@ -365,7 +367,6 @@ def iplot(*series, show=True, **kwargs):
            xscale = "log",
            xlabel = "Frequency, omega, [rad/s]",
            ylabel = "Magnitude [dB]",
-           use_latex = True,
        )
 
     A polar line plot. Note:
