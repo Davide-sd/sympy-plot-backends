@@ -3,182 +3,69 @@ from pytest import raises
 pn = pytest.importorskip("panel")
 from spb import BB, PB, MB, plot
 from spb.interactive.panel import (
-    DynamicParam, MyList, InteractivePlot, create_widgets
+    DynamicParam, InteractivePlot, create_widgets
 )
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from sympy import (
-    Integer, Float, Rational, pi, symbols, sin, cos
+    Integer, Float, Rational, pi, symbols, sin, cos, exp
 )
 import numpy as np
 import param
 import bokeh
 
 
-def test_DynamicParam():
-    a, b, c, d, e, f = symbols("a, b, c, d, e, f")
-
-    # test _tuple_to_dict
-    t = DynamicParam(
-        params={
-            a: (1, 0, 5),
-            b: (2, 1.5, 4.5, 20),
-            c: (3, 2, 5, 30, None, "test1"),
-            d: (1, 1, 10, 10, None, "test2", "log"),
-        },
-        use_latex=False,
-    )
-    p1 = getattr(t.param, "dyn_param_0")
-    p2 = getattr(t.param, "dyn_param_1")
-    p3 = getattr(t.param, "dyn_param_2")
-    p4 = getattr(t.param, "dyn_param_3")
-
-    def test_number(p, d, sb, l, st):
-        assert isinstance(p, param.Number)
-        assert p.default == d
-        assert p.softbounds == sb
-        assert p.label == l
-        assert p.step == st
-
-    def test_log_slider(p, d, sb, n, l):
-        assert isinstance(p, MyList)
-        assert p.default == 1
-        assert p.objects[0] == sb[0]
-        assert p.objects[-1] == sb[1]
-        assert len(p.objects) == 10
-        assert p.label == l
-
-    test_number(p1, 1, (0, 5), "a", 0.125)
-    test_number(p2, 2, (1.5, 4.5), "b", 0.15)
-    test_number(p3, 3, (2, 5), "test1", 0.1)
-    test_log_slider(p4, 1, (1, 10), 10, "test2")
-
-    # all formatters should be None
-    assert isinstance(t.formatters, dict)
-    assert len(t.formatters) == 4
-    assert all(e is None for e in t.formatters.values())
-
-    # test use_latex
-    formatter = bokeh.models.formatters.PrintfTickFormatter(format="%.4f")
-    t = DynamicParam(
-        params={
-            a: (1, 0, 5),
-            b: (2, 1.5, 4.5, 20),
-            c: (3, 2, 5, 30, formatter, "test1"),
-            d: (1, 1, 10, 10, None, "test2", "log"),
-        },
-        use_latex=True,
-    )
-    p1 = getattr(t.param, "dyn_param_0")
-    p2 = getattr(t.param, "dyn_param_1")
-    p3 = getattr(t.param, "dyn_param_2")
-    p4 = getattr(t.param, "dyn_param_3")
-
-    test_number(p1, 1, (0, 5), "$$a$$", 0.125)
-    test_number(p2, 2, (1.5, 4.5), "$$b$$", 0.15)
-    test_number(p3, 3, (2, 5), "test1", 0.1)
-    test_log_slider(p4, 1, (1, 10), 10, "test2")
-
-    # one formatter should be set
-    assert isinstance(t.formatters, dict)
-    assert len(t.formatters) == 4
-    assert all(t.formatters[k] is None for k in [a, b, d])
-    assert isinstance(
-        t.formatters[c], bokeh.models.formatters.PrintfTickFormatter
-    )
-
-    # test mix tuple and parameters
-    t = DynamicParam(
-        params={
-            a: (1, 0, 5),
-            b: (1, 1, 10, 10, None, "test3", "log"),
-            c: param.Boolean(default=True, label="test4"),
-            d: param.ObjectSelector(
+@pytest.mark.parametrize(
+    "par, expected_widget_type", [
+        (
+            param.Number(default=0, bounds=(0, 2), label="test"),
+            pn.widgets.FloatSlider
+        ),
+        (
+            param.Integer(default=0, bounds=(0, 2), label="test"),
+            pn.widgets.IntSlider
+        ),
+        (
+            param.Boolean(True),
+            pn.widgets.Checkbox
+        ),
+        (
+            param.ObjectSelector(
                 default=5, objects=[1, 2, 3, 4, 5], label="test5"
             ),
-            e: param.Number(
-                default=6.1, softbounds=(1.1, 10.1), label="test6"
-            ),
-            f: param.Integer(default=6, softbounds=(1, None), label="test7"),
-        },
-        use_latex=False,
-    )
-    p1 = getattr(t.param, "dyn_param_0")
-    p2 = getattr(t.param, "dyn_param_1")
-    p3 = getattr(t.param, "dyn_param_2")
-    p4 = getattr(t.param, "dyn_param_3")
-    p5 = getattr(t.param, "dyn_param_4")
-    p6 = getattr(t.param, "dyn_param_5")
-    test_number(p1, 1, (0, 5), "a", 0.125)
-    test_log_slider(p2, 1, (1, 10), 10, "test3")
-    assert isinstance(p3, param.Boolean)
-    assert p3.default is True
-    assert p3.label == "test4"
-    assert isinstance(p4, param.ObjectSelector)
-    assert p4.label == "test5"
-    assert p4.default == 5
-    assert isinstance(p5, param.Number)
-    assert p5.default == 6.1
-    assert p5.softbounds == (1.1, 10.1)
-    assert p5.label == "test6"
-    assert isinstance(p6, param.Integer)
-    assert p6.default == 6
-    assert p6.label == "test7"
-
-    r = {a: 1, b: 1, c: True, d: 5, e: 6.1, f: 6}
-    assert t.read_parameters() == r
-
-
-def test_DynamicParam_symbolic_parameters():
-    # verify that we can pass symbolic numbers, which will then be converted
-    # to float numbers
-
-    a, b, c = symbols("a, b, c")
-
-    # test _tuple_to_dict
-    t = DynamicParam(
-        params={
-            a: (Integer(1), 0, 5),
-            b: (2, Float(1.5), 4.5, Integer(20)),
-            c: (3 * pi / 2, Rational(2, 3), Float(5), 30, None, "test1"),
-        },
-        use_latex=False,
-    )
-    p1 = getattr(t.param, "dyn_param_0")
-    p2 = getattr(t.param, "dyn_param_1")
-    p3 = getattr(t.param, "dyn_param_2")
-
-    def test_number(p, d, sb):
-        assert isinstance(p, param.Number)
-        assert np.isclose(p.default, d) and isinstance(p.default, float)
-        assert p.softbounds == sb
-        assert all(isinstance(t, float) for t in p.softbounds)
-        assert isinstance(p.step, float)
-
-    test_number(p1, 1, (0, 5))
-    test_number(p2, 2, (1.5, 4.5))
-    test_number(p3, 1.5 * np.pi, (2 / 3, 5))
+            pn.widgets.select.Select
+        )
+    ]
+)
+def test_DynamicParam(par, expected_widget_type):
+    # verify the proper conversion from a param's Parameter to a
+    # panel's widget
+    d = DynamicParam(par)
+    tmp_panel = pn.Param(d)
+    widget = tmp_panel.widget("dyn_param_0")
+    assert isinstance(widget, expected_widget_type)
 
 
 def test_iplot(panel_options):
     # verify that the correct widgets are created, with the appropriate labels
 
     bm = bokeh.models
-    a, b, c, d = symbols("a, b, c, d")
-    x, y, u, v = symbols("x, y, u, v")
+    a, b, c, d, e, f, g, h, x = symbols("a, b, c, d, e, f, g, h, x")
 
     t = plot(
-        (a + b + c + d) * cos(x),
+        c * cos(a * x) * exp(-abs(x) / b) + d * (x - e) * f + g*h,
         (x, -5, 5),
         params={
             a: (2, 1, 3, 5),
-            b: (3, 2, 4000, 10, None, "label", "log"),
+            b: (3, 1e-03, 4e03, 10, None, "label", "log"),
             c: param.Number(0.15, softbounds=(0, 1), label="test", step=0.025),
             # TODO: if I remove the following label, the tests are going to
             # fail: it would use the label "test5"... How is it possible?
             d: param.Integer(1, softbounds=(0, 10), label="d"),
-            y: param.Integer(1, softbounds=(0, None)),
-            u: param.Boolean(default=True),
-            v: param.ObjectSelector(default=2, objects=[1, 2, 3, 4]),
+            e: param.Integer(1, softbounds=(0, None)),
+            f: param.Boolean(default=True),
+            g: param.ObjectSelector(default=2, objects=[1, 2, 3, 4]),
+            h: pn.widgets.FloatSlider(
+                value=5, start=0, end=10, name="float slider")
         },
         layout="tb",
         ncols=2,
@@ -186,23 +73,8 @@ def test_iplot(panel_options):
         **panel_options
     )
 
-    # no latex in labels
-    p1 = getattr(t.param, "dyn_param_0")
-    p2 = getattr(t.param, "dyn_param_1")
-    p3 = getattr(t.param, "dyn_param_2")
-    p4 = getattr(t.param, "dyn_param_3")
-
-    assert p1.label == "a"
-    assert p2.label == "label"
-    assert p3.label == "test"
-    assert p4.label == "d"
-
-    # there are 7 parameters in this plot
-    assert len(t.mapping) == 7
-
     # c1 wraps the controls, c2 wraps the plot
-    c1, c2 = t.show().get_root().children
-    gridbox = c1.children[0].children[0]
+    gridbox, html = t.show().get_root().children
     assert isinstance(gridbox.children[0][0], bm.Slider)
     assert isinstance(gridbox.children[1][0].children[1], bm.Slider)
     assert isinstance(gridbox.children[2][0], bm.Slider)
@@ -210,14 +82,23 @@ def test_iplot(panel_options):
     assert isinstance(gridbox.children[4][0], bm.Spinner)
     assert isinstance(gridbox.children[5][0], bm.Checkbox)
     assert isinstance(gridbox.children[6][0], bm.Select)
+    assert isinstance(gridbox.children[7][0], bm.Slider)
+    assert gridbox.children[0][0].title == "a"
+    assert gridbox.children[1][0].children[0].text[:5] == "label"
+    assert gridbox.children[2][0].title == "test"
+    assert gridbox.children[3][0].title == "d"
+    assert gridbox.children[7][0].title == "float slider"
+    # verify it's an Nx2 grid of widgets
+    assert gridbox.children[0][1:3] == (0, 0)
+    assert gridbox.children[1][1:3] == (0, 1)
+    assert gridbox.children[2][1:3] == (1, 0)
+    assert gridbox.children[3][1:3] == (1, 1)
+    assert gridbox.children[4][1:3] == (2, 0)
+    assert gridbox.children[5][1:3] == (2, 1)
+    assert gridbox.children[6][1:3] == (3, 0)
+    assert gridbox.children[7][1:3] == (3, 1)
 
-    # test that the previous class-attribute associated to the previous
-    # parameters are cleared in a new instance
-    current_params = [
-        k for k in InteractivePlot.__dict__.keys() if "dyn_param_" in k
-    ]
-    assert len(current_params) == 7
-
+    # verify use_latex works properly
     t = plot(
         (a + b + c) * cos(x),
         (x, -5, 5),
@@ -227,82 +108,20 @@ def test_iplot(panel_options):
             c: param.Number(0.15, softbounds=(0, 1), label="test", step=0.025),
         },
         layout="tb",
-        ncols=2,
+        ncols=3,
         use_latex=True,
         **panel_options
     )
 
-    # there are 3 parameters in this plot
-    assert len(t.mapping) == 3
-
-    # latex in labels
-    p1 = getattr(t.param, "dyn_param_0")
-    p2 = getattr(t.param, "dyn_param_1")
-    p3 = getattr(t.param, "dyn_param_2")
-
-    assert p1.label == "$$a$$"
-    assert p2.label == "$$b$$"
-    assert p3.label == "test"
-
-    t = plot(
-        (a + b) * cos(x),
-        (x, -5, 5),
-        params={
-            a: (1, 0, 5),
-            b: (1, 1, 10, 10, None, "test3", "log"),
-        },
-        use_latex=False,
-        **panel_options
-    )
-
-    new_params = [
-        k for k in InteractivePlot.__dict__.keys() if "dyn_param_" in k
-    ]
-    assert len(new_params) == 2
-
-
-def test_create_widgets():
-    x, y, z = symbols("x:z")
-
-    w = create_widgets(
-        {
-            x: (2, 0, 4),
-            y: (200, 1, 1000, 10, None, "y", "log"),
-            z: param.Integer(3, softbounds=(3, 10), label="n"),
-        },
-        use_latex=True,
-    )
-
-    assert isinstance(w, dict)
-    assert len(w) == 3
-    assert isinstance(w[x], pn.widgets.FloatSlider)
-    assert isinstance(w[y], pn.widgets.DiscreteSlider)
-    assert isinstance(w[z], pn.widgets.IntSlider)
-    assert w[x].name == "$$x$$"
-    assert w[y].name == "y"
-    assert w[z].name == "n"
-
-    formatter = bokeh.models.formatters.PrintfTickFormatter(format="%.4f")
-    w = create_widgets(
-        {
-            x: (2, 0, 4),
-            y: (200, 1, 1000, 10, formatter, "y", "log"),
-            z: param.Integer(3, softbounds=(3, 10), label="n"),
-        },
-        use_latex=False,
-    )
-
-    assert isinstance(w, dict)
-    assert len(w) == 3
-    assert isinstance(w[x], pn.widgets.FloatSlider)
-    assert isinstance(w[y], pn.widgets.DiscreteSlider)
-    assert isinstance(w[z], pn.widgets.IntSlider)
-    assert w[x].name == "x"
-    assert w[y].name == "y"
-    assert w[z].name == "n"
-
-    assert all(w[k].format is None for k in [x, z])
-    assert isinstance(w[y].format, bokeh.models.formatters.PrintfTickFormatter)
+    # c1 wraps the controls, c2 wraps the plot
+    gridbox, html = t.show().get_root().children
+    assert gridbox.children[0][0].title == "$$a$$"
+    assert gridbox.children[1][0].title == "$$b$$"
+    assert gridbox.children[2][0].title == "test"
+    # verify it's an 1x3 grid of widgets
+    assert gridbox.children[0][1:3] == (0, 0)
+    assert gridbox.children[1][1:3] == (0, 1)
+    assert gridbox.children[2][1:3] == (0, 2)
 
 
 def test_template(panel_options):
@@ -374,3 +193,48 @@ def test_template(panel_options):
         **panel_options
     )
     raises(TypeError, lambda: p._create_template())
+
+
+def test_create_widgets():
+    x, y, z = symbols("x:z")
+
+    w = create_widgets(
+        {
+            x: (2, 0, 4),
+            y: (200, 1, 1000, 10, None, "y", "log"),
+            z: param.Integer(3, softbounds=(3, 10), label="n"),
+        },
+        use_latex=True,
+    )
+
+    assert isinstance(w, dict)
+    assert len(w) == 3
+    assert isinstance(w[x], pn.widgets.FloatSlider)
+    assert isinstance(w[y], pn.widgets.DiscreteSlider)
+    assert isinstance(w[z], pn.widgets.IntSlider)
+    assert w[x].name == "$$x$$"
+    assert w[y].name == "y"
+    assert w[z].name == "n"
+
+    formatter = bokeh.models.formatters.PrintfTickFormatter(format="%.4f")
+    w = create_widgets(
+        {
+            x: (2, 0, 4, formatter),
+            y: (200, 1, 1000, 10, "%.4f", "y", "log"),
+            z: param.Integer(3, softbounds=(3, 10), label="n"),
+        },
+        use_latex=False,
+    )
+
+    assert isinstance(w, dict)
+    assert len(w) == 3
+    assert isinstance(w[x], pn.widgets.FloatSlider)
+    assert isinstance(w[y], pn.widgets.DiscreteSlider)
+    assert isinstance(w[z], pn.widgets.IntSlider)
+    assert w[x].name == "x"
+    assert w[y].name == "y"
+    assert w[z].name == "n"
+
+    assert isinstance(w[x].format, bokeh.models.formatters.PrintfTickFormatter)
+    assert w[y].formatter == "%.4f"
+    assert w[z].format is None

@@ -241,37 +241,42 @@ def test_plotgrid_mode_1_interactive_panel():
     res = p.show()
     assert isinstance(res, pn.Column)
     assert len(res.objects) == 2
-    assert isinstance(res.objects[0], pn.param.ParamMethod)
-    assert isinstance(res.objects[1], pn.GridSpec)
+    assert isinstance(res.objects[0], pn.GridBox)
+    assert isinstance(res.objects[1], pn.param.ParamFunction)
     # widgets grid
-    t = res.objects[0].get_root()
-    sliders = t.children[0].children[0].children
+    grid = res.objects[0]
+    assert grid.ncols == 2
+    assert grid.nrows is None
+    sliders = grid.objects
+    assert len(sliders) == 2
     assert all(
-        isinstance(s[0], bokeh.models.widgets.sliders.Slider) for s in sliders
+        isinstance(o, pn.widgets.FloatSlider) for o in sliders
     )
     # plots grid
-    assert res.objects[1].nrows == 3
-    assert res.objects[1].ncols == 1
-    assert all(
-        isinstance(res.objects[1][i, 0], pn.pane.plotly.Plotly)
-        for i in range(3)
-    )
+    assert isinstance(res.objects[1].get_root(), pn.models.layout.Column)
+    plot_grid = res.objects[1].get_root().children[0]
+    plots = plot_grid.children
+    assert len(plots) == 3
+    assert all(isinstance(p[0], pn.models.plotly.PlotlyPlot) for p in plots)
+    assert plots[0][1:] == (0, 0, 1, 1)
+    assert plots[1][1:] == (1, 0, 1, 1)
+    assert plots[2][1:] == (2, 0, 1, 1)
 
     # quick run-down to verify that no errors are raised when changing the
     # value of a widget
-    sliders[0][0].value = 2
+    sliders[0].value = 2
 
     p = build_plotgrid(BB)
     res = p.show()
-    t = res.objects[0].get_root()
-    sliders = t.children[0].children[0].children
-    sliders[0][0].value = 2
+    grid = res.objects[0]
+    sliders = grid.objects
+    sliders[0].value = 2
 
     p = build_plotgrid(MB)
     res = p.show()
-    t = res.objects[0].get_root()
-    sliders = t.children[0].children[0].children
-    sliders[0][0].value = 2
+    grid = res.objects[0]
+    sliders = grid.objects
+    sliders[0].value = 2
 
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
@@ -520,29 +525,27 @@ def test_plotgrid_mode_2_interactive_panel():
     res = p.show()
     assert isinstance(res, pn.Column)
     assert len(res.objects) == 2
-    assert isinstance(res.objects[0], pn.param.ParamMethod)
-    assert isinstance(res.objects[1], pn.GridSpec)
+    assert isinstance(res.objects[0], pn.GridBox)
+    assert isinstance(res.objects[1], pn.param.ParamFunction)
     # widgets grid
-    t = res.objects[0].get_root()
-    sliders = t.children[0].children[0].children
+    grid = res.objects[0]
+    assert grid.ncols == 2
+    assert grid.nrows is None
+    sliders = grid.objects
     assert all(
-        isinstance(s[0], bokeh.models.widgets.sliders.Slider) for s in sliders
+        isinstance(s, pn.widgets.FloatSlider) for s in sliders
     )
     # plots grid
-    assert res.objects[1].nrows == 3
-    assert res.objects[1].ncols == 3
-    assert isinstance(res.objects[1][0, 0], pn.pane.plotly.Plotly)
-    assert isinstance(res.objects[1][1, 0], pn.pane.plotly.Plotly)
-    assert isinstance(res.objects[1][2, 0], pn.pane.plotly.Plotly)
-    assert isinstance(res.objects[1][2, 1:], pn.GridSpec)
-    assert isinstance(
-        list(res.objects[1][2, 1:].objects.values())[0], pn.pane.plotly.Plotly
-    )
-    assert isinstance(res.objects[1][0:2, 1:], pn.GridSpec)
-    assert isinstance(
-        list(res.objects[1][0:2, 1:].objects.values())[0],
-        pn.pane.plotly.Plotly
-    )
+    assert isinstance(res.objects[1].get_root(), pn.models.layout.Column)
+    plot_grid = res.objects[1].get_root().children[0]
+    plots = plot_grid.children
+    assert len(plots) == 5
+    assert all(isinstance(p[0], pn.models.plotly.PlotlyPlot) for p in plots)
+    assert plots[0][1:] == (0, 0, 1, 1)
+    assert plots[1][1:] == (1, 0, 1, 1)
+    assert plots[2][1:] == (2, 0, 1, 1)
+    assert plots[3][1:] == (2, 1, 1, 2)
+    assert plots[4][1:] == (0, 1, 2, 2)
 
 
 @pytest.mark.skipif(pn is None, reason="panel is not installed")

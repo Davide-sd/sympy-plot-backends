@@ -121,11 +121,6 @@ def create_interactive_plot(*series, **kwargs):
     if imodule == "panel":
         from spb.interactive.panel import iplot
         return iplot(*series, **kwargs)
-    elif imodule == "panel_bind":
-        # NOTE: Holoviz's Panel is really slow to load, so let's load it only when
-        # it is necessary
-        from spb.interactive.panel_bind import iplot
-        return iplot(*series, **kwargs)
     elif imodule == "ipywidgets":
         from spb.interactive.ipywidgets import iplot
         return iplot(*series, **kwargs)
