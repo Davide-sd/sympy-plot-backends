@@ -242,7 +242,7 @@ def test_plotgrid_mode_1_interactive_panel():
     assert isinstance(res, pn.Column)
     assert len(res.objects) == 2
     assert isinstance(res.objects[0], pn.GridBox)
-    assert isinstance(res.objects[1], pn.param.ParamFunction)
+    assert isinstance(res.objects[1], pn.GridSpec)
     # widgets grid
     grid = res.objects[0]
     assert grid.ncols == 2
@@ -253,14 +253,13 @@ def test_plotgrid_mode_1_interactive_panel():
         isinstance(o, pn.widgets.FloatSlider) for o in sliders
     )
     # plots grid
-    assert isinstance(res.objects[1].get_root(), pn.models.layout.Column)
-    plot_grid = res.objects[1].get_root().children[0]
-    plots = plot_grid.children
-    assert len(plots) == 3
-    assert all(isinstance(p[0], pn.models.plotly.PlotlyPlot) for p in plots)
-    assert plots[0][1:] == (0, 0, 1, 1)
-    assert plots[1][1:] == (1, 0, 1, 1)
-    assert plots[2][1:] == (2, 0, 1, 1)
+    plots = res.objects[1]
+    assert plots.ncols == 1
+    assert plots.nrows == 3
+    assert len(plots.objects) == 3
+    assert isinstance(plots.objects[(0, 0, 1, 1)], pn.pane.Plotly)
+    assert isinstance(plots.objects[(1, 0, 2, 1)], pn.pane.Plotly)
+    assert isinstance(plots.objects[(2, 0, 3, 1)], pn.pane.Plotly)
 
     # quick run-down to verify that no errors are raised when changing the
     # value of a widget
@@ -526,7 +525,7 @@ def test_plotgrid_mode_2_interactive_panel():
     assert isinstance(res, pn.Column)
     assert len(res.objects) == 2
     assert isinstance(res.objects[0], pn.GridBox)
-    assert isinstance(res.objects[1], pn.param.ParamFunction)
+    assert isinstance(res.objects[1], pn.GridSpec)
     # widgets grid
     grid = res.objects[0]
     assert grid.ncols == 2
@@ -536,16 +535,15 @@ def test_plotgrid_mode_2_interactive_panel():
         isinstance(s, pn.widgets.FloatSlider) for s in sliders
     )
     # plots grid
-    assert isinstance(res.objects[1].get_root(), pn.models.layout.Column)
-    plot_grid = res.objects[1].get_root().children[0]
-    plots = plot_grid.children
-    assert len(plots) == 5
-    assert all(isinstance(p[0], pn.models.plotly.PlotlyPlot) for p in plots)
-    assert plots[0][1:] == (0, 0, 1, 1)
-    assert plots[1][1:] == (1, 0, 1, 1)
-    assert plots[2][1:] == (2, 0, 1, 1)
-    assert plots[3][1:] == (2, 1, 1, 2)
-    assert plots[4][1:] == (0, 1, 2, 2)
+    plots = res.objects[1]
+    assert plots.ncols == 3
+    assert plots.nrows == 3
+    assert len(plots.objects) == 5
+    assert isinstance(plots.objects[(0, 0, 1, 1)], pn.pane.Plotly)
+    assert isinstance(plots.objects[(1, 0, 2, 1)], pn.pane.Plotly)
+    assert isinstance(plots.objects[(2, 0, 3, 1)], pn.pane.Plotly)
+    assert isinstance(plots.objects[(2, 1, 3, 3)], pn.pane.Plotly)
+    assert isinstance(plots.objects[(0, 1, 2, 3)], pn.pane.Plotly)
 
 
 @pytest.mark.skipif(pn is None, reason="panel is not installed")

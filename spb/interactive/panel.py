@@ -231,7 +231,13 @@ class InteractivePlot(IPlot):
         default_kw = {}
         if isinstance(self._backend, PB):
             pane_func = pn.pane.Plotly
-        elif isinstance(self._backend, MB):
+        elif (
+            isinstance(self._backend, MB) or        # vanilla MB
+            (
+                hasattr(self._backend, "is_matplotlib_fig") and
+                self._backend.is_matplotlib_fig     # plotgrid with all MBs
+            )
+        ):
             # since we are using Jupyter and interactivity, it is useful to
             # activate ipympl interactive frame, as well as setting a lower
             # dpi resolution of the matplotlib image
@@ -242,7 +248,8 @@ class InteractivePlot(IPlot):
             pane_func = pn.pane.Matplotlib
         elif isinstance(self._backend, BB):
             pane_func = pn.pane.Bokeh
-        else:
+        elif isinstance(self._backend, KB):
+            print("nope")
             # TODO: for some reason, panel is going to set width=0
             # if K3D-Jupyter is used.
             # Temporary workaround: create a Pane with a default width.
@@ -251,6 +258,18 @@ class InteractivePlot(IPlot):
             # way it does with Bokeh, Plotly, Matplotlib, ...
             default_kw["width"] = 800
             pane_func = pn.pane.panel
+        else:
+            # here we are dealing with plotgrid of BB/PB/or mixed backend...
+            # but not with plotgrids of MB
+            # First, set the necessary data to create bindings for each
+            # subplot
+            self._backend.pre_set_bindings(
+                list(self.mapping.keys()),
+                self._widgets_for_binding()
+            )
+            # Then, create the pn.GridSpec figure
+            self.pane = self._backend.fig
+            return
         kw = self.merge({}, default_kw, self._pane_kw)
         self.pane = pane_func(self._binding, **kw)
 

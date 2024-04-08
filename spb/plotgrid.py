@@ -59,17 +59,6 @@ def _create_mpl_figure(
         catch=(RuntimeError,))
     plt = matplotlib.pyplot
 
-    def get_fig_panes_plots(fig):
-        panes_plots = {}
-        if is_iplot_panel:
-            pn = import_module(
-                'panel',
-                min_module_version='0.12.0')
-            pane = pn.pane.Matplotlib(fig, dpi=96)
-            panes_plots[pane] = fig
-            return pane, panes_plots
-        return fig, panes_plots
-
     kw = {} if not size else {"figsize": size}
     if is_iplot_panel:
         fig = matplotlib.figure.Figure(**kw)
@@ -100,8 +89,7 @@ def _create_mpl_figure(
             p = MB(*p.series, **cpa)
             p.draw()
             new_plots.append(p)
-        fig, panes_plots = get_fig_panes_plots(fig)
-        return fig, new_plots, panes_plots
+        return fig, new_plots
 
     for spec, p in mapping.items():
         if isinstance(p, IPlot):
@@ -119,35 +107,7 @@ def _create_mpl_figure(
         new_plots.append(p)
 
     fig.tight_layout()
-    fig, panes_plots = get_fig_panes_plots(fig)
-    return fig, new_plots, panes_plots
-
-
-def _create_panel_figure(mapping, panel_kw):
-    pn = import_module(
-        'panel',
-        min_module_version='0.12.0')
-    pn.extension("plotly")
-
-    panes_plots = {}
-    fig = pn.GridSpec(**panel_kw)
-    for spec, p in mapping.items():
-        rs = spec.rowspan
-        cs = spec.colspan
-        if isinstance(p, IPlot):
-            # a panel's `pane` must receive a figure of some kind, not another
-            # panel's object, otherwise there will be performance penalty,
-            # especially noticeable with Plotly and Bokeh
-            p = p.backend
-        _fig = p.fig
-        if isinstance(p, PB):
-            pane = pn.pane.Plotly(_fig.to_dict())
-            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pane
-        else:
-            pane = pn.pane.panel(_fig)
-            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pane
-        panes_plots[pane] = p
-    return fig, panes_plots
+    return fig, new_plots
 
 
 def _create_ipywidgets_figure(mapping, panel_kw):
@@ -215,7 +175,6 @@ def _get_all_parameters(plots):
     for plot in plots:
         if isinstance(plot, IPlot):
             all_plots.append(plot.backend)
-            # all_plots.append(plot)
             all_parameters.update(plot._original_params)
         else:
             all_plots.append(plot)
@@ -488,6 +447,9 @@ class PlotGrid:
         self._panes_plots = {}
         self._is_iplot = kwargs.get("is_iplot", False)
         self._imodule = kwargs.get("imodule", cfg["interactive"]["module"])
+        # those are set by spb.interactive.panel, they allow binding widgets
+        # to appropriate update functions.
+        self._params_symbols, self._params_widgets = None, None
 
         # validate GridSpec, if provided
         self.gs = kwargs.get("gs", None)
@@ -573,7 +535,7 @@ class PlotGrid:
                     c += 1
 
             if self.is_matplotlib_fig:
-                self._fig, self._new_plots, self._panes_plots = _create_mpl_figure(
+                self._fig, self._new_plots = _create_mpl_figure(
                     mapping, self.imagegrid, self.size, is_iplot_panel)
             else:
                 size = self.size
@@ -588,8 +550,8 @@ class PlotGrid:
                         "height",
                         nr * self._panel_row_height if not size else size[1]
                     )
-                    self._fig, self._panes_plots = _create_panel_figure(
-                        mapping, self.panel_kw)
+                    self._fig, self._panes_plots = self._create_panel_figure(
+                        mapping)
                 else:
                     get_size = lambda t: str(t) + "px" if isinstance(t, int) else t
                     self.panel_kw.setdefault("width", "800px" if not size else get_size(size[0]))
@@ -605,7 +567,7 @@ class PlotGrid:
         else:
             # Second mode of operation
             if self.is_matplotlib_fig:
-                self._fig, self._new_plots, self._panes_plots = _create_mpl_figure(
+                self._fig, self._new_plots = _create_mpl_figure(
                     gs, self.imagegrid, self.size, is_iplot_panel)
             else:
                 for plot in gs.values():
@@ -615,8 +577,8 @@ class PlotGrid:
                         self._new_plots.append(plot)
 
                 if self._imodule == "panel":
-                    self._fig, self._panes_plots = _create_panel_figure(
-                        gs, self.panel_kw)
+                    self._fig, self._panes_plots = self._create_panel_figure(
+                        gs)
                 else:
                     first_element = list(gs.keys())[0]
                     mpl_gs = first_element.get_gridspec()
@@ -625,20 +587,65 @@ class PlotGrid:
                     self._fig, self._bokeh_outputs_plots = _create_ipywidgets_figure(
                         gs, self.panel_kw)
 
-    def _action_post_update(self):
-        """With Holoviz's Panel, plots are contained into `panes`: they are
-        ultimately responsible to update what is shown on the screen.
-        This method is executed by the interactive widget plot after all
-        subplots have updated their data.
-        """
-        for pane, plot in self._panes_plots.items():
-            pane.param.trigger("object")
-            if isinstance(plot, PB):
-                pane.object = plot.fig.to_dict()
-            elif isinstance(plot, self.matplotlib.figure.Figure):
-                pane.object = plot
+
+    def _create_panel_figure(self, mapping):
+        pn = import_module(
+            'panel',
+            min_module_version='0.12.0')
+        pn.extension("plotly")
+
+        panes_plots = {}
+        fig = pn.GridSpec(**self.panel_kw)
+        create_binding = self._params_symbols is not None
+        for i, (spec, p) in enumerate(mapping.items()):
+            rs = spec.rowspan
+            cs = spec.colspan
+            if isinstance(p, IPlot):
+                # a panel's `pane` must receive a figure of some kind, not another
+                # panel's object, otherwise there will be performance penalty,
+                # especially noticeable with Plotly and Bokeh
+                p = p.backend
+            _fig = p.fig
+            if isinstance(p, PB):
+                pane = pn.pane.Plotly(
+                    _fig.to_dict() if not create_binding else
+                    pn.bind(self._update_plotly, p, *self._params_widgets)
+                )
+            elif isinstance(p, MB):
+                pane = pn.pane.Matplotlib(
+                    _fig if not create_binding else
+                    pn.bind(self._update_plot, p, *self._params_widgets)
+                )
+            elif isinstance(p, BB):
+                pane = pn.pane.Bokeh(
+                    _fig if not create_binding else
+                    pn.bind(self._update_plot, p, *self._params_widgets)
+                )
             else:
-                pane.object = plot.fig
+                pane = pn.pane.panel(
+                    _fig if not create_binding else
+                    pn.bind(self._update_plot, p, *self._params_widgets)
+                )
+            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pane
+            panes_plots[pane] = p
+        return fig, panes_plots
+
+    def pre_set_bindings(self, symbols, widgets):
+        """Set the necessary data to create bindings for interactive widgets
+        plots with panel.
+        """
+        self._params_symbols = symbols
+        self._params_widgets = widgets
+
+    def _update_plot(self, p, *values):
+        d = {symb: v for symb, v in zip(self._params_symbols, values)}
+        p.update_interactive(d)
+        return p.fig
+
+    def _update_plotly(self, p, *values):
+        d = {symb: v for symb, v in zip(self._params_symbols, values)}
+        p.update_interactive(d)
+        return p.fig.to_dict()
 
     def update_interactive(self, params):
         """Implement the logic to update the data generated by
