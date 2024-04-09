@@ -33,7 +33,7 @@ def _hardcoded_defaults():
             # https://docs.bokeh.org/en/latest/docs/reference/themes.html
             "theme": "caliber",
             # How will the plot resizes to fill the available space.
-            "sizing_mode": "stretch_width",
+            "sizing_mode": "fixed",
             # the default size of the plot when sizing_mode=fixed
             "width": 600,
             "height": 400,
