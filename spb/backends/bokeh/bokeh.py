@@ -106,6 +106,24 @@ class BokehBackend(Plot):
     .. [#fn6] https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
 
 
+    Notes
+    =====
+
+    By providing ``update_event=True`` to any plot function, this backend
+    binds pan/zoom events in order to automatically compute new data as the
+    user interact with the plot.
+
+    When executing this mode of operation inside:
+
+    * Jupyter Notebook/Lab: no problem has been encountered (with
+      Firefox/Chrome).
+    * A standard Python interpreter:
+
+      * No problem has been encountered with Chrome.
+      * Memory leaks has been observed with Firefox. Watch out your system
+        monitor!
+
+
     See also
     ========
 
@@ -160,7 +178,7 @@ class BokehBackend(Plot):
             import_kwargs={
                 'fromlist': [
                     'models', 'events', 'plotting', 'io',
-                    'palettes', 'embed', 'resources'
+                    'palettes', 'embed', 'resources', 'server'
                 ]
             },
             warn_not_installed=True,
@@ -511,7 +529,7 @@ class BokehBackend(Plot):
         associated to events.
         """
         doc.theme = self._theme
-        doc.add_root(self._fig)
+        doc.add_root(self.fig)
 
     def show(self):
         """Visualize the plot on the screen."""
@@ -519,14 +537,23 @@ class BokehBackend(Plot):
             self._process_renderers()
 
         if self._update_event:
-            # TODO: the current way we are launching the server only works within
-            # Jupyter Notebook. Is there another way of launching it so that it can
-            # run from any Python interpreter?
-            self.bokeh.plotting.show(self._launch_server)
+            if self._run_in_notebook:
+                self.bokeh.plotting.show(self._launch_server)
+            else:
+                # NOTE:
+                # 1. From: https://docs.bokeh.org/en/latest/docs/user_guide/server/library.html
+                #    In particular: https://github.com/bokeh/bokeh/tree/3.4.0/examples/server/api/standalone_embed.py
+                # 2. TODO: Only works for one plot, then python needs to be
+                #    closed and reopened.
+                # 3. Use Control+C to stop the server process
+                # 4. Watch out for memory leaks on Firefox.
+                from bokeh.server.server import Server
+                server = Server(self._launch_server, num_procs=1)
+                server.start()
+                server.io_loop.add_callback(server.show, "/")
+                server.io_loop.start()
         else:
-            # if the backend it running from a python interpreter, the server
-            # wont' work. Hence, launch a static figure, which doesn't listen
-            # to events (no pan-auto-update).
+            # launch a static figure
             curdoc = self.bokeh.io.curdoc
             curdoc().theme = self._theme
             self.bokeh.plotting.show(self._fig)
