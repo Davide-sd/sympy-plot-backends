@@ -71,7 +71,8 @@ class InteractivePlot(IPlot):
         self._grid_widgets = _build_grid_layout(self._widgets, self._ncols)
 
         # map symbols to widgets
-        self._params_widgets = {k: v for k, v in zip(params.keys(), self._widgets)}
+        self._params_widgets = {
+            k: v for k, v in zip(params.keys(), self._widgets)}
 
         plotgrid = kwargs.get("plotgrid", None)
 
@@ -113,7 +114,7 @@ class InteractivePlot(IPlot):
                     warn_not_installed=True,
                     min_module_version='2.3.0')
                 with self._output_figure:
-                    clear_output(True)
+                    clear_output(True) # NOTE: this is the cause of flickering
                     bokeh.io.show(self._backend.fig)
 
         for w in self._widgets:
