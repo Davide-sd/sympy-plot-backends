@@ -641,7 +641,7 @@ def test_plot_size():
     # NOTE: K3DBackend doesn't support custom size
 
     p = make_test_plot_size(BB)
-    assert p.fig.sizing_mode == "stretch_width"
+    assert p.fig.sizing_mode == "fixed"
 
     p = make_test_plot_size(BB, (400, 200))
     assert p.fig.sizing_mode == "fixed"
