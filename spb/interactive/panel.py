@@ -249,7 +249,6 @@ class InteractivePlot(IPlot):
         elif isinstance(self._backend, BB):
             pane_func = pn.pane.Bokeh
         elif isinstance(self._backend, KB):
-            print("nope")
             # TODO: for some reason, panel is going to set width=0
             # if K3D-Jupyter is used.
             # Temporary workaround: create a Pane with a default width.
@@ -381,7 +380,9 @@ def iplot(*series, show=True, **kwargs):
 
            - default, min, max : float
                 Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers.
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
            - N : int, optional
                 Number of steps of the slider.
            - tick_format : TickFormatter or None, optional
@@ -426,14 +427,17 @@ def iplot(*series, show=True, **kwargs):
         section to understand how the interactive plot is built).
         The following web pages shows the available options:
 
-        * Refer to [#fn2]_ for
-          :py:class:`spb.backends.matplotlib.MatplotlibBackend`.
-          Two interesting options are:
+        * If Matplotlib is used, the figure is wrapped by
+          :py:class:`panel.pane.plot.Matplotlib`. Two interesting options are:
 
           * ``interactive``: wheter to activate the ipympl interactive backend.
           * ``dpi``: set the dots per inch of the output png. Default to 96.
 
-        * Refer to [#fn3]_ for :py:class:`spb.backends.plotly.PlotlyBackend`.
+        * If Plotly is used, the figure is wrapped by
+          :py:class:`panel.pane.plotly.Plotly`.
+
+        * If Bokeh is used, the figure is wrapped by
+          :py:class:`panel.pane.plot.Bokeh`.
 
     servable : bool, optional
         Default to False, which will show the interactive application on the
@@ -445,7 +449,7 @@ def iplot(*series, show=True, **kwargs):
         If True, it will return an object that will be rendered on the
         output cell of a Jupyter Notebook. If False, it returns an instance
         of ``InteractivePlot``, which can later be be shown by calling the
-        `show()` method.
+        ``show()`` method.
 
     template : optional
         Specify the template to be used to build the interactive application
@@ -485,6 +489,51 @@ def iplot(*series, show=True, **kwargs):
         If True, the latex representation of the symbols will be used in the
         labels of the parameter-controls. If False, the string
         representation will be used instead.
+
+
+    See also
+    ========
+
+    create_widgets
+
+
+    Notes
+    =====
+
+    1. This function is specifically designed to work within Jupyter Notebook.
+       It is also possible to use it from a regular Python console,
+       by executing: ``iplot(..., servable=True)``, which will create a server
+       process loading the interactive plot on the browser.
+       However, :py:class:`spb.backends.k3d.K3DBackend` is not supported
+       in this mode of operation.
+
+    2. The interactive application consists of two main containers:
+
+       * a pane containing the widgets.
+       * a pane containing the chart, which can be further customize
+         by setting the ``pane_kw`` dictionary. Please, read its documentation
+         to understand the available options.
+
+    3. Some examples use an instance of
+       :py:class:`bokeh.models.PrintfTickFormatter` to format the
+       value shown by a slider. This class is exposed by Bokeh, but can be
+       used in interactive plots with any backend.
+
+    4. It has been observed that Dark Reader (or other night-mode-enabling
+       browser extensions) might interfere with the correct behaviour of
+       the output of  interactive plots. Please, consider adding ``localhost``
+       to the exclusion list of such browser extensions.
+
+    5. :py:class:`spb.backends.matplotlib.MatplotlibBackend` can be used,
+       but the resulting figure is just a PNG image without any interactive
+       frame. Thus, data exploration is not great. Therefore, the use of
+       :py:class:`spb.backends.plotly.PlotlyBackend` or
+       :py:class:`spb.backends.bokeh.BokehBackend` is encouraged.
+
+    6. When ``BokehBackend`` is used:
+
+       * rendering of gradient lines is slow.
+       * color bars might not update their ranges.
 
 
     Examples
@@ -563,8 +612,7 @@ def iplot(*series, show=True, **kwargs):
     wave and:
 
     1. custom format of the value shown on the slider.
-    2. creation of an integer spinner widget. This is achieved by setting
-       ``None`` as one of the bounds of the integer parameter.
+    2. creation of an integer spinner widget.
 
     .. panel-screenshot::
 
@@ -671,79 +719,6 @@ def iplot(*series, show=True, **kwargs):
            name = "Non Circular Planetary Drive - Ring Profile"
        )
 
-    Notes
-    =====
-
-    1. This function is specifically designed to work within Jupyter Notebook.
-       It is also possible to use it from a regular Python console,
-       by executing: ``iplot(..., servable=True)``, which will create a server
-       process loading the interactive plot on the browser.
-       However, :py:class:`spb.backends.k3d.K3DBackend` is not supported
-       in this mode of operation.
-
-    2. The interactive application consists of two main containers:
-
-       * a pane containing the widgets.
-       * a pane containing the chart. We can further customize this container
-         by setting the ``pane_kw`` dictionary. Please, read its documentation
-         to understand the available options.
-
-    3. Some examples use an instance of ``PrintfTickFormatter`` to format the
-       value shown by a slider. This class is exposed by Bokeh, but can be
-       used in interactive plots with any backend. Refer to [#fn1]_ for more
-       information about tick formatting.
-
-    4. It has been observed that Dark Reader (or other night-mode-enabling
-       browser extensions) might interfere with the correct behaviour of
-       the output of  interactive plots. Please, consider adding ``localhost``
-       to the exclusion list of such browser extensions.
-
-    5. Say we are creating two different interactive plots and capturing
-       their output on two variables, using ``show=False``. For example,
-       ``p1 = plot(..., params={a:(...), b:(...), ...}, show=False)`` and
-       ``p2 = plot(..., params={a:(...), b:(...), ...}, show=False)``.
-       Then, running ``p1.show()`` on the screen will result in an error.
-       This is standard behaviour that can't be changed, as `panel's`
-       parameters are class attributes that gets deleted each time a new
-       instance is created.
-
-    6. :py:class:`spb.backends.matplotlib.MatplotlibBackend` can be used,
-       but the resulting figure is just a PNG image without any interactive
-       frame. Thus, data exploration is not great. Therefore, the use of
-       :py:class:`spb.backends.plotly.PlotlyBackend` or
-       :py:class:`spb.backends.bokeh.BokehBackend` is encouraged.
-
-    7. When :py:class:`spb.backends.bokeh.BokehBackend` is used:
-
-       * rendering of gradient lines is slow.
-       * color bars might not update their ranges.
-
-    8. Once this module has been loaded and executed, the safest procedure
-       to restart Jupyter Notebook's kernel is the following:
-
-       * save the current notebook.
-       * close the notebook and Jupyter server.
-       * restart Jupyter server and open the notebook.
-       * reload the cells.
-
-       Failing to follow this procedure might results in the notebook to
-       become  unresponsive once the module has been reloaded, with several
-       errors appearing on the output cell.
-
-
-    References
-    ==========
-
-    .. [#fn1] https://docs.bokeh.org/en/latest/docs/user_guide/styling.html#tick-label-formats
-    .. [#fn2] https://panel.holoviz.org/reference/panes/Matplotlib.html
-    .. [#fn3] https://panel.holoviz.org/reference/panes/Plotly.html
-
-
-    See also
-    ========
-
-    create_widgets
-
     """
     i = InteractivePlot(*series, **kwargs)
     if show:
@@ -829,7 +804,7 @@ def create_widgets(params, use_latex=True, **kwargs):
     See also
     ========
 
-    iplot, create_series
+    iplot
 
     """
     results = dict()

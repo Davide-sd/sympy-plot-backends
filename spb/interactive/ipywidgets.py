@@ -190,13 +190,16 @@ def iplot(*series, show=True, **kwargs):
         1. a widget.
         2. a tuple of the form:
            `(default, min, max, N, tick_format, label, spacing)`,
-           which will instantiate a :py:class:`ipywidgets.FloatSlider` or
-           a :py:class:`ipywidgets.FloatLogSlider`, depending on the
-           spacing strategy. In particular:
+           which will instantiate a
+           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
+           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
+           depending on the spacing strategy. In particular:
 
            - default, min, max : float
                 Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers.
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
            - N : int, optional
                 Number of steps of the slider.
            - tick_format : str or None, optional
@@ -228,8 +231,8 @@ def iplot(*series, show=True, **kwargs):
         Default to True.
         If True, it will return an object that will be rendered on the
         output cell of a Jupyter Notebook. If False, it returns an instance
-        of ``InteractivePlot``, which can later be be shown by calling the
-        `show()` method.
+        of ``InteractivePlot``, which can later be shown by calling the
+        ``show()`` method.
 
     title : str or tuple
         The title to be shown on top of the figure. To specify a parametric
@@ -246,6 +249,19 @@ def iplot(*series, show=True, **kwargs):
         If True, the latex representation of the symbols will be used in the
         labels of the parameter-controls. If False, the string
         representation will be used instead.
+
+
+    Notes
+    =====
+
+    1. This function is specifically designed to work within Jupyter Notebook
+       and requires the
+       `ipywidgets module <https://ipywidgets.readthedocs.io>`_ .
+
+    2. To update Matplotlib plots, the ``%matplotlib widget`` command must be
+       executed at the top of the Jupyter Notebook. It requires the
+       installation of the
+       `ipympl module <https://github.com/matplotlib/ipympl>`_ .
 
 
     Examples
@@ -303,7 +319,8 @@ def iplot(*series, show=True, **kwargs):
            cos(x * n - phi) * exp(-abs(x) * d), (x, -5*pi, 5*pi),
            params={
                d: (0.1, 0, 1, ".3f"),
-               n: ipywidgets.BoundedIntText(value=2, min=1, max=10, description="$n$"),
+               n: ipywidgets.BoundedIntText(value=2, min=1, max=10,
+                   description="$n$"),
                phi: (0, 0, 2*pi, 50, r"$\phi$ [rad]")
            },
            ylim=(-1.25, 1.25))
@@ -330,7 +347,8 @@ def iplot(*series, show=True, **kwargs):
            (fs, (x, 0, 10), "approx"),
            params = {
                T: (4, 0, 10, 80, "Period, T"),
-               m: ipywidgets.BoundedIntText(value=4, min=1, max=100, description="Sum up to n ")
+               m: ipywidgets.BoundedIntText(value=4, min=1, max=100,
+                   description="Sum up to n ")
            },
            xlabel = "x",
            ylabel = "y",
@@ -394,7 +412,8 @@ def iplot(*series, show=True, **kwargs):
                p1: (0.035, -0.035, 0.035, 50),
                p2: (0.005, -0.02, 0.02, 50),
                # integer parameter created with ipywidgets
-               r: ipywidgets.BoundedIntText(value=2, min=2, max=5, description="r"),
+               r: ipywidgets.BoundedIntText(value=2, min=2, max=5,
+                   description="r"),
                # integer parameter created with usual syntax
                c: (3, 1, 5, 4)
            },
@@ -421,22 +440,6 @@ def iplot(*series, show=True, **kwargs):
                sin(x)*cos(x), (x, -5, 5),
                rendering_kw={"marker": "^", "linestyle": ":"}, n=50),
        )
-
-    Notes
-    =====
-
-    1. This function is specifically designed to work within Jupyter Notebook
-       and requires the ``ipywidgets`` module [#fna]_ .
-
-    2. To update Matplotlib plots, the ``%matplotlib widget`` command must be
-       executed at the top of the Jupyter Notebook. It requires the
-       installation of the ``ipympl`` module [#fnb]_ .
-
-    References
-    ==========
-
-    .. [#fna] https://ipywidgets.readthedocs.io
-    .. [#fnb] https://github.com/matplotlib/ipympl
 
     """
     i = InteractivePlot(*series, **kwargs)
