@@ -262,20 +262,25 @@ def vector_field_2d(
     * the use of ``prange`` (parametric plotting range).
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
+    * the use of :py:class:`panel.widgets.slider.RangeSlider`, which is a
+      2-values widget.
 
     .. panel-screenshot::
        :small-size: 800, 610
 
        from sympy import *
        from spb import *
-       x, y, a, b, c, d = symbols("x, y, a, b, c, d")
+       import panel as pn
+       x, y, a, b, c, d, e = symbols("x, y, a, b, c, d, e")
        v = [-sin(a * y), cos(b * x)]
        graphics(
            vector_field_2d(-sin(a * y), cos(b * x),
-               prange(x, -3*c, 3*c), prange(y, -3*d, 3*d),
+               prange(x, -3*c, 3*c), prange(y, d, e),
                params={
                    a: (1, -2, 2), b: (1, -2, 2),
-                   c: (1, 0, 2), d: (1, 0, 2),
+                   c: (1, 0, 2),
+                   (d, e): pn.widgets.RangeSlider(
+                       value=(-3, 3), start=-9, end=9, step=0.1)
                },
                quiver_kw=dict(color="black", scale=30, headwidth=5),
                contour_kw={"cmap": "Blues_r", "levels": 15}

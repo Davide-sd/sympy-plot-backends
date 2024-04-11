@@ -385,13 +385,35 @@ class BaseSeries:
             kwargs.get("zscale", "linear")
         ]
 
-        self._params = kwargs.get("params", dict())
-        if not isinstance(self._params, dict):
+        self._params = _params = kwargs.get("params", dict())
+        # this is used by spb.interactive to keep track of multi-values widgets
+        self._original_params = _params.copy()
+        if not isinstance(_params, dict):
             raise TypeError(
                 "`params` must be a dictionary mapping symbols "
                 "to numeric values.")
-        if len(self._params) > 0:
+        if len(_params) > 0:
             self.is_interactive = True
+            if any(isinstance(t, (list, tuple)) for t in _params.keys()):
+                # NOTE: at this point, params is a dictionary with the
+                # followingform:
+                #     { symb1: (1, 0, 10, "label"),
+                #       symb2: FloatSlider(value=2, min=0, max=5),
+                #       (symb3, symb4): RangeSlider(...)}
+                # Need to extract (symb3, symb4) so that self.param.keys()
+                # contains only symbols
+                new_params = {}
+                for k, v in _params.items():
+                    if isinstance(k, (list, tuple)):
+                        for s in k:
+                            new_params[s] = v
+                    else:
+                        new_params[k] = v
+                self._params = new_params
+                # NOTE: Data series are unable to extract numerical values
+                # from widgets. This step is done by iplot(). Before executing
+                # the get_data() method, be sure to provide a ``params``
+                # dictionary mapping symbols to numeric values.
 
         self.rendering_kw = kwargs.get("rendering_kw", dict())
 
@@ -551,7 +573,25 @@ class BaseSeries:
 
     @params.setter
     def params(self, p):
-        self._params = p
+        # NOTE: this setter expects p.values() to be numeric, or list/tuple of
+        # numbers. It is meant to be called when users update the state of
+        # some Widget.
+        self._params = self._params_helper(p)
+
+    def _params_helper(self, p):
+        if not any(isinstance(t, (list, tuple)) for t in p.keys()):
+            return p
+        # some widget could be a RangeSlider. User wrote something like:
+        # (symb1, symb2): RangeSlider(...)
+        # Need to split its symbols/values.
+        new_params = {}
+        for k, v in p.items():
+            if not isinstance(v, (list, tuple)):
+                new_params[k] = v
+            else:
+                for s, val in zip(k, v):
+                    new_params[s] = val
+        return new_params
 
     @property
     def scales(self):
@@ -3173,7 +3213,7 @@ class SliceVector3DSeries(Vector3DSeries):
 
     @params.setter
     def params(self, p):
-        self._params = p
+        self._params = self._params_helper(p)
         if self.slice_surf_series.is_interactive:
             # update both parameters and discretization ranges
             self.slice_surf_series.params = p

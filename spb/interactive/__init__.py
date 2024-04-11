@@ -194,3 +194,36 @@ class IPlot:
 
         new_iplot = type(self)(*series, **merge({}, backend_kw, iplot_kw))
         return new_iplot
+
+
+def _aggregate_parameters(params, series):
+    """Loop over data series to extract the `params` dictionaries provided by
+    the user. This is necessary when dealing with the ``graphics`` module.
+
+    Parameters
+    ==========
+    params : dict
+        Whatever was provided by the user in the main function call (be it
+        plot(), plot_paramentric(), ..., graphics())
+    series : list
+        Data series of the current interactive widget plot.
+
+    Returns
+    =======
+    params : dict
+    """
+    if params is None:
+        params = {}
+    if len(params) == 0:
+        # this is the case when an interactive widget plot is build with
+        # the `graphics` interface.
+        for s in series:
+            if s.is_interactive:
+                # use s._original_params instead of s.params in order to
+                # keep track of multi-values widgets
+                params.update(s._original_params)
+    if len(params) == 0:
+        raise ValueError(
+            "In order to create an interactive plot, "
+            "the `params` dictionary must be provided.")
+    return params

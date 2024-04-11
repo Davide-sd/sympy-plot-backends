@@ -1,11 +1,12 @@
 import pytest
 from pytest import raises
 pn = pytest.importorskip("panel")
-from spb import BB, PB, MB, plot
+from spb import BB, PB, MB, plot, graphics, line, line_parametric_2d
 from spb.interactive.panel import (
     DynamicParam, InteractivePlot, create_widgets
 )
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
+from spb.utils import prange
 from sympy import (
     Integer, Float, Rational, pi, symbols, sin, cos, exp
 )
@@ -238,3 +239,50 @@ def test_create_widgets():
     assert isinstance(w[x].format, bokeh.models.formatters.PrintfTickFormatter)
     assert w[y].formatter == "%.4f"
     assert w[z].format is None
+
+
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
+def test_params_multi_value_widgets_1():
+    a, b, c, x = symbols("a:c x")
+    p = plot(
+        cos(c * x), prange(x, a, b), n=10, adaptive=False,
+        params={
+            (a, b): pn.widgets.RangeSlider(
+                value=(-2, 2), start=-5, end=5, step=0.1),
+            c: (1, 0, 5)
+        }, imodule="panel", show=False, backend=MB)
+    fig = p.fig
+    d1 = p.backend[0].get_data()
+    # verify that no errors are raise when an update event is triggered
+    p._update((-3, 3), 2)
+    d2 = p.backend[0].get_data()
+    assert not np.allclose(d1, d2)
+
+
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
+def test_params_multi_value_widgets_2():
+    a, b, c, d, x = symbols("a:d x")
+    p = graphics(
+        line(cos(x), range=(x, -5, 5), n=10, adaptive=False),
+        line(cos(c * x), range=(x, a, b), n=10, adaptive=False,
+            params={
+                (a, b): pn.widgets.RangeSlider(
+                    value=(-2, 2), start=-5, end=5, step=0.1),
+                c: (1, 0, 5)
+            }),
+        line_parametric_2d(cos(d*x), sin(d*x), range=(x, -4, 4),
+            n=10, adaptive=False,
+            params={d: (2, 0, 6)}),
+        imodule="panel", show=False, backend=MB)
+    fig = p.fig
+    d1 = p.backend[0].get_data()
+    d2 = p.backend[1].get_data()
+    d3 = p.backend[2].get_data()
+    # verify that no errors are raise when an update event is triggered
+    p._update((-3, 3), 2, 3)
+    d4 = p.backend[0].get_data()
+    d5 = p.backend[1].get_data()
+    d6 = p.backend[2].get_data()
+    assert np.allclose(d1, d4)
+    assert not np.allclose(d2, d5)
+    assert not np.allclose(d3, d6)

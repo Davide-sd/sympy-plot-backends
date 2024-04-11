@@ -296,6 +296,9 @@ def plot(*args, **kwargs):
     * the use of ``prange`` (parametric plotting range).
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
+    * the use of :py:class:`panel.widgets.slider.RangeSlider`, which is a
+      2-values widget. In this case it is used to enforce the condition
+      `f1 < f2`.
     * the use of a parametric title, specified with a tuple of the form:
       ``(title_str, param_symbol1, ...)``, where:
 
@@ -309,20 +312,21 @@ def plot(*args, **kwargs):
 
        from sympy import *
        from spb import *
-       x, a, b, c, n = symbols("x, a, b, c, n")
+       import panel as pn
+       x, y, f1, f2, d, n = symbols("x, y, f_1, f_2, d, n")
        plot(
-           (cos(a * x + b) * exp(-c * x), "oscillator"),
-           (exp(-c * x), "upper limit", {"linestyle": ":"}),
-           (-exp(-c * x), "lower limit", {"linestyle": ":"}),
+           (cos(f1 * x) * exp(-d * x), "oscillator 1"),
+           (cos(f2 * x) * exp(-d * x), "oscillator 2"),
+           (exp(-d * x), "upper limit", {"linestyle": ":"}),
+           (-exp(-d * x), "lower limit", {"linestyle": ":"}),
            prange(x, 0, n * pi),
            params={
-               a: (1, 0, 10),     # frequency
-               b: (0, 0, 2 * pi), # phase
-               c: (0.25, 0, 1),   # damping
+               (f1, f2): pn.widgets.RangeSlider(value=(1, 2), start=0, end=10, step=0.1),     # frequency
+               d: (0.25, 0, 1),   # damping
                n: (2, 0, 4)       # multiple of pi
            },
            ylim=(-1.25, 1.25),
-           title=("Frequency = {:.2f} Hz", a)
+           title=("$f_1$ = {:.2f} Hz", f1),
        )
 
     See Also
@@ -838,16 +842,28 @@ def plot_contour(*args, **kwargs):
     * the use of ``prange`` (parametric plotting range).
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
+    * the use of :py:class:`panel.widgets.slider.RangeSlider`, which is a
+      2-values widget.
 
     .. panel-screenshot::
        :small-size: 800, 600
 
        from sympy import *
        from spb import *
-       x, y, a, b, xp, yp = symbols("x y a b x_p y_p")
+       import panel as pn
+       x, y, a, b = symbols("x y a b")
+       x_min, x_max, y_min, y_max = symbols("x_min x_max y_min y_max")
        expr = (cos(x) + a * sin(x) * sin(y) - b * sin(x) * cos(y))**2
-       plot_contour(expr, prange(x, 0, xp*pi), prange(y, 0, yp * pi),
-           params={a: (1, 0, 2), b: (1, 0, 2), xp: (1, 0, 2), yp: (2, 0, 2)},
+       plot_contour(
+           expr, prange(x, x_min*pi, x_max*pi), prange(y, y_min*pi, y_max*pi),
+           params={
+               a: (1, 0, 2),
+               b: (1, 0, 2),
+               (x_min, x_max): pn.widgets.RangeSlider(
+                   value=(-1, 1), start=-3, end=3, step=0.1),
+               (y_min, y_max): pn.widgets.RangeSlider(
+                   value=(-1, 1), start=-3, end=3, step=0.1),
+           },
            grid=False)
 
     See Also
@@ -1059,21 +1075,26 @@ def plot_implicit(*args, **kwargs):
     * the use of ``prange`` (parametric plotting range).
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
+    * the use of :py:class:`panel.widgets.slider.RangeSlider`, which is a
+      2-values widget.
 
     .. panel-screenshot::
        :small-size: 800, 700
 
        from sympy import *
        from spb import *
-       x, y, a, b, c, d, e = symbols("x, y, a, b, c, d, e")
+       import panel as pn
+       x, y, a, b, c, d = symbols("x, y, a, b, c, d")
+       y_min, y_max = symbols("y_min, y_max")
        expr = Eq(a * x**2 - b * x + c, d * y + y**2)
-       plot_implicit(expr, (x, -2, 2), prange(y, -e, e),
+       plot_implicit(expr, (x, -2, 2), prange(y, y_min, y_max),
            params={
                a: (10, -15, 15),
                b: (7, -15, 15),
                c: (3, -15, 15),
                d: (2, -15, 15),
-               e: (10, 1, 15),
+               (y_min, y_max): pn.widgets.RangeSlider(
+                   value=(-10, 10), start=-15, end=15, step=0.1)
            }, n=150, ylim=(-10, 10))
 
     See Also

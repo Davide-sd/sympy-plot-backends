@@ -48,7 +48,17 @@ def _create_missing_ranges(exprs, ranges, npar, params=None, imaginary=False):
 
     free_symbols = _get_free_symbols(exprs)
     if params is not None:
-        free_symbols = free_symbols.difference(params.keys())
+        if any(isinstance(t, (list, tuple)) for t in params.keys()):
+            # take care of RangeSlider
+            p_symbols = set()
+            for k in params.keys():
+                if isinstance(k, (list, tuple)):
+                    p_symbols = p_symbols.union(k)
+                else:
+                    p_symbols = p_symbols.union([k])
+        else:
+            p_symbols = params.keys()
+        free_symbols = free_symbols.difference(p_symbols)
 
     if len(free_symbols) > npar:
         raise ValueError(

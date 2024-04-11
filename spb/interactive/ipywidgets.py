@@ -1,7 +1,8 @@
 import ipywidgets
+from sympy import latex
 from sympy.external import import_module
 from spb.defaults import TWO_D_B, THREE_D_B
-from spb.interactive import _tuple_to_dict, IPlot
+from spb.interactive import _tuple_to_dict, IPlot, _aggregate_parameters
 from spb import BB, MB, PlotGrid
 from IPython.display import clear_output
 import warnings
@@ -26,6 +27,11 @@ def _build_widgets(params, use_latex=True):
             else:
                 widgets.append(ipywidgets.FloatLogSlider(**d))
         elif isinstance(v, ipywidgets.Widget):
+            if hasattr(v, "description") and len(v.description) == 0:
+                # show the symbol if no label was set to the widget
+                wrapper = "$%s$" if use_latex else "%s"
+                func = latex if use_latex else str
+                v.description = wrapper % func(s)
             widgets.append(v)
         else:
             raise ValueError(
@@ -54,14 +60,7 @@ def _build_grid_layout(widgets, ncols):
 class InteractivePlot(IPlot):
     def __init__(self, *series, **kwargs):
         params = kwargs.pop("params", {})
-        if len(params) == 0:
-            # this is the case when an interactive widget plot is build with
-            # the `graphics` interface.
-            for s in series:
-                if s.is_interactive:
-                    params.update(s.params)
-        if not params:
-            raise ValueError("`params` must be provided.")
+        params = _aggregate_parameters(params, series)
         self._original_params = params
         self._use_latex = kwargs.pop("use_latex", True)
         self._ncols = kwargs.get("ncols", 2)
@@ -102,23 +101,23 @@ class InteractivePlot(IPlot):
             "params": self._original_params,
         }
 
-    def show(self):
+    def _update(self, change):
         # bind widgets state to this update function
-        def update(change):
-            self._backend.update_interactive(
-                {k: v.value for k, v in self._params_widgets.items()})
-            if isinstance(self._backend, BB):
-                bokeh = import_module(
-                    'bokeh',
-                    import_kwargs={'fromlist': ['io']},
-                    warn_not_installed=True,
-                    min_module_version='2.3.0')
-                with self._output_figure:
-                    clear_output(True) # NOTE: this is the cause of flickering
-                    bokeh.io.show(self._backend.fig)
+        self._backend.update_interactive(
+            {k: v.value for k, v in self._params_widgets.items()})
+        if isinstance(self._backend, BB):
+            bokeh = import_module(
+                'bokeh',
+                import_kwargs={'fromlist': ['io']},
+                warn_not_installed=True,
+                min_module_version='2.3.0')
+            with self._output_figure:
+                clear_output(True) # NOTE: this is the cause of flickering
+                bokeh.io.show(self._backend.fig)
 
+    def show(self):
         for w in self._widgets:
-            w.observe(update, "value")
+            w.observe(self._update, "value")
 
         # create the output figure
         if (isinstance(self._backend, MB) or

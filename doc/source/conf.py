@@ -226,6 +226,10 @@ intersphinx_mapping = {
     'sympy': ('https://docs.sympy.org/latest/', None),
     'control': ('https://python-control.readthedocs.io/en/latest/', None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "bokeh": ("https://docs.bokeh.org/en/latest/", None),
+    "panel": ("https://panel.holoviz.org/", None),
+    "param": ("https://param.holoviz.org/", None),
+    "ipywidgets": ("https://ipywidgets.readthedocs.io/en/stable/", None),
 }
 
 

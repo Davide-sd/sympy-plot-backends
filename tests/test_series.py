@@ -31,6 +31,8 @@ ct = import_module("control")
 scipy = import_module("scipy")
 adaptive = import_module("adaptive")
 plotly = import_module("plotly")
+pn = import_module("panel")
+ipy = import_module("ipywidgets")
 
 # NOTE:
 #
@@ -4538,3 +4540,27 @@ def test_pole_zero_series_interactive():
     x, y = s2.get_data()
     assert np.allclose(x, [0, 0])
     assert np.allclose(y, [0.5, -0.5])
+
+
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
+def test_params_multi_value_widgets_1():
+    # verify that data series are able to deal with widgets returning
+    # multiple values
+
+    a, b, c, x = symbols("a:c x")
+    range_slider = pn.widgets.RangeSlider(
+        value=(-2, 2), start=-5, end=5, step=0.1)
+    s = LineOver1DRangeSeries(cos(c * x), (x, a, b), n=10, adaptive=False,
+        params={
+            (a, b): range_slider,
+            c: (1, 0, 5)
+        })
+    # verify that tuples in params.keys() are going to be expanded
+    assert len(s.params) == 3
+    assert s.params[a] is range_slider
+    assert s.params[b] is range_slider
+    assert s.params[c] == (1, 0, 5)
+    # simulate update event
+    new_params = {(a, b): (-3, 4), c: 2}
+    s.params = new_params
+    assert s.params == {a: -3, b: 4, c: 2}

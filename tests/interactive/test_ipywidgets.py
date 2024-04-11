@@ -1,8 +1,9 @@
 import pytest
 from pytest import raises
 ipywidgets = pytest.importorskip("ipywidgets")
-from spb import BB, PB, MB, plot
+from spb import BB, PB, MB, plot, graphics, line, line_parametric_2d
 from spb.interactive.ipywidgets import _build_widgets, InteractivePlot
+from spb.utils import prange
 from sympy import symbols, cos, sin, exp, pi, Float, Integer, Rational
 import numpy as np
 
@@ -124,3 +125,58 @@ def test_plot_layout(ipywidgets_options):
         **options
     )
     assert isinstance(p4, ipywidgets.HBox)
+
+
+@pytest.mark.skipif(ipywidgets is None, reason="ipywidgets is not installed")
+def test_params_multi_value_widgets_1():
+    a, b, c, x = symbols("a:c x")
+    w1 = ipywidgets.FloatRangeSlider(value=(-2, 2), min=-5, max=5)
+    w2 = ipywidgets.FloatSlider(value=1, min=0, max=5)
+    p = plot(
+        cos(c * x), prange(x, a, b), n=10, adaptive=False,
+        params={
+            (a, b): w1,
+            c: w2
+        }, imodule="ipywidgets", show=False, backend=MB)
+    fig = p.fig
+    d1 = p.backend[0].get_data()
+    # verify that no errors are raise when an update event is triggered
+    w1.value = (-3, 3)
+    w2.value = 2
+    p._update(None)
+    d2 = p.backend[0].get_data()
+    assert not np.allclose(d1, d2)
+
+
+@pytest.mark.skipif(ipywidgets is None, reason="ipywidgets is not installed")
+def test_params_multi_value_widgets_2():
+    a, b, c, d, x = symbols("a:d x")
+    w1 = ipywidgets.FloatRangeSlider(value=(-2, 2), min=-5, max=5, step=0.1)
+    w2 = ipywidgets.FloatSlider(value=1, min=0, max=5)
+    w3 = ipywidgets.FloatSlider(value=2, min=0, max=6)
+    p = graphics(
+        line(cos(x), range=(x, -5, 5), n=10, adaptive=False),
+        line(cos(c * x), range=(x, a, b), n=10, adaptive=False,
+            params={
+                (a, b): w1,
+                c: w2
+            }),
+        line_parametric_2d(cos(d*x), sin(d*x), range=(x, -4, 4),
+            n=10, adaptive=False,
+            params={d: w3}),
+        imodule="ipywidgets", show=False, backend=MB)
+    fig = p.fig
+    d1 = p.backend[0].get_data()
+    d2 = p.backend[1].get_data()
+    d3 = p.backend[2].get_data()
+    # verify that no errors are raise when an update event is triggered
+    w1.value = (-3, 3)
+    w2.value = 2
+    w3.value = 3
+    p._update(None)
+    d4 = p.backend[0].get_data()
+    d5 = p.backend[1].get_data()
+    d6 = p.backend[2].get_data()
+    assert np.allclose(d1, d4)
+    assert not np.allclose(d2, d5)
+    assert not np.allclose(d3, d6)

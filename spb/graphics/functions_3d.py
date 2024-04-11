@@ -495,22 +495,27 @@ def surface(
     * the use of ``prange`` (parametric plotting range).
     * the use of the ``params`` dictionary to specify sliders in
       their basic form: (default, min, max).
+    * the use of :py:class:`panel.widgets.slider.RangeSlider`, which is a
+      2-values widget.
 
     .. panel-screenshot::
        :small-size: 800, 600
 
        from sympy import *
        from spb import *
-       x, y, a, b, d = symbols("x y a b d")
+       import panel as pn
+       x, y, a, b, d, e = symbols("x y a b d e")
        graphics(
            surface(cos(x**2 + y**2) * exp(-(x**2 + y**2) * d),
-               prange(x, -2*a, 2*a), prange(y, -2*b, 2*b),
-               use_cm=True, n=100,
+               prange(x, b, c), prange(y, d, e),
                params={
-                   a: (1, 0, 3),
-                   b: (1, 0, 3),
-                   d: (0.25, 0, 1),
+                   a: (0.25, 0, 1),
+                   (b, c): pn.widgets.RangeSlider(
+                       value=(-2, 2), start=-4, end=4, step=0.1),
+                   (d, e): pn.widgets.RangeSlider(
+                       value=(-2, 2), start=-4, end=4, step=0.1),
                },
+               use_cm=True, n=100,
                wireframe=True, wf_n1=15, wf_n2=15),
            backend=PB, aspect=dict(x=1.5, y=1.5, z=0.75))
 

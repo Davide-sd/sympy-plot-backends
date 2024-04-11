@@ -5,9 +5,10 @@ Implements interactive-widgets plotting with Holoviz Panel using
 
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.utils import _validate_kwargs
-from spb.interactive import _tuple_to_dict, IPlot
+from spb.interactive import _tuple_to_dict, IPlot, _aggregate_parameters
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from spb.plotgrid import PlotGrid
+from sympy import latex
 from sympy.external import import_module
 import warnings
 
@@ -118,15 +119,7 @@ class InteractivePlot(IPlot):
         self._template = kwargs.pop("template", None)
         self._name = name
 
-        if params is None:
-            params = {}
-        if len(params) == 0:
-            # this is the case when an interactive widget plot is build with
-            # the `graphics` interface: need to construct the params dict
-            # by looping over the series
-            for s in series:
-                if s.is_interactive:
-                    params.update(s.params)
+        params = _aggregate_parameters(params, series)
         self._original_params = params
 
         # The following dictionary will be used to create the appropriate
@@ -810,6 +803,11 @@ def create_widgets(params, use_latex=True, **kwargs):
     results = dict()
     for symb, v in params.items():
         if isinstance(v, (pn.widgets.base.Widget)):
+            if hasattr(v, "name") and len(v.name) == 0:
+                # show the symbol if no label was set to the widget
+                wrapper = "$$%s$$" if use_latex else "%s"
+                func = latex if use_latex else str
+                v.name = wrapper % func(symb)
             results[symb] = v
         elif isinstance(v, param.parameterized.Parameter):
             dyn_param = DynamicParam(v)
