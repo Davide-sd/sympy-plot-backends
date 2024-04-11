@@ -931,10 +931,10 @@ def is_siso(system):
     sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
     if isinstance(system, sm.control.lti.SISOLinearTimeInvariant):
         return True
-    if isinstance(system, sp.signal.TransferFunction):
+    if sp and isinstance(system, sp.signal.TransferFunction):
         return True
     if (
-        isinstance(system, ct.TransferFunction) and
+        ct and isinstance(system, ct.TransferFunction) and
         (system.ninputs == 1) and (system.noutputs == 1)
     ):
         return True
