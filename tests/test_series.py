@@ -1996,7 +1996,7 @@ def test_use_cm(use_cm):
         sqrt(z), (z, -2 - 3j, 4 + 5j),
         threed=False, use_cm=use_cm
     )
-    assert s.use_cm is use_cm
+    assert s.use_cm is True
 
     s = ComplexSurfaceSeries(
         sqrt(z), (z, -2 - 3j, 4 + 5j),

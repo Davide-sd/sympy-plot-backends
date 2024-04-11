@@ -2178,6 +2178,7 @@ class ContourSeries(SurfaceOver2DRangeSeries):
         super().__init__(*args, **kwargs)
         self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.show_clabels = kwargs.get("clabels", True)
+        self.use_cm = True
 
         # NOTE: contour plots are used by plot_contour, plot_vector and
         # plot_complex_vector. By implementing contour_kw we are able to
@@ -2709,6 +2710,7 @@ class ComplexSurfaceSeries(
         if not kwargs.get("threed", False):
             self.is_contour = True
             self.is_3Dsurface = False
+            self.use_cm = True
         self.is_filled = kwargs.get("is_filled", kwargs.get("fill", True))
         self.show_clabels = kwargs.get("clabels", True)
         self._post_init()

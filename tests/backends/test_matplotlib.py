@@ -15,7 +15,10 @@ from spb import (
     plot_complex_list, graphics, vector_field_2d, plot_nyquist, plot_nichols,
     plot_step_response
 )
-from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
+from spb.series import (
+    RootLocusSeries, SGridLineSeries, ZGridLineSeries, ContourSeries,
+    Vector2DSeries
+)
 from spb.series import SurfaceOver2DRangeSeries
 from sympy import (
     sin, cos, I, pi, Eq, exp, Circle, Polygon, sqrt, Matrix, Line, Segment,
@@ -2603,3 +2606,32 @@ def test_hvlines():
     )
     p.backend.update_interactive({a: 3, b: 4})
     p.backend.close()
+
+
+def test_plot_vector_2d_legend_1():
+    x, y = symbols("x, y")
+    p = plot_vector(
+        [-sin(y), cos(x)], (x, -pi, pi), (y, -pi, pi),
+        backend=MB, scalar=True, n=10, show=False
+    )
+    assert isinstance(p[0], ContourSeries)
+    assert isinstance(p[1], Vector2DSeries)
+    assert not p[1].use_cm
+    # this is because there is only one vector series with use_cm=False
+    assert p.legend is None
+
+@pytest.mark.parametrize(
+    "streamlines, use_cm, expected", [
+        (False, False, True),
+        (False, True, None),
+        (True, False, True),
+        (True, True, None)
+    ]
+)
+def test_plot_vector_2d_legend_2(streamlines, use_cm, expected):
+    x, y = symbols("x, y")
+    p = plot_vector(
+        [-sin(y), cos(x)], [cos(x), -sin(y)], (x, -pi, pi), (y, -pi, pi),
+        backend=MB, n=10, show=False, streamlines=streamlines, use_cm=use_cm
+    )
+    assert p.legend is expected

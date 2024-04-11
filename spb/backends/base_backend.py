@@ -334,8 +334,11 @@ class Plot:
         self.legend = kwargs.get("legend", None)
         if self.legend is None:
             series_to_show = [
-                s for s in self._series if (s.show_in_legend and (not s.use_cm)
-                and (not s.is_grid))
+                s for s in self._series if (
+                    s.show_in_legend and
+                    (not s.use_cm) and
+                    (not s.is_grid)
+                )
             ]
             if len(series_to_show) > 1:
                 # don't show the legend if `plot_piecewise` created this
