@@ -756,7 +756,7 @@ def tf_to_control(tf):
             )
         return ct.tf(n, d)
 
-    if isinstance(tf, ct.TransferFunction):
+    if ct and isinstance(tf, ct.TransferFunction):
         return tf
 
     if isinstance(tf, Expr):
@@ -780,7 +780,7 @@ def tf_to_control(tf):
             den.append(row_den)
         return ct.tf(num, den)
 
-    elif isinstance(tf, sp.signal.TransferFunction):
+    elif sp and isinstance(tf, sp.signal.TransferFunction):
         return ct.tf(tf.num, tf.den, dt=0 if tf.dt is None else tf.dt)
 
     elif isinstance(tf, (list, tuple)):

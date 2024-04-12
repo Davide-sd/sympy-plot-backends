@@ -530,10 +530,13 @@ def _set_lower_upper_limits(system, lower_limit, upper_limit,
         lower_limit = 0
     if not upper_limit:
         tfinal = None
-        if not kwargs.get("params", None):
+        ct = import_module("control")
+        if ct and (not kwargs.get("params", None)):
+            # this procedure requires the control module
             control_sys = tf_to_control(system)
             tfinal, _ = _ideal_tfinal_and_dt(control_sys, is_step=is_step)
-        # if interactive widget plot, use default value of 10
+        # if interactive widget plot, or control is not installed, use
+        # default value of 10
         upper_limit = tfinal if tfinal else 10
     return lower_limit, upper_limit
 
