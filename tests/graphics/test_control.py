@@ -835,42 +835,57 @@ def test_siso_responses(tf_siso, func):
 
 
 @pytest.mark.parametrize(
-    "tf_mimo, func, use_control",
+    "tf_mimo, func, use_control, upper_limit",
     [
-        (tf_mimo_sympy, step_response, True),
-        (tf_mimo_sympy, impulse_response, True),
-        (tf_mimo_sympy, ramp_response, True),
-        (tf_mimo_sympy, step_response, False),
-        (tf_mimo_sympy, impulse_response, False),
-        (tf_mimo_sympy, ramp_response, False),
-        (tf_mimo_control, step_response, True),
-        (tf_mimo_control, impulse_response, True),
-        (tf_mimo_control, ramp_response, True),
-        (tf_mimo_control, step_response, False),
-        (tf_mimo_control, impulse_response, False),
-        (tf_mimo_control, ramp_response, False),
+        (tf_mimo_sympy, step_response, True, None),
+        (tf_mimo_sympy, impulse_response, True, None),
+        (tf_mimo_sympy, ramp_response, True, None),
+        (tf_mimo_sympy, step_response, False, None),
+        (tf_mimo_sympy, impulse_response, False, None),
+        (tf_mimo_sympy, ramp_response, False, None),
+        (tf_mimo_control, step_response, True, None),
+        (tf_mimo_control, impulse_response, True, None),
+        (tf_mimo_control, ramp_response, True, None),
+        (tf_mimo_control, step_response, False, None),
+        (tf_mimo_control, impulse_response, False, None),
+        (tf_mimo_control, ramp_response, False, None),
+        (tf_mimo_sympy, step_response, True, 10),
+        (tf_mimo_sympy, impulse_response, True, 10),
+        (tf_mimo_sympy, ramp_response, True, 10),
+        (tf_mimo_sympy, step_response, False, 10),
+        (tf_mimo_sympy, impulse_response, False, 10),
+        (tf_mimo_sympy, ramp_response, False, 10),
+        (tf_mimo_control, step_response, True, 10),
+        (tf_mimo_control, impulse_response, True, 10),
+        (tf_mimo_control, ramp_response, True, 10),
+        (tf_mimo_control, step_response, False, 10),
+        (tf_mimo_control, impulse_response, False, 10),
+        (tf_mimo_control, ramp_response, False, 10),
     ]
 )
-def test_mimo_responses(tf_mimo, func, use_control):
+def test_mimo_responses(tf_mimo, func, use_control, upper_limit):
     # verify that a MIMO system gets unpacked into several SISO systems
 
-    series = func(tf_mimo, prec=16, n=10, control=use_control)
+    series = func(tf_mimo, prec=16, n=10, control=use_control,
+        upper_limit=upper_limit)
     assert len(series) == 6
     test_series = SystemResponseSeries if use_control else LineOver1DRangeSeries
     assert all(isinstance(s, test_series) for s in series)
 
-    s1 = func(tf_1, prec=16, n=10, control=use_control)[0]
-    s2 = func(tf_2, prec=16, n=10, control=use_control)[0]
-    s3 = func(tf_3, prec=16, n=10, control=use_control)[0]
-    s4 = func(-tf_1, prec=16, n=10, control=use_control)[0]
-    s5 = func(-tf_2, prec=16, n=10, control=use_control)[0]
-    s6 = func(-tf_3, prec=16, n=10, control=use_control)[0]
-    assert np.allclose(s1.get_data(), series[0].get_data())
-    assert np.allclose(s2.get_data(), series[1].get_data())
-    assert np.allclose(s3.get_data(), series[2].get_data())
-    assert np.allclose(s4.get_data(), series[3].get_data())
-    assert np.allclose(s5.get_data(), series[4].get_data())
-    assert np.allclose(s6.get_data(), series[5].get_data())
+    kwargs = dict(prec=16, n=10, control=use_control, upper_limit=upper_limit)
+    s1 = func(tf_1, **kwargs)[0]
+    s2 = func(tf_2, **kwargs)[0]
+    s3 = func(tf_3, **kwargs)[0]
+    s4 = func(-tf_1, **kwargs)[0]
+    s5 = func(-tf_2, **kwargs)[0]
+    s6 = func(-tf_3, **kwargs)[0]
+    if upper_limit is not None:
+        assert np.allclose(s1.get_data(), series[0].get_data())
+        assert np.allclose(s2.get_data(), series[1].get_data())
+        assert np.allclose(s3.get_data(), series[2].get_data())
+        assert np.allclose(s4.get_data(), series[3].get_data())
+        assert np.allclose(s5.get_data(), series[4].get_data())
+        assert np.allclose(s6.get_data(), series[5].get_data())
 
 
 @pytest.mark.parametrize(

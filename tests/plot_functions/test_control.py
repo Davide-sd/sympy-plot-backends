@@ -261,7 +261,8 @@ def test_impulse_response():
 
     def impulse_res_tester(sys, expected_value):
         p = plot_impulse_response(sys,
-            control=False, show_axes=False, show=False, n=10, prec=16)
+            control=False, show_axes=False, show=False, n=10, prec=16,
+            upper_limit=10)
         x, y = p[0].get_data()
         x_check = check_point_accuracy(x, expected_value[0])
         y_check = check_point_accuracy(y, expected_value[1])
@@ -311,7 +312,7 @@ def test_step_response():
 
     def step_res_tester(sys, expected_value):
         p = plot_step_response(sys,
-            control=False, show_axes=False, show=False, n=10)
+            control=False, show_axes=False, show=False, n=10, upper_limit=10)
         x, y = p[0].get_data()
         x_check = check_point_accuracy(x, expected_value[0])
         y_check = check_point_accuracy(y, expected_value[1])
@@ -359,7 +360,7 @@ def test_ramp_response():
     def ramp_res_tester(sys, num_points, expected_value, slope=1):
         p = plot_ramp_response(sys,
             control=False, show_axes=False, show=False,
-            slope=slope, n=num_points)
+            slope=slope, n=num_points, upper_limit=10)
         x, y = p[0].get_data()
         x_check = check_point_accuracy(x, expected_value[0])
         y_check = check_point_accuracy(y, expected_value[1])
@@ -436,6 +437,48 @@ def test_interactive_plots():
     do_test(plot_ramp_response)
     do_test(plot_bode_magnitude)
     do_test(plot_bode_phase)
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+@pytest.mark.parametrize(
+    "tfs, lower_limit, upper_limit, use_control", [
+        ([_tf1], None, None, True),
+        ([_tf1], 1, 9, True),
+        ([_tf1, _tf2], None, None, True),
+        ([_tf1, _tf2], 1, 9, True),
+        ([tfm1], None, None, True),
+        ([tfm1], 1, 9, True),
+        ([_tf1], None, None, False),
+        ([_tf1], 1, 9, False),
+        ([_tf1, _tf2], None, None, False),
+        ([_tf1, _tf2], 1, 9, False),
+        ([tfm1], None, None, False),
+        ([tfm1], 1, 9, False),
+    ]
+)
+def test_responses_lower_upper_limits(
+    tfs, lower_limit, upper_limit, use_control
+):
+    # verify that lower/upper limits are autocomputed if not provided by user
+    kwargs = dict(lower_limit=lower_limit, upper_limit=upper_limit,
+        show=False, n=10)
+
+    def do_test(func):
+        p = func(*tfs, **kwargs)
+        expected_lower_limit = 0 if not lower_limit else lower_limit
+        all_data = [s.get_data() for s in p.series]
+        assert all(np.isclose(data[0][0], expected_lower_limit)
+            for data in all_data)
+        if upper_limit:
+            assert all(np.isclose(data[0][-1], upper_limit)
+                for data in all_data)
+        else:
+            assert all(not np.isclose(data[0][-1], 10)
+                for data in all_data)
+
+    do_test(plot_step_response)
+    do_test(plot_impulse_response)
+    do_test(plot_ramp_response)
 
 
 # xfail because tf7... who knows?!?!? locally works fine, on github it's

@@ -38,14 +38,14 @@ because the integration starts with a zero initial condition.
    s = symbols("s")
    G = (8*s**2 + 18*s + 32) / (s**3 + 6*s**2 + 14*s + 24)
    p1 = graphics(
-       step_response(G, label="G1 - control", control=True, rendering_kw={"linestyle": "--"}),
-       step_response(G, label="G1 - sympy", control=False, scatter=True, n=20),
-       xlabel="Time [s]", ylabel="Amplitude", xlim=(0, 10), show=False
+      step_response(G, upper_limit=10, label="G1 - control", control=True, rendering_kw={"linestyle": "--"}),
+      step_response(G, upper_limit=10, label="G1 - sympy", control=False, scatter=True, n=20),
+      xlabel="Time [s]", ylabel="Amplitude", xlim=(0, 10), show=False
    )
    p2 = graphics(
-       step_response(G, label="G1 - control", control=True, rendering_kw={"linestyle": "--"}, lower_limit=2),
-       step_response(G, label="G1 - sympy", control=False, scatter=True, n=20, lower_limit=2),
-       xlabel="Time [s]", ylabel="Amplitude", xlim=(0, 10), show=False
+      step_response(G, upper_limit=10, label="G1 - control", control=True, rendering_kw={"linestyle": "--"}, lower_limit=2),
+      step_response(G, upper_limit=10, label="G1 - sympy", control=False, scatter=True, n=20, lower_limit=2),
+      xlabel="Time [s]", ylabel="Amplitude", xlim=(0, 10), show=False
    )
    plotgrid(p1, p2)
 

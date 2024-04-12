@@ -5,13 +5,14 @@ from spb.graphics.control import (
     ramp_response, impulse_response,
     bode_magnitude, bode_phase,
     control_axis, root_locus, ngrid as ngrid_function,
-    _get_grid_series
+    _get_grid_series, _ideal_tfinal_and_dt
 )
 from spb.interactive import create_interactive_plot
 from spb.plotgrid import plotgrid
 from spb.series import HVLineSeries
-from spb.utils import _instantiate_backend, is_siso
+from spb.utils import _instantiate_backend, is_siso, tf_to_sympy, tf_to_control
 from sympy import exp, latex, sympify, Expr
+from sympy.external import import_module
 
 
 __all__ = [
@@ -233,8 +234,35 @@ def plot_pole_zero(
 pole_zero_plot = plot_pole_zero
 
 
+def _set_upper_limits(systems, upper_limit, is_step=True, **kwargs):
+    """If user didn't set upper time limit, compute the appropriate
+    value.
+    """
+    if (not upper_limit) and (not kwargs.get("params", None)):
+        sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+        TransferFunctionMatrix = sm.control.lti.TransferFunctionMatrix
+        sympy_systems = [tf_to_sympy(s) for s in systems]
+        # if multiple mimo systems are being plotted, unpack them
+        all_sympy_systems = []
+        for s in sympy_systems:
+            if isinstance(s, TransferFunctionMatrix):
+                for t in s.args[0]:
+                    all_sympy_systems.extend(t)
+            else:
+                all_sympy_systems.append(s)
+        # I want all systems to use the same upper time limit.
+        # So, build a temporary MIMO transfer function including all systems
+        # in order to compute an appropriate maximum time for the simulation.
+        sympy_mimo_sys = TransferFunctionMatrix([all_sympy_systems])
+        control_mimo_sys = tf_to_control(sympy_mimo_sys)
+        tfinal, _ = _ideal_tfinal_and_dt(control_mimo_sys)
+        if tfinal:
+            upper_limit = tfinal
+    return upper_limit
+
+
 def plot_step_response(
-    *systems, lower_limit=0, upper_limit=10,
+    *systems, lower_limit=None, upper_limit=None,
     prec=8, show_axes=False, control=True,
     input=None, output=None, **kwargs
 ):
@@ -262,12 +290,14 @@ def plot_step_response(
         * a sequence of LTI systems.
         * a sequence of 2-tuples ``(LTI system, label)``.
         * a dict mapping LTI systems to labels.
-    lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0. If a different value
-        is to be used, also set ``control=False`` (see examples in order to
-        understand why).
-    upper_limit : Number, optional
-        The upper limit of the plot range. Defaults to 10.
+    lower_limit : Number or None, optional
+        The lower time limit of the plot range. Defaults to 0. If a different
+        value  is to be used, also set ``control=False`` (see examples in
+        order to understand why).
+    upper_limit : Number or None, optional
+        The upper time limit of the plot range. If not provided, an
+        appropriate value will be computed. If a interactive widget plot is
+        being created, it defaults to 10.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
@@ -376,6 +406,9 @@ def plot_step_response(
     .. [1] https://www.mathworks.com/help/control/ref/lti.step.html
 
     """
+
+    upper_limit = _set_upper_limits(
+        systems, upper_limit, is_step=True, **kwargs)
     systems = _unpack_systems(systems, **kwargs)
     series = []
     for s, l in systems:
@@ -398,8 +431,8 @@ step_response_plot = plot_step_response
 
 
 def plot_impulse_response(
-    *systems, prec=8, lower_limit=0,
-    upper_limit=10, show_axes=False, control=True,
+    *systems, prec=8, lower_limit=None,
+    upper_limit=None, show_axes=False, control=True,
     input=None, output=None, **kwargs
 ):
     """
@@ -426,12 +459,14 @@ def plot_impulse_response(
         * a sequence of LTI systems.
         * a sequence of 2-tuples ``(LTI system, label)``.
         * a dict mapping LTI systems to labels.
-    lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0. If a different value
-        is to be used, also set ``control=False`` (see examples in order to
-        understand why).
-    upper_limit : Number, optional
-        The upper limit of the plot range. Defaults to 10.
+    lower_limit : Number or None, optional
+        The lower time limit of the plot range. Defaults to 0. If a different
+        value  is to be used, also set ``control=False`` (see examples in
+        order to understand why).
+    upper_limit : Number or None, optional
+        The upper time limit of the plot range. If not provided, an
+        appropriate value will be computed. If a interactive widget plot is
+        being created, it defaults to 10.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
@@ -543,6 +578,8 @@ def plot_impulse_response(
     .. [1] https://www.mathworks.com/help/control/ref/lti.impulse.html
 
     """
+    upper_limit = _set_upper_limits(
+        systems, upper_limit, is_step=False, **kwargs)
     systems = _unpack_systems(systems, **kwargs)
     series = []
     for s, l in systems:
@@ -566,7 +603,7 @@ impulse_response_plot = plot_impulse_response
 
 def plot_ramp_response(
     *systems, slope=1, prec=8,
-    lower_limit=0, upper_limit=10, show_axes=False, control=True,
+    lower_limit=None, upper_limit=None, show_axes=False, control=True,
     input=None, output=None, **kwargs
 ):
     """
@@ -598,12 +635,14 @@ def plot_ramp_response(
         * a dict mapping LTI systems to labels.
     slope : Number, optional
         The slope of the input ramp function. Defaults to 1.
-    lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0. If a different value
-        is to be used, also set ``control=False`` (see examples in order to
-        understand why).
-    upper_limit : Number, optional
-        The upper limit of the plot range. Defaults to 10.
+    lower_limit : Number or None, optional
+        The lower time limit of the plot range. Defaults to 0. If a different
+        value  is to be used, also set ``control=False`` (see examples in
+        order to understand why).
+    upper_limit : Number or None, optional
+        The upper time limit of the plot range. If not provided, an
+        appropriate value will be computed. If a interactive widget plot is
+        being created, it defaults to 10.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
@@ -713,6 +752,8 @@ def plot_ramp_response(
     .. [1] https://en.wikipedia.org/wiki/Ramp_function
 
     """
+    upper_limit = _set_upper_limits(
+        systems, upper_limit, is_step=True, **kwargs)
     systems = _unpack_systems(systems, **kwargs)
     series = []
     for s, l in systems:

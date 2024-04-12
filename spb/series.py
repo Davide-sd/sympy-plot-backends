@@ -4665,6 +4665,7 @@ class SystemResponseSeries(ControlBaseSeries):
                 n = self.n[0]
             else:
                 n = int((end - start) / self._control_tf.dt) + 1
+                end = (n - 1) * self._control_tf.dt
             self._time_array = self._discretize(
                     start, end, n, self.scales[0], self.only_integers)
 

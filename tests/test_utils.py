@@ -22,7 +22,7 @@ import numpy as np
 ct = import_module("control")
 scipy = import_module("scipy")
 
-x, a, b = symbols("x a b")
+x, a, b, s = symbols("x a b s")
 
 
 def test_plot_sympify():
@@ -347,6 +347,26 @@ def test_tf_to_control_7():
     _is_control_tf_equals(tf_to_control(tfm), tfm_expected)
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
+def test_tf_to_control_8():
+    # tuple/list of elements
+
+    tf = ([1, 2], [3, 4, 5])
+    _is_control_tf_equals(tf_to_control(tf), ct.tf([1, 2], [3, 4, 5]))
+
+    tf = (s + 2, 3*s**2 + 4*s + 5)
+    _is_control_tf_equals(tf_to_control(tf), ct.tf([1, 2], [3, 4, 5]))
+
+    tf = (a + 2, 3*a**2 + 4*a + 5)
+    _is_control_tf_equals(tf_to_control(tf), ct.tf([1, 2], [3, 4, 5]))
+
+    tf = (a + 2, 3*a**2 + 4*a + 5, a)
+    _is_control_tf_equals(tf_to_control(tf), ct.tf([1, 2], [3, 4, 5]))
+
+    tf = (s + a, 3*s**2 + 4*s + 5)
+    raises(ValueError, lambda: tf_to_control(tf))
+
+
 def test_tf_to_sympy_1():
     # symbolic expressions to TransferFunction
 
@@ -396,10 +416,11 @@ def test_tf_to_sympy_4():
 
 
 def test_tf_to_sympy_5():
-    # raise TypeError
+    # raise errors
     raises(TypeError, lambda: tf_to_sympy(1))
     raises(TypeError, lambda: tf_to_sympy([1, 2, 3]))
-    raises(TypeError, lambda: tf_to_sympy([[1, 2, 3], [1, 2, 3, 4]]))
+    raises(ValueError, lambda: tf_to_sympy(
+        ([1, 2, 3], [4, 5, 6, 7], s, "test")))
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
@@ -437,6 +458,42 @@ def test_tf_to_sympy_6():
     ):
         H = tf_to_sympy(G3)
         assert H.var == z
+
+@pytest.mark.parametrize(
+    "tf_tuple, tf", [
+        (([1, 2], [4, 5, 6]), TransferFunction(s+2, 4*s**2 + 5*s + 6, s)),
+        ((s+2, 4*s**2 + 5*s + 6), TransferFunction(s+2, 4*s**2 + 5*s + 6, s)),
+        # multiple free symbols: the s-variable is the first from the
+        # free-symbols set
+        ((s+a, 4*s**2 + b*s + 6), (
+            TransferFunction(s+a, 4*s**2 + b*s + 6, a),
+            TransferFunction(s+a, 4*s**2 + b*s + 6, b),
+            TransferFunction(s+a, 4*s**2 + b*s + 6, s),
+        )),
+        # one free-symbol, different from s
+        ((a+2, 4*a**2 + 5*a + 6), TransferFunction(a+2, 4*a**2 + 5*a + 6, a)),
+    ]
+)
+def test_tf_to_sympy_7(tf_tuple, tf):
+    # 2 elements-tuple to TransferFunction
+    if isinstance(tf, TransferFunction):
+        assert tf_to_sympy(tf_tuple) == tf
+    else:
+        assert tf_to_sympy(tf_tuple) in tf
+
+
+@pytest.mark.parametrize(
+    "tf_tuple, tf", [
+        (([1, 2], [4, 5, 6], s), TransferFunction(s+2, 4*s**2 + 5*s + 6, s)),
+        ((s+2, 4*s**2 + 5*s + 6, s), TransferFunction(s+2, 4*s**2 + 5*s + 6, s)),
+        ((s+a, 4*s**2 + b*s + 6, s), TransferFunction(s+a, 4*s**2 + b*s + 6, s)),
+        # multiple free-symbols, s-variable different from s
+        ((s+a, 4*s**2 + b*s + 6, a), TransferFunction(s+a, 4*s**2 + b*s + 6, a)),
+    ]
+)
+def test_tf_to_sympy_8(tf_tuple, tf):
+    # 3 elements-tuple to TransferFunction
+    assert tf_to_sympy(tf_tuple) == tf
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")

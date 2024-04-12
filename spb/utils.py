@@ -699,7 +699,7 @@ def is_number(t, allow_complex=True):
     return isinstance(t, number_types) or (isinstance(t, Expr) and t.is_number)
 
 
-def tf_to_control(tf, gen=None):
+def tf_to_control(tf):
     """Convert a transfer function to a ``control.TransferFunction``.
 
     Parameters
@@ -707,22 +707,20 @@ def tf_to_control(tf, gen=None):
     tf :
         The transfer function's type can be:
 
-        * Expr: it must be a rational expression.
-        * sympy.physics.control.TransferFunction
-        * sympy.physics.control.TransferFunctionMatrix
-        * scipy.signal.TransferFunction
-
-    gen : Symbol or None
-        The s or z variable. It is only used if ``tf`` is a symbolic
-        expression containing multiple free symbols.
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``.
+          ``num, den`` can be symbolic expressions or list of coefficients.
 
     Returns
     =======
-    tf : ct.TransferFunction
+    tf : :py:class:`ct.TransferFunction`
     """
     ct = import_module("control")
     sp = import_module("scipy")
-    sympy = import_module("sympy")
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
 
     def _from_sympy_to_ct(num, den):
         fs = num.free_symbols.union(den.free_symbols)
@@ -760,15 +758,17 @@ def tf_to_control(tf, gen=None):
 
     if isinstance(tf, ct.TransferFunction):
         return tf
+
     if isinstance(tf, Expr):
-        if gen is None:
-            gen = tf.free_symbols.pop()
-        tf = sympy.physics.control.TransferFunction.from_rational_expression(
+        gen = tf.free_symbols.pop()
+        tf = sm.control.TransferFunction.from_rational_expression(
             tf, gen)
         return _from_sympy_to_ct(tf.num, tf.den)
-    elif isinstance(tf, sympy.physics.control.TransferFunction):
+
+    elif isinstance(tf, sm.control.TransferFunction):
         return _from_sympy_to_ct(tf.num, tf.den)
-    elif isinstance(tf, sympy.physics.control.TransferFunctionMatrix):
+
+    elif isinstance(tf, sm.control.TransferFunctionMatrix):
         num, den = [], []
         for i in range(tf.num_outputs):
             row_num, row_den = [], []
@@ -779,8 +779,14 @@ def tf_to_control(tf, gen=None):
             num.append(row_num)
             den.append(row_den)
         return ct.tf(num, den)
+
     elif isinstance(tf, sp.signal.TransferFunction):
         return ct.tf(tf.num, tf.den, dt=0 if tf.dt is None else tf.dt)
+
+    elif isinstance(tf, (list, tuple)):
+        tf = tf_to_sympy(tf)
+        return _from_sympy_to_ct(tf.num, tf.den)
+
     else:
         raise TypeError(
             "Transfer function's type not recognized.\n" +
@@ -790,18 +796,30 @@ def tf_to_control(tf, gen=None):
         )
 
 
-def tf_to_sympy(tf, var=None, skip_check_dt=False):
+def tf_to_sympy(tf, var=None, skip_check_dt=False, params={}):
     """Convert a transfer function from the control module or from scipy.signal
     to a sympy ``TransferFunction`` or ``TransferFunctionMatrix``.
 
     Parameters
     ==========
     tf : control.TransferFunction, scipy.signal.TransferFunction
+
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``.
+          ``num, den`` can be symbolic expressions or list of coefficients.
+
     var : Symbol or None
-        The s-variable (or z-variable).
+        The s-variable (or z-variable) when ``tf`` is a symbolic expression.
+        If not provided, it will be automatically selected.
     skip_check_dt : bool
         If True, don't raise a warning about sympy not supporting discrete-time
         systems.
+    params : dict
+        A dictionary whose keys are symbols.
 
     Returns
     =======
@@ -809,13 +827,13 @@ def tf_to_sympy(tf, var=None, skip_check_dt=False):
     """
     ct = import_module("control")
     sp = import_module("scipy")
-    sympy = import_module("sympy")
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
 
     gen = Symbol("z") if is_discrete_time(tf) else Symbol("s")
-    TransferFunction = sympy.physics.control.lti.TransferFunction
-    TransferFunctionMatrix = sympy.physics.control.lti.TransferFunctionMatrix
-    Series = sympy.physics.control.lti.Series
-    Parallel = sympy.physics.control.lti.Parallel
+    TransferFunction = sm.control.lti.TransferFunction
+    TransferFunctionMatrix = sm.control.lti.TransferFunctionMatrix
+    Series = sm.control.lti.Series
+    Parallel = sm.control.lti.Parallel
 
     def _check_dt(system):
         if system.dt and (not skip_check_dt):
@@ -830,7 +848,7 @@ def tf_to_sympy(tf, var=None, skip_check_dt=False):
 
     elif isinstance(tf, Expr):
         if var is None:
-            fs = list(tf.free_symbols)
+            fs = list(tf.free_symbols.difference(params.keys()))
             if len(fs) > 1:
                 warnings.warn(
                     "Multiple free symbols found in transfer function: %s. "
@@ -838,9 +856,7 @@ def tf_to_sympy(tf, var=None, skip_check_dt=False):
                     "(or z-variable). Use the ``var=`` keyword argument "
                     "to specify the appropriate symbol." % fs
                 )
-                var = fs[0]
-            else:
-                var = tf.free_symbols.pop() if len(tf.free_symbols) > 0 else Symbol("s")
+            var = fs[0] if len(tf.free_symbols) > 0 else Symbol("s")
         return TransferFunction.from_rational_expression(tf, var)
 
     elif isinstance(tf, (Series, Parallel)):
@@ -870,6 +886,30 @@ def tf_to_sympy(tf, var=None, skip_check_dt=False):
         _check_dt(tf)
         return TransferFunction(n, d, gen)
 
+    if isinstance(tf, (list, tuple)):
+        powers = lambda e, s: [t * s**(len(e) - (k + 1))
+            for k, t in enumerate(e)]
+        if len(tf) == 2:
+            num, den = tf
+            if all(isinstance(e, Expr) for e in tf):
+                gen = Tuple(num, den).free_symbols.difference(params.keys()).pop()
+            else:
+                num = sum(powers(num, gen))
+                den = sum(powers(den, gen))
+            return TransferFunction(num, den, gen)
+        elif len(tf) == 3:
+            num, den, gen = tf
+            if not all(isinstance(e, Expr) for e in tf):
+                num = sum(powers(num, gen))
+                den = sum(powers(den, gen))
+            return TransferFunction(num, den, gen)
+        else:
+            raise ValueError(
+                "If a tuple/list is provided, it must have "
+                "two or three elements: (num, den, free_symbol [opt]). "
+                f"Received len(system) = {len(tf)}, system = {tf}"
+            )
+
     else:
         raise TypeError(
             "Transfer function's type not recognized.\n" +
@@ -892,9 +932,9 @@ def is_discrete_time(system):
     """
     ct = import_module("control")
     sp = import_module("scipy")
-    sy = import_module("sympy")
+    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
 
-    if isinstance(system, sy.physics.control.lti.SISOLinearTimeInvariant):
+    if isinstance(system, sm.control.lti.SISOLinearTimeInvariant):
         return False
     if (sp is not None) and isinstance(system, sp.signal.TransferFunction):
         return False if system.dt is None else True

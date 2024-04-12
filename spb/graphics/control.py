@@ -107,38 +107,57 @@ def _preprocess_system(system, **kwargs):
     if isinstance(system, tuple(allowed_types)):
         return system
 
-    if isinstance(system, (list, tuple)):
-        if len(system) == 2:
-            if all(isinstance(e, Expr) for e in system):
-                num, den = system
-                fs = Tuple(num, den).free_symbols.pop()
-                return sm.control.lti.TransferFunction(num, den, fs)
-            else:
-                num, den = system
-                num = [float(t) for t in num]
-                den = [float(t) for t in den]
-                return ct.tf(num, den)
-        elif len(system) == 3:
-            num, den, fs = system
-            return sm.control.lti.TransferFunction(num, den, fs)
-        else:
-            raise ValueError(
-                "If a tuple/list is provided, it must have "
-                "two or three elements: (num, den, free_symbol [opt]). "
-                f"Received len(system) = {len(system)}"
-            )
+    # if isinstance(system, (
+    #     ct.TransferFunction,
+    #     sp.signal.TransferFunction,
+    #     sm.control.lti.TransferFunction,
+    #     sm.control.lti.TransferFunctionMatrix
+    # )):
+    #     return system
 
-    if isinstance(system, Expr):
-        params = kwargs.get("params", dict())
-        fs = system.free_symbols.difference(params.keys())
-        if len(fs) > 1:
-            raise ValueError(f"Too many free symbols: {fs}")
-        elif len(fs) == 0:
-            raise ValueError(
-                "An expression with one free symbol is required.")
-        return sm.control.lti.TransferFunction.from_rational_expression(system, fs.pop())
+    params = kwargs.get("params", {})
+    system = tf_to_sympy(system, params=params)
+    # fs = system.free_symbols
+    # if len(fs) > 1:
+    #     raise ValueError(f"Too many free symbols: {fs}")
+    # elif len(fs) == 0:
+    #     raise ValueError(
+    #         "An expression with one free symbol is required.")
 
-    raise TypeError(f"type(system) = {type(system)} not recognized.")
+    return system
+
+    # if isinstance(system, (list, tuple)):
+    #     if len(system) == 2:
+    #         if all(isinstance(e, Expr) for e in system):
+    #             num, den = system
+    #             fs = Tuple(num, den).free_symbols.pop()
+    #             return sm.control.lti.TransferFunction(num, den, fs)
+    #         else:
+    #             num, den = system
+    #             num = [float(t) for t in num]
+    #             den = [float(t) for t in den]
+    #             return ct.tf(num, den)
+    #     elif len(system) == 3:
+    #         num, den, fs = system
+    #         return sm.control.lti.TransferFunction(num, den, fs)
+    #     else:
+    #         raise ValueError(
+    #             "If a tuple/list is provided, it must have "
+    #             "two or three elements: (num, den, free_symbol [opt]). "
+    #             f"Received len(system) = {len(system)}"
+    #         )
+
+    # if isinstance(system, Expr):
+    #     params = kwargs.get("params", dict())
+    #     fs = system.free_symbols.difference(params.keys())
+    #     if len(fs) > 1:
+    #         raise ValueError(f"Too many free symbols: {fs}")
+    #     elif len(fs) == 0:
+    #         raise ValueError(
+    #             "An expression with one free symbol is required.")
+    #     return sm.control.lti.TransferFunction.from_rational_expression(system, fs.pop())
+
+    # raise TypeError(f"type(system) = {type(system)} not recognized.")
 
 
 def _check_system(system, bypass_delay_check=False):
@@ -501,6 +520,24 @@ def _ilt(expr, s, t):
     return y
 
 
+def _set_lower_upper_limits(system, lower_limit, upper_limit,
+    is_step=True, **kwargs
+):
+    """If user didn't set lower/upper time limits, compute the appropriate
+    values.
+    """
+    if not lower_limit:
+        lower_limit = 0
+    if not upper_limit:
+        tfinal = None
+        if not kwargs.get("params", None):
+            control_sys = tf_to_control(system)
+            tfinal, _ = _ideal_tfinal_and_dt(control_sys, is_step=is_step)
+        # if interactive widget plot, use default value of 10
+        upper_limit = tfinal if tfinal else 10
+    return lower_limit, upper_limit
+
+
 def _step_response_helper(
     system, label, lower_limit, upper_limit, prec, **kwargs
 ):
@@ -563,7 +600,7 @@ def _check_lower_limit_and_control(lower_limit, control):
 
 
 def step_response(
-    system, lower_limit=0, upper_limit=10, prec=8,
+    system, lower_limit=None, upper_limit=None, prec=8,
     label=None, rendering_kw=None, control=True,
     input=None, output=None, **kwargs
 ):
@@ -588,12 +625,14 @@ def step_response(
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
           :py:class:`sympy.physics.control.lti.TransferFunction`.
-    lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0. If a different value
-        is to be used, also set ``control=False`` (see examples in order to
-        understand why).
-    upper_limit : Number, optional
-        The upper limit of the plot range. Defaults to 10.
+    lower_limit : Number or None, optional
+        The lower time limit of the plot range. Defaults to 0. If a different
+        value  is to be used, also set ``control=False`` (see examples in
+        order to understand why).
+    upper_limit : Number or None, optional
+        The upper time limit of the plot range. If not provided, an
+        appropriate value will be computed. If a interactive widget plot is
+        being created, it defaults to 10.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
@@ -647,8 +686,8 @@ def step_response(
         tf1 = TransferFunction(
             8*s**2 + 18*s + 32, s**3 + 6*s**2 + 14*s + 24, s)
         graphics(
-            line(Heaviside(t), (t, -1, 10), label="step"),
-            step_response(tf1, label="response"),
+            line(Heaviside(t), (t, -1, 8), label="step"),
+            step_response(tf1, label="response", upper_limit=8),
             xlabel="Time [s]", ylabel="Amplitude"
         )
 
@@ -737,7 +776,10 @@ def step_response(
     .. [1] https://www.mathworks.com/help/control/ref/lti.step.html
 
     """
+
     control = _check_if_control_is_installed(use_control=control)
+    lower_limit, upper_limit = _set_lower_upper_limits(
+        system, lower_limit, upper_limit, is_step=True, **kwargs)
     _check_lower_limit_and_control(lower_limit, control)
     systems = _unpack_mimo_systems(
         system,
@@ -797,7 +839,7 @@ def _impulse_response_with_control_helper(
 
 
 def impulse_response(
-    system, prec=8, lower_limit=0, upper_limit=10,
+    system, prec=8, lower_limit=None, upper_limit=None,
     label=None, rendering_kw=None, control=True,
     input=None, output=None, **kwargs
 ):
@@ -822,12 +864,14 @@ def impulse_response(
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
           :py:class:`sympy.physics.control.lti.TransferFunction`.
-    lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0. If a different value
-        is to be used, also set ``control=False`` (see examples in order to
-        understand why).
-    upper_limit : Number, optional
-        The upper limit of the plot range. Defaults to 10.
+    lower_limit : Number or None, optional
+        The lower time limit of the plot range. Defaults to 0. If a different
+        value  is to be used, also set ``control=False`` (see examples in
+        order to understand why).
+    upper_limit : Number or None, optional
+        The upper time limit of the plot range. If not provided, an
+        appropriate value will be computed. If a interactive widget plot is
+        being created, it defaults to 10.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
@@ -970,6 +1014,8 @@ def impulse_response(
 
     """
     control = _check_if_control_is_installed(use_control=control)
+    lower_limit, upper_limit = _set_lower_upper_limits(
+        system, lower_limit, upper_limit, is_step=False, **kwargs)
     _check_lower_limit_and_control(lower_limit, control)
     systems = _unpack_mimo_systems(
         system,
@@ -1039,7 +1085,7 @@ def _ramp_response_with_control_helper(
 
 
 def ramp_response(
-    system, prec=8, slope=1, lower_limit=0, upper_limit=10,
+    system, prec=8, slope=1, lower_limit=None, upper_limit=None,
     label=None, rendering_kw=None, control=True,
     input=None, output=None, **kwargs
 ):
@@ -1072,12 +1118,14 @@ def ramp_response(
         Defaults to 8.
     slope : Number, optional
         The slope of the input ramp function. Defaults to 1.
-    lower_limit : Number, optional
-        The lower limit of the plot range. Defaults to 0. If a different value
-        is to be used, also set ``control=False`` (see examples in order to
-        understand why).
-    upper_limit : Number, optional
-        The upper limit of the plot range. Defaults to 10.
+    lower_limit : Number or None, optional
+        The lower time limit of the plot range. Defaults to 0. If a different
+        value  is to be used, also set ``control=False`` (see examples in
+        order to understand why).
+    upper_limit : Number or None, optional
+        The upper time limit of the plot range. If not provided, an
+        appropriate value will be computed. If a interactive widget plot is
+        being created, it defaults to 10.
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
@@ -1201,7 +1249,7 @@ def ramp_response(
            ramp_response(
                tf2, label="B", slope=a, lower_limit=b, upper_limit=c,
                params=params, control=True),
-           xlabel="Time [s]", ylabel="Amplitude", imodule="panel")
+           xlabel="Time [s]", ylabel="Amplitude")
 
     See Also
     ========
@@ -1216,6 +1264,8 @@ def ramp_response(
     """
     sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
     control = _check_if_control_is_installed(use_control=control)
+    lower_limit, upper_limit = _set_lower_upper_limits(
+        system, lower_limit, upper_limit, is_step=False, **kwargs)
     _check_lower_limit_and_control(lower_limit, control)
     systems = _unpack_mimo_systems(
         system,
@@ -1826,7 +1876,7 @@ def nyquist(system, omega_limits=None, input=None, output=None,
 
        graphics(
            nyquist(tf1, m_circles=True),
-           xlabel="Real", ylabel="Imaginary"
+           grid=False, xlabel="Real", ylabel="Imaginary"
        )
 
     Interactive-widgets plot of a systems:
@@ -2265,11 +2315,8 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
        :context: close-figs
        :include-source: True
 
-       xlim = (-5.5, 1)
-       ylim = (-3, 3)
        graphics(
-           sgrid(auto=True),
-           grid=False, xlim=xlim, ylim=ylim
+           sgrid(auto=True)
        )
 
     Interactive-widgets plot of custom s-grid lines:
@@ -2770,3 +2817,183 @@ def _default_frequency_exponent_range(
         lsp_max = max(lsp_max, np.log10(max(freq_interesting)))
 
     return lsp_min, lsp_max
+
+
+# utility function to find time period and time increment using pole locations
+# from control.timeresp 0.10.0
+def _ideal_tfinal_and_dt(sys, is_step=True):
+    """helper function to compute ideal simulation duration tfinal and dt, the
+    time increment. Usually called by _default_time_vector, whose job it is to
+    choose a realistic time vector. Considers both poles and zeros.
+
+    For discrete-time models, dt is inherent and only tfinal is computed.
+
+    Parameters
+    ----------
+    sys : StateSpace or TransferFunction
+        The system whose time response is to be computed
+    is_step : bool
+        Scales the dc value by the magnitude of the nonzero mode since
+        integrating the impulse response gives
+        :math:`\\int e^{-\\lambda t} = -e^{-\\lambda t}/ \\lambda`
+        Default is True.
+
+    Returns
+    -------
+    tfinal : float
+        The final time instance for which the simulation will be performed.
+    dt : float
+        The estimated sampling period for the simulation.
+
+    Notes
+    -----
+    Just by evaluating the fastest mode for dt and slowest for tfinal often
+    leads to unnecessary, bloated sampling (e.g., Transfer(1,[1,1001,1000]))
+    since dt will be very small and tfinal will be too large though the fast
+    mode hardly ever contributes. Similarly, change the numerator to [1, 2, 0]
+    and the simulation would be unnecessarily long and the plot is virtually
+    an L shape since the decay is so fast.
+
+    Instead, a modal decomposition in time domain hence a truncated ZIR and ZSR
+    can be used such that only the modes that have significant effect on the
+    time response are taken. But the sensitivity of the eigenvalues complicate
+    the matter since dlambda = <w, dA*v> with <w,v> = 1. Hence we can only work
+    with simple poles with this formulation. See Golub, Van Loan Section 7.2.2
+    for simple eigenvalue sensitivity about the nonunity of <w,v>. The size of
+    the response is dependent on the size of the eigenshapes rather than the
+    eigenvalues themselves.
+
+    By Ilhan Polat, with modifications by Sawyer Fuller to integrate into
+    python-control 2020.08.17
+
+    """
+    control = import_module("control")
+    sp = import_module("scipy")
+    np = import_module("numpy")
+
+    if not control:
+        return None, None
+
+    _convert_to_statespace = control.statesp._convert_to_statespace
+    isdtime = control.iosys.isdtime
+    matrix_balance = sp.linalg.matrix_balance
+    eig = sp.linalg.eig
+    norm = sp.linalg.norm
+
+    sqrt_eps = np.sqrt(np.spacing(1.))
+    default_tfinal = 5                  # Default simulation horizon
+    default_dt = 0.1
+    total_cycles = 5                    # Number cycles for oscillating modes
+    pts_per_cycle = 25                  # Number points divide period of osc
+    log_decay_percent = np.log(1000)    # Reduction factor for real pole decays
+
+    if sys._isstatic():
+        tfinal = default_tfinal
+        dt = sys.dt if isdtime(sys, strict=True) else default_dt
+    elif isdtime(sys, strict=True):
+        dt = sys.dt
+        A = _convert_to_statespace(sys).A
+        tfinal = default_tfinal
+        p = sp.linalg.eigvals(A)
+        # Array Masks
+        # unstable
+        m_u = (np.abs(p) >= 1 + sqrt_eps)
+        p_u, p = p[m_u], p[~m_u]
+        if p_u.size > 0:
+            m_u = (p_u.real < 0) & (np.abs(p_u.imag) < sqrt_eps)
+            if np.any(~m_u):
+                t_emp = np.max(
+                    log_decay_percent / np.abs(np.log(p_u[~m_u]) / dt))
+                tfinal = max(tfinal, t_emp)
+
+        # zero - negligible effect on tfinal
+        m_z = np.abs(p) < sqrt_eps
+        p = p[~m_z]
+        # Negative reals- treated as oscillary mode
+        m_nr = (p.real < 0) & (np.abs(p.imag) < sqrt_eps)
+        p_nr, p = p[m_nr], p[~m_nr]
+        if p_nr.size > 0:
+            t_emp = np.max(log_decay_percent / np.abs((np.log(p_nr)/dt).real))
+            tfinal = max(tfinal, t_emp)
+        # discrete integrators
+        m_int = (p.real - 1 < sqrt_eps) & (np.abs(p.imag) < sqrt_eps)
+        p_int, p = p[m_int], p[~m_int]
+        # pure oscillatory modes
+        m_w = (np.abs(np.abs(p) - 1) < sqrt_eps)
+        p_w, p = p[m_w], p[~m_w]
+        if p_w.size > 0:
+            t_emp = total_cycles * 2 * np.pi / np.abs(np.log(p_w)/dt).min()
+            tfinal = max(tfinal, t_emp)
+
+        if p.size > 0:
+            t_emp = log_decay_percent / np.abs((np.log(p)/dt).real).min()
+            tfinal = max(tfinal, t_emp)
+
+        if p_int.size > 0:
+            tfinal = tfinal * 5
+    else:       # cont time
+        sys_ss = _convert_to_statespace(sys)
+        # Improve conditioning via balancing and zeroing tiny entries
+        # See <w,v> for [[1,2,0], [9,1,0.01], [1,2,10*np.pi]]
+        #   before/after balance
+        b, (sca, perm) = matrix_balance(sys_ss.A, separate=True)
+        p, l, r = eig(b, left=True, right=True)
+        # Reciprocal of inner product <w,v> for each eigval, (bound the
+        #   ~infs by 1e12)
+        # G = Transfer([1], [1,0,1]) gives zero sensitivity (bound by 1e-12)
+        eig_sens = np.reciprocal(np.maximum(1e-12, np.einsum('ij,ij->j', l, r).real))
+        eig_sens = np.minimum(1e12, eig_sens)
+        # Tolerances
+        p[np.abs(p) < np.spacing(eig_sens * norm(b, 1))] = 0.
+        # Incorporate balancing to outer factors
+        l[perm, :] *= np.reciprocal(sca)[:, None]
+        r[perm, :] *= sca[:, None]
+        w, v = sys_ss.C @ r, l.T.conj() @ sys_ss.B
+
+        origin = False
+        # Computing the "size" of the response of each simple mode
+        wn = np.abs(p)
+        if np.any(wn == 0.):
+            origin = True
+
+        dc = np.zeros_like(p, dtype=float)
+        # well-conditioned nonzero poles, np.abs just in case
+        ok = np.abs(eig_sens) <= 1/sqrt_eps
+        # the averaged t->inf response of each simple eigval on each i/o
+        # channel. See, A = [[-1, k], [0, -2]], response sizes are
+        # k-dependent (that is R/L eigenvector dependent)
+        dc[ok] = norm(v[ok, :], axis=1)*norm(w[:, ok], axis=0)*eig_sens[ok]
+        dc[wn != 0.] /= wn[wn != 0] if is_step else 1.
+        dc[wn == 0.] = 0.
+        # double the oscillating mode magnitude for the conjugate
+        dc[p.imag != 0.] *= 2
+
+        # Now get rid of noncontributing integrators and simple modes if any
+        relevance = (dc > 0.1*dc.max()) | ~ok
+        psub = p[relevance]
+        wnsub = wn[relevance]
+
+        tfinal, dt = [], []
+        ints = wnsub == 0.
+        iw = (psub.imag != 0.) & (np.abs(psub.real) <= sqrt_eps)
+
+        # Pure imaginary?
+        if np.any(iw):
+            tfinal += (total_cycles * 2 * np.pi / wnsub[iw]).tolist()
+            dt += (2 * np.pi / pts_per_cycle / wnsub[iw]).tolist()
+        # The rest ~ts = log(%ss value) / exp(Re(eigval)t)
+        texp_mode = log_decay_percent / np.abs(psub[~iw & ~ints].real)
+        tfinal += texp_mode.tolist()
+        dt += np.minimum(
+            texp_mode / 50,
+            (2 * np.pi / pts_per_cycle / wnsub[~iw & ~ints])
+        ).tolist()
+
+        # All integrators?
+        if len(tfinal) == 0:
+            return default_tfinal*5, default_dt*5
+
+        tfinal = np.max(tfinal)*(5 if origin else 1)
+        dt = np.min(dt)
+
+    return tfinal, dt
