@@ -2,6 +2,47 @@
  Changelog
 ==========
 
+v3.3.0
+======
+
+* Control system plotting
+
+  * Fixed bug with missing title of ``plot_root_locus``.
+
+  * Implemented ``sgrid`` based on Matplotlib projection.
+
+  * Improved ``sgrid`` support on Bokeh interactive plots.
+
+  * Improved labeling of MIMO systems.
+
+  * ``step_response, impulse_response, ramp_response`` are now able to
+    compute an appropriate upper time limit for the simulation.
+
+  * Updated code to use ``control 0.10.0``. As a consequence, Python 3.9 is
+    no longer supported by this module.
+
+* Improvements of interactive plots:
+
+  * Added support for multiple-values widgets, like ``RangeSlider``.
+
+  * Improvements of ``spb.interactive.panel``:
+
+    * Simplified underlying architecture. Previously, ``InteractivePlot``
+      inherited from ``param.Parameterized``: widgets were class
+      attributes. Instantiating a new interactive plot would make the previous
+      instance completely unusable. This inheritance has been removed.
+      Now, widgets are instance attributes. Multiple instances work perfectly
+      fine.
+
+    * Added support for widgets of Holoviz Panel.
+
+    * Updated plotgrid to work with the new architecture.
+  
+  * Improvements to documentation.
+
+* Fixed bug with legend of ``plot_vector``.
+
+
 v3.2.0
 ======
 
