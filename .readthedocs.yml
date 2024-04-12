@@ -19,6 +19,11 @@ build:
       - libxt6
       - libpci-dev
       - libasound2
+      # dependencies for slycot
+      - gfortran
+      - cmake
+      - libblas-dev
+      - liblapack-dev
    jobs:
       pre_install:
          - mkdir $HOME/selenium
