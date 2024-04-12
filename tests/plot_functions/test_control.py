@@ -439,6 +439,7 @@ def test_interactive_plots():
     do_test(plot_bode_phase)
 
 
+@pytest.mark.skipif(ct is None, reason="control is not installed")
 @pytest.mark.filterwarnings("ignore::UserWarning")
 @pytest.mark.parametrize(
     "tfs, lower_limit, upper_limit, use_control", [
