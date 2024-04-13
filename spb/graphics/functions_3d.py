@@ -504,9 +504,10 @@ def surface(
        from sympy import *
        from spb import *
        import panel as pn
-       x, y, a, b, d, e = symbols("x y a b d e")
+       x, y, a, b, c, d, e = symbols("x y a b c d e")
        graphics(
-           surface(cos(x**2 + y**2) * exp(-(x**2 + y**2) * d),
+           surface(
+               cos(x**2 + y**2) * exp(-(x**2 + y**2) * a),
                prange(x, b, c), prange(y, d, e),
                params={
                    a: (0.25, 0, 1),
