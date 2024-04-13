@@ -55,7 +55,9 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
 
             kw = wf_kwargs.copy()
             if s.is_interactive:
-                kw["params"] = s.params.copy()
+                # pass in the original parameters provided by the user, which
+                # might contain RangeSlider...
+                kw["params"] = s._original_params.copy()
 
             if s.is_parametric:
                 (x, sx, ex), (y, sy, ey) = s.ranges
