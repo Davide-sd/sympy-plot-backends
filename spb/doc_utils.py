@@ -199,7 +199,7 @@ def _modify_iplot_code(code):
         tree.body[-1] = ast.Assign(
             targets=[ast.Name(id="panelplot")],
             value=ln.value.func.value, lineno=ln.lineno)
-        last_command = ast.parse("panelplot.layout_controls()")
+        last_command = ast.parse("panelplot.layout_controls")
         tree.body.append(last_command.body[-1])
 
     elif (
@@ -262,7 +262,7 @@ def _modify_iplot_code(code):
                 value=ln.value, lineno=ln.lineno)
 
             if is_KB:
-                last_command = ast.parse("panelplot.layout_controls()")
+                last_command = ast.parse("panelplot.layout_controls")
             else:
                 last_command = ast.parse(
                     "panelplot._create_template(show=False)")
