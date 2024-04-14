@@ -17,20 +17,23 @@ class Plot:
 
     1. The user creates the symbolic expressions and calls one of the plotting
        functions.
-    2. The plotting functions generate a list of instances of the `BaseSeries`
-       class, containing the necessary information to plot the expressions
-       (eg the expression, ranges, series name, ...). Eventually, these
-       objects will generate the numerical data to be plotted.
-    3. The plotting functions instantiate the `Plot` class, which stores the
+    2. The plotting functions generate a list of instances of ``BaseSeries``,
+       containing the necessary information to generate the appropriate
+       numerical data and create the proper visualization
+       (eg the expression, ranges, series name, ...).
+    3. The plotting functions instantiate the ``Plot`` class, which stores the
        list of series and the main attributes of the plot (eg axis labels,
-       title, etc.). Among the keyword arguments, there must be `backend`,
-       a subclass of `Plot` which specify the backend to be used.
-    4. The backend will render the numerical data to a plot and (eventually)
-       show it on the screen. The figure is populated with numerical data once
-       the `show()` method or the `fig` attribute are called.
+       title, etc.). Among the keyword arguments, there must be ``backend=``,
+       where a subclass of ``Plot`` can be specified in order to use a
+       particular plotting library.
+    4. Each data series will be associated to a corresponding renderer, which
+       receives the numerical data and add it to the figure. A renderer is also
+       responsible to keep objects up-to-date when interactive-widgets plots
+       are used. The figure is populated with numerical data when the
+       ``show()`` method or the ``fig`` attribute are called.
 
     The backend should check if it supports the data series that it's given.
-    Please, explore the `MatplotlibBackend` source code to understand how a
+    Please, explore ``MatplotlibBackend`` source code to understand how a
     backend should be coded.
 
     Also note that setting attributes to plot objects or to data series after
@@ -48,7 +51,7 @@ class Plot:
     * ``save(self, path, **kwargs)``: used to save the current plot to the
       specified file path.
     * ``self._fig``: an instance attribute to store the backend-specific plot
-      object, which can be retrieved with the `Plot.fig` attribute. This
+      object, which can be retrieved with the ``Plot.fig`` attribute. This
       object can then be used to further customize the resulting plot, using
       backend-specific commands.
     * ``update_interactive(self, params)``: this method receives a dictionary

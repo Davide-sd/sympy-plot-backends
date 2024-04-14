@@ -4,11 +4,12 @@
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/sympy_plot_backends.svg)](https://anaconda.org/conda-forge/sympy_plot_backends)
 [![Documentation Status](https://readthedocs.org/projects/sympy-plot-backends/badge/?version=latest)](http://sympy-plot-backends.readthedocs.io/)
 ![Coverage](https://github.com/Davide-sd/sympy-plot-backends/blob/master/coverage.svg)
+[![](https://img.shields.io/static/v1?label=Github%20Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/Davide-sd)
 
 
 This module contains a few plotting backends that can be used with [SymPy](github.com/sympy/sympy) and [Numpy](https://github.com/numpy/numpy). A backend represents the plotting library: it provides the necessary functionalities to quickly and easily plot the most common types of symbolic expressions (line plots, surface plots, parametric plots, vector plots, complex plots, control system plots).
 
-The following plotting libraries are supported: [Matplolib](https://matplotlib.org/), [Plotly](https://plotly.com/), [Bokeh](https://github.com/bokeh/bokeh), [K3D-Jupyter](https://github.com/K3D-tools/K3D-jupyter), [Mayavi](https://github.com/enthought/mayavi).
+The following plotting libraries are supported: [Matplolib](https://matplotlib.org/), [Plotly](https://plotly.com/), [Bokeh](https://github.com/bokeh/bokeh), [K3D-Jupyter](https://github.com/K3D-tools/K3D-jupyter).
 
 <div>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/iplot_bokeh.png" width=250/>
@@ -30,24 +31,30 @@ On top of the usual plotting functions exposed by SymPy (`plot`,
 * visualize 2D/3D vector fields with quivers or streamlines.
 * visualize complex functions with [domain coloring](https://en.wikipedia.org/wiki/Domain_coloring).
 * visualize entities from the `sympy.geometry` module.
-* visualize control systems' response to input signals, visualize Bode, Nyquist and Nichols plots.
+* visualize control systems' response to input signals, root locus, as well as Bode, Nyquist and Nichols diagrams.
 * create parametric-interactive plots using widgets
   (sliders, buttons, etc.) with *ipywidgets* or *Holoviz's Panel*.
-* combine multiple plots into a grid-like layout.
 
 Please, read the
 [following documentation page](https://sympy-plot-backends.readthedocs.io/en/latest/overview.html#differences-with-sympy-plotting)
 to understand the differences between this module and ``sympy.plotting``.
 
-If you feel like some feature could be implemented, open an issue or create
-a PR.
 
+## Development and Support
 
-## Explore the Capabilities
+If you feel like a feature could be implemented, open an issue or create a PR.
 
-[Read the documentation](https://sympy-plot-backends.readthedocs.io/) to 
-explore the capabilities before the installation, which contains plenty of
-examples.
+If you really want a new feature but you don't have the capabilities or the
+time to make it work, I'm willing to help; but first, open an issue or send
+me an email so that we can discuss a sponsorship strategy.
+
+Developing this module and its documentation was no easy job. Implementing
+new feature and fixing bugs requires time and energy too. If you found this
+module useful, you can show your appreciation by sponsoring this project:
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/davide_sd)
+or
+[![](https://img.shields.io/static/v1?label=Github%20Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/Davide-sd)
 
 
 ## Installation
@@ -72,7 +79,14 @@ plotly, k3d, vtk, execute the following command:
 pip install sympy_plot_backends[all]
 ```
 
-Or:
+If you are using zshell, the above `pip` command is going to fail.
+Use the following instead:
+
+```
+pip install "sympy_plot_backends[all]"
+```
+
+Or, if you are using `conda`:
 
 ```
 conda install -c anaconda scipy notebook colorcet
@@ -84,15 +98,9 @@ conda install -c bokeh ipywidgets_bokeh
 conda install -c conda-forge k3d msgpack-python
 conda install -c plotly plotly
 conda install -c conda-forge vtk
+conda install -c conda-forge control slycot
 ```
 
-Finally, if you are using zshell, the above `pip` command is going to fail.
-Use the following instead:
-
-```
-pip install "sympy_plot_backends[all]"
-```
-  
 
 ## Warnings
 

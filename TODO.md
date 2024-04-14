@@ -1,6 +1,6 @@
 ## TODO
 
-- [ ] enable the user to provide existing figures and plot over them.
+In no particular order:
 
 - [ ] Implement parallel evaluation when `modules="mpmath"` or
   `modules="sympy"`. [Motivational example](https://stackoverflow.com/a/77163667/2329968).
@@ -11,10 +11,10 @@
 - [ ] `plot_implicit`: decouple `And` expressions and plot them with contours
   following a strategy similar to sage.
 
-- [ ] 3D vector fields discretizing the volume with two polar parameters, or
+- [ ] 3D vector fields: discretize the volume with two polar parameters, or
   two cylindrical parameters.
 
-- [ ] `plot_nyquist` and `plot_nichols` for Plotly/Bokeh.
+- [ ] Control system plotting for Plotly.
 
 - [ ] implement parametric-widgets support for `xlim, ylim, zlim` and
   `xlabel, ylabel, zlabel`.
@@ -24,8 +24,10 @@
 - [ ] Create a way to apply rotation/translation/scaling transformation to 3D
   entities (obviously, with interactive plotting in mind).
 
-- [ ] custom legend position with keyword argument.
+- [ ] Custom legend position with keyword argument.
 
-- [ ] wireframe lines for iso-modulus, iso-phase on `analytic_landscape`.
+- [ ] Apply `pi` tick format to axis labels.
 
-- [ ] asymptotes on 3D plots: probably requires to break mesh connectivity.
+- [ ] Wireframe lines for iso-modulus, iso-phase on `analytic_landscape`.
+
+- [ ] Asymptotes on 3D plots: probably requires to break mesh connectivity.

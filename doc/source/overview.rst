@@ -22,9 +22,7 @@ libraries):
 `Matplotlib <https://matplotlib.org/>`_,
 `Plotly <https://plotly.com/>`_,
 `Bokeh <https://github.com/bokeh/bokeh>`_,
-`K3D-Jupyter <https://github.com/K3D-tools/K3D-jupyter>`_,
-`Mayavi <https://docs.enthought.com/mayavi/mayavi/>`_ (support for this backend
-is limited).
+`K3D-Jupyter <https://github.com/K3D-tools/K3D-jupyter>`_.
 
 The 3 most important reasons for supporting multiple backends are:
 
@@ -37,10 +35,7 @@ The 3 most important reasons for supporting multiple backends are:
    translates to better data exploration and visualization (especially when
    working with Jupyter Notebook).
 
-#. To use the **plotting library we are most comfortable with**. The backend
-   can be used as a starting point to plot symbolic expressions; then, we could
-   use the figure object to add numerical (or experimental) results using the
-   commands associated to the specific plotting library.
+#. To use the **plotting library we are most comfortable with**.
 
 More information about the backends can be found at:
 :doc:`Backends </modules/backends/index>` .
@@ -51,9 +46,7 @@ Examples
 
 The following code blocks shows a few examples about the capabilities of
 this module. Please, try them on a Jupyter Notebook to explore the interactive
-figures. Alternatively, consider loading the ``html`` output when available:
-note that changing the state of widgets won't update the plot as there is no
-active Python kernel running on this web page.
+figures.
 
 
 Interactive-Parametric 2D plot of the magnitude of a second order transfer
@@ -264,21 +257,14 @@ Differences with sympy.plotting
 * While the backends implemented in this module might resemble the ones from
   the `sympy.plotting` module, they are not interchangeable.
 
-* `sympy.plotting` also provides a ``Plotgrid`` class to combine multiple plots
-  into a grid-like layout. This module replaces that class with the
-  ``plotgrid`` function. Again, they are not interchangeable.
-
 * The ``plot_implicit`` function uses a mesh grid algorithm and contour plots
   by default (in contrast to the adaptive algorithm used by `sympy.plotting`).
   It is going to automatically switch to an adaptive algorithm if
   Boolean expressions are found. This ensures a better visualization for
   non-Boolean implicit expressions.
 
-* ``experimental_lambdify``, used by `sympy.plotting`, has been completely
-  removed.
-
 * `sympy.plotting` is unable to visualize summations containing infinity in
-  their lower/upper bounds. The new module introduces the ``sum_bound`` keyword
+  their lower/upper bounds. This module introduces the ``sum_bound`` keyword
   argument into the ``plot`` function: it substitutes infinity with a large
   integer number. As such, it is possible to visualize summations.
 

@@ -66,7 +66,8 @@ extensions = [
     'sphinx_plotly_directive',
     'sphinx_panel_screenshot',
     'sphinx_k3d_screenshot',
-    'sphinx_math_dollar'
+    'sphinx_math_dollar',
+    'sphinx_design'
 ]
 
 # nbsphinx_allow_errors = True
