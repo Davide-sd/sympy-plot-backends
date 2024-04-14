@@ -49,8 +49,9 @@ time to make it work, I'm willing to help; but first, open an issue or send
 me an email so that we can discuss a sponsorship strategy.
 
 Developing this module and its documentation was no easy job. Implementing
-new feature and fixing bugs requires time and energy too. If you found this
-module useful, you can show your appreciation by sponsoring this project:
+new features and fixing bugs requires time and energy too. If you found this
+module useful and would like to show your appreciation, please consider
+sponsoring this project with either one of these options:
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/davide_sd)
 or
