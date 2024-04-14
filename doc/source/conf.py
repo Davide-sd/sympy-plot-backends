@@ -70,6 +70,11 @@ extensions = [
     'sphinx_design'
 ]
 
+# in order to show the icons on sponsorship buttons
+html_css_files = [
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+]
+
 # nbsphinx_allow_errors = True
 
 # hide the table inside classes autodoc
