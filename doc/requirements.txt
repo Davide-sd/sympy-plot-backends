@@ -5,6 +5,7 @@ jupyter-sphinx
 nbsphinx
 nbsphinx_link
 sphinx-rtd-theme
+sphinx_design
 # sphinx_plotly_directive
 git+https://github.com/Davide-sd/sphinx-plotly-directive@combine
 sphinx_panel_screenshot
