@@ -1,8 +1,10 @@
+from spb.animation import AnimationData, BaseAnimation
 from spb.defaults import cfg
 from spb.backends.matplotlib import MB
 from spb.backends.plotly import PB
 from spb.backends.bokeh import BB
 from spb.interactive import IPlot, create_interactive_plot
+from spb.utils import _aggregate_parameters
 from sympy.utilities.exceptions import sympy_deprecation_warning
 from sympy.external import import_module
 
@@ -144,6 +146,7 @@ def _create_ipywidgets_figure(mapping, panel_kw):
                 bokeh.io.show(plot_fig)
             bokeh_outputs_plots.append((new_fig, p))
             plot_fig = new_fig
+        print(type(plot_fig))
         fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = ipy.Box([plot_fig])
     return fig, bokeh_outputs_plots
 
@@ -204,26 +207,26 @@ def _get_plots_imodule(plots):
     return imodules.pop() if len(imodules) > 0 else None
 
 
-def _check_imodules(plots_imodule, plotgrid_imodule):
-    def raise_error(plots_imodule, plotgrid_imodule):
-        raise ValueError(
-            "The interactive module used by `plotgrid` is different from "
-            "the interactive module used by the plots. This is not supported. "
-            "Please, only chose one interactive module. Received:\n"
-            f"plotgrid imodule={plotgrid_imodule}\n"
-            f"plots imodule={plots_imodule}"
-        )
-    default_imodule = cfg["interactive"]["module"]
-    if (plots_imodule is None) and (plotgrid_imodule is None):
-        pass
-    elif plots_imodule is None:
-        if plotgrid_imodule != default_imodule:
-            raise_error(default_imodule, plotgrid_imodule)
-    elif plotgrid_imodule is None:
-        if plots_imodule != default_imodule:
-            raise_error(plots_imodule, default_imodule)
-    elif plotgrid_imodule != plots_imodule:
-        raise_error(plots_imodule, plotgrid_imodule)
+# def _check_imodules(plots_imodule, plotgrid_imodule):
+#     def raise_error(plots_imodule, plotgrid_imodule):
+#         raise ValueError(
+#             "The interactive module used by `plotgrid` is different from "
+#             "the interactive module used by the plots. This is not supported. "
+#             "Please, only chose one interactive module. Received:\n"
+#             f"plotgrid imodule={plotgrid_imodule}\n"
+#             f"plots imodule={plots_imodule}"
+#         )
+#     default_imodule = cfg["interactive"]["module"]
+#     if (plots_imodule is None) and (plotgrid_imodule is None):
+#         pass
+#     elif plots_imodule is None:
+#         if plotgrid_imodule != default_imodule:
+#             raise_error(default_imodule, plotgrid_imodule)
+#     elif plotgrid_imodule is None:
+#         if plots_imodule != default_imodule:
+#             raise_error(plots_imodule, default_imodule)
+#     elif plotgrid_imodule != plots_imodule:
+#         raise_error(plots_imodule, plotgrid_imodule)
 
 
 def plotgrid(*args, **kwargs):
@@ -372,6 +375,7 @@ def plotgrid(*args, **kwargs):
     .. [#fn2] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.axes_grid1.axes_grid.ImageGrid.html
 
     """
+    print("plotgrid function")
 
     nr = kwargs.get("nr", -1)
     nc = kwargs.get("nc", 1)
@@ -393,7 +397,21 @@ def plotgrid(*args, **kwargs):
     else:
         plots_imodule = None
 
-    _check_imodules(plots_imodule, kwargs.get("imodule", None))
+
+    plotgrid_imodule = kwargs.get("imodule", None)
+    if (plotgrid_imodule is None) and plots_imodule:
+        plotgrid_imodule = plots_imodule
+
+    # NOTE: plots_imodule can be None, meaning it was not provided by
+    # the user.
+    if plots_imodule and (plotgrid_imodule != plots_imodule):
+        raise ValueError(
+            "The interactive module used by `plotgrid` is different from "
+            "the interactive module used by the plots. This is not supported. "
+            "Please, only chose one interactive module. Received:\n"
+            f"plotgrid imodule={plotgrid_imodule}\n"
+            f"plots imodule={plots_imodule}"
+        )
 
     is_iplot = len(all_parameters) > 0
     p = PlotGrid(nr, nc, *args, show=False, is_iplot=is_iplot, **kwargs)
@@ -401,6 +419,11 @@ def plotgrid(*args, **kwargs):
         kwargs["plotgrid"] = p
         kwargs["params"] = all_parameters
         kwargs["show"] = show
+        kwargs["animation"] = any(
+            plot.backend._animation_data is not None for plot in p._all_plots)
+        if plotgrid_imodule:
+            # assure the proper interactive module is going to be used
+            kwargs["imodule"] = plotgrid_imodule
         return create_interactive_plot(**kwargs)
 
     if not show:
@@ -411,7 +434,108 @@ def plotgrid(*args, **kwargs):
     return p.show()
 
 
-class PlotGrid:
+class PlotGridAnimationEnabler(BaseAnimation):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._animation_data = None
+        original_params, fps, time = {}, [], []
+        for p in self._all_plots:
+            if isinstance(p, IPlot) and p.backend._animation_data:
+                original_params = _aggregate_parameters(
+                    original_params.copy(), p.backend.series)
+                fps.append(p.backend._animation_data.fps)
+                time.append(p.backend._animation_data.time)
+        if original_params:
+            self._animation_data = AnimationData(
+                fps=max(fps), time=max(time), params=original_params)
+
+
+class PanelEnabler:
+    def __init__(self, *args, **kwargs):
+        print("PanelEnabler.__init__")
+        # those are set by spb.interactive.panel, they allow binding widgets
+        # to appropriate update functions.
+        self._params_symbols, self._params_widgets = None, None
+
+    def pre_set_bindings(self, symbols, widgets):
+        """Set the necessary data to create bindings for interactive widgets
+        plots with panel.
+        """
+        print("PlotGrid.pre_set_bindings", symbols, widgets)
+        self._params_symbols = symbols
+        self._params_widgets = widgets
+
+    def _update_plot(self, p, *values):
+        d = {symb: v for symb, v in zip(self._params_symbols, values)}
+        p.update_interactive(d)
+        return p.fig
+
+    def _update_plotly(self, p, *values):
+        print("_update_plotly", values)
+        d = {symb: v for symb, v in zip(self._params_symbols, values)}
+        p.update_interactive(d)
+        return p.fig.to_dict()
+
+    def _update_plot_animation(self, p, frame_idx):
+        print("_update_plot_animation", frame_idx)
+        p.update_animation(frame_idx)
+        return p.fig
+
+    def _update_plotly_animation(self, p, frame_idx):
+        print("_update_plotly_animation", frame_idx)
+        p.update_animation(frame_idx)
+        return p.fig.to_dict()
+
+    def _create_panel_figure(self, mapping):
+        pn = import_module(
+            'panel',
+            min_module_version='0.12.0')
+        pn.extension("plotly")
+
+        panes_plots = {}
+        fig = pn.GridSpec(**self.panel_kw)
+        create_binding = self._params_symbols is not None
+        update_func = self._update_plot
+        update_func_plotly = self._update_plotly
+        if self._animation_data:
+            update_func = self._update_plot_animation
+            update_func_plotly = self._update_plotly_animation
+        for i, (spec, p) in enumerate(mapping.items()):
+            rs = spec.rowspan
+            cs = spec.colspan
+            if isinstance(p, IPlot):
+                # a panel's `pane` must receive a figure of some kind, not another
+                # panel's object, otherwise there will be performance penalty,
+                # especially noticeable with Plotly and Bokeh
+                p = p.backend
+            _fig = p.fig
+            if isinstance(p, PB):
+                print("update_func_plotly", update_func_plotly)
+                pane = pn.pane.Plotly(
+                    _fig.to_dict() if not create_binding else
+                    pn.bind(update_func_plotly, p, *self._params_widgets)
+                )
+            elif isinstance(p, MB):
+                pane = pn.pane.Matplotlib(
+                    _fig if not create_binding else
+                    pn.bind(update_func, p, *self._params_widgets)
+                )
+            elif isinstance(p, BB):
+                pane = pn.pane.Bokeh(
+                    _fig if not create_binding else
+                    pn.bind(update_func, p, *self._params_widgets)
+                )
+            else:
+                pane = pn.pane.panel(
+                    _fig if not create_binding else
+                    pn.bind(update_func, p, *self._params_widgets)
+                )
+            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pane
+            panes_plots[pane] = p
+        return fig, panes_plots
+
+
+class PlotGrid(PlotGridAnimationEnabler, PanelEnabler):
     """Implement the logic to create a grid of plots. Refer to ``plotgrid``
     about examples.
     """
@@ -447,9 +571,6 @@ class PlotGrid:
         self._panes_plots = {}
         self._is_iplot = kwargs.get("is_iplot", False)
         self._imodule = kwargs.get("imodule", cfg["interactive"]["module"])
-        # those are set by spb.interactive.panel, they allow binding widgets
-        # to appropriate update functions.
-        self._params_symbols, self._params_widgets = None, None
 
         # validate GridSpec, if provided
         self.gs = kwargs.get("gs", None)
@@ -459,11 +580,16 @@ class PlotGrid:
                 self.gs.values(), MB)
             self.is_bokeh_fig = _are_all_plots_instances_of(
                 self.gs.values(), BB)
+            self._all_plots = list(self.gs.values())
         else:
             self.is_matplotlib_fig = _are_all_plots_instances_of(args, MB)
             self.is_bokeh_fig = _are_all_plots_instances_of(args, BB)
+            self._all_plots = args
 
         self.panel_kw = kwargs.get("panel_kw", dict())
+
+        # initialize animation-related attributes
+        super().__init__(**kwargs)
 
         if kwargs.get("show", True):
             self.show()
@@ -519,10 +645,15 @@ class PlotGrid:
         gs = self.gs
         is_iplot_panel = self._is_iplot and (self._imodule == "panel")
 
+        print("PlotGrid._create_figure")
+        print("self._is_iplot", self._is_iplot)
+        print("is_iplot_panel", is_iplot_panel)
+
         if (gs is None) and (len(self.args) == 0):
             self._fig = self.plt.figure()
 
         elif (gs is None):
+            print("CASE no gs")
             # First mode of operation
             nr, nc = self.nrows, self.ncolumns
             gs = GridSpec(nr, nc)
@@ -535,15 +666,18 @@ class PlotGrid:
                     c += 1
 
             if self.is_matplotlib_fig:
+                print("Matplotlib figure")
                 self._fig, self._new_plots = _create_mpl_figure(
                     mapping, self.imagegrid, self.size, is_iplot_panel)
             else:
+                print("Mixed backends")
                 size = self.size
 
                 # NOTE: assumimg all plots are of the same backend
                 self._new_plots = self.args
 
                 if self._imodule == "panel":
+                    print("creating panel figure")
                     self.panel_kw.setdefault(
                         "width", 800 if not size else size[0])
                     self.panel_kw.setdefault(
@@ -586,66 +720,6 @@ class PlotGrid:
                         "n_rows": mpl_gs.nrows, "n_columns": mpl_gs.ncols}
                     self._fig, self._bokeh_outputs_plots = _create_ipywidgets_figure(
                         gs, self.panel_kw)
-
-
-    def _create_panel_figure(self, mapping):
-        pn = import_module(
-            'panel',
-            min_module_version='0.12.0')
-        pn.extension("plotly")
-
-        panes_plots = {}
-        fig = pn.GridSpec(**self.panel_kw)
-        create_binding = self._params_symbols is not None
-        for i, (spec, p) in enumerate(mapping.items()):
-            rs = spec.rowspan
-            cs = spec.colspan
-            if isinstance(p, IPlot):
-                # a panel's `pane` must receive a figure of some kind, not another
-                # panel's object, otherwise there will be performance penalty,
-                # especially noticeable with Plotly and Bokeh
-                p = p.backend
-            _fig = p.fig
-            if isinstance(p, PB):
-                pane = pn.pane.Plotly(
-                    _fig.to_dict() if not create_binding else
-                    pn.bind(self._update_plotly, p, *self._params_widgets)
-                )
-            elif isinstance(p, MB):
-                pane = pn.pane.Matplotlib(
-                    _fig if not create_binding else
-                    pn.bind(self._update_plot, p, *self._params_widgets)
-                )
-            elif isinstance(p, BB):
-                pane = pn.pane.Bokeh(
-                    _fig if not create_binding else
-                    pn.bind(self._update_plot, p, *self._params_widgets)
-                )
-            else:
-                pane = pn.pane.panel(
-                    _fig if not create_binding else
-                    pn.bind(self._update_plot, p, *self._params_widgets)
-                )
-            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = pane
-            panes_plots[pane] = p
-        return fig, panes_plots
-
-    def pre_set_bindings(self, symbols, widgets):
-        """Set the necessary data to create bindings for interactive widgets
-        plots with panel.
-        """
-        self._params_symbols = symbols
-        self._params_widgets = widgets
-
-    def _update_plot(self, p, *values):
-        d = {symb: v for symb, v in zip(self._params_symbols, values)}
-        p.update_interactive(d)
-        return p.fig
-
-    def _update_plotly(self, p, *values):
-        d = {symb: v for symb, v in zip(self._params_symbols, values)}
-        p.update_interactive(d)
-        return p.fig.to_dict()
 
     def update_interactive(self, params):
         """Implement the logic to update the data generated by

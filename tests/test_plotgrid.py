@@ -5,6 +5,8 @@ from spb import (
     plotgrid, PlotGrid, plot, plot3d, plot_contour, plot_vector, plot_polar,
     plot_complex, plot_parametric, plot3d_parametric_line,
 )
+from spb.animation.ipywidgets import Animation as IPYAnimation
+from spb.animation.panel import Animation as PanelAnimation
 from spb.interactive import IPlot
 from spb.plotgrid import _nrows_ncols
 from sympy import symbols, sin, cos, tan, exp, pi, Piecewise
@@ -684,21 +686,21 @@ def test_save():
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        if pn is not None:
-            # holoviz's panel objects
-            p1, p2, p3, p4, p5, p6, p7 = _create_plots(PB)
+        #
+        # holoviz's panel objects
+        p1, p2, p3, p4, p5, p6, p7 = _create_plots(PB)
 
-            # symmetric grid
-            p = PlotGrid(2, 2, p1, p2, p3, p4, show=False, imodule="panel")
-            p.save("test_1.html")
+        # symmetric grid
+        p = PlotGrid(2, 2, p1, p2, p3, p4, show=False, imodule="panel")
+        p.save("test_1.html")
 
-            # grid size greater than the number of subplots
-            p = PlotGrid(3, 4, p1, p2, p3, p4, show=False, imodule="panel")
-            p.save("test_2.html")
+        # grid size greater than the number of subplots
+        p = PlotGrid(3, 4, p1, p2, p3, p4, show=False, imodule="panel")
+        p.save("test_2.html")
 
-            # unsymmetric grid (subplots in one line)
-            p = PlotGrid(1, 3, p5, p6, p7, show=False, imodule="panel")
-            p.save("test_3.html")
+        # unsymmetric grid (subplots in one line)
+        p = PlotGrid(1, 3, p5, p6, p7, show=False, imodule="panel")
+        p.save("test_3.html")
 
 
 @pytest.mark.skipif(pn is None, reason="panel is not installed")
@@ -787,3 +789,62 @@ def test_plotgrid_interactive_mixed_modules():
         ValueError,
         lambda: plotgrid(p1, p2, p3, imodule="ipywidgets", show=False)
     )
+
+
+def test_plotgrid_mode_1_matplotlib_animation_ipywidgets():
+    a, b, x = symbols("a b x")
+    options = dict(show=False, n=10, backend=MB, imodule="ipywidgets")
+    p1 = plot(cos(a*x), (x, -3*pi, 3*pi),
+        params={a: (1, 5)}, animation={"fps": 10, "time": 1}, **options)
+    p2 = plot(sin(b*x), (x, -3*pi, 3*pi),
+        params={b: (2, 4)}, animation={"fps": 4, "time": 2}, **options)
+    p = plotgrid(p1, p2, show=False)
+    assert isinstance(p, IPYAnimation)
+    assert isinstance(p.backend, PlotGrid)
+    assert hasattr(p.backend, "update_animation")
+    # verify that plotgrid collects all parameters from its plots,
+    # and that the max fps/time are used
+    animation_data = p.backend._animation_data
+    fps = 10
+    time = 2
+    assert animation_data.matrix.shape == (fps * time, 2)
+    # no error should be raised when saving the animation
+    with TemporaryDirectory(prefix="sympy_") as tmpdir:
+        p.save(os.path.join(tmpdir, "animation.gif"))
+        p.save(os.path.join(tmpdir, "animation.mp4"))
+
+
+@pytest.mark.parametrize(
+    "imodule, expected_type", [
+        ("panel", PanelAnimation),
+        ("ipywidgets", IPYAnimation)
+    ]
+)
+def test_plotgrid_mode_1_different_backends_animation(imodule, expected_type):
+    a, b, x = symbols("a b x")
+    options = dict(show=False, n=10, imodule=imodule)
+    p1 = plot(cos(a*x), (x, -3*pi, 3*pi),
+        params={a: (1, 5)}, animation={"fps": 10, "time": 1},
+        backend=MB, **options)
+    p2 = plot(sin(b*x), (x, -3*pi, 3*pi),
+        params={b: (2, 4)}, animation={"fps": 4, "time": 2},
+        backend=PB, **options)
+    p = plotgrid(p1, p2, show=False)
+    assert isinstance(p, expected_type)
+    assert isinstance(p.backend, PlotGrid)
+    assert hasattr(p.backend, "update_animation")
+    # verify that plotgrid collects all parameters from its plots,
+    # and that the max fps/time are used
+    animation_data = p.backend._animation_data
+    fps = 10
+    time = 2
+    assert animation_data.matrix.shape == (fps * time, 2)
+    with TemporaryDirectory(prefix="sympy_") as tmpdir:
+        with raises(
+            RuntimeError,
+            match="Saving plotgrid animation is only supported when"
+        ):
+            p.save(os.path.join(tmpdir, "animation.gif"))
+    # because of the error, one way to test that animation works fine is:
+    for i in range(animation_data.matrix.shape[0]):
+        p.update_animation(i)

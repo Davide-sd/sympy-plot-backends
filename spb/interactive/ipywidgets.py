@@ -2,7 +2,8 @@ import ipywidgets
 from sympy import latex
 from sympy.external import import_module
 from spb.defaults import TWO_D_B, THREE_D_B
-from spb.interactive import _tuple_to_dict, IPlot, _aggregate_parameters
+from spb.interactive import _tuple_to_dict, IPlot
+from spb.utils import _aggregate_parameters
 from spb import BB, MB, PlotGrid
 from IPython.display import clear_output
 import warnings

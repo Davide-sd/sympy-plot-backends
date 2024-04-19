@@ -116,14 +116,27 @@ def create_interactive_plot(*series, **kwargs):
         imodule = cfg["interactive"]["module"]
     imodule = imodule.lower()
 
+    animation = kwargs.get("animation", False)
+
     # NOTE: Holoviz's Panel is really slow to load, so let's load it only when
-        # it is necessary
-    if imodule == "panel":
-        from spb.interactive.panel import iplot
-        return iplot(*series, **kwargs)
-    elif imodule == "ipywidgets":
-        from spb.interactive.ipywidgets import iplot
-        return iplot(*series, **kwargs)
+    # it is necessary
+    print("create_interactive_plot")
+    if not animation:
+        print("not animation")
+        if imodule == "panel":
+            from spb.interactive.panel import iplot
+            return iplot(*series, **kwargs)
+        elif imodule == "ipywidgets":
+            from spb.interactive.ipywidgets import iplot
+            return iplot(*series, **kwargs)
+    else:
+        print("animation")
+        if imodule == "panel":
+            from spb.animation.panel import animation
+            return animation(*series, **kwargs)
+        elif imodule == "ipywidgets":
+            from spb.animation.ipywidgets import animation
+            return animation(*series, **kwargs)
 
     raise ValueError("`%s` is not a valid interactive module" % imodule)
 
@@ -194,36 +207,3 @@ class IPlot:
 
         new_iplot = type(self)(*series, **merge({}, backend_kw, iplot_kw))
         return new_iplot
-
-
-def _aggregate_parameters(params, series):
-    """Loop over data series to extract the `params` dictionaries provided by
-    the user. This is necessary when dealing with the ``graphics`` module.
-
-    Parameters
-    ==========
-    params : dict
-        Whatever was provided by the user in the main function call (be it
-        plot(), plot_paramentric(), ..., graphics())
-    series : list
-        Data series of the current interactive widget plot.
-
-    Returns
-    =======
-    params : dict
-    """
-    if params is None:
-        params = {}
-    if len(params) == 0:
-        # this is the case when an interactive widget plot is build with
-        # the `graphics` interface.
-        for s in series:
-            if s.is_interactive:
-                # use s._original_params instead of s.params in order to
-                # keep track of multi-values widgets
-                params.update(s._original_params)
-    if len(params) == 0:
-        raise ValueError(
-            "In order to create an interactive plot, "
-            "the `params` dictionary must be provided.")
-    return params

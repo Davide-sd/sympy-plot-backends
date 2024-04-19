@@ -1,6 +1,5 @@
 """
-Implements interactive-widgets plotting with Holoviz Panel using
-`pn.bind`, which binds a function or method to the values of widgets.
+Implements interactive-widgets plotting with Bokeh.
 """
 
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
@@ -8,74 +7,77 @@ from spb.utils import _validate_kwargs
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from spb.plotgrid import PlotGrid
-from spb.utils import _aggregate_parameters
-from sympy import latex
 from sympy.external import import_module
 import warnings
 
-param = import_module(
-    'param',
-    min_module_version='1.11.0',
-    warn_not_installed=True)
-pn = import_module(
-    'panel',
-    min_module_version='0.12.0',
-    warn_not_installed=True)
-
-pn.extension("mathjax", "plotly", sizing_mode="stretch_width")
+# param = import_module(
+#     'param',
+#     min_module_version='1.11.0',
+#     warn_not_installed=True)
+bokeh = import_module(
+    'bokeh',
+    import_kwargs={
+        'fromlist': [
+            'models', 'events', 'plotting', 'io',
+            'palettes', 'embed', 'resources'
+        ]
+    },
+    warn_not_installed=True,
+    min_module_version='2.3.0'
+)
 
 
 def _dict_to_slider(d):
     if d["type"] == "linear":
-        return pn.widgets.FloatSlider(
-            start=d["min"], end=d["max"], value=d["value"],
-            step=d["step"], name=d["description"], format=d["formatter"]
-        )
-    else:
-        np = import_module("numpy")
-        _min, _max, step, value = d["min"], d["max"], d["step"], d["value"]
-        N = int((_max - _min) / step)
-        # divide the range in N steps evenly spaced in a log scale
-        options = np.geomspace(_min, _max, N)
-        # the provided default value may not be in the computed options.
-        # If that's the case, I chose the closest value
-        if value not in options:
-            value = min(options, key=lambda x: abs(x - value))
-
         kwargs = dict(
-            options=options.tolist(), value=value, name=d["description"])
+            start=d["min"], end=d["max"], value=d["value"],
+            step=d["step"], title=d["description"]
+        )
         if d["formatter"]:
-            kwargs["formatter"] = d["formatter"]
-        return pn.widgets.DiscreteSlider(**kwargs)
+            kwargs["format"] = d["formatter"]
+        return bokeh.models.Slider(**kwargs)
+    else:
+        raise NotImplementedError("Bokeh doesn't support logarithmic sliders.")
+        # np = import_module("numpy")
+        # _min, _max, step, value = d["min"], d["max"], d["step"], d["value"]
+        # N = int((_max - _min) / step)
+        # # divide the range in N steps evenly spaced in a log scale
+        # options = np.geomspace(_min, _max, N)
+        # # the provided default value may not be in the computed options.
+        # # If that's the case, I chose the closest value
+        # if value not in options:
+        #     value = min(options, key=lambda x: abs(x - value))
 
+        # kwargs = dict(
+        #     options=options.tolist(), value=value, name=d["description"])
+        # if d["formatter"]:
+        #     kwargs["formatter"] = d["formatter"]
+        # return pn.widgets.DiscreteSlider(**kwargs)
 
-class DynamicParam(param.Parameterized):
-    """This class is used to convert a parameter from the ``param`` module to
-    a widget from ``panel``.
+def _get_mode():
+    """Verify which environment is used to run the code.
 
-    Examples
-    ========
+    Returns
+    =======
+        mode : int
+            0 - the code is running on Jupyter Notebook or qtconsole
+            1 - terminal running IPython
+            2 - other type (?)
+            3 - probably standard Python interpreter
 
-    >>> import param
-    >>> import panel as pn
-    >>> p = param.Number(default=0, bounds=(0, 5))
-    >>> dyn_param = DynamicParam(p)
-    >>> tmp_panel = pn.Param(dyn_param)
-    >>> widget = tmp_panel.widget("dyn_param_0")
-    >>> type(widget)
-    panel.widgets.slider.FloatSlider
-
+    # TODO: detect if we are running in Jupyter Lab.
     """
-    def __init__(self, current_param, **kwargs):
-        # remove the previous class attributes added by the previous instances
-        prev_params = [k for k in type(self).__dict__.keys() if "dyn_param_" in k]
-        for p in prev_params:
-            delattr(type(self), p)
-
-        # this must be present in order to assure correct behaviour
-        super().__init__(name="", **kwargs)
-
-        self.param.add_parameter("dyn_param_0", current_param)
+    # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == "ZMQInteractiveShell":
+            return 0  # Jupyter notebook or qtconsole
+        elif shell == "TerminalInteractiveShell":
+            return 1  # Terminal running IPython
+        else:
+            return 2  # Other type (?)
+    except NameError:
+        return 3  # Probably standard Python interpreter
 
 
 class InteractivePlot(IPlot):
@@ -120,7 +122,15 @@ class InteractivePlot(IPlot):
         self._template = kwargs.pop("template", None)
         self._name = name
 
-        params = _aggregate_parameters(params, series)
+        if params is None:
+            params = {}
+        if len(params) == 0:
+            # this is the case when an interactive widget plot is build with
+            # the `graphics` interface: need to construct the params dict
+            # by looping over the series
+            for s in series:
+                if s.is_interactive:
+                    params.update(s.params)
         self._original_params = params
 
         # The following dictionary will be used to create the appropriate
@@ -128,11 +138,15 @@ class InteractivePlot(IPlot):
         #    key: the provided symbol
         #    val: widget
         self.mapping = create_widgets(params, self._use_latex)
+        for widget in self.mapping.values():
+            if hasattr(widget, "value"):
+                widget.on_change('value', self._update)
+            else:
+                widget.on_change('active', self._update)
 
         plotgrid = kwargs.get("plotgrid", None)
         if plotgrid:
             self._backend = plotgrid
-            self._binding = pn.bind(self._update, *self._widgets_for_binding())
         else:
             # assure that each series has the correct values associated
             # to parameters
@@ -148,52 +162,23 @@ class InteractivePlot(IPlot):
             self._backend = Backend(*series, **kwargs)
             _validate_kwargs(self._backend, **original_kwargs)
 
-            from spb import PB
-            if Backend is PB:
-                self._binding = pn.bind(
-                    self._update_plotly, *self._widgets_for_binding())
-            else:
-                self._binding = pn.bind(
-                    self._update, *self._widgets_for_binding())
-
-    def _widgets_for_binding(self):
-        """Select the appropriate things to return for the `pn.bind` function.
-        """
-        widgets = list(self.mapping.values())
-        if self._throttled:
-            def is_panel_slider(t):
-                if not isinstance(t, pn.widgets.base.Widget):
-                    return False
-                if "Slider" in type(t).__name__:
-                    return True
-                return False
-            widgets = [
-                w if not is_panel_slider(w) else w.param.value_throttled
-                for w in widgets
-            ]
-        return widgets
+        self._run_in_notebook = False
+        if _get_mode() == 0:
+            self._run_in_notebook = True
+            bokeh.io.output_notebook(hide_banner=True)
 
     def read_parameters(self):
-        return {symb: widget.value for symb, widget in self.mapping.items()}
+        readouts = {}
+        for symb, widget in self.mapping.items():
+            if hasattr(widget, "value"):
+                readouts[symb] = widget.value
+            else:
+                readouts[symb] = widget.active
+        return readouts
 
-    def _update(self, *values):
-        d = {symb: v for symb, v in zip(list(self.mapping.keys()), values)}
+    def _update(self, attr, old, new):
+        d = self.read_parameters()
         self.backend.update_interactive(d)
-        return self.fig
-
-    def _update_plotly(self, *values):
-        d = {symb: v for symb, v in zip(list(self.mapping.keys()), values)}
-        self.backend.update_interactive(d)
-        # NOTE: while pn.pane.Plotly can receive an instance of go.Figure,
-        # the update will be extremely slow, because after each trace
-        # is updated with new data, it will trigger an update event on the
-        # javascript side. Instead, by providing the following dictionary,
-        # first the traces are updated, then the pane creates the figure
-        # (with only one single javascript update).
-        # TODO: can the backend be modified by adding data and layout
-        # attributes, avoiding the creation of the figure? The figure could
-        # be created inside the fig getter.
-        return self.fig.to_dict()
 
     @property
     def pane_kw(self):
@@ -214,131 +199,52 @@ class InteractivePlot(IPlot):
             "pane_kw": self._pane_kw
         }
 
-    def _init_pane(self):
-        """Here we wrap the figure exposed by the backend with a Pane, which
-        allows to set useful properties.
-        """
-        # NOTE: If the following import statement was located at the
-        # beginning of the file, there would be a circular import.
-        from spb import KB, MB, BB, PB
-
-        default_kw = {}
-        if isinstance(self._backend, PB):
-            pane_func = pn.pane.Plotly
-        elif (
-            isinstance(self._backend, MB) or        # vanilla MB
-            (
-                hasattr(self._backend, "is_matplotlib_fig") and
-                self._backend.is_matplotlib_fig     # plotgrid with all MBs
-            )
-        ):
-            # since we are using Jupyter and interactivity, it is useful to
-            # activate ipympl interactive frame, as well as setting a lower
-            # dpi resolution of the matplotlib image
-            default_kw["dpi"] = 96
-            # NOTE: the following must be set to False in order for the
-            # example outputs to become visible on Sphinx.
-            default_kw["interactive"] = False
-            pane_func = pn.pane.Matplotlib
-        elif isinstance(self._backend, BB):
-            pane_func = pn.pane.Bokeh
-        elif isinstance(self._backend, KB):
-            # TODO: for some reason, panel is going to set width=0
-            # if K3D-Jupyter is used.
-            # Temporary workaround: create a Pane with a default width.
-            # Long term solution: create a PR on panel to create a K3DPane
-            # so that panel will automatically deal with K3D, in the same
-            # way it does with Bokeh, Plotly, Matplotlib, ...
-            default_kw["width"] = 800
-            pane_func = pn.pane.panel
-        else:
-            # here we are dealing with plotgrid of BB/PB/or mixed backend...
-            # but not with plotgrids of MB
-            # First, set the necessary data to create bindings for each
-            # subplot
-            self._backend.pre_set_bindings(
-                list(self.mapping.keys()),
-                self._widgets_for_binding()
-            )
-            # Then, create the pn.GridSpec figure
-            self.pane = self._backend.fig
-            return
-        kw = self.merge({}, default_kw, self._pane_kw)
-        self.pane = pane_func(self._binding, **kw)
-
     @property
     def layout_controls(self):
+        n = self._ncols
         widgets = list(self.mapping.values())
-        return pn.GridBox(*widgets, ncols=self._ncols)
+        rows = [widgets[i:i+n] for i in range(0, len(widgets), n)]
+        rows = [bokeh.layouts.row(*r) for r in rows]
+        return bokeh.layouts.column(*rows)
+    
+    def _launch_server(self, doc):
+        """ By launching a server application, we can use Python callbacks
+        associated to events.
+        """
+        doc.theme = cfg["bokeh"]["theme"]
+        doc.add_root(self._pane)
 
     def show(self):
-        self._init_pane()
+        fig = self._backend.fig
+        if self._layout == "tb":
+            # NOTE: white because on Jupyter with dark theme, control's labels
+            # are unreadable...
+            content = bokeh.layouts.column(self.layout_controls, fig,
+                background="white")
+        elif self._layout == "bb":
+            content = bokeh.layouts.column(fig, self.layout_controls,
+                background="white")
+        elif self._layout == "sbl":
+            content = bokeh.layouts.row(self.layout_controls, fig,
+                background="white")
+        elif self._layout == "sbr":
+            content = bokeh.layouts.row(fig, self.layout_controls,
+                background="white")
+        self._pane = content
 
-        if not self._servable:
-            if self._layout == "tb":
-                content = pn.Column(self.layout_controls, self.pane)
-            elif self._layout == "bb":
-                content = pn.Column(self.pane, self.layout_controls)
-            elif self._layout == "sbl":
-                content = pn.Row(
-                    pn.Column(self.layout_controls),
-                    pn.Column(self.pane), width_policy="max")
-            elif self._layout == "sbr":
-                content = pn.Row(
-                    pn.Column(self.pane),
-                    pn.Column(self.layout_controls))
-
-            return content
-
-        return self._create_template(True)
-
-    def _create_template(self, show=False):
-        """Instantiate a template, populate it and serves it.
-
-        Parameters
-        ==========
-
-        show : boolean
-            If True, the template will be served on a new browser window.
-            Otherwise, just return the template: ``show=False`` is used
-            by the documentation to visualize servable applications.
-        """
-        if not show:
-            self._init_pane()
-
-        # pn.theme was introduced with panel 1.0.0, before there was
-        # pn.template.theme
-        submodule = pn.theme if hasattr(pn, "theme") else pn.template.theme
-        theme = submodule.DarkTheme
-        if cfg["interactive"]["theme"] != "dark":
-            theme = submodule.DefaultTheme
-        default_template_kw = dict(title=self._name, theme=theme)
-
-        if (self._template is None) or isinstance(self._template, dict):
-            kw = self._template if isinstance(self._template, dict) else {}
-            kw = self.merge(default_template_kw, kw)
-            kw["sidebar_location"] = self._layout
-            if len(self._name.strip()) == 0:
-                kw.setdefault("show_header", False)
-            template = SymPyBootstrapTemplate(**kw)
-        elif isinstance(self._template, pn.template.base.BasicTemplate):
-            template = self._template
-        elif (isinstance(self._template, type) and
-            issubclass(self._template, pn.template.base.BasicTemplate)):
-            template = self._template(**default_template_kw)
+        if self._run_in_notebook:
+            return bokeh.plotting.show(self._launch_server)
         else:
-            raise TypeError("`template` not recognized. It can either be a "
-                "dictionary of keyword arguments to be passed to the default "
-                "template, an instance of pn.template.base.BasicTemplate "
-                "or a subclass of pn.template.base.BasicTemplate. Received: "
-                "type(template) = %s" % type(self._template))
-
-        template.main.append(self.pane)
-        template.sidebar.append(self.layout_controls)
-
-        if show:
-            return template.servable().show()
-        return template
+            # NOTE:
+            # 1. From: https://docs.bokeh.org/en/latest/docs/user_guide/server/library.html
+            #    In particular: https://github.com/bokeh/bokeh/tree/3.4.0/examples/server/api/standalone_embed.py
+            # 2. Watch out for memory leaks on Firefox.
+            # 3. Use Control+C to stop the server process
+            from bokeh.server.server import Server
+            server = Server(self._launch_server, num_procs=1)
+            server.start()
+            server.io_loop.add_callback(server.show, "/")
+            server.io_loop.start()
 
 
 def iplot(*series, show=True, **kwargs):
@@ -374,9 +280,7 @@ def iplot(*series, show=True, **kwargs):
 
            - default, min, max : float
                 Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers. The order of these 3
-                numbers is not important: the module will figure it out
-                which is what.
+                respectively. Must be finite numbers.
            - N : int, optional
                 Number of steps of the slider.
            - tick_format : TickFormatter or None, optional
@@ -421,17 +325,14 @@ def iplot(*series, show=True, **kwargs):
         section to understand how the interactive plot is built).
         The following web pages shows the available options:
 
-        * If Matplotlib is used, the figure is wrapped by
-          :py:class:`panel.pane.plot.Matplotlib`. Two interesting options are:
+        * Refer to [#fn2]_ for
+          :py:class:`spb.backends.matplotlib.MatplotlibBackend`.
+          Two interesting options are:
 
           * ``interactive``: wheter to activate the ipympl interactive backend.
           * ``dpi``: set the dots per inch of the output png. Default to 96.
 
-        * If Plotly is used, the figure is wrapped by
-          :py:class:`panel.pane.plotly.Plotly`.
-
-        * If Bokeh is used, the figure is wrapped by
-          :py:class:`panel.pane.plot.Bokeh`.
+        * Refer to [#fn3]_ for :py:class:`spb.backends.plotly.PlotlyBackend`.
 
     servable : bool, optional
         Default to False, which will show the interactive application on the
@@ -443,7 +344,7 @@ def iplot(*series, show=True, **kwargs):
         If True, it will return an object that will be rendered on the
         output cell of a Jupyter Notebook. If False, it returns an instance
         of ``InteractivePlot``, which can later be be shown by calling the
-        ``show()`` method.
+        `show()` method.
 
     template : optional
         Specify the template to be used to build the interactive application
@@ -483,51 +384,6 @@ def iplot(*series, show=True, **kwargs):
         If True, the latex representation of the symbols will be used in the
         labels of the parameter-controls. If False, the string
         representation will be used instead.
-
-
-    See also
-    ========
-
-    create_widgets
-
-
-    Notes
-    =====
-
-    1. This function is specifically designed to work within Jupyter Notebook.
-       It is also possible to use it from a regular Python console,
-       by executing: ``iplot(..., servable=True)``, which will create a server
-       process loading the interactive plot on the browser.
-       However, :py:class:`spb.backends.k3d.K3DBackend` is not supported
-       in this mode of operation.
-
-    2. The interactive application consists of two main containers:
-
-       * a pane containing the widgets.
-       * a pane containing the chart, which can be further customize
-         by setting the ``pane_kw`` dictionary. Please, read its documentation
-         to understand the available options.
-
-    3. Some examples use an instance of
-       :py:class:`bokeh.models.PrintfTickFormatter` to format the
-       value shown by a slider. This class is exposed by Bokeh, but can be
-       used in interactive plots with any backend.
-
-    4. It has been observed that Dark Reader (or other night-mode-enabling
-       browser extensions) might interfere with the correct behaviour of
-       the output of  interactive plots. Please, consider adding ``localhost``
-       to the exclusion list of such browser extensions.
-
-    5. :py:class:`spb.backends.matplotlib.MatplotlibBackend` can be used,
-       but the resulting figure is just a PNG image without any interactive
-       frame. Thus, data exploration is not great. Therefore, the use of
-       :py:class:`spb.backends.plotly.PlotlyBackend` or
-       :py:class:`spb.backends.bokeh.BokehBackend` is encouraged.
-
-    6. When ``BokehBackend`` is used:
-
-       * rendering of gradient lines is slow.
-       * color bars might not update their ranges.
 
 
     Examples
@@ -606,7 +462,8 @@ def iplot(*series, show=True, **kwargs):
     wave and:
 
     1. custom format of the value shown on the slider.
-    2. creation of an integer spinner widget.
+    2. creation of an integer spinner widget. This is achieved by setting
+       ``None`` as one of the bounds of the integer parameter.
 
     .. panel-screenshot::
 
@@ -713,6 +570,79 @@ def iplot(*series, show=True, **kwargs):
            name = "Non Circular Planetary Drive - Ring Profile"
        )
 
+    Notes
+    =====
+
+    1. This function is specifically designed to work within Jupyter Notebook.
+       It is also possible to use it from a regular Python console,
+       by executing: ``iplot(..., servable=True)``, which will create a server
+       process loading the interactive plot on the browser.
+       However, :py:class:`spb.backends.k3d.K3DBackend` is not supported
+       in this mode of operation.
+
+    2. The interactive application consists of two main containers:
+
+       * a pane containing the widgets.
+       * a pane containing the chart. We can further customize this container
+         by setting the ``pane_kw`` dictionary. Please, read its documentation
+         to understand the available options.
+
+    3. Some examples use an instance of ``PrintfTickFormatter`` to format the
+       value shown by a slider. This class is exposed by Bokeh, but can be
+       used in interactive plots with any backend. Refer to [#fn1]_ for more
+       information about tick formatting.
+
+    4. It has been observed that Dark Reader (or other night-mode-enabling
+       browser extensions) might interfere with the correct behaviour of
+       the output of  interactive plots. Please, consider adding ``localhost``
+       to the exclusion list of such browser extensions.
+
+    5. Say we are creating two different interactive plots and capturing
+       their output on two variables, using ``show=False``. For example,
+       ``p1 = plot(..., params={a:(...), b:(...), ...}, show=False)`` and
+       ``p2 = plot(..., params={a:(...), b:(...), ...}, show=False)``.
+       Then, running ``p1.show()`` on the screen will result in an error.
+       This is standard behaviour that can't be changed, as `panel's`
+       parameters are class attributes that gets deleted each time a new
+       instance is created.
+
+    6. :py:class:`spb.backends.matplotlib.MatplotlibBackend` can be used,
+       but the resulting figure is just a PNG image without any interactive
+       frame. Thus, data exploration is not great. Therefore, the use of
+       :py:class:`spb.backends.plotly.PlotlyBackend` or
+       :py:class:`spb.backends.bokeh.BokehBackend` is encouraged.
+
+    7. When :py:class:`spb.backends.bokeh.BokehBackend` is used:
+
+       * rendering of gradient lines is slow.
+       * color bars might not update their ranges.
+
+    8. Once this module has been loaded and executed, the safest procedure
+       to restart Jupyter Notebook's kernel is the following:
+
+       * save the current notebook.
+       * close the notebook and Jupyter server.
+       * restart Jupyter server and open the notebook.
+       * reload the cells.
+
+       Failing to follow this procedure might results in the notebook to
+       become  unresponsive once the module has been reloaded, with several
+       errors appearing on the output cell.
+
+
+    References
+    ==========
+
+    .. [#fn1] https://docs.bokeh.org/en/latest/docs/user_guide/styling.html#tick-label-formats
+    .. [#fn2] https://panel.holoviz.org/reference/panes/Matplotlib.html
+    .. [#fn3] https://panel.holoviz.org/reference/panes/Plotly.html
+
+
+    See also
+    ========
+
+    create_widgets
+
     """
     i = InteractivePlot(*series, **kwargs)
     if show:
@@ -798,25 +728,16 @@ def create_widgets(params, use_latex=True, **kwargs):
     See also
     ========
 
-    iplot
+    iplot, create_series
 
     """
     results = dict()
     for symb, v in params.items():
-        if isinstance(v, (pn.widgets.base.Widget)):
-            if hasattr(v, "name") and len(v.name) == 0:
-                # show the symbol if no label was set to the widget
-                wrapper = "$$%s$$" if use_latex else "%s"
-                func = latex if use_latex else str
-                v.name = wrapper % func(symb)
-            results[symb] = v
-        elif isinstance(v, param.parameterized.Parameter):
-            dyn_param = DynamicParam(v)
-            tmp_panel = pn.Param(dyn_param)
-            results[symb] = tmp_panel.widget("dyn_param_0")
-        elif isinstance(v, (list, tuple)):
+        if isinstance(v, (list, tuple)):
             d = _tuple_to_dict(symb, v, use_latex, "$$%s$$")
             results[symb] = _dict_to_slider(d)
+        elif isinstance(v, bokeh.models.widgets.widget.Widget):
+            results[symb] = v
         else:
             raise TypeError(
                 "Parameter type not recognized. Expected list/tuple/"

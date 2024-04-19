@@ -2,13 +2,39 @@ from itertools import cycle, islice
 from spb.series import (
     BaseSeries, LineOver1DRangeSeries, ComplexSurfaceBaseSeries
 )
+from spb.animation import AnimationData, BaseAnimation
 from spb.backends.utils import convert_colormap
+from spb.utils import _aggregate_parameters
 from sympy import Symbol
 from sympy.utilities.iterables import is_sequence
 from sympy.external import import_module
 
 
-class Plot:
+class PlotAnimationEnabler(BaseAnimation):
+    def __init__(self, *args, **kwargs):
+        self._animation_data = None
+        animation = kwargs.get("animation", False)
+        print("PlotAnimationEnabler.__init__ animation", animation)
+        if isinstance(animation, AnimationData):
+            self._animation_data = animation
+        else:
+            params = {}
+            if animation:
+                params = _aggregate_parameters(params, self.series)
+            animation_data_kwargs = {"params": params}
+            if isinstance(animation, dict):
+                animation_data_kwargs = self.merge({},
+                    animation_data_kwargs, animation)
+            if animation:
+                self._animation_data = AnimationData(**animation_data_kwargs)
+                initial_params = self._animation_data[0]
+                # update series with proper initial values before plotting
+                for s in self.series:
+                    if s.is_interactive:
+                        s.params = initial_params
+
+
+class Plot(PlotAnimationEnabler):
     """Base class for all backends. A backend represents the plotting library,
     which implements the necessary functionalities in order to use SymPy
     plotting functions.
@@ -189,7 +215,7 @@ class Plot:
         "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
         "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim", "show_axis",
         "xscale", "yscale", "zscale", "process_piecewise", "polar_axis",
-        "imodule", "update_event"
+        "imodule", "update_event", "animation"
     ]
     """contains a list of public keyword arguments supported by the series.
     It will be used to validate the user-provided keyword arguments.
@@ -395,6 +421,9 @@ class Plot:
         self.axis = kwargs.get("show_axis", kwargs.get("axis", True))
         self._update_event = kwargs.get("update_event", False)
 
+        # initialize animation-related attributes
+        super().__init__(*args, **kwargs)
+
     def _copy_kwargs(self):
         """Copy the values of the plot attributes into a dictionary which will
         be later used to create a new `Plot` object having the same attributes.
@@ -421,6 +450,7 @@ class Plot:
             camera=self.camera,
             polar_axis=self.polar_axis,
             axis=self.axis,
+            animation=self._animation_data
         )
 
     def _init_cyclers(self, start_index_cl=None, start_index_cm=None):
