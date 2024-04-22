@@ -1,4 +1,4 @@
-from spb.animation import SaveAnimation
+from spb.animation import BaseAnimation
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.interactive import IPlot
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
@@ -18,7 +18,8 @@ pn = import_module(
 
 pn.extension("mathjax", "plotly", sizing_mode="stretch_width")
 
-class Animation(SaveAnimation, IPlot):
+
+class Animation(BaseAnimation, IPlot):
     def __init__(self, *series, **kwargs):
         self._servable = kwargs.pop("servable", cfg["interactive"]["servable"])
         self._pane_kw = kwargs.pop("pane_kw", dict())
@@ -30,27 +31,29 @@ class Animation(SaveAnimation, IPlot):
         plotgrid = kwargs.get("plotgrid", None)
         if plotgrid:
             self._backend = plotgrid
+            self._post_init_plotgrid(**kwargs)
         else:
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
             kwargs["is_iplot"] = True
             kwargs["imodule"] = "panel"
             self._backend = Backend(*series, **kwargs)
-        
+            self._post_init_plot(**kwargs)
+
         self._play_widget = pn.widgets.Player(
             value=0,
             start=0,
-            end=self._backend._animation_data.n_frames - 1,
+            end=self._animation_data.n_frames - 1,
             step=1,
-            interval=int(1000 / self._backend._animation_data.fps),
+            interval=int(1000 / self._animation_data.fps),
         )
         self._binding = pn.bind(self._update, self._play_widget)
-    
+
     def _update(self, frame_idx):
         print("spb.animation.panel._update", frame_idx)
-        self._backend.update_animation(frame_idx)
+        self.update_animation(frame_idx)
         return self._backend.fig
-    
+
     def _init_pane(self):
         """Here we wrap the figure exposed by the backend with a Pane, which
         allows to set useful properties.
@@ -110,7 +113,7 @@ class Animation(SaveAnimation, IPlot):
         kw = self.merge({}, default_kw, self._pane_kw)
         self.pane = pane_func(self._binding, **kw)
         print("self.pane", self.pane)
-    
+
     def show(self):
         self._init_pane()
 
@@ -132,7 +135,7 @@ class Animation(SaveAnimation, IPlot):
         """
         if not show:
             self._init_pane()
-        
+
         print("_create_template")
 
         # pn.theme was introduced with panel 1.0.0, before there was

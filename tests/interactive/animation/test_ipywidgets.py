@@ -1,3 +1,4 @@
+from matplotlib.animation import FuncAnimation
 import os
 import pytest
 from spb import plot, line, graphics, MB, PB, BB, KB, surface
@@ -26,7 +27,7 @@ def test_animation_single_plot_1d(backend, imodule, expected_type):
         imodule=imodule, backend=backend
     )
     assert isinstance(p, expected_type)
-    animation_data = p.backend._animation_data
+    animation_data = p._animation_data
     fps = 30
     time = 5
     assert animation_data.matrix.shape == (fps * time, 1)
@@ -37,7 +38,7 @@ def test_animation_single_plot_1d(backend, imodule, expected_type):
         animation={"fps": 5, "time": 2},
         show=False, imodule=imodule
     )
-    animation_data = p.backend._animation_data
+    animation_data = p._animation_data
     fps = 5
     time = 2
     assert animation_data.matrix.shape == (fps * time, 2)
@@ -52,6 +53,33 @@ def test_animation_single_plot_1d(backend, imodule, expected_type):
         assert len(os.listdir(tmpdir)) == 1 + fps * time + 1
 
 
+@pytest.mark.parametrize(
+    "backend, imodule", [
+        (MB, "panel"),
+        (MB, "ipywidgets"),
+        (PB, "panel"),
+        (PB, "ipywidgets"),
+        (BB, "panel"),
+        (BB, "ipywidgets"),
+    ]
+)
+def test_animation_single_plot_1d_get_func_animation(backend, imodule):
+    p = graphics(
+        line(cos(a*x), params={a: (1, 2)}, n=10),
+        animation=True, show=False,
+        imodule=imodule, backend=backend
+    )
+    if backend is MB:
+        assert isinstance(p.get_FuncAnimation(), FuncAnimation)
+    else:
+        with pytest.raises(
+            TypeError,
+            match="FuncAnimation can only be created when the backend produced"
+        ):
+            p.get_FuncAnimation()
+
+
+# NOTE: slow test, especially Plotly
 @pytest.mark.parametrize(
     "backend, imodule, expected_type", [
         (MB, "panel", PanelAnimation),
@@ -73,7 +101,7 @@ def test_animation_single_plot_3d(backend, imodule, expected_type):
         show=False, imodule=imodule, backend=backend
     )
     assert isinstance(p, expected_type)
-    animation_data = p.backend._animation_data
+    animation_data = p._animation_data
     fps = 3
     time = 1
     assert animation_data.matrix.shape == (fps * time, 1)
@@ -87,3 +115,33 @@ def test_animation_single_plot_3d(backend, imodule, expected_type):
             # and frames from this command.
             p.save(os.path.join(tmpdir, "animation_2.mp4"), save_frames=True)
             assert len(os.listdir(tmpdir)) == 1 + fps * time + 1
+
+
+@pytest.mark.parametrize(
+    "backend, imodule", [
+        (MB, "panel"),
+        (MB, "ipywidgets"),
+        (PB, "panel"),
+        (PB, "ipywidgets"),
+        (KB, "panel"),
+        (KB, "ipywidgets"),
+    ]
+)
+def test_animation_single_plot_3d_get_func_animation(backend, imodule):
+    p = graphics(
+        surface(
+            cos(x**2 + y**2 - a) * exp(-(x**2 + y**2) * 0.2),
+            (x, -pi, pi), (y, -pi, pi),
+            params={a: (1, 2)}, n=10
+        ),
+        animation={"fps": 3, "time": 1}, # NOTE: keep them down for performance
+        show=False, imodule=imodule, backend=backend
+    )
+    if backend is MB:
+        assert isinstance(p.get_FuncAnimation(), FuncAnimation)
+    else:
+        with pytest.raises(
+            TypeError,
+            match="FuncAnimation can only be created when the backend produced"
+        ):
+            p.get_FuncAnimation()

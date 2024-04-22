@@ -204,8 +204,7 @@ class MatplotlibBackend(Plot):
             'matplotlib',
             import_kwargs={
                 'fromlist': [
-                    'pyplot', 'cm', 'collections', 'colors', 'patches',
-                    'animation'
+                    'pyplot', 'cm', 'collections', 'colors', 'patches'
                 ]
             },
             warn_not_installed=True,
@@ -226,7 +225,6 @@ class MatplotlibBackend(Plot):
         self.Line3DCollection = self.mpl_toolkits.mplot3d.art3d.Line3DCollection
         self.Path3DCollection = self.mpl_toolkits.mplot3d.art3d.Path3DCollection
         self.Axes3D = self.mpl_toolkits.mplot3d.Axes3D
-        self.FuncAnimation = self.matplotlib.animation.FuncAnimation
 
         # set default colors
         self.colormaps = [
@@ -279,9 +277,6 @@ class MatplotlibBackend(Plot):
         self._imagegrid = kwargs.get("imagegrid", False)
         self._update_event = kwargs.get(
             "update_event", cfg["matplotlib"]["update_event"])
-
-        # In case of animation, someone may want to get a FuncAnimation
-        self._animation = None
 
         self._create_renderers()
 
@@ -693,20 +688,6 @@ class MatplotlibBackend(Plot):
 
     process_series = draw
 
-    def _create_animation(self):
-        self._animation = self.FuncAnimation(
-            fig=self.fig, func=self.update_animation,
-            frames=self._animation_data.n_frames,
-            interval=int(1000 / self._animation_data.fps)
-        )
-
-    @property
-    def animation(self):
-        if self._animation_data:
-            # create the animation only if there is data to be used
-            self._create_animation()
-        return self._animation
-
     def show(self, **kwargs):
         """Display the current plot.
 
@@ -720,8 +701,6 @@ class MatplotlibBackend(Plot):
         if _show:
             try:
                 self._fig.tight_layout()
-                if self._animation_data:
-                    self._create_animation()
                 self.plt.show(**kwargs)
             except ValueError as err:
                 # solve issue 34:

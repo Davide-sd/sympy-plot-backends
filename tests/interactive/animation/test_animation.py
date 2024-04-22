@@ -7,33 +7,6 @@ from sympy import symbols, sin, cos, pi, E
 from sympy.abc import a, b, c, d, x, y
 
 
-def test_animation():
-    # animation IS NOT requested
-    p = plot(
-        a * cos(b*x), (x, -10, 10),
-        params={
-            a: (0, 0, 5),
-            b: (5, 2, 20)
-        },
-        n=10, show=False, backend=MB
-    )
-    assert p.backend.animation is None
-    assert p.backend._animation_data is None
-
-    # animation IS requested
-    p = plot(
-        a * cos(b*x), (x, -10, 10),
-        params={
-            a: {0: 0, 1: 2, 3: 4},
-            b: (0, 20)
-        },
-        animation=True,
-        n=10, show=False, backend=MB
-    )
-    assert p.animation is not None
-    assert isinstance(p._animation_data, AnimationData)
-
-
 def test_animation_check_params_keys():
     with raises(
         TypeError,
