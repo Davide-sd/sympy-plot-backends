@@ -43,9 +43,9 @@ class Animation(BaseAnimation, IPlot):
         self._play_widget = pn.widgets.Player(
             value=0,
             start=0,
-            end=self._animation_data.n_frames - 1,
+            end=self.animation_data.n_frames - 1,
             step=1,
-            interval=int(1000 / self._animation_data.fps),
+            interval=int(1000 / self.animation_data.fps),
         )
         self._binding = pn.bind(self._update, self._play_widget)
 

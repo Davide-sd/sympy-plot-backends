@@ -27,15 +27,15 @@ class Animation(BaseAnimation, IPlot):
         play = ipywidgets.Play(
             value=0,
             min=0,
-            max=self._animation_data.n_frames,
+            max=self.animation_data.n_frames,
             step=1,
-            interval=int(1000 / self._animation_data.fps),
+            interval=int(1000 / self.animation_data.fps),
             description="Press play",
             disabled=False
         )
         slider = ipywidgets.IntSlider(
             min=0,
-            max=self._animation_data.n_frames,
+            max=self.animation_data.n_frames - 1,
             step=1
         )
         ipywidgets.jslink((play, 'value'), (slider, 'value'))

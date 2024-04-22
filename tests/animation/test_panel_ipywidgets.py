@@ -32,7 +32,7 @@ def test_animation_single_plot_1d(backend, imodule, expected_type):
         imodule=imodule, backend=backend
     )
     assert isinstance(p, expected_type)
-    animation_data = p._animation_data
+    animation_data = p.animation_data
     fps = 30
     time = 5
     assert animation_data.matrix.shape == (fps * time, 1)
@@ -43,7 +43,7 @@ def test_animation_single_plot_1d(backend, imodule, expected_type):
         animation={"fps": 5, "time": 2},
         show=False, imodule=imodule
     )
-    animation_data = p._animation_data
+    animation_data = p.animation_data
     fps = 5
     time = 2
     assert animation_data.matrix.shape == (fps * time, 2)
@@ -106,7 +106,7 @@ def test_animation_single_plot_3d(backend, imodule, expected_type):
         show=False, imodule=imodule, backend=backend
     )
     assert isinstance(p, expected_type)
-    animation_data = p._animation_data
+    animation_data = p.animation_data
     fps = 3
     time = 1
     assert animation_data.matrix.shape == (fps * time, 1)
@@ -169,7 +169,7 @@ def test_plotgrid_mode_1_matplotlib_animation(imodule, expected_type):
     assert isinstance(p.backend, PlotGrid)
     # verify that plotgrid collects all parameters from its plots,
     # and that the max fps/time are used
-    animation_data = p._animation_data
+    animation_data = p.animation_data
     fps = 10
     time = 2
     assert animation_data.matrix.shape == (fps * time, 2)
@@ -201,7 +201,7 @@ def test_plotgrid_mode_1_different_backends_animation(imodule, expected_type):
     assert isinstance(p.backend, PlotGrid)
     # verify that plotgrid collects all parameters from its plots,
     # and that the max fps/time are used
-    animation_data = p._animation_data
+    animation_data = p.animation_data
     fps = 10
     time = 2
     assert animation_data.matrix.shape == (fps * time, 2)
@@ -250,7 +250,7 @@ def test_plotgrid_mode_2_matplotlib(imodule, expected_type):
     assert isinstance(p.backend, PlotGrid)
     # verify that plotgrid collects all parameters from its plots,
     # and that the max fps/time are used
-    animation_data = p._animation_data
+    animation_data = p.animation_data
     fps = 7
     time = 0.7
     assert animation_data.matrix.shape == (int(fps * time), 3)

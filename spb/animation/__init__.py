@@ -32,7 +32,7 @@ class BaseAnimation:
                     animation_data_kwargs, animation)
             if animation:
                 self._animation_data = AnimationData(**animation_data_kwargs)
-                initial_params = self._animation_data[0]
+                initial_params = self.animation_data[0]
                 # update series with proper initial values before plotting
                 for s in self._backend.series:
                     if s.is_interactive:
@@ -53,16 +53,20 @@ class BaseAnimation:
             self._animation_data = AnimationData(
                 fps=max(fps), time=max(time), params=original_params)
 
+    @property
+    def animation_data(self):
+        return self._animation_data
+
     def update_animation(self, frame_idx):
         """Update the figure in order to obtain the visualization at a
         specifie frame of the animation.
         """
-        if not self._animation_data:
+        if not self.animation_data:
             raise RuntimeError(
                 "The data necessary to build the animation has not been "
                 "provided. You must set `animation=True` to the function call."
             )
-        params = self._animation_data[frame_idx]
+        params = self.animation_data[frame_idx]
         self.backend.update_interactive(params)
 
     def get_FuncAnimation(self):
@@ -83,8 +87,8 @@ class BaseAnimation:
             catch=(RuntimeError,))
         return matplotlib.animation.FuncAnimation(
             fig=self.backend.fig, func=self.update_animation,
-            frames=self._animation_data.n_frames,
-            interval=int(1000 / self._animation_data.fps)
+            frames=self.animation_data.n_frames,
+            interval=int(1000 / self.animation_data.fps)
         )
 
     def save(self, path, save_frames=False, **kwargs):
@@ -134,7 +138,7 @@ class BaseAnimation:
             self._save_other_backends_animation(path, save_frames, **kwargs)
 
     def _save_k3d_animation(self, path, save_frames, **kwargs):
-        n_frames = self._animation_data.n_frames
+        n_frames = self.animation_data.n_frames
         base = os.path.basename(path).split(".")[0]
 
         @self._backend.fig.yield_screenshots
@@ -155,7 +159,7 @@ class BaseAnimation:
         inner_func()
 
     def _save_other_backends_animation(self, path, save_frames, **kwargs):
-        n_frames = self._animation_data.n_frames
+        n_frames = self.animation_data.n_frames
         base = os.path.basename(path).split(".")[0]
 
         with TemporaryDirectory(prefix="animation") as tmpdir:
@@ -179,7 +183,7 @@ class BaseAnimation:
 
     def _save_helper(self, path, frames, **kwargs):
         ext = os.path.splitext(path)[1]
-        fps = self._animation_data.fps
+        fps = self.animation_data.fps
         if ext == ".gif":
             kwargs.setdefault("loop", True)
             kwargs.setdefault("fps", fps)
