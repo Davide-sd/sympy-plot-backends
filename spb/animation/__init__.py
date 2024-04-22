@@ -1,14 +1,12 @@
 from imageio.v3 import imwrite, imread
 from imageio import mimwrite
+import io
 import os
+import shutil
 from sympy import Symbol
 from sympy.external import import_module
 from tempfile import TemporaryDirectory
 from tqdm.notebook import trange
-
-
-# import moviepy
-# https://community.plotly.com/t/how-to-export-animation-and-save-it-in-a-video-format-like-mp4-mpeg-or/64621/2
 
 
 class BaseAnimation:
@@ -17,7 +15,7 @@ class BaseAnimation:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._animation_data = None
-    
+
     def update_animation(self, frame_idx):
         """Update the figure in order to obtain the visualization at a
         specifie frame of the animation.
@@ -61,7 +59,7 @@ class AnimationData:
                 "All keys of ``params`` must be a single symbol. The "
                 "following keys are something else: %s" % [k for i, k in
                     enumerate(params.keys()) if not_symbols[i]])
-        
+
         self.parameters = list(params.keys())
         self.n_frames = fps * time
         self.time = time
@@ -88,9 +86,9 @@ class AnimationData:
                     "Expected an instance of `dict`, or `list` or `tuple`. "
                     "Received: %s" % (k, type(v))
                 )
-        
+
         self.matrix = np.array(values).T
-    
+
     def _create_steps(self, d):
         np = import_module("numpy")
         ani_time = self.time
@@ -102,10 +100,11 @@ class AnimationData:
 
     def _create_interpolation(self, v):
         if len(v) == 2:
-            start, end = v
+            start, end = [float(t) for t in v]
             strategy = "linear"
         else:
             start, end, strategy = v
+            start, end = float(start), float(end)
             strategy = strategy.lower()
 
         allowed_strategies = ["linear", "log"]
@@ -113,12 +112,12 @@ class AnimationData:
             raise ValueError(
                 "Discretization strategy must be either one of the "
                 "following: %s" % allowed_strategies)
-        
+
         np = import_module("numpy")
         if strategy == "linear":
             return np.linspace(start, end, self.n_frames)
         return np.geomspace(start, end, self.n_frames)
-    
+
     def __getitem__(self, index):
         """Returns a dictionary mapping parameters to values at the specified
         animation frame.
@@ -127,7 +126,38 @@ class AnimationData:
 
 
 class SaveAnimation:
-    def save(self, path, **kwargs):
+    """Implement the logic to save animations.
+    """
+
+    def save(self, path, save_frames=False, **kwargs):
+        """Save the animation to a file.
+
+        Parameters
+        ==========
+
+        path : str
+            Where to save the animation on the disk. Supported formats are
+            ``.gif`` or ``.mp4``.
+        save_frames : bool, optional
+            Default to False. If True, save individual frames into png files.
+        **kwargs :
+            Keyword arguments to customize the gif/video creation process.
+            Both gif/video animations are created using ``imageio.mimwrite``.
+            In particular:
+
+            * gif files are created with
+              :py:class:`imageio.plugins.pillowmulti.GIFFormat`
+            * gif files are created with
+              :py:class:`imageio.plugins.ffmpeg.FfmpegFormat`. If a video seems
+              to be low-quality, try to increase the bitrate. Its default
+              value is ``bitrate=3000000``.
+
+        Notes
+        =====
+
+        Saving K3D-Jupyter animations is particularly slow.
+
+        """
         # avoid circular imports
         from spb.plotgrid import PlotGrid
         if (
@@ -138,28 +168,68 @@ class SaveAnimation:
                 "Saving plotgrid animation is only supported when the overall "
                 "figure is a Matplotlib's figure."
             )
-    
-        ext = os.path.splitext(path)[1]
+
+        from spb import KB
+        if isinstance(self._backend, KB):
+            self._save_k3d_animation(path, save_frames, **kwargs)
+        else:
+            self._save_other_backends_animation(path, save_frames, **kwargs)
+
+    def _save_k3d_animation(self, path, save_frames, **kwargs):
+        n_frames = self._backend._animation_data.n_frames
+        base = os.path.basename(path).split(".")[0]
+
+        @self._backend.fig.yield_screenshots
+        def inner_func():
+            frames = []
+            for i in trange(n_frames):
+                self._backend.update_animation(i)
+                self._backend.fig.fetch_screenshot()
+                screenshot_bytes = yield
+                buffer = io.BytesIO(screenshot_bytes)
+                img = imread(buffer)
+                frames.append(img)
+                if save_frames:
+                    name = base + "_" + str(i) + ".png"
+                    imwrite(os.path.join(os.path.dirname(path), name), img)
+            self._save_helper(path, frames, **kwargs)
+
+        inner_func()
+
+    def _save_other_backends_animation(self, path, save_frames, **kwargs):
+        n_frames = self._backend._animation_data.n_frames
+        base = os.path.basename(path).split(".")[0]
 
         with TemporaryDirectory(prefix="animation") as tmpdir:
-            filenames = []
-            n_frames = self._backend._animation_data.n_frames
-            fps = self._backend._animation_data.fps
+            tmp_filenames = []
+            dest = os.path.dirname(path)
+            if dest == "":
+                dest = "."
 
             for i in trange(n_frames):
                 self._backend.update_animation(i)
-                filename = os.path.join(tmpdir, str(i) + ".png")
-                filenames.append(filename)
-                self._backend.save(filename)
+                filename = base + "_" + str(i) + ".png"
+                tmp_filename = os.path.join(tmpdir, filename)
+                tmp_filenames.append(tmp_filename)
+                self._backend.save(tmp_filename)
+                if save_frames:
+                    shutil.copy2(tmp_filename, dest)
 
-            frames = [imread(f) for f in filenames]
+            frames = [imread(f) for f in tmp_filenames]
 
-            if ext == ".gif":
-                kwargs.setdefault("duration", int(1000 / fps))
-                imwrite(path, frames, **kwargs)
-            elif ext == ".mp4":
-                kwargs.setdefault("fps", fps)
-                kwargs.setdefault("quality", 10)
-                mimwrite(path, frames, **kwargs)
-            else:
-                mimwrite(path, frames, **kwargs)
+        self._save_helper(path, frames, **kwargs)
+
+
+    def _save_helper(self, path, frames, **kwargs):
+        ext = os.path.splitext(path)[1]
+        fps = self._backend._animation_data.fps
+        if ext == ".gif":
+            kwargs.setdefault("loop", True)
+            kwargs.setdefault("fps", fps)
+        elif ext == ".mp4":
+            kwargs.setdefault("fps", fps)
+            # NOTE: setting quality=something would use variable bitrate.
+            # However, this creates artifacts between consecutive frames.
+            # Instead, let's use constant bitrate.
+            kwargs.setdefault("bitrate", 3000000)
+        mimwrite(path, frames, **kwargs)
