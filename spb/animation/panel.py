@@ -50,7 +50,6 @@ class Animation(BaseAnimation, IPlot):
         self._binding = pn.bind(self._update, self._play_widget)
 
     def _update(self, frame_idx):
-        print("spb.animation.panel._update", frame_idx)
         self.update_animation(frame_idx)
         return self._backend.fig
 
@@ -62,11 +61,8 @@ class Animation(BaseAnimation, IPlot):
         # beginning of the file, there would be a circular import.
         from spb import KB, MB, BB, PB
 
-        print("_init_pane")
-
         default_kw = {}
         if isinstance(self._backend, PB):
-            print("Case 0")
             pane_func = pn.pane.Plotly
         elif (
             isinstance(self._backend, MB) or        # vanilla MB
@@ -75,7 +71,6 @@ class Animation(BaseAnimation, IPlot):
                 self._backend.is_matplotlib_fig     # plotgrid with all MBs
             )
         ):
-            print("Case 1")
             # since we are using Jupyter and interactivity, it is useful to
             # activate ipympl interactive frame, as well as setting a lower
             # dpi resolution of the matplotlib image
@@ -85,10 +80,8 @@ class Animation(BaseAnimation, IPlot):
             default_kw["interactive"] = False
             pane_func = pn.pane.Matplotlib
         elif isinstance(self._backend, BB):
-            print("Case 2")
             pane_func = pn.pane.Bokeh
         elif isinstance(self._backend, KB):
-            print("Case 3")
             # TODO: for some reason, panel is going to set width=0
             # if K3D-Jupyter is used.
             # Temporary workaround: create a Pane with a default width.
@@ -98,7 +91,6 @@ class Animation(BaseAnimation, IPlot):
             default_kw["width"] = 800
             pane_func = pn.pane.panel
         else:
-            print("Case 4")
             # here we are dealing with plotgrid of BB/PB/or mixed backend...
             # but not with plotgrids of MB
             # First, set the necessary data to create bindings for each
@@ -107,12 +99,12 @@ class Animation(BaseAnimation, IPlot):
                 [1], # anything but None
                 [self._play_widget]
             )
+            self._backend.pre_set_animation(self)
             # Then, create the pn.GridSpec figure
             self.pane = self._backend.fig
             return
         kw = self.merge({}, default_kw, self._pane_kw)
         self.pane = pane_func(self._binding, **kw)
-        print("self.pane", self.pane)
 
     def show(self):
         self._init_pane()
@@ -135,8 +127,6 @@ class Animation(BaseAnimation, IPlot):
         """
         if not show:
             self._init_pane()
-
-        print("_create_template")
 
         # pn.theme was introduced with panel 1.0.0, before there was
         # pn.template.theme

@@ -1,11 +1,16 @@
 from matplotlib.animation import FuncAnimation
+from matplotlib.gridspec import GridSpec
 import os
 import pytest
-from spb import plot, line, graphics, MB, PB, BB, KB, surface
+from spb import (
+    plot, line, graphics, MB, PB, BB, KB, surface, plotgrid, plot3d,
+    prange
+)
 from spb.animation.ipywidgets import Animation as IPYAnimation
 from spb.animation.panel import Animation as PanelAnimation
+from spb.plotgrid import PlotGrid
 from sympy import cos, sin, exp, pi
-from sympy.abc import a, b, x, y
+from sympy.abc import a, b, c, x, y
 from tempfile import TemporaryDirectory
 
 
@@ -145,3 +150,114 @@ def test_animation_single_plot_3d_get_func_animation(backend, imodule):
             match="FuncAnimation can only be created when the backend produced"
         ):
             p.get_FuncAnimation()
+
+
+@pytest.mark.parametrize(
+    "imodule, expected_type", [
+        ("ipywidgets", IPYAnimation),
+        ("panel", PanelAnimation),
+    ]
+)
+def test_plotgrid_mode_1_matplotlib_animation(imodule, expected_type):
+    options = dict(show=False, n=10, backend=MB, imodule=imodule)
+    p1 = plot(cos(a*x), (x, -3*pi, 3*pi),
+        params={a: (1, 5)}, animation={"fps": 10, "time": 1}, **options)
+    p2 = plot(sin(b*x), (x, -3*pi, 3*pi),
+        params={b: (2, 4)}, animation={"fps": 4, "time": 2}, **options)
+    p = plotgrid(p1, p2, show=False)
+    assert isinstance(p, expected_type)
+    assert isinstance(p.backend, PlotGrid)
+    # verify that plotgrid collects all parameters from its plots,
+    # and that the max fps/time are used
+    animation_data = p._animation_data
+    fps = 10
+    time = 2
+    assert animation_data.matrix.shape == (fps * time, 2)
+    # no error should be raised when saving the animation
+    with TemporaryDirectory(prefix="animation_plogrid_1") as tmpdir:
+        p.save(os.path.join(tmpdir, "animation.gif"))
+        assert len(os.listdir(tmpdir)) == 1
+
+        p.save(os.path.join(tmpdir, "animation.mp4"), save_frames=True)
+        assert len(os.listdir(tmpdir)) == 1 + fps * time + 1
+
+
+@pytest.mark.parametrize(
+    "imodule, expected_type", [
+        ("panel", PanelAnimation),
+        ("ipywidgets", IPYAnimation)
+    ]
+)
+def test_plotgrid_mode_1_different_backends_animation(imodule, expected_type):
+    options = dict(show=False, n=10, imodule=imodule)
+    p1 = plot(cos(a*x), (x, -3*pi, 3*pi),
+        params={a: (1, 5)}, animation={"fps": 10, "time": 1},
+        backend=MB, **options)
+    p2 = plot(sin(b*x), (x, -3*pi, 3*pi),
+        params={b: (2, 4)}, animation={"fps": 4, "time": 2},
+        backend=PB, **options)
+    p = plotgrid(p1, p2, show=False)
+    assert isinstance(p, expected_type)
+    assert isinstance(p.backend, PlotGrid)
+    # verify that plotgrid collects all parameters from its plots,
+    # and that the max fps/time are used
+    animation_data = p._animation_data
+    fps = 10
+    time = 2
+    assert animation_data.matrix.shape == (fps * time, 2)
+    with TemporaryDirectory(prefix="animation_plogrid_2") as tmpdir:
+        with pytest.raises(
+            RuntimeError,
+            match="Saving plotgrid animation is only supported when"
+        ):
+            p.save(os.path.join(tmpdir, "animation.gif"))
+    # because of the error, one way to test that animation works fine is:
+    for i in range(animation_data.matrix.shape[0]):
+        p.update_animation(i)
+
+
+@pytest.mark.parametrize(
+    "imodule, expected_type", [
+        ("panel", PanelAnimation),
+        ("ipywidgets", IPYAnimation)
+    ]
+)
+def test_plotgrid_mode_2_matplotlib(imodule, expected_type):
+    params = {
+        a: (1, 3),
+        b: (0, 1),
+        c: (2, pi)
+    }
+    p1 = plot(
+        cos(a*x), params=params, animation={"fps": 5, "time": 0.5},
+        show=False, imodule=imodule)
+    p2 = plot(
+        cos(a*x) * exp(-abs(x) * b), params=params,
+        animation={"fps": 6, "time": 0.6}, show=False, imodule=imodule)
+    p3 = plot3d(
+        cos(x**2 + y**2 - a), prange(x, -c, c), prange(y, -c, c),
+        params=params, animation={"fps": 7, "time": 0.7},
+        show=False, imodule=imodule)
+    gs = GridSpec(2, 2)
+    mapping = {
+        gs[0, :]: p1,
+        gs[1, 0]: p2,
+        gs[1, 1]: p3
+    }
+    p = plotgrid(gs=mapping, show=False)
+
+    assert isinstance(p, expected_type)
+    assert isinstance(p.backend, PlotGrid)
+    # verify that plotgrid collects all parameters from its plots,
+    # and that the max fps/time are used
+    animation_data = p._animation_data
+    fps = 7
+    time = 0.7
+    assert animation_data.matrix.shape == (int(fps * time), 3)
+    # no error should be raised when saving the animation
+    with TemporaryDirectory(prefix="animation_plogrid_1") as tmpdir:
+        p.save(os.path.join(tmpdir, "animation.gif"))
+        assert len(os.listdir(tmpdir)) == 1
+
+        p.save(os.path.join(tmpdir, "animation.mp4"), save_frames=True)
+        assert len(os.listdir(tmpdir)) == 1 + int(fps * time) + 1

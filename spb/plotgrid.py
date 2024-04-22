@@ -146,7 +146,6 @@ def _create_ipywidgets_figure(mapping, panel_kw):
                 bokeh.io.show(plot_fig)
             bokeh_outputs_plots.append((new_fig, p))
             plot_fig = new_fig
-        print(type(plot_fig))
         fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = ipy.Box([plot_fig])
     return fig, bokeh_outputs_plots
 
@@ -375,7 +374,6 @@ def plotgrid(*args, **kwargs):
     .. [#fn2] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.axes_grid1.axes_grid.ImageGrid.html
 
     """
-    print("plotgrid function")
 
     nr = kwargs.get("nr", -1)
     nc = kwargs.get("nc", 1)
@@ -413,6 +411,10 @@ def plotgrid(*args, **kwargs):
             f"plots imodule={plots_imodule}"
         )
 
+    if plotgrid_imodule:
+        # assure the proper interactive module is going to be used
+        kwargs["imodule"] = plotgrid_imodule
+
     is_iplot = len(all_parameters) > 0
     p = PlotGrid(nr, nc, *args, show=False, is_iplot=is_iplot, **kwargs)
     if is_iplot:
@@ -420,10 +422,7 @@ def plotgrid(*args, **kwargs):
         kwargs["params"] = all_parameters
         kwargs["show"] = show
         kwargs["animation"] = any(
-            plot.backend._animation_data is not None for plot in p._all_plots)
-        if plotgrid_imodule:
-            # assure the proper interactive module is going to be used
-            kwargs["imodule"] = plotgrid_imodule
+            isinstance(plot, BaseAnimation) for plot in p._all_plots)
         return create_interactive_plot(**kwargs)
 
     if not show:
@@ -434,36 +433,24 @@ def plotgrid(*args, **kwargs):
     return p.show()
 
 
-class PlotGridAnimationEnabler(BaseAnimation):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._animation_data = None
-        original_params, fps, time = {}, [], []
-        for p in self._all_plots:
-            if isinstance(p, IPlot) and p.backend._animation_data:
-                original_params = _aggregate_parameters(
-                    original_params.copy(), p.backend.series)
-                fps.append(p.backend._animation_data.fps)
-                time.append(p.backend._animation_data.time)
-        if original_params:
-            self._animation_data = AnimationData(
-                fps=max(fps), time=max(time), params=original_params)
-
-
 class PanelEnabler:
     def __init__(self, *args, **kwargs):
-        print("PanelEnabler.__init__")
         # those are set by spb.interactive.panel, they allow binding widgets
         # to appropriate update functions.
         self._params_symbols, self._params_widgets = None, None
+        # this is set by spb.interactive.animation.panel. It allows to access
+        # the animation data
+        self._animation = None
 
     def pre_set_bindings(self, symbols, widgets):
         """Set the necessary data to create bindings for interactive widgets
         plots with panel.
         """
-        print("PlotGrid.pre_set_bindings", symbols, widgets)
         self._params_symbols = symbols
         self._params_widgets = widgets
+
+    def pre_set_animation(self, animation):
+        self._animation = animation
 
     def _update_plot(self, p, *values):
         d = {symb: v for symb, v in zip(self._params_symbols, values)}
@@ -471,19 +458,18 @@ class PanelEnabler:
         return p.fig
 
     def _update_plotly(self, p, *values):
-        print("_update_plotly", values)
         d = {symb: v for symb, v in zip(self._params_symbols, values)}
         p.update_interactive(d)
         return p.fig.to_dict()
 
     def _update_plot_animation(self, p, frame_idx):
-        print("_update_plot_animation", frame_idx)
-        p.update_animation(frame_idx)
+        d = self._animation._animation_data[frame_idx]
+        p.update_interactive(d)
         return p.fig
 
     def _update_plotly_animation(self, p, frame_idx):
-        print("_update_plotly_animation", frame_idx)
-        p.update_animation(frame_idx)
+        d = self._animation._animation_data[frame_idx]
+        p.update_interactive(d)
         return p.fig.to_dict()
 
     def _create_panel_figure(self, mapping):
@@ -497,7 +483,7 @@ class PanelEnabler:
         create_binding = self._params_symbols is not None
         update_func = self._update_plot
         update_func_plotly = self._update_plotly
-        if self._animation_data:
+        if self._is_animation:
             update_func = self._update_plot_animation
             update_func_plotly = self._update_plotly_animation
         for i, (spec, p) in enumerate(mapping.items()):
@@ -510,7 +496,6 @@ class PanelEnabler:
                 p = p.backend
             _fig = p.fig
             if isinstance(p, PB):
-                print("update_func_plotly", update_func_plotly)
                 pane = pn.pane.Plotly(
                     _fig.to_dict() if not create_binding else
                     pn.bind(update_func_plotly, p, *self._params_widgets)
@@ -535,13 +520,14 @@ class PanelEnabler:
         return fig, panes_plots
 
 
-class PlotGrid(PlotGridAnimationEnabler, PanelEnabler):
+class PlotGrid(PanelEnabler):
     """Implement the logic to create a grid of plots. Refer to ``plotgrid``
     about examples.
     """
     _panel_row_height = 350
 
     def __init__(self, nrows, ncolumns, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.matplotlib = import_module(
             'matplotlib',
             import_kwargs={'fromlist': ['pyplot', 'gridspec']},
@@ -586,10 +572,11 @@ class PlotGrid(PlotGridAnimationEnabler, PanelEnabler):
             self.is_bokeh_fig = _are_all_plots_instances_of(args, BB)
             self._all_plots = args
 
-        self.panel_kw = kwargs.get("panel_kw", dict())
+        self._is_animation = kwargs.get("is_animation", any(
+            isinstance(p, BaseAnimation) for p in self._all_plots
+        ))
 
-        # initialize animation-related attributes
-        super().__init__(**kwargs)
+        self.panel_kw = kwargs.get("panel_kw", dict())
 
         if kwargs.get("show", True):
             self.show()
@@ -645,15 +632,10 @@ class PlotGrid(PlotGridAnimationEnabler, PanelEnabler):
         gs = self.gs
         is_iplot_panel = self._is_iplot and (self._imodule == "panel")
 
-        print("PlotGrid._create_figure")
-        print("self._is_iplot", self._is_iplot)
-        print("is_iplot_panel", is_iplot_panel)
-
         if (gs is None) and (len(self.args) == 0):
             self._fig = self.plt.figure()
 
         elif (gs is None):
-            print("CASE no gs")
             # First mode of operation
             nr, nc = self.nrows, self.ncolumns
             gs = GridSpec(nr, nc)
@@ -666,18 +648,15 @@ class PlotGrid(PlotGridAnimationEnabler, PanelEnabler):
                     c += 1
 
             if self.is_matplotlib_fig:
-                print("Matplotlib figure")
                 self._fig, self._new_plots = _create_mpl_figure(
                     mapping, self.imagegrid, self.size, is_iplot_panel)
             else:
-                print("Mixed backends")
                 size = self.size
 
                 # NOTE: assumimg all plots are of the same backend
                 self._new_plots = self.args
 
                 if self._imodule == "panel":
-                    print("creating panel figure")
                     self.panel_kw.setdefault(
                         "width", 800 if not size else size[0])
                     self.panel_kw.setdefault(

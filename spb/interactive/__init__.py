@@ -120,9 +120,7 @@ def create_interactive_plot(*series, **kwargs):
 
     # NOTE: Holoviz's Panel is really slow to load, so let's load it only when
     # it is necessary
-    print("create_interactive_plot")
     if not animation:
-        print("not animation")
         if imodule == "panel":
             from spb.interactive.panel import iplot
             return iplot(*series, **kwargs)
@@ -130,7 +128,6 @@ def create_interactive_plot(*series, **kwargs):
             from spb.interactive.ipywidgets import iplot
             return iplot(*series, **kwargs)
     else:
-        print("animation")
         if imodule == "panel":
             from spb.animation.panel import animation
             return animation(*series, **kwargs)

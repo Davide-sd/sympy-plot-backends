@@ -3,6 +3,7 @@ from imageio import mimwrite
 import io
 import os
 import shutil
+from spb.interactive import IPlot
 from spb.utils import _aggregate_parameters
 from sympy import Symbol
 from sympy.external import import_module
@@ -17,7 +18,6 @@ class BaseAnimation:
         mergedeep = import_module("mergedeep")
         merge = mergedeep.merge
         animation = kwargs.get("animation", False)
-        print("BaseAnimation._post_init_plot animation", animation)
 
         self._animation_data = None
         if isinstance(animation, AnimationData):
@@ -41,15 +41,14 @@ class BaseAnimation:
     def _post_init_plotgrid(self, *args, **kwargs):
         """This methods has to be executed after self._backend has been set.
         """
-        print("BaseAnimation._post_init_plotgrid")
         self._animation_data = None
         original_params, fps, time = {}, [], []
         for p in self._backend._all_plots:
-            if isinstance(p, IPlot) and p.backend._animation_data:
+            if isinstance(p, BaseAnimation):
                 original_params = _aggregate_parameters(
                     original_params.copy(), p.backend.series)
-                fps.append(p.backend._animation_data.fps)
-                time.append(p.backend._animation_data.time)
+                fps.append(p._animation_data.fps)
+                time.append(p._animation_data.time)
         if original_params:
             self._animation_data = AnimationData(
                 fps=max(fps), time=max(time), params=original_params)
@@ -58,7 +57,6 @@ class BaseAnimation:
         """Update the figure in order to obtain the visualization at a
         specifie frame of the animation.
         """
-        print("BaseAnimation.update_animation", frame_idx)
         if not self._animation_data:
             raise RuntimeError(
                 "The data necessary to build the animation has not been "
@@ -226,7 +224,7 @@ class AnimationData:
                     enumerate(params.keys()) if not_symbols[i]])
 
         self.parameters = list(params.keys())
-        self.n_frames = fps * time
+        self.n_frames = int(fps * time)
         self.time = time
         self.fps = fps
 

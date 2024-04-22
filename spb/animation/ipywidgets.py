@@ -43,7 +43,6 @@ class Animation(BaseAnimation, IPlot):
         self._play_widget = ipywidgets.HBox([play, slider])
 
     def _update(self, change):
-        print("IPYAnimation._update")
         frame_idx = change["new"]
         self.update_animation(frame_idx)
         if isinstance(self._backend, BB):
