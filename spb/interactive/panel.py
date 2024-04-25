@@ -78,7 +78,136 @@ class DynamicParam(param.Parameterized):
         self.param.add_parameter("dyn_param_0", current_param)
 
 
-class InteractivePlot(IPlot):
+class PanelCommon(IPlot):
+    """Common code for interactive applications with Holoviz Panel.
+    """
+
+    @property
+    def pane_kw(self):
+        """Return the keyword arguments used to customize the wrapper to the
+        plot.
+        """
+        return self._pane_kw
+
+    def _init_pane(self):
+        """Here we wrap the figure exposed by the backend with a Pane, which
+        allows to set useful properties.
+        """
+        # NOTE: If the following import statement was located at the
+        # beginning of the file, there would be a circular import.
+        from spb import KB, MB, BB, PB
+
+        default_kw = {}
+        if isinstance(self._backend, PB):
+            pane_func = pn.pane.Plotly
+        elif (
+            isinstance(self._backend, MB) or        # vanilla MB
+            (
+                hasattr(self._backend, "is_matplotlib_fig") and
+                self._backend.is_matplotlib_fig     # plotgrid with all MBs
+            )
+        ):
+            # since we are using Jupyter and interactivity, it is useful to
+            # activate ipympl interactive frame, as well as setting a lower
+            # dpi resolution of the matplotlib image
+            default_kw["dpi"] = 96
+            # NOTE: the following must be set to False in order for the
+            # example outputs to become visible on Sphinx.
+            default_kw["interactive"] = False
+            pane_func = pn.pane.Matplotlib
+        elif isinstance(self._backend, BB):
+            pane_func = pn.pane.Bokeh
+        elif isinstance(self._backend, KB):
+            # TODO: for some reason, panel is going to set width=0
+            # if K3D-Jupyter is used.
+            # Temporary workaround: create a Pane with a default width.
+            # Long term solution: create a PR on panel to create a K3DPane
+            # so that panel will automatically deal with K3D, in the same
+            # way it does with Bokeh, Plotly, Matplotlib, ...
+            default_kw["width"] = 800
+            pane_func = pn.pane.panel
+        else:
+            # here we are dealing with plotgrid of BB/PB/or mixed backend...
+            # but not with plotgrids of MB
+            self._init_pane_for_plotgrid()
+            return
+        kw = self.merge({}, default_kw, self._pane_kw)
+        self.pane = pane_func(self._binding, **kw)
+
+    @property
+    def layout_controls(self):
+        """Return the controls used by the interactive application"""
+        raise NotImplementedError
+
+    def show(self):
+        self._init_pane()
+
+        if not self._servable:
+            if self._layout == "tb":
+                content = pn.Column(self.layout_controls, self.pane)
+            elif self._layout == "bb":
+                content = pn.Column(self.pane, self.layout_controls)
+            elif self._layout == "sbl":
+                content = pn.Row(
+                    pn.Column(self.layout_controls),
+                    pn.Column(self.pane), width_policy="max")
+            elif self._layout == "sbr":
+                content = pn.Row(
+                    pn.Column(self.pane),
+                    pn.Column(self.layout_controls))
+            return content
+
+        return self._create_template(True)
+
+    def _create_template(self, show=False):
+        """Instantiate a template, populate it and serves it.
+
+        Parameters
+        ==========
+
+        show : boolean
+            If True, the template will be served on a new browser window.
+            Otherwise, just return the template: ``show=False`` is used
+            by the documentation to visualize servable applications.
+        """
+        if not show:
+            self._init_pane()
+
+        # pn.theme was introduced with panel 1.0.0, before there was
+        # pn.template.theme
+        submodule = pn.theme if hasattr(pn, "theme") else pn.template.theme
+        theme = submodule.DarkTheme
+        if cfg["interactive"]["theme"] != "dark":
+            theme = submodule.DefaultTheme
+        default_template_kw = dict(title=self._name, theme=theme)
+
+        if (self._template is None) or isinstance(self._template, dict):
+            kw = self._template if isinstance(self._template, dict) else {}
+            kw = self.merge(default_template_kw, kw)
+            kw["sidebar_location"] = self._layout
+            if len(self._name.strip()) == 0:
+                kw.setdefault("show_header", False)
+            template = SymPyBootstrapTemplate(**kw)
+        elif isinstance(self._template, pn.template.base.BasicTemplate):
+            template = self._template
+        elif (isinstance(self._template, type) and
+            issubclass(self._template, pn.template.base.BasicTemplate)):
+            template = self._template(**default_template_kw)
+        else:
+            raise TypeError("`template` not recognized. It can either be a "
+                "dictionary of keyword arguments to be passed to the default "
+                "template, an instance of pn.template.base.BasicTemplate "
+                "or a subclass of pn.template.base.BasicTemplate. Received: "
+                "type(template) = %s" % type(self._template))
+
+        self._populate_template(template)
+
+        if show:
+            return template.servable().show()
+        return template
+
+
+class InteractivePlot(PanelCommon):
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
@@ -195,13 +324,6 @@ class InteractivePlot(IPlot):
         # be created inside the fig getter.
         return self.fig.to_dict()
 
-    @property
-    def pane_kw(self):
-        """Return the keyword arguments used to customize the wrapper to the
-        plot.
-        """
-        return self._pane_kw
-
     def _get_iplot_kw(self):
         return {
             "backend": type(self._backend),
@@ -214,131 +336,23 @@ class InteractivePlot(IPlot):
             "pane_kw": self._pane_kw
         }
 
-    def _init_pane(self):
-        """Here we wrap the figure exposed by the backend with a Pane, which
-        allows to set useful properties.
-        """
-        # NOTE: If the following import statement was located at the
-        # beginning of the file, there would be a circular import.
-        from spb import KB, MB, BB, PB
+    def _init_pane_for_plotgrid(self):
+        # First, set the necessary data to create bindings for each subplot
+        self._backend.pre_set_bindings(
+            list(self.mapping.keys()),
+            self._widgets_for_binding()
+        )
+        # Then, create the pn.GridSpec figure
+        self.pane = self._backend.fig
 
-        default_kw = {}
-        if isinstance(self._backend, PB):
-            pane_func = pn.pane.Plotly
-        elif (
-            isinstance(self._backend, MB) or        # vanilla MB
-            (
-                hasattr(self._backend, "is_matplotlib_fig") and
-                self._backend.is_matplotlib_fig     # plotgrid with all MBs
-            )
-        ):
-            # since we are using Jupyter and interactivity, it is useful to
-            # activate ipympl interactive frame, as well as setting a lower
-            # dpi resolution of the matplotlib image
-            default_kw["dpi"] = 96
-            # NOTE: the following must be set to False in order for the
-            # example outputs to become visible on Sphinx.
-            default_kw["interactive"] = False
-            pane_func = pn.pane.Matplotlib
-        elif isinstance(self._backend, BB):
-            pane_func = pn.pane.Bokeh
-        elif isinstance(self._backend, KB):
-            # TODO: for some reason, panel is going to set width=0
-            # if K3D-Jupyter is used.
-            # Temporary workaround: create a Pane with a default width.
-            # Long term solution: create a PR on panel to create a K3DPane
-            # so that panel will automatically deal with K3D, in the same
-            # way it does with Bokeh, Plotly, Matplotlib, ...
-            default_kw["width"] = 800
-            pane_func = pn.pane.panel
-        else:
-            # here we are dealing with plotgrid of BB/PB/or mixed backend...
-            # but not with plotgrids of MB
-            # First, set the necessary data to create bindings for each
-            # subplot
-            self._backend.pre_set_bindings(
-                list(self.mapping.keys()),
-                self._widgets_for_binding()
-            )
-            # Then, create the pn.GridSpec figure
-            self.pane = self._backend.fig
-            return
-        kw = self.merge({}, default_kw, self._pane_kw)
-        self.pane = pane_func(self._binding, **kw)
+    def _populate_template(self, template):
+        template.main.append(self.pane)
+        template.sidebar.append(self.layout_controls)
 
     @property
     def layout_controls(self):
         widgets = list(self.mapping.values())
         return pn.GridBox(*widgets, ncols=self._ncols)
-
-    def show(self):
-        self._init_pane()
-
-        if not self._servable:
-            if self._layout == "tb":
-                content = pn.Column(self.layout_controls, self.pane)
-            elif self._layout == "bb":
-                content = pn.Column(self.pane, self.layout_controls)
-            elif self._layout == "sbl":
-                content = pn.Row(
-                    pn.Column(self.layout_controls),
-                    pn.Column(self.pane), width_policy="max")
-            elif self._layout == "sbr":
-                content = pn.Row(
-                    pn.Column(self.pane),
-                    pn.Column(self.layout_controls))
-
-            return content
-
-        return self._create_template(True)
-
-    def _create_template(self, show=False):
-        """Instantiate a template, populate it and serves it.
-
-        Parameters
-        ==========
-
-        show : boolean
-            If True, the template will be served on a new browser window.
-            Otherwise, just return the template: ``show=False`` is used
-            by the documentation to visualize servable applications.
-        """
-        if not show:
-            self._init_pane()
-
-        # pn.theme was introduced with panel 1.0.0, before there was
-        # pn.template.theme
-        submodule = pn.theme if hasattr(pn, "theme") else pn.template.theme
-        theme = submodule.DarkTheme
-        if cfg["interactive"]["theme"] != "dark":
-            theme = submodule.DefaultTheme
-        default_template_kw = dict(title=self._name, theme=theme)
-
-        if (self._template is None) or isinstance(self._template, dict):
-            kw = self._template if isinstance(self._template, dict) else {}
-            kw = self.merge(default_template_kw, kw)
-            kw["sidebar_location"] = self._layout
-            if len(self._name.strip()) == 0:
-                kw.setdefault("show_header", False)
-            template = SymPyBootstrapTemplate(**kw)
-        elif isinstance(self._template, pn.template.base.BasicTemplate):
-            template = self._template
-        elif (isinstance(self._template, type) and
-            issubclass(self._template, pn.template.base.BasicTemplate)):
-            template = self._template(**default_template_kw)
-        else:
-            raise TypeError("`template` not recognized. It can either be a "
-                "dictionary of keyword arguments to be passed to the default "
-                "template, an instance of pn.template.base.BasicTemplate "
-                "or a subclass of pn.template.base.BasicTemplate. Received: "
-                "type(template) = %s" % type(self._template))
-
-        template.main.append(self.pane)
-        template.sidebar.append(self.layout_controls)
-
-        if show:
-            return template.servable().show()
-        return template
 
 
 def iplot(*series, show=True, **kwargs):
@@ -533,7 +547,7 @@ def iplot(*series, show=True, **kwargs):
     Examples
     ========
 
-    NOTE: the following examples use the ordinary plotting function because
+    NOTE: the following examples use the ordinary plotting functions because
     ``iplot`` is already integrated with them.
 
     Surface plot between -10 <= x, y <= 10 discretized with 50 points
