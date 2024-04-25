@@ -4,7 +4,7 @@ import io
 import os
 import shutil
 from spb.interactive import IPlot
-from spb.utils import _aggregate_parameters
+from spb.utils import _aggregate_parameters, get_environment
 from sympy import Symbol
 from sympy.external import import_module
 from tempfile import TemporaryDirectory
@@ -12,6 +12,9 @@ from tqdm.notebook import trange
 
 
 class BaseAnimation:
+    """Implements the base functionalities to create animations.
+    """
+
     def _post_init_plot(self, *args, **kwargs):
         """This methods has to be executed after self._backend has been set.
         """
@@ -59,7 +62,12 @@ class BaseAnimation:
 
     def update_animation(self, frame_idx):
         """Update the figure in order to obtain the visualization at a
-        specifie frame of the animation.
+        specified frame of the animation.
+
+        Parameters
+        ==========
+        frame_idx : int
+            Must be ``0 <= frame_idx < fps*time``.
         """
         if not self.animation_data:
             raise RuntimeError(
@@ -70,6 +78,9 @@ class BaseAnimation:
         self.backend.update_interactive(params)
 
     def get_FuncAnimation(self):
+        """Return a Matplotlib's ``FuncAnimation`` object. It only works if
+        this animation is showing a Matplotlib's figure.
+        """
         from spb import MB
         if not isinstance(self.backend, MB):
             raise TypeError(
@@ -107,9 +118,9 @@ class BaseAnimation:
             Both gif/video animations are created using ``imageio.mimwrite``.
             In particular:
 
-            * gif files are created with
+            * GIFs are created with
               :py:class:`imageio.plugins.pillowmulti.GIFFormat`
-            * gif files are created with
+            * MP4s are created with
               :py:class:`imageio.plugins.ffmpeg.FfmpegFormat`. If a video seems
               to be low-quality, try to increase the bitrate. Its default
               value is ``bitrate=3000000``.
@@ -120,6 +131,10 @@ class BaseAnimation:
         Saving K3D-Jupyter animations is particularly slow.
 
         """
+        ext = os.path.splitext(path)[1]
+        if len(ext) == 0:
+            raise ValueError("Please, provide a file extension.")
+
         # avoid circular imports
         from spb.plotgrid import PlotGrid
         if (
@@ -144,7 +159,9 @@ class BaseAnimation:
         @self._backend.fig.yield_screenshots
         def inner_func():
             frames = []
-            for i in trange(n_frames):
+            r = (range(n_frames) if get_environment() != 0
+                else trange(n_frames))
+            for i in r:
                 self.update_animation(i)
                 self._backend.fig.fetch_screenshot()
                 screenshot_bytes = yield
@@ -168,7 +185,9 @@ class BaseAnimation:
             if dest == "":
                 dest = "."
 
-            for i in trange(n_frames):
+            r = (range(n_frames) if get_environment() != 0
+                else trange(n_frames))
+            for i in r:
                 self.update_animation(i)
                 filename = base + "_" + str(i) + ".png"
                 tmp_filename = os.path.join(tmpdir, filename)
@@ -185,8 +204,10 @@ class BaseAnimation:
         ext = os.path.splitext(path)[1]
         fps = self.animation_data.fps
         if ext == ".gif":
-            kwargs.setdefault("loop", True)
+            kwargs.setdefault("loop", 0)    # loop=0 means loops continuously
             kwargs.setdefault("fps", fps)
+            # NOTE: from my tests on 3D plots with colorbars, 2 works best.
+            kwargs.setdefault("quantizer", 2)
         elif ext == ".mp4":
             kwargs.setdefault("fps", fps)
             # NOTE: setting quality=something would use variable bitrate.
