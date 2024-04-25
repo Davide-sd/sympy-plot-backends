@@ -230,7 +230,7 @@ def animation(*series, show=True, **kwargs):
        import numpy as np
        r, theta, t, a = symbols("r, theta, t, a")
        expr = cos(r**2 - a) * exp(-r / 3)
-       p = plot_surface_revolution(
+       p = plot3d_revolution(
            expr, (r, 0, 5), (theta, 0, t),
            params={t: (1e-03, 2*pi), a: (0, 2*pi)},
            use_cm=True, color_func=lambda x, y, z: np.sqrt(x**2 + y**2),
