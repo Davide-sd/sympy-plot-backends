@@ -67,7 +67,8 @@ extensions = [
     'sphinx_panel_screenshot',
     'sphinx_k3d_screenshot',
     'sphinx_math_dollar',
-    'sphinx_design'
+    'sphinx_design',
+    "sphinxcontrib.video"
 ]
 
 # in order to show the icons on sponsorship buttons
@@ -131,6 +132,7 @@ html_static_path = [
     '_static/tut-3',
     '_static/tut-4',
     '_static/tut-5',
+    '_static/animations',
 ]
 
 # html_js_files = [

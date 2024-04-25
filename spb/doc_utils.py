@@ -307,7 +307,8 @@ def postprocess_KB_interactive_image(
     """
     import numpy as np
     from PIL import Image
-    from spb.interactive.panel import InteractivePlot
+    from spb.animation import BaseAnimation
+    from spb.interactive.panel import PanelCommon
     from spb import KB
     from sphinx_k3d_screenshot.utils import get_k3d_screenshot, get_driver
 
@@ -315,10 +316,12 @@ def postprocess_KB_interactive_image(
         return img
 
     panelplot = ns["panelplot"]
-    if not isinstance(panelplot, InteractivePlot):
+    if not isinstance(panelplot, PanelCommon):
         return img
     if not isinstance(panelplot.backend, KB):
         return img
+
+    is_animation = isinstance(panelplot, BaseAnimation)
 
     # At this point img has dimension specified by `size`, but only the top
     # portion is actually populated with widgets. The remaining portions is
@@ -340,6 +343,12 @@ def postprocess_KB_interactive_image(
 
     # concatenate vertically the two images
     final = Image.new('RGB', (img.width, img.height + plot.height))
-    final.paste(img, (0, 0))
-    final.paste(plot, (0, img.height))
+    if is_animation:
+        # place play controls on the bottom
+        final.paste(plot, (0, 0))
+        final.paste(img, (0, plot.height))
+    else:
+        # place widgets on the top
+        final.paste(img, (0, 0))
+        final.paste(plot, (0, img.height))
     return final

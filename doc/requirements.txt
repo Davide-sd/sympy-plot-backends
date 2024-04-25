@@ -13,3 +13,4 @@ sphinx_k3d_screenshot
 kaleido
 # to satidfy ipympl requirements we need
 ipywidgets<8,>=7.6.0
+sphinxcontrib-video

@@ -31,6 +31,7 @@ This document is automatically generated using spb's docstrings.
    series.rst
    renderers.rst
    interactive.rst
+   animation.rst
    defaults.rst
    backends/index.rst
    references.rst
