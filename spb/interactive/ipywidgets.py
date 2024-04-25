@@ -267,7 +267,7 @@ def iplot(*series, show=True, **kwargs):
     Examples
     ========
 
-    NOTE: the following examples use the ordinary plotting function because
+    NOTE: the following examples use the ordinary plotting functions because
     ``iplot`` is already integrated with them.
 
     Surface plot between -10 <= x, y <= 10 discretized with 50 points
