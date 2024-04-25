@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v3.4.0
+======
+
+* Implemented animations.
+
+
 v3.3.0
 ======
 
