@@ -112,44 +112,6 @@ def _create_mpl_figure(
     return fig, new_plots
 
 
-def _create_ipywidgets_figure(mapping, panel_kw):
-    ipy = import_module('ipywidgets')
-    plotly = import_module(
-        'plotly',
-        import_kwargs={'fromlist': ['graph_objects']},
-        warn_not_installed=True,
-        min_module_version='5.0.0')
-    go = plotly.graph_objects
-
-    fig = ipy.GridspecLayout(**panel_kw)
-    bokeh_outputs_plots = []
-    for spec, p in mapping.items():
-        rs = spec.rowspan
-        cs = spec.colspan
-        plot_fig = p.fig
-        if isinstance(p, PB):
-            # ipywidgets requires Plotly's FigureWidget
-            plot_fig = go.FigureWidget(p.fig.to_dict())
-        elif _are_all_plots_instances_of([p], BB):
-            bokeh = import_module(
-                'bokeh',
-                import_kwargs={'fromlist': ['io']},
-                warn_not_installed=True,
-                min_module_version='2.3.0')
-            # let's assume cfg["bokeh"]["height"] is an integer
-            min_height = str(cfg["bokeh"]["height"]) + "px"
-            new_fig = ipy.Output(layout=ipy.Layout(
-                height='auto', min_height=min_height,
-                width='100%', max_width="100%")
-            )
-            with new_fig:
-                bokeh.io.show(plot_fig)
-            bokeh_outputs_plots.append((new_fig, p))
-            plot_fig = new_fig
-        fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = ipy.Box([plot_fig])
-    return fig, bokeh_outputs_plots
-
-
 def _check_gs(gs):
     """Helper function to verify the provided GridSpec.
     """
@@ -204,28 +166,6 @@ def _get_plots_imodule(plots):
             "interactive module for all plots.\n"
             f"Received interactive modules: {imodules}")
     return imodules.pop() if len(imodules) > 0 else None
-
-
-# def _check_imodules(plots_imodule, plotgrid_imodule):
-#     def raise_error(plots_imodule, plotgrid_imodule):
-#         raise ValueError(
-#             "The interactive module used by `plotgrid` is different from "
-#             "the interactive module used by the plots. This is not supported. "
-#             "Please, only chose one interactive module. Received:\n"
-#             f"plotgrid imodule={plotgrid_imodule}\n"
-#             f"plots imodule={plots_imodule}"
-#         )
-#     default_imodule = cfg["interactive"]["module"]
-#     if (plots_imodule is None) and (plotgrid_imodule is None):
-#         pass
-#     elif plots_imodule is None:
-#         if plotgrid_imodule != default_imodule:
-#             raise_error(default_imodule, plotgrid_imodule)
-#     elif plotgrid_imodule is None:
-#         if plots_imodule != default_imodule:
-#             raise_error(plots_imodule, default_imodule)
-#     elif plotgrid_imodule != plots_imodule:
-#         raise_error(plots_imodule, plotgrid_imodule)
 
 
 def plotgrid(*args, **kwargs):
@@ -433,7 +373,60 @@ def plotgrid(*args, **kwargs):
     return p.show()
 
 
+class IpywidgetsEnabler:
+    """Necessary code to get ipywidgets and interactive features to work with
+    PlotGrid.
+    """
+
+    def _create_ipywidgets_figure(self, mapping, panel_kw):
+        ipy = import_module('ipywidgets')
+        plotly = import_module(
+            'plotly',
+            import_kwargs={'fromlist': ['graph_objects']},
+            warn_not_installed=True,
+            min_module_version='5.0.0')
+        go = plotly.graph_objects
+
+        fig = ipy.GridspecLayout(**panel_kw)
+        bokeh_outputs_plots = []
+        for spec, p in mapping.items():
+            rs = spec.rowspan
+            cs = spec.colspan
+            plot_fig = p.fig
+            if isinstance(p, PB):
+                # ipywidgets requires Plotly's FigureWidget
+                plot_fig = go.FigureWidget(p.fig.to_dict())
+            elif _are_all_plots_instances_of([p], BB):
+                bokeh = import_module(
+                    'bokeh',
+                    import_kwargs={'fromlist': ['io']},
+                    warn_not_installed=True,
+                    min_module_version='2.3.0')
+                # let's assume cfg["bokeh"]["height"] is an integer
+                min_height = str(cfg["bokeh"]["height"]) + "px"
+                new_fig = ipy.Output(layout=ipy.Layout(
+                    height='auto', min_height=min_height,
+                    width='100%', max_width="100%")
+                )
+                with new_fig:
+                    bokeh.io.show(plot_fig)
+                bokeh_outputs_plots.append((new_fig, p))
+                plot_fig = new_fig
+            fig[slice(rs.start, rs.stop), slice(cs.start, cs.stop)] = ipy.Box([plot_fig])
+        return fig, bokeh_outputs_plots
+
+
 class PanelEnabler:
+    """Necessary code to get panel and interactive features to work with
+    PlotGrid.
+
+    Notes
+    =====
+
+    In a panel figure, each subplot is wrapped by a pane, which is bound to
+    a particular update function, depending if the subplot is a Plotly figure
+    (or something else), or if it is an animation.
+    """
     def __init__(self, *args, **kwargs):
         # those are set by spb.interactive.panel, they allow binding widgets
         # to appropriate update functions.
@@ -450,6 +443,10 @@ class PanelEnabler:
         self._params_widgets = widgets
 
     def pre_set_animation(self, animation):
+        """Let this PlotGrid instance know that we are dealing with an
+        animation. This attribute will be later used to execute the appropriate
+        update function.
+        """
         self._animation = animation
 
     def _update_plot(self, p, *values):
@@ -520,7 +517,7 @@ class PanelEnabler:
         return fig, panes_plots
 
 
-class PlotGrid(PanelEnabler):
+class PlotGrid(PanelEnabler, IpywidgetsEnabler):
     """Implement the logic to create a grid of plots. Refer to ``plotgrid``
     about examples.
     """
@@ -674,7 +671,7 @@ class PlotGrid(PanelEnabler):
                             str(nr * self._panel_row_height) + "px" if not size else get_size(size[1]))
                     self.panel_kw["n_rows"] = nr
                     self.panel_kw["n_columns"] = nc
-                    self._fig, self._bokeh_outputs_plots = _create_ipywidgets_figure(
+                    self._fig, self._bokeh_outputs_plots = self._create_ipywidgets_figure(
                         mapping, self.panel_kw)
 
         else:
@@ -697,7 +694,7 @@ class PlotGrid(PanelEnabler):
                     mpl_gs = first_element.get_gridspec()
                     self.panel_kw = {
                         "n_rows": mpl_gs.nrows, "n_columns": mpl_gs.ncols}
-                    self._fig, self._bokeh_outputs_plots = _create_ipywidgets_figure(
+                    self._fig, self._bokeh_outputs_plots = self._create_ipywidgets_figure(
                         gs, self.panel_kw)
 
     def update_interactive(self, params):
