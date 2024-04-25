@@ -2,6 +2,7 @@ from spb.defaults import cfg
 from spb.backends.base_backend import Plot
 from spb.backends.mayavi.renderers import *
 from spb.series import *
+from spb.utils import get_environment
 from sympy.external import import_module
 import warnings
 
@@ -125,7 +126,7 @@ class MayaviBackend(Plot):
         notebook_kw = kwargs.pop("notebook_kw", dict())
         self.grid = kwargs.get("grid", cfg["mayavi"]["grid"])
 
-        if (self._get_mode() == 0) and (not window):
+        if (get_environment() == 0) and (not window):
             self.mlab.init_notebook(**notebook_kw)
 
         # NOTE/TODO: to adjust the aspect ratio, Mayavi uses the ``extent``
