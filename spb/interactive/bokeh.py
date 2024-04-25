@@ -3,7 +3,7 @@ Implements interactive-widgets plotting with Bokeh.
 """
 
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
-from spb.utils import _validate_kwargs
+from spb.utils import _validate_kwargs, get_environment
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from spb.plotgrid import PlotGrid
@@ -53,31 +53,6 @@ def _dict_to_slider(d):
         # if d["formatter"]:
         #     kwargs["formatter"] = d["formatter"]
         # return pn.widgets.DiscreteSlider(**kwargs)
-
-def _get_mode():
-    """Verify which environment is used to run the code.
-
-    Returns
-    =======
-        mode : int
-            0 - the code is running on Jupyter Notebook or qtconsole
-            1 - terminal running IPython
-            2 - other type (?)
-            3 - probably standard Python interpreter
-
-    # TODO: detect if we are running in Jupyter Lab.
-    """
-    # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
-    try:
-        shell = get_ipython().__class__.__name__
-        if shell == "ZMQInteractiveShell":
-            return 0  # Jupyter notebook or qtconsole
-        elif shell == "TerminalInteractiveShell":
-            return 1  # Terminal running IPython
-        else:
-            return 2  # Other type (?)
-    except NameError:
-        return 3  # Probably standard Python interpreter
 
 
 class InteractivePlot(IPlot):
@@ -163,7 +138,7 @@ class InteractivePlot(IPlot):
             _validate_kwargs(self._backend, **original_kwargs)
 
         self._run_in_notebook = False
-        if _get_mode() == 0:
+        if get_environment() == 0:
             self._run_in_notebook = True
             bokeh.io.output_notebook(hide_banner=True)
 
@@ -206,7 +181,7 @@ class InteractivePlot(IPlot):
         rows = [widgets[i:i+n] for i in range(0, len(widgets), n)]
         rows = [bokeh.layouts.row(*r) for r in rows]
         return bokeh.layouts.column(*rows)
-    
+
     def _launch_server(self, doc):
         """ By launching a server application, we can use Python callbacks
         associated to events.

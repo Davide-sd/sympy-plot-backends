@@ -14,6 +14,7 @@ from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     PlaneSeries, GeometrySeries, Arrow3DSeries
 )
+from spb.utils import get_environment
 from sympy.external import import_module
 import warnings
 
@@ -162,7 +163,7 @@ class K3DBackend(Plot):
 
         self._init_cyclers()
         super().__init__(*args, **kwargs)
-        if (not self.skip_notebook_check) and (self._get_mode() != 0):
+        if (not self.skip_notebook_check) and (get_environment() != 0):
             warnings.warn(
                 "K3DBackend only works properly within Jupyter Notebook")
         self._use_latex = kwargs.get("use_latex", cfg["k3d"]["use_latex"])
@@ -470,7 +471,7 @@ class K3DBackend(Plot):
                 self.fig.snapshot_include_js = include_js
                 f.write(self.fig.get_snapshot(**kwargs))
         elif ext == ".png":
-            if self._get_mode() != 0:
+            if get_environment() != 0:
                 raise ValueError(
                     "K3D-Jupyter requires the plot to be shown on the screen "
                     + "before saving a png file.")

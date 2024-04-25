@@ -476,31 +476,6 @@ class Plot:
                 + "3. Execute again the plot statement."
             )
 
-    def _get_mode(self):
-        """Verify which environment is used to run the code.
-
-        Returns
-        =======
-            mode : int
-                0 - the code is running on Jupyter Notebook or qtconsole
-                1 - terminal running IPython
-                2 - other type (?)
-                3 - probably standard Python interpreter
-
-        # TODO: detect if we are running in Jupyter Lab.
-        """
-        # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
-        try:
-            shell = get_ipython().__class__.__name__
-            if shell == "ZMQInteractiveShell":
-                return 0  # Jupyter notebook or qtconsole
-            elif shell == "TerminalInteractiveShell":
-                return 1  # Terminal running IPython
-            else:
-                return 2  # Other type (?)
-        except NameError:
-            return 3  # Probably standard Python interpreter
-
     def _use_cyclic_cm(self, param, is_complex):
         """When using complex_plot and `absarg=True`, it might happens that the
         argument is not fully covering the range [-pi, pi]. In such occurences,

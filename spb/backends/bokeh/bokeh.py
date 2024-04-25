@@ -18,6 +18,7 @@ from spb.series import (
     SystemResponseSeries, ColoredSystemResponseSeries, RootLocusSeries,
     NyquistLineSeries
 )
+from spb.utils import get_environment
 from sympy.external import import_module
 
 
@@ -218,7 +219,7 @@ class BokehBackend(Plot):
         self._theme = kwargs.get("theme", cfg["bokeh"]["theme"])
 
         self._run_in_notebook = False
-        if self._get_mode() == 0:
+        if get_environment() == 0:
             self._run_in_notebook = True
             self.bokeh.io.output_notebook(hide_banner=True)
 
