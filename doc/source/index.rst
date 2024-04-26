@@ -28,7 +28,7 @@ without the knowledge of complicated widget libraries.
 
 .. image:: _static/animations/3d_animation.gif
   :width: 220
-  :alt: polar animation
+  :alt: 3D animation
 
 
 Development and Support

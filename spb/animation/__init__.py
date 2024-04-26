@@ -128,7 +128,9 @@ class BaseAnimation:
         Notes
         =====
 
-        Saving K3D-Jupyter animations is particularly slow.
+        * When saving an animation from Jupyter Notebook/Lab, a progress bar
+          will be visibile, indicating how many frames have been generated.
+        * Saving K3D-Jupyter animations is particularly slow.
 
         """
         ext = os.path.splitext(path)[1]

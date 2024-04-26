@@ -19,8 +19,6 @@ In no particular order:
 - [ ] implement parametric-widgets support for `xlim, ylim, zlim` and
   `xlabel, ylabel, zlabel`.
 
-- [ ] Create an Animation class.
-
 - [ ] Create a way to apply rotation/translation/scaling transformation to 3D
   entities (obviously, with interactive plotting in mind).
 

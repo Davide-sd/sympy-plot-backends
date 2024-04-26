@@ -15,7 +15,7 @@ The following plotting libraries are supported: [Matplolib](https://matplotlib.o
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/iplot_bokeh.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/mpl-streamplot.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/plotly_streamlines_2.png" width=250/>
-<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/K3D-spherical-harmonics.png" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/animation.gif" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/bokeh_domain_coloring.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/K3D-cone-vectors.png" width=250/>
 </div>
@@ -34,6 +34,7 @@ On top of the usual plotting functions exposed by SymPy (`plot`,
 * visualize control systems' response to input signals, root locus, as well as Bode, Nyquist and Nichols diagrams.
 * create parametric-interactive plots using widgets
   (sliders, buttons, etc.) with *ipywidgets* or *Holoviz's Panel*.
+* create animations.
 
 Please, read the
 [following documentation page](https://sympy-plot-backends.readthedocs.io/en/latest/overview.html#differences-with-sympy-plotting)
