@@ -26,9 +26,9 @@ without the knowledge of complicated widget libraries.
   :width: 220
   :alt: domain coloring
 
-.. image:: _static/trefoil-knot-plotly.png
+.. image:: _static/animations/3d_animation.gif
   :width: 220
-  :alt: 3D surface
+  :alt: polar animation
 
 
 Development and Support

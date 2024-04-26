@@ -90,7 +90,7 @@ Polar animation with Matplotlib:
    expr = sin(2 * x) * cos(5 * x) + pi / 2
    plot_polar(
        expr, prange(x, 0, u),
-       params={u: (1, 2*pi)}, animation=True,
+       params={u: (1, 2*pi)}, animation={"fps": 10, "time": 4},
        polar_axis=True, ylim=(0, 3), title="$%s$" % latex(expr))
   
 .. image:: _static/animations/polar-animation.gif
