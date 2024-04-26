@@ -80,18 +80,22 @@ function:
    )
 
 
-Polar plot with Matplotlib:
+Polar animation with Matplotlib:
 
-.. plot::
-   :context: reset
-   :include-source: True
-
+.. code-block::
+   
    from sympy import symbols, sin, cos, pi, latex
-   from spb import plot_polar
-   x = symbols("x")
+   from spb import plot_polar, prange
+   u, x = symbols("u, x")
    expr = sin(2 * x) * cos(5 * x) + pi / 2
-   plot_polar(expr, (x, 0, 2 * pi),
+   plot_polar(
+       expr, prange(x, 0, u),
+       params={u: (1, 2*pi)}, animation=True,
        polar_axis=True, ylim=(0, 3), title="$%s$" % latex(expr))
+  
+.. image:: _static/animations/polar-animation.gif
+  :width: 500
+  :alt: polar animation
 
 
 2D parametric plot with Matplotlib, using Numpy and lambda functions:
@@ -131,25 +135,31 @@ Interactive-Parametric domain coloring plot of a complex function:
    )
 
 
-3D plot with K3D-Jupyter and polar discretization. Two identical expressions
-are going to be plotted, one will display the mesh with a solid color, the
-other will display the connectivity of the mesh (wireframe).
-Customization on the colors, surface/wireframe can easily be done after the
-plot is created:
+Animation of a 3D surface using K3D-Jupyter. Here we create an
+``Animation`` object, which can later be used to save the animation
+to a file.
 
-.. k3d-screenshot::
-   :camera: 1.092, -3.01, 1.458, 0.159, -0.107, -0.359, -0.185, 0.427, 0.885
+.. code-block::
 
-   from sympy import symbols, cos, sin, pi, latex
-   from spb import plot3d, KB
-   r, theta = symbols("r, theta")
-   expr = cos(r) * cos(sin(4 * theta))
-   plot3d(
-       (expr, {"color": 0x1f77b4}),
-       (expr, {"color": 0x1a5fb4, "opacity": 0.15, "wireframe": True}),
-       (r, 0, 2), (theta, 0, 2 * pi),
-       n1=50, n2=200, is_polar=True, grid=False,
-       title=r"f\left(r, \theta\right) = " + latex(expr), backend=KB)
+   from sympy import *
+   from spb import *
+   import numpy as np
+   r, theta, t, a = symbols("r, theta, t, a")
+   expr = cos(r**2 - a) * exp(-r / 3)
+   plot3d_revolution(
+      expr, (r, 0, 5), (theta, 0, t),
+      params={t: (1e-03, 2*pi), a: (0, 2*pi)},
+      use_cm=True, color_func=lambda x, y, z: np.sqrt(x**2 + y**2),
+      is_polar=True,
+      wireframe=True, wf_n1=30, wf_n2=30,
+      wf_rendering_kw={"width": 0.005},
+      animation=True,
+      title=(r"theta={:.4f}; \, a={:.4f}", t, a),
+      backend=KB, grid=False
+   )
+
+.. video:: _static/animations/3d_animation.mp4
+   :width: 500
 
 
 3D plot with Plotly of a parametric surface, colored according to the
