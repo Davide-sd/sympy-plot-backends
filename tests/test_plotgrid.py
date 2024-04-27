@@ -684,21 +684,22 @@ def test_save():
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        #
-        # holoviz's panel objects
-        p1, p2, p3, p4, p5, p6, p7 = _create_plots(PB)
+        if plotly:
+            #
+            # holoviz's panel objects
+            p1, p2, p3, p4, p5, p6, p7 = _create_plots(PB)
 
-        # symmetric grid
-        p = PlotGrid(2, 2, p1, p2, p3, p4, show=False, imodule="panel")
-        p.save("test_1.html")
+            # symmetric grid
+            p = PlotGrid(2, 2, p1, p2, p3, p4, show=False, imodule="panel")
+            p.save("test_1.html")
 
-        # grid size greater than the number of subplots
-        p = PlotGrid(3, 4, p1, p2, p3, p4, show=False, imodule="panel")
-        p.save("test_2.html")
+            # grid size greater than the number of subplots
+            p = PlotGrid(3, 4, p1, p2, p3, p4, show=False, imodule="panel")
+            p.save("test_2.html")
 
-        # unsymmetric grid (subplots in one line)
-        p = PlotGrid(1, 3, p5, p6, p7, show=False, imodule="panel")
-        p.save("test_3.html")
+            # unsymmetric grid (subplots in one line)
+            p = PlotGrid(1, 3, p5, p6, p7, show=False, imodule="panel")
+            p.save("test_3.html")
 
 
 @pytest.mark.skipif(pn is None, reason="panel is not installed")
