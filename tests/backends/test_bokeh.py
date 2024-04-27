@@ -239,7 +239,7 @@ def test_plot_contour(use_latex, xl, yl, label_func):
     assert len(p.backend.series) == 1
     f = p.fig
     assert len(f.renderers) == 1
-    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
+    assert isinstance(f.renderers[0], bokeh.models.ContourRenderer)
     # 1 colorbar
     assert len(f.right) == 1
     assert f.right[0].title == label_func(use_latex, cos(a*x**2 + y**2))
@@ -267,7 +267,7 @@ def test_plot_vector_2d_quivers(pivot, success):
         assert len(p.backend.series) == 2
         f = p.fig
         assert len(f.renderers) == 2
-        assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
+        assert isinstance(f.renderers[0], bokeh.models.ContourRenderer)
         assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.Segment)
         # 1 colorbar
         assert len(f.right) == 1
@@ -301,7 +301,7 @@ def test_plot_vector_2d_streamlines_custom_scalar_field(
     assert len(p.backend.series) == 2
     f = p.fig
     assert len(f.renderers) == 2
-    assert isinstance(f.renderers[0].glyph, bokeh.models.glyphs.Image)
+    assert isinstance(f.renderers[0], bokeh.models.ContourRenderer)
     assert isinstance(f.renderers[1].glyph, bokeh.models.glyphs.MultiLine)
     # 1 colorbar
     assert len(f.right) == 1

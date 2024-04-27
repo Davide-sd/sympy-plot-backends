@@ -7,6 +7,8 @@ v3.4.0
 
 * Implemented animations.
 
+* ``BokehBackend`` is now able to create contour plots.
+
 
 v3.3.0
 ======
