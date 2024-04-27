@@ -22,5 +22,6 @@ imageio-ffmpeg
 psutil
 av
 tqdm
+kaleido
 # mayavi>=4.8.0
 # PyQt5>=5.15.7
