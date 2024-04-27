@@ -1,4 +1,4 @@
-from spb.animation import AnimationData, BaseAnimation
+from spb.animation import BaseAnimation
 from spb.defaults import cfg
 from spb.backends.matplotlib import MB
 from spb.backends.plotly import PB

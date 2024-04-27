@@ -1,5 +1,3 @@
-from imageio.v3 import imwrite, imread
-from imageio import mimwrite
 import io
 import os
 import shutil
@@ -8,12 +6,23 @@ from spb.utils import _aggregate_parameters, get_environment
 from sympy import Symbol
 from sympy.external import import_module
 from tempfile import TemporaryDirectory
-from tqdm.notebook import trange
 
 
 class BaseAnimation:
     """Implements the base functionalities to create animations.
     """
+
+    def _load_imageio(self):
+        imageio = import_module(
+            'imageio',
+            import_kwargs={
+                'fromlist': [ 'v3' ]
+            },
+            warn_not_installed=True,
+        )
+        self.imwrite = imageio.v3.imwrite
+        self.imread = imageio.v3.imread
+        self.mimwrite = imageio.mimwrite
 
     def _post_init_plot(self, *args, **kwargs):
         """This methods has to be executed after self._backend has been set.
@@ -40,6 +49,7 @@ class BaseAnimation:
                 for s in self._backend.series:
                     if s.is_interactive:
                         s.params = initial_params
+        self._load_imageio()
 
     def _post_init_plotgrid(self, *args, **kwargs):
         """This methods has to be executed after self._backend has been set.
@@ -55,6 +65,7 @@ class BaseAnimation:
         if original_params:
             self._animation_data = AnimationData(
                 fps=max(fps), time=max(time), params=original_params)
+        self._load_imageio()
 
     @property
     def animation_data(self):
@@ -155,6 +166,7 @@ class BaseAnimation:
             self._save_other_backends_animation(path, save_frames, **kwargs)
 
     def _save_k3d_animation(self, path, save_frames, **kwargs):
+        from tqdm.notebook import trange
         n_frames = self.animation_data.n_frames
         base = os.path.basename(path).split(".")[0]
 
@@ -168,16 +180,17 @@ class BaseAnimation:
                 self._backend.fig.fetch_screenshot()
                 screenshot_bytes = yield
                 buffer = io.BytesIO(screenshot_bytes)
-                img = imread(buffer)
+                img = self.imread(buffer)
                 frames.append(img)
                 if save_frames:
                     name = base + "_" + str(i) + ".png"
-                    imwrite(os.path.join(os.path.dirname(path), name), img)
+                    self.imwrite(os.path.join(os.path.dirname(path), name), img)
             self._save_helper(path, frames, **kwargs)
 
         inner_func()
 
     def _save_other_backends_animation(self, path, save_frames, **kwargs):
+        from tqdm.notebook import trange
         n_frames = self.animation_data.n_frames
         base = os.path.basename(path).split(".")[0]
 
@@ -198,7 +211,7 @@ class BaseAnimation:
                 if save_frames:
                     shutil.copy2(tmp_filename, dest)
 
-            frames = [imread(f) for f in tmp_filenames]
+            frames = [self.imread(f) for f in tmp_filenames]
 
         self._save_helper(path, frames, **kwargs)
 
@@ -216,7 +229,7 @@ class BaseAnimation:
             # However, this creates artifacts between consecutive frames.
             # Instead, let's use constant bitrate.
             kwargs.setdefault("bitrate", 3000000)
-        mimwrite(path, frames, **kwargs)
+        self.mimwrite(path, frames, **kwargs)
 
 
 class AnimationData:

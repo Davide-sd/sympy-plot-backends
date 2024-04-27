@@ -17,5 +17,10 @@ vtk
 adaptive>=0.13.1
 control>=0.10.0
 slycot
+imageio
+imageio-ffmpeg
+psutil
+av
+tqdm
 # mayavi>=4.8.0
 # PyQt5>=5.15.7
