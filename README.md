@@ -15,7 +15,7 @@ The following plotting libraries are supported: [Matplolib](https://matplotlib.o
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/iplot_bokeh.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/mpl-streamplot.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/plotly_streamlines_2.png" width=250/>
-<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/animation.gif" width=250/>
+<img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/animation.gif" width=250 style="width:250px;height:auto;"/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/bokeh_domain_coloring.png" width=250/>
 <img src="https://raw.githubusercontent.com/Davide-sd/sympy-plot-backends/master/imgs/K3D-cone-vectors.png" width=250/>
 </div>
