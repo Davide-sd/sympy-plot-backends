@@ -2,6 +2,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.gridspec import GridSpec
 import os
 import pytest
+ipywidgets = pytest.importorskip("ipywidgets")
 from spb import (
     plot, line, graphics, MB, PB, BB, KB, surface, plotgrid, plot3d,
     prange
