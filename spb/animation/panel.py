@@ -216,7 +216,7 @@ def animation(*series, show=True, **kwargs):
            ylim=(-1.25, 1.25)
        )
 
-    .. video:: _static/animations/matplotlib-animation.mp4
+    .. video:: ../_static/animations/matplotlib-animation.mp4
        :width: 600
 
     Animation of a 3D surface using K3D-Jupyter. Here we create an
@@ -245,7 +245,7 @@ def animation(*series, show=True, **kwargs):
        # Use the mouse to properly orient the view and then save the animation
        p.save("3d-animation.mp4")
 
-    .. video:: _static/animations/3d_animation.mp4
+    .. video:: ../_static/animations/3d_animation.mp4
        :width: 600
 
     Evolution of a complex function using the graphics module and Plotly.
@@ -282,7 +282,7 @@ def animation(*series, show=True, **kwargs):
            title="$f(t)=%s$" % latex(f), animation=True, size=(704, 512)
        )
 
-    .. video:: _static/animations/graphics-animation.mp4
+    .. video:: ../_static/animations/graphics-animation.mp4
        :width: 600
 
     Plotgrid animation. Note that:
@@ -320,7 +320,7 @@ def animation(*series, show=True, **kwargs):
        }
        plotgrid(gs=mapping)
 
-    .. video:: _static/animations/plotgrid-animation.mp4
+    .. video:: ../_static/animations/plotgrid-animation.mp4
        :width: 600
 
     """
