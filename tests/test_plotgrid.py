@@ -5,8 +5,6 @@ from spb import (
     plotgrid, PlotGrid, plot, plot3d, plot_contour, plot_vector, plot_polar,
     plot_complex, plot_parametric, plot3d_parametric_line,
 )
-from spb.animation.ipywidgets import Animation as IPYAnimation
-from spb.animation.panel import Animation as PanelAnimation
 from spb.interactive import IPlot
 from spb.plotgrid import _nrows_ncols
 from sympy import symbols, sin, cos, tan, exp, pi, Piecewise
