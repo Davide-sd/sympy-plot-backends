@@ -1,3 +1,4 @@
+sphinx==7.2.6 # verify that builds complete with this version
 matplotlib
 numpydoc
 sphinx-math-dollar
