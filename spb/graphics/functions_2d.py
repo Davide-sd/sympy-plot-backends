@@ -73,14 +73,16 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
 
             if dots:
                 xx, yy = main_series.get_data()
-                if xx[0] != _range[1]:
+                # NOTE: starting with SymPy 1.13, == means structural
+                # equality also for Float/Integer/Rational
+                if not _range[1].equals(xx[0]):
                     correct_list = series if _set.left_open else filled_series
                     correct_list.append(
                         List2DSeries(
                             [xx[0]], [yy[0]], scatter=True,
                             fill=not _set.left_open, **kwargs)
                     )
-                if xx[-1] != _range[2]:
+                if not _range[2].equals(xx[-1]):
                     correct_list = series if _set.right_open else filled_series
                     correct_list.append(
                         List2DSeries(

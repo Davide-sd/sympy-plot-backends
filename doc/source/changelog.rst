@@ -2,6 +2,14 @@
  Changelog
 ==========
 
+v3.4.1
+======
+
+Adjusted code to run with SymPy>=1.13, in which numbers finally follows
+the structural equality rule (for example, ``2.0 == 2``
+returns ``False``).
+
+
 v3.4.0
 ======
 
