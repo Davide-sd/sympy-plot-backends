@@ -253,7 +253,11 @@ class K3DBackend(Plot):
 
         https://stackoverflow.com/q/2262100/2329968
         """
-        R, G, B = RGB
+        # NOTE: starting with NumPy 2.0.0, need to cast to int, otherwise
+        # there is a risk that RGB is an array of dtype=uint8, which
+        # could raise the error:
+        # OverflowError: Python integer 65536 out of bounds for uint8
+        R, G, B = [int(t) for t in RGB]
         return R * 256 ** 2 + G * 256 + B
 
     @classmethod

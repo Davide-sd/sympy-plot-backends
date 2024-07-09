@@ -1003,7 +1003,16 @@ def test_plot_and_save_2(paf_options, adaptive):
 
 
 @pytest.mark.filterwarnings("ignore:The evaluation with NumPy/SciPy failed.")
-@pytest.mark.parametrize("adaptive", [True, False])
+@pytest.mark.parametrize("adaptive",
+    [
+        True,
+        # NOTE: starting with SymPy 1.13.0, code printers went through a
+        # redesign. Seems like NumpyPrinter is no longer able to deal with
+        # Integral, but Scipy can. So, this test case will fail if scipy is
+        # not installed, hence the xfail.
+        pytest.param(False, marks=pytest.mark.xfail(reason="reasons"))
+    ]
+)
 def test_plot_and_save_4(paf_options, adaptive):
     if adaptive and (adaptive_module is None):
         return

@@ -1,6 +1,6 @@
 packaging
 appdirs>=1.4.4
-numpy>=1.21.1
+numpy<2.0.0 # Because slycot doesn't support Numpy 2, yet.
 scipy>=1.7.1
 sympy>=1.10.1
 matplotlib>=3.7.0

@@ -3739,8 +3739,9 @@ class Arrow2DSeries(BaseSeries):
 
     def __str__(self):
         pre = "3D " if self.is_3D else "2D "
-        start = tuple(self.start)
-        end = tuple(s + d for s, d in zip(start, self.direction))
+        cast = lambda t: t if isinstance(t, Expr) else float(t)
+        start = tuple(cast(t) for t in self.start)
+        end = tuple(cast(s + d) for s, d in zip(start, self.direction))
         return self._str_helper(
             pre + f"arrow from {start} to {end}"
         )

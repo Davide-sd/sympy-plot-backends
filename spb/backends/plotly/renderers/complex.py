@@ -143,7 +143,14 @@ def _draw_analytic_landscape_helper(renderer, data):
             locations = list(range(0, len(colorscale)))
             locations = [t / (len(colorscale) - 1) for t in locations]
             for loc, c in zip(locations, colorscale):
-                tmp.append([loc, "rgb" + str(tuple(c))])
+                tmp.append([loc, "rgb" + str(
+                    # NOTE: starting with NumPy 2.0.0, need to cast to int,
+                    # otherwise there is a risk of raising a ValueError,
+                    # because this would happen:
+                    # [0.0, 'rgb(np.uint8(0), np.uint8(252), np.uint8(255))']
+                    # which Plotly is unable to parse
+                    tuple(int(t) for t in c)
+                )])
             colorscale = tmp
             # to avoid jumps in the colormap, first and last colors
             # must be the same.
