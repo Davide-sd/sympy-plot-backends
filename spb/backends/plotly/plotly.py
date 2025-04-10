@@ -372,8 +372,10 @@ class PlotlyBackend(Plot):
         self._colorbar_counter += 1
         return dict(
             x=1 + self._cbs * k,
-            title=label,
-            titleside="right",
+            title=dict(
+                text=label,
+                side="right"
+            ),
             # scale down the color bar to make room for legend
             len=(
                 self._cbsdf if (sc and (self.legend or (self.legend is None)))
