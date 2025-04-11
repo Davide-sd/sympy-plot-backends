@@ -89,6 +89,7 @@ def test_convert_to_plotly():
                     [
                         isinstance(t[1], str)
                         and ((t[1][:3] == "rgb") or (t[1][0] == "#"))
+                        and ("int" not in t)
                         for t in r
                     ]
                 )

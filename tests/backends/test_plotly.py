@@ -4,6 +4,8 @@ go = pytest.importorskip("plotly").graph_objects
 from spb.series import Parametric3DLineSeries
 import numpy as np
 import os
+import colorcet as cc
+import matplotlib.cm as cm
 from sympy import Symbol
 from tempfile import TemporaryDirectory
 from spb import (
@@ -1630,3 +1632,18 @@ def test_hvlines():
         [l2.x0, l2.x1, l2.y0, l2.y1]
     )
     p.backend.update_interactive({a: 3, b: 4})
+
+
+def test_matplotlib_colormap_with_PlotlyBackend():
+    class NewPB(PB):
+        colormaps = ["solar", "aggrnyl", cm.coolwarm, cc.kbc]
+
+    expr = cos(x**2 + y**2)
+    p = plot3d(
+        (expr, (x, -2, 0), (y, -2, 0)),
+        (expr, (x, 0, 2), (y, -2, 0)),
+        (expr, (x, -2, 0), (y, 0, 2)),
+        (expr, (x, 0, 2), (y, 0, 2)),
+        n = 20, backend=NewPB, use_cm=True, show=False
+    )
+    fig = p.fig

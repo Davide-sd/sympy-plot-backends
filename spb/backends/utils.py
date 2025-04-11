@@ -109,7 +109,7 @@ def convert_colormap(cm, to, n=256):
             discr = np.linspace(0, 1, n)
             colors = (cm(discr) * 255).astype(int)
             r = [
-                [loc, "rgb" + str(tuple(c[:-1]))]
+                [loc, "rgb(%d, %d, %d)" % tuple(c[:-1])]
                 for loc, c in zip(discr, colors)
             ]
         elif isinstance(cm, np.ndarray) or all(
