@@ -66,11 +66,11 @@ def _draw_domain_coloring_helper(renderer, data):
                         "&#x3C0;",
                     ],
                     x=1 + 0.1 * p._colorbar_counter,
-                    title=(
-                        "Argument" if s.get_label(False) == str(s.expr)
-                        else s.get_label(p._use_latex)
+                    title=dict(
+                        text="Argument" if s.get_label(False) == str(s.expr)
+                        else s.get_label(p._use_latex),
+                        side="right",
                     ),
-                    titleside="right",
                 ),
                 showscale=True,
             ),
@@ -163,8 +163,10 @@ def _draw_analytic_landscape_helper(renderer, data):
         showscale=s.colorbar,
         colorbar=dict(
             x=1 + 0.1 * p._colorbar_counter,
-            title="Argument",
-            titleside="right",
+            title=dict(
+                text="Argument",
+                side="right",
+            ),
             tickvals=[
                 -np.pi,
                 -np.pi / 2,
