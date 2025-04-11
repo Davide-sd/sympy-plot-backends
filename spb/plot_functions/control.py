@@ -1186,7 +1186,7 @@ def plot_nyquist(*systems, **kwargs):
                e: (2, 0, 10),
                f: (3, 0, 10),
            },
-           m_circles=False
+           m_circles=False,
            xlim=(-1, 4), ylim=(-2.5, 2.5), aspect="equal"
        )
 
