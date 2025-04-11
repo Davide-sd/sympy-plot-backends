@@ -2,6 +2,14 @@
  Changelog
 ==========
 
+v3.4.2
+======
+
+* small update to ``PlotlyBackend`` and related renderers in order to keep it
+  up-to-date with Plotly.
+  Thanks to `zarstensen  <https://github.com/zarstensen>`_ for the fix.
+
+
 v3.4.1
 ======
 
@@ -55,7 +63,7 @@ v3.3.0
     * Added support for widgets of Holoviz Panel.
 
     * Updated plotgrid to work with the new architecture.
-  
+
   * Improvements to documentation.
 
 * Fixed bug with legend of ``plot_vector``.
@@ -137,9 +145,9 @@ v3.1.0
     slightly improve performance. In particular, the mixin class
     ``CommonUniformEvaluation`` has been introduced, which handles all the
     machinery necessary to evaluate symbolic expressions. Series classes
-    may or may not inherit from it. ``CommonUniformEvaluation`` allows for a 
+    may or may not inherit from it. ``CommonUniformEvaluation`` allows for a
     better separation of scopes: data series that don't need that code are
-    faster to instantiate. 
+    faster to instantiate.
 
   * Breaking: refactoring of ``NyquistLineSeries`` in order to use the
     ``control`` module. In particular, the ``get_data`` method now returns
@@ -220,7 +228,7 @@ v3.0.0
 
 * Reorganized old plotting functions (whose name's start with ``plot_``)
   into a new submodule: ``spb.plot_functions``. In particular:
-  
+
   * Deprecated ``spb.vectors``.  Its content is now into
     ``spb.plot_functions.vectors``.
   * Deprecated ``spb.functions``. Its content is now into
@@ -298,9 +306,9 @@ v2.4.0
 
   * fixed bug with axis labels of ``plot_real_imag`` when creating contour
     plots.
-  
+
   * fixed bug with colorbar label of 3d plots with lambda functions.
-  
+
 
 v2.3.0
 ======
@@ -326,13 +334,13 @@ v2.3.0
 * Introducing the control module, which contains plotting functions for some
   of the common plots used in control system. This is an improved version of
   what is currently present on SymPy (version 1.12), because:
-  
+
     * it allows to plot multiple systems simultaneously, making it easier to
       compare different transfer functions.
     * it works both on Matplotlib, Plotly and Bokeh.
     * it allows to create interactive-widgets plots, allowing the study of
       parametric systems.
-  
+
   Thanks to all SymPy developers that worked on the
   ``sympy.physics.control.control_plots`` module.
 
@@ -378,11 +386,11 @@ v2.1.0
 
   * implemented the ``color`` keyword argument, to set the color of line or
     region being plotted.
-  
+
   * implemented the ``border_color`` keyword argument: this will add a new
     data series to represent a limiting border when plotting inequalities
     (``>, >=, <, <=``).
-  
+
   * reduced the number of discretization points from 1000 to 100. Thanks to
     improvements to the backend and data generation, same quality can be
     achieved much more efficiently.
@@ -399,7 +407,7 @@ v2.1.0
 
   * fixed bad behavior when plotting filled geometries with interactive
     widgets.
-  
+
   * fixed missing legend entries when combining different types of plots.
 
 * Bug fixes on ``K3DBackend``:
@@ -444,12 +452,12 @@ code to load the new configuration settings:
     been removed. The interactive functionalities have been integrated on
     regular ``*Series``. This greatly simplifies the code base, meaning bug
     fixes should take less time to implement.
-  
+
   * Refactoring of ``iplot`` to take into account the aforementioned
     changes. In particular, interactive widget plots are now tighly integrated
     into the usual plotting functions. This improves user experience and
     simplifies the code base.
-  
+
   * The ``spb.interactive.create_series`` function has been removed.
 
 * Changed the default evaluation algorithm to a uniform sampling strategy,
@@ -484,14 +492,14 @@ code to load the new configuration settings:
   * Implemented the ``template`` keyword argument for interactive widget plots
     with Holoviz's Panel and ``servable=True``: user can further customize the
     layout of the web application, or can provide their own Panel's templates.
-  
+
   * The module is now fully interactive. Thanks to the ``prange`` class, it is
     possible to specify parametric ranges. Explore the examples in the module
     documentation to find out how to use it.
 
 * ``color_func`` now support symbolic expressions.
 
-* ``line_color`` and ``surface_color`` are now deprecated in favor of 
+* ``line_color`` and ``surface_color`` are now deprecated in favor of
   ``color_func``.
 
 * ``plot_implicit``:
@@ -562,10 +570,10 @@ v1.6.4
 ======
 
 * ``MatplotlibBackend``:
-  
+
   * improved ``aspect`` logic. It is now able to support the new values for
     3D plots for Matplotlib>=3.6.0.
-  
+
   * exposed the ``ax`` attribute to easily retrieve the plot axis.
 
 * Added ``camera`` keyword arguments to backends in order to set the 3D view
@@ -600,7 +608,7 @@ v1.6.2
 
   * if the number of points of a line is greater than some threshold, the
     backend will switch to ``go.Scattergl``. This improves performance.
-  
+
   * Fixed bug with interactive widget contour plot and update of colorbar.
 
 * ``MatplotlibBackend`` can now combine 3d plots with contour plots.
@@ -619,7 +627,7 @@ v1.6.1
 
   * Changed ``cgf["interactive"]["theme"]`` to ``"light"``: interactive plots
     served on a new browser window will use a light theme.
-  
+
   * Changed ``cgf["bokeh"]["update_event"]`` to ``False``: Bokeh won't update
     the plot with new data as dragging or zooming operations are performed.
 
@@ -631,7 +639,7 @@ v1.6.1
   * Added label capability to ``plot_implicit``.
 
   * ``show()`` method now accepts keyword arguments. This is useful to detach
-    the plot from a non-interactive console. 
+    the plot from a non-interactive console.
 
 * Added ``dots`` keyword argument to ``plot_piecewise`` to choose wheter to
   show circular markers on endpoints.
@@ -701,7 +709,7 @@ v1.5.0
 * Fixed bug with ``plot3d`` and ``plot_contour`` when dealing with instances
   of ``BaseScalar``.
 
-* Added ``normalize`` keyword argument to ``plot_vector`` and 
+* Added ``normalize`` keyword argument to ``plot_vector`` and
   ``plot_complex_vector`` to visualize quivers with unit length.
 
 * Improve documentation of ``plot_vector`` and ``plot_complex_vector``.
@@ -712,7 +720,7 @@ v1.5.0
 
   * it is now be able to plot more than 14 2d/3d parametric lines when
     ``use_cm=False``.
-  
+
   * improved logic to show colorbars on 3D surface plots.
 
   * added support for custom aspect ratio on 3D plots.
@@ -731,7 +739,7 @@ v1.5.0
 
   * Inside ``plot_parametric`` and ``plot3d_parametric_line``, the ``tz``
     keyword argument has been renamed to ``tp``.
-  
+
   * Removed Mayavi from setup dependencies. Mayavi is difficult to install:
     can't afford the time it requires for proper setup and testing.
     ``MayaviBackend`` is still available to be used "as is".
@@ -809,7 +817,7 @@ v1.2.1
     latex representations were generated at different times and in different
     functions. Now, they are generated simultaneously inside the ``__init__``
     method of a data series.
-  
+
   * Changes in names of functions that are meant to remain private:
 
     * ``adaptive_eval`` -> ``_adaptive_eval``.
@@ -832,7 +840,7 @@ v1.2.0
 
   * Possibility to plot and customize multiple expressions with a single
     function call. For example, for line plots:
-    
+
     .. code-block:: python
 
        plot(
@@ -870,7 +878,7 @@ v1.2.0
 
   * Fixed a bug with line series when plotting complex-related function
     with ``adaptive=False``.
-  
+
   * Fixed bug with ``lambdify`` and ``modules="sympy"``.
 
   * Fixed bug with the number of discretization points of vector series.
@@ -945,7 +953,7 @@ v1.1.2
 * It is now possible to pass a float number of discretization points, for
   example ``n=1e04``.
 * added ``label`` keyword argument to plot functions.
-  
+
 
 
 v1.1.1
