@@ -8,6 +8,8 @@ v3.4.2
 * small update to ``PlotlyBackend`` and related renderers in order to keep it
   up-to-date with Plotly.
   Thanks to `zarstensen  <https://github.com/zarstensen>`_ for the fix.
+* small update to ``Implicid2DRenderer`` in order to keep it
+  up-to-date with Matplotlib.
 
 
 v3.4.1
