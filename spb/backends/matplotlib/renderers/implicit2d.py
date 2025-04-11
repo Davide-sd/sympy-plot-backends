@@ -1,4 +1,5 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
+from packaging import version
 
 
 def _matplotlib_list(interval_list):
@@ -82,11 +83,19 @@ def _draw_implicit2d_helper(renderer, data):
 
 def _update_implicit2d_helper(renderer, data, handle):
     p = renderer.plot
+    current_version = version.parse(p.matplotlib.__version__)
+    v_3_10_0 = version.parse("3.10.0")
+
     if len(data) == 2:
         raise NotImplementedError
     else:
-        for c in handle[0].collections:
-            c.remove()
+        if current_version < v_3_10_0:
+            for c in handle[0].collections:
+                c.remove()
+        else:
+            # NOTE: API changed with Matplotlib 3.10.0
+            # https://matplotlib.org/stable/api/prev_api_changes/api_changes_3.10.0.html#numdecs-parameter-and-attribute-of-loglocator
+            handle[0].remove()
         xx, yy, zz, plot_type = data
         kw = handle[1]
         if plot_type == "contour":
