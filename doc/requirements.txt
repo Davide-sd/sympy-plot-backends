@@ -16,3 +16,4 @@ kaleido
 # to satidfy ipympl requirements we need
 ipywidgets<8,>=7.6.0
 sphinxcontrib-video
+anywidget # for plotly v6+
