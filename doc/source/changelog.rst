@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v3.4.3
+======
+
+* Fixed bug with retrieval of free symbols from symbolic expressions.
+
+
 v3.4.2
 ======
 

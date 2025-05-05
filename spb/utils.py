@@ -2,7 +2,7 @@ from spb.defaults import cfg
 from sympy import (
     Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed, ImageSet,
     FiniteSet, Basic, Float, Integer, Rational, Poly, fraction, exp,
-    NumberSymbol
+    NumberSymbol, IndexedBase
 )
 from sympy.vector import BaseScalar
 from sympy.core.function import AppliedUndef
@@ -170,11 +170,35 @@ def _get_free_symbols(exprs):
     if all(callable(e) for e in exprs):
         return set()
 
-    free = set().union(*[e.atoms(Indexed) for e in exprs])
-    free = free.union(*[e.atoms(AppliedUndef) for e in exprs])
-    if len(free) > 0:
-        return free
-    return set().union(*[e.free_symbols for e in exprs])
+    # NOTE:
+    # 1. srepr(IndexedBase("a")) is "IndexedBase(Symbol('a'))"
+    #    So, if expr = IndexedBase("a")[0] + 1, it follows that
+    #    expr.free_symbols is {IndexedBase("a")[0], Symbol("a")}
+    #    This must be filtered to {IndexedBase("a")[0]}
+    # 2. Let a = IndexedBase("a"). Even though as of sympy 1.14.0 it is
+    #    possible to write expressions like a + 1, for simplicity,
+    #    I don't allow them, because of Note 1, which would increase
+    #    complexity in this code.
+
+    undefined_func = set().union(*[e.atoms(AppliedUndef) for e in exprs])
+    undefined_func_args = set().union(*[f.args for f in undefined_func])
+    indexed_base = set().union(*[e.atoms(IndexedBase) for e in exprs])
+    indexed_base_args = set().union(*[i.args for i in indexed_base])
+
+    # select all free symbols, be them instances of Symbol, Indexed
+    # or the arguments of IndexedBase
+    free_symbols = set().union(*[e.free_symbols for e in exprs])
+    # remove instances of IndexedBase
+    free_symbols = free_symbols.difference(indexed_base)
+    # remove free symbols that are arguments of applied undef functions
+    # it is unlikely that these symbols are being used as parameters as well.
+    free_symbols = free_symbols.difference(undefined_func_args)
+    # remove free symbols that are arguments of indexed base
+    free_symbols = free_symbols.difference(indexed_base_args)
+
+    free = free_symbols.union(undefined_func)
+
+    return free
 
 
 def _check_arguments(args, nexpr, npar, **kwargs):

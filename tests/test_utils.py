@@ -9,10 +9,10 @@ from spb.utils import (
     _create_missing_ranges, _plot_sympify,
     _validate_kwargs, prange, extract_solution,
     tf_to_control, tf_to_sympy, is_discrete_time, tf_find_time_delay,
-    is_number
+    is_number, _get_free_symbols
 )
 from sympy import (
-    symbols, Expr, Tuple, Integer, sin, cos, Matrix,
+    symbols, Expr, Tuple, Integer, sin, cos, Matrix, Function, IndexedBase,
     I, Polygon, solveset, FiniteSet, ImageSet, exp, Rational, Float, pi
 )
 from sympy.external import import_module
@@ -571,3 +571,32 @@ def test_tf_find_time_delay():
 )
 def test_is_number(num, expected):
     assert is_number(num) is expected
+
+
+def test_get_free_symbols():
+    x, y, z, t = symbols("x, y, z, t")
+    f = Function("f")(t)
+    g = Function("f")(x)
+    w = IndexedBase("w")
+
+    e = x + y + 1
+    assert _get_free_symbols(e) == {x, y}
+
+    e = f + 1
+    assert _get_free_symbols(e) == {f}
+
+    e = w[0] + 1
+    assert _get_free_symbols(e) == {w[0]}
+
+    e = w + 1
+    assert _get_free_symbols(e) == set()
+
+    e = x + y + z + f
+    assert _get_free_symbols(e) == {x, y, z, f}
+
+    e = f + g
+    assert _get_free_symbols(e) == {f, g}
+
+    e = f + g + y
+    assert _get_free_symbols(e) == {f, g, y}
+
