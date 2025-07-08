@@ -5,6 +5,8 @@ from bokeh.models import (
     ColumnDataSource, Span, Arrow, LabelSet, Label, Line as BLine, Scatter,
     MultiLine
 )
+from bokeh.io import curdoc
+from bokeh.themes import built_in_themes
 import os
 from tempfile import TemporaryDirectory
 import numpy as np
@@ -1533,3 +1535,18 @@ def test_hvlines():
     assert lines[0].dimension == "width"
     assert lines[1].dimension == "height"
     p.backend.update_interactive({a: 3, b: 4})
+
+
+def test_bokeh_theme():
+    p1 = plot(sin(x), backend=BB, show=False)
+    p2 = plot(cos(x), backend=BB, show=False, theme="dark_minimal")
+
+    p3 = p1 + p2
+    p4 = p2 + p1
+    assert p1.theme == "caliber"
+    assert p2.theme == "dark_minimal"
+    assert p3.theme == "caliber"
+    assert p4.theme == "dark_minimal"
+
+    # TODO: how to compare themes on figures?????
+

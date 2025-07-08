@@ -1647,3 +1647,19 @@ def test_matplotlib_colormap_with_PlotlyBackend():
         n = 20, backend=NewPB, use_cm=True, show=False
     )
     fig = p.fig
+
+
+def test_plotly_theme():
+    p1 = plot(sin(x), backend=PB, show=False)
+    p2 = plot(cos(x), backend=PB, show=False, theme="plotly_dark")
+
+    p3 = p1 + p2
+    p4 = p2 + p1
+    assert p1.theme == "seaborn"
+    assert p2.theme == "plotly_dark"
+    assert p3.theme == "seaborn"
+    assert p4.theme == "plotly_dark"
+
+    assert p1.fig.layout.template != p2.fig.layout.template
+    assert p3.fig.layout.template == p1.fig.layout.template
+    assert p4.fig.layout.template == p2.fig.layout.template
