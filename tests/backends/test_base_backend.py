@@ -241,25 +241,29 @@ def test_number_of_renderers():
         do_test(BB)
 
 
-def test_axis_scales():
+@pytest.mark.parametrize("axis_scale", [
+    "linear",
+    "log"
+])
+def test_axis_scales(axis_scale):
     # by default, axis scales should be set to None: this allows users to
     # extend plot capabilities to create plots with categoricals axis.
     # See: https://github.com/Davide-sd/sympy-plot-backends/issues/29
     x = symbols("x")
     p = plot(sin(x), backend=MB, show=False, n=5)
-    assert all(t is None for t in [p.xscale, p.yscale, p.zscale])
+    assert all(t is "linear" for t in [p.xscale, p.yscale, p.zscale])
 
-    p = plot(sin(x), backend=MB, show=False, n=5, xscale="linear")
-    assert p.xscale == "linear"
-    assert all(t is None for t in [p.yscale, p.zscale])
+    p = plot(sin(x), backend=MB, show=False, n=5, xscale=axis_scale)
+    assert p.xscale == axis_scale
+    assert all(t is "linear" for t in [p.yscale, p.zscale])
 
-    p = plot(sin(x), backend=MB, show=False, n=5, yscale="linear")
-    assert p.yscale == "linear"
-    assert all(t is None for t in [p.xscale, p.zscale])
+    p = plot(sin(x), backend=MB, show=False, n=5, yscale=axis_scale)
+    assert p.yscale == axis_scale
+    assert all(t is "linear" for t in [p.xscale, p.zscale])
 
-    p = plot(sin(x), backend=MB, show=False, n=5, zscale="linear")
-    assert p.zscale == "linear"
-    assert all(t is None for t in [p.xscale, p.yscale])
+    p = plot(sin(x), backend=MB, show=False, n=5, zscale=axis_scale)
+    assert p.zscale == axis_scale
+    assert all(t is "linear" for t in [p.xscale, p.yscale])
 
 
 @pytest.mark.parametrize(
