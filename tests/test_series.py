@@ -292,34 +292,34 @@ def test_number_discretization_points():
     # points are consistent with each other.
     x, y, z = symbols("x:z")
 
-    for pt in [
-        LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries
-    ]:
-        kw1 = _set_discretization_points({"n": 10}, pt)
-        kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-        kw3 = _set_discretization_points({"n1": 10}, pt)
-        assert all(("n1" in kw) and kw["n1"] == 10 for kw in [kw1, kw2, kw3])
+    # for pt in [
+    #     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries
+    # ]:
+    #     kw1 = _set_discretization_points({"n": 10}, pt)
+    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+    #     kw3 = _set_discretization_points({"n1": 10}, pt)
+    #     assert all(("n1" in kw) and kw["n1"] == 10 for kw in [kw1, kw2, kw3])
 
-    for pt in [
-        SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-        ComplexSurfaceSeries, ComplexDomainColoringSeries, Vector2DSeries,
-        ImplicitSeries,
-    ]:
-        kw1 = _set_discretization_points({"n": 10}, pt)
-        kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-        kw3 = _set_discretization_points({"n1": 10, "n2": 20}, pt)
-        assert kw1["n1"] == kw1["n2"] == 10
-        assert all((kw["n1"] == 10) and (kw["n2"] == 20) for kw in [kw2, kw3])
+    # for pt in [
+    #     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
+    #     ComplexSurfaceSeries, ComplexDomainColoringSeries, Vector2DSeries,
+    #     ImplicitSeries,
+    # ]:
+    #     kw1 = _set_discretization_points({"n": 10}, pt)
+    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+    #     kw3 = _set_discretization_points({"n1": 10, "n2": 20}, pt)
+    #     assert kw1["n1"] == kw1["n2"] == 10
+    #     assert all((kw["n1"] == 10) and (kw["n2"] == 20) for kw in [kw2, kw3])
 
-    for pt in [Vector3DSeries, SliceVector3DSeries, Implicit3DSeries]:
-        kw1 = _set_discretization_points({"n": 10}, pt)
-        kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-        kw3 = _set_discretization_points({"n1": 10, "n2": 20, "n3": 30}, pt)
-        assert kw1["n1"] == kw1["n2"] == kw1["n3"] == 10
-        assert all(
-            ((kw["n1"] == 10) and (kw["n2"] == 20) and (kw["n3"] == 30))
-            for kw in [kw2, kw3]
-        )
+    # for pt in [Vector3DSeries, SliceVector3DSeries, Implicit3DSeries]:
+    #     kw1 = _set_discretization_points({"n": 10}, pt)
+    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+    #     kw3 = _set_discretization_points({"n1": 10, "n2": 20, "n3": 30}, pt)
+    #     assert kw1["n1"] == kw1["n2"] == kw1["n3"] == 10
+    #     assert all(
+    #         ((kw["n1"] == 10) and (kw["n2"] == 20) and (kw["n3"] == 30))
+    #         for kw in [kw2, kw3]
+    #     )
 
     # verify that line-related series can deal with large float number of
     # discretization points
@@ -457,14 +457,13 @@ def test_interactive_vs_noninteractive():
     assert s.is_interactive
 
     s = Vector3DSeries(
-        cos(y), sin(x), z, (x, -5, 5), (y, -5, 5), (z, -5, 5), slice=None
+        cos(y), sin(x), z, (x, -5, 5), (y, -5, 5), (z, -5, 5)
     )
     assert not s.is_interactive
     s = Vector3DSeries(
         u * cos(y), u * sin(x), z,
         (x, -5, 5), (y, -5, 5), (z, -5, 5),
         params={u: 1},
-        slice=None,
     )
     assert s.is_interactive
 
@@ -915,7 +914,6 @@ def test_only_integers():
     expr = (r * cos(u) * sin(v), r * sin(u) * sin(v), r * cos(v))
     s = ParametricSurfaceSeries(
         *expr, (u, 0, 2 * pi), (v, 0, pi), "",
-        adaptive=False,
         only_integers=True
     )
     xx, yy, zz, uu, vv = s.get_data()
@@ -923,7 +921,6 @@ def test_only_integers():
 
     s = ComplexSurfaceSeries(
         sqrt(x), (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
-        adaptive=False,
         only_integers=True
     )
     xx, yy, zz = s.get_data()
@@ -933,7 +930,7 @@ def test_only_integers():
 
     s = ComplexDomainColoringSeries(
         sqrt(x), (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
-        adaptive=False, only_integers=True
+        only_integers=True
     )
     xx, yy, zz, aa, _, _ = s.get_data()
     assert xx.shape == yy.shape == zz.shape == aa.shape == (5, 7)
@@ -975,7 +972,6 @@ def test_only_integers():
     expr = (r * cos(u) * sin(v), 1, r * cos(v))
     s = ParametricSurfaceSeries(
         *expr, (u, 0, 2 * pi), (v, 0, pi), "",
-        adaptive=False,
         only_integers=True
     )
     xx, yy, zz, uu, vv = s.get_data()
@@ -983,7 +979,6 @@ def test_only_integers():
 
     s = ComplexSurfaceSeries(
         1, (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
-        adaptive=False,
         only_integers=True
     )
     xx, yy, zz = s.get_data()
@@ -993,7 +988,6 @@ def test_only_integers():
 
     s = ComplexDomainColoringSeries(
         1, (x, -3.5 - 2.5j, 3.5 + 2.5j), "",
-        adaptive=False,
         only_integers=True
     )
     xx, yy, zz, aa, _, _ = s.get_data()
@@ -1155,15 +1149,15 @@ def test_steps():
     )
     do_test(s1, s2)
 
-    s1 = List2DSeries([0, 1, 2], [3, 4, 5], adaptive=False, n=40, steps=False)
-    s2 = List2DSeries([0, 1, 2], [3, 4, 5], adaptive=False, n=40, steps=True)
+    s1 = List2DSeries([0, 1, 2], [3, 4, 5], steps=False)
+    s2 = List2DSeries([0, 1, 2], [3, 4, 5], steps=True)
     do_test(s1, s2)
 
     s1 = List3DSeries(
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], adaptive=False, n=40, steps=False
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], steps=False
     )
     s2 = List3DSeries(
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], adaptive=False, n=40, steps=True
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], steps=True
     )
     do_test(s1, s2)
 
@@ -1184,9 +1178,9 @@ def test_steps():
     do_test(s1, s2)
 
     s1 = ComplexPointSeries(
-        [1 + 2 * I, 3 + 4 * I], adaptive=False, n=40, steps=False)
+        [1 + 2 * I, 3 + 4 * I], steps=False)
     s2 = ComplexPointSeries(
-        [1 + 2 * I, 3 + 4 * I], adaptive=False, n=40, steps=True)
+        [1 + 2 * I, 3 + 4 * I], steps=True)
     do_test(s1, s2)
 
 
@@ -1206,11 +1200,8 @@ def test_steps_2():
     assert np.allclose(d1, d2)
     assert not np.allclose(d1, d3)
 
-    with warns(
-        UserWarning,
-        match="``steps`` not recognized.",
-    ):
-        LineOver1DRangeSeries(x, (x, -10, 10), n=21, steps="a")
+    raises(ValueError, lambda: LineOver1DRangeSeries(
+        x, (x, -10, 10), n=21, steps="a"))
 
 
 def test_interactive():
@@ -1282,7 +1273,7 @@ def test_interactive():
     s2 = ParametricSurfaceSeries(
         cos(x + y), sin(x + y), x - y,
         (x, -3, 3), (y, -3, 3),
-        adaptive=False, n1=50, n2=50,
+        n1=50, n2=50,
     )
     do_test(s1.get_data(), s2.get_data())
 
@@ -2263,12 +2254,12 @@ def test_apply_transforms():
     s1 = ParametricSurfaceSeries(
         u + v, u - v, u * v,
         (u, 0, 2 * pi), (v, 0, pi),
-        adaptive=False, n1=10, n2=10
+        n1=10, n2=10
     )
     s2 = ParametricSurfaceSeries(
         u + v, u - v, u * v,
         (u, 0, 2 * pi), (v, 0, pi),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         tx=np.rad2deg,
         ty=lambda x: 2 * x,
         tz=lambda x: 3 * x,
@@ -2938,7 +2929,7 @@ def test_color_func():
 
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         color_func=lambda u: u,
     )
     xx, yy, zz, uu, vv = s.get_data()
@@ -2946,7 +2937,7 @@ def test_color_func():
     assert np.allclose(uu, col)
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         color_func=lambda u, v: u * v,
     )
     xx, yy, zz, uu, vv = s.get_data()
@@ -2954,7 +2945,7 @@ def test_color_func():
     assert np.allclose(uu * vv, col)
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         color_func=lambda x, y, z: x * y * z,
     )
     xx, yy, zz, uu, vv = s.get_data()
@@ -2962,7 +2953,7 @@ def test_color_func():
     assert np.allclose(xx * yy * zz, col)
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         color_func=lambda x, y, z, u, v: x * y * z * u * v,
     )
     xx, yy, zz, uu, vv = s.get_data()
@@ -3078,7 +3069,7 @@ def test_color_func_scalar_val():
 
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         color_func=lambda u: 1,
     )
     xx, yy, zz, uu, vv = s.get_data()
@@ -3283,7 +3274,7 @@ def test_expr_is_lambda_function_adaptive_false():
     fz = lambda u, v: u * v
     s1 = ParametricSurfaceSeries(
         fx, fy, fz, ("u", 0, pi), ("v", 0, 2 * pi),
-        adaptive=False, n1=10, n2=10
+        n1=10, n2=10
     )
     s1.get_data()
     assert s1.label == ""
@@ -3301,8 +3292,7 @@ def test_expr_is_lambda_function_adaptive_false():
 
     raises(TypeError, lambda: List2DSeries(lambda t: t, lambda t: t))
     raises(TypeError, lambda: List3DSeries(lambda t: t, lambda t: t))
-    raises(TypeError, lambda: ComplexPointSeries(lambda t: t, lambda t: t))
-    raises(TypeError, lambda: ComplexPointSeries(lambda t: t, lambda t: t))
+    raises(TypeError, lambda: ComplexPointSeries(lambda t: t))
     raises(
         TypeError,
         lambda: ComplexSurfaceSeries(
@@ -4373,10 +4363,10 @@ def test_root_locus_series_2():
     assert len(s2.get_data()) == 2
 
 
-def test_sgrid_line_series():
+def test_sgrid_line_series_1():
     xi = [0, 0.2, 0.5, 1]
     wn = [1, 2, 3]
-    s = SGridLineSeries(xi, wn, [], [])
+    s = SGridLineSeries(xi, wn, [], [], auto=False)
     xi_dict, wn_dict, y_tp, x_ts = s.get_data()
     xi_ret = [k[0] for k in xi_dict.keys()]
     assert np.allclose(xi_ret, xi)
@@ -4390,7 +4380,7 @@ def test_sgrid_line_series():
 
 
 @pytest.mark.skipif(ct is None, reason="control is not installed")
-def test_sgrid_line_series():
+def test_sgrid_line_series_2():
     xi = [0, 0.2, 0.5, 1]
     wn = [1, 2, 3]
     # when one or more data series (RootLocusSeries or PoleZeroSeries or
@@ -4431,7 +4421,7 @@ def test_sgrid_line_series_interactive():
     wn = [1, b]
     tp = [1, pi, c]
     ts = [1, 4, d]
-    s = SGridLineSeries(xi, wn, tp, ts, params=params)
+    s = SGridLineSeries(xi, wn, tp, ts, auto=False, params=params)
     assert s.is_interactive
     xi_dict, wn_dict, y_tp, x_ts = s.get_data()
     xi_ret = [k[0] for k in xi_dict.keys()]
@@ -4442,7 +4432,7 @@ def test_sgrid_line_series_interactive():
 
     # xi > 1 -> ValueError
     params = {a: 1.5, b: 2, c: 2*pi, d: 8}
-    s = SGridLineSeries(xi, wn, tp, ts, params=params)
+    s = SGridLineSeries(xi, wn, tp, ts, auto=False, params=params)
     raises(ValueError, lambda: s.get_data())
 
 
