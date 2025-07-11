@@ -16,7 +16,7 @@ def _draw_geometry_helper(renderer, data):
     c = p._ax.fill(x, y, **kw)
     proxy_artist = p.Rectangle(
         (0, 0), 1, 1,
-        color=color, label=s.get_label(p._use_latex)
+        color=color, label=s.get_label(p.use_latex)
     )
     if s.show_in_legend:
         p._legend_handles.append(proxy_artist)

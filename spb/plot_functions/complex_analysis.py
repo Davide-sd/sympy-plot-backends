@@ -255,7 +255,8 @@ def _set_axis_labels(series, kwargs):
     if (
         kwargs.get("aspect", None) is None) and any(
             (s.is_complex and s.is_domain_coloring and (not s.is_3D))
-            or s.is_point for s in series
+            # or s.is_point
+            for s in series
     ):
         # set aspect equal for 2D domain coloring or complex points
         kwargs.setdefault("aspect", "equal")

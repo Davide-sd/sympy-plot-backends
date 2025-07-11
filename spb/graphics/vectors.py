@@ -306,17 +306,18 @@ def vector_field_2d(
             "visualization might be flipped."
         )
 
+    scalar = kwargs.get("scalar", True)
+    kwargs.setdefault("use_cm", False if scalar else True)
+    is_streamlines = kwargs.get("streamlines", False)
     params = kwargs.get("params", {})
     ranges = _preprocess_multiple_ranges(
         [expr1, expr2], [range1, range2], 2, params)
-    is_streamlines = kwargs.get("streamlines", False)
     s = Vector2DSeries(
         expr1, expr2, *ranges, label,
         rendering_kw=quiver_kw if not is_streamlines else stream_kw,
         **kwargs
     )
 
-    scalar = kwargs.get("scalar", True)
     if scalar is True:
         if not is_vec_lambda_function:
             scalar_field = sqrt(expr1**2 + expr2**2)
@@ -633,9 +634,10 @@ def vector_field_3d(
         )
 
     params = kwargs.get("params", {})
+    is_streamlines = kwargs.get("streamlines", False)
+    _slice = kwargs.pop("slice", None)
     ranges = _preprocess_multiple_ranges(
         [expr1, expr2, expr3], [range1, range2, range3], 3, params)
-    is_streamlines = kwargs.get("streamlines", False)
     series = [
         Vector3DSeries(
             expr1, expr2, expr3, *ranges, label,
@@ -644,7 +646,6 @@ def vector_field_3d(
         )
     ]
 
-    _slice = kwargs.pop("slice", None)
     if _slice is None:
         return series
 

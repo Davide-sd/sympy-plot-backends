@@ -1,3 +1,4 @@
+import param
 import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
@@ -135,9 +136,9 @@ class BokehBackend(Plot):
     _allowed_keys = Plot._allowed_keys + [
         "markers", "annotations", "fill", "rectangles"]
 
-    colorloop = []
-    colormaps = []
-    cyclic_colormaps = []
+    # colorloop = []
+    # colormaps = []
+    # cyclic_colormaps = []
 
     renderers_map = {
         LineOver1DRangeSeries: Line2DRenderer,
@@ -172,6 +173,9 @@ class BokehBackend(Plot):
     ngrid_line_kw = {"line_color": "#aaa", "line_dash": "dotted"}
     mcircles_line_kw = {"line_color": "#aaa", "line_dash": "dotted"}
 
+    _fig = param.Parameter(default=None, doc="""
+        The figure in which symbolic expressions will be plotted into.""")
+
     def __init__(self, *args, **kwargs):
         self.np = import_module('numpy')
         self.bokeh = import_module(
@@ -196,27 +200,30 @@ class BokehBackend(Plot):
             catch=(RuntimeError,))
         cm = matplotlib.cm
 
-        self.colorloop = bp.Category10[10]
-        self.colormaps = [cc.bmy, "aggrnyl", cc.kbc, cc.bjy, "plotly3"]
-        self.cyclic_colormaps = [
+        kwargs.setdefault("colorloop", bp.Category10[10])
+        kwargs.setdefault("colormaps", [
+            cc.bmy, "aggrnyl", cc.kbc, cc.bjy, "plotly3"])
+        kwargs.setdefault("cyclic_colormaps", [
             cm.hsv, cm.twilight, cc.cyclic_mygbm_30_95_c78_s25
-        ]
+        ])
+
+        kwargs.setdefault("use_latex", cfg["bokeh"]["use_latex"])
+        kwargs.setdefault("theme", cfg["bokeh"]["theme"])
+        kwargs.setdefault("grid", cfg["bokeh"]["grid"])
+        kwargs.setdefault("update_event", cfg["bokeh"]["update_event"])
 
         # _init_cyclers needs to know if an existing figure was provided
-        self._use_existing_figure = kwargs.get("fig", False)
-        self._fig = None
-        self._init_cyclers()
+        self._use_existing_figure = "fig" in kwargs
+
         super().__init__(*args, **kwargs)
+
+        self._init_cyclers()
 
         if self.polar_axis:
             raise ValueError("BokehBackend doesn't support polar axis.")
 
-        # set labels
-        self._use_latex = kwargs.get("use_latex", cfg["bokeh"]["use_latex"])
         self._set_labels()
         self._set_title()
-
-        self._theme = kwargs.get("theme", cfg["bokeh"]["theme"])
 
         self._run_in_notebook = False
         if get_environment() == 0:
@@ -252,24 +259,18 @@ class BokehBackend(Plot):
             kw["x_axis_type"] = self.xscale
         if self.yscale:
             kw["y_axis_type"] = self.yscale
-        if self._use_existing_figure:
-            self._fig = self._use_existing_figure
-            self._use_existing_figure = True
-        else:
+        if self._fig is None:
             self._fig = self.bokeh.plotting.figure(**kw)
         self._fig.axis.visible = self.axis
-        self.grid = kwargs.get("grid", cfg["bokeh"]["grid"])
         self._fig.grid.visible = self.grid
         if cfg["bokeh"]["show_minor_grid"]:
             self._fig.grid.minor_grid_line_alpha = cfg["bokeh"]["minor_grid_line_alpha"]
             self._fig.grid.minor_grid_line_color = self._fig.grid.grid_line_color[0]
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
-        if self._invert_x_axis:
+        if self.invert_x_axis:
             self._fig.x_range.flipped = True
 
-        self._update_event = kwargs.get(
-            "update_event", cfg["bokeh"]["update_event"])
-        if self._update_event:
+        if self.update_event:
             self._fig.on_event(self.bokeh.events.RangesUpdate, self._ranges_update)
 
         self._create_renderers()
@@ -322,7 +323,7 @@ class BokehBackend(Plot):
     @staticmethod
     def _do_sum_kwargs(p1, p2):
         kw = p1._copy_kwargs()
-        kw["theme"] = p1._theme
+        # kw["theme"] = p1.theme
         return kw
 
     def _process_renderers(self):
@@ -386,7 +387,7 @@ class BokehBackend(Plot):
                         bokeh_renderer = r.handles[0][0]
                     legend_items.append(
                         self.bokeh.models.LegendItem(
-                            label=s.get_label(self._use_latex),
+                            label=s.get_label(self.use_latex),
                             renderers=[bokeh_renderer])
                     )
             if self.legend and (len(legend_items) > 0):
@@ -529,7 +530,7 @@ class BokehBackend(Plot):
         """ By launching a server application, we can use Python callbacks
         associated to events.
         """
-        doc.theme = self._theme
+        doc.theme = self.theme
         doc.add_root(self.fig)
 
     def show(self):
@@ -537,7 +538,7 @@ class BokehBackend(Plot):
         if len(self._fig.renderers) != len(self.series):
             self._process_renderers()
 
-        if self._update_event:
+        if self.update_event:
             if self._run_in_notebook:
                 self.bokeh.plotting.show(self._launch_server)
             else:
@@ -556,7 +557,7 @@ class BokehBackend(Plot):
         else:
             # launch a static figure
             curdoc = self.bokeh.io.curdoc
-            curdoc().theme = self._theme
+            curdoc().theme = self.theme
             self.bokeh.plotting.show(self._fig)
 
     def _get_quivers_data(self, xs, ys, u, v, **quiver_kw):

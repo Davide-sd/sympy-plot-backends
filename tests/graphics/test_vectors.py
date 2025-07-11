@@ -1,6 +1,6 @@
 import pytest
 from spb.graphics import (
-    vector_field_2d, vector_field_3d, surface_parametric, arrow_2d
+    vector_field_2d, vector_field_3d, surface_parametric, arrow_2d, arrow_3d
 )
 from spb.series import (
     ContourSeries, Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
@@ -231,7 +231,7 @@ def test_arrow_3d(start, direc, label, rkw, sil, params):
     kwargs = {}
     if params:
         kwargs["params"] = params
-    series = arrow_2d(
+    series = arrow_3d(
         start, direc, label=label, rendering_kw=rkw, show_in_legend=sil,
         **kwargs
     )

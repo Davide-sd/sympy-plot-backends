@@ -26,9 +26,9 @@ def _draw_line2d_helper(renderer, data):
             c = p._ax.scatter(x, y, **kw)
 
         is_cb_added = p._add_colorbar(
-            c, s.get_label(p._use_latex), s.use_cm and s.colorbar
+            c, s.get_label(p.use_latex), s.use_cm and s.colorbar
         )
-        handle = (c, kw, is_cb_added, p._fig.axes[-1])
+        handle = (c, kw, is_cb_added, p.fig.axes[-1])
     else:
         if s.get_label(False) != "__k__":
             color = next(p._cl) if s.line_color is None else s.line_color
@@ -36,7 +36,7 @@ def _draw_line2d_helper(renderer, data):
             color = p.wireframe_color
 
         lkw = dict(
-            label=s.get_label(p._use_latex) if s.show_in_legend else "_nolegend_",
+            label=s.get_label(p.use_latex) if s.show_in_legend else "_nolegend_",
             color=color
         )
         if s.is_point:
@@ -80,7 +80,7 @@ def _update_line2d_helper(renderer, data, handles):
         if is_cb_added:
             norm = p.Normalize(vmin=p.np.amin(param), vmax=p.np.amax(param))
             p._update_colorbar(
-                cax, kw["cmap"], s.get_label(p._use_latex), norm=norm)
+                cax, kw["cmap"], s.get_label(p.use_latex), norm=norm)
     else:
         line = line_handles[0]
         # TODO: Point2D are updated but not visible.

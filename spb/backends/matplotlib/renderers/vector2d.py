@@ -20,14 +20,14 @@ def _draw_vector2d_helper(renderer, data):
             kw = p.merge({}, skw, s.rendering_kw)
             sp = p._ax.streamplot(xx, yy, uu, vv, **kw)
             is_cb_added = p._add_colorbar(
-                sp.lines, s.get_label(p._use_latex), s.use_cm and s.colorbar)
+                sp.lines, s.get_label(p.use_latex), s.use_cm and s.colorbar)
         else:
             skw["color"] = next(p._cl)
             kw = p.merge({}, skw, s.rendering_kw)
             solid_color = kw["color"]
             sp = p._ax.streamplot(xx, yy, uu, vv, **kw)
             is_cb_added = False
-        handle = [sp, kw, is_cb_added, p._fig.axes[-1]]
+        handle = [sp, kw, is_cb_added, p.fig.axes[-1]]
     else:
         qkw = dict()
         if any(s.is_contour for s in p.series):
@@ -52,20 +52,21 @@ def _draw_vector2d_helper(renderer, data):
             kw = p.merge({}, qkw, s.rendering_kw)
             q = p._ax.quiver(xx, yy, uu, vv, color_val, **kw)
             is_cb_added = p._add_colorbar(
-                q, s.get_label(p._use_latex), s.use_cm and s.colorbar)
+                q, s.get_label(p.use_latex), s.use_cm and s.colorbar)
         else:
             is_cb_added = False
             qkw["color"] = next(p._cl)
             kw = p.merge({}, qkw, s.rendering_kw)
             solid_color = kw["color"]
             q = p._ax.quiver(xx, yy, uu, vv, **kw)
-        handle = [q, kw, is_cb_added, p._fig.axes[-1]]
+        handle = [q, kw, is_cb_added, p.fig.axes[-1]]
 
     if (not s.use_cm) and s.show_in_legend:
+        print("ok")
         # quivers are rendered with solid color: set up a legend handle
         proxy_artist = p.Line2D(
             [], [],
-            color=solid_color, label=s.get_label(p._use_latex)
+            color=solid_color, label=s.get_label(p.use_latex)
         )
         p._legend_handles.append(proxy_artist)
 
@@ -92,7 +93,7 @@ def _update_vector2d_helper(renderer, data, handle):
             p._update_colorbar(
                 cax,
                 kw["cmap"],
-                s.get_label(p._use_latex),
+                s.get_label(p.use_latex),
                 color_val
             )
         else:

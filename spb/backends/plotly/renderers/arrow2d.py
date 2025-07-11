@@ -9,7 +9,7 @@ def _draw_arrow_2d(renderer, data):
         x=x,
         y=y,
         xref="x", yref="y",
-        text="" if not s.show_in_legend else s.get_label(p._use_latex),
+        text="" if not s.show_in_legend else s.get_label(p.use_latex),
         showarrow=True,
         axref="x", ayref='y',
         ax=u,

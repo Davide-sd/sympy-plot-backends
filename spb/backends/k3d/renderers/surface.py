@@ -33,7 +33,7 @@ def _draw_surface_helper(renderer, data):
             vertices[:, 0], vertices[:, 1], vertices[:, 2])
 
     a = dict(
-        name=s.get_label(p._use_latex, "%s") if p._show_label else None,
+        name=s.get_label(p.use_latex, "%s") if p.show_label else None,
         side="double",
         flat_shading=False,
         wireframe=False,

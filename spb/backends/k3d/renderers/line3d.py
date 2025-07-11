@@ -36,7 +36,7 @@ def _draw_line3d_helper(renderer, data):
         # keyword arguments for the line object
         a = dict(
             width=0.1 if s.show_in_legend else 0.001,
-            name=p._get_series_label(s, "%s") if p._show_label else None,
+            name=p._get_series_label(s, "%s") if p.show_label else None,
             color=(
                 p.wireframe_color if not s.show_in_legend
                 else (

@@ -29,11 +29,11 @@ def _draw_line2d_helper(renderer, data):
             if not s.is_complex
             else "x: %{x}<br />y: %{y}<br />Arg: %{customdata}"
         )
-        if s.is_polar:
+        if hasattr(s, "is_polar") and s.is_polar:
             ht = "r: %{r}<br />θ: %{theta}<br />u: %{customdata}"
 
         lkw = dict(
-            name=s.get_label(p._use_latex),
+            name=s.get_label(p.use_latex),
             line_color=color,
             mode=mode,
             customdata=param,
@@ -60,11 +60,11 @@ def _draw_line2d_helper(renderer, data):
                 # colorbars is greater than the available figure width.
                 # That raises a strange error.
                 lkw["marker"]["colorbar"] = p._create_colorbar(
-                    s.get_label(p._use_latex), True)
+                    s.get_label(p.use_latex), True)
 
         kw = p.merge({}, lkw, s.rendering_kw)
 
-        if s.is_polar:
+        if hasattr(s, "is_polar") and s.is_polar:
             kw.setdefault("thetaunit", "radians")
             cls = _scatter_class(p, len(x), True)
             handle = cls(r=y, theta=x, **kw)
@@ -75,7 +75,7 @@ def _draw_line2d_helper(renderer, data):
         x, y = data
         color = next(p._cl) if s.line_color is None else s.line_color
         lkw = dict(
-            name=s.get_label(p._use_latex),
+            name=s.get_label(p.use_latex),
             mode="lines" if not s.is_point else "markers",
             line_color=color,
             showlegend=s.show_in_legend
@@ -92,7 +92,7 @@ def _draw_line2d_helper(renderer, data):
                     )
                 )
         kw = p.merge({}, lkw, s.rendering_kw)
-        if s.is_polar:
+        if hasattr(s, "is_polar") and s.is_polar:
             kw.setdefault("thetaunit", "radians")
             cls = _scatter_class(p, len(x), True)
             handle = cls(r=y, theta=x, **kw)
@@ -128,12 +128,12 @@ def _update_line2d_helper(renderer, data, idxs):
         handle["customdata"] = param
     else:
         x, y = data
-        if not s.is_polar:
-            handle["x"] = x
-            handle["y"] = y
-        else:
+        if hasattr(s, "is_polar") and s.is_polar:
             handle["r"] = y
             handle["theta"] = x
+        else:
+            handle["x"] = x
+            handle["y"] = y
 
     # update vertical lines
     if len(vlines_idx) != len(s.poles_locations):

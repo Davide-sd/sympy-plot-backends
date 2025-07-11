@@ -1,3 +1,4 @@
+import param
 import os
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
@@ -129,6 +130,11 @@ class K3DBackend(Plot):
         Arrow3DSeries: Arrow3DRenderer
     }
 
+    _fig = param.Parameter(default=None, doc="""
+        The figure in which symbolic expressions will be plotted into.""")
+    show_label = param.Boolean(default=False, doc="""
+        Show/hide labels of the expressions.""")
+
     def __init__(self, *args, **kwargs):
         self.np = import_module('numpy')
         self.k3d = k3d = import_module(
@@ -148,8 +154,8 @@ class K3DBackend(Plot):
             catch=(RuntimeError,))
         cm = self.matplotlib.cm
 
-        self.colorloop = cm.tab10.colors
-        self.colormaps = [
+        kwargs.setdefault("colorloop", cm.tab10.colors)
+        kwargs.setdefault("colormaps", [
             k3d.basic_color_maps.CoolWarm,
             k3d.matplotlib_color_maps.Plasma,
             k3d.matplotlib_color_maps.Winter,
@@ -157,24 +163,25 @@ class K3DBackend(Plot):
             k3d.paraview_color_maps.Haze,
             k3d.matplotlib_color_maps.Summer,
             k3d.paraview_color_maps.Blue_to_Yellow,
-        ]
-        self.cyclic_colormaps = [
-            cc.colorwheel, k3d.paraview_color_maps.Erdc_iceFire_H]
+        ])
+        kwargs.setdefault("cyclic_colormaps", [
+            cc.colorwheel, k3d.paraview_color_maps.Erdc_iceFire_H])
 
-        self._init_cyclers()
+        kwargs.setdefault("use_latex", cfg["k3d"]["use_latex"])
+        kwargs.setdefault("grid", cfg["k3d"]["grid"])
+
         super().__init__(*args, **kwargs)
         if (not self.skip_notebook_check) and (get_environment() != 0):
             warnings.warn(
                 "K3DBackend only works properly within Jupyter Notebook")
-        self._use_latex = kwargs.get("use_latex", cfg["k3d"]["use_latex"])
+
         self._set_labels("%s")
         self._set_title("%s")
+        self._init_cyclers()
 
-        self._show_label = kwargs.get("show_label", False)
         self._bounds = []
         self._clipping = []
         self._title_handle = None
-        self.grid = kwargs.get("grid", cfg["k3d"]["grid"])
 
         kw = dict(
             grid_visible=self.grid,
@@ -189,12 +196,10 @@ class K3DBackend(Plot):
         if cfg["k3d"]["camera_mode"]:
             kw["camera_mode"] = cfg["k3d"]["camera_mode"]
 
-        self._use_existing_figure = kwargs.get("fig", False)
-        if self._use_existing_figure:
-            self._fig = kwargs["fig"]
-            self._use_existing_figure = True
-        else:
+        self._use_existing_figure = "fig" in kwargs
+        if not self._use_existing_figure:
             self._fig = k3d.plot(**kw)
+
         if (self.xscale == "log") or (self.yscale == "log"):
             warnings.warn(
                 "K3D-Jupyter doesn't support log scales. We will "
@@ -230,8 +235,8 @@ class K3DBackend(Plot):
     @staticmethod
     def _do_sum_kwargs(p1, p2):
         kw = p1._copy_kwargs()
-        sl1 = False if not hasattr(p1, "_show_label") else p1._show_label
-        sl2 = False if not hasattr(p2, "_show_label") else p2._show_label
+        sl1 = False if not hasattr(p1, "show_label") else p1.show_label
+        sl2 = False if not hasattr(p2, "show_label") else p2.show_label
         kw["show_label"] = sl1 or sl2
         return kw
 

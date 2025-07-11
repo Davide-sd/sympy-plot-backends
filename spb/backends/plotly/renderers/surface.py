@@ -16,11 +16,11 @@ def _draw_surface_helper(renderer, data):
     colorscale = [[0, col], [1, col]]
     colormap = next(p._cm)
     skw = dict(
-        name=s.get_label(p._use_latex),
+        name=s.get_label(p.use_latex),
         showscale=s.use_cm and s.colorbar,
         showlegend=(not s.use_cm) and s.show_in_legend,
         colorbar=p._create_colorbar(
-            s.get_label(p._use_latex), p._scale_down_colorbar),
+            s.get_label(p.use_latex), p._scale_down_colorbar),
         colorscale=colormap if s.use_cm else colorscale,
         surfacecolor=surfacecolor,
         cmin=surfacecolor.min(),

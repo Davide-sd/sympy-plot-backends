@@ -494,10 +494,11 @@ def get_vertices_indices(x, y, z):
 
 
 def _instantiate_backend(Backend, *series, **kwargs):
+    show = kwargs.pop("show", True)
     p = Backend(*series, **kwargs)
     _validate_kwargs(p, **kwargs)
 
-    if kwargs.get("show", True):
+    if show:
         p.show()
     return p
 

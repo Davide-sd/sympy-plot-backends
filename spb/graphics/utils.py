@@ -33,11 +33,12 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
 
     def create_series(expr, ranges, surface_series, **kw):
         expr = [e if callable(e) else sympify(e) for e in expr]
-        kw["tx"] = surface_series._tx
-        kw["ty"] = surface_series._ty
-        kw["tz"] = surface_series._tz
-        kw["tp"] = surface_series._tp
-        kw["force_real_eval"] = surface_series._force_real_eval
+        kw["tx"] = surface_series.tx
+        kw["ty"] = surface_series.ty
+        kw["tz"] = surface_series.tz
+        if hasattr(surface_series, "tp"):
+            kw["tp"] = surface_series.tp
+        kw["force_real_eval"] = surface_series.force_real_eval
         if "return" not in kw.keys():
             return Parametric3DLineSeries(*expr, *ranges, "__k__", **kw)
         return ComplexParametric3DLineSeries(*expr, *ranges, "__k__", **kw)

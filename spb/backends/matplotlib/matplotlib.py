@@ -1,3 +1,4 @@
+import param
 import itertools
 from spb.defaults import cfg
 from spb.backends.base_backend import Plot
@@ -199,6 +200,9 @@ class MatplotlibBackend(Plot):
     mcircles_line_kw = {"color": '0.75', "linestyle": ':',
         "zorder": 0, "linewidth": 0.9}
 
+    _fig = param.Parameter(default=None, doc="""
+        The figure in which symbolic expressions will be plotted into.""")
+
     def __init__(self, *args, **kwargs):
         self.matplotlib = import_module(
             'matplotlib',
@@ -227,12 +231,17 @@ class MatplotlibBackend(Plot):
         self.Axes3D = self.mpl_toolkits.mplot3d.Axes3D
 
         # set default colors
-        self.colormaps = [
+        # self.colormaps = [
+        #     cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
+        #     cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer]
+        # self.cyclic_colormaps = [cm.twilight, cm.hsv]
+        # # load default colorloop
+        # self.colorloop = self.plt.rcParams['axes.prop_cycle'].by_key()["color"]
+        kwargs.setdefault("colormaps", [
             cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
-            cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer]
-        self.cyclic_colormaps = [cm.twilight, cm.hsv]
-        # load default colorloop
-        self.colorloop = self.plt.rcParams['axes.prop_cycle'].by_key()["color"]
+            cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer])
+        kwargs.setdefault("cyclic_colormaps", [cm.twilight, cm.hsv])
+        kwargs.setdefault("colorloop", self.plt.rcParams['axes.prop_cycle'].by_key()["color"])
 
         # plotgrid() can provide its figure and axes to be populated with
         # the data from the series. These attributes will also be populated
@@ -246,12 +255,16 @@ class MatplotlibBackend(Plot):
         if self._use_existing_figure and (self._plotgrid_ax is None):
             self._plotgrid_ax = self._plotgrid_fig.get_axes()[0]
 
-        self._init_cyclers()
+
+        kwargs.setdefault(
+            "update_event", cfg["matplotlib"]["update_event"])
+        kwargs.setdefault(
+            "use_latex", cfg["matplotlib"]["use_latex"])
+        kwargs.setdefault("theme", "default")
         super().__init__(*args, **kwargs)
+        # self._init_cyclers()
 
         # set labels
-        self._use_latex = kwargs.get(
-            "use_latex", cfg["matplotlib"]["use_latex"])
         self._set_labels()
         self._set_title()
 
@@ -275,10 +288,10 @@ class MatplotlibBackend(Plot):
         # use ImageGrid, which is suited to create equal aspect ratio axes
         # sharing colorbar
         self._imagegrid = kwargs.get("imagegrid", False)
-        self._update_event = kwargs.get(
-            "update_event", cfg["matplotlib"]["update_event"])
 
+        print("MB.__init__ before", self._fig)
         self._create_renderers()
+        print("MB.__init__ after", self._fig)
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
@@ -288,6 +301,7 @@ class MatplotlibBackend(Plot):
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
+        print("MB._do_sum_kwargs")
         return p1._copy_kwargs()
 
     def _init_cyclers(self):
@@ -323,6 +337,7 @@ class MatplotlibBackend(Plot):
         self._cyccm = process_iterator(self._cyccm, self.cyclic_colormaps)
 
     def _create_figure(self):
+        print("MB._create_figure")
         if self._plotgrid_fig is not None:
             self._fig = self._plotgrid_fig
             self._ax = self._plotgrid_ax
@@ -354,7 +369,7 @@ class MatplotlibBackend(Plot):
                 from spb.backends.matplotlib.renderers._sgrid_helper import sgrid_auto
                 self._ax = sgrid_auto(self._fig)
 
-        if self._update_event:
+        if self.update_event:
             self._fig.canvas.mpl_connect(
                 'button_release_event', self._update_axis_limits)
             self._fig.canvas.mpl_connect(
@@ -368,7 +383,9 @@ class MatplotlibBackend(Plot):
     @property
     def fig(self):
         """Returns the figure."""
+        print("MB.fig")
         self._create_ax_if_not_available()
+        # return super().fig
         return self._fig
 
     @property
@@ -384,6 +401,7 @@ class MatplotlibBackend(Plot):
         return self._ax
 
     def _process_renderers(self):
+        print("MB._process_renderers")
         # XXX Workaround for matplotlib issue
         # https://github.com/matplotlib/matplotlib/issues/17130
         xlims, ylims, zlims = [], [], []
@@ -592,7 +610,7 @@ class MatplotlibBackend(Plot):
             else:
                 self._ax.set_zlim([0, 1])
 
-        if self._invert_x_axis:
+        if self.invert_x_axis:
             self._ax.invert_xaxis()
 
         # xlim and ylim should always be set at last so that plot limits
@@ -680,11 +698,13 @@ class MatplotlibBackend(Plot):
         """ Loop over the renderers, generates numerical data and add it to
         the figure. Note that this method doesn't show the plot.
         """
+        print("MB.draw")
         # create the figure from scratch every time, otherwise if the plot was
         # previously shown, it would not be possible to show it again. This
         # behaviour is specific to Matplotlib
-        self._create_figure()
-        self._process_renderers()
+        with self.plt.style.context(self.theme):
+            self._create_figure()
+            self._process_renderers()
 
     process_series = draw
 
@@ -697,6 +717,7 @@ class MatplotlibBackend(Plot):
         **kwargs : dict
             Keyword arguments to be passed to plt.show().
         """
+        print("MB.show")
         self.draw()
         if _show:
             try:

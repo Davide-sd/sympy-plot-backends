@@ -1,14 +1,273 @@
 from itertools import cycle, islice
+from numbers import Number
+import param
 from spb.series import (
     BaseSeries, LineOver1DRangeSeries, ComplexSurfaceBaseSeries
 )
 from spb.backends.utils import convert_colormap
-from sympy import Symbol
+from sympy import Symbol, Expr
 from sympy.utilities.iterables import is_sequence
 from sympy.external import import_module
 
+class _TupleOfRealNumbers(param.Tuple):
+    """``xlim, ylim, zlim`` receives 2-elements tuple from the user.
+    They must contain numbers. Symbolic numbers (like pi) will be converted to
+    floats.
 
-class Plot:
+    Note that first `__set__` is called, then `_validate` is called.
+    """
+
+    def _validate(self, val):
+        super()._validate(val)
+        np = import_module("numpy")
+
+        # NOTE: at this stage, each element of val should have been parsed.
+        # All symbolic numbers (like S.Half, pi, etc.), should now be float.
+        # numerical complex numbers are still the same.
+        # symbolic complex numbers are still symbolic expression.
+        # symbolic expressions maybe present.
+
+        def check(t):
+            is_number = isinstance(t, Number)
+            is_real = is_number and (not isinstance(t, (Expr, complex)))
+            is_nan, is_finite = False, False
+            if is_real:
+                is_nan = np.isnan(t)
+                is_finite = np.isfinite(t)
+            return is_real and (not is_nan) and is_finite
+
+        if val:
+            if not all(check(n) for n in val):
+                raise ValueError(
+                    f"All numbers from {self.name}={val} must be real"
+                    " and finite."
+                )
+
+    def __set__(self, obj, val):
+        parsed_val = val
+        if val is not None:
+            parsed_val = []
+            for v in val:
+                try:
+                    parsed_val.append(float(v))
+                except TypeError:
+                    parsed_val.append(v)
+            parsed_val = tuple(parsed_val)
+        super().__set__(obj, parsed_val)
+
+
+class _StringOrTupleOrCallable(param.Parameter):
+    def __init__(self, default=None, **params):
+        super().__init__(default=default, **params)
+
+    def _validate(self, val):
+        if not (isinstance(val, (str, tuple, list)) or callable(val)):
+            raise ValueError(
+                f"Parameter '{self.name}' must be a string or a callable,"
+                f" not {type(val).__name__}."
+            )
+        if isinstance(val, (tuple, list)):
+            if len(val) == 0:
+                raise ValueError(
+                    f"Parameter '{self.name}' value is a tuple of 0-length."
+                    " This is not ok. At least one element must be present."
+                )
+            if not isinstance(val[0], str):
+                raise ValueError(
+                    f"Parameter '{self.name}' is a tuple. Its first element"
+                    " must be a string."
+                )
+        return val
+
+
+class PlotAttributes(param.Parameterized):
+    colorloop = param.ClassSelector(default=[], class_=(list, tuple), doc="""
+        List of colors to be used in line plots or solid color surfaces.""")
+    colormaps = param.ClassSelector(default=[], class_=(list, tuple), doc="""
+        List of color maps to render surfaces.""")
+    cyclic_colormaps = param.ClassSelector(default=[], class_=(list, tuple), doc="""
+        List of cyclic color maps to render complex series (the phase/argument
+        ranges over [-pi, pi]).""")
+
+    # NOTE: `fig` and `ax` are just placeholder parameters in order for them
+    # to appear in the `graphics` docstring. In reality, all backends
+    # implement the `_fig` parameter (and MatplotlibBackend implements the
+    # `_ax` parameter), as well as read-only `fig` (and `ax`) properties,
+    # because when a user requests the figure or axis, the backend must first
+    # check that these elements exists. If not, they need to be created first.
+    fig = param.Parameter(
+        default=None, doc="Get or set the figure where to plot into.")
+    ax = param.Parameter(doc="""
+        An existing Matplotlib's Axes over which the symbolic
+        expressions will be plotted.""")
+
+    theme = param.String(default="", doc="""
+        Theme to be used to style the figure. Depending on the backend being
+        used, several themes may be available.
+
+        * For Plotly: https://plotly.com/python/templates/
+        * For Bokeh: https://docs.bokeh.org/en/latest/docs/reference/themes.html
+        * For Matplotlib: https://matplotlib.org/stable/gallery/style_sheets/style_sheets_reference.html
+        """)
+    title = _StringOrTupleOrCallable(default="", doc="""
+        Title of the plot. It can be:
+
+        * a string.
+        * a callable receiving a single argument, `use_latex`, which must
+          return a string.
+        * a tuple of the form `(format_str, symbol 1, symbol 2, etc.)`, which
+          creates an output string when parameters `symbol 1, symbol 2, etc.`
+          receive numerical values from the widgets. This operation mode only
+          works when creating interactive data series (ie, specifying the
+          ``params`` dictionary).""")
+    xlabel = _StringOrTupleOrCallable(default="", doc="""
+        Label of the x-axis. It can be:
+
+        * a string.
+        * a callable receiving a single argument, `use_latex`, which must
+          return a string.
+        * a tuple of the form `(format_str, symbol 1, symbol 2, etc.)`, which
+          creates an output string when parameters `symbol 1, symbol 2, etc.`
+          receive numerical values from the widgets. This operation mode only
+          works when creating interactive data series (ie, specifying the
+          ``params`` dictionary).""")
+    ylabel = _StringOrTupleOrCallable(default="", doc="""
+        Label of the y-axis. It can be:
+
+        * a string.
+        * a callable receiving a single argument, `use_latex`, which must
+          return a string.
+        * a tuple of the form `(format_str, symbol 1, symbol 2, etc.)`, which
+          creates an output string when parameters `symbol 1, symbol 2, etc.`
+          receive numerical values from the widgets. This operation mode only
+          works when creating interactive data series (ie, specifying the
+          ``params`` dictionary).""")
+    zlabel = _StringOrTupleOrCallable(default="", doc="""
+        Label of the z-axis. It can be:
+
+        * a string.
+        * a callable receiving a single argument, `use_latex`, which must
+          return a string.
+        * a tuple of the form `(format_str, symbol 1, symbol 2, etc.)`, which
+          creates an output string when parameters `symbol 1, symbol 2, etc.`
+          receive numerical values from the widgets. This operation mode only
+          works when creating interactive data series (ie, specifying the
+          ``params`` dictionary).""")
+    size = _TupleOfRealNumbers(default=None, length=2, doc="""
+        Set the size of the plot, `(width, height)`.
+        For Matplotlib, the size is measured in inches. For Bokeh, Plotly
+        and K3D-Jupyter, the size is in pixel.""")
+    use_latex = param.Boolean(
+        default=True, doc="""
+        Turn on/off the rendering of latex labels. If the backend doesn't
+        support latex, it will render the string representations instead.""")
+    aspect = param.ClassSelector(class_=(str, tuple, list), doc="""
+        Set the aspect ratio.
+
+        Possible values for Matplotlib (only works for a 2D plot):
+
+        * ``"auto"``: Matplotlib will fit the plot in the vibile area.
+        * ``"equal"``: sets equal spacing.
+        * tuple containing 2 float numbers, from which the aspect ratio is
+          computed. This only works for 2D plots.
+
+        Possible values for Plotly:
+
+        - ``"equal"``: sets equal spacing on the axis of a 2D plot.
+        - For 3D plots:
+
+          * ``"cube"``: fix the ratio to be a cube
+          * ``"data"``: draw axes in proportion of their ranges
+          * ``"auto"``: automatically produce something that is well
+            proportioned using 'data' as the default.
+          * manually set the aspect ratio by providing a dictionary.
+            For example: ``dict(x=1, y=1, z=2)`` forces the z-axis to appear
+            twice as big as the other two.
+
+        Possible values for Bokeh:
+
+        * ``"equal"``: sets equal spacing.
+        """)
+    axis_center = param.ClassSelector(
+        class_=(str, tuple), allow_None=True, doc="""
+        Set the location of the intersection between the horizontal and
+        vertical axis in a 2D plot. It only works with Matplotlib and it can
+        receive the following values:
+
+        * ``None``: traditional layout, with the horizontal axis fixed on the
+          bottom and the vertical axis fixed on the left. This is the default
+          value.
+        * a tuple ``(x, y)`` specifying the exact intersection point.
+        * ``'center'``: center of the current plot area.
+        * ``'auto'``: the intersection point is automatically computed.
+        """)
+    camera = param.Parameter(doc="""
+        Set the camera position for 3D plots.
+
+        For Matplotlib, it can be a dictionary of keyword arguments that will
+        be passed to the ``Axes3D.view_init`` method. Refer to the following
+        link for more information:
+        https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.view_init
+
+        For Plotly, it can be a dictionary of keyword arguments that will
+        be passed to the layout's ``scene_camera``. Refer to the following
+        link for more information:
+        https://plotly.com/python/3d-camera-controls/
+
+        For K3D-Jupyter, it is list of 9 numbers, namely:
+
+        * ``x_cam, y_cam, z_cam``:  the position of the camera in the scene
+        * ``x_tar, y_tar, z_tar``: the position of the target of the camera
+        * ``x_up, y_up, z_up``: components of the up vector
+        """)
+    axis = param.Boolean(True, doc="Show the axis in the figure.")
+    polar_axis = param.Boolean(False, doc="""
+        If True, the backend will polar axis, otherwise it uses cartesian axis.
+        This is only supported for 2D plots.""")
+    grid = param.Boolean(True, doc="""
+        Toggle the visibility of major grid lines.""")
+    minor_grid = param.Boolean(False, doc="""
+        Toggle the visibility of minor grid lines.""")
+    # NOTE: The backend might need to create different types of figure
+    # depending on the interactive module being used.
+    imodule = param.Selector(
+        default="ipywidgets", objects=["panel", "ipywidgets"], doc="""
+        Chose the interactive module to be used with parametric widgets
+        plots. Possible options are ``'panel'`` or ``'ipywidgets'``.""")
+    legend = param.Boolean(default=None, doc="""
+        Toggle the visibility of the legend. If None, the backend will
+        automatically determine if it is appropriate to show it.""")
+    update_event = param.Boolean(False, allow_None=True, doc="""
+        If True and the backend supports such functionality, events like
+        drag and zoom will trigger a recompute of the data series within the
+        new axis limits.""")
+    xlim = _TupleOfRealNumbers(default=None, length=2, doc="""
+        Limit the figure's x-axis to the specified range. The tuple must be in
+        the form `(min_val, max_val)`.""")
+    ylim = _TupleOfRealNumbers(default=None, length=2, doc="""
+        Limit the figure's y-axis to the specified range. The tuple must be in
+        the form `(min_val, max_val)`.""")
+    zlim = _TupleOfRealNumbers(default=None, length=2, doc="""
+        Limit the figure's z-axis to the specified range. The tuple must be in
+        the form `(min_val, max_val)`.""")
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        If the backend supports it, the x-direction will use the specified
+        scale. Note that none of the backends support logarithmic scale
+        for 3D plots.""")
+    yscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        If the backend supports it, the y-direction will use the specified
+        scale. Note that none of the backends support logarithmic scale
+        for 3D plots.""")
+    zscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        If the backend supports it, the z-direction will use the specified
+        scale. Note that none of the backends support logarithmic scale
+        for 3D plots.""")
+
+
+class Plot(PlotAttributes):
     """Base class for all backends. A backend represents the plotting library,
     which implements the necessary functionalities in order to use SymPy
     plotting functions.
@@ -173,16 +432,10 @@ class Plot:
     # order to convert any colormap to the specified plotting library.
     _library = ""
 
-    colorloop = []
-    """List of colors to be used in line plots or solid color surfaces."""
+    # colorloop = []
+    # colormaps = []
+    # cyclic_colormaps = []
 
-    colormaps = []
-    """List of color maps to render surfaces."""
-
-    cyclic_colormaps = []
-    """List of cyclic color maps to render complex series (the phase/argument
-    ranges over [-pi, pi]).
-    """
 
     _allowed_keys = [
         "aspect", "axis", "axis_center", "backend",
@@ -195,6 +448,17 @@ class Plot:
     It will be used to validate the user-provided keyword arguments.
     """
 
+    is_iplot = param.Boolean(False, constant=True, doc="""
+        NOTE: matplotlib is not designed to be interactive, therefore it
+        needs a way to detect where its figure is going to be displayed.
+        For regular plots, plt.figure can be used. For interactive-parametric
+        plots with holoviz panel, matplotlib.figure.Figure must be used.
+        """)
+    invert_x_axis = param.Boolean(doc="""
+        Allow to invert x-axis if the range is given as (symbol, max, min)
+        instead of (symbol, min, max).""")
+
+
     def _set_labels(self, wrapper="$%s$"):
         """Set the correct axis labels depending on wheter the backend support
         Latex rendering.
@@ -206,15 +470,15 @@ class Plot:
         wrapper : str
             Wrapper string for the latex labels. Default to '$%s$'.
         """
-        if not self._use_latex:
+        if not self.use_latex:
             wrapper = "%s"
 
         if callable(self.xlabel):
-            self.xlabel = wrapper % self.xlabel(self._use_latex)
+            self.xlabel = wrapper % self.xlabel(self.use_latex)
         if callable(self.ylabel):
-            self.ylabel = wrapper % self.ylabel(self._use_latex)
+            self.ylabel = wrapper % self.ylabel(self.use_latex)
         if callable(self.zlabel):
-            self.zlabel = wrapper % self.zlabel(self._use_latex)
+            self.zlabel = wrapper % self.zlabel(self.use_latex)
 
     def _set_title(self, wrapper="$%s$"):
         """Set the correct title depending on wheter the backend support
@@ -227,11 +491,11 @@ class Plot:
         wrapper : str
             Wrapper string for the latex labels. Default to '$%s$'.
         """
-        if not self._use_latex:
+        if not self.use_latex:
             wrapper = "%s"
 
         if callable(self.title):
-            self.title = self.title(wrapper, self._use_latex)
+            self.title = self.title(wrapper, self.use_latex)
 
     def _create_parametric_text(self, t, params):
         """Given a tuple of the form `(str, symbol1, symbol2, ...)`
@@ -282,34 +546,23 @@ class Plot:
         self._mergedeep = import_module('mergedeep')
         self.merge = self._mergedeep.merge
 
-        # Options for the graph as a whole.
-        # The possible values for each option are described in the docstring
-        # of Plot. They are based purely on convention, no checking is done.
-        self.title = kwargs.get("title", None)
-        self.xlabel = kwargs.get("xlabel", None)
-        self.ylabel = kwargs.get("ylabel", None)
-        self.zlabel = kwargs.get("zlabel", None)
-        self.aspect = kwargs.get("aspect", kwargs.get("aspect_ratio", "auto"))
-        self.axis_center = kwargs.get("axis_center", None)
-        self.camera = kwargs.get("camera", None)
-        self.grid = kwargs.get("grid", True)
-        self.xscale = kwargs.get("xscale", None)
-        self.yscale = kwargs.get("yscale", None)
-        self.zscale = kwargs.get("zscale", None)
-        self.polar_axis = kwargs.get("polar_axis", None)
-        # NOTE: it would be nice to have detect_poles=True by default.
-        # However, the correct detection also depends on the number of points
-        # and the value of `eps`. Getting the detection right is likely to
-        # be a trial-by-error procedure. Hence, keep this parameter to False.
-        self.detect_poles = kwargs.get("detect_poles", False)
-        # NOTE: matplotlib is not designed to be interactive, therefore it
-        # needs a way to detect where its figure is going to be displayed.
-        # For regular plots, plt.figure can be used. For interactive-parametric
-        # plots with holoviz panel, matplotlib.figure.Figure must be used.
-        self.is_iplot = kwargs.get("is_iplot", False)
-        # backend might need to create different types of figure depending on
-        # the interactive module being used
-        self.imodule = kwargs.get("imodule", None)
+        print("Plot.__init__", kwargs)
+
+        process_piecewise = kwargs.pop("process_piecewise", None)
+
+        if "is_polar" in kwargs:
+            kwargs.setdefault("polar_axis", kwargs.pop("is_polar"))
+        if "fig" in kwargs:
+            kwargs["_fig"] = kwargs.pop("fig")
+        # if "ax" in kwargs:
+        #     kwargs["_ax"] = kwargs.pop("ax")
+
+        # remove keyword arguments that are not parameters of this backend
+        kwargs = {k: v for k, v in kwargs.items() if k in list(self.param)}
+
+
+        super().__init__(**kwargs)
+        self._init_cyclers()
 
         # Contains the data objects to be plotted. The backend should be smart
         # enough to iterate over this list.
@@ -319,12 +572,12 @@ class Plot:
         # the extension of the area to cover with grids, which can be obtained
         # after plotting all other series.
         self._series = non_grid_series + grid_series
-        if "process_piecewise" in kwargs.keys():
+        if process_piecewise is not None:
             # if the backend was called by plot_piecewise, each piecewise
             # function must use the same color. Here we preprocess each
             # series to add the correct color
             series = []
-            for idx, _series in kwargs["process_piecewise"].items():
+            for idx, _series in process_piecewise.items():
                 color = next(self._cl)
                 for s in _series:
                     self._set_piecewise_color(s, color)
@@ -334,7 +587,6 @@ class Plot:
         # Automatic legend: if more than 1 data series has been provided
         # and the user has not set legend=False, then show the legend for
         # better clarity.
-        self.legend = kwargs.get("legend", None)
         if self.legend is None:
             series_to_show = [
                 s for s in self._series if (
@@ -346,90 +598,71 @@ class Plot:
             if len(series_to_show) > 1:
                 # don't show the legend if `plot_piecewise` created this
                 # backend
-                if not ("process_piecewise" in kwargs.keys()):
+                if process_piecewise is None:
                     self.legend = True
 
         # allow to invert x-axis if the range is given as (symbol, max, min)
         # instead of (symbol, min, max).
         # just check the first series.
-        self._invert_x_axis = False
         if (
             (len(self._series) > 0) and
             isinstance(self._series[0], LineOver1DRangeSeries)
         ):
             # elements of parametric ranges can't be compared because they
             # are likely going to be symbolic expressions
-            if not self._series[0]._interactive_ranges:
+            if not self._series[0]._parametric_ranges:
                 r = self._series[0].ranges[0]
                 # Ranges can be real or complex. Cast them to complex and
                 # look at the real part.
                 if complex(r[1]).real > complex(r[2]).real:
-                    self._invert_x_axis = True
+                    self.invert_x_axis = True
 
-        # Objects used to render/display the plots, which depends on the
-        # plotting library.
-        self._fig = None
-
-        is_real = lambda lim: all(getattr(i, "is_real", True) for i in lim)
-        is_finite = lambda lim: all(getattr(i, "is_finite", True) for i in lim)
-
-        # reduce code repetition
-        def check_and_set(t_name, t):
-            if t:
-                if not is_real(t):
-                    raise ValueError(
-                        f"All numbers from {t_name}={t} must be real")
-                if not is_finite(t):
-                    raise ValueError(
-                        f"All numbers from {t_name}={t} must be finite")
-                setattr(self, t_name, (float(t[0]), float(t[1])))
-
-        self.xlim = None
-        check_and_set("xlim", kwargs.get("xlim", None))
-        self.ylim = None
-        check_and_set("ylim", kwargs.get("ylim", None))
-        self.zlim = None
-        check_and_set("zlim", kwargs.get("zlim", None))
-        self.size = None
-        check_and_set("size", kwargs.get("size", None))
-        self.axis = kwargs.get("show_axis", kwargs.get("axis", True))
-        self._update_event = kwargs.get("update_event", False)
 
     def _copy_kwargs(self):
         """Copy the values of the plot attributes into a dictionary which will
         be later used to create a new `Plot` object having the same attributes.
         """
-        return dict(
-            title=self.title,
-            xlabel=self.xlabel,
-            ylabel=self.ylabel,
-            zlabel=self.zlabel,
-            aspect=self.aspect,
-            axis_center=self.axis_center,
-            grid=self.grid,
-            xscale=self.xscale,
-            yscale=self.yscale,
-            zscale=self.zscale,
-            detect_poles=self.detect_poles,
-            legend=self.legend,
-            xlim=self.xlim,
-            ylim=self.ylim,
-            zlim=self.zlim,
-            size=self.size,
-            is_iplot=self.is_iplot,
-            use_latex=self._use_latex,
-            camera=self.camera,
-            polar_axis=self.polar_axis,
-            axis=self.axis
-        )
+        print("Plot._copy_kwargs")
+        params = {}
+        # copy all parameters into the dictionary
+        for k in list(self.param):
+            if k not in ["name", "_fig", "fig", "ax"]:
+                params[k] = getattr(self, k)
+        return params
+        # return dict(
+        #     title=self.title,
+        #     xlabel=self.xlabel,
+        #     ylabel=self.ylabel,
+        #     zlabel=self.zlabel,
+        #     aspect=self.aspect,
+        #     axis_center=self.axis_center,
+        #     grid=self.grid,
+        #     xscale=self.xscale,
+        #     yscale=self.yscale,
+        #     zscale=self.zscale,
+        #     # detect_poles=self.detect_poles,
+        #     legend=self.legend,
+        #     xlim=self.xlim,
+        #     ylim=self.ylim,
+        #     zlim=self.zlim,
+        #     size=self.size,
+        #     is_iplot=self.is_iplot,
+        #     use_latex=self.use_latex,
+        #     camera=self.camera,
+        #     polar_axis=self.polar_axis,
+        #     axis=self.axis
+        # )
 
     def _init_cyclers(self, start_index_cl=None, start_index_cm=None):
         """Create infinite loop iterators over the provided color maps."""
-
+        print("Plot._init_cyclers")
         tb = type(self)
         colorloop = self.colorloop if not tb.colorloop else tb.colorloop
         colormaps = self.colormaps if not tb.colormaps else tb.colormaps
         cyclic_colormaps = self.cyclic_colormaps
+        # print("colorloop", colorloop)
+        # print("colormaps", colormaps)
+        # print("cyclic_colormaps", cyclic_colormaps)
         if tb.cyclic_colormaps:
             cyclic_colormaps = tb.cyclic_colormaps
 
@@ -535,8 +768,9 @@ class Plot:
                     else:
                         new_ranges.append((r[0], *l))
                 s.ranges = new_ranges
-                s._interactive_ranges = True
-                s.is_interactive = True
+                s._parametric_ranges = True
+                with param.edit_constant(s):
+                    s.is_interactive = True
             all_params = self.merge({}, all_params, s.params)
 
         if len(css) > 0:
@@ -547,16 +781,17 @@ class Plot:
                     # design choice: interactive ranges should not
                     # be modified
                     s.ranges = [(s.ranges[0][0], *lim)]
-                    s._interactive_ranges = True
-                    s.is_interactive = True
+                    s._parametric_ranges = True
+                    with param.edit_constant(s):
+                        s.is_interactive = True
                 all_params = self.merge({}, all_params, s.params)
 
         return all_params
 
-    @property
-    def fig(self):
-        """Returns the figure used to render/display the plots."""
-        return self._fig
+    # @property
+    # def fig(self):
+    #     """Returns the figure used to render/display the plots."""
+    #     return self._fig
 
     @property
     def renderers(self):
@@ -627,6 +862,7 @@ class Plot:
         object, which uses the series of both plots and merges the _kwargs
         dictionary of `self` with the one of `other`.
         """
+        print("Plot._do_sum", "SUMMING PLOTS")
         if not isinstance(other, Plot):
             raise TypeError(
                 "Both sides of the `+` operator must be instances of the Plot "
@@ -636,6 +872,8 @@ class Plot:
         series.extend(self.series)
         series.extend(other.series)
         kwargs = self._do_sum_kwargs(self, other)
+        kwargs.pop("fig", None) # in order to avoid duplicate series
+        print("Collected kwargs", kwargs)
         return type(self)(*series, **kwargs)
 
     def append(self, arg):

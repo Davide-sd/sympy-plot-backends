@@ -1,3 +1,4 @@
+import param
 import itertools
 import os
 from spb.defaults import cfg
@@ -154,10 +155,10 @@ class PlotlyBackend(Plot):
     _allowed_keys = Plot._allowed_keys + [
         "markers", "annotations", "fill", "rectangles", "camera"]
 
-    colorloop = []
-    colormaps = []
-    cyclic_colormaps = []
-    quivers_colors = []
+    # colorloop = []
+    # colormaps = []
+    # cyclic_colormaps = []
+    # quivers_colors = []
     wireframe_color = "#000000"
 
     scattergl_threshold = 2000
@@ -196,6 +197,11 @@ class PlotlyBackend(Plot):
 
     pole_line_kw = {"line": dict(color='black', dash='dot', width=1)}
 
+    _fig = param.Parameter(default=None, doc="""
+        The figure in which symbolic expressions will be plotted into.""")
+    quivers_colors = param.ClassSelector(default=[], class_=(list, tuple), doc="""
+        List of colors for rendering quivers.""")
+
     def __init__(self, *series, **kwargs):
         self.np = import_module('numpy')
         self.plotly = import_module(
@@ -209,24 +215,32 @@ class PlotlyBackend(Plot):
 
         # The following colors corresponds to the discret color map
         # px.colors.qualitative.Plotly.
-        self.colorloop = [
+        kwargs.setdefault("colorloop", [
             "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
-            "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"]
-        self.colormaps = [
+            "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"])
+        kwargs.setdefault("colormaps", [
             "aggrnyl", "plotly3", "reds_r", "ice", "inferno",
-            "deep_r", "turbid_r", "gnbu_r", "geyser_r", "oranges_r"]
-        self.cyclic_colormaps = ["phase", "twilight", "hsv", "icefire"]
+            "deep_r", "turbid_r", "gnbu_r", "geyser_r", "oranges_r"])
+        kwargs.setdefault("cyclic_colormaps", [
+            "phase", "twilight", "hsv", "icefire"])
         # TODO: here I selected black and white, but they are not visible
         # with dark or light theme respectively... Need a better selection
         # of colors. Although, they are placed in the middle of the loop,
         # so they are unlikely going to be used.
-        self.quivers_colors = [
+        kwargs.setdefault("quivers_colors", [
             "magenta", "crimson", "darkorange", "dodgerblue", "wheat",
-            "slategrey", "white", "black", "darkred", "indigo"]
+            "slategrey", "white", "black", "darkred", "indigo"])
+        kwargs.setdefault("update_event", cfg["plotly"]["update_event"])
+        kwargs.setdefault("use_latex", cfg["plotly"]["use_latex"])
+        kwargs.setdefault("grid", cfg["plotly"]["grid"])
+        kwargs.setdefault("theme", cfg["plotly"]["theme"])
 
-        self._update_event = kwargs.get(
-            "update_event", cfg["plotly"]["update_event"])
-        if (self._update_event and any(isinstance(s, Vector2DSeries) for
+        # _init_cyclers needs to know if an existing figure was provided
+        self._use_existing_figure = "fig" in kwargs
+
+        super().__init__(*series, **kwargs)
+
+        if (self.update_event and any(isinstance(s, Vector2DSeries) for
             s in series)):
             warnings.warn(
                 "You are trying to use `update_event=True` with a 2D quiver "
@@ -234,26 +248,25 @@ class PlotlyBackend(Plot):
                 "need to interrupt the kernel."
             )
 
-        # _init_cyclers needs to know if an existing figure was provided
-        self._use_existing_figure = kwargs.get("fig", False)
-        self._fig = None
+
+        # self._fig = None
         self._init_cyclers()
-        super().__init__(*series, **kwargs)
-        if self._use_existing_figure:
-            self._fig = self._use_existing_figure
-            self._use_existing_figure = True
-        else:
+        # if self._use_existing_figure:
+        #     self._fig = self._use_existing_figure
+        #     self._use_existing_figure = True
+        # else:
+        if not self._use_existing_figure:
             if (
                 (self.is_iplot and (self.imodule == "ipywidgets"))
-                or self._update_event
+                or self.update_event
             ):
+                print("WTF")
                 self._fig = self.go.FigureWidget()
             else:
                 self._fig = self.go.Figure()
 
         # NOTE: Plotly 3D currently doesn't support latex labels
         # https://github.com/plotly/plotly.js/issues/608
-        self._use_latex = kwargs.get("use_latex", cfg["plotly"]["use_latex"])
         self._set_labels()
         self._set_title()
 
@@ -272,9 +285,6 @@ class PlotlyBackend(Plot):
                 "#BC7196", "#7E7DCD", "#FC6955", "#E48F72"
             ]
 
-        self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
-        self.grid = kwargs.get("grid", cfg["plotly"]["grid"])
-
         self._colorbar_counter = 0
         self._scale_down_colorbar = (
             self.legend and
@@ -285,7 +295,7 @@ class PlotlyBackend(Plot):
         self._create_renderers()
         self._n_annotations = 0
 
-        if self._update_event:
+        if self.update_event:
             self._fig.layout.on_change(
                 lambda obj, xrange, yrange: self._update_axis_limits(xrange, yrange),
                 ('xaxis', 'range'), ('yaxis', 'range'))
@@ -333,21 +343,21 @@ class PlotlyBackend(Plot):
     @staticmethod
     def _do_sum_kwargs(p1, p2):
         kw = p1._copy_kwargs()
-        kw["theme"] = p1._theme
+        # kw["theme"] = p1.theme
         return kw
 
     def _init_cyclers(self):
         start_index_cl, start_index_cm = None, None
         if self._use_existing_figure:
-            fig = self._use_existing_figure if self._fig is None else self._fig
+            # fig = self._use_existing_figure if self._fig is None else self._fig
             # attempt to determine how many lines or surfaces are plotted
             # on the user-provided figure
 
             # assume user plotted 3d surfaces using solid colors
             count_meshes = sum([
-                isinstance(c, self.go.Surface) for c in fig.data])
+                isinstance(c, self.go.Surface) for c in self._fig.data])
             count_lines = sum([
-                isinstance(c, self.go.Scatter) for c in fig.data])
+                isinstance(c, self.go.Scatter) for c in self._fig.data])
             start_index_cl = count_lines + count_meshes
         super()._init_cyclers(start_index_cl, 0)
         tb = type(self)
@@ -437,7 +447,7 @@ class PlotlyBackend(Plot):
     def _update_layout(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()
         self._fig.update_layout(
-            template=self._theme,
+            template=self.theme,
             width=None if not self.size else self.size[0],
             height=None if not self.size else self.size[1],
             title=r"<b>%s</b>" % ("" if not title else title),
@@ -450,7 +460,7 @@ class PlotlyBackend(Plot):
                 zeroline=self.grid,  # thick line at x=0
                 constrain="domain",
                 visible=self.axis,
-                autorange=None if not self._invert_x_axis else "reversed"
+                autorange=None if not self.invert_x_axis else "reversed"
             ),
             yaxis=dict(
                 title="" if not ylabel else ylabel,

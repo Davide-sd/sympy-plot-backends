@@ -23,7 +23,7 @@ def _draw_surface_helper(renderer, data):
         proxy_artist = p.Rectangle(
             (0, 0), 1, 1,
             color=skw["color"],
-            label=s.get_label(p._use_latex)
+            label=s.get_label(p.use_latex)
         )
         if s.show_in_legend:
             p._legend_handles.append(proxy_artist)
@@ -38,12 +38,12 @@ def _draw_surface_helper(renderer, data):
         kw["facecolors"] = cmap(norm(facecolors))
     c = p._ax.plot_surface(x, y, z, **kw)
     is_cb_added = p._add_colorbar(
-        c, s.get_label(p._use_latex),
+        c, s.get_label(p.use_latex),
         s.use_cm and s.colorbar,
         norm=norm,
         cmap=cmap
     )
-    return [c, kw, is_cb_added, p._fig.axes[-1]]
+    return [c, kw, is_cb_added, p.fig.axes[-1]]
 
 
 def _update_surface_helper(renderer, data, handle):
@@ -75,7 +75,7 @@ def _update_surface_helper(renderer, data, handle):
 
     if is_cb_added:
         p._update_colorbar(
-            cax, kw["cmap"], s.get_label(p._use_latex), norm=norm)
+            cax, kw["cmap"], s.get_label(p.use_latex), norm=norm)
 
 
 class SurfaceRenderer(MatplotlibRenderer):

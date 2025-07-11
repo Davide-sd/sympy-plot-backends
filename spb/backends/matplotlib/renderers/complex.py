@@ -34,13 +34,13 @@ def _draw_complex_helper(renderer, data):
             colormap = p.ListedColormap(colors)
             norm = p.Normalize(vmin=-np.pi, vmax=np.pi)
             method = (
-                p._fig.colorbar if not p._imagegrid else p._ax.cax.colorbar
+                p.fig.colorbar if not p._imagegrid else p._ax.cax.colorbar
             )
             cb2 = method(
                 p.cm.ScalarMappable(norm=norm, cmap=colormap),
                 label=(
                     "Argument" if s.get_label(False) == str(s.expr)
-                    else s.get_label(p._use_latex)
+                    else s.get_label(p.use_latex)
                 ),
                 ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
                 ax=p._ax,
@@ -102,7 +102,7 @@ def _draw_complex_helper(renderer, data):
             mappable = p.cm.ScalarMappable(
                 cmap=p.ListedColormap(colorscale), norm=norm
             )
-            cb = p._fig.colorbar(
+            cb = p.fig.colorbar(
                 mappable,
                 orientation="vertical",
                 label="Argument",

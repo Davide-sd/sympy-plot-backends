@@ -11,6 +11,8 @@ from spb.series import (
 )
 from sympy import symbols, cos, sin, pi, exp
 from sympy.external import import_module
+from spb.interactive.panel import InteractivePlot as PanelInteractivePlot
+from spb.interactive.ipywidgets import InteractivePlot as IPYInteractivePlot
 
 pn = import_module("panel")
 
@@ -75,9 +77,9 @@ def test_graphics_single_series_interactive(backend, imodule):
 
     g = graphics(line(cos(u * x), params={u: (1, 0, 2)}), **graphics_options)
     if imodule == "panel":
-        g_type = spb.interactive.panel.InteractivePlot
+        g_type = PanelInteractivePlot
     else:
-        g_type = spb.interactive.ipywidgets.InteractivePlot
+        g_type = IPYInteractivePlot
     assert isinstance(g, g_type)
     assert isinstance(g.backend, backend)
     assert len(g.backend.series) == 1

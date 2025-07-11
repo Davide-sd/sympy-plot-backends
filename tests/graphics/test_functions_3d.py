@@ -297,7 +297,7 @@ def test_list_3d(label, rkw):
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, List3DSeries)
-    assert s.get_label(False) == label
+    assert s.get_label(False) == "" if label is None else label
     assert s.rendering_kw == {} if not rkw else {"color": "r"}
 
 

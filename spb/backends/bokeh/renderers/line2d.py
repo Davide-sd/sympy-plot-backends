@@ -17,7 +17,7 @@ def _draw_line2d_helper(renderer, data):
         )
         source = {"xs": x, "ys": y, "us": param}
         ds, line, cb, kw = p._create_gradient_line(
-            "xs", "ys", "us", source, colormap, s.get_label(p._use_latex),
+            "xs", "ys", "us", source, colormap, s.get_label(p.use_latex),
             s.rendering_kw, s.is_point)
         h = p._fig.add_glyph(ds, line)
         handle.append(h)
@@ -33,8 +33,8 @@ def _draw_line2d_helper(renderer, data):
         else:
             x, y = data
             source = {
-                "xs": x if not s.is_polar else y * np.cos(x),
-                "ys": y if not s.is_polar else y * np.sin(x)
+                "xs": x if not (hasattr(s, "is_polar") and s.is_polar) else y * np.cos(x),
+                "ys": y if not (hasattr(s, "is_polar") and s.is_polar) else y * np.sin(x)
             }
             tooltips=[("x", "@xs"), ("y", "@ys")]
 
@@ -44,7 +44,7 @@ def _draw_line2d_helper(renderer, data):
             color = "#000000"
         lkw = dict(
             line_width=2, color=color,
-            legend_label=s.get_label(p._use_latex)
+            legend_label=s.get_label(p.use_latex)
         )
         if not s.is_point:
             kw = p.merge({}, lkw, s.rendering_kw)
@@ -95,8 +95,8 @@ def _update_line2d_helper(renderer, data, handles):
         else:
             x, y = data
             source = {
-                "xs": x if not s.is_polar else y * np.cos(x),
-                "ys": y if not s.is_polar else y * np.sin(x)
+                "xs": x if not (hasattr(s, "is_polar") and s.is_polar) else y * np.cos(x),
+                "ys": y if not (hasattr(s, "is_polar") and s.is_polar) else y * np.sin(x)
             }
         handle[0].data_source.data.update(source)
 

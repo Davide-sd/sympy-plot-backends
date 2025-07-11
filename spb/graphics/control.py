@@ -578,7 +578,7 @@ def _step_response_with_control_helper(
     _x = Dummy("x")
     return SystemResponseSeries(
         expr, prange(_x, lower_limit, upper_limit),
-        label, force_real_eval=True, response_type="step", **kwargs
+        label, force_real_eval=True, _response_type="step", **kwargs
     )
 
 
@@ -837,7 +837,7 @@ def _impulse_response_with_control_helper(
 
     return SystemResponseSeries(
         expr, prange(_x, lower_limit, upper_limit),
-        label, force_real_eval=True, response_type="impulse", **kwargs
+        label, force_real_eval=True, _response_type="impulse", **kwargs
     )
 
 
@@ -1083,7 +1083,7 @@ def _ramp_response_with_control_helper(
     _x = Dummy("x")
     return SystemResponseSeries(
         expr, prange(_x, lower_limit, upper_limit),
-        label, force_real_eval=True, response_type="ramp", **kwargs
+        label, force_real_eval=True, _response_type="ramp", **kwargs
     )
 
 

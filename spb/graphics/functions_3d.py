@@ -535,14 +535,22 @@ def surface(
             "them, however the order will be arbitrary, which means the "
             "visualization might be flipped."
         )
+    kwargs_without_wireframe = _remove_wireframe_kwargs(kwargs)
     ranges = _preprocess_multiple_ranges([expr], [range1, range2], 2, params)
     s = SurfaceOver2DRangeSeries(
         expr, *ranges, label,
         rendering_kw=rendering_kw, colorbar=colorbar,
-        use_cm=use_cm, **kwargs)
+        use_cm=use_cm, **kwargs_without_wireframe)
     s = [s]
     s += _plot3d_wireframe_helper(s, **kwargs)
     return s
+
+
+def _remove_wireframe_kwargs(kwargs):
+    kwargs_without_wireframe = kwargs.copy()
+    for k in ["wireframe", "wf_n1", "wf_n2", "wf_npoints", "wf_rendering_kw"]:
+        kwargs_without_wireframe.pop(k, None)
+    return kwargs_without_wireframe
 
 
 def surface_parametric(
@@ -790,11 +798,12 @@ def surface_parametric(
             "them, however the order will be arbitrary, which means the "
             "visualization might be flipped."
         )
+    kwargs_without_wireframe = _remove_wireframe_kwargs(kwargs)
     ranges = _preprocess_multiple_ranges(
         [expr1, expr2, expr3], [range1, range2], 2, params)
     s = ParametricSurfaceSeries(
         expr1, expr2, expr3, *ranges, label,
-        rendering_kw=rendering_kw, **kwargs)
+        rendering_kw=rendering_kw, **kwargs_without_wireframe)
     return [s] + _plot3d_wireframe_helper([s], **kwargs)
 
 
@@ -1320,7 +1329,7 @@ def surface_revolution(
         # link the number of discretization points between the two series
         curve_kw["n"] = surface[0].n[0]
         curve_kw.setdefault("use_cm", False)
-        curve_kw.setdefault("force_real_eval", surface[0]._force_real_eval)
+        curve_kw.setdefault("force_real_eval", surface[0].force_real_eval)
         line = line_parametric_3d(x, y, z, range_t, **curve_kw)
 
         surface.extend(line)

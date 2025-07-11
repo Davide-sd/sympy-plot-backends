@@ -580,7 +580,7 @@ def test_plot3d_wireframe_transform_function():
         tx=fx, ty=fy, tz=fz,
     )
     assert all(
-        (s._tx == fx) and (s._ty == fy) and (s._tz == fz) for s in p.series)
+        (s.tx == fx) and (s.ty == fy) and (s.tz == fz) for s in p.series)
 
 
 def test_plot3d_plot_contour_base_scalars(paf_options):

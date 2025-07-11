@@ -15,7 +15,7 @@ def _draw_contour_helper(renderer, data):
         ),
         colorscale=next(p._cm),
         colorbar=p._create_colorbar(
-            s.get_label(p._use_latex), p._show_2D_vectors),
+            s.get_label(p.use_latex), p._show_2D_vectors),
         showscale=s.is_filled and s.colorbar,
         zmin=zz.min(), zmax=zz.max()
     )

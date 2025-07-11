@@ -1,5 +1,6 @@
 from spb.defaults import cfg
 from spb.graphics.utils import _plot3d_wireframe_helper, _plot_sympify
+from spb.graphics.functions_3d import _remove_wireframe_kwargs
 from spb.graphics.vectors import vector_field_2d
 from spb.series import (
     ComplexPointSeries, AbsArgLineSeries, LineOver1DRangeSeries,
@@ -533,12 +534,13 @@ def _contour_surface_helper(
     expr = _plot_sympify(expr)
     if threed:
         kwargs["threed"] = True
+    kwargs_without_wireframe = _remove_wireframe_kwargs(kwargs)
     params = kwargs.get("params", {})
     range = _create_missing_ranges(
         [expr], [range] if range else [], 1, params, imaginary=True)[0]
     series = []
     for k in keys:
-        kw = kwargs.copy()
+        kw = kwargs_without_wireframe.copy()
         kw["return"] = k
         cls = ComplexSurfaceSeries if k != "absarg" else ComplexDomainColoringSeries
         series.append(

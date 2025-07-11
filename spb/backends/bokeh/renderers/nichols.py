@@ -33,7 +33,7 @@ def _draw_nichols_helper(renderer, data):
 
         ds, line, cb, kw = p._create_gradient_line(
             "ol_p", "ol_m", "o", source,
-            colormap, s.get_label(p._use_latex),
+            colormap, s.get_label(p.use_latex),
             s.rendering_kw, s.is_point)
         h = p._fig.add_glyph(ds, line)
         handles.append(h)
@@ -49,7 +49,7 @@ def _draw_nichols_helper(renderer, data):
         color = next(p._cl) if s.line_color is None else s.line_color
         lkw = dict(
             line_width=2, color=color,
-            legend_label=s.get_label(p._use_latex)
+            legend_label=s.get_label(p.use_latex)
         )
         arrows = None
         if not s.is_point:

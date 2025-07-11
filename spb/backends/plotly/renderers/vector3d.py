@@ -24,7 +24,7 @@ def _draw_vector3d_helper(renderer, data):
                 next(p._cm) if s.use_cm else p._solid_colorscale(s)),
             sizeref=0.3,
             showscale=s.use_cm and s.colorbar,
-            colorbar=p._create_colorbar(s.get_label(p._use_latex)),
+            colorbar=p._create_colorbar(s.get_label(p.use_latex)),
             starts=dict(
                 x=seeds_points[:, 0],
                 y=seeds_points[:, 1],
@@ -55,7 +55,7 @@ def _draw_vector3d_helper(renderer, data):
             colorscale=next(p._cm),
             sizemode="absolute",
             sizeref=40,
-            colorbar=p._create_colorbar(s.get_label(p._use_latex)),
+            colorbar=p._create_colorbar(s.get_label(p.use_latex)),
             cmin=mag.min(),
             cmax=mag.max(),
         )

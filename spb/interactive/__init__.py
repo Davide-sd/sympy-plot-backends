@@ -200,7 +200,10 @@ class IPlot:
 
         backend_kw = self._backend._copy_kwargs()
         iplot_kw = self._get_iplot_kw()
+        iplot_kw.pop("fig", None)
         iplot_kw["show"] = False
+        print("iplot_kw", iplot_kw)
+        print("len(series)", len(series))
 
         new_iplot = type(self)(*series, **merge({}, backend_kw, iplot_kw))
         return new_iplot

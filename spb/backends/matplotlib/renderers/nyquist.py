@@ -133,7 +133,7 @@ def _draw_nyquist_helper(renderer, data):
         p, s.primary_style, primary_style, "primary_style", color)
     mirror_style = _create_line_style(
         p, s.mirror_style, mirror_style, "mirror_style", color)
-    primary_style[0]["label"] = s.get_label(p._use_latex)
+    primary_style[0]["label"] = s.get_label(p.use_latex)
 
     # Set the arrow style
     arrow_style = mpl.patches.ArrowStyle('simple', head_width=6, head_length=6)

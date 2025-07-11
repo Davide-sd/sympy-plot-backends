@@ -27,7 +27,7 @@ def _draw_domain_coloring_helper(renderer, data):
         dx=(xmax - xmin) / s.n[0],
         dy=(ymax - ymin) / s.n[1],
         z=img,
-        name=s.get_label(p._use_latex),
+        name=s.get_label(p.use_latex),
         customdata=np.dstack([mag, angle]),
         hovertemplate=(
             "x: %{x}<br />y: %{y}<br />RGB: %{z}"
@@ -68,7 +68,7 @@ def _draw_domain_coloring_helper(renderer, data):
                     x=1 + 0.1 * p._colorbar_counter,
                     title=dict(
                         text="Argument" if s.get_label(False) == str(s.expr)
-                        else s.get_label(p._use_latex),
+                        else s.get_label(p.use_latex),
                         side="right",
                     ),
                 ),
@@ -159,7 +159,7 @@ def _draw_analytic_landscape_helper(renderer, data):
         colorscale = [[0, col], [1, col]]
 
     skw = dict(
-        name=s.get_label(p._use_latex),
+        name=s.get_label(p.use_latex),
         showscale=s.colorbar,
         colorbar=dict(
             x=1 + 0.1 * p._colorbar_counter,

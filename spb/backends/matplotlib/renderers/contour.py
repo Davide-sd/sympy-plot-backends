@@ -20,11 +20,11 @@ def _draw_contour_helper(renderer, data):
     c = func(x, y, z, **kw)
     clabel = None
     if s.is_filled:
-        p._add_colorbar(c, s.get_label(p._use_latex), s.colorbar)
+        p._add_colorbar(c, s.get_label(p.use_latex), s.colorbar)
     else:
         if s.show_clabels:
             clabel = p._ax.clabel(c)
-    return [c, kw, p._fig.axes[-1], clabel]
+    return [c, kw, p.fig.axes[-1], clabel]
 
 
 def _update_contour_helper(renderer, data, handle):
@@ -50,7 +50,7 @@ def _update_contour_helper(renderer, data, handle):
     handle[0] = func(x, y, z, **kw)
 
     if s.is_filled and s.colorbar:
-        p._update_colorbar(cax, kw["cmap"], s.get_label(p._use_latex), param=z)
+        p._update_colorbar(cax, kw["cmap"], s.get_label(p.use_latex), param=z)
     else:
         if (not s.is_filled) and s.show_clabels:
             clabels = p._ax.clabel(handle[0])

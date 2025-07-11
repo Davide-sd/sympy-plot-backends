@@ -221,7 +221,7 @@ def test_list_2d(label, rkw):
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, List2DSeries)
-    assert s.get_label(False) == label
+    assert s.get_label(False) == "" if label is None else label
     assert s.rendering_kw == {} if not rkw else {"color": "r"}
 
 
@@ -240,7 +240,7 @@ def test_list_2d(label, rkw):
 def test_geometry(geom, label, rkw, fill, params):
     if params is None:
         params = {}
-    series = geometry(geom, label, rkw, fill=fill, params=params)
+    series = geometry(geom, label=label, rendering_kw=rkw, fill=fill, params=params)
     assert len(series) == 1
     s = series[0]
     if isinstance(geom, Curve):

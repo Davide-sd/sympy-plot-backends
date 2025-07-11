@@ -18,7 +18,7 @@ def _draw_line3d_helper(renderer, data):
 
     if not s.is_point:
         lkw = dict(
-            name=s.get_label(p._use_latex),
+            name=s.get_label(p.use_latex),
             mode="lines",
             showlegend=s.show_in_legend,
         )
@@ -33,7 +33,7 @@ def _draw_line3d_helper(renderer, data):
             lkw["line"] = dict(
                 width=4,
                 colorbar=p._create_colorbar(
-                    s.get_label(p._use_latex), p._scale_down_colorbar),
+                    s.get_label(p.use_latex), p._scale_down_colorbar),
                 colorscale=(
                     next(p._cm) if s.use_cm
                     else p._solid_colorscale(s)
@@ -50,7 +50,7 @@ def _draw_line3d_helper(renderer, data):
                         else s.line_color
                     ) if (
                         s.show_in_legend or
-                        s.get_label(p._use_latex) != "__k__"
+                        s.get_label(p.use_latex) != "__k__"
                     )
                     else p.wireframe_color
                 )
@@ -58,7 +58,7 @@ def _draw_line3d_helper(renderer, data):
     else:
         color = next(p._cl) if s.line_color is None else s.line_color
         lkw = dict(
-            name=s.get_label(p._use_latex),
+            name=s.get_label(p.use_latex),
             mode="markers",
             showlegend=s.show_in_legend)
 
@@ -70,7 +70,7 @@ def _draw_line3d_helper(renderer, data):
         )
         if s.use_cm:
             lkw["marker"]["colorbar"] = p._create_colorbar(
-                s.get_label(p._use_latex), p._scale_down_colorbar)
+                s.get_label(p.use_latex), p._scale_down_colorbar)
 
         if not s.is_filled:
             # TODO: how to show a colorscale if is_point=True

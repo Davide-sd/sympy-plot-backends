@@ -7,7 +7,7 @@ from spb import (
     PB, MB, KB, BB, plot, plot3d, prange, plot_vector, plot_contour,
     plot_complex, plot_parametric
 )
-from sympy import sin, cos, pi, exp, symbols, I
+from sympy import sin, cos, pi, exp, symbols, I, S
 from sympy.external import import_module
 
 pn = import_module("panel")
@@ -251,19 +251,19 @@ def test_axis_scales(axis_scale):
     # See: https://github.com/Davide-sd/sympy-plot-backends/issues/29
     x = symbols("x")
     p = plot(sin(x), backend=MB, show=False, n=5)
-    assert all(t is "linear" for t in [p.xscale, p.yscale, p.zscale])
+    assert all(t == "linear" for t in [p.xscale, p.yscale, p.zscale])
 
     p = plot(sin(x), backend=MB, show=False, n=5, xscale=axis_scale)
     assert p.xscale == axis_scale
-    assert all(t is "linear" for t in [p.yscale, p.zscale])
+    assert all(t == "linear" for t in [p.yscale, p.zscale])
 
     p = plot(sin(x), backend=MB, show=False, n=5, yscale=axis_scale)
     assert p.yscale == axis_scale
-    assert all(t is "linear" for t in [p.xscale, p.zscale])
+    assert all(t == "linear" for t in [p.xscale, p.zscale])
 
     p = plot(sin(x), backend=MB, show=False, n=5, zscale=axis_scale)
     assert p.zscale == axis_scale
-    assert all(t is "linear" for t in [p.xscale, p.yscale])
+    assert all(t == "linear" for t in [p.xscale, p.yscale])
 
 
 @pytest.mark.parametrize(
@@ -377,3 +377,31 @@ def test_update_event_parametric_ranges(backend):
     assert p[0].ranges == [(x, y, 2*pi)]
     p._update_series_ranges((-10, 10), (-5, 6))
     assert p[0].ranges == [(x, y, 2*pi)]
+
+
+@pytest.mark.parametrize("lim, should_fail", [
+    [(-1, 1), False],
+    [(-1.5, 3.5), False],
+    [(-1, pi), False],
+    [(-S.Half, 1), False],
+    [(-S.Half, S.Infinity), True],
+    [(S.NegativeInfinity, 5), True],
+    [(S.ComplexInfinity, 5), True],
+    [(-2+3j, 4), True],
+    [(-2+3*I, 4), True],
+    [(-2, 4+2j), True],
+    [(-2, 4+2*I), True],
+])
+def test_xlim_ylim_zlim(lim, should_fail):
+    x = symbols("x")
+    fx = lambda : plot(sin(x), show=False, xlim=lim)
+    fy = lambda : plot(sin(x), show=False, ylim=lim)
+    fz = lambda : plot(sin(x), show=False, zlim=lim)
+    if should_fail:
+        raises(ValueError, fx)
+        raises(ValueError, fy)
+        raises(ValueError, fz)
+    else:
+        fx()
+        fy()
+        fz()
