@@ -8,19 +8,20 @@ from spb.series import (
     ComplexSurfaceSeries, ComplexDomainColoringSeries,
     ComplexPointSeries, GeometrySeries,
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
-    _set_discretization_points, ColoredLineOver1DRangeSeries,
+    ColoredLineOver1DRangeSeries,
     HVLineSeries, Arrow2DSeries, Arrow3DSeries, RootLocusSeries,
     SGridLineSeries, ZGridLineSeries, PoleZeroSeries, SystemResponseSeries,
     ColoredSystemResponseSeries, NyquistLineSeries, Ellipse,
     NicholsLineSeries, NyquistLineSeries, SystemResponseSeries
 )
+from spb.series.series import _set_discretization_points
 from spb import plot3d_spherical
 from sympy.abc import j, k, l, d, s, x, y
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
     Function, dsolve, Eq, Ynm, floor, Ne, Piecewise, hyper, nsolve,
-    Polygon, Line, Segment, Point3D, Line3D
+    Polygon, Line, Segment, Point3D, Line3D, Expr
 )
 from sympy.physics.control import TransferFunction
 from sympy.vector import CoordSys3D, gradient
@@ -2908,7 +2909,7 @@ def test_color_func():
         color_func=lambda x: x,
     )
     xx, yy, zz = s.get_data()
-    col = s.eval_color_func(xx, yy, zz)
+    col = s.evaluator.eval_color_func(xx, yy, zz)
     assert np.allclose(xx, col)
     s = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
@@ -2916,7 +2917,7 @@ def test_color_func():
         color_func=lambda x, y: x * y,
     )
     xx, yy, zz = s.get_data()
-    col = s.eval_color_func(xx, yy, zz)
+    col = s.evaluator.eval_color_func(xx, yy, zz)
     assert np.allclose(xx * yy, col)
     s = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
@@ -2924,7 +2925,7 @@ def test_color_func():
         color_func=lambda x, y, z: x * y * z,
     )
     xx, yy, zz = s.get_data()
-    col = s.eval_color_func(xx, yy, zz)
+    col = s.evaluator.eval_color_func(xx, yy, zz)
     assert np.allclose(xx * yy * zz, col)
 
     s = ParametricSurfaceSeries(
@@ -2933,7 +2934,7 @@ def test_color_func():
         color_func=lambda u: u,
     )
     xx, yy, zz, uu, vv = s.get_data()
-    col = s.eval_color_func(xx, yy, zz, uu, vv)
+    col = s.evaluator.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(uu, col)
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
@@ -2941,7 +2942,7 @@ def test_color_func():
         color_func=lambda u, v: u * v,
     )
     xx, yy, zz, uu, vv = s.get_data()
-    col = s.eval_color_func(xx, yy, zz, uu, vv)
+    col = s.evaluator.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(uu * vv, col)
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
@@ -2949,7 +2950,7 @@ def test_color_func():
         color_func=lambda x, y, z: x * y * z,
     )
     xx, yy, zz, uu, vv = s.get_data()
-    col = s.eval_color_func(xx, yy, zz, uu, vv)
+    col = s.evaluator.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(xx * yy * zz, col)
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
@@ -2957,7 +2958,7 @@ def test_color_func():
         color_func=lambda x, y, z, u, v: x * y * z * u * v,
     )
     xx, yy, zz, uu, vv = s.get_data()
-    col = s.eval_color_func(xx, yy, zz, uu, vv)
+    col = s.evaluator.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(xx * yy * zz * uu * vv, col)
 
     # Interactive Series
@@ -3065,7 +3066,7 @@ def test_color_func_scalar_val():
         color_func=lambda x: 1,
     )
     xx, yy, zz = s.get_data()
-    assert np.allclose(s.eval_color_func(xx), np.ones(xx.shape))
+    assert np.allclose(s.evaluator.eval_color_func(xx), np.ones(xx.shape))
 
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
@@ -3073,7 +3074,7 @@ def test_color_func_scalar_val():
         color_func=lambda u: 1,
     )
     xx, yy, zz, uu, vv = s.get_data()
-    col = s.eval_color_func(xx, yy, zz, uu, vv)
+    col = s.evaluator.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(col, np.ones(xx.shape))
 
 
@@ -3863,9 +3864,10 @@ def test_color_func_expression():
         grid=False, show=False,
     )
     d = p[0].get_data()
-    assert callable(p[0].color_func)
+    assert isinstance(p[0].color_func, Expr)
+    assert callable(p[0].evaluator.color_func)
     # the following statement should not raise errors
-    p[0].eval_color_func(*d)
+    p[0].evaluator.eval_color_func(*d)
 
     x, y = symbols("x, y")
     s1 = LineOver1DRangeSeries(
@@ -3881,7 +3883,8 @@ def test_color_func_expression():
     assert all(isinstance(t, ColoredLineOver1DRangeSeries) for t in [s1, s2])
     # the following statement should not raise errors
     d1 = s1.get_data()
-    assert callable(s1.color_func)
+    assert isinstance(s1.color_func, Expr)
+    assert callable(s1.evaluator.color_func)
     d2 = s2.get_data()
     assert not np.allclose(d1[-1], d2[-1])
 
@@ -3897,7 +3900,8 @@ def test_color_func_expression():
     )
     # the following statement should not raise errors
     d1 = s1.get_data()
-    assert callable(s1.color_func)
+    assert isinstance(s1.color_func, Expr)
+    assert callable(s1.evaluator.color_func)
     d2 = s2.get_data()
     assert not np.allclose(d1[-1], d2[-1])
 
@@ -3908,16 +3912,17 @@ def test_color_func_expression():
     )
     # the following statement should not raise errors
     d = s.get_data()
-    assert callable(s.color_func)
+    assert isinstance(s.color_func, Expr)
+    assert callable(s.evaluator.color_func)
 
     xx = [1, 2, 3, 4, 5]
     yy = [1, 2, 3, 4, 5]
     zz = [1, 2, 3, 4, 5]
     raises(
-        TypeError,
+        ValueError,
         lambda: List2DSeries(xx, yy, use_cm=True, color_func=sin(x)))
     raises(
-        TypeError,
+        ValueError,
         lambda: List3DSeries(xx, yy, zz, use_cm=True, color_func=sin(x)))
 
 
