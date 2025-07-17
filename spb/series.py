@@ -2258,7 +2258,10 @@ class ImplicitSeries(
                 stacklevel=1)
 
         if isinstance(expr, BooleanFunction):
-            self._non_adaptive_expr = None
+            # NOTE: at this stage, I'll be using the adaptive algorithm.
+            # However, I need to set the expression for the uniform meshing
+            # algorithm too, in case the adaptive algorithm fails to evaluate.
+            self._non_adaptive_expr = expr
             self._is_equality = False
         else:
             # these are needed for uniform meshing evaluation

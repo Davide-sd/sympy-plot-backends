@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v3.4.4
+======
+
+* Fixed bug with `ImplicitSeries`'s evaluation of boolean expressions.
+
+
 v3.4.3
 ======
 

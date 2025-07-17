@@ -4564,3 +4564,65 @@ def test_params_multi_value_widgets_1():
     new_params = {(a, b): (-3, 4), c: 2}
     s.params = new_params
     assert s.params == {a: -3, b: 4, c: 2}
+
+
+def test_implicit_2d_series_boolean_and():
+    x, y = symbols("x, y")
+
+    cond1 = y + 2*Abs(x) > 0
+    cond2 = x > 0
+    cond3 = y < 0
+
+    s1 = ImplicitSeries(cond1, (x, -5, 5), (y, -10, 10), adaptive=False)
+    assert s1.adaptive is False
+    s1.get_data()
+    assert s1.adaptive is False
+
+    s2 = ImplicitSeries(cond1, (x, -5, 5), (y, -10, 10), adaptive=True)
+    assert s2.adaptive is True
+    # because of Abs, the adaptive algorithm is going to fail, so the uniform
+    # meshing algorithm takes over
+    with warns(
+        UserWarning,
+        match="Adaptive meshing could not be applied to the expression. Using uniform meshing."
+    ):
+        s2.get_data()
+    assert s2.adaptive is False
+
+    s3 = ImplicitSeries(cond2, (x, -5, 5), (y, -10, 10), adaptive=False)
+    assert s3.adaptive is False
+    s3.get_data()
+    assert s3.adaptive is False
+
+    s4 = ImplicitSeries(cond2, (x, -5, 5), (y, -10, 10), adaptive=True)
+    assert s4.adaptive is True
+    s4.get_data()
+    assert s4.adaptive is True
+
+    with warns(
+        UserWarning,
+        match="The provided expression contains Boolean functions."
+    ):
+        # Because of boolean And, the adaptive algorithm takes over
+        s5 = ImplicitSeries(
+            cond2 & cond3, (x, -5, 5), (y, -10, 10), adaptive=False)
+        assert s5.adaptive is True
+        s5.get_data()
+        assert s5.adaptive is True
+
+    s6 = ImplicitSeries(cond2 & cond3, (x, -5, 5), (y, -10, 10), adaptive=True)
+    assert s6.adaptive is True
+    s6.get_data()
+    assert s6.adaptive is True
+
+    s7 = ImplicitSeries(cond1 & cond2, (x, -5, 5), (y, -10, 10), adaptive=True)
+    assert s7.adaptive is True
+    # because of Abs, the adaptive algorithm is going to fail, so the uniform
+    # meshing algorithm takes over
+    with warns(
+        UserWarning,
+        match="Adaptive meshing could not be applied to the expression. Using uniform meshing."
+    ):
+        s7.get_data()
+    assert s7.adaptive is False
+
