@@ -11,6 +11,7 @@ def test_cfg_keys():
     must_have_keys = [
         "backend_2D",
         "backend_3D",
+        "use_repr",
         "matplotlib",
         "plotly",
         "k3d",
@@ -25,6 +26,10 @@ def test_cfg_keys():
     ]
     for k in must_have_keys:
         assert k in cfg.keys()
+
+
+def test_use_repr():
+    assert cfg["use_repr"] is False
 
 
 def test_plot_range_keys():

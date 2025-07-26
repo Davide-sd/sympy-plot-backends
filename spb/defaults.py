@@ -91,6 +91,7 @@ def _hardcoded_defaults():
             # Render latex with Mayavi
             "use_latex": True,
         },
+        use_repr=False,
         # Possible values: "matplotlib", "plotly", "bokeh"
         backend_2D="matplotlib",
         # Possible values: "matplotlib", "plotly", "k3d"

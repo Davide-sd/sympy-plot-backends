@@ -851,6 +851,11 @@ class Plot(PlotAttributes):
             return self
         return other._do_sum(self)
 
+    def __repr__(self):
+        if cfg["use_repr"] is False:
+            return object.__repr__(self)
+        return super().__repr__()
+
     def _do_sum(self, other):
         """Differently from Plot.extend, this method creates a new plot
         object, which uses the series of both plots and merges the _kwargs

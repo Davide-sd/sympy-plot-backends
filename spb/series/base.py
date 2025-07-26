@@ -363,6 +363,11 @@ class BaseSeries(param.Parameterized):
         functions). This parameter is used by the evaluator in order to
         retrieve the expressions to be lambdified and evaluated.""")
 
+    def __repr__(self):
+        if cfg["use_repr"] is False:
+            return object.__repr__(self)
+        return super().__repr__()
+
     @param.depends("expr", watch=True)
     def _update_evaluator(self):
         if self.evaluator is not None:
