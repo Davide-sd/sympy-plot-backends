@@ -121,7 +121,7 @@ class InteractivePlot(IPlot):
 
         plotgrid = kwargs.get("plotgrid", None)
         if plotgrid:
-            self._backend = plotgrid
+            self.backend = plotgrid
         else:
             # assure that each series has the correct values associated
             # to parameters
@@ -134,8 +134,8 @@ class InteractivePlot(IPlot):
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
             kwargs["is_iplot"] = True
             kwargs["imodule"] = "panel"
-            self._backend = Backend(*series, **kwargs)
-            _validate_kwargs(self._backend, **original_kwargs)
+            self.backend = Backend(*series, **kwargs)
+            _validate_kwargs(self.backend, **original_kwargs)
 
         self._run_in_notebook = False
         if get_environment() == 0:
@@ -164,7 +164,7 @@ class InteractivePlot(IPlot):
 
     def _get_iplot_kw(self):
         return {
-            "backend": type(self._backend),
+            "backend": type(self.backend),
             "layout": self._layout,
             "template": self._template,
             "ncols": self._ncols,
@@ -190,7 +190,7 @@ class InteractivePlot(IPlot):
         doc.add_root(self._pane)
 
     def show(self):
-        fig = self._backend.fig
+        fig = self.backend.fig
         if self._layout == "tb":
             # NOTE: white because on Jupyter with dark theme, control's labels
             # are unreadable...

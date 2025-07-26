@@ -357,12 +357,14 @@ def plotgrid(*args, **kwargs):
 
     is_iplot = len(all_parameters) > 0
     p = PlotGrid(nr, nc, *args, show=False, is_iplot=is_iplot, **kwargs)
-    if is_iplot:
+    is_animation = any(
+        isinstance(plot, BaseAnimation) for plot in p._all_plots)
+
+    if is_iplot or is_animation:
         kwargs["plotgrid"] = p
         kwargs["params"] = all_parameters
         kwargs["show"] = show
-        kwargs["animation"] = any(
-            isinstance(plot, BaseAnimation) for plot in p._all_plots)
+        kwargs["animation"] = is_animation
         return create_interactive_plot(**kwargs)
 
     if not show:

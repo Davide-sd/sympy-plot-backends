@@ -340,12 +340,18 @@ def plot(*args, **kwargs):
     plot_expr = _check_arguments(args, 1, 1, **kwargs)
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    fill_for_generic_series = kwargs.get("fill", None)
+    if isinstance(fill_for_generic_series, (dict, list)):
+        kwargs.pop("fill")
     lines = []
 
     for pe in plot_expr:
         expr, r, label, rendering_kw = pe
         lines.extend(line(expr, r, label, rendering_kw, **kwargs))
     _set_labels(lines, global_labels, global_rendering_kw)
+
+    if fill_for_generic_series:
+        kwargs["fill"] = fill_for_generic_series
     gs = _create_generic_data_series(**kwargs)
     return graphics(*lines, gs, **kwargs)
 
@@ -506,6 +512,9 @@ def plot_parametric(*args, **kwargs):
     plot_expr = _check_arguments(args, 2, 1, **kwargs)
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    fill_for_generic_series = kwargs.get("fill", None)
+    if isinstance(fill_for_generic_series, (dict, list)):
+        kwargs.pop("fill")
     lines = []
 
     for pe in plot_expr:
@@ -513,6 +522,9 @@ def plot_parametric(*args, **kwargs):
         lines.extend(
             line_parametric_2d(e1, e2, r, label, rendering_kw, **kwargs))
     _set_labels(lines, global_labels, global_rendering_kw)
+
+    if fill_for_generic_series:
+        kwargs["fill"] = fill_for_generic_series
     gs = _create_generic_data_series(**kwargs)
     return graphics(*lines, gs, **kwargs)
 
@@ -1123,6 +1135,9 @@ def plot_implicit(*args, **kwargs):
     global_rendering_kw = kwargs.pop("rendering_kw", None)
     color = kwargs.pop("color", None)
     border_color = kwargs.pop("border_color", None)
+    fill_for_generic_series = kwargs.get("fill", None)
+    if isinstance(fill_for_generic_series, (dict, list)):
+        kwargs.pop("fill")
 
     series = []
     # attempt to compute the area that should be visible on the plot.
@@ -1143,6 +1158,9 @@ def plot_implicit(*args, **kwargs):
             ymax = s.end_y
 
     _set_labels(series, global_labels, global_rendering_kw)
+
+    if fill_for_generic_series:
+        kwargs["fill"] = fill_for_generic_series
     series += _create_generic_data_series(**kwargs)
     if (xmin != oo) and (xmax != -oo):
         kwargs.setdefault("xlim", (xmin, xmax))
@@ -1285,6 +1303,9 @@ def plot_polar(*args, **kwargs):
     kwargs.setdefault("aspect", "equal")
     kwargs.setdefault("xlabel", "")
     kwargs.setdefault("ylabel", "")
+    fill_for_generic_series = kwargs.get("fill", None)
+    if isinstance(fill_for_generic_series, (dict, list)):
+        kwargs.pop("fill")
 
     polar_axis = kwargs.get("polar_axis", False)
     if polar_axis:
@@ -1301,6 +1322,9 @@ def plot_polar(*args, **kwargs):
         e1, e2 = (r * cos(theta), r * sin(theta))
         lines.extend(line_parametric_2d(e1, e2, *pe[1:], **kwargs))
     _set_labels(lines, global_labels, global_rendering_kw)
+
+    if fill_for_generic_series:
+        kwargs["fill"] = fill_for_generic_series
     gs = _create_generic_data_series(**kwargs)
     return graphics(*lines, gs, **kwargs)
 
@@ -1847,7 +1871,7 @@ def plot_piecewise(*args, **kwargs):
                     s.label = labels[i]
                     already_set = True
                 else:
-                    s.label = None
+                    s.label = ""
         color_series_dict[i] = series
 
     # NOTE: let's overwrite this keyword argument: the dictionary will be used

@@ -11,17 +11,17 @@ from spb.series import (
     ColoredLineOver1DRangeSeries,
     HVLineSeries, Arrow2DSeries, Arrow3DSeries, RootLocusSeries,
     SGridLineSeries, ZGridLineSeries, PoleZeroSeries, SystemResponseSeries,
-    ColoredSystemResponseSeries, NyquistLineSeries, Ellipse,
+    ColoredSystemResponseSeries, NyquistLineSeries,
     NicholsLineSeries, NyquistLineSeries, SystemResponseSeries
 )
-from spb.series.series import _set_discretization_points
+from spb.series.base import _set_discretization_points
 from spb import plot3d_spherical
 from sympy.abc import j, k, l, d, s, x, y
 from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
     Function, dsolve, Eq, Ynm, floor, Ne, Piecewise, hyper, nsolve,
-    Polygon, Line, Segment, Point3D, Line3D, Expr
+    Polygon, Line, Segment, Point3D, Line3D, Expr, Ellipse
 )
 from sympy.physics.control import TransferFunction
 from sympy.vector import CoordSys3D, gradient
@@ -293,34 +293,42 @@ def test_number_discretization_points():
     # points are consistent with each other.
     x, y, z = symbols("x:z")
 
-    # for pt in [
-    #     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries
-    # ]:
-    #     kw1 = _set_discretization_points({"n": 10}, pt)
-    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-    #     kw3 = _set_discretization_points({"n1": 10}, pt)
-    #     assert all(("n1" in kw) and kw["n1"] == 10 for kw in [kw1, kw2, kw3])
+    for pt in [
+        LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries
+    ]:
+        kw1 = _set_discretization_points({"n": 10}, pt)
+        assert kw1["n"] == [10, 10, 10]
+        kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+        assert kw2["n"] == [10, 20, 30]
+        kw3 = _set_discretization_points({"n1": 10}, pt)
+        assert kw3["n"] == [10, 1000, 1000]
+        assert all("n1" not in d for d in [kw1, kw2, kw3])
 
-    # for pt in [
-    #     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-    #     ComplexSurfaceSeries, ComplexDomainColoringSeries, Vector2DSeries,
-    #     ImplicitSeries,
-    # ]:
-    #     kw1 = _set_discretization_points({"n": 10}, pt)
-    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-    #     kw3 = _set_discretization_points({"n1": 10, "n2": 20}, pt)
-    #     assert kw1["n1"] == kw1["n2"] == 10
-    #     assert all((kw["n1"] == 10) and (kw["n2"] == 20) for kw in [kw2, kw3])
+    for pt in [
+        SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
+        ComplexSurfaceSeries, ComplexDomainColoringSeries, Vector2DSeries,
+        ImplicitSeries,
+    ]:
+        kw1 = _set_discretization_points({"n": 10}, pt)
+        assert kw1["n"] == [10, 10, 10]
+        kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+        assert kw2["n"] == [10, 20, 30]
+        kw3 = _set_discretization_points({"n1": 10, "n2": 20}, pt)
+        assert kw3["n"] == [10, 20, pt._N]
+        assert all("n1" not in d for d in [kw1, kw2, kw3])
+        assert all("n2" not in d for d in [kw1, kw2, kw3])
 
-    # for pt in [Vector3DSeries, SliceVector3DSeries, Implicit3DSeries]:
-    #     kw1 = _set_discretization_points({"n": 10}, pt)
-    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-    #     kw3 = _set_discretization_points({"n1": 10, "n2": 20, "n3": 30}, pt)
-    #     assert kw1["n1"] == kw1["n2"] == kw1["n3"] == 10
-    #     assert all(
-    #         ((kw["n1"] == 10) and (kw["n2"] == 20) and (kw["n3"] == 30))
-    #         for kw in [kw2, kw3]
-    #     )
+
+    for pt in [Vector3DSeries, SliceVector3DSeries, Implicit3DSeries]:
+        kw1 = _set_discretization_points({"n": 10}, pt)
+        assert kw1["n"] == [10, 10, 10]
+        kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+        assert kw2["n"] == [10, 20, 30]
+        kw3 = _set_discretization_points({"n1": 10, "n2": 20, "n3": 30}, pt)
+        assert kw3["n"] == [10, 20, 30]
+        assert all("n1" not in d for d in [kw1, kw2, kw3])
+        assert all("n2" not in d for d in [kw1, kw2, kw3])
+        assert all("n3" not in d for d in [kw1, kw2, kw3])
 
     # verify that line-related series can deal with large float number of
     # discretization points
@@ -2365,12 +2373,13 @@ def test_apply_transforms_control():
     assert np.allclose(y2, y1 - 1)
 
     s1 = ColoredSystemResponseSeries(
-        G, (t, 0, 10), n=10, color_func=lambda x: x+1)
+        G, (t, 0, 10), n=10, color_func=lambda x, y: x*y)
     s2 = ColoredSystemResponseSeries(
-        G, (t, 0, 10), n=10, color_func=lambda x: x+1,
+        G, (t, 0, 10), n=10, color_func=lambda x, y: x*y,
         tx=lambda x: x+1, ty=lambda y: y-1, tp=lambda p: 2*p)
     x1, y1, p1 = s1.get_data()
     x2, y2, p2 = s2.get_data()
+    assert np.allclose(p1, x1 * y1)
     assert np.allclose(x2, x1 + 1)
     assert np.allclose(y2, y1 - 1)
     assert np.allclose(p2, 2*p1)
@@ -2491,8 +2500,8 @@ def test_series_labels():
     assert s2.get_label(True) == "test"
     expr = x**2 + y**2 - 5
     s3 = ImplicitSeries(expr, (x, -10, 10), (y, -10, 10), None)
-    assert s3.get_label(False) == str(expr)
-    assert s3.get_label(True) == wrapper % latex(expr)
+    assert s3.get_label(False) == f"Eq({str(expr)}, 0)"
+    assert s3.get_label(True) == wrapper % (latex(expr) + " = 0")
 
     expr = (-sin(y), cos(x))
     s1 = Vector2DSeries(*expr, (x, -2, 2), (y, -2, 2), None)
@@ -2909,7 +2918,7 @@ def test_color_func():
         color_func=lambda x: x,
     )
     xx, yy, zz = s.get_data()
-    col = s.evaluator.eval_color_func(xx, yy, zz)
+    col = s.eval_color_func(xx, yy, zz)
     assert np.allclose(xx, col)
     s = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
@@ -2917,7 +2926,7 @@ def test_color_func():
         color_func=lambda x, y: x * y,
     )
     xx, yy, zz = s.get_data()
-    col = s.evaluator.eval_color_func(xx, yy, zz)
+    col = s.eval_color_func(xx, yy, zz)
     assert np.allclose(xx * yy, col)
     s = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
@@ -2925,7 +2934,7 @@ def test_color_func():
         color_func=lambda x, y, z: x * y * z,
     )
     xx, yy, zz = s.get_data()
-    col = s.evaluator.eval_color_func(xx, yy, zz)
+    col = s.eval_color_func(xx, yy, zz)
     assert np.allclose(xx * yy * zz, col)
 
     s = ParametricSurfaceSeries(
@@ -2934,7 +2943,7 @@ def test_color_func():
         color_func=lambda u: u,
     )
     xx, yy, zz, uu, vv = s.get_data()
-    col = s.evaluator.eval_color_func(xx, yy, zz, uu, vv)
+    col = s.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(uu, col)
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
@@ -2942,7 +2951,7 @@ def test_color_func():
         color_func=lambda u, v: u * v,
     )
     xx, yy, zz, uu, vv = s.get_data()
-    col = s.evaluator.eval_color_func(xx, yy, zz, uu, vv)
+    col = s.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(uu * vv, col)
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
@@ -2950,7 +2959,7 @@ def test_color_func():
         color_func=lambda x, y, z: x * y * z,
     )
     xx, yy, zz, uu, vv = s.get_data()
-    col = s.evaluator.eval_color_func(xx, yy, zz, uu, vv)
+    col = s.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(xx * yy * zz, col)
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
@@ -2958,8 +2967,23 @@ def test_color_func():
         color_func=lambda x, y, z, u, v: x * y * z * u * v,
     )
     xx, yy, zz, uu, vv = s.get_data()
-    col = s.evaluator.eval_color_func(xx, yy, zz, uu, vv)
+    col = s.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(xx * yy * zz * uu * vv, col)
+
+    s = Vector2DSeries(
+        sin(x - y), cos(x + y), (x, -3, 3), (y, -3, 3),
+        color_func=lambda x, y, u, v: u + v)
+    xx, yy, uu, vv = s.get_data()
+    col = s.eval_color_func(xx, yy, uu, vv)
+    assert np.allclose(col, uu + vv)
+
+    s = Vector3DSeries(
+        z, y, x, (x, -10, 10), (y, -10, 10), (z, -10, 10),
+        color_func=lambda x, y, z, u, v, w: u + v + w
+    )
+    xx, yy, zz, uu, vv, ww = s.get_data()
+    col = s.eval_color_func(xx, yy, zz, uu, vv, ww)
+    assert np.allclose(col, uu + vv + ww)
 
     # Interactive Series
     s = List2DSeries(
@@ -3066,7 +3090,7 @@ def test_color_func_scalar_val():
         color_func=lambda x: 1,
     )
     xx, yy, zz = s.get_data()
-    assert np.allclose(s.evaluator.eval_color_func(xx), np.ones(xx.shape))
+    assert np.allclose(s.eval_color_func(xx), np.ones(xx.shape))
 
     s = ParametricSurfaceSeries(
         1, x, y, (x, 0, 1), (y, 0, 1),
@@ -3074,7 +3098,7 @@ def test_color_func_scalar_val():
         color_func=lambda u: 1,
     )
     xx, yy, zz, uu, vv = s.get_data()
-    col = s.evaluator.eval_color_func(xx, yy, zz, uu, vv)
+    col = s.eval_color_func(xx, yy, zz, uu, vv)
     assert np.allclose(col, np.ones(xx.shape))
 
 
@@ -3869,7 +3893,7 @@ def test_color_func_expression():
     # the following statement should not raise errors
     p[0].evaluator.eval_color_func(*d)
 
-    x, y = symbols("x, y")
+    x, y, z = symbols("x, y, z")
     s1 = LineOver1DRangeSeries(
         cos(x), (x, -10, 10),
         color_func=sin(x),
@@ -3910,6 +3934,22 @@ def test_color_func_expression():
         color_func=sin(x**2 + y**2),
         adaptive=False, n1=5, n2=5,
     )
+
+    s = Vector2DSeries(
+        sin(x - y), cos(x + y), (x, -3, 3), (y, -3, 3),
+        color_func=x*y)
+    xx, yy, uu, vv = s.get_data()
+    col = s.eval_color_func(xx, yy, uu, vv)
+    assert np.allclose(col, xx * yy)
+
+    s = Vector3DSeries(
+        z, y, x, (x, -10, 10), (y, -10, 10), (z, -10, 10),
+        color_func=x * y * z
+    )
+    xx, yy, zz, uu, vv, ww = s.get_data()
+    col = s.eval_color_func(xx, yy, zz, uu, vv, ww)
+    assert np.allclose(col, xx * yy * zz)
+
     # the following statement should not raise errors
     d = s.get_data()
     assert isinstance(s.color_func, Expr)
@@ -4559,3 +4599,73 @@ def test_params_multi_value_widgets_1():
     new_params = {(a, b): (-3, 4), c: 2}
     s.params = new_params
     assert s.params == {a: -3, b: 4, c: 2}
+
+
+def test_implicit_2d_series_boolean_and():
+    x, y = symbols("x, y")
+
+    cond1 = y + 2*Abs(x) > 0
+    cond2 = x > 0
+    cond3 = y < 0
+
+    s1 = ImplicitSeries(cond1, (x, -5, 5), (y, -10, 10), adaptive=False)
+    assert s1.adaptive is False
+    s1.get_data()
+    assert s1.adaptive is False
+
+    s2 = ImplicitSeries(cond1, (x, -5, 5), (y, -10, 10), adaptive=True)
+    assert s2.adaptive is True
+    # because of Abs, the adaptive algorithm is going to fail, so the uniform
+    # meshing algorithm takes over
+    with warns(
+        UserWarning,
+        match="Adaptive meshing could not be applied to the expression, thus uniform meshing will be used."
+    ):
+        s2.get_data()
+    assert s2.adaptive is False
+
+    s3 = ImplicitSeries(cond2, (x, -5, 5), (y, -10, 10), adaptive=False)
+    assert s3.adaptive is False
+    s3.get_data()
+    assert s3.adaptive is False
+
+    s4 = ImplicitSeries(cond2, (x, -5, 5), (y, -10, 10), adaptive=True)
+    assert s4.adaptive is True
+    s4.get_data()
+    assert s4.adaptive is True
+
+    with warns(
+        UserWarning,
+        match="The provided expression contains Boolean functions."
+    ):
+        # Because of boolean And, the adaptive algorithm takes over
+        s5 = ImplicitSeries(
+            cond2 & cond3, (x, -5, 5), (y, -10, 10), adaptive=False)
+        assert s5.adaptive is True
+        s5.get_data()
+        assert s5.adaptive is True
+
+    with warns(
+        UserWarning,
+        match="The provided expression contains Boolean functions."
+    ):
+        s6 = ImplicitSeries(cond2 & cond3, (x, -5, 5), (y, -10, 10), adaptive=True)
+        assert s6.adaptive is True
+        s6.get_data()
+        assert s6.adaptive is True
+
+    with warns(
+        UserWarning,
+        match="The provided expression contains Boolean functions."
+    ):
+        s7 = ImplicitSeries(cond1 & cond2, (x, -5, 5), (y, -10, 10), adaptive=True)
+
+    assert s7.adaptive is True
+    # because of Abs, the adaptive algorithm is going to fail, so the uniform
+    # meshing algorithm takes over
+    with warns(
+        UserWarning,
+        match="Adaptive meshing could not be applied to the expression, thus uniform meshing will be used."
+    ):
+        s7.get_data()
+    assert s7.adaptive is False

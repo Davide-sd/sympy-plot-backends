@@ -15,7 +15,7 @@ from sympy import I, cos, sin, symbols, pi, re, im, Dummy, Expr
 
 
 def complex_points(
-    *numbers, label=None, rendering_kw=None, scatter=True, **kwargs
+    *numbers, label="", rendering_kw=None, scatter=True, **kwargs
 ):
     """Plot complex points.
 

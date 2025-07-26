@@ -1,5 +1,6 @@
 from collections import Counter
 import math
+import param
 from spb.defaults import cfg
 from spb.utils import is_number
 from sympy import latex
@@ -138,20 +139,42 @@ def create_interactive_plot(*series, **kwargs):
     raise ValueError("`%s` is not a valid interactive module" % imodule)
 
 
-class IPlot:
+class IPlot(param.Parameterized):
     """Mixin class for interactive plots containing common attributes and
     methods.
     """
 
+    use_latex = param.Boolean(default=True, doc="""
+        Use latex on the labels of the widgets.""")
+    ncols = param.Integer(default=2, bounds=(1, None), doc="""
+        Number of columns used by the interactive widgets.""")
+    layout = param.Selector(
+        default="tb", objects={
+            "Widgets on the top bar": "tb",
+            "Widgets on the bottom bar": "bb",
+            "Widgets on the left side bar": "sbl",
+            "Widgets on the right side bar": "sbr",
+        }, doc="""
+        Select the location of the widgets in relation to the plotting
+        area of the interactive application.""")
+    backend = param.Parameter(constant=True, doc="""
+        An instance of the `Plot` class where the numerical data will
+        be added to the appropriate figure.""")
+    _original_params = param.Dict(default={}, doc="""
+        Stores the original parameter dictionary received in the
+        function call.""")
+    _widgets = param.List(default=[], doc="""
+        List of the widgets created by the interactive application.""")
+    _grid_widgets = param.Parameter(doc="""
+        Store the actual object (created by the selected interactive module)
+        which holds the widgets already layed out in a grid.""")
+    _params_widgets = param.Dict(default={}, doc="""
+        Map symbols to widgets""")
+
     @property
     def fig(self):
         """Return the plot object"""
-        return self._backend.fig
-
-    @property
-    def backend(self):
-        """Return the backend"""
-        return self._backend
+        return self.backend.fig
 
     def save(self, *args, **kwargs):
         """Save the current figure.
@@ -159,7 +182,7 @@ class IPlot:
         backend's documentation to learn more about arguments and keyword
         arguments.
         """
-        self._backend.save(*args, **kwargs)
+        self.backend.save(*args, **kwargs)
 
     def __add__(self, other):
         return self._do_sum(other)
@@ -182,11 +205,11 @@ class IPlot:
                 "InteractivePlot or Plot class.\n"
                 "Received: {} + {}".format(type(self), type(other)))
 
-        series = self._backend.series
+        series = self.backend.series
         if isinstance(other, Plot):
             series.extend(other.series)
         else:
-            series.extend(other._backend.series)
+            series.extend(other.backend.series)
 
         # check that the interactive series uses the same parameters
         symbols = []
@@ -198,12 +221,10 @@ class IPlot:
                 "The same parameters must be used when summing up multiple "
                 "interactive plots.")
 
-        backend_kw = self._backend._copy_kwargs()
+        backend_kw = self.backend._copy_kwargs()
         iplot_kw = self._get_iplot_kw()
         iplot_kw.pop("fig", None)
         iplot_kw["show"] = False
-        print("iplot_kw", iplot_kw)
-        print("len(series)", len(series))
 
         new_iplot = type(self)(*series, **merge({}, backend_kw, iplot_kw))
         return new_iplot

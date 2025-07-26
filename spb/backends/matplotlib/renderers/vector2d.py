@@ -62,7 +62,6 @@ def _draw_vector2d_helper(renderer, data):
         handle = [q, kw, is_cb_added, p.fig.axes[-1]]
 
     if (not s.use_cm) and s.show_in_legend:
-        print("ok")
         # quivers are rendered with solid color: set up a legend handle
         proxy_artist = p.Line2D(
             [], [],

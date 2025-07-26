@@ -25,7 +25,7 @@ class BaseAnimation:
         self.mimwrite = imageio.mimwrite
 
     def _post_init_plot(self, *args, **kwargs):
-        """This methods has to be executed after self._backend has been set.
+        """This methods has to be executed after self.backend has been set.
         """
         mergedeep = import_module("mergedeep")
         merge = mergedeep.merge
@@ -37,7 +37,7 @@ class BaseAnimation:
         else:
             params = {}
             if animation:
-                params = _aggregate_parameters(params, self._backend.series)
+                params = _aggregate_parameters(params, self.backend.series)
             animation_data_kwargs = {"params": params}
             if isinstance(animation, dict):
                 animation_data_kwargs = merge({},
@@ -46,17 +46,17 @@ class BaseAnimation:
                 self._animation_data = AnimationData(**animation_data_kwargs)
                 initial_params = self.animation_data[0]
                 # update series with proper initial values before plotting
-                for s in self._backend.series:
+                for s in self.backend.series:
                     if s.is_interactive:
                         s.params = initial_params
         self._load_imageio()
 
     def _post_init_plotgrid(self, *args, **kwargs):
-        """This methods has to be executed after self._backend has been set.
+        """This methods has to be executed after self.backend has been set.
         """
         self._animation_data = None
         original_params, fps, time = {}, [], []
-        for p in self._backend._all_plots:
+        for p in self.backend._all_plots:
             if isinstance(p, BaseAnimation):
                 original_params = _aggregate_parameters(
                     original_params.copy(), p.backend.series)
@@ -151,8 +151,8 @@ class BaseAnimation:
         # avoid circular imports
         from spb.plotgrid import PlotGrid
         if (
-            isinstance(self._backend, PlotGrid) and
-            (not self._backend.is_matplotlib_fig)
+            isinstance(self.backend, PlotGrid) and
+            (not self.backend.is_matplotlib_fig)
         ):
             raise RuntimeError(
                 "Saving plotgrid animation is only supported when the overall "
@@ -160,7 +160,7 @@ class BaseAnimation:
             )
 
         from spb import KB
-        if isinstance(self._backend, KB):
+        if isinstance(self.backend, KB):
             self._save_k3d_animation(path, save_frames, **kwargs)
         else:
             self._save_other_backends_animation(path, save_frames, **kwargs)
@@ -170,14 +170,14 @@ class BaseAnimation:
         n_frames = self.animation_data.n_frames
         base = os.path.basename(path).split(".")[0]
 
-        @self._backend.fig.yield_screenshots
+        @self.backend.fig.yield_screenshots
         def inner_func():
             frames = []
             r = (range(n_frames) if get_environment() != 0
                 else trange(n_frames))
             for i in r:
                 self.update_animation(i)
-                self._backend.fig.fetch_screenshot()
+                self.backend.fig.fetch_screenshot()
                 screenshot_bytes = yield
                 buffer = io.BytesIO(screenshot_bytes)
                 img = self.imread(buffer)
@@ -207,7 +207,7 @@ class BaseAnimation:
                 filename = base + "_" + str(i) + ".png"
                 tmp_filename = os.path.join(tmpdir, filename)
                 tmp_filenames.append(tmp_filename)
-                self._backend.save(tmp_filename)
+                self.backend.save(tmp_filename)
                 if save_frames:
                     shutil.copy2(tmp_filename, dest)
 

@@ -1,6 +1,7 @@
 from itertools import cycle, islice
 from numbers import Number
 import param
+from spb.defaults import cfg
 from spb.series import (
     BaseSeries, LineOver1DRangeSeries, ComplexSurfaceBaseSeries
 )
@@ -545,9 +546,7 @@ class Plot(PlotAttributes):
         # the merge function is used by all backends
         self._mergedeep = import_module('mergedeep')
         self.merge = self._mergedeep.merge
-
-        print("Plot.__init__", kwargs)
-
+        kwargs.setdefault("imodule", cfg["interactive"]["module"])
         process_piecewise = kwargs.pop("process_piecewise", None)
 
         if "is_polar" in kwargs:
@@ -622,7 +621,6 @@ class Plot(PlotAttributes):
         """Copy the values of the plot attributes into a dictionary which will
         be later used to create a new `Plot` object having the same attributes.
         """
-        print("Plot._copy_kwargs")
         params = {}
         # copy all parameters into the dictionary
         for k in list(self.param):
@@ -655,14 +653,10 @@ class Plot(PlotAttributes):
 
     def _init_cyclers(self, start_index_cl=None, start_index_cm=None):
         """Create infinite loop iterators over the provided color maps."""
-        print("Plot._init_cyclers")
         tb = type(self)
         colorloop = self.colorloop if not tb.colorloop else tb.colorloop
         colormaps = self.colormaps if not tb.colormaps else tb.colormaps
         cyclic_colormaps = self.cyclic_colormaps
-        # print("colorloop", colorloop)
-        # print("colormaps", colormaps)
-        # print("cyclic_colormaps", cyclic_colormaps)
         if tb.cyclic_colormaps:
             cyclic_colormaps = tb.cyclic_colormaps
 
@@ -862,7 +856,6 @@ class Plot(PlotAttributes):
         object, which uses the series of both plots and merges the _kwargs
         dictionary of `self` with the one of `other`.
         """
-        print("Plot._do_sum", "SUMMING PLOTS")
         if not isinstance(other, Plot):
             raise TypeError(
                 "Both sides of the `+` operator must be instances of the Plot "
@@ -873,7 +866,6 @@ class Plot(PlotAttributes):
         series.extend(other.series)
         kwargs = self._do_sum_kwargs(self, other)
         kwargs.pop("fig", None) # in order to avoid duplicate series
-        print("Collected kwargs", kwargs)
         return type(self)(*series, **kwargs)
 
     def append(self, arg):

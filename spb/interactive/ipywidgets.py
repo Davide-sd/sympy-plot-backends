@@ -77,7 +77,7 @@ class InteractivePlot(IPlot):
         plotgrid = kwargs.get("plotgrid", None)
 
         if plotgrid:
-            self._backend = plotgrid
+            self.backend = plotgrid
         else:
             # assure that each series has the correct values associated
             # to parameters
@@ -91,11 +91,11 @@ class InteractivePlot(IPlot):
             kwargs["is_iplot"] = True
             kwargs["imodule"] = "ipywidgets"
             kwargs["use_latex"] = self._use_latex
-            self._backend = Backend(*series, **kwargs)
+            self.backend = Backend(*series, **kwargs)
 
     def _get_iplot_kw(self):
         return {
-            "backend": type(self._backend),
+            "backend": type(self.backend),
             "layout": self._layout,
             "ncols": self._ncols,
             "use_latex": self._use_latex,
@@ -104,9 +104,9 @@ class InteractivePlot(IPlot):
 
     def _update(self, change):
         # bind widgets state to this update function
-        self._backend.update_interactive(
+        self.backend.update_interactive(
             {k: v.value for k, v in self._params_widgets.items()})
-        if isinstance(self._backend, BB):
+        if isinstance(self.backend, BB):
             bokeh = import_module(
                 'bokeh',
                 import_kwargs={'fromlist': ['io']},
@@ -114,24 +114,24 @@ class InteractivePlot(IPlot):
                 min_module_version='2.3.0')
             with self._output_figure:
                 clear_output(True) # NOTE: this is the cause of flickering
-                bokeh.io.show(self._backend.fig)
+                bokeh.io.show(self.backend.fig)
 
     def show(self):
         for w in self._widgets:
             w.observe(self._update, "value")
 
         # create the output figure
-        if (isinstance(self._backend, MB) or
-            (isinstance(self._backend, PlotGrid) and self._backend.is_matplotlib_fig)):
+        if (isinstance(self.backend, MB) or
+            (isinstance(self.backend, PlotGrid) and self.backend.is_matplotlib_fig)):
             # without plt.ioff, picture will show up twice. Morover, there
             # won't be any update
-            self._backend.plt.ioff()
-            if isinstance(self._backend, PlotGrid):
-                if not self._backend.imagegrid:
-                    self._backend.fig.tight_layout()
-            self._output_figure = ipywidgets.Box([self._backend.fig.canvas])
-        elif isinstance(self._backend, BB):
-            if self._backend._update_event:
+            self.backend.plt.ioff()
+            if isinstance(self.backend, PlotGrid):
+                if not self.backend.imagegrid:
+                    self.backend.fig.tight_layout()
+            self._output_figure = ipywidgets.Box([self.backend.fig.canvas])
+        elif isinstance(self.backend, BB):
+            if self.backend.update_event:
                 warnings.warn(
                     "You are trying to generate an interactive plot with "
                     "Bokeh using `update_event=True`. This mode of operation "
@@ -146,15 +146,15 @@ class InteractivePlot(IPlot):
                 warn_not_installed=True,
                 min_module_version='2.3.0')
             with self._output_figure:
-                bokeh.io.show(self._backend.fig)
+                bokeh.io.show(self.backend.fig)
         else:
-            self._output_figure = self._backend.fig
+            self._output_figure = self.backend.fig
 
-        if (isinstance(self._backend, MB) or
-            (isinstance(self._backend, PlotGrid) and self._backend.is_matplotlib_fig)):
+        if (isinstance(self.backend, MB) or
+            (isinstance(self.backend, PlotGrid) and self.backend.is_matplotlib_fig)):
             # turn back interactive behavior with plt.ion, so that picture
             # will be updated.
-            self._backend.plt.ion() # without it there won't be any update
+            self.backend.plt.ion() # without it there won't be any update
 
         if self._layout == "tb":
             return ipywidgets.VBox([self._grid_widgets, self._output_figure])

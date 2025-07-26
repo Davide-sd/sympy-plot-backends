@@ -1069,3 +1069,33 @@ def get_environment():
             return 2  # Other type (?)
     except NameError:
         return 3  # Probably standard Python interpreter
+
+
+def _correct_shape(a, b):
+    """Convert ``a`` to a np.ndarray of the same shape of ``b``.
+
+    Parameters
+    ==========
+    a : int, float, complex, np.ndarray
+        Usually, this is the result of a numerical evaluation of a
+        symbolic expression. Even if a discretized domain was used to
+        evaluate the function, the result can be a scalar (int, float,
+        complex).
+    b : np.ndarray
+        It represents the correct shape that ``a`` should have.
+
+    Returns
+    =======
+    new_a : np.ndarray
+        An array with the correct shape.
+    """
+    np = import_module('numpy')
+
+    if not isinstance(a, np.ndarray):
+        a = np.array(a)
+    if a.shape != b.shape:
+        if a.shape == ():
+            a = a * np.ones_like(b)
+        else:
+            a = a.reshape(b.shape)
+    return a

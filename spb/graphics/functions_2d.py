@@ -1379,6 +1379,8 @@ def implicit_2d(
             "visualization might be flipped."
         )
 
+    print("implicit_2d", kwargs)
+
     series = []
     ranges = _preprocess_multiple_ranges([expr], [range1, range2], 2, params)
     series.append(ImplicitSeries(

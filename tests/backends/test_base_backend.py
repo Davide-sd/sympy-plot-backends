@@ -333,7 +333,7 @@ def test_update_event_parametric_ranges(backend):
     x, y, z = symbols("x, y, z")
     ip = plot(sin(x), prange(x, -y*pi, pi), show=False, n=10, backend=backend,
         params={y: (1, 0, 2)})
-    p = ip._backend
+    p = ip.backend
     assert p[0].ranges == [(x, -y*pi, pi)]
     p._update_series_ranges((-10, 10))
     assert p[0].ranges == [(x, -y*pi, pi)]
@@ -343,7 +343,7 @@ def test_update_event_parametric_ranges(backend):
         prange(x, -z*pi, pi), (y, -pi, pi),
         show=False, n=10, backend=backend, params={z: (1, 0, 2)}
     )
-    p = ip._backend
+    p = ip.backend
     assert p[0].ranges == [(x, -z*pi, pi), (y, -pi, pi)]
     p._update_series_ranges((-10, 10), (-5, 6))
     assert p[0].ranges == [(x, -z*pi, pi), (y, -5, 6)]
@@ -352,7 +352,7 @@ def test_update_event_parametric_ranges(backend):
         [-sin(y), cos(x)], prange(x, -z*pi, pi), (y, -pi, pi),
         backend=backend, scalar=True, n=10, show=False, params={z: (1, 0, 2)}
     )
-    p = ip._backend
+    p = ip.backend
     assert p[0].ranges == [(x, -z*pi, pi), (y, -pi, pi)]
     assert p[1].ranges == [(x, -z*pi, pi), (y, -pi, pi)]
     p._update_series_ranges((-10, 10), (-5, 6))
@@ -361,7 +361,7 @@ def test_update_event_parametric_ranges(backend):
 
     ip = plot_complex(sin(x), prange(x, -y-2j, 2+2j),
         show=False, n=10, backend=backend, params={y: (1, 0, 2)})
-    p = ip._backend
+    p = ip.backend
     assert p[0].ranges[0][0] == x
     assert (p[0].ranges[0][1] - (-y - 2*I)).nsimplify() == 0
     assert (p[0].ranges[0][2] - (2 + 2*I)).nsimplify() == 0
@@ -373,7 +373,7 @@ def test_update_event_parametric_ranges(backend):
     # parametric plot must not update the range
     ip = plot_parametric(cos(x), sin(x), prange(x, y, 2*pi),
         show=False, backend=PB, n=10, params={y: (1, 0, 2)})
-    p = ip._backend
+    p = ip.backend
     assert p[0].ranges == [(x, y, 2*pi)]
     p._update_series_ranges((-10, 10), (-5, 6))
     assert p[0].ranges == [(x, y, 2*pi)]

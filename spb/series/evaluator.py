@@ -1,7 +1,7 @@
 import param
 from inspect import signature
 from spb.defaults import cfg
-from spb.utils import _get_free_symbols
+from spb.utils import _get_free_symbols, _correct_shape
 from sympy import (
     Tuple, symbols, sympify, Expr, lambdify,
     atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
@@ -42,144 +42,144 @@ class IntervalMathPrinter(PythonCodePrinter):
         )
 
 
-# def _adaptive_eval(
-#     wrapper_func, free_symbols, expr, bounds, *args,
-#     modules=None, goal=None, loss_fn=None
-# ):
-#     """Numerical evaluation of a symbolic expression with an adaptive
-#     algorithm [#fn1]_.
+def _adaptive_eval(
+    wrapper_func, free_symbols, expr, bounds, *args,
+    modules=None, goal=None, loss_fn=None
+):
+    """Numerical evaluation of a symbolic expression with an adaptive
+    algorithm [#fn1]_.
 
-#     Note: this is an experimental function, as such it is prone to changes.
-#     Please, do not use it in your code.
+    Note: this is an experimental function, as such it is prone to changes.
+    Please, do not use it in your code.
 
-#     Parameters
-#     ==========
+    Parameters
+    ==========
 
-#     wrapper_func : callable
-#         The function to be evaluated, which will return any number of
-#         elements, depending on the computation to be done. The signature
-#         must be as follow: ``wrapper_func(f, *args)``
-#         where ``f`` is the lambda function representing the symbolic
-#         expression; ``*args`` is a list of arguments necessary to perform
-#         the evaluation.
+    wrapper_func : callable
+        The function to be evaluated, which will return any number of
+        elements, depending on the computation to be done. The signature
+        must be as follow: ``wrapper_func(f, *args)``
+        where ``f`` is the lambda function representing the symbolic
+        expression; ``*args`` is a list of arguments necessary to perform
+        the evaluation.
 
-#     free_symbols : tuple or list
-#         The free symbols associated to ``expr``.
+    free_symbols : tuple or list
+        The free symbols associated to ``expr``.
 
-#     expr : Expr
-#         The symbolic expression to be evaluated.
+    expr : Expr
+        The symbolic expression to be evaluated.
 
-#     bounds : tuple (min, max) or list of tuples
-#         The bounds for the numerical evaluation. Let `f(x)` be the function
-#         to be evaluated, then `x` will assume values between [min, max].
-#         For multivariate functions there is a correspondance between the
-#         symbols in ``free_symbols`` and the tuples in ``bounds``.
+    bounds : tuple (min, max) or list of tuples
+        The bounds for the numerical evaluation. Let `f(x)` be the function
+        to be evaluated, then `x` will assume values between [min, max].
+        For multivariate functions there is a correspondance between the
+        symbols in ``free_symbols`` and the tuples in ``bounds``.
 
-#     args :
-#         The necessary arguments to perform the evaluation.
+    args :
+        The necessary arguments to perform the evaluation.
 
-#     modules : str or None
-#         The evaluation module. Refer to ``lambdify`` for a list of possible
-#         values. If ``None``, the evaluation will be done with Numpy/Scipy.
+    modules : str or None
+        The evaluation module. Refer to ``lambdify`` for a list of possible
+        values. If ``None``, the evaluation will be done with Numpy/Scipy.
 
-#     goal : callable
-#         A function requiring one input element, the learner. It must return
-#         a float number. In practice, it controls the "smoothness" of the
-#         evaluation.
+    goal : callable
+        A function requiring one input element, the learner. It must return
+        a float number. In practice, it controls the "smoothness" of the
+        evaluation.
 
-#     loss_fn : callable or None
-#         The loss function to be used by the learner. Possible values:
+    loss_fn : callable or None
+        The loss function to be used by the learner. Possible values:
 
-#         * ``None`` (default): it will use the ``default_loss`` from the
-#           adaptive module.
-#         * callable : look at adaptive.learner.learner1D or
-#           adaptive.learner.learnerND to find more loss functions.
+        * ``None`` (default): it will use the ``default_loss`` from the
+          adaptive module.
+        * callable : look at adaptive.learner.learner1D or
+          adaptive.learner.learnerND to find more loss functions.
 
-#     Returns
-#     =======
+    Returns
+    =======
 
-#     data : np.ndarray
-#         A Numpy array containing the evaluation results. The shape is [NxM],
-#         where N is the random number of evaluation points and M is the sum
-#         between the number of free symbols and the number of elements
-#         returned by ``wrapper_func``.
-#         No matter the evaluation ``modules``, the array type is going to be
-#         complex.
+    data : np.ndarray
+        A Numpy array containing the evaluation results. The shape is [NxM],
+        where N is the random number of evaluation points and M is the sum
+        between the number of free symbols and the number of elements
+        returned by ``wrapper_func``.
+        No matter the evaluation ``modules``, the array type is going to be
+        complex.
 
-#     References
-#     ==========
+    References
+    ==========
 
-#     .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
-#     """
-#     np = import_module('numpy')
-#     adaptive = import_module(
-#         'adaptive',
-#         import_kwargs={'fromlist': ['runner', 'learner']},
-#         min_module_version='0.12.0',
-#         warn_not_installed=True)
-#     simple = adaptive.runner.simple
-#     Learner1D = adaptive.learner.learner1D.Learner1D
-#     LearnerND = adaptive.learner.learnerND.LearnerND
-#     default_loss_1d = adaptive.learner.learner1D.default_loss
-#     default_loss_nd = adaptive.learner.learnerND.default_loss
-#     from functools import partial
+    .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
+    """
+    np = import_module('numpy')
+    adaptive = import_module(
+        'adaptive',
+        import_kwargs={'fromlist': ['runner', 'learner']},
+        min_module_version='0.12.0',
+        warn_not_installed=True)
+    simple = adaptive.runner.simple
+    Learner1D = adaptive.learner.learner1D.Learner1D
+    LearnerND = adaptive.learner.learnerND.LearnerND
+    default_loss_1d = adaptive.learner.learner1D.default_loss
+    default_loss_nd = adaptive.learner.learnerND.default_loss
+    from functools import partial
 
-#     if not callable(expr):
-#         # expr is a single symbolic expressions or a tuple of symb expressions
-#         one_d = hasattr(free_symbols, "__iter__") and (len(free_symbols) == 1)
-#     else:
-#         # expr is a user-provided lambda function
-#         one_d = len(signature(expr).parameters) == 1
+    if not callable(expr):
+        # expr is a single symbolic expressions or a tuple of symb expressions
+        one_d = hasattr(free_symbols, "__iter__") and (len(free_symbols) == 1)
+    else:
+        # expr is a user-provided lambda function
+        one_d = len(signature(expr).parameters) == 1
 
-#     lf = default_loss_1d if one_d else default_loss_nd
-#     if loss_fn is not None:
-#         lf = loss_fn
-#     k = "loss_per_interval" if one_d else "loss_per_simplex"
-#     d = {k: lf}
-#     Learner = Learner1D if one_d else LearnerND
+    lf = default_loss_1d if one_d else default_loss_nd
+    if loss_fn is not None:
+        lf = loss_fn
+    k = "loss_per_interval" if one_d else "loss_per_simplex"
+    d = {k: lf}
+    Learner = Learner1D if one_d else LearnerND
 
-#     if not callable(expr):
-#         # expr is a single symbolic expressions or a tuple of symb expressions
-#         try:
-#             # TODO: set cse=True once this issue is solved:
-#             # https://github.com/sympy/sympy/issues/24246
-#             f = lambdify(free_symbols, expr, modules=modules, cse=False)
-#             learner = Learner(
-#                 partial(wrapper_func, f, *args), bounds=bounds, **d)
-#             simple(learner, goal)
-#         except Exception as err:
-#             warnings.warn(
-#                 "The evaluation with %s failed.\n" % (
-#                     "NumPy/SciPy" if not modules else modules) +
-#                 "{}: {}\n".format(type(err).__name__, err) +
-#                 "Trying to evaluate the expression with Sympy, but it might "
-#                 "be a slow operation."
-#             )
-#             f = lambdify(free_symbols, expr, modules="sympy", cse=False)
-#             learner = Learner(
-#                 partial(wrapper_func, f, *args), bounds=bounds, **d)
-#             simple(learner, goal)
-#     else:
-#         # expr is a user-provided lambda function
-#         learner = Learner(
-#             partial(wrapper_func, expr, *args), bounds=bounds, **d)
-#         simple(learner, goal)
+    if not callable(expr):
+        # expr is a single symbolic expressions or a tuple of symb expressions
+        try:
+            # TODO: set cse=True once this issue is solved:
+            # https://github.com/sympy/sympy/issues/24246
+            f = lambdify(free_symbols, expr, modules=modules, cse=False)
+            learner = Learner(
+                partial(wrapper_func, f, *args), bounds=bounds, **d)
+            simple(learner, goal)
+        except Exception as err:
+            warnings.warn(
+                "The evaluation with %s failed.\n" % (
+                    "NumPy/SciPy" if not modules else modules) +
+                "{}: {}\n".format(type(err).__name__, err) +
+                "Trying to evaluate the expression with Sympy, but it might "
+                "be a slow operation."
+            )
+            f = lambdify(free_symbols, expr, modules="sympy", cse=False)
+            learner = Learner(
+                partial(wrapper_func, f, *args), bounds=bounds, **d)
+            simple(learner, goal)
+    else:
+        # expr is a user-provided lambda function
+        learner = Learner(
+            partial(wrapper_func, expr, *args), bounds=bounds, **d)
+        simple(learner, goal)
 
-#     if one_d:
-#         return learner.to_numpy()
+    if one_d:
+        return learner.to_numpy()
 
-#     # For multivariate functions, create a meshgrid where to interpolate the
-#     # results. Taken from adaptive.learner.learnerND.plot
-#     x, y = learner._bbox
-#     scale_factor = np.prod(np.diag(learner._transform))
-#     a_sq = np.sqrt(np.min(learner.tri.volumes()) * scale_factor)
-#     n = max(10, int(0.658 / a_sq) * 2)
-#     xs = ys = np.linspace(0, 1, n)
-#     xs = xs * (x[1] - x[0]) + x[0]
-#     ys = ys * (y[1] - y[0]) + y[0]
-#     z = learner._ip()(xs[:, None], ys[None, :]).squeeze()
-#     xs, ys = np.meshgrid(xs, ys)
-#     return xs, ys, np.rot90(z)
+    # For multivariate functions, create a meshgrid where to interpolate the
+    # results. Taken from adaptive.learner.learnerND.plot
+    x, y = learner._bbox
+    scale_factor = np.prod(np.diag(learner._transform))
+    a_sq = np.sqrt(np.min(learner.tri.volumes()) * scale_factor)
+    n = max(10, int(0.658 / a_sq) * 2)
+    xs = ys = np.linspace(0, 1, n)
+    xs = xs * (x[1] - x[0]) + x[0]
+    ys = ys * (y[1] - y[0]) + y[0]
+    z = learner._ip()(xs[:, None], ys[None, :]).squeeze()
+    xs, ys = np.meshgrid(xs, ys)
+    return xs, ys, np.rot90(z)
 
 
 def _uniform_eval(
@@ -244,66 +244,68 @@ def _uniform_eval(
         return _eval_with_sympy()
 
 
-# class _AdaptiveEvaluationParameters(param.Parameterized):
-#     adaptive = param.Boolean(False, doc="""
-#         If True uses the adaptive algorithm, if the data series supports
-#         such functionality.""")
-#     adaptive_goal = param.Parameter(
-#         doc="""
-#         Controls the "smoothness" of the adaptive algorithm evaluation.
-#         Possible values:
+class _AdaptiveEvaluationParameters(param.Parameterized):
+    """A data series requiring adaptive evaluation using the python-adaptive
+    module should inherith from this mixin, which exposes the appropriate
+    parameters.
 
-#         * ``None`` (default):  it will use the following goal:
-#           ``lambda l: l.loss() < 0.01``
-#         * number (int or float). The lower the number, the more
-#           evaluation points. This number will be used in the following goal:
-#           `lambda l: l.loss() < number`
-#         * callable: a function requiring one input element, the learner. It
-#           must return a float number.
-#         """)
-#     loss_fn = param.Callable(doc="""
-#         The loss function to be used by the learner of the adaptive algorithm.
-#         Possible values:
+    The actual numerical evaluation is performed by the `_adaptive_eval`
+    function.
+    """
+    adaptive = param.Boolean(False, doc="""
+        If True uses the adaptive algorithm, if the data series supports
+        such functionality.""")
+    adaptive_goal = param.Parameter(
+        doc="""
+        Controls the "smoothness" of the adaptive algorithm evaluation.
+        Possible values:
 
-#         * ``None`` (default): it will use the ``default_loss`` from the
-#           adaptive module.
-#         * callable : look at adaptive.learner.learner1D or
-#           adaptive.learner.learnerND to find more loss functions.
-#         """)
+        * ``None`` (default):  it will use the following goal:
+          ``lambda l: l.loss() < 0.01``
+        * number (int or float). The lower the number, the more
+          evaluation points. This number will be used in the following goal:
+          `lambda l: l.loss() < number`
+        * callable: a function requiring one input element, the learner. It
+          must return a float number.
+        """)
+    loss_fn = param.Callable(doc="""
+        The loss function to be used by the learner of the adaptive algorithm.
+        Possible values:
 
-# class CommonAdaptiveEvaluation(_AdaptiveEvaluationParameters):
-#     """If a data series uses the python-adaptive module, it should
-#     inherith from this mixin.
-#     """
-#     _goal = param.Callable()
+        * ``None`` (default): it will use the ``default_loss`` from the
+          adaptive module.
+        * callable : look at adaptive.learner.learner1D or
+          adaptive.learner.learnerND to find more loss functions.
+        """)
+    _goal = param.Callable()
 
-#     _allowed_keys = [
-#         "adaptive", "adaptive_goal", "loss_fn"
-#     ]
+    _allowed_keys = [
+        "adaptive", "adaptive_goal", "loss_fn"
+    ]
 
-#     def __init__(self, *args, **kwargs):
-#         kwargs.setdefault("adaptive", cfg["adaptive"]["used_by_default"])
-#         kwargs.setdefault("adaptive_goal", cfg["adaptive"]["goal"])
-#         super().__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("adaptive", cfg["adaptive"]["used_by_default"])
+        kwargs.setdefault("adaptive_goal", cfg["adaptive"]["goal"])
+        super().__init__(*args, **kwargs)
 
-#     @param.depends("adaptive_goal", watch=True, on_init=True)
-#     def _update_goal(self):
-#         goal = lambda l: l.loss() < 0.01
-#         if self.adaptive_goal is not None:
-#             if isinstance(self.adaptive_goal, (int, float)):
-#                 goal = lambda l: l.loss() < self.adaptive_goal
-#             elif callable(self.adaptive_goal):
-#                 goal = self.adaptive_goal
-#             else:
-#                 warnings.warn(
-#                     f"``adaptive_goal`` received a value of type "
-#                     f"{type(self.adaptive_goal)}, which is not recognized. "
-#                     "Proceeding with the default goal."
-#                 )
-#         self._goal = goal
+    @param.depends("adaptive_goal", watch=True, on_init=True)
+    def _update_goal(self):
+        goal = lambda l: l.loss() < 0.01
+        if self.adaptive_goal is not None:
+            if isinstance(self.adaptive_goal, (int, float)):
+                goal = lambda l: l.loss() < self.adaptive_goal
+            elif callable(self.adaptive_goal):
+                goal = self.adaptive_goal
+            else:
+                warnings.warn(
+                    f"``adaptive_goal`` received a value of type "
+                    f"{type(self.adaptive_goal)}, which is not recognized. "
+                    "Proceeding with the default goal."
+                )
+        self._goal = goal
 
 
-class _UniformEvaluationParameters(param.Parameterized):
+class _GridEvaluationParameters(param.Parameterized):
     force_real_eval = param.Boolean(False, doc="""
         By default, numerical evaluation is performed over complex numbers,
         which is slower but produces correct results.
@@ -324,7 +326,38 @@ class _UniformEvaluationParameters(param.Parameterized):
         Specify the evaluation modules to be used by lambdify.""")
 
 
-class CommonUniformEvaluation(param.Parameterized):
+def _discretize(start, end, N, scale="linear", only_integers=False):
+    """Discretize a 1D domain.
+
+    Returns
+    =======
+
+    domain : np.ndarray with dtype=float or complex
+        The domain's dtype will be float or complex (depending on the
+        type of start/end) even if only_integers=True. It is left for
+        the downstream code to perform further casting, if necessary.
+    """
+    np = import_module('numpy')
+
+    if only_integers is True:
+        start, end = int(start), int(end)
+        N = end - start + 1
+
+    if scale == "linear":
+        return np.linspace(start, end, N)
+    return np.geomspace(start, end, N)
+
+
+def _update_range_value(series, expr):
+    """Given a symbolic expression, substitutes the parameters if
+    the series is interactive.
+    """
+    if not series._parametric_ranges:
+        return complex(expr)
+    return complex(expr.subs(series.params))
+
+
+class GridEvaluator(param.Parameterized):
     """Many plotting functions resemble this form:
 
     .. code-block:: python
@@ -352,8 +385,10 @@ class CommonUniformEvaluation(param.Parameterized):
     3. Evaluate each lambda function with the appropriate arrays and
        parameters.
 
-    Child series should call ``self._evaluate()`` in order to get
-    numerical data, which should then be post-processed.
+    Let ``evaluator`` be an instance of ``GridEvaluator``. Then,
+    series requiring this kind of evaluation should call
+    ``evaluator._evaluate()`` in order to get numerical data, which should
+    then be post-processed.
 
     Note: it's not mandatory to use this class. For example, control system
     related data series don't need this machinery.
@@ -466,13 +501,13 @@ class CommonUniformEvaluation(param.Parameterized):
         # create a 1D discretization
         for i, r in enumerate(self.series.ranges):
             discr_symbols.append(r[0])
-            c_start = self._update_range_value(r[1])
-            c_end = self._update_range_value(r[2])
+            c_start = _update_range_value(self.series, r[1])
+            c_end = _update_range_value(self.series, r[2])
             start = c_start.real if c_start.imag == c_end.imag == 0 else c_start
             end = c_end.real if c_start.imag == c_end.imag == 0 else c_end
             needs_integer_discr = self.series.only_integers or (
                 r[0] in self._needs_to_be_int)
-            d = self._discretize(
+            d = _discretize(
                 start, end, self.series.n[i],
                 scale=self.series.scales[i],
                 only_integers=needs_integer_discr
@@ -540,7 +575,7 @@ class CommonUniformEvaluation(param.Parameterized):
         for f in self._functions:
             r = _uniform_eval(*f, *args, modules=self.series.modules)
             # the evaluation might produce an int/float. Need this correction.
-            r = self._correct_shape(np.array(r), discr[0])
+            r = _correct_shape(np.array(r), discr[0])
             # sometime the evaluation is performed over arrays of type object.
             # hence, `result` might be of type object, which don't work well
             # with numpy real and imag functions.
@@ -563,18 +598,17 @@ class CommonUniformEvaluation(param.Parameterized):
                 args.append(self._discretized_domain[s])
         return args
 
-    def _update_range_value(self, t):
-        """Given a symbolic expression, `t`, substitutes the parameters if
-        this series is interactive.
-        """
-        if not self.series._parametric_ranges:
-            return complex(t)
-        return complex(t.subs(self.series.params))
+    # def _update_range_value(self, t):
+    #     """Given a symbolic expression, `t`, substitutes the parameters if
+    #     this series is interactive.
+    #     """
+    #     if not self.series._parametric_ranges:
+    #         return complex(t)
+    #     return complex(t.subs(self.series.params))
 
     # @param.depends("series.expr")
     def set_expressions(self):
         """Set the expression (or expressions) to be evaluated."""
-        print("Evaluator.set_expressions")
         e = self.series.expr
         is_iter = hasattr(e, "__iter__")
         is_callable = callable(e) if not is_iter else any(callable(t) for t in e)
@@ -663,25 +697,27 @@ class CommonUniformEvaluation(param.Parameterized):
             _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
             return _re
 
-        nargs = arity(self.color_func)
-        if nargs == 1:
-            if self.series.is_2Dline and self.series.is_parametric:
-                if len(args) == 2:
-                    # ColoredLineOver1DRangeSeries
-                    return self._correct_shape(
-                        self.color_func(args[0]), args[0])
-                # Parametric2DLineSeries
-                return self._correct_shape(self.color_func(args[2]), args[2])
-            elif self.series.is_3Dline and self.series.is_parametric:
-                return self._correct_shape(self.color_func(args[3]), args[3])
-            elif self.series.is_3Dsurface and self.series.is_parametric:
-                return self._correct_shape(self.color_func(args[3]), args[3])
-            return self._correct_shape(self.color_func(args[0]), args[0])
-        elif nargs == 2:
-            if self.series.is_3Dsurface and self.series.is_parametric:
-                return self._correct_shape(self.color_func(*args[3:]), args[3])
-            return self._correct_shape(self.color_func(*args[:2]), args[0])
-        return self._correct_shape(self.color_func(*args[:nargs]), args[0])
+        # # TODO: move this code into their respective classes
+        # nargs = arity(self.color_func)
+        # if nargs == 1:
+        #     if self.series.is_2Dline and self.series.is_parametric:
+        #         if len(args) == 2:
+        #             # ColoredLineOver1DRangeSeries
+        #             return _correct_shape(
+        #                 self.color_func(args[0]), args[0])
+        #         # Parametric2DLineSeries
+        #         return _correct_shape(self.color_func(args[2]), args[2])
+        #     elif self.series.is_3Dline and self.series.is_parametric:
+        #         return _correct_shape(self.color_func(args[3]), args[3])
+        #     elif self.series.is_3Dsurface and self.series.is_parametric:
+        #         return _correct_shape(self.color_func(args[3]), args[3])
+        #     return _correct_shape(self.color_func(args[0]), args[0])
+        # elif nargs == 2:
+        #     if self.series.is_3Dsurface and self.series.is_parametric:
+        #         return _correct_shape(self.color_func(*args[3:]), args[3])
+        #     return _correct_shape(self.color_func(*args[:2]), args[0])
+        # return _correct_shape(self.color_func(*args[:nargs]), args[0])
+
 
     @staticmethod
     def _discretize(start, end, N, scale="linear", only_integers=False):
@@ -704,38 +740,6 @@ class CommonUniformEvaluation(param.Parameterized):
         if scale == "linear":
             return np.linspace(start, end, N)
         return np.geomspace(start, end, N)
-
-    @staticmethod
-    def _correct_shape(a, b):
-        """Convert ``a`` to a np.ndarray of the same shape of ``b``.
-
-        Parameters
-        ==========
-
-        a : int, float, complex, np.ndarray
-            Usually, this is the result of a numerical evaluation of a
-            symbolic expression. Even if a discretized domain was used to
-            evaluate the function, the result can be a scalar (int, float,
-            complex).
-
-        b : np.ndarray
-            It represents the correct shape that ``a`` should have.
-
-        Returns
-        =======
-        new_a : np.ndarray
-            An array with the correct shape.
-        """
-        np = import_module('numpy')
-
-        if not isinstance(a, np.ndarray):
-            a = np.array(a)
-        if a.shape != b.shape:
-            if a.shape == ():
-                a = a * np.ones_like(b)
-            else:
-                a = a.reshape(b.shape)
-        return a
 
     # # TODO: do I need this?
     # # @param.depends("n", "params", watch=True)
@@ -770,19 +774,19 @@ class CommonUniformEvaluation(param.Parameterized):
     #         self.adaptive = False
 
 
-class ComplexCommonUniformEvaluation(CommonUniformEvaluation):
+class ComplexGridEvaluator(GridEvaluator):
     def _create_discretized_domain(self):
         """Discretize the ranges in case of uniform meshing strategy.
         """
         np = import_module('numpy')
-        start_x = self._update_range_value(self.series.start).real
-        end_x = self._update_range_value(self.series.end).real
-        start_y = self._update_range_value(self.series.start).imag
-        end_y = self._update_range_value(self.series.end).imag
-        x = self._discretize(
+        start_x = _update_range_value(self.series, self.series.start).real
+        end_x = _update_range_value(self.series, self.series.end).real
+        start_y = _update_range_value(self.series, self.series.start).imag
+        end_y = _update_range_value(self.series, self.series.end).imag
+        x = _discretize(
             start_x, end_x, self.series.n[0], self.series.scales[0],
             self.series.only_integers)
-        y = self._discretize(
+        y = _discretize(
             start_y, end_y, self.series.n[1], self.series.scales[1],
             self.series.only_integers)
         xx, yy = np.meshgrid(x, y)
@@ -790,16 +794,17 @@ class ComplexCommonUniformEvaluation(CommonUniformEvaluation):
         self._discretized_domain = {self.series.var: domain}
 
 
-class SliceVectorUniformEvaluation(CommonUniformEvaluation):
+class SliceVectorGridEvaluator(GridEvaluator):
     def _discretize(self):
         data = self.series.slice_surf_series.get_data()
+        from spb.series.series_2d_3d import PlaneSeries
         if isinstance(self.series.slice_surf_series, PlaneSeries):
             return data
         if self.series.slice_surf_series.is_parametric:
             return data[:3]
 
         # symbols used by this vector's discretization
-        discr_symbols = [r[0] for r in self.ranges]
+        discr_symbols = [r[0] for r in self.series.ranges]
         # ordered symbols from slice_surf_series
         order = self._discretize_helper(discr_symbols)
         return [data[k] for k in order]
@@ -810,6 +815,7 @@ class SliceVectorUniformEvaluation(CommonUniformEvaluation):
         # [yy, zz, f(yy, zz)], which has not the correct order expected by
         # the vector field's discretization. Here we are going to fix that.
 
+        from spb.series.series_2d_3d import SurfaceOver2DRangeSeries
         if not isinstance(self.series.slice_surf_series, SurfaceOver2DRangeSeries):
             raise TypeError("This helper function is meant to be used only "
                 "with non-parametric slicing surfaces of 2 variables. "
@@ -848,6 +854,7 @@ class SliceVectorUniformEvaluation(CommonUniformEvaluation):
         # symbols used by this vector's discretization
         discr_symbols = [r[0] for r in self.series.ranges]
 
+        from spb.series.series_2d_3d import SurfaceOver2DRangeSeries
         if (
             isinstance(self.series.slice_surf_series, SurfaceOver2DRangeSeries) and
             (not self.series.slice_surf_series.is_parametric)

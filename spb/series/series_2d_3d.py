@@ -6,7 +6,11 @@ from inspect import signature
 from spb.wegert import wegert
 from spb.defaults import cfg
 from spb.utils import (
-    _get_free_symbols, unwrap, extract_solution, tf_to_control
+    _get_free_symbols,
+    _correct_shape,
+    unwrap,
+    extract_solution,
+    tf_to_control
 )
 import sympy
 from sympy import (
@@ -32,1390 +36,19 @@ from matplotlib.cbook import (
 import warnings
 from spb.series.evaluator import (
     IntervalMathPrinter,
-    CommonUniformEvaluation,
-    ComplexCommonUniformEvaluation,
-    SliceVectorUniformEvaluation,
-    _UniformEvaluationParameters
+    _AdaptiveEvaluationParameters,
+    _GridEvaluationParameters,
+    GridEvaluator,
+    ComplexGridEvaluator,
+    _adaptive_eval,
 )
-
-
-# def format_warnings_on_one_line(
-#     message, category, filename, lineno, file=None, line=None
-# ):
-#     # https://stackoverflow.com/a/26433913/2329968
-#     return '%s:%s: %s: %s\n' % (filename, lineno, category.__name__, message)
-
-
-# warnings.formatwarning = format_warnings_on_one_line
-
-
-# class IntervalMathPrinter(PythonCodePrinter):
-#     """A printer to be used inside `plot_implicit` when `adaptive=True`,
-#     in which case the interval arithmetic module is going to be used, which
-#     requires the following edits.
-#     """
-#     def _print_And(self, expr):
-#         PREC = precedence(expr)
-#         return " & ".join(self.parenthesize(a, PREC)
-#                 for a in sorted(expr.args, key=default_sort_key))
-
-#     def _print_Or(self, expr):
-#         PREC = precedence(expr)
-#         return " | ".join(
-#             self.parenthesize(a, PREC)
-#             for a in sorted(expr.args, key=default_sort_key)
-#         )
-
-
-# def _adaptive_eval(
-#     wrapper_func, free_symbols, expr, bounds, *args,
-#     modules=None, goal=None, loss_fn=None
-# ):
-#     """Numerical evaluation of a symbolic expression with an adaptive
-#     algorithm [#fn1]_.
-
-#     Note: this is an experimental function, as such it is prone to changes.
-#     Please, do not use it in your code.
-
-#     Parameters
-#     ==========
-
-#     wrapper_func : callable
-#         The function to be evaluated, which will return any number of
-#         elements, depending on the computation to be done. The signature
-#         must be as follow: ``wrapper_func(f, *args)``
-#         where ``f`` is the lambda function representing the symbolic
-#         expression; ``*args`` is a list of arguments necessary to perform
-#         the evaluation.
-
-#     free_symbols : tuple or list
-#         The free symbols associated to ``expr``.
-
-#     expr : Expr
-#         The symbolic expression to be evaluated.
-
-#     bounds : tuple (min, max) or list of tuples
-#         The bounds for the numerical evaluation. Let `f(x)` be the function
-#         to be evaluated, then `x` will assume values between [min, max].
-#         For multivariate functions there is a correspondance between the
-#         symbols in ``free_symbols`` and the tuples in ``bounds``.
-
-#     args :
-#         The necessary arguments to perform the evaluation.
-
-#     modules : str or None
-#         The evaluation module. Refer to ``lambdify`` for a list of possible
-#         values. If ``None``, the evaluation will be done with Numpy/Scipy.
-
-#     goal : callable
-#         A function requiring one input element, the learner. It must return
-#         a float number. In practice, it controls the "smoothness" of the
-#         evaluation.
-
-#     loss_fn : callable or None
-#         The loss function to be used by the learner. Possible values:
-
-#         * ``None`` (default): it will use the ``default_loss`` from the
-#           adaptive module.
-#         * callable : look at adaptive.learner.learner1D or
-#           adaptive.learner.learnerND to find more loss functions.
-
-#     Returns
-#     =======
-
-#     data : np.ndarray
-#         A Numpy array containing the evaluation results. The shape is [NxM],
-#         where N is the random number of evaluation points and M is the sum
-#         between the number of free symbols and the number of elements
-#         returned by ``wrapper_func``.
-#         No matter the evaluation ``modules``, the array type is going to be
-#         complex.
-
-#     References
-#     ==========
-
-#     .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
-#     """
-#     np = import_module('numpy')
-#     adaptive = import_module(
-#         'adaptive',
-#         import_kwargs={'fromlist': ['runner', 'learner']},
-#         min_module_version='0.12.0',
-#         warn_not_installed=True)
-#     simple = adaptive.runner.simple
-#     Learner1D = adaptive.learner.learner1D.Learner1D
-#     LearnerND = adaptive.learner.learnerND.LearnerND
-#     default_loss_1d = adaptive.learner.learner1D.default_loss
-#     default_loss_nd = adaptive.learner.learnerND.default_loss
-#     from functools import partial
-
-#     if not callable(expr):
-#         # expr is a single symbolic expressions or a tuple of symb expressions
-#         one_d = hasattr(free_symbols, "__iter__") and (len(free_symbols) == 1)
-#     else:
-#         # expr is a user-provided lambda function
-#         one_d = len(signature(expr).parameters) == 1
-
-#     lf = default_loss_1d if one_d else default_loss_nd
-#     if loss_fn is not None:
-#         lf = loss_fn
-#     k = "loss_per_interval" if one_d else "loss_per_simplex"
-#     d = {k: lf}
-#     Learner = Learner1D if one_d else LearnerND
-
-#     if not callable(expr):
-#         # expr is a single symbolic expressions or a tuple of symb expressions
-#         try:
-#             # TODO: set cse=True once this issue is solved:
-#             # https://github.com/sympy/sympy/issues/24246
-#             f = lambdify(free_symbols, expr, modules=modules, cse=False)
-#             learner = Learner(
-#                 partial(wrapper_func, f, *args), bounds=bounds, **d)
-#             simple(learner, goal)
-#         except Exception as err:
-#             warnings.warn(
-#                 "The evaluation with %s failed.\n" % (
-#                     "NumPy/SciPy" if not modules else modules) +
-#                 "{}: {}\n".format(type(err).__name__, err) +
-#                 "Trying to evaluate the expression with Sympy, but it might "
-#                 "be a slow operation."
-#             )
-#             f = lambdify(free_symbols, expr, modules="sympy", cse=False)
-#             learner = Learner(
-#                 partial(wrapper_func, f, *args), bounds=bounds, **d)
-#             simple(learner, goal)
-#     else:
-#         # expr is a user-provided lambda function
-#         learner = Learner(
-#             partial(wrapper_func, expr, *args), bounds=bounds, **d)
-#         simple(learner, goal)
-
-#     if one_d:
-#         return learner.to_numpy()
-
-#     # For multivariate functions, create a meshgrid where to interpolate the
-#     # results. Taken from adaptive.learner.learnerND.plot
-#     x, y = learner._bbox
-#     scale_factor = np.prod(np.diag(learner._transform))
-#     a_sq = np.sqrt(np.min(learner.tri.volumes()) * scale_factor)
-#     n = max(10, int(0.658 / a_sq) * 2)
-#     xs = ys = np.linspace(0, 1, n)
-#     xs = xs * (x[1] - x[0]) + x[0]
-#     ys = ys * (y[1] - y[0]) + y[0]
-#     z = learner._ip()(xs[:, None], ys[None, :]).squeeze()
-#     xs, ys = np.meshgrid(xs, ys)
-#     return xs, ys, np.rot90(z)
-
-
-# def _uniform_eval(
-#     f1, f2, *args, modules=None, force_real_eval=False, has_sum=False
-# ):
-#     """
-#     Note: this is an experimental function, as such it is prone to changes.
-#     Please, do not use it in your code.
-#     """
-#     np = import_module('numpy')
-
-#     def wrapper_func(func, *args):
-#         try:
-#             return complex(func(*args))
-#         except (ZeroDivisionError, OverflowError):
-#             return complex(np.nan, np.nan)
-
-#     # NOTE: np.vectorize is much slower than numpy vectorized operations.
-#     # However, this modules must be able to evaluate functions also with
-#     # mpmath or sympy.
-#     wrapper_func = np.vectorize(wrapper_func, otypes=[complex])
-
-#     def _eval_with_sympy(err=None):
-#         if f2 is None:
-#             raise RuntimeError(
-#                 "Impossible to evaluate the provided numerical function "
-#                 "because there is no fall-back numerical function to "
-#                 "be evaluated with SymPy.")
-#         return wrapper_func(f2, *args)
-
-#     # TODO: same message as adaptive_eval... use common function
-#     def _msg(err):
-#         warnings.warn(
-#             "The evaluation with %s failed.\n" % (
-#                 "NumPy/SciPy" if not modules else modules) +
-#             "{}: {}\n".format(type(err).__name__, err) +
-#             "Trying to evaluate the expression with Sympy, but it might "
-#             "be a slow operation.",
-#             stacklevel=2
-#         )
-
-#     if modules == "sympy":
-#         return _eval_with_sympy()
-#     elif (modules is None) or ("numpy" in modules) or ("numexpr" in modules):
-#         try:
-#             # attempt to use numpy/numexpr native vectorized operation
-#             return f1(*args)
-#         except (ValueError, TypeError):
-#             # attempt to use numpy/numexpr with numpy.vectorize
-#             return wrapper_func(f1, *args)
-#         except Exception as err:
-#             # fall back to sympy
-#             _msg(err)
-#             return _eval_with_sympy()
-
-#     try:
-#         # any other module attempts to use numpy.vectorize
-#         return wrapper_func(f1, *args)
-#     except Exception as err:
-#         # fall back to sympy
-#         _msg(err)
-#         return _eval_with_sympy()
-
-
-def _get_wrapper_for_expr(ret):
-    wrapper = "%s"
-    if ret == "real":
-        wrapper = "re(%s)"
-    elif ret == "imag":
-        wrapper = "im(%s)"
-    elif ret == "abs":
-        wrapper = "abs(%s)"
-    elif ret == "arg":
-        wrapper = "arg(%s)"
-    return wrapper
-
-
-# class Label(param.Parameterized):
-#     _label_str = param.String("", doc="""Contains str representation.""")
-#     _label_latex = param.String("", doc="""Contains latex representation.""")
-#     doc = param.String("")
-
-#     def __get__(self, obj, objtype):
-#         return self._label_latex
-
-#     def __set__(self, obj, val):
-#         self.param.update({
-#             "_label_str": val,
-#             "_label_latex": val,
-#         })
-
-
-class _ParametersDict(param.Dict):
-    """As of `param 2.2.0, there is no mechanism to preprocess the value
-    of an attribute just before it is set. This class allows to do just that.
-
-    https://discourse.holoviz.org/t/what-is-the-best-way-to-make-custom-validation-and-transform-before-validation/3369
-    """
-
-    def __set__(self, obj, val):
-        """Preprocess the parameters provided to the series.
-
-        NOTE: at this point, if the data series is being instantiated,
-        val is a dictionary with the following form:
-            {
-                symb1: (1, 0, 10, "label"),
-                symb2: FloatSlider(value=2, min=0, max=5),
-                (symb3, symb4): RangeSlider(...),
-            }
-        On the other hand, if the data series is being updated with new
-        data from the widgets, val has this form:
-            {
-                symb1: val1,
-                symb2: val2,
-                (symb3, symb4): (val3, val4),
-            }
-
-        Here I unpack (symb3, symb4) so that self.param.keys()
-        contains only symbols. This is what val is going to look
-        after the preprocessing:
-            {
-                symb1: (1, 0, 10, "label"),
-                symb2: FloatSlider(value=2, min=0, max=5),
-                symb3: RangeSlider(...),
-                symb4: RangeSlider(...),
-            }
-        Or if numeric values are provided:
-            {
-                symb1: val1,
-                symb2: val2,
-                symb3: val3,
-                symb4: val4,
-            }
-        """
-        # NOTE: Data series are unable to extract numerical values
-        # from widgets. This step is done by iplot(). Before executing
-        # the get_data() method, be sure to provide a ``params``
-        # dictionary mapping symbols to numeric values.
-
-        if any(isinstance(t, (list, tuple)) for t in val.keys()):
-            new_params = {}
-            for k, v in val.items():
-                if isinstance(k, (list, tuple)):
-                    # we are dealing with a multivalued widget
-                    if isinstance(v, (list, tuple)):
-                        # this is executed when params is updated with new
-                        # numerical data from the widget
-                        for symb, num in zip(k, v):
-                            new_params[symb] = num
-                    else:
-                        # this is executed at data series instantiation
-                        for symb in k:
-                            new_params[symb] = v
-                else:
-                    new_params[k] = v
-            val = new_params
-
-        super().__set__( obj, val)
-
-
-class _BaseSeriesParameters(param.Parameterized):
-    # NOTE: some data series should not be shown on the legend, for example
-    # wireframe lines on 3D plots.
-    show_in_legend = param.Boolean(True, doc="""
-        Toggle the visibility of the data series on the legend.""")
-    colorbar = param.Boolean(True, doc="""
-        Toggle the visibility of the colorbar associated to the current data
-        series.""")
-    use_cm = param.Boolean(False, doc="""
-        Toggle the use of a colormap. By default, some series might use a
-        colormap to display the necessary data. Setting this attribute
-        to False will inform the associated renderer to use solid color.""")
-    # TODO: can I remove _label_str and only keep label?
-    label = param.String("", doc="""
-        Get or set the label associated to this series, which will be
-        eventually shown on the legend or colorbar. By default the data series
-        stores two labels: one for the string represation of the symbolic
-        expression, the other for the latex representation.
-        If the user set this parameter, both labels will receive the same
-        value. To retrieve one or the other representation, call the
-        ``get_label`` method of the data series.""")
-    rendering_kw = param.Dict(doc="""
-        Keyword arguments to be passed to the renderers of the selected
-        plotting library in order to further customize the appearance of this
-        data series.""")
-    # TODO: can the code be modified so that series.params ALWAYS returns
-    # a dictionary mapping symbols to numerical values? This requires
-    # the extraction of values during series instantiation.
-    params = _ParametersDict({}, doc="""
-        A dictionary mapping symbols to parameters. If provided, this
-        dictionary enables the interactive-widgets plot, which doesn't support
-        the adaptive algorithm (meaning it will use ``adaptive=False``).
-
-        When calling a plotting function, the parameter can be specified with:
-
-        * a widget from the ``ipywidgets`` module.
-        * a widget from the ``panel`` module.
-        * a tuple of the form:
-           `(default, min, max, N, tick_format, label, spacing)`,
-           which will instantiate a
-           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
-           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
-           depending on the spacing strategy. In particular:
-
-           - default, min, max : float
-                Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers. The order of these 3
-                numbers is not important: the module will figure it out
-                which is what.
-           - N : int, optional
-                Number of steps of the slider.
-           - tick_format : str or None, optional
-                Provide a formatter for the tick value of the slider.
-                Default to ``".2f"``.
-           - label: str, optional
-                Custom text associated to the slider.
-           - spacing : str, optional
-                Specify the discretization spacing. Default to ``"linear"``,
-                can be changed to ``"log"``.
-
-        Notes:
-
-        1. parameters cannot be linked together (ie, one parameter
-           cannot depend on another one).
-        2. If a widget returns multiple numerical values (like
-           :py:class:`panel.widgets.slider.RangeSlider` or
-           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
-           then a corresponding number of symbols must be provided.
-
-        Here follows a couple of examples. If ``imodule="panel"``:
-
-        .. code-block:: python
-
-            import panel as pn
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
-                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
-            }
-
-        Or with ``imodule="ipywidgets"``:
-
-        .. code-block:: python
-
-            import ipywidgets as w
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
-                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
-            }
-
-        When instantiating a data series directly, ``params`` must be a
-        dictionary mapping symbols to numerical values.
-
-        Let ``series`` be any data series. Then ``series.params`` returns a
-        dictionary mapping symbols to numerical values.
-        """)
-    tx = param.Callable(doc="""
-        Numerical transformation function to be applied to the data on the
-        x-axis.""")
-    ty = param.Callable(doc="""
-        Numerical transformation function to be applied to the data on the
-        y-axis.""")
-    # TODO: xscale or x_scale?
-    xscale = param.Selector(
-        default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the x-direction.""")
-    yscale = param.Selector(
-        default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the y-direction.""")
-    zscale = param.Selector(
-        default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the z-direction.""")
-    # TODO: set it as a ClassSelector, then transform it to list with
-    # param.depends?
-    n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
-        Number of discretization points along the x, y, z directions,
-        respectively. It can easily be set with ``n=number``, which will
-        set ``number`` for each element of the list.
-        For surface, contour, 2d vector field plots it can be set with
-        ``n=[num1, num2]``. For 3D implicit plots it can be set with
-        ``n=[num1, num2, num3]``.
-
-        Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
-        set in order to modify the respective element of the ``n`` list.""")
-    # TODO: better doc for all data series
-    color_func = param.Parameter(default=None, doc="""
-        A color function to be applied to the numerical data. It can be:
-
-        * None: no color function.
-        * callable: a function returning numerical data.
-        * Expr: A symbolic expression having at most as many free symbols as
-          ``expr``.
-        """)
-
-
-class _TzParameter(param.Parameterized):
-    tz = param.Callable(doc="""
-        Numerical transformation function to be applied to the data on the
-        z-axis, if the data series is used in 3D plots.""")
-
-
-class _TpParameter(param.Parameterized):
-    tp = param.Callable(doc="""
-        Numerical transformation function to be applied to the data on the
-        parameter, if the data series is used in parametric plots (the one
-        using colormaps).""")
-
-
-class _IsPolarForLineParameter(param.Parameterized):
-    is_polar = param.Boolean(False, doc="""
-        If True, apply a cartesian to polar transformation.""")
-
-
-class _IsPolarForSurfaceParameter(param.Parameterized):
-    is_polar = param.Boolean(False, doc="""
-        If True, requests a polar discretization. In this case,
-        ``range1`` represents the radius, while ``range2`` represents
-        the angle.""")
-
-
-class BaseSeries(_BaseSeriesParameters):
-    """Base class for the data objects containing stuff to be plotted.
-
-    Notes
-    =====
-
-    The backend should check if it supports the data series that it's given.
-    It's the backend responsibility to know how to use the data series that
-    it's given.
-    """
-
-    # Some flags follow. The rationale for using flags instead of checking
-    # base classes is that setting multiple flags is simpler than multiple
-    # inheritance.
-
-    is_2Dline = False
-
-    is_3Dline = False
-
-    is_3Dsurface = False
-
-    is_contour = False
-
-    is_implicit = False
-    # Both contour and implicit series uses colormap, but they are different.
-    # Hence, a different attribute
-
-    is_parametric = False
-
-    is_interactive = False
-    # An interactive series can update its data.
-
-    is_vector = False
-    is_2Dvector = False
-    is_3Dvector = False
-    is_slice = False
-    # Represents a 2D or 3D vector
-
-    is_complex = False
-    # Represent a complex expression
-    is_domain_coloring = False
-
-    is_geometry = False
-    # If True, it represents an object of the sympy.geometry module
-
-    is_generic = False
-    # Implement back-compatibility with sympy.plotting <= 1.11
-    # Please, read NOTE section on GenericDataSeries
-
-    is_grid = False
-    # Represents grids like s-grid, z-grid, n-grid, ...
-
-    _allowed_keys = []
-    # contains a list of keyword arguments supported by the series. It will be
-    # used to validate the user-provided keyword arguments.
-
-    _N = 100
-    # default number of discretization points for uniform sampling. Each
-    # subclass can set its number.
-
-    #####################
-    # Instance Attributes
-    #####################
-
-
-    _label_str = param.String("", doc="""Contains str representation.""")
-    _label_latex = param.String("", doc="""Contains latex representation.""")
-    is_interactive = param.Boolean(False, constant=True, doc="""
-        If True, this data series contains symbolic expressions with
-        parameters which received numerical values from widgets.""")
-    # TODO: I probably don't need this if I can better implement ``params``
-    # in the first place. See TODO on ``params``.
-    _original_params = param.Dict({}, doc="""
-        This stores a copy of the ``params`` dictionary, just as it was
-        provided by the user during a plotting function call. It is used
-        by spb.interactive to keep track of multi-values widgets, which
-        allows the mapping of symbols to the appropriate numerical values.""")
-    _parametric_ranges = param.Boolean(False, doc="""
-        Whether the series contains any parametric range, which is a range
-        depending on symbols contained in ``params.keys()``.""")
-    evaluator = param.ClassSelector(class_=CommonUniformEvaluation, doc="""
-        The machinery that generates numerical data starting from
-        the parameters of the current series.""")
-    expr = param.ClassSelector(
-        class_=(list, tuple, Tuple, Expr, GeometryEntity), doc="""
-        This parameter is meant to be read-only. Depending on the type of the
-        data series, it returns one or more symbolic expressions (or numerical
-        functions). This parameter is used by the evaluator in order to
-        retrieve the expressions to be lambdified and evaluated.""")
-
-    @param.depends("expr", watch=True)
-    def _update_evaluator(self):
-        if self.evaluator is not None:
-            self.evaluator.set_expressions()
-
-    @param.depends("n", watch=True, on_init=True)
-    def _cast_to_int(self):
-        # convert the number of discretization points to integer.
-        # this allows the user to specify float numbers, like
-        # ``n=1e04``.
-        self.n = [int(t) for t in self.n]
-
-    # TODO: do I need this?
-    @param.depends("rendering_kw", watch=True, on_init=True)
-    def _enforce_dict_on_rendering_kw(self):
-        if self.rendering_kw is None:
-            self.rendering_kw = {}
-
-    @param.depends("_label_str", watch=True, on_init=True)
-    def _update_label(self):
-        # NOTE: this implements back-compatibility with sympy.plotting
-        self.label = self._label_str
-
-    @param.depends("label", watch=True)
-    def _update_latex_and_str_labels(self):
-        # this is triggered when someone changes the label after instantiating
-        # the plot, like p[0].label = "something"
-        self._label_latex = self.label
-        self._label_str = self.label
-
-    _allowed_keys = [
-        "show_in_legend", "colorbar", "use_cm", "scatter", "label",
-        "n1", "n2", "n3", "xscale", "yscale", "zscale", "params",
-        "rendering_kw", "tx", "ty", "tz", "tp", "color_func"
-    ]
-
-    def __init__(self, *args, **kwargs):
-        print("BaseSeries.__init__", kwargs)
-        # allow the user to specify the number of discretization points
-        # using different keyword arguments
-        kwargs = _set_discretization_points(kwargs.copy(), type(self))
-
-        # if user provides a label, overrides both the string and latex
-        # representations
-        label = kwargs.pop("label", None)
-        if label is not None:
-            kwargs["_label_str"] = kwargs["_label_latex"] = label
-
-        _params = kwargs.setdefault("params", {})
-        # this is used by spb.interactive to keep track of multi-values widgets
-        kwargs.setdefault("_original_params", kwargs.get("params", {}))
-
-        # remove keyword arguments that are not parameters of this series
-        kwargs = {
-            k: v for k, v in kwargs.items()
-            if k in self._get_list_of_allowed_params()
-        }
-
-        super().__init__(*args, **kwargs)
-
-        # contains the symbolic expression(s) to be plotted
-        self._expr = None
-        # eventually it will be populated with tuples (symbol, min, max)
-        self._ranges = []
-
-        if len(_params) > 0:
-            with param.edit_constant(self):
-                self.is_interactive = True
-
-    def _post_init(self):
-        exprs = self.expr if hasattr(self.expr, "__iter__") else [self.expr]
-        if any(callable(e) for e in exprs) and self.params:
-            raise TypeError(
-                "`params` was provided, hence an interactive plot "
-                "is expected. However, interactive plots do not support "
-                "user-provided numerical functions.")
-
-        # if the expressions is a lambda function and no label has been
-        # provided, then its better to do the following in order to avoid
-        # suprises on the backend
-        if any(callable(e) for e in exprs):
-            if self._label_str == str(self.expr):
-                self.label = ""
-
-        self._check_fs()
-
-        # if hasattr(self, "adaptive") and self.adaptive and self.params:
-        #     warnings.warn(
-        #         "`params` was provided, hence an interactive plot "
-        #         "is expected. However, interactive plots do not support "
-        #         "adaptive evaluation. Automatically switched to "
-        #         "adaptive=False.")
-        #     self.adaptive = False
-
-    @classmethod
-    def _get_list_of_allowed_params(cls):
-        # also allows n1, n2, n3. they will be removed later on inside
-        # _set_discretization_points
-        return list(cls.param) + [
-            "n1", "n2", "n3", "nb_of_points",
-            "nb_of_points_x", "nb_of_points_y",
-            "nb_of_points_u", "nb_of_points_v"
-        ]
-
-    def _block_lambda_functions(self, *exprs):
-        if any(callable(e) for e in exprs):
-            raise TypeError(type(self).__name__ + " requires a symbolic "
-                "expression.")
-
-    def _check_fs(self):
-        """ Checks if there are enogh parameters and free symbols.
-        """
-        exprs, ranges = self.expr, self.ranges
-        params, label = self.params, self.label
-        exprs = exprs if hasattr(exprs, "__iter__") else [exprs]
-        if any(callable(e) for e in exprs):
-            return
-
-        # from the expression's free symbols, remove the ones used in
-        # the parameters and the ranges
-        fs = _get_free_symbols(exprs)
-        fs = fs.difference(params.keys())
-        if ranges is not None:
-            fs = fs.difference([r[0] for r in ranges])
-
-        if len(fs) > 0:
-            if (ranges is not None) and len(ranges) > 0:
-                erl = "Expression: %s\nRanges: %s\nLabel: %s\n" % (
-                    exprs, ranges, label)
-            else:
-                erl = "Expression: %s\nLabel: %s\n" % (exprs, label)
-            raise ValueError(
-                "Incompatible expression and parameters.\n%s"
-                "params: %s\n"
-                "Specify what these symbols represent: %s\n"
-                "Are they ranges or parameters?" % (erl, params, fs)
-            )
-
-        # verify that all symbols are known (they either represent plotting
-        # ranges or parameters)
-        range_symbols = [r[0] for r in ranges]
-        for r in ranges:
-            fs = set().union(*[e.free_symbols for e in r[1:]])
-            if any(t in fs for t in range_symbols):
-                raise ValueError("Range symbols can't be included into "
-                    "minimum and maximum of a range. "
-                    "Received range: %s" % str(r))
-            remaining_fs = fs.difference(params.keys())
-            if len(remaining_fs) > 0:
-                raise ValueError(
-                    "Unkown symbols found in plotting range: %s. " % (r,) +
-                    "Are the following parameters? %s" % remaining_fs)
-
-    # def _update_range_value(self, t):
-    #     """Given a symbolic expression, `t`, substitutes the parameters if
-    #     this series is interactive.
-    #     """
-    #     if not self._parametric_ranges:
-    #         return complex(t)
-    #     return complex(t.subs(self.params))
-
-    # @property
-    # def expr(self):
-    #     """Return the expression (or expressions) of the series."""
-    #     return self._expr
-
-    # @expr.setter
-    # def expr(self, v):
-    #     self._expr = v
-
-    @property
-    def is_3D(self):
-        flags3D = [self.is_3Dline, self.is_3Dsurface, self.is_3Dvector]
-        return any(flags3D)
-
-    @property
-    def is_line(self):
-        flagslines = [self.is_2Dline, self.is_3Dline]
-        return any(flagslines)
-
-    def _line_surface_color(self, prop, val):
-        """This method enables back-compatibility with old sympy.plotting"""
-        # print("_line_surface_color")
-        # NOTE: color_func is set inside the init method of the series.
-        # If line_color/surface_color is not a callable, then color_func will
-        # be set to None.
-        prop = prop[1:] # remove underscore
-        if callable(val) or isinstance(val, Expr):
-            prop_val = None
-            cf_val = val
-        else:
-            prop_val = val
-            cf_val = None
-
-        # prevents the triggering of events, which would cause recursion error
-        with param.discard_events(self):
-            setattr(self, prop, prop_val)
-            if val is not None:
-                # avoid resetting color_func when user writes line_color=None
-                self.color_func = cf_val
-
-    @property
-    def scales(self):
-        return [self.xscale, self.yscale, self.zscale]
-
-    # @staticmethod
-    # def _discretize(start, end, N, scale="linear", only_integers=False):
-    #     """Discretize a 1D domain.
-
-    #     Returns
-    #     =======
-
-    #     domain : np.ndarray with dtype=float or complex
-    #         The domain's dtype will be float or complex (depending on the
-    #         type of start/end) even if only_integers=True. It is left for
-    #         the downstream code to perform further casting, if necessary.
-    #     """
-    #     np = import_module('numpy')
-
-    #     if only_integers is True:
-    #         start, end = int(start), int(end)
-    #         N = end - start + 1
-
-    #     if scale == "linear":
-    #         return np.linspace(start, end, N)
-    #     return np.geomspace(start, end, N)
-
-    # @staticmethod
-    # def _correct_shape(a, b):
-    #     """Convert ``a`` to a np.ndarray of the same shape of ``b``.
-
-    #     Parameters
-    #     ==========
-
-    #     a : int, float, complex, np.ndarray
-    #         Usually, this is the result of a numerical evaluation of a
-    #         symbolic expression. Even if a discretized domain was used to
-    #         evaluate the function, the result can be a scalar (int, float,
-    #         complex).
-
-    #     b : np.ndarray
-    #         It represents the correct shape that ``a`` should have.
-
-    #     Returns
-    #     =======
-    #     new_a : np.ndarray
-    #         An array with the correct shape.
-    #     """
-    #     np = import_module('numpy')
-
-    #     if not isinstance(a, np.ndarray):
-    #         a = np.array(a)
-    #     if a.shape != b.shape:
-    #         if a.shape == ():
-    #             a = a * np.ones_like(b)
-    #         else:
-    #             a = a.reshape(b.shape)
-    #     return a
-
-    # def eval_color_func(self, *args):
-    #     """Evaluate the color function.
-
-    #     Parameters
-    #     ==========
-
-    #     args : tuple
-    #         Arguments to be passed to the coloring function. Can be coordinates
-    #         or parameters or both.
-
-    #     Notes
-    #     =====
-
-    #     The backend will request the data series to generate the numerical
-    #     data. Depending on the data series, either the data series itself or
-    #     the backend will eventually execute this function to generate the
-    #     appropriate coloring value.
-    #     """
-    #     np = import_module('numpy')
-    #     if self.color_func is None:
-    #         # NOTE: with the line_color and surface_color attributes
-    #         # (back-compatibility with the old sympy.plotting module) it is
-    #         # possible to create a plot with a callable line_color (or
-    #         # surface_color). For example:
-    #         # p = plot(sin(x), line_color=lambda x, y: -y)
-    #         # This will create a ColoredLineOver1DRangeSeries, which
-    #         # efffectively is a parametric series. Later we could change
-    #         # it to a string value:
-    #         # p[0].line_color = "red"
-    #         # However, this won't apply the red color, because we can't ask
-    #         # a parametric series to be non-parametric!
-    #         warnings.warn(
-    #             "This is likely not the result you were  looking for. "
-    #             "Please, re-execute the plot command, this time "
-    #             "with the appropriate line_color or surface_color")
-    #         return np.ones_like(args[0])
-
-    #     if self._eval_color_func_with_signature:
-    #         args = self._aggregate_args()
-    #         color = self.color_func(*args)
-    #         _re, _im = np.real(color), np.imag(color)
-    #         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
-    #         return _re
-
-    #     nargs = arity(self.color_func)
-    #     if nargs == 1:
-    #         if self.is_2Dline and self.is_parametric:
-    #             if len(args) == 2:
-    #                 # ColoredLineOver1DRangeSeries
-    #                 return self._correct_shape(
-    #                     self.color_func(args[0]), args[0])
-    #             # Parametric2DLineSeries
-    #             return self._correct_shape(self.color_func(args[2]), args[2])
-    #         elif self.is_3Dline and self.is_parametric:
-    #             return self._correct_shape(self.color_func(args[3]), args[3])
-    #         elif self.is_3Dsurface and self.is_parametric:
-    #             return self._correct_shape(self.color_func(args[3]), args[3])
-    #         return self._correct_shape(self.color_func(args[0]), args[0])
-    #     elif nargs == 2:
-    #         if self.is_3Dsurface and self.is_parametric:
-    #             return self._correct_shape(self.color_func(*args[3:]), args[3])
-    #         return self._correct_shape(self.color_func(*args[:2]), args[0])
-    #     return self._correct_shape(self.color_func(*args[:nargs]), args[0])
-
-    def get_data(self):
-        """Compute and returns the numerical data.
-
-        The number of arrays returned by this method depends on the
-        specific instance. Let ``s`` be an instance of ``BaseSeries``.
-        Make sure to read ``help(s.get_data)`` to understand what it returns.
-        """
-        raise NotImplementedError
-
-    def _get_wrapped_label(self, label, wrapper):
-        """Given a latex representation of an expression, wrap it inside
-        some characters. Matplotlib needs "$%s%$", K3D-Jupyter needs "%s".
-        """
-        return wrapper % label
-
-    def get_label(self, use_latex=False, wrapper="$%s$"):
-        """Return the label to be used to display the expression.
-
-        Parameters
-        ==========
-        use_latex : bool
-            If False, the string representation of the expression is returned.
-            If True, the latex representation is returned.
-        wrapper : str
-            The backend might need the latex representation to be wrapped by
-            some characters. Default to ``"$%s$"``.
-
-        Returns
-        =======
-        label : str
-        """
-        if use_latex is False:
-            return self._label_str
-        if self._label_str == str(self.expr):
-            return self._get_wrapped_label(self._label_latex, wrapper)
-        return self._label_latex
-
-    @property
-    def ranges(self):
-        return self._ranges
-
-    @ranges.setter
-    def ranges(self, val):
-        new_vals = []
-        for v in val:
-            if v is not None:
-                new_vals.append(tuple(map(sympify, v)))
-
-        numbers_or_expressions = set().union(*[nv[1:] for nv in new_vals])
-        fs = set().union(*[e.free_symbols for e in numbers_or_expressions])
-        if len(fs) > 0:
-            self._parametric_ranges = True
-        self._ranges = new_vals
-
-    def _apply_transform(self, *args):
-        """Apply transformations to the results of numerical evaluation.
-
-        Parameters
-        ==========
-        args : tuple
-            Results of numerical evaluation.
-
-        Returns
-        =======
-        transformed_args : tuple
-            Tuple containing the transformed results.
-        """
-        raise NotImplementedError
-
-        # elif (
-        #     (len(args) == 3) and isinstance(self, (
-        #         Parametric2DLineSeries, ColoredLineOver1DRangeSeries,
-        #         ColoredSystemResponseSeries))
-        # ):
-        #     x, y, u = args
-        #     return (t(x, self.tx), t(y, self.ty), t(u, self.tp))
-        # elif len(args) == 3:
-        #     x, y, z = args
-        #     return t(x, self.tx), t(y, self.ty), t(z, self.tz)
-        # elif (len(args) == 4) and isinstance(self, Parametric3DLineSeries):
-        #     x, y, z, u = args
-        #     return (t(x, self.tx), t(y, self.ty), t(z, self.tz), t(u, self.tp))
-        # elif len(args) == 4:  # 2D vector plot
-        #     x, y, u, v = args
-        #     return (
-        #         t(x, self.tx), t(y, self.ty),
-        #         t(u, self.tx), t(v, self.ty)
-        #     )
-        # elif (len(args) == 5) and isinstance(self, ParametricSurfaceSeries):
-        #     x, y, z, u, v = args
-        #     return (t(x, self.tx), t(y, self.ty), t(z, self.tz), u, v)
-        # elif (len(args) == 6) and self.is_3Dvector:  # 3D vector plot
-        #     x, y, z, u, v, w = args
-        #     return (
-        #         t(x, self.tx), t(y, self.ty), t(z, self.tz),
-        #         t(u, self.tx), t(v, self.ty), t(w, self.tz)
-        #     )
-        # elif len(args) == 6:  # complex plot
-        #     x, y, _abs, _arg, img, colors = args
-        #     return (
-        #         t(x, self.tx), t(y, self.ty), t(_abs, self.tz),
-        #         _arg, img, colors
-        #     )
-        # return args
-
-    def _get_transform_helper(self):
-        t = lambda x, transform: x if transform is None else transform(x)
-        return t
-
-    def _str_helper(self, s):
-        pre, post = "", ""
-        if self.is_interactive:
-            pre = "interactive "
-            post = " and parameters " + str(tuple(self.params.keys()))
-        return pre + s + post
-
-
-# class _AdaptiveEvaluationParameters(param.Parameterized):
-#     adaptive = param.Boolean(False, doc="""
-#         If True uses the adaptive algorithm, if the data series supports
-#         such functionality.""")
-#     adaptive_goal = param.Parameter(
-#         doc="""
-#         Controls the "smoothness" of the adaptive algorithm evaluation.
-#         Possible values:
-
-#         * ``None`` (default):  it will use the following goal:
-#           ``lambda l: l.loss() < 0.01``
-#         * number (int or float). The lower the number, the more
-#           evaluation points. This number will be used in the following goal:
-#           `lambda l: l.loss() < number`
-#         * callable: a function requiring one input element, the learner. It
-#           must return a float number.
-#         """)
-#     loss_fn = param.Callable(doc="""
-#         The loss function to be used by the learner of the adaptive algorithm.
-#         Possible values:
-
-#         * ``None`` (default): it will use the ``default_loss`` from the
-#           adaptive module.
-#         * callable : look at adaptive.learner.learner1D or
-#           adaptive.learner.learnerND to find more loss functions.
-#         """)
-
-# class CommonAdaptiveEvaluation(_AdaptiveEvaluationParameters):
-#     """If a data series uses the python-adaptive module, it should
-#     inherith from this mixin.
-#     """
-#     _goal = param.Callable()
-
-#     _allowed_keys = [
-#         "adaptive", "adaptive_goal", "loss_fn"
-#     ]
-
-#     def __init__(self, *args, **kwargs):
-#         kwargs.setdefault("adaptive", cfg["adaptive"]["used_by_default"])
-#         kwargs.setdefault("adaptive_goal", cfg["adaptive"]["goal"])
-#         super().__init__(*args, **kwargs)
-
-#     @param.depends("adaptive_goal", watch=True, on_init=True)
-#     def _update_goal(self):
-#         goal = lambda l: l.loss() < 0.01
-#         if self.adaptive_goal is not None:
-#             if isinstance(self.adaptive_goal, (int, float)):
-#                 goal = lambda l: l.loss() < self.adaptive_goal
-#             elif callable(self.adaptive_goal):
-#                 goal = self.adaptive_goal
-#             else:
-#                 warnings.warn(
-#                     f"``adaptive_goal`` received a value of type "
-#                     f"{type(self.adaptive_goal)}, which is not recognized. "
-#                     "Proceeding with the default goal."
-#                 )
-#         self._goal = goal
-
-
-# class _UniformEvaluationParameters(param.Parameterized):
-#     force_real_eval = param.Boolean(False, doc="""
-#         By default, numerical evaluation is performed over complex numbers,
-#         which is slower but produces correct results.
-#         However, when the symbolic expression is converted to a numerical
-#         function with lambdify, the resulting function may not like to
-#         be evaluated over complex numbers. In such cases, forcing the
-#         evaluation to be performed over real numbers might be a good choice.
-#         The plotting module should be able to detect such occurences and
-#         automatically activate this option. If that is not the case, or
-#         evaluation performance is of paramount importance, set this parameter
-#         to True, but be aware that it might produce wrong results.
-#         It only works with ``adaptive=False``.""")
-#     only_integers = param.Boolean(False, doc="""
-#         Discretize the domain using only integer numbers. It only works when
-#         ``adaptive=False``. When this parameter is True, the number of
-#         discretization points is choosen by the algorithm.""")
-#     modules = param.Parameter(None, doc="""
-#         Specify the evaluation modules to be used by lambdify.""")
-
-
-# class CommonUniformEvaluation(_UniformEvaluationParameters):
-#     """Many plotting functions resemble this form:
-
-#     .. code-block:: python
-
-#        plot_function(
-#            expr1, expr2 [opt], ...,
-#            range1, range2 [opt], ...,
-#            params=dict()
-#        )
-
-#     Namely, there are one or more symbolic expressions to represent a curve
-#     or surface, that should be evaluated over one or more ranges, with zero
-#     or more parameters (whose values come from interactive widgets).
-
-#     This class automates the following processes:
-
-#     1. Create lambda functions from symbolic expressions. In particular, it
-#        creates one lambda function to be evaluated with the specified module
-#        (usually NumPy), and another lambda function to be evaluated with
-#        SymPy, in case there are any errors with the first.
-#     2. Create numerical arrays representing ranges, according to the specified
-#        discretization strategy (linear or logarithmic). Usually, these arrays
-#        are of type complex, unless ``force_real_eval=True`` is provided in the
-#        ``plot_function`` call.
-#     3. Evaluate each lambda function with the appropriate arrays and
-#        parameters.
-
-#     Child series should call ``self._evaluate()`` in order to get
-#     numerical data, which should then be post-processed.
-
-#     Note: it's not mandatory to use this class. For example, control system
-#     related data series don't need this machinery.
-#     """
-
-#     _functions = param.List([], doc="""
-#         List of numerical functions representing the expressions to evaluate.
-#         It is generated by the *Series with lambdify.""")
-
-#     _signature = param.List([], item_type=Expr, doc="""
-#         Signature of the numerical functions. It is generated by the
-#         *Series.""")
-
-#     _discretized_domain = param.Dict({}, doc="""
-#         Contain a dictionary with the discretized ranges, used to evaluate
-#         the numerical functions.""")
-
-#     _needs_to_be_int = param.List([], doc="""
-#         Consider a generic summation, for example:
-#             s = Sum(cos(pi * x), (x, 1, y))
-#         This gets lambdified to something like:
-#             sum(cos(pi*x) for x in range(1, y+1))
-#         Hence, y needs to be an integer, otherwise it raises:
-#             TypeError: 'complex' object cannot be interpreted as an integer
-#         This list will contains symbols that are upper bound to summations
-#         or products.""")
-
-#     _allowed_keys = [
-#         "force_real_eval", "only_integers", "modules", "is_polar"
-#     ]
-
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-
-#         if hasattr(self, "adaptive") and self.adaptive and self.only_integers:
-#             warnings.warn(
-#                 "``only_integers=True`` is not supported by the adaptive "
-#                 "algorithm. Automatically setting ``adaptive=False``."
-#             )
-#             self.adaptive = False
-
-#     def _create_lambda_func(self):
-#         """Create the lambda functions to be used by the uniform meshing
-#         strategy.
-#         """
-#         exprs = self.expr if hasattr(self.expr, "__iter__") else [self.expr]
-#         if not any(callable(e) for e in exprs):
-#             fs = _get_free_symbols(exprs)
-#             self._signature = sorted(fs, key=lambda t: t.name)
-
-#             # Generate a list of lambda functions, two for each expression:
-#             # 1. the default one.
-#             # 2. the backup one, in case of failures with the default one.
-#             self._functions = []
-#             for e in exprs:
-#                 # TODO: set cse=True once this issue is solved:
-#                 # https://github.com/sympy/sympy/issues/24246
-#                 self._functions.append([
-#                     lambdify(self._signature, e, modules=self.modules),
-#                     lambdify(self._signature, e, modules="sympy", dummify=True),
-#                 ])
-#         else:
-#             self._signature = sorted([r[0] for r in self.ranges], key=lambda t: t.name)
-#             self._functions = [(e, None) for e in exprs]
-
-#         # deal with symbolic color_func
-#         if isinstance(self.color_func, Expr):
-#             self.color_func = lambdify(self._signature, self.color_func)
-#             self._eval_color_func_with_signature = True
-
-#     def _create_discretized_domain(self):
-#         """Discretize the ranges for uniform meshing strategy.
-#         """
-#         # NOTE: the goal is to create a dictionary stored in
-#         # self._discretized_domain, mapping symbols to a numpy array
-#         # representing the discretization
-#         discr_symbols = []
-#         discretizations = []
-
-#         # create a 1D discretization
-#         for i, r in enumerate(self.ranges):
-#             discr_symbols.append(r[0])
-#             c_start = self._update_range_value(r[1])
-#             c_end = self._update_range_value(r[2])
-#             start = c_start.real if c_start.imag == c_end.imag == 0 else c_start
-#             end = c_end.real if c_start.imag == c_end.imag == 0 else c_end
-#             needs_integer_discr = self.only_integers or (r[0] in self._needs_to_be_int)
-#             d = BaseSeries._discretize(
-#                 start, end, self.n[i],
-#                 scale=self.scales[i],
-#                 only_integers=needs_integer_discr
-#             )
-
-#             if (
-#                 (not self.force_real_eval) and
-#                 (not needs_integer_discr) and
-#                 (d.dtype != "complex")
-#             ):
-#                 d = d + 1j * c_start.imag
-
-#             if needs_integer_discr:
-#                 d = d.astype(int)
-
-#             discretizations.append(d)
-
-#         # create 2D or 3D
-#         self._create_discretized_domain_helper(discr_symbols, discretizations)
-
-#     def _create_discretized_domain_helper(self, discr_symbols, discretizations):
-#         """Create 2D or 3D discretized grids.
-
-#         Subclasses should override this method in order to implement a
-#         different behaviour.
-#         """
-#         np = import_module('numpy')
-
-#         # discretization suitable for 2D line plots, 3D surface plots,
-#         # contours plots, vector plots
-#         # NOTE: why indexing='ij'? Because it produces consistent results with
-#         # np.mgrid. This is important as Mayavi requires this indexing
-#         # to correctly compute 3D streamlines. VTK is able to compute them
-#         # nonetheless, but it produces "strange" results with "voids" into the
-#         # discretization volume. This indexing solves the problem.
-#         # Also note that matplotlib 2D streamlines requires indexing='xy'.
-#         indexing = "xy"
-#         if self.is_3Dvector or (self.is_3Dsurface and self.is_implicit):
-#             indexing = "ij"
-#         meshes = np.meshgrid(*discretizations, indexing=indexing)
-#         self._discretized_domain = {
-#             k: v for k, v in zip(discr_symbols, meshes)}
-
-#     def _evaluate(self, cast_to_real=True):
-#         """Evaluation of the symbolic expression (or expressions) with the
-#         uniform meshing strategy, based on current values of the parameters.
-#         """
-#         np = import_module('numpy')
-
-#         # create lambda functions
-#         if not self._functions:
-#             self._create_lambda_func()
-#         # create (or update) the discretized domain
-#         if (not self._discretized_domain) or self._parametric_ranges:
-#             self._create_discretized_domain()
-#         # ensure that discretized domains are returned with the proper order
-#         discr = [self._discretized_domain[s[0]] for s in self.ranges]
-
-#         args = self._aggregate_args()
-
-#         results = []
-#         for f in self._functions:
-#             r = _uniform_eval(*f, *args, modules=self.modules)
-#             # the evaluation might produce an int/float. Need this correction.
-#             r = self._correct_shape(np.array(r), discr[0])
-#             # sometime the evaluation is performed over arrays of type object.
-#             # hence, `result` might be of type object, which don't work well
-#             # with numpy real and imag functions.
-#             r = r.astype(complex)
-#             results.append(r)
-
-#         if cast_to_real:
-#             discr = [np.real(d.astype(complex)) for d in discr]
-#         return [*discr, *results]
-
-#     def _aggregate_args(self):
-#         args = []
-#         for s in self._signature:
-#             if s in self.params.keys():
-#                 args.append(
-#                     int(self.params[s]) if s in self._needs_to_be_int else
-#                     self.params[s] if self.force_real_eval
-#                     else complex(self.params[s]))
-#             else:
-#                 args.append(self._discretized_domain[s])
-#         return args
-
-#     @property
-#     def expr(self):
-#         """Return the expression (or expressions) of the series."""
-#         return self._expr
-
-#     @expr.setter
-#     def expr(self, e):
-#         """Set the expression (or expressions) of the series."""
-#         is_iter = hasattr(e, "__iter__")
-#         is_callable = callable(e) if not is_iter else any(callable(t) for t in e)
-#         if is_callable:
-#             self._expr = e
-#         else:
-#             self._expr = sympify(e) if not is_iter else Tuple(*e)
-#             s = set()
-#             for e in self._expr.atoms(Sum, Product):
-#                 for a in e.args[1:]:
-#                     if isinstance(a[-1], Symbol):
-#                         s.add(a[-1])
-#             self._needs_to_be_int = list(s)
-
-#             # list of sympy functions that when lambdified, the corresponding
-#             # numpy functions don't like complex-type arguments
-#             pf = [ceiling, floor, atan2, frac, zeta, Integral, hyper]
-#             if self.force_real_eval is not True:
-#                 check_res = [self._expr.has(f) for f in pf]
-#                 self.force_real_eval = any(check_res)
-#                 if self.force_real_eval and (
-#                     (self.modules is None) or
-#                     (isinstance(self.modules, str) and "numpy" in self.modules)
-#                 ):
-#                     funcs = [f for f, c in zip(pf, check_res) if c]
-#                     warnings.warn(
-#                         "NumPy is unable to evaluate with complex "
-#                         "numbers some of the functions included in this "
-#                         "symbolic expression: %s. " % funcs +
-#                         "Hence, the evaluation will use real numbers. "
-#                         "If you believe the resulting plot is incorrect, "
-#                         "change the evaluation module by setting the "
-#                         "`modules` keyword argument.")
-#             if self._functions:
-#                 # update lambda functions
-#                 self._create_lambda_func()
-
-#     # TODO: do I need this?
-#     # @param.depends("n", "params", watch=True)
-#     # def _update_discretized_domain(self):
-#     #     if self._discretized_domain:
-#     #         # update the discretized domain
-#     #         self._create_discretized_domain()
-
-    # def _post_init(self):
-    #     exprs = self.expr if hasattr(self.expr, "__iter__") else [self.expr]
-    #     if any(callable(e) for e in exprs) and self.params:
-    #         raise TypeError(
-    #             "`params` was provided, hence an interactive plot "
-    #             "is expected. However, interactive plots do not support "
-    #             "user-provided numerical functions.")
-
-    #     # if the expressions is a lambda function and no label has been
-    #     # provided, then its better to do the following in order to avoid
-    #     # suprises on the backend
-    #     if any(callable(e) for e in exprs):
-    #         if self._label_str == str(self.expr):
-    #             self.label = ""
-
-    #     self._check_fs()
-
-    #     # if hasattr(self, "adaptive") and self.adaptive and self.params:
-    #     #     warnings.warn(
-    #     #         "`params` was provided, hence an interactive plot "
-    #     #         "is expected. However, interactive plots do not support "
-    #     #         "adaptive evaluation. Automatically switched to "
-    #     #         "adaptive=False.")
-    #     #     self.adaptive = False
+from spb.series.base import (
+    BaseSeries,
+    _TpParameter,
+    _TzParameter,
+    _get_wrapper_for_expr,
+    _raise_color_func_error
+)
 
 
 def _detect_poles_numerical_helper(
@@ -1489,7 +122,17 @@ def _check_steps(steps):
     return steps
 
 
-class _Line2DSeriesParameters(param.Parameterized):
+class Line2DBaseSeries(BaseSeries):
+    """A base class for 2D lines."""
+
+    is_2Dline = True
+    _N = 1000
+
+    _allowed_keys = [
+        "steps", "scatter", "is_filled", "fill", "line_color", "detect_poles",
+        "eps", "is_polar", "unwrap", "exclude",
+    ]
+
     steps = param.Selector(
         default=False,
         objects=["pre", "post", "mid", True, False, None],
@@ -1541,83 +184,6 @@ class _Line2DSeriesParameters(param.Parameterized):
         * True: use ``np.unwrap()`` with default keyword arguments.
         * dictionary of keyword arguments passed to ``np.unwrap()``.
         """)
-
-class _ExprParameter(param.Parameterized):
-    expr = param.Parameter(doc="""
-        It can either be:
-
-        1. a symbolic expression representing the function of one variable
-           to be plotted.
-        2. a numerical function of one variable, supporting vectorization.
-           In this case the following keyword arguments are not supported:
-           ``params``, ``sum_bound``.""")
-
-
-class _RangeParameter(param.Parameterized):
-    range = param.Tuple(default=("x", 10, -10), length=3, doc="""
-
-        A 3-tuple of the form `(symbol, min, max)`, denoting the range of the
-        variable. Default values: `min=-10` and `max=10`.""")
-
-
-class PublicLine2DParameters(
-    _IsPolarForLineParameter,
-    _BaseSeriesParameters,
-    _UniformEvaluationParameters,
-    _Line2DSeriesParameters,
-    _RangeParameter,
-    _ExprParameter
-):
-    color_func = param.Parameter(default=None, doc="""
-        Define a custom line color mapping. It can either be:
-
-        * A numerical function of 2 variables, x, y (the points computed by
-          the internal algorithm) supporting vectorization.
-        * A symbolic expression having at most as many free symbols as expr.
-        * None: the default value (no color mapping).
-        """)
-
-    sum_bounds = param.Integer(default=1000, doc="""
-        When plotting sums, the expression will be pre-processed in order to
-        replace lower/upper bounds set to +/- infinity with this +/-
-        numerical value.  Note: the higher this number, the slower the
-        evaluation.""")
-
-
-class PublicParametricLine2DParameters(
-    PublicLine2DParameters
-):
-    exclude = param.List([], item_type=float, doc="""
-        A list of numerical values along the parameter which are going to
-        be excluded from the evaluation. In practice, it introduces
-        discontinuities in the resulting line.""")
-    color_func = param.Parameter(default=None, doc="""
-        Define a custom color mapping when ``use_cm=True``. It can either be:
-
-        * A numerical function supporting vectorization. The arity can be:
-
-          * 1 argument: ``f(t)``, where ``t`` is the parameter.
-          * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of
-            the points.
-          * 3 arguments: ``f(x, y, t)``.
-
-        * A symbolic expression having at most as many free symbols as
-          ``expr1`` or ``expr2``.
-        * None: the default value (color mapping according to the parameter).
-        """)
-
-
-class Line2DBaseSeries(_Line2DSeriesParameters, BaseSeries):
-    """A base class for 2D lines."""
-
-    is_2Dline = True
-    _N = 1000
-
-    _allowed_keys = [
-        "steps", "scatter", "is_filled", "fill", "line_color", "detect_poles",
-        "eps", "is_polar", "unwrap", "exclude",
-    ]
-
     poles_locations = param.List([], doc="""
         When ``detect_poles="symbolic"``, stores the location of the computed
         poles so that they can be appropriately rendered.""")
@@ -1628,11 +194,15 @@ class Line2DBaseSeries(_Line2DSeriesParameters, BaseSeries):
 
     def __init__(self, *args, **kwargs):
         if "scatter" in kwargs:
-            kwargs["is_point"] = kwargs.pop("scatter")
+            kwargs.setdefault("is_point", kwargs.pop("scatter"))
         if "fill" in kwargs:
-            kwargs["is_filled"] = kwargs.pop("fill")
+            kwargs.setdefault("is_filled", kwargs.pop("fill"))
+        if "label" in kwargs:
+            if kwargs["label"] is None:
+                kwargs["label"] = ""
         kwargs.setdefault("use_cm", False)
         # kwargs.setdefault("n", self._N)
+
 
         exclude = kwargs.pop("exclude", [])
         if isinstance(exclude, Set):
@@ -1807,14 +377,7 @@ class Line2DBaseSeries(_Line2DSeriesParameters, BaseSeries):
             return self.ranges[0][2]
 
 
-class PublicList2DParameters(_TpParameter, _Line2DSeriesParameters):
-    pass
-
-class PublicList3DParameters(_TzParameter, _Line2DSeriesParameters):
-    pass
-
-
-class List2DSeries(_TpParameter, Line2DBaseSeries):
+class List2DSeries(Line2DBaseSeries, _TpParameter):
     """Representation for a line consisting of list of points."""
 
     # NOTE: these parameters will eventually hold either Tuple or numpy arrays
@@ -1880,7 +443,8 @@ class List2DSeries(_TpParameter, Line2DBaseSeries):
         self._block_lambda_functions(list_x, list_y)
         any_expr, kwargs = self._cast_to_appropriate_type(
             list_x, list_y, **kwargs)
-        super().__init__(label=label, **kwargs)
+        kwargs["label"] = label
+        super().__init__(**kwargs)
 
         # any_expr_in = lambda _list: [
         #     isinstance(t, Expr) and (not t.is_number) for t in _list]
@@ -1915,17 +479,38 @@ class List2DSeries(_TpParameter, Line2DBaseSeries):
         lx, ly = self.list_x, self.list_y
 
         if not self.is_interactive:
-            return self._eval_color_func_and_return(lx, ly)
+            return self._return_correct_elements(lx, ly)
 
         np = import_module('numpy')
         lx = np.array([t.evalf(subs=self.params) for t in lx], dtype=float)
         ly = np.array([t.evalf(subs=self.params) for t in ly], dtype=float)
-        return self._eval_color_func_and_return(lx, ly)
+        return self._return_correct_elements(lx, ly)
 
-    def _eval_color_func_and_return(self, *data):
+    def _return_correct_elements(self, *data):
+        color = self.eval_color_func(*data)
+        if color is None:
+            return [*data]
+        return [*data, color]
+
+    def eval_color_func(self, *data):
         if self.use_cm and callable(self.color_func):
-            return [*data, self.color_func(*data)]
-        return data
+            nargs = arity(self.color_func)
+            if nargs == 0:
+                color = self.color_func()
+            elif nargs == 1:
+                # y-coord for 2D lines
+                color = self.color_func(data[1])
+            elif nargs == 2:
+                color = self.color_func(*data)
+            else:
+                raise ValueError(
+                    "The `color_func` attribute of a `List2DSeries`"
+                    " must be a function with 1 or 2 parameters. Instead,"
+                    f" {nargs} parameters were provided."
+                )
+            color = _correct_shape(color, data[0])
+            return color
+        return None
 
 
 class List3DSeries(_TzParameter, List2DSeries):
@@ -1988,17 +573,40 @@ class List3DSeries(_TzParameter, List2DSeries):
         lx, ly, lz = self.list_x, self.list_y, self.list_z
 
         if not self.is_interactive:
-            return self._eval_color_func_and_return(lx, ly, lz)
+            return self._return_correct_elements(lx, ly, lz)
 
         np = import_module('numpy')
         lx = np.array([t.evalf(subs=self.params) for t in lx], dtype=float)
         ly = np.array([t.evalf(subs=self.params) for t in ly], dtype=float)
         lz = np.array([t.evalf(subs=self.params) for t in lz], dtype=float)
-        return self._eval_color_func_and_return(lx, ly, lz)
+        return self._return_correct_elements(lx, ly, lz)
+
+    def eval_color_func(self, *data):
+        if self.use_cm and callable(self.color_func):
+            nargs = arity(self.color_func)
+            if nargs == 0:
+                color = self.color_func()
+            elif nargs == 1:
+                # z-coord for 3D lines
+                color = self.color_func(data[2])
+            elif nargs == 2:
+                color = self.color_func(*data[:2])
+            elif nargs == 3:
+                color = self.color_func(*data)
+            else:
+                raise ValueError(
+                    "The `color_func` attribute of a `List3DSeries`"
+                    " must be a function with 1 or 2 or 3 parameters. Instead,"
+                    f" {nargs} parameters were provided."
+                )
+            color = _correct_shape(color, data[0])
+            return color
+        return None
 
 
 class LineOver1DRangeSeries(
-    _UniformEvaluationParameters,
+    _GridEvaluationParameters,
+    _AdaptiveEvaluationParameters,
     Line2DBaseSeries
 ):
     """Representation for a line consisting of a SymPy expression over a
@@ -2008,7 +616,11 @@ class LineOver1DRangeSeries(
         "absarg", "is_complex", "is_polar"
     ]
 
-    expr = param.Parameter()
+    sum_bounds = param.Integer(default=1000, doc="""
+        When plotting sums, the expression will be pre-processed in order to
+        replace lower/upper bounds set to +/- infinity with this +/-
+        numerical value.  Note: the higher this number, the slower the
+        evaluation.""")
 
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
@@ -2023,7 +635,7 @@ class LineOver1DRangeSeries(
         _return = kwargs.pop("return", None)
         super().__init__(**kwargs)
         self.expr = expr if callable(expr) else sympify(expr)
-        self.evaluator = CommonUniformEvaluation(series=self)
+        self.evaluator = GridEvaluator(series=self)
         self._label_str = str(self.expr) if label is None else label
         self._label_latex = latex(self.expr) if label is None else label
         self.ranges = [var_start_end]
@@ -2085,11 +697,8 @@ class LineOver1DRangeSeries(
 
     def _uniform_sampling(self):
         np = import_module('numpy')
-
         x, result = self.evaluator._evaluate()
         _re, _im = np.real(result), np.imag(result)
-        # _re = self._correct_shape(_re, x)
-        # _im = self._correct_shape(_im, x)
         return x, _re, _im
 
     def _get_real_imag(self):
@@ -2097,8 +706,8 @@ class LineOver1DRangeSeries(
         return complex values. The imaginary part can be used to mask out the
         unwanted values.
         """
-        # if self.adaptive:
-        #     return self._adaptive_sampling()
+        if self.adaptive:
+            return self._adaptive_sampling()
         return self._uniform_sampling()
 
     def _get_data_helper(self):
@@ -2141,6 +750,20 @@ class ColoredLineOver1DRangeSeries(_TpParameter, LineOver1DRangeSeries):
         kwargs.setdefault("use_cm", True)
         super().__init__(*args, **kwargs)
 
+    def eval_color_func(self, x, y):
+        color = self.evaluator.eval_color_func(x, y)
+        if color is not None:
+            return color
+
+        nargs = arity(self.evaluator.color_func)
+        if nargs == 1:
+            color = self.evaluator.color_func(x)
+        elif nargs == 2:
+            color = self.evaluator.color_func(x, y)
+        else:
+            _raise_color_func_error(self, nargs)
+        return _correct_shape(color, x)
+
     def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed.
         Depending on the `adaptive` option, this function will either use an
@@ -2148,53 +771,12 @@ class ColoredLineOver1DRangeSeries(_TpParameter, LineOver1DRangeSeries):
         provided range.
         """
         x, y = super()._get_data_helper()
-        return x, y, self.evaluator.eval_color_func(x, y)
+        return x, y, self.eval_color_func(x, y)
 
     # def _apply_transform(self, *args):
     #     t = self._get_transform_helper()
     #     x, y, p = args
     #     return t(x, self.tx), t(y, self.ty), t(p, self.tp)
-
-
-class AbsArgLineSeries(_TzParameter, LineOver1DRangeSeries):
-    """Represents the absolute value of a complex function colored by its
-    argument over a complex range (a + I*b, c + I * b).
-    Note that the imaginary part of the start and end must be the same.
-    """
-
-    is_parametric = True
-    is_complex = True
-
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls)
-
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("use_cm", True)
-        super().__init__(*args, **kwargs)
-
-    def __str__(self):
-        return self._str_helper("cartesian abs-arg line: %s for %s over %s" % (
-            str(self.expr),
-            str(self.var),
-            str((self.start, self.end))))
-
-    def _get_data_helper(self):
-        """Returns coordinates that needs to be postprocessed.
-        Depending on the `adaptive` option, this function will either use an
-        adaptive algorithm or it will uniformly sample the expression over the
-        provided range.
-        """
-        np = import_module('numpy')
-
-        x, _re, _im = self._get_real_imag()
-        _abs = np.sqrt(_re**2 + _im**2)
-        _angle = np.arctan2(_im, _re)
-        return x, _abs, _angle
-
-    def _apply_transform(self, *args):
-        t = self._get_transform_helper()
-        x, y, a = args
-        return t(x, self.tx), t(y, self.ty), t(a, self.tz)
 
 
 class _2DParametricParameters(param.Parameterized):
@@ -2212,6 +794,10 @@ class _2DParametricParameters(param.Parameterized):
         one variable to be plotted, or a numerical function of one variable,
         supporting vectorization. In the latter case the following keyword
         arguments are not supported: ``params``, ``sum_bound``.""")
+    exclude = param.List([], item_type=float, doc="""
+        A list of numerical values along the parameter which are going to
+        be excluded from the evaluation. In practice, it introduces
+        discontinuities in the resulting line.""")
 
 
 class _3DParametricParameters(_2DParametricParameters):
@@ -2225,14 +811,15 @@ class _3DParametricParameters(_2DParametricParameters):
 
 
 class ParametricLineBaseSeries(
-    _UniformEvaluationParameters,
+    _GridEvaluationParameters,
     Line2DBaseSeries,
-    _IsPolarForLineParameter,
-    _TpParameter
+    _TpParameter,
+    _AdaptiveEvaluationParameters
 ):
     is_parametric = True
 
-    expr = param.Parameter()
+    is_polar = param.Boolean(False, doc="""
+        If True, apply a cartesian to polar transformation.""")
 
     def _set_parametric_line_label(self, label):
         """Logic to set the correct label to be shown on the plot.
@@ -2306,17 +893,36 @@ class ParametricLineBaseSeries(
             return self._get_wrapped_label(self._label_latex, wrapper)
         return self._label_str
 
+    def eval_color_func(self, *coords):
+        color = self.evaluator.eval_color_func(*coords)
+        if color is not None:
+            return color
+
+        nargs = arity(self.evaluator.color_func)
+        if nargs == 1:
+            color = self.evaluator.color_func(coords[-1])
+        elif nargs == 2:
+            if self.is_2Dline:
+                color = self.evaluator.color_func(*coords[:2])
+        elif nargs == 3:
+            color = self.evaluator.color_func(*coords[:3])
+        elif nargs == 4:
+            if self.is_3Dline:
+                color = self.evaluator.color_func(*coords)
+        else:
+            _raise_color_func_error(self, nargs)
+        return _correct_shape(color, coords[0])
+
     def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed.
         Depending on the `adaptive` option, this function will either use an
         adaptive algorithm or it will uniformly sample the expression over the
         provided range.
         """
-        # if self.adaptive:
-        #     coords = self._adaptive_sampling()
-        # else:
-        #     coords = self._uniform_sampling()
-        coords = self._uniform_sampling()
+        if self.adaptive:
+            coords = self._adaptive_sampling()
+        else:
+            coords = self._uniform_sampling()
 
         if self.is_2Dline and self.is_polar:
             # when plot_polar is executed with polar_axis=True
@@ -2328,7 +934,7 @@ class ParametricLineBaseSeries(
 
         if callable(self.color_func):
             coords = list(coords)
-            coords[-1] = self.evaluator.eval_color_func(*coords)
+            coords[-1] = self.eval_color_func(*coords)
 
         return coords
 
@@ -2354,6 +960,21 @@ class Parametric2DLineSeries(
 
     is_parametric = True
 
+    color_func = param.Parameter(default=None, doc="""
+        Define a custom color mapping when ``use_cm=True``. It can either be:
+
+        * A numerical function supporting vectorization. The arity can be:
+
+          * 1 argument: ``f(t)``, where ``t`` is the parameter.
+          * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of
+            the points.
+          * 3 arguments: ``f(x, y, t)``.
+
+        * A symbolic expression having at most as many free symbols as
+          ``expr_x`` or ``expr_y``.
+        * None: the default value (color mapping according to the parameter).
+        """)
+
     def __init__(self, expr_x, expr_y, var_start_end, label="", **kwargs):
         kwargs["expr_x"] = expr_x if callable(expr_x) else sympify(expr_x)
         kwargs["expr_y"] = expr_y if callable(expr_y) else sympify(expr_y)
@@ -2361,7 +982,7 @@ class Parametric2DLineSeries(
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y)
         self.ranges = [var_start_end]
-        self.evaluator = CommonUniformEvaluation(series=self)
+        self.evaluator = GridEvaluator(series=self)
         self._cast = float
         self._set_parametric_line_label(label)
         self._post_init()
@@ -2382,12 +1003,6 @@ class Parametric2DLineSeries(
         )
 
 
-class PublicParametricLine3DParameters(
-    _3DParametricParameters,
-    PublicParametricLine2DParameters
-):
-    pass
-
 class Parametric3DLineSeries(
     _3DParametricParameters,
     _TzParameter,
@@ -2399,6 +1014,21 @@ class Parametric3DLineSeries(
     is_2Dline = False
     is_3Dline = True
 
+    color_func = param.Parameter(default=None, doc="""
+        Define a custom color mapping when ``use_cm=True``. It can either be:
+
+        * A numerical function supporting vectorization. The arity can be:
+
+          * 1 argument: ``f(t)``, where ``t`` is the parameter.
+          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
+            of the points.
+          * 4 arguments: ``f(x, y, z, t)``.
+
+        * A symbolic expression having at most as many free symbols as
+          ``expr_x`` or ``expr_y`` or ``expr_z``.
+        * None: the default value (color mapping according to the parameter).
+        """)
+
     def __init__(
         self, expr_x, expr_y, expr_z, var_start_end, label="", **kwargs
     ):
@@ -2409,7 +1039,7 @@ class Parametric3DLineSeries(
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
         self.ranges = [var_start_end]
-        self.evaluator = CommonUniformEvaluation(series=self)
+        self.evaluator = GridEvaluator(series=self)
         self._cast = float
         self._set_parametric_line_label(label)
         self._post_init()
@@ -2430,17 +1060,16 @@ class Parametric3DLineSeries(
         ))
 
 
-class PublicSurfaceParameters(
-    _IsPolarForSurfaceParameter,
-    _TzParameter,
-    BaseSeries
-):
-    pass
+# class PublicSurfaceParameters(
+#     _IsPolarForSurfaceParameter,
+#     _TzParameter,
+#     BaseSeries
+# ):
+#     pass
 
 
 class SurfaceBaseSeries(
-    _UniformEvaluationParameters,
-    _IsPolarForSurfaceParameter,
+    _GridEvaluationParameters,
     _TzParameter,
     BaseSeries
 ):
@@ -2449,9 +1078,12 @@ class SurfaceBaseSeries(
     is_3Dsurface = True
     _allowed_keys = ["surface_color", "is_polar"]
 
-    expr = param.Parameter()
     surface_color = param.Parameter(default=None, doc="""
         For back-compatibility with old sympy.plotting.""")
+    is_polar = param.Boolean(False, doc="""
+        If True, requests a polar discretization. In this case,
+        ``range1`` represents the radius, while ``range2`` represents
+        the angle.""")
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("color_func", lambda x, y, z: z)
@@ -2502,7 +1134,7 @@ class SurfaceBaseSeries(
             )
 
 
-class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
+class SurfaceOver2DRangeSeries(SurfaceBaseSeries, _AdaptiveEvaluationParameters):
     """Representation for a 3D surface consisting of a sympy expression and 2D
     range."""
 
@@ -2512,7 +1144,7 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
         super().__init__(**kwargs)
         self.ranges = [var_start_end_x, var_start_end_y]
-        self.evaluator = CommonUniformEvaluation(series=self)
+        self.evaluator = GridEvaluator(series=self)
         self._set_surface_label(label)
         self._post_init()
 
@@ -2609,11 +1241,10 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         """
         np = import_module('numpy')
 
-        # if self.adaptive:
-        #     res = self._adaptive_sampling()
-        # else:
-        #     res = self._uniform_sampling()
-        res = self._uniform_sampling()
+        if self.adaptive:
+            res = self._adaptive_sampling()
+        else:
+            res = self._uniform_sampling()
 
         x, y, z = res
         if self.is_polar and self.is_3Dsurface:
@@ -2622,6 +1253,22 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
             y = r * np.sin(y)
 
         return self._apply_transform(x, y, z)
+
+    def eval_color_func(self, *coords):
+        color = self.evaluator.eval_color_func(*coords)
+        if color is not None:
+            return color
+
+        nargs = arity(self.evaluator.color_func)
+        if nargs == 1:
+            color = self.evaluator.color_func(coords[0])
+        elif nargs == 2:
+            color = self.evaluator.color_func(*coords[:2])
+        elif nargs == 3:
+            color = self.evaluator.color_func(*coords)
+        else:
+            _raise_color_func_error(self, nargs)
+        return _correct_shape(color, coords[0])
 
 
 class ParametricSurfaceSeries(
@@ -2644,7 +1291,7 @@ class ParametricSurfaceSeries(
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
         self.ranges = [var_start_end_u, var_start_end_v]
-        self.evaluator = CommonUniformEvaluation(series=self)
+        self.evaluator = GridEvaluator(series=self)
         self._set_surface_label(label)
         self._post_init()
 
@@ -2723,29 +1370,39 @@ class ParametricSurfaceSeries(
 
         return self._apply_transform(*results[2:], *results[:2])
 
+    def eval_color_func(self, *coords):
+        color = self.evaluator.eval_color_func(*coords)
+        if color is not None:
+            return color
 
-class _ContourParameters(param.Parameterized):
-    is_filled = param.Boolean(True, doc="""
-        If True, used filled contours. Otherwise, use line contours.""")
-    show_clabels = param.Boolean(True, doc="""
-        Toggle the label's visibility of contour lines. Only works when
-        ``is_filled=False``. Note that some backend might not implement
-        this feature.""")
+        nargs = arity(self.evaluator.color_func)
+        if nargs == 1:
+            color = self.evaluator.color_func(coords[3])
+        elif nargs == 2:
+            color = self.evaluator.color_func(coords[3], coords[4])
+        elif nargs == 3:
+            color = self.evaluator.color_func(*coords[:3])
+        elif nargs == 5:
+            color = self.evaluator.color_func(*coords)
+        else:
+            _raise_color_func_error(self, nargs)
+        return _correct_shape(color, coords[0])
 
 
-class PublicContourParameters(
-    _ContourParameters,
-    BaseSeries
-):
-    pass
-
-class ContourSeries(_ContourParameters, SurfaceOver2DRangeSeries):
+class ContourSeries(SurfaceOver2DRangeSeries):
     """Representation for a contour plot."""
 
     is_3Dsurface = False
     is_contour = True
     _allowed_keys = [
         "contour_kw", "is_filled", "fill", "clabels"]
+
+    is_filled = param.Boolean(True, doc="""
+        If True, used filled contours. Otherwise, use line contours.""")
+    show_clabels = param.Boolean(True, doc="""
+        Toggle the label's visibility of contour lines. Only works when
+        ``is_filled=False``. Note that some backend might not implement
+        this feature.""")
 
     def __init__(self, *args, **kwargs):
         kwargs = kwargs.copy()
@@ -2761,7 +1418,7 @@ class ContourSeries(_ContourParameters, SurfaceOver2DRangeSeries):
 
 
 class ImplicitSeries(
-    _UniformEvaluationParameters,
+    _GridEvaluationParameters,
     BaseSeries
 ):
     """Representation for Implicit plot
@@ -2781,36 +1438,72 @@ class ImplicitSeries(
     _allowed_keys = ["adaptive", "depth", "color"]
     _N = 100
 
-    expr = param.Parameter()
+    # expr = param.Parameter()
     adaptive = param.Boolean(False, doc="""
-        If True uses the adaptive algorithm, if the data series supports
-        such functionality.""")
+        Select the evaluation strategy to be used.
+        If ``False``, the internal algorithm uses a mesh grid approach.
+        In such case, Boolean combinations of expressions cannot be plotted.
+        If ``True``, the internal algorithm uses interval arithmetic.
+        If the expression cannot be plotted with interval arithmetic, it
+        switches to the meshgrid approach.""")
+    depth = param.Integer(default=0, bounds=(0, 4), doc="""
+        The depth of recursion for adaptive grid. Default value is 0.
+        Think of the resulting plot as a picture composed by pixels. By
+        increasing ``depth`` we are increasing the number of pixels, thus
+        obtaining a more accurate plot, at the cost of evaluation speed
+        and possibly readability (if the figure has small size).""")
+    _actual_depth = param.Integer(default=4, bounds=(4, 8), doc="""
+        The ``depth`` is meant to be user friendly. It will be processed
+        by the data series. The new value used by the algorithm is stored
+        in this parameter.""")
+    _adaptive_expr = param.ClassSelector(
+        class_=(Expr, Relational, BooleanFunction), doc="""
+        The expression to be evaluated by the adaptive algorithm.""")
+    _non_adaptive_expr = param.ClassSelector(
+        class_=(Expr, Relational, BooleanFunction), doc="""
+        The expression to be evaluated by the uniform mesh
+        evaluation algorithm.""")
+    _has_relational = param.Boolean(default=False, doc="""
+        This flag is set by the algorithm when the symbolic expression
+        is going to be set. It indicates the presence of ``Equality``,
+        ``GreaterThan``, ``LessThan`` in the symbolic expression.""")
+    _is_equality = param.Boolean(default=False, doc="""
+        This flag is set by the algorithm when the symbolic expression
+        is going to be set. It indicates the presence of ``Equality``
+        in the symbolic expression.""")
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         kwargs = kwargs.copy()
+        kwargs["label"] = label if label is not None else ""
+        # kwargs["_label_str"] = str(expr) if label is None else label
+        # kwargs["_label_latex"] = latex(expr) if label is None else label
         color = kwargs.pop("color", kwargs.get("line_color", None))
-        depth = kwargs.pop("depth", 0)
+        kwargs = self._preprocess_expr(expr, kwargs)
         super().__init__(**kwargs)
-        self._label_str = str(expr) if label is None else label
-        self._label_latex = latex(expr) if label is None else label
-        self.expr = expr
+
         self.ranges = [var_start_end_x, var_start_end_y]
-        self.evaluator = CommonUniformEvaluation(series=self)
+        self.evaluator = GridEvaluator(series=self)
         self.var_x, self.start_x, self.end_x = self.ranges[0]
         self.var_y, self.start_y, self.end_y = self.ranges[1]
         self._color = color
+        # if label is not None:
+        #     self._update_latex_and_str_labels()
 
         if self.is_interactive and self.adaptive:
             raise NotImplementedError("Interactive plot with `adaptive=True` "
                 "is not supported.")
 
-        # Check whether the depth is greater than 4 or less than 0.
-        if depth > 4:
-            depth = 4
-        elif depth < 0:
-            depth = 0
-        self.depth = 4 + depth
+        # # Check whether the depth is greater than 4 or less than 0.
+        # if depth > 4:
+        #     depth = 4
+        # elif depth < 0:
+        #     depth = 0
+        # self.depth = 4 + depth
         self._post_init()
+
+    @param.depends("depth", on_init=True, watch=True)
+    def _update_actual_depth(self):
+        self._actual_depth = self.depth + 4
 
     @property
     def expr(self):
@@ -2819,17 +1512,22 @@ class ImplicitSeries(
         return self._non_adaptive_expr
 
     @expr.setter
-    def expr(self, expr):
+    def expr(self, value):
+        kwargs = self._preprocess_expr(value, {})
+        self.param.update(kwargs)
+
+    def _preprocess_expr(self, expr, kwargs):
         self._block_lambda_functions(expr)
         # these are needed for adaptive evaluation
-        expr, has_equality = self._has_equality(sympify(expr))
-        self._adaptive_expr = expr
-        self.has_equality = has_equality
-        self._label_str = str(expr)
-        self._label_latex = latex(expr)
+        expr, has_relational = self._has_relational(sympify(expr))
+        kwargs["_adaptive_expr"] = expr
+        kwargs["_has_relational"] = has_relational
+        kwargs["_label_str"] = str(expr)
+        kwargs["_label_latex"] = latex(expr)
 
+        adaptive = kwargs.get("adaptive", self.param.adaptive.default)
         if isinstance(expr, (BooleanFunction, Ne)) and (not self.adaptive):
-            self.adaptive = True
+            kwargs["adaptive"] = adaptive = True
             msg = "contains Boolean functions. "
             if isinstance(expr, Ne):
                 msg = "is an unequality. "
@@ -2839,14 +1537,48 @@ class ImplicitSeries(
                 stacklevel=1)
 
         if isinstance(expr, BooleanFunction):
-            self._non_adaptive_expr = None
-            self._is_equality = False
+            # NOTE: at this stage, I'll be using the adaptive algorithm.
+            # However, I need to set the expression for the uniform meshing
+            # algorithm too, in case the adaptive algorithm fails to evaluate.
+            kwargs["_non_adaptive_expr"] = expr
+            kwargs["_is_equality"] = False
         else:
             # these are needed for uniform meshing evaluation
             expr, is_equality = self._preprocess_meshgrid_expression(
-                expr, self.adaptive)
-            self._non_adaptive_expr = expr
-            self._is_equality = is_equality
+                expr, adaptive)
+            kwargs["_non_adaptive_expr"] = expr
+            kwargs["_is_equality"] = is_equality
+        return kwargs
+
+    # @expr.setter
+    # def expr(self, expr):
+    #     self._block_lambda_functions(expr)
+    #     # these are needed for adaptive evaluation
+    #     expr, has_equality = self._has_equality(sympify(expr))
+    #     self._adaptive_expr = expr
+    #     self.has_equality = has_equality
+    #     self._label_str = str(expr)
+    #     self._label_latex = latex(expr)
+
+    #     if isinstance(expr, (BooleanFunction, Ne)) and (not self.adaptive):
+    #         self.adaptive = True
+    #         msg = "contains Boolean functions. "
+    #         if isinstance(expr, Ne):
+    #             msg = "is an unequality. "
+    #         warnings.warn(f"The provided expression {msg}"
+    #             "In order to plot the expression, the algorithm "
+    #             "automatically switched to an adaptive sampling.",
+    #             stacklevel=1)
+
+    #     if isinstance(expr, BooleanFunction):
+    #         self._non_adaptive_expr = None
+    #         self._is_equality = False
+    #     else:
+    #         # these are needed for uniform meshing evaluation
+    #         expr, is_equality = self._preprocess_meshgrid_expression(
+    #             expr, self.adaptive)
+    #         self._non_adaptive_expr = expr
+    #         self._is_equality = is_equality
 
     @property
     def line_color(self):
@@ -2858,10 +1590,10 @@ class ImplicitSeries(
 
     color = line_color
 
-    def _has_equality(self, expr):
+    def _has_relational(self, expr):
         # Represents whether the expression contains an Equality, GreaterThan
         # or LessThan
-        has_equality = False
+        has_relational = False
 
         def arg_expand(bool_expr):
             """Recursively expands the arguments of an Boolean Function"""
@@ -2876,14 +1608,14 @@ class ImplicitSeries(
             arg_expand(expr)
             # Check whether there is an equality in the expression provided.
             if any(isinstance(e, (Equality, GreaterThan, LessThan)) for e in arg_list):
-                has_equality = True
+                has_relational = True
         elif not isinstance(expr, Relational):
             expr = Equality(expr, 0)
-            has_equality = True
+            has_relational = True
         elif isinstance(expr, (Equality, GreaterThan, LessThan)):
-            has_equality = True
+            has_relational = True
 
-        return expr, has_equality
+        return expr, has_relational
 
     def __str__(self):
         f = lambda t: float(t) if len(t.free_symbols) == 0 else t
@@ -2953,13 +1685,15 @@ class ImplicitSeries(
                 "Proceeding with uniform meshing."
                 )
             self.adaptive = False
-        except (AttributeError, TypeError):
+        except (AttributeError, TypeError) as err:
             # XXX: AttributeError("'list' object has no attribute 'is_real'")
             # That needs fixing somehow - we shouldn't be catching
             # AttributeError here.
             warnings.warn(
                 "Adaptive meshing could not be applied to the"
-                " expression. Using uniform meshing.")
+                " expression, thus uniform meshing will be used."
+                "The following is the error for debuggin purposes.\n"
+                f"{err.__class__.__name__}: {err}")
             self.adaptive = False
 
         return data
@@ -2968,7 +1702,7 @@ class ImplicitSeries(
         """Uses interval math to adaptively mesh and obtain the plot"""
         np = import_module('numpy')
 
-        k = self.depth
+        k = self._actual_depth
         interval_list = []
         sx, sy = [float(t) for t in [self.start_x, self.start_y]]
         ex, ey = [float(t) for t in [self.end_x, self.end_y]]
@@ -3038,7 +1772,7 @@ class ImplicitSeries(
         # If it represents an equality, then none of the intervals
         # would have satisfied the expression due to floating point
         # differences. Add all the undecided values to the plot.
-        if self.has_equality:
+        if self._has_relational:
             for intervals in interval_list:
                 intervalx = intervals[0]
                 intervaly = intervals[1]
@@ -3126,7 +1860,7 @@ class Implicit3DSeries(SurfaceBaseSeries):
         super().__init__(**kwargs)
         self.expr = expr if callable(expr) else sympify(expr)
         self.ranges = [range_x, range_y, range_z]
-        self.evaluator = CommonUniformEvaluation(series=self)
+        self.evaluator = GridEvaluator(series=self)
         self.var_x, self.start_x, self.end_x = self.ranges[0]
         self.var_y, self.start_y, self.end_y = self.ranges[1]
         self.var_z, self.start_z, self.end_z = self.ranges[2]
@@ -3175,781 +1909,6 @@ class Implicit3DSeries(SurfaceBaseSeries):
         return t(x, self.tx), t(y, self.ty), t(z, self.tz), f
 
 
-class ComplexPointSeries(_TpParameter, Line2DBaseSeries):
-    """Representation for a line in the complex plane consisting of
-    list of points."""
-    color_func = param.Callable(default=None, doc="""
-        A color function to be applied to the numerical data. It can be:
-
-        * None: no color function.
-        * callable: a function accepting two arguments (the real and imaginary
-          parts of the complex coordinates) and returning numerical data.
-        """)
-
-    def __init__(self, expr, label="", **kwargs):
-        super().__init__(label=label, **kwargs)
-        if isinstance(expr, (list, tuple)):
-            self.expr = Tuple(*expr)
-        elif isinstance(expr, Expr):
-            self.expr = Tuple(expr)
-        else:
-            self.expr = expr
-
-        self._block_lambda_functions(*self.expr)
-
-        self.is_point = kwargs.get("scatter", kwargs.get("is_point", True))
-        if self.use_cm and self.color_func:
-            self.is_parametric = True
-
-    def _get_data_helper(self):
-        """Returns coordinates that needs to be postprocessed."""
-        np = import_module('numpy')
-        points = [complex(p.evalf(subs=self.params)) for p in self.expr]
-        points = np.array(points)
-        r, i = np.real(points), np.imag(points)
-        if self.use_cm and callable(self.color_func):
-            return r, i, self.color_func(r, i)
-        return r, i
-
-    def __str__(self):
-        return self._str_helper("complex points: %s" % self.expr)
-
-
-class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
-    """Represent a complex function."""
-    is_complex = True
-    _N = 300
-
-    expr = param.Parameter()
-    is_filled = param.Boolean(True, doc="""
-        If True, used filled contours. Otherwise, use line contours.""")
-    show_clabels = param.Boolean(True, doc="""
-        If True, used filled contours. Otherwise, use line contours.""")
-
-    def __init__(self, expr, r, label="", **kwargs):
-        _return = kwargs.pop("return", None)
-        kwargs.setdefault("show_clabels", kwargs.pop("clabels", True))
-        kwargs["expr"] = expr if callable(expr) else sympify(expr)
-        super().__init__(**kwargs)
-        self.ranges = [r]
-        self.evaluator = ComplexCommonUniformEvaluation(series=self)
-        self._label_str = str(expr) if label is None else label
-        self._label_latex = latex(expr) if label is None else label
-        # determines what data to return on the z-axis
-        self._return = _return
-
-    @property
-    def var(self):
-        return self.ranges[0][0]
-
-    @property
-    def start(self):
-        return self.ranges[0][1]
-
-    @property
-    def end(self):
-        return self.ranges[0][2]
-
-    def __str__(self):
-        if self.is_domain_coloring:
-            prefix = "complex domain coloring"
-            if self.is_3Dsurface:
-                prefix = "complex 3D domain coloring"
-        else:
-            prefix = "complex cartesian surface"
-            if self.is_contour:
-                prefix = "complex contour"
-
-        wrapper = _get_wrapper_for_expr(self._return)
-        res, ree = re(self.start), re(self.end)
-        ims, ime = im(self.start), im(self.end)
-        f = lambda t: float(t) if len(t.free_symbols) == 0 else t
-
-        return self._str_helper(
-            prefix + ": %s for" " re(%s) over %s and im(%s) over %s" % (
-                wrapper % self.expr,
-                str(self.var),
-                str((f(res), f(ree))),
-                str(self.var),
-                str((f(ims), f(ime))),
-            )
-        )
-
-    # def _create_discretized_domain(self):
-    #     """Discretize the ranges in case of uniform meshing strategy.
-    #     """
-    #     np = import_module('numpy')
-    #     start_x = self._update_range_value(self.start).real
-    #     end_x = self._update_range_value(self.end).real
-    #     start_y = self._update_range_value(self.start).imag
-    #     end_y = self._update_range_value(self.end).imag
-    #     x = self._discretize(
-    #         start_x, end_x, self.n[0], self.scales[0], self.only_integers)
-    #     y = self._discretize(
-    #         start_y, end_y, self.n[1], self.scales[1], self.only_integers)
-    #     xx, yy = np.meshgrid(x, y)
-    #     domain = xx + 1j * yy
-    #     self._discretized_domain = {self.var: domain}
-
-
-class ComplexSurfaceSeries(
-    ComplexSurfaceBaseSeries
-):
-    """Represents a 3D surface or contour plot of a complex function over
-    the complex plane.
-    """
-    is_3Dsurface = True
-    is_contour = False
-    is_domain_coloring = False
-    _allowed_keys = ["threed", "is_filled", "clabels"]
-
-    # TODO: I have defined them in ComplexSurfaceBaseSeries.
-    # Which one do I remove?
-    is_filled = param.Boolean(True, doc="""
-        If True, used filled contours. Otherwise, use line contours.""")
-
-    show_clabels = param.Boolean(True, doc="""
-        If True, used filled contours. Otherwise, use line contours.""")
-
-    def __init__(self, expr, r, label="", **kwargs):
-        threed = kwargs.pop("threed", False)
-        kwargs.setdefault("is_filled", kwargs.pop("fill", True))
-        super().__init__(expr, r, label, **kwargs)
-
-        if isinstance(self, ComplexSurfaceSeries):
-            self._block_lambda_functions(self.expr)
-
-        if not threed:
-            self.is_contour = True
-            self.is_3Dsurface = False
-            self.use_cm = True
-
-        self._post_init()
-
-    def _create_discretized_domain(self):
-        return ComplexSurfaceBaseSeries._create_discretized_domain(self)
-
-    def get_data(self):
-        """Return arrays of coordinates for plotting.
-
-        Returns
-        =======
-
-        mesh_x : np.ndarray [n2 x n1]
-            Real discretized domain.
-
-        mesh_y : np.ndarray [n2 x n1]
-            Imaginary discretized domain.
-
-        z : np.ndarray [n2 x n1]
-            Results of the evaluation.
-        """
-        np = import_module('numpy')
-
-        domain, z = self.evaluator._evaluate(False)
-        if self._return is None:
-            pass
-        elif self._return == "real":
-            z = np.real(z)
-        elif self._return == "imag":
-            z = np.imag(z)
-        elif self._return == "abs":
-            z = np.absolute(z)
-        elif self._return == "arg":
-            z = np.angle(z)
-        else:
-            raise ValueError(
-                "`_return` not recognized. Received: %s" % self._return)
-
-        return self._apply_transform(np.real(domain), np.imag(domain), z)
-
-
-class ComplexDomainColoringBaseSeries(param.Parameterized):
-    coloring = param.Selector(
-        default="a", objects=[
-            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
-            "k", "k+log", "l", "m", "n", "o"
-        ], doc="""
-        Choose between different domain coloring options. Default to ``"a"``.
-        Refer to [Wegert]_ for more information.
-
-        - ``"a"``: standard domain coloring showing the argument of the
-          complex function.
-        - ``"b"``: enhanced domain coloring showing iso-modulus and iso-phase
-          lines.
-        - ``"c"``: enhanced domain coloring showing iso-modulus lines.
-        - ``"d"``: enhanced domain coloring showing iso-phase lines.
-        - ``"e"``: alternating black and white stripes corresponding to
-          modulus.
-        - ``"f"``: alternating black and white stripes corresponding to
-          phase.
-        - ``"g"``: alternating black and white stripes corresponding to
-          real part.
-        - ``"h"``: alternating black and white stripes corresponding to
-          imaginary part.
-        - ``"i"``: cartesian chessboard on the complex points space. The
-          result will hide zeros.
-        - ``"j"``: polar Chessboard on the complex points space. The result
-          will show conformality.
-        - ``"k"``: black and white magnitude of the complex function.
-          Zeros are black, poles are white.
-        - ``"k+log"``: same as ``"k"`` but apply a base 10 logarithm to the
-          magnitude, which improves the visibility of zeros of functions with
-          steep poles.
-        - ``"l"``:enhanced domain coloring showing iso-modulus and iso-phase
-          lines, blended with the magnitude: white regions indicates greater
-          magnitudes. Can be used to distinguish poles from zeros.
-        - ``"m"``: enhanced domain coloring showing iso-modulus lines, blended
-          with the magnitude: white regions indicates greater magnitudes.
-          Can be used to distinguish poles from zeros.
-        - ``"n"``: enhanced domain coloring showing iso-phase lines, blended
-          with the magnitude: white regions indicates greater magnitudes.
-          Can be used to distinguish poles from zeros.
-        - ``"o"``: enhanced domain coloring showing iso-phase lines, blended
-          with the magnitude: white regions indicates greater magnitudes.
-          Can be used to distinguish poles from zeros.
-
-        The user can also provide a callable, ``f(w)``, where ``w`` is an
-        [n x m] Numpy array (provided by the plotting module) containing
-        the results (complex numbers) of the evaluation of the complex
-        function. The callable should return:
-
-        - img : ndarray [n x m x 3]
-            An array of RGB colors (0 <= R,G,B <= 255)
-        - colorscale : ndarray [N x 3] or None
-            An array with N RGB colors, (0 <= R,G,B <= 255).
-            If ``colorscale=None``, no color bar will be shown on the plot.
-        """)
-
-    phaseres = param.Integer(20, bounds=(1, 100), doc="""
-        It controls the number of iso-phase and/or iso-modulus lines
-        in domain coloring plots.""")
-
-    cmap = param.ClassSelector(class_=(str, list, tuple), doc="""
-        Specify the colormap to be used on enhanced domain coloring plots
-        (both images and 3d plots). Default to ``"hsv"``. Can be any colormap
-        from matplotlib or colorcet.""")
-
-    blevel = param.Number(0.75, bounds=(0, 1), doc="""
-        Controls the black level of ehanced domain coloring plots.
-        It must be `0 (black) <= blevel <= 1 (white)`.""")
-
-    phaseoffset = param.Number(0, bounds=[0, 2*math.pi], doc="""
-        Controls the phase offset of the colormap in domain coloring plots.""")
-
-
-class ComplexDomainColoringSeries(
-    ComplexSurfaceBaseSeries,
-    ComplexDomainColoringBaseSeries
-):
-    """Represents a 2D/3D domain coloring plot of a complex function over
-    the complex plane.
-    """
-    is_3Dsurface = False
-    is_domain_coloring = True
-    _allowed_keys = [
-        "threed", "coloring", "phaseres", "cmap", "blevel", "phaseoffset",
-        "colorbar", "at_infinity", "riemann_mask", "annotate"
-    ]
-
-    at_infinity = param.Boolean(False, doc="""
-        If False the visualization will be centered about the complex point
-        zero. Otherwise, it will be centered at infinity.""")
-
-    annotate = param.Boolean(True, doc="""
-        Turn on/off the annotations on the 2D projections of the Riemann
-        sphere. Default to True (annotations are visible). They can only
-        be visible when ``riemann_mask=True``.""")
-
-    riemann_mask = param.Boolean(False, doc="""
-        Turn on/off the unit disk mask representing the Riemann sphere
-        on the 2D projections. Default to True (mask is active).""")
-
-    def __init__(self, expr, r, label="", **kwargs):
-        threed = kwargs.pop("threed", False)
-        if threed:
-            kwargs.setdefault("use_cm", True)
-
-        super().__init__(expr, r, label, **kwargs)
-
-        if threed:
-            self.is_3Dsurface = True
-        #     self.use_cm = kwargs.get("use_cm", True)
-
-        # apply the transformation z -> 1/z in order to study the behavior
-        # of the function at z=infinity
-        # self.at_infinity = kwargs.get("at_infinity", False)
-        if self.at_infinity:
-            if callable(self.expr):
-                raise ValueError(
-                    "``at_infinity=True`` is only supported for symbolic "
-                    "expressions. Instead, a callable was provided.")
-            z = self.ranges[0][0]
-            tmp = self.expr.subs(z, 1 / z)
-            if self._label_str == str(self.expr):
-                # adjust labels to prevent the wrong one to be seen on colorbar
-                self._label_str = str(tmp)
-                self._label_latex = latex(tmp)
-            self.expr = tmp
-
-        # # domain coloring mode
-        # self._init_domain_coloring_kw(**kwargs)
-
-        # self.annotate = kwargs.get("annotate", True)
-        # self.riemann_mask = kwargs.get("riemann_mask", False)
-        self._post_init()
-
-    # def _init_domain_coloring_kw(self, **kwargs):
-    #     self.coloring = kwargs.get("coloring", "a")
-    #     if isinstance(self.coloring, str):
-    #         self.coloring = self.coloring.lower()
-    #     elif not callable(self.coloring):
-    #         raise TypeError(
-    #             "`coloring` must be a character from 'a' to 'j' or "
-    #             "a callable.")
-    #     self.phaseres = kwargs.get("phaseres", 20)
-    #     self.cmap = kwargs.get("cmap", None)
-    #     self.blevel = float(kwargs.get("blevel", 0.75))
-    #     if self.blevel < 0:
-    #         warnings.warn(
-    #             "It must be 0 <= blevel <= 1. Automatically "
-    #             "setting blevel = 0.")
-    #         self.blevel = 0
-    #     if self.blevel > 1:
-    #         warnings.warn(
-    #             "It must be 0 <= blevel <= 1. Automatically "
-    #             "setting blevel = 1.")
-    #         self.blevel = 1
-    #     self.phaseoffset = float(kwargs.get("phaseoffset", 0))
-
-    def _create_discretized_domain(self):
-        return ComplexSurfaceBaseSeries._create_discretized_domain(self)
-
-    def _domain_coloring(self, domain, w):
-        if isinstance(self.coloring, str):
-            self.coloring = self.coloring.lower()
-            return wegert(
-                self.coloring, w, self.phaseres, self.cmap,
-                self.blevel, self.phaseoffset,
-                self.at_infinity, self.riemann_mask,
-                domain=[domain[0, 0], domain[-1, -1]])
-        return self.coloring(w)
-
-    def get_data(self):
-        """Return arrays of coordinates for plotting.
-
-        Returns
-        =======
-
-        mesh_x : np.ndarray [n2 x n1]
-            Real discretized domain.
-
-        mesh_y : np.ndarray [n2 x n1]
-            Imaginary discretized domain.
-
-        abs : np.ndarray [n2 x n1]
-            Absolute value of the function.
-
-        arg : np.ndarray [n2 x n1]
-            Argument of the function.
-
-        img : np.ndarray [n2 x n1 x 3]
-            RGB image values computed from the argument of the function.
-            0 <= R, G, B <= 255
-
-        colors : np.ndarray [256 x 3]
-            Color scale associated to `img`.
-        """
-        np = import_module('numpy')
-
-        domain, z = self.evaluator._evaluate(False)
-        return self._apply_transform(
-            np.real(domain), np.imag(domain),
-            np.absolute(z), np.angle(z),
-            *self._domain_coloring(domain, z),
-        )
-
-
-class ComplexParametric3DLineSeries(Parametric3DLineSeries):
-    """Represent a mesh/wireframe line of a complex surface series.
-    """
-
-    def __init__(self, *args, **kwargs):
-        _return = kwargs.pop("return", None)
-        super().__init__(*args, **kwargs)
-        # determines what data to return on the z-axis
-        self._return = _return
-
-    def _adaptive_sampling(self):
-        raise NotImplementedError
-
-    def _uniform_sampling(self):
-        """Returns coordinates that needs to be postprocessed."""
-        np = import_module('numpy')
-
-        results = self._evaluate()
-        for i in range(len(results) - 1):
-            _re, _im = np.real(results[i]), np.imag(results[i])
-            _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
-            results[i] = _re
-
-        if self._return is None:
-            pass
-        elif self._return == "real":
-            results[-1] = np.real(results[-1])
-        elif self._return == "imag":
-            results[-1] = np.imag(results[-1])
-        elif self._return == "abs" or self._return == "absarg":
-            results[-1] = np.absolute(results[-1])
-        elif self._return == "arg":
-            results[-1] = np.angle(results[-1])
-        else:
-            raise ValueError(
-                "`_return` not recognized. Received: %s" % self._return)
-
-        return [*results[1:], results[0]]
-
-
-def _set_discretization_points(kwargs, Series):
-    """Allow the use of the keyword arguments n, n1 and n2 (and n3) to
-    specify the number of discretization points in two (or three) directions.
-
-    Parameters
-    ==========
-
-    kwargs : dict
-
-    Series : BaseSeries
-        The type of the series, which indicates the kind of plot we are
-        trying to create.
-
-    Returns
-    =======
-
-    kwargs : dict
-    """
-    print("_set_discretization_points before", kwargs)
-
-    number_kw = ["n1", "n2", "n3"]
-    deprecated_keywords = {
-        "nb_of_points": "n",
-        "nb_of_points_x": number_kw[0],
-        "nb_of_points_y": number_kw[1],
-        "nb_of_points_u": number_kw[0],
-        "nb_of_points_v": number_kw[1],
-        "points": "n"
-    }
-    for k, v in deprecated_keywords.items():
-        if k in kwargs.keys():
-            kwargs[v] = kwargs.pop(k)
-
-    n = [Series._N] * 3
-    provided_n = kwargs.get("n", None)
-    if provided_n is not None:
-        if hasattr(provided_n, "__iter__"):
-            for i in range(min(len(provided_n), 3)):
-                n[i] = provided_n[i]
-        else:
-            n = [provided_n] * 3
-
-    kwargs["n"] = [kwargs.pop(k, n[i]) for i, k in enumerate(number_kw)]
-
-    print("_set_discretization_points after", kwargs)
-    return kwargs
-
-
-class VectorBase(_UniformEvaluationParameters, BaseSeries):
-    """Represent a vector field."""
-
-    is_vector = True
-    is_slice = False
-    _allowed_keys = [
-        "streamlines", "quiver_kw", "stream_kw", "normalize"]
-
-    expr = param.Parameter()
-    is_streamlines = param.Boolean(False, doc="""
-        If True shows the streamlines, otherwise shows the vector field.""")
-    normalize = param.Boolean(False, doc="""
-        If True, draw arrows with the same length. Note that normalization
-        is achieved at the backend side, which allows to get same length
-        arrows, but colored with the actual magnitude.
-        If normalization would be applied on the series get_data(), the
-        coloring by magnitude would not be applicable at the backend.
-        """)
-
-    def __init__(self, exprs, ranges, label, **kwargs):
-        print("VectorBase.__init__", kwargs)
-        kwargs.setdefault("use_cm", True)
-        if kwargs.get("use_cm") is None:
-            kwargs["use_cm"] = False
-        if "streamlines" in kwargs:
-            kwargs["is_streamlines"] = kwargs.pop("streamlines")
-        super().__init__(**kwargs)
-        self.expr = tuple([e if callable(e) else sympify(e) for e in exprs])
-        self.ranges = ranges
-        self.evaluator = CommonUniformEvaluation(series=self)
-        self._label_str = str(exprs) if label is None else label
-        self._label_latex = latex(exprs) if label is None else label
-
-        # if the expressions are lambda functions and no label has been
-        # provided, then its better to do the following in order to avoid
-        # suprises on the backend
-        if any(callable(e) for e in self.expr):
-            if self._label_str == str(self.expr):
-                self._label_str = "Magnitude"
-
-        # NOTE: when plotting vector fields it might be useful to repeat the
-        # plot command switching between quivers and streamlines.
-        # Usually, plotting libraries expose different functions for quivers
-        # and streamlines, accepting different keyword arguments.
-        # The choice to implement separates stream_kw and quiver_kw allows
-        # this quick switch.
-        if self.is_streamlines:
-            self.rendering_kw = kwargs.get(
-                "stream_kw", kwargs.get("rendering_kw", dict()))
-        else:
-            self.rendering_kw = kwargs.get(
-                "quiver_kw", kwargs.get("rendering_kw", dict()))
-        self._post_init()
-
-    def get_label(self, use_latex=False, wrapper="$%s$"):
-        if use_latex:
-            expr = self.expr
-            if self._label_str != str(expr):
-                return self._label_latex
-            return self._get_wrapped_label(self._label_latex, wrapper)
-        return self._label_str
-
-    def get_data(self):
-        """Return arrays of coordinates for plotting. Depending on the
-        `adaptive` option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
-
-        Returns
-        =======
-
-        mesh_x : np.ndarray [n2 x n1]
-            Discretized x-domain.
-
-        mesh_y : np.ndarray [n2 x n1]
-            Discretized y-domain.
-
-        mesh_z : np.ndarray [n2 x n1] (optional)
-            Discretized z-domain in the case of Vector3DSeries.
-
-        u : np.ndarray [n2 x n1]
-            First component of the vector field.
-
-        v : np.ndarray [n2 x n1]
-            Second component of the vector field.
-
-        w : np.ndarray [n2 x n1] (optional)
-            Third component of the vector field in the case of Vector3DSeries.
-        """
-        np = import_module('numpy')
-
-        results = self.evaluator._evaluate()
-        for i, r in enumerate(results):
-            re_v, im_v = np.real(r), np.imag(r)
-            re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
-            results[i] = re_v
-
-        return self._apply_transform(*results)
-
-    def _apply_transform(self, *args):
-        t = self._get_transform_helper()
-        if self.is_2Dvector:
-            x, y, u, v = args
-            return (
-                t(x, self.tx), t(y, self.ty),
-                t(u, self.tx), t(v, self.ty)
-            )
-        else:
-            x, y, z, u, v, w = args
-            return (
-                t(x, self.tx), t(y, self.ty), t(z, self.tz),
-                t(u, self.tx), t(v, self.ty), t(w, self.tz)
-            )
-
-
-class Vector2DSeries(VectorBase):
-    """Represents a 2D vector field."""
-
-    is_2Dvector = True
-    # default number of discretization points
-    _N = 25
-    _allowed_keys = ["scalar"]
-
-    def __init__(self, u, v, range1, range2, label="", **kwargs):
-        # if "scalar" not in kwargs.keys():
-        #     use_cm = False
-        # elif (not kwargs["scalar"]) or (kwargs["scalar"] is None):
-        #     use_cm = True
-        # else:
-        #     use_cm = False
-        # kwargs.setdefault("use_cm", )
-        super().__init__((u, v), (range1, range2), label, **kwargs)
-
-        # self.use_cm = kwargs.get("use_cm", use_cm)
-
-    def __str__(self):
-        ranges = []
-        f = lambda t: t if len(t.free_symbols) > 0 else float(t)
-        for r in self.ranges:
-            ranges.append((r[0], f(r[1]), f(r[2])))
-        return self._str_helper(
-            "2D vector series: [%s, %s] over %s, %s" % (
-                *self.expr, *ranges))
-
-
-class Vector3DSeries(_TzParameter, VectorBase):
-    """Represents a 3D vector field."""
-
-    is_3D = True
-    is_3Dvector = True
-    # default number of discretization points
-    _N = 10
-
-    def __init__(self, u, v, z, range1, range2, range3, label="", **kwargs):
-        super().__init__((u, v, z), (range1, range2, range3), label, **kwargs)
-        if self.is_streamlines and isinstance(self.color_func, Expr):
-            raise TypeError(
-                "Vector3DSeries with streamlines can't use "
-                "symbolic `color_func`.")
-
-    def __str__(self):
-        ranges = []
-        for r in self.ranges:
-            ranges.append((r[0], float(r[1]), float(r[2])))
-        return self._str_helper(
-            "3D vector series: [%s, %s, %s] over %s, %s, %s" % (
-                *self.expr, *ranges))
-
-
-def _build_slice_series(slice_surf, ranges, **kwargs):
-    if isinstance(slice_surf, Plane):
-        return PlaneSeries(sympify(slice_surf), *ranges, **kwargs)
-    elif isinstance(slice_surf, BaseSeries):
-        if slice_surf.is_3Dsurface:
-            return slice_surf
-        raise TypeError("Only 3D surface-related series are supported.")
-
-    # If the vector field is V(x, y, z), the slice expression can be f(x, y)
-    # or f(y, z) or f(x, z). Extract the correct ranges.
-    fs = slice_surf.free_symbols
-    new_ranges = [r for r in ranges if r[0] in fs]
-    # apply the correct discretization number
-    n = [
-        int(kwargs.get("n1", Vector3DSeries._N)),
-        int(kwargs.get("n2", Vector3DSeries._N)),
-        int(kwargs.get("n3", Vector3DSeries._N))]
-    discr_symbols = [r[0] for r in ranges]
-    idx = [discr_symbols.index(s) for s in [r[0] for r in new_ranges]]
-    kwargs2 = kwargs.copy()
-    kwargs2["n1"] = n[idx[0]]
-    kwargs2["n2"] = n[idx[1]]
-
-    return SurfaceOver2DRangeSeries(slice_surf, *new_ranges, **kwargs2)
-
-
-
-class SliceVector3DSeries(Vector3DSeries):
-    """Represents a 3D vector field plotted over a slice. The slice can be
-    a Plane or a surface.
-    """
-    is_slice = True
-
-    def __init__(
-        self, slice_surf, u, v, w, range_x, range_y, range_z,
-        label="", **kwargs
-    ):
-        plane_kwargs = kwargs.copy()
-        plane_kwargs.pop("normalize", None)
-        self.slice_surf_series = _build_slice_series(
-            slice_surf, [range_x, range_y, range_z], **plane_kwargs)
-        super().__init__(u, v, w, range_x, range_y, range_z, label, **kwargs)
-        self.evaluator = SliceVectorUniformEvaluation(series=self)
-
-    # def _discretize(self):
-    #     data = self.slice_surf_series.get_data()
-    #     if isinstance(self.slice_surf_series, PlaneSeries):
-    #         return data
-    #     if self.slice_surf_series.is_parametric:
-    #         return data[:3]
-
-    #     # symbols used by this vector's discretization
-    #     discr_symbols = [r[0] for r in self.ranges]
-    #     # ordered symbols from slice_surf_series
-    #     order = self._discretize_helper(discr_symbols)
-    #     return [data[k] for k in order]
-
-    # def _discretize_helper(self, vec_discr_symbols):
-    #     # NOTE: let's say the vector field is discretized along x, y, z (in
-    #     # this order), and the slice surface is f(y, z). Then, data will be
-    #     # [yy, zz, f(yy, zz)], which has not the correct order expected by
-    #     # the vector field's discretization. Here we are going to fix that.
-
-    #     if not isinstance(self.slice_surf_series, SurfaceOver2DRangeSeries):
-    #         raise TypeError("This helper function is meant to be used only "
-    #             "with non-parametric slicing surfaces of 2 variables. "
-    #             "type(self.slice_surf_series) = {}".format(
-    #                 type(self.slice_surf_series)))
-
-    #     # slice surface free symbols
-    #     # don't use self.slice_surf_series.free_symbols as this expression
-    #     # might not use both its discretization symbols
-    #     ssfs = [r[0] for r in self.slice_surf_series.ranges]
-    #     # given f(y, z), we already have y, z (ssfs), now find x
-    #     missing_symbol = list(set(vec_discr_symbols).difference(ssfs))
-    #     # ordered symbols in the returned data
-    #     returned_symbols = ssfs + missing_symbol
-    #     # output order
-    #     order = [returned_symbols.index(s) for s in vec_discr_symbols]
-    #     return order
-
-    # def _create_discretized_domain(self):
-    #     """Discretize the ranges in case of uniform meshing strategy.
-    #     """
-    #     # TODO: once InteractiveSeries has been remove, the following can
-    #     # be reorganized in order to remove code repetition, specifically the
-    #     # following line of code.
-    #     # symbols used by this vector's discretization
-    #     discr_symbols = [r[0] for r in self.ranges]
-    #     discretizations = self._discretize()
-    #     self._discretized_domain = {
-    #         k: v for k, v in zip(discr_symbols, discretizations)}
-
-    # @param.depends("params", watch=True)
-    # def _update_discretized_domain(self):
-    #     if self.slice_surf_series.is_interactive:
-    #         # update both parameters and discretization ranges
-    #         self.slice_surf_series.params = self.params
-    #     # symbols used by this vector's discretization
-    #     discr_symbols = [r[0] for r in self.ranges]
-
-    #     if (
-    #         isinstance(self.slice_surf_series, SurfaceOver2DRangeSeries) and
-    #         (not self.slice_surf_series.is_parametric)
-    #     ):
-    #         # ordered symbols from slice_surf_series
-    #         ordered_symbols = self._discretize_helper(discr_symbols)
-    #         data = self.slice_surf_series.get_data()
-    #         self._discretized_domain = {
-    #             k: data[v] for k, v in zip(discr_symbols, ordered_symbols)
-    #         }
-    #     else:
-    #         self._discretized_domain = {
-    #             k: v for k, v in zip(
-    #                 discr_symbols,
-    #                 self.slice_surf_series.get_data()
-    #             )
-    #         }
-
-    def __str__(self):
-        return "sliced " + super().__str__() + " at {}".format(
-            self.slice_surf_series)
-
-
 class PlaneSeries(SurfaceBaseSeries):
     """Represents a plane in a 3D domain."""
 
@@ -3967,6 +1926,12 @@ class PlaneSeries(SurfaceBaseSeries):
         # super().__init__(**kwargs)
         # kwargs.setdefault("n", self._N)
         self._block_lambda_functions(plane)
+        color_func = kwargs.get("color_func", None)
+        if (color_func is not None) and (not callable(color_func)):
+            raise ValueError(
+                "`PlaneSeries`'s `color_func` attribute must be callable."
+                " Here is its documentation:\n\n"
+                f"{self.param.color_func.doc}")
         super().__init__(**kwargs)
         self.plane = sympify(plane)
         self.expr = self.plane
@@ -4082,13 +2047,15 @@ class PlaneSeries(SurfaceBaseSeries):
                 zz[idx] = np.nan
         return self._apply_transform(xx, yy, zz)
 
-
-class PublicGeometryParameters(
-    _BaseSeriesParameters,
-    _Line2DSeriesParameters,
-    _TzParameter
-):
-    pass
+    def eval_color_func(self, *coords):
+        if self.color_func is None:
+            return None
+        nargs = arity(self.color_func)
+        if nargs == 3:
+            color = self.color_func(*coords)
+        else:
+            _raise_color_func_error(self, nargs)
+        return _correct_shape(color, coords[0])
 
 
 class GeometrySeries(_TzParameter, Line2DBaseSeries):
@@ -4112,7 +2079,6 @@ class GeometrySeries(_TzParameter, Line2DBaseSeries):
         return object.__new__(cls)
 
     def __init__(self, expr, _range=None, label="", **kwargs):
-        print("GeometrySeries.__init__", kwargs)
         if not isinstance(expr, GeometryEntity):
             raise ValueError(
                 "`expr` must be a geomtric entity.\n"
@@ -4282,106 +2248,18 @@ class GenericDataSeries(BaseSeries):
     """
     is_generic = True
 
+    is_filled = param.Parameter()
+
     def __init__(self, tp, *args, **kwargs):
-        super().__init__(**kwargs)
+        kwargs_without_fill = kwargs.copy()
+        kwargs_without_fill.pop("fill", None)
+        super().__init__(**kwargs_without_fill)
         self.type = tp
         self.args = args
         self.rendering_kw = kwargs
 
     def get_data(self):
         return self.args
-
-
-class RiemannSphereSeries(
-    _TzParameter,
-    ComplexDomainColoringBaseSeries,
-    BaseSeries
-):
-    is_complex = True
-    is_domain_coloring = True
-    is_3Dsurface = True
-    _N = 150
-    _allowed_keys = [
-        "cmap", "coloring", "blevel", "phaseres", "phaseoffset"]
-
-    def __init__(self, f, range_t, range_p, **kwargs):
-        self._block_lambda_functions(f)
-        super().__init__(**kwargs)
-        if len(f.free_symbols) > 1:
-            # NOTE: considering how computationally heavy this series is,
-            # it is rather unuseful to allow interactive-widgets plot.
-            raise ValueError(
-                "Complex function can only have one free symbol. "
-                "Received free symbols: %s" % f.free_symbols)
-        self.expr = f
-        # NOTE: we can easily create a sphere with a single data series.
-        # However, K3DBackend is unable to properly visualize it, and it
-        # would require a few hours of work to apply the necessary edits.
-        # Instead, I'm going to create two sphere caps (Northen and Southern
-        # hemispheres, respectively), hence the need for ranges :D
-        self.ranges = [range_t, range_p]
-        if self.n[0] == self.n[1]:
-            self.n = [self.n[0], 4 * self.n[0], self._N]
-        self.use_cm = True
-
-    def get_data(self):
-        """Return arrays of coordinates for plotting.
-
-        Returns
-        =======
-
-        x, y, z : np.ndarray [n2 x n1]
-            Coordinates on the unit sphere.
-
-        arg : np.ndarray [n2 x n1]
-            Argument of the function.
-
-        img : np.ndarray [n2 x n1 x 3]
-            RGB image values computed from the argument of the function.
-            0 <= R, G, B <= 255
-
-        colors : np.ndarray [256 x 3]
-            Color scale associated to `img`.
-        """
-        np = import_module('numpy')
-
-        # discretize the unit sphere
-        r = 1
-        # TODO: this parameterization places a lot of points near the poles
-        # but not enough near the equator. Can a different parameterization
-        # improves the final result, maybe even reducing the computational
-        # cost?
-        ts, te = [float(t) for t in self.ranges[0][1:]]
-        ps, pe = [float(t) for t in self.ranges[1][1:]]
-        t, p = np.mgrid[ts:te:self.n[0]*1j, ps:pe:self.n[1]*1j]
-        X = r * np.sin(t) * np.cos(p)
-        Y = r * np.sin(t) * np.sin(p)
-        Z = r * np.cos(t)
-        # stereographic projection
-        # TODO: suppress warnings
-        x = X / (1 - Z)
-        y = Y / (1 - Z)
-        # evaluation over the complex plane
-        # NOTE: _uniform_eval should be used, as it is able to deal with
-        # different evaluation modules. However, that method is much slower
-        # than vanilla-Numpy with vectorization, even when using Numpy.
-        # To get decent results, the function must be evaluated on a big
-        # number of discretization points, which automatically precludes
-        # mpmath or sympy. Hence, just use bare bones Numpy, even though this
-        # module might not implement all the interesting functions.
-        z = x + 1j * y
-        f = lambdify(list(self.expr.free_symbols)[0], self.expr)
-        w = f(z)
-        img, cs = wegert(self.coloring, w, self.phaseres, self.cmap)
-        return self._apply_transform(X, Y, Z, np.angle(w), img, cs)
-
-    def _apply_transform(self, *args):
-        t = self._get_transform_helper()
-        x, y, _abs, _arg, img, colors = args
-        return (
-            t(x, self.tx), t(y, self.ty), t(_abs, self.tz),
-            _arg, img, colors
-        )
 
 class HVLineSeries(BaseSeries):
     """Represent an horizontal or vertical line series.
@@ -4409,1420 +2287,3 @@ class HVLineSeries(BaseSeries):
         pre = "horizontal" if self.is_horizontal else "vertical"
         post = "y = " if self.is_horizontal else "x = "
         return self._str_helper(pre + " line at " + post + str(self.expr))
-
-
-class ListTupleArray(param.ClassSelector):
-    """Parameter accepting values of type List, Tuple or np.array, with
-    an optionally specified length by setting the ``bounds`` value.
-    """
-
-    __slots__ = ['bounds']
-
-    def __init__(self, is_instance=True, bounds=None, **params):
-        self.bounds = bounds
-        params["class_"] = (list, tuple, np.ndarray, Tuple)
-        params["is_instance"] = is_instance
-        super().__init__(**params)
-
-    def _validate(self, val):
-        super()._validate(val)
-        self._validate_class_(val, self.class_, self.is_instance)
-        self._validate_bounds(val, self.bounds)
-
-    def _validate_bounds(self, val, bounds):
-        "Checks that the list is of the right length and has the right contents."
-        if bounds is None or (val is None and self.allow_None):
-            return
-        min_length, max_length = bounds
-        l = len(val)
-        class_name = self.__class__.__name__
-        if min_length is not None and max_length is not None:
-            if not (min_length <= l <= max_length):
-                raise ValueError(
-                    f"{class_name} parameter length must be between "
-                    f"{min_length} and {max_length} (inclusive), not {l}."
-                )
-        elif min_length is not None:
-            if not min_length <= l:
-                raise ValueError(
-                    f"{class_name} length must be at "
-                    f"least {min_length}, not {l}."
-                )
-        elif max_length is not None:
-            if not l <= max_length:
-                raise ValueError(
-                    f"{class_name} length must be at "
-                    f"most {max_length}, not {l}."
-                )
-
-class Arrow2DSeries(BaseSeries):
-    """Represent an arrow in a 2D space.
-    """
-
-    is_2Dvector = True
-    _allowed_keys = ["normalize"]
-
-    start = ListTupleArray(bounds=(2, 2), doc="""
-        Coordinates of the start position, (x, y).""")
-    direction = ListTupleArray(bounds=(2, 2), doc="""
-        Componenents of the direction vector, (u, v).""")
-
-    def __init__(self, start, direction, label="", **kwargs):
-        self._block_lambda_functions(start, direction)
-        expr_in = lambda _list: [
-            isinstance(t, Expr) and (not t.is_number) for t in _list
-        ]
-        any_expr = any(expr_in(start) + expr_in(direction))
-        if any_expr:
-            start = Tuple(*start)
-            direction = Tuple(*direction)
-        else:
-            start = np.array(start, dtype=np.float64)
-            direction = np.array(direction, dtype=np.float64)
-
-        kwargs["start"] = start
-        kwargs["direction"] = direction
-        kwargs["expr"] = (start, direction)
-
-        if not label:
-            # label: (from) -> (to)
-            kwargs["_label_str"] = (
-                "({}) -> ({})".format(
-                    ", ".join([str(t) for t in start]),
-                    ", ".join([str(u + v) for u, v in zip(
-                        start, direction)])
-                )
-            )
-            kwargs["_label_latex"] = (
-                r"\left({}\right) \rightarrow \left({}\right)".format(
-                    ", ".join([latex(t) for t in start]),
-                    ", ".join([latex(u + v) for u, v in zip(
-                        start, direction)])
-                )
-            )
-        else:
-            kwargs["label"] = label
-
-        super().__init__(**kwargs)
-
-        if any_expr and (not self.params):
-            raise ValueError(
-                "Some or all elements of the provided coordinates "
-                "are symbolic expressions, but the ``params`` dictionary "
-                "was not provided: those elements can't be evaluated."
-            )
-
-        if not any(isinstance(t, np.ndarray) for t in [self.start, self.direction]):
-            self._check_fs()
-
-        # np = import_module('numpy')
-        # if len(start) != len(direction):
-        #     raise ValueError(
-        #         "`start` and `direction` must have the same number of elements.\n"
-        #         f"Received: len(start) = {len(start)} "
-        #         f"and len(direction) = {len(direction)}"
-        #     )
-        # self._block_lambda_functions(start, direction)
-        # check = lambda l: [
-        #     isinstance(t, Expr) and (not t.is_number) for t in l
-        # ]
-        # if any(check(start) + check(direction)) or self.params:
-        #     if not self.params:
-        #         raise ValueError(
-        #             "Some or all elements of the provided coordinates "
-        #             "are symbolic expressions, but the ``params`` dictionary "
-        #             "was not provided: those elements can't be evaluated."
-        #         )
-        #     self.start = Tuple(*start)
-        #     self.direction = Tuple(*direction)
-        # else:
-        #     self.start = np.array(start, dtype=np.float64)
-        #     self.direction = np.array(direction, dtype=np.float64)
-
-        # self._expr = (self.start, self.direction)
-        # if not any(isinstance(t, np.ndarray) for t in [self.start, self.direction]):
-        #     self._check_fs()
-        # # if label:
-        # #     self.label = label
-        # # else:
-        # if not label:
-        #     # label: (from) -> (to)
-        #     self._label_str = (
-        #         "({}) -> ({})".format(
-        #             ", ".join([str(t) for t in self.start]),
-        #             ", ".join([str(u + v) for u, v in zip(
-        #                 self.start, self.direction)])
-        #         )
-        #     )
-        #     self._label_latex = (
-        #         r"\left({}\right) \rightarrow \left({}\right)".format(
-        #             ", ".join([latex(t) for t in self.start]),
-        #             ", ".join([latex(u + v) for u, v in zip(
-        #                 self.start, self.direction)])
-        #         )
-        #     )
-        # print("label str:", self._label_str)
-        # print("label latex:", self._label_latex)
-
-    def __str__(self):
-        pre = "3D " if self.is_3D else "2D "
-        cast = lambda t: t if isinstance(t, Expr) else float(t)
-        start = tuple(cast(t) for t in self.start)
-        end = tuple(cast(s + d) for s, d in zip(start, self.direction))
-        return self._str_helper(
-            pre + f"arrow from {start} to {end}"
-        )
-
-    def get_label(self, use_latex=False, wrapper="$%s$"):
-        """Return the label to be used to display the expression.
-
-        Parameters
-        ==========
-        use_latex : bool
-            If False, the string representation of the expression is returned.
-            If True, the latex representation is returned.
-        wrapper : str
-            The backend might need the latex representation to be wrapped by
-            some characters. Default to ``"$%s$"``.
-
-        Returns
-        =======
-        label : str
-        """
-        if use_latex is False:
-            return self._label_str
-        return self._get_wrapped_label(self._label_latex, wrapper)
-
-    def get_data(self):
-        """Return arrays of coordinates for plotting.
-
-        Returns
-        =======
-        x1, y1, z1 [optional] : float
-            Coordinates of the start position.
-        x2, y2, z2 [optional] : float
-            Coordinates of the end position.
-        """
-        np = import_module('numpy')
-        start, direction = self.start, self.direction
-
-        if not self.is_interactive:
-            start, direction = [
-                np.array(t, dtype=float) for t in [start, direction]
-            ]
-        else:
-            start = np.array(
-                [t.evalf(subs=self.params) for t in start], dtype=float)
-            direction = np.array(
-                [t.evalf(subs=self.params) for t in direction], dtype=float)
-
-        end = start + direction
-        return self._apply_transform(*start, *end)
-
-    def _apply_transform(self, *args):
-        t = self._get_transform_helper()
-        if self.is_2Dvector:
-            x1, y1, x2, y2 = args
-            return (
-                t(x1, self.tx), t(y1, self.ty),
-                t(x2, self.tx), t(y2, self.ty)
-            )
-        else:
-            x1, y1, z1, x2, y2, z2 = args
-            return (
-                t(x1, self.tx), t(y1, self.ty), t(z1, self.tz),
-                t(x2, self.tx), t(y2, self.ty), t(z2, self.tz)
-            )
-
-
-class Arrow3DSeries(_TzParameter, Arrow2DSeries):
-    """Represent an arrow in a 3D space.
-    """
-    is_3D = True
-    is_2Dvector = False
-    is_3Dvector = True
-
-    start = ListTupleArray(bounds=(3, 3), doc="""
-        Coordinates of the start position, (x, y).""")
-    direction = ListTupleArray(bounds=(3, 3), doc="""
-        Componenents of the direction vector, (u, v).""")
-
-    def get_data(self):
-        """Return arrays of coordinates for plotting.
-
-        Returns
-        =======
-        x, y, z : float
-            Coordinates of the start position.
-        u, v, w : float
-            Coordinates of the end position.
-        """
-        return super().get_data()
-
-
-class GridBase:
-    """
-    *GridLineSeries may cover the entire visible area. Hence, they need to
-    know the axis limits.
-
-    Axis limits can be:
-    1. provided by the user in the plot function call. For example:
-       ``plot(..., xlim=(a, b), ylim=(c, d))``
-    2. computed from the data that has already be plotted.
-    3. provided in some function call that generates data series. For example:
-       ``graphics(sgrid(xlim=(a, b), ylim=(c, d)))``
-
-    Either way, the appropriate renderer will:
-
-    1. figure it out the axis limits.
-    2. Let the grid series knows about this limits by calling
-       ``series.set_axis_limits(xlim, ylim)``.
-    3. Compute the numerical data for the specified grid that cover the
-       specified area, with ``series.get_data()``.
-
-    """
-    is_grid = True
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.show_in_legend = kwargs.get("show_in_legend", False)
-        xlim = kwargs.get("xlim", None)
-        ylim = kwargs.get("ylim", None)
-        # Jupyter lab + "from sympy import *" convert all numbers to
-        # sympy's types. The algorithm expectes them to be `float`.
-        self._xlim = [float(t) for t in xlim] if xlim else None
-        self._ylim = [float(t) for t in ylim] if ylim else None
-
-    def set_axis_limits(self, xlim, ylim):
-        self._xlim = xlim
-        self._ylim = ylim
-
-    @property
-    def xlim(self):
-        return self._xlim
-
-    @property
-    def ylim(self):
-        return self._ylim
-
-
-class _NaturalFrequencyDampingRatioGrid(param.Parameterized):
-    auto = param.Boolean(True, doc="""
-        If True, automatically compute damping ratio and natural frequencies
-        in order to obtain a "evenly" distributed grid.""")
-    show_control_axis = param.Boolean(True, doc="""
-        Shows an horizontal and vertical grid lines crossing at the origin.""")
-    xi = param.List([], doc="""
-        List of damping values where to draw a grid line.""")
-    wn = param.List([], doc="""
-        List of natural frequencies where to draw a grid line.""")
-    # NOTE: this is overriding the ``tp`` attribute of BaseSeries
-    tp = param.List([], doc="""
-        List of peak times where to draw a grid line.""")
-    ts = param.List([], doc="""
-        List of settling times where to draw a grid line.""")
-
-
-class SGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
-    """Represent a grid of damping ratio lines and natural frequency lines
-    on the s-plane. This data series implements two modes of operation:
-
-    1. User can provide xi, wn.
-    2. User can provide dummy xi, wn, and a list of associated RootLocusSeries.
-       When ``get_data()`` will be called, it first loops over the associated
-       root locus series in order to determine the axis limits of the visible
-       area. Then, it computes new values of xi, wn in order to get grid lines
-       "evenly" distributed on the available space.
-    """
-
-    def __init__(self, xi, wn, tp, ts, series=[], **kwargs):
-        super().__init__(xi=xi, wn=wn, tp=tp, ts=ts, **kwargs)
-
-    def __str__(self):
-        return "s-grid"
-
-    def _sgrid_default_xi(self, xlim, ylim):
-        """Return default list of damping coefficients
-
-        This function computes a list of damping coefficients based on the limits
-        of the graph.  A set of 4 damping coefficients are computed for the x-axis
-        and a set of three damping coefficients are computed for the y-axis
-        (corresponding to the normal 4:3 plot aspect ratio in `matplotlib`?).
-
-        Parameters
-        ----------
-        xlim : array_like
-            List of x-axis limits [min, max]
-        ylim : array_like
-            List of y-axis limits [min, max]
-
-        Returns
-        -------
-        zeta : list
-            List of default damping coefficients for the plot
-
-        """
-        np = import_module("numpy")
-
-        x_lower_lim = xlim[0] if xlim else -10
-        y_upper_lim = ylim[1] if ylim else 10
-
-        # Damping coefficient lines that intersect the x-axis
-        sep1 = -x_lower_lim / 4
-        ang1 = [np.arctan((sep1*i)/y_upper_lim) for i in np.arange(1, 4, 1)]
-
-        # Damping coefficient lines that intersection the y-axis
-        sep2 = y_upper_lim / 3
-        ang2 = [
-            np.arctan(-x_lower_lim/(y_upper_lim-sep2*i))
-            for i in np.arange(1, 3, 1)
-        ]
-
-        # Put the lines together and add one at -pi/2 (negative real axis)
-        angles = np.concatenate((ang1, ang2))
-
-        # Return the damping coefficients corresponding to these angles
-        zeta = np.sin(angles).tolist()
-        if not self.show_control_axis:
-            zeta += [0, 1]
-        return zeta
-
-    def _sgrid_default_wn(self, xlim, ylim, max_lines=7):
-        """Return default wn for root locus plot
-
-        This function computes a list of natural frequencies based on the grid
-        parameters of the graph.
-
-        Parameters
-        ----------
-        xloc : array_like
-            List of x-axis tick values
-        ylim : array_like
-            List of y-axis limits [min, max]
-        max_lines : int, optional
-            Maximum number of frequencies to generate (default = 7)
-
-        Returns
-        -------
-        wn : list
-            List of default natural frequencies for the plot
-
-        """
-        lower_lim = xlim[0] if xlim else -10
-        np = import_module("numpy")
-        available_width = 0 - lower_lim
-        wn = np.linspace(0, abs(lower_lim), max_lines)[1:-1]
-        return wn
-
-    def get_data(self):
-        """
-        Returns
-        =======
-        xi_dict : dict
-        wn_dict : dict
-        y_tp : np.ndarray
-        x_ts : np.ndarray
-        """
-        np = import_module("numpy")
-
-        if self.auto:
-            xi = self._sgrid_default_xi(self.xlim, self.ylim)
-            wn = self._sgrid_default_wn(self.xlim, self.ylim)
-        else:
-            xi = np.array([
-                t.evalf(subs=self.params) if isinstance(t, Expr) else t
-                for t in self.xi], dtype=float)
-            if any(xi > 1) or any(xi < 0):
-                # Enforce this condition
-                raise ValueError("It must be ``0 <= xi <= 1. "
-                    "Computed: %s" % xi)
-            wn = np.array([
-                t.evalf(subs=self.params) if isinstance(t, Expr) else t
-                for t in self.wn], dtype=float)
-        tp = np.array([
-            t.evalf(subs=self.params) if isinstance(t, Expr) else t
-            for t in self.tp], dtype=float)
-        ts = np.array([
-            t.evalf(subs=self.params) if isinstance(t, Expr) else t
-            for t in self.ts], dtype=float)
-
-        angles = np.pi - np.arccos(xi)
-        y_over_x = np.tan(angles)
-        r = max(1000, max(wn)) if len(wn) > 0 else 1000
-
-        xi_dict = {k: {} for k in zip(xi, angles, y_over_x)}
-        wn_dict = {k: {} for k in wn}
-        tp_dict = {k: {} for k in tp}
-        ts_dict = {k: {} for k in ts}
-
-        # damping ratio lines
-        for k in zip(xi, angles, y_over_x):
-            x, a, yp = k
-            xi_dict[k]["x"] = np.array([0, r * np.cos(a)])
-            xi_dict[k]["y"] = np.array([0, r * np.sin(a)])
-            xi_dict[k]["label"] = "%.2f" % x
-
-        # natural frequency lines
-        t = np.linspace(np.pi/2, 3*np.pi/2, 100)
-        ct = np.cos(t)
-        st = np.sin(t)
-        ylim = self._ylim
-        y_offset = 0 if ylim is None else 0.015 * abs(ylim[1] - ylim[0])
-        for w in wn:
-            wn_dict[w]["x"] = w * ct
-            wn_dict[w]["y"] = w * st
-            wn_dict[w]["label"] = "%.2f" % w
-            wn_dict[w]["lx"] = -w
-            wn_dict[w]["ly"] = y_offset
-
-        # peak time lines
-        y_tp = np.pi / tp
-        # settling time lines
-        x_ts = -4 / ts
-
-        return xi_dict, wn_dict, y_tp, x_ts
-
-
-class ZGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
-    """Represent a grid of damping ratio lines and natural frequency lines
-    on the z-plane.
-    """
-    sampling_period = param.Number(doc="""Sampling period.""")
-
-    def __init__(self, xi, wn, tp, ts, **kwargs):
-        super().__init__(xi=xi, wn=wn, tp=tp, ts=ts, **kwargs)
-
-    def __str__(self):
-        return "z-grid"
-
-    def get_data(self):
-        """
-        Returns
-        =======
-        xi, wn, tp, ts : dict
-            Dictionaries containing the required numerical data to create
-            lines and annotations.
-        """
-        np = import_module("numpy")
-        if self.is_interactive:
-            xi = np.array([
-                t.evalf(subs=self.params) if isinstance(t, Expr) else t
-                for t in self.xi], dtype=float)
-            wn = np.array([
-                t.evalf(subs=self.params) if isinstance(t, Expr) else t
-                for t in self.wn], dtype=float)
-            tp = np.array([
-                t.evalf(subs=self.params) if isinstance(t, Expr) else t
-                for t in self.tp], dtype=float)
-            ts = np.array([
-                t.evalf(subs=self.params) if isinstance(t, Expr) else t
-                for t in self.ts], dtype=float)
-        else:
-            xi = np.array(self.xi, dtype=float)
-            wn = np.array(self.wn, dtype=float)
-            tp = np.array(self.tp, dtype=float)
-            ts = np.array(self.ts, dtype=float)
-
-        T = self.sampling_period
-        xi_dict = {k: {} for k in xi}
-        wn_dict = {k: {} for k in wn}
-        tp_dict = {k: {} for k in tp}
-        ts_dict = {k: {} for k in ts}
-
-        # damping ratio lines
-        for zeta in xi:
-            # Calculate in polar coordinates
-            factor = zeta/np.sqrt(1-zeta**2)
-            x = np.linspace(0, np.sqrt(1-zeta**2), 200)
-            ang = np.pi*x
-            mag = np.exp(-np.pi*factor*x)
-            # Draw upper part in retangular coordinates
-            xret = mag*np.cos(ang)
-            yret = mag*np.sin(ang)
-            xi_dict[zeta]["x1"] = xret
-            xi_dict[zeta]["y1"] = yret
-            # Draw lower part in retangular coordinates
-            xret = mag*np.cos(-ang)
-            yret = mag*np.sin(-ang)
-            xi_dict[zeta]["x2"] = xret
-            xi_dict[zeta]["y2"] = yret
-            # Annotation
-            an_i = int(len(xret)/2.5)
-            an_x = xret[an_i]
-            an_y = yret[an_i]
-            xi_dict[zeta]["lx"] = xret[an_i]
-            xi_dict[zeta]["ly"] = yret[an_i]
-            xi_dict[zeta]["label"] = str(round(zeta, 2))
-
-        # natural frequency lines
-        r_an = 1.075
-        fmt = '{:1.1f}' if len(wn) > 1 else '{:1.2f}'
-        def get_label(num):
-            def func(use_latex=True):
-                if use_latex:
-                    return r"$\frac{"+num+r"\pi}{T}$"
-                return str(num) + " π/T"
-            return func
-        for a in wn:
-            # Calculate in polar coordinates
-            x = np.linspace(-np.pi/2, np.pi/2, 200)
-            ang = np.pi*a*np.sin(x)
-            mag = np.exp(-np.pi*a*np.cos(x))
-            # Draw in retangular coordinates
-            xret = mag*np.cos(ang)
-            yret = mag*np.sin(ang)
-            wn_dict[a]["x"] = xret
-            wn_dict[a]["y"] = yret
-            # Annotation
-            angle = np.arctan2(yret[-1], xret[-1])
-            wn_dict[a]["lx"] = r_an * np.cos(angle)
-            wn_dict[a]["ly"] = r_an * np.sin(angle)
-            if T is None:
-                num = fmt.format(a)
-                an = r"$\frac{"+num+r"\pi}{T}$"
-                an = get_label(num)
-            else:
-                func = lambda a, T: lambda use_latex: "%.2f" % (a * np.pi * T)
-                an = func(a, T)
-            wn_dict[a]["label"] = an
-
-        # peak time lines
-        angles = np.pi / tp
-        for _tp, a in zip(tp, angles):
-            tp_dict[_tp]["x"] = [0, np.cos(a)]
-            tp_dict[_tp]["y"] = [0, np.sin(a)]
-            # Annotation
-            tp_dict[_tp]["lx"] = r_an * np.cos(a)
-            tp_dict[_tp]["ly"] = r_an * np.sin(a)
-            an = _tp if not T else _tp * T
-            an = "%.2f" % an if not T else "%.2f s" % an
-            tp_dict[_tp]["label"] = an
-
-        # settling time lines
-        radius = np.exp(-4 / ts)
-        theta = np.linspace(0, 2*np.pi, 400)
-        ct = np.cos(theta)
-        st = np.sin(theta)
-        for _ts, r in zip(ts, radius):
-            ts_dict[_ts]["x"] = r * ct
-            ts_dict[_ts]["y"] = r * st
-            # Annotation
-            an_i = int(len(theta)*0.75)
-            ts_dict[_ts]["lx"] = ts_dict[_ts]["x"][an_i]
-            ts_dict[_ts]["ly"] = ts_dict[_ts]["y"][an_i]
-            an = _ts if not T else _ts * T
-            an = "%.2f" % an if not T else "%.2f s" % an
-            ts_dict[_ts]["label"] = an
-
-        return xi_dict, wn_dict, tp_dict, ts_dict
-
-
-class ArrowsMixin:
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.arrows = kwargs.get("arrows", 3)
-
-        # Parse the arrows keyword
-        np = import_module("numpy")
-        if not self.arrows:
-            self.arrow_locs = []
-        elif isinstance(self.arrows, int):
-            N = 3 if self.arrows is True else self.arrows
-            # Space arrows out, starting midway along each "region"
-            self.arrow_locs = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
-        elif isinstance(self.arrows, (list, np.ndarray)):
-            self.arrow_locs = np.sort(np.atleast_1d(self.arrows))
-        else:
-            raise ValueError("unknown or unsupported arrow location")
-
-
-class NicholsLineSeries(ArrowsMixin, CommonUniformEvaluation, Line2DBaseSeries):
-    """Represent a Nichols line in control system plotting.
-    """
-    _allowed_keys = ["arrows"]
-
-    def __init__(
-        self, tf, ol_phase, ol_mag, cl_phase, cl_mag, omega_range,
-        label="", **kwargs
-    ):
-        super().__init__(**kwargs)
-        self._tf = tf
-        self.expr = Tuple(ol_phase, ol_mag, cl_phase, cl_mag)
-        self.ranges = [omega_range]
-        self.label = label
-        self.force_real_eval = True
-
-    def __str__(self):
-        return self._str_helper("nichols line of %s" % self._tf)
-
-    def get_data(self):
-        """
-        Returns
-        =======
-        omega : np.ndarray
-        ol_phase : np.ndarray
-        ol_mag : np.ndarray
-        cl_phase : np.ndarray
-        cl_mag : np.ndarray
-        """
-        np = import_module('numpy')
-
-        results = self._evaluate()
-        for i, r in enumerate(results):
-            _re, _im = np.real(r), np.imag(r)
-            _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
-            results[i] = _re
-
-        omega, ol_phase, ol_mag, cl_phase, cl_mag = results
-        ol_mag = 20 * np.log10(ol_mag)
-        ol_phase = np.degrees(unwrap(ol_phase))
-        cl_mag = 20 * np.log10(cl_mag)
-        # TODO: if the nichols line passes through the point (-180 deg, 0 dB)
-        # (in open loop), then the resulting closed-loop phase is wrong. Why?
-        # For example, test with this system:
-        # tf = (5 * (s - 1)) / (s**2 * (s**2 + s + 4))
-        cl_phase = np.degrees(unwrap(cl_phase))
-        return omega, ol_phase, ol_mag, cl_phase, cl_mag
-
-
-class ControlBaseSeries(Line2DBaseSeries):
-    """A base series for classes that are going to produce numerical
-    data using the ``control`` module for control-system plotting.
-    Those series represent a SISO system.
-    """
-
-    _allowed_keys = ["control_kw"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(**kwargs)
-        TransferFunction = sympy.physics.control.lti.TransferFunction
-        np = import_module('numpy')
-        sp = import_module('scipy')
-        ct = import_module('control')
-        label = kwargs.get("label", "")
-        tf = args[0]
-
-        if isinstance(tf, (Expr, TransferFunction)):
-            if isinstance(tf, Expr):
-                params_fs = set(self.params.keys())
-                fs = tf.free_symbols.difference(params_fs)
-                fs = fs.pop() if len(fs) > 0 else symbols("s")
-                tf = TransferFunction.from_rational_expression(tf, fs)
-            self._expr = tf
-            self._control_tf = None
-            if not self.is_interactive:
-                self._control_tf = tf_to_control(tf)
-            self._label_str = str(self.expr) if label is None else label
-            self._label_latex = latex(self.expr) if label is None else label
-        elif isinstance(tf, (sp.signal.TransferFunction, ct.TransferFunction)):
-            self._expr = None
-            self._label_str = label
-            self._label_latex = label
-            if label is None:
-                s = symbols("s" if tf.dt is None else "z")
-                n = tf.num[0][0] if isinstance(ct.TransferFunction) else tf.num
-                d = tf.den[0][0] if isinstance(ct.TransferFunction) else tf.den
-                expr = Poly.from_list(n, s) / Poly.from_list(d, s)
-                self._label_str = str(expr)
-                self._label_latex = latex(expr)
-            if isinstance(tf, sp.signal.TransferFunction):
-                self._control_tf = tf_to_control(tf)
-            else:
-                self._control_tf = tf
-        else:
-            raise TypeError(
-                "Transfer function's type not recognized. "
-                "Received: " + str(type(tf))
-            )
-
-        self._control_kw = kwargs.get("control_kw", {})
-
-    def _check_fs(self):
-        """ Checks if there are enogh parameters and free symbols.
-        """
-        fs = set()
-        if self._expr:
-            fs = {self._expr.var}
-        ranges, params = self.ranges, self.params
-
-        # from the expression's free symbols, remove the ones used in
-        # the parameters and the ranges
-        fs = fs.difference(params.keys())
-        if ranges is not None:
-            fs = fs.difference([r[0] for r in ranges])
-
-        if len(fs) > 1:
-            raise ValueError(
-                "Incompatible expression and parameters.\n"
-                + "Specify what these symbols represent: {}\n".format(fs)
-                + "Are they ranges or parameters?"
-            )
-
-        # verify that all symbols are known (they either represent plotting
-        # ranges or parameters)
-        range_symbols = [r[0] for r in ranges]
-        for r in ranges:
-            fs = set().union(*[e.free_symbols for e in r[1:]])
-            if any(t in fs for t in range_symbols):
-                raise ValueError("Range symbols can't be included into "
-                    "minimum and maximum of a range. "
-                    "Received range: %s" % str(r))
-            remaining_fs = fs.difference(params.keys())
-            if len(remaining_fs) > 0:
-                raise ValueError(
-                    "Unkown symbols found in plotting range: %s. " % (r,) +
-                    "Are the following parameters? %s" % remaining_fs)
-
-
-class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
-    """Generates numerical data for Nyquist plot using the ``control``
-    module.
-    """
-
-    _allowed_keys = [
-        "arrows", "max_curve_magnitude", "max_curve_offset",
-        "start_marker", "primary_style", "mirror_style"
-    ]
-
-    def _copy_from_dict(self, d, k):
-        if k in d.keys():
-            setattr(self, k, d[k])
-
-    def __init__(self, tf, var_start_end, label="", **kwargs):
-        super().__init__(tf, label=label, **kwargs)
-        self.ranges = [var_start_end]
-        self._check_fs()
-
-        # these attributes are used by ``control`` in the rendering step,
-        # not in the data generation step. I need them here in order to
-        # control the rendering in each backend.
-        self.max_curve_magnitude = kwargs.get("max_curve_magnitude", 20)
-        self.max_curve_offset = kwargs.get("max_curve_offset", 0.02)
-        self.start_marker = kwargs.get("start_marker", True)
-        self.primary_style = kwargs.get("primary_style", None)
-        self.mirror_style = kwargs.get("mirror_style", None)
-        for k in ["arrows", "max_curve_magnitude", "max_curve_offset",
-            "start_marker", "primary_style", "mirror_style"]:
-            self._copy_from_dict(self._control_kw, k)
-
-    def __str__(self):
-        return self._str_helper(
-            "nyquist line of %s" % (
-                self._expr if self._expr else self._control_tf))
-
-    def get_data(self):
-        """
-        Returns
-        =======
-        x_reg, y_reg : np.ndarray
-        x_scl, y_scl : np.ndarray
-        x_inv1, y_inv1 : np.ndarray
-        x_inv2, y_inv2 : np.ndarray
-        curve_offset : np.ndarray
-        """
-        np = import_module("numpy")
-        ct = import_module("control")
-        mergedeep = import_module('mergedeep')
-
-        if self.is_interactive:
-            tf = self._expr.subs(self.params)
-            self._control_tf = tf_to_control(tf)
-
-        control_kw = {}
-        sym, start, end = self.ranges[0]
-        if (start != end) or self._parametric_ranges:
-            start = self._update_range_value(start).real
-            end = self._update_range_value(end).real
-            control_kw["omega_limits"] = [10**start, 10**end]
-
-        ckw = mergedeep.merge({}, control_kw, self._control_kw)
-        response_obj = ct.nyquist_response(self._control_tf, **ckw)
-        resp = response_obj.response
-        if response_obj.dt in [0, None]:
-            splane_contour = response_obj.contour
-        else:
-            splane_contour = np.log(response_obj.contour) / response_obj.dt
-
-        max_curve_magnitude = self.max_curve_magnitude
-        max_curve_offset = self.max_curve_offset
-
-        reg_mask = np.logical_or(
-            np.abs(resp) > max_curve_magnitude,
-            splane_contour.real != 0)
-
-        scale_mask = ~reg_mask \
-            & np.concatenate((~reg_mask[1:], ~reg_mask[-1:])) \
-            & np.concatenate((~reg_mask[0:1], ~reg_mask[:-1]))
-
-        # Rescale the points with large magnitude
-        rescale = np.logical_and(
-            reg_mask, abs(resp) > max_curve_magnitude)
-        resp[rescale] *= max_curve_magnitude / abs(resp[rescale])
-
-        # Plot the regular portions of the curve (and grab the color)
-        x_reg = np.ma.masked_where(reg_mask, resp.real)
-        y_reg = np.ma.masked_where(reg_mask, resp.imag)
-
-        # Figure out how much to offset the curve: the offset goes from
-        # zero at the start of the scaled section to max_curve_offset as
-        # we move along the curve
-        curve_offset = self._compute_curve_offset(
-            resp, scale_mask, max_curve_offset)
-
-        # Plot the scaled sections of the curve (changing linestyle)
-        x_scl = np.ma.masked_where(scale_mask, resp.real)
-        y_scl = np.ma.masked_where(scale_mask, resp.imag)
-
-        # the primary curve (invisible) for setting arrows
-        x_inv1, y_inv1 = resp.real.copy(), resp.imag.copy()
-        x_inv1[reg_mask] *= (1 + curve_offset[reg_mask])
-        y_inv1[reg_mask] *= (1 + curve_offset[reg_mask])
-
-        # Add the arrows to the mirror image (on top of an invisible contour)
-        x_inv2, y_inv2 = resp.real.copy(), resp.imag.copy()
-        x_inv2[reg_mask] *= (1 - curve_offset[reg_mask])
-        y_inv2[reg_mask] *= (1 - curve_offset[reg_mask])
-
-        return x_reg, y_reg, x_scl, y_scl, x_inv1, y_inv1, x_inv2, y_inv2, curve_offset
-
-    @staticmethod
-    def _compute_curve_offset(resp, mask, max_offset):
-        """
-            Function to compute Nyquist curve offsets
-
-        This function computes a smoothly varying offset that starts and ends at
-        zero at the ends of a scaled segment.
-
-        This function comes from ``control/freqplot.py``.
-        """
-        np = import_module("numpy")
-
-        # Compute the arc length along the curve
-        s_curve = np.cumsum(
-            np.sqrt(np.diff(resp.real) ** 2 + np.diff(resp.imag) ** 2))
-
-        # Initialize the offset
-        offset = np.zeros(resp.size)
-        arclen = np.zeros(resp.size)
-
-        # Walk through the response and keep track of each continous component
-        i, nsegs = 0, 0
-        while i < resp.size:
-            # Skip the regular segment
-            while i < resp.size and mask[i]:
-                i += 1              # Increment the counter
-                if i == resp.size:
-                    break
-                # Keep track of the arclength
-                arclen[i] = arclen[i-1] + np.abs(resp[i] - resp[i-1])
-
-            nsegs += 0.5
-            if i == resp.size:
-                break
-
-            # Save the starting offset of this segment
-            seg_start = i
-
-            # Walk through the scaled segment
-            while i < resp.size and not mask[i]:
-                i += 1
-                if i == resp.size:  # See if we are done with this segment
-                    break
-                # Keep track of the arclength
-                arclen[i] = arclen[i-1] + np.abs(resp[i] - resp[i-1])
-
-            nsegs += 0.5
-            if i == resp.size:
-                break
-
-            # Save the ending offset of this segment
-            seg_end = i
-
-            # Now compute the scaling for this segment
-            s_segment = arclen[seg_end-1] - arclen[seg_start]
-            offset[seg_start:seg_end] = max_offset * s_segment/s_curve[-1] * \
-                np.sin(np.pi * (arclen[seg_start:seg_end]
-                                - arclen[seg_start])/s_segment)
-
-        return offset
-
-
-class RootLocusSeries(ControlBaseSeries):
-    """Generates numerical data for root locus plot using the ``control``
-    module.
-
-    Symbolic expressions or SymPy's transfer functions are converted to
-    ``control.TransferFunction``. If a interactive-widget plot is created,
-    at each widget's state-change the updated symbolic transfer function
-    will be converted to ``control.TransferFunction``.
-
-    It has been shown that numpy.roots() produces inaccurate results in
-    comparison to sympy.roots(). https://github.com/sympy/sympy/issues/25234
-    However, we are dealing with a root locus plot, where branches start from
-    poles and goes to zeros (or to infinity). Hence, these errors are
-    likely to be irrelevant on a practical case. This data series uses
-    ``control`` (hence numpy) for performace.
-
-    References
-    ==========
-
-    https://github.com/python-control/python-control
-
-    """
-
-    def __init__(self, tf, label="", **kwargs):
-        super().__init__(tf, label=label, **kwargs)
-        self._check_fs()
-
-        # compute appropriate axis limits from the transfer function
-        # associated to this data series.
-        self._xlim = None
-        self._ylim = None
-        # zeros and poles are necessary in order to show appropriate markers.
-        self._zeros = None
-        self._poles = None
-
-        self._zeros_rk = kwargs.get("zeros_rk", dict())
-        self._poles_rk = kwargs.get("poles_rk", dict())
-
-    def __str__(self):
-        expr = self._expr if self._expr else self._control_tf
-        return "root locus of " + str(expr)
-
-    @property
-    def zeros(self):
-        if self._zeros is None:
-            self.get_data()
-        return self._zeros
-
-    @property
-    def poles(self):
-        if self._poles is None:
-            self.get_data()
-        return self._poles
-
-    @property
-    def xlim(self):
-        return self._xlim
-
-    @property
-    def ylim(self):
-        return self._ylim
-
-    def get_data(self):
-        """
-        Returns
-        =======
-        roots : ndarray
-            Closed-loop root locations, arranged in which each row corresponds
-            to a gain in gains
-        gains : ndarray
-            Gains used.  Same as kvect keyword argument if provided.
-        """
-        ct = import_module("control")
-        # TODO: open PR on control and implement a method inside the object
-        # returned by root_locus_map, so that we don't have to deal with
-        # private methods.
-        from control.pzmap import _compute_root_locus_limits
-
-        if self.is_interactive:
-            tf = self._expr.subs(self.params)
-            self._control_tf = tf_to_control(tf)
-
-        self._zeros = self._control_tf.zeros()
-        self._poles = self._control_tf.poles()
-        data = ct.root_locus_map(
-            self._control_tf, **self._control_kw)
-        self._xlim, self._ylim = _compute_root_locus_limits(data)
-        return data.loci, data.gains
-
-
-
-class SystemResponseSeries(ControlBaseSeries):
-    """Represent a system response computed with the ``control`` module.
-
-    Computing the inverse laplace transform of a system with SymPy is not
-    trivial: sometimes it works fine, other times it produces wrong results,
-    other times it just consumes to much memory even for trivial transfer
-    functions. This is true for both the public ``inverse_laplace_transform``
-    as well as the private ``_fast_inverse_laplace`` used in
-    ``spb.graphics.control``.
-
-    In order to address these issues, let's evaluate the system with the
-    ``control`` module. Sure, it relies on numerical integration, hence errors.
-    But, at least it doesn't crash the machine and it is reliable.
-    """
-
-    only_integers = param.Boolean(False, doc="""
-        Discretize the domain using only integer numbers.""")
-    response_type = param.Selector(
-        default="step", objects=["impulse", "step", "ramp"], doc="""
-        The type of response to simulate.""")
-
-    def __new__(cls, *args, **kwargs):
-        cf = kwargs.get("color_func", None)
-        lc = kwargs.get("line_color", None)
-        if (callable(cf) or callable(lc) or isinstance(cf, Expr)):
-            return super().__new__(ColoredSystemResponseSeries)
-        return object.__new__(cls)
-
-    def __init__(self, tf, var_start_end, label="", **kwargs):
-        super().__init__(tf, label=label, **kwargs)
-        self.ranges = [var_start_end]
-        self._check_fs()
-
-        if self._expr is None:
-            self.steps = self._control_tf.isdtime()
-
-        # time values over which the evaluation will be performed
-        self._time_array = None
-
-    def __str__(self):
-        return self._str_helper(
-            "%s response of %s" % (
-                self.response_type,
-                self._expr if self._expr else self._control_tf))
-
-    def _get_data_helper(self):
-        ct = import_module("control")
-        np = import_module("numpy")
-        mergedeep = import_module('mergedeep')
-
-        if self.is_interactive:
-            tf = self._expr.subs(self.params)
-            self._control_tf = tf_to_control(tf)
-
-        # create (or update) the discretized domain
-        _, start, end = self.ranges[0]
-        if self._parametric_ranges:
-            start = self._update_range_value(start).real
-            end = self._update_range_value(end).real
-        else:
-            start, end = float(start), float(end)
-
-        if (self._time_array is None) or self._parametric_ranges:
-            if not self._control_tf.isdtime():
-                n = self.n[0]
-            else:
-                n = int((end - start) / self._control_tf.dt) + 1
-                end = (n - 1) * self._control_tf.dt
-            self._time_array = self._discretize(
-                    start, end, n, self.scales[0], self.only_integers)
-
-        control_kw = {"T": self._time_array, "squeeze": True}
-
-        if self.response_type == "step":
-            ckw = mergedeep.merge({}, control_kw, self._control_kw)
-            response = ct.step_response(self._control_tf, **ckw)
-        elif self.response_type == "impulse":
-            ckw = mergedeep.merge({}, control_kw, self._control_kw)
-            response = ct.impulse_response(self._control_tf, **ckw)
-        elif self.response_type == "ramp":
-            ramp = self._time_array
-            control_kw["U"] = ramp
-            ckw = mergedeep.merge({}, control_kw, self._control_kw)
-            response = ct.forced_response(self._control_tf, **ckw)
-        else:
-            raise NotImplementedError
-
-        return response.time, response.y.flatten()
-
-
-class ColoredSystemResponseSeries(_TpParameter, SystemResponseSeries):
-    """Represent a system response computed with the ``control`` module,
-    and colored according some color function.
-    """
-    is_parametric = True
-
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("use_cm", True)
-        super().__init__(*args, **kwargs)
-
-    def _get_data_helper(self):
-        x, y = super()._get_data_helper()
-        return x, y, self.evaluator.eval_color_func(x, y)
-
-
-class PoleZeroCommon(param.Parameterized):
-    return_poles = param.Boolean(True, doc="""
-        If True returns the poles of the transfer function, otherwise
-        it returns the zeros.""")
-    pole_color = param.ClassSelector(class_=(str, list, tuple), doc="""
-        The color of the pole points on the plot.""")
-    zero_color = param.ClassSelector(class_=(str, list, tuple), doc="""
-        The color of the zero points on the plot.""")
-    pole_markersize = param.Integer(10, bounds=(1, None), doc="""
-        The size of the markers used to mark the poles in the plot.""")
-    zero_markersize = param.Integer(10, bounds=(1, None), doc="""
-        The size of the markers used to mark the zeros in the plot.""")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.is_point = True
-
-    def __str__(self):
-        return self._str_helper("poles" if self.return_poles else "zeros ")
-
-
-class PoleZeroWithSympySeries(PoleZeroCommon, List2DSeries):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-
-class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
-    """Represent a the pole-zero of an LTI SISO system computed
-    with the ``control`` module.
-
-    This series represents either poles or zeros, not both at the same time.
-    In some sense, it behaves like a List2DSeries. So, to represents both
-    poles and zeros of a transfer function, we need to instatiate two
-    different series passing in the same transfer function.
-
-    While computationally less efficient, this design choice have been made
-    in order to reuse the existing BaseBackend architecture, that sets up
-    the number of colors based on the number of data series, as well as the
-    logic to show or hide the legend.
-    """
-    def __init__(self, tf, label="", **kwargs):
-        super().__init__(tf, label=label, **kwargs)
-        self._check_fs()
-
-    def __str__(self):
-        pre = "poles of " if self.return_poles else "zeros of "
-        expr = self._expr if self._expr is not None else self._control_tf
-        return pre + str(expr)
-
-    def _get_data_helper(self):
-        """
-        Returns
-        =======
-        x : np.ndarray
-        y : np.ndarray
-        """
-        np = import_module("numpy")
-        if self.is_interactive:
-            tf = self._expr.subs(self.params)
-            self._control_tf = tf_to_control(tf)
-        if self.return_poles:
-            points = self._control_tf.poles()
-        else:
-            points = self._control_tf.zeros()
-        return np.real(points), np.imag(points)
-
-
-class NGridLineSeries(GridBase, BaseSeries):
-    """ The code of this class comes from the ``control`` package, which has
-    been rearranged to work with the architecture of this module.
-    """
-
-    def __init__(self, cl_mags=None, cl_phases=None, label_cl_phases=False,
-        **kwargs):
-        super().__init__(**kwargs)
-        np = import_module("numpy")
-        self.cl_mags = cl_mags if cl_mags is None else np.array(cl_mags)
-        self.cl_phases = cl_phases if cl_phases is None else np.array(cl_phases)
-        self.label_cl_phases = label_cl_phases
-        self.show_in_legend = kwargs.get("show_in_legend", False)
-        self.show_cl_mags = kwargs.get("show_cl_mags", True)
-        self.show_cl_phases = kwargs.get("show_cl_phases", True)
-
-    def __str__(self):
-        return "n-grid"
-
-    @staticmethod
-    def closed_loop_contours(Gcl_mags, Gcl_phases):
-        """Contours of the function Gcl = Gol/(1+Gol), where
-        Gol is an open-loop transfer function, and Gcl is a corresponding
-        closed-loop transfer function.
-
-        Parameters
-        ----------
-        Gcl_mags : array-like
-            Array of magnitudes of the contours
-        Gcl_phases : array-like
-            Array of phases in radians of the contours
-
-        Returns
-        -------
-        contours : complex array
-            Array of complex numbers corresponding to the contours.
-        """
-        # Compute the contours in Gcl-space. Since we're given closed-loop
-        # magnitudes and phases, this is just a case of converting them into
-        # a complex number.
-        np = import_module("numpy")
-        Gcl = Gcl_mags*np.exp(1.j*Gcl_phases)
-
-        # Invert Gcl = Gol/(1+Gol) to map the contours into the open-loop space
-        return Gcl/(1.0 - Gcl)
-
-    @staticmethod
-    def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
-        """Constant-magnitude contours of the function Gcl = Gol/(1+Gol), where
-        Gol is an open-loop transfer function, and Gcl is a corresponding
-        closed-loop transfer function.
-
-        Parameters
-        ----------
-        mags : array-like
-            Array of magnitudes in dB of the M-circles
-        phase_min : degrees
-            Minimum phase in degrees of the N-circles
-        phase_max : degrees
-            Maximum phase in degrees of the N-circles
-
-        Returns
-        -------
-        contours : complex array
-            Array of complex numbers corresponding to the contours.
-        """
-        # Convert magnitudes and phase range into a grid suitable for
-        # building contours
-        np = import_module("numpy")
-        phases = np.radians(np.linspace(phase_min, phase_max, 2000))
-        Gcl_mags, Gcl_phases = np.meshgrid(10.0**(mags/20.0), phases)
-        return NGridLineSeries.closed_loop_contours(Gcl_mags, Gcl_phases)
-
-    @staticmethod
-    def n_circles(phases, mag_min=-40.0, mag_max=12.0):
-        """Constant-phase contours of the function Gcl = Gol/(1+Gol), where
-        Gol is an open-loop transfer function, and Gcl is a corresponding
-        closed-loop transfer function.
-
-        Parameters
-        ----------
-        phases : array-like
-            Array of phases in degrees of the N-circles
-        mag_min : dB
-            Minimum magnitude in dB of the N-circles
-        mag_max : dB
-            Maximum magnitude in dB of the N-circles
-
-        Returns
-        -------
-        contours : complex array
-            Array of complex numbers corresponding to the contours.
-        """
-        # Convert phases and magnitude range into a grid suitable for
-        # building contours
-        np = import_module("numpy")
-        mags = np.linspace(10**(mag_min/20.0), 10**(mag_max/20.0), 2000)
-        Gcl_phases, Gcl_mags = np.meshgrid(np.radians(phases), mags)
-        return NGridLineSeries.closed_loop_contours(Gcl_mags, Gcl_phases)
-
-    def get_data(self):
-        np = import_module("numpy")
-
-        # Default chart size
-        ol_phase_min = -359.99
-        ol_phase_max = 0.0
-        ol_mag_min = -40.0
-        ol_mag_max = default_ol_mag_max = 50.0
-
-        cl_mags = self.cl_mags
-        cl_phases = self.cl_phases
-        label_cl_phases = self.label_cl_phases
-
-        # Find extent of intersection the current dataset or view
-        ol_phase_min, ol_phase_max = self._xlim
-        ol_mag_min, ol_mag_max = self._ylim
-
-        # M-circle magnitudes.
-        if cl_mags is None:
-            # Default chart magnitudes
-            # The key set of magnitudes are always generated, since this
-            # guarantees a recognizable Nichols chart grid.
-            key_cl_mags = np.array([
-                -40.0, -20.0, -12.0, -6.0, -3.0, -1.0, -0.5,
-                0.0, 0.25, 0.5, 1.0, 3.0, 6.0, 12.0
-            ])
-
-            # Extend the range of magnitudes if necessary. The extended arange
-            # will end up empty if no extension is required. Assumes that
-            # closed-loop magnitudes are approximately aligned with open-loop
-            # magnitudes beyond the value of np.min(key_cl_mags)
-            cl_mag_step = -20.0  # dB
-            extended_cl_mags = np.arange(
-                np.min(key_cl_mags), ol_mag_min + cl_mag_step, cl_mag_step)
-            cl_mags = np.concatenate((extended_cl_mags, key_cl_mags))
-
-        # a minimum 360deg extent containing the phases
-        phase_round_max = 360.0*np.ceil(ol_phase_max/360.0)
-        phase_round_min = min(phase_round_max-360,
-                            360.0*np.floor(ol_phase_min/360.0))
-
-        # N-circle phases (should be in the range -360 to 0)
-        if cl_phases is None:
-            # aim for 9 lines, but always show (-360+eps, -180, -eps)
-            # smallest spacing is 45, biggest is 180
-            phase_span = phase_round_max - phase_round_min
-            spacing = np.clip(round(phase_span / 8 / 45) * 45, 45, 180)
-            key_cl_phases = np.array([-0.25, -359.75])
-            other_cl_phases = np.arange(-spacing, -360.0, -spacing)
-            cl_phases = np.unique(np.concatenate((key_cl_phases, other_cl_phases)))
-        elif not ((-360 < np.min(cl_phases)) and (np.max(cl_phases) < 0.0)):
-            raise ValueError('cl_phases must between -360 and 0, exclusive')
-
-        self.cl_mags = cl_mags
-        self.cl_phases = cl_phases
-
-        # Find the M-contours
-        m = self.m_circles(
-            cl_mags, phase_min=np.min(cl_phases), phase_max=np.max(cl_phases))
-        m_mag = 20*np.log10(np.abs(m))
-        m_phase = np.mod(np.degrees(np.angle(m)), -360.0)  # Unwrap
-
-        # Find the N-contours
-        n = self.n_circles(cl_phases, mag_min=np.min(cl_mags), mag_max=np.max(cl_mags))
-        n_mag = 20*np.log10(np.abs(n))
-        n_phase = np.mod(np.degrees(np.angle(n)), -360.0)  # Unwrap
-
-        # Plot the contours behind other plot elements.
-        # The "phase offset" is used to produce copies of the chart that cover
-        # the entire range of the plotted data, starting from a base chart computed
-        # over the range -360 < phase < 0. Given the range
-        # the base chart is computed over, the phase offset should be 0
-        # for -360 < ol_phase_min < 0.
-        phase_offsets = 360 + np.arange(phase_round_min, phase_round_max, 360.0)
-        return m_mag, m_phase, n_mag, n_phase, phase_offsets
-
-
-class MCirclesSeries(GridBase, BaseSeries):
-    def __init__(self, magnitudes_db, magnitudes, **kwargs):
-        super().__init__(**kwargs)
-        self.magnitudes_db = Tuple(*magnitudes_db)
-        self.magnitudes = self._expr = Tuple(*magnitudes)
-        self.show_minus_one = kwargs.get("show_minus_one", False)
-
-    def get_data(self):
-        """
-        Returns
-        =======
-
-        data : list
-            Each element of the list has the form:
-            ``[magnitude_db, x_coords, y_coords]``.
-        """
-        np = import_module("numpy")
-        data = []
-        magnitudes = self.magnitudes
-        magnitudes_db = self.magnitudes_db
-        if self.is_interactive:
-            magnitudes = magnitudes.subs(self.params)
-            magnitudes_db = magnitudes_db.subs(self.params)
-        magnitudes = np.array(magnitudes, dtype=float)
-        magnitudes_db = np.array(magnitudes_db, dtype=float)
-
-        theta = np.linspace(0, 2*np.pi, 400)
-        ct = np.cos(theta)
-        st = np.sin(theta)
-        for mdb, m in zip(magnitudes_db, magnitudes):
-            if not np.isclose(mdb, 0):
-                r = m / (1 - m**2)
-                x = m**2 / (1 - m**2) + r * ct
-                y = r * st
-            else:
-                x = [-0.5]
-                y = [0]
-            data.append([mdb, x, y])
-        return data

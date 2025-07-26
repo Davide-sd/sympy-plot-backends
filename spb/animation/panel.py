@@ -32,14 +32,14 @@ class Animation(BaseAnimation, PanelCommon):
 
         plotgrid = kwargs.get("plotgrid", None)
         if plotgrid:
-            self._backend = plotgrid
+            self.backend = plotgrid
             self._post_init_plotgrid(**kwargs)
         else:
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
             kwargs["is_iplot"] = True
             kwargs["imodule"] = "panel"
-            self._backend = Backend(*series, **kwargs)
+            self.backend = Backend(*series, **kwargs)
             self._post_init_plot(**kwargs)
 
         self._play_widget = pn.widgets.Player(
@@ -53,17 +53,17 @@ class Animation(BaseAnimation, PanelCommon):
 
     def _update(self, frame_idx):
         self.update_animation(frame_idx)
-        return self._backend.fig
+        return self.backend.fig
 
     def _init_pane_for_plotgrid(self):
         # First, set the necessary data to create bindings for each subplot
-        self._backend.pre_set_bindings(
+        self.backend.pre_set_bindings(
             [1], # anything but None
             [self._play_widget]
         )
-        self._backend.pre_set_animation(self)
+        self.backend.pre_set_animation(self)
         # Then, create the pn.GridSpec figure
-        self.pane = self._backend.fig
+        self.pane = self.backend.fig
 
     def _populate_template(self, template):
         template.main.append(pn.Column(self.pane, self._play_widget))

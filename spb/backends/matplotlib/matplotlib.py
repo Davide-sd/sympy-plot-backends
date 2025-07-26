@@ -288,10 +288,7 @@ class MatplotlibBackend(Plot):
         # use ImageGrid, which is suited to create equal aspect ratio axes
         # sharing colorbar
         self._imagegrid = kwargs.get("imagegrid", False)
-
-        print("MB.__init__ before", self._fig)
         self._create_renderers()
-        print("MB.__init__ after", self._fig)
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
@@ -301,7 +298,6 @@ class MatplotlibBackend(Plot):
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
-        print("MB._do_sum_kwargs")
         return p1._copy_kwargs()
 
     def _init_cyclers(self):
@@ -337,7 +333,6 @@ class MatplotlibBackend(Plot):
         self._cyccm = process_iterator(self._cyccm, self.cyclic_colormaps)
 
     def _create_figure(self):
-        print("MB._create_figure")
         if self._plotgrid_fig is not None:
             self._fig = self._plotgrid_fig
             self._ax = self._plotgrid_ax
@@ -383,7 +378,6 @@ class MatplotlibBackend(Plot):
     @property
     def fig(self):
         """Returns the figure."""
-        print("MB.fig")
         self._create_ax_if_not_available()
         # return super().fig
         return self._fig
@@ -401,7 +395,6 @@ class MatplotlibBackend(Plot):
         return self._ax
 
     def _process_renderers(self):
-        print("MB._process_renderers")
         # XXX Workaround for matplotlib issue
         # https://github.com/matplotlib/matplotlib/issues/17130
         xlims, ylims, zlims = [], [], []
@@ -698,7 +691,6 @@ class MatplotlibBackend(Plot):
         """ Loop over the renderers, generates numerical data and add it to
         the figure. Note that this method doesn't show the plot.
         """
-        print("MB.draw")
         # create the figure from scratch every time, otherwise if the plot was
         # previously shown, it would not be possible to show it again. This
         # behaviour is specific to Matplotlib
@@ -717,7 +709,6 @@ class MatplotlibBackend(Plot):
         **kwargs : dict
             Keyword arguments to be passed to plt.show().
         """
-        print("MB.show")
         self.draw()
         if _show:
             try:

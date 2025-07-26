@@ -527,15 +527,14 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
         # keys_to_maintain = list(self.param) + ["process_piecewise", "imodule", "polar_axis"]
         keys_to_maintain = list(Plot.param) + [
             "process_piecewise", "backend", "show", "fig", "ax",
+            # this enables animations
+            "animation",
+            # these enable interactive widgets plotting
+            "pane_kw", "ncols", "layout", "template"
         ]
 
-
-        # print("graphics params", list(self.param))
-        print("Plot params", list(Plot.param))
-        # print("zxasdasd", "ax" in params)
         params = {k: v for k, v in params.items() if k in keys_to_maintain}
 
-        # print("zxasdasd", "ax" in params)
         # p = param.ParamOverrides(self, params)
 
         # set the appropriate transformation on 2D line series if polar axis

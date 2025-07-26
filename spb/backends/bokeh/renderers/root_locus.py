@@ -112,5 +112,5 @@ class RootLocusRenderer(Renderer):
     def _set_axis_limits(self, data):
         np = self.plot.np
         # NOTE: axis limits cannot be NaN or Inf
-        self._xlims = [[np.nanmin(data[0]), np.nanmax(data[0])]]
-        self._ylims = [[np.nanmin(data[1]), np.nanmax(data[1])]]
+        self.xlims = [[np.nanmin(data[0]), np.nanmax(data[0])]]
+        self.ylims = [[np.nanmin(data[1]), np.nanmax(data[1])]]

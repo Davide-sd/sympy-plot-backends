@@ -345,9 +345,9 @@ class BokehBackend(Plot):
         for r, s in zip(self.renderers, self.series):
             self._check_supported_series(r, s)
             r.draw()
-            if hasattr(r, "_xlims"):
-                xlims.extend(r._xlims)
-                ylims.extend(r._ylims)
+            if hasattr(r, "xlims"):
+                xlims.extend(r.xlims)
+                ylims.extend(r.ylims)
 
         if (len(xlims) > 0) and (self.xlim is None):
             # this is used in order to properly visualized some *GridSeries

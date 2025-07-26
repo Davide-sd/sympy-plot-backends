@@ -260,7 +260,6 @@ class PlotlyBackend(Plot):
                 (self.is_iplot and (self.imodule == "ipywidgets"))
                 or self.update_event
             ):
-                print("WTF")
                 self._fig = self.go.FigureWidget()
             else:
                 self._fig = self.go.Figure()

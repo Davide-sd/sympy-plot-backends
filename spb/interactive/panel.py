@@ -98,13 +98,13 @@ class PanelCommon(IPlot):
         from spb import KB, MB, BB, PB
 
         default_kw = {}
-        if isinstance(self._backend, PB):
+        if isinstance(self.backend, PB):
             pane_func = pn.pane.Plotly
         elif (
-            isinstance(self._backend, MB) or        # vanilla MB
+            isinstance(self.backend, MB) or        # vanilla MB
             (
-                hasattr(self._backend, "is_matplotlib_fig") and
-                self._backend.is_matplotlib_fig     # plotgrid with all MBs
+                hasattr(self.backend, "is_matplotlib_fig") and
+                self.backend.is_matplotlib_fig     # plotgrid with all MBs
             )
         ):
             # since we are using Jupyter and interactivity, it is useful to
@@ -115,9 +115,9 @@ class PanelCommon(IPlot):
             # example outputs to become visible on Sphinx.
             default_kw["interactive"] = False
             pane_func = pn.pane.Matplotlib
-        elif isinstance(self._backend, BB):
+        elif isinstance(self.backend, BB):
             pane_func = pn.pane.Bokeh
-        elif isinstance(self._backend, KB):
+        elif isinstance(self.backend, KB):
             # TODO: for some reason, panel is going to set width=0
             # if K3D-Jupyter is used.
             # Temporary workaround: create a Pane with a default width.
@@ -260,7 +260,7 @@ class InteractivePlot(PanelCommon):
 
         plotgrid = kwargs.get("plotgrid", None)
         if plotgrid:
-            self._backend = plotgrid
+            self.backend = plotgrid
             self._binding = pn.bind(self._update, *self._widgets_for_binding())
         else:
             # assure that each series has the correct values associated
@@ -274,8 +274,8 @@ class InteractivePlot(PanelCommon):
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
             kwargs["is_iplot"] = True
             kwargs["imodule"] = "panel"
-            self._backend = Backend(*series, **kwargs)
-            _validate_kwargs(self._backend, **original_kwargs)
+            self.backend = Backend(*series, **kwargs)
+            _validate_kwargs(self.backend, **original_kwargs)
 
             from spb import PB
             if Backend is PB:
@@ -326,7 +326,7 @@ class InteractivePlot(PanelCommon):
 
     def _get_iplot_kw(self):
         return {
-            "backend": type(self._backend),
+            "backend": type(self.backend),
             "layout": self._layout,
             "template": self._template,
             "ncols": self._ncols,
@@ -338,12 +338,12 @@ class InteractivePlot(PanelCommon):
 
     def _init_pane_for_plotgrid(self):
         # First, set the necessary data to create bindings for each subplot
-        self._backend.pre_set_bindings(
+        self.backend.pre_set_bindings(
             list(self.mapping.keys()),
             self._widgets_for_binding()
         )
         # Then, create the pn.GridSpec figure
-        self.pane = self._backend.fig
+        self.pane = self.backend.fig
 
     def _populate_template(self, template):
         template.main.append(self.pane)

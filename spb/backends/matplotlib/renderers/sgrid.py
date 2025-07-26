@@ -209,7 +209,7 @@ class SGridLineRenderer(MatplotlibRenderer):
         self.series.set_axis_limits(xlim, ylim)
 
     def draw(self):
-        if (self.series._xlim is None) and (self.series._ylim is None):
+        if (self.series.xlim is None) and (self.series.ylim is None):
             # if user didn't set xlim/ylim in sgrid() function call
             self._set_axis_limits_before_compute_data()
 

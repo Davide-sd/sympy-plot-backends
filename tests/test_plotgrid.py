@@ -132,14 +132,21 @@ def test_plotgrid_mode_1_different_backends():
         backend=PB,
         n1=20, n2=20,
         show=False,
+        imodule="panel"
     )
     p3 = plot3d(
         cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
         backend=KBchild1,
         n1=20, n2=20,
         show=False,
+        imodule="panel"
     )
-    p4 = plot_vector([-y, x], (x, -5, 5), (y, -5, 5), backend=BB, show=False)
+    p4 = plot_vector(
+        [-y, x], (x, -5, 5), (y, -5, 5),
+        backend=BB,
+        show=False,
+        imodule="panel"
+    )
 
     p = plotgrid(p1, p2, p3, p4, nr=2, nc=2, show=False, imodule="panel")
     assert isinstance(p.fig, pn.GridSpec)
@@ -365,6 +372,7 @@ def test_plotgrid_mode_2_different_backends():
         n=20,
         show=False,
         use_latex=False,
+        imodule="panel"
     )
 
     gs = GridSpec(3, 3)
