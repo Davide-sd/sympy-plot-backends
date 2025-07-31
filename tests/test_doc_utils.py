@@ -1,6 +1,6 @@
 import pytest
 import sys
-from spb.doc_utils import _modify_code, _modify_iplot_code
+from spb.doc_utils.html import _modify_code, _modify_iplot_code
 
 # NOTE: those functions requires Python >= 3.9 because they use the
 # ast module, in particular the unparse function, which is not available
