@@ -73,6 +73,50 @@ def _create_series(series_type, plot_expr, **kwargs):
 
 
 def _create_generic_data_series(**kwargs):
+    """
+    Parameters
+    ==========
+
+    annotations : list, optional
+        A list of dictionaries specifying the type of annotation
+        required. The keys in the dictionary should be equivalent
+        to the arguments:
+
+        * `matplotlib.axes.Axes.annotate` method.
+        * Plotly's `graph_objects.Scatter` class.
+        * `bokeh.models.LabelSet` class.
+
+    markers : list, optional
+        A list of dictionaries specifying the type the markers required.
+        The keys in the dictionary should be equivalent to the arguments
+        of:
+
+        * `matplotlib.pyplot.plot()` function along with the marker
+          related keyworded arguments.
+        * Plotly's `graph_objects.Scatter` class.
+        * `bokeh.models.Scatter` class.
+
+    rectangles : list, optional
+        A list of dictionaries specifying the dimensions of the
+        rectangles to be plotted. The keys in the dictionary should be
+        equivalent to the arguments of:
+
+        * `matplotlib.patches.Rectangle` class.
+        * Plotly's `graph_objects.Figure.add_shape` function.
+        * The ``"args"`` key must contain the
+          `bokeh.models.ColumnDataSource` object containing the data.
+          All other keyword arguments will be passed to the
+          `bokeh.models.Rect` class.
+
+    fill : dict, optional
+        A dictionary specifying the type of color filling required in
+        the plot. The keys in the dictionary should be equivalent to the
+        arguments of:
+
+        * `matplotlib.axes.Axes.fill_between` method.
+        * Plotly's `graph_objects.Scatter` class.
+        * `bokeh.models.VArea` class.
+    """
     keywords = ["annotations", "markers", "fill", "rectangles"]
     series = []
     for kw in keywords:

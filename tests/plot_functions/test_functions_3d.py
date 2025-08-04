@@ -343,14 +343,14 @@ def test_plot3d_revolution(paf_options, pi_options):
     p = plot3d_revolution(cos(t), (t, 0, pi), **options)
     assert len(p.series) == 1
     assert isinstance(p[0], ParametricSurfaceSeries)
-    assert (p[0].var_u, p[0].start_u, p[0].end_u) == (t, 0, float(pi))
-    assert (p[0].var_v, p[0].start_v, p[0].end_v) == (phi, 0, float(2 * pi))
+    assert (p[0].var_u, p[0].start_u, p[0].end_u) == (t, 0, pi)
+    assert (p[0].var_v, p[0].start_v, p[0].end_v) == (phi, 0, 2 * pi)
 
     p = plot3d_revolution(cos(t), (t, 0, pi), (phi, 0, pi / 2), **options)
     assert len(p.series) == 1
     assert isinstance(p[0], ParametricSurfaceSeries)
-    assert (p[0].var_u, p[0].start_u, p[0].end_u) == (t, 0, float(pi))
-    assert (p[0].var_v, p[0].start_v, p[0].end_v) == (phi, 0, float(pi / 2))
+    assert (p[0].var_u, p[0].start_u, p[0].end_u) == (t, 0, pi)
+    assert (p[0].var_v, p[0].start_v, p[0].end_v) == (phi, 0, pi / 2)
 
     # by setting parallel_axis it produces different expressions/data
     p1 = plot3d_revolution(

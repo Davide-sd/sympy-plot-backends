@@ -145,9 +145,14 @@ class Line2DBaseSeries(BaseSeries):
     is_filled = param.Boolean(True, doc="""
         Whether scatter's markers are filled or void.""")
     line_color = param.Parameter(default=None, doc="""
-        For back-compatibility with old sympy.plotting.""")
+        For back-compatibility with old sympy.plotting. Use ``rendering_kw``
+        in order to fully customize the appearance of the line/scatter.""")
     detect_poles = param.Selector(
-        default=False, objects=[True, False, "symbolic"], doc="""
+        default=False, objects={
+            "No poles detection": False,
+            "Poles detection with the numerical algorithm": True,
+            "Poles detection with numerical and symbolic algorithms": "symbolic"
+        }, doc="""
         Chose whether to detect and correctly plot the roots of the
         denominator. There are two algorithms at work:
 
@@ -160,13 +165,6 @@ class Line2DBaseSeries(BaseSeries):
            from the ``sympy.calculus.util`` module, which computes the
            locations of discontinuities. If any are found, vertical lines
            will be shown.
-
-        Possible options:
-
-        * ``False``: no poles detection.
-        * ``True``: activate poles detection computed with the numerical
-          gradient.
-        * ``"symbolic"``: use both numerical and symbolic algorithms.
         """)
     eps = param.Number(default=0.01, bounds=(0, None), doc="""
         An arbitrary small value used by the ``detect_poles`` numerical
@@ -187,6 +185,30 @@ class Line2DBaseSeries(BaseSeries):
     poles_locations = param.List([], doc="""
         When ``detect_poles="symbolic"``, stores the location of the computed
         poles so that they can be appropriately rendered.""")
+    rendering_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
+        """)
 
     @param.depends("line_color", watch=True, on_init=True)
     def _update_line_color(self):
@@ -211,10 +233,12 @@ class Line2DBaseSeries(BaseSeries):
             exclude = [exclude]
         kwargs["exclude"] = sorted([float(e) for e in exclude])
 
+        print("Line2DSeries.__init__", kwargs)
         super().__init__(*args, **kwargs)
 
     def get_data(self):
-        """Return coordinates for plotting the line.
+        """
+        Return coordinates for plotting the line.
 
         Returns
         =======
@@ -360,21 +384,11 @@ class Line2DBaseSeries(BaseSeries):
 
     @property
     def start(self):
-        if not self.ranges:
-            return None
-        try:
-            return self._cast(self.ranges[0][1])
-        except Exception:
-            return self.ranges[0][1]
+        return self.ranges[0][1]
 
     @property
     def end(self):
-        if not self.ranges:
-            return None
-        try:
-            return self._cast(self.ranges[0][2])
-        except Exception:
-            return self.ranges[0][2]
+        return self.ranges[0][2]
 
 
 class List2DSeries(Line2DBaseSeries, _TpParameter):
@@ -609,18 +623,21 @@ class LineOver1DRangeSeries(
     _AdaptiveEvaluationParameters,
     Line2DBaseSeries
 ):
-    """Representation for a line consisting of a SymPy expression over a
-    real range."""
+    """
+    Representation for a line consisting of a SymPy expression over a
+    real range.
+    """
 
     _allowed_keys = [
         "absarg", "is_complex", "is_polar"
     ]
+    _exclude_params_from_doc = ["zscale"]
 
-    sum_bounds = param.Integer(default=1000, doc="""
-        When plotting sums, the expression will be pre-processed in order to
-        replace lower/upper bounds set to +/- infinity with this +/-
-        numerical value.  Note: the higher this number, the slower the
-        evaluation.""")
+    expr = param.Parameter(doc="""
+        It can either be a symbolic expression representing the function
+        of one variable to be plotted, or a numerical function of one
+        variable, supporting vectorization. In the latter case the following
+        keyword arguments are not supported: ``params``, ``sum_bound``.""")
 
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
@@ -639,10 +656,6 @@ class LineOver1DRangeSeries(
         self._label_str = str(self.expr) if label is None else label
         self._label_latex = latex(self.expr) if label is None else label
         self.ranges = [var_start_end]
-        # this is used to cast the values of ranges when self.start/self.end
-        # are called. Used for back-compatibility with old sympy.plotting,
-        # it is now difficult to remove.
-        self._cast = complex
         # for complex-related data series, this determines what data to return
         # on the y-axis
         self._return = _return
@@ -1079,11 +1092,23 @@ class SurfaceBaseSeries(
     _allowed_keys = ["surface_color", "is_polar"]
 
     surface_color = param.Parameter(default=None, doc="""
-        For back-compatibility with old sympy.plotting.""")
+        For back-compatibility with old sympy.plotting. Use ``rendering_kw``
+        in order to fully customize the appearance of the surface.""")
     is_polar = param.Boolean(False, doc="""
         If True, requests a polar discretization. In this case,
         ``range1`` represents the radius, while ``range2`` represents
         the angle.""")
+    rendering_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the surface.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
+        * Plotly:
+          https://plotly.com/python/3d-surface-plots/
+        * K3D-Jupyter: look at the documentation of k3d.mesh.
+        """)
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("color_func", lambda x, y, z: z)
@@ -1134,7 +1159,7 @@ class SurfaceBaseSeries(
             )
 
 
-class SurfaceOver2DRangeSeries(SurfaceBaseSeries, _AdaptiveEvaluationParameters):
+class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     """Representation for a 3D surface consisting of a sympy expression and 2D
     range."""
 
@@ -1158,31 +1183,19 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries, _AdaptiveEvaluationParameters)
 
     @property
     def start_x(self):
-        try:
-            return float(self.ranges[0][1])
-        except Exception:
-            return self.ranges[0][1]
+        return self.ranges[0][1]
 
     @property
     def end_x(self):
-        try:
-            return float(self.ranges[0][2])
-        except Exception:
-            return self.ranges[0][2]
+        return self.ranges[0][2]
 
     @property
     def start_y(self):
-        try:
-            return float(self.ranges[1][1])
-        except Exception:
-            return self.ranges[1][1]
+        return self.ranges[1][1]
 
     @property
     def end_y(self):
-        try:
-            return float(self.ranges[1][2])
-        except Exception:
-            return self.ranges[1][2]
+        return self.ranges[1][2]
 
     def __str__(self):
         series_type = "cartesian surface" if self.is_3Dsurface else "contour"
@@ -1194,36 +1207,9 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries, _AdaptiveEvaluationParameters)
             )
         )
 
-    def _adaptive_sampling(self):
-        np = import_module('numpy')
-
-        def func(f, xy):
-            try:
-                w = f(*[complex(t) for t in xy])
-                return w.real if np.isclose(w.imag, 0) else np.nan
-            except (ZeroDivisionError, OverflowError):
-                return np.nan
-
-        return _adaptive_eval(
-            func, [self.var_x, self.var_y], self.expr,
-            [(self.start_x, self.end_x), (self.start_y, self.end_y)],
-            modules=self.modules,
-            goal=self._goal,
-            loss_fn=self.loss_fn)
-
-    def _uniform_sampling(self):
-        np = import_module('numpy')
-
-        results = self.evaluator._evaluate()
-        for i, r in enumerate(results):
-            _re, _im = np.real(r), np.imag(r)
-            _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
-            results[i] = _re
-
-        return results
-
     def get_data(self):
-        """Return arrays of coordinates for plotting. Depending on the
+        """
+        Return arrays of coordinates for plotting. Depending on the
         `adaptive` option, this function will either use an adaptive algorithm
         or it will uniformly sample the expression over the provided range.
 
@@ -1241,12 +1227,13 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries, _AdaptiveEvaluationParameters)
         """
         np = import_module('numpy')
 
-        if self.adaptive:
-            res = self._adaptive_sampling()
-        else:
-            res = self._uniform_sampling()
+        results = self.evaluator._evaluate()
+        for i, r in enumerate(results):
+            _re, _im = np.real(r), np.imag(r)
+            _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
+            results[i] = _re
 
-        x, y, z = res
+        x, y, z = results
         if self.is_polar and self.is_3Dsurface:
             r = x.copy()
             x = r * np.cos(y)
@@ -1305,31 +1292,19 @@ class ParametricSurfaceSeries(
 
     @property
     def start_u(self):
-        try:
-            return float(self.ranges[0][1])
-        except Exception:
-            return self.ranges[0][1]
+        return self.ranges[0][1]
 
     @property
     def end_u(self):
-        try:
-            return float(self.ranges[0][2])
-        except Exception:
-            return self.ranges[0][2]
+        return self.ranges[0][2]
 
     @property
     def start_v(self):
-        try:
-            return float(self.ranges[1][1])
-        except Exception:
-            return self.ranges[1][1]
+        return self.ranges[1][1]
 
     @property
     def end_v(self):
-        try:
-            return float(self.ranges[1][2])
-        except Exception:
-            return self.ranges[1][2]
+        return self.ranges[1][2]
 
     def __str__(self):
         return self._str_helper(
@@ -1342,7 +1317,8 @@ class ParametricSurfaceSeries(
         )
 
     def get_data(self):
-        """Return arrays of coordinates for plotting. Depending on the
+        """
+        Return arrays of coordinates for plotting. Depending on the
         `adaptive` option, this function will either use an adaptive algorithm
         or it will uniformly sample the expression over the provided range.
 
@@ -1403,6 +1379,16 @@ class ContourSeries(SurfaceOver2DRangeSeries):
         Toggle the label's visibility of contour lines. Only works when
         ``is_filled=False``. Note that some backend might not implement
         this feature.""")
+    rendering_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the contour.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
+        * Plotly:
+          https://plotly.com/python/contour-plots/
+        """)
 
     def __init__(self, *args, **kwargs):
         kwargs = kwargs.copy()
@@ -1471,6 +1457,16 @@ class ImplicitSeries(
         This flag is set by the algorithm when the symbolic expression
         is going to be set. It indicates the presence of ``Equality``
         in the symbolic expression.""")
+    rendering_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the contour.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
+        * Plotly:
+          https://plotly.com/python/contour-plots/
+        """)
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         kwargs = kwargs.copy()
@@ -1630,7 +1626,8 @@ class ImplicitSeries(
         )
 
     def get_data(self):
-        """Returns numerical data.
+        """
+        Returns numerical data.
 
         Returns
         =======
@@ -1826,7 +1823,8 @@ class ImplicitSeries(
         return expr, equality
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
-        """Return the label to be used to display the expression.
+        """
+        Return the label to be used to display the expression.
 
         Parameters
         ==========
@@ -1855,6 +1853,16 @@ class Implicit3DSeries(SurfaceBaseSeries):
     is_implicit = True
     _N = 60
 
+    rendering_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the surface.
+        Here are some useful links for the supported plotting libraries:
+
+        * Plotly:
+          https://plotly.com/python/3d-isosurface-plots/
+        * K3D-Jupyter: look at the documentation of k3d.marching_cubes.
+        """)
+
     def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
         # kwargs.setdefault("n", self._N)
         super().__init__(**kwargs)
@@ -1882,7 +1890,8 @@ class Implicit3DSeries(SurfaceBaseSeries):
             )
 
     def get_data(self):
-        """Evaluate the expression over the provided domain. The backend will
+        """
+        Evaluate the expression over the provided domain. The backend will
         then try to compute and visualize the final result, if it support this
         data series.
 
@@ -2181,9 +2190,12 @@ class GeometrySeries(_TzParameter, Line2DBaseSeries):
 
 
 class GenericDataSeries(BaseSeries):
-    """Represents generic numerical data.
+    """
+    Represents generic numerical data.
 
-    NOTE:
+    Notes
+    =====
+
     This class implements back-compatibility with Sympy <=1.11: its plotting
     module accepts the following keyword arguments:
 
@@ -2287,3 +2299,6 @@ class HVLineSeries(BaseSeries):
         pre = "horizontal" if self.is_horizontal else "vertical"
         post = "y = " if self.is_horizontal else "x = "
         return self._str_helper(pre + " line at " + post + str(self.expr))
+
+
+# LineOver1DRangeSeries.__doc__ = "ASD"

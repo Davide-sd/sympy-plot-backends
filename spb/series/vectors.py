@@ -67,7 +67,7 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
             kwargs["is_streamlines"] = kwargs.pop("streamlines")
         super().__init__(**kwargs)
         self.expr = tuple([e if callable(e) else sympify(e) for e in exprs])
-        self.ranges = ranges
+        self.ranges = list(ranges)
         self.evaluator = GridEvaluator(series=self)
         self._label_str = str(exprs) if label is None else label
         self._label_latex = latex(exprs) if label is None else label
@@ -85,12 +85,10 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         # and streamlines, accepting different keyword arguments.
         # The choice to implement separates stream_kw and quiver_kw allows
         # this quick switch.
-        if self.is_streamlines:
-            self.rendering_kw = kwargs.get(
-                "stream_kw", kwargs.get("rendering_kw", dict()))
-        else:
-            self.rendering_kw = kwargs.get(
-                "quiver_kw", kwargs.get("rendering_kw", dict()))
+        rendering_kw = self._enforce_dict_on_rendering_kw(
+            kwargs.get("rendering_kw", {}))
+        other_kw = "stream_kw" if self.is_streamlines else "quiver_kw"
+        self.rendering_kw = kwargs.get(other_kw, rendering_kw)
         self._post_init()
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
@@ -175,6 +173,22 @@ class Vector2DSeries(VectorBase):
     # default number of discretization points
     _N = 25
     _allowed_keys = ["scalar"]
+    rendering_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the quivers or
+        streamlines.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - quivers: https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
+          - streamlines: https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+
+        * Plotly:
+
+          - 2D quivers: https://plotly.com/python/quiver-plots/
+          - 2D streamlines: https://plotly.com/python/streamline-plots/
+        """)
 
     def __init__(self, u, v, range1, range2, label="", **kwargs):
         # if "scalar" not in kwargs.keys():
@@ -205,6 +219,38 @@ class Vector3DSeries(_TzParameter, VectorBase):
     is_3Dvector = True
     # default number of discretization points
     _N = 10
+    rendering_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the quivers or
+        streamlines.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - quivers: https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
+          - streamlines: https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+
+        * Plotly:
+
+          - 3D cones: https://plotly.com/python/cone-plot/
+          - 3D streamlines: https://plotly.com/python/streamtube-plot/
+
+        * K3D-Jupyter:
+
+          - for quiver plots, the keys can be:
+
+            * scale: a float number acting as a scale multiplier.
+              Default to 1.
+            * pivot: indicates the part of the arrow that is anchored to the
+              X, Y, Z grid. It can be ``"tail", "mid", "middle", "tip"``.
+              Defaul to ``"mid"``.
+            * color: set a solid color by specifying an integer color, or
+              a colormap by specifying one of k3d's colormaps.
+              If this key is not provided, a default color or colormap is used,
+              depending on the value of ``use_cm``.
+
+          - for streamline plots, refers to k3d.line documentation.
+        """)
 
     def __init__(self, u, v, z, range1, range2, range3, label="", **kwargs):
         super().__init__((u, v, z), (range1, range2, range3), label, **kwargs)
@@ -326,6 +372,18 @@ class Arrow2DSeries(BaseSeries):
         Coordinates of the start position, (x, y).""")
     direction = ListTupleArray(bounds=(2, 2), doc="""
         Componenents of the direction vector, (u, v).""")
+    rendering_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the arrows.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrowPatch.html
+        * Plotly:
+          https://plotly.com/python/reference/layout/annotations/
+        * Bokeh:
+          https://docs.bokeh.org/en/latest/docs/reference/models/annotations.html#bokeh.models.Arrow
+        """)
 
     def __init__(self, start, direction, label="", **kwargs):
         self._block_lambda_functions(start, direction)
@@ -385,7 +443,8 @@ class Arrow2DSeries(BaseSeries):
         )
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
-        """Return the label to be used to display the expression.
+        """
+        Return the label to be used to display the expression.
 
         Parameters
         ==========
@@ -454,9 +513,19 @@ class Arrow3DSeries(_TzParameter, Arrow2DSeries):
     is_3Dvector = True
 
     start = ListTupleArray(bounds=(3, 3), doc="""
-        Coordinates of the start position, (x, y).""")
+        Coordinates of the start position, (x, y, z).""")
     direction = ListTupleArray(bounds=(3, 3), doc="""
-        Componenents of the direction vector, (u, v).""")
+        Componenents of the direction vector, (u, v, w).""")
+    rendering_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the arrows.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrowPatch.html
+        * K3D-Jupyter:
+          Look at the documentation of k3d.vectors.
+        """)
 
     def get_data(self):
         """Return arrays of coordinates for plotting.

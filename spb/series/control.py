@@ -749,7 +749,8 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
 
 
 class RootLocusSeries(ControlBaseSeries):
-    """Generates numerical data for root locus plot using the ``control``
+    """
+    Generates numerical data for root locus plot using the ``control``
     module.
 
     Symbolic expressions or SymPy's transfer functions are converted to

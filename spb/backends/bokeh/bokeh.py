@@ -1,6 +1,7 @@
 import param
 import os
 from spb.defaults import cfg
+from spb.doc_utils.ipython import generate_doc
 from spb.backends.base_backend import Plot
 from spb.backends.bokeh.renderers import (
     Line2DRenderer, Vector2DRenderer, ComplexRenderer, ContourRenderer,
@@ -27,86 +28,6 @@ class BokehBackend(Plot):
     """
     A backend for plotting SymPy's symbolic expressions using Bokeh.
     This implementation only supports 2D plots.
-
-    Parameters
-    ==========
-
-    aspect : str
-        Set the aspect ratio of a 2D plot. Default to ``None``. Set it to
-        ``"equal"`` to sets equal spacing on the axis.
-
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's plot
-        functions to customize the appearance of lines, surfaces, images,
-        contours, quivers, streamlines...
-        To learn more about customization:
-
-        * Refer to:
-
-          - [#fn1]_ to customize lines plots. Default to:
-            ``dict(line_width = 2)``.
-          - [#fn6]_ to customize scatter plots. Default to:
-            ``dict(marker = "circle")``.
-
-        * Default options for quiver plots:
-
-          .. code-block:: python
-
-           dict(
-               scale = 1,
-               pivot = "mid",      # "mid", "tip" or "tail"
-               arrow_heads = True,  # show/hide arrow
-               line_width = 1
-           )
-
-        * Default options for streamline plots:
-          ``dict(line_width=2, line_alpha=0.8)``
-
-    axis : boolean, optional
-        Turns on/off the axis visibility (and associated tick labels).
-        Default to True (axis are visible).
-
-    theme : str, optional
-        Set the theme. Find more Bokeh themes at [#fn2]_ .
-
-    update_event : bool, optional
-        If True, it binds pan/zoom events in order to automatically compute
-        new data as the user interact with the plot.
-        Default to False.
-
-    annotations : list, optional
-        A list of dictionaries specifying the type of annotation
-        required. The keys in the dictionary should be equivalent
-        to the arguments of the `bokeh.models.LabelSet` class.
-        This feature is experimental. It might get removed in the future.
-
-    markers : list, optional
-        A list of dictionaries specifying the type the markers required.
-        The keys in the dictionary should be equivalent to the arguments
-        of the `bokeh.models.Scatter` class.
-        This feature is experimental. It might get removed in the future.
-
-    rectangles : list, optional
-        A list of dictionaries specifying the dimensions of the
-        rectangles to be plotted. The ``"args"`` key must contain the
-        `bokeh.models.ColumnDataSource` object containing the
-        data. All other keyword arguments will be passed to the
-        `bokeh.models.Rect` class.
-        This feature is experimental. It might get removed in the future.
-
-    fill : dict, optional
-        A dictionary specifying the type of color filling required in
-        the plot. The keys in the dictionary should be equivalent to the
-        arguments of the `bokeh.models.VArea` class.
-        This feature is experimental. It might get removed in the future.
-
-
-    References
-    ==========
-    .. [#fn1] https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-    .. [#fn2] https://docs.bokeh.org/en/latest/docs/reference/themes.html
-    .. [#fn6] https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
 
     Notes
     =====
@@ -639,3 +560,6 @@ class BokehBackend(Plot):
 
 
 BB = BokehBackend
+
+
+generate_doc(BokehBackend)

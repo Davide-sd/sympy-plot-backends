@@ -2,6 +2,7 @@ import param
 import itertools
 import os
 from spb.defaults import cfg
+from spb.doc_utils.ipython import generate_doc
 from spb.backends.base_backend import Plot
 from spb.backends.plotly.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
@@ -26,113 +27,6 @@ import warnings
 class PlotlyBackend(Plot):
     """
     A backend for plotting SymPy's symbolic expressions using Plotly.
-
-    Parameters
-    ==========
-
-    aspect : str, optional
-        Set the aspect ratio of the plot. Default to ``"auto"``.
-        Possible values:
-
-        - ``"equal"``: sets equal spacing on the axis of a 2D plot.
-        - For 3D plots:
-
-          * ``"cube"``: fix the ratio to be a cube
-          * ``"data"``: draw axes in proportion to the proportion of their
-            ranges
-          * ``"auto"``: automatically produce something that is well
-            proportioned using 'data' as the default.
-          * manually set the aspect ratio by providing a dictionary.
-            For example: ``dict(x=1, y=1, z=2)`` forces the z-axis to appear
-            twice as big as the other two.
-
-    camera : dict, optional
-        A dictionary of keyword arguments that will be passed to the layout's
-        ``scene_camera`` in order to set the 3D camera orientation.
-        Refer to [#fn18]_ for more information.
-
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's plot
-        functions to customize the appearance of lines, surfaces, images,
-        contours, quivers, streamlines...
-        To learn more about customization:
-
-        * Refer to [#fn1]_ and [#fn2]_ to customize contour plots.
-        * Refer to [#fn3]_ and [#fn4]_ to customize line plots.
-        * Refer to [#fn7]_ to customize surface plots.
-        * Refer to [#fn14]_ to customize implicit surface plots.
-        * Refer to [#fn5]_ to customize 2D quiver plots. Default to:
-          ``dict( scale = 0.075 )``.
-        * Refer to [#fn6]_ to customize 3D cone plots. Default to:
-          ``dict( sizemode = "absolute", sizeref = 40 )``.
-        * Refer to [#fn8]_ to customize 2D streamlines plots. Defaul to:
-          ``dict( arrow_scale = 0.15 )``.
-        * Refer to [#fn9]_ to customize 3D streamlines plots. Defaul to:
-          ``dict( sizeref = 0.3 )``.
-        * Refere to to [#fn19]_ to customize 2D arrow plots.
-
-    axis : boolean, optional
-        Turns on/off the axis visibility (and associated tick labels).
-        Default to True (axis are visible).
-
-    theme : str, optional
-        Set the theme. Default to ``"plotly_dark"``. Find more Plotly themes at
-        [#fn10]_ .
-
-    update_event : bool, optional
-        If True, it binds pan/zoom events in order to automatically compute
-        new data as the user interact with the plot.
-        Default to False.
-
-    annotations : list, optional
-        A list of dictionaries specifying the type the markers required.
-        The keys in the dictionary should be equivalent to the arguments
-        of the Plotly's `graph_objects.Scatter` class. Refer to [#fn15]_
-        for more information.
-        This feature is experimental. It might get removed in the future.
-
-    markers : list, optional
-        A list of dictionaries specifying the type the markers required.
-        The keys in the dictionary should be equivalent to the arguments
-        of the Plotly's `graph_objects.Scatter` class. Refer to [#fn3]_
-        for more information.
-        This feature is experimental. It might get removed in the future.
-
-    rectangles : list, optional
-        A list of dictionaries specifying the dimensions of the
-        rectangles to be plotted. The keys in the dictionary should be
-        equivalent to the arguments of the Plotly's
-        `graph_objects.Figure.add_shape` function. Refer to [#fn16]_
-        for more information.
-        This feature is experimental. It might get removed in the future.
-
-    fill : dict, optional
-        A list of dictionaries specifying the type the markers required.
-        The keys in the dictionary should be equivalent to the arguments
-        of the Plotly's `graph_objects.Scatter` class. Refer to [#fn17]_
-        for more information.
-        This feature is experimental. It might get removed in the future.
-
-    References
-    ==========
-    .. [#fn1] https://plotly.com/python/contour-plots/
-    .. [#fn2] https://plotly.com/python/builtin-colorscales/
-    .. [#fn3] https://plotly.com/python/line-and-scatter/
-    .. [#fn4] https://plotly.com/python/3d-scatter-plots/
-    .. [#fn5] https://plotly.com/python/quiver-plots/
-    .. [#fn6] https://plotly.com/python/cone-plot/
-    .. [#fn7] https://plotly.com/python/3d-surface-plots/
-    .. [#fn8] https://plotly.com/python/streamline-plots/
-    .. [#fn9] https://plotly.com/python/streamtube-plot/
-    .. [#fn10] https://plotly.com/python/templates/
-    .. [#fn13] https://github.com/plotly/plotly.js/issues/5003
-    .. [#fn14] https://plotly.com/python/3d-isosurface-plots/
-    .. [#fn15] https://plotly.com/python/text-and-annotations/
-    .. [#fn16] https://plotly.com/python/shapes/
-    .. [#fn17] https://plotly.com/python/filled-area-plots/
-    .. [#fn18] https://plotly.com/python/3d-camera-controls/
-    .. [#fn19] https://plotly.com/python/reference/layout/annotations/
-
 
     Notes
     =====
@@ -575,3 +469,6 @@ class PlotlyBackend(Plot):
 
 
 PB = PlotlyBackend
+
+
+generate_doc(PlotlyBackend)

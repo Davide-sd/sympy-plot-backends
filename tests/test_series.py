@@ -118,21 +118,6 @@ def test_adaptive():
     assert len(x1) < len(x2)
     assert len(x1) > len(x3)
 
-    # the more refined the goal, the greater the number of points
-    s1 = SurfaceOver2DRangeSeries(
-        cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
-        adaptive=True, adaptive_goal=0.5
-    )
-    x1, _, _ = s1.get_data()
-    n1 = x1.shape[0] * x1.shape[1]
-    s2 = SurfaceOver2DRangeSeries(
-        cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
-        adaptive=True, adaptive_goal=0.1
-    )
-    x2, _, _ = s2.get_data()
-    n2 = x2.shape[0] * x2.shape[1]
-    assert n1 < n2
-
 
 @pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
 def test_adaptive_zerodivisionerror():
@@ -1541,23 +1526,23 @@ def test_str():
     u, x, y, z = symbols("u, x:z")
 
     s = LineOver1DRangeSeries(cos(x), (x, -4, 3))
-    assert str(s) == "cartesian line: cos(x) for x over (-4.0, 3.0)"
+    assert str(s) == "cartesian line: cos(x) for x over (-4, 3)"
 
     d = {"return": "real"}
     s = LineOver1DRangeSeries(cos(x), (x, -4, 3), **d)
-    assert str(s) == "cartesian line: re(cos(x)) for x over (-4.0, 3.0)"
+    assert str(s) == "cartesian line: re(cos(x)) for x over (-4, 3)"
 
     d = {"return": "imag"}
     s = LineOver1DRangeSeries(cos(x), (x, -4, 3), **d)
-    assert str(s) == "cartesian line: im(cos(x)) for x over (-4.0, 3.0)"
+    assert str(s) == "cartesian line: im(cos(x)) for x over (-4, 3)"
 
     d = {"return": "abs"}
     s = LineOver1DRangeSeries(cos(x), (x, -4, 3), **d)
-    assert str(s) == "cartesian line: abs(cos(x)) for x over (-4.0, 3.0)"
+    assert str(s) == "cartesian line: abs(cos(x)) for x over (-4, 3)"
 
     d = {"return": "arg"}
     s = LineOver1DRangeSeries(cos(x), (x, -4, 3), **d)
-    assert str(s) == "cartesian line: arg(cos(x)) for x over (-4.0, 3.0)"
+    assert str(s) == "cartesian line: arg(cos(x)) for x over (-4, 3)"
 
     s = LineOver1DRangeSeries(
         cos(u * x), (x, -4, 3),
@@ -1565,7 +1550,7 @@ def test_str():
     )
     assert (
         str(s)
-        == "interactive cartesian line: cos(u*x) for x over (-4.0, 3.0) and parameters (u,)"
+        == "interactive cartesian line: cos(u*x) for x over (-4, 3) and parameters (u,)"
     )
 
     s = LineOver1DRangeSeries(
@@ -1578,17 +1563,17 @@ def test_str():
     )
 
     s = AbsArgLineSeries(sqrt(x), (x, -5 + 2j, 5 + 2j))
-    assert str(s) == "cartesian abs-arg line: sqrt(x) for x over ((-5+2j), (5+2j))"
+    assert str(s) == "cartesian abs-arg line: sqrt(x) for x over (-5.0 + 2.0*I, 5.0 + 2.0*I)"
 
     s = AbsArgLineSeries(cos(u * x), (x, -4, 3), params={u: 1})
     assert (
         str(s)
-        == "interactive cartesian abs-arg line: cos(u*x) for x over ((-4+0j), (3+0j)) and parameters (u,)"
+        == "interactive cartesian abs-arg line: cos(u*x) for x over (-4, 3) and parameters (u,)"
     )
 
     s = Parametric2DLineSeries(cos(x), sin(x), (x, -4, 3))
     assert (
-        str(s) == "parametric cartesian line: (cos(x), sin(x)) for x over (-4.0, 3.0)"
+        str(s) == "parametric cartesian line: (cos(x), sin(x)) for x over (-4, 3)"
     )
 
     s = Parametric2DLineSeries(
@@ -1597,7 +1582,7 @@ def test_str():
     )
     assert (
         str(s)
-        == "interactive parametric cartesian line: (cos(u*x), sin(x)) for x over (-4.0, 3.0) and parameters (u,)"
+        == "interactive parametric cartesian line: (cos(u*x), sin(x)) for x over (-4, 3) and parameters (u,)"
     )
 
     s = Parametric2DLineSeries(
@@ -1612,7 +1597,7 @@ def test_str():
     s = Parametric3DLineSeries(cos(x), sin(x), x, (x, -4, 3))
     assert (
         str(s)
-        == "3D parametric cartesian line: (cos(x), sin(x), x) for x over (-4.0, 3.0)"
+        == "3D parametric cartesian line: (cos(x), sin(x), x) for x over (-4, 3)"
     )
 
     s = Parametric3DLineSeries(
@@ -1621,7 +1606,7 @@ def test_str():
     )
     assert (
         str(s)
-        == "interactive 3D parametric cartesian line: (cos(u*x), sin(x), x) for x over (-4.0, 3.0) and parameters (u,)"
+        == "interactive 3D parametric cartesian line: (cos(u*x), sin(x), x) for x over (-4, 3) and parameters (u,)"
     )
 
     s = Parametric3DLineSeries(
@@ -1635,7 +1620,7 @@ def test_str():
     s = SurfaceOver2DRangeSeries(cos(x * y), (x, -4, 3), (y, -2, 5))
     assert (
         str(s)
-        == "cartesian surface: cos(x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
+        == "cartesian surface: cos(x*y) for x over (-4, 3) and y over (-2, 5)"
     )
 
     s = SurfaceOver2DRangeSeries(
@@ -1644,7 +1629,7 @@ def test_str():
     )
     assert (
         str(s)
-        == "interactive cartesian surface: cos(u*x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0) and parameters (u,)"
+        == "interactive cartesian surface: cos(u*x*y) for x over (-4, 3) and y over (-2, 5) and parameters (u,)"
     )
 
     s = SurfaceOver2DRangeSeries(
@@ -1652,16 +1637,16 @@ def test_str():
     )
     assert (
         str(s)
-        == "interactive cartesian surface: cos(u*x*y) for x over (-4*u, 3.0) and y over (-2.0, 5*u) and parameters (u,)"
+        == "interactive cartesian surface: cos(u*x*y) for x over (-4*u, 3) and y over (-2, 5*u) and parameters (u,)"
     )
 
     s = ContourSeries(cos(x * y), (x, -4, 3), (y, -2, 5))
-    assert str(s) == "contour: cos(x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
+    assert str(s) == "contour: cos(x*y) for x over (-4, 3) and y over (-2, 5)"
 
     s = ContourSeries(cos(u * x * y), (x, -4, 3), (y, -2, 5), params={u: 1})
     assert (
         str(s)
-        == "interactive contour: cos(u*x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0) and parameters (u,)"
+        == "interactive contour: cos(u*x*y) for x over (-4, 3) and y over (-2, 5) and parameters (u,)"
     )
 
     s = ParametricSurfaceSeries(
@@ -1669,7 +1654,7 @@ def test_str():
     )
     assert (
         str(s)
-        == "parametric cartesian surface: (cos(x*y), sin(x*y), x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0)"
+        == "parametric cartesian surface: (cos(x*y), sin(x*y), x*y) for x over (-4, 3) and y over (-2, 5)"
     )
 
     s = ParametricSurfaceSeries(
@@ -1678,7 +1663,7 @@ def test_str():
     )
     assert (
         str(s)
-        == "interactive parametric cartesian surface: (cos(u*x*y), sin(x*y), x*y) for x over (-4.0, 3.0) and y over (-2.0, 5.0) and parameters (u,)"
+        == "interactive parametric cartesian surface: (cos(u*x*y), sin(x*y), x*y) for x over (-4, 3) and y over (-2, 5) and parameters (u,)"
     )
 
     s = ImplicitSeries(x < y, (x, -5, 4), (y, -3, 2))

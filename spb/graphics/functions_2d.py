@@ -14,6 +14,7 @@ from spb.utils import (
     _create_missing_ranges, _preprocess_multiple_ranges
 )
 import warnings
+import param
 
 
 def _process_piecewise(piecewise, _range, label, **kwargs):
@@ -548,6 +549,256 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
         [expr], [range] if range else [], 1, params)[0]
     return _build_line_series(
         expr, range, label, rendering_kw=rendering_kw, **kwargs)
+
+
+
+# class line(param.ParameterizedFunction, LineOver1DRangeSeries):
+#     """Plot a function of one variable over a 2D space.
+
+#     Returns
+#     =======
+
+#     series : list
+#         A list containing one instance of ``LineOver1DRangeSeries``.
+
+#     Examples
+#     ========
+
+#     .. plot::
+#        :context: close-figs
+#        :format: doctest
+#        :include-source: True
+
+#        >>> from sympy import symbols, sin, pi, tan, exp, cos, log, floor
+#        >>> from spb import *
+#        >>> x, y = symbols('x, y')
+
+#     Single Plot
+
+#     .. plot::
+#        :context: close-figs
+#        :format: doctest
+#        :include-source: True
+
+#        >>> graphics(line(x**2, (x, -5, 5)))
+#        Plot object containing:
+#        [0]: cartesian line: x**2 for x over (-5.0, 5.0)
+
+#     Multiple functions over the same range with custom rendering options:
+
+#     .. plot::
+#        :context: close-figs
+#        :format: doctest
+#        :include-source: True
+
+#        >>> graphics(
+#        ...     line(x, (x, -3, 3)),
+#        ...     line(log(x), (x, -3, 3), rendering_kw={"linestyle": "--"}),
+#        ...     line(exp(x), (x, -3, 3), rendering_kw={"linestyle": ":"}),
+#        ...     aspect="equal", ylim=(-3, 3)
+#        ... )
+#        Plot object containing:
+#        [0]: cartesian line: x for x over (-3.0, 3.0)
+#        [1]: cartesian line: log(x) for x over (-3.0, 3.0)
+#        [2]: cartesian line: exp(x) for x over (-3.0, 3.0)
+
+#     Plotting a summation in which the free symbol of the expression is not
+#     used in the lower/upper bounds:
+
+#     .. plot::
+#        :context: close-figs
+#        :format: doctest
+#        :include-source: True
+
+#        >>> from sympy import Sum, oo, latex
+#        >>> expr = Sum(1 / x ** y, (x, 1, oo))
+#        >>> graphics(
+#        ...     line(expr, (y, 2, 10), sum_bound=1e03),
+#        ...     title="$%s$" % latex(expr)
+#        ... )
+#        Plot object containing:
+#        [0]: cartesian line: Sum(x**(-y), (x, 1, 1000)) for y over (2.0, 10.0)
+
+#     Plotting a summation in which the free symbol of the expression is
+#     used in the lower/upper bounds. Here, the discretization variable must
+#     assume integer values:
+
+#     .. plot::
+#        :context: close-figs
+#        :format: doctest
+#        :include-source: True
+
+#        >>> expr = Sum(1 / x, (x, 1, y))
+#        >>> graphics(
+#        ...     line(expr, (y, 2, 10), scatter=True),
+#        ...     title="$%s$" % latex(expr)
+#        ... )
+#        Plot object containing:
+#        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
+
+#     Using an adaptive algorithm, detect and plot vertical lines at
+#     singularities. Also, apply a transformation function to the discretized
+#     domain in order to convert radians to degrees:
+
+#     .. plot::
+#        :context: close-figs
+#        :format: doctest
+#        :include-source: True
+
+#        >>> import numpy as np
+#        >>> graphics(
+#        ...     line(
+#        ...         tan(x), (x, -1.5*pi, 1.5*pi),
+#        ...         adaptive=True, adaptive_goal=0.001,
+#        ...         detect_poles="symbolic", tx=np.rad2deg
+#        ...     ),
+#        ...     ylim=(-7, 7), xlabel="x [deg]", grid=False
+#        ... )
+#        Plot object containing:
+#        [0]: cartesian line: tan(x) for x over (-4.71238898038469, 4.71238898038469)
+
+#     Introducing discontinuities by excluding specified points:
+
+#     .. plot::
+#        :context: close-figs
+#        :format: doctest
+#        :include-source: True
+
+#        >>> graphics(
+#        ...     line(floor(x) / x, (x, -3.25, 3.25), exclude=list(range(-4, 5))),
+#        ...     ylim=(-1, 5)
+#        ... )
+#        Plot object containing:
+#        [0]: cartesian line: floor(x)/x for x over (-3.25, 3.25)
+
+#     Creating a step plot:
+
+#     .. plot::
+#        :context: close-figs
+#        :format: doctest
+#        :include-source: True
+
+#        >>> graphics(
+#        ...     line(x-2, (x, 0, 10), only_integers=True, steps="pre", label="pre"),
+#        ...     line(x, (x, 0, 10), only_integers=True, steps="mid", label="mid"),
+#        ...     line(x+2, (x, 0, 10), only_integers=True, steps="post", label="post"),
+#        ... )
+#        Plot object containing:
+#        [0]: cartesian line: x - 2 for x over (0.0, 10.0)
+#        [1]: cartesian line: x for x over (0.0, 10.0)
+#        [2]: cartesian line: x + 2 for x over (0.0, 10.0)
+
+#     Advanced example showing:
+
+#     * detect singularities by setting ``adaptive=False`` (better performance),
+#       increasing the number of discretization points (in order to have
+#       'vertical' segments on the lines) and reducing the threshold for the
+#       singularity-detection algorithm.
+#     * application of color function.
+#     * combining together multiple lines.
+
+#     .. plot::
+#        :context: close-figs
+#        :format: doctest
+#        :include-source: True
+
+#        >>> import numpy as np
+#        >>> expr = 1 / cos(10 * x) + 5 * sin(x)
+#        >>> def cf(x, y):
+#        ...     # map a colormap to the distance from the origin
+#        ...     d = np.sqrt(x**2 + y**2)
+#        ...     # visibility of the plot is limited: ylim=(-10, 10). However,
+#        ...     # some of the y-values computed by the function are much higher
+#        ...     # (or lower). Filter them out in order to have the entire
+#        ...     # colormap spectrum visible in the plot.
+#        ...     offset = 12 # 12 > 10 (safety margin)
+#        ...     d[(y > offset) | (y < -offset)] = 0
+#        ...     return d
+#        >>> graphics(
+#        ...     line(
+#        ...         expr, (x, -5, 5), "distance from (0, 0)",
+#        ...         rendering_kw={"cmap": "plasma"},
+#        ...         adaptive=False, detect_poles=True, n=3e04,
+#        ...         eps=1e-04, color_func=cf),
+#        ...     line(5 * sin(x), (x, -5, 5), rendering_kw={"linestyle": "--"}),
+#        ...     ylim=(-10, 10), title="$%s$" % latex(expr)
+#        ... )
+#        Plot object containing:
+#        [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-5.0, 5.0)
+#        [1]: cartesian line: 5*sin(x) for x over (-5.0, 5.0)
+
+#     Interactive-widget plot of an oscillator. Refer to the interactive
+#     sub-module documentation to learn more about the ``params`` dictionary.
+#     This plot illustrates:
+
+#     * plotting multiple expressions, each one with its own label and
+#       rendering options.
+#     * the use of ``prange`` (parametric plotting range).
+#     * the use of the ``params`` dictionary to specify sliders in
+#       their basic form: (default, min, max).
+#     * the use of :py:class:`panel.widgets.slider.RangeSlider`, which is a
+#       2-values widget. In this case it is used to enforce the condition
+#       `f1 < f2`.
+#     * the use of a parametric title, specified with a tuple of the form:
+#       ``(title_str, param_symbol1, ...)``, where:
+
+#       * ``title_str`` must be a formatted string, for example:
+#         ``"test = {:.2f}"``.
+#       * ``param_symbol1, ...`` must be a symbol or a symbolic expression
+#         whose free symbols are contained in the ``params`` dictionary.
+
+#     .. panel-screenshot::
+#        :small-size: 800, 625
+
+#        from sympy import *
+#        from spb import *
+#        import panel as pn
+#        x, y, f1, f2, d, n = symbols("x, y, f_1, f_2, d, n")
+#        params = {
+#            (f1, f2): pn.widgets.RangeSlider(
+#                value=(1, 2), start=0, end=10, step=0.1),     # frequencies
+#            d: (0.25, 0, 1),   # damping
+#            n: (2, 0, 4)       # multiple of pi
+#        }
+#        graphics(
+#            line(cos(f1 * x) * exp(-d * x), prange(x, 0, n * pi),
+#                label="oscillator 1", params=params),
+#            line(cos(f2 * x) * exp(-d * x), prange(x, 0, n * pi),
+#                label="oscillator 2", params=params),
+#            line(exp(-d * x), prange(x, 0, n * pi), label="upper limit",
+#                rendering_kw={"linestyle": ":"}, params=params),
+#            line(-exp(-d * x), prange(x, 0, n * pi), label="lower limit",
+#                rendering_kw={"linestyle": ":"}, params=params),
+#            ylim=(-1.25, 1.25),
+#            title=("$f_1$ = {:.2f} Hz", f1)
+#        )
+
+#     See Also
+#     ========
+
+#     line_parametric_2d, line_polar, implicit_2d, list_2d, geometry,
+#     spb.graphics.functions_3d.line_parametric_3d
+
+#     """
+
+#     range = param.Tuple(doc="""
+#         A 3-tuple (symbol, min, max) denoting the range of the variable
+#         to be shown on the horizontal axis.
+#         Default values: `min=-10` and `max=10`.""")
+#     sum_bound = param.Integer(default=1000, doc="""
+#         When plotting sums, the expression will be pre-processed in order
+#         to replace lower/upper bounds set to +/- infinity with this +/-
+#         numerical value. Default value to 1000. Note: the higher this number,
+#         the slower the evaluation.""")
+
+#     def __call__(self, expr, range=None, label=None, rendering_kw=None, **kwargs):
+#         p = ParamOverrides(self, kwargs)
+#         expr = _plot_sympify(expr)
+#         params = kwargs.get("params", {})
+#         range = _create_missing_ranges(
+#             [expr], [range] if range else [], 1, params)[0]
+#         return _build_line_series(
+#             expr, range, label, rendering_kw=rendering_kw, **kwargs)
 
 
 def line_parametric_2d(

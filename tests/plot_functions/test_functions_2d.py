@@ -357,7 +357,7 @@ def test_plot_parametric_region(p_options, pi_options):
     assert len(p.series) == 8
     assert all(isinstance(s, Parametric2DLineSeries) for s in p.series)
     assert all(
-        (s.var, s.start, s.end) == (v, 0, float(2 * pi / 3))
+        (s.var, s.start, s.end) == (v, 0, 2 * pi / 3)
         for s in p.series[:3]
     )
     assert all((s.var, s.start, s.end) == (u, 1, 2) for s in p.series[3:])
@@ -389,7 +389,7 @@ def test_plot_parametric_region(p_options, pi_options):
     assert sum((s.var, s.start, s.end) == (u, 1, 2) for s in p.series) == 10
     assert (
         sum(
-            (s.var, s.start, s.end) == (v, 0, float(2 * pi / 3))
+            (s.var, s.start, s.end) == (v, 0, 2 * pi / 3)
             for s in p.series) == 6
     )
 
@@ -404,12 +404,12 @@ def test_plot_parametric_region(p_options, pi_options):
     assert sum((s.var, s.start, s.end) == (u, 1, 2) for s in p.series) == 5
     assert (
         sum(
-            (s.var, s.start, s.end) == (v, 0, float(2 * pi / 3))
+            (s.var, s.start, s.end) == (v, 0, 2 * pi / 3)
             for s in p.series) == 3
     )
     assert sum((s.var, s.start, s.end) == (x, 0, 1) for s in p.series) == 5
     assert sum(
-        (s.var, s.start, s.end) == (y, 0, float(pi)) for s in p.series) == 3
+        (s.var, s.start, s.end) == (y, 0, pi) for s in p.series) == 3
 
 
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
@@ -504,8 +504,8 @@ def test_plot_piecewise(p_options):
     assert len([t for t in s if isinstance(t, List2DSeries)]) == 6
     assert (
         (s[0].expr == -S(1))
-        and np.isclose(s[0].start.real, -5)
-        and np.isclose(s[0].end.real, -1 - 1e-06)
+        and np.isclose(s[0].start, -5)
+        and np.isclose(s[0].end, -1 - 1e-06)
     )
     assert (
         np.allclose(s[1].list_x, -1)
@@ -514,8 +514,8 @@ def test_plot_piecewise(p_options):
     )
     assert (
         (s[2].expr == x)
-        and np.isclose(s[2].start.real, -1 - 1e-06)
-        and np.isclose(s[2].end.real, -1e-06)
+        and np.isclose(s[2].start, -1 - 1e-06)
+        and np.isclose(s[2].end, -1e-06)
     )
     assert (
         np.allclose(s[3].list_x, -1e-06)
@@ -524,8 +524,8 @@ def test_plot_piecewise(p_options):
     )
     assert (
         (s[4].expr == x**2)
-        and np.isclose(s[4].start.real, 0)
-        and np.isclose(s[4].end.real, 1 - 1e-06)
+        and np.isclose(s[4].start, 0)
+        and np.isclose(s[4].end, 1 - 1e-06)
     )
     assert (
         np.allclose(s[5].list_x, 1 - 1e-06)
@@ -534,8 +534,8 @@ def test_plot_piecewise(p_options):
     )
     assert (
         (s[6].expr == x**3)
-        and np.isclose(s[6].start.real, 1)
-        and np.isclose(s[6].end.real, 5)
+        and np.isclose(s[6].start, 1)
+        and np.isclose(s[6].end, 5)
     )
     assert (
         np.allclose(s[7].list_x, -1) and np.allclose(s[7].list_y, -1)
@@ -559,13 +559,13 @@ def test_plot_piecewise(p_options):
     assert len([t for t in s if isinstance(t, List2DSeries)]) == 2
     assert (
         (s[0].expr == 0)
-        and np.isclose(s[0].start.real, -10)
-        and np.isclose(s[0].end.real, 0)
+        and np.isclose(s[0].start, -10)
+        and np.isclose(s[0].end, 0)
     )
     assert (
         (s[1].expr == 1)
-        and np.isclose(s[1].start.real, 1e-06)
-        and np.isclose(s[1].end.real, 10)
+        and np.isclose(s[1].start, 1e-06)
+        and np.isclose(s[1].end, 10)
     )
     assert (
         np.allclose(s[2].list_x, 1e-06)
@@ -1171,7 +1171,7 @@ def test_logplot_PR_16796(paf_options, adaptive):
     d = p[0].get_data()
     assert len(d[0]) >= 30
     assert not np.isnan(d[1]).all()
-    assert p[0].end == 100.0
+    assert p[0].end == 100
     assert p[0].start == 0.001
 
 

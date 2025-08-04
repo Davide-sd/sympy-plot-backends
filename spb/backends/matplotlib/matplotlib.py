@@ -1,6 +1,7 @@
 import param
 import itertools
 from spb.defaults import cfg
+from spb.doc_utils.ipython import generate_doc
 from spb.backends.base_backend import Plot
 from spb.backends.matplotlib.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
@@ -46,97 +47,6 @@ def unset_show():
 class MatplotlibBackend(Plot):
     """
     A backend for plotting SymPy's symbolic expressions using Matplotlib.
-
-    Parameters
-    ==========
-
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of a 2D plot. Possible values:
-
-        * ``"auto"``: Matplotlib will fit the plot in the vibile area.
-        * ``"equal"``: sets equal spacing.
-        * tuple containing 2 float numbers, from which the aspect ratio is
-          computed. This only works for 2D plots.
-
-    axis_center : (float, float) or str or None, optional
-        Set the location of the intersection between the horizontal and
-        vertical axis in a 2D plot. It can be:
-
-        * ``None``: traditional layout, with the horizontal axis fixed on the
-          bottom and the vertical axis fixed on the left. This is the default
-          value.
-        * a tuple ``(x, y)`` specifying the exact intersection point.
-        * ``'center'``: center of the current plot area.
-        * ``'auto'``: the intersection point is automatically computed.
-
-    camera : dict, optional
-        A dictionary of keyword arguments that will be passed to the
-        ``Axes3D.view_init`` method. Refer to [#fn9]_ for more information.
-
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's plot
-        functions to customize the appearance of lines, surfaces, images,
-        contours, quivers, streamlines...
-        To learn more about customization:
-
-        * Refer to [#fn1]_ to customize contour plots.
-        * Refer to [#fn2]_ to customize image plots.
-        * Refer to [#fn3]_ to customize solid line plots.
-        * Refer to [#fn4]_ to customize colormap-based line plots.
-        * Refer to [#fn5]_ to customize quiver plots.
-        * Refer to [#fn6]_ to customize surface plots.
-        * Refer to [#fn7]_ to customize stramline plots.
-        * Refer to [#fn8]_ to customize 3D scatter plots.
-        * Refer to [#fn11]_ to customize 2D arrows.
-
-    axis : boolean, optional
-        Turns on/off the axis visibility (and associated tick labels).
-        Default to True (axis are visible).
-
-    update_event : bool, optional
-        If True, it binds pan/zoom events in order to automatically compute
-        new data as the user interact with the plot.
-        Default to False.
-
-    annotations : list, optional
-        A list of dictionaries specifying the type of annotation
-        required. The keys in the dictionary should be equivalent
-        to the arguments of the `matplotlib.axes.Axes.annotate` method.
-        This feature is experimental. It might get removed in the future.
-
-    markers : list, optional
-        A list of dictionaries specifying the type the markers required.
-        The keys in the dictionary should be equivalent to the arguments
-        of the `matplotlib.pyplot.plot()` function along with the marker
-        related keyworded arguments.
-        This feature is experimental. It might get removed in the future.
-
-    rectangles : list, optional
-        A list of dictionaries specifying the dimensions of the
-        rectangles to be plotted. The keys in the dictionary should be
-        equivalent to the arguments of the `matplotlib.patches.Rectangle`
-        class.
-        This feature is experimental. It might get removed in the future.
-
-    fill : dict, optional
-        A dictionary specifying the type of color filling required in
-        the plot. The keys in the dictionary should be equivalent to the
-        arguments of the `matplotlib.axes.Axes.fill_between` method.
-        This feature is experimental. It might get removed in the future.
-
-
-    References
-    ==========
-    .. [#fn1] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
-    .. [#fn2] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
-    .. [#fn3] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-    .. [#fn4] https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-    .. [#fn5] https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
-    .. [#fn6] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
-    .. [#fn7] https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
-    .. [#fn8] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-    .. [#fn9] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.view_init
-    .. [#fn11] https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrowPatch.html
 
     See also
     ========
@@ -495,7 +405,8 @@ class MatplotlibBackend(Plot):
                 self._ax.set_zlabel(zlabel, position=(0, 1))
 
     def update_interactive(self, params):
-        """Implement the logic to update the data generated by
+        """
+        Implement the logic to update the data generated by
         interactive-widget plots.
 
         Parameters
@@ -688,7 +599,8 @@ class MatplotlibBackend(Plot):
         return np.ma.concatenate([points[:-1], points[1:]], axis=1)
 
     def draw(self):
-        """ Loop over the renderers, generates numerical data and add it to
+        """
+        Loop over the renderers, generates numerical data and add it to
         the figure. Note that this method doesn't show the plot.
         """
         # create the figure from scratch every time, otherwise if the plot was
@@ -701,7 +613,8 @@ class MatplotlibBackend(Plot):
     process_series = draw
 
     def show(self, **kwargs):
-        """Display the current plot.
+        """
+        Display the current plot.
 
         Parameters
         ==========
@@ -736,7 +649,8 @@ class MatplotlibBackend(Plot):
             self.close()
 
     def save(self, path, **kwargs):
-        """Save the current plot at the specified location.
+        """
+        Save the current plot at the specified location.
 
         Refer to [#fn10]_ to visualize all the available keyword arguments.
 
@@ -756,3 +670,6 @@ class MatplotlibBackend(Plot):
 
 
 MB = MatplotlibBackend
+
+
+generate_doc(MatplotlibBackend)

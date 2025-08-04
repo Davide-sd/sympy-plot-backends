@@ -1371,8 +1371,8 @@ def test_plot_complex_vector(pc_options):
     assert len(s) == 2
     assert isinstance(s[0], ContourSeries)
     assert s[0].get_label(False) == "Magnitude"
-    assert (s[0].start_x, s[0].end_x) == (-5, 4)
-    assert (s[0].start_y, s[0].end_y) == (-2, 3)
+    assert to_float((s[0].start_x, s[0].end_x)) == (-5, 4)
+    assert to_float((s[0].start_y, s[0].end_y)) == (-2, 3)
     assert isinstance(s[1], Vector2DSeries)
     assert to_float(s[1].ranges[0][1:]) == (-5, 4)
     assert to_float(s[1].ranges[1][1:]) == (-2, 3)
