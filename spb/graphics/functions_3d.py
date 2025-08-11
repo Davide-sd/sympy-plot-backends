@@ -973,7 +973,8 @@ def surface_spherical(
         rel(">", range_phi[2], 2*pi, range_phi[2]))
 
     return surface_parametric(
-        x, y, z, range_theta, range_phi, label, **kwargs)
+        x, y, z, range_theta, range_phi, label,
+        rendering_kw=rendering_kw, **kwargs)
 
 
 def implicit_3d(
