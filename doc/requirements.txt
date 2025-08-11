@@ -12,7 +12,7 @@ sphinx_design
 git+https://github.com/Davide-sd/sphinx-plotly-directive@combine
 sphinx_panel_screenshot
 sphinx_k3d_screenshot
-kaleido
+kaleido<0.4.0
 # to satidfy ipympl requirements we need
 ipywidgets<8,>=7.6.0
 sphinxcontrib-video
