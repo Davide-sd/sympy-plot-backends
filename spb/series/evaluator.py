@@ -253,8 +253,14 @@ class _AdaptiveEvaluationParameters(param.Parameterized):
     function.
     """
     adaptive = param.Boolean(False, doc="""
-        If True uses the adaptive algorithm, if the data series supports
-        such functionality.""")
+        If True uses the adaptive algorithm implemented in [python-adaptive]_
+        to evaluate the provided expression and create smooth plots.
+        The evaluation points will be placed in regions of the curve where its
+        gradient is high. Use ``adaptive_goal`` and ``loss_fn`` to further
+        customize the output.
+        If False, the expression will be evaluated over a uniformly distributed
+        grid of points. Use ``n`` to change the number of evaluation points
+        and ``x_scale`` to change the discretization strategy.""")
     adaptive_goal = param.Parameter(
         doc="""
         Controls the "smoothness" of the adaptive algorithm evaluation.
@@ -323,7 +329,8 @@ class _GridEvaluationParameters(param.Parameterized):
         ``adaptive=False``. When this parameter is True, the number of
         discretization points is choosen by the algorithm.""")
     modules = param.Parameter(None, doc="""
-        Specify the evaluation modules to be used by lambdify.""")
+        Specify the evaluation modules to be used by lambdify.
+        If not specified, the evaluation will be done with NumPy/SciPy.""")
 
 
 def _discretize(start, end, N, scale="linear", only_integers=False):

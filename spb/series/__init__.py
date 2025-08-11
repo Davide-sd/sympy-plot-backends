@@ -94,6 +94,6 @@ series = [
     HVLineSeries
 ]
 
-generate_doc(*series)
+# generate_doc(*series)
 
 __all__ = [s.__name__ for s in series]

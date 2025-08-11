@@ -2,6 +2,20 @@
  Changelog
 ==========
 
+v4.0.0
+======
+
+* Refactoring of the plotting module in order to use the
+  `param module <https://param.holoviz.org>`_. While this add a new
+  mandatory dependency (previously, it was installed and used only
+  when using the interactive module), it brings many benefits:
+
+  * clearer code base.
+
+* removal of the adaptive evaluation of surfaces.
+
+
+
 v3.4.3
 ======
 

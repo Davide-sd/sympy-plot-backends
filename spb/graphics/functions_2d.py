@@ -190,7 +190,7 @@ def _build_line_series(expr, r, label, **kwargs):
     return series
 
 
-def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
+def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
     """Plot a function of one variable over a 2D space.
 
     Parameters
@@ -201,24 +201,44 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
         one variable to be plotted, or a numerical function of one variable,
         supporting vectorization. In the latter case the following keyword
         arguments are not supported: ``params``, ``sum_bound``.
-    range : (symbol, min, max)
+    range_x : (symbol, min, max)
         A 3-tuple denoting the range of the x variable. Default values:
         `min=-10` and `max=10`.
     label : str, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of ``expr`` will be used.
+        The label to be shown on the legend (or colorbar).
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    adaptive : bool, optional
-        Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [python-adaptive]_ to create smooth plots.
-        Use ``adaptive_goal`` and ``loss_fn`` to further customize the output.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
 
-        The default value is ``False``, which uses an uniform sampling
-        strategy, where the number of discretization points is specified by
-        the ``n`` keyword argument.
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
+    adaptive : bool, optional
+        If True uses the adaptive algorithm implemented in [python-adaptive]_
+        to evaluate the provided expression and create smooth plots.
+        The evaluation points will be placed in regions of the curve where its
+        gradient is high. Use ``adaptive_goal`` and ``loss_fn`` to further
+        customize the output.
+        If False, the expression will be evaluated over a uniformly distributed
+        grid of points. Use ``n`` to change the number of evaluation points
+        and ``xscale`` to change the discretization strategy.
+        Default to False.
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
@@ -231,13 +251,20 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
           must return a float number. Refer to [python-adaptive]_ for
           more information.
     color_func : callable or Expr, optional
-        Define the line color mapping. It can either be:
+        A color function to be applied to the numerical data. It can be:
 
         * A numerical function of 2 variables, x, y (the points computed by
           the internal algorithm) supporting vectorization.
         * A symbolic expression having at most as many free symbols as
           ``expr``.
-        * None: the default value (no color mapping).
+        * None: no color mapping.
+
+        Default to None. Related parameters: ``colorbar, use_cm``.
+    colorbar : boolean, optional
+        Toggle the visibility of the colorbar associated to the current data
+        series. Note that a colorbar is only visible if ``use_cm=True`` and
+        ``color_func`` is not None.
+        Default to True.
     detect_poles : boolean or str, optional
         Chose whether to detect and correctly plot poles. There are two
         algorithms at work:
@@ -254,33 +281,42 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
 
         Possible options:
 
+        * ``False``: no poles detection.
         * ``True``: activate poles detection computed with the numerical
           gradient.
-        * ``False``: no poles detection.
         * ``"symbolic"``: use both numerical and symbolic algorithms.
 
         Default to ``False``.
     eps : float, optional
-        An arbitrary small value used by the ``detect_poles`` algorithm.
-        Default value to 0.1. Before changing this value, it is recommended to
-        increase the number of discretization points.
+        An arbitrary small value used by the ``detect_poles`` numerical
+        algorithm. Before changing this value, it is recommended to increase
+        the number of discretization points.
+        It must be: 0 ≤ eps < ∞
+        Default value: 0.01
     exclude : list, optional
         A list of numerical values in the horizontal coordinate which are
-        going to be excluded from the plot. In practice, it introduces
-        discontinuities in the resulting line.
+        going to be excluded from the evaluation. In practice, the algorithm
+        introduces discontinuities in the resulting line at the
+        specified locations.
     force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
+        By default, numerical evaluation is performed over complex numbers,
+        which is slower but produces correct results.
+        However, when the symbolic expression is converted to a numerical
+        function with lambdify, the resulting function may not like to
+        be evaluated over complex numbers. In such cases, forcing the
+        evaluation to be performed over real numbers might be a good choice.
+        The plotting module should be able to detect such occurences and
+        automatically activate this option. If that is not the case, or
+        evaluation performance is of paramount importance, set this parameter
+        to True, but be aware that it might produce wrong results.
+        It only works with ``adaptive=False``.
+        Default to False.
     scatter : boolean, optional
-        Default to False, which will render a line connecting all the points.
-        If True, a scatter plot will be generated.
+        Whether to create a scatter or a continuous line.
+        Default to False (create a continous line).
     fill : boolean, optional
-        Default to True, which will render empty circular markers. It only
-        works if ``scatter=True``.
-        If False, filled circular markers will be rendered.
+        Whether scatter's markers are filled or void.
+        Default to True.
     loss_fn : callable or None
         The loss function to be used by the ``adaptive`` learner.
         Possible values:
@@ -290,33 +326,128 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
         * callable : Refer to [python-adaptive]_ for more information.
           Specifically, look at ``adaptive.learner.learner1D`` to find
           more loss functions.
+    modules :
+        Specify the evaluation modules to be used by lambdify.
+        If not specified, the evaluation will be done with NumPy/SciPy.
+        Default to None.
     n : int, optional
-        Used when the ``adaptive=False``: the function is uniformly
-        sampled at ``n`` number of points. Default value to 1000.
+        Number of discretization points to be used in the evaluation
+        when ``adaptive=False``. Look at ``xscale`` to change the
+        discretization strategy.
         If the ``adaptive=True``, this parameter will be ignored.
+        Default value to 1000.
     only_integers : boolean, optional
-        Default to ``False``. If ``True``, discretize the domain with integer
-        numbers. It only works when ``adaptive=False``.
-        When ``only_integers=True``, the number of discretization points is
-        choosen by the algorithm.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-    steps : {'pre', 'post', 'mid', False}, default: False, optional
+        Discretize the domain using only integer numbers. It only works when
+        ``adaptive=False``. When this parameter is True, the number of
+        discretization points is choosen by the algorithm.
+        Default to True.
+    params : dict, optional
+        A dictionary mapping symbols to parameters. If provided, this
+        dictionary enables the interactive-widgets plot, which doesn't support
+        the adaptive algorithm (meaning it will use ``adaptive=False``).
+
+        When calling a plotting function, the parameter can be specified with:
+
+        * a widget from the ``ipywidgets`` module.
+        * a widget from the ``panel`` module.
+        * a tuple of the form:
+           `(default, min, max, N, tick_format, label, spacing)`,
+           which will instantiate a
+           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
+           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
+           depending on the spacing strategy. In particular:
+
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
+           - N : int, optional
+                Number of steps of the slider.
+           - tick_format : str or None, optional
+                Provide a formatter for the tick value of the slider.
+                Default to ``".2f"``.
+           - label: str, optional
+                Custom text associated to the slider.
+           - spacing : str, optional
+                Specify the discretization spacing. Default to ``"linear"``,
+                can be changed to ``"log"``.
+
+        Notes:
+
+        1. parameters cannot be linked together (ie, one parameter
+           cannot depend on another one).
+        2. If a widget returns multiple numerical values (like
+           :py:class:`panel.widgets.slider.RangeSlider` or
+           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
+           then a corresponding number of symbols must be provided.
+
+        Here follows a couple of examples. If ``imodule="panel"``:
+
+        .. code-block:: python
+
+            import panel as pn
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
+                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
+            }
+
+        Or with ``imodule="ipywidgets"``:
+
+        .. code-block:: python
+
+            import ipywidgets as w
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
+                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
+            }
+
+        When instantiating a data series directly, ``params`` must be a
+        dictionary mapping symbols to numerical values.
+
+        Let ``series`` be any data series. Then ``series.params`` returns a
+        dictionary mapping symbols to numerical values.
+    show_in_legend : bool, optional
+        Toggle the visibility of the data series on the legend.
+        Default to True.
+    steps : optional
         If set, it connects consecutive points with steps rather than
         straight segments.
+        Possible options: ['pre', 'post', 'mid', True, False, None]
+        Default to False.
     sum_bound : int, optional
         When plotting sums, the expression will be pre-processed in order
         to replace lower/upper bounds set to +/- infinity with this +/-
         numerical value. Default value to 1000. Note: the higher this number,
         the slower the evaluation.
     tx, ty : callable, optional
-        Apply a numerical function to the discretized x-direction or to the
-        output of the numerical evaluation, the y-direction.
-    xscale : 'linear' or 'log', optional
-        Sets the scaling of the discretized range. Default to ``'linear'``.
+        Numerical transformation function to be applied to the results
+        of the numerical evaluation. In particular:
+
+        * ``tx`` modifies the x-coordinates.
+        * ``ty`` modifies the y-coordinates.
+
+        Default to None.
+    unwrap : optional
+        Whether to use numpy.unwrap() on the computed coordinates in order
+        to get rid of discontinuities. It can be:
+
+        * False: do not use ``np.unwrap()``.
+        * True: use ``np.unwrap()`` with default keyword arguments.
+        * dictionary of keyword arguments passed to ``np.unwrap()``.
+
+        Default to False.
+    use_cm : boolean, optional
+        Toggle the use of a colormap. It only works if ``color_func`` is not
+        None. Setting this attribute to False will inform the associated
+        renderer to use solid color.
+        Default to False. Related parameters: ``color_func, colorbar``.
+    xscale : str, optional
+        Discretization strategy along the x-direction.
+        Possible options: ['linear', 'log']
+        Default value: 'linear'
 
     Returns
     =======
@@ -545,264 +676,14 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
-    range = _create_missing_ranges(
-        [expr], [range] if range else [], 1, params)[0]
+    range_x = _create_missing_ranges(
+        [expr], [range_x] if range_x else [], 1, params)[0]
     return _build_line_series(
-        expr, range, label, rendering_kw=rendering_kw, **kwargs)
-
-
-
-# class line(param.ParameterizedFunction, LineOver1DRangeSeries):
-#     """Plot a function of one variable over a 2D space.
-
-#     Returns
-#     =======
-
-#     series : list
-#         A list containing one instance of ``LineOver1DRangeSeries``.
-
-#     Examples
-#     ========
-
-#     .. plot::
-#        :context: close-figs
-#        :format: doctest
-#        :include-source: True
-
-#        >>> from sympy import symbols, sin, pi, tan, exp, cos, log, floor
-#        >>> from spb import *
-#        >>> x, y = symbols('x, y')
-
-#     Single Plot
-
-#     .. plot::
-#        :context: close-figs
-#        :format: doctest
-#        :include-source: True
-
-#        >>> graphics(line(x**2, (x, -5, 5)))
-#        Plot object containing:
-#        [0]: cartesian line: x**2 for x over (-5.0, 5.0)
-
-#     Multiple functions over the same range with custom rendering options:
-
-#     .. plot::
-#        :context: close-figs
-#        :format: doctest
-#        :include-source: True
-
-#        >>> graphics(
-#        ...     line(x, (x, -3, 3)),
-#        ...     line(log(x), (x, -3, 3), rendering_kw={"linestyle": "--"}),
-#        ...     line(exp(x), (x, -3, 3), rendering_kw={"linestyle": ":"}),
-#        ...     aspect="equal", ylim=(-3, 3)
-#        ... )
-#        Plot object containing:
-#        [0]: cartesian line: x for x over (-3.0, 3.0)
-#        [1]: cartesian line: log(x) for x over (-3.0, 3.0)
-#        [2]: cartesian line: exp(x) for x over (-3.0, 3.0)
-
-#     Plotting a summation in which the free symbol of the expression is not
-#     used in the lower/upper bounds:
-
-#     .. plot::
-#        :context: close-figs
-#        :format: doctest
-#        :include-source: True
-
-#        >>> from sympy import Sum, oo, latex
-#        >>> expr = Sum(1 / x ** y, (x, 1, oo))
-#        >>> graphics(
-#        ...     line(expr, (y, 2, 10), sum_bound=1e03),
-#        ...     title="$%s$" % latex(expr)
-#        ... )
-#        Plot object containing:
-#        [0]: cartesian line: Sum(x**(-y), (x, 1, 1000)) for y over (2.0, 10.0)
-
-#     Plotting a summation in which the free symbol of the expression is
-#     used in the lower/upper bounds. Here, the discretization variable must
-#     assume integer values:
-
-#     .. plot::
-#        :context: close-figs
-#        :format: doctest
-#        :include-source: True
-
-#        >>> expr = Sum(1 / x, (x, 1, y))
-#        >>> graphics(
-#        ...     line(expr, (y, 2, 10), scatter=True),
-#        ...     title="$%s$" % latex(expr)
-#        ... )
-#        Plot object containing:
-#        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
-
-#     Using an adaptive algorithm, detect and plot vertical lines at
-#     singularities. Also, apply a transformation function to the discretized
-#     domain in order to convert radians to degrees:
-
-#     .. plot::
-#        :context: close-figs
-#        :format: doctest
-#        :include-source: True
-
-#        >>> import numpy as np
-#        >>> graphics(
-#        ...     line(
-#        ...         tan(x), (x, -1.5*pi, 1.5*pi),
-#        ...         adaptive=True, adaptive_goal=0.001,
-#        ...         detect_poles="symbolic", tx=np.rad2deg
-#        ...     ),
-#        ...     ylim=(-7, 7), xlabel="x [deg]", grid=False
-#        ... )
-#        Plot object containing:
-#        [0]: cartesian line: tan(x) for x over (-4.71238898038469, 4.71238898038469)
-
-#     Introducing discontinuities by excluding specified points:
-
-#     .. plot::
-#        :context: close-figs
-#        :format: doctest
-#        :include-source: True
-
-#        >>> graphics(
-#        ...     line(floor(x) / x, (x, -3.25, 3.25), exclude=list(range(-4, 5))),
-#        ...     ylim=(-1, 5)
-#        ... )
-#        Plot object containing:
-#        [0]: cartesian line: floor(x)/x for x over (-3.25, 3.25)
-
-#     Creating a step plot:
-
-#     .. plot::
-#        :context: close-figs
-#        :format: doctest
-#        :include-source: True
-
-#        >>> graphics(
-#        ...     line(x-2, (x, 0, 10), only_integers=True, steps="pre", label="pre"),
-#        ...     line(x, (x, 0, 10), only_integers=True, steps="mid", label="mid"),
-#        ...     line(x+2, (x, 0, 10), only_integers=True, steps="post", label="post"),
-#        ... )
-#        Plot object containing:
-#        [0]: cartesian line: x - 2 for x over (0.0, 10.0)
-#        [1]: cartesian line: x for x over (0.0, 10.0)
-#        [2]: cartesian line: x + 2 for x over (0.0, 10.0)
-
-#     Advanced example showing:
-
-#     * detect singularities by setting ``adaptive=False`` (better performance),
-#       increasing the number of discretization points (in order to have
-#       'vertical' segments on the lines) and reducing the threshold for the
-#       singularity-detection algorithm.
-#     * application of color function.
-#     * combining together multiple lines.
-
-#     .. plot::
-#        :context: close-figs
-#        :format: doctest
-#        :include-source: True
-
-#        >>> import numpy as np
-#        >>> expr = 1 / cos(10 * x) + 5 * sin(x)
-#        >>> def cf(x, y):
-#        ...     # map a colormap to the distance from the origin
-#        ...     d = np.sqrt(x**2 + y**2)
-#        ...     # visibility of the plot is limited: ylim=(-10, 10). However,
-#        ...     # some of the y-values computed by the function are much higher
-#        ...     # (or lower). Filter them out in order to have the entire
-#        ...     # colormap spectrum visible in the plot.
-#        ...     offset = 12 # 12 > 10 (safety margin)
-#        ...     d[(y > offset) | (y < -offset)] = 0
-#        ...     return d
-#        >>> graphics(
-#        ...     line(
-#        ...         expr, (x, -5, 5), "distance from (0, 0)",
-#        ...         rendering_kw={"cmap": "plasma"},
-#        ...         adaptive=False, detect_poles=True, n=3e04,
-#        ...         eps=1e-04, color_func=cf),
-#        ...     line(5 * sin(x), (x, -5, 5), rendering_kw={"linestyle": "--"}),
-#        ...     ylim=(-10, 10), title="$%s$" % latex(expr)
-#        ... )
-#        Plot object containing:
-#        [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-5.0, 5.0)
-#        [1]: cartesian line: 5*sin(x) for x over (-5.0, 5.0)
-
-#     Interactive-widget plot of an oscillator. Refer to the interactive
-#     sub-module documentation to learn more about the ``params`` dictionary.
-#     This plot illustrates:
-
-#     * plotting multiple expressions, each one with its own label and
-#       rendering options.
-#     * the use of ``prange`` (parametric plotting range).
-#     * the use of the ``params`` dictionary to specify sliders in
-#       their basic form: (default, min, max).
-#     * the use of :py:class:`panel.widgets.slider.RangeSlider`, which is a
-#       2-values widget. In this case it is used to enforce the condition
-#       `f1 < f2`.
-#     * the use of a parametric title, specified with a tuple of the form:
-#       ``(title_str, param_symbol1, ...)``, where:
-
-#       * ``title_str`` must be a formatted string, for example:
-#         ``"test = {:.2f}"``.
-#       * ``param_symbol1, ...`` must be a symbol or a symbolic expression
-#         whose free symbols are contained in the ``params`` dictionary.
-
-#     .. panel-screenshot::
-#        :small-size: 800, 625
-
-#        from sympy import *
-#        from spb import *
-#        import panel as pn
-#        x, y, f1, f2, d, n = symbols("x, y, f_1, f_2, d, n")
-#        params = {
-#            (f1, f2): pn.widgets.RangeSlider(
-#                value=(1, 2), start=0, end=10, step=0.1),     # frequencies
-#            d: (0.25, 0, 1),   # damping
-#            n: (2, 0, 4)       # multiple of pi
-#        }
-#        graphics(
-#            line(cos(f1 * x) * exp(-d * x), prange(x, 0, n * pi),
-#                label="oscillator 1", params=params),
-#            line(cos(f2 * x) * exp(-d * x), prange(x, 0, n * pi),
-#                label="oscillator 2", params=params),
-#            line(exp(-d * x), prange(x, 0, n * pi), label="upper limit",
-#                rendering_kw={"linestyle": ":"}, params=params),
-#            line(-exp(-d * x), prange(x, 0, n * pi), label="lower limit",
-#                rendering_kw={"linestyle": ":"}, params=params),
-#            ylim=(-1.25, 1.25),
-#            title=("$f_1$ = {:.2f} Hz", f1)
-#        )
-
-#     See Also
-#     ========
-
-#     line_parametric_2d, line_polar, implicit_2d, list_2d, geometry,
-#     spb.graphics.functions_3d.line_parametric_3d
-
-#     """
-
-#     range = param.Tuple(doc="""
-#         A 3-tuple (symbol, min, max) denoting the range of the variable
-#         to be shown on the horizontal axis.
-#         Default values: `min=-10` and `max=10`.""")
-#     sum_bound = param.Integer(default=1000, doc="""
-#         When plotting sums, the expression will be pre-processed in order
-#         to replace lower/upper bounds set to +/- infinity with this +/-
-#         numerical value. Default value to 1000. Note: the higher this number,
-#         the slower the evaluation.""")
-
-#     def __call__(self, expr, range=None, label=None, rendering_kw=None, **kwargs):
-#         p = ParamOverrides(self, kwargs)
-#         expr = _plot_sympify(expr)
-#         params = kwargs.get("params", {})
-#         range = _create_missing_ranges(
-#             [expr], [range] if range else [], 1, params)[0]
-#         return _build_line_series(
-#             expr, range, label, rendering_kw=rendering_kw, **kwargs)
+        expr, range_x, label, rendering_kw=rendering_kw, **kwargs)
 
 
 def line_parametric_2d(
-    expr1, expr2, range=None, label=None, rendering_kw=None,
+    expr1, expr2, range_p=None, label=None, rendering_kw=None,
     colorbar=True, use_cm=True, **kwargs
 ):
     """Plots a 2D parametric curve.
@@ -817,25 +698,45 @@ def line_parametric_2d(
         one variable to be plotted, or a numerical function of one variable,
         supporting vectorization. In the latter case the following keyword
         arguments are not supported: ``params``, ``sum_bound``.
-    range : (symbol, min, max)
+    range_p : (symbol, min, max)
         A 3-tuple denoting the parameter symbol, start value and stop value.
-        For example, ``(u, 0, 5)``. If the range is not specified, then a
+        For example, ``(u, 0, 5)``. If ``range_p`` is not specified, then a
         default range of (-10, 10) is used.
     label : str, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of ``expr1`` and ``expr1`` will be used.
+        The label to be shown on the legend (or colorbar).
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    adaptive : bool, optional
-        Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [python-adaptive]_ to create smooth plots.
-        Use ``adaptive_goal`` and ``loss_fn`` to further customize the output.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
 
-        The default value is ``False``, which uses an uniform sampling
-        strategy, where the number of discretization points is specified by
-        the ``n`` keyword argument.
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
+    adaptive : bool, optional
+        If True uses the adaptive algorithm implemented in [python-adaptive]_
+        to evaluate the provided expression and create smooth plots.
+        The evaluation points will be placed in regions of the curve where its
+        gradient is high. Use ``adaptive_goal`` and ``loss_fn`` to further
+        customize the output.
+        If False, the expression will be evaluated over a uniformly distributed
+        grid of points. Use ``n`` to change the number of evaluation points
+        and ``xscale`` to change the discretization strategy.
+        Default to False.
     adaptive_goal : callable, int, float or None
         Controls the "smoothness" of the evaluation. Possible values:
 
@@ -847,11 +748,8 @@ def line_parametric_2d(
         * callable: a function requiring one input element, the learner. It
           must return a float number. Refer to [python-adaptive]_ for
           more information.
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
     color_func : callable, optional
-        Define the line color mapping when ``use_cm=True``. It can either be:
+        Define a custom color mapping when ``use_cm=True``. It can either be:
 
         * A numerical function supporting vectorization. The arity can be:
 
@@ -861,18 +759,32 @@ def line_parametric_2d(
           * 3 arguments: ``f(x, y, t)``.
 
         * A symbolic expression having at most as many free symbols as
-          ``expr1`` or ``expr2``.
-        * None: the default value (color mapping applied to the parameter).
+          ``expr_x`` or ``expr_y``.
+        * None: color mapping according to the parameter.
+
+        Default to None.
+    colorbar : boolean, optional
+        Toggle the visibility of the colorbar associated to the current data
+        series. Note that a colorbar is only visible if ``use_cm=True`` and
+        ``color_func`` is not None.
+        Default to True.
     exclude : list, optional
         A list of numerical values along the parameter which are going to
         be excluded from the plot. In practice, it introduces discontinuities
         in the resulting line.
     force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
+        By default, numerical evaluation is performed over complex numbers,
+        which is slower but produces correct results.
+        However, when the symbolic expression is converted to a numerical
+        function with lambdify, the resulting function may not like to
+        be evaluated over complex numbers. In such cases, forcing the
+        evaluation to be performed over real numbers might be a good choice.
+        The plotting module should be able to detect such occurences and
+        automatically activate this option. If that is not the case, or
+        evaluation performance is of paramount importance, set this parameter
+        to True, but be aware that it might produce wrong results.
+        It only works with ``adaptive=False``.
+        Default to False.
     loss_fn : callable or None
         The loss function to be used by the adaptive learner.
         Possible values:
@@ -883,22 +795,116 @@ def line_parametric_2d(
           Specifically, look at ``adaptive.learner.learner1D`` to find
           more loss functions.
     n : int, optional
-        Used when the ``adaptive=False``. The function is uniformly sampled
-        at ``n`` number of points. Default value to 1000.
+        Number of discretization points to be used in the evaluation
+        when ``adaptive=False``. Look at ``xscale`` to change the
+        discretization strategy.
         If the ``adaptive=True``, this parameter will be ignored.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
+        Default value to 1000.
+    scatter : boolean, optional
+        Whether to create a scatter or a continuous line.
+        Default to False (create a continous line).
+    fill : boolean, optional
+        Whether scatter's markers are filled or void.
+        Default to True.
+    only_integers : boolean, optional
+        Discretize the domain using only integer numbers. It only works when
+        ``adaptive=False``. When this parameter is True, the number of
+        discretization points is choosen by the algorithm.
+        Default to True.
+    params : dict, optional
+        A dictionary mapping symbols to parameters. If provided, this
+        dictionary enables the interactive-widgets plot, which doesn't support
+        the adaptive algorithm (meaning it will use ``adaptive=False``).
+
+        When calling a plotting function, the parameter can be specified with:
+
+        * a widget from the ``ipywidgets`` module.
+        * a widget from the ``panel`` module.
+        * a tuple of the form:
+           `(default, min, max, N, tick_format, label, spacing)`,
+           which will instantiate a
+           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
+           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
+           depending on the spacing strategy. In particular:
+
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
+           - N : int, optional
+                Number of steps of the slider.
+           - tick_format : str or None, optional
+                Provide a formatter for the tick value of the slider.
+                Default to ``".2f"``.
+           - label: str, optional
+                Custom text associated to the slider.
+           - spacing : str, optional
+                Specify the discretization spacing. Default to ``"linear"``,
+                can be changed to ``"log"``.
+
+        Notes:
+
+        1. parameters cannot be linked together (ie, one parameter
+           cannot depend on another one).
+        2. If a widget returns multiple numerical values (like
+           :py:class:`panel.widgets.slider.RangeSlider` or
+           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
+           then a corresponding number of symbols must be provided.
+
+        Here follows a couple of examples. If ``imodule="panel"``:
+
+        .. code-block:: python
+
+            import panel as pn
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
+                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
+            }
+
+        Or with ``imodule="ipywidgets"``:
+
+        .. code-block:: python
+
+            import ipywidgets as w
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
+                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
+            }
+
+        When instantiating a data series directly, ``params`` must be a
+        dictionary mapping symbols to numerical values.
+
+        Let ``series`` be any data series. Then ``series.params`` returns a
+        dictionary mapping symbols to numerical values.
+    show_in_legend : bool, optional
+        Toggle the visibility of the data series on the legend.
+        Default to True.
+    sum_bound : int, optional
+        When plotting sums, the expression will be pre-processed in order
+        to replace lower/upper bounds set to +/- infinity with this +/-
+        numerical value. Default value to 1000. Note: the higher this number,
+        the slower the evaluation.
     tx, ty, tp : callable, optional
-        Apply a numerical function to the x-direction, y-direction and
-        parameter, respectively.
+        Numerical transformation function to be applied to the results
+        of the numerical evaluation. In particular:
+
+        * ``tx`` modifies the x-coordinates,
+        * ``ty`` modifies the y-coordinates.
+        * ``tp`` modifies the parameter.
+
+        Default to None.
     use_cm : boolean, optional
-        If True, apply a color map to the parametric lines.
-        If False, solid colors will be used instead. Default to True.
-    xscale : 'linear' or 'log', optional
-        Sets the scaling of the parameter.
+        Toggle the use of a colormap. It only works if ``color_func`` is not
+        None. Setting this attribute to False will inform the associated
+        renderer to use solid color.
+        Default to False. Related parameters: ``color_func, colorbar``.
+    xscale : str, optional
+        Discretization strategy along the parameter.
+        Possible options: ['linear', 'log']
+        Default value: 'linear'
 
     Returns
     =======
@@ -1043,16 +1049,16 @@ def line_parametric_2d(
     """
     expr1, expr2 = map(_plot_sympify, [expr1, expr2])
     params = kwargs.get("params", {})
-    range = _create_missing_ranges(
-        [expr1, expr2], [range] if range else [], 1, params)[0]
+    range_p = _create_missing_ranges(
+        [expr1, expr2], [range_p] if range_p else [], 1, params)[0]
     s = Parametric2DLineSeries(
-        expr1, expr2, range, label,
+        expr1, expr2, range_p, label,
         rendering_kw=rendering_kw, colorbar=colorbar,
         use_cm=use_cm, **kwargs)
     return [s]
 
 
-def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
+def line_polar(expr, range_p=None, label=None, rendering_kw=None, **kwargs):
     """Creates a 2D polar plot of a function of one variable.
 
     This function executes ``line_parametric_2d``. Refer to its documentation
@@ -1152,11 +1158,11 @@ def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
     kwargs.setdefault("use_cm", False)
-    range = _create_missing_ranges(
-        [expr], [range] if range else [], 1, params)[0]
-    theta = range[0]
+    range_p = _create_missing_ranges(
+        [expr], [range_p] if range_p else [], 1, params)[0]
+    theta = range_p[0]
     return line_parametric_2d(
-        expr * cos(theta), expr * sin(theta), range,
+        expr * cos(theta), expr * sin(theta), range_p,
         label, rendering_kw, **kwargs)
 
 
@@ -1169,20 +1175,156 @@ def contour(
     Parameters
     ==========
 
-    clabels : bool, optional
-        Visualize labels of contour lines. Only works when ``fill=False``.
-        Default to True. Note that some backend might not implement this
-        feature.
+    expr : Expr or callable
+        Expression representing the function of two variables to be plotted.
+        The expression representing the function of two variables to be
+        plotted. It can be a:
+
+        * Symbolic expression.
+        * Numerical function of two variable, supporting vectorization.
+          In this case the following keyword arguments are not supported:
+          ``params``.
+    range1, range2: (symbol, min, max)
+        A 3-tuple denoting the range of the first and second variable,
+        respectively. Default values: `min=-10` and `max=10`. Note: if both
+        ranges are not provided, the code will attempt to find them. However,
+        the order will be arbitrary, which means the visualization might be
+        flipped. To avoid this problem, always set at least one of the ranges.
+    label : str, optional
+        The label to be shown on the colorbar.
+    rendering_kw : dict, optional
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the contour.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
+        * Plotly:
+          https://plotly.com/python/contour-plots/
+    color_func : callable, optional
+        Define a custom color mapping. It can either be:
+
+        * A numerical function supporting vectorization. The arity can be:
+
+          * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of
+            the points.
+          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
+            of the points.
+        * A symbolic expression having at most as many free symbols as
+          ``expr``.
+        * None: color mapping according to the z coordinate.
+
+        Default to None.
     colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
+        Toggle the visibility of the colorbar associated to the current data
+        series. Default to True.
+    clabels : bool, optional
+        Toggle the label's visibility of contour lines. Only works when
+        ``is_filled=False``. Note that some backend might not implement
+        this feature.
+        Default to True.
     fill : bool, optional
-        Choose between filled contours or line contours. Default to True
-        (filled contours).
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_3d.surface`.
-        Refer to its documentation for a for a full list of keyword arguments.
+        If True, use filled contours. Otherwise, use line contours.
+        Default to True.
+    modules :
+        Specify the evaluation modules to be used by lambdify.
+        If not specified, the evaluation will be done with NumPy/SciPy.
+        Default to None.
+    n, n1, n2 : int, optional
+        Number of discretization points along the two ranges. Default to 100.
+        ``n`` is a shortcut to set the same number of discretization points on
+        both directions.
+    only_integers : boolean, optional
+        Discretize the domain using only integer numbers. It only works when
+        ``adaptive=False``. When this parameter is True, the number of
+        discretization points is choosen by the algorithm.
+        Default to True.
+    params : dict, optional
+        A dictionary mapping symbols to parameters. If provided, this
+        dictionary enables the interactive-widgets plot, which doesn't support
+        the adaptive algorithm (meaning it will use ``adaptive=False``).
+
+        When calling a plotting function, the parameter can be specified with:
+
+        * a widget from the ``ipywidgets`` module.
+        * a widget from the ``panel`` module.
+        * a tuple of the form:
+           `(default, min, max, N, tick_format, label, spacing)`,
+           which will instantiate a
+           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
+           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
+           depending on the spacing strategy. In particular:
+
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
+           - N : int, optional
+                Number of steps of the slider.
+           - tick_format : str or None, optional
+                Provide a formatter for the tick value of the slider.
+                Default to ``".2f"``.
+           - label: str, optional
+                Custom text associated to the slider.
+           - spacing : str, optional
+                Specify the discretization spacing. Default to ``"linear"``,
+                can be changed to ``"log"``.
+
+        Notes:
+
+        1. parameters cannot be linked together (ie, one parameter
+           cannot depend on another one).
+        2. If a widget returns multiple numerical values (like
+           :py:class:`panel.widgets.slider.RangeSlider` or
+           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
+           then a corresponding number of symbols must be provided.
+
+        Here follows a couple of examples. If ``imodule="panel"``:
+
+        .. code-block:: python
+
+            import panel as pn
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
+                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
+            }
+
+        Or with ``imodule="ipywidgets"``:
+
+        .. code-block:: python
+
+            import ipywidgets as w
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
+                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
+            }
+
+        When instantiating a data series directly, ``params`` must be a
+        dictionary mapping symbols to numerical values.
+
+        Let ``series`` be any data series. Then ``series.params`` returns a
+        dictionary mapping symbols to numerical values.
+    sum_bound : int, optional
+        When plotting sums, the expression will be pre-processed in order
+        to replace lower/upper bounds set to +/- infinity with this +/-
+        numerical value. Default value to 1000. Note: the higher this number,
+        the slower the evaluation.
+    tx, ty, tz : callable, optional
+        Numerical transformation function to be applied to the results
+        of the numerical evaluation. In particular:
+
+        * ``tx`` modifies the x-coordinates,
+        * ``ty`` modifies the y-coordinates.
+        * ``tz`` modifies the z-coordinates.
+
+        Default to None.
+    xscale, yscale : str, optional
+        Discretization strategy along the x and y directions, respectively.
+        Possible options: ['linear', 'log']
+        Default value: 'linear'
 
     Returns
     =======
@@ -1372,9 +1514,7 @@ def implicit_2d(
         Tuple denoting the discretization domain, for example:
         ``(x, -10, 10)``.
     label : str, optional
-        The label to be shown when multiple expressions are plotted.
-        If not provided, the string representation of the expression
-        will be used.
+        The label to be shown on the legend.
     rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of contours. Refer to the
@@ -1393,30 +1533,96 @@ def implicit_2d(
         limiting border. Refer to the plotting library (backend) manual for
         more informations.
     adaptive : bool, optional
-        The default value is set to ``False``, meaning that the internal
-        algorithm uses a mesh grid approach. In such case, Boolean
-        combinations of expressions cannot be plotted.
-        If set to ``True``, the internal algorithm uses interval arithmetic.
+        Select the evaluation strategy to be used.
+        If ``False``, the internal algorithm uses a mesh grid approach.
+        In such case, Boolean combinations of expressions cannot be plotted.
+        If ``True``, the internal algorithm uses interval arithmetic.
         If the expression cannot be plotted with interval arithmetic, it
         switches to the meshgrid approach.
+        Default to False.
     depth : integer
-        The depth of recursion for adaptive grid. Default value is 0.
-        Takes value in the range (0, 4).
-        Think of the resulting plot as a picture composed by pixels. By
-        increasing ``depth`` we are increasing the number of pixels, thus
-        obtaining a more accurate plot.
+        The depth of recursion for adaptive grid.
+        Think of the resulting plot as a picture composed by pixels.
+        By increasing ``depth`` we are increasing the number of pixels, thus
+        obtaining a more accurate plot, at the cost of evaluation speed
+        and possibly readability (if the figure has small size).
+        It must be: 0 ≤ depth ≤ 4
+        Default value: 0
     n, n1, n2 : int
         Number of discretization points in the horizontal and vertical
         directions when ``adaptive=False``. Default to 100. ``n`` is a shortcut
         to set the same number of discretization points on both directions.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
-    show_in_legend : bool
-        If True, add a legend entry for the expression being plotted.
-        This option is useful to hide a particular expression when combining
-        together multiple plots. Default to True.
+    params : dict, optional
+        A dictionary mapping symbols to parameters. If provided, this
+        dictionary enables the interactive-widgets plot, which doesn't support
+        the adaptive algorithm (meaning it will use ``adaptive=False``).
+
+        When calling a plotting function, the parameter can be specified with:
+
+        * a widget from the ``ipywidgets`` module.
+        * a widget from the ``panel`` module.
+        * a tuple of the form:
+           `(default, min, max, N, tick_format, label, spacing)`,
+           which will instantiate a
+           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
+           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
+           depending on the spacing strategy. In particular:
+
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
+           - N : int, optional
+                Number of steps of the slider.
+           - tick_format : str or None, optional
+                Provide a formatter for the tick value of the slider.
+                Default to ``".2f"``.
+           - label: str, optional
+                Custom text associated to the slider.
+           - spacing : str, optional
+                Specify the discretization spacing. Default to ``"linear"``,
+                can be changed to ``"log"``.
+
+        Notes:
+
+        1. parameters cannot be linked together (ie, one parameter
+           cannot depend on another one).
+        2. If a widget returns multiple numerical values (like
+           :py:class:`panel.widgets.slider.RangeSlider` or
+           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
+           then a corresponding number of symbols must be provided.
+
+        Here follows a couple of examples. If ``imodule="panel"``:
+
+        .. code-block:: python
+
+            import panel as pn
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
+                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
+            }
+
+        Or with ``imodule="ipywidgets"``:
+
+        .. code-block:: python
+
+            import ipywidgets as w
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
+                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
+            }
+
+        When instantiating a data series directly, ``params`` must be a
+        dictionary mapping symbols to numerical values.
+
+        Let ``series`` be any data series. Then ``series.params`` returns a
+        dictionary mapping symbols to numerical values.
+    show_in_legend : bool, optional
+        Toggle the visibility of the data series on the legend.
+        Default to True.
 
     Returns
     =======
@@ -1661,19 +1867,147 @@ def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
     label : str, optional
         The label to be shown in the legend.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
+    color_func : callable or Expr, optional
+        A color function to be applied to the numerical data. It can be:
+
+        * A numerical function of 2 variables, x, y (the points computed by
+          the internal algorithm) supporting vectorization.
+        * A symbolic expression having at most as many free symbols as
+          ``expr``.
+        * None: no color mapping.
+
+        Default to None. Related parameters: ``colorbar, use_cm``.
+    colorbar : boolean, optional
+        Toggle the visibility of the colorbar associated to the current data
+        series. Note that a colorbar is only visible if ``use_cm=True`` and
+        ``color_func`` is not None.
+        Default to True.
     scatter : boolean, optional
-        Default to False, which will render a line connecting all the points.
-        If True, a scatter plot will be generated.
+        Whether to create a scatter or a continuous line.
+        Default to False (create a continous line).
     fill : boolean, optional
-        Default to False, which will render empty circular markers. It only
-        works if ``scatter=True``.
-        If True, filled circular markers will be rendered.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
+        Whether scatter's markers are filled or void.
+        Default to True.
+    params : dict, optional
+        A dictionary mapping symbols to parameters. If provided, this
+        dictionary enables the interactive-widgets plot, which doesn't support
+        the adaptive algorithm (meaning it will use ``adaptive=False``).
+
+        When calling a plotting function, the parameter can be specified with:
+
+        * a widget from the ``ipywidgets`` module.
+        * a widget from the ``panel`` module.
+        * a tuple of the form:
+           `(default, min, max, N, tick_format, label, spacing)`,
+           which will instantiate a
+           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
+           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
+           depending on the spacing strategy. In particular:
+
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
+           - N : int, optional
+                Number of steps of the slider.
+           - tick_format : str or None, optional
+                Provide a formatter for the tick value of the slider.
+                Default to ``".2f"``.
+           - label: str, optional
+                Custom text associated to the slider.
+           - spacing : str, optional
+                Specify the discretization spacing. Default to ``"linear"``,
+                can be changed to ``"log"``.
+
+        Notes:
+
+        1. parameters cannot be linked together (ie, one parameter
+           cannot depend on another one).
+        2. If a widget returns multiple numerical values (like
+           :py:class:`panel.widgets.slider.RangeSlider` or
+           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
+           then a corresponding number of symbols must be provided.
+
+        Here follows a couple of examples. If ``imodule="panel"``:
+
+        .. code-block:: python
+
+            import panel as pn
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
+                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
+            }
+
+        Or with ``imodule="ipywidgets"``:
+
+        .. code-block:: python
+
+            import ipywidgets as w
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
+                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
+            }
+
+        When instantiating a data series directly, ``params`` must be a
+        dictionary mapping symbols to numerical values.
+
+        Let ``series`` be any data series. Then ``series.params`` returns a
+        dictionary mapping symbols to numerical values.
+    show_in_legend : bool, optional
+        Toggle the visibility of the data series on the legend.
+        Default to True.
+    steps : optional
+        If set, it connects consecutive points with steps rather than
+        straight segments.
+        Possible options: ['pre', 'post', 'mid', True, False, None]
+        Default to False.
+    tx, ty : callable, optional
+        Numerical transformation function to be applied to the results
+        of the numerical evaluation. In particular:
+
+        * ``tx`` modifies the x-coordinates.
+        * ``ty`` modifies the y-coordinates.
+
+        Default to None.
+    unwrap : optional
+        Whether to use numpy.unwrap() on the computed coordinates in order
+        to get rid of discontinuities. It can be:
+
+        * False: do not use ``np.unwrap()``.
+        * True: use ``np.unwrap()`` with default keyword arguments.
+        * dictionary of keyword arguments passed to ``np.unwrap()``.
+
+        Default to False.
+    use_cm : boolean, optional
+        Toggle the use of a colormap. It only works if ``color_func`` is not
+        None. Setting this attribute to False will inform the associated
+        renderer to use solid color.
+        Default to False. Related parameters: ``color_func, colorbar``.
 
     Returns
     =======
@@ -1803,11 +2137,115 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines or fills. Refer to
         the plotting library (backend) manual for more informations.
-    fill : boolean
-        Default to True. Fill the polygon/circle/ellipse.
-    A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
+    fill : boolean, optional
+        Fill the polygon/circle/ellipse. Default to True.
+    params : dict, optional
+        A dictionary mapping symbols to parameters. If provided, this
+        dictionary enables the interactive-widgets plot, which doesn't support
+        the adaptive algorithm (meaning it will use ``adaptive=False``).
+
+        When calling a plotting function, the parameter can be specified with:
+
+        * a widget from the ``ipywidgets`` module.
+        * a widget from the ``panel`` module.
+        * a tuple of the form:
+           `(default, min, max, N, tick_format, label, spacing)`,
+           which will instantiate a
+           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
+           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
+           depending on the spacing strategy. In particular:
+
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
+           - N : int, optional
+                Number of steps of the slider.
+           - tick_format : str or None, optional
+                Provide a formatter for the tick value of the slider.
+                Default to ``".2f"``.
+           - label: str, optional
+                Custom text associated to the slider.
+           - spacing : str, optional
+                Specify the discretization spacing. Default to ``"linear"``,
+                can be changed to ``"log"``.
+
+        Notes:
+
+        1. parameters cannot be linked together (ie, one parameter
+           cannot depend on another one).
+        2. If a widget returns multiple numerical values (like
+           :py:class:`panel.widgets.slider.RangeSlider` or
+           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
+           then a corresponding number of symbols must be provided.
+
+        Here follows a couple of examples. If ``imodule="panel"``:
+
+        .. code-block:: python
+
+            import panel as pn
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
+                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
+            }
+
+        Or with ``imodule="ipywidgets"``:
+
+        .. code-block:: python
+
+            import ipywidgets as w
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
+                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
+            }
+
+        When instantiating a data series directly, ``params`` must be a
+        dictionary mapping symbols to numerical values.
+
+        Let ``series`` be any data series. Then ``series.params`` returns a
+        dictionary mapping symbols to numerical values.
+    show_in_legend : bool, optional
+        Toggle the visibility of the data series on the legend.
+        Default to True.
+    steps : optional
+        If set, it connects consecutive points with steps rather than
+        straight segments.
+        Possible options: ['pre', 'post', 'mid', True, False, None]
+        Default to False.
+    sum_bound : int, optional
+        When plotting sums, the expression will be pre-processed in order
+        to replace lower/upper bounds set to +/- infinity with this +/-
+        numerical value. Default value to 1000. Note: the higher this number,
+        the slower the evaluation.
+    tx, ty : callable, optional
+        Numerical transformation function to be applied to the results
+        of the numerical evaluation. In particular:
+
+        * ``tx`` modifies the x-coordinates.
+        * ``ty`` modifies the y-coordinates.
+
+        Default to None.
+    unwrap : optional
+        Whether to use numpy.unwrap() on the computed coordinates in order
+        to get rid of discontinuities. It can be:
+
+        * False: do not use ``np.unwrap()``.
+        * True: use ``np.unwrap()`` with default keyword arguments.
+        * dictionary of keyword arguments passed to ``np.unwrap()``.
+
+        Default to False.
+    use_cm : boolean, optional
+        Toggle the use of a colormap. It only works if ``color_func`` is not
+        None. Setting this attribute to False will inform the associated
+        renderer to use solid color.
+        Default to False. Related parameters: ``color_func, colorbar``.
+    xscale : str, optional
+        Discretization strategy along the x-direction.
+        Possible options: ['linear', 'log']
+        Default value: 'linear'
 
     Returns
     =======

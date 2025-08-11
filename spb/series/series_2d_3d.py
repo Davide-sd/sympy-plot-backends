@@ -141,7 +141,7 @@ class Line2DBaseSeries(BaseSeries):
             straight segments.""")
     # TODO: replace is_point with is_scatter or scatter
     is_point = param.Boolean(False, doc="""
-        Whether to create scatter or a continuous line.""")
+        Whether to create a scatter or a continuous line.""")
     is_filled = param.Boolean(True, doc="""
         Whether scatter's markers are filled or void.""")
     line_color = param.Parameter(default=None, doc="""
@@ -168,8 +168,8 @@ class Line2DBaseSeries(BaseSeries):
         """)
     eps = param.Number(default=0.01, bounds=(0, None), doc="""
         An arbitrary small value used by the ``detect_poles`` numerical
-        algorithm. Default value to 0.01. Before changing this value, it is
-        recommended to increase the number of discretization points.""")
+        algorithm. Before changing this value, it is recommended to increase
+        the number of discretization points.""")
     # TODO: are they excluded from eval or is the result at this particular
     # coordinate set to Nan?
     exclude = param.List([], item_type=float, doc="""
@@ -392,7 +392,9 @@ class Line2DBaseSeries(BaseSeries):
 
 
 class List2DSeries(Line2DBaseSeries, _TpParameter):
-    """Representation for a line consisting of list of points."""
+    """
+    Representation for a line consisting of list of points.
+    """
 
     # NOTE: these parameters will eventually hold either Tuple or numpy arrays
     list_x = param.Parameter(default=[], doc="""
@@ -638,7 +640,15 @@ class LineOver1DRangeSeries(
         of one variable to be plotted, or a numerical function of one
         variable, supporting vectorization. In the latter case the following
         keyword arguments are not supported: ``params``, ``sum_bound``.""")
+    color_func = param.Parameter(doc="""
+        A color function to be applied to the numerical data. It can be:
 
+        * A numerical function of 2 variables, x, y (the points computed by
+          the internal algorithm) supporting vectorization.
+        * A symbolic expression having at most as many free symbols as
+          ``expr``.
+        * None: the default value (no color mapping).
+        """)
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
             return super().__new__(AbsArgLineSeries)
@@ -968,7 +978,8 @@ class Parametric2DLineSeries(
     _2DParametricParameters,
     ParametricLineBaseSeries
 ):
-    """Representation for a line consisting of two parametric sympy expressions
+    """
+    Representation for a line consisting of two parametric sympy expressions
     over a range."""
 
     is_parametric = True
@@ -996,7 +1007,6 @@ class Parametric2DLineSeries(
         self.expr = (self.expr_x, self.expr_y)
         self.ranges = [var_start_end]
         self.evaluator = GridEvaluator(series=self)
-        self._cast = float
         self._set_parametric_line_label(label)
         self._post_init()
 
@@ -1021,7 +1031,8 @@ class Parametric3DLineSeries(
     _TzParameter,
     ParametricLineBaseSeries
 ):
-    """Representation for a 3D line consisting of three parametric sympy
+    """
+    Representation for a 3D line consisting of three parametric sympy
     expressions and a range."""
 
     is_2Dline = False
@@ -1053,7 +1064,6 @@ class Parametric3DLineSeries(
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
         self.ranges = [var_start_end]
         self.evaluator = GridEvaluator(series=self)
-        self._cast = float
         self._set_parametric_line_label(label)
         self._post_init()
 
@@ -1160,8 +1170,25 @@ class SurfaceBaseSeries(
 
 
 class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
-    """Representation for a 3D surface consisting of a sympy expression and 2D
-    range."""
+    """
+    Representation for a 3D surface consisting of a sympy expression and 2D
+    range.
+    """
+
+    color_func = param.Parameter(default=None, doc="""
+        Define a custom color mapping. It can either be:
+
+        * A numerical function supporting vectorization. The arity can be:
+
+          * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of
+            the points.
+          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
+            of the points.
+        * A symbolic expression having at most as many free symbols as
+          ``expr``.
+        * None: the default value (color mapping according to the
+          z coordinate).
+        """)
 
     def __init__(
         self, expr, var_start_end_x, var_start_end_y, label="", **kwargs
@@ -1262,8 +1289,10 @@ class ParametricSurfaceSeries(
     _3DParametricParameters,
     SurfaceBaseSeries
 ):
-    """Representation for a 3D surface consisting of three parametric sympy
-    expressions and a range."""
+    """
+    Representation for a 3D surface consisting of three parametric sympy
+    expressions and a range.
+    """
 
     is_parametric = True
 
@@ -1374,7 +1403,7 @@ class ContourSeries(SurfaceOver2DRangeSeries):
         "contour_kw", "is_filled", "fill", "clabels"]
 
     is_filled = param.Boolean(True, doc="""
-        If True, used filled contours. Otherwise, use line contours.""")
+        If True, use filled contours. Otherwise, use line contours.""")
     show_clabels = param.Boolean(True, doc="""
         Toggle the label's visibility of contour lines. Only works when
         ``is_filled=False``. Note that some backend might not implement
@@ -1407,7 +1436,8 @@ class ImplicitSeries(
     _GridEvaluationParameters,
     BaseSeries
 ):
-    """Representation for Implicit plot
+    """
+    Representation for Implicit plot
 
     References
     ==========
@@ -1955,7 +1985,7 @@ class PlaneSeries(SurfaceBaseSeries):
         if self.params and not self.plane.free_symbols:
             self.params = dict()
             with param.edit_constant(self):
-                self.is_interactive = False
+                self._is_interactive = False
 
     def __str__(self):
         return self._str_helper(
@@ -2068,7 +2098,8 @@ class PlaneSeries(SurfaceBaseSeries):
 
 
 class GeometrySeries(_TzParameter, Line2DBaseSeries):
-    """Represents an entity from the sympy.geometry module.
+    """
+    Represents an entity from the sympy.geometry module.
     Depending on the geometry entity, this class can either represents a
     point, a line, or a parametric line
     """
@@ -2274,7 +2305,8 @@ class GenericDataSeries(BaseSeries):
         return self.args
 
 class HVLineSeries(BaseSeries):
-    """Represent an horizontal or vertical line series.
+    """
+    Represent an horizontal or vertical line series.
     In Matplotlib, this will be rendered by axhline or axvline.
     """
     is_horizontal = param.Boolean(default=True, doc="""

@@ -727,7 +727,7 @@ class Plot(PlotAttributes):
                 s.ranges = new_ranges
                 s._parametric_ranges = True
                 with param.edit_constant(s):
-                    s.is_interactive = True
+                    s._is_interactive = True
             all_params = self.merge({}, all_params, s.params)
 
         if len(css) > 0:
@@ -740,7 +740,7 @@ class Plot(PlotAttributes):
                     s.ranges = [(s.ranges[0][0], *lim)]
                     s._parametric_ranges = True
                     with param.edit_constant(s):
-                        s.is_interactive = True
+                        s._is_interactive = True
                 all_params = self.merge({}, all_params, s.params)
 
         return all_params

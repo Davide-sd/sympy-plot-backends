@@ -12,7 +12,21 @@ cyan = '\x1b[1;36m%s\x1b[0m'
 WARN_MISFORMATTED_DOCSTRINGS = False
 
 
+def _validate_style(style: str):
+    available_styles = ["param", "numpydoc"]
+    if style not in available_styles:
+        raise ValueError(
+            f"`style` must be one of these options: {available_styles}."
+            f" Instead, '{style}' was received."
+        )
+
+
 class MyParamPager(ParamPager):
+    def __init__(self, metaclass=False, style="param"):
+        super().__init__(metaclass)
+        _validate_style(style)
+        self.style = style
+
     def __call__(self, param_obj):
         """
         Given a Parameterized object or class, display information
@@ -50,8 +64,10 @@ class MyParamPager(ParamPager):
         heading_text = 'Parameters'
         heading_string = f"{heading_text}\n{'=' * len(heading_text)}"
         docstring_heading = (green % heading_string)
+        # print("1")
         docstrings = self.param_docstrings(
             param_info, max_col_len=100, only_changed=False)
+        # print("2")
         return f"\n\n{docstring_heading}\n\n{docstrings}"
 
     def param_docstrings(self, info, max_col_len=100, only_changed=False):
@@ -70,61 +86,10 @@ class MyParamPager(ParamPager):
                 continue
             displayed_params.append((name, params[name]))
 
-        right_shift = max(len(name) for name, _ in displayed_params)+2
-
-        for i, (name, p) in enumerate(displayed_params):
-            heading = "%s: " % name
-            unindented = textwrap.dedent("< No docstring available >" if p.doc is None else p.doc)
-
-            try:
-                if isinstance(p, param.Selector):
-                    unindented += "\nPossible options: "
-                    wrapped_val = lambda t: f"'{t}'" if isinstance(t, str) else str(t)
-                    z = lambda: zip(p.objects.keys(), p.objects.values())
-                    if all((k == v) or (k == str(v)) for k, v in z()):
-                        unindented += f"{list(p.objects.values())}"
-                    else:
-                        unindented += "\n"
-                        for k, v in z():
-                            unindented += f"\n* {wrapped_val(v)}: {k}"
-                        unindented += "\n"
-                    unindented += f"\nDefault value: {wrapped_val(p.default)}"
-                elif isinstance(p, (param.Integer, param.Number)):
-                    if p.bounds is not None:
-                        lb = str(p.bounds[0]) if p.bounds[0] is not None else "-∞"
-                        ub = str(p.bounds[1]) if p.bounds[1] is not None else "∞"
-                        fs = "≤" if p.inclusive_bounds[0] else "<"
-                        fs = fs if lb != "-∞" else "<"
-                        ss = "≤" if p.inclusive_bounds[1] else "<"
-                        ss = ss if ub != "∞" else "<"
-                        unindented += f"\nIt must be: {lb} {fs} {name} {ss} {ub}"
-                    unindented += f"\nDefault value: {p.default}"
-            except Exception as err:
-                print(f"Error processing parameter '{name}':", err)
-
-            if (WARN_MISFORMATTED_DOCSTRINGS
-                and not unindented.startswith("\n")  and len(unindented.splitlines()) > 1):
-                param.main.warning("Multi-line docstring for %r is incorrectly formatted "
-                                   " (should start with newline)", name)
-            # Strip any starting newlines
-            while unindented.startswith("\n"):
-                unindented = unindented[1:]
-
-            lines = unindented.splitlines()
-            if len(lines) > 1:
-                tail = [f"{' '  * right_shift}{line}" for line in lines[1:]]
-                all_lines = [ heading.ljust(right_shift) + lines[0]] + tail
-            elif len(lines) == 1:
-                all_lines = [ heading.ljust(right_shift) + lines[0]]
-            else:
-                all_lines = []
-
-            if i % 2:  # Alternate red and blue for docstrings
-                contents.extend([red %el for el in all_lines])
-            else:
-                contents.extend([blue %el for el in all_lines])
-
-        return "\n".join(contents)
+        parameters_dict = _get_parameters_dict(displayed_params)
+        contents = _assemble_parameters_docstring(
+            parameters_dict, self.style)
+        return contents
 
     def get_param_info(self, obj, include_super=True):
         """
@@ -132,46 +97,221 @@ class MyParamPager(ParamPager):
         and the dictionary of parameter values. If include_super is
         True, parameters are also collected from the super classes.
         """
-
-        params = dict(obj.param.objects('existing'))
-        # do not show 'private' parameters
-        params = {k: v for k, v in params.items() if k[0] != "_"}
-        if hasattr(obj, "_exclude_params_from_doc"):
-            params = {
-                k: v for k, v in params.items()
-                if k not in obj._exclude_params_from_doc
-            }
-        # get the class' __init__ method's signature
-        init_signature = list(inspect.signature(obj.__init__).parameters.keys())
-        init_signature = [
-            p for p in init_signature if p not in ["self", "kwargs"]]
-        # sort parameters: first the ones shown in the signature, then
-        # alphabetically sort the remaining
-        params = dict(sorted(params.items()))
-        params_name = list(params.keys())
-        priority_params = []
-        for p in init_signature:
-            if p in params_name:
-                priority_params.append((p, params[p]))
-        secondary_params = [
-            (k,  v) for k, v in params.items() if k not in init_signature]
-        params = dict(priority_params + secondary_params)
-
-        if isinstance(obj,type):
-            changed = []
-            val_dict = {k:p.default for (k,p) in params.items()}
-            self_class = obj
-        else:
-            changed = list(obj.param.values(onlychanged=True).keys())
-            val_dict = obj.param.values()
-            self_class = obj.__class__
-
-        if not include_super:
-            params = {k:v for (k,v) in params.items()
-                      if k in self_class.__dict__}
-
-        params.pop('name') # Already displayed in the title.
+        params, val_dict, changed = _get_param_info_helper(obj, include_super)
         return (params, val_dict, changed)
+
+
+def _assemble_parameters_docstring(parameters: dict, style: str) -> str:
+    right_shift = max(len(name) for name in parameters) + 2
+    contents = []
+
+    for i, name in enumerate(parameters):
+        if style == "param":
+            heading = f"{name}: "
+        else:
+            heading = f"{name} : {parameters[name]["type"]}"
+
+        unindented = parameters[name]["doc"]
+
+        lines = unindented.splitlines()
+        if style == "param":
+            if len(lines) > 1:
+                tail = [f"{' '  * right_shift}{line}" for line in lines[1:]]
+                all_lines = [heading.ljust(right_shift) + lines[0]] + tail
+            elif len(lines) == 1:
+                all_lines = [heading.ljust(right_shift) + lines[0]]
+            else:
+                all_lines = []
+        else:
+            all_lines = [heading] + [
+                textwrap.indent(line, "    ") for line in lines]
+
+        if i % 2:  # Alternate red and blue for docstrings
+            contents.extend([red % el for el in all_lines])
+        else:
+            contents.extend([blue % el for el in all_lines])
+    return "\n".join(contents)
+
+def _get_parameters_from_object(obj) -> dict:
+    """
+    Returns
+    =======
+    A dictionary with the form {
+        "param_name_1": parameter_1,
+        "param_name_2": parameter_2,
+    }
+    where parameter_1, parameter_2 are parameters from the `param` module.
+    """
+    if (
+        (not isinstance(obj, param.Parameterized))
+        and (not issubclass(obj, param.Parameterized))
+    ):
+        return {}
+
+    params = dict(obj.param.objects('existing'))
+    # do not show 'private' parameters
+    params = {k: v for k, v in params.items() if k[0] != "_"}
+    if hasattr(obj, "_exclude_params_from_doc"):
+        params = {
+            k: v for k, v in params.items()
+            if k not in obj._exclude_params_from_doc
+        }
+    return params
+
+
+def _get_param_info_helper(obj, include_super=True):
+    """
+    Get the parameter dictionary, the list of modifed parameters
+    and the dictionary of parameter values. If include_super is
+    True, parameters are also collected from the super classes.
+    """
+
+    params = _get_parameters_from_object(obj)
+
+    # get the class' __init__ method's or __call__ method's signature
+    method = obj.__init__
+    if issubclass(obj, param.ParameterizedFunction):
+        method = obj.__call__
+    init_signature = list(inspect.signature(method).parameters.keys())
+    init_signature = [
+        p for p in init_signature if p not in ["self", "kwargs"]]
+
+    # sort parameters: first the ones shown in the signature, then
+    # alphabetically sort the remaining
+    params = _sort_parameters_by_signature(params, init_signature)
+
+    if isinstance(obj, type):
+        changed = []
+        val_dict = {k: p.default for (k, p) in params.items()}
+        self_class = obj
+    else:
+        changed = list(obj.param.values(onlychanged=True).keys())
+        val_dict = obj.param.values()
+        self_class = obj.__class__
+
+    if not include_super:
+        params = {k:v for (k,v) in params.items()
+                    if k in self_class.__dict__}
+
+    params.pop('name') # Already displayed in the title.
+    return (params, val_dict, changed)
+
+
+def _sort_parameters_by_signature(params: dict, signature: list) -> dict:
+    """
+    Given a dictionary of parameters where the keys represent their names,
+    sort this dictionary giving priority to the provided signature.
+    """
+    params_name = list(params.keys())
+    priority_params = []
+    for p in signature:
+        if p in params_name:
+            priority_params.append((p, params[p]))
+    # sort alphabetically the remaining parameters
+    secondary_params = [
+        (k,  v) for k, v in params.items() if k not in signature]
+    secondary_params = sorted(
+        secondary_params, key=lambda item: item[0])
+    return dict(priority_params + secondary_params)
+
+
+
+def _get_parameters_dict(displayed_params: list) -> dict:
+    """
+    Parameters
+    ==========
+    displayed_params : dict
+        A list with the form [
+            ("param_name_1", parameter_1),
+            ("param_name_2", parameter_2),
+        ]
+
+    Returns
+    =======
+    A dictionary with the form {
+        "param_name_1": {
+            "type": "something",
+            "doc": "docstring parameter 1"
+        },
+        "param_name_2": {
+            "type": "something",
+            "doc": "docstring parameter 2"
+        }
+    }
+    """
+    parameters = {}
+    for name, p in displayed_params:
+        if type(p) in _PARAM_TYPE_MAP:
+            type_ = _PARAM_TYPE_MAP[type(p)]
+        elif isinstance(p, param.Dict):
+            # this is necessary in order to catch _ParametersDict, defined
+            # in series/base.py, which is an instance of param.Dict. If this
+            # if statement was not present, it would go into the next one,
+            # causing errors.
+            type_ = "dict"
+        elif isinstance(p, param.ClassSelector):
+            classes = p.class_
+            if not hasattr(classes, "__iter__"):
+                classes = [classes]
+            type_ = ", ".join([str(t) for t in classes])
+        else:
+            type_ = ""
+
+        unindented = textwrap.dedent("< No docstring available >" if p.doc is None else p.doc)
+
+        try:
+            if isinstance(p, param.Selector):
+                unindented += "\nPossible options: "
+                wrapped_val = lambda t: f"'{t}'" if isinstance(t, str) else str(t)
+                z = lambda: zip(p.objects.keys(), p.objects.values())
+                if all((k == v) or (k == str(v)) for k, v in z()):
+                    unindented += f"{list(p.objects.values())}"
+                else:
+                    unindented += "\n"
+                    for k, v in z():
+                        unindented += f"\n* {wrapped_val(v)}: {k}"
+                    unindented += "\n"
+                unindented += f"\nDefault value: {wrapped_val(p.default)}"
+            elif isinstance(p, (param.Integer, param.Number)):
+                if p.bounds is not None:
+                    lb = str(p.bounds[0]) if p.bounds[0] is not None else "-∞"
+                    ub = str(p.bounds[1]) if p.bounds[1] is not None else "∞"
+                    fs = "≤" if p.inclusive_bounds[0] else "<"
+                    fs = fs if lb != "-∞" else "<"
+                    ss = "≤" if p.inclusive_bounds[1] else "<"
+                    ss = ss if ub != "∞" else "<"
+                    unindented += f"\nIt must be: {lb} {fs} {name} {ss} {ub}"
+                unindented += f"\nDefault value: {p.default}"
+        except Exception as err:
+            print(f"Error processing parameter '{name}':", err)
+
+        if (WARN_MISFORMATTED_DOCSTRINGS
+            and not unindented.startswith("\n")  and len(unindented.splitlines()) > 1):
+            param.main.warning("Multi-line docstring for %r is incorrectly formatted "
+                                " (should start with newline)", name)
+        # Strip any starting newlines
+        while unindented.startswith("\n"):
+            unindented = unindented[1:]
+
+        parameters[name] = {
+            "type": type_,
+            "doc": unindented
+        }
+
+    return parameters
+
+
+_PARAM_TYPE_MAP = {
+    param.String: "str",
+    param.Boolean: "bool",
+    param.Integer: "int",
+    param.Number: "float",
+    param.Tuple: "tuple",
+    param.List: "list",
+    param.Dict: "dict",
+    param.Callable: "callable",
+    param.Parameter: "",
+}
 
 
 def split_docstring(docstring):
@@ -248,6 +388,151 @@ def add_docstring_methods(docstring_sections, cls):
     return docstring_sections
 
 
+def extract_parameters_from_docstring(doc: str) -> dict:
+    """
+    Given a docstring section, for example the content of `Parameters`,
+    returns a dictionary mapping parameters name and type (if any) to its
+    docstring.
+
+    Parameters
+    ==========
+    doc : str
+        Multiline docstring section, for example the content of the
+        `Parameters` section.
+
+    Returns
+    =======
+    A dictionary with the form {
+        "param_name_1": {
+            "type": "something",
+            "doc": "docstring parameter 1"
+        },
+        "param_name_2": {
+            "type": "something",
+            "doc": "docstring parameter 2"
+        }
+    }
+    """
+    if not doc:
+        return {}
+
+    lines = doc.splitlines()
+    params = {}
+    current_key = None
+    key_types = None
+    current_desc = []
+
+    for line in lines:
+        # Match lines like: a : int, b :, c : bool, dict
+        match = re.match(r"^\s*(\w+\s*:\s*.*)", line)
+        if match:
+            if current_key:
+                params[current_key] = {
+                    "type": key_types,
+                    "doc": strip_indent(current_desc)
+                }
+            current_key = match.group(1).strip()
+            current_key, key_types = [t.strip() for t in current_key.split(":")]
+            current_desc = []
+        elif current_key:
+            current_desc.append(line)
+
+    if current_key:
+        params[current_key] = {
+            "type": key_types,
+            "doc": strip_indent(current_desc)
+        }
+
+    return params
+
+
+def strip_indent(lines):
+    """Remove common leading whitespace from all lines."""
+    return textwrap.dedent("\n".join(lines)).rstrip()
+
+
+def extract_params_from_cls(cls):
+    if not issubclass(cls, param.Parameterized):
+        return {}
+
+    # for
+
+
+def generate_doc_for_ordinary_functions(func_map, style="numpydoc"):
+    _validate_style(style)
+    try:
+        get_ipython()
+        # param_pager = MyParamPager(metaclass=True, style="numpydoc")
+
+        for func, objs in func_map.items():
+            original_docstring = func.__doc__
+
+            try:
+                # split the original docstring into sections
+                docstring_sections = split_docstring(original_docstring)
+                print("len(docstring_sections)", len(docstring_sections))
+
+                # rearrange the sections and add colors to the titles
+                numpydoc_sections_to_look_for = [
+                    "general", "Parameters", "Attributes", "Methods",
+                    "Returns", "Yields", "Raises", "Warns", "Warnings",
+                    "Examples", "Notes", "References", "See Also",
+                ]
+                final_docstring = ""
+                for title in numpydoc_sections_to_look_for:
+                    # print("title", title, docstring_sections[title])
+
+                    if title != "Parameters":
+                        if title in docstring_sections:
+                            if title == "general":
+                                final_docstring += f"\n{docstring_sections[title]}"
+                            else:
+                                header = f"\n\n{green % title}"
+                                header += green % f"\n{'=' * len(title)}\n"
+                                final_docstring += header + docstring_sections[title]
+                    else:
+                        params_dict_from_docstring = {}
+                        if "Parameters" in docstring_sections:
+                            params_dict_from_docstring = extract_parameters_from_docstring(
+                                docstring_sections["Parameters"])
+
+                        params = {}
+                        for obj in objs:
+                            current_params, _, _ = _get_param_info_helper(
+                                obj, include_super=True)
+                            params.update(current_params)
+
+                        displayed_params = list(params.items())
+                        params_dict_from_obj = _get_parameters_dict(
+                            displayed_params)
+
+                        dict_with_all_params = params_dict_from_obj.copy()
+                        dict_with_all_params.update(params_dict_from_docstring)
+
+                        signature = inspect.signature(func)
+                        signature = list(signature.parameters.keys())
+                        signature = [
+                            p for p in signature if p not in ["self", "kwargs"]]
+                        dict_with_all_params = _sort_parameters_by_signature(
+                            dict_with_all_params, signature)
+
+                        print("wtf")
+                        # print(dict_with_all_params)
+                        contents = _assemble_parameters_docstring(
+                            dict_with_all_params, style)
+
+                        header = f"\n\n{green % title}"
+                        header += green % f"\n{'=' * len(title)}\n"
+                        final_docstring += header + contents
+
+                func.__doc__ = final_docstring
+            except Exception as err:
+                print(f"{type(err).__name__}: {err}")
+
+    except:
+        pass
+
+
 def generate_doc(*classes):
     try:
         get_ipython()
@@ -266,8 +551,11 @@ def generate_doc(*classes):
                 original_docstring = "\n".join(current_docstring[:i])
                 # split the original docstring into sections
                 docstring_sections = split_docstring(original_docstring)
-                # add a section for the public methods
-                docstring_sections = add_docstring_methods(docstring_sections, cls)
+
+                if not issubclass(cls, param.ParameterizedFunction):
+                    # add a section for the public methods
+                    docstring_sections = add_docstring_methods(docstring_sections, cls)
+
                 # I would also like to include a signature of the __init__ method
                 init_signature = f"Init signature:\n{cls.__name__}{inspect.signature(cls.__init__)}"
                 init_signature = init_signature.replace("self, ", "")
@@ -278,6 +566,7 @@ def generate_doc(*classes):
                     "Examples", "Notes", "References", "See Also",
                 ]
                 final_docstring = ""
+                print("a")
                 for title in numpydoc_sections_to_look_for:
                     if title != "Parameters":
                         if title in docstring_sections:
@@ -290,7 +579,7 @@ def generate_doc(*classes):
                                 final_docstring += header + docstring_sections[title]
                     else:
                         final_docstring += f"\n{param_pager(cls)}"
-
+                print("b")
                 cls.__doc__ = final_docstring
                 # print(final_docstring)
             except Exception as err:

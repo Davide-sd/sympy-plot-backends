@@ -238,9 +238,6 @@ class BaseSeries(param.Parameterized):
 
     is_parametric = False
 
-    is_interactive = False
-    # An interactive series can update its data.
-
     is_vector = False
     is_2Dvector = False
     is_3Dvector = False
@@ -290,13 +287,12 @@ class BaseSeries(param.Parameterized):
     label = param.String("", doc="""
         Get or set the label associated to this series, which will be
         eventually shown on the legend or colorbar. By default the data series
-        stores two labels: one for the string represation of the symbolic
-        expression, the other for the latex representation. If this parameter
-        is left unset, the data series will automatically convert the symbolic
-        expression(s) to the appropriate representation. On the other hand,
-        if the user set this parameter, both labels will receive the same
-        value. To retrieve one or the other representation, call the
-        ``get_label`` method of the data series.""")
+        stores two labels: one for the string representation of the symbolic
+        expression, the other for the latex representation. The plotting
+        library will then decide which one is best to be shown. If the user
+        set this parameter, both labels will receive the same value.
+        To retrieve one or the other representation, call the ``get_label``
+        method of the data series.""")
     rendering_kw = param.Dict(doc="""
         Keyword arguments to be passed to the renderers of the selected
         plotting library in order to further customize the appearance of this
@@ -414,7 +410,7 @@ class BaseSeries(param.Parameterized):
 
     _label_str = param.String("", doc="""Contains str representation.""")
     _label_latex = param.String("", doc="""Contains latex representation.""")
-    is_interactive = param.Boolean(False, constant=True, doc="""
+    _is_interactive = param.Boolean(False, constant=True, doc="""
         Verify if this data series is interactive or not. Each data series
         expect one (or more) symbols to be specified as a discretization
         variable (ie, the ranges of the data series). However, the symbolic
@@ -441,10 +437,10 @@ class BaseSeries(param.Parameterized):
         data series, it returns one or more symbolic expressions (or numerical
         functions). This parameter is used by the evaluator in order to
         retrieve the expressions to be lambdified and evaluated.""")
-    ranges = param.List(default=[], doc="""
-        Return a list of 3-elements tuples, each one having the form
-        (symbol, min, max), representing the ranges of numerical values
-        used by each of the specified symbols.""")
+    # ranges = param.List(default=[], doc="""
+    #     Return a list of 3-elements tuples, each one having the form
+    #     (symbol, min, max), representing the ranges of numerical values
+    #     used by each of the specified symbols.""")
     # _exclude_params_from_doc = param.List(default=[], item_type=str, doc="""
     #     List of parameter names to be excluded from the documentation, either
     #     because they are meant to remain private, or because they are
@@ -541,9 +537,11 @@ class BaseSeries(param.Parameterized):
 
         super().__init__(*args, **kwargs)
 
+        self._ranges = []
+
         if len(_params) > 0:
             with param.edit_constant(self):
-                self.is_interactive = True
+                self._is_interactive = True
 
         # if docstring_signature:
         # self.__class_docstring()
@@ -659,6 +657,14 @@ class BaseSeries(param.Parameterized):
         flagslines = [self.is_2Dline, self.is_3Dline]
         return any(flagslines)
 
+    @property
+    def is_interactive(self):
+        return self._is_interactive
+
+    # @is_interactive.setter
+    # def is_interactive(self, value):
+    #     self._is_interactive = value
+
     def _line_surface_color(self, prop, val):
         """This method enables back-compatibility with old sympy.plotting"""
         # NOTE: color_func is set inside the init method of the series.
@@ -737,10 +743,20 @@ class BaseSeries(param.Parameterized):
             return self._get_wrapped_label(self._label_latex, wrapper)
         return self._label_latex
 
-    @param.depends("ranges", watch=True)
-    def _validate_ranges(self):
+    # @param.depends("ranges", watch=True)
+    @property
+    def ranges(self):
+        """
+        Return a list of 3-elements tuples, each one having the form
+        (symbol, min, max), representing the ranges of numerical values
+        used by each of the specified symbols.
+        """
+        return self._ranges
+
+    @ranges.setter
+    def ranges(self, values):
         new_vals = []
-        for v in self.ranges:
+        for v in values:
             if v is not None:
                 new_vals.append(tuple(map(sympify, v)))
 
@@ -748,8 +764,7 @@ class BaseSeries(param.Parameterized):
         fs = set().union(*[e.free_symbols for e in numbers_or_expressions])
         if len(fs) > 0:
             self._parametric_ranges = True
-        with param.discard_events(self):
-            self.ranges = new_vals
+        self._ranges = new_vals
 
     def _apply_transform(self, *args):
         """Apply transformations to the results of numerical evaluation.

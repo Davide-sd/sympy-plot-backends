@@ -4,6 +4,7 @@ from spb.doc_utils.ipython import (
     MyParamPager,
     get_public_methods,
     split_docstring,
+    _get_parameters_dict
 )
 
 
