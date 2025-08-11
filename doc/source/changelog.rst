@@ -2,6 +2,13 @@
  Changelog
 ==========
 
+v3.4.5
+======
+
+* Fixed bug with ``surface_spherical`` not setting the provided value for
+  ``rendering_kw``.
+
+
 v3.4.4
 ======
 
