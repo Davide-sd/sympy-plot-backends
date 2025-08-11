@@ -37,12 +37,12 @@ def test_line(default_range, rang, label, rkw, n, params):
     s = series[0]
     assert isinstance(s, LineOver1DRangeSeries)
     assert s.expr == cos(x)
-    assert s.ranges[0] == default_range(x) if not rang else r
-    assert s.get_label(False) == "cos(x)" if not label else label
-    assert s.rendering_kw == {} if not rkw else rkw
-    assert s.n[0] == 1000 if not n else n
+    assert s.ranges[0] == (default_range(x) if not rang else r)
+    assert s.get_label(False) == ("cos(x)" if not label else label)
+    assert s.rendering_kw == ({} if not rkw else rkw)
+    assert s.n[0] == (1000 if not n else n)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize("rang, label, rkw, n, params", [
@@ -69,12 +69,12 @@ def test_line_parametric_2d(default_range, rang, label, rkw, n, params):
     s = series[0]
     assert isinstance(s, Parametric2DLineSeries)
     assert s.expr == (cos(x), sin(x))
-    assert s.ranges[0] == default_range(x) if not rang else r
-    assert s.get_label(False) == "x" if not label else label
-    assert s.rendering_kw == {} if not rkw else rkw
-    assert s.n[0] == 1000 if not n else n
+    assert s.ranges[0] == (default_range(x) if not rang else r)
+    assert s.get_label(False) == ("x" if not label else label)
+    assert s.rendering_kw == ({} if not rkw else rkw)
+    assert s.n[0] == (1000 if not n else n)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize("rang, label, rkw, n, params", [
@@ -101,12 +101,12 @@ def test_line_polar(default_range, rang, label, rkw, n, params):
     s = series[0]
     assert isinstance(s, Parametric2DLineSeries)
     assert s.expr == (3*sin(2*x)*cos(x), 3*sin(x)*sin(2*x))
-    assert s.ranges[0] == default_range(x) if not rang else r
+    assert s.ranges[0] == (default_range(x) if not rang else r)
     assert s.get_label(False) == "(3*sin(2*x)*cos(x), 3*sin(x)*sin(2*x))" if not label else label
-    assert s.rendering_kw == {} if not rkw else rkw
-    assert s.n[0] == 1000 if not n else n
+    assert s.rendering_kw == ({} if not rkw else rkw)
+    assert s.n[0] == (1000 if not n else n)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
@@ -146,28 +146,28 @@ def test_implicit_2d(default_range, range1, range2, label, rkw, n,  color,
     assert len(series) == 1 + (1 if border_color else 0)
     assert all(isinstance(t, ImplicitSeries) for t in series)
     assert all(t.expr == expected_expr for t in series)
-    assert all(t.get_label(False) == str(expr) if not label else label for t in series)
+    assert all(t.get_label(False) == (str(expr) if not label else label) for t in series)
     s = series[0]
-    assert (s.ranges[0] == default_range(x) if not range1 else r1) or \
-        (s.ranges[0] == default_range(y) if not range1 else r1)
-    assert (s.ranges[1] == default_range(y) if not range2 else r2) or \
-        (s.ranges[1] == default_range(x) if not range2 else r2)
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert (s.ranges[0] == (default_range(x) if not range1 else r1)) or \
+        (s.ranges[0] == (default_range(y) if not range1 else r1))
+    assert (s.ranges[1] == (default_range(y) if not range2 else r2)) or \
+        (s.ranges[1] == (default_range(x) if not range2 else r2))
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.color == color
-    assert all(t == 100 if not n else n for t in s.n)
+    assert all(t == (100 if not n else n) for t in s.n[:2])
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
     if border_color:
         s = series[1]
-        assert (s.ranges[0] == default_range(x) if not range1 else r1) or \
-            (s.ranges[0] == default_range(y) if not range1 else r1)
-        assert (s.ranges[1] == default_range(y) if not range2 else r2) or \
-            (s.ranges[1] == default_range(x) if not range2 else r2)
+        assert (s.ranges[0] == (default_range(x) if not range1 else r1)) or \
+            (s.ranges[0] == (default_range(y) if not range1 else r1))
+        assert (s.ranges[1] == (default_range(y) if not range2 else r2)) or \
+            (s.ranges[1] == (default_range(x) if not range2 else r2))
         assert s.rendering_kw == {}
         assert s.color == border_color
-        assert all(t == 100 if not n else n for t in s.n)
+        assert all(t == (100 if not n else n) for t in s.n[:2])
         assert s.is_interactive == (len(s.params) > 0)
-        assert s.params == {} if not params else params
+        assert s.params == ({} if not params else params)
 
 
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
@@ -198,15 +198,15 @@ def test_contour(default_range, range1, range2, label, rkw, n, params):
     s = series[0]
     assert isinstance(s, ContourSeries)
     assert s.expr == cos(x*y)
-    assert (s.ranges[0] == default_range(x) if not range1 else r1) or \
-        (s.ranges[0] == default_range(y) if not range1 else r1)
-    assert (s.ranges[1] == default_range(y) if not range2 else r2) or \
-        (s.ranges[1] == default_range(x) if not range2 else r2)
-    assert s.get_label(False) == "cos(x*y)" if not label else label
-    assert s.rendering_kw == {} if not rkw else rkw
-    assert all(t == 100 if not n else n for t in s.n)
+    assert (s.ranges[0] == (default_range(x) if not range1 else r1)) or \
+        (s.ranges[0] == (default_range(y) if not range1 else r1))
+    assert (s.ranges[1] == (default_range(y) if not range2 else r2)) or \
+        (s.ranges[1] == (default_range(x) if not range2 else r2))
+    assert s.get_label(False) == ("cos(x*y)" if not label else label)
+    assert s.rendering_kw == ({} if not rkw else rkw)
+    assert all(t == (100 if not n else n) for t in s.n[:2])
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize("label, rkw", [
@@ -222,7 +222,7 @@ def test_list_2d(label, rkw):
     s = series[0]
     assert isinstance(s, List2DSeries)
     assert s.get_label(False) == label
-    assert s.rendering_kw == {} if not rkw else {"color": "r"}
+    assert s.rendering_kw == ({} if not rkw else {"color": "r"})
 
 
 @pytest.mark.parametrize("geom, label, rkw, fill, params", [
@@ -253,8 +253,8 @@ def test_geometry(geom, label, rkw, fill, params):
     else:
         assert isinstance(s, GeometrySeries)
         assert s.expr == geom
-        assert s.get_label(False) == str(geom) if not label else label
+        assert s.get_label(False) == (str(geom) if not label else label)
     assert s.is_filled == fill
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)

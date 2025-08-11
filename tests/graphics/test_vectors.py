@@ -61,11 +61,10 @@ def test_vector_field_2d(
         kwargs["stream_kw"] = quiver_kw
     if contour_kw:
         kwargs["contour_kw"] = contour_kw
-    print(e1, e2)
     series = vector_field_2d(
         e1, e2, range1=r1, range2=r2,
         scalar=scalar, streamlines=streamlines, **kwargs)
-    assert len(series) == 1 if not scalar else 2
+    assert len(series) == (1 if not scalar else 2)
     if len(series) == 1:
         vec_series = series[0]
     else:
@@ -89,9 +88,9 @@ def test_vector_field_2d(
         assert isinstance(con_series, ContourSeries)
         assert con_series.expr == sqrt(sum(t**2 for t in vec_series.expr))
         assert con_series.get_label(False) == "Magnitude"
-        assert con_series.rendering_kw == {} if not contour_kw else contour_kw
+        assert con_series.rendering_kw == ({} if not contour_kw else contour_kw)
         assert con_series.is_interactive == (len(vec_series.params) > 0)
-        assert con_series.params == {} if not params else params
+        assert con_series.params == ({} if not params else params)
 
 
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
@@ -122,7 +121,7 @@ def test_vector_field_3d(
     if quiver_kw:
         kwargs["quiver_kw"] = quiver_kw
     if stream_kw:
-        kwargs["stream_kw"] = quiver_kw
+        kwargs["stream_kw"] = stream_kw
     series = vector_field_3d(
         e1, e2, e3, range1=r1, range2=r2, range3=r3,
         streamlines=streamlines, **kwargs)
@@ -152,11 +151,11 @@ def test_vector_field_3d(
         assert series[0].ranges[1] == r2c
         assert series[0].ranges[2] == r3c
     if streamlines:
-        assert series[0].rendering_kw == {} if not stream_kw else stream_kw
+        assert series[0].rendering_kw == ({} if not stream_kw else stream_kw)
     else:
-        assert series[0].rendering_kw == {} if not quiver_kw else quiver_kw
+        assert series[0].rendering_kw == ({} if not quiver_kw else quiver_kw)
     assert series[0].is_interactive == (len(series[0].params) > 0)
-    assert series[0].params == {} if not params else params
+    assert series[0].params == ({} if not params else params)
 
 
 def test_vector_field_3d_sliced_series():
@@ -213,9 +212,9 @@ def test_arrow_2d(start, direc, label, rkw, sil, params):
     else:
         assert s.get_label(False) == (
             "(j, k) -> (j + 3, k + 4)" if not label else label)
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize(
@@ -245,6 +244,6 @@ def test_arrow_3d(start, direc, label, rkw, sil, params):
     else:
         assert s.get_label(False) == (
             "(j, k, l) -> (j + 4, k + 5, l + 6)" if not label else label)
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)

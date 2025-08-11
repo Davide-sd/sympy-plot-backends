@@ -71,7 +71,7 @@ tf_dt_scipy_2 = scipy.signal.TransferFunction(
 def test_control_axis(hor, ver, rkw):
     series = control_axis(hor, ver, rendering_kw=rkw)
     assert len(series) == hor + ver
-    assert all(s.rendering_kw == {} if not rkw else rkw for s in series)
+    assert all(s.rendering_kw == ({} if not rkw else rkw) for s in series)
     assert all(isinstance(s, HVLineSeries) for s in series)
     if len(series) == 2:
         assert series[0].is_horizontal is True
@@ -136,7 +136,7 @@ def test_pole_zero(tf, label, pkw, zkw, params, use_control):
     if zkw:
         assert series[1].rendering_kw.get("color", None) == zkw["color"]
     assert all(s.is_interactive == (len(s.params) > 0) for s in series)
-    assert all(s.params == {} if not params else params for s in series)
+    assert all(s.params == ({} if not params else params) for s in series)
 
 
 @pytest.mark.parametrize(
@@ -236,7 +236,7 @@ def test_step_response(tf, label, rkw, params):
     d1 = s1.get_data()
     assert s1.rendering_kw == {} if not rkw else rkw
     assert s1.is_interactive == (len(s1.params) > 0)
-    assert s1.params == {} if not params else params
+    assert s1.params == ({} if not params else params)
 
     # evaluate with control
     series = step_response(tf, label=label, rendering_kw=rkw,
@@ -247,7 +247,7 @@ def test_step_response(tf, label, rkw, params):
     d2 = s2.get_data()
     assert s2.rendering_kw == {} if not rkw else rkw
     assert s2.is_interactive == (len(s2.params) > 0)
-    assert s2.params == {} if not params else params
+    assert s2.params == ({} if not params else params)
 
     assert np.allclose(d1, d2)
 
@@ -305,7 +305,7 @@ def test_impulse_response(tf, label, rkw, params):
     d1 = s1.get_data()
     assert s1.rendering_kw == {} if not rkw else rkw
     assert s1.is_interactive == (len(s1.params) > 0)
-    assert s1.params == {} if not params else params
+    assert s1.params == ({} if not params else params)
 
     # evaluate with control
     series = impulse_response(tf, label=label, rendering_kw=rkw,
@@ -316,7 +316,7 @@ def test_impulse_response(tf, label, rkw, params):
     d2 = s2.get_data()
     assert s2.rendering_kw == {} if not rkw else rkw
     assert s2.is_interactive == (len(s2.params) > 0)
-    assert s2.params == {} if not params else params
+    assert s2.params == ({} if not params else params)
 
     assert np.allclose(d1, d2)
 
@@ -350,9 +350,9 @@ def test_ramp_response(tf, label, rkw, params):
     s1 = series[0]
     assert isinstance(s1, LineOver1DRangeSeries)
     d1 = s1.get_data()
-    assert s1.rendering_kw == {} if not rkw else rkw
+    assert s1.rendering_kw == ({} if not rkw else rkw)
     assert s1.is_interactive == (len(s1.params) > 0)
-    assert s1.params == {} if not params else params
+    assert s1.params == ({} if not params else params)
 
     # evaluate with control
     series = ramp_response(tf, label=label, rendering_kw=rkw,
@@ -361,9 +361,9 @@ def test_ramp_response(tf, label, rkw, params):
     s2 = series[0]
     assert isinstance(s2, SystemResponseSeries)
     d2 = s2.get_data()
-    assert s2.rendering_kw == {} if not rkw else rkw
+    assert s2.rendering_kw == ({} if not rkw else rkw)
     assert s2.is_interactive == (len(s2.params) > 0)
-    assert s2.params == {} if not params else params
+    assert s2.params == ({} if not params else params)
 
     assert np.allclose(d1, d2)
 
@@ -407,9 +407,9 @@ def test_bode_magnitude(tf, label, rkw, params):
     s = series[0]
     assert isinstance(s, LineOver1DRangeSeries)
     s.get_data()
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize(
@@ -501,9 +501,9 @@ def test_bode_phase(tf, label, rkw, params):
     s = series[0]
     assert isinstance(s, LineOver1DRangeSeries)
     s.get_data()
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize(
@@ -587,9 +587,9 @@ def test_nyquist(tf, label, rkw, params, mcircles):
     else:
         assert isinstance(s, MCirclesSeries)
     s.get_data()
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize(
@@ -597,7 +597,7 @@ def test_nyquist(tf, label, rkw, params, mcircles):
 )
 def test_nyquist_mimo(mcircles):
     series = nyquist(tf_mimo_sympy, m_circles=mcircles)
-    assert len(series) == 6 if not mcircles else 7
+    assert len(series) == (6 if not mcircles else 7)
     if not mcircles:
         assert all(isinstance(s, NyquistLineSeries) for s in series)
     else:
@@ -633,9 +633,9 @@ def test_nichols(tf, label, rkw, params):
     assert isinstance(series[1], NicholsLineSeries)
     s = series[1]
     s.get_data()
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize(

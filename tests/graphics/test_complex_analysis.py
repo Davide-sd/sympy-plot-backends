@@ -22,19 +22,21 @@ p1 = symbols("p1")
     (None, None, True, None),
     ("test", {"color": "r"}, True, {p1: (1, 0, 2)}),
 ])
-def test_complex_points(label, rkw, scatter, params):
+def test_complex_points_1(label, rkw, scatter, params):
+    params={} if not params else params
     series = complex_points(
-        3 + 2 * I, 4 * I, 2,
-        scatter=scatter, rendering_kw=rkw, label=label
+        3 + 2 * I, 4 * I, 2, p1 if params else 0,
+        scatter=scatter, rendering_kw=rkw, label=label,
+        params=params
     )
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, ComplexPointSeries)
     assert s.get_label(False) == label
     assert s.is_point is scatter
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == params
 
 
 @pytest.mark.parametrize("label, rkw, scatter, params", [
@@ -43,21 +45,23 @@ def test_complex_points(label, rkw, scatter, params):
     ("test", {"color": "r"}, True, {p1: (1, 0, 2)}),
 ])
 def test_complex_points_2(label, rkw, scatter, params):
+    params={} if not params else params
     z = symbols("z")
     expr1 = z * exp(2 * pi * I * z)
     expr2 = 2 * expr1
     n = 15
     l1 = [expr1.subs(z, t / n) for t in range(n)]
     l2 = [expr2.subs(z, t / n) for t in range(n)]
-    series = complex_points(l1, label=label, scatter=scatter, rendering_kw=rkw)
+    series = complex_points(
+        l1, label=label, scatter=scatter, rendering_kw=rkw, params=params)
     s = series[0]
     assert len(series) == 1
     assert isinstance(s, ComplexPointSeries)
     assert s.get_label(False) == label
     assert s.is_point is scatter
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == params
     raises(TypeError, lambda: complex_points(l1, l2))
 
 
@@ -82,11 +86,11 @@ def test_line_abs_arg_colored(default_range, rang, label, rkw, params):
     s = series[0]
     assert isinstance(s, AbsArgLineSeries)
     assert s.expr == expr
-    assert s.ranges[0] == default_range(x) if not rang else r
-    assert s.get_label(False) == "Arg" if not label else label
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.ranges[0] == (default_range(x) if not rang else r)
+    assert s.get_label(False) == ("Arg" if not label else "Arg(%s)" % label)
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize("rang, label, rkw, abs, arg, params", [
@@ -117,19 +121,19 @@ def test_line_abs_arg(default_range, rang, label, rkw, abs, arg, params):
     for s in series:
         assert isinstance(s, LineOver1DRangeSeries)
         assert s.expr == expr
-        assert s.ranges[0] == default_range(x) if not rang else r
-        assert s.rendering_kw == {} if not rkw else rkw
+        assert s.ranges[0] == (default_range(x) if not rang else r)
+        assert s.rendering_kw == ({} if not rkw else rkw)
         assert s.is_interactive == (len(s.params) > 0)
-        assert s.params == {} if not params else params
+        assert s.params == ({} if not params else params)
         assert not np.allclose(ref.get_data(), s.get_data())
 
     if abs and arg:
-        assert series[0].get_label(False) == "Abs" if not label else label
-        assert series[1].get_label(False) == "Arg" if not label else label
+        assert series[0].get_label(False) == ("Abs" if not label else "Abs(%s)" % label)
+        assert series[1].get_label(False) == ("Arg" if not label else "Arg(%s)" % label)
     elif abs:
-        assert series[0].get_label(False) == "Abs" if not label else label
+        assert series[0].get_label(False) == ("Abs" if not label else "Abs(%s)" % label)
     elif arg:
-        assert series[0].get_label(False) == "Arg" if not label else label
+        assert series[0].get_label(False) == ("Arg" if not label else "Arg(%s)" % label)
 
 
 @pytest.mark.parametrize("rang, label, rkw, real, imag, params", [
@@ -160,19 +164,19 @@ def test_line_real_imag(default_range, rang, label, rkw, real, imag, params):
     for s in series:
         assert isinstance(s, LineOver1DRangeSeries)
         assert s.expr == expr
-        assert s.ranges[0] == default_range(x) if not rang else r
-        assert s.rendering_kw == {} if not rkw else rkw
+        assert s.ranges[0] == (default_range(x) if not rang else r)
+        assert s.rendering_kw == ({} if not rkw else rkw)
         assert s.is_interactive == (len(s.params) > 0)
-        assert s.params == {} if not params else params
+        assert s.params == ({} if not params else params)
         assert not np.allclose(ref.get_data(), s.get_data())
 
     if real and imag:
-        assert series[0].get_label(False) == "Re" if not label else label
-        assert series[1].get_label(False) == "Im" if not label else label
+        assert series[0].get_label(False) == ("Re" if not label else "Re(%s)" % label)
+        assert series[1].get_label(False) == ("Im" if not label else "Im(%s)" % label)
     elif real:
-        assert series[0].get_label(False) == "Re" if not label else label
+        assert series[0].get_label(False) == ("Re" if not label else "Re(%s)" % label)
     elif imag:
-        assert series[0].get_label(False) == "Im" if not label else label
+        assert series[0].get_label(False) == ("Im" if not label else "Im(%s)" % label)
 
 
 @pytest.mark.parametrize("rang, label, rkw, abs, arg, params, wf, wf_n1, wf_n2", [
@@ -207,23 +211,23 @@ def test_surface_abs_arg(
         assert s.expr == expr
         dcr = default_complex_range(x)
         assert s.ranges[0][0] == x
-        assert s.ranges[0][1] == sympify(dcr[1]) if not rang else r[1]
-        assert s.ranges[0][2] == sympify(dcr[2]) if not rang else r[2]
-        assert s.rendering_kw == {} if not rkw else rkw
+        assert s.ranges[0][1] == (sympify(dcr[1]) if not rang else sympify(r[1]))
+        assert s.ranges[0][2] == (sympify(dcr[2]) if not rang else sympify(r[2]))
+        assert s.rendering_kw == ({} if not rkw else rkw)
         assert s.is_interactive == (len(s.params) > 0)
-        assert s.params == {} if not params else params
+        assert s.params == ({} if not params else params)
 
     if abs and arg:
         lbl = surface_series[0].get_label(False)
-        assert lbl == "Abs" if not label else label
+        assert lbl == ("Abs" if not label else "Abs(%s)" % label)
         lbl = surface_series[1].get_label(False)
-        assert lbl == "Arg" if not label else label
+        assert lbl == ("Arg" if not label else "Arg(%s)" % label)
     elif abs:
         lbl = surface_series[0].get_label(False)
-        assert lbl == "Abs" if not label else label
+        assert lbl == ("Abs" if not label else "Abs(%s)" % label)
     elif arg:
         lbl = surface_series[0].get_label(False)
-        assert lbl == "Arg" if not label else label
+        assert lbl == ("Arg" if not label else "Arg(%s)" % label)
 
     wf_series = [s for s in series if isinstance(s, ComplexParametric3DLineSeries)]
     assert len(wf_series) == sum([abs, arg]) * ((wf_n1 + wf_n2) if wf else 0)
@@ -263,23 +267,23 @@ def test_surface_real_imag(
         assert s.expr == expr
         dcr = default_complex_range(x)
         assert s.ranges[0][0] == x
-        assert s.ranges[0][1] == sympify(dcr[1]) if not rang else r[1]
-        assert s.ranges[0][2] == sympify(dcr[2]) if not rang else r[2]
-        assert s.rendering_kw == {} if not rkw else rkw
+        assert s.ranges[0][1] == (sympify(dcr[1]) if not rang else sympify(r[1]))
+        assert s.ranges[0][2] == (sympify(dcr[2]) if not rang else sympify(r[2]))
+        assert s.rendering_kw == ({} if not rkw else rkw)
         assert s.is_interactive == (len(s.params) > 0)
-        assert s.params == {} if not params else params
+        assert s.params == ({} if not params else params)
 
     if real and imag:
         lbl = surface_series[0].get_label(False)
-        assert lbl == "Re" if not label else label
+        assert lbl == ("Re" if not label else "Re(%s)" % label)
         lbl = surface_series[1].get_label(False)
-        assert lbl == "Im" if not label else label
+        assert lbl == ("Im" if not label else "Im(%s)" % label)
     elif real:
         lbl = surface_series[0].get_label(False)
-        assert lbl == "Re" if not label else label
+        assert lbl == ("Re" if not label else "Re(%s)" % label)
     elif imag:
         lbl = surface_series[0].get_label(False)
-        assert lbl == "Im" if not label else label
+        assert lbl == ("Im" if not label else "Im(%s)" % label)
 
     wf_series = [
         s for s in series
@@ -310,11 +314,11 @@ def test_domain_coloring(default_complex_range, rang, coloring, params):
     assert s.expr == expr
     dcr = default_complex_range(x)
     assert s.ranges[0][0] == x
-    assert s.ranges[0][1] == sympify(dcr[1]) if not rang else r[1]
-    assert s.ranges[0][2] == sympify(dcr[2]) if not rang else r[2]
+    assert s.ranges[0][1] == (sympify(dcr[1]) if not rang else sympify(r[1]))
+    assert s.ranges[0][2] == (sympify(dcr[2]) if not rang else sympify(r[2]))
     assert s.coloring == coloring
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize("rang, coloring, params", [
@@ -339,11 +343,11 @@ def test_analytic_landscape(default_complex_range, rang, coloring, params):
     assert s.expr == expr
     dcr = default_complex_range(x)
     assert s.ranges[0][0] == x
-    assert s.ranges[0][1] == sympify(dcr[1]) if not rang else r[1]
-    assert s.ranges[0][2] == sympify(dcr[2]) if not rang else r[2]
+    assert s.ranges[0][1] == (sympify(dcr[1]) if not rang else sympify(r[1]))
+    assert s.ranges[0][2] == (sympify(dcr[2]) if not rang else sympify(r[2]))
     assert s.coloring == coloring
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize("rang, coloring, at_infinity, riemann_mask, params", [
@@ -377,13 +381,13 @@ def test_riemann_sphere_2d(rang, coloring, at_infinity, riemann_mask, params):
         assert s.expr == expr
     dcr = (x, -1.25 - 1.25 * I, 1.25 + 1.25 * I)
     assert s.ranges[0][0] == x
-    assert s.ranges[0][1] == sympify(dcr[1]) if not rang else r[1]
-    assert s.ranges[0][2] == sympify(dcr[2]) if not rang else r[2]
+    assert s.ranges[0][1] == (sympify(dcr[1]) if not rang else sympify(r[1]))
+    assert s.ranges[0][2] == (sympify(dcr[2]) if not rang else sympify(r[2]))
     assert s.coloring == coloring
     assert s.at_infinity == at_infinity
     assert s.riemann_mask == riemann_mask
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
     if riemann_mask:
         assert isinstance(series[1], Parametric2DLineSeries)
         a = Dummy()
