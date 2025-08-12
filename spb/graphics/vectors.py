@@ -57,7 +57,8 @@ def vector_field_2d(
     expr1, expr2=None, range1=None, range2=None, label=None,
     quiver_kw=None, stream_kw=None, contour_kw=None, **kwargs
 ):
-    """Plot a 2D vector field.
+    """
+    Plot a 2D vector field.
 
     Parameters
     ==========
@@ -94,6 +95,10 @@ def vector_field_2d(
         A dictionary of keywords/values which is passed to the backend
         contour function to customize the appearance. Refer to the plotting
         library (backend) manual for more informations.
+    modules :
+        Specify the evaluation modules to be used by lambdify.
+        If not specified, the evaluation will be done with NumPy/SciPy.
+        Default to None.
     n, n1, n2 : int, optional
         Number of discretization points for the quivers or streamlines in the
         x/y-direction, respectively. Default to 25. ``n`` is a shortcut to
@@ -102,18 +107,88 @@ def vector_field_2d(
         Number of discretization points for the scalar contour plot.
         Default to 100.
     normalize : bool, optional
-        Default to False. If True, the vector field will be normalized,
-        resulting in quivers having the same length. If ``use_cm=True``, the
-        backend will color the quivers by the (pre-normalized) vector field's
-        magnitude. Note: only quivers will be affected by this option.
+        If True, the vector field will be normalized, resulting in quivers
+        having the same length. If ``use_cm=True``, the backend will color
+        the quivers by the (pre-normalized) vector field's magnitude.
+        Note: only quivers will be affected by this option.
+        Default to False.
     params : dict, optional
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
+        A dictionary mapping symbols to parameters. If provided, this
+        dictionary enables the interactive-widgets plot, which doesn't support
+        the adaptive algorithm (meaning it will use ``adaptive=False``).
+
+        When calling a plotting function, the parameter can be specified with:
+
+        * a widget from the ``ipywidgets`` module.
+        * a widget from the ``panel`` module.
+        * a tuple of the form:
+           `(default, min, max, N, tick_format, label, spacing)`,
+           which will instantiate a
+           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
+           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
+           depending on the spacing strategy. In particular:
+
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
+           - N : int, optional
+                Number of steps of the slider.
+           - tick_format : str or None, optional
+                Provide a formatter for the tick value of the slider.
+                Default to ``".2f"``.
+           - label: str, optional
+                Custom text associated to the slider.
+           - spacing : str, optional
+                Specify the discretization spacing. Default to ``"linear"``,
+                can be changed to ``"log"``.
+
+        Notes:
+
+        1. parameters cannot be linked together (ie, one parameter
+           cannot depend on another one).
+        2. If a widget returns multiple numerical values (like
+           :py:class:`panel.widgets.slider.RangeSlider` or
+           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
+           then a corresponding number of symbols must be provided.
+
+        Here follows a couple of examples. If ``imodule="panel"``:
+
+        .. code-block:: python
+
+            import panel as pn
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
+                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
+            }
+
+        Or with ``imodule="ipywidgets"``:
+
+        .. code-block:: python
+
+            import ipywidgets as w
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
+                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
+            }
+
+        When instantiating a data series directly, ``params`` must be a
+        dictionary mapping symbols to numerical values.
+
+        Let ``series`` be any data series. Then ``series.params`` returns a
+        dictionary mapping symbols to numerical values.
     quiver_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend quivers-
-        plotting function to customize the appearance. Refer to the plotting
-        library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the quivers.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
+        * Plotly:
+          https://plotly.com/python/quiver-plots/
     scalar : boolean, Expr, None or list/tuple of 2 elements, optional
         Represents the scalar field to be plotted in the background of a 2D
         vector field plot. It can be:
@@ -136,9 +211,27 @@ def vector_field_2d(
         Whether to plot the vector field using streamlines (True) or quivers
         (False). Default to False.
     stream_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend
-        streamlines-plotting function to customize the appearance. Refer to
-        the Notes section to learn more.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the streamlines.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+        * Plotly:
+          https://plotly.com/python/streamline-plots/
+    tx, ty : callable, optional
+        Numerical transformation function to be applied to the results
+        of the numerical evaluation. In particular:
+
+        * ``tx`` modifies the x-coordinates.
+        * ``ty`` modifies the y-coordinates.
+
+        Default to None.
+    xscale, yscale : str, optional
+        Discretization strategies for the different ranges.
+        Possible options: ['linear', 'log']
+        Default value: 'linear'
+
 
     Returns
     =======
@@ -369,13 +462,15 @@ def vector_field_3d(
     expr1, expr2=None, expr3=None, range1=None, range2=None,
     range3=None, label=None, quiver_kw=None, stream_kw=None, **kwargs
 ):
-    """Plot a 3D vector field.
+    """
+    Plot a 3D vector field.
 
     Parameters
     ==========
 
     expr1, expr2, expr3 : Vector, Expr or callable
-        The components of the vector field. It can be a:
+        The components of the vector field along three mutually perpendicular
+        directions. It can be a:
 
         * A vector from the `sympy.vector` module or from the
           `sympy.physics.mechanics` module. In this case, only ``expr1``
@@ -400,27 +495,97 @@ def vector_field_3d(
           ``expr1/expr2/expr3``. This only works for quivers plot.
         * None: the default value, which will map colors according to the
           magnitude of the vector.
-    contour_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend
-        contour function to customize the appearance. Refer to the plotting
-        library (backend) manual for more informations.
-    n, n1, n2 : int, optional
+    modules :
+        Specify the evaluation modules to be used by lambdify.
+        If not specified, the evaluation will be done with NumPy/SciPy.
+        Default to None.
+    n, n1, n2, n3 : int, optional
         Number of discretization points for the quivers or streamlines in the
-        x/y/z-direction, respectively. Default to 25. ``n`` is a shortcut to
-        set the same number of discretization points on all directions.
+        x/y-direction, respectively. Default to 25. ``n`` is a shortcut to
+        set the same number of discretization points on both directions.
     normalize : bool, optional
-        Default to False. If True, the vector field will be normalized,
-        resulting in quivers having the same length. If ``use_cm=True``, the
-        backend will color the quivers by the (pre-normalized) vector field's
-        magnitude. Note: only quivers will be affected by this option.
+        If True, the vector field will be normalized, resulting in quivers
+        having the same length. If ``use_cm=True``, the backend will color
+        the quivers by the (pre-normalized) vector field's magnitude.
+        Note: only quivers will be affected by this option.
+        Default to False.
     params : dict, optional
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
+        A dictionary mapping symbols to parameters. If provided, this
+        dictionary enables the interactive-widgets plot, which doesn't support
+        the adaptive algorithm (meaning it will use ``adaptive=False``).
+
+        When calling a plotting function, the parameter can be specified with:
+
+        * a widget from the ``ipywidgets`` module.
+        * a widget from the ``panel`` module.
+        * a tuple of the form:
+           `(default, min, max, N, tick_format, label, spacing)`,
+           which will instantiate a
+           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
+           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
+           depending on the spacing strategy. In particular:
+
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
+           - N : int, optional
+                Number of steps of the slider.
+           - tick_format : str or None, optional
+                Provide a formatter for the tick value of the slider.
+                Default to ``".2f"``.
+           - label: str, optional
+                Custom text associated to the slider.
+           - spacing : str, optional
+                Specify the discretization spacing. Default to ``"linear"``,
+                can be changed to ``"log"``.
+
+        Notes:
+
+        1. parameters cannot be linked together (ie, one parameter
+           cannot depend on another one).
+        2. If a widget returns multiple numerical values (like
+           :py:class:`panel.widgets.slider.RangeSlider` or
+           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
+           then a corresponding number of symbols must be provided.
+
+        Here follows a couple of examples. If ``imodule="panel"``:
+
+        .. code-block:: python
+
+            import panel as pn
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
+                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
+            }
+
+        Or with ``imodule="ipywidgets"``:
+
+        .. code-block:: python
+
+            import ipywidgets as w
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
+                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
+            }
+
+        When instantiating a data series directly, ``params`` must be a
+        dictionary mapping symbols to numerical values.
+
+        Let ``series`` be any data series. Then ``series.params`` returns a
+        dictionary mapping symbols to numerical values.
     quiver_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend quivers-
-        plotting function to customize the appearance. Refer to the plotting
-        library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the quivers.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
+        * Plotly:
+          https://plotly.com/python/cone-plot/
     slice : Plane, list, Expr, optional
         Plot the 3D vector field over the provided slice. It can be:
 
@@ -438,6 +603,10 @@ def vector_field_3d(
         - `n3` will only be used with planes parallel to xz or yz.
         - `n1`, `n2`, `n3` doesn't affect the slice if it is an instance of
           ``SurfaceOver2DRangeSeries`` or ``ParametricSurfaceSeries``.
+    show_in_legend : bool
+        If True, add a legend entry for the vector being plotted.
+        This option is useful to hide a particular expression when combining
+        together multiple plots, and when ``use_cm=False``. Default to True.
     streamlines : boolean, optional
         Whether to plot the vector field using streamlines (True) or quivers
         (False). Default to False.
@@ -460,6 +629,28 @@ def vector_field_3d(
 
         If 3D streamlines appears to be cut short inside the specified domain,
         try to increase ``max_prop`` (default value to 5000).
+
+        To further customize the appearance, here are some useful links for
+        the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+        * Plotly:
+          https://plotly.com/python/streamtube-plot/
+        * K3D-Jupyter: refers to k3d.line documentation.
+    tx, ty, tz : callable, optional
+        Numerical transformation function to be applied to the results
+        of the numerical evaluation. In particular:
+
+        * ``tx`` modifies the x-coordinates.
+        * ``ty`` modifies the y-coordinates.
+        * ``tz`` modifies the z-coordinates.
+
+        Default to None.
+    xscale, yscale, zscale : str, optional
+        Discretization strategies for the different ranges.
+        Possible options: ['linear', 'log']
+        Default value: 'linear'
 
     Returns
     =======
@@ -678,25 +869,32 @@ def arrow_2d(
     start, direction, label=None, rendering_kw=None, show_in_legend=True,
     **kwargs
 ):
-    """Draw an arrow in a 2D space.
+    """
+    Draw an arrow in a 2D space.
 
     Parameters
     ==========
-    start : (x, y)
-        Coordinates of the start position.
-    direction : (u, v)
-        Componenents of the direction vector.
+    start : tuple
+        Coordinates of the start position, (x, y).
+    direction : tuple
+        Componenents of the direction vector, (u, v).
     label : str, optional
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the arrows.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrowPatch.html
+        * Plotly:
+          https://plotly.com/python/reference/layout/annotations/
+        * Bokeh:
+          https://docs.bokeh.org/en/latest/docs/reference/models/annotations.html#bokeh.models.Arrow
     show_in_legend : bool
-        If True, add a legend entry for the expression being plotted.
-        This option is useful to hide a particular expression when combining
-        together multiple plots. Default to True.
+        Toggle the visibility of the data series on the legend.
+        Default to True.
 
     Returns
     =======
@@ -768,7 +966,8 @@ def arrow_3d(
     start, direction, label=None, rendering_kw=None, show_in_legend=True,
     **kwargs
 ):
-    """Draw an arrow in a 2D space.
+    """
+    Draw an arrow in a 2D space.
 
     Parameters
     ==========
@@ -780,13 +979,17 @@ def arrow_3d(
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the arrows.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrowPatch.html
+        * K3D-Jupyter:
+          Look at the documentation of k3d.vectors.
     show_in_legend : bool
-        If True, add a legend entry for the expression being plotted.
-        This option is useful to hide a particular expression when combining
-        together multiple plots. Default to True.
+        Toggle the visibility of the data series on the legend.
+        Default to True.
 
     Returns
     =======

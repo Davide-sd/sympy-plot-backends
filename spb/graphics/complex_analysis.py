@@ -17,7 +17,8 @@ from sympy import I, cos, sin, symbols, pi, re, im, Dummy, Expr
 def complex_points(
     *numbers, label="", rendering_kw=None, scatter=True, **kwargs
 ):
-    """Plot complex points.
+    """
+    Plot complex points.
 
     Parameters
     ==========
@@ -31,13 +32,103 @@ def complex_points(
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of lines. Refer to the
         plotting library (backend) manual for more informations.
+    color_func : callable, optional
+        A color function to be applied to the numerical data. It can be:
+
+        * None: no color function.
+        * callable: a function accepting two arguments (the real and imaginary
+          parts of the complex coordinates) and returning numerical data.
     scatter : boolean, optional
         Default to True, which renders a scatter plot. If False, a line will
         connect all the points.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
+    fill : boolean, optional
+        Whether scatter's markers are filled or void.
+        Default to True.
+    params : dict, optional
+        A dictionary mapping symbols to parameters. If provided, this
+        dictionary enables the interactive-widgets plot, which doesn't support
+        the adaptive algorithm (meaning it will use ``adaptive=False``).
+
+        When calling a plotting function, the parameter can be specified with:
+
+        * a widget from the ``ipywidgets`` module.
+        * a widget from the ``panel`` module.
+        * a tuple of the form:
+           `(default, min, max, N, tick_format, label, spacing)`,
+           which will instantiate a
+           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
+           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
+           depending on the spacing strategy. In particular:
+
+           - default, min, max : float
+                Default value, minimum value and maximum value of the slider,
+                respectively. Must be finite numbers. The order of these 3
+                numbers is not important: the module will figure it out
+                which is what.
+           - N : int, optional
+                Number of steps of the slider.
+           - tick_format : str or None, optional
+                Provide a formatter for the tick value of the slider.
+                Default to ``".2f"``.
+           - label: str, optional
+                Custom text associated to the slider.
+           - spacing : str, optional
+                Specify the discretization spacing. Default to ``"linear"``,
+                can be changed to ``"log"``.
+
+        Notes:
+
+        1. parameters cannot be linked together (ie, one parameter
+           cannot depend on another one).
+        2. If a widget returns multiple numerical values (like
+           :py:class:`panel.widgets.slider.RangeSlider` or
+           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
+           then a corresponding number of symbols must be provided.
+
+        Here follows a couple of examples. If ``imodule="panel"``:
+
+        .. code-block:: python
+
+            import panel as pn
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
+                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
+            }
+
+        Or with ``imodule="ipywidgets"``:
+
+        .. code-block:: python
+
+            import ipywidgets as w
+            params = {
+                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
+                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
+                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
+            }
+
+        When instantiating a data series directly, ``params`` must be a
+        dictionary mapping symbols to numerical values.
+
+        Let ``series`` be any data series. Then ``series.params`` returns a
+        dictionary mapping symbols to numerical values.
+    show_in_legend : bool, optional
+        Toggle the visibility of the data series on the legend.
+        Default to True.
+    tx, ty : callable, optional
+        Numerical transformation function to be applied to the results
+        of the numerical evaluation. In particular:
+
+        * ``tx`` modifies the x-coordinates (real part).
+        * ``ty`` modifies the y-coordinates (imaginary part).
+
+        Default to None.
+    use_cm : boolean, optional
+        Toggle the use of a colormap. It only works if ``color_func`` is not
+        None. Setting this attribute to False will inform the associated
+        renderer to use solid color.
+        Default to False. Related parameters: ``color_func, colorbar``.
+
 
     Returns
     =======
@@ -143,7 +234,8 @@ _pre_wrappers = {
 def line_abs_arg_colored(
     expr, range=None, label=None, rendering_kw=None, **kwargs
 ):
-    """Plot the absolute value of a complex function f(x) colored by its
+    """
+    Plot the absolute value of a complex function f(x) colored by its
     argument, with x in Reals.
 
     Parameters
@@ -159,9 +251,28 @@ def line_abs_arg_colored(
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     **kwargs :
         Keyword arguments are the same as
         :func:`~spb.graphics.functions_2d.line`.
@@ -260,7 +371,8 @@ def line_abs_arg(
     expr, range=None, label=None, rendering_kw=None,
     abs=True, arg=True, **kwargs
 ):
-    """Plot the absolute value and/or the argument of a complex function
+    """
+    Plot the absolute value and/or the argument of a complex function
     f(x) with x in Reals.
 
     Parameters
@@ -276,9 +388,28 @@ def line_abs_arg(
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     abs : boolean, optional
         Show/hide the absolute value. Default to True (visible).
     arg : boolean, optional
@@ -364,7 +495,8 @@ def line_real_imag(
     expr, range=None, label=None, rendering_kw=None,
     real=True, imag=True, **kwargs
 ):
-    """Plot the real and imaginary part of a complex function
+    """
+    Plot the real and imaginary part of a complex function
     f(x) with x in Reals.
 
     Parameters
@@ -380,9 +512,28 @@ def line_real_imag(
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     real : boolean, optional
         Show/hide the real part. Default to True (visible).
     imag : boolean, optional
@@ -570,7 +721,8 @@ def surface_abs_arg(
     expr, range=None, label=None, rendering_kw=None,
     abs=True, arg=True, **kwargs
 ):
-    """Plot the absolute value and/or the argument of a complex function
+    """
+    Plot the absolute value and/or the argument of a complex function
     f(x) with x in Complex.
 
     Parameters
@@ -586,9 +738,15 @@ def surface_abs_arg(
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the surface.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
+        * Plotly:
+          https://plotly.com/python/3d-surface-plots/
+        * K3D-Jupyter: look at the documentation of k3d.mesh.
     abs : boolean, optional
         Show/hide the absolute value. Default to True (visible).
     arg : boolean, optional
@@ -673,7 +831,8 @@ def contour_abs_arg(
     expr, range=None, label=None, rendering_kw=None,
     abs=True, arg=True, **kwargs
 ):
-    """Plot contours of the absolute value and/or the argument of a complex
+    """
+    Plot contours of the absolute value and/or the argument of a complex
     function f(x) with x in Complex.
 
     Parameters
@@ -689,9 +848,14 @@ def contour_abs_arg(
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of contours. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the contour.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
+        * Plotly:
+          https://plotly.com/python/contour-plots/
     abs : boolean, optional
         Show/hide the absolute value. Default to True (visible).
     arg : boolean, optional
@@ -774,7 +938,8 @@ def surface_real_imag(
     expr, range=None, label=None, rendering_kw=None,
     real=True, imag=True, **kwargs
 ):
-    """Plot the real and imaginary part of a complex function f(x)
+    """
+    Plot the real and imaginary part of a complex function f(x)
     with x in Complex.
 
     Parameters
@@ -790,9 +955,15 @@ def surface_real_imag(
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the surface.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
+        * Plotly:
+          https://plotly.com/python/3d-surface-plots/
+        * K3D-Jupyter: look at the documentation of k3d.mesh.
     real : boolean, optional
         Show/hide the real part. Default to True (visible).
     imag : boolean, optional
@@ -877,7 +1048,8 @@ def contour_real_imag(
     expr, range=None, label=None, rendering_kw=None,
     real=True, imag=True, **kwargs
 ):
-    """Plot contours of the real and imaginary parts of a complex
+    """
+    Plot contours of the real and imaginary parts of a complex
     function f(x) with x in Complex.
 
     Parameters
@@ -893,9 +1065,14 @@ def contour_real_imag(
         The label to be shown in the legend. If not provided, the string
         representation of ``expr`` will be used.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of contours. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the contour.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
+        * Plotly:
+          https://plotly.com/python/contour-plots/
     real : boolean, optional
         Show/hide the real part. Default to True (visible).
     arg : boolean, optional
@@ -979,7 +1156,8 @@ def domain_coloring(
     coloring=None, cmap=None, phaseres=20, phaseoffset=0, blevel=0.75,
     colorbar=True, **kwargs
 ):
-    """Plot an image of the absolute value of a complex function f(x)
+    """
+    Plot an image of the absolute value of a complex function f(x)
     colored by its argument, with x in Complex.
 
     Parameters
@@ -996,8 +1174,15 @@ def domain_coloring(
         representation of ``expr`` will be used.
     rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of the image. Refer to the
-        plotting library (backend) manual for more informations.
+        function to customize the appearance of the image.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
+        * Plotly:
+          https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.Image.html
+        * Bokeh:
+          https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.figure.image_rgba
     blevel : float, optional
         Controls the black level of ehanced domain coloring plots. It must be
         `0 (black) <= blevel <= 1 (white)`. Default to 0.75.
@@ -1213,7 +1398,7 @@ def domain_coloring(
            domain_coloring(z, (z, -2-2j, 2+2j), coloring="a",
                cmap="viridis", phaseoffset=pi),
            grid=False, show=False, legend=True, aspect="equal",
-           title=r"phase offset = $\pi$", axis=False)
+           title="phase offset = $\\pi$", axis=False)
        plotgrid(p1, p2, nc=2, size=(6, 2))
 
     A pure phase portrait is rarely useful, as it conveys too little
@@ -1277,7 +1462,8 @@ def domain_coloring(
 def analytic_landscape(
     expr, range=None, label=None, rendering_kw=None, **kwargs
 ):
-    """Plot a surface of the absolute value of a complex function f(x)
+    """
+    Plot a surface of the absolute value of a complex function f(x)
     colored by its argument, with x in Complex.
 
     Parameters
@@ -1340,7 +1526,8 @@ def riemann_sphere_2d(
     expr, range=None, label=None, rendering_kw=None,
     at_infinity=False, riemann_mask=True, annotate=True, **kwargs
 ):
-    """Visualize stereographic projections of the Riemann sphere.
+    """
+    Visualize stereographic projections of the Riemann sphere.
 
     Refer to :func:`~spb.plot_functions.complex_analysis.plot_riemann_sphere`
     to learn more about the Riemann sphere.
@@ -1445,7 +1632,8 @@ def riemann_sphere_2d(
 
 
 def riemann_sphere_3d(expr, rendering_kw=None, colorbar=True, **kwargs):
-    """Visualize a complex function over the Riemann sphere.
+    """
+    Visualize a complex function over the Riemann sphere.
 
     Parameters
     ==========
@@ -1504,7 +1692,8 @@ def riemann_sphere_3d(expr, rendering_kw=None, colorbar=True, **kwargs):
 
 
 def complex_vector_field(expr, range=None, **kwargs):
-    """Plot the vector field `[re(f), im(f)]` for a complex function `f`
+    """
+    Plot the vector field `[re(f), im(f)]` for a complex function `f`
     over the specified complex domain.
 
     Parameters

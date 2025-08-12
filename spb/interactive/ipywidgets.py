@@ -321,7 +321,7 @@ def iplot(*series, show=True, **kwargs):
                d: (0.1, 0, 1, ".3f"),
                n: ipywidgets.BoundedIntText(value=2, min=1, max=10,
                    description="$n$"),
-               phi: (0, 0, 2*pi, 50, r"$\phi$ [rad]")
+               phi: (0, 0, 2*pi, 50, "$\\phi$ [rad]")
            },
            ylim=(-1.25, 1.25))
 

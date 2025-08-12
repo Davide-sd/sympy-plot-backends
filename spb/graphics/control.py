@@ -246,9 +246,28 @@ def control_axis(hor=True, ver=True, rendering_kw=None, **kwargs):
     hor, ver : bool, optional
         Wheter to add the horizontal and/or vertical axis.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
 
     Returns
     =======
@@ -642,9 +661,28 @@ def step_response(
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     control : bool, optional
         If True, computes the step response with the ``control``
         module, which uses numerical integration. If False, computes the
@@ -881,9 +919,28 @@ def impulse_response(
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     control : bool, optional
         If True, computes the impulse response with the ``control``
         module, which uses numerical integration. If False, computes the
@@ -1132,9 +1189,28 @@ def ramp_response(
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     control : bool, optional
         If True, computes the ramp response with the ``control``
         module, which uses numerical integration. If False, computes the
@@ -1409,9 +1485,28 @@ def bode_magnitude(
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     input : int, optional
         Only compute the poles/zeros for the listed input. If not specified,
         the poles/zeros for each independent input are computed (as
@@ -1589,9 +1684,28 @@ def bode_phase(
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     input : int, optional
         Only compute the poles/zeros for the listed input. If not specified,
         the poles/zeros for each independent input are computed (as
@@ -2013,9 +2127,28 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True, arrows=True,
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     input : int, optional
         Only compute the poles/zeros for the listed input. If not specified,
         the poles/zeros for each independent input are computed (as
@@ -2146,9 +2279,28 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     label : str, optional
         The label to be shown on the legend.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     control_kw : dict
         A dictionary of keyword arguments to be passed to
         :py:func:`control.root_locus_map`.
@@ -2280,9 +2432,28 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
         If provided, compute damping ratios and natural frequencies in order
         to display "evenly" distributed grid lines on the plane.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
 
     Examples
     ========
@@ -2442,9 +2613,28 @@ def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
         Shows an horizontal and vertical grid lines crossing at the origin.
         Default to True.
     rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
 
     Examples
     ========
@@ -2577,9 +2767,28 @@ def ngrid(
     label_cl_phases: bool, optional
         If True, closed-loop phase lines will be labelled. Default to False.
     rendering_kw : dict or None, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
 
     Returns
     =======
@@ -2657,9 +2866,28 @@ def mcircles(
         Specify the magnitudes in dB.
         If None, a list of default magnitudes will be used.
     rendering_kw : dict or None, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+
+          - for solid lines:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
+          - for colormap-based lines:
+            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
+          - for scatters:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
+
+        * Bokeh:
+
+          - for solid lines:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
+          - for scatter:
+            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
+
+        * Plotly:
+          https://plotly.com/python/line-and-scatter/
     show_minus_one : bool
         Show a marker at (x, y) = (-1, 0).
 
