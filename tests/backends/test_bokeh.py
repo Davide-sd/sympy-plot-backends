@@ -425,7 +425,7 @@ def test_plot_real_imag(use_latex, label_func):
     assert f.renderers[1].glyph.line_color == "red"
     assert f.legend[0].visible is True
     assert f.xaxis.axis_label == label_func(use_latex, x)
-    assert f.yaxis.axis_label == r"$f\left(x\right)$" if use_latex else "f(x)"
+    assert f.yaxis.axis_label == (r"$f\left(x\right)$" if use_latex else "f(x)")
 
 
 @pytest.mark.parametrize(

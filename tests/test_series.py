@@ -4342,9 +4342,9 @@ def test_arrow2dserie(start, direc, label, rkw, sil, params):
         assert s.get_label(False) == (
             "(j, k) -> (j + 3, k + 4)" if not label else label)
         assert str(s) == "interactive 2D arrow from (j, k) to (j + 3, k + 4) and parameters (j, k)"
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 
@@ -4376,9 +4376,9 @@ def test_arrow3dserie(start, direc, label, rkw, sil, params):
         assert s.get_label(False) == (
             "(j, k, l) -> (j + 4, k + 5, l + 6)" if not label else label)
         assert str(s) == "interactive 3D arrow from (j, k, l) to (j + 4, k + 5, l + 6) and parameters (j, k, l)"
-    assert s.rendering_kw == {} if not rkw else rkw
+    assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == {} if not params else params
+    assert s.params == ({} if not params else params)
 
 
 def test_domain_coloring_k_plus_log():

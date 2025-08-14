@@ -647,7 +647,7 @@ def test_plot_real_imag(use_latex, label_func):
     assert f.data[1]["line"]["color"] == "red"
     assert f.layout["showlegend"] is True
     assert f.layout["xaxis"]["title"]["text"] == label_func(use_latex, x)
-    assert f.layout["yaxis"]["title"]["text"] == r"$f\left(x\right)$" if use_latex else "f(x)"
+    assert f.layout["yaxis"]["title"]["text"] == (r"$f\left(x\right)$" if use_latex else "f(x)")
 
 
 @pytest.mark.parametrize(
@@ -686,7 +686,7 @@ def test_plot_complex_2d(use_latex, label_func):
     assert len(f.data) == 2
     assert isinstance(f.data[0], go.Image)
     # TODO: there must be some bugs here with the wrapper $$
-    assert f.data[0]["name"] == "$sqrt(x)$" if use_latex else "sqrt(x)"
+    assert f.data[0]["name"] == ("$sqrt(x)$" if use_latex else "sqrt(x)")
     assert isinstance(f.data[1], go.Scatter)
     assert f.data[1]["marker"]["colorbar"]["title"]["text"] == "Argument"
     assert f.layout["xaxis"]["title"]["text"] == "Re"

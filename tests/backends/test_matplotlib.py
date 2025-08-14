@@ -752,7 +752,7 @@ def test_plot_real_imag(use_latex, label_func):
     assert ax.get_lines()[1].get_label() == "Im(sqrt(x))"
     assert ax.get_lines()[1].get_color() == "red"
     assert ax.get_xlabel() == label_func(use_latex, x)
-    assert ax.get_ylabel() == r"$f\left(x\right)$" if use_latex else "f(x)"
+    assert ax.get_ylabel() == (r"$f\left(x\right)$" if use_latex else "f(x)")
 
     p.close()
 
