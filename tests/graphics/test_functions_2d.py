@@ -5,7 +5,7 @@ from spb.graphics import (
 )
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries,
-    ContourSeries, ImplicitSeries, List2DSeries, GeometrySeries
+    ContourSeries, ImplicitSeries, List2DSeries, Geometry2DSeries
 )
 from sympy import (
     symbols, cos, sin, pi, Rational,
@@ -251,7 +251,7 @@ def test_geometry(geom, label, rkw, fill, params):
         else:
             assert s.get_label(False) == label
     else:
-        assert isinstance(s, GeometrySeries)
+        assert isinstance(s, Geometry2DSeries)
         assert s.expr == geom
         assert s.get_label(False) == str(geom) if not label else label
     assert s.is_filled == fill

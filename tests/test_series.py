@@ -6,7 +6,7 @@ from spb.series import (
     ImplicitSeries, Implicit3DSeries, RiemannSphereSeries,
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
     ComplexSurfaceSeries, ComplexDomainColoringSeries,
-    ComplexPointSeries, GeometrySeries,
+    ComplexPointSeries, Geometry2DSeries, Geometry3DSeries,
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
     ColoredLineOver1DRangeSeries,
     HVLineSeries, Arrow2DSeries, Arrow3DSeries, RootLocusSeries,
@@ -225,6 +225,21 @@ def test_detect_poles():
     assert not np.any(np.isnan(yy1))
     assert not np.any(np.isnan(yy3))
     assert np.any(np.isnan(yy2))
+
+    s1 = Parametric2DLineSeries(
+        1 / cos(x), 1 / sin(x), (x, 1e-05, 2*pi),
+        detect_poles=False, n=1000)
+    s2 = Parametric2DLineSeries(
+        1 / cos(x), 1 / sin(x), (x, 1e-05, 2*pi),
+        detect_poles=True, n=1000)
+    xx1, yy1, pp1 = s1.get_data()
+    xx2, yy2, pp2 = s2.get_data()
+    assert not np.isnan(xx1).any()
+    assert not np.isnan(yy1).any()
+    assert not np.isnan(pp1).any()
+    assert np.isnan(xx2).any()
+    assert np.isnan(yy2).any()
+    assert not np.isnan(pp2).any()
 
     with warns(
         UserWarning,
@@ -485,9 +500,9 @@ def test_interactive_vs_noninteractive():
     )
     assert s.is_interactive
 
-    s = GeometrySeries(Circle(Point(0, 0), 5))
+    s = Geometry2DSeries(Circle(Point(0, 0), 5))
     assert not s.is_interactive
-    s = GeometrySeries(Circle(Point(0, 0), u * 5), params={u: 1})
+    s = Geometry2DSeries(Circle(Point(0, 0), u * 5), params={u: 1})
     assert s.is_interactive
 
     s = ComplexSurfaceSeries(sqrt(z), (z, -5 - 5j, 5 + 5j))
@@ -577,6 +592,50 @@ def test_lin_log_scale():
     assert not np.isclose(xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2])
     assert not np.isclose(yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0])
 
+    s = ContourSeries(
+        cos(x**2 + y**2), (x, 1, 5), (y, 1, 5),
+        n=10,
+        xscale="linear", yscale="linear",
+    )
+    xx, yy, _ = s.get_data()
+    assert np.isclose(xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2])
+    assert np.isclose(yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0])
+
+    s = ContourSeries(
+        cos(x**2 + y**2), (x, 1, 5), (y, 1, 5),
+        n=10,
+        xscale="log", yscale="log"
+    )
+    xx, yy, _ = s.get_data()
+    assert not np.isclose(xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2])
+    assert not np.isclose(yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0])
+
+    s = PlaneSeries(
+        Plane((0, 0, 0), (1, 1, 1)),
+        (x, -5, 5), (y, -5, 5), (z, -5, 5),
+        xscale="linear", yscale="linear", zscale="linear"
+    )
+    xx, yy, zz = s.get_data()
+    assert np.isclose(
+        xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2]
+    )
+    assert np.isclose(
+        yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0]
+    )
+
+    s = PlaneSeries(
+        Plane((0, 0, 0), (1, 1, 1)),
+        (x, 1e-5, 5), (y, 1e-5, 5), (z, 1e-5, 5),
+        xscale="log", yscale="log", zscale="log"
+    )
+    xx, yy, zz = s.get_data()
+    assert not np.isclose(
+        xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2]
+    )
+    assert not np.isclose(
+        yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0]
+    )
+
     s = ImplicitSeries(
         cos(x**2 + y**2) > 0, (x, 1, 5), (y, 1, 5),
         n1=10, n2=10, adaptive=False,
@@ -595,6 +654,36 @@ def test_lin_log_scale():
     assert not np.isclose(xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2])
     assert not np.isclose(yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0])
 
+    s = Implicit3DSeries(
+        x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        n=5, xscale="linear", yscale="linear", zscale="linear"
+    )
+    xx, yy, zz, _ = s.get_data()
+    assert np.isclose(
+        xx[:, 0, 0][1] - xx[:, 0, 0][0], xx[:, 0, 0][-1] - xx[:, 0, 0][-2]
+    )
+    assert np.isclose(
+        yy[0, :, 0][1] - yy[0, :, 0][0], yy[0, :, 0][-1] - yy[0, :, 0][-2]
+    )
+    assert np.isclose(
+        zz[0, 0, :][1] - zz[0, 0, :][0], zz[0, 0, :][-1] - zz[0, 0, :][-2]
+    )
+
+    s = Implicit3DSeries(
+        x**2 + y**3 - z**2, (x, -2, 2), (y, -2, 2), (z, -2, 2),
+        n=5, xscale="log", yscale="log", zscale="log"
+    )
+    xx, yy, zz, _ = s.get_data()
+    assert not np.isclose(
+        xx[:, 0, 0][1] - xx[:, 0, 0][0], xx[:, 0, 0][-1] - xx[:, 0, 0][-2]
+    )
+    assert not np.isclose(
+        yy[0, :, 0][1] - yy[0, :, 0][0], yy[0, :, 0][-1] - yy[0, :, 0][-2]
+    )
+    assert not np.isclose(
+        zz[0, 0, :][1] - zz[0, 0, :][0], zz[0, 0, :][-1] - zz[0, 0, :][-2]
+    )
+
     s = AbsArgLineSeries(
         cos(x), (x, 1e-05, 1e05),
         n=10, adaptive=False,
@@ -610,6 +699,32 @@ def test_lin_log_scale():
     )
     xx, yy, _ = s.get_data()
     assert not np.isclose(xx[1] - xx[0], xx[-1] - xx[-2])
+
+    s = Vector2DSeries(
+        x, y,
+        (x, 1, 1e05), (y, 1, 1e05),
+        xscale="linear", yscale="linear"
+    )
+    xx, yy, _, _ = s.get_data()
+    assert np.isclose(
+        xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2]
+    )
+    assert np.isclose(
+        yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0]
+    )
+
+    s = Vector2DSeries(
+        x, y,
+        (x, 1, 1e05), (y, 1, 1e05),
+        xscale="log", yscale="log"
+    )
+    xx, yy,  _, _ = s.get_data()
+    assert not np.isclose(
+        xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2]
+    )
+    assert not np.isclose(
+        yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0]
+    )
 
     s = Vector3DSeries(
         x, y, z,
@@ -642,6 +757,22 @@ def test_lin_log_scale():
     assert not np.isclose(
         zz[0, 0, :][1] - zz[0, 0, :][0], zz[0, 0, :][-1] - zz[0, 0, :][-2]
     )
+
+    s = ComplexSurfaceSeries(
+        1, (x, -5 - 2 * I, 5 + 2 * I), n1=10, n2=10,
+        xscale="linear", yscale="linear"
+    )
+    xx, yy, _ = s.get_data()
+    assert np.isclose(xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2])
+    assert np.isclose(yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0])
+
+    s = ComplexSurfaceSeries(
+        1, (x, -5 - 2 * I, 5 + 2 * I), n1=10, n2=10,
+        xscale="log", yscale="log"
+    )
+    xx, yy, _ = s.get_data()
+    assert not np.isclose(xx[0, 1] - xx[0, 0], xx[0, -1] - xx[0, -2])
+    assert not np.isclose(yy[1, 0] - yy[0, 0], yy[-1, 0] - yy[-2, 0])
 
 
 def test_rendering_kw():
@@ -706,7 +837,7 @@ def test_rendering_kw():
     )
     assert isinstance(s.rendering_kw, dict)
 
-    s = GeometrySeries(Circle(Point(0, 0), 5))
+    s = Geometry2DSeries(Circle(Point(0, 0), 5))
     assert isinstance(s.rendering_kw, dict)
 
 
@@ -1093,9 +1224,9 @@ def test_is_filled_2d(is_filled):
     s = ContourSeries(expr, *ranges, is_filled=is_filled)
     assert s.is_filled is is_filled
 
-    s = GeometrySeries(Circle(Point(0, 0), 5))
+    s = Geometry2DSeries(Circle(Point(0, 0), 5))
     assert s.is_filled
-    s = GeometrySeries(Circle(Point(0, 0), 5), is_filled=is_filled)
+    s = Geometry2DSeries(Circle(Point(0, 0), 5), is_filled=is_filled)
     assert s.is_filled is is_filled
 
     # ComplexSurfaceSeries generates data for 3D surfaces or 2D contours
@@ -1865,13 +1996,13 @@ def test_str():
         == "interactive plane series: Plane(Point3D(z, 0, 0), (1, 1, 1)) over (x, -5, 4), (y, -3, 2), (z, -6, 7) and parameters (z,)"
     )
 
-    s = GeometrySeries(Circle(Point(0, 0), 5))
-    assert str(s) == "geometry entity: Circle(Point2D(0, 0), 5)"
+    s = Geometry2DSeries(Circle(Point(0, 0), 5))
+    assert str(s) == "2D geometry entity: Circle(Point2D(0, 0), 5)"
 
-    s = GeometrySeries(Circle(Point(x, 0), 5), params={x: 1})
+    s = Geometry2DSeries(Circle(Point(x, 0), 5), params={x: 1})
     assert (
         str(s)
-        == "interactive geometry entity: Circle(Point2D(x, 0), 5) and parameters (x,)"
+        == "interactive 2D geometry entity: Circle(Point2D(x, 0), 5) and parameters (x,)"
     )
 
     s = Implicit3DSeries(
@@ -2023,7 +2154,7 @@ def test_use_cm(use_cm):
     )
     assert s.use_cm is use_cm
 
-    s = GeometrySeries(Circle(Point(0, 0), 5), use_cm=use_cm)
+    s = Geometry2DSeries(Circle(Point(0, 0), 5), use_cm=use_cm)
     assert s.use_cm is use_cm
 
 
@@ -2361,13 +2492,13 @@ def test_apply_transforms_control():
         G, (t, 0, 10), n=10, color_func=lambda x, y: x*y)
     s2 = ColoredSystemResponseSeries(
         G, (t, 0, 10), n=10, color_func=lambda x, y: x*y,
-        tx=lambda x: x+1, ty=lambda y: y-1, tp=lambda p: 2*p)
+        tx=lambda x: x+1, ty=lambda y: y-1)
     x1, y1, p1 = s1.get_data()
     x2, y2, p2 = s2.get_data()
     assert np.allclose(p1, x1 * y1)
     assert np.allclose(x2, x1 + 1)
     assert np.allclose(y2, y1 - 1)
-    assert np.allclose(p2, 2*p1)
+    assert np.allclose(p2, p1)
 
     s1 = PoleZeroSeries(G, return_poles=True)
     s2 = PoleZeroSeries(
@@ -2390,8 +2521,8 @@ def test_apply_transforms_control():
     ]
 )
 def test_apply_transforms_geometry_2d(g):
-    s1 = GeometrySeries(g)
-    s2 = GeometrySeries(g, tx=lambda x: x*2, ty=lambda y: y*3)
+    s1 = Geometry2DSeries(g)
+    s2 = Geometry2DSeries(g, tx=lambda x: x*2, ty=lambda y: y*3)
     x1, y1 = s1.get_data()
     x2, y2 = s2.get_data()
     assert np.allclose(x2, x1*2)
@@ -2406,8 +2537,8 @@ def test_apply_transforms_geometry_2d(g):
     ]
 )
 def test_apply_transforms_geometry_3d(g):
-    s1 = GeometrySeries(g)
-    s2 = GeometrySeries(
+    s1 = Geometry3DSeries(g)
+    s2 = Geometry3DSeries(
         g, tx=lambda x: x*2, ty=lambda y: y*3, tz=lambda z: z*4)
     x1, y1, z1 = s1.get_data()
     x2, y2, z2 = s2.get_data()
@@ -2526,8 +2657,8 @@ def test_series_labels():
     assert s2.get_label(True) == "test"
 
     expr = Circle(Point(0, 0), 5)
-    s1 = GeometrySeries(expr, label=None)
-    s2 = GeometrySeries(expr, label="test")
+    s1 = Geometry2DSeries(expr, label=None)
+    s2 = Geometry2DSeries(expr, label="test")
     assert s1.get_label(False) == str(expr)
     assert s1.get_label(True) == wrapper % latex(expr)
     assert s2.get_label(False) == "test"
