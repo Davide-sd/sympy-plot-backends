@@ -12,6 +12,7 @@ from sympy.printing.pycode import PythonCodePrinter
 from sympy.printing.precedence import precedence
 from sympy.core.sorting import default_sort_key
 import warnings
+from numbers import Number
 
 
 def format_warnings_on_one_line(
@@ -312,6 +313,10 @@ class _AdaptiveEvaluationParameters(param.Parameterized):
 
 
 class _GridEvaluationParameters(param.Parameterized):
+    evaluator = param.Parameter(doc="""
+        An instance of ``GridEvaluator``, which is the machinery that
+        generates numerical data starting from the parameters of the
+        current series.""")
     force_real_eval = param.Boolean(False, doc="""
         By default, numerical evaluation is performed over complex numbers,
         which is slower but produces correct results.
@@ -331,6 +336,23 @@ class _GridEvaluationParameters(param.Parameterized):
     modules = param.Parameter(None, doc="""
         Specify the evaluation modules to be used by lambdify.
         If not specified, the evaluation will be done with NumPy/SciPy.""")
+    n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
+        Number of discretization points along the x, y, z directions,
+        respectively. It can easily be set with ``n=number``, which will
+        set ``number`` for each element of the list.
+        For surface, contour, 2d vector field plots it can be set with
+        ``n=[num1, num2]``. For 3D implicit plots it can be set with
+        ``n=[num1, num2, num3]``.
+
+        Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
+        set in order to modify the respective element of the ``n`` list.""")
+
+    @param.depends("n", watch=True, on_init=True)
+    def _cast_to_int(self):
+        """Convert the number of discretization points to integer.
+        This allows the user to specify float numbers, like ``n=1e04``.
+        """
+        self.n = [int(t) for t in self.n]
 
 
 def _discretize(start, end, N, scale="linear", only_integers=False):

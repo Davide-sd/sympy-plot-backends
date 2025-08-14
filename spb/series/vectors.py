@@ -36,7 +36,7 @@ from spb.series.evaluator import (
     _GridEvaluationParameters,
     _correct_shape
 )
-from spb.series.base import BaseSeries, _TzParameter
+from spb.series.base import BaseSeries
 from spb.series.series_2d_3d import PlaneSeries, SurfaceOver2DRangeSeries
 
 
@@ -58,6 +58,12 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         If normalization would be applied on the series get_data(), the
         coloring by magnitude would not be applicable at the backend.
         """)
+    tx = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        x-axis.""")
+    ty = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        y-axis.""")
 
     def __init__(self, exprs, ranges, label, **kwargs):
         kwargs.setdefault("use_cm", True)
@@ -189,6 +195,12 @@ class Vector2DSeries(VectorBase):
           - 2D quivers: https://plotly.com/python/quiver-plots/
           - 2D streamlines: https://plotly.com/python/streamline-plots/
         """)
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the x-direction.""")
+    yscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the y-direction.""")
 
     def __init__(self, u, v, range1, range2, label="", **kwargs):
         # if "scalar" not in kwargs.keys():
@@ -212,7 +224,7 @@ class Vector2DSeries(VectorBase):
                 *self.expr, *ranges))
 
 
-class Vector3DSeries(_TzParameter, VectorBase):
+class Vector3DSeries(VectorBase):
     """Represents a 3D vector field."""
 
     is_3D = True
@@ -251,6 +263,18 @@ class Vector3DSeries(_TzParameter, VectorBase):
 
           - for streamline plots, refers to k3d.line documentation.
         """)
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the x-direction.""")
+    yscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the y-direction.""")
+    zscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the z-direction.""")
+    tz = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        z-axis.""")
 
     def __init__(self, u, v, z, range1, range2, range3, label="", **kwargs):
         super().__init__((u, v, z), (range1, range2, range3), label, **kwargs)
@@ -384,6 +408,12 @@ class Arrow2DSeries(BaseSeries):
         * Bokeh:
           https://docs.bokeh.org/en/latest/docs/reference/models/annotations.html#bokeh.models.Arrow
         """)
+    tx = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        x-axis.""")
+    ty = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        y-axis.""")
 
     def __init__(self, start, direction, label="", **kwargs):
         self._block_lambda_functions(start, direction)
@@ -505,7 +535,7 @@ class Arrow2DSeries(BaseSeries):
             )
 
 
-class Arrow3DSeries(_TzParameter, Arrow2DSeries):
+class Arrow3DSeries(Arrow2DSeries):
     """Represent an arrow in a 3D space.
     """
     is_3D = True
@@ -526,6 +556,9 @@ class Arrow3DSeries(_TzParameter, Arrow2DSeries):
         * K3D-Jupyter:
           Look at the documentation of k3d.vectors.
         """)
+    tz = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        z-axis.""")
 
     def get_data(self):
         """Return arrays of coordinates for plotting.

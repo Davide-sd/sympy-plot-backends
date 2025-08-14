@@ -23,7 +23,6 @@ from sympy import (
 from sympy.core.relational import Relational
 from sympy.calculus.util import continuous_domain
 from sympy.geometry.entity import GeometryEntity
-from sympy.geometry.line import LinearEntity2D, LinearEntity3D
 from sympy.logic.boolalg import BooleanFunction
 from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
@@ -44,8 +43,6 @@ from spb.series.evaluator import (
 )
 from spb.series.base import (
     BaseSeries,
-    _TpParameter,
-    _TzParameter,
     _get_wrapper_for_expr,
     _raise_color_func_error
 )
@@ -122,23 +119,7 @@ def _check_steps(steps):
     return steps
 
 
-class Line2DBaseSeries(BaseSeries):
-    """A base class for 2D lines."""
-
-    is_2Dline = True
-    _N = 1000
-
-    _allowed_keys = [
-        "steps", "scatter", "is_filled", "fill", "line_color", "detect_poles",
-        "eps", "is_polar", "unwrap", "exclude",
-    ]
-
-    steps = param.Selector(
-        default=False,
-        objects=["pre", "post", "mid", True, False, None],
-        doc="""
-            If set, it connects consecutive points with steps rather than
-            straight segments.""")
+class LineBaseMixin(param.Parameterized):
     # TODO: replace is_point with is_scatter or scatter
     is_point = param.Boolean(False, doc="""
         Whether to create a scatter or a continuous line.""")
@@ -147,6 +128,39 @@ class Line2DBaseSeries(BaseSeries):
     line_color = param.Parameter(default=None, doc="""
         For back-compatibility with old sympy.plotting. Use ``rendering_kw``
         in order to fully customize the appearance of the line/scatter.""")
+    steps = param.Selector(
+        default=False,
+        objects=["pre", "post", "mid", True, False, None],
+        doc="""
+            If set, it connects consecutive points with steps rather than
+            straight segments.""")
+    tx = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        x-axis.""")
+    ty = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        y-axis.""")
+
+    @param.depends("line_color", watch=True, on_init=True)
+    def _update_line_color(self):
+        self._line_surface_color("_line_color", self.line_color)
+
+
+class _LineWithRangeMixin:
+    @property
+    def var(self):
+        return None if not self.ranges else self.ranges[0][0]
+
+    @property
+    def start(self):
+        return self.ranges[0][1]
+
+    @property
+    def end(self):
+        return self.ranges[0][2]
+
+
+class _DetectPolesMixin(param.Parameterized):
     detect_poles = param.Selector(
         default=False, objects={
             "No poles detection": False,
@@ -170,10 +184,25 @@ class Line2DBaseSeries(BaseSeries):
         An arbitrary small value used by the ``detect_poles`` numerical
         algorithm. Before changing this value, it is recommended to increase
         the number of discretization points.""")
+    poles_locations = param.List([], doc="""
+        When ``detect_poles="symbolic"``, stores the location of the computed
+        poles so that they can be appropriately rendered.""")
+
+
+class Line2DBaseSeries(LineBaseMixin, BaseSeries):
+    """A base class for 2D lines."""
+
+    is_2Dline = True
+    _N = 1000
+
+    _allowed_keys = [
+        "steps", "scatter", "is_filled", "fill", "line_color", "detect_poles",
+        "eps", "is_polar", "unwrap", "exclude",
+    ]
+
+
     # TODO: are they excluded from eval or is the result at this particular
     # coordinate set to Nan?
-    exclude = param.List([], item_type=float, doc="""
-        List of x-coordinates to be excluded from evaluation.""")
     unwrap = param.ClassSelector(default=False, class_=(bool, dict), doc="""
         Whether to use numpy.unwrap() on the computed coordinates in order
         to get rid of discontinuities. It can be:
@@ -182,9 +211,6 @@ class Line2DBaseSeries(BaseSeries):
         * True: use ``np.unwrap()`` with default keyword arguments.
         * dictionary of keyword arguments passed to ``np.unwrap()``.
         """)
-    poles_locations = param.List([], doc="""
-        When ``detect_poles="symbolic"``, stores the location of the computed
-        poles so that they can be appropriately rendered.""")
     rendering_kw = param.Dict(default={}, doc="""
         A dictionary of keyword arguments to be passed to the renderers
         in order to further customize the appearance of the line.
@@ -210,9 +236,8 @@ class Line2DBaseSeries(BaseSeries):
           https://plotly.com/python/line-and-scatter/
         """)
 
-    @param.depends("line_color", watch=True, on_init=True)
-    def _update_line_color(self):
-        self._line_surface_color("_line_color", self.line_color)
+
+
 
     def __init__(self, *args, **kwargs):
         if "scatter" in kwargs:
@@ -233,7 +258,6 @@ class Line2DBaseSeries(BaseSeries):
             exclude = [exclude]
         kwargs["exclude"] = sorted([float(e) for e in exclude])
 
-        print("Line2DSeries.__init__", kwargs)
         super().__init__(*args, **kwargs)
 
     def get_data(self):
@@ -256,9 +280,15 @@ class Line2DBaseSeries(BaseSeries):
         np = import_module('numpy')
         points = self._get_data_helper()
 
+        detect_poles = self.detect_poles if hasattr(self, "detect_poles") else None
+
+
+        # postprocessing
+        points = self._apply_transform(*points)
+
         if (
             isinstance(self, LineOver1DRangeSeries) and
-            (self.detect_poles == "symbolic")
+            (detect_poles == "symbolic")
         ):
             poles = _detect_poles_symbolic_helper(
                 self.expr.subs(self.params), *self.ranges[0])
@@ -266,18 +296,15 @@ class Line2DBaseSeries(BaseSeries):
             t = lambda x, transform: x if transform is None else transform(x)
             self.poles_locations = list(t(np.array(poles), self.tx))
 
-        # postprocessing
-        points = self._apply_transform(*points)
-
-        if self.is_2Dline and self.detect_poles:
+        if self.is_2Dline and detect_poles:
             if len(points) == 2:
                 x, y = points
-                x, y = _detect_poles_numerical_helper(
-                    x, y, self.eps)
+                x, y = _detect_poles_numerical_helper(x, y, self.eps)
                 points = (x, y)
             else:
                 x, y, p = points
-                x, y = _detect_poles_numerical_helper(x, y, self.eps)
+                _, x = _detect_poles_numerical_helper(p, x, self.eps)
+                _, y = _detect_poles_numerical_helper(p, y, self.eps)
                 points = (x, y, p)
 
         if self.unwrap:
@@ -312,14 +339,18 @@ class Line2DBaseSeries(BaseSeries):
         else:
             if self.is_2Dline:
                 x, y, p = args
-                return t(x, self.tx), t(y, self.ty), t(p, self.tp)
+                # NOTE: it is not guaranteed for a series to have tp
+                tp = (lambda p: p) if not hasattr(self, "tp") else self.tp
+                return t(x, self.tx), t(y, self.ty), t(p, tp)
             else:
                 if len(args) == 3:
                     x, y, z = args
                     return t(x, self.tx), t(y, self.ty), t(z, self.tz)
                 else:
+                    # NOTE: it is not guaranteed for a series to have tp
+                    tp = (lambda p: p) if not hasattr(self, "tp") else self.tp
                     x, y, z, p = args
-                    return t(x, self.tx), t(y, self.ty), t(z, self.tz), t(p, self.tp)
+                    return t(x, self.tx), t(y, self.ty), t(z, self.tz), t(p, tp)
 
     def _insert_exclusions(self, points):
         """Add NaN to each of the exclusion point. Practically, this adds a
@@ -333,6 +364,8 @@ class Line2DBaseSeries(BaseSeries):
         to the exclusion points. But that's only work with adaptive=False.
         The following approach work even with adaptive=True.
         """
+        if not hasattr(self, "exclude"):
+            return points
         if len(self.exclude) == 0:
             return points
 
@@ -378,20 +411,8 @@ class Line2DBaseSeries(BaseSeries):
                             (points[j][:idx], [values[0], np.nan, values[1]], points[j][idx+1:]))
         return points
 
-    @property
-    def var(self):
-        return None if not self.ranges else self.ranges[0][0]
 
-    @property
-    def start(self):
-        return self.ranges[0][1]
-
-    @property
-    def end(self):
-        return self.ranges[0][2]
-
-
-class List2DSeries(Line2DBaseSeries, _TpParameter):
+class List2DSeries(Line2DBaseSeries):
     """
     Representation for a line consisting of list of points.
     """
@@ -529,7 +550,7 @@ class List2DSeries(Line2DBaseSeries, _TpParameter):
         return None
 
 
-class List3DSeries(_TzParameter, List2DSeries):
+class List3DSeries(List2DSeries):
     is_2Dline = False
     is_3Dline = True
 
@@ -542,6 +563,9 @@ class List3DSeries(_TzParameter, List2DSeries):
         * callable: a function accepting thre arguments (the x-y-z coordinates)
           and returning numerical data.
         """)
+    tz = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        z-axis.""")
 
     def __init__(self, list_x, list_y, list_z, label="", **kwargs):
         self._check_length(list_x, list_y, list_z)
@@ -623,6 +647,8 @@ class List3DSeries(_TzParameter, List2DSeries):
 class LineOver1DRangeSeries(
     _GridEvaluationParameters,
     _AdaptiveEvaluationParameters,
+    _LineWithRangeMixin,
+    _DetectPolesMixin,
     Line2DBaseSeries
 ):
     """
@@ -640,6 +666,11 @@ class LineOver1DRangeSeries(
         of one variable to be plotted, or a numerical function of one
         variable, supporting vectorization. In the latter case the following
         keyword arguments are not supported: ``params``, ``sum_bound``.""")
+    exclude = param.List([], item_type=float, doc="""
+        List of x-coordinates to be excluded from evaluation.""")
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the x-direction.""")
     color_func = param.Parameter(doc="""
         A color function to be applied to the numerical data. It can be:
 
@@ -649,6 +680,7 @@ class LineOver1DRangeSeries(
           ``expr``.
         * None: the default value (no color mapping).
         """)
+
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
             return super().__new__(AbsArgLineSeries)
@@ -764,7 +796,7 @@ class LineOver1DRangeSeries(
     #     return t(x, self.tx), t(y, self.ty)
 
 
-class ColoredLineOver1DRangeSeries(_TpParameter, LineOver1DRangeSeries):
+class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
     """Represents a 2D line series in which `color_func` is a callable.
     """
     is_parametric = True
@@ -787,6 +819,11 @@ class ColoredLineOver1DRangeSeries(_TpParameter, LineOver1DRangeSeries):
             _raise_color_func_error(self, nargs)
         return _correct_shape(color, x)
 
+    def _apply_transform(self, *args):
+        t = self._get_transform_helper()
+        x, y, p = args
+        return t(x, self.tx), t(y, self.ty), p
+
     def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed.
         Depending on the `adaptive` option, this function will either use an
@@ -795,11 +832,6 @@ class ColoredLineOver1DRangeSeries(_TpParameter, LineOver1DRangeSeries):
         """
         x, y = super()._get_data_helper()
         return x, y, self.eval_color_func(x, y)
-
-    # def _apply_transform(self, *args):
-    #     t = self._get_transform_helper()
-    #     x, y, p = args
-    #     return t(x, self.tx), t(y, self.ty), t(p, self.tp)
 
 
 class _2DParametricParameters(param.Parameterized):
@@ -835,14 +867,21 @@ class _3DParametricParameters(_2DParametricParameters):
 
 class ParametricLineBaseSeries(
     _GridEvaluationParameters,
-    Line2DBaseSeries,
-    _TpParameter,
-    _AdaptiveEvaluationParameters
+    _AdaptiveEvaluationParameters,
+    _LineWithRangeMixin,
+    _DetectPolesMixin,
+    Line2DBaseSeries
 ):
     is_parametric = True
 
     is_polar = param.Boolean(False, doc="""
         If True, apply a cartesian to polar transformation.""")
+    tp = param.Callable(doc="""
+        Numerical transformation function to be applied to the numerical values
+        of the parameter.""")
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the parameter.""")
 
     def _set_parametric_line_label(self, label):
         """Logic to set the correct label to be shown on the plot.
@@ -1028,7 +1067,6 @@ class Parametric2DLineSeries(
 
 class Parametric3DLineSeries(
     _3DParametricParameters,
-    _TzParameter,
     ParametricLineBaseSeries
 ):
     """
@@ -1052,6 +1090,9 @@ class Parametric3DLineSeries(
           ``expr_x`` or ``expr_y`` or ``expr_z``.
         * None: the default value (color mapping according to the parameter).
         """)
+    tz = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        z-axis.""")
 
     def __init__(
         self, expr_x, expr_y, expr_z, var_start_end, label="", **kwargs
@@ -1093,7 +1134,6 @@ class Parametric3DLineSeries(
 
 class SurfaceBaseSeries(
     _GridEvaluationParameters,
-    _TzParameter,
     BaseSeries
 ):
     """A base class for 3D surfaces."""
@@ -1119,6 +1159,15 @@ class SurfaceBaseSeries(
           https://plotly.com/python/3d-surface-plots/
         * K3D-Jupyter: look at the documentation of k3d.mesh.
         """)
+    tx = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        x-axis.""")
+    ty = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        y-axis.""")
+    tz = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        z-axis.""")
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("color_func", lambda x, y, z: z)
@@ -1189,6 +1238,12 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         * None: the default value (color mapping according to the
           z coordinate).
         """)
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the x-direction.""")
+    yscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the y-direction.""")
 
     def __init__(
         self, expr, var_start_end_x, var_start_end_y, label="", **kwargs
@@ -1295,6 +1350,13 @@ class ParametricSurfaceSeries(
     """
 
     is_parametric = True
+
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the the first parameter.""")
+    yscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the the second parameter.""")
 
     def __init__(
         self, expr_x, expr_y, expr_z,
@@ -1497,6 +1559,12 @@ class ImplicitSeries(
         * Plotly:
           https://plotly.com/python/contour-plots/
         """)
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the x-direction.""")
+    yscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the y-direction.""")
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         kwargs = kwargs.copy()
@@ -1892,6 +1960,15 @@ class Implicit3DSeries(SurfaceBaseSeries):
           https://plotly.com/python/3d-isosurface-plots/
         * K3D-Jupyter: look at the documentation of k3d.marching_cubes.
         """)
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the x-direction.""")
+    yscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the y-direction.""")
+    zscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the z-direction.""")
 
     def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
         # kwargs.setdefault("n", self._N)
@@ -1958,6 +2035,16 @@ class PlaneSeries(SurfaceBaseSeries):
     # range along the z-direction. With _use_nan=True, every z-value outside
     # of the provided z_range will be set to Nan.
     _use_nan = True
+
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the x-direction.""")
+    yscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the y-direction.""")
+    zscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the z-direction.""")
 
     def __init__(
         self, plane, x_range, y_range, z_range=None, label="", **kwargs
@@ -2097,7 +2184,7 @@ class PlaneSeries(SurfaceBaseSeries):
         return _correct_shape(color, coords[0])
 
 
-class GeometrySeries(_TzParameter, Line2DBaseSeries):
+class Geometry2DSeries(Line2DBaseSeries):
     """
     Represents an entity from the sympy.geometry module.
     Depending on the geometry entity, this class can either represents a
@@ -2105,18 +2192,30 @@ class GeometrySeries(_TzParameter, Line2DBaseSeries):
     """
 
     is_geometry = True
+    is_2Dline = True
 
-    def __new__(cls, *args, **kwargs):
-        if isinstance(args[0], Plane):
-            return PlaneSeries(*args, **kwargs)
-        elif isinstance(args[0], Curve):
-            new_cls = (
-                Parametric2DLineSeries
-                if len(args[0].functions) == 2
-                else Parametric3DLineSeries
-            )
-            return new_cls(*args[0].functions, args[0].limits, **kwargs)
-        return object.__new__(cls)
+    n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
+        Number of discretization points along the x, y, z directions,
+        respectively. It can easily be set with ``n=number``, which will
+        set ``number`` for each element of the list.
+        For surface, contour, 2d vector field plots it can be set with
+        ``n=[num1, num2]``. For 3D implicit plots it can be set with
+        ``n=[num1, num2, num3]``.
+
+        Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
+        set in order to modify the respective element of the ``n`` list.""")
+
+    # def __new__(cls, *args, **kwargs):
+    #     if isinstance(args[0], Plane):
+    #         return PlaneSeries(*args, **kwargs)
+    #     elif isinstance(args[0], Curve):
+    #         new_cls = (
+    #             Parametric2DLineSeries
+    #             if len(args[0].functions) == 2
+    #             else Parametric3DLineSeries
+    #         )
+    #         return new_cls(*args[0].functions, args[0].limits, **kwargs)
+    #     return object.__new__(cls)
 
     def __init__(self, expr, _range=None, label="", **kwargs):
         if not isinstance(expr, GeometryEntity):
@@ -2130,6 +2229,7 @@ class GeometrySeries(_TzParameter, Line2DBaseSeries):
         kwargs["_label_str"] = str(expr) if label is None else label
         kwargs["_label_latex"] = latex(expr) if label is None else label
         super().__init__(**kwargs)
+
         r = expr.free_symbols.difference(set(self.params.keys()))
         if len(r) > 0:
             raise ValueError(
@@ -2137,15 +2237,7 @@ class GeometrySeries(_TzParameter, Line2DBaseSeries):
                 f"following symbols with the `params` dictionary: {r}"
             )
 
-        if isinstance(expr, (LinearEntity3D, Point3D)):
-            self.is_2Dline = False
-            self.is_3Dline = True
-            self.is_parametric = False
-            if isinstance(expr, Point3D):
-                self.is_point = True
-        elif isinstance(expr, LinearEntity2D):
-            self.is_2Dline = True
-        elif isinstance(expr, (Polygon, Circle, Ellipse)):
+        if isinstance(expr, (Polygon, Circle, Ellipse)):
             self.is_2Dline = not self.is_filled
         elif isinstance(expr, Point2D):
             self.is_point = True
@@ -2156,13 +2248,7 @@ class GeometrySeries(_TzParameter, Line2DBaseSeries):
         np = import_module('numpy')
 
         expr = self.expr.subs(self.params)
-        if isinstance(expr, Point3D):
-            return self._apply_transform(
-                np.array([expr.x], dtype=float),
-                np.array([expr.y], dtype=float),
-                np.array([expr.z], dtype=float)
-            )
-        elif isinstance(expr, Point2D):
+        if isinstance(expr, Point2D):
             return self._apply_transform(
                 np.array([expr.x], dtype=float),
                 np.array([expr.y], dtype=float)
@@ -2192,12 +2278,6 @@ class GeometrySeries(_TzParameter, Line2DBaseSeries):
             x = np.append(x, x[0])
             y = np.append(y, y[0])
             return self._apply_transform(x, y)
-        elif isinstance(expr, LinearEntity3D):
-            p1, p2 = expr.points
-            x = np.array([p1.x, p2.x], dtype=float)
-            y = np.array([p1.y, p2.y], dtype=float)
-            z = np.array([p1.z, p2.z], dtype=float)
-            return self._apply_transform(x, y, z)
         elif isinstance(expr, (Segment, Ray)):
             p1, p2 = expr.points
             x = np.array([p1.x, p2.x])
@@ -2217,7 +2297,77 @@ class GeometrySeries(_TzParameter, Line2DBaseSeries):
             return self._apply_transform(x.astype(float), y.astype(float))
 
     def __str__(self):
-        return self._str_helper("geometry entity: %s" % str(self.expr))
+        return self._str_helper("2D geometry entity: %s" % str(self.expr))
+
+
+class Geometry3DSeries(Line2DBaseSeries):
+    """
+    Represents an entity from the sympy.geometry module.
+    Depending on the geometry entity, this class can either represents a
+    point, a line, or a parametric line
+    """
+
+    is_geometry = True
+    is_2Dline = False
+    is_3Dline = True
+
+    tz = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        z-axis.""")
+
+    # def __new__(cls, *args, **kwargs):
+    #     if isinstance(args[0], Plane):
+    #         return PlaneSeries(*args, **kwargs)
+    #     elif isinstance(args[0], Curve):
+    #         new_cls = (
+    #             Parametric2DLineSeries
+    #             if len(args[0].functions) == 2
+    #             else Parametric3DLineSeries
+    #         )
+    #         return new_cls(*args[0].functions, args[0].limits, **kwargs)
+    #     return object.__new__(cls)
+
+    def __init__(self, expr, _range=None, label="", **kwargs):
+        if not isinstance(expr, GeometryEntity):
+            raise ValueError(
+                "`expr` must be a geomtric entity.\n"
+                + "Received: type(expr) = {}\n".format(type(expr))
+                + "Expr: {}".format(expr)
+            )
+
+        kwargs["expr"] = expr
+        kwargs["_label_str"] = str(expr) if label is None else label
+        kwargs["_label_latex"] = latex(expr) if label is None else label
+        super().__init__(**kwargs)
+        r = expr.free_symbols.difference(set(self.params.keys()))
+        if len(r) > 0:
+            raise ValueError(
+                "Too many free symbols. Please, specify the values of the "
+                f"following symbols with the `params` dictionary: {r}"
+            )
+
+        if isinstance(expr, Point3D):
+            self.is_point = True
+
+    def get_data(self):
+        np = import_module('numpy')
+
+        expr = self.expr.subs(self.params)
+        if isinstance(expr, Point3D):
+            return self._apply_transform(
+                np.array([expr.x], dtype=float),
+                np.array([expr.y], dtype=float),
+                np.array([expr.z], dtype=float)
+            )
+        else: # LinearEntity3D
+            p1, p2 = expr.points
+            x = np.array([p1.x, p2.x], dtype=float)
+            y = np.array([p1.y, p2.y], dtype=float)
+            z = np.array([p1.z, p2.z], dtype=float)
+            return self._apply_transform(x, y, z)
+
+    def __str__(self):
+        return self._str_helper("3D geometry entity: %s" % str(self.expr))
 
 
 class GenericDataSeries(BaseSeries):

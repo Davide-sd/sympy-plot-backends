@@ -44,7 +44,8 @@ from spb.series.series_2d_3d import (
     ImplicitSeries,
     Implicit3DSeries,
     PlaneSeries,
-    GeometrySeries,
+    Geometry2DSeries,
+    Geometry3DSeries,
     GenericDataSeries,
     HVLineSeries
 )
@@ -89,11 +90,12 @@ series = [
     ImplicitSeries,
     Implicit3DSeries,
     PlaneSeries,
-    GeometrySeries,
+    Geometry2DSeries,
+    Geometry3DSeries,
     GenericDataSeries,
     HVLineSeries
 ]
 
-# generate_doc(*series)
+generate_doc(*series)
 
 __all__ = [s.__name__ for s in series]

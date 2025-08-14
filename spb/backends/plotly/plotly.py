@@ -17,7 +17,7 @@ from spb.series import (
     RiemannSphereSeries, Implicit3DSeries,
     ComplexDomainColoringSeries, ComplexSurfaceSeries,
     ContourSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
-    PlaneSeries, GeometrySeries, GenericDataSeries,
+    PlaneSeries, Geometry2DSeries, Geometry3DSeries, GenericDataSeries,
     HVLineSeries, Arrow2DSeries
 )
 from sympy.external import import_module
@@ -83,7 +83,8 @@ class PlotlyBackend(Plot):
         SurfaceOver2DRangeSeries: SurfaceRenderer,
         ParametricSurfaceSeries: SurfaceRenderer,
         PlaneSeries: SurfaceRenderer,
-        GeometrySeries: GeometryRenderer,
+        Geometry2DSeries: GeometryRenderer,
+        Geometry3DSeries: GeometryRenderer,
         GenericDataSeries: GenericRenderer,
         HVLineSeries: HVLineRenderer,
         Arrow2DSeries: Arrow2DRenderer

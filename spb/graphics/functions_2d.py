@@ -1,13 +1,15 @@
 from sympy import (
     sin, cos, Piecewise, Sum, Wild, sign, piecewise_fold, Interval, Union,
-    FiniteSet, Eq, Ne, Expr
+    FiniteSet, Eq, Ne, Expr, Plane, Curve, Point3D
 )
 from sympy.core.relational import Relational
+from sympy.geometry.line import LinearEntity3D
 # NOTE: from sympy import EmptySet is a different thing!!!
 from sympy.sets.sets import EmptySet
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, ContourSeries,
-    ImplicitSeries, List2DSeries, GeometrySeries, HVLineSeries
+    ImplicitSeries, List2DSeries, Geometry2DSeries, Geometry3DSeries,
+    HVLineSeries
 )
 from spb.graphics.utils import _plot_sympify
 from spb.utils import (
@@ -2366,8 +2368,25 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
     line, spb.graphics.functions_3d.plane
 
     """
-    s = GeometrySeries(
-        geom, label=label, rendering_kw=rendering_kw, fill=fill, **kwargs)
+    if isinstance(geom, Plane):
+        raise TypeError("")
+
+    if isinstance(geom, Curve):
+        new_cls = (
+            Parametric2DLineSeries
+            if len(geom.functions) == 2
+            else Parametric3DLineSeries
+        )
+        s = new_cls(
+            *geom.functions, geom.limits,
+            label=label, rendering_kw=rendering_kw, fill=fill, **kwargs)
+    else:
+        if isinstance(geom, (LinearEntity3D, Point3D)):
+            new_cls = Geometry3DSeries
+        else:
+            new_cls = Geometry2DSeries
+        s = new_cls(
+            geom, label=label, rendering_kw=rendering_kw, fill=fill, **kwargs)
     return [s]
 
 

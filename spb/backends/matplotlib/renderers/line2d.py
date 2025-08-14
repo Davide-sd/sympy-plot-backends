@@ -49,9 +49,11 @@ def _draw_line2d_helper(renderer, data):
         handle = l
 
     # add vertical lines at discontinuities
-    hvlines = [
-        p._ax.axvline(x_loc, **p.pole_line_kw) for x_loc in s.poles_locations
-    ]
+    hvlines = []
+    if hasattr(s, "poles_locations"):
+        hvlines = [
+            p._ax.axvline(x_loc, **p.pole_line_kw) for x_loc in s.poles_locations
+        ]
 
     return [handle, hvlines]
 
@@ -87,16 +89,17 @@ def _update_line2d_helper(renderer, data, handles):
         line.set_data(x, y)
 
     # update vertical lines
-    if len(hvlines) != len(s.poles_locations):
-        for hvl in hvlines:
-            hvl.remove()
-        handles[1] = [
-            p._ax.axvline(x_loc, **p.pole_line_kw)
-            for x_loc in s.poles_locations
-        ]
-    elif len(hvlines) > 0:
-        for hvl, x_loc in zip(hvlines, s.poles_locations):
-            hvl.set_xdata([x_loc, x_loc])
+    if hasattr(s, "poles_locations"):
+        if len(hvlines) != len(s.poles_locations):
+            for hvl in hvlines:
+                hvl.remove()
+            handles[1] = [
+                p._ax.axvline(x_loc, **p.pole_line_kw)
+                for x_loc in s.poles_locations
+            ]
+        elif len(hvlines) > 0:
+            for hvl, x_loc in zip(hvlines, s.poles_locations):
+                hvl.set_xdata([x_loc, x_loc])
 
 
 class Line2DRenderer(MatplotlibRenderer):

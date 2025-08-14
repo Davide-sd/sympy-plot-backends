@@ -38,8 +38,6 @@ from spb.series.evaluator import (
 )
 from spb.series.base import (
     BaseSeries,
-    _TzParameter,
-    _TpParameter,
     _get_wrapper_for_expr
 )
 from spb.series.series_2d_3d import (
@@ -51,7 +49,7 @@ from spb.series.series_2d_3d import (
 )
 
 
-class AbsArgLineSeries(_TzParameter, LineOver1DRangeSeries):
+class AbsArgLineSeries(LineOver1DRangeSeries):
     """Represents the absolute value of a complex function colored by its
     argument over a complex range (a + I*b, c + I * b).
     Note that the imaginary part of the start and end must be the same.
@@ -59,6 +57,9 @@ class AbsArgLineSeries(_TzParameter, LineOver1DRangeSeries):
 
     is_parametric = True
     is_complex = True
+    tz = param.Callable(doc="""
+        Numerical transformation function to be applied to the numerical values
+        of the phase.""")
 
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
@@ -92,7 +93,7 @@ class AbsArgLineSeries(_TzParameter, LineOver1DRangeSeries):
         return t(x, self.tx), t(y, self.ty), t(a, self.tz)
 
 
-class ComplexPointSeries(_TpParameter, Line2DBaseSeries):
+class ComplexPointSeries(Line2DBaseSeries):
     """Representation for a line in the complex plane consisting of
     list of points."""
     color_func = param.Callable(default=None, doc="""
@@ -142,6 +143,12 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         If True, used filled contours. Otherwise, use line contours.""")
     show_clabels = param.Boolean(True, doc="""
         If True, used filled contours. Otherwise, use line contours.""")
+    xscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the x-direction (real part).""")
+    yscale = param.Selector(
+        default="linear", objects=["linear", "log"], doc="""
+        Discretization strategy along the y-direction (imaginary part).""")
 
     def __init__(self, expr, r, label="", **kwargs):
         _return = kwargs.pop("return", None)
@@ -514,7 +521,6 @@ class ComplexParametric3DLineSeries(Parametric3DLineSeries):
 
 
 class RiemannSphereSeries(
-    _TzParameter,
     ComplexDomainColoringBaseSeries,
     BaseSeries
 ):
@@ -524,6 +530,26 @@ class RiemannSphereSeries(
     _N = 150
     _allowed_keys = [
         "cmap", "coloring", "blevel", "phaseres", "phaseoffset"]
+
+    n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
+        Number of discretization points along the x, y, z directions,
+        respectively. It can easily be set with ``n=number``, which will
+        set ``number`` for each element of the list.
+        For surface, contour, 2d vector field plots it can be set with
+        ``n=[num1, num2]``. For 3D implicit plots it can be set with
+        ``n=[num1, num2, num3]``.
+
+        Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
+        set in order to modify the respective element of the ``n`` list.""")
+    tx = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        x-axis.""")
+    ty = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        y-axis.""")
+    tz = param.Callable(doc="""
+        Numerical transformation function to be applied to the data on the
+        z-axis.""")
 
     def __init__(self, f, range_t, range_p, **kwargs):
         self._block_lambda_functions(f)

@@ -14,7 +14,7 @@ from spb.series import (
     RiemannSphereSeries, Implicit3DSeries,
     ComplexDomainColoringSeries, ComplexSurfaceSeries,
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
-    PlaneSeries, GeometrySeries, Arrow3DSeries
+    PlaneSeries, Geometry3DSeries, Arrow3DSeries
 )
 from spb.utils import get_environment
 from sympy.external import import_module
@@ -74,7 +74,7 @@ class K3DBackend(Plot):
         SurfaceOver2DRangeSeries: SurfaceRenderer,
         ParametricSurfaceSeries: SurfaceRenderer,
         PlaneSeries: SurfaceRenderer,
-        GeometrySeries: GeometryRenderer,
+        Geometry3DSeries: GeometryRenderer,
         Arrow3DSeries: Arrow3DRenderer
     }
 

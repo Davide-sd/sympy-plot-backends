@@ -470,7 +470,7 @@ def generate_doc_for_ordinary_functions(func_map, style="numpydoc"):
             try:
                 # split the original docstring into sections
                 docstring_sections = split_docstring(original_docstring)
-                print("len(docstring_sections)", len(docstring_sections))
+                # print("len(docstring_sections)", len(docstring_sections))
 
                 # rearrange the sections and add colors to the titles
                 numpydoc_sections_to_look_for = [
@@ -516,7 +516,7 @@ def generate_doc_for_ordinary_functions(func_map, style="numpydoc"):
                         dict_with_all_params = _sort_parameters_by_signature(
                             dict_with_all_params, signature)
 
-                        print("wtf")
+                        # print("wtf")
                         # print(dict_with_all_params)
                         contents = _assemble_parameters_docstring(
                             dict_with_all_params, style)
@@ -566,7 +566,7 @@ def generate_doc(*classes):
                     "Examples", "Notes", "References", "See Also",
                 ]
                 final_docstring = ""
-                print("a")
+                # print("a")
                 for title in numpydoc_sections_to_look_for:
                     if title != "Parameters":
                         if title in docstring_sections:
@@ -579,7 +579,7 @@ def generate_doc(*classes):
                                 final_docstring += header + docstring_sections[title]
                     else:
                         final_docstring += f"\n{param_pager(cls)}"
-                print("b")
+                # print("b")
                 cls.__doc__ = final_docstring
                 # print(final_docstring)
             except Exception as err:

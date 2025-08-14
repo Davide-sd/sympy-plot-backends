@@ -18,7 +18,7 @@ from spb.series.evaluator import (
     GridEvaluator,
     _update_range_value
 )
-from spb.series.base import BaseSeries, _TpParameter, _get_wrapper_for_expr
+from spb.series.base import BaseSeries, _get_wrapper_for_expr
 from spb.series.series_2d_3d import Line2DBaseSeries, List2DSeries
 
 
@@ -430,6 +430,9 @@ class NicholsLineSeries(
     """Represent a Nichols line in control system plotting.
     """
     _allowed_keys = ["arrows"]
+    xscale = param.Selector(
+        default="log", objects=["linear", "log"], doc="""
+        Discretization strategy along the pulsation.""")
 
     def __init__(
         self, tf, ol_phase, ol_mag, cl_phase, cl_mag, omega_range,
@@ -861,6 +864,16 @@ class SystemResponseSeries(ControlBaseSeries):
     response_type = param.Selector(
         default="step", objects=["impulse", "step", "ramp"], doc="""
         The type of response to simulate.""")
+    n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
+        Number of discretization points along the x, y, z directions,
+        respectively. It can easily be set with ``n=number``, which will
+        set ``number`` for each element of the list.
+        For surface, contour, 2d vector field plots it can be set with
+        ``n=[num1, num2]``. For 3D implicit plots it can be set with
+        ``n=[num1, num2, num3]``.
+
+        Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
+        set in order to modify the respective element of the ``n`` list.""")
 
     def __new__(cls, *args, **kwargs):
         cf = kwargs.get("color_func", None)
@@ -931,8 +944,9 @@ class SystemResponseSeries(ControlBaseSeries):
         return response.time, response.y.flatten()
 
 
-class ColoredSystemResponseSeries(_TpParameter, SystemResponseSeries):
-    """Represent a system response computed with the ``control`` module,
+class ColoredSystemResponseSeries(SystemResponseSeries):
+    """
+    Represent a system response computed with the ``control`` module,
     and colored according some color function.
     """
     is_parametric = True
@@ -945,6 +959,11 @@ class ColoredSystemResponseSeries(_TpParameter, SystemResponseSeries):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("use_cm", True)
         super().__init__(*args, **kwargs)
+
+    def _apply_transform(self, *args):
+        t = self._get_transform_helper()
+        x, y, p = args
+        return t(x, self.tx), t(y, self.ty), p
 
     def _get_data_helper(self):
         x, y = super()._get_data_helper()
