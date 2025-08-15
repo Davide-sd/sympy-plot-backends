@@ -36,6 +36,7 @@ from spb.series.evaluator import (
 )
 from spb.series.base import (
     BaseSeries,
+    _CastToInteger,
     _get_wrapper_for_expr
 )
 from spb.series.series_2d_3d import (

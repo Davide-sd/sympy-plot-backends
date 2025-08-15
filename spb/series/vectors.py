@@ -36,7 +36,7 @@ from spb.series.evaluator import (
     _GridEvaluationParameters,
     _correct_shape
 )
-from spb.series.base import BaseSeries
+from spb.series.base import BaseSeries, _CastToInteger
 from spb.series.series_2d_3d import PlaneSeries, SurfaceOver2DRangeSeries
 
 
