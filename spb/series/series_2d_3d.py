@@ -37,12 +37,14 @@ from spb.series.evaluator import (
     IntervalMathPrinter,
     _AdaptiveEvaluationParameters,
     _GridEvaluationParameters,
+    _NMixin,
     GridEvaluator,
     ComplexGridEvaluator,
     _adaptive_eval,
 )
 from spb.series.base import (
     BaseSeries,
+    _CastToInteger,
     _get_wrapper_for_expr,
     _raise_color_func_error
 )
@@ -681,6 +683,11 @@ class LineOver1DRangeSeries(
         * None: the default value (no color mapping).
         """)
 
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the parameter to be used in the
+        evaluation when ``adaptive=False``.
+        Related parameters: ``adaptive``, ``xscale``.""")
+
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
             return super().__new__(AbsArgLineSeries)
@@ -882,6 +889,10 @@ class ParametricLineBaseSeries(
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the parameter.""")
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the parameter to be used in the
+        evaluation when ``adaptive=False``.
+        Related parameters: ``adaptive``, ``xscale``.""")
 
     def _set_parametric_line_label(self, label):
         """Logic to set the correct label to be shown on the plot.
@@ -1168,6 +1179,12 @@ class SurfaceBaseSeries(
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the x-axis to be used in the
+        evaluation. Related parameters: ``xscale``.""")
+    n2 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the y-axis to be used in the
+        evaluation. Related parameters: ``yscale``.""")
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("color_func", lambda x, y, z: z)
@@ -1240,10 +1257,12 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         """)
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the x-direction.""")
+        Discretization strategy along the x-direction.
+        Related parameters: ``n1``.""")
     yscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the y-direction.""")
+        Discretization strategy along the y-direction.
+        Related parameters: ``n2``.""")
 
     def __init__(
         self, expr, var_start_end_x, var_start_end_y, label="", **kwargs
@@ -1353,10 +1372,12 @@ class ParametricSurfaceSeries(
 
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the the first parameter.""")
+        Discretization strategy along the the first parameter.
+        Related parameters: ``n1``.""")
     yscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the the second parameter.""")
+        Discretization strategy along the the second parameter.
+        Related parameters: ``n2``.""")
 
     def __init__(
         self, expr_x, expr_y, expr_z,
@@ -1561,10 +1582,18 @@ class ImplicitSeries(
         """)
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the x-direction.""")
+        Discretization strategy along the x-direction.
+        Related parameters: ``n1``.""")
     yscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the y-direction.""")
+        Discretization strategy along the y-direction.
+        Related parameters: ``n2``.""")
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the x-axis to be used in the
+        evaluation. Related parameters: ``xscale``.""")
+    n2 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the y-axis to be used in the
+        evaluation. Related parameters: ``yscale``.""")
 
     def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
         kwargs = kwargs.copy()
@@ -1962,13 +1991,25 @@ class Implicit3DSeries(SurfaceBaseSeries):
         """)
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the x-direction.""")
+        Discretization strategy along the x-direction.
+        Related parameters: ``n1``.""")
     yscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the y-direction.""")
+        Discretization strategy along the y-direction.
+        Related parameters: ``n2``.""")
     zscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the z-direction.""")
+        Discretization strategy along the z-direction.
+        Related parameters: ``n3``.""")
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the x-axis to be used in the
+        evaluation. Related parameters: ``xscale``.""")
+    n2 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the y-axis to be used in the
+        evaluation. Related parameters: ``yscale``.""")
+    n3 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the z-axis to be used in the
+        evaluation. Related parameters: ``zscale``..""")
 
     def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
         # kwargs.setdefault("n", self._N)
@@ -2038,13 +2079,20 @@ class PlaneSeries(SurfaceBaseSeries):
 
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the x-direction.""")
+        Discretization strategy along the x-direction.
+        Related parameters: ``n1``.""")
     yscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the y-direction.""")
+        Discretization strategy along the y-direction.
+        Related parameters: ``n2``.""")
     zscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the z-direction.""")
+        Discretization strategy along the z-direction.
+        Related parameters: ``n3``.""")
+    n3 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the z-axis to be used in the
+        evaluation. Related parameters: ``zscale``.""")
+
 
     def __init__(
         self, plane, x_range, y_range, z_range=None, label="", **kwargs
@@ -2184,7 +2232,7 @@ class PlaneSeries(SurfaceBaseSeries):
         return _correct_shape(color, coords[0])
 
 
-class Geometry2DSeries(Line2DBaseSeries):
+class Geometry2DSeries(Line2DBaseSeries, _NMixin):
     """
     Represents an entity from the sympy.geometry module.
     Depending on the geometry entity, this class can either represents a
@@ -2194,16 +2242,21 @@ class Geometry2DSeries(Line2DBaseSeries):
     is_geometry = True
     is_2Dline = True
 
-    n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
-        Number of discretization points along the x, y, z directions,
-        respectively. It can easily be set with ``n=number``, which will
-        set ``number`` for each element of the list.
-        For surface, contour, 2d vector field plots it can be set with
-        ``n=[num1, num2]``. For 3D implicit plots it can be set with
-        ``n=[num1, num2, num3]``.
+    # n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
+    #     Number of discretization points along the x, y, z directions,
+    #     respectively. It can easily be set with ``n=number``, which will
+    #     set ``number`` for each element of the list.
+    #     For surface, contour, 2d vector field plots it can be set with
+    #     ``n=[num1, num2]``. For 3D implicit plots it can be set with
+    #     ``n=[num1, num2, num3]``.
 
-        Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
-        set in order to modify the respective element of the ``n`` list.""")
+    #     Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
+    #     set in order to modify the respective element of the ``n`` list.""")
+
+
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points used to resolve the polar
+        angle theta ∈ [0, 2*pi] in order to plot ellipses.""")
 
     # def __new__(cls, *args, **kwargs):
     #     if isinstance(args[0], Plane):

@@ -31,9 +31,7 @@ from matplotlib.cbook import (
 )
 import warnings
 from spb.series.evaluator import (
-    IntervalMathPrinter,
-    _GridEvaluationParameters,
-    GridEvaluator,
+    _NMixin,
     ComplexGridEvaluator
 )
 from spb.series.base import (
@@ -145,10 +143,19 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         If True, used filled contours. Otherwise, use line contours.""")
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the x-direction (real part).""")
+        Discretization strategy along the x-direction (real part).
+        Related parameters: ``n1``.""")
     yscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the y-direction (imaginary part).""")
+        Discretization strategy along the y-direction (imaginary part).
+        Related parameters: ``n12``.""")
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the x-axis (real part) to be
+        used in the evaluation. Related parameters: ``xscale``.""")
+    n2 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the y-axis (imaginary part)
+        to be used in the evaluation. Related parameters: ``yscale``.""")
+
 
     def __init__(self, expr, r, label="", **kwargs):
         _return = kwargs.pop("return", None)
@@ -522,7 +529,8 @@ class ComplexParametric3DLineSeries(Parametric3DLineSeries):
 
 class RiemannSphereSeries(
     ComplexDomainColoringBaseSeries,
-    BaseSeries
+    BaseSeries,
+    _NMixin
 ):
     is_complex = True
     is_domain_coloring = True
@@ -531,16 +539,16 @@ class RiemannSphereSeries(
     _allowed_keys = [
         "cmap", "coloring", "blevel", "phaseres", "phaseoffset"]
 
-    n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
-        Number of discretization points along the x, y, z directions,
-        respectively. It can easily be set with ``n=number``, which will
-        set ``number`` for each element of the list.
-        For surface, contour, 2d vector field plots it can be set with
-        ``n=[num1, num2]``. For 3D implicit plots it can be set with
-        ``n=[num1, num2, num3]``.
+    # n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
+    #     Number of discretization points along the x, y, z directions,
+    #     respectively. It can easily be set with ``n=number``, which will
+    #     set ``number`` for each element of the list.
+    #     For surface, contour, 2d vector field plots it can be set with
+    #     ``n=[num1, num2]``. For 3D implicit plots it can be set with
+    #     ``n=[num1, num2, num3]``.
 
-        Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
-        set in order to modify the respective element of the ``n`` list.""")
+    #     Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
+    #     set in order to modify the respective element of the ``n`` list.""")
     tx = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         x-axis.""")
@@ -550,6 +558,18 @@ class RiemannSphereSeries(
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
+
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the x-axis to be used in the
+        evaluation.""")
+    n2 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the y-axis to be used in the
+        evaluation.""")
+    n3 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the z-axis to be used in the
+        evaluation.""")
+
+
 
     def __init__(self, f, range_t, range_p, **kwargs):
         self._block_lambda_functions(f)

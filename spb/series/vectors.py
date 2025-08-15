@@ -197,10 +197,19 @@ class Vector2DSeries(VectorBase):
         """)
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the x-direction.""")
+        Discretization strategy along the x-direction.
+        Related parameters: ``n1``.""")
     yscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the y-direction.""")
+        Discretization strategy along the y-direction.
+        Related parameters: ``n2``.""")
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the x-axis to be used in the
+        evaluation. Related parameters: ``xscale``.""")
+    n2 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the y-axis to be used in the
+        evaluation. Related parameters: ``yscale``.""")
+
 
     def __init__(self, u, v, range1, range2, label="", **kwargs):
         # if "scalar" not in kwargs.keys():
@@ -265,16 +274,30 @@ class Vector3DSeries(VectorBase):
         """)
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the x-direction.""")
+        Discretization strategy along the x-direction.
+        Related parameters: ``n1``.""")
     yscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the y-direction.""")
+        Discretization strategy along the y-direction.
+        Related parameters: ``n2``.""")
     zscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the z-direction.""")
+        Discretization strategy along the z-direction.
+        Related parameters: ``n3``.""")
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the x-axis to be used in the
+        evaluation. Related parameters: ``xscale``.""")
+    n2 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the y-axis to be used in the
+        evaluation. Related parameters: ``yscale``.""")
+    n3 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the z-axis to be used in the
+        evaluation. Related parameters: ``zscale``.""")
+
+
 
     def __init__(self, u, v, z, range1, range2, range3, label="", **kwargs):
         super().__init__((u, v, z), (range1, range2, range3), label, **kwargs)

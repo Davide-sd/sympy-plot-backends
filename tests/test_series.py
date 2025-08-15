@@ -293,16 +293,50 @@ def test_number_discretization_points():
     # points are consistent with each other.
     x, y, z = symbols("x:z")
 
+    # for pt in [
+    #     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries
+    # ]:
+    #     kw1 = _set_discretization_points({"n": 10}, pt)
+    #     assert kw1["n"] == [10, 10, 10]
+    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+    #     assert kw2["n"] == [10, 20, 30]
+    #     kw3 = _set_discretization_points({"n1": 10}, pt)
+    #     assert kw3["n"] == [10, 1000, 1000]
+    #     assert all("n1" not in d for d in [kw1, kw2, kw3])
+
+    # for pt in [
+    #     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
+    #     ComplexSurfaceSeries, ComplexDomainColoringSeries, Vector2DSeries,
+    #     ImplicitSeries,
+    # ]:
+    #     kw1 = _set_discretization_points({"n": 10}, pt)
+    #     assert kw1["n"] == [10, 10, 10]
+    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+    #     assert kw2["n"] == [10, 20, 30]
+    #     kw3 = _set_discretization_points({"n1": 10, "n2": 20}, pt)
+    #     assert kw3["n"] == [10, 20, pt._N]
+    #     assert all("n1" not in d for d in [kw1, kw2, kw3])
+    #     assert all("n2" not in d for d in [kw1, kw2, kw3])
+
+
+    # for pt in [Vector3DSeries, SliceVector3DSeries, Implicit3DSeries]:
+    #     kw1 = _set_discretization_points({"n": 10}, pt)
+    #     assert kw1["n"] == [10, 10, 10]
+    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
+    #     assert kw2["n"] == [10, 20, 30]
+    #     kw3 = _set_discretization_points({"n1": 10, "n2": 20, "n3": 30}, pt)
+    #     assert kw3["n"] == [10, 20, 30]
+    #     assert all("n1" not in d for d in [kw1, kw2, kw3])
+    #     assert all("n2" not in d for d in [kw1, kw2, kw3])
+    #     assert all("n3" not in d for d in [kw1, kw2, kw3])
+
     for pt in [
         LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries
     ]:
         kw1 = _set_discretization_points({"n": 10}, pt)
-        assert kw1["n"] == [10, 10, 10]
         kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-        assert kw2["n"] == [10, 20, 30]
         kw3 = _set_discretization_points({"n1": 10}, pt)
-        assert kw3["n"] == [10, 1000, 1000]
-        assert all("n1" not in d for d in [kw1, kw2, kw3])
+        assert all(("n1" in kw) and kw["n1"] == 10 for kw in [kw1, kw2, kw3])
 
     for pt in [
         SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
@@ -310,30 +344,28 @@ def test_number_discretization_points():
         ImplicitSeries,
     ]:
         kw1 = _set_discretization_points({"n": 10}, pt)
-        assert kw1["n"] == [10, 10, 10]
         kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-        assert kw2["n"] == [10, 20, 30]
         kw3 = _set_discretization_points({"n1": 10, "n2": 20}, pt)
-        assert kw3["n"] == [10, 20, pt._N]
-        assert all("n1" not in d for d in [kw1, kw2, kw3])
-        assert all("n2" not in d for d in [kw1, kw2, kw3])
-
+        assert kw1["n1"] == kw1["n2"] == 10
+        assert all((kw["n1"] == 10) and (kw["n2"] == 20) for kw in [kw2, kw3])
 
     for pt in [Vector3DSeries, SliceVector3DSeries, Implicit3DSeries]:
         kw1 = _set_discretization_points({"n": 10}, pt)
-        assert kw1["n"] == [10, 10, 10]
         kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-        assert kw2["n"] == [10, 20, 30]
         kw3 = _set_discretization_points({"n1": 10, "n2": 20, "n3": 30}, pt)
-        assert kw3["n"] == [10, 20, 30]
-        assert all("n1" not in d for d in [kw1, kw2, kw3])
-        assert all("n2" not in d for d in [kw1, kw2, kw3])
-        assert all("n3" not in d for d in [kw1, kw2, kw3])
+        assert kw1["n1"] == kw1["n2"] == kw1["n3"] == 10
+        assert all(
+            ((kw["n1"] == 10) and (kw["n2"] == 20) and (kw["n3"] == 30))
+            for kw in [kw2, kw3]
+        )
 
     # verify that line-related series can deal with large float number of
     # discretization points
     LineOver1DRangeSeries(
         cos(x), (x, -5, 5), adaptive=False, n=1e04
+    ).get_data()
+    LineOver1DRangeSeries(
+        cos(x), (x, -5, 5), adaptive=False, n1=1e04
     ).get_data()
     AbsArgLineSeries(
         sqrt(x), (x, -5, 5), adaptive=False, n=1e04

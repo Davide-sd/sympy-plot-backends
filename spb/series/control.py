@@ -15,10 +15,11 @@ import warnings
 from spb.series.evaluator import (
     _discretize,
     _GridEvaluationParameters,
+    _NMixin,
     GridEvaluator,
     _update_range_value
 )
-from spb.series.base import BaseSeries, _get_wrapper_for_expr
+from spb.series.base import BaseSeries, _CastToInteger, _get_wrapper_for_expr
 from spb.series.series_2d_3d import Line2DBaseSeries, List2DSeries
 
 
@@ -432,7 +433,11 @@ class NicholsLineSeries(
     _allowed_keys = ["arrows"]
     xscale = param.Selector(
         default="log", objects=["linear", "log"], doc="""
-        Discretization strategy along the pulsation.""")
+        Discretization strategy along the pulsation.
+        Related parameters: ``n1``.""")
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the pulsation to be used in the
+        evaluation. Related parameters: ``xscale``.""")
 
     def __init__(
         self, tf, ol_phase, ol_mag, cl_phase, cl_mag, omega_range,
@@ -844,7 +849,7 @@ class RootLocusSeries(ControlBaseSeries):
 
 
 
-class SystemResponseSeries(ControlBaseSeries):
+class SystemResponseSeries(ControlBaseSeries, _NMixin):
     """Represent a system response computed with the ``control`` module.
 
     Computing the inverse laplace transform of a system with SymPy is not
@@ -864,16 +869,20 @@ class SystemResponseSeries(ControlBaseSeries):
     response_type = param.Selector(
         default="step", objects=["impulse", "step", "ramp"], doc="""
         The type of response to simulate.""")
-    n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
-        Number of discretization points along the x, y, z directions,
-        respectively. It can easily be set with ``n=number``, which will
-        set ``number`` for each element of the list.
-        For surface, contour, 2d vector field plots it can be set with
-        ``n=[num1, num2]``. For 3D implicit plots it can be set with
-        ``n=[num1, num2, num3]``.
+    n1 = _CastToInteger(default=100, doc="""
+        Number of discretization points along the time axis to be used in the
+        evaluation.""")
 
-        Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
-        set in order to modify the respective element of the ``n`` list.""")
+    # n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
+    #     Number of discretization points along the x, y, z directions,
+    #     respectively. It can easily be set with ``n=number``, which will
+    #     set ``number`` for each element of the list.
+    #     For surface, contour, 2d vector field plots it can be set with
+    #     ``n=[num1, num2]``. For 3D implicit plots it can be set with
+    #     ``n=[num1, num2, num3]``.
+
+    #     Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
+    #     set in order to modify the respective element of the ``n`` list.""")
 
     def __new__(cls, *args, **kwargs):
         cf = kwargs.get("color_func", None)

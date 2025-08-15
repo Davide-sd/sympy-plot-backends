@@ -154,7 +154,7 @@ def test_implicit_2d(default_range, range1, range2, label, rkw, n,  color,
         (s.ranges[1] == (default_range(x) if not range2 else r2))
     assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.color == color
-    assert all(t == (100 if not n else n) for t in s.n)
+    assert all(t == (100 if not n else n) for t in s.n[:-1])
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == ({} if not params else params)
     if border_color:
@@ -165,7 +165,7 @@ def test_implicit_2d(default_range, range1, range2, label, rkw, n,  color,
             (s.ranges[1] == (default_range(x) if not range2 else r2))
         assert s.rendering_kw == {}
         assert s.color == border_color
-        assert all(t == (100 if not n else n) for t in s.n)
+        assert all(t == (100 if not n else n) for t in s.n[:-1])
         assert s.is_interactive == (len(s.params) > 0)
         assert s.params == ({} if not params else params)
 
@@ -204,7 +204,7 @@ def test_contour(default_range, range1, range2, label, rkw, n, params):
         (s.ranges[1] == (default_range(x) if not range2 else r2))
     assert s.get_label(False) == ("cos(x*y)" if not label else label)
     assert s.rendering_kw == ({} if not rkw else rkw)
-    assert all(t == (100 if not n else n) for t in s.n)
+    assert all(t == (100 if not n else n) for t in s.n[:-1])
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == ({} if not params else params)
 

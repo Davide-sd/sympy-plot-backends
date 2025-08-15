@@ -30,7 +30,7 @@ from matplotlib.cbook import (
     pts_to_prestep, pts_to_poststep, pts_to_midstep
 )
 import warnings
-from spb.series.evaluator import GridEvaluator
+# from spb.series.evaluator import GridEvaluator
 from param.ipython import ParamPager
 
 
@@ -129,6 +129,17 @@ class _ParametersDict(param.Dict):
             val = new_params
 
         super().__set__( obj, val)
+
+
+class _CastToInteger(param.Integer):
+    """
+    ``n1, n2, n3`` (number of discretization points) should be integer
+    for np.linspace to work properly, but can receive float numbers.
+    For example, 1e04.
+    """
+
+    def __set__(self, obj, val):
+        super().__set__(obj, int(val))
 
 
 class BaseSeries(param.Parameterized):
@@ -428,7 +439,8 @@ class BaseSeries(param.Parameterized):
         # also allows n1, n2, n3. they will be removed later on inside
         # _set_discretization_points
         return list(cls.param) + [
-            "n1", "n2", "n3", "nb_of_points",
+            # "n1", "n2", "n3",
+            "nb_of_points",
             "nb_of_points_x", "nb_of_points_y",
             "nb_of_points_u", "nb_of_points_v"
         ]
@@ -643,14 +655,12 @@ def _set_discretization_points(kwargs, Series):
 
     kwargs : dict
     """
-
-    number_kw = ["n1", "n2", "n3"]
     deprecated_keywords = {
-        "nb_of_points": "n",
-        "nb_of_points_x": number_kw[0],
-        "nb_of_points_y": number_kw[1],
-        "nb_of_points_u": number_kw[0],
-        "nb_of_points_v": number_kw[1],
+        "nb_of_points": "n1",
+        "nb_of_points_x": "n1",
+        "nb_of_points_y": "n2",
+        "nb_of_points_u": "n1",
+        "nb_of_points_v": "n2",
         "points": "n"
     }
     for k, v in deprecated_keywords.items():
@@ -658,14 +668,16 @@ def _set_discretization_points(kwargs, Series):
             kwargs[v] = kwargs.pop(k)
 
     n = [Series._N] * 3
-    provided_n = kwargs.get("n", None)
+    provided_n = kwargs.pop("n", None)
     if provided_n is not None:
         if hasattr(provided_n, "__iter__"):
             for i in range(min(len(provided_n), 3)):
-                n[i] = provided_n[i]
+                n[i] = int(provided_n[i])
         else:
-            n = [provided_n] * 3
+            n = [int(provided_n)] * 3
 
-    kwargs["n"] = [kwargs.pop(k, n[i]) for i, k in enumerate(number_kw)]
-
+    kwargs.setdefault("n1", n[0])
+    kwargs.setdefault("n2", n[1])
+    kwargs.setdefault("n3", n[2])
     return kwargs
+
