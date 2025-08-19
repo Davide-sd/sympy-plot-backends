@@ -4198,6 +4198,10 @@ def test_2d_complex_domain_coloring_zero_infinity():
         coloring="b", at_infinity=True, riemann_mask=True,
         n1=n1, n2=n2,
     )
+    assert s1.expr != s3.expr
+    assert s2.expr != s4.expr
+    assert s1.expr == s2.expr
+    assert s3.expr == s4.expr
     d1, d2, d3, d4 = [t.get_data() for t in [s1, s2, s3, s4]]
     assert not np.allclose(d1[-2], d2[-2])
     assert not np.allclose(d1[-2], d3[-2])

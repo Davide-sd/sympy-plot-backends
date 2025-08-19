@@ -6,7 +6,7 @@ from inspect import signature
 from spb.wegert import wegert
 from spb.defaults import cfg
 from spb.utils import (
-    _get_free_symbols, unwrap, extract_solution, tf_to_control
+    _get_free_symbols, unwrap, extract_solution, tf_to_control, prange
 )
 import sympy
 from sympy import (
@@ -48,7 +48,9 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
     _allowed_keys = [
         "streamlines", "quiver_kw", "stream_kw", "normalize"]
 
-    expr = param.Parameter()
+    _expr = param.Parameter(doc="""
+        Holds a tuple of symbolic expressions representing the
+        vector field.""")
     is_streamlines = param.Boolean(False, doc="""
         If True shows the streamlines, otherwise shows the vector field.""")
     normalize = param.Boolean(False, doc="""
@@ -71,8 +73,8 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
             kwargs["use_cm"] = False
         if "streamlines" in kwargs:
             kwargs["is_streamlines"] = kwargs.pop("streamlines")
+        kwargs["_expr"] = exprs
         super().__init__(**kwargs)
-        self.expr = tuple([e if callable(e) else sympify(e) for e in exprs])
         self.ranges = list(ranges)
         self.evaluator = GridEvaluator(series=self)
         self._label_str = str(exprs) if label is None else label
@@ -96,6 +98,10 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         other_kw = "stream_kw" if self.is_streamlines else "quiver_kw"
         self.rendering_kw = kwargs.get(other_kw, rendering_kw)
         self._post_init()
+
+    @property
+    def expr(self):
+        return self._expr
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
         if use_latex:
@@ -179,6 +185,24 @@ class Vector2DSeries(VectorBase):
     # default number of discretization points
     _N = 25
     _allowed_keys = ["scalar"]
+    u = param.Parameter(doc="""
+        The components of the vector field along the x-axis. It can be a:
+
+        * A symbolic expression.
+        * A numerical function of two variables.
+        """)
+    v = param.Parameter(doc="""
+        The components of the vector field along the y-axis. It can be a:
+
+        * A symbolic expression.
+        * A numerical function of two variables.
+        """)
+    range_x = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the x variable.
+        Default values: `min=-10` and `max=10`.""")
+    range_y = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the y variable.
+        Default values: `min=-10` and `max=10`.""")
     rendering_kw = param.Dict(default={}, doc="""
         A dictionary of keyword arguments to be passed to the renderers
         in order to further customize the appearance of the quivers or
@@ -211,7 +235,13 @@ class Vector2DSeries(VectorBase):
         evaluation. Related parameters: ``yscale``.""")
 
 
-    def __init__(self, u, v, range1, range2, label="", **kwargs):
+    def __init__(self, u, v, range_x, range_y, label="", **kwargs):
+        u = u if callable(u) else sympify(u)
+        v = v if callable(v) else sympify(v)
+        kwargs["u"] = u
+        kwargs["v"] = v
+        kwargs["range_x"] = range_x
+        kwargs["range_y"] = range_y
         # if "scalar" not in kwargs.keys():
         #     use_cm = False
         # elif (not kwargs["scalar"]) or (kwargs["scalar"] is None):
@@ -219,7 +249,7 @@ class Vector2DSeries(VectorBase):
         # else:
         #     use_cm = False
         # kwargs.setdefault("use_cm", )
-        super().__init__((u, v), (range1, range2), label, **kwargs)
+        super().__init__((u, v), (range_x, range_y), label, **kwargs)
 
         # self.use_cm = kwargs.get("use_cm", use_cm)
 
@@ -240,6 +270,34 @@ class Vector3DSeries(VectorBase):
     is_3Dvector = True
     # default number of discretization points
     _N = 10
+
+    u = param.Parameter(doc="""
+        The components of the vector field along the x-axis. It can be a:
+
+        * A symbolic expression.
+        * A numerical function of three variables.
+        """)
+    v = param.Parameter(doc="""
+        The components of the vector field along the y-axis. It can be a:
+
+        * A symbolic expression.
+        * A numerical function of three variables.
+        """)
+    w = param.Parameter(doc="""
+        The components of the vector field along the z-axis. It can be a:
+
+        * A symbolic expression.
+        * A numerical function of three variables.
+        """)
+    range_x = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the x variable.
+        Default values: `min=-10` and `max=10`.""")
+    range_y = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the y variable.
+        Default values: `min=-10` and `max=10`.""")
+    range_z = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the z variable.
+        Default values: `min=-10` and `max=10`.""")
     rendering_kw = param.Dict(default={}, doc="""
         A dictionary of keyword arguments to be passed to the renderers
         in order to further customize the appearance of the quivers or
@@ -299,8 +357,17 @@ class Vector3DSeries(VectorBase):
 
 
 
-    def __init__(self, u, v, z, range1, range2, range3, label="", **kwargs):
-        super().__init__((u, v, z), (range1, range2, range3), label, **kwargs)
+    def __init__(self, u, v, w, range_x, range_y, range_z, label="", **kwargs):
+        u = u if callable(u) else sympify(u)
+        v = v if callable(v) else sympify(v)
+        w = w if callable(w) else sympify(w)
+        kwargs["u"] = u
+        kwargs["v"] = v
+        kwargs["w"] = w
+        kwargs["range_x"] = range_x
+        kwargs["range_y"] = range_y
+        kwargs["range_z"] = range_z
+        super().__init__((u, v, w), (range_x, range_y, range_z), label, **kwargs)
         if self.is_streamlines and isinstance(self.color_func, Expr):
             raise TypeError(
                 "Vector3DSeries with streamlines can't use "
@@ -415,6 +482,7 @@ class Arrow2DSeries(BaseSeries):
     is_2Dvector = True
     _allowed_keys = ["normalize"]
 
+    _expr = param.Parameter()
     start = ListTupleArray(bounds=(2, 2), doc="""
         Coordinates of the start position, (x, y).""")
     direction = ListTupleArray(bounds=(2, 2), doc="""
@@ -453,7 +521,7 @@ class Arrow2DSeries(BaseSeries):
 
         kwargs["start"] = start
         kwargs["direction"] = direction
-        kwargs["expr"] = (start, direction)
+        kwargs["_expr"] = (start, direction)
 
         if not label:
             # label: (from) -> (to)
@@ -485,6 +553,10 @@ class Arrow2DSeries(BaseSeries):
 
         if not any(isinstance(t, np.ndarray) for t in [self.start, self.direction]):
             self._check_fs()
+
+    @property
+    def expr(self):
+        return self._expr
 
     def __str__(self):
         pre = "3D " if self.is_3D else "2D "

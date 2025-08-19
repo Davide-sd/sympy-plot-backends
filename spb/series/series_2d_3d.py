@@ -10,7 +10,8 @@ from spb.utils import (
     _correct_shape,
     unwrap,
     extract_solution,
-    tf_to_control
+    tf_to_control,
+    prange
 )
 import sympy
 from sympy import (
@@ -20,6 +21,7 @@ from sympy import (
     atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
     Union, Interval, nsimplify, Set, Integral, hyper, fraction
 )
+from sympy.logic.boolalg import Boolean
 from sympy.core.relational import Relational
 from sympy.calculus.util import continuous_domain
 from sympy.geometry.entity import GeometryEntity
@@ -668,6 +670,9 @@ class LineOver1DRangeSeries(
         of one variable to be plotted, or a numerical function of one
         variable, supporting vectorization. In the latter case the following
         keyword arguments are not supported: ``params``, ``sum_bound``.""")
+    range_x = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the x variable.
+        Default values: `min=-10` and `max=10`.""")
     exclude = param.List([], item_type=float, doc="""
         List of x-coordinates to be excluded from evaluation.""")
     xscale = param.Selector(
@@ -697,14 +702,15 @@ class LineOver1DRangeSeries(
             return super().__new__(ColoredLineOver1DRangeSeries)
         return object.__new__(cls)
 
-    def __init__(self, expr, var_start_end, label="", **kwargs):
+    def __init__(self, expr, range_x, label="", **kwargs):
         _return = kwargs.pop("return", None)
+        kwargs["range_x"] = range_x
+        kwargs["expr"] = expr if callable(expr) else sympify(expr)
         super().__init__(**kwargs)
-        self.expr = expr if callable(expr) else sympify(expr)
         self.evaluator = GridEvaluator(series=self)
         self._label_str = str(self.expr) if label is None else label
         self._label_latex = latex(self.expr) if label is None else label
-        self.ranges = [var_start_end]
+        self.ranges = [range_x]
         # for complex-related data series, this determines what data to return
         # on the y-axis
         self._return = _return
@@ -841,7 +847,46 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
         return x, y, self.eval_color_func(x, y)
 
 
-class _2DParametricParameters(param.Parameterized):
+# class _2DParametricParameters(param.Parameterized):
+#     expr_x = param.Parameter(doc="""
+#         The expression representing the component along the x-axis of the
+#         parametric function.
+#         It can either be a symbolic expression representing the function of
+#         one variable to be plotted, or a numerical function of one variable,
+#         supporting vectorization. In the latter case the following keyword
+#         arguments are not supported: ``params``, ``sum_bound``.""")
+#     expr_y = param.Parameter(doc="""
+#         The expression representing the component along the y-axis of the
+#         parametric function.
+#         It can either be a symbolic expression representing the function of
+#         one variable to be plotted, or a numerical function of one variable,
+#         supporting vectorization. In the latter case the following keyword
+#         arguments are not supported: ``params``, ``sum_bound``.""")
+#     exclude = param.List([], item_type=float, doc="""
+#         A list of numerical values along the parameter which are going to
+#         be excluded from the evaluation. In practice, it introduces
+#         discontinuities in the resulting line.""")
+
+
+# class _3DParametricParameters(_2DParametricParameters):
+#     expr_z = param.Parameter(doc="""
+#         The expression representing the component along the z-axis of the
+#         parametric function.
+#         It can either be a symbolic expression representing the function of
+#         one variable to be plotted, or a numerical function of one variable,
+#         supporting vectorization. In the latter case the following keyword
+#         arguments are not supported: ``params``, ``sum_bound``.""")
+
+
+class ParametricLineBaseSeries(
+    _GridEvaluationParameters,
+    _AdaptiveEvaluationParameters,
+    _LineWithRangeMixin,
+    _DetectPolesMixin,
+    Line2DBaseSeries
+):
+    is_parametric = True
+
     expr_x = param.Parameter(doc="""
         The expression representing the component along the x-axis of the
         parametric function.
@@ -856,31 +901,13 @@ class _2DParametricParameters(param.Parameterized):
         one variable to be plotted, or a numerical function of one variable,
         supporting vectorization. In the latter case the following keyword
         arguments are not supported: ``params``, ``sum_bound``.""")
+    range_p = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the parameter.
+        Default values: `min=-10` and `max=10`.""")
     exclude = param.List([], item_type=float, doc="""
         A list of numerical values along the parameter which are going to
         be excluded from the evaluation. In practice, it introduces
         discontinuities in the resulting line.""")
-
-
-class _3DParametricParameters(_2DParametricParameters):
-    expr_z = param.Parameter(doc="""
-        The expression representing the component along the z-axis of the
-        parametric function.
-        It can either be a symbolic expression representing the function of
-        one variable to be plotted, or a numerical function of one variable,
-        supporting vectorization. In the latter case the following keyword
-        arguments are not supported: ``params``, ``sum_bound``.""")
-
-
-class ParametricLineBaseSeries(
-    _GridEvaluationParameters,
-    _AdaptiveEvaluationParameters,
-    _LineWithRangeMixin,
-    _DetectPolesMixin,
-    Line2DBaseSeries
-):
-    is_parametric = True
-
     is_polar = param.Boolean(False, doc="""
         If True, apply a cartesian to polar transformation.""")
     tp = param.Callable(doc="""
@@ -1025,7 +1052,6 @@ class ParametricLineBaseSeries(
 
 
 class Parametric2DLineSeries(
-    _2DParametricParameters,
     ParametricLineBaseSeries
 ):
     """
@@ -1049,13 +1075,14 @@ class Parametric2DLineSeries(
         * None: the default value (color mapping according to the parameter).
         """)
 
-    def __init__(self, expr_x, expr_y, var_start_end, label="", **kwargs):
+    def __init__(self, expr_x, expr_y, range_p, label="", **kwargs):
         kwargs["expr_x"] = expr_x if callable(expr_x) else sympify(expr_x)
         kwargs["expr_y"] = expr_y if callable(expr_y) else sympify(expr_y)
+        kwargs["range_p"] = range_p
         kwargs.setdefault("use_cm", True)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y)
-        self.ranges = [var_start_end]
+        self.ranges = [range_p]
         self.evaluator = GridEvaluator(series=self)
         self._set_parametric_line_label(label)
         self._post_init()
@@ -1077,7 +1104,6 @@ class Parametric2DLineSeries(
 
 
 class Parametric3DLineSeries(
-    _3DParametricParameters,
     ParametricLineBaseSeries
 ):
     """
@@ -1087,6 +1113,13 @@ class Parametric3DLineSeries(
     is_2Dline = False
     is_3Dline = True
 
+    expr_z = param.Parameter(doc="""
+        The expression representing the component along the z-axis of the
+        parametric function.
+        It can either be a symbolic expression representing the function of
+        one variable to be plotted, or a numerical function of one variable,
+        supporting vectorization. In the latter case the following keyword
+        arguments are not supported: ``params``, ``sum_bound``.""")
     color_func = param.Parameter(default=None, doc="""
         Define a custom color mapping when ``use_cm=True``. It can either be:
 
@@ -1106,15 +1139,16 @@ class Parametric3DLineSeries(
         z-axis.""")
 
     def __init__(
-        self, expr_x, expr_y, expr_z, var_start_end, label="", **kwargs
+        self, expr_x, expr_y, expr_z, range_p, label="", **kwargs
     ):
         kwargs["expr_x"] = expr_x if callable(expr_x) else sympify(expr_x)
         kwargs["expr_y"] = expr_y if callable(expr_y) else sympify(expr_y)
         kwargs["expr_z"] = expr_z if callable(expr_z) else sympify(expr_z)
+        kwargs["range_p"] = range_p
         kwargs.setdefault("use_cm", True)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
-        self.ranges = [var_start_end]
+        self.ranges = [range_p]
         self.evaluator = GridEvaluator(series=self)
         self._set_parametric_line_label(label)
         self._post_init()
@@ -1241,6 +1275,21 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     range.
     """
 
+    expr = param.Parameter(doc="""
+        The expression representing the function of two variables to be
+        plotted. It can be a:
+
+        * Symbolic expression.
+        * Numerical function of two variable, supporting vectorization.
+          In this case the following keyword arguments are not supported:
+          ``params``.
+        """)
+    range_x = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the x variable.
+        Default values: `min=-10` and `max=10`.""")
+    range_y = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the y variable.
+        Default values: `min=-10` and `max=10`.""")
     color_func = param.Parameter(default=None, doc="""
         Define a custom color mapping. It can either be:
 
@@ -1265,11 +1314,13 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         Related parameters: ``n2``.""")
 
     def __init__(
-        self, expr, var_start_end_x, var_start_end_y, label="", **kwargs
+        self, expr, range_x, range_y, label="", **kwargs
     ):
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
+        kwargs["range_x"] = range_x
+        kwargs["range_y"] = range_y
         super().__init__(**kwargs)
-        self.ranges = [var_start_end_x, var_start_end_y]
+        self.ranges = [range_x, range_y]
         self.evaluator = GridEvaluator(series=self)
         self._set_surface_label(label)
         self._post_init()
@@ -1360,7 +1411,6 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
 
 
 class ParametricSurfaceSeries(
-    _3DParametricParameters,
     SurfaceBaseSeries
 ):
     """
@@ -1370,6 +1420,36 @@ class ParametricSurfaceSeries(
 
     is_parametric = True
 
+    expr_x = param.Parameter(doc="""
+        The expression representing the component along the x-axis of the
+        parametric function. It can be a:
+
+        * Symbolic expression.
+        * Numerical function of two variable, f(u, v), supporting
+          vectorization. In this case the following keyword arguments are
+          not supported: ``params``.""")
+    expr_y = param.Parameter(doc="""
+        The expression representing the component along the y-axis of the
+        parametric function. It can be a:
+
+        * Symbolic expression.
+        * Numerical function of two variable, f(u, v), supporting
+          vectorization. In this case the following keyword arguments are
+          not supported: ``params``.""")
+    expr_z = param.Parameter(doc="""
+        The expression representing the component along the z-axis of the
+        parametric function. It can be a:
+
+        * Symbolic expression.
+        * Numerical function of two variable, f(u, v), supporting
+          vectorization. In this case the following keyword arguments are
+          not supported: ``params``.""")
+    range_u = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the u parameter.
+        Default values: `min=-10` and `max=10`.""")
+    range_v = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the v parameter.
+        Default values: `min=-10` and `max=10`.""")
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the the first parameter.
@@ -1381,15 +1461,17 @@ class ParametricSurfaceSeries(
 
     def __init__(
         self, expr_x, expr_y, expr_z,
-        var_start_end_u, var_start_end_v, label="", **kwargs
+        range_u, range_v, label="", **kwargs
     ):
         kwargs["expr_x"] = expr_x if callable(expr_x) else sympify(expr_x)
         kwargs["expr_y"] = expr_y if callable(expr_y) else sympify(expr_y)
         kwargs["expr_z"] = expr_z if callable(expr_z) else sympify(expr_z)
+        kwargs["range_u"] = range_u
+        kwargs["range_v"] = range_v
         kwargs.setdefault("color_func", lambda x, y, z, u, v: z)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
-        self.ranges = [var_start_end_u, var_start_end_v]
+        self.ranges = [range_u, range_v]
         self.evaluator = GridEvaluator(series=self)
         self._set_surface_label(label)
         self._post_init()
@@ -1537,7 +1619,14 @@ class ImplicitSeries(
     _allowed_keys = ["adaptive", "depth", "color"]
     _N = 100
 
-    # expr = param.Parameter()
+    f = param.ClassSelector(class_=(Relational, Boolean, Expr), doc="""
+        The equation / inequality that is to be plotted.""")
+    range_x = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the x variable.
+        Default values: `min=-10` and `max=10`.""")
+    range_y = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the y variable.
+        Default values: `min=-10` and `max=10`.""")
     adaptive = param.Boolean(False, doc="""
         Select the evaluation strategy to be used.
         If ``False``, the internal algorithm uses a mesh grid approach.
@@ -1595,16 +1684,17 @@ class ImplicitSeries(
         Number of discretization points along the y-axis to be used in the
         evaluation. Related parameters: ``yscale``.""")
 
-    def __init__(self, expr, var_start_end_x, var_start_end_y, label="", **kwargs):
+    def __init__(self, f, rangex_x, rangex_y, label="", **kwargs):
         kwargs = kwargs.copy()
+        kwargs["f"] = f
+        kwargs["rangex_x"] = rangex_x
+        kwargs["rangex_y"] = rangex_y
         kwargs["label"] = label if label is not None else ""
-        # kwargs["_label_str"] = str(expr) if label is None else label
-        # kwargs["_label_latex"] = latex(expr) if label is None else label
         color = kwargs.pop("color", kwargs.get("line_color", None))
-        kwargs = self._preprocess_expr(expr, kwargs)
+        kwargs = self._preprocess_expr(f, kwargs)
         super().__init__(**kwargs)
 
-        self.ranges = [var_start_end_x, var_start_end_y]
+        self.ranges = [rangex_x, rangex_y]
         self.evaluator = GridEvaluator(series=self)
         self.var_x, self.start_x, self.end_x = self.ranges[0]
         self.var_y, self.start_y, self.end_y = self.ranges[1]
@@ -1630,6 +1720,7 @@ class ImplicitSeries(
 
     @property
     def expr(self):
+        "Return the symbolic expression to be evaluated."
         if self.adaptive:
             return self._adaptive_expr
         return self._non_adaptive_expr
@@ -1638,6 +1729,10 @@ class ImplicitSeries(
     def expr(self, value):
         kwargs = self._preprocess_expr(value, {})
         self.param.update(kwargs)
+
+    @param.depends("f", watch=True)
+    def _update_expr(self):
+        self.expr = self.f
 
     def _preprocess_expr(self, expr, kwargs):
         self._block_lambda_functions(expr)
@@ -1980,6 +2075,22 @@ class Implicit3DSeries(SurfaceBaseSeries):
     is_implicit = True
     _N = 60
 
+    expr = param.Parameter(doc="""
+        Implicit expression.  It can be a:
+
+        * Symbolic expression.
+        * Numerical function of three variable, f(x, y, z), supporting
+            vectorization.
+        """)
+    range_x = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the x variable.
+        Default values: `min=-10` and `max=10`.""")
+    range_y = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the y variable.
+        Default values: `min=-10` and `max=10`.""")
+    range_z = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the z variable.
+        Default values: `min=-10` and `max=10`.""")
     rendering_kw = param.Dict(default={}, doc="""
         A dictionary of keyword arguments to be passed to the renderers
         in order to further customize the appearance of the surface.
@@ -2013,8 +2124,11 @@ class Implicit3DSeries(SurfaceBaseSeries):
 
     def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
         # kwargs.setdefault("n", self._N)
+        kwargs["expr"] = expr if callable(expr) else sympify(expr)
+        kwargs["range_x"] = range_x
+        kwargs["range_y"] = range_y
+        kwargs["range_z"] = range_z
         super().__init__(**kwargs)
-        self.expr = expr if callable(expr) else sympify(expr)
         self.ranges = [range_x, range_y, range_z]
         self.evaluator = GridEvaluator(series=self)
         self.var_x, self.start_x, self.end_x = self.ranges[0]
@@ -2074,9 +2188,20 @@ class PlaneSeries(SurfaceBaseSeries):
 
     # a generic plane (for example with normal (1,1,1)) can generate a huge
     # range along the z-direction. With _use_nan=True, every z-value outside
-    # of the provided z_range will be set to Nan.
+    # of the provided range_z will be set to Nan.
     _use_nan = True
 
+    plane = param.ClassSelector(class_=Plane, doc="""
+        The plane to be plotted.""")
+    range_x = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the x variable.
+        Default values: `min=-10` and `max=10`.""")
+    range_y = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the y variable.
+        Default values: `min=-10` and `max=10`.""")
+    range_z = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the z variable.
+        Default values: `min=-10` and `max=10`.""")
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the x-direction.
@@ -2095,10 +2220,14 @@ class PlaneSeries(SurfaceBaseSeries):
 
 
     def __init__(
-        self, plane, x_range, y_range, z_range=None, label="", **kwargs
+        self, plane, range_x, range_y, range_z=None, label="", **kwargs
     ):
         # super().__init__(**kwargs)
         # kwargs.setdefault("n", self._N)
+        kwargs["plane"] = plane
+        kwargs["range_x"] = range_x
+        kwargs["range_y"] = range_y
+        kwargs["range_z"] = range_z
         self._block_lambda_functions(plane)
         color_func = kwargs.get("color_func", None)
         if (color_func is not None) and (not callable(color_func)):
@@ -2107,15 +2236,8 @@ class PlaneSeries(SurfaceBaseSeries):
                 " Here is its documentation:\n\n"
                 f"{self.param.color_func.doc}")
         super().__init__(**kwargs)
-        self.plane = sympify(plane)
         self.expr = self.plane
-        if not isinstance(self.plane, Plane):
-            raise TypeError(
-                "`plane` must be an instance of sympy.geometry.Plane")
-        self.x_range = sympify(x_range)
-        self.y_range = sympify(y_range)
-        self.z_range = sympify(z_range)
-        self.ranges = [self.x_range, self.y_range, self.z_range]
+        self.ranges = [self.range_x, self.range_y, self.range_z]
         self._set_surface_label(label)
         if self.params and not self.plane.free_symbols:
             self.params = dict()
@@ -2125,7 +2247,7 @@ class PlaneSeries(SurfaceBaseSeries):
     def __str__(self):
         return self._str_helper(
             "plane series: %s over %s, %s, %s" % (
-                self.plane, self.x_range, self.y_range, self.z_range))
+                self.plane, self.range_x, self.range_y, self.range_z))
 
     def get_data(self):
         np = import_module('numpy')
@@ -2138,8 +2260,8 @@ class PlaneSeries(SurfaceBaseSeries):
             # parallel to yz plane (normal vector (1, 0, 0))
             s = SurfaceOver2DRangeSeries(
                 plane.p1[0],
-                (x, *self.z_range[1:]),
-                (y, *self.y_range[1:]),
+                (x, *self.range_z[1:]),
+                (y, *self.range_y[1:]),
                 "",
                 n1=self.n[2],
                 n2=self.n[1],
@@ -2152,8 +2274,8 @@ class PlaneSeries(SurfaceBaseSeries):
             # parallel to xz plane (normal vector (0, 1, 0))
             s = SurfaceOver2DRangeSeries(
                 plane.p1[1],
-                (x, *self.x_range[1:]),
-                (y, *self.z_range[1:]),
+                (x, *self.range_x[1:]),
+                (y, *self.range_z[1:]),
                 "",
                 n1=self.n[0],
                 n2=self.n[2],
@@ -2177,8 +2299,8 @@ class PlaneSeries(SurfaceBaseSeries):
 
             s = SurfaceOver2DRangeSeries(
                 proj_p2nv,
-                (x, *self.x_range[1:]),
-                (y, *self.z_range[1:]),
+                (x, *self.range_x[1:]),
+                (y, *self.range_z[1:]),
                 "",
                 n1=self.n[0],
                 n2=self.n[2],
@@ -2207,8 +2329,8 @@ class PlaneSeries(SurfaceBaseSeries):
                 eq = solve(eq, z)[0]
             s = SurfaceOver2DRangeSeries(
                 eq,
-                (x, *self.x_range[1:]),
-                (y, *self.y_range[1:]),
+                (x, *self.range_x[1:]),
+                (y, *self.range_y[1:]),
                 "",
                 n1=self.n[0],
                 n2=self.n[1],
@@ -2217,7 +2339,7 @@ class PlaneSeries(SurfaceBaseSeries):
             )
             xx, yy, zz = s.get_data()
             if (len(fs) > 1) and self._use_nan:
-                idx = np.logical_or(zz < self.z_range[1], zz > self.z_range[2])
+                idx = np.logical_or(zz < self.range_z[1], zz > self.range_z[2])
                 zz[idx] = np.nan
         return self._apply_transform(xx, yy, zz)
 
@@ -2254,6 +2376,12 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
     #     set in order to modify the respective element of the ``n`` list.""")
 
 
+    geom = param.ClassSelector(class_=GeometryEntity, doc="""
+        Represent the geometric entity to be plotted.""")
+    range_x = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the x variable
+        to be used when plotting lines. Default to None.""")
+    # _expr = param.Parameter()
     n1 = _CastToInteger(default=100, doc="""
         Number of discretization points used to resolve the polar
         angle theta ∈ [0, 2*pi] in order to plot ellipses.""")
@@ -2270,29 +2398,34 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
     #         return new_cls(*args[0].functions, args[0].limits, **kwargs)
     #     return object.__new__(cls)
 
-    def __init__(self, expr, _range=None, label="", **kwargs):
-        if not isinstance(expr, GeometryEntity):
+    @property
+    def expr(self):
+        return self.geom
+
+    def __init__(self, geom, range_x=None, label="", **kwargs):
+        if not isinstance(geom, GeometryEntity):
             raise ValueError(
                 "`expr` must be a geomtric entity.\n"
-                + "Received: type(expr) = {}\n".format(type(expr))
-                + "Expr: {}".format(expr)
+                + "Received: type(expr) = {}\n".format(type(geom))
+                + "Expr: {}".format(geom)
             )
 
-        kwargs["expr"] = expr
-        kwargs["_label_str"] = str(expr) if label is None else label
-        kwargs["_label_latex"] = latex(expr) if label is None else label
+        kwargs["geom"] = geom
+        kwargs["range_x"] = range_x
+        kwargs["_label_str"] = str(geom) if label is None else label
+        kwargs["_label_latex"] = latex(geom) if label is None else label
         super().__init__(**kwargs)
 
-        r = expr.free_symbols.difference(set(self.params.keys()))
+        r = geom.free_symbols.difference(set(self.params.keys()))
         if len(r) > 0:
             raise ValueError(
                 "Too many free symbols. Please, specify the values of the "
                 f"following symbols with the `params` dictionary: {r}"
             )
 
-        if isinstance(expr, (Polygon, Circle, Ellipse)):
+        if isinstance(geom, (Polygon, Circle, Ellipse)):
             self.is_2Dline = not self.is_filled
-        elif isinstance(expr, Point2D):
+        elif isinstance(geom, Point2D):
             self.is_point = True
             self.is_2Dline = True
             self.poles_locations = []
@@ -2300,7 +2433,7 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
     def get_data(self):
         np = import_module('numpy')
 
-        expr = self.expr.subs(self.params)
+        expr = self.geom.subs(self.params)
         if isinstance(expr, Point2D):
             return self._apply_transform(
                 np.array([expr.x], dtype=float),
@@ -2338,19 +2471,19 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
             return self._apply_transform(x.astype(float), y.astype(float))
         else:  # Line
             p1, p2 = expr.points
-            if not self.ranges:
+            if not self.range_x:
                 x = np.array([p1.x, p2.x])
                 y = np.array([p1.y, p2.y])
             else:
-                _range = self.ranges[0]
+                print(self.range_x)
                 m = expr.slope
                 q = p1[1] - m * p1[0]
-                x = np.array([_range[1], _range[2]])
+                x = np.array([self.range_x[1], self.range_x[2]])
                 y = m * x + q
             return self._apply_transform(x.astype(float), y.astype(float))
 
     def __str__(self):
-        return self._str_helper("2D geometry entity: %s" % str(self.expr))
+        return self._str_helper("2D geometry entity: %s" % str(self.geom))
 
 
 class Geometry3DSeries(Line2DBaseSeries):
@@ -2364,6 +2497,9 @@ class Geometry3DSeries(Line2DBaseSeries):
     is_2Dline = False
     is_3Dline = True
 
+    geom = param.ClassSelector(class_=GeometryEntity, doc="""
+        Represent the geometric entity to be plotted.""")
+    # _expr = param.Parameter()
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
@@ -2380,32 +2516,37 @@ class Geometry3DSeries(Line2DBaseSeries):
     #         return new_cls(*args[0].functions, args[0].limits, **kwargs)
     #     return object.__new__(cls)
 
-    def __init__(self, expr, _range=None, label="", **kwargs):
-        if not isinstance(expr, GeometryEntity):
+
+    @property
+    def expr(self):
+        return self.geom
+
+    def __init__(self, geom, label="", **kwargs):
+        if not isinstance(geom, GeometryEntity):
             raise ValueError(
                 "`expr` must be a geomtric entity.\n"
-                + "Received: type(expr) = {}\n".format(type(expr))
-                + "Expr: {}".format(expr)
+                + "Received: type(expr) = {}\n".format(type(geom))
+                + "Expr: {}".format(geom)
             )
 
-        kwargs["expr"] = expr
-        kwargs["_label_str"] = str(expr) if label is None else label
-        kwargs["_label_latex"] = latex(expr) if label is None else label
+        kwargs["geom"] = geom
+        kwargs["_label_str"] = str(geom) if label is None else label
+        kwargs["_label_latex"] = latex(geom) if label is None else label
         super().__init__(**kwargs)
-        r = expr.free_symbols.difference(set(self.params.keys()))
+        r = geom.free_symbols.difference(set(self.params.keys()))
         if len(r) > 0:
             raise ValueError(
                 "Too many free symbols. Please, specify the values of the "
                 f"following symbols with the `params` dictionary: {r}"
             )
 
-        if isinstance(expr, Point3D):
+        if isinstance(geom, Point3D):
             self.is_point = True
 
     def get_data(self):
         np = import_module('numpy')
 
-        expr = self.expr.subs(self.params)
+        expr = self.geom.subs(self.params)
         if isinstance(expr, Point3D):
             return self._apply_transform(
                 np.array([expr.x], dtype=float),
@@ -2420,7 +2561,7 @@ class Geometry3DSeries(Line2DBaseSeries):
             return self._apply_transform(x, y, z)
 
     def __str__(self):
-        return self._str_helper("3D geometry entity: %s" % str(self.expr))
+        return self._str_helper("3D geometry entity: %s" % str(self.geom))
 
 
 class GenericDataSeries(BaseSeries):
@@ -2512,17 +2653,22 @@ class HVLineSeries(BaseSeries):
     Represent an horizontal or vertical line series.
     In Matplotlib, this will be rendered by axhline or axvline.
     """
+    _expr = param.ClassSelector(class_=Expr)
     is_horizontal = param.Boolean(default=True, doc="""
         If True, the series represents and horizontal line. Otherwise,
         it represents a vertical line.""")
 
-    def __init__(self, v, horizontal, label="", **kwargs):
-        expr = sympify(v)
-        kwargs["expr"] = expr
+    def __init__(self, expr, horizontal, label="", **kwargs):
+        expr = sympify(expr)
+        kwargs["_expr"] = expr
         kwargs["is_horizontal"] = horizontal
         kwargs["_label_str"] = str(expr) if label is None else label
         kwargs["_label_latex"] = latex(expr) if label is None else label
         super().__init__(**kwargs)
+
+    @property
+    def expr(self):
+        return self._expr
 
     def get_data(self):
         location = self.expr
@@ -2536,4 +2682,26 @@ class HVLineSeries(BaseSeries):
         return self._str_helper(pre + " line at " + post + str(self.expr))
 
 
-# LineOver1DRangeSeries.__doc__ = "ASD"
+class HLineSeries(HVLineSeries):
+    y = param.Parameter(doc="""
+        The y-coordinate where to draw the horizontal line.""")
+
+    def __init__(self, y, label="", **kwargs):
+        super().__init__(y, True, label, **kwargs)
+
+    @param.depends("y", watch=True)
+    def _update_expr(self):
+        self._expr = self.y
+
+
+class VLineSeries(HVLineSeries):
+    x = param.Parameter(doc="""
+        The x-coordinate where to draw the vertical line.""")
+
+    def __init__(self, x, label="", **kwargs):
+        super().__init__(x, False, label, **kwargs)
+
+    @param.depends("x", watch=True)
+    def _update_expr(self):
+        self._expr = self.x
+

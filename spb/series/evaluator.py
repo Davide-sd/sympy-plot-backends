@@ -337,6 +337,7 @@ class _NMixin:
         if hasattr(self, "n3"):
             self.n3 = n[2]
 
+
 class _GridEvaluationParameters(param.Parameterized, _NMixin):
     evaluator = param.Parameter(doc="""
         An instance of ``GridEvaluator``, which is the machinery that
@@ -506,7 +507,7 @@ class GridEvaluator(param.Parameterized):
                 "``only_integers=True`` is not supported by the adaptive "
                 "algorithm. Automatically setting ``adaptive=False``."
             )
-            self.adaptive = False
+            self.series.adaptive = False
 
     def _create_lambda_func(self):
         """Create the lambda functions to be used by the uniform meshing
@@ -663,7 +664,7 @@ class GridEvaluator(param.Parameterized):
     #         return complex(t)
     #     return complex(t.subs(self.series.params))
 
-    # @param.depends("series.expr")
+    # @param.depends("series.expr", watch=True)
     def set_expressions(self):
         """Set the expression (or expressions) to be evaluated."""
         e = self.series.expr

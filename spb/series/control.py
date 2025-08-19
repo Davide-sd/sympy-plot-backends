@@ -6,7 +6,7 @@ from inspect import signature
 from spb.wegert import wegert
 from spb.defaults import cfg
 from spb.utils import (
-    _get_free_symbols, unwrap, extract_solution, tf_to_control
+    _get_free_symbols, unwrap, extract_solution, tf_to_control, prange
 )
 # import sympy
 from sympy import latex, Tuple, symbols, Expr, Poly
@@ -29,6 +29,7 @@ class GridBase(param.Parameterized):
     know the axis limits.
 
     Axis limits can be:
+
     1. provided by the user in the plot function call. For example:
        ``plot(..., xlim=(a, b), ylim=(c, d))``
     2. computed from the data that was already plotted.
@@ -83,7 +84,8 @@ class _NaturalFrequencyDampingRatioGrid(param.Parameterized):
 
 
 class SGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
-    """Represent a grid of damping ratio lines and natural frequency lines
+    """
+    Represent a grid of damping ratio lines and natural frequency lines
     on the s-plane. This data series implements two modes of operation:
 
     1. User can provide xi, wn.
@@ -243,10 +245,11 @@ class SGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
 
 
 class ZGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
-    """Represent a grid of damping ratio lines and natural frequency lines
+    """
+    Represent a grid of damping ratio lines and natural frequency lines
     on the z-plane.
     """
-    sampling_period = param.Number(doc="""Sampling period.""")
+    sampling_period = param.Number(doc="Sampling period.")
 
     def __init__(self, xi, wn, tp, ts, **kwargs):
         super().__init__(xi=xi, wn=wn, tp=tp, ts=ts, **kwargs)
@@ -386,6 +389,7 @@ class ArrowsMixin(param.Parameterized):
         * If a 1D array is passed, it should consist of a sorted list of
           floats between 0 and 1, indicating the location along the curve
           to plot an arrow.""")
+    # TODO: set this private?
     arrow_locs = param.Parameter(doc="""
         Location of the arrows along the curve.""")
 
@@ -420,7 +424,8 @@ class _TfParameter(param.Parameterized):
           :py:class:`sympy.physics.control.lti.TransferFunction`.
         * a tuple of two or three elements: ``(num, den, generator [opt])``,
           which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.""")
+          :py:class:`sympy.physics.control.lti.TransferFunction`.
+        """)
 
 class NicholsLineSeries(
     ArrowsMixin,
@@ -435,6 +440,9 @@ class NicholsLineSeries(
         default="log", objects=["linear", "log"], doc="""
         Discretization strategy along the pulsation.
         Related parameters: ``n1``.""")
+    omega_range = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the limits to the range of
+        frequencies.""")
     n1 = _CastToInteger(default=100, doc="""
         Number of discretization points along the pulsation to be used in the
         evaluation. Related parameters: ``xscale``.""")
@@ -446,6 +454,7 @@ class NicholsLineSeries(
         kwargs["force_real_eval"] = True
         kwargs["label"] = label
         kwargs["_tf"] = tf
+        kwargs["omega_range"] = omega_range
         super().__init__(**kwargs)
         self.expr = Tuple(ol_phase, ol_mag, cl_phase, cl_mag)
         self.ranges = [omega_range]
@@ -485,7 +494,8 @@ class NicholsLineSeries(
 
 
 class ControlBaseSeries(Line2DBaseSeries):
-    """A base series for classes that are going to produce numerical
+    """
+    A base series for classes that are going to produce numerical
     data using the ``control`` module for control-system plotting.
     Those series represent a SISO system.
     """
@@ -584,7 +594,8 @@ class ControlBaseSeries(Line2DBaseSeries):
 
 
 class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
-    """Generates numerical data for Nyquist plot using the ``control``
+    """
+    Generates numerical data for Nyquist plot using the ``control``
     module.
     """
 
@@ -593,14 +604,17 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
         "start_marker", "primary_style", "mirror_style"
     ]
 
+    range_omega = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the frequencies.""")
+
     def _copy_from_dict(self, d, k):
         if k in d.keys():
             setattr(self, k, d[k])
 
-    def __init__(self, tf, var_start_end, label="", **kwargs):
-        super().__init__(tf, label=label, **kwargs)
-        self.ranges = [var_start_end]
+    def __init__(self, tf, range_omega, label="", **kwargs):
+        super().__init__(tf, range_omega=range_omega, label=label, **kwargs)
         self._check_fs()
+        self.ranges = [range_omega]
 
         # these attributes are used by ``control`` in the rendering step,
         # not in the data generation step. I need them here in order to
@@ -638,7 +652,7 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
             self._control_tf = tf_to_control(tf)
 
         control_kw = {}
-        sym, start, end = self.ranges[0]
+        sym, start, end = self.range_omega
         if (start != end) or self._parametric_ranges:
             start = _update_range_value(self, start).real
             end = _update_range_value(self, end).real
@@ -697,7 +711,7 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
     @staticmethod
     def _compute_curve_offset(resp, mask, max_offset):
         """
-            Function to compute Nyquist curve offsets
+        Function to compute Nyquist curve offsets
 
         This function computes a smoothly varying offset that starts and ends at
         zero at the ends of a scaled segment.
@@ -850,7 +864,8 @@ class RootLocusSeries(ControlBaseSeries):
 
 
 class SystemResponseSeries(ControlBaseSeries, _NMixin):
-    """Represent a system response computed with the ``control`` module.
+    """
+    Represent a system response computed with the ``control`` module.
 
     Computing the inverse laplace transform of a system with SymPy is not
     trivial: sometimes it works fine, other times it produces wrong results,
@@ -872,6 +887,8 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
     n1 = _CastToInteger(default=100, doc="""
         Number of discretization points along the time axis to be used in the
         evaluation.""")
+    range_t = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the time.""")
 
     # n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
     #     Number of discretization points along the x, y, z directions,
@@ -891,10 +908,10 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
             return super().__new__(ColoredSystemResponseSeries)
         return object.__new__(cls)
 
-    def __init__(self, tf, var_start_end, label="", **kwargs):
-        super().__init__(tf, label=label, **kwargs)
-        self.ranges = [var_start_end]
+    def __init__(self, tf, range_t, label="", **kwargs):
+        super().__init__(tf, range_t=range_t, label=label, **kwargs)
         self._check_fs()
+        self.ranges = [range_t]
 
         if self.expr is None:
             self.steps = self._control_tf.isdtime()
@@ -918,7 +935,7 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
             self._control_tf = tf_to_control(tf)
 
         # create (or update) the discretized domain
-        _, start, end = self.ranges[0]
+        _, start, end = self.range_t
         if self._parametric_ranges:
             start = _update_range_value(self, start).real
             end = _update_range_value(self, end).real
@@ -1006,7 +1023,8 @@ class PoleZeroWithSympySeries(PoleZeroCommon, List2DSeries):
 
 
 class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
-    """Represent a the pole-zero of an LTI SISO system computed
+    """
+    Represent a the pole-zero of an LTI SISO system computed
     with the ``control`` module.
 
     This series represents either poles or zeros, not both at the same time.
@@ -1047,7 +1065,8 @@ class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
 
 
 class NGridLineSeries(GridBase, BaseSeries):
-    """ The code of this class comes from the ``control`` package, which has
+    """
+    The code of this class comes from the ``control`` package, which has
     been rearranged to work with the architecture of this module.
     """
 
@@ -1072,7 +1091,8 @@ class NGridLineSeries(GridBase, BaseSeries):
 
     @staticmethod
     def closed_loop_contours(Gcl_mags, Gcl_phases):
-        """Contours of the function Gcl = Gol/(1+Gol), where
+        """
+        Contours of the function Gcl = Gol/(1+Gol), where
         Gol is an open-loop transfer function, and Gcl is a corresponding
         closed-loop transfer function.
 
@@ -1099,7 +1119,8 @@ class NGridLineSeries(GridBase, BaseSeries):
 
     @staticmethod
     def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
-        """Constant-magnitude contours of the function Gcl = Gol/(1+Gol), where
+        """
+        Constant-magnitude contours of the function Gcl = Gol/(1+Gol), where
         Gol is an open-loop transfer function, and Gcl is a corresponding
         closed-loop transfer function.
 
@@ -1126,7 +1147,8 @@ class NGridLineSeries(GridBase, BaseSeries):
 
     @staticmethod
     def n_circles(phases, mag_min=-40.0, mag_max=12.0):
-        """Constant-phase contours of the function Gcl = Gol/(1+Gol), where
+        """
+        Constant-phase contours of the function Gcl = Gol/(1+Gol), where
         Gol is an open-loop transfer function, and Gcl is a corresponding
         closed-loop transfer function.
 

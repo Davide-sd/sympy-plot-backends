@@ -6,7 +6,7 @@ from inspect import signature
 from spb.wegert import wegert
 from spb.defaults import cfg
 from spb.utils import (
-    _get_free_symbols, unwrap, extract_solution, tf_to_control
+    _get_free_symbols, unwrap, extract_solution, tf_to_control, prange
 )
 import sympy
 from sympy import (
@@ -49,7 +49,8 @@ from spb.series.series_2d_3d import (
 
 
 class AbsArgLineSeries(LineOver1DRangeSeries):
-    """Represents the absolute value of a complex function colored by its
+    """
+    Represents the absolute value of a complex function colored by its
     argument over a complex range (a + I*b, c + I * b).
     Note that the imaginary part of the start and end must be the same.
     """
@@ -93,8 +94,13 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
 
 
 class ComplexPointSeries(Line2DBaseSeries):
-    """Representation for a line in the complex plane consisting of
-    list of points."""
+    """
+    Representation for a line in the complex plane consisting of
+    list of points.
+    """
+
+    numbers = param.Parameter(doc="""
+        Complex numbers, or a list of complex numbers.""")
     color_func = param.Callable(default=None, doc="""
         A color function to be applied to the numerical data. It can be:
 
@@ -103,25 +109,26 @@ class ComplexPointSeries(Line2DBaseSeries):
           parts of the complex coordinates) and returning numerical data.
         """)
 
-    def __init__(self, expr, label="", **kwargs):
-        super().__init__(label=label, **kwargs)
-        if isinstance(expr, (list, tuple)):
-            self.expr = Tuple(*expr)
-        elif isinstance(expr, Expr):
-            self.expr = Tuple(expr)
-        else:
-            self.expr = expr
-
-        self._block_lambda_functions(*self.expr)
+    def __init__(self, numbers, label="", **kwargs):
+        if isinstance(numbers, (list, tuple)):
+            numbers = Tuple(*numbers)
+        elif isinstance(numbers, Expr):
+            numbers = Tuple(numbers)
+        self._block_lambda_functions(*numbers)
+        super().__init__(numbers=numbers, label=label, **kwargs)
 
         self.is_point = kwargs.get("scatter", kwargs.get("is_point", True))
         if self.use_cm and self.color_func:
             self.is_parametric = True
 
+    @property
+    def expr(self):
+        return self.numbers
+
     def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed."""
         np = import_module('numpy')
-        points = [complex(p.evalf(subs=self.params)) for p in self.expr]
+        points = [complex(p.evalf(subs=self.params)) for p in self.numbers]
         points = np.array(points)
         r, i = np.real(points), np.imag(points)
         if self.use_cm and callable(self.color_func):
@@ -129,15 +136,22 @@ class ComplexPointSeries(Line2DBaseSeries):
         return r, i
 
     def __str__(self):
-        return self._str_helper("complex points: %s" % self.expr)
+        return self._str_helper("complex points: %s" % self.numbers)
 
 
 class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
-    """Represent a complex function."""
+    """
+    Represent a complex function to be shown on a 2D contour or 3D surface.
+    """
+
     is_complex = True
     _N = 300
 
-    expr = param.Parameter()
+    expr = param.Parameter(doc="""
+        The expression representing the complex function to be plotted.""")
+    range_c = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the complex
+        variable. Default values: `min=-10-10j` and `max=10+10j`.""")
     is_filled = param.Boolean(True, doc="""
         If True, used filled contours. Otherwise, use line contours.""")
     show_clabels = param.Boolean(True, doc="""
@@ -158,12 +172,13 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         to be used in the evaluation. Related parameters: ``yscale``.""")
 
 
-    def __init__(self, expr, r, label="", **kwargs):
+    def __init__(self, expr, range_c, label="", **kwargs):
         _return = kwargs.pop("return", None)
         kwargs.setdefault("show_clabels", kwargs.pop("clabels", True))
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
+        kwargs["range_c"] = range_c
         super().__init__(**kwargs)
-        self.ranges = [r]
+        self.ranges = [range_c]
         self.evaluator = ComplexGridEvaluator(series=self)
         self._label_str = str(expr) if label is None else label
         self._label_latex = latex(expr) if label is None else label
@@ -211,9 +226,11 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
 class ComplexSurfaceSeries(
     ComplexSurfaceBaseSeries
 ):
-    """Represents a 3D surface or contour plot of a complex function over
+    """
+    Represents a 3D surface or contour plot of a complex function over
     the complex plane.
     """
+
     is_3Dsurface = True
     is_contour = False
     is_domain_coloring = False
@@ -360,7 +377,8 @@ class ComplexDomainColoringSeries(
     ComplexSurfaceBaseSeries,
     ComplexDomainColoringBaseSeries
 ):
-    """Represents a 2D/3D domain coloring plot of a complex function over
+    """
+    Represents a 2D/3D domain coloring plot of a complex function over
     the complex plane.
     """
     is_3Dsurface = False
@@ -387,7 +405,6 @@ class ComplexDomainColoringSeries(
         threed = kwargs.pop("threed", False)
         if threed:
             kwargs.setdefault("use_cm", True)
-
         super().__init__(expr, r, label, **kwargs)
 
         if threed:
@@ -416,6 +433,11 @@ class ComplexDomainColoringSeries(
         # self.annotate = kwargs.get("annotate", True)
         # self.riemann_mask = kwargs.get("riemann_mask", False)
         self._post_init()
+
+    @param.depends("expr", watch=True)
+    def _update_evaluator(self):
+        if self.evaluator is not None:
+            self.evaluator.set_expressions()
 
     # def _init_domain_coloring_kw(self, **kwargs):
     #     self.coloring = kwargs.get("coloring", "a")
@@ -489,7 +511,8 @@ class ComplexDomainColoringSeries(
 
 
 class ComplexParametric3DLineSeries(Parametric3DLineSeries):
-    """Represent a mesh/wireframe line of a complex surface series.
+    """
+    Represent a mesh/wireframe line of a complex surface series.
     """
 
     def __init__(self, *args, **kwargs):
@@ -550,6 +573,16 @@ class RiemannSphereSeries(
 
     #     Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
     #     set in order to modify the respective element of the ``n`` list.""")
+    expr = param.Parameter(doc="""
+        The expression representing the complex function to be plotted.""")
+    range_t = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the polar angle
+        theta, usually ranging from [0, pi/2] for half hemisphere.
+        Default values: `min=-10` and `max=10`.""")
+    range_p = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+        A 3-tuple `(symb, min, max)` denoting the range of the azimuthal angle
+        phi, usually ranging from [0, 2*pi].
+        Default values: `min=-10` and `max=10`.""")
     tx = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         x-axis.""")
@@ -559,38 +592,34 @@ class RiemannSphereSeries(
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
-
-    n1 = _CastToInteger(default=100, doc="""
-        Number of discretization points along the x-axis to be used in the
-        evaluation.""")
-    n2 = _CastToInteger(default=100, doc="""
-        Number of discretization points along the y-axis to be used in the
-        evaluation.""")
-    n3 = _CastToInteger(default=100, doc="""
-        Number of discretization points along the z-axis to be used in the
-        evaluation.""")
+    n1 = _CastToInteger(default=150, doc="""
+        Number of discretization points along the polar angle to be used
+        in the evaluation.""")
+    n2 = _CastToInteger(default=600, doc="""
+        Number of discretization points along the azimuthal angle to be used
+        in the evaluation.""")
 
 
-
-    def __init__(self, f, range_t, range_p, **kwargs):
-        self._block_lambda_functions(f)
+    def __init__(self, expr, range_t, range_p, **kwargs):
+        self._block_lambda_functions(expr)
+        kwargs["expr"] = expr
+        kwargs["range_t"] = range_t
+        kwargs["range_p"] = range_p
+        kwargs["use_cm"] = True
         super().__init__(**kwargs)
-        if len(f.free_symbols) > 1:
+        if len(expr.free_symbols) > 1:
             # NOTE: considering how computationally heavy this series is,
             # it is rather unuseful to allow interactive-widgets plot.
             raise ValueError(
                 "Complex function can only have one free symbol. "
                 "Received free symbols: %s" % f.free_symbols)
-        self.expr = f
         # NOTE: we can easily create a sphere with a single data series.
         # However, K3DBackend is unable to properly visualize it, and it
         # would require a few hours of work to apply the necessary edits.
         # Instead, I'm going to create two sphere caps (Northen and Southern
         # hemispheres, respectively), hence the need for ranges :D
-        self.ranges = [range_t, range_p]
-        if self.n[0] == self.n[1]:
-            self.n = [self.n[0], 4 * self.n[0], self._N]
-        self.use_cm = True
+        if self.n1 == self.n2:
+            self.n2 = 4 * self.n1
 
     def get_data(self):
         """Return arrays of coordinates for plotting.
@@ -600,14 +629,11 @@ class RiemannSphereSeries(
 
         x, y, z : np.ndarray [n2 x n1]
             Coordinates on the unit sphere.
-
         arg : np.ndarray [n2 x n1]
             Argument of the function.
-
         img : np.ndarray [n2 x n1 x 3]
             RGB image values computed from the argument of the function.
             0 <= R, G, B <= 255
-
         colors : np.ndarray [256 x 3]
             Color scale associated to `img`.
         """
@@ -619,9 +645,9 @@ class RiemannSphereSeries(
         # but not enough near the equator. Can a different parameterization
         # improves the final result, maybe even reducing the computational
         # cost?
-        ts, te = [float(t) for t in self.ranges[0][1:]]
-        ps, pe = [float(t) for t in self.ranges[1][1:]]
-        t, p = np.mgrid[ts:te:self.n[0]*1j, ps:pe:self.n[1]*1j]
+        ts, te = [float(t) for t in self.range_t[1:]]
+        ps, pe = [float(t) for t in self.range_p[1:]]
+        t, p = np.mgrid[ts:te:self.n1*1j, ps:pe:self.n2*1j]
         X = r * np.sin(t) * np.cos(p)
         Y = r * np.sin(t) * np.sin(p)
         Z = r * np.cos(t)

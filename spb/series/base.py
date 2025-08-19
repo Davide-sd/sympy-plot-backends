@@ -336,21 +336,21 @@ class BaseSeries(param.Parameterized):
     # evaluator = param.ClassSelector(class_=GridEvaluator, doc="""
     #     The machinery that generates numerical data starting from
     #     the parameters of the current series.""")
-    expr = param.Parameter(doc="""
-        This parameter is meant to be read-only. Depending on the type of the
-        data series, it returns one or more symbolic expressions (or numerical
-        functions). This parameter is used by the evaluator in order to
-        retrieve the expressions to be lambdified and evaluated.""")
+    # expr = param.Parameter(doc="""
+    #     This parameter is meant to be read-only. Depending on the type of the
+    #     data series, it returns one or more symbolic expressions (or numerical
+    #     functions). This parameter is used by the evaluator in order to
+    #     retrieve the expressions to be lambdified and evaluated.""")
 
     def __repr__(self):
         if cfg["use_repr"] is False:
             return object.__repr__(self)
         return super().__repr__()
 
-    @param.depends("expr", watch=True)
-    def _update_evaluator(self):
-        if hasattr(self, "evaluator") and (self.evaluator is not None):
-            self.evaluator.set_expressions()
+    # @param.depends("expr", watch=True)
+    # def _update_evaluator(self):
+    #     if hasattr(self, "evaluator") and (self.evaluator is not None):
+    #         self.evaluator.set_expressions()
 
     def _enforce_dict_on_rendering_kw(self, rendering_kw):
         return {} if rendering_kw is None else rendering_kw
@@ -597,6 +597,7 @@ class BaseSeries(param.Parameterized):
         """
         return self._ranges
 
+    # TODO: should this be implemented only by series requiring the evaluator?
     @ranges.setter
     def ranges(self, values):
         new_vals = []
@@ -609,6 +610,22 @@ class BaseSeries(param.Parameterized):
         if len(fs) > 0:
             self._parametric_ranges = True
         self._ranges = new_vals
+
+        with param.discard_events(self):
+            if hasattr(self, "range_x"):
+                self.range_x = self._ranges[0]
+            if hasattr(self, "range_p"):
+                self.range_p = self._ranges[0]
+            if hasattr(self, "range_u"):
+                self.range_u = self._ranges[0]
+            if hasattr(self, "range_y"):
+                self.range_y = self._ranges[1]
+            if hasattr(self, "range_v"):
+                self.range_v = self._ranges[1]
+            if hasattr(self, "range_z"):
+                self.range_z = self._ranges[2]
+
+
 
     def _apply_transform(self, *args):
         """Apply transformations to the results of numerical evaluation.
