@@ -32,6 +32,8 @@ from matplotlib.cbook import (
 import warnings
 # from spb.series.evaluator import GridEvaluator
 from param.ipython import ParamPager
+from param.parameterized import Undefined
+import typing
 
 
 def _get_wrapper_for_expr(ret):
@@ -140,6 +142,40 @@ class _CastToInteger(param.Integer):
 
     def __set__(self, obj, val):
         super().__set__(obj, int(val))
+
+
+class _RangeTuple(param.ClassSelector):
+    """
+    Represent a range for some variable. It must be a 3-elements tuple,
+    `(symbol, min_val, max_val)`.
+    """
+
+    @typing.overload
+    def __init__(
+        self,
+        default=None, *, is_instance=True,
+        allow_None=False, doc=None, label=None, precedence=None, instantiate=True,
+        constant=False, readonly=False, pickle_default_value=True, per_instance=True,
+        allow_refs=False, nested_refs=False
+    ):
+        ...
+
+    def __init__(self, default=Undefined, **params):
+        super().__init__(default=default, class_=(tuple, Tuple), **params)
+
+    def _validate(self, val):
+        super()._validate(val)
+        if val is not None:
+            if len(val) != 3:
+                raise ValueError(
+                    f"Parameter '{self.name}' must be a 3-elements tuple."
+                    f" Instead, {len(val)} elements were provided."
+                )
+
+    def __set__(self, obj, val):
+        if (val is not None) and isinstance(val[0], str):
+            val = (Symbol(val[0]), *val[1:])
+        super().__set__(obj, sympify(val))
 
 
 class BaseSeries(param.Parameterized):
@@ -311,7 +347,6 @@ class BaseSeries(param.Parameterized):
         * Expr: A symbolic expression having at most as many free symbols as
           ``expr``.
         """)
-
     _label_str = param.String("", doc="""Contains str representation.""")
     _label_latex = param.String("", doc="""Contains latex representation.""")
     _is_interactive = param.Boolean(False, constant=True, doc="""
@@ -333,6 +368,9 @@ class BaseSeries(param.Parameterized):
     _parametric_ranges = param.Boolean(False, doc="""
         Whether the series contains any parametric range, which is a range
         depending on symbols contained in ``params.keys()``.""")
+    _range_names = param.List(default=[], item_type=str, doc="""
+        List of parameter names refering to ranges. This parameter allows to
+        quickly retrieve all ranges associated to a particular data series.""")
     # evaluator = param.ClassSelector(class_=GridEvaluator, doc="""
     #     The machinery that generates numerical data starting from
     #     the parameters of the current series.""")
@@ -403,11 +441,14 @@ class BaseSeries(param.Parameterized):
 
         super().__init__(*args, **kwargs)
 
-        self._ranges = []
-
         if len(_params) > 0:
             with param.edit_constant(self):
                 self._is_interactive = True
+
+            numbers_or_expressions = set().union(*[nv[1:] for nv in self.ranges])
+            fs = set().union(*[e.free_symbols for e in numbers_or_expressions])
+            if len(fs) > 0:
+                self._parametric_ranges = True
 
     def _post_init(self):
         exprs = self.expr if hasattr(self.expr, "__iter__") else [self.expr]
@@ -426,20 +467,11 @@ class BaseSeries(param.Parameterized):
 
         self._check_fs()
 
-        # if hasattr(self, "adaptive") and self.adaptive and self.params:
-        #     warnings.warn(
-        #         "`params` was provided, hence an interactive plot "
-        #         "is expected. However, interactive plots do not support "
-        #         "adaptive evaluation. Automatically switched to "
-        #         "adaptive=False.")
-        #     self.adaptive = False
-
     @classmethod
     def _get_list_of_allowed_params(cls):
         # also allows n1, n2, n3. they will be removed later on inside
         # _set_discretization_points
         return list(cls.param) + [
-            # "n1", "n2", "n3",
             "nb_of_points",
             "nb_of_points_x", "nb_of_points_y",
             "nb_of_points_u", "nb_of_points_v"
@@ -591,41 +623,16 @@ class BaseSeries(param.Parameterized):
     @property
     def ranges(self):
         """
-        Return a list of 3-elements tuples, each one having the form
-        (symbol, min, max), representing the ranges of numerical values
+        Return a list of up to three 3-elements tuples, each one having the
+        form (symbol, min, max), representing the ranges of numerical values
         used by each of the specified symbols.
         """
-        return self._ranges
+        return [getattr(self, k) for k in self._range_names]
 
-    # TODO: should this be implemented only by series requiring the evaluator?
     @ranges.setter
     def ranges(self, values):
-        new_vals = []
-        for v in values:
-            if v is not None:
-                new_vals.append(tuple(map(sympify, v)))
-
-        numbers_or_expressions = set().union(*[nv[1:] for nv in new_vals])
-        fs = set().union(*[e.free_symbols for e in numbers_or_expressions])
-        if len(fs) > 0:
-            self._parametric_ranges = True
-        self._ranges = new_vals
-
-        with param.discard_events(self):
-            if hasattr(self, "range_x"):
-                self.range_x = self._ranges[0]
-            if hasattr(self, "range_p"):
-                self.range_p = self._ranges[0]
-            if hasattr(self, "range_u"):
-                self.range_u = self._ranges[0]
-            if hasattr(self, "range_y"):
-                self.range_y = self._ranges[1]
-            if hasattr(self, "range_v"):
-                self.range_v = self._ranges[1]
-            if hasattr(self, "range_z"):
-                self.range_z = self._ranges[2]
-
-
+        for k, v in zip(self._range_names, values):
+            setattr(self, k, v)
 
     def _apply_transform(self, *args):
         """Apply transformations to the results of numerical evaluation.

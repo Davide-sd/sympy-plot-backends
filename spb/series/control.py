@@ -19,7 +19,12 @@ from spb.series.evaluator import (
     GridEvaluator,
     _update_range_value
 )
-from spb.series.base import BaseSeries, _CastToInteger, _get_wrapper_for_expr
+from spb.series.base import (
+    BaseSeries,
+    _RangeTuple,
+    _CastToInteger,
+    _get_wrapper_for_expr
+)
 from spb.series.series_2d_3d import Line2DBaseSeries, List2DSeries
 
 
@@ -428,10 +433,10 @@ class _TfParameter(param.Parameterized):
         """)
 
 class NicholsLineSeries(
+    Line2DBaseSeries,
     ArrowsMixin,
     _TfParameter,
     _GridEvaluationParameters,
-    Line2DBaseSeries
 ):
     """Represent a Nichols line in control system plotting.
     """
@@ -440,7 +445,7 @@ class NicholsLineSeries(
         default="log", objects=["linear", "log"], doc="""
         Discretization strategy along the pulsation.
         Related parameters: ``n1``.""")
-    omega_range = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_omega = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the limits to the range of
         frequencies.""")
     n1 = _CastToInteger(default=100, doc="""
@@ -454,10 +459,11 @@ class NicholsLineSeries(
         kwargs["force_real_eval"] = True
         kwargs["label"] = label
         kwargs["_tf"] = tf
-        kwargs["omega_range"] = omega_range
+        kwargs["range_omega"] = omega_range
+        kwargs["_range_names"] = ["range_omega"]
         super().__init__(**kwargs)
         self.expr = Tuple(ol_phase, ol_mag, cl_phase, cl_mag)
-        self.ranges = [omega_range]
+        # self.ranges = [self.range_omega]
         self.evaluator = GridEvaluator(series=self)
 
     def __str__(self):
@@ -604,7 +610,7 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
         "start_marker", "primary_style", "mirror_style"
     ]
 
-    range_omega = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_omega = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the frequencies.""")
 
     def _copy_from_dict(self, d, k):
@@ -612,9 +618,10 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
             setattr(self, k, d[k])
 
     def __init__(self, tf, range_omega, label="", **kwargs):
+        kwargs["_range_names"] = ["range_omega"]
         super().__init__(tf, range_omega=range_omega, label=label, **kwargs)
         self._check_fs()
-        self.ranges = [range_omega]
+        self.ranges = [self.range_omega]
 
         # these attributes are used by ``control`` in the rendering step,
         # not in the data generation step. I need them here in order to
@@ -887,7 +894,7 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
     n1 = _CastToInteger(default=100, doc="""
         Number of discretization points along the time axis to be used in the
         evaluation.""")
-    range_t = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_t = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the time.""")
 
     # n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
@@ -909,15 +916,17 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
         return object.__new__(cls)
 
     def __init__(self, tf, range_t, label="", **kwargs):
+        kwargs["_range_names"] = ["range_t"]
         super().__init__(tf, range_t=range_t, label=label, **kwargs)
         self._check_fs()
-        self.ranges = [range_t]
+        # self.ranges = [range_t]
 
         if self.expr is None:
             self.steps = self._control_tf.isdtime()
 
         # time values over which the evaluation will be performed
         self._time_array = None
+        self._post_init()
 
     def __str__(self):
         return self._str_helper(

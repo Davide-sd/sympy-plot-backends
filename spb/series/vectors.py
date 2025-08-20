@@ -36,7 +36,7 @@ from spb.series.evaluator import (
     _GridEvaluationParameters,
     _correct_shape
 )
-from spb.series.base import BaseSeries, _CastToInteger
+from spb.series.base import BaseSeries, _RangeTuple, _CastToInteger
 from spb.series.series_2d_3d import PlaneSeries, SurfaceOver2DRangeSeries
 
 
@@ -75,7 +75,7 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
             kwargs["is_streamlines"] = kwargs.pop("streamlines")
         kwargs["_expr"] = exprs
         super().__init__(**kwargs)
-        self.ranges = list(ranges)
+        # self.ranges = list(ranges)
         self.evaluator = GridEvaluator(series=self)
         self._label_str = str(exprs) if label is None else label
         self._label_latex = latex(exprs) if label is None else label
@@ -197,10 +197,10 @@ class Vector2DSeries(VectorBase):
         * A symbolic expression.
         * A numerical function of two variables.
         """)
-    range_x = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_x = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the x variable.
         Default values: `min=-10` and `max=10`.""")
-    range_y = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_y = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the y variable.
         Default values: `min=-10` and `max=10`.""")
     rendering_kw = param.Dict(default={}, doc="""
@@ -242,6 +242,7 @@ class Vector2DSeries(VectorBase):
         kwargs["v"] = v
         kwargs["range_x"] = range_x
         kwargs["range_y"] = range_y
+        kwargs["_range_names"] = ["range_x", "range_y"]
         # if "scalar" not in kwargs.keys():
         #     use_cm = False
         # elif (not kwargs["scalar"]) or (kwargs["scalar"] is None):
@@ -289,13 +290,13 @@ class Vector3DSeries(VectorBase):
         * A symbolic expression.
         * A numerical function of three variables.
         """)
-    range_x = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_x = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the x variable.
         Default values: `min=-10` and `max=10`.""")
-    range_y = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_y = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the y variable.
         Default values: `min=-10` and `max=10`.""")
-    range_z = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_z = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the z variable.
         Default values: `min=-10` and `max=10`.""")
     rendering_kw = param.Dict(default={}, doc="""
@@ -367,6 +368,7 @@ class Vector3DSeries(VectorBase):
         kwargs["range_x"] = range_x
         kwargs["range_y"] = range_y
         kwargs["range_z"] = range_z
+        kwargs["_range_names"] = ["range_x", "range_y", "range_z"]
         super().__init__((u, v, w), (range_x, range_y, range_z), label, **kwargs)
         if self.is_streamlines and isinstance(self.color_func, Expr):
             raise TypeError(

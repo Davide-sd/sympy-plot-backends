@@ -36,6 +36,7 @@ from spb.series.evaluator import (
 )
 from spb.series.base import (
     BaseSeries,
+    _RangeTuple,
     _CastToInteger,
     _get_wrapper_for_expr
 )
@@ -149,7 +150,7 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
 
     expr = param.Parameter(doc="""
         The expression representing the complex function to be plotted.""")
-    range_c = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_c = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the complex
         variable. Default values: `min=-10-10j` and `max=10+10j`.""")
     is_filled = param.Boolean(True, doc="""
@@ -177,8 +178,9 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         kwargs.setdefault("show_clabels", kwargs.pop("clabels", True))
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
         kwargs["range_c"] = range_c
+        kwargs["_range_names"] = ["range_c"]
         super().__init__(**kwargs)
-        self.ranges = [range_c]
+        self.ranges = [self.range_c]
         self.evaluator = ComplexGridEvaluator(series=self)
         self._label_str = str(expr) if label is None else label
         self._label_latex = latex(expr) if label is None else label
@@ -419,7 +421,7 @@ class ComplexDomainColoringSeries(
                 raise ValueError(
                     "``at_infinity=True`` is only supported for symbolic "
                     "expressions. Instead, a callable was provided.")
-            z = self.ranges[0][0]
+            z = self.range_c[0]
             tmp = self.expr.subs(z, 1 / z)
             if self._label_str == str(self.expr):
                 # adjust labels to prevent the wrong one to be seen on colorbar
@@ -575,11 +577,11 @@ class RiemannSphereSeries(
     #     set in order to modify the respective element of the ``n`` list.""")
     expr = param.Parameter(doc="""
         The expression representing the complex function to be plotted.""")
-    range_t = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_t = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the polar angle
         theta, usually ranging from [0, pi/2] for half hemisphere.
         Default values: `min=-10` and `max=10`.""")
-    range_p = param.ClassSelector(class_=(tuple, Tuple, prange), doc="""
+    range_p = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the azimuthal angle
         phi, usually ranging from [0, 2*pi].
         Default values: `min=-10` and `max=10`.""")
