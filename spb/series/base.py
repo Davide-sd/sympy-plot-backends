@@ -6,7 +6,8 @@ from inspect import signature
 from spb.wegert import wegert
 from spb.defaults import cfg
 from spb.utils import (
-    _get_free_symbols, unwrap, extract_solution, tf_to_control
+    _get_free_symbols, unwrap, extract_solution, tf_to_control,
+    _check_misspelled_kwargs
 )
 import sympy
 from sympy import (
@@ -34,6 +35,22 @@ import warnings
 from param.ipython import ParamPager
 from param.parameterized import Undefined
 import typing
+
+
+def _check_misspelled_series_kwargs(series, **kwargs):
+    plot_function = kwargs.pop("plot_function", False)
+
+    if plot_function:
+        from spb.backends.base_backend import Plot
+        plot_params = list(Plot.param) + [
+            "show", "backend", "imodule", "threed", "process_piecewise",
+            "animation", "servable", "template", "ncols", "layout",
+            "markers", "rectangles", "annotations"
+        ]
+        for k in plot_params:
+            kwargs.pop(k, None)
+
+    _check_misspelled_kwargs(series, exclude_keys=["n"], **kwargs)
 
 
 def _get_wrapper_for_expr(ret):
@@ -227,10 +244,6 @@ class BaseSeries(param.Parameterized):
     is_grid = False
     # Represents grids like s-grid, z-grid, n-grid, ...
 
-    _allowed_keys = []
-    # contains a list of keyword arguments supported by the series. It will be
-    # used to validate the user-provided keyword arguments.
-
     _N = 100
     # default number of discretization points for uniform sampling. Each
     # subclass can set its number.
@@ -405,12 +418,6 @@ class BaseSeries(param.Parameterized):
         self._label_latex = self.label
         self._label_str = self.label
 
-    _allowed_keys = [
-        "show_in_legend", "colorbar", "use_cm", "scatter", "label",
-        "n1", "n2", "n3", "xscale", "yscale", "zscale", "params",
-        "rendering_kw", "tx", "ty", "tz", "tp", "color_func"
-    ]
-
     def __init__(self, *args, **kwargs):
         # allow the user to specify the number of discretization points
         # using different keyword arguments
@@ -432,6 +439,11 @@ class BaseSeries(param.Parameterized):
         _params = kwargs.setdefault("params", {})
         # this is used by spb.interactive to keep track of multi-values widgets
         kwargs.setdefault("_original_params", kwargs.get("params", {}))
+
+        # _check_misspelled_kwargs(
+        #     self,
+        #     exclude_keys=["_range_names", "n1", "n2", "n3", "_original_params"],
+        #     **kwargs)
 
         # remove keyword arguments that are not parameters of this series
         kwargs = {

@@ -289,7 +289,7 @@ def test_plot_vector_3d_streamlines():
 
     # other keywords: it should not raise errors
     p = make_test_plot_vector_3d_quiver_streamlines(
-        KB, True, stream_kw=dict(), kwargs=dict(use_cm=False)
+        KB, True, stream_kw=dict(), use_cm=False
     )
     raises(NotImplementedError, lambda: p.backend.update_interactive({a: 2}))
 
@@ -478,7 +478,7 @@ def test_save():
     # proceeds smoothtly or it raises errors when wrong options are given
 
     x, y, z = symbols("x:z")
-    options = dict(backend=KB, adaptive=False, n=5, show=False)
+    options = dict(backend=KB, n=5, show=False)
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), **options)
@@ -678,7 +678,6 @@ def test_update_interactive():
         cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2),
         backend=KB,
         show=False,
-        adaptive=False,
         n=5,
         params={u: (1, 0, 2)},
     )

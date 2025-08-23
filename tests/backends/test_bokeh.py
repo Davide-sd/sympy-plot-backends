@@ -780,7 +780,7 @@ def test_update_interactive():
 
     p = plot_contour(
         cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        backend=BB, show=False, adaptive=False,
+        backend=BB, show=False,
         n=5,
         params={u: (1, 0, 2)},
     )

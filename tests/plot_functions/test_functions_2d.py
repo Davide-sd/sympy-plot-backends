@@ -913,10 +913,13 @@ def test_plot_and_save_2(paf_options, adaptive):
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
+        paf_options2 = paf_options.copy()
+        paf_options2.pop("adaptive")
+
         # 3d parametric plots
         p = plot3d_parametric_line(
             sin(x), cos(x), x,
-            legend=True, **paf_options)
+            legend=True, **paf_options2)
         filename = "test_3d_line.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -924,25 +927,25 @@ def test_plot_and_save_2(paf_options, adaptive):
         p = plot3d_parametric_line(
             (sin(x), cos(x), x, (x, -5, 5)),
             (cos(x), sin(x), x, (x, -3, 3)),
-            **paf_options
+            **paf_options2
         )
         filename = "test_3d_line_multiple.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot3d_parametric_line(sin(x), cos(x), x, **paf_options)
+        p = plot3d_parametric_line(sin(x), cos(x), x, **paf_options2)
         filename = "test_3d_line_points.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # 3d surface single plot.
-        p = plot3d(x * y, **paf_options)
+        p = plot3d(x * y, **paf_options2)
         filename = "test_surface.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Multiple 3D plots with same range.
-        p = plot3d(-x * y, x * y, (x, -5, 5), **paf_options)
+        p = plot3d(-x * y, x * y, (x, -5, 5), **paf_options2)
         filename = "test_surface_multiple.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -951,15 +954,13 @@ def test_plot_and_save_2(paf_options, adaptive):
         p = plot3d(
             (x * y, (x, -3, 3), (y, -3, 3)),
             (-x * y, (x, -3, 3), (y, -3, 3)),
-            **paf_options
+            **paf_options2
         )
         filename = "test_surface_multiple_ranges.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Single Parametric 3D plot
-        paf_options2 = paf_options.copy()
-        paf_options2.pop("adaptive")
         p = plot3d_parametric_surface(
             sin(x + y), cos(x - y), x - y, **paf_options2)
         filename = "test_parametric_surface.png"
@@ -978,14 +979,14 @@ def test_plot_and_save_2(paf_options, adaptive):
 
         # Single Contour plot.
         p = plot_contour(
-            sin(x) * sin(y), (x, -5, 5), (y, -5, 5), **paf_options)
+            sin(x) * sin(y), (x, -5, 5), (y, -5, 5), **paf_options2)
         filename = "test_contour_plot.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Multiple Contour plots with same range.
         p = plot_contour(
-            x**2 + y**2, x**3 + y**3, (x, -5, 5), (y, -5, 5), **paf_options
+            x**2 + y**2, x**3 + y**3, (x, -5, 5), (y, -5, 5), **paf_options2
         )
         filename = "test_contour_plot.png"
         p.save(os.path.join(tmpdir, filename))
@@ -995,7 +996,7 @@ def test_plot_and_save_2(paf_options, adaptive):
         p = plot_contour(
             (x**2 + y**2, (x, -5, 5), (y, -5, 5)),
             (x**3 + y**3, (x, -3, 3), (y, -3, 3)),
-            **paf_options
+            **paf_options2
         )
         filename = "test_contour_plot.png"
         p.save(os.path.join(tmpdir, filename))
@@ -1439,7 +1440,7 @@ def test_appliedundef_objects():
     f2 = f2(t)
 
     kwargs = dict(
-        adaptive=False, n=10, show=False, backend=MB, use_latex=False)
+        n=10, show=False, backend=MB, use_latex=False)
     p = plot(cos(f1), (f1, -pi, pi), **kwargs)
     p[0].get_data()
     assert p.xlabel == "f1"

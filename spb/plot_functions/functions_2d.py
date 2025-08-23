@@ -380,6 +380,7 @@ def plot(*args, **kwargs):
     plot_geometry, plot_piecewise
 
     """
+    kwargs["plot_function"] = True
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 1, 1, **kwargs)
     global_labels = kwargs.pop("label", [])
@@ -552,6 +553,7 @@ def plot_parametric(*args, **kwargs):
     plot_geometry, plot_piecewise
 
     """
+    kwargs["plot_function"] = True
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 2, 1, **kwargs)
     global_labels = kwargs.pop("label", [])
@@ -725,6 +727,7 @@ def plot_parametric_region(*args, **kwargs):
        ...     xlabel="Re", ylabel="Im", title="$f(z)=%s$" % latex(f))
 
     """
+    kwargs["plot_function"] = True
     np = import_module('numpy')
     n1 = kwargs.pop("n1", 10)
     n2 = kwargs.pop("n2", 10)
@@ -929,6 +932,7 @@ def plot_contour(*args, **kwargs):
     plot_geometry, plot_piecewise
 
     """
+    kwargs["plot_function"] = True
     return _plot3d_plot_contour_helper(False, *args, **kwargs)
 
 
@@ -1175,6 +1179,7 @@ def plot_implicit(*args, **kwargs):
 
     args = _plot_sympify(args)
     args = _check_arguments(args, 1, 2, **kwargs)
+    kwargs["plot_function"] = True
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
     color = kwargs.pop("color", None)
@@ -1341,6 +1346,7 @@ def plot_polar(*args, **kwargs):
     plot_geometry, plot_piecewise
 
     """
+    kwargs["plot_function"] = True
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
     kwargs.setdefault("polar_axis", False)
@@ -1548,6 +1554,7 @@ def plot_geometry(*args, **kwargs):
     plot_contour, plot_piecewise
 
     """
+    kwargs["plot_function"] = True
     args = _plot_sympify(args)
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
@@ -1718,6 +1725,7 @@ def plot_list(*args, **kwargs):
     plot_geometry, plot_piecewise, plot3d_list
 
     """
+    kwargs["plot_function"] = True
     g_labels = kwargs.pop("label", [])
     g_rendering_kw = kwargs.pop("rendering_kw", None)
     series = []
@@ -1872,6 +1880,7 @@ def plot_piecewise(*args, **kwargs):
     plot_contour, plot_geometry
 
     """
+    kwargs["plot_function"] = True
     if kwargs.pop("params", None) is not None:
         raise NotImplementedError(
             "plot_piecewise doesn't support interactive widgets.")

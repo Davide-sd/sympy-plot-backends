@@ -77,7 +77,6 @@ class MayaviBackend(Plot):
     """
 
     _library = "mayavi"
-    _allowed_keys = Plot._allowed_keys + ["window", "notebook_kw"]
     wireframe_color = (0, 0, 0)
 
     renderers_map = {
@@ -209,7 +208,7 @@ class MayaviBackend(Plot):
 
     def draw(self):
         self._process_renderers()
-    
+
     # process_series = draw
 
     def show(self):

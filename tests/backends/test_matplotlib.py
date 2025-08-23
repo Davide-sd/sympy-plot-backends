@@ -949,15 +949,15 @@ def test_save():
     # Verify that the save method accepts keyword arguments.
 
     x, y, z = symbols("x:z")
-    options = dict(backend=MB, show=False, adaptive=False, n=5)
+    options = dict(backend=MB, show=False, n=5)
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
-        p = plot(sin(x), cos(x), **options)
+        p = plot(sin(x), cos(x), adaptive=False, **options)
         filename = "test_mpl_save_1.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot(sin(x), cos(x), **options)
+        p = plot(sin(x), cos(x), adaptive=False, **options)
         filename = "test_mpl_save_2.pdf"
         p.save(os.path.join(tmpdir, filename), dpi=150)
         p.close()
@@ -1081,12 +1081,10 @@ def test_plot3d_update_interactive():
         (x, -5, 5),
         (y, -5, 5),
         "test",
-        threed=True,
         use_cm=False,
         params={u: 1},
         n1=3,
         n2=3,
-        n3=3,
     )
     p = MB(s, show=False)
     p.draw()
@@ -1103,12 +1101,10 @@ def test_plot3d_update_interactive():
         (x, -5, 5),
         (y, -5, 5),
         "test",
-        threed=True,
         use_cm=True,
         params={u: 1},
         n1=3,
         n2=3,
-        n3=3,
     )
     p = MB(s, show=False)
     p.draw()
@@ -1327,21 +1323,21 @@ def test_min_install():
 
     p = plot3d(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        **options
+        **options2
     )
     p.draw()
     p.close()
 
     p = plot_contour(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        is_filled=False, **options
+        is_filled=False, **options2
     )
     p.draw()
     p.close()
 
     p = plot_contour(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        is_filled=True, **options
+        is_filled=True, **options2
     )
     p.draw()
     p.close()

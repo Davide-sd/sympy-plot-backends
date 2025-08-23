@@ -305,12 +305,12 @@ def test_plotgrid_mode_2_matplotlib():
 
     # all plots are instances of MatplotlibBackend
     options = dict(
-        adaptive=False, n=100, backend=MB, show=False, use_latex=False
+        n=100, backend=MB, show=False, use_latex=False
     )
-    p1 = plot(exp(x), **options)
-    p2 = plot(sin(x), **options)
-    p3 = plot(tan(x), detect_poles=True, eps=0.1, ylim=(-5, 5), **options)
-    p4 = plot(cos(x), **options)
+    p1 = plot(exp(x), adaptive=False, **options)
+    p2 = plot(sin(x), adaptive=False, **options)
+    p3 = plot(tan(x), adaptive=False, detect_poles=True, eps=0.1, ylim=(-5, 5), **options)
+    p4 = plot(cos(x), adaptive=False, **options)
     options["n"] = 20
     p5 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), **options)
 
@@ -405,7 +405,7 @@ def test_plotgrid_mode_2_interactive_ipywidgets():
     x, y, z = symbols("x, y, z")
     # all plots are instances of PlotlyBackend
     options = dict(
-        adaptive=False, n=100,
+        n=100,
         backend=PB,
         show=False,
         use_latex=False,
@@ -415,15 +415,15 @@ def test_plotgrid_mode_2_interactive_ipywidgets():
         },
     )
 
-    p1 = plot(exp(x * y) * exp(-abs(x) / z), **options)
-    p2 = plot(sin(x * y) * exp(-abs(x) / z), **options)
+    p1 = plot(exp(x * y) * exp(-abs(x) / z), adaptive=False, **options)
+    p2 = plot(sin(x * y) * exp(-abs(x) / z), adaptive=False, **options)
     p3 = plot(
         tan(x * y) * exp(-abs(x) / z),
-        detect_poles=True, eps=0.1,
+        adaptive=False, detect_poles=True, eps=0.1,
         ylim=(-5, 5),
         **options
     )
-    p4 = plot(cos(x * y) * exp(-abs(x) / z), **options)
+    p4 = plot(cos(x * y) * exp(-abs(x) / z), adaptive=False, **options)
     options["n"] = 20
     p5 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), **options)
 
@@ -480,7 +480,7 @@ def test_plotgrid_mode_2_interactive_panel():
     x, y, z = symbols("x, y, z")
     # all plots are instances of PlotlyBackend
     options = dict(
-        adaptive=False, n=100,
+        n=100,
         backend=PB,
         imodule="panel",
         show=False,
@@ -491,16 +491,17 @@ def test_plotgrid_mode_2_interactive_panel():
         },
     )
 
-    p1 = plot(exp(x * y) * exp(-abs(x) / z), **options)
-    p2 = plot(sin(x * y) * exp(-abs(x) / z), **options)
+    p1 = plot(exp(x * y) * exp(-abs(x) / z), adaptive=False, **options)
+    p2 = plot(sin(x * y) * exp(-abs(x) / z), adaptive=False, **options)
     p3 = plot(
         tan(x * y) * exp(-abs(x) / z),
+        adaptive=False,
         detect_poles=True,
         eps=0.1,
         ylim=(-5, 5),
         **options
     )
-    p4 = plot(cos(x * y) * exp(-abs(x) / z), **options)
+    p4 = plot(cos(x * y) * exp(-abs(x) / z), adaptive=False, **options)
     options["n"] = 20
     p5 = plot3d(cos(x**2 + y**2), (x, -2, 2), (y, -2, 2), **options)
 
@@ -655,14 +656,19 @@ def test_save():
     x, y = symbols("x, y")
 
     def _create_plots(B):
-        options = dict(adaptive=False, n=10, show=False, backend=B)
-        p1 = plot(x, **options)
-        p2 = plot_parametric((sin(x), cos(x)), (x, sin(x)), **options)
-        p3 = plot_parametric(cos(x), sin(x), **options)
-        p4 = plot3d_parametric_line(sin(x), cos(x), x, **options)
-        p5 = plot(cos(x), (x, -pi, pi), **options)
+        options = dict(n=10, show=False, backend=B)
+        p1 = plot(x, adaptive=False, **options)
+        p2 = plot_parametric(
+            (sin(x), cos(x)), (x, sin(x)), adaptive=False, **options)
+        p3 = plot_parametric(
+            cos(x), sin(x), adaptive=False, **options)
+        p4 = plot3d_parametric_line(
+            sin(x), cos(x), x, adaptive=False, **options)
+        p5 = plot(cos(x), (x, -pi, pi), adaptive=False, **options)
         p5[0].color_func = lambda a: a
-        p6 = plot(Piecewise((1, x > 0), (0, True)), (x, -1, 1), **options)
+        p6 = plot(
+            Piecewise((1, x > 0), (0, True)), (x, -1, 1),
+            adaptive=False, **options)
         p7 = plot_contour(
             (x**2 + y**2, (x, -5, 5), (y, -5, 5)),
             (x**3 + y**3, (x, -3, 3), (y, -3, 3)),

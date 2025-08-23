@@ -263,14 +263,14 @@ def test_params_multi_value_widgets_1():
 def test_params_multi_value_widgets_2():
     a, b, c, d, x = symbols("a:d x")
     p = graphics(
-        line(cos(x), range=(x, -5, 5), n=10, adaptive=False),
-        line(cos(c * x), range=(x, a, b), n=10, adaptive=False,
+        line(cos(x), range_x=(x, -5, 5), n=10, adaptive=False),
+        line(cos(c * x), range_x=(x, a, b), n=10, adaptive=False,
             params={
                 (a, b): pn.widgets.RangeSlider(
                     value=(-2, 2), start=-5, end=5, step=0.1),
                 c: (1, 0, 5)
             }),
-        line_parametric_2d(cos(d*x), sin(d*x), range=(x, -4, 4),
+        line_parametric_2d(cos(d*x), sin(d*x), range_p=(x, -4, 4),
             n=10, adaptive=False,
             params={d: (2, 0, 6)}),
         imodule="panel", show=False, backend=MB)

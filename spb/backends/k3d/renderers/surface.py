@@ -23,6 +23,8 @@ def _draw_surface_helper(renderer, data):
             # avoid triangulation errors when plotting vertical
             # planes
             vertices, indices = get_vertices_indices(x, y, z)
+            vertices = vertices.astype(np.float32)
+            indices = np.asarray(indices, dtype=np.uint32)
         else:
             x = x.flatten()
             y = y.flatten()

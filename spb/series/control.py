@@ -438,9 +438,9 @@ class NicholsLineSeries(
     _TfParameter,
     _GridEvaluationParameters,
 ):
-    """Represent a Nichols line in control system plotting.
     """
-    _allowed_keys = ["arrows"]
+    Represent a Nichols line in control system plotting.
+    """
     xscale = param.Selector(
         default="log", objects=["linear", "log"], doc="""
         Discretization strategy along the pulsation.
@@ -505,8 +505,6 @@ class ControlBaseSeries(Line2DBaseSeries):
     data using the ``control`` module for control-system plotting.
     Those series represent a SISO system.
     """
-
-    _allowed_keys = ["control_kw"]
 
     expr = param.Parameter(doc="""
         Store a symbolic transfer function.""")
@@ -604,11 +602,6 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
     Generates numerical data for Nyquist plot using the ``control``
     module.
     """
-
-    _allowed_keys = [
-        "arrows", "max_curve_magnitude", "max_curve_offset",
-        "start_marker", "primary_style", "mirror_style"
-    ]
 
     range_omega = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the frequencies.""")

@@ -399,14 +399,16 @@ def vector_field_2d(
             "visualization might be flipped."
         )
 
+    nc = kwargs.pop("nc", 100) # number of discr points for contours
     scalar = kwargs.get("scalar", True)
     kwargs.setdefault("use_cm", False if scalar else True)
-    is_streamlines = kwargs.get("streamlines", False)
+    is_streamlines = kwargs.pop("streamlines", False)
     params = kwargs.get("params", {})
     ranges = _preprocess_multiple_ranges(
         [expr1, expr2], [range1, range2], 2, params)
     s = Vector2DSeries(
         expr1, expr2, *ranges, label,
+        is_streamlines=is_streamlines,
         rendering_kw=quiver_kw if not is_streamlines else stream_kw,
         **kwargs
     )
@@ -444,7 +446,6 @@ def vector_field_2d(
 
     series = [s]
     if scalar_field:
-        nc = kwargs.pop("nc", 100)
         cs_kwargs = kwargs.copy()
         for kw in ["n", "n1", "n2"]:
             if kw in cs_kwargs.keys():
@@ -744,7 +745,7 @@ def vector_field_3d(
                    width=0.025,
                    color_map=k3d.colormaps.matplotlib_color_maps.plasma
                )),
-           title=r"Rössler \, attractor", xlabel="x", ylabel="y", zlabel="z",
+           title="Rössler \\, attractor", xlabel="x", ylabel="y", zlabel="z",
            backend=KB, grid=False)
 
     Visually verify the normal vector to a circular cone surface.

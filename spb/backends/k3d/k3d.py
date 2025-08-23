@@ -59,8 +59,6 @@ class K3DBackend(Plot):
     # quivers-pivot offsets
     _qp_offset = {"tail": 0, "mid": 0.5, "middle": 0.5, "tip": 1}
 
-    _allowed_keys = Plot._allowed_keys + ["show_label", "camera"]
-
     renderers_map = {
         Parametric3DLineSeries: Line3DRenderer,
         ComplexParametric3DLineSeries: Line3DRenderer,

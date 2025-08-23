@@ -212,6 +212,7 @@ def plot_pole_zero(
 
     .. [1] https://en.wikipedia.org/wiki/Pole%E2%80%93zero_plot
     """
+    kwargs["plot_function"] = True
     systems = _unpack_systems(systems)
     series = []
     for system, label in systems:
@@ -407,6 +408,7 @@ def plot_step_response(
 
     """
 
+    kwargs["plot_function"] = True
     upper_limit = _set_upper_limits(
         systems, upper_limit, is_step=True, **kwargs)
     systems = _unpack_systems(systems, **kwargs)
@@ -578,6 +580,7 @@ def plot_impulse_response(
     .. [1] https://www.mathworks.com/help/control/ref/lti.impulse.html
 
     """
+    kwargs["plot_function"] = True
     upper_limit = _set_upper_limits(
         systems, upper_limit, is_step=False, **kwargs)
     systems = _unpack_systems(systems, **kwargs)
@@ -752,6 +755,7 @@ def plot_ramp_response(
     .. [1] https://en.wikipedia.org/wiki/Ramp_function
 
     """
+    kwargs["plot_function"] = True
     upper_limit = _set_upper_limits(
         systems, upper_limit, is_step=True, **kwargs)
     systems = _unpack_systems(systems, **kwargs)
@@ -784,6 +788,7 @@ def plot_bode_magnitude(
 
     See ``plot_bode`` for all the parameters.
     """
+    kwargs["plot_function"] = True
     freq_units = ('rad/sec', 'Hz')
     freq_unit = cfg["bode"]["freq_unit"] if freq_unit is None else freq_unit
     if freq_unit not in freq_units:
@@ -819,6 +824,7 @@ def plot_bode_phase(
 
     See ``plot_bode`` for all the parameters.
     """
+    kwargs["plot_function"] = True
     freq_units = ('rad/sec', 'Hz')
     phase_units = ('rad', 'deg')
     freq_unit = cfg["bode"]["freq_unit"] if freq_unit is None else freq_unit
@@ -997,6 +1003,7 @@ def plot_bode(
     plot_bode_magnitude, plot_bode_phase, plot_nyquist, plot_nichols
 
     """
+    kwargs["plot_function"] = True
     show = kwargs.pop("show", True)
     kwargs["show"] = False
     title = kwargs.get("title", None)
@@ -1191,6 +1198,7 @@ def plot_nyquist(*systems, **kwargs):
        )
 
     """
+    kwargs["plot_function"] = True
     systems = _unpack_systems(systems)
     series = []
     for s, l in systems:
@@ -1304,6 +1312,7 @@ def plot_nichols(*systems, **kwargs):
     plot_bode, plot_nyquist
 
     """
+    kwargs["plot_function"] = True
     systems = _unpack_systems(systems)
     series, grid = [], []
     show_ngrid = kwargs.get("ngrid", True)
@@ -1427,6 +1436,7 @@ def plot_root_locus(*systems, sgrid=True, zgrid=False, **kwargs):
        plot_root_locus(G, params=params, xlim=(-4, 1))
 
     """
+    kwargs["plot_function"] = True
     systems = _unpack_systems(systems)
     kwargs.setdefault("grid", False)
     kwargs.setdefault("xlabel", "Real")

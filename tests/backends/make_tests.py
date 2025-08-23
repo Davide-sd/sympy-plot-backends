@@ -22,10 +22,12 @@ import numpy as np
 
 
 def options():
-    return dict(n=5, adaptive=False, show=False)
+    return dict(n=5, show=False)
 
 
 def custom_colorloop_1(B):
+    opts = options()
+    opts["adaptive"] = False
     return plot(
         sin(x),
         cos(x),
@@ -34,7 +36,7 @@ def custom_colorloop_1(B):
         2 * sin(x),
         2 * cos(x),
         backend=B,
-        **options()
+        **opts
     )
 
 
@@ -55,6 +57,8 @@ def custom_colorloop_2(B, show=False):
 
 
 def make_test_plot(B, rendering_kw, use_latex=False):
+    opts = options()
+    opts["adaptive"] = False
     return plot(
         sin(a * x),
         cos(b * x),
@@ -63,11 +67,13 @@ def make_test_plot(B, rendering_kw, use_latex=False):
         legend=True,
         use_latex=use_latex,
         params={a: (1, 0, 2), b: (1, 0, 2)},
-        **options()
+        **opts
     )
 
 
 def make_test_plot_parametric(B, use_cm, rendering_kw={}):
+    opts = options()
+    opts["adaptive"] = False
     return plot_parametric(
         cos(a * x), sin(b * x),
         (x, 0, 1.5 * pi),
@@ -76,13 +82,14 @@ def make_test_plot_parametric(B, use_cm, rendering_kw={}):
         rendering_kw=rendering_kw,
         use_latex=False,
         params={a: (1, 0, 2), b: (1, 0, 2)},
-        **options()
+        **opts
     )
 
 
 def make_test_plot3d_parametric_line(B, rendering_kw, use_latex, use_cm, show=False):
     opts = options()
     opts["show"] = show
+    opts["adaptive"] = False
     return plot3d_parametric_line(
         cos(a * x), sin(b * x), x,
         (x, -pi, pi),
@@ -185,8 +192,6 @@ def make_plot3d_parametric_surface_wireframe_1(B, wf):
     x = (1 + v / 2 * cos(u / 2)) * cos(u)
     y = (1 + v / 2 * cos(u / 2)) * sin(u)
     z = v / 2 * sin(u / 2)
-    opts = options()
-    opts.pop("adaptive")
     return plot3d_parametric_surface(
         x, y, z,
         (u, 0, 2 * pi), (v, -1, 1),
@@ -196,7 +201,7 @@ def make_plot3d_parametric_surface_wireframe_1(B, wf):
         wf_n1=5,
         wf_n2=6,
         wf_rendering_kw=wf,
-        **opts
+        **options()
     )
 
 
@@ -204,8 +209,6 @@ def make_plot3d_parametric_surface_wireframe_2(B, wf):
     x = lambda u, v: v * np.cos(u)
     y = lambda u, v: v * np.sin(u)
     z = lambda u, v: np.sin(4 * u)
-    opts = options()
-    opts.pop("adaptive")
     return plot3d_parametric_surface(
         x, y, z,
         ("u", 0, 2 * np.pi), ("v", -1, 0),
@@ -214,7 +217,7 @@ def make_plot3d_parametric_surface_wireframe_2(B, wf):
         wireframe=wf,
         wf_n1=5,
         wf_n2=6,
-        **opts
+        **options()
     )
 
 
@@ -274,7 +277,6 @@ def make_test_plot_vector_3d_quiver_streamlines(
 ):
     opts = options()
     opts["show"] = show
-    opts.pop("adaptive")
     return plot_vector(
         Matrix([a * z, y, x]),
         (x, -5, 5), (y, -4, 4), (z, -3, 3),
@@ -289,8 +291,6 @@ def make_test_plot_vector_3d_quiver_streamlines(
 
 
 def make_test_plot_vector_2d_normalize(B, norm):
-    opts = options()
-    opts.pop("adaptive")
     return plot_vector(
         [-u * sin(y), cos(x)],
         (x, -2, 2), (y, -2, 2),
@@ -304,8 +304,6 @@ def make_test_plot_vector_2d_normalize(B, norm):
 
 
 def make_test_plot_vector_3d_normalize(B, norm):
-    opts = options()
-    opts.pop("adaptive")
     return plot_vector(
         [u * z, -x, y],
         (x, -2, 2), (y, -2, 2), (z, -2, 2),
@@ -313,7 +311,7 @@ def make_test_plot_vector_3d_normalize(B, norm):
         normalize=norm,
         use_cm=False,
         params={u: (1, 0, 2)},
-        **opts
+        **options()
     )
 
 
@@ -332,15 +330,13 @@ def make_test_plot_vector_2d_color_func(B, streamlines, cf):
 
 
 def make_test_plot_vector_3d_quiver_color_func(B, cf):
-    opts = options()
-    opts.pop("adaptive")
     return plot_vector(
         Matrix([a * z, a * y, a * x]),
         (x, -2, 2), (y, -2, 2), (z, -2, 2),
         backend=B,
         color_func=cf,
         params={a: (1, 0, 2)},
-        **opts
+        **options()
     )
 
 
@@ -401,28 +397,24 @@ def make_test_plot_complex_1d(B, rendering_kw, use_latex):
 
 
 def make_test_plot_complex_2d(B, rendering_kw, use_latex=False):
-    opts = options()
-    opts.pop("adaptive")
     return plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
         backend=B,
         coloring="a",
         rendering_kw=rendering_kw,
         use_latex=use_latex,
-        **opts
+        **options()
     )
 
 
 def make_test_plot_complex_3d(B, rendering_kw):
-    opts = options()
-    opts.pop("adaptive")
     return plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
         backend=B,
         rendering_kw=rendering_kw,
         threed=True,
         use_cm=False,
-        **opts
+        **options()
     )
 
 
@@ -585,7 +577,6 @@ def make_test_plot_polar_use_cm(B, pa=False, ucm=False, cf=None):
 def make_test_plot3d_implicit(B, show=False):
     opts = options()
     opts["show"] = show
-    opts.pop("adaptive")
     return plot3d_implicit(
         x**2 + y**3 - z**2,
         (x, -2, 2), (y, -2, 2), (z, -2, 2),
@@ -764,6 +755,7 @@ def make_test_show_in_legend_3d(B):
     )
     p4 = p1 + p2 + p3
 
+    options.pop("adaptive")
     p13 = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), "a", **options)
     p14 = plot3d(
         sin(x**2 + y**2),

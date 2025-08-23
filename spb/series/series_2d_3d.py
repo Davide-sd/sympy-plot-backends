@@ -11,7 +11,7 @@ from spb.utils import (
     unwrap,
     extract_solution,
     tf_to_control,
-    prange
+    prange,
 )
 import sympy
 from sympy import (
@@ -49,7 +49,8 @@ from spb.series.base import (
     _RangeTuple,
     _CastToInteger,
     _get_wrapper_for_expr,
-    _raise_color_func_error
+    _raise_color_func_error,
+    _check_misspelled_series_kwargs
 )
 
 
@@ -200,12 +201,6 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
     is_2Dline = True
     _N = 1000
 
-    _allowed_keys = [
-        "steps", "scatter", "is_filled", "fill", "line_color", "detect_poles",
-        "eps", "is_polar", "unwrap", "exclude",
-    ]
-
-
     # TODO: are they excluded from eval or is the result at this particular
     # coordinate set to Nan?
     unwrap = param.ClassSelector(default=False, class_=(bool, dict), doc="""
@@ -254,14 +249,6 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
                 kwargs["label"] = ""
         kwargs.setdefault("use_cm", False)
         # kwargs.setdefault("n", self._N)
-
-
-        exclude = kwargs.pop("exclude", [])
-        if isinstance(exclude, Set):
-            exclude = list(extract_solution(exclude, n=100))
-        if not hasattr(exclude, "__iter__"):
-            exclude = [exclude]
-        kwargs["exclude"] = sorted([float(e) for e in exclude])
 
         super().__init__(*args, **kwargs)
 
@@ -649,6 +636,16 @@ class List3DSeries(List2DSeries):
         return None
 
 
+def _process_exclude_kw(kwargs):
+    exclude = kwargs.pop("exclude", [])
+    if isinstance(exclude, Set):
+        exclude = list(extract_solution(exclude, n=100))
+    if not hasattr(exclude, "__iter__"):
+        exclude = [exclude]
+    kwargs["exclude"] = sorted([float(e) for e in exclude])
+    return kwargs
+
+
 class LineOver1DRangeSeries(
     _GridEvaluationParameters,
     _AdaptiveEvaluationParameters,
@@ -660,11 +657,6 @@ class LineOver1DRangeSeries(
     Representation for a line consisting of a SymPy expression over a
     real range.
     """
-
-    _allowed_keys = [
-        "absarg", "is_complex", "is_polar"
-    ]
-    _exclude_params_from_doc = ["zscale"]
 
     expr = param.Parameter(doc="""
         It can either be a symbolic expression representing the function
@@ -704,9 +696,11 @@ class LineOver1DRangeSeries(
 
     def __init__(self, expr, range_x, label="", **kwargs):
         _return = kwargs.pop("return", None)
+        _check_misspelled_series_kwargs(self, additional_keys=["sum_bound"], **kwargs)
         kwargs["range_x"] = range_x
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
         kwargs["_range_names"] = ["range_x"]
+        kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
         self.evaluator = GridEvaluator(series=self)
         self._label_str = str(self.expr) if label is None else label
@@ -1077,11 +1071,13 @@ class Parametric2DLineSeries(
         """)
 
     def __init__(self, expr_x, expr_y, range_p, label="", **kwargs):
+        _check_misspelled_series_kwargs(self, **kwargs)
         kwargs["expr_x"] = expr_x if callable(expr_x) else sympify(expr_x)
         kwargs["expr_y"] = expr_y if callable(expr_y) else sympify(expr_y)
         kwargs["range_p"] = range_p
         kwargs["_range_names"] = ["range_p"]
         kwargs.setdefault("use_cm", True)
+        kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y)
         # self.ranges = [range_p]
@@ -1143,12 +1139,14 @@ class Parametric3DLineSeries(
     def __init__(
         self, expr_x, expr_y, expr_z, range_p, label="", **kwargs
     ):
+        _check_misspelled_series_kwargs(self, **kwargs)
         kwargs["expr_x"] = expr_x if callable(expr_x) else sympify(expr_x)
         kwargs["expr_y"] = expr_y if callable(expr_y) else sympify(expr_y)
         kwargs["expr_z"] = expr_z if callable(expr_z) else sympify(expr_z)
         kwargs["range_p"] = range_p
         kwargs["_range_names"] = ["range_p"]
         kwargs.setdefault("use_cm", True)
+        kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
         # self.ranges = [range_p]
@@ -1187,7 +1185,6 @@ class SurfaceBaseSeries(
     """A base class for 3D surfaces."""
 
     is_3Dsurface = True
-    _allowed_keys = ["surface_color", "is_polar"]
 
     surface_color = param.Parameter(default=None, doc="""
         For back-compatibility with old sympy.plotting. Use ``rendering_kw``
@@ -1224,6 +1221,8 @@ class SurfaceBaseSeries(
         evaluation. Related parameters: ``yscale``.""")
 
     def __init__(self, *args, **kwargs):
+        # NOTE: "scalar" comes from plot_vector
+        _check_misspelled_series_kwargs(self, additional_keys=["scalar"], **kwargs)
         kwargs.setdefault("color_func", lambda x, y, z: z)
         super().__init__(**kwargs)
         # NOTE: why should SurfaceOver2DRangeSeries support is polar?
@@ -1569,8 +1568,6 @@ class ContourSeries(SurfaceOver2DRangeSeries):
 
     is_3Dsurface = False
     is_contour = True
-    _allowed_keys = [
-        "contour_kw", "is_filled", "fill", "clabels"]
 
     is_filled = param.Boolean(True, doc="""
         If True, use filled contours. Otherwise, use line contours.""")
@@ -1621,7 +1618,6 @@ class ImplicitSeries(
 
     is_implicit = True
     use_cm = False
-    _allowed_keys = ["adaptive", "depth", "color"]
     _N = 100
 
     f = param.ClassSelector(class_=(Relational, Boolean, Expr), doc="""
@@ -1690,6 +1686,7 @@ class ImplicitSeries(
         evaluation. Related parameters: ``yscale``.""")
 
     def __init__(self, f, rangex_x, rangex_y, label="", **kwargs):
+        _check_misspelled_series_kwargs(self, additional_keys=["color"], **kwargs)
         kwargs = kwargs.copy()
         kwargs["f"] = f
         kwargs["range_x"] = rangex_x
@@ -2229,6 +2226,8 @@ class PlaneSeries(SurfaceBaseSeries):
     def __init__(
         self, plane, range_x, range_y, range_z=None, label="", **kwargs
     ):
+        # NOTE: "scalar" comes from plot_vector
+        _check_misspelled_series_kwargs(self, additional_keys=["scalar"], **kwargs)
         # super().__init__(**kwargs)
         # kwargs.setdefault("n", self._N)
         kwargs["plane"] = plane
@@ -2410,6 +2409,7 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
         return self.geom
 
     def __init__(self, geom, range_x=None, label="", **kwargs):
+        _check_misspelled_series_kwargs(self, **kwargs)
         if not isinstance(geom, GeometryEntity):
             raise ValueError(
                 "`expr` must be a geomtric entity.\n"
@@ -2528,6 +2528,7 @@ class Geometry3DSeries(Line2DBaseSeries):
         return self.geom
 
     def __init__(self, geom, label="", **kwargs):
+        _check_misspelled_series_kwargs(self, **kwargs)
         if not isinstance(geom, GeometryEntity):
             raise ValueError(
                 "`expr` must be a geomtric entity.\n"
@@ -2665,6 +2666,7 @@ class HVLineSeries(BaseSeries):
         it represents a vertical line.""")
 
     def __init__(self, expr, horizontal, label="", **kwargs):
+        _check_misspelled_series_kwargs(self, **kwargs)
         expr = sympify(expr)
         kwargs["_expr"] = expr
         kwargs["is_horizontal"] = horizontal

@@ -548,7 +548,7 @@ def test_plot_vector_3d_streamlines(use_latex, label_func):
 
     # other keywords: it should not raise errors
     p = make_test_plot_vector_3d_quiver_streamlines(
-        PB, True, stream_kw=dict(), kwargs=dict(use_cm=False)
+        PB, True, stream_kw=dict(), use_cm=False
     )
 
 

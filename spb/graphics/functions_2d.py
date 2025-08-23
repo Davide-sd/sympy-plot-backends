@@ -2371,6 +2371,8 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
     if isinstance(geom, Plane):
         raise TypeError("")
 
+    kwargs.setdefault("is_filled", fill)
+
     if isinstance(geom, Curve):
         new_cls = (
             Parametric2DLineSeries
@@ -2379,14 +2381,14 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
         )
         s = new_cls(
             *geom.functions, geom.limits,
-            label=label, rendering_kw=rendering_kw, fill=fill, **kwargs)
+            label=label, rendering_kw=rendering_kw, **kwargs)
     else:
         if isinstance(geom, (LinearEntity3D, Point3D)):
             new_cls = Geometry3DSeries
         else:
             new_cls = Geometry2DSeries
         s = new_cls(
-            geom, label=label, rendering_kw=rendering_kw, fill=fill, **kwargs)
+            geom, label=label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 

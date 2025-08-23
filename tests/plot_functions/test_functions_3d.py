@@ -587,6 +587,7 @@ def test_plot3d_plot_contour_base_scalars(paf_options):
     # verify that these functions are able to deal with base scalars
 
     options = paf_options.copy()
+    options.pop("adaptive")
     options["n"] = 10
 
     C = CoordSys3D("")
@@ -637,6 +638,7 @@ def test_functions_iplot_integration(pi_options):
 def test_plot3d_wireframe(pi_options):
     # verify that wireframe=True produces the expected data series
     x, y, u = symbols("x, y, u")
+    pi_options.pop("adaptive")
     pi_options["n"] = 10
 
     _plot3d = lambda wf: plot3d(
@@ -735,6 +737,7 @@ def test_plot3d_wireframe_and_labels(pi_options):
     # verify that `wireframe=True` produces the expected data series even when
     # `label` is set
     x, y, u = symbols("x, y, u")
+    pi_options.pop("adaptive")
     pi_options["n"] = 10
 
     t = plot3d(
@@ -924,7 +927,6 @@ def test_indexed_objects():
     p = plot3d(
         cos(x[0] ** 2 + x[1] ** 2),
         (x[0], -pi, pi), (x[1], -pi, pi),
-        adaptive=False,
         n=10,
         show=False,
         backend=MB,

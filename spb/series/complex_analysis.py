@@ -38,7 +38,8 @@ from spb.series.base import (
     BaseSeries,
     _RangeTuple,
     _CastToInteger,
-    _get_wrapper_for_expr
+    _get_wrapper_for_expr,
+    _check_misspelled_series_kwargs
 )
 from spb.series.series_2d_3d import (
     LineOver1DRangeSeries,
@@ -236,7 +237,6 @@ class ComplexSurfaceSeries(
     is_3Dsurface = True
     is_contour = False
     is_domain_coloring = False
-    _allowed_keys = ["threed", "is_filled", "clabels"]
 
     # TODO: I have defined them in ComplexSurfaceBaseSeries.
     # Which one do I remove?
@@ -385,10 +385,6 @@ class ComplexDomainColoringSeries(
     """
     is_3Dsurface = False
     is_domain_coloring = True
-    _allowed_keys = [
-        "threed", "coloring", "phaseres", "cmap", "blevel", "phaseoffset",
-        "colorbar", "at_infinity", "riemann_mask", "annotate"
-    ]
 
     at_infinity = param.Boolean(False, doc="""
         If False the visualization will be centered about the complex point
@@ -562,8 +558,6 @@ class RiemannSphereSeries(
     is_domain_coloring = True
     is_3Dsurface = True
     _N = 150
-    _allowed_keys = [
-        "cmap", "coloring", "blevel", "phaseres", "phaseoffset"]
 
     # n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
     #     Number of discretization points along the x, y, z directions,
@@ -604,6 +598,7 @@ class RiemannSphereSeries(
 
     def __init__(self, expr, range_t, range_p, **kwargs):
         self._block_lambda_functions(expr)
+        _check_misspelled_series_kwargs(self, **kwargs)
         kwargs["expr"] = expr
         kwargs["range_t"] = range_t
         kwargs["range_p"] = range_p

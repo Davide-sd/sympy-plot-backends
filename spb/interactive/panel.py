@@ -4,7 +4,7 @@ Implements interactive-widgets plotting with Holoviz Panel using
 """
 
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
-from spb.utils import _validate_kwargs
+from spb.utils import _check_misspelled_kwargs
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from spb.plotgrid import PlotGrid
@@ -275,7 +275,7 @@ class InteractivePlot(PanelCommon):
             kwargs["is_iplot"] = True
             kwargs["imodule"] = "panel"
             self.backend = Backend(*series, **kwargs)
-            _validate_kwargs(self.backend, **original_kwargs)
+            # _check_misspelled_kwargs(self.backend, **original_kwargs)
 
             from spb import PB
             if Backend is PB:

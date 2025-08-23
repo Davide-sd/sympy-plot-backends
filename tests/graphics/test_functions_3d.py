@@ -207,7 +207,7 @@ def test_surface_revolution(default_range, range1, range2, label, rkw, n, params
 
     r1 = (t, *range1) if isinstance(range1, (list, tuple)) else None
     r2 = (phi, *range2) if isinstance(range2, (list, tuple)) else None
-    kwargs = {"wireframe": wf}
+    kwargs = {"wireframe": wf, "force_real_eval": True}
     if params:
         kwargs["params"] = params
     if n:

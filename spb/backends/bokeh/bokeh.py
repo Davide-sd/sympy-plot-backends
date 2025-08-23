@@ -54,8 +54,6 @@ class BokehBackend(Plot):
     """
 
     _library = "bokeh"
-    _allowed_keys = Plot._allowed_keys + [
-        "markers", "annotations", "fill", "rectangles"]
 
     # colorloop = []
     # colormaps = []

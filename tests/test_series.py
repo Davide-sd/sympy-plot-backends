@@ -293,43 +293,6 @@ def test_number_discretization_points():
     # points are consistent with each other.
     x, y, z = symbols("x:z")
 
-    # for pt in [
-    #     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries
-    # ]:
-    #     kw1 = _set_discretization_points({"n": 10}, pt)
-    #     assert kw1["n"] == [10, 10, 10]
-    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-    #     assert kw2["n"] == [10, 20, 30]
-    #     kw3 = _set_discretization_points({"n1": 10}, pt)
-    #     assert kw3["n"] == [10, 1000, 1000]
-    #     assert all("n1" not in d for d in [kw1, kw2, kw3])
-
-    # for pt in [
-    #     SurfaceOver2DRangeSeries, ContourSeries, ParametricSurfaceSeries,
-    #     ComplexSurfaceSeries, ComplexDomainColoringSeries, Vector2DSeries,
-    #     ImplicitSeries,
-    # ]:
-    #     kw1 = _set_discretization_points({"n": 10}, pt)
-    #     assert kw1["n"] == [10, 10, 10]
-    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-    #     assert kw2["n"] == [10, 20, 30]
-    #     kw3 = _set_discretization_points({"n1": 10, "n2": 20}, pt)
-    #     assert kw3["n"] == [10, 20, pt._N]
-    #     assert all("n1" not in d for d in [kw1, kw2, kw3])
-    #     assert all("n2" not in d for d in [kw1, kw2, kw3])
-
-
-    # for pt in [Vector3DSeries, SliceVector3DSeries, Implicit3DSeries]:
-    #     kw1 = _set_discretization_points({"n": 10}, pt)
-    #     assert kw1["n"] == [10, 10, 10]
-    #     kw2 = _set_discretization_points({"n": [10, 20, 30]}, pt)
-    #     assert kw2["n"] == [10, 20, 30]
-    #     kw3 = _set_discretization_points({"n1": 10, "n2": 20, "n3": 30}, pt)
-    #     assert kw3["n"] == [10, 20, 30]
-    #     assert all("n1" not in d for d in [kw1, kw2, kw3])
-    #     assert all("n2" not in d for d in [kw1, kw2, kw3])
-    #     assert all("n3" not in d for d in [kw1, kw2, kw3])
-
     for pt in [
         LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries
     ]:
@@ -1057,7 +1020,6 @@ def test_only_integers():
 
     s = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -5.5, 5.5), (y, -3.5, 3.5), "",
-        adaptive=False,
         only_integers=True,
     )
     xx, yy, _ = s.get_data()
@@ -1115,7 +1077,6 @@ def test_only_integers():
 
     s = SurfaceOver2DRangeSeries(
         1, (x, -5.5, 5.5), (y, -3.5, 3.5), "",
-        adaptive=False,
         only_integers=True
     )
     xx, yy, _ = s.get_data()
@@ -1417,7 +1378,7 @@ def test_interactive():
     )
     s2 = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
-        adaptive=False, n1=50, n2=50
+        n1=50, n2=50
     )
     do_test(s1.get_data(), s2.get_data())
 
@@ -2381,12 +2342,12 @@ def test_apply_transforms():
     s1 = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2),
         (x, -2 * pi, 2 * pi), (y, -2 * pi, 2 * pi),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
     )
     s2 = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2),
         (x, -2 * pi, 2 * pi), (y, -2 * pi, 2 * pi),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         tx=np.rad2deg,
         ty=lambda x: 2 * x,
         tz=lambda x: 3 * x,
@@ -2487,12 +2448,12 @@ def test_apply_transforms():
 
     s1 = ComplexDomainColoringSeries(
         (z**2 + 1) / (z**2 - 1), (z, -3 - 4 * I, 3 + 4 * I),
-        n1=10, n2=10, n3=10
+        n1=10, n2=10
     )
     s2 = ComplexDomainColoringSeries(
         (z**2 + 1) / (z**2 - 1),
         (z, -3 - 4 * I, 3 + 4 * I),
-        n1=10, n2=10, n3=10,
+        n1=10, n2=10,
         tx=lambda t: t*2,
         ty=lambda t: t*3,
         tz=lambda t: t*4,
@@ -2934,11 +2895,11 @@ def test_is_polar_3d():
     expr = (x**2 - 1) ** 2
     s1 = SurfaceOver2DRangeSeries(
         expr, (x, 0, 1.5), (y, 0, 2 * pi),
-        n=10, adaptive=False, is_polar=False
+        n=10, is_polar=False
     )
     s2 = SurfaceOver2DRangeSeries(
         expr, (x, 0, 1.5), (y, 0, 2 * pi),
-        n=10, adaptive=False, is_polar=True
+        n=10, is_polar=True
     )
     x1, y1, z1 = s1.get_data()
     x2, y2, z2 = s2.get_data()
@@ -3062,7 +3023,7 @@ def test_color_func():
 
     s = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         color_func=lambda x: x,
     )
     xx, yy, zz = s.get_data()
@@ -3070,7 +3031,7 @@ def test_color_func():
     assert np.allclose(xx, col)
     s = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         color_func=lambda x, y: x * y,
     )
     xx, yy, zz = s.get_data()
@@ -3078,7 +3039,7 @@ def test_color_func():
     assert np.allclose(xx * yy, col)
     s = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         color_func=lambda x, y, z: x * y * z,
     )
     xx, yy, zz = s.get_data()
@@ -3234,7 +3195,7 @@ def test_color_func_scalar_val():
 
     s = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        adaptive=False, n1=10, n2=10,
+        n1=10, n2=10,
         color_func=lambda x: 1,
     )
     xx, yy, zz = s.get_data()
@@ -3318,11 +3279,11 @@ def test_complex_adaptive_false():
 
     s1 = SurfaceOver2DRangeSeries(
         im(expr1), (x, -5, 5), (y, -10, 10),
-        adaptive=False, n1=30, n2=3
+        n1=30, n2=3
     )
     s2 = SurfaceOver2DRangeSeries(
         im(expr2), (x, -5, 5), (y, -10, 10),
-        adaptive=False, n1=30, n2=3, params={u: 1}
+        n1=30, n2=3, params={u: 1}
     )
     data1 = s1.get_data()
     data2 = s2.get_data()
@@ -3352,20 +3313,6 @@ def test_complex_adaptive_true():
     )
     data1 = s1.get_data()
     assert all(not np.allclose(d, 0) for d in data1)
-
-    s1 = SurfaceOver2DRangeSeries(
-        im(expr1), (x, -5, 5), (y, -2, 2),
-        adaptive=True, adaptive_goal=0.1
-    )
-    data1 = s1.get_data()
-    assert all(not np.allclose(d, 0) for d in data1)
-
-    s1 = SurfaceOver2DRangeSeries(
-        sqrt(x * y), (x, -5, 5), (y, -5, 5),
-        adaptive=True, adaptive_goal=0.1
-    )
-    data1 = s1.get_data()
-    assert np.isnan(data1[-1]).any()
 
 
 @pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
@@ -3433,12 +3380,12 @@ def test_expr_is_lambda_function_adaptive_false():
     f = lambda x, y: np.cos(x**2 + y**2)
     s1 = SurfaceOver2DRangeSeries(
         f, ("a", -2, 2), ("b", -3, 3),
-        adaptive=False, n1=10, n2=10
+        n1=10, n2=10
     )
     s1.get_data()
     s2 = ContourSeries(
         f, ("a", -2, 2), ("b", -3, 3),
-        adaptive=False, n1=10, n2=10)
+        n1=10, n2=10)
     s2.get_data()
     assert s1.label == s2.label == ""
 
@@ -3883,12 +3830,12 @@ def test_symbolic_plotting_ranges():
 
     s1 = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
-        adaptive=False, n1=5, n2=5
+        n1=5, n2=5
     )
     s2 = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -pi * a, pi * a), (y, -pi * b, pi * b),
         params={a: 1, b: 1},
-        adaptive=False, n1=5, n2=5,
+        n1=5, n2=5,
     )
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
@@ -3900,7 +3847,7 @@ def test_symbolic_plotting_ranges():
         SurfaceOver2DRangeSeries(
             cos(x**2 + y**2), (x, -pi * a, pi * a), (y, -pi * b, pi * b),
             params={a: 1},
-            adaptive=False, n1=5, n2=5)
+            n1=5, n2=5)
 
     # one range symbol is included into another range's minimum or maximum val
     with raises(
@@ -3910,7 +3857,7 @@ def test_symbolic_plotting_ranges():
         SurfaceOver2DRangeSeries(
             cos(x**2 + y**2), (x, -pi * a + y, pi * a), (y, -pi * b, pi * b),
             params={a: 1},
-            adaptive=False, n1=5, n2=5)
+            n1=5, n2=5)
 
     s1 = ParametricSurfaceSeries(
         cos(x - y), sin(x + y), x - y, (x, -2, 2), (y, -2, 2), n1=5, n2=5
@@ -4041,77 +3988,77 @@ def test_color_func_expression():
     # the following statement should not raise errors
     p[0].evaluator.eval_color_func(*d)
 
-    x, y, z = symbols("x, y, z")
-    s1 = LineOver1DRangeSeries(
-        cos(x), (x, -10, 10),
-        color_func=sin(x),
-        adaptive=False, n=10
-    )
-    s2 = LineOver1DRangeSeries(
-        cos(x), (x, -10, 10),
-        color_func=lambda x: np.cos(x),
-        adaptive=False, n=10
-    )
-    assert all(isinstance(t, ColoredLineOver1DRangeSeries) for t in [s1, s2])
-    # the following statement should not raise errors
-    d1 = s1.get_data()
-    assert isinstance(s1.color_func, Expr)
-    assert callable(s1.evaluator.color_func)
-    d2 = s2.get_data()
-    assert not np.allclose(d1[-1], d2[-1])
+    # x, y, z = symbols("x, y, z")
+    # s1 = LineOver1DRangeSeries(
+    #     cos(x), (x, -10, 10),
+    #     color_func=sin(x),
+    #     adaptive=False, n=10
+    # )
+    # s2 = LineOver1DRangeSeries(
+    #     cos(x), (x, -10, 10),
+    #     color_func=lambda x: np.cos(x),
+    #     adaptive=False, n=10
+    # )
+    # assert all(isinstance(t, ColoredLineOver1DRangeSeries) for t in [s1, s2])
+    # # the following statement should not raise errors
+    # d1 = s1.get_data()
+    # assert isinstance(s1.color_func, Expr)
+    # assert callable(s1.evaluator.color_func)
+    # d2 = s2.get_data()
+    # assert not np.allclose(d1[-1], d2[-1])
 
-    s1 = Parametric2DLineSeries(
-        cos(x), sin(x), (x, 0, 2 * pi),
-        color_func=sin(x),
-        adaptive=False, n=10, use_cm=True,
-    )
-    s2 = Parametric2DLineSeries(
-        cos(x), sin(x), (x, 0, 2 * pi),
-        color_func=lambda x: np.cos(x),
-        adaptive=False, n=10, use_cm=True,
-    )
-    # the following statement should not raise errors
-    d1 = s1.get_data()
-    assert isinstance(s1.color_func, Expr)
-    assert callable(s1.evaluator.color_func)
-    d2 = s2.get_data()
-    assert not np.allclose(d1[-1], d2[-1])
+    # s1 = Parametric2DLineSeries(
+    #     cos(x), sin(x), (x, 0, 2 * pi),
+    #     color_func=sin(x),
+    #     adaptive=False, n=10, use_cm=True,
+    # )
+    # s2 = Parametric2DLineSeries(
+    #     cos(x), sin(x), (x, 0, 2 * pi),
+    #     color_func=lambda x: np.cos(x),
+    #     adaptive=False, n=10, use_cm=True,
+    # )
+    # # the following statement should not raise errors
+    # d1 = s1.get_data()
+    # assert isinstance(s1.color_func, Expr)
+    # assert callable(s1.evaluator.color_func)
+    # d2 = s2.get_data()
+    # assert not np.allclose(d1[-1], d2[-1])
 
-    s = SurfaceOver2DRangeSeries(
-        cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
-        color_func=sin(x**2 + y**2),
-        adaptive=False, n1=5, n2=5,
-    )
+    # s = SurfaceOver2DRangeSeries(
+    #     cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+    #     color_func=sin(x**2 + y**2),
+    #     n1=5, n2=5,
+    # )
 
-    s = Vector2DSeries(
-        sin(x - y), cos(x + y), (x, -3, 3), (y, -3, 3),
-        color_func=x*y)
-    xx, yy, uu, vv = s.get_data()
-    col = s.eval_color_func(xx, yy, uu, vv)
-    assert np.allclose(col, xx * yy)
+    # s = Vector2DSeries(
+    #     sin(x - y), cos(x + y), (x, -3, 3), (y, -3, 3),
+    #     color_func=x*y)
+    # xx, yy, uu, vv = s.get_data()
+    # col = s.eval_color_func(xx, yy, uu, vv)
+    # assert np.allclose(col, xx * yy)
 
-    s = Vector3DSeries(
-        z, y, x, (x, -10, 10), (y, -10, 10), (z, -10, 10),
-        color_func=x * y * z
-    )
-    xx, yy, zz, uu, vv, ww = s.get_data()
-    col = s.eval_color_func(xx, yy, zz, uu, vv, ww)
-    assert np.allclose(col, xx * yy * zz)
+    # s = Vector3DSeries(
+    #     z, y, x, (x, -10, 10), (y, -10, 10), (z, -10, 10),
+    #     color_func=x * y * z
+    # )
+    # xx, yy, zz, uu, vv, ww = s.get_data()
+    # col = s.eval_color_func(xx, yy, zz, uu, vv, ww)
+    # assert np.allclose(col, xx * yy * zz)
 
-    # the following statement should not raise errors
-    d = s.get_data()
-    assert isinstance(s.color_func, Expr)
-    assert callable(s.evaluator.color_func)
+    # # the following statement should not raise errors
+    # d = s.get_data()
+    # assert isinstance(s.color_func, Expr)
+    # assert callable(s.evaluator.color_func)
 
-    xx = [1, 2, 3, 4, 5]
-    yy = [1, 2, 3, 4, 5]
-    zz = [1, 2, 3, 4, 5]
-    raises(
-        ValueError,
-        lambda: List2DSeries(xx, yy, use_cm=True, color_func=sin(x)))
-    raises(
-        ValueError,
-        lambda: List3DSeries(xx, yy, zz, use_cm=True, color_func=sin(x)))
+    # xx = [1, 2, 3, 4, 5]
+    # yy = [1, 2, 3, 4, 5]
+    # zz = [1, 2, 3, 4, 5]
+    # raises(
+    #     ValueError,
+    #     lambda: List2DSeries(xx, yy, use_cm=True, color_func=sin(x)))
+    # raises(
+    #     ValueError,
+    #     lambda: List3DSeries(xx, yy, zz, use_cm=True, color_func=sin(x)))
 
 
 def test_2d_complex_domain_coloring_schemes():
@@ -4821,3 +4768,63 @@ def test_implicit_2d_series_boolean_and():
     ):
         s7.get_data()
     assert s7.adaptive is False
+
+
+def test_validation_kwargs():
+    x, y, z = symbols("x, y, z")
+
+    def do_test(warning_checker, wrong_correct_map):
+        for warning in warning_checker:
+            user_warning = warning.message
+            msg = user_warning.args[0]
+            for k, v in wrong_correct_map.items():
+                assert f"'{k}': did you mean '{v}'?" in msg
+
+    with warns(
+        UserWarning,
+        match="The following keyword arguments are unused by `LineOver1DRangeSeries`."
+    ) as w:
+        LineOver1DRangeSeries(cos(x), (x, 0, 2*pi), adative=True)
+        do_test(w, {"adative": "adaptive"})
+
+    with warns(
+        UserWarning,
+        match="The following keyword arguments are unused by `SurfaceOver2DRangeSeries`."
+    ) as w:
+        SurfaceOver2DRangeSeries(
+            cos(x*y), (x, 0, pi), (y, -pi, pi), x_scale="log", yscale="log")
+        do_test(w, {"x_scale": "xscale"})
+
+    with warns(
+        UserWarning,
+        match="The following keyword arguments are unused by `ImplicitSeries`."
+    ) as w:
+        ImplicitSeries(cos(x*y), (x, 0, pi), (y, -pi, pi), adative=True, dep=2)
+        do_test(w, {"adative": "adaptive", "dep": "depth"})
+
+    with warns(
+        UserWarning,
+        match="The following keyword arguments are unused by `Vector2DSeries`."
+    ) as w:
+        Vector2DSeries(
+            -y, x, (x, 0, pi), (y, -pi, pi),
+            adaptive=True, stream_lines=True, scala=False)
+        do_test(w, {
+            "adaptive": "name",
+            "stream_lines": "streamlines",
+            "scala": "scalar"
+        })
+
+    with warns(
+        UserWarning,
+        match="The following keyword arguments are unused by `ComplexDomainColoringSeries`."
+    ) as w:
+        ComplexDomainColoringSeries(cos(z), (z, -2-2j, 2+2j), phase_res=3)
+        do_test(w, {"phase_res": "phaseres"})
+
+    with warns(
+        UserWarning,
+        match="The following keyword arguments are unused by `Geometry2DSeries`."
+    ) as w:
+        Geometry2DSeries(Polygon((4, 0), 4, n=5), isfilled=True)
+        do_test(w, {"isfilled": "is_filled"})

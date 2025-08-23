@@ -400,18 +400,6 @@ class Plot(PlotAttributes):
     # colormaps = []
     # cyclic_colormaps = []
 
-
-    _allowed_keys = [
-        "aspect", "axis", "axis_center", "backend",
-        "detect_poles", "grid", "legend", "show", "size", "title", "use_latex",
-        "xlabel", "ylabel", "zlabel", "xlim", "ylim", "zlim", "show_axis",
-        "xscale", "yscale", "zscale", "process_piecewise", "polar_axis",
-        "imodule", "update_event"
-    ]
-    """contains a list of public keyword arguments supported by the series.
-    It will be used to validate the user-provided keyword arguments.
-    """
-
     is_iplot = param.Boolean(False, constant=True, doc="""
         NOTE: matplotlib is not designed to be interactive, therefore it
         needs a way to detect where its figure is going to be displayed.

@@ -42,6 +42,7 @@ def _build_complex_point_series(*args, allow_lambda=False, pc=False, **kwargs):
     series = []
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    kwargs["plot_function"] = True
 
     if all([isinstance(a, Expr) for a in args]):
         # args is a list of complex numbers
@@ -103,6 +104,7 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
     new_args = []
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    kwargs["plot_function"] = True
 
     # option to be used with lambdify with complex functions
     kwargs.setdefault("modules", cfg["complex"]["modules"])
@@ -456,6 +458,7 @@ def plot_real_imag(*args, **kwargs):
     plot_complex, plot_complex_list, plot_complex_vector
 
     """
+    kwargs["plot_function"] = True
     kwargs["absarg"] = False
     kwargs.setdefault("abs", False)
     kwargs.setdefault("arg", False)
@@ -641,6 +644,7 @@ def plot_complex(*args, **kwargs):
     plot_complex_vector
 
     """
+    kwargs["plot_function"] = True
     kwargs["absarg"] = True
     kwargs["real"] = False
     kwargs["imag"] = False
@@ -751,6 +755,7 @@ def plot_complex_list(*args, **kwargs):
     plot_real_imag, plot_complex, plot_complex_vector
 
     """
+    kwargs["plot_function"] = True
     kwargs["absarg"] = False
     kwargs["abs"] = False
     kwargs["arg"] = False
@@ -892,15 +897,18 @@ def plot_complex_vector(*args, **kwargs):
     """
     # for each argument, generate one series. Those series will be used to
     # generate the proper input arguments for plot_vector
+    kwargs["plot_function"] = True
+    kwargs.setdefault("xlabel", "Re")
+    kwargs.setdefault("ylabel", "Im")
+    global_labels = kwargs.pop("label", [])
+
+    original_kwargs = kwargs.copy()
     kwargs["absarg"] = False
     kwargs["abs"] = False
     kwargs["arg"] = False
     kwargs["real"] = True
     kwargs["imag"] = False
     kwargs["threed"] = False
-    kwargs.setdefault("xlabel", "Re")
-    kwargs.setdefault("ylabel", "Im")
-    global_labels = kwargs.pop("label", [])
 
     args = _plot_sympify(args)
     series = _build_series(*args, allow_lambda=False, **kwargs)
@@ -917,11 +925,11 @@ def plot_complex_vector(*args, **kwargs):
     for i, s in enumerate(series):
         new_series.extend(
             complex_vector_field(
-                s.expr, s.ranges[0], label=get_label(i), **kwargs)
+                s.expr, s.ranges[0], label=get_label(i), **original_kwargs)
         )
     for s, lbl in zip(new_series, global_labels):
         s.label = lbl
-    return graphics(*new_series, **kwargs)
+    return graphics(*new_series, **original_kwargs)
 
 
 def plot_riemann_sphere(
@@ -1132,6 +1140,7 @@ def plot_riemann_sphere(
     plot_complex
 
     """
+    kwargs["plot_function"] = True
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
 

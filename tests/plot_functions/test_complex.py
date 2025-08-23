@@ -2041,6 +2041,7 @@ def test_plot_complex_vector_label_kw(pc_options):
     # verify that the label keyword argument works, if the correct
     # number of labels is provided.
 
+    pc_options.pop("adaptive")
     x, t = symbols("x, t")
 
     # one expression -> 2 series -> 2 labels
@@ -2057,6 +2058,7 @@ def test_plot_complex_vector_label_kw_interactive(pc_options):
     # verify that the label keyword argument works, if the correct
     # number of labels is provided.
 
+    pc_options.pop("adaptive")
     x, t = symbols("x, t")
 
     # one expression -> 2 series -> 2 labels
@@ -2798,7 +2800,9 @@ def test_plot_real_imag_wireframe_true(pi_options):
     # verify that wireframe lines also work with plot_real_imag
 
     x, u = symbols("x, u")
+    pi_options.pop("adaptive")
     pi_options["n"] = 12
+
 
     t = plot_real_imag(
         sqrt(x) * exp(u * x),
@@ -2825,10 +2829,11 @@ def test_plot_real_imag_wireframe_true(pi_options):
 
 
 @pytest.mark.skipif(pn is None, reason="panel is not installed")
-def test_plot_real_imag_wireframe_true(pi_options):
+def test_plot_real_imag_wireframe_true_interactive(pi_options):
     # verify that wireframe lines also work with plot_real_imag
 
     x, u = symbols("x, u")
+    pi_options.pop("adaptive")
     pi_options["n"] = 12
 
     # wireframe lines works even when interactive ranges are used

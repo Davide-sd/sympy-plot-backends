@@ -9,6 +9,7 @@ from sympy.core.function import AppliedUndef
 from sympy.core.relational import Relational
 from sympy.logic.boolalg import BooleanFunction
 from sympy.external import import_module
+import param
 import warnings
 import inspect
 
@@ -496,94 +497,89 @@ def get_vertices_indices(x, y, z):
 def _instantiate_backend(Backend, *series, **kwargs):
     show = kwargs.pop("show", True)
     p = Backend(*series, **kwargs)
-    _validate_kwargs(p, **kwargs)
 
     if show:
         p.show()
     return p
 
 
-def _validate_kwargs(backend_obj, **kwargs):
+def _check_misspelled_kwargs(
+    obj, additional_keys=[], exclude_keys=[], **kwargs):
     """Find the user-provided keywords arguments that might contain spelling
     errors and informs the user of possible alternatives.
 
     Parameters
     ==========
-    backend_obj : Plot
-        An instance of the Plot class
+    obj : param.Parameterized
+        The object holding the correct parameter names.
+    additional_keys : list
+        List of string representing additional keyword arguments that might be
+        involved in the instantiation of `obj`.
+    exclude_keys : list
+        List of string representing parameter names that should not be
+        considered while performing the validation.
+    **kwargs : dict
+        Keyword arguments passed to `obj` __init__ method.
 
     Notes
     =====
-    To keep development "agile", I extensively used ``**kwargs`` everywhere.
-    The problem is that there are "multiple levels" of keyword arguments:
+
+    Within this module, there are "multiple levels" of keyword arguments:
 
     * some keyword arguments get intercepted at the plotting function level.
       Think for example to ``scalar`` in ``plot_vector``, or ``sum_bound`` in
       ``plot``.
     * some plotting function might insert useful keyword arguments, for example
       ``real``, ``imag``, etc., on complex-related functions.
-    * many of the keyword arguments get passed down to the Series and to
-      the Backend classes.
+    * many of the keyword arguments get passed down to the Series and/or to
+      the Backend classes (for example, ``xscale, ...``).
 
-    There are many approaches to tackle keyword arguments validation:
+    After porting this module to param, I have implemented the validation
+    of keyword arguments at the ``*Series`` and ``graphics``. I was unable
+    to perform it inside the ``Plot`` class because the ``graphics`` function
+    removes unused keyword arguments.
+    Hopefully one day I'll implement on the interactive level too
+    (interactive plots and animations).
 
-    1. Replace **kwargs everywhere with the actual expected keywords.
-       This is very time consuming and hard to maintain as the module gets
-       developed even further. Moreover, Python will raise an error everytime
-       something get mispelled, which I think is annoying.
-    2. Perform "multiple levels" of keyword validation, at a plotting function
-       level (on each function), at a series level and at a backend level.
-       Again, time consuming.
-    3. The laziest and most simple approach I could think of: create the
-       ``_allowed_keys`` attribute on Series and Backend classes. Implement
-       this function to perform some validation. It is definitely not as good
-       as the previous approaches, in particular:
+    The plotting module offers two main approaches:
 
-       * the validation is actually done after the creation of Series and
-         Backend. This is not a problem as the validation is only meant to show
-         a warning message.
-       * needs to be careful when modifying Series and Backend, as the
-         ``_allowed_keys`` attribute must be update.
-       * function-level keyword arguments must be listed inside this function.
-         Again, not so great in terms of further development.
+    * spb.plot_function, inherithed from sympy.plotting. Here, the problem is
+      that keyword arguments from a specific plot function get directed
+      both at series as well as the backend. For example, the Plot class could
+      receive arguments that are meant to go to LineOver1DRangeSeries, and
+      vice-versa. It's a mess. In order to deal with this mess, I introduced
+      the `plot_function` keyword argument: this will enable validation on data
+      series but not on the ``graphics`` function.
+    * spb.graphics: here, there is a clear separation between data series
+      and backend. I can implement the validation on both ends.
 
-       But it's a quick approach and surely better than nothing.
+    With this in mind, this function is executed at the ``__init__``
+    of *Series, and inside the ``graphics`` function.
     """
-    # find the user-provided keywords arguments that might contain
-    # spelling errors and inform the user of possible alternatives.
-    allowed_keys = set(backend_obj._allowed_keys)
-    for s in backend_obj.series:
-        for c in inspect.getmro(type(s)):
-            if hasattr(c, "_allowed_keys"):
-                allowed_keys = allowed_keys.union(getattr(c, "_allowed_keys"))
-    # some functions injects the following keyword arguments that will be
-    # processed by other functions before instantion of Series and Backend.
-    allowed_keys = allowed_keys.union([
-        "abs", "absarg", "arg", "real", "imag", "force_real_eval",
-        "slice", "threed", "sum_bound", "n",
-        "phaseres", "is_point", "is_polar", "label",
-        "wireframe", "wf_n1", "wf_n2", "wf_npoints", "wf_rendering_kw",
-        "dots", "show_in_legend", "fig", "ax",
-        "sgrid", "ngrid", "zgrid", "m_circles"
-    ])
-    # from interactive sub-module
-    allowed_keys = allowed_keys.union([
-        "layout", "ncols", "use_latex", "throttled", "servable",
-        "custom_css", "pane_kw", "is_iplot", "series", "template"
-    ])
-    # from graphics.control sub-module
-    allowed_keys = allowed_keys.union([
-        "omega_limits", "input", "output"
-    ])
-    user_provided_keys = set(kwargs.keys())
+    if isinstance(obj, param.Parameterized):
+        # do not consider private attributes
+        allowed_keys = [
+            t for t in obj.param.objects('existing')
+            if t[0] != "_"
+        ] + additional_keys
+    else:
+        allowed_keys = additional_keys
+
+    allowed_keys = list(set(allowed_keys))
+    print(allowed_keys)
+    # allowed_keys = list(set(allowed_keys))
+    kwargs = [k for k in kwargs if k[0] != "_"]
+    user_provided_keys = set(kwargs).difference(exclude_keys)
     unused_keys = user_provided_keys.difference(allowed_keys)
+
     if len(unused_keys) > 0:
-        msg = "The following keyword arguments are unused.\n"
+        t = type(obj).__name__
+        msg = f"The following keyword arguments are unused by `{t}`.\n"
         for k in unused_keys:
             possible_match = find_closest_string(k, allowed_keys)
             msg += "* '%s'" % k
             msg += ": did you mean '%s'?\n" % possible_match
-        warnings.warn(msg, stacklevel=3)
+        warnings.warn(msg, stacklevel=2)
         # this "return" helps with tests
         return msg
 

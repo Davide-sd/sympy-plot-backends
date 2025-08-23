@@ -135,7 +135,7 @@ class InteractivePlot(IPlot):
             kwargs["is_iplot"] = True
             kwargs["imodule"] = "panel"
             self.backend = Backend(*series, **kwargs)
-            _validate_kwargs(self.backend, **original_kwargs)
+            # _validate_kwargs(self.backend, **original_kwargs)
 
         self._run_in_notebook = False
         if get_environment() == 0:

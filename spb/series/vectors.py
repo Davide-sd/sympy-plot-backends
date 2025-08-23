@@ -36,7 +36,13 @@ from spb.series.evaluator import (
     _GridEvaluationParameters,
     _correct_shape
 )
-from spb.series.base import BaseSeries, _RangeTuple, _CastToInteger
+from spb.series.base import (
+    BaseSeries,
+    _RangeTuple,
+    _CastToInteger,
+    _check_misspelled_series_kwargs
+)
+
 from spb.series.series_2d_3d import PlaneSeries, SurfaceOver2DRangeSeries
 
 
@@ -45,8 +51,6 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
 
     is_vector = True
     is_slice = False
-    _allowed_keys = [
-        "streamlines", "quiver_kw", "stream_kw", "normalize"]
 
     _expr = param.Parameter(doc="""
         Holds a tuple of symbolic expressions representing the
@@ -68,6 +72,8 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         y-axis.""")
 
     def __init__(self, exprs, ranges, label, **kwargs):
+        _check_misspelled_series_kwargs(
+            self, additional_keys=["scalar", "streamlines"], **kwargs)
         kwargs.setdefault("use_cm", True)
         if kwargs.get("use_cm") is None:
             kwargs["use_cm"] = False
@@ -184,7 +190,6 @@ class Vector2DSeries(VectorBase):
     is_2Dvector = True
     # default number of discretization points
     _N = 25
-    _allowed_keys = ["scalar"]
     u = param.Parameter(doc="""
         The components of the vector field along the x-axis. It can be a:
 
@@ -404,6 +409,7 @@ def _build_slice_series(slice_surf, ranges, **kwargs):
     discr_symbols = [r[0] for r in ranges]
     idx = [discr_symbols.index(s) for s in [r[0] for r in new_ranges]]
     kwargs2 = kwargs.copy()
+    kwargs2.pop("n3", None)
     kwargs2["n1"] = n[idx[0]]
     kwargs2["n2"] = n[idx[1]]
 
@@ -421,10 +427,10 @@ class SliceVector3DSeries(Vector3DSeries):
         self, slice_surf, u, v, w, range_x, range_y, range_z,
         label="", **kwargs
     ):
-        plane_kwargs = kwargs.copy()
-        plane_kwargs.pop("normalize", None)
+        slice_surf_kwargs = kwargs.copy()
+        slice_surf_kwargs.pop("normalize", None)
         self.slice_surf_series = _build_slice_series(
-            slice_surf, [range_x, range_y, range_z], **plane_kwargs)
+            slice_surf, [range_x, range_y, range_z], **slice_surf_kwargs)
         super().__init__(u, v, w, range_x, range_y, range_z, label, **kwargs)
         self.evaluator = SliceVectorGridEvaluator(series=self)
 
@@ -482,7 +488,6 @@ class Arrow2DSeries(BaseSeries):
     """
 
     is_2Dvector = True
-    _allowed_keys = ["normalize"]
 
     _expr = param.Parameter()
     start = ListTupleArray(bounds=(2, 2), doc="""

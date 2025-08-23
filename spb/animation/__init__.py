@@ -220,7 +220,7 @@ class BaseAnimation:
         fps = self.animation_data.fps
         if ext == ".gif":
             kwargs.setdefault("loop", 0)    # loop=0 means loops continuously
-            kwargs.setdefault("fps", fps)
+            kwargs.setdefault("duration", int(1000 / fps))
             # NOTE: from my tests on 3D plots with colorbars, 2 works best.
             kwargs.setdefault("quantizer", 2)
         elif ext == ".mp4":

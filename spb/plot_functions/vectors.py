@@ -352,6 +352,7 @@ def plot_vector(*args, **kwargs):
     args = _plot_sympify(args)
     args = _preprocess(*args)
     kwargs.setdefault("aspect", "equal")
+    kwargs["plot_function"] = True
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
     scalar = kwargs.pop("scalar", -1)

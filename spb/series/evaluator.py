@@ -286,10 +286,6 @@ class _AdaptiveEvaluationParameters(param.Parameterized):
         """)
     _goal = param.Callable()
 
-    _allowed_keys = [
-        "adaptive", "adaptive_goal", "loss_fn"
-    ]
-
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("adaptive", cfg["adaptive"]["used_by_default"])
         kwargs.setdefault("adaptive_goal", cfg["adaptive"]["goal"])
@@ -742,10 +738,15 @@ class GridEvaluator(param.Parameterized):
             # p[0].line_color = "red"
             # However, this won't apply the red color, because we can't ask
             # a parametric series to be non-parametric!
-            warnings.warn(
-                "This is likely not the result you were  looking for. "
-                "Please, re-execute the plot command, this time "
-                "with the appropriate line_color or surface_color")
+            # Similarly, if a 3D surface plot is created with
+            # surface_color="red" and `use_cm=True`, then no color_func will
+            # be set, and we would end up here, creating constant color across
+            # the surface.
+            if self.series.use_cm:
+                warnings.warn(
+                    "This is likely not the result you were  looking for. "
+                    "Please, re-execute the plot command, this time "
+                    "with the appropriate line_color or surface_color")
             return np.ones_like(args[0])
 
         if self._eval_color_func_with_signature:

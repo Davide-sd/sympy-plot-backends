@@ -192,6 +192,7 @@ def plot3d_parametric_line(*args, **kwargs):
     plot3d_revolution, plot3d_implicit, plot3d_list
 
     """
+    kwargs["plot_function"] = True
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 3, 1, **kwargs)
     global_labels = kwargs.pop("label", [])
@@ -396,6 +397,7 @@ def plot3d(*args, **kwargs):
     plot3d_revolution, plot3d_implicit, plot3d_list, plot_contour
 
     """
+    kwargs["plot_function"] = True
     return _plot3d_plot_contour_helper(True, *args, **kwargs)
 
 
@@ -500,7 +502,7 @@ def plot3d_parametric_surface(*args, **kwargs):
            "v", {"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
            backend=KB,
            use_cm=True, color_func=lambda u, v: u,
-           title=r"Möbius \, strip",
+           title="Möbius \\, strip",
            wireframe=True, wf_n1=20, wf_rendering_kw={"width": 0.004})
 
     Riemann surfaces of the real part of the multivalued function `z**n`,
@@ -568,7 +570,7 @@ def plot3d_parametric_surface(*args, **kwargs):
                up: (1, 0, 2),
                vp: (2, 0, 2),
            },
-           title=r"Catenoid \, to \, Right \, Helicoid \, Transformation")
+           title="Catenoid \\, to \\, Right \\, Helicoid \\, Transformation")
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. Note that the plot's
@@ -590,7 +592,7 @@ def plot3d_parametric_surface(*args, **kwargs):
            },
            backend=KB,
            use_cm=True,
-           title=r"Plücker's \, conoid",
+           title="Plücker's \\, conoid",
            wireframe=True,
            wf_rendering_kw={"width": 0.004},
            wf_n1=75, wf_n2=6, imodule="panel"
@@ -603,6 +605,7 @@ def plot3d_parametric_surface(*args, **kwargs):
     plot3d_revolution, plot3d_implicit, plot3d_list
 
     """
+    kwargs["plot_function"] = True
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 3, 2, **kwargs)
     global_labels = kwargs.pop("label", [])
@@ -761,6 +764,7 @@ def plot3d_spherical(*args, **kwargs):
     plot_expr = _check_arguments(args, 1, 2, **kwargs)
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    kwargs["plot_function"] = True
     surfaces = []
     indeces = []
 
@@ -864,6 +868,7 @@ def plot3d_implicit(*args, **kwargs):
     plot3d_spherical, plot3d_revolution, plot3d_list
 
     """
+    kwargs["plot_function"] = True
     if kwargs.pop("params", None) is not None:
         raise NotImplementedError(
             "plot3d_implicit doesn't support interactive widgets.")
@@ -939,7 +944,7 @@ def plot3d_revolution(
        ...     use_cm=True, color_func=lambda t, phi: phi,
        ...     rendering_kw={"alpha": 0.6, "cmap": "twilight"},
        ...     # indicates the azimuthal angle on the colorbar label
-       ...     label=r"$\phi$ [rad]",
+       ...     label="$\\phi$ [rad]",
        ...     show_curve=True,
        ...     # this dictionary will be passes to plot3d_parametric_line in
        ...     # order to draw the initial curve
@@ -1026,6 +1031,7 @@ def plot3d_revolution(
     plot3d_spherical, plot3d_implicit, plot3d_list
 
     """
+    kwargs["plot_function"] = True
     surfaces = surface_revolution(
         curve, range_t, range_phi,
         axis=axis, parallel_axis=parallel_axis, show_curve=show_curve,
@@ -1131,6 +1137,7 @@ def plot3d_list(*args, **kwargs):
     plot3d_spherical, plot3d_revolution, plot3d_implicit
 
     """
+    kwargs["plot_function"] = True
     g_labels = kwargs.pop("label", [])
     g_rendering_kw = kwargs.pop("rendering_kw", None)
     series = []

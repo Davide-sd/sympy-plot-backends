@@ -8,7 +8,7 @@ from spb.series import (
     SurfaceOver2DRangeSeries, ContourSeries,
     ImplicitSeries, Implicit3DSeries, BaseSeries
 )
-from spb.utils import _instantiate_backend
+from spb.utils import _instantiate_backend, _check_misspelled_kwargs
 
 
 # def graphics(
@@ -526,21 +526,31 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
         is_3D = any(s.is_3D for s in series)
         params.setdefault("backend", TWO_D_B if is_3D else THREE_D_B)
 
+        print("graphics", params)
+
         # TODO: this can be done without the params of this class, using instead
         # the params of Plot
-        # remove keyword arguments that are not parameters of this backend
-        # keys_to_maintain = list(self.param) + ["process_piecewise", "imodule", "polar_axis"]
-        keys_to_maintain = list(Plot.param) + [
+        keys_to_be_aware_of = [
             "process_piecewise", "backend", "show", "fig", "ax",
             # this enables animations
             "animation",
             # these enable interactive widgets plotting
-            "pane_kw", "ncols", "layout", "template"
+            "pane_kw", "ncols", "layout", "template",
+            "plot_function"
         ]
+        # remove keyword arguments that are not parameters of this backend
+        keys_to_maintain = list(Plot.param) + keys_to_be_aware_of
 
+        # possible_mispelled_keys = [
+        #     k for k in params in k not in keys_to_maintain
+        # ]
+        if not params.get("plot_function", False):
+            _check_misspelled_kwargs(
+                self, additional_keys=keys_to_be_aware_of, **params)
         params = {k: v for k, v in params.items() if k in keys_to_maintain}
 
         # p = param.ParamOverrides(self, params)
+        print("graphics", params)
 
         # set the appropriate transformation on 2D line series if polar axis
         # are requested
