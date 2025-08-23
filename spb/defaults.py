@@ -82,15 +82,6 @@ def _hardcoded_defaults():
             # automatically compute new data when zoom/pan are used
             "update_event": False,
         },
-        mayavi={
-            "size": (800, 500),
-            "bg_color": None,
-            "fg_color": None,
-            # Show/hide main grid
-            "grid": True,
-            # Render latex with Mayavi
-            "use_latex": True,
-        },
         use_repr=False,
         # Possible values: "matplotlib", "plotly", "bokeh"
         backend_2D="matplotlib",

@@ -526,7 +526,7 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
         is_3D = any(s.is_3D for s in series)
         params.setdefault("backend", TWO_D_B if is_3D else THREE_D_B)
 
-        print("graphics", params)
+        # print("graphics", params)
 
         # TODO: this can be done without the params of this class, using instead
         # the params of Plot
@@ -550,7 +550,7 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
         params = {k: v for k, v in params.items() if k in keys_to_maintain}
 
         # p = param.ParamOverrides(self, params)
-        print("graphics", params)
+        # print("graphics", params)
 
         # set the appropriate transformation on 2D line series if polar axis
         # are requested

@@ -345,9 +345,9 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
                     return t(x, self.tx), t(y, self.ty), t(z, self.tz), t(p, tp)
 
     def _insert_exclusions(self, points):
-        """Add NaN to each of the exclusion point. Practically, this adds a
-        NaN to the exlusion point, plus two other nearby points evaluated with
-        the numerical functions associated to this data series.
+        """
+        Add NaN to each of the exclusion point, plus two other nearby points
+        evaluated with the numerical functions associated to this data series.
         These nearby points are important when the number of discretization
         points is low, or the scale is logarithm.
 
@@ -366,41 +366,53 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
         n = len(points)
         # index of the x-coordinate (for 2d plots) or parameter (for 2d/3d
         # parametric plots)
-        k = n - 1
-        if n == 2:
-            k = 0
+        k = 0 if (n == 2) else n - 1
         # indeces of the other coordinates
         j_indeces = sorted(set(range(n)).difference([k]))
         # TODO: for now, I assume that numpy functions are going to succeed
         funcs = [f[0] for f in self.evaluator._functions]
+        # compute difference between consecutive points
+        diff = np.roll(points[k], -1) - points[k]
+        max_diff = diff[:-1].max()
+        min_diff = diff[:-1].min()
 
         for e in self.exclude:
             res = points[k] - e >= 0
+
             # if res contains both True and False, ie, if e is found
             if any(res) and any(~res):
                 idx = np.nanargmax(res)
-                # select the previous point with respect to e
-                idx -= 1
-                # TODO: what if points[k][idx]==e or points[k][idx+1]==e?
 
-                if idx > 0 and idx < len(points[k]) - 1:
-                    delta_prev = abs(e - points[k][idx])
-                    delta_post = abs(e - points[k][idx + 1])
+                if not np.isclose(points[k][idx], e):
+                    # select the previous point with respect to e
+                    idx -= 1
+
+                if idx > 0:
+                    is_discr_point = np.isclose(points[k][idx], e)
+                    is_last_point = (idx < len(points[k]) - 1)
+                    delta_prev = abs(e - points[k][idx]) if not is_discr_point else min_diff / 100
+                    delta_post = abs(e - points[k][idx + 1]) if is_last_point else float("inf")
                     delta = min(delta_prev, delta_post) / 100
                     prev = e - delta
                     post = e + delta
 
                     # add points to the x-coord or the parameter
-                    points[k] = np.concatenate(
-                        (points[k][:idx], [prev, e, post], points[k][idx+1:]))
+                    points[k] = np.concatenate((
+                        points[k][:idx],
+                        [prev, e, post] if is_last_point else [prev, e],
+                        points[k][idx+1:] if is_last_point else []
+                    ))
 
                     # add points to the other coordinates
                     c = 0
                     for j in j_indeces:
                         values = funcs[c](np.array([prev, post]))
                         c += 1
-                        points[j] = np.concatenate(
-                            (points[j][:idx], [values[0], np.nan, values[1]], points[j][idx+1:]))
+                        points[j] = np.concatenate((
+                            points[j][:idx],
+                            [values[0], np.nan, values[1]] if is_last_point else [values[0], np.nan],
+                            points[j][idx+1:] if is_last_point else []
+                        ))
         return points
 
 

@@ -566,8 +566,6 @@ def _check_misspelled_kwargs(
         allowed_keys = additional_keys
 
     allowed_keys = list(set(allowed_keys))
-    print(allowed_keys)
-    # allowed_keys = list(set(allowed_keys))
     kwargs = [k for k in kwargs if k[0] != "_"]
     user_provided_keys = set(kwargs).difference(exclude_keys)
     unused_keys = user_provided_keys.difference(allowed_keys)
@@ -580,8 +578,6 @@ def _check_misspelled_kwargs(
             msg += "* '%s'" % k
             msg += ": did you mean '%s'?\n" % possible_match
         warnings.warn(msg, stacklevel=2)
-        # this "return" helps with tests
-        return msg
 
 
 # taken from

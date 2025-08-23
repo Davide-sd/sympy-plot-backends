@@ -37,7 +37,6 @@ from spb.backends.matplotlib import MB
 from spb.backends.bokeh import BB
 from spb.backends.plotly import PB
 from spb.backends.k3d import KB
-from spb.backends.mayavi import MAB
 
 from spb.graphics.graphics import graphics
 from spb.graphics.functions_2d import (
@@ -70,7 +69,7 @@ __all__ = [
     "plot3d_revolution", "plot_implicit", "plot_polar", "plot_geometry",
     "plot_list", "plot_piecewise", "plot_vector", "plot_complex",
     "plot_complex_list", "plot_real_imag", "plot_complex_vector", "plotgrid",
-    "MB", "BB", "PB", "KB", "MAB", "plot3d_list", "prange",
+    "MB", "BB", "PB", "KB", "plot3d_list", "prange",
     "plot_riemann_sphere", "PlotGrid",
     "plot_pole_zero", "plot_step_response", "plot_impulse_response",
     "plot_ramp_response", "plot_bode_magnitude", "plot_bode_phase",

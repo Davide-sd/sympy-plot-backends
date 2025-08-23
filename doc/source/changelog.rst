@@ -12,13 +12,17 @@ v4.0.0
 
   * clearer code base.
 
-* removal of the adaptive evaluation of surfaces.
+* removal of the adaptive algorithm from the evaluation of surfaces.
 
 * remove ``tp`` keyword argument from ``step_response``, ``ramp_response``,
   ``impulse_response``.
 
-* fixed bug with the numerical algorithm about singularities detection of
-  2D parametric lines.
+* fixed bugs:
+
+  * with the numerical algorithm about singularities detection of
+    2D parametric lines.
+  * with the ``exclude`` keyword arguments, in particular the algorithm
+    used to insert exclusion points.
 
 *
 

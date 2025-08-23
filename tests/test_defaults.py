@@ -21,7 +21,6 @@ def test_cfg_keys():
         "plot3d",
         "adaptive",
         "plot_range",
-        "mayavi",
         "bode",
     ]
     for k in must_have_keys:
@@ -113,14 +112,6 @@ def test_cfg_k3d_keys():
     assert "grid" in cfg["k3d"].keys()
     assert isinstance(cfg["k3d"]["grid"], bool)
     assert "camera_mode" in cfg["k3d"].keys()
-
-
-def test_cfg_mayavi_keys():
-    k3d_keys = ["size", "bg_color", "fg_color", "use_latex", "grid"]
-    for k in k3d_keys:
-        assert k in cfg["mayavi"].keys()
-
-    assert isinstance(cfg["k3d"]["grid"], bool)
 
 
 def test_cfg_interactive_keys():

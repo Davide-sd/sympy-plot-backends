@@ -3988,77 +3988,77 @@ def test_color_func_expression():
     # the following statement should not raise errors
     p[0].evaluator.eval_color_func(*d)
 
-    # x, y, z = symbols("x, y, z")
-    # s1 = LineOver1DRangeSeries(
-    #     cos(x), (x, -10, 10),
-    #     color_func=sin(x),
-    #     adaptive=False, n=10
-    # )
-    # s2 = LineOver1DRangeSeries(
-    #     cos(x), (x, -10, 10),
-    #     color_func=lambda x: np.cos(x),
-    #     adaptive=False, n=10
-    # )
-    # assert all(isinstance(t, ColoredLineOver1DRangeSeries) for t in [s1, s2])
-    # # the following statement should not raise errors
-    # d1 = s1.get_data()
-    # assert isinstance(s1.color_func, Expr)
-    # assert callable(s1.evaluator.color_func)
-    # d2 = s2.get_data()
-    # assert not np.allclose(d1[-1], d2[-1])
+    x, y, z = symbols("x, y, z")
+    s1 = LineOver1DRangeSeries(
+        cos(x), (x, -10, 10),
+        color_func=sin(x),
+        adaptive=False, n=10
+    )
+    s2 = LineOver1DRangeSeries(
+        cos(x), (x, -10, 10),
+        color_func=lambda x: np.cos(x),
+        adaptive=False, n=10
+    )
+    assert all(isinstance(t, ColoredLineOver1DRangeSeries) for t in [s1, s2])
+    # the following statement should not raise errors
+    d1 = s1.get_data()
+    assert isinstance(s1.color_func, Expr)
+    assert callable(s1.evaluator.color_func)
+    d2 = s2.get_data()
+    assert not np.allclose(d1[-1], d2[-1])
 
-    # s1 = Parametric2DLineSeries(
-    #     cos(x), sin(x), (x, 0, 2 * pi),
-    #     color_func=sin(x),
-    #     adaptive=False, n=10, use_cm=True,
-    # )
-    # s2 = Parametric2DLineSeries(
-    #     cos(x), sin(x), (x, 0, 2 * pi),
-    #     color_func=lambda x: np.cos(x),
-    #     adaptive=False, n=10, use_cm=True,
-    # )
-    # # the following statement should not raise errors
-    # d1 = s1.get_data()
-    # assert isinstance(s1.color_func, Expr)
-    # assert callable(s1.evaluator.color_func)
-    # d2 = s2.get_data()
-    # assert not np.allclose(d1[-1], d2[-1])
+    s1 = Parametric2DLineSeries(
+        cos(x), sin(x), (x, 0, 2 * pi),
+        color_func=sin(x),
+        adaptive=False, n=10, use_cm=True,
+    )
+    s2 = Parametric2DLineSeries(
+        cos(x), sin(x), (x, 0, 2 * pi),
+        color_func=lambda x: np.cos(x),
+        adaptive=False, n=10, use_cm=True,
+    )
+    # the following statement should not raise errors
+    d1 = s1.get_data()
+    assert isinstance(s1.color_func, Expr)
+    assert callable(s1.evaluator.color_func)
+    d2 = s2.get_data()
+    assert not np.allclose(d1[-1], d2[-1])
 
-    # s = SurfaceOver2DRangeSeries(
-    #     cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
-    #     color_func=sin(x**2 + y**2),
-    #     n1=5, n2=5,
-    # )
+    s = SurfaceOver2DRangeSeries(
+        cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
+        color_func=sin(x**2 + y**2),
+        n1=5, n2=5,
+    )
 
-    # s = Vector2DSeries(
-    #     sin(x - y), cos(x + y), (x, -3, 3), (y, -3, 3),
-    #     color_func=x*y)
-    # xx, yy, uu, vv = s.get_data()
-    # col = s.eval_color_func(xx, yy, uu, vv)
-    # assert np.allclose(col, xx * yy)
+    s = Vector2DSeries(
+        sin(x - y), cos(x + y), (x, -3, 3), (y, -3, 3),
+        color_func=x*y)
+    xx, yy, uu, vv = s.get_data()
+    col = s.eval_color_func(xx, yy, uu, vv)
+    assert np.allclose(col, xx * yy)
 
-    # s = Vector3DSeries(
-    #     z, y, x, (x, -10, 10), (y, -10, 10), (z, -10, 10),
-    #     color_func=x * y * z
-    # )
-    # xx, yy, zz, uu, vv, ww = s.get_data()
-    # col = s.eval_color_func(xx, yy, zz, uu, vv, ww)
-    # assert np.allclose(col, xx * yy * zz)
+    s = Vector3DSeries(
+        z, y, x, (x, -10, 10), (y, -10, 10), (z, -10, 10),
+        color_func=x * y * z
+    )
+    xx, yy, zz, uu, vv, ww = s.get_data()
+    col = s.eval_color_func(xx, yy, zz, uu, vv, ww)
+    assert np.allclose(col, xx * yy * zz)
 
-    # # the following statement should not raise errors
-    # d = s.get_data()
-    # assert isinstance(s.color_func, Expr)
-    # assert callable(s.evaluator.color_func)
+    # the following statement should not raise errors
+    d = s.get_data()
+    assert isinstance(s.color_func, Expr)
+    assert callable(s.evaluator.color_func)
 
-    # xx = [1, 2, 3, 4, 5]
-    # yy = [1, 2, 3, 4, 5]
-    # zz = [1, 2, 3, 4, 5]
-    # raises(
-    #     ValueError,
-    #     lambda: List2DSeries(xx, yy, use_cm=True, color_func=sin(x)))
-    # raises(
-    #     ValueError,
-    #     lambda: List3DSeries(xx, yy, zz, use_cm=True, color_func=sin(x)))
+    xx = [1, 2, 3, 4, 5]
+    yy = [1, 2, 3, 4, 5]
+    zz = [1, 2, 3, 4, 5]
+    raises(
+        ValueError,
+        lambda: List2DSeries(xx, yy, use_cm=True, color_func=sin(x)))
+    raises(
+        ValueError,
+        lambda: List3DSeries(xx, yy, zz, use_cm=True, color_func=sin(x)))
 
 
 def test_2d_complex_domain_coloring_schemes():
@@ -4243,6 +4243,61 @@ def test_exclude_points():
     assert np.count_nonzero(np.isnan(xx)) == 11
     assert np.count_nonzero(np.isnan(yy)) == 11
     assert len(xx) > 100
+
+
+def test_exclude_points_2():
+    x = symbols("x")
+    expr = Piecewise(
+        (cos(x), (x < 0)),
+        (sin(x), True)
+    )
+
+    # here, the exclusion point happens precisely at a discretization point
+    s1 = LineOver1DRangeSeries(expr, (x, -1, 1), n=11, exclude=[0])
+    xx1, yy1 = s1.get_data()
+    assert len(xx1) == len(yy1) == 13 # 2 points have been added near the esclusion
+    assert not np.isnan(xx1).any()
+    assert np.isnan(yy1).any()
+    assert np.allclose(
+        xx1,
+        np.array([
+            -1., -0.8, -0.6, -0.4, -0.2,
+            -2.e-05, 0, 2.e-05, 0.2, 0.4, 0.6, 0.8, 1.
+        ])
+    )
+    assert np.allclose(
+        yy1,
+        np.array([
+            0.54030231, 0.69670671, 0.82533561, 0.92106099, 0.98006658,
+            1, np.nan, 2.e-05, 0.19866933, 0.38941834, 0.56464247, 0.71735609,
+            0.84147098]),
+        equal_nan=True
+    )
+
+    # here, the exclusion point falls in between two discretization points
+    s2 = LineOver1DRangeSeries(expr, (x, -1, 1), n=12, exclude=[0])
+    xx2, yy2 = s2.get_data()
+    assert len(xx2) == len(yy2) == 14
+    assert 0.0 in xx2
+    assert not np.isnan(xx2).any()
+    assert np.isnan(yy2).any()
+    assert np.allclose(
+        xx2,
+        np.array([
+            -1.00000000e+00, -8.18181818e-01, -6.36363636e-01, -4.54545455e-01,
+            -2.72727273e-01, -9.09090909e-04,  0.00000000e+00,  9.09090909e-04,
+            9.09090909e-02,  2.72727273e-01,  4.54545455e-01,  6.36363636e-01,
+            8.18181818e-01,  1.00000000e+00])
+    )
+    assert np.allclose(
+        yy2,
+        np.array([
+            5.40302306e-01, 6.83549435e-01, 8.04262070e-01, 8.98460691e-01,
+            9.63039864e-01, 9.99999587e-01, np.nan, 9.09090784e-04,
+            9.07839235e-02, 2.69358908e-01, 4.39053968e-01, 5.94274788e-01,
+            7.29904220e-01, 8.41470985e-01]),
+        equal_nan=True
+    )
 
 
 def test_unwrap():
