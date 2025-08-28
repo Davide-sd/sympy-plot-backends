@@ -3984,7 +3984,7 @@ def test_color_func_expression():
     )
     d = p[0].get_data()
     assert isinstance(p[0].color_func, Expr)
-    assert callable(p[0].evaluator.color_func)
+    assert callable(p[0].lambdifier.request_color_func(p[0].modules))
     # the following statement should not raise errors
     p[0].evaluator.eval_color_func(*d)
 
@@ -4003,7 +4003,7 @@ def test_color_func_expression():
     # the following statement should not raise errors
     d1 = s1.get_data()
     assert isinstance(s1.color_func, Expr)
-    assert callable(s1.evaluator.color_func)
+    assert callable(s1.lambdifier.request_color_func(s1.modules))
     d2 = s2.get_data()
     assert not np.allclose(d1[-1], d2[-1])
 
@@ -4020,7 +4020,7 @@ def test_color_func_expression():
     # the following statement should not raise errors
     d1 = s1.get_data()
     assert isinstance(s1.color_func, Expr)
-    assert callable(s1.evaluator.color_func)
+    assert callable(s1.lambdifier.request_color_func(s1.modules))
     d2 = s2.get_data()
     assert not np.allclose(d1[-1], d2[-1])
 
@@ -4048,7 +4048,7 @@ def test_color_func_expression():
     # the following statement should not raise errors
     d = s.get_data()
     assert isinstance(s.color_func, Expr)
-    assert callable(s.evaluator.color_func)
+    assert callable(s.lambdifier.request_color_func(s.modules))
 
     xx = [1, 2, 3, 4, 5]
     yy = [1, 2, 3, 4, 5]
@@ -4059,6 +4059,20 @@ def test_color_func_expression():
     raises(
         ValueError,
         lambda: List3DSeries(xx, yy, zz, use_cm=True, color_func=sin(x)))
+
+
+def test_color_func_expression_eval_with_sympy():
+    # this is a case in which the color_func is a symbolic expression,
+    # containing functions that, at the time of writing this, cannot be
+    # evaluated with numpy/scipy. Hence, the code should be able to perform
+    # the evaluation with sympy.
+
+    x = symbols("x")
+    s = LineOver1DRangeSeries(
+        cos(x), (x, 0, 2*pi),
+        color_func=hyper([2,4,6,8], [2,3,5,7,11], x), n=10
+    )
+    s.get_data()
 
 
 def test_2d_complex_domain_coloring_schemes():
@@ -4298,6 +4312,27 @@ def test_exclude_points_2():
             7.29904220e-01, 8.41470985e-01]),
         equal_nan=True
     )
+
+
+def test_exclude_points_3():
+    # at the time of writing this, numpy/scipy are unable to evaluate the
+    # hyper function. Here I test the exclusion algorithm performs the
+    # evaluations with sympy in the proximity of the exclusion points.
+
+    x = symbols("x")
+    s = LineOver1DRangeSeries(
+        hyper((1.0331469998003, 9.67916472867169), (10.0,), x),
+        (x, -5, 0.5),
+        exclude=[0], n=10)
+    xx, yy = s.get_data()
+    assert np.allclose(xx, [
+        -5.00000000e+00, -4.38888889e+00, -3.77777778e+00, -3.16666667e+00,
+        -2.55555556e+00, -1.94444444e+00, -1.33333333e+00, -7.22222222e-01,
+        -1.11111111e-03,  0.00000000e+00,  1.11111111e-03,  5.00000000e-01])
+    assert np.allclose(yy, [
+        0.16192905, 0.18079556, 0.20453862, 0.23531307, 0.2767561 ,
+        0.33552226, 0.42521825, 0.57864633, 0.99889011, np.nan,
+        1.00111233, 1.98563064], equal_nan=True)
 
 
 def test_unwrap():

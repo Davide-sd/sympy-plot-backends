@@ -17,7 +17,8 @@ from spb.series.evaluator import (
     _GridEvaluationParameters,
     _NMixin,
     GridEvaluator,
-    _update_range_value
+    _update_range_value,
+    Lambdifier
 )
 from spb.series.base import (
     BaseSeries,
@@ -461,10 +462,13 @@ class NicholsLineSeries(
         kwargs["_tf"] = tf
         kwargs["range_omega"] = omega_range
         kwargs["_range_names"] = ["range_omega"]
+        kwargs["_lambdifier"] = Lambdifier(series=self)
+        kwargs["evaluator"] = GridEvaluator(series=self)
         super().__init__(**kwargs)
         self.expr = Tuple(ol_phase, ol_mag, cl_phase, cl_mag)
+        self.lambdifier.set_expressions()
         # self.ranges = [self.range_omega]
-        self.evaluator = GridEvaluator(series=self)
+        # self.evaluator = GridEvaluator(series=self)
 
     def __str__(self):
         return self._str_helper("nichols line of %s" % self._tf)

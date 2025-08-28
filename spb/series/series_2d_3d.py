@@ -40,9 +40,12 @@ from spb.series.evaluator import (
     _AdaptiveEvaluationParameters,
     _GridEvaluationParameters,
     _NMixin,
+    Lambdifier,
     GridEvaluator,
     ComplexGridEvaluator,
     _adaptive_eval,
+    _warning_eval_error,
+    _get_wrapper_func
 )
 from spb.series.base import (
     BaseSeries,
@@ -362,6 +365,7 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
             return points
 
         np = import_module("numpy")
+        wrapper_func = _get_wrapper_func()
         points = list(points)
         n = len(points)
         # index of the x-coordinate (for 2d plots) or parameter (for 2d/3d
@@ -369,8 +373,6 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
         k = 0 if (n == 2) else n - 1
         # indeces of the other coordinates
         j_indeces = sorted(set(range(n)).difference([k]))
-        # TODO: for now, I assume that numpy functions are going to succeed
-        funcs = [f[0] for f in self.evaluator._functions]
         # compute difference between consecutive points
         diff = np.roll(points[k], -1) - points[k]
         max_diff = diff[:-1].max()
@@ -406,7 +408,23 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
                     # add points to the other coordinates
                     c = 0
                     for j in j_indeces:
-                        values = funcs[c](np.array([prev, post]))
+                        functions = self.lambdifier.request_lambda_functions(
+                            self.modules)
+                        domain = np.array([prev, post])
+
+                        try:
+                            r = functions[c](domain)
+                        except (ValueError, TypeError):
+                            # attempt to use numpy.vectorize
+                            r = wrapper_func(f, domain)
+                        except Exception as err:
+                            # fall back to sympy
+                            _warning_eval_error(err, self.modules)
+                            sympy_functions = self.lambdifier.request_lambda_functions(
+                                "sympy")
+                            r = wrapper_func(sympy_functions[c], domain)
+
+                        values = np.real(r)
                         c += 1
                         points[j] = np.concatenate((
                             points[j][:idx],
@@ -533,7 +551,7 @@ class List2DSeries(Line2DBaseSeries):
             return [*data]
         return [*data, color]
 
-    def eval_color_func(self, *data):
+    def _eval_color_func_helper(self, *data):
         if self.use_cm and callable(self.color_func):
             nargs = arity(self.color_func)
             if nargs == 0:
@@ -625,7 +643,7 @@ class List3DSeries(List2DSeries):
         lz = np.array([t.evalf(subs=self.params) for t in lz], dtype=float)
         return self._return_correct_elements(lx, ly, lz)
 
-    def eval_color_func(self, *data):
+    def _eval_color_func_helper(self, *data):
         if self.use_cm and callable(self.color_func):
             nargs = arity(self.color_func)
             if nargs == 0:
@@ -712,9 +730,14 @@ class LineOver1DRangeSeries(
         kwargs["range_x"] = range_x
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
         kwargs["_range_names"] = ["range_x"]
+        kwargs["_lambdifier"] = Lambdifier(series=self)
+        kwargs["evaluator"] = GridEvaluator(series=self)
         kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
-        self.evaluator = GridEvaluator(series=self)
+        self.lambdifier.set_expressions()
+        # self.evaluator = GridEvaluator(series=self)
+        # self. =
+        # self.lambdifier =
         self._label_str = str(self.expr) if label is None else label
         self._label_latex = latex(self.expr) if label is None else label
         # self.ranges = [range_x]
@@ -825,16 +848,13 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
         kwargs.setdefault("use_cm", True)
         super().__init__(*args, **kwargs)
 
-    def eval_color_func(self, x, y):
-        color = self.evaluator.eval_color_func(x, y)
-        if color is not None:
-            return color
-
-        nargs = arity(self.evaluator.color_func)
+    def _eval_color_func_helper(self, x, y):
+        color_func = self.lambdifier.request_color_func(self.modules)
+        nargs = arity(color_func)
         if nargs == 1:
-            color = self.evaluator.color_func(x)
+            color = color_func(x)
         elif nargs == 2:
-            color = self.evaluator.color_func(x, y)
+            color = color_func(x, y)
         else:
             _raise_color_func_error(self, nargs)
         return _correct_shape(color, x)
@@ -1000,22 +1020,19 @@ class ParametricLineBaseSeries(
             return self._get_wrapped_label(self._label_latex, wrapper)
         return self._label_str
 
-    def eval_color_func(self, *coords):
-        color = self.evaluator.eval_color_func(*coords)
-        if color is not None:
-            return color
-
-        nargs = arity(self.evaluator.color_func)
+    def _eval_color_func_helper(self, *coords):
+        color_func = self.lambdifier.request_color_func(self.modules)
+        nargs = arity(color_func)
         if nargs == 1:
-            color = self.evaluator.color_func(coords[-1])
+            color = color_func(coords[-1])
         elif nargs == 2:
             if self.is_2Dline:
-                color = self.evaluator.color_func(*coords[:2])
+                color = color_func(*coords[:2])
         elif nargs == 3:
-            color = self.evaluator.color_func(*coords[:3])
+            color = color_func(*coords[:3])
         elif nargs == 4:
             if self.is_3Dline:
-                color = self.evaluator.color_func(*coords)
+                color = color_func(*coords)
         else:
             _raise_color_func_error(self, nargs)
         return _correct_shape(color, coords[0])
@@ -1088,12 +1105,15 @@ class Parametric2DLineSeries(
         kwargs["expr_y"] = expr_y if callable(expr_y) else sympify(expr_y)
         kwargs["range_p"] = range_p
         kwargs["_range_names"] = ["range_p"]
+        kwargs["_lambdifier"] = Lambdifier(series=self)
+        kwargs["evaluator"] = GridEvaluator(series=self)
         kwargs.setdefault("use_cm", True)
         kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y)
         # self.ranges = [range_p]
-        self.evaluator = GridEvaluator(series=self)
+        # self.evaluator = GridEvaluator(series=self)
+        self.lambdifier.set_expressions()
         self._post_init()
         self._set_parametric_line_label(label)
 
@@ -1157,12 +1177,15 @@ class Parametric3DLineSeries(
         kwargs["expr_z"] = expr_z if callable(expr_z) else sympify(expr_z)
         kwargs["range_p"] = range_p
         kwargs["_range_names"] = ["range_p"]
+        kwargs["_lambdifier"] = Lambdifier(series=self)
+        kwargs["evaluator"] = GridEvaluator(series=self)
         kwargs.setdefault("use_cm", True)
         kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
         # self.ranges = [range_p]
-        self.evaluator = GridEvaluator(series=self)
+        # self.evaluator = GridEvaluator(series=self)
+        self.lambdifier.set_expressions()
         self._post_init()
         self._set_parametric_line_label(label)
 
@@ -1334,9 +1357,12 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         kwargs["range_x"] = range_x
         kwargs["range_y"] = range_y
         kwargs["_range_names"] = ["range_x", "range_y"]
+        kwargs["_lambdifier"] = Lambdifier(series=self)
+        kwargs["evaluator"] = GridEvaluator(series=self)
         super().__init__(**kwargs)
+        self.lambdifier.set_expressions()
         # self.ranges = [range_x, range_y]
-        self.evaluator = GridEvaluator(series=self)
+        # self.evaluator = GridEvaluator(series=self)
         self._set_surface_label(label)
         self._post_init()
 
@@ -1408,18 +1434,15 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
 
         return self._apply_transform(x, y, z)
 
-    def eval_color_func(self, *coords):
-        color = self.evaluator.eval_color_func(*coords)
-        if color is not None:
-            return color
-
-        nargs = arity(self.evaluator.color_func)
+    def _eval_color_func_helper(self, *coords):
+        color_func = self.lambdifier.request_color_func(self.modules)
+        nargs = arity(color_func)
         if nargs == 1:
-            color = self.evaluator.color_func(coords[0])
+            color = color_func(coords[0])
         elif nargs == 2:
-            color = self.evaluator.color_func(*coords[:2])
+            color = color_func(*coords[:2])
         elif nargs == 3:
-            color = self.evaluator.color_func(*coords)
+            color = color_func(*coords)
         else:
             _raise_color_func_error(self, nargs)
         return _correct_shape(color, coords[0])
@@ -1484,11 +1507,14 @@ class ParametricSurfaceSeries(
         kwargs["range_u"] = range_u
         kwargs["range_v"] = range_v
         kwargs["_range_names"] = ["range_u", "range_v"]
+        kwargs["_lambdifier"] = Lambdifier(series=self)
+        kwargs["evaluator"] = GridEvaluator(series=self)
         kwargs.setdefault("color_func", lambda x, y, z, u, v: z)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
         # self.ranges = [range_u, range_v]
-        self.evaluator = GridEvaluator(series=self)
+        # self.evaluator = GridEvaluator(series=self)
+        self.lambdifier.set_expressions()
         self._set_surface_label(label)
         self._post_init()
 
@@ -1556,20 +1582,17 @@ class ParametricSurfaceSeries(
 
         return self._apply_transform(*results[2:], *results[:2])
 
-    def eval_color_func(self, *coords):
-        color = self.evaluator.eval_color_func(*coords)
-        if color is not None:
-            return color
-
-        nargs = arity(self.evaluator.color_func)
+    def _eval_color_func_helper(self, *coords):
+        color_func = self.lambdifier.request_color_func(self.modules)
+        nargs = arity(color_func)
         if nargs == 1:
-            color = self.evaluator.color_func(coords[3])
+            color = color_func(coords[3])
         elif nargs == 2:
-            color = self.evaluator.color_func(coords[3], coords[4])
+            color = color_func(coords[3], coords[4])
         elif nargs == 3:
-            color = self.evaluator.color_func(*coords[:3])
+            color = color_func(*coords[:3])
         elif nargs == 5:
-            color = self.evaluator.color_func(*coords)
+            color = color_func(*coords)
         else:
             _raise_color_func_error(self, nargs)
         return _correct_shape(color, coords[0])
@@ -1705,12 +1728,14 @@ class ImplicitSeries(
         kwargs["range_y"] = rangex_y
         kwargs["_range_names"] = ["range_x", "range_y"]
         kwargs["label"] = label if label is not None else ""
+        kwargs["_lambdifier"] = Lambdifier(series=self)
+        kwargs["evaluator"] = GridEvaluator(series=self)
         color = kwargs.pop("color", kwargs.get("line_color", None))
         kwargs = self._preprocess_expr(f, kwargs)
         super().__init__(**kwargs)
 
         # self.ranges = [rangex_x, rangex_y]
-        self.evaluator = GridEvaluator(series=self)
+        # self.evaluator = GridEvaluator(series=self)
         self.var_x, self.start_x, self.end_x = self.range_x
         self.var_y, self.start_y, self.end_y = self.range_y
         self._color = color
@@ -1728,6 +1753,7 @@ class ImplicitSeries(
         #     depth = 0
         # self.depth = 4 + depth
         self._post_init()
+        self.lambdifier.set_expressions()
 
     @param.depends("depth", on_init=True, watch=True)
     def _update_actual_depth(self):
@@ -2144,9 +2170,11 @@ class Implicit3DSeries(SurfaceBaseSeries):
         kwargs["range_y"] = range_y
         kwargs["range_z"] = range_z
         kwargs["_range_names"] = ["range_x", "range_y", "range_z"]
+        kwargs["_lambdifier"] = Lambdifier(series=self)
+        kwargs["evaluator"] = GridEvaluator(series=self)
         super().__init__(**kwargs)
         self.ranges = [self.range_x, self.range_y, self.range_z]
-        self.evaluator = GridEvaluator(series=self)
+        self.lambdifier.set_expressions()
         self.var_x, self.start_x, self.end_x = self.range_x
         self.var_y, self.start_y, self.end_y = self.range_y
         self.var_z, self.start_z, self.end_z = self.range_z
@@ -2246,6 +2274,10 @@ class PlaneSeries(SurfaceBaseSeries):
         kwargs["range_x"] = range_x
         kwargs["range_y"] = range_y
         kwargs["range_z"] = range_z
+        # NOTE: these two attributes are necessary in order to evaluate
+        # the user-provided `color_func`
+        kwargs["_lambdifier"] = Lambdifier(series=self)
+        kwargs["evaluator"] = GridEvaluator(series=self)
         self._block_lambda_functions(plane)
         color_func = kwargs.get("color_func", None)
         if (color_func is not None) and (not callable(color_func)):
@@ -2255,6 +2287,7 @@ class PlaneSeries(SurfaceBaseSeries):
                 f"{self.param.color_func.doc}")
         super().__init__(**kwargs)
         self.expr = self.plane
+        # self.lambdifier.set_expressions()
         # self.ranges = [self.range_x, self.range_y, self.range_z]
         self._set_surface_label(label)
         if self.params and not self.plane.free_symbols:
@@ -2361,12 +2394,11 @@ class PlaneSeries(SurfaceBaseSeries):
                 zz[idx] = np.nan
         return self._apply_transform(xx, yy, zz)
 
-    def eval_color_func(self, *coords):
-        if self.color_func is None:
-            return None
-        nargs = arity(self.color_func)
+    def _eval_color_func_helper(self, *coords):
+        color_func = self.lambdifier.request_color_func(self.modules)
+        nargs = arity(color_func)
         if nargs == 3:
-            color = self.color_func(*coords)
+            color = color_func(*coords)
         else:
             _raise_color_func_error(self, nargs)
         return _correct_shape(color, coords[0])

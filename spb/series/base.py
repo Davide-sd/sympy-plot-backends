@@ -585,14 +585,27 @@ class BaseSeries(param.Parameterized):
         to generate the appropriate coloring value.
 
         Parameters
-        ==========
-
+        ----------
         args : tuple
-            Arguments to be passed to the coloring function. Can be coordinates
-            or parameters or both. Read the documentation of each data series
-            `color_func` attribute to find out what the arguments should be.
+            Arguments to be passed to the coloring function. Can be numerical
+            coordinates or parameters or both. Read the documentation of each
+            data series `color_func` attribute to find out what the
+            arguments should be.
+
+        Returns
+        -------
+        color : np.ndarray or float
+            Results of the numerical evaluation of the ``color_func``
+            attribute.
         """
+        if hasattr(self, "evaluator") and (self.evaluator is not None):
+            color = self.evaluator.eval_color_func(*args)
+            if color is not None:
+                return color
+        if hasattr(self, "_eval_color_func_helper"):
+            return self._eval_color_func_helper(*args)
         raise NotImplementedError
+
 
     def get_data(self):
         """Compute and returns the numerical data.

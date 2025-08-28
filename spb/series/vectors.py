@@ -31,6 +31,7 @@ from matplotlib.cbook import (
 )
 import warnings
 from spb.series.evaluator import (
+    Lambdifier,
     GridEvaluator,
     SliceVectorGridEvaluator,
     _GridEvaluationParameters,
@@ -80,9 +81,12 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         if "streamlines" in kwargs:
             kwargs["is_streamlines"] = kwargs.pop("streamlines")
         kwargs["_expr"] = exprs
+        kwargs["_lambdifier"] = Lambdifier(series=self)
+        kwargs.setdefault("evaluator", GridEvaluator(series=self))
         super().__init__(**kwargs)
         # self.ranges = list(ranges)
-        self.evaluator = GridEvaluator(series=self)
+        # self.evaluator = GridEvaluator(series=self)
+        self.lambdifier.set_expressions()
         self._label_str = str(exprs) if label is None else label
         self._label_latex = latex(exprs) if label is None else label
 
@@ -168,17 +172,14 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
                 t(u, self.tx), t(v, self.ty), t(w, self.tz)
             )
 
-    def eval_color_func(self, *coords):
-        color = self.evaluator.eval_color_func(*coords)
-        if color is not None:
-            return color
-
-        nargs = arity(self.evaluator.color_func)
+    def _eval_color_func_helper(self, *coords):
+        color_func = self.lambdifier.request_color_func(self.modules)
+        nargs = arity(color_func)
         if (
             (self.is_3Dvector and (nargs == 6))
             or (self.is_2Dvector and (nargs == 4))
         ):
-            color = self.evaluator.color_func(*coords)
+            color = color_func(*coords)
         else:
             _raise_color_func_error(self, nargs)
         return _correct_shape(color, coords[0])
@@ -390,6 +391,10 @@ class Vector3DSeries(VectorBase):
 
 
 def _build_slice_series(slice_surf, ranges, **kwargs):
+    print("_build_slice_series")
+    print("slice_surf", slice_surf)
+    print("ranges", ranges)
+    print("kwargs", kwargs)
     if isinstance(slice_surf, Plane):
         return PlaneSeries(sympify(slice_surf), *ranges, **kwargs)
     elif isinstance(slice_surf, BaseSeries):
@@ -431,8 +436,14 @@ class SliceVector3DSeries(Vector3DSeries):
         slice_surf_kwargs.pop("normalize", None)
         self.slice_surf_series = _build_slice_series(
             slice_surf, [range_x, range_y, range_z], **slice_surf_kwargs)
-        super().__init__(u, v, w, range_x, range_y, range_z, label, **kwargs)
-        self.evaluator = SliceVectorGridEvaluator(series=self)
+        # kwargs["evaluator"] = SliceVectorGridEvaluator(series=self)
+        kwargs.setdefault("evaluator", SliceVectorGridEvaluator(series=self))
+        super().__init__(
+            u, v, w, range_x, range_y, range_z, label, **kwargs)
+
+    @param.depends("params", watch=True)
+    def _update_discretized_domain(self):
+        self.evaluator._update_discretized_domain()
 
     def __str__(self):
         return "sliced " + super().__str__() + " at {}".format(
