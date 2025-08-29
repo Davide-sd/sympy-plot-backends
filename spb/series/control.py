@@ -1,14 +1,5 @@
-import math
-import numpy as np
 import param
-from numbers import Number
-from inspect import signature
-from spb.wegert import wegert
-from spb.defaults import cfg
-from spb.utils import (
-    _get_free_symbols, unwrap, extract_solution, tf_to_control, prange
-)
-# import sympy
+from spb.utils import unwrap, tf_to_control
 from sympy import latex, Tuple, symbols, Expr, Poly
 from sympy.external import import_module
 import warnings
@@ -22,8 +13,7 @@ from spb.series.evaluator import (
 from spb.series.base import (
     BaseSeries,
     _RangeTuple,
-    _CastToInteger,
-    _get_wrapper_for_expr
+    _CastToInteger
 )
 from spb.series.series_2d_3d import Line2DBaseSeries, List2DSeries
 
@@ -394,24 +384,23 @@ class ArrowsMixin(param.Parameterized):
         * If a 1D array is passed, it should consist of a sorted list of
           floats between 0 and 1, indicating the location along the curve
           to plot an arrow.""")
-    # TODO: set this private?
-    arrow_locs = param.Parameter(doc="""
+    __arrow_locs = param.Parameter(doc="""
         Location of the arrows along the curve.""")
 
     @param.depends("arrows", watch=True, on_init=True)
-    def _set_arrow_locs(self):
+    def _set__arrow_locs(self):
         # Parse the arrows keyword
         np = import_module("numpy")
-        arrow_locs = []
+        _arrow_locs = []
 
         if not self.arrows:
-            self.arrow_locs = []
+            self._arrow_locs = []
         elif isinstance(self.arrows, int):
             N = 3 if self.arrows is True else self.arrows
             # Space arrows out, starting midway along each "region"
-            self.arrow_locs = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
+            self._arrow_locs = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
         elif isinstance(self.arrows, (list, np.ndarray)):
-            self.arrow_locs = np.sort(np.atleast_1d(self.arrows))
+            self._arrow_locs = np.sort(np.atleast_1d(self.arrows))
         else:
             raise ValueError("unknown or unsupported arrow location")
 
@@ -465,8 +454,6 @@ class NicholsLineSeries(
         super().__init__(**kwargs)
         self.expr = Tuple(ol_phase, ol_mag, cl_phase, cl_mag)
         self.evaluator.set_expressions()
-        # self.ranges = [self.range_omega]
-        # self.evaluator = GridEvaluator(series=self)
 
     def __str__(self):
         return self._str_helper("nichols line of %s" % self._tf)
@@ -483,7 +470,7 @@ class NicholsLineSeries(
         """
         np = import_module('numpy')
 
-        results = self.evaluator._evaluate()
+        results = self.evaluator.evaluate()
         for i, r in enumerate(results):
             _re, _im = np.real(r), np.imag(r)
             _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
@@ -892,17 +879,6 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
     range_t = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the time.""")
 
-    # n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
-    #     Number of discretization points along the x, y, z directions,
-    #     respectively. It can easily be set with ``n=number``, which will
-    #     set ``number`` for each element of the list.
-    #     For surface, contour, 2d vector field plots it can be set with
-    #     ``n=[num1, num2]``. For 3D implicit plots it can be set with
-    #     ``n=[num1, num2, num3]``.
-
-    #     Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
-    #     set in order to modify the respective element of the ``n`` list.""")
-
     def __new__(cls, *args, **kwargs):
         cf = kwargs.get("color_func", None)
         lc = kwargs.get("line_color", None)
@@ -914,7 +890,6 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
         kwargs["_range_names"] = ["range_t"]
         super().__init__(tf, range_t=range_t, label=label, **kwargs)
         self._check_fs()
-        # self.ranges = [range_t]
 
         if self.expr is None:
             self.steps = self._control_tf.isdtime()

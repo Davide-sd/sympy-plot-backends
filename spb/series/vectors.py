@@ -1,35 +1,8 @@
-import math
-import numpy as np
 import param
-from numbers import Number
-from inspect import signature
-from spb.wegert import wegert
-from spb.defaults import cfg
-from spb.utils import (
-    _get_free_symbols, unwrap, extract_solution, tf_to_control, prange
-)
-import sympy
 from sympy import (
-    latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
-    Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
-    Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Union, Interval, nsimplify, Set, Integral, hyper, fraction
+    latex, Tuple, arity, symbols, sympify, Expr, Plane
 )
-from sympy.core.relational import Relational
-from sympy.calculus.util import continuous_domain
-from sympy.geometry.entity import GeometryEntity
-from sympy.geometry.line import LinearEntity2D, LinearEntity3D
-from sympy.logic.boolalg import BooleanFunction
-from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
-from sympy.printing.pycode import PythonCodePrinter
-from sympy.printing.precedence import precedence
-from sympy.core.sorting import default_sort_key
-from matplotlib.cbook import (
-    pts_to_prestep, pts_to_poststep, pts_to_midstep
-)
-import warnings
 from spb.series.evaluator import (
     GridEvaluator,
     SliceVectorGridEvaluator,
@@ -42,7 +15,6 @@ from spb.series.base import (
     _CastToInteger,
     _check_misspelled_series_kwargs
 )
-
 from spb.series.series_2d_3d import PlaneSeries, SurfaceOver2DRangeSeries
 
 
@@ -82,8 +54,6 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         kwargs["_expr"] = exprs
         kwargs.setdefault("evaluator", GridEvaluator(series=self))
         super().__init__(**kwargs)
-        # self.ranges = list(ranges)
-        # self.evaluator = GridEvaluator(series=self)
         self.evaluator.set_expressions()
         self._label_str = str(exprs) if label is None else label
         self._label_latex = latex(exprs) if label is None else label
@@ -147,7 +117,7 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         """
         np = import_module('numpy')
 
-        results = self.evaluator._evaluate()
+        results = self.evaluator.evaluate()
         for i, r in enumerate(results):
             re_v, im_v = np.real(r), np.imag(r)
             re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
@@ -247,16 +217,7 @@ class Vector2DSeries(VectorBase):
         kwargs["range_x"] = range_x
         kwargs["range_y"] = range_y
         kwargs["_range_names"] = ["range_x", "range_y"]
-        # if "scalar" not in kwargs.keys():
-        #     use_cm = False
-        # elif (not kwargs["scalar"]) or (kwargs["scalar"] is None):
-        #     use_cm = True
-        # else:
-        #     use_cm = False
-        # kwargs.setdefault("use_cm", )
         super().__init__((u, v), (range_x, range_y), label, **kwargs)
-
-        # self.use_cm = kwargs.get("use_cm", use_cm)
 
     def __str__(self):
         ranges = []
@@ -360,8 +321,6 @@ class Vector3DSeries(VectorBase):
         Number of discretization points along the z-axis to be used in the
         evaluation. Related parameters: ``zscale``.""")
 
-
-
     def __init__(self, u, v, w, range_x, range_y, range_z, label="", **kwargs):
         u = u if callable(u) else sympify(u)
         v = v if callable(v) else sympify(v)
@@ -389,10 +348,6 @@ class Vector3DSeries(VectorBase):
 
 
 def _build_slice_series(slice_surf, ranges, **kwargs):
-    print("_build_slice_series")
-    print("slice_surf", slice_surf)
-    print("ranges", ranges)
-    print("kwargs", kwargs)
     if isinstance(slice_surf, Plane):
         return PlaneSeries(sympify(slice_surf), *ranges, **kwargs)
     elif isinstance(slice_surf, BaseSeries):
@@ -419,7 +374,6 @@ def _build_slice_series(slice_surf, ranges, **kwargs):
     return SurfaceOver2DRangeSeries(slice_surf, *new_ranges, **kwargs2)
 
 
-
 class SliceVector3DSeries(Vector3DSeries):
     """Represents a 3D vector field plotted over a slice. The slice can be
     a Plane or a surface.
@@ -434,7 +388,6 @@ class SliceVector3DSeries(Vector3DSeries):
         slice_surf_kwargs.pop("normalize", None)
         self.slice_surf_series = _build_slice_series(
             slice_surf, [range_x, range_y, range_z], **slice_surf_kwargs)
-        # kwargs["evaluator"] = SliceVectorGridEvaluator(series=self)
         kwargs.setdefault("evaluator", SliceVectorGridEvaluator(series=self))
         super().__init__(
             u, v, w, range_x, range_y, range_z, label, **kwargs)
@@ -457,6 +410,7 @@ class ListTupleArray(param.ClassSelector):
 
     def __init__(self, is_instance=True, bounds=None, **params):
         self.bounds = bounds
+        np = import_module("numpy")
         params["class_"] = (list, tuple, np.ndarray, Tuple)
         params["is_instance"] = is_instance
         super().__init__(**params)
@@ -523,6 +477,7 @@ class Arrow2DSeries(BaseSeries):
         y-axis.""")
 
     def __init__(self, start, direction, label="", **kwargs):
+        np = import_module("numpy")
         self._block_lambda_functions(start, direction)
         expr_in = lambda _list: [
             isinstance(t, Expr) and (not t.is_number) for t in _list

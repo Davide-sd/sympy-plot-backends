@@ -1,25 +1,16 @@
-import math
-import numpy as np
 import param
 from numbers import Number
-from inspect import signature
-from spb.wegert import wegert
-from spb.defaults import cfg
 from spb.utils import (
-    _get_free_symbols,
     _correct_shape,
     unwrap,
     extract_solution,
-    tf_to_control,
-    prange,
 )
 import sympy
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
     Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Union, Interval, nsimplify, Set, Integral, hyper, fraction
+    Symbol, im, re, Poly, Union, Interval, nsimplify, Set
 )
 from sympy.logic.boolalg import Boolean
 from sympy.core.relational import Relational
@@ -28,9 +19,6 @@ from sympy.geometry.entity import GeometryEntity
 from sympy.logic.boolalg import BooleanFunction
 from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
-from sympy.printing.pycode import PythonCodePrinter
-from sympy.printing.precedence import precedence
-from sympy.core.sorting import default_sort_key
 from matplotlib.cbook import (
     pts_to_prestep, pts_to_poststep, pts_to_midstep
 )
@@ -41,7 +29,7 @@ from spb.series.evaluator import (
     _NMixin,
     GridEvaluator,
     _warning_eval_error,
-    _get_wrapper_func
+    _get_wrapper_func_for_eval
 )
 from spb.series.base import (
     BaseSeries,
@@ -56,7 +44,8 @@ from spb.series.base import (
 def _detect_poles_numerical_helper(
     x, y, eps=0.01, expr=None, symb=None, symbolic=False
 ):
-    """Compute the steepness of each segment. If it's greater than a
+    """
+    Compute the steepness of each segment. If it's greater than a
     threshold, set the right-point y-value non NaN and record the
     corresponding x-location for further processing.
 
@@ -82,7 +71,8 @@ def _detect_poles_numerical_helper(
 
 
 def _detect_poles_symbolic_helper(expr, symb, start, end):
-    """Attempts to compute symbolic discontinuities.
+    """
+    Attempts to compute symbolic discontinuities.
 
     Returns
     =======
@@ -235,9 +225,6 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
           https://plotly.com/python/line-and-scatter/
         """)
 
-
-
-
     def __init__(self, *args, **kwargs):
         if "scatter" in kwargs:
             kwargs.setdefault("is_point", kwargs.pop("scatter"))
@@ -247,8 +234,6 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
             if kwargs["label"] is None:
                 kwargs["label"] = ""
         kwargs.setdefault("use_cm", False)
-        # kwargs.setdefault("n", self._N)
-
         super().__init__(*args, **kwargs)
 
     def get_data(self):
@@ -270,9 +255,9 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
         """
         np = import_module('numpy')
         points = self._get_data_helper()
-
-        detect_poles = self.detect_poles if hasattr(self, "detect_poles") else None
-
+        detect_poles = None
+        if hasattr(self, "detect_poles"):
+            detect_poles = self.detect_poles
 
         # postprocessing
         points = self._apply_transform(*points)
@@ -361,7 +346,7 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
             return points
 
         np = import_module("numpy")
-        wrapper_func = _get_wrapper_func()
+        wrapper_func = _get_wrapper_func_for_eval()
         points = list(points)
         n = len(points)
         # index of the x-coordinate (for 2d plots) or parameter (for 2d/3d
@@ -501,20 +486,6 @@ class List2DSeries(Line2DBaseSeries):
         kwargs["label"] = label
         super().__init__(**kwargs)
 
-        # any_expr_in = lambda _list: [
-        #     isinstance(t, Expr) and (not t.is_number) for t in _list]
-        # if any(any_expr_in(list_x) + any_expr_in(list_y)) or self.params:
-        #     if not self.params:
-        #         raise ValueError(
-        #             "Some or all elements of the provided lists "
-        #             "are symbolic expressions, but the ``params`` dictionary "
-        #             "was not provided: those elements can't be evaluated.")
-        #     self.list_x = Tuple(*list_x)
-        #     self.list_y = Tuple(*list_y)
-        # else:
-        #     self.list_x = np.array(list_x, dtype=np.float64)
-        #     self.list_y = np.array(list_y, dtype=np.float64)
-
         if any_expr:
             self._check_fs()
 
@@ -597,30 +568,6 @@ class List3DSeries(List2DSeries):
 
         if self.use_cm and self.color_func:
             self.is_parametric = True
-
-        # # TODO: this can definitely be done better
-        # kwargs["list_z"]
-        # super().__init__(list_x, list_y, label, **kwargs)
-        # np = import_module('numpy')
-        # if len(list_z) != len(list_x):
-        #     raise ValueError(
-        #         "The three lists of coordinates must have the same "
-        #         "number of elements.\n"
-        #         "Received: len(list_x) = len(list_y) = {} ".format(len(list_x)) +
-        #         "and len(list_z) = {}".format(len(list_z))
-        #     )
-        # self._block_lambda_functions(list_z)
-        # check = lambda l: [isinstance(t, Expr) and (not t.is_number) for t in l]
-        # if any(check(list_z)):
-        #     if not self.params:
-        #         raise ValueError(
-        #             "Some or all elements of the provided lists "
-        #             "are symbolic expressions, but the ``params`` dictionary "
-        #             "was not provided: those elements can't be evaluated.")
-        #     self.list_z = Tuple(*list_z)
-        #     self._check_fs()
-        # else:
-        #     self.list_z = np.array(list_z, dtype=np.float64)
 
     @property
     def expr(self):
@@ -720,6 +667,7 @@ class LineOver1DRangeSeries(
         return object.__new__(cls)
 
     def __init__(self, expr, range_x, label="", **kwargs):
+        print("asd", label)
         _return = kwargs.pop("return", None)
         _check_misspelled_series_kwargs(self, additional_keys=["sum_bound"], **kwargs)
         kwargs["range_x"] = range_x
@@ -731,7 +679,6 @@ class LineOver1DRangeSeries(
         self.evaluator.set_expressions()
         self._label_str = str(self.expr) if label is None else label
         self._label_latex = latex(self.expr) if label is None else label
-        # self.ranges = [range_x]
         # for complex-related data series, this determines what data to return
         # on the y-axis
         self._return = _return
@@ -765,46 +712,12 @@ class LineOver1DRangeSeries(
             str((f(self.start), f(self.end))),
         ) + post
 
-    # def _adaptive_sampling(self):
-    #     np = import_module('numpy')
-
-    #     def func(f, imag, x):
-    #         try:
-    #             w = complex(f(x + 1j * imag))
-    #             return w.real, w.imag
-    #         except (ZeroDivisionError, OverflowError):
-    #             return np.nan, np.nan
-
-    #     data = _adaptive_eval(
-    #         func, [self.var], self.expr,
-    #         [complex(self.start).real, complex(self.end).real],
-    #         complex(self.start).imag,
-    #         modules=self.modules,
-    #         goal=self._goal,
-    #         loss_fn=self.loss_fn)
-    #     return data[:, 0], data[:, 1], data[:, 2]
-
-    def _uniform_sampling(self):
-        np = import_module('numpy')
-        x, result = self.evaluator._evaluate()
-        _re, _im = np.real(result), np.imag(result)
-        return x, _re, _im
-
-    def _get_real_imag(self):
-        """ By evaluating the function over a complex range it should
-        return complex values. The imaginary part can be used to mask out the
-        unwanted values.
-        """
-        # if self.adaptive:
-        #     return self._adaptive_sampling()
-        return self._uniform_sampling()
-
     def _get_data_helper(self):
         """Returns coordinates that needs to be postprocessed.
         """
         np = import_module('numpy')
-
-        x, _re, _im = self._get_real_imag()
+        x, result = self.evaluator.evaluate()
+        _re, _im = np.real(result), np.imag(result)
 
         if self._return is None:
             # The evaluation could produce complex numbers. Set real elements
@@ -823,11 +736,6 @@ class LineOver1DRangeSeries(
                 "`_return` not recognized. Received: %s" % self._return)
 
         return x, _re
-
-    # def _apply_transform(self, *args):
-    #     t = self._get_transform_helper()
-    #     x, y = args
-    #     return t(x, self.tx), t(y, self.ty)
 
 
 class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
@@ -863,37 +771,6 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
         """
         x, y = super()._get_data_helper()
         return x, y, self.eval_color_func(x, y)
-
-
-# class _2DParametricParameters(param.Parameterized):
-#     expr_x = param.Parameter(doc="""
-#         The expression representing the component along the x-axis of the
-#         parametric function.
-#         It can either be a symbolic expression representing the function of
-#         one variable to be plotted, or a numerical function of one variable,
-#         supporting vectorization. In the latter case the following keyword
-#         arguments are not supported: ``params``, ``sum_bound``.""")
-#     expr_y = param.Parameter(doc="""
-#         The expression representing the component along the y-axis of the
-#         parametric function.
-#         It can either be a symbolic expression representing the function of
-#         one variable to be plotted, or a numerical function of one variable,
-#         supporting vectorization. In the latter case the following keyword
-#         arguments are not supported: ``params``, ``sum_bound``.""")
-#     exclude = param.List([], item_type=float, doc="""
-#         A list of numerical values along the parameter which are going to
-#         be excluded from the evaluation. In practice, it introduces
-#         discontinuities in the resulting line.""")
-
-
-# class _3DParametricParameters(_2DParametricParameters):
-#     expr_z = param.Parameter(doc="""
-#         The expression representing the component along the z-axis of the
-#         parametric function.
-#         It can either be a symbolic expression representing the function of
-#         one variable to be plotted, or a numerical function of one variable,
-#         supporting vectorization. In the latter case the following keyword
-#         arguments are not supported: ``params``, ``sum_bound``.""")
 
 
 class ParametricLineBaseSeries(
@@ -960,39 +837,6 @@ class ParametricLineBaseSeries(
             if self._label_str == str(self.expr):
                 self._label_str = ""
 
-    # def _adaptive_sampling(self):
-    #     np = import_module('numpy')
-
-    #     def func(f, is_2Dline, x):
-    #         try:
-    #             w = [complex(t) for t in f(complex(x))]
-    #             return [t.real if np.isclose(t.imag, 0) else np.nan for t in w]
-    #         except (ZeroDivisionError, OverflowError):
-    #             return [np.nan for t in range(2 if is_2Dline else 3)]
-
-    #     if all(not callable(e) for e in self.expr):
-    #         expr = Tuple(self.expr_x, self.expr_y)
-    #         if not self.is_2Dline:
-    #             expr = Tuple(self.expr_x, self.expr_y, self.expr_z)
-    #     else:
-    #         # expr is user-provided lambda functions
-    #         expr = lambda x: (self.expr_x(x), self.expr_y(x))
-    #         if not self.is_2Dline:
-    #             expr = lambda x: (
-    #                 self.expr_x(x), self.expr_y(x), self.expr_z(x))
-
-    #     data = _adaptive_eval(
-    #         func, [self.var], expr,
-    #         [float(self.start), float(self.end)],
-    #         self.is_2Dline,
-    #         modules=self.modules,
-    #         goal=self._goal,
-    #         loss_fn=self.loss_fn)
-
-    #     if self.is_2Dline:
-    #         return data[:, 1], data[:, 2], data[:, 0]
-    #     return data[:, 1], data[:, 2], data[:, 3], data[:, 0]
-
     def get_label(self, use_latex=False, wrapper="$%s$"):
         # parametric lines returns the representation of the parameter to be
         # shown on the colorbar if `use_cm=True`, otherwise it returns the
@@ -1033,10 +877,6 @@ class ParametricLineBaseSeries(
         adaptive algorithm or it will uniformly sample the expression over the
         provided range.
         """
-        # if self.adaptive:
-        #     coords = self._adaptive_sampling()
-        # else:
-        #     coords = self._uniform_sampling()
         coords = self._uniform_sampling()
 
         if self.is_2Dline and self.is_polar:
@@ -1057,7 +897,7 @@ class ParametricLineBaseSeries(
         """Returns coordinates that needs to be postprocessed."""
         np = import_module('numpy')
 
-        results = self.evaluator._evaluate()
+        results = self.evaluator.evaluate()
         for i, r in enumerate(results):
             _re, _im = np.real(r), np.imag(r)
             _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
@@ -1071,9 +911,8 @@ class Parametric2DLineSeries(
 ):
     """
     Representation for a line consisting of two parametric sympy expressions
-    over a range."""
-
-    is_parametric = True
+    over a range.
+    """
 
     color_func = param.Parameter(default=None, doc="""
         Define a custom color mapping when ``use_cm=True``. It can either be:
@@ -1101,16 +940,9 @@ class Parametric2DLineSeries(
         kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y)
-        # self.ranges = [range_p]
-        # self.evaluator = GridEvaluator(series=self)
         self.evaluator.set_expressions()
         self._post_init()
         self._set_parametric_line_label(label)
-
-    # def _apply_transform(self, *args):
-    #     t = self._get_transform_helper()
-    #     x, y, p = args
-    #     return t(x, self.tx), t(y, self.ty), t(p, self.tp)
 
     def __str__(self):
         return self._str_helper(
@@ -1128,7 +960,8 @@ class Parametric3DLineSeries(
 ):
     """
     Representation for a 3D line consisting of three parametric sympy
-    expressions and a range."""
+    expressions and a range.
+    """
 
     is_2Dline = False
     is_3Dline = True
@@ -1172,16 +1005,9 @@ class Parametric3DLineSeries(
         kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
-        # self.ranges = [range_p]
-        # self.evaluator = GridEvaluator(series=self)
         self.evaluator.set_expressions()
         self._post_init()
         self._set_parametric_line_label(label)
-
-    # def _apply_transform(self, *args):
-    #     t = self._get_transform_helper()
-    #     x, y, z, p = args
-    #     return t(x, self.tx), t(y, self.ty), t(z, self.tz), t(p, self.tp)
 
     def __str__(self):
         return self._str_helper(
@@ -1192,14 +1018,6 @@ class Parametric3DLineSeries(
             str(self.var),
             str((self.start, self.end))
         ))
-
-
-# class PublicSurfaceParameters(
-#     _IsPolarForSurfaceParameter,
-#     _TzParameter,
-#     BaseSeries
-# ):
-#     pass
 
 
 class SurfaceBaseSeries(
@@ -1213,6 +1031,13 @@ class SurfaceBaseSeries(
     surface_color = param.Parameter(default=None, doc="""
         For back-compatibility with old sympy.plotting. Use ``rendering_kw``
         in order to fully customize the appearance of the surface.""")
+    # NOTE: why should SurfaceOver2DRangeSeries support is polar?
+    # After all, the same result can be achieve with
+    # ParametricSurfaceSeries. For example:
+    # sin(r) for (r, 0, 2 * pi) and (theta, 0, pi/2) can be parameterized
+    # as (r * cos(theta), r * sin(theta), sin(t)) for (r, 0, 2 * pi) and
+    # (theta, 0, pi/2).
+    # Because it is faster to evaluate (important for interactive plots).
     is_polar = param.Boolean(False, doc="""
         If True, requests a polar discretization. In this case,
         ``range1`` represents the radius, while ``range2`` represents
@@ -1249,14 +1074,6 @@ class SurfaceBaseSeries(
         _check_misspelled_series_kwargs(self, additional_keys=["scalar"], **kwargs)
         kwargs.setdefault("color_func", lambda x, y, z: z)
         super().__init__(**kwargs)
-        # NOTE: why should SurfaceOver2DRangeSeries support is polar?
-        # After all, the same result can be achieve with
-        # ParametricSurfaceSeries. For example:
-        # sin(r) for (r, 0, 2 * pi) and (theta, 0, pi/2) can be parameterized
-        # as (r * cos(theta), r * sin(theta), sin(t)) for (r, 0, 2 * pi) and
-        # (theta, 0, pi/2).
-        # Because it is faster to evaluate (important for interactive plots).
-
         if callable(self.surface_color):
             self.color_func = self.surface_color
             self.surface_color = None
@@ -1349,8 +1166,6 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         kwargs.setdefault("evaluator", GridEvaluator(series=self))
         super().__init__(**kwargs)
         self.evaluator.set_expressions()
-        # self.ranges = [range_x, range_y]
-        # self.evaluator = GridEvaluator(series=self)
         self._set_surface_label(label)
         self._post_init()
 
@@ -1408,7 +1223,7 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         """
         np = import_module('numpy')
 
-        results = self.evaluator._evaluate()
+        results = self.evaluator.evaluate()
         for i, r in enumerate(results):
             _re, _im = np.real(r), np.imag(r)
             _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
@@ -1499,8 +1314,6 @@ class ParametricSurfaceSeries(
         kwargs.setdefault("color_func", lambda x, y, z, u, v: z)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
-        # self.ranges = [range_u, range_v]
-        # self.evaluator = GridEvaluator(series=self)
         self.evaluator.set_expressions()
         self._set_surface_label(label)
         self._post_init()
@@ -1561,7 +1374,7 @@ class ParametricSurfaceSeries(
         """
         np = import_module('numpy')
 
-        results = self.evaluator._evaluate()
+        results = self.evaluator.evaluate()
         for i, r in enumerate(results):
             _re, _im = np.real(r), np.imag(r)
             _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
@@ -1720,24 +1533,14 @@ class ImplicitSeries(
         kwargs = self._preprocess_expr(f, kwargs)
         super().__init__(**kwargs)
 
-        # self.ranges = [rangex_x, rangex_y]
-        # self.evaluator = GridEvaluator(series=self)
         self.var_x, self.start_x, self.end_x = self.range_x
         self.var_y, self.start_y, self.end_y = self.range_y
         self._color = color
-        # if label is not None:
-        #     self._update_latex_and_str_labels()
 
         if self.is_interactive and self.adaptive:
             raise NotImplementedError("Interactive plot with `adaptive=True` "
                 "is not supported.")
 
-        # # Check whether the depth is greater than 4 or less than 0.
-        # if depth > 4:
-        #     depth = 4
-        # elif depth < 0:
-        #     depth = 0
-        # self.depth = 4 + depth
         self._post_init()
         self.evaluator.set_expressions()
 
@@ -1794,36 +1597,6 @@ class ImplicitSeries(
             kwargs["_non_adaptive_expr"] = expr
             kwargs["_is_equality"] = is_equality
         return kwargs
-
-    # @expr.setter
-    # def expr(self, expr):
-    #     self._block_lambda_functions(expr)
-    #     # these are needed for adaptive evaluation
-    #     expr, has_equality = self._has_equality(sympify(expr))
-    #     self._adaptive_expr = expr
-    #     self.has_equality = has_equality
-    #     self._label_str = str(expr)
-    #     self._label_latex = latex(expr)
-
-    #     if isinstance(expr, (BooleanFunction, Ne)) and (not self.adaptive):
-    #         self.adaptive = True
-    #         msg = "contains Boolean functions. "
-    #         if isinstance(expr, Ne):
-    #             msg = "is an unequality. "
-    #         warnings.warn(f"The provided expression {msg}"
-    #             "In order to plot the expression, the algorithm "
-    #             "automatically switched to an adaptive sampling.",
-    #             stacklevel=1)
-
-    #     if isinstance(expr, BooleanFunction):
-    #         self._non_adaptive_expr = None
-    #         self._is_equality = False
-    #     else:
-    #         # these are needed for uniform meshing evaluation
-    #         expr, is_equality = self._preprocess_meshgrid_expression(
-    #             expr, self.adaptive)
-    #         self._non_adaptive_expr = expr
-    #         self._is_equality = is_equality
 
     @property
     def line_color(self):
@@ -2035,7 +1808,7 @@ class ImplicitSeries(
         """
         np = import_module('numpy')
 
-        xarray, yarray, z_grid = self.evaluator._evaluate()
+        xarray, yarray, z_grid = self.evaluator.evaluate()
         _re, _im = np.real(z_grid), np.imag(z_grid)
         _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
         if self._is_equality:
@@ -2150,7 +1923,6 @@ class Implicit3DSeries(SurfaceBaseSeries):
         evaluation. Related parameters: ``zscale``..""")
 
     def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
-        # kwargs.setdefault("n", self._N)
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
         kwargs["range_x"] = range_x
         kwargs["range_y"] = range_y
@@ -2158,7 +1930,6 @@ class Implicit3DSeries(SurfaceBaseSeries):
         kwargs["_range_names"] = ["range_x", "range_y", "range_z"]
         kwargs.setdefault("evaluator", GridEvaluator(series=self))
         super().__init__(**kwargs)
-        self.ranges = [self.range_x, self.range_y, self.range_z]
         self.evaluator.set_expressions()
         self.var_x, self.start_x, self.end_x = self.range_x
         self.var_y, self.start_y, self.end_y = self.range_y
@@ -2195,7 +1966,7 @@ class Implicit3DSeries(SurfaceBaseSeries):
         """
         np = import_module('numpy')
 
-        results = self.evaluator._evaluate()
+        results = self.evaluator.evaluate()
         for i, r in enumerate(results):
             re_v, im_v = np.real(r), np.imag(r)
             re_v[np.invert(np.isclose(im_v, np.zeros_like(im_v)))] = np.nan
@@ -2214,11 +1985,6 @@ class PlaneSeries(SurfaceBaseSeries):
 
     is_3Dsurface = True
     _N = 20
-
-    # a generic plane (for example with normal (1,1,1)) can generate a huge
-    # range along the z-direction. With _use_nan=True, every z-value outside
-    # of the provided range_z will be set to Nan.
-    _use_nan = True
 
     plane = param.ClassSelector(class_=Plane, doc="""
         The plane to be plotted.""")
@@ -2246,6 +2012,10 @@ class PlaneSeries(SurfaceBaseSeries):
     n3 = _CastToInteger(default=100, doc="""
         Number of discretization points along the z-axis to be used in the
         evaluation. Related parameters: ``zscale``.""")
+    _use_nan = param.Boolean(True, doc="""
+        A generic plane (for example with normal (1,1,1)) can generate a huge
+        range along the z-direction. With _use_nan=True, every z-value outside
+        of the provided range_z will be set to Nan.""")
 
 
     def __init__(
@@ -2253,13 +2023,11 @@ class PlaneSeries(SurfaceBaseSeries):
     ):
         # NOTE: "scalar" comes from plot_vector
         _check_misspelled_series_kwargs(self, additional_keys=["scalar"], **kwargs)
-        # super().__init__(**kwargs)
-        # kwargs.setdefault("n", self._N)
         kwargs["plane"] = plane
         kwargs["range_x"] = range_x
         kwargs["range_y"] = range_y
         kwargs["range_z"] = range_z
-        # NOTE: these two attributes are necessary in order to evaluate
+        # NOTE: this attribute is necessary in order to evaluate
         # the user-provided `color_func`
         kwargs.setdefault("evaluator", GridEvaluator(series=self))
         self._block_lambda_functions(plane)
@@ -2271,8 +2039,6 @@ class PlaneSeries(SurfaceBaseSeries):
                 f"{self.param.color_func.doc}")
         super().__init__(**kwargs)
         self.expr = self.plane
-        # self.evaluator.set_expressions()
-        # self.ranges = [self.range_x, self.range_y, self.range_z]
         self._set_surface_label(label)
         if self.params and not self.plane.free_symbols:
             self.params = dict()
@@ -2398,39 +2164,14 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
     is_geometry = True
     is_2Dline = True
 
-    # n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
-    #     Number of discretization points along the x, y, z directions,
-    #     respectively. It can easily be set with ``n=number``, which will
-    #     set ``number`` for each element of the list.
-    #     For surface, contour, 2d vector field plots it can be set with
-    #     ``n=[num1, num2]``. For 3D implicit plots it can be set with
-    #     ``n=[num1, num2, num3]``.
-
-    #     Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
-    #     set in order to modify the respective element of the ``n`` list.""")
-
-
     geom = param.ClassSelector(class_=GeometryEntity, doc="""
         Represent the geometric entity to be plotted.""")
     range_x = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the x variable
         to be used when plotting lines. Default to None.""")
-    # _expr = param.Parameter()
     n1 = _CastToInteger(default=100, doc="""
         Number of discretization points used to resolve the polar
         angle theta ∈ [0, 2*pi] in order to plot ellipses.""")
-
-    # def __new__(cls, *args, **kwargs):
-    #     if isinstance(args[0], Plane):
-    #         return PlaneSeries(*args, **kwargs)
-    #     elif isinstance(args[0], Curve):
-    #         new_cls = (
-    #             Parametric2DLineSeries
-    #             if len(args[0].functions) == 2
-    #             else Parametric3DLineSeries
-    #         )
-    #         return new_cls(*args[0].functions, args[0].limits, **kwargs)
-    #     return object.__new__(cls)
 
     @property
     def expr(self):
@@ -2533,23 +2274,9 @@ class Geometry3DSeries(Line2DBaseSeries):
 
     geom = param.ClassSelector(class_=GeometryEntity, doc="""
         Represent the geometric entity to be plotted.""")
-    # _expr = param.Parameter()
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
-
-    # def __new__(cls, *args, **kwargs):
-    #     if isinstance(args[0], Plane):
-    #         return PlaneSeries(*args, **kwargs)
-    #     elif isinstance(args[0], Curve):
-    #         new_cls = (
-    #             Parametric2DLineSeries
-    #             if len(args[0].functions) == 2
-    #             else Parametric3DLineSeries
-    #         )
-    #         return new_cls(*args[0].functions, args[0].limits, **kwargs)
-    #     return object.__new__(cls)
-
 
     @property
     def expr(self):
@@ -2683,6 +2410,7 @@ class GenericDataSeries(BaseSeries):
     def get_data(self):
         return self.args
 
+
 class HVLineSeries(BaseSeries):
     """
     Represent an horizontal or vertical line series.
@@ -2740,4 +2468,3 @@ class VLineSeries(HVLineSeries):
     @param.depends("x", watch=True)
     def _update_expr(self):
         self._expr = self.x
-

@@ -158,7 +158,7 @@ def _draw_nyquist_helper(renderer, data):
     arrows_handles = []
     arrows1 = _draw_arrows_helper(
         ax, invisible_primary_line,
-        s.arrow_locs,
+        s._arrow_locs,
         arrowstyle=arrow_style,
         dir=1
     )
@@ -181,7 +181,7 @@ def _draw_nyquist_helper(renderer, data):
         arrows2 = _draw_arrows_helper(
             ax,
             invisible_secondary_line,
-            s.arrow_locs,
+            s._arrow_locs,
             arrowstyle=arrow_style,
             dir=-1
         )
@@ -231,7 +231,7 @@ def _update_nyquist_helper(renderer, data, handles):
     arrows1 = _draw_arrows_helper(
         ax,
         invisible_primary_line,
-        s.arrow_locs,
+        s._arrow_locs,
         arrowstyle=arrow_style,
         dir=1
     )
@@ -246,7 +246,7 @@ def _update_nyquist_helper(renderer, data, handles):
         invisible_secondary_line.set_data(x_inv2, -y_inv2)
         arrows2 = _draw_arrows_helper(
             ax, invisible_secondary_line,
-            s.arrow_locs,
+            s._arrow_locs,
             arrowstyle=arrow_style,
             dir=-1
         )

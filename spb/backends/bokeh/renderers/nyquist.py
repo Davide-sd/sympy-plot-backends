@@ -234,7 +234,7 @@ def _draw_nyquist_helper(renderer, data):
 
     # Add arrows
     arrows_handles = []
-    source = _compute_arrows_position(x_reg, y_reg, s.arrow_locs, dir=1)
+    source = _compute_arrows_position(x_reg, y_reg, s._arrow_locs, dir=1)
     arrows1 = p.bokeh.models.Arrow(
         source=p.bokeh.models.ColumnDataSource(data=source),
         line_color=color, end=arrow_style)
@@ -267,7 +267,7 @@ def _draw_nyquist_helper(renderer, data):
             ))
 
         # Add arrows
-        source = _compute_arrows_position(x_reg, -y_reg, s.arrow_locs, dir=-1)
+        source = _compute_arrows_position(x_reg, -y_reg, s._arrow_locs, dir=-1)
         arrows2 = p.bokeh.models.Arrow(
             source=p.bokeh.models.ColumnDataSource(data=source),
             line_color=color, end=arrow_style)
@@ -342,7 +342,7 @@ def _update_nyquist_helper(renderer, data, handles):
             mcircles)
         )
 
-    source = _compute_arrows_position(x_reg, y_reg, s.arrow_locs, dir=1)
+    source = _compute_arrows_position(x_reg, y_reg, s._arrow_locs, dir=1)
     arrows_handles[0].source.data.update(source)
 
     if secondary_line:
@@ -355,7 +355,7 @@ def _update_nyquist_helper(renderer, data, handles):
                 mcircles)
             )
 
-        source = _compute_arrows_position(x_reg, -y_reg, s.arrow_locs, dir=1)
+        source = _compute_arrows_position(x_reg, -y_reg, s._arrow_locs, dir=1)
         arrows_handles[1].source.data.update(source)
 
     if start_marker_handle:

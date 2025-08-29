@@ -1,38 +1,9 @@
-import math
-import numpy as np
 import param
-from numbers import Number
-from inspect import signature
-from spb.wegert import wegert
 from spb.defaults import cfg
-from spb.utils import (
-    _get_free_symbols, unwrap, extract_solution, tf_to_control,
-    _check_misspelled_kwargs
-)
-import sympy
-from sympy import (
-    latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
-    Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
-    Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Union, Interval, nsimplify, Set, Integral, hyper, fraction
-)
-from sympy.core.relational import Relational
-from sympy.calculus.util import continuous_domain
-from sympy.geometry.entity import GeometryEntity
-from sympy.geometry.line import LinearEntity2D, LinearEntity3D
-from sympy.logic.boolalg import BooleanFunction
-from sympy.plotting.intervalmath import interval
+from spb.utils import _get_free_symbols, _check_misspelled_kwargs
+from sympy import latex, Tuple, symbols, sympify, Expr, Symbol
 from sympy.external import import_module
-from sympy.printing.pycode import PythonCodePrinter
-from sympy.printing.precedence import precedence
-from sympy.core.sorting import default_sort_key
-from matplotlib.cbook import (
-    pts_to_prestep, pts_to_poststep, pts_to_midstep
-)
 import warnings
-# from spb.series.evaluator import GridEvaluator
-from param.ipython import ParamPager
 from param.parameterized import Undefined
 import typing
 
@@ -351,7 +322,6 @@ class BaseSeries(param.Parameterized):
         Let ``series`` be any data series. Then ``series.params`` returns a
         dictionary mapping symbols to numerical values.
         """)
-    # # TODO: better doc for all data series
     color_func = param.Parameter(default=None, doc="""
         A color function to be applied to the numerical data. It can be:
 
@@ -384,24 +354,11 @@ class BaseSeries(param.Parameterized):
     _range_names = param.List(default=[], item_type=str, doc="""
         List of parameter names refering to ranges. This parameter allows to
         quickly retrieve all ranges associated to a particular data series.""")
-    # evaluator = param.ClassSelector(class_=GridEvaluator, doc="""
-    #     The machinery that generates numerical data starting from
-    #     the parameters of the current series.""")
-    # expr = param.Parameter(doc="""
-    #     This parameter is meant to be read-only. Depending on the type of the
-    #     data series, it returns one or more symbolic expressions (or numerical
-    #     functions). This parameter is used by the evaluator in order to
-    #     retrieve the expressions to be lambdified and evaluated.""")
 
     def __repr__(self):
         if cfg["use_repr"] is False:
             return object.__repr__(self)
         return super().__repr__()
-
-    # @param.depends("expr", watch=True)
-    # def _update_evaluator(self):
-    #     if hasattr(self, "evaluator") and (self.evaluator is not None):
-    #         self.evaluator.set_expressions()
 
     def _enforce_dict_on_rendering_kw(self, rendering_kw):
         return {} if rendering_kw is None else rendering_kw
@@ -440,11 +397,6 @@ class BaseSeries(param.Parameterized):
         # this is used by spb.interactive to keep track of multi-values widgets
         kwargs.setdefault("_original_params", kwargs.get("params", {}))
 
-        # _check_misspelled_kwargs(
-        #     self,
-        #     exclude_keys=["_range_names", "n1", "n2", "n3", "_original_params"],
-        #     **kwargs)
-
         # remove keyword arguments that are not parameters of this series
         kwargs = {
             k: v for k, v in kwargs.items()
@@ -474,8 +426,10 @@ class BaseSeries(param.Parameterized):
         # provided, then its better to do the following in order to avoid
         # suprises on the backend
         if any(callable(e) for e in exprs):
+            print("wtf", self._label_str, str(self.expr))
             if self._label_str == str(self.expr):
                 self.label = ""
+                # self._update_latex_and_str_labels()
 
         self._check_fs()
 
@@ -605,7 +559,6 @@ class BaseSeries(param.Parameterized):
         if hasattr(self, "_eval_color_func_helper"):
             return self._eval_color_func_helper(*args)
         raise NotImplementedError
-
 
     def get_data(self):
         """Compute and returns the numerical data.

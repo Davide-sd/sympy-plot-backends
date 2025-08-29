@@ -44,7 +44,7 @@ def _draw_nichols_helper(renderer, data):
         arrow_style = mpl.patches.ArrowStyle('simple', head_width=6, head_length=6)
         arrows = _draw_arrows_helper(
             p._ax, line,
-            s.arrow_locs,
+            s._arrow_locs,
             arrowstyle=arrow_style,
             dir=1
         )
@@ -84,7 +84,7 @@ def _update_nichols_helper(renderer, data, handles):
         arrow_style = mpl.patches.ArrowStyle('simple', head_width=6, head_length=6)
         new_arrows = _draw_arrows_helper(
             p._ax, line,
-            s.arrow_locs,
+            s._arrow_locs,
             arrowstyle=arrow_style,
             dir=1
         )

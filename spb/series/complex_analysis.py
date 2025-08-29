@@ -1,34 +1,10 @@
 import math
-import numpy as np
 import param
-from numbers import Number
-from inspect import signature
 from spb.wegert import wegert
-from spb.defaults import cfg
-from spb.utils import (
-    _get_free_symbols, unwrap, extract_solution, tf_to_control, prange
-)
-import sympy
 from sympy import (
-    latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
-    Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
-    Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Union, Interval, nsimplify, Set, Integral, hyper, fraction
+    latex, Tuple, symbols, sympify, Expr, lambdify, im, re
 )
-from sympy.core.relational import Relational
-from sympy.calculus.util import continuous_domain
-from sympy.geometry.entity import GeometryEntity
-from sympy.geometry.line import LinearEntity2D, LinearEntity3D
-from sympy.logic.boolalg import BooleanFunction
-from sympy.plotting.intervalmath import interval
 from sympy.external import import_module
-from sympy.printing.pycode import PythonCodePrinter
-from sympy.printing.precedence import precedence
-from sympy.core.sorting import default_sort_key
-from matplotlib.cbook import (
-    pts_to_prestep, pts_to_poststep, pts_to_midstep
-)
 import warnings
 from spb.series.evaluator import (
     _NMixin,
@@ -83,8 +59,8 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
         provided range.
         """
         np = import_module('numpy')
-
-        x, _re, _im = self._get_real_imag()
+        x, result = self.evaluator.evaluate()
+        _re, _im = np.real(result), np.imag(result)
         _abs = np.sqrt(_re**2 + _im**2)
         _angle = np.arctan2(_im, _re)
         return x, _abs, _angle
@@ -154,10 +130,6 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
     range_c = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the complex
         variable. Default values: `min=-10-10j` and `max=10+10j`.""")
-    is_filled = param.Boolean(True, doc="""
-        If True, used filled contours. Otherwise, use line contours.""")
-    show_clabels = param.Boolean(True, doc="""
-        If True, used filled contours. Otherwise, use line contours.""")
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the x-direction (real part).
@@ -173,7 +145,6 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         Number of discretization points along the y-axis (imaginary part)
         to be used in the evaluation. Related parameters: ``yscale``.""")
 
-
     def __init__(self, expr, range_c, label="", **kwargs):
         _return = kwargs.pop("return", None)
         kwargs.setdefault("show_clabels", kwargs.pop("clabels", True))
@@ -182,8 +153,6 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         kwargs["_range_names"] = ["range_c"]
         kwargs.setdefault("evaluator", ComplexGridEvaluator(series=self))
         super().__init__(**kwargs)
-        self.ranges = [self.range_c]
-        # self.evaluator = ComplexGridEvaluator(series=self)
         self.evaluator.set_expressions()
         self._label_str = str(expr) if label is None else label
         self._label_latex = latex(expr) if label is None else label
@@ -240,11 +209,8 @@ class ComplexSurfaceSeries(
     is_contour = False
     is_domain_coloring = False
 
-    # TODO: I have defined them in ComplexSurfaceBaseSeries.
-    # Which one do I remove?
     is_filled = param.Boolean(True, doc="""
         If True, used filled contours. Otherwise, use line contours.""")
-
     show_clabels = param.Boolean(True, doc="""
         If True, used filled contours. Otherwise, use line contours.""")
 
@@ -253,8 +219,7 @@ class ComplexSurfaceSeries(
         kwargs.setdefault("is_filled", kwargs.pop("fill", True))
         super().__init__(expr, r, label, **kwargs)
 
-        if isinstance(self, ComplexSurfaceSeries):
-            self._block_lambda_functions(self.expr)
+        self._block_lambda_functions(self.expr)
 
         if not threed:
             self.is_contour = True
@@ -283,7 +248,7 @@ class ComplexSurfaceSeries(
         """
         np = import_module('numpy')
 
-        domain, z = self.evaluator._evaluate(False)
+        domain, z = self.evaluator.evaluate(False)
         if self._return is None:
             pass
         elif self._return == "real":
@@ -303,6 +268,7 @@ class ComplexSurfaceSeries(
     def _eval_color_func_helper(self, *coords):
         return SurfaceOver2DRangeSeries._eval_color_func_helper(
             self, *coords)
+
 
 class ComplexDomainColoringBaseSeries(param.Parameterized):
     coloring = param.Selector(
@@ -360,20 +326,16 @@ class ComplexDomainColoringBaseSeries(param.Parameterized):
             An array with N RGB colors, (0 <= R,G,B <= 255).
             If ``colorscale=None``, no color bar will be shown on the plot.
         """)
-
     phaseres = param.Integer(20, bounds=(1, 100), doc="""
         It controls the number of iso-phase and/or iso-modulus lines
         in domain coloring plots.""")
-
     cmap = param.ClassSelector(class_=(str, list, tuple), doc="""
         Specify the colormap to be used on enhanced domain coloring plots
         (both images and 3d plots). Default to ``"hsv"``. Can be any colormap
         from matplotlib or colorcet.""")
-
     blevel = param.Number(0.75, bounds=(0, 1), doc="""
         Controls the black level of ehanced domain coloring plots.
         It must be `0 (black) <= blevel <= 1 (white)`.""")
-
     phaseoffset = param.Number(0, bounds=[0, 2*math.pi], doc="""
         Controls the phase offset of the colormap in domain coloring plots.""")
 
@@ -392,12 +354,10 @@ class ComplexDomainColoringSeries(
     at_infinity = param.Boolean(False, doc="""
         If False the visualization will be centered about the complex point
         zero. Otherwise, it will be centered at infinity.""")
-
     annotate = param.Boolean(True, doc="""
         Turn on/off the annotations on the 2D projections of the Riemann
         sphere. Default to True (annotations are visible). They can only
         be visible when ``riemann_mask=True``.""")
-
     riemann_mask = param.Boolean(False, doc="""
         Turn on/off the unit disk mask representing the Riemann sphere
         on the 2D projections. Default to True (mask is active).""")
@@ -410,11 +370,9 @@ class ComplexDomainColoringSeries(
 
         if threed:
             self.is_3Dsurface = True
-        #     self.use_cm = kwargs.get("use_cm", True)
 
         # apply the transformation z -> 1/z in order to study the behavior
         # of the function at z=infinity
-        # self.at_infinity = kwargs.get("at_infinity", False)
         if self.at_infinity:
             if callable(self.expr):
                 raise ValueError(
@@ -428,40 +386,12 @@ class ComplexDomainColoringSeries(
                 self._label_latex = latex(tmp)
             self.expr = tmp
 
-        # # domain coloring mode
-        # self._init_domain_coloring_kw(**kwargs)
-
-        # self.annotate = kwargs.get("annotate", True)
-        # self.riemann_mask = kwargs.get("riemann_mask", False)
         self._post_init()
 
     @param.depends("expr", watch=True)
     def _update_lambdifier(self):
         if self.evaluator is not None:
             self.evaluator.set_expressions()
-
-    # def _init_domain_coloring_kw(self, **kwargs):
-    #     self.coloring = kwargs.get("coloring", "a")
-    #     if isinstance(self.coloring, str):
-    #         self.coloring = self.coloring.lower()
-    #     elif not callable(self.coloring):
-    #         raise TypeError(
-    #             "`coloring` must be a character from 'a' to 'j' or "
-    #             "a callable.")
-    #     self.phaseres = kwargs.get("phaseres", 20)
-    #     self.cmap = kwargs.get("cmap", None)
-    #     self.blevel = float(kwargs.get("blevel", 0.75))
-    #     if self.blevel < 0:
-    #         warnings.warn(
-    #             "It must be 0 <= blevel <= 1. Automatically "
-    #             "setting blevel = 0.")
-    #         self.blevel = 0
-    #     if self.blevel > 1:
-    #         warnings.warn(
-    #             "It must be 0 <= blevel <= 1. Automatically "
-    #             "setting blevel = 1.")
-    #         self.blevel = 1
-    #     self.phaseoffset = float(kwargs.get("phaseoffset", 0))
 
     def _create_discretized_domain(self):
         return ComplexSurfaceBaseSeries._create_discretized_domain(self)
@@ -503,7 +433,7 @@ class ComplexDomainColoringSeries(
         """
         np = import_module('numpy')
 
-        domain, z = self.evaluator._evaluate(False)
+        domain, z = self.evaluator.evaluate(False)
         return self._apply_transform(
             np.real(domain), np.imag(domain),
             np.absolute(z), np.angle(z),
@@ -529,7 +459,7 @@ class ComplexParametric3DLineSeries(Parametric3DLineSeries):
         """Returns coordinates that needs to be postprocessed."""
         np = import_module('numpy')
 
-        results = self.evaluator._evaluate()
+        results = self.evaluator.evaluate()
         for i in range(len(results) - 1):
             _re, _im = np.real(results[i]), np.imag(results[i])
             _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
@@ -562,16 +492,6 @@ class RiemannSphereSeries(
     is_3Dsurface = True
     _N = 150
 
-    # n = param.List([100, 100, 100], item_type=Number, bounds=(3, 3), doc="""
-    #     Number of discretization points along the x, y, z directions,
-    #     respectively. It can easily be set with ``n=number``, which will
-    #     set ``number`` for each element of the list.
-    #     For surface, contour, 2d vector field plots it can be set with
-    #     ``n=[num1, num2]``. For 3D implicit plots it can be set with
-    #     ``n=[num1, num2, num3]``.
-
-    #     Alternatively, ``n1=num1, n2=num2, n3=num3`` can be indipendently
-    #     set in order to modify the respective element of the ``n`` list.""")
     expr = param.Parameter(doc="""
         The expression representing the complex function to be plotted.""")
     range_t = _RangeTuple(doc="""

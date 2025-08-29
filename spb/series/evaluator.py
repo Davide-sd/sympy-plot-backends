@@ -54,7 +54,7 @@ def _warning_eval_error(err, modules):
     )
 
 
-def _get_wrapper_func():
+def _get_wrapper_func_for_eval():
     """
     Create a 'vectorized' wrapper function for numerical evaluation.
     """
@@ -81,7 +81,7 @@ def _uniform_eval(evaluator):
 
     series = evaluator.series
     modules = series.modules
-    wrapper_func = _get_wrapper_func()
+    wrapper_func = _get_wrapper_func_for_eval()
 
     results = []
     functions = evaluator.request_lambda_functions(modules)
@@ -229,6 +229,11 @@ def _hashify_modules(modules):
 
 
 class _LambdifierMixin(param.Parameterized):
+    """
+    Please, look at ``GridEvaluator`` docstring to understand what this class
+    does.
+    """
+
     series = param.Parameter(doc="Data series to be evaluated.")
     expr = param.Parameter(constant=True, doc="""
         Symbolic expressions (or user-provided numerical functions)
@@ -445,7 +450,6 @@ class GridEvaluator(_LambdifierMixin):
     related data series don't need this machinery.
     """
 
-    series = param.Parameter(doc="Data series to be evaluated.")
     _discretized_domain = param.Dict({}, doc="""
         Contain a dictionary with the discretized ranges, used to evaluate
         the numerical functions.""")
@@ -532,7 +536,7 @@ class GridEvaluator(_LambdifierMixin):
         self._discretized_domain = {
             k: v for k, v in zip(discr_symbols, meshes)}
 
-    def _evaluate(self, cast_to_real=True):
+    def evaluate(self, cast_to_real=True):
         """
         Evaluation of the symbolic expression (or expressions) with the
         uniform meshing strategy, based on current values of the parameters.
@@ -610,7 +614,7 @@ class GridEvaluator(_LambdifierMixin):
             return np.ones_like(args[0])
 
         if self._eval_color_func_with_signature:
-            wrapper_func = _get_wrapper_func()
+            wrapper_func = _get_wrapper_func_for_eval()
             args = self._aggregate_args()
             try:
                 color = cf(*args)
@@ -695,9 +699,6 @@ class SliceVectorGridEvaluator(GridEvaluator):
     def _create_discretized_domain(self):
         """Discretize the ranges in case of uniform meshing strategy.
         """
-        # TODO: once InteractiveSeries has been remove, the following can
-        # be reorganized in order to remove code repetition, specifically the
-        # following line of code.
         # symbols used by this vector's discretization
         discr_symbols = [r[0] for r in self.series.ranges]
         discretizations = self._discretize()

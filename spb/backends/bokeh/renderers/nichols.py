@@ -60,7 +60,7 @@ def _draw_nichols_helper(renderer, data):
             arrow_style = p.bokeh.models.VeeHead(
                     line_color=color, fill_color=color, size=10)
             source = _compute_arrows_position(
-                ol_phase, ol_mag, arrow_locs=s.arrow_locs, dir=1)
+                ol_phase, ol_mag, arrow_locs=s._arrow_locs, dir=1)
             arrows = p.bokeh.models.Arrow(
                 source=p.bokeh.models.ColumnDataSource(data=source),
                 line_color=color, end=arrow_style)
@@ -121,7 +121,7 @@ def _update_nichols_helper(renderer, data, handles):
         handles[0].data_source.data.update(source)
         if len(handles) > 1:
             source = _compute_arrows_position(
-                ol_phase, ol_mag, arrow_locs=s.arrow_locs, dir=1)
+                ol_phase, ol_mag, arrow_locs=s._arrow_locs, dir=1)
             handles[1].source.data.update(source)
 
 
