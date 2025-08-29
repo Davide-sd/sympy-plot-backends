@@ -31,7 +31,6 @@ from matplotlib.cbook import (
 )
 import warnings
 from spb.series.evaluator import (
-    Lambdifier,
     GridEvaluator,
     SliceVectorGridEvaluator,
     _GridEvaluationParameters,
@@ -81,12 +80,11 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         if "streamlines" in kwargs:
             kwargs["is_streamlines"] = kwargs.pop("streamlines")
         kwargs["_expr"] = exprs
-        kwargs["_lambdifier"] = Lambdifier(series=self)
         kwargs.setdefault("evaluator", GridEvaluator(series=self))
         super().__init__(**kwargs)
         # self.ranges = list(ranges)
         # self.evaluator = GridEvaluator(series=self)
-        self.lambdifier.set_expressions()
+        self.evaluator.set_expressions()
         self._label_str = str(exprs) if label is None else label
         self._label_latex = latex(exprs) if label is None else label
 
@@ -173,7 +171,7 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
             )
 
     def _eval_color_func_helper(self, *coords):
-        color_func = self.lambdifier.request_color_func(self.modules)
+        color_func = self.evaluator.request_color_func(self.modules)
         nargs = arity(color_func)
         if (
             (self.is_3Dvector and (nargs == 6))

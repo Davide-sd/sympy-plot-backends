@@ -80,12 +80,11 @@ def _uniform_eval(evaluator):
     np = import_module('numpy')
 
     series = evaluator.series
-    lambdifier = series.lambdifier
     modules = series.modules
     wrapper_func = _get_wrapper_func()
 
     results = []
-    functions = lambdifier.request_lambda_functions(modules)
+    functions = evaluator.request_lambda_functions(modules)
     # ensure that discretized domains are returned with the proper order
     discr = [evaluator._discretized_domain[s[0]] for s in series.ranges]
     args = evaluator._aggregate_args()
@@ -99,7 +98,7 @@ def _uniform_eval(evaluator):
         except Exception as err:
             # fall back to sympy
             _warning_eval_error(err, modules)
-            sympy_functions = lambdifier.request_lambda_functions("sympy")
+            sympy_functions = evaluator.request_lambda_functions("sympy")
             r = wrapper_func(sympy_functions[i], *args)
 
         # the evaluation might produce an int/float. Need this correction.
@@ -139,9 +138,6 @@ class _NMixin:
 
 
 class _GridEvaluationParameters(param.Parameterized, _NMixin):
-    _lambdifier = param.Parameter(doc="""
-        The machinery that creates lambda functions which are eventually
-        going to be evaluated.""")
     evaluator = param.Parameter(doc="""
         An instance of ``GridEvaluator``, which is the machinery that
         generates numerical data starting from the parameters of the
@@ -165,10 +161,6 @@ class _GridEvaluationParameters(param.Parameterized, _NMixin):
     modules = param.Parameter(None, doc="""
         Specify the evaluation modules to be used by lambdify.
         If not specified, the evaluation will be done with NumPy/SciPy.""")
-
-    @property
-    def lambdifier(self):
-        return self._lambdifier
 
 
 def _discretize(start, end, N, scale="linear", only_integers=False):
@@ -236,7 +228,7 @@ def _hashify_modules(modules):
     raise NotImplementedError
 
 
-class Lambdifier(param.Parameterized):
+class _LambdifierMixin(param.Parameterized):
     series = param.Parameter(doc="Data series to be evaluated.")
     expr = param.Parameter(constant=True, doc="""
         Symbolic expressions (or user-provided numerical functions)
@@ -378,8 +370,6 @@ class Lambdifier(param.Parameterized):
                         s.add(a[-1])
             self.series.evaluator._needs_to_be_int = list(s)
 
-            # TODO: move this into GridEval and only raise the warning
-            # if adaptive=False
             # TODO: what if the user set force_real_eval=True (or the
             # algorithm did it with the previous expression) but the new
             # expression doesn't need it?
@@ -413,7 +403,7 @@ class Lambdifier(param.Parameterized):
             self._functions = {}
 
 
-class GridEvaluator(param.Parameterized):
+class GridEvaluator(_LambdifierMixin):
     """
     Many plotting functions resemble this form:
 
@@ -431,23 +421,27 @@ class GridEvaluator(param.Parameterized):
 
     This class automates the following processes:
 
-    1. Create lambda functions from symbolic expressions. In particular, it
-       creates one lambda function to be evaluated with the specified module
-       (usually NumPy), and another lambda function to be evaluated with
-       SymPy, in case there are any errors with the first.
+    1. Create lambda functions from symbolic expressions, using the specified
+       evaluation module (usually NumPy/ScipY).
     2. Create numerical arrays representing ranges, according to the specified
        discretization strategy (linear or logarithmic). Usually, these arrays
        are of type complex, unless ``force_real_eval=True`` is provided in the
        ``plot_function`` call.
     3. Evaluate each lambda function with the appropriate arrays and
-       parameters.
+       parameters. If the evaluation succeeds, return the results.
+    4. If the evaluation fails (for example, a particular SymPy function
+       is not yet implemented in NumPy/SciPy), then creates new lambda
+       functions using SymPy as the evaluation module.
+    5. Evaluate the new lambda functions and return the results.
 
     Let ``evaluator`` be an instance of ``GridEvaluator``. Then,
     series requiring this kind of evaluation should call
     ``evaluator._evaluate()`` in order to get numerical data, which should
     then be post-processed.
 
-    Note: it's not mandatory to use this class. For example, control system
+    Notes
+    -----
+    It's not mandatory to use this class. For example, control system
     related data series don't need this machinery.
     """
 
@@ -470,14 +464,6 @@ class GridEvaluator(param.Parameterized):
         numpy functions don't like complex-type arguments, and appropriate
         actions should be taken."""
     )
-
-    def __init__(self, **params):
-        super().__init__(**params)
-        if not hasattr(self.series, "lambdifier"):
-            raise ValueError(
-                f"{type(self.series).__name__} must expose the"
-                " `lambdifier` attribute."
-            )
 
     def _create_discretized_domain(self):
         """
@@ -567,7 +553,7 @@ class GridEvaluator(param.Parameterized):
 
     def _aggregate_args(self):
         args = []
-        for s in self.series.lambdifier._signature:
+        for s in self._signature:
             if s in self.series.params.keys():
                 args.append(
                     int(self.series.params[s]) if s in self._needs_to_be_int else
@@ -598,7 +584,7 @@ class GridEvaluator(param.Parameterized):
         appropriate coloring value.
         """
         np = import_module('numpy')
-        cf = self.series.lambdifier.request_color_func(self.series.modules)
+        cf = self.request_color_func(self.series.modules)
 
         if cf is None:
             # NOTE: with the line_color and surface_color attributes
@@ -623,10 +609,9 @@ class GridEvaluator(param.Parameterized):
                     "with the appropriate line_color or surface_color")
             return np.ones_like(args[0])
 
-        if self.series.lambdifier._eval_color_func_with_signature:
+        if self._eval_color_func_with_signature:
             wrapper_func = _get_wrapper_func()
             args = self._aggregate_args()
-            lambdifier = self.series.lambdifier
             try:
                 color = cf(*args)
             except (ValueError, TypeError):
@@ -635,7 +620,7 @@ class GridEvaluator(param.Parameterized):
             except Exception as err:
                 # fall back to sympy
                 _warning_eval_error(err, self.series.modules)
-                cf = lambdifier.request_color_func("sympy")
+                cf = self.request_color_func("sympy")
                 color = wrapper_func(cf, *args)
 
             _re, _im = np.real(color), np.imag(color)

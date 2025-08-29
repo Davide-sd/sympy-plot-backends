@@ -37,13 +37,9 @@ from matplotlib.cbook import (
 import warnings
 from spb.series.evaluator import (
     IntervalMathPrinter,
-    # _AdaptiveEvaluationParameters,
     _GridEvaluationParameters,
     _NMixin,
-    Lambdifier,
     GridEvaluator,
-    ComplexGridEvaluator,
-    # _adaptive_eval,
     _warning_eval_error,
     _get_wrapper_func
 )
@@ -408,7 +404,7 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
                     # add points to the other coordinates
                     c = 0
                     for j in j_indeces:
-                        functions = self.lambdifier.request_lambda_functions(
+                        functions = self.evaluator.request_lambda_functions(
                             self.modules)
                         domain = np.array([prev, post])
 
@@ -420,7 +416,7 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
                         except Exception as err:
                             # fall back to sympy
                             _warning_eval_error(err, self.modules)
-                            sympy_functions = self.lambdifier.request_lambda_functions(
+                            sympy_functions = self.evaluator.request_lambda_functions(
                                 "sympy")
                             r = wrapper_func(sympy_functions[c], domain)
 
@@ -729,14 +725,10 @@ class LineOver1DRangeSeries(
         kwargs["range_x"] = range_x
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
         kwargs["_range_names"] = ["range_x"]
-        kwargs["_lambdifier"] = Lambdifier(series=self)
-        kwargs["evaluator"] = GridEvaluator(series=self)
+        kwargs.setdefault("evaluator", GridEvaluator(series=self))
         kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
-        self.lambdifier.set_expressions()
-        # self.evaluator = GridEvaluator(series=self)
-        # self. =
-        # self.lambdifier =
+        self.evaluator.set_expressions()
         self._label_str = str(self.expr) if label is None else label
         self._label_latex = latex(self.expr) if label is None else label
         # self.ranges = [range_x]
@@ -848,7 +840,7 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
         super().__init__(*args, **kwargs)
 
     def _eval_color_func_helper(self, x, y):
-        color_func = self.lambdifier.request_color_func(self.modules)
+        color_func = self.evaluator.request_color_func(self.modules)
         nargs = arity(color_func)
         if nargs == 1:
             color = color_func(x)
@@ -1019,7 +1011,7 @@ class ParametricLineBaseSeries(
         return self._label_str
 
     def _eval_color_func_helper(self, *coords):
-        color_func = self.lambdifier.request_color_func(self.modules)
+        color_func = self.evaluator.request_color_func(self.modules)
         nargs = arity(color_func)
         if nargs == 1:
             color = color_func(coords[-1])
@@ -1104,15 +1096,14 @@ class Parametric2DLineSeries(
         kwargs["expr_y"] = expr_y if callable(expr_y) else sympify(expr_y)
         kwargs["range_p"] = range_p
         kwargs["_range_names"] = ["range_p"]
-        kwargs["_lambdifier"] = Lambdifier(series=self)
-        kwargs["evaluator"] = GridEvaluator(series=self)
+        kwargs.setdefault("evaluator", GridEvaluator(series=self))
         kwargs.setdefault("use_cm", True)
         kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y)
         # self.ranges = [range_p]
         # self.evaluator = GridEvaluator(series=self)
-        self.lambdifier.set_expressions()
+        self.evaluator.set_expressions()
         self._post_init()
         self._set_parametric_line_label(label)
 
@@ -1176,15 +1167,14 @@ class Parametric3DLineSeries(
         kwargs["expr_z"] = expr_z if callable(expr_z) else sympify(expr_z)
         kwargs["range_p"] = range_p
         kwargs["_range_names"] = ["range_p"]
-        kwargs["_lambdifier"] = Lambdifier(series=self)
-        kwargs["evaluator"] = GridEvaluator(series=self)
+        kwargs.setdefault("evaluator", GridEvaluator(series=self))
         kwargs.setdefault("use_cm", True)
         kwargs = _process_exclude_kw(kwargs)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
         # self.ranges = [range_p]
         # self.evaluator = GridEvaluator(series=self)
-        self.lambdifier.set_expressions()
+        self.evaluator.set_expressions()
         self._post_init()
         self._set_parametric_line_label(label)
 
@@ -1356,10 +1346,9 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         kwargs["range_x"] = range_x
         kwargs["range_y"] = range_y
         kwargs["_range_names"] = ["range_x", "range_y"]
-        kwargs["_lambdifier"] = Lambdifier(series=self)
-        kwargs["evaluator"] = GridEvaluator(series=self)
+        kwargs.setdefault("evaluator", GridEvaluator(series=self))
         super().__init__(**kwargs)
-        self.lambdifier.set_expressions()
+        self.evaluator.set_expressions()
         # self.ranges = [range_x, range_y]
         # self.evaluator = GridEvaluator(series=self)
         self._set_surface_label(label)
@@ -1434,7 +1423,7 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         return self._apply_transform(x, y, z)
 
     def _eval_color_func_helper(self, *coords):
-        color_func = self.lambdifier.request_color_func(self.modules)
+        color_func = self.evaluator.request_color_func(self.modules)
         nargs = arity(color_func)
         if nargs == 1:
             color = color_func(coords[0])
@@ -1506,14 +1495,13 @@ class ParametricSurfaceSeries(
         kwargs["range_u"] = range_u
         kwargs["range_v"] = range_v
         kwargs["_range_names"] = ["range_u", "range_v"]
-        kwargs["_lambdifier"] = Lambdifier(series=self)
-        kwargs["evaluator"] = GridEvaluator(series=self)
+        kwargs.setdefault("evaluator", GridEvaluator(series=self))
         kwargs.setdefault("color_func", lambda x, y, z, u, v: z)
         super().__init__(**kwargs)
         self.expr = (self.expr_x, self.expr_y, self.expr_z)
         # self.ranges = [range_u, range_v]
         # self.evaluator = GridEvaluator(series=self)
-        self.lambdifier.set_expressions()
+        self.evaluator.set_expressions()
         self._set_surface_label(label)
         self._post_init()
 
@@ -1582,7 +1570,7 @@ class ParametricSurfaceSeries(
         return self._apply_transform(*results[2:], *results[:2])
 
     def _eval_color_func_helper(self, *coords):
-        color_func = self.lambdifier.request_color_func(self.modules)
+        color_func = self.evaluator.request_color_func(self.modules)
         nargs = arity(color_func)
         if nargs == 1:
             color = color_func(coords[3])
@@ -1727,8 +1715,7 @@ class ImplicitSeries(
         kwargs["range_y"] = rangex_y
         kwargs["_range_names"] = ["range_x", "range_y"]
         kwargs["label"] = label if label is not None else ""
-        kwargs["_lambdifier"] = Lambdifier(series=self)
-        kwargs["evaluator"] = GridEvaluator(series=self)
+        kwargs.setdefault("evaluator", GridEvaluator(series=self))
         color = kwargs.pop("color", kwargs.get("line_color", None))
         kwargs = self._preprocess_expr(f, kwargs)
         super().__init__(**kwargs)
@@ -1752,7 +1739,7 @@ class ImplicitSeries(
         #     depth = 0
         # self.depth = 4 + depth
         self._post_init()
-        self.lambdifier.set_expressions()
+        self.evaluator.set_expressions()
 
     @param.depends("depth", on_init=True, watch=True)
     def _update_actual_depth(self):
@@ -2169,11 +2156,10 @@ class Implicit3DSeries(SurfaceBaseSeries):
         kwargs["range_y"] = range_y
         kwargs["range_z"] = range_z
         kwargs["_range_names"] = ["range_x", "range_y", "range_z"]
-        kwargs["_lambdifier"] = Lambdifier(series=self)
-        kwargs["evaluator"] = GridEvaluator(series=self)
+        kwargs.setdefault("evaluator", GridEvaluator(series=self))
         super().__init__(**kwargs)
         self.ranges = [self.range_x, self.range_y, self.range_z]
-        self.lambdifier.set_expressions()
+        self.evaluator.set_expressions()
         self.var_x, self.start_x, self.end_x = self.range_x
         self.var_y, self.start_y, self.end_y = self.range_y
         self.var_z, self.start_z, self.end_z = self.range_z
@@ -2275,8 +2261,7 @@ class PlaneSeries(SurfaceBaseSeries):
         kwargs["range_z"] = range_z
         # NOTE: these two attributes are necessary in order to evaluate
         # the user-provided `color_func`
-        kwargs["_lambdifier"] = Lambdifier(series=self)
-        kwargs["evaluator"] = GridEvaluator(series=self)
+        kwargs.setdefault("evaluator", GridEvaluator(series=self))
         self._block_lambda_functions(plane)
         color_func = kwargs.get("color_func", None)
         if (color_func is not None) and (not callable(color_func)):
@@ -2286,7 +2271,7 @@ class PlaneSeries(SurfaceBaseSeries):
                 f"{self.param.color_func.doc}")
         super().__init__(**kwargs)
         self.expr = self.plane
-        # self.lambdifier.set_expressions()
+        # self.evaluator.set_expressions()
         # self.ranges = [self.range_x, self.range_y, self.range_z]
         self._set_surface_label(label)
         if self.params and not self.plane.free_symbols:
@@ -2394,7 +2379,7 @@ class PlaneSeries(SurfaceBaseSeries):
         return self._apply_transform(xx, yy, zz)
 
     def _eval_color_func_helper(self, *coords):
-        color_func = self.lambdifier.request_color_func(self.modules)
+        color_func = self.evaluator.request_color_func(self.modules)
         nargs = arity(color_func)
         if nargs == 3:
             color = color_func(*coords)

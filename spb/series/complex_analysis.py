@@ -32,7 +32,6 @@ from matplotlib.cbook import (
 import warnings
 from spb.series.evaluator import (
     _NMixin,
-    Lambdifier,
     ComplexGridEvaluator
 )
 from spb.series.base import (
@@ -181,12 +180,11 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
         kwargs["range_c"] = range_c
         kwargs["_range_names"] = ["range_c"]
-        kwargs["_lambdifier"] = Lambdifier(series=self)
-        kwargs["evaluator"] = ComplexGridEvaluator(series=self)
+        kwargs.setdefault("evaluator", ComplexGridEvaluator(series=self))
         super().__init__(**kwargs)
         self.ranges = [self.range_c]
         # self.evaluator = ComplexGridEvaluator(series=self)
-        self.lambdifier.set_expressions()
+        self.evaluator.set_expressions()
         self._label_str = str(expr) if label is None else label
         self._label_latex = latex(expr) if label is None else label
         # determines what data to return on the z-axis
@@ -439,8 +437,8 @@ class ComplexDomainColoringSeries(
 
     @param.depends("expr", watch=True)
     def _update_lambdifier(self):
-        if self.lambdifier is not None:
-            self.lambdifier.set_expressions()
+        if self.evaluator is not None:
+            self.evaluator.set_expressions()
 
     # def _init_domain_coloring_kw(self, **kwargs):
     #     self.coloring = kwargs.get("coloring", "a")

@@ -3751,7 +3751,7 @@ def test_color_func_expression():
     )
     d = p[0].get_data()
     assert isinstance(p[0].color_func, Expr)
-    assert callable(p[0].lambdifier.request_color_func(p[0].modules))
+    assert callable(p[0].evaluator.request_color_func(p[0].modules))
     # the following statement should not raise errors
     p[0].evaluator.eval_color_func(*d)
 
@@ -3770,7 +3770,7 @@ def test_color_func_expression():
     # the following statement should not raise errors
     d1 = s1.get_data()
     assert isinstance(s1.color_func, Expr)
-    assert callable(s1.lambdifier.request_color_func(s1.modules))
+    assert callable(s1.evaluator.request_color_func(s1.modules))
     d2 = s2.get_data()
     assert not np.allclose(d1[-1], d2[-1])
 
@@ -3787,7 +3787,7 @@ def test_color_func_expression():
     # the following statement should not raise errors
     d1 = s1.get_data()
     assert isinstance(s1.color_func, Expr)
-    assert callable(s1.lambdifier.request_color_func(s1.modules))
+    assert callable(s1.evaluator.request_color_func(s1.modules))
     d2 = s2.get_data()
     assert not np.allclose(d1[-1], d2[-1])
 
@@ -3815,7 +3815,7 @@ def test_color_func_expression():
     # the following statement should not raise errors
     d = s.get_data()
     assert isinstance(s.color_func, Expr)
-    assert callable(s.lambdifier.request_color_func(s.modules))
+    assert callable(s.evaluator.request_color_func(s.modules))
 
     xx = [1, 2, 3, 4, 5]
     yy = [1, 2, 3, 4, 5]
