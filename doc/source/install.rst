@@ -11,11 +11,10 @@ only basic plotting with Numpy and Matplotlib will be installed::
 
 Or::
 
-    conda install -c conda-forge sympy_plot_backends 
+    conda install -c conda-forge sympy_plot_backends
 
-To install the complete requirements in order to get adaptive algorithm,
-interactive plots, bokeh, plotly, k3d, vtk, control ,execute the
-following command::
+To install the complete requirements in order to get interactive plots,
+bokeh, plotly, k3d, vtk, control ,execute the following command::
 
     pip install sympy_plot_backends[all]
 
@@ -30,8 +29,6 @@ To install the complete requirements with conda::
     # scipy gives more numerical functions, notebook install the
     # Jupyter Notebook (enabling interactivity)
     conda install -c anaconda scipy notebook
-    # to install the adaptive algorithm:
-    conda install -c conda-forge adaptive
     # to install interactive widgets with holoviz's Panel
     conda install -c conda-forge panel
     # to install interactive widgets with ipywidgets

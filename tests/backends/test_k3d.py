@@ -186,10 +186,10 @@ def test_plot3d_wireframe():
     assert isinstance(p4[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p4.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[1]) for s in p4.series[1:21]
+        (s.n[0] == p4[0].n[1]) for s in p4.series[1:21]
     )
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[0]) for s in p4.series[21:]
+        (s.n[0] == p4[0].n[0]) for s in p4.series[21:]
     )
     assert all(obj.width == 0.01 for obj in p4.fig.objects[1:])
 
@@ -654,7 +654,6 @@ def test_update_interactive():
         backend=KB,
         is_point=True,
         show=False,
-        adaptive=False,
         n=5,
         params={u: (1, 0, 2)},
     )
@@ -667,7 +666,6 @@ def test_update_interactive():
         backend=KB,
         is_point=False,
         show=False,
-        adaptive=False,
         n=5,
         params={u: (1, 0, 2)},
     )

@@ -18,8 +18,6 @@ import pytest
 import numpy as np
 
 pn = import_module("panel")
-adaptive_module = import_module("adaptive")
-
 
 # NOTE:
 #
@@ -587,7 +585,6 @@ def test_plot3d_plot_contour_base_scalars(paf_options):
     # verify that these functions are able to deal with base scalars
 
     options = paf_options.copy()
-    options.pop("adaptive")
     options["n"] = 10
 
     C = CoordSys3D("")
@@ -638,7 +635,6 @@ def test_functions_iplot_integration(pi_options):
 def test_plot3d_wireframe(pi_options):
     # verify that wireframe=True produces the expected data series
     x, y, u = symbols("x, y, u")
-    pi_options.pop("adaptive")
     pi_options["n"] = 10
 
     _plot3d = lambda wf: plot3d(
@@ -688,7 +684,6 @@ def test_plot3d_parametric_surface_wireframe(pi_options):
     # verify that wireframe=True produces the expected data series
     x, y, u = symbols("x, y, u")
     pi_options["n"] = 10
-    pi_options.pop("adaptive")
 
     _plot3d_ps = lambda wf: plot3d_parametric_surface(
         u * x * cos(y), x * sin(y), x * cos(4 * y) / 2,
@@ -737,7 +732,6 @@ def test_plot3d_wireframe_and_labels(pi_options):
     # verify that `wireframe=True` produces the expected data series even when
     # `label` is set
     x, y, u = symbols("x, y, u")
-    pi_options.pop("adaptive")
     pi_options["n"] = 10
 
     t = plot3d(
@@ -781,7 +775,7 @@ def test_plot3d_wireframe_and_labels(pi_options):
 def test_number_discretization_points():
     # verify the different ways of setting the numbers of discretization points
     x, y, z = symbols("x, y, z")
-    options = dict(adaptive=False, show=False, backend=MB)
+    options = dict(show=False, backend=MB)
 
     p = plot3d_parametric_line(cos(x), sin(x), x, (x, 0, 2 * pi), **options)
     assert p[0].n[0] == 1000
@@ -946,13 +940,9 @@ def test_indexed_objects():
 # plotting module
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_plot3d_parametric_line_limits(paf_options, adaptive):
-    if adaptive and (adaptive_module is None):
-        return
-
+def test_plot3d_parametric_line_limits(paf_options):
     x = symbols("x")
-    paf_options.update({"adaptive": adaptive, "n": 60})
+    paf_options.update({"n": 60})
 
     v1 = (2 * cos(x), 2 * sin(x), 2 * x, (x, -5, 5))
     v2 = (sin(x), cos(x), x, (x, -5, 5))

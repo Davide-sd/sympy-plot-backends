@@ -736,7 +736,6 @@ def plot_parametric_region(*args, **kwargs):
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
     args = _plot_sympify(args)
-    kwargs["adaptive"] = False
     kwargs["use_cm"] = False
     kwargs["legend"] = False
     plot_expr = _check_arguments(args, 2, 2, **kwargs)

@@ -30,8 +30,6 @@ import pytest
 import numpy as np
 
 ipy = import_module("ipywidgets")
-adaptive_module = import_module("adaptive")
-
 
 # NOTE:
 #
@@ -770,14 +768,10 @@ def test_plot_label_rendering_kw_interactive(p_options, pi_options):
 # plotting module
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_plot_and_save_1(paf_options, adaptive):
-    if adaptive and (adaptive_module is None):
-        return
-
+def test_plot_and_save_1(paf_options):
     x, y, z = symbols("x, y, z")
     pa_options = paf_options.copy()
-    pa_options.update({"adaptive": adaptive, "n": 10})
+    pa_options.update({"n": 10})
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         #
@@ -830,13 +824,9 @@ def test_plot_and_save_1(paf_options, adaptive):
         p.close()
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_issue_7471(paf_options, adaptive):
-    if adaptive and (adaptive_module is None):
-        return
-
+def test_issue_7471(paf_options):
     x = symbols("x")
-    paf_options.update({"adaptive": adaptive, "n": 10})
+    paf_options.update({"n": 10})
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         p1 = plot(x, **paf_options)
@@ -847,13 +837,9 @@ def test_issue_7471(paf_options, adaptive):
         p1.close()
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_issue_10925(paf_options, adaptive):
-    if adaptive and (adaptive_module is None):
-        return
-
+def test_issue_10925(paf_options):
     x = symbols("x")
-    paf_options.update({"adaptive": adaptive, "n": 10})
+    paf_options.update({"n": 10})
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         f = Piecewise(
@@ -868,14 +854,9 @@ def test_issue_10925(paf_options, adaptive):
         p.close()
 
 
-@pytest.mark.filterwarnings("ignore:.*does not support adaptive algorithm.")
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_plot_and_save_2(paf_options, adaptive):
-    if adaptive and (adaptive_module is None):
-        return
-
+def test_plot_and_save_2(paf_options):
     x, y, z = symbols("x, y, z")
-    paf_options.update({"adaptive": adaptive, "n": 10})
+    paf_options.update({"n": 10})
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         # parametric 2d plots.
@@ -913,13 +894,10 @@ def test_plot_and_save_2(paf_options, adaptive):
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        paf_options2 = paf_options.copy()
-        paf_options2.pop("adaptive")
-
         # 3d parametric plots
         p = plot3d_parametric_line(
             sin(x), cos(x), x,
-            legend=True, **paf_options2)
+            legend=True, **paf_options)
         filename = "test_3d_line.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -927,25 +905,25 @@ def test_plot_and_save_2(paf_options, adaptive):
         p = plot3d_parametric_line(
             (sin(x), cos(x), x, (x, -5, 5)),
             (cos(x), sin(x), x, (x, -3, 3)),
-            **paf_options2
+            **paf_options
         )
         filename = "test_3d_line_multiple.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot3d_parametric_line(sin(x), cos(x), x, **paf_options2)
+        p = plot3d_parametric_line(sin(x), cos(x), x, **paf_options)
         filename = "test_3d_line_points.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # 3d surface single plot.
-        p = plot3d(x * y, **paf_options2)
+        p = plot3d(x * y, **paf_options)
         filename = "test_surface.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Multiple 3D plots with same range.
-        p = plot3d(-x * y, x * y, (x, -5, 5), **paf_options2)
+        p = plot3d(-x * y, x * y, (x, -5, 5), **paf_options)
         filename = "test_surface_multiple.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -954,7 +932,7 @@ def test_plot_and_save_2(paf_options, adaptive):
         p = plot3d(
             (x * y, (x, -3, 3), (y, -3, 3)),
             (-x * y, (x, -3, 3), (y, -3, 3)),
-            **paf_options2
+            **paf_options
         )
         filename = "test_surface_multiple_ranges.png"
         p.save(os.path.join(tmpdir, filename))
@@ -962,7 +940,7 @@ def test_plot_and_save_2(paf_options, adaptive):
 
         # Single Parametric 3D plot
         p = plot3d_parametric_surface(
-            sin(x + y), cos(x - y), x - y, **paf_options2)
+            sin(x + y), cos(x - y), x - y, **paf_options)
         filename = "test_parametric_surface.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
@@ -971,7 +949,7 @@ def test_plot_and_save_2(paf_options, adaptive):
         p = plot3d_parametric_surface(
             (x * sin(z), x * cos(z), z, (x, -5, 5), (z, -5, 5)),
             (sin(x + y), cos(x - y), x - y, (x, -5, 5), (y, -5, 5)),
-            **paf_options2
+            **paf_options
         )
         filename = "test_parametric_surface.png"
         p.save(os.path.join(tmpdir, filename))
@@ -979,14 +957,14 @@ def test_plot_and_save_2(paf_options, adaptive):
 
         # Single Contour plot.
         p = plot_contour(
-            sin(x) * sin(y), (x, -5, 5), (y, -5, 5), **paf_options2)
+            sin(x) * sin(y), (x, -5, 5), (y, -5, 5), **paf_options)
         filename = "test_contour_plot.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
         # Multiple Contour plots with same range.
         p = plot_contour(
-            x**2 + y**2, x**3 + y**3, (x, -5, 5), (y, -5, 5), **paf_options2
+            x**2 + y**2, x**3 + y**3, (x, -5, 5), (y, -5, 5), **paf_options
         )
         filename = "test_contour_plot.png"
         p.save(os.path.join(tmpdir, filename))
@@ -996,30 +974,16 @@ def test_plot_and_save_2(paf_options, adaptive):
         p = plot_contour(
             (x**2 + y**2, (x, -5, 5), (y, -5, 5)),
             (x**3 + y**3, (x, -3, 3), (y, -3, 3)),
-            **paf_options2
+            **paf_options
         )
         filename = "test_contour_plot.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
 
-@pytest.mark.filterwarnings("ignore:The evaluation with NumPy/SciPy failed.")
-@pytest.mark.parametrize("adaptive",
-    [
-        True,
-        # NOTE: starting with SymPy 1.13.0, code printers went through a
-        # redesign. Seems like NumpyPrinter is no longer able to deal with
-        # Integral, but Scipy can. So, this test case will fail if scipy is
-        # not installed, hence the xfail.
-        pytest.param(False, marks=pytest.mark.xfail(reason="reasons"))
-    ]
-)
-def test_plot_and_save_4(paf_options, adaptive):
-    if adaptive and (adaptive_module is None):
-        return
-
+def test_plot_and_save_4(paf_options):
     x, y = symbols("x, y")
-    paf_options.update({"adaptive": adaptive, "n": 10})
+    paf_options.update({"n": 10})
 
     #
     # Examples from the 'advanced' notebook
@@ -1037,13 +1001,9 @@ def test_plot_and_save_4(paf_options, adaptive):
         p.close()
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_plot_and_save_5a(paf_options, adaptive):
-    if adaptive and (adaptive_module is None):
-        return
-
+def test_plot_and_save_5a(paf_options):
     x, y = symbols("x, y")
-    paf_options.update({"adaptive": adaptive, "n": 10})
+    paf_options.update({"n": 10})
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         s = Sum(1 / x**y, (x, 1, oo))
@@ -1069,13 +1029,9 @@ def test_plot_and_save_5b(paf_options):
 
 
 @pytest.mark.filterwarnings("ignore:The evaluation with NumPy/SciPy failed.")
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_plot_and_save_6(paf_options, adaptive):
-    if adaptive and (adaptive_module is None):
-        return
-
+def test_plot_and_save_6(paf_options):
     x = symbols("x")
-    paf_options.update({"adaptive": adaptive, "n": 10})
+    paf_options.update({"n": 10})
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         filename = "test.png"
@@ -1103,7 +1059,7 @@ def test_plot_and_save_6(paf_options, adaptive):
 
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_issue_11461(paf_options, pat_options):
+def test_issue_11461(paf_options):
     x = symbols("x")
 
     expr = real_root((log(x / (x - 2))), 3)
@@ -1112,45 +1068,31 @@ def test_issue_11461(paf_options, pat_options):
     d = p[0].get_data()
     assert not np.isnan(d[1]).all()
 
-    if adaptive_module is not None:
-        p = plot(expr, **pat_options)
-        # Random number of segments, probably more than 100, but we want to see
-        # that there are segments generated, as opposed to when the bug was present
-        d = p[0].get_data()
-        assert len(d[0]) >= 30
-        assert not np.isnan(d[1]).all()
-
     # plot_piecewise is not able to deal with ConditionSet
     raises(TypeError, lambda: plot_piecewise(expr, backend=MB, show=False))
 
 
-@pytest.mark.skipif(adaptive_module is None, reason="adaptive is not installed")
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_issue_11865(pat_options):
+def test_issue_11865(paf_options):
     k = symbols("k", integer=True)
     f = Piecewise(
         (-I * exp(I * pi * k) / k + I * exp(-I * pi * k) / k, Ne(k, 0)),
         (2 * pi, True)
     )
-    p = plot(f, **pat_options)
+    p = plot(f, **paf_options)
     # Random number of segments, probably more than 100, but we want to see
     # that there are segments generated, as opposed to when the bug was present
     d = p[0].get_data()
     assert len(d[0]) >= 30
     assert not np.isnan(d[1]).all()
 
-    p = plot_piecewise(f, **pat_options)
+    p = plot_piecewise(f, **paf_options)
     d = p[0].get_data()
     assert not np.isnan(d[1]).all()
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_issue_16572(paf_options, adaptive):
-    if (adaptive_module is None) and adaptive:
-        return
-
+def test_issue_16572(paf_options):
     x = symbols("x")
-    paf_options.update({"adaptive": adaptive})
     p = plot(LambertW(x), **paf_options)
     # Random number of segments, probably more than 100, but we want to see
     # that there are segments generated, as opposed to when the bug was present
@@ -1159,13 +1101,8 @@ def test_issue_16572(paf_options, adaptive):
     assert not np.isnan(d[1]).all()
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_logplot_PR_16796(paf_options, adaptive):
-    if (adaptive_module is None) and adaptive:
-        return
-
+def test_logplot_PR_16796(paf_options):
     x = symbols("x")
-    paf_options.update({"adaptive": adaptive})
     p = plot(x, (x, 0.001, 100), xscale="log", **paf_options)
     # Random number of segments, probably more than 100, but we want to see
     # that there are segments generated, as opposed to when the bug was present
@@ -1176,13 +1113,8 @@ def test_logplot_PR_16796(paf_options, adaptive):
     assert p[0].start == 0.001
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_issue_17405(paf_options, adaptive):
-    if (adaptive_module is None) and adaptive:
-        return
-
+def test_issue_17405(paf_options):
     x = symbols("x")
-    paf_options.update({"adaptive": adaptive})
     f = x**0.3 - 10 * x**3 + x**2
     p = plot(f, (x, -10, 10), **paf_options)
     d = p[0].get_data()
@@ -1190,10 +1122,9 @@ def test_issue_17405(paf_options, adaptive):
     assert len(d[0]) >= 30
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_issue_15265(paf_options, adaptive):
+def test_issue_15265(paf_options):
     x = symbols("x")
-    paf_options.update({"adaptive": adaptive, "n": 10})
+    paf_options.update({"n": 10})
     eqn = sin(x)
 
     p = plot(eqn, xlim=(-S.Pi, S.Pi), ylim=(-1, 1), **paf_options)
@@ -1243,10 +1174,9 @@ def test_issue_15265(paf_options, adaptive):
     )
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_append_issue_7140(paf_options, adaptive):
+def test_append_issue_7140(paf_options):
     x = symbols("x")
-    paf_options.update({"adaptive": adaptive, "n": 10})
+    paf_options.update({"n": 10})
     p1 = plot(x, **paf_options)
     p2 = plot(x**2, **paf_options)
 
@@ -1373,6 +1303,7 @@ def test_plot_implicit_adaptive_true():
 
 
 @pytest.mark.xfail
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_plot_implicit_region_and():
     # NOTE: these tests require Matplotlib v3.4.2. Using a different version
     # will likely make these tests fail.
@@ -1424,8 +1355,7 @@ def test_indexed_objects():
 
     p = plot(
         cos(x[0]), (x[0], -pi, pi),
-        adaptive=False, n=10, show=False, use_latex=False,
-        backend=MB,
+        n=10, show=False, use_latex=False, backend=MB,
     )
     p[0].get_data()
     assert p.xlabel == "x[0]"
@@ -1456,7 +1386,7 @@ def test_appliedundef_objects():
 def test_number_discretization_points():
     # verify the different ways of setting the numbers of discretization points
     x, y, z = symbols("x, y, z")
-    options = dict(adaptive=False, show=False, backend=MB)
+    options = dict(show=False, backend=MB)
 
     p = plot(cos(x), (x, -10, 10), **options)
     assert p[0].n[0] == 1000

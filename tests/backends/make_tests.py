@@ -27,7 +27,6 @@ def options():
 
 def custom_colorloop_1(B):
     opts = options()
-    opts["adaptive"] = False
     return plot(
         sin(x),
         cos(x),
@@ -58,7 +57,6 @@ def custom_colorloop_2(B, show=False):
 
 def make_test_plot(B, rendering_kw, use_latex=False):
     opts = options()
-    opts["adaptive"] = False
     return plot(
         sin(a * x),
         cos(b * x),
@@ -73,7 +71,6 @@ def make_test_plot(B, rendering_kw, use_latex=False):
 
 def make_test_plot_parametric(B, use_cm, rendering_kw={}):
     opts = options()
-    opts["adaptive"] = False
     return plot_parametric(
         cos(a * x), sin(b * x),
         (x, 0, 1.5 * pi),
@@ -89,7 +86,6 @@ def make_test_plot_parametric(B, use_cm, rendering_kw={}):
 def make_test_plot3d_parametric_line(B, rendering_kw, use_latex, use_cm, show=False):
     opts = options()
     opts["show"] = show
-    opts["adaptive"] = False
     return plot3d_parametric_line(
         cos(a * x), sin(b * x), x,
         (x, -pi, pi),
@@ -741,7 +737,7 @@ def make_test_domain_coloring_2d(B, at_infinity):
 
 
 def make_test_show_in_legend_3d(B):
-    options = dict(backend=B, use_cm=False, show=False, adaptive=False, n=5)
+    options = dict(backend=B, use_cm=False, show=False, n=5)
 
     p1 = plot3d_parametric_line(
         cos(x), sin(x), x, (x, 0, 2 * pi), "a", **options
@@ -755,7 +751,6 @@ def make_test_show_in_legend_3d(B):
     )
     p4 = p1 + p2 + p3
 
-    options.pop("adaptive")
     p13 = plot3d(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), "a", **options)
     p14 = plot3d(
         sin(x**2 + y**2),
@@ -772,7 +767,7 @@ def make_test_show_in_legend_3d(B):
 
 
 def make_test_show_in_legend_2d(B):
-    options = dict(backend=B, use_cm=False, show=False, adaptive=False, n=5)
+    options = dict(backend=B, use_cm=False, show=False, n=5)
 
     p5 = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi), "a", **options)
     p6 = plot_parametric(
@@ -794,7 +789,7 @@ def make_test_show_in_legend_2d(B):
 
 
 def make_test_legend_plot_sum_1(B, l):
-    options = dict(show=False, backend=B, adaptive=False, n=5)
+    options = dict(show=False, backend=B, n=5)
     p1 = plot(cos(x), **options, legend=l)
     p2 = plot(sin(x), **options)
     p3 = plot(cos(x) * sin(x), **options)
@@ -802,7 +797,7 @@ def make_test_legend_plot_sum_1(B, l):
 
 
 def make_test_legend_plot_sum_2(B, l):
-    options = dict(show=False, backend=B, adaptive=False, n=5)
+    options = dict(show=False, backend=B, n=5)
     p1 = plot(cos(x), **options)
     p2 = plot(sin(x), **options, legend=l)
     p3 = plot(cos(x) * sin(x), **options)

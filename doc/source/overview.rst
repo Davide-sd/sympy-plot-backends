@@ -83,7 +83,7 @@ function:
 Polar animation with Matplotlib:
 
 .. code-block::
-   
+
    from sympy import symbols, sin, cos, pi, latex
    from spb import plot_polar, prange
    u, x = symbols("u, x")
@@ -92,7 +92,7 @@ Polar animation with Matplotlib:
        expr, prange(x, 0, u),
        params={u: (1, 2*pi)}, animation={"fps": 10, "time": 4},
        polar_axis=True, ylim=(0, 3), title="$%s$" % latex(expr))
-  
+
 .. image:: _static/animations/polar-animation.gif
   :width: 500
   :alt: polar animation
@@ -278,14 +278,8 @@ Differences with sympy.plotting
   argument into the ``plot`` function: it substitutes infinity with a large
   integer number. As such, it is possible to visualize summations.
 
-* The adaptive algorithm is also different: this module relies on
-  `adaptive <https://github.com/python-adaptive/adaptive/>`_, which allows more
-  flexibility.
-
-  * The ``depth`` keyword argument has been removed, while ``adaptive_goal``
-    and ``loss_fn`` have been introduced to control the new module.
-  * It has also been implemented to 3D lines and surfaces.
-  * It allows to generate smoother line plots, at the cost of performance.
+* `sympy.plotting` provides an adaptive algorithm for line plots. This module
+  does not.
 
 * `sympy.plotting` exposed the ``nb_of_points_*`` keyword arguments. These have
   been replaced with ``n`` or ``n1, n2``.

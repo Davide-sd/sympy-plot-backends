@@ -245,7 +245,7 @@ def test_create_widgets():
 def test_params_multi_value_widgets_1():
     a, b, c, x = symbols("a:c x")
     p = plot(
-        cos(c * x), prange(x, a, b), n=10, adaptive=False,
+        cos(c * x), prange(x, a, b), n=10,
         params={
             (a, b): pn.widgets.RangeSlider(
                 value=(-2, 2), start=-5, end=5, step=0.1),
@@ -263,15 +263,15 @@ def test_params_multi_value_widgets_1():
 def test_params_multi_value_widgets_2():
     a, b, c, d, x = symbols("a:d x")
     p = graphics(
-        line(cos(x), range_x=(x, -5, 5), n=10, adaptive=False),
-        line(cos(c * x), range_x=(x, a, b), n=10, adaptive=False,
+        line(cos(x), range_x=(x, -5, 5), n=10),
+        line(cos(c * x), range_x=(x, a, b), n=10,
             params={
                 (a, b): pn.widgets.RangeSlider(
                     value=(-2, 2), start=-5, end=5, step=0.1),
                 c: (1, 0, 5)
             }),
         line_parametric_2d(cos(d*x), sin(d*x), range_p=(x, -4, 4),
-            n=10, adaptive=False,
+            n=10,
             params={d: (2, 0, 6)}),
         imodule="panel", show=False, backend=MB)
     fig = p.fig

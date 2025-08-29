@@ -952,12 +952,12 @@ def test_save():
     options = dict(backend=MB, show=False, n=5)
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
-        p = plot(sin(x), cos(x), adaptive=False, **options)
+        p = plot(sin(x), cos(x), **options)
         filename = "test_mpl_save_1.png"
         p.save(os.path.join(tmpdir, filename))
         p.close()
 
-        p = plot(sin(x), cos(x), adaptive=False, **options)
+        p = plot(sin(x), cos(x), **options)
         filename = "test_mpl_save_2.pdf"
         p.save(os.path.join(tmpdir, filename), dpi=150)
         p.close()
@@ -1242,7 +1242,7 @@ def test_label_after_plot_instantiation():
     # verify that it is possible to set a label after a plot has been created
     x = symbols("x")
 
-    p = plot(sin(x), cos(x), show=False, backend=MB, adaptive=False, n=5)
+    p = plot(sin(x), cos(x), show=False, backend=MB, n=5)
     p[0].label = "a"
     p[1].label = "$b^{2}$"
     f = p.fig
@@ -1255,8 +1255,7 @@ def test_min_install():
     # raise errors. Useful to test minimum installation of the module
 
     x, y, z = symbols("x:z")
-    options = dict(adaptive=False, n=5, backend=MB, show=False)
-    options2 = dict(n=5, backend=MB, show=False)
+    options = dict(n=5, backend=MB, show=False)
 
     p = plot(sin(x), (x, -pi, pi), **options)
     p.draw()
@@ -1285,7 +1284,7 @@ def test_min_install():
 
     p = plot_implicit(
         x**2 + y**2 - 4, (x, -5, 5), (y, -5, 5),
-        **options
+        adaptive=False, **options
     )
     p.draw()
     p.close()
@@ -1293,7 +1292,7 @@ def test_min_install():
     # points
     p = plot3d_parametric_line(
         cos(x), sin(x), x, (x, -pi, pi),
-        is_point=True, **options2
+        is_point=True, **options
     )
     p.draw()
     p.close()
@@ -1323,21 +1322,21 @@ def test_min_install():
 
     p = plot3d(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        **options2
+        **options
     )
     p.draw()
     p.close()
 
     p = plot_contour(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        is_filled=False, **options2
+        is_filled=False, **options
     )
     p.draw()
     p.close()
 
     p = plot_contour(
         cos(x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        is_filled=True, **options2
+        is_filled=True, **options
     )
     p.draw()
     p.close()
@@ -1348,42 +1347,42 @@ def test_min_install():
     fz = v / 2 * sin(u / 2)
     p = plot3d_parametric_surface(
         fx, fy, fz, (u, 0, 2 * pi), (v, -1, 1),
-        use_cm=True, **options2
+        use_cm=True, **options
     )
     p.draw()
     p.close()
 
     p = plot_vector(
         Matrix([-y, x]), (x, -5, 5), (y, -4, 4),
-        scalar=True, **options2
+        scalar=True, **options
     )
     p.draw()
     p.close()
 
     p = plot_vector(
         Matrix([-y, x]), (x, -5, 5), (y, -4, 4),
-        scalar=False, **options2
+        scalar=False, **options
     )
     p.draw()
     p.close()
 
     p = plot_vector(
         Matrix([z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
-        **options2
+        **options
     )
     p.draw()
     p.close()
 
     p = plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
-        threed=False, **options2
+        threed=False, **options
     )
     p.draw()
     p.close()
 
     p = plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
-        threed=True, use_cm=True, **options2
+        threed=True, use_cm=True, **options
     )
     p.draw()
     p.close()
@@ -1469,7 +1468,6 @@ def test_generic_data_series():
         x,
         backend=MB,
         show=False,
-        adaptive=False,
         n=5,
         markers=[{"args": [[0, 1], [0, 1]], "marker": "*", "linestyle": "none"}],
         annotations=[{"text": "test", "xy": (0, 0)}],
@@ -1486,7 +1484,7 @@ def test_axis_center(ac):
     x = symbols("x")
     p = plot(
         sin(x),
-        adaptive=False, n=5,
+        n=5,
         backend=MB, show=False, axis_center=ac
     )
     p.draw()
@@ -1573,7 +1571,7 @@ def test_contour_and_3d():
         legend=True,
         n=4
     )
-    p3 = plot(cos(x), (x, 0, 2 * pi), adaptive=False, n=5, show=False)
+    p3 = plot(cos(x), (x, 0, 2 * pi), n=5, show=False)
 
     p = p1 + p2
     p.draw()
@@ -1761,7 +1759,7 @@ def test_domain_coloring_2d():
 @pytest.mark.filterwarnings("ignore:NumPy is unable to evaluate with complex numbers")
 def test_show_hide_colorbar():
     x, y, z = symbols("x, y, z")
-    options = dict(use_cm=True, n=5, adaptive=False, backend=MB, show=False)
+    options = dict(use_cm=True, n=5, backend=MB, show=False)
 
     p = lambda c: plot_parametric(
         cos(x), sin(x), (x, 0, 2 * pi),
@@ -1942,7 +1940,6 @@ def test_axis_limits():
         expr,
         (x, -5, 5),
         ylim=(-10, 10),
-        adaptive=False,
         detect_poles=True,
         n=1000,
         eps=1e-04,

@@ -37,13 +37,13 @@ from matplotlib.cbook import (
 import warnings
 from spb.series.evaluator import (
     IntervalMathPrinter,
-    _AdaptiveEvaluationParameters,
+    # _AdaptiveEvaluationParameters,
     _GridEvaluationParameters,
     _NMixin,
     Lambdifier,
     GridEvaluator,
     ComplexGridEvaluator,
-    _adaptive_eval,
+    # _adaptive_eval,
     _warning_eval_error,
     _get_wrapper_func
 )
@@ -678,7 +678,6 @@ def _process_exclude_kw(kwargs):
 
 class LineOver1DRangeSeries(
     _GridEvaluationParameters,
-    _AdaptiveEvaluationParameters,
     _LineWithRangeMixin,
     _DetectPolesMixin,
     Line2DBaseSeries
@@ -774,24 +773,24 @@ class LineOver1DRangeSeries(
             str((f(self.start), f(self.end))),
         ) + post
 
-    def _adaptive_sampling(self):
-        np = import_module('numpy')
+    # def _adaptive_sampling(self):
+    #     np = import_module('numpy')
 
-        def func(f, imag, x):
-            try:
-                w = complex(f(x + 1j * imag))
-                return w.real, w.imag
-            except (ZeroDivisionError, OverflowError):
-                return np.nan, np.nan
+    #     def func(f, imag, x):
+    #         try:
+    #             w = complex(f(x + 1j * imag))
+    #             return w.real, w.imag
+    #         except (ZeroDivisionError, OverflowError):
+    #             return np.nan, np.nan
 
-        data = _adaptive_eval(
-            func, [self.var], self.expr,
-            [complex(self.start).real, complex(self.end).real],
-            complex(self.start).imag,
-            modules=self.modules,
-            goal=self._goal,
-            loss_fn=self.loss_fn)
-        return data[:, 0], data[:, 1], data[:, 2]
+    #     data = _adaptive_eval(
+    #         func, [self.var], self.expr,
+    #         [complex(self.start).real, complex(self.end).real],
+    #         complex(self.start).imag,
+    #         modules=self.modules,
+    #         goal=self._goal,
+    #         loss_fn=self.loss_fn)
+    #     return data[:, 0], data[:, 1], data[:, 2]
 
     def _uniform_sampling(self):
         np = import_module('numpy')
@@ -804,8 +803,8 @@ class LineOver1DRangeSeries(
         return complex values. The imaginary part can be used to mask out the
         unwanted values.
         """
-        if self.adaptive:
-            return self._adaptive_sampling()
+        # if self.adaptive:
+        #     return self._adaptive_sampling()
         return self._uniform_sampling()
 
     def _get_data_helper(self):
@@ -907,7 +906,6 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
 
 class ParametricLineBaseSeries(
     _GridEvaluationParameters,
-    _AdaptiveEvaluationParameters,
     _LineWithRangeMixin,
     _DetectPolesMixin,
     Line2DBaseSeries
@@ -970,38 +968,38 @@ class ParametricLineBaseSeries(
             if self._label_str == str(self.expr):
                 self._label_str = ""
 
-    def _adaptive_sampling(self):
-        np = import_module('numpy')
+    # def _adaptive_sampling(self):
+    #     np = import_module('numpy')
 
-        def func(f, is_2Dline, x):
-            try:
-                w = [complex(t) for t in f(complex(x))]
-                return [t.real if np.isclose(t.imag, 0) else np.nan for t in w]
-            except (ZeroDivisionError, OverflowError):
-                return [np.nan for t in range(2 if is_2Dline else 3)]
+    #     def func(f, is_2Dline, x):
+    #         try:
+    #             w = [complex(t) for t in f(complex(x))]
+    #             return [t.real if np.isclose(t.imag, 0) else np.nan for t in w]
+    #         except (ZeroDivisionError, OverflowError):
+    #             return [np.nan for t in range(2 if is_2Dline else 3)]
 
-        if all(not callable(e) for e in self.expr):
-            expr = Tuple(self.expr_x, self.expr_y)
-            if not self.is_2Dline:
-                expr = Tuple(self.expr_x, self.expr_y, self.expr_z)
-        else:
-            # expr is user-provided lambda functions
-            expr = lambda x: (self.expr_x(x), self.expr_y(x))
-            if not self.is_2Dline:
-                expr = lambda x: (
-                    self.expr_x(x), self.expr_y(x), self.expr_z(x))
+    #     if all(not callable(e) for e in self.expr):
+    #         expr = Tuple(self.expr_x, self.expr_y)
+    #         if not self.is_2Dline:
+    #             expr = Tuple(self.expr_x, self.expr_y, self.expr_z)
+    #     else:
+    #         # expr is user-provided lambda functions
+    #         expr = lambda x: (self.expr_x(x), self.expr_y(x))
+    #         if not self.is_2Dline:
+    #             expr = lambda x: (
+    #                 self.expr_x(x), self.expr_y(x), self.expr_z(x))
 
-        data = _adaptive_eval(
-            func, [self.var], expr,
-            [float(self.start), float(self.end)],
-            self.is_2Dline,
-            modules=self.modules,
-            goal=self._goal,
-            loss_fn=self.loss_fn)
+    #     data = _adaptive_eval(
+    #         func, [self.var], expr,
+    #         [float(self.start), float(self.end)],
+    #         self.is_2Dline,
+    #         modules=self.modules,
+    #         goal=self._goal,
+    #         loss_fn=self.loss_fn)
 
-        if self.is_2Dline:
-            return data[:, 1], data[:, 2], data[:, 0]
-        return data[:, 1], data[:, 2], data[:, 3], data[:, 0]
+    #     if self.is_2Dline:
+    #         return data[:, 1], data[:, 2], data[:, 0]
+    #     return data[:, 1], data[:, 2], data[:, 3], data[:, 0]
 
     def get_label(self, use_latex=False, wrapper="$%s$"):
         # parametric lines returns the representation of the parameter to be
@@ -1043,10 +1041,11 @@ class ParametricLineBaseSeries(
         adaptive algorithm or it will uniformly sample the expression over the
         provided range.
         """
-        if self.adaptive:
-            coords = self._adaptive_sampling()
-        else:
-            coords = self._uniform_sampling()
+        # if self.adaptive:
+        #     coords = self._adaptive_sampling()
+        # else:
+        #     coords = self._uniform_sampling()
+        coords = self._uniform_sampling()
 
         if self.is_2Dline and self.is_polar:
             # when plot_polar is executed with polar_axis=True

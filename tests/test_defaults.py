@@ -19,7 +19,6 @@ def test_cfg_keys():
         "complex",
         "interactive",
         "plot3d",
-        "adaptive",
         "plot_range",
         "bode",
     ]
@@ -43,14 +42,6 @@ def test_plot3d_keys():
         ("use_cm" in cfg["plot3d"].keys())
         and (cfg["plot3d"]["use_cm"] is False)
     )
-
-
-def test_adaptive_keys():
-    must_have_keys = ["goal", "used_by_default"]
-    for k in must_have_keys:
-        assert k in cfg["adaptive"].keys()
-    assert cfg["adaptive"]["used_by_default"] is False
-    assert cfg["adaptive"]["goal"] == 0.01
 
 
 def test_cfg_matplotlib_keys():

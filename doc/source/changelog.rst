@@ -12,7 +12,12 @@ v4.0.0
 
   * clearer code base.
 
-* removal of the adaptive algorithm from the evaluation of surfaces.
+* Improved logic dealing with lambdification in order minimize the time
+  spent in this stage.
+
+* Removed the adaptive algorithm from
+  ``line, line_parametric_2d, line_parametric_3d, surface`` (and their
+  respective counterpars, ``plot, plot_parametric, plot3d_parametric, plot3d``).
 
 * remove ``tp`` keyword argument from ``step_response``, ``ramp_response``,
   ``impulse_response``.

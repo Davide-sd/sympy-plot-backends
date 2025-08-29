@@ -123,16 +123,6 @@ def _hardcoded_defaults():
             "freq_unit": "rad/sec"
         },
 
-        # settings that will be passed to the adaptive library:
-        # https://github.com/python-adaptive/adaptive/
-        adaptive={
-            # set True for adaptive algorithm, or False for  uniform meshing
-            # algorithm for line plots
-            "used_by_default": False,
-            # higher number produces coarser results
-            "goal": 0.01
-        },
-
         plot_range={
             # set the default plot range
             "min": -10,

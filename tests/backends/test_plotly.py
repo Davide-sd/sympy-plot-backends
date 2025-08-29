@@ -255,9 +255,9 @@ def test_plot3d_wireframe():
     assert isinstance(p1[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[1]) for s in p1.series[1:11])
+        (s.n[0] == p1[0].n[1]) for s in p1.series[1:11])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[0]) for s in p1.series[11:])
+        (s.n[0] == p1[0].n[0]) for s in p1.series[11:])
     assert all(
         p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
     assert np.allclose(
@@ -275,9 +275,9 @@ def test_plot3d_wireframe():
     assert isinstance(p4[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p4.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[1]) for s in p4.series[1:21])
+        (s.n[0] == p4[0].n[1]) for s in p4.series[1:21])
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[0]) for s in p4.series[21:])
+        (s.n[0] == p4[0].n[0]) for s in p4.series[21:])
     assert all(t["line"]["color"] == "red" for t in p4.fig.data[1:])
     assert np.allclose(
         [t.x[0] for t in p4.fig.data[1:21]], np.linspace(0, 3.25, 20))
@@ -298,9 +298,9 @@ def test_plot3d_wireframe_lambda_function():
     assert isinstance(p1[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[1]) for s in p1.series[1:11])
+        (s.n[0] == p1[0].n[1]) for s in p1.series[1:11])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[0]) for s in p1.series[11:])
+        (s.n[0] == p1[0].n[0]) for s in p1.series[11:])
     assert all(
         p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
     assert np.allclose(
@@ -313,10 +313,10 @@ def test_plot3d_wireframe_lambda_function():
     assert isinstance(p4[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p4.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[1]) for s in p4.series[1:21]
+        (s.n[0] == p4[0].n[1]) for s in p4.series[1:21]
     )
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[0]) for s in p4.series[21:]
+        (s.n[0] == p4[0].n[0]) for s in p4.series[21:]
     )
     assert all(t["line"]["color"] == "red" for t in p4.fig.data[1:])
     assert np.allclose(
@@ -337,9 +337,9 @@ def test_plot3d_parametric_surface_wireframe():
     assert isinstance(p[0], ParametricSurfaceSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p[0].n[1]) for s in p.series[1:6])
+        (s.n[0] == p[0].n[1]) for s in p.series[1:6])
     assert all(
-        (not s.adaptive) and (s.n[0] == p[0].n[0]) for s in p.series[6:])
+        (s.n[0] == p[0].n[0]) for s in p.series[6:])
     assert all(t["line"]["color"] == "red" for t in p.fig.data[1:])
     assert all(
         [
@@ -367,9 +367,9 @@ def test_plot3d_parametric_surface_wireframe_lambda_function():
     assert isinstance(p1[0], ParametricSurfaceSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[1]) for s in p1.series[1:6])
+        (s.n[0] == p1[0].n[1]) for s in p1.series[1:6])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[0]) for s in p1.series[6:])
+        (s.n[0] == p1[0].n[0]) for s in p1.series[6:])
     assert all(
         p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
     assert all(
@@ -793,7 +793,7 @@ def test_save():
     # NOTE: xfail because locally I need to have kaleido installed.
 
     x, y, z = symbols("x:z")
-    options = dict(backend=PB, show=False, adaptive=False, n=5)
+    options = dict(backend=PB, show=False, n=5)
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         # Plotly requires additional libraries to save static pictures.
@@ -1069,7 +1069,6 @@ def test_generic_data_series():
         x,
         backend=PB,
         show=False,
-        adaptive=False,
         n=5,
         markers=[{"x": [0, 1], "y": [0, 1], "mode": "markers"}],
         annotations=[{"x": [0, 1], "y": [0, 1], "text": ["a", "b"]}],
@@ -1085,12 +1084,11 @@ def test_scatter_gl():
 
     n = PB.scattergl_threshold
     x = symbols("x")
-    p1 = plot(cos(x), adaptive=False, n=n - 100, backend=PB, show=False)
-    p2 = plot(cos(x), adaptive=False, n=n + 100, backend=PB, show=False)
+    p1 = plot(cos(x), n=n - 100, backend=PB, show=False)
+    p2 = plot(cos(x), n=n + 100, backend=PB, show=False)
     p3 = plot_polar(
         1 + sin(10 * x) / 10,
         (x, 0, 2 * pi),
-        adaptive=False,
         n=n - 100,
         backend=PB,
         show=False,
@@ -1099,7 +1097,6 @@ def test_scatter_gl():
     p4 = plot_polar(
         1 + sin(10 * x) / 10,
         (x, 0, 2 * pi),
-        adaptive=False,
         n=n + 100,
         backend=PB,
         show=False,
@@ -1111,7 +1108,6 @@ def test_scatter_gl():
         (x, 0, 2 * pi),
         backend=PB,
         show=False,
-        adaptive=False,
         n=n - 100,
     )
     p6 = plot_parametric(
@@ -1120,7 +1116,6 @@ def test_scatter_gl():
         (x, 0, 2 * pi),
         backend=PB,
         show=False,
-        adaptive=False,
         n=n + 100,
     )
     f1, f2, f3, f4, f5, f6 = [t.fig for t in [p1, p2, p3, p4, p5, p6]]
@@ -1235,7 +1230,7 @@ def test_domain_coloring_2d():
 @pytest.mark.filterwarnings("ignore:NumPy is unable to evaluate with complex numbers")
 def test_show_hide_colorbar():
     x, y, z = symbols("x, y, z")
-    options = dict(use_cm=True, n=5, adaptive=False, backend=PB, show=False)
+    options = dict(use_cm=True, n=5, backend=PB, show=False)
 
     p = lambda c: plot_parametric(
         cos(x), sin(x), (x, 0, 2 * pi), colorbar=c, **options
@@ -1395,13 +1390,13 @@ def test_show_legend():
     x = symbols("x")
     p = plot(
         sin(x), (x, -pi, pi),
-        backend=PB, adaptive=False, n=5, show=False
+        backend=PB, n=5, show=False
     )
     assert not p.fig.layout.showlegend
 
     p = plot(
         sin(x), cos(x), (x, -pi, pi),
-        backend=PB, adaptive=False, n=5, show=False
+        backend=PB, n=5, show=False
     )
     assert p.fig.layout.showlegend
 

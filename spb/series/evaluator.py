@@ -43,144 +43,144 @@ class IntervalMathPrinter(PythonCodePrinter):
         )
 
 
-def _adaptive_eval(
-    wrapper_func, free_symbols, expr, bounds, *args,
-    modules=None, goal=None, loss_fn=None
-):
-    """Numerical evaluation of a symbolic expression with an adaptive
-    algorithm [#fn1]_.
+# def _adaptive_eval(
+#     wrapper_func, free_symbols, expr, bounds, *args,
+#     modules=None, goal=None, loss_fn=None
+# ):
+#     """Numerical evaluation of a symbolic expression with an adaptive
+#     algorithm [#fn1]_.
 
-    Note: this is an experimental function, as such it is prone to changes.
-    Please, do not use it in your code.
+#     Note: this is an experimental function, as such it is prone to changes.
+#     Please, do not use it in your code.
 
-    Parameters
-    ==========
+#     Parameters
+#     ==========
 
-    wrapper_func : callable
-        The function to be evaluated, which will return any number of
-        elements, depending on the computation to be done. The signature
-        must be as follow: ``wrapper_func(f, *args)``
-        where ``f`` is the lambda function representing the symbolic
-        expression; ``*args`` is a list of arguments necessary to perform
-        the evaluation.
+#     wrapper_func : callable
+#         The function to be evaluated, which will return any number of
+#         elements, depending on the computation to be done. The signature
+#         must be as follow: ``wrapper_func(f, *args)``
+#         where ``f`` is the lambda function representing the symbolic
+#         expression; ``*args`` is a list of arguments necessary to perform
+#         the evaluation.
 
-    free_symbols : tuple or list
-        The free symbols associated to ``expr``.
+#     free_symbols : tuple or list
+#         The free symbols associated to ``expr``.
 
-    expr : Expr
-        The symbolic expression to be evaluated.
+#     expr : Expr
+#         The symbolic expression to be evaluated.
 
-    bounds : tuple (min, max) or list of tuples
-        The bounds for the numerical evaluation. Let `f(x)` be the function
-        to be evaluated, then `x` will assume values between [min, max].
-        For multivariate functions there is a correspondance between the
-        symbols in ``free_symbols`` and the tuples in ``bounds``.
+#     bounds : tuple (min, max) or list of tuples
+#         The bounds for the numerical evaluation. Let `f(x)` be the function
+#         to be evaluated, then `x` will assume values between [min, max].
+#         For multivariate functions there is a correspondance between the
+#         symbols in ``free_symbols`` and the tuples in ``bounds``.
 
-    args :
-        The necessary arguments to perform the evaluation.
+#     args :
+#         The necessary arguments to perform the evaluation.
 
-    modules : str or None
-        The evaluation module. Refer to ``lambdify`` for a list of possible
-        values. If ``None``, the evaluation will be done with Numpy/Scipy.
+#     modules : str or None
+#         The evaluation module. Refer to ``lambdify`` for a list of possible
+#         values. If ``None``, the evaluation will be done with Numpy/Scipy.
 
-    goal : callable
-        A function requiring one input element, the learner. It must return
-        a float number. In practice, it controls the "smoothness" of the
-        evaluation.
+#     goal : callable
+#         A function requiring one input element, the learner. It must return
+#         a float number. In practice, it controls the "smoothness" of the
+#         evaluation.
 
-    loss_fn : callable or None
-        The loss function to be used by the learner. Possible values:
+#     loss_fn : callable or None
+#         The loss function to be used by the learner. Possible values:
 
-        * ``None`` (default): it will use the ``default_loss`` from the
-          adaptive module.
-        * callable : look at adaptive.learner.learner1D or
-          adaptive.learner.learnerND to find more loss functions.
+#         * ``None`` (default): it will use the ``default_loss`` from the
+#           adaptive module.
+#         * callable : look at adaptive.learner.learner1D or
+#           adaptive.learner.learnerND to find more loss functions.
 
-    Returns
-    =======
+#     Returns
+#     =======
 
-    data : np.ndarray
-        A Numpy array containing the evaluation results. The shape is [NxM],
-        where N is the random number of evaluation points and M is the sum
-        between the number of free symbols and the number of elements
-        returned by ``wrapper_func``.
-        No matter the evaluation ``modules``, the array type is going to be
-        complex.
+#     data : np.ndarray
+#         A Numpy array containing the evaluation results. The shape is [NxM],
+#         where N is the random number of evaluation points and M is the sum
+#         between the number of free symbols and the number of elements
+#         returned by ``wrapper_func``.
+#         No matter the evaluation ``modules``, the array type is going to be
+#         complex.
 
-    References
-    ==========
+#     References
+#     ==========
 
-    .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
-    """
-    np = import_module('numpy')
-    adaptive = import_module(
-        'adaptive',
-        import_kwargs={'fromlist': ['runner', 'learner']},
-        min_module_version='0.12.0',
-        warn_not_installed=True)
-    simple = adaptive.runner.simple
-    Learner1D = adaptive.learner.learner1D.Learner1D
-    LearnerND = adaptive.learner.learnerND.LearnerND
-    default_loss_1d = adaptive.learner.learner1D.default_loss
-    default_loss_nd = adaptive.learner.learnerND.default_loss
-    from functools import partial
+#     .. [#fn1] `adaptive module <https://github.com/python-adaptive/adaptive`_.
+#     """
+#     np = import_module('numpy')
+#     adaptive = import_module(
+#         'adaptive',
+#         import_kwargs={'fromlist': ['runner', 'learner']},
+#         min_module_version='0.12.0',
+#         warn_not_installed=True)
+#     simple = adaptive.runner.simple
+#     Learner1D = adaptive.learner.learner1D.Learner1D
+#     LearnerND = adaptive.learner.learnerND.LearnerND
+#     default_loss_1d = adaptive.learner.learner1D.default_loss
+#     default_loss_nd = adaptive.learner.learnerND.default_loss
+#     from functools import partial
 
-    if not callable(expr):
-        # expr is a single symbolic expressions or a tuple of symb expressions
-        one_d = hasattr(free_symbols, "__iter__") and (len(free_symbols) == 1)
-    else:
-        # expr is a user-provided lambda function
-        one_d = len(signature(expr).parameters) == 1
+#     if not callable(expr):
+#         # expr is a single symbolic expressions or a tuple of symb expressions
+#         one_d = hasattr(free_symbols, "__iter__") and (len(free_symbols) == 1)
+#     else:
+#         # expr is a user-provided lambda function
+#         one_d = len(signature(expr).parameters) == 1
 
-    lf = default_loss_1d if one_d else default_loss_nd
-    if loss_fn is not None:
-        lf = loss_fn
-    k = "loss_per_interval" if one_d else "loss_per_simplex"
-    d = {k: lf}
-    Learner = Learner1D if one_d else LearnerND
+#     lf = default_loss_1d if one_d else default_loss_nd
+#     if loss_fn is not None:
+#         lf = loss_fn
+#     k = "loss_per_interval" if one_d else "loss_per_simplex"
+#     d = {k: lf}
+#     Learner = Learner1D if one_d else LearnerND
 
-    if not callable(expr):
-        # expr is a single symbolic expressions or a tuple of symb expressions
-        try:
-            # TODO: set cse=True once this issue is solved:
-            # https://github.com/sympy/sympy/issues/24246
-            f = lambdify(free_symbols, expr, modules=modules, cse=False)
-            learner = Learner(
-                partial(wrapper_func, f, *args), bounds=bounds, **d)
-            simple(learner, goal)
-        except Exception as err:
-            warnings.warn(
-                "The evaluation with %s failed.\n" % (
-                    "NumPy/SciPy" if not modules else modules) +
-                "{}: {}\n".format(type(err).__name__, err) +
-                "Trying to evaluate the expression with Sympy, but it might "
-                "be a slow operation."
-            )
-            f = lambdify(free_symbols, expr, modules="sympy", cse=False)
-            learner = Learner(
-                partial(wrapper_func, f, *args), bounds=bounds, **d)
-            simple(learner, goal)
-    else:
-        # expr is a user-provided lambda function
-        learner = Learner(
-            partial(wrapper_func, expr, *args), bounds=bounds, **d)
-        simple(learner, goal)
+#     if not callable(expr):
+#         # expr is a single symbolic expressions or a tuple of symb expressions
+#         try:
+#             # TODO: set cse=True once this issue is solved:
+#             # https://github.com/sympy/sympy/issues/24246
+#             f = lambdify(free_symbols, expr, modules=modules, cse=False)
+#             learner = Learner(
+#                 partial(wrapper_func, f, *args), bounds=bounds, **d)
+#             simple(learner, goal)
+#         except Exception as err:
+#             warnings.warn(
+#                 "The evaluation with %s failed.\n" % (
+#                     "NumPy/SciPy" if not modules else modules) +
+#                 "{}: {}\n".format(type(err).__name__, err) +
+#                 "Trying to evaluate the expression with Sympy, but it might "
+#                 "be a slow operation."
+#             )
+#             f = lambdify(free_symbols, expr, modules="sympy", cse=False)
+#             learner = Learner(
+#                 partial(wrapper_func, f, *args), bounds=bounds, **d)
+#             simple(learner, goal)
+#     else:
+#         # expr is a user-provided lambda function
+#         learner = Learner(
+#             partial(wrapper_func, expr, *args), bounds=bounds, **d)
+#         simple(learner, goal)
 
-    if one_d:
-        return learner.to_numpy()
+#     if one_d:
+#         return learner.to_numpy()
 
-    # For multivariate functions, create a meshgrid where to interpolate the
-    # results. Taken from adaptive.learner.learnerND.plot
-    x, y = learner._bbox
-    scale_factor = np.prod(np.diag(learner._transform))
-    a_sq = np.sqrt(np.min(learner.tri.volumes()) * scale_factor)
-    n = max(10, int(0.658 / a_sq) * 2)
-    xs = ys = np.linspace(0, 1, n)
-    xs = xs * (x[1] - x[0]) + x[0]
-    ys = ys * (y[1] - y[0]) + y[0]
-    z = learner._ip()(xs[:, None], ys[None, :]).squeeze()
-    xs, ys = np.meshgrid(xs, ys)
-    return xs, ys, np.rot90(z)
+#     # For multivariate functions, create a meshgrid where to interpolate the
+#     # results. Taken from adaptive.learner.learnerND.plot
+#     x, y = learner._bbox
+#     scale_factor = np.prod(np.diag(learner._transform))
+#     a_sq = np.sqrt(np.min(learner.tri.volumes()) * scale_factor)
+#     n = max(10, int(0.658 / a_sq) * 2)
+#     xs = ys = np.linspace(0, 1, n)
+#     xs = xs * (x[1] - x[0]) + x[0]
+#     ys = ys * (y[1] - y[0]) + y[0]
+#     z = learner._ip()(xs[:, None], ys[None, :]).squeeze()
+#     xs, ys = np.meshgrid(xs, ys)
+#     return xs, ys, np.rot90(z)
 
 
 # def _uniform_eval(
@@ -365,67 +365,67 @@ def _uniform_eval2(evaluator):
     #     return _eval_with_sympy()
 
 
-class _AdaptiveEvaluationParameters(param.Parameterized):
-    """A data series requiring adaptive evaluation using the python-adaptive
-    module should inherith from this mixin, which exposes the appropriate
-    parameters.
+# class _AdaptiveEvaluationParameters(param.Parameterized):
+#     """A data series requiring adaptive evaluation using the python-adaptive
+#     module should inherith from this mixin, which exposes the appropriate
+#     parameters.
 
-    The actual numerical evaluation is performed by the `_adaptive_eval`
-    function.
-    """
-    adaptive = param.Boolean(False, doc="""
-        If True uses the adaptive algorithm implemented in [python-adaptive]_
-        to evaluate the provided expression and create smooth plots.
-        The evaluation points will be placed in regions of the curve where its
-        gradient is high. Use ``adaptive_goal`` and ``loss_fn`` to further
-        customize the output.
-        If False, the expression will be evaluated over a uniformly distributed
-        grid of points. Use ``n`` to change the number of evaluation points
-        and ``x_scale`` to change the discretization strategy.""")
-    adaptive_goal = param.Parameter(
-        doc="""
-        Controls the "smoothness" of the adaptive algorithm evaluation.
-        Possible values:
+#     The actual numerical evaluation is performed by the `_adaptive_eval`
+#     function.
+#     """
+#     adaptive = param.Boolean(False, doc="""
+#         If True uses the adaptive algorithm implemented in [python-adaptive]_
+#         to evaluate the provided expression and create smooth plots.
+#         The evaluation points will be placed in regions of the curve where its
+#         gradient is high. Use ``adaptive_goal`` and ``loss_fn`` to further
+#         customize the output.
+#         If False, the expression will be evaluated over a uniformly distributed
+#         grid of points. Use ``n`` to change the number of evaluation points
+#         and ``x_scale`` to change the discretization strategy.""")
+#     adaptive_goal = param.Parameter(
+#         doc="""
+#         Controls the "smoothness" of the adaptive algorithm evaluation.
+#         Possible values:
 
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          `lambda l: l.loss() < number`
-        * callable: a function requiring one input element, the learner. It
-          must return a float number.
-        """)
-    loss_fn = param.Callable(doc="""
-        The loss function to be used by the learner of the adaptive algorithm.
-        Possible values:
+#         * ``None`` (default):  it will use the following goal:
+#           ``lambda l: l.loss() < 0.01``
+#         * number (int or float). The lower the number, the more
+#           evaluation points. This number will be used in the following goal:
+#           `lambda l: l.loss() < number`
+#         * callable: a function requiring one input element, the learner. It
+#           must return a float number.
+#         """)
+#     loss_fn = param.Callable(doc="""
+#         The loss function to be used by the learner of the adaptive algorithm.
+#         Possible values:
 
-        * ``None`` (default): it will use the ``default_loss`` from the
-          adaptive module.
-        * callable : look at adaptive.learner.learner1D or
-          adaptive.learner.learnerND to find more loss functions.
-        """)
-    _goal = param.Callable()
+#         * ``None`` (default): it will use the ``default_loss`` from the
+#           adaptive module.
+#         * callable : look at adaptive.learner.learner1D or
+#           adaptive.learner.learnerND to find more loss functions.
+#         """)
+#     _goal = param.Callable()
 
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("adaptive", cfg["adaptive"]["used_by_default"])
-        kwargs.setdefault("adaptive_goal", cfg["adaptive"]["goal"])
-        super().__init__(*args, **kwargs)
+#     def __init__(self, *args, **kwargs):
+#         kwargs.setdefault("adaptive", cfg["adaptive"]["used_by_default"])
+#         kwargs.setdefault("adaptive_goal", cfg["adaptive"]["goal"])
+#         super().__init__(*args, **kwargs)
 
-    @param.depends("adaptive_goal", watch=True, on_init=True)
-    def _update_goal(self):
-        goal = lambda l: l.loss() < 0.01
-        if self.adaptive_goal is not None:
-            if isinstance(self.adaptive_goal, (int, float)):
-                goal = lambda l: l.loss() < self.adaptive_goal
-            elif callable(self.adaptive_goal):
-                goal = self.adaptive_goal
-            else:
-                warnings.warn(
-                    f"``adaptive_goal`` received a value of type "
-                    f"{type(self.adaptive_goal)}, which is not recognized. "
-                    "Proceeding with the default goal."
-                )
-        self._goal = goal
+#     @param.depends("adaptive_goal", watch=True, on_init=True)
+#     def _update_goal(self):
+#         goal = lambda l: l.loss() < 0.01
+#         if self.adaptive_goal is not None:
+#             if isinstance(self.adaptive_goal, (int, float)):
+#                 goal = lambda l: l.loss() < self.adaptive_goal
+#             elif callable(self.adaptive_goal):
+#                 goal = self.adaptive_goal
+#             else:
+#                 warnings.warn(
+#                     f"``adaptive_goal`` received a value of type "
+#                     f"{type(self.adaptive_goal)}, which is not recognized. "
+#                     "Proceeding with the default goal."
+#                 )
+#         self._goal = goal
 
 
 class _NMixin:

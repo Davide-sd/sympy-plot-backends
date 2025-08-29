@@ -22,17 +22,7 @@ def p_options():
 def paf_options(p_options):
     # paf = plot adaptive false
     options = p_options.copy()
-    options["adaptive"] = False
     options["n"] = 100
-    return options
-
-
-@pytest.fixture
-def pat_options(p_options):
-    # pat = plot adaptive true
-    options = p_options.copy()
-    options["adaptive"] = True
-    options["adaptive_goal"] = 0.05
     return options
 
 

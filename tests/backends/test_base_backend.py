@@ -97,15 +97,15 @@ def test_plot_sum():
     # inside rendering_kw
     p1 = plot(
         sin(x), backend=PB, rendering_kw=dict(line_color='black'),
-        xlabel="x1", ylabel="y1", adaptive=False, **options
+        xlabel="x1", ylabel="y1", **options
     )
     p2 = plot(
         cos(x), backend=PB, rendering_kw=dict(line_dash='dash'),
-        xlabel="x2", ylabel="y2", adaptive=False, **options
+        xlabel="x2", ylabel="y2", **options
     )
     p3 = plot(
         sin(x) * cos(x), backend=PB,
-        rendering_kw=dict(line_dash='dot'), adaptive=False, **options
+        rendering_kw=dict(line_dash='dot'), **options
     )
     p4 = p1 + p2 + p3
     assert isinstance(p4, PB)
@@ -141,7 +141,7 @@ def test_plot_sum():
         [-sin(y), cos(x)], (x, -3, 3), (y, -3, 3),
         backend=MB, scalar=True, **options
     )
-    p2 = plot(sin(x), (x, -3, 3), backend=MB, adaptive=False, **options)
+    p2 = plot(sin(x), (x, -3, 3), backend=MB, **options)
     p3 = p1 + p2
     assert isinstance(p3, MB)
     assert len(p3.series) == 3
@@ -162,8 +162,8 @@ def test_plot_sum():
 
     # summing plots with different backends: the first backend will be used in
     # the result
-    p1 = plot(sin(x), backend=MB, adaptive=False, **options)
-    p2 = plot(cos(x), backend=PB, adaptive=False, **options)
+    p1 = plot(sin(x), backend=MB, **options)
+    p2 = plot(cos(x), backend=PB, **options)
     p3 = p1 + p2
     assert isinstance(p3, MB)
 
@@ -179,8 +179,8 @@ def test_plot_sum():
     raises(AttributeError, lambda: (p1 + p2).draw())
 
     # verify that summing up bokeh plots doesn't raise errors
-    p1 = plot(sin(x), (x, -pi, pi), backend=BB, adaptive=False, **options)
-    p2 = plot(cos(x), (x, -pi, pi), backend=BB, adaptive=False, **options)
+    p1 = plot(sin(x), (x, -pi, pi), backend=BB, **options)
+    p2 = plot(cos(x), (x, -pi, pi), backend=BB, **options)
     p3 = p1 + p2
 
     # verify that summing up K3D plots doesn't raise errors

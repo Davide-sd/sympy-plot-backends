@@ -598,7 +598,7 @@ def test_save(mocker):
     #    Hence, if in our system those libraries are installed, tests will
     #    fail!
     x, y, z = symbols("x:z")
-    options = dict(backend=BB, show=False, adaptive=False, n=5)
+    options = dict(backend=BB, show=False, n=5)
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         # Bokeh requires additional libraries to save static pictures.
@@ -743,7 +743,7 @@ def test_update_interactive():
 
     p = plot(
         sin(u * x), (x, -pi, pi),
-        adaptive=False, n=5, backend=BB, show=False,
+        n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
     )
     p.backend.draw()
@@ -751,7 +751,7 @@ def test_update_interactive():
 
     p = plot_parametric(
         cos(u * x), sin(u * x), (x, 0, 2 * pi),
-        adaptive=False, n=5, backend=BB, show=False,
+        n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=True,
         is_point=False,
@@ -761,7 +761,7 @@ def test_update_interactive():
 
     p = plot_parametric(
         cos(u * x), sin(u * x), (x, 0, 2 * pi),
-        adaptive=False, n=5, backend=BB, show=False,
+        n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=True,
         is_point=True,
@@ -771,7 +771,7 @@ def test_update_interactive():
 
     p = plot_parametric(
         cos(u * x), sin(u * x), (x, 0, 2 * pi),
-        adaptive=False, n=5, backend=BB, show=False,
+        n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=False,
     )
@@ -854,7 +854,6 @@ def test_generic_data_series():
         x,
         backend=BB,
         show=False,
-        adaptive=False,
         n=5,
         markers=[{"x": [0, 1], "y": [0, 1], "marker": "square"}],
         annotations=[{"x": "x", "y": "y", "source": source}],
@@ -908,7 +907,7 @@ def test_domain_coloring_2d():
 @pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
 def test_show_hide_colorbar():
     x, y, z = symbols("x, y, z")
-    options = dict(use_cm=True, n=5, adaptive=False, backend=BB, show=False)
+    options = dict(use_cm=True, n=5, backend=BB, show=False)
 
     p = lambda c: plot_parametric(
         cos(x), sin(x), (x, 0, 2 * pi), colorbar=c, **options

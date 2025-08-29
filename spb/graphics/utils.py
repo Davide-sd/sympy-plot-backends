@@ -26,9 +26,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
 
     wf_kwargs = dict(
         use_cm=False, show_in_legend=False,
-        # use uniform meshing to maximize performance
-        adaptive=False, n=npoints,
-        rendering_kw=wf_rend_kw
+        n=npoints, rendering_kw=wf_rend_kw
     )
 
     def create_series(expr, ranges, surface_series, **kw):

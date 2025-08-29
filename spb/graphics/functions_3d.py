@@ -1644,8 +1644,6 @@ def surface_revolution(
 
     if show_curve:
         curve_kw["params"] = params
-        # uniform mesh evaluation is faster
-        curve_kw["adaptive"] = False
         # link the number of discretization points between the two series
         curve_kw["n"] = surface[0].n[0]
         curve_kw.setdefault("use_cm", False)

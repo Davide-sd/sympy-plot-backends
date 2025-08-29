@@ -133,7 +133,7 @@ def test_params_multi_value_widgets_1():
     w1 = ipywidgets.FloatRangeSlider(value=(-2, 2), min=-5, max=5)
     w2 = ipywidgets.FloatSlider(value=1, min=0, max=5)
     p = plot(
-        cos(c * x), prange(x, a, b), n=10, adaptive=False,
+        cos(c * x), prange(x, a, b), n=10,
         params={
             (a, b): w1,
             c: w2
@@ -155,14 +155,14 @@ def test_params_multi_value_widgets_2():
     w2 = ipywidgets.FloatSlider(value=1, min=0, max=5)
     w3 = ipywidgets.FloatSlider(value=2, min=0, max=6)
     p = graphics(
-        line(cos(x), range_x=(x, -5, 5), n=10, adaptive=False),
-        line(cos(c * x), range_x=(x, a, b), n=10, adaptive=False,
+        line(cos(x), range_x=(x, -5, 5), n=10),
+        line(cos(c * x), range_x=(x, a, b), n=10,
             params={
                 (a, b): w1,
                 c: w2
             }),
         line_parametric_2d(cos(d*x), sin(d*x), range_p=(x, -4, 4),
-            n=10, adaptive=False,
+            n=10,
             params={d: w3}),
         imodule="ipywidgets", show=False, backend=MB)
     fig = p.fig

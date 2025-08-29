@@ -30,7 +30,6 @@ import numpy as np
 
 ct = import_module("control")
 scipy = import_module("scipy")
-adaptive = import_module("adaptive")
 plotly = import_module("plotly")
 pn = import_module("panel")
 ipy = import_module("ipywidgets")
@@ -51,115 +50,26 @@ tf1 = (s**2 - 4) / (s**3 + 2*s - 3)
 tf2 = TransferFunction.from_rational_expression(tf1)
 
 
-@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
-def test_adaptive():
-    # verify that adaptive-related keywords produces the expected results
-
-    from adaptive.learner.learner1D import curvature_loss_function
-
-    x, y = symbols("x, y")
-
-    # use default adaptive options: adaptive_goal=0.01, loss_fn=None
-    s1 = LineOver1DRangeSeries(sin(x), (x, -10, 10), "", adaptive=True)
-    x1, _ = s1.get_data()
-    # use a different goal: set a number
-    s2 = LineOver1DRangeSeries(
-        sin(x), (x, -10, 10), "", adaptive=True, adaptive_goal=0.001
-    )
-    x2, _ = s2.get_data()
-    # use a different goal: set a function
-    s3 = LineOver1DRangeSeries(
-        sin(x), (x, -10, 10), "",
-        adaptive=True, adaptive_goal=lambda l: l.npoints >= 100,
-    )
-    x3, _ = s3.get_data()
-    # use a different loss function
-    s4 = LineOver1DRangeSeries(
-        sin(x), (x, -10, 10), "",
-        adaptive=True, adaptive_goal=0.01, loss_fn=curvature_loss_function(),
-    )
-    x4, _ = s4.get_data()
-    assert len(x1) < len(x2)
-    assert len(x3) >= 100
-    # using the same adaptive_goal value, curvature_loss_function produces
-    # less points than default_loss
-    assert len(x1) > len(x4)
-
-    s1 = Parametric2DLineSeries(cos(x), sin(x), (x, 0, 2 * pi), adaptive=True)
-    x1, _, _ = s1.get_data()
-    s2 = Parametric2DLineSeries(
-        cos(x), sin(x), (x, 0, 2 * pi),
-        adaptive=True, adaptive_goal=0.001
-    )
-    x2, _, _ = s2.get_data()
-    s3 = Parametric2DLineSeries(
-        cos(x), sin(x), (x, 0, 2 * pi),
-        adaptive=True, adaptive_goal=0.01, loss_fn=curvature_loss_function(),
-    )
-    x3, _, _ = s3.get_data()
-    assert len(x1) < len(x2)
-    assert len(x1) > len(x3)
-
-    s1 = Parametric3DLineSeries(
-        cos(x), sin(x), x, (x, 0, 2 * pi),
-        adaptive=True
-    )
-    x1, _, _, _ = s1.get_data()
-    s2 = Parametric3DLineSeries(
-        cos(x), sin(x), x, (x, 0, 2 * pi),
-        adaptive=True, adaptive_goal=0.001
-    )
-    x2, _, _, _ = s2.get_data()
-    s3 = Parametric3DLineSeries(
-        cos(x), sin(x), x, (x, 0, 2 * pi),
-        adaptive=True, adaptive_goal=0.01, loss_fn=curvature_loss_function(),
-    )
-    x3, _, _, _ = s3.get_data()
-    assert len(x1) < len(x2)
-    assert len(x1) > len(x3)
-
-
-@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
-def test_adaptive_zerodivisionerror():
-    # adaptive should be able to catch ZeroDivisionError
-
-    x, y = symbols("x, y")
-
-    s1 = LineOver1DRangeSeries(1 / x, (x, -10, 10), "", adaptive=True)
-    x1, y1 = s1.get_data()
-
-    s1 = Parametric2DLineSeries(
-        cos(x), 1 / x, (x, -10, 10), "",
-        adaptive=True
-    )
-    x1, y1, p1 = s1.get_data()
-
-    s1 = Parametric3DLineSeries(
-        cos(x), x, 1 / x, (x, -10, 10), "", adaptive=True
-    )
-    x1, y1, z1, p1 = s1.get_data()
-
-
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_detect_poles():
     x, u = symbols("x, u")
 
     s1 = LineOver1DRangeSeries(
         tan(x), (x, -pi, pi),
-        adaptive=False, n=1000,
+        n=1000,
         detect_poles=False
     )
     xx1, yy1 = s1.get_data()
     s2 = LineOver1DRangeSeries(
         tan(x), (x, -pi, pi),
-        adaptive=False, n=1000,
+        n=1000,
         detect_poles=True, eps=0.01
     )
     xx2, yy2 = s2.get_data()
     # eps is too small: doesn't detect any poles
     s3 = LineOver1DRangeSeries(
         tan(x), (x, -pi, pi),
-        adaptive=False, n=1000,
+        n=1000,
         detect_poles=True, eps=1e-06
     )
     xx3, yy3 = s3.get_data()
@@ -175,18 +85,18 @@ def test_detect_poles():
     ):
         s1 = LineOver1DRangeSeries(
             frac(x), (x, -10, 10),
-            adaptive=False, n=1000,
+            n=1000,
             detect_poles=False
         )
         xx1, yy1 = s1.get_data()
         s2 = LineOver1DRangeSeries(
             frac(x), (x, -10, 10),
-            adaptive=False, n=1000,
+            n=1000,
             detect_poles=True, eps=0.05
         )
         s3 = LineOver1DRangeSeries(
             frac(x), (x, -10, 10),
-            adaptive=False, n=1000,
+            n=1000,
             detect_poles="symbolic"
         )
         xx1, yy1 = s1.get_data()
@@ -201,14 +111,14 @@ def test_detect_poles():
     s1 = LineOver1DRangeSeries(
         tan(u * x), (x, -pi, pi),
         params={u: 1},
-        adaptive=False, n=1000,
+        n=1000,
         detect_poles=False,
     )
     xx1, yy1 = s1.get_data()
     s2 = LineOver1DRangeSeries(
         tan(u * x), (x, -pi, pi),
         params={u: 1},
-        adaptive=False, n=1000,
+        n=1000,
         detect_poles=True, eps=0.01,
     )
     xx2, yy2 = s2.get_data()
@@ -216,7 +126,7 @@ def test_detect_poles():
     s3 = LineOver1DRangeSeries(
         tan(u * x), (x, -pi, pi),
         params={u: 1},
-        adaptive=False, n=1000,
+        n=1000,
         detect_poles=True, eps=1e-06,
     )
     xx3, yy3 = s3.get_data()
@@ -251,12 +161,12 @@ def test_detect_poles():
         r, i = re(f), im(f)
         s1 = Parametric2DLineSeries(
             r.subs(u, -2), i.subs(u, -2), (v, -2, 2),
-            adaptive=False, n=1000,
+            n=1000,
             detect_poles=False,
         )
         s2 = Parametric2DLineSeries(
             r.subs(u, -2), i.subs(u, -2), (v, -2, 2),
-            adaptive=False, n=1000,
+            n=1000,
             detect_poles=True,
         )
         xx1, yy1, pp1 = s1.get_data()
@@ -273,7 +183,7 @@ def test_detect_poles():
         s1 = Parametric2DLineSeries(
             r.subs(u, -2), i.subs(u, -2), (v, -2, 2),
             params={x: 1},
-            adaptive=False, n1=1000,
+            n1=1000,
             detect_poles=False,
         )
         xx1, yy1, pp1 = s1.get_data()
@@ -281,7 +191,7 @@ def test_detect_poles():
         s2 = Parametric2DLineSeries(
             r.subs(u, -2), i.subs(u, -2), (v, -2, 2),
             params={x: 1},
-            adaptive=False, n1=1000,
+            n1=1000,
             detect_poles=True,
         )
         xx2, yy2, pp2 = s2.get_data()
@@ -325,13 +235,13 @@ def test_number_discretization_points():
     # verify that line-related series can deal with large float number of
     # discretization points
     LineOver1DRangeSeries(
-        cos(x), (x, -5, 5), adaptive=False, n=1e04
+        cos(x), (x, -5, 5), n=1e04
     ).get_data()
     LineOver1DRangeSeries(
-        cos(x), (x, -5, 5), adaptive=False, n1=1e04
+        cos(x), (x, -5, 5), n1=1e04
     ).get_data()
     AbsArgLineSeries(
-        sqrt(x), (x, -5, 5), adaptive=False, n=1e04
+        sqrt(x), (x, -5, 5), n=1e04
     ).get_data()
 
 
@@ -523,7 +433,7 @@ def test_lin_log_scale():
 
     s = LineOver1DRangeSeries(
         x, (x, 1, 10),
-        adaptive=False, n=50,
+        n=50,
         xscale="linear"
     )
     xx, _ = s.get_data()
@@ -531,7 +441,7 @@ def test_lin_log_scale():
 
     s = LineOver1DRangeSeries(
         x, (x, 1, 10),
-        adaptive=False, n=50,
+        n=50,
         xscale="log"
     )
     xx, _ = s.get_data()
@@ -539,7 +449,7 @@ def test_lin_log_scale():
 
     s = Parametric2DLineSeries(
         cos(x), sin(x), (x, pi / 2, 1.5 * pi),
-        adaptive=False, n=50,
+        n=50,
         xscale="linear"
     )
     _, _, param = s.get_data()
@@ -547,7 +457,7 @@ def test_lin_log_scale():
 
     s = Parametric2DLineSeries(
         cos(x), sin(x), (x, pi / 2, 1.5 * pi),
-        adaptive=False, n=50,
+        n=50,
         xscale="log"
     )
     _, _, param = s.get_data()
@@ -555,7 +465,7 @@ def test_lin_log_scale():
 
     s = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, pi / 2, 1.5 * pi),
-        adaptive=False, n=50,
+        n=50,
         xscale="linear"
     )
     _, _, _, param = s.get_data()
@@ -563,7 +473,7 @@ def test_lin_log_scale():
 
     s = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, pi / 2, 1.5 * pi),
-        adaptive=False, n=50,
+        n=50,
         xscale="log"
     )
     _, _, _, param = s.get_data()
@@ -681,7 +591,7 @@ def test_lin_log_scale():
 
     s = AbsArgLineSeries(
         cos(x), (x, 1e-05, 1e05),
-        n=10, adaptive=False,
+        n=10,
         xscale="linear"
     )
     xx, yy, _ = s.get_data()
@@ -689,7 +599,7 @@ def test_lin_log_scale():
 
     s = AbsArgLineSeries(
         cos(x), (x, 1e-05, 1e05),
-        n=10, adaptive=False,
+        n=10,
         xscale="log"
     )
     xx, yy, _ = s.get_data()
@@ -847,7 +757,7 @@ def test_data_shape():
     assert len(xx) == len(yy)
     assert np.all(yy == 1)
 
-    s = LineOver1DRangeSeries(1, (x, -5, 5), adaptive=False, n=10)
+    s = LineOver1DRangeSeries(1, (x, -5, 5), n=10)
     xx, yy = s.get_data()
     assert len(xx) == len(yy) == 10
     assert np.all(yy == 1)
@@ -857,7 +767,7 @@ def test_data_shape():
     assert len(xx) == len(_abs) == len(_arg)
     assert np.all(_abs == 1)
 
-    s = AbsArgLineSeries(1, (x, -5, 5), adaptive=False, n=10)
+    s = AbsArgLineSeries(1, (x, -5, 5), n=10)
     xx, _abs, _arg = s.get_data()
     assert len(xx) == len(_abs) == len(_arg) == 10
     assert np.all(_abs == 1)
@@ -872,12 +782,12 @@ def test_data_shape():
     assert (len(xx) == len(yy)) and (len(xx) == len(param))
     assert np.all(xx == 1)
 
-    s = Parametric2DLineSeries(sin(x), 1, (x, 0, pi), adaptive=False)
+    s = Parametric2DLineSeries(sin(x), 1, (x, 0, pi))
     xx, yy, param = s.get_data()
     assert (len(xx) == len(yy)) and (len(xx) == len(param))
     assert np.all(yy == 1)
 
-    s = Parametric2DLineSeries(1, sin(x), (x, 0, pi), adaptive=False)
+    s = Parametric2DLineSeries(1, sin(x), (x, 0, pi))
     xx, yy, param = s.get_data()
     assert (len(xx) == len(yy)) and (len(xx) == len(param))
     assert np.all(xx == 1)
@@ -984,7 +894,6 @@ def test_only_integers():
 
     s = LineOver1DRangeSeries(
         sin(x), (x, -5.5, 4.5), "",
-        adaptive=False,
         only_integers=True
     )
     xx, _ = s.get_data()
@@ -993,7 +902,6 @@ def test_only_integers():
 
     s = AbsArgLineSeries(
         sqrt(x), (x, -5.5, 4.5), "",
-        adaptive=False,
         only_integers=True
     )
     xx, _, _ = s.get_data()
@@ -1002,7 +910,6 @@ def test_only_integers():
 
     s = Parametric2DLineSeries(
         cos(x), sin(x), (x, 0, 2 * pi), "",
-        adaptive=False,
         only_integers=True
     )
     _, _, p = s.get_data()
@@ -1011,7 +918,6 @@ def test_only_integers():
 
     s = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, 0, 2 * pi), "",
-        adaptive=False,
         only_integers=True
     )
     _, _, _, p = s.get_data()
@@ -1059,7 +965,6 @@ def test_only_integers():
     # only_integers also works with scalar expressions
     s = LineOver1DRangeSeries(
         1, (x, -5.5, 4.5), "",
-        adaptive=False,
         only_integers=True
     )
     xx, _ = s.get_data()
@@ -1068,7 +973,6 @@ def test_only_integers():
 
     s = Parametric2DLineSeries(
         cos(x), 1, (x, 0, 2 * pi), "",
-        adaptive=False,
         only_integers=True
     )
     _, _, p = s.get_data()
@@ -1250,20 +1154,20 @@ def test_steps():
         assert len(xx1) != len(xx2)
 
     s1 = LineOver1DRangeSeries(
-        cos(x), (x, -5, 5), "", adaptive=False, n=40, steps=False
+        cos(x), (x, -5, 5), "", n=40, steps=False
     )
     s2 = LineOver1DRangeSeries(
-        cos(x), (x, -5, 5), "", adaptive=False, n=40, steps=True
+        cos(x), (x, -5, 5), "", n=40, steps=True
     )
     do_test(s1, s2)
 
     s1 = AbsArgLineSeries(
         cos(x), (x, -5, 5), "",
-        adaptive=False, n=40, steps=False
+        n=40, steps=False
     )
     s2 = AbsArgLineSeries(
         cos(x), (x, -5, 5), "",
-        adaptive=False, n=40, steps=True
+        n=40, steps=True
     )
     do_test(s1, s2)
 
@@ -1280,18 +1184,18 @@ def test_steps():
     do_test(s1, s2)
 
     s1 = Parametric2DLineSeries(
-        cos(x), sin(x), (x, -5, 5), adaptive=False, n=40, steps=False
+        cos(x), sin(x), (x, -5, 5), n=40, steps=False
     )
     s2 = Parametric2DLineSeries(
-        cos(x), sin(x), (x, -5, 5), adaptive=False, n=40, steps=True
+        cos(x), sin(x), (x, -5, 5), n=40, steps=True
     )
     do_test(s1, s2)
 
     s1 = Parametric3DLineSeries(
-        cos(x), sin(x), x, (x, -5, 5), adaptive=False, n=40, steps=False
+        cos(x), sin(x), x, (x, -5, 5), n=40, steps=False
     )
     s2 = Parametric3DLineSeries(
-        cos(x), sin(x), x, (x, -5, 5), adaptive=False, n=40, steps=True
+        cos(x), sin(x), x, (x, -5, 5), n=40, steps=True
     )
     do_test(s1, s2)
 
@@ -1333,25 +1237,25 @@ def test_interactive():
             assert np.allclose(d1, d2)
 
     s1 = LineOver1DRangeSeries(u * cos(x), (x, -5, 5), params={u: 1}, n=50)
-    s2 = LineOver1DRangeSeries(cos(x), (x, -5, 5), adaptive=False, n=50)
+    s2 = LineOver1DRangeSeries(cos(x), (x, -5, 5), n=50)
     do_test(s1.get_data(), s2.get_data())
 
     # complex function evaluated over a real line with numpy
     s1 = AbsArgLineSeries(
         u * cos(x), (x, -5, 5), params={u: 1}, n=50, modules=None)
     s2 = AbsArgLineSeries(
-        cos(x), (x, -5, 5), adaptive=False, n=50, modules=None)
+        cos(x), (x, -5, 5), n=50, modules=None)
     do_test(s1.get_data(), s2.get_data())
 
     # complex function evaluated over a real line with mpmath
     s1 = AbsArgLineSeries(
         (z**2 + 1) / (z**2 - 1), (z, -3, 3),
-        adaptive=False, n=11,
+        n=11,
         modules="mpmath"
     )
     s2 = AbsArgLineSeries(
         (z**2 + 1) / (z**2 - 1), (z, -3, 3), "",
-        adaptive=False, n=11,
+        n=11,
         modules="mpmath",
     )
     do_test(s1.get_data(), s2.get_data())
@@ -1359,7 +1263,7 @@ def test_interactive():
     s1 = Parametric2DLineSeries(
         u * cos(x), u * sin(x), (x, -5, 5), params={u: 1}, n=50)
     s2 = Parametric2DLineSeries(
-        cos(x), sin(x), (x, -5, 5), adaptive=False, n=50)
+        cos(x), sin(x), (x, -5, 5), n=50)
     do_test(s1.get_data(), s2.get_data())
 
     s1 = Parametric3DLineSeries(
@@ -1367,7 +1271,7 @@ def test_interactive():
     )
     s2 = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, -5, 5),
-        adaptive=False, n=50
+        n=50
     )
     do_test(s1.get_data(), s2.get_data())
 
@@ -1431,13 +1335,13 @@ def test_interactive():
     expr = re((z**2 + 1) / (z**2 - 1))
     s1 = LineOver1DRangeSeries(
         u * expr, (z, -3, 3),
-        adaptive=False, n=50,
+        n=50,
         modules=None,
         params={u: 1}
     )
     s2 = LineOver1DRangeSeries(
         expr, (z, -3, 3),
-        adaptive=False, n=50,
+        n=50,
         modules=None
     )
     do_test(s1.get_data(), s2.get_data())
@@ -1452,7 +1356,7 @@ def test_interactive():
     )
     s2 = LineOver1DRangeSeries(
         expr, (z, -3, 3),
-        adaptive=False, n=50,
+        n=50,
         modules="mpmath"
     )
     do_test(s1.get_data(), s2.get_data())
@@ -1571,8 +1475,7 @@ def test_list3dseries_interactive():
     assert not s.is_parametric
 
 
-@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
-def test_mpmath_adaptive_true():
+def test_mpmath():
     # test that the argument of complex functions evaluated with mpmath
     # might be different than the one computed with Numpy (different
     # behaviour at branch cuts)
@@ -1583,32 +1486,10 @@ def test_mpmath_adaptive_true():
         match="NumPy is unable to evaluate with complex numbers some of",
     ):
         s1 = LineOver1DRangeSeries(
-            im(sqrt(-z)), (z, 1e-03, 5), adaptive=True, modules=None
+            im(sqrt(-z)), (z, -5, 5), n=20, modules=None
         )
         s2 = LineOver1DRangeSeries(
-            im(sqrt(-z)), (z, 1e-03, 5), adaptive=True, modules="mpmath"
-        )
-        xx1, yy1 = s1.get_data()
-        xx2, yy2 = s2.get_data()
-        assert np.all(yy1 < 0)
-        assert np.all(yy2 > 0)
-
-
-def test_mpmath_adaptive_false():
-    # test that the argument of complex functions evaluated with mpmath
-    # might be different than the one computed with Numpy (different
-    # behaviour at branch cuts)
-    z, u = symbols("z, u")
-
-    with warns(
-        UserWarning,
-        match="NumPy is unable to evaluate with complex numbers some of",
-    ):
-        s1 = LineOver1DRangeSeries(
-            im(sqrt(-z)), (z, -5, 5), adaptive=False, n=20, modules=None
-        )
-        s2 = LineOver1DRangeSeries(
-            im(sqrt(-z)), (z, -5, 5), adaptive=False, n=20, modules="mpmath"
+            im(sqrt(-z)), (z, -5, 5), n=20, modules="mpmath"
         )
         xx1, yy1 = s1.get_data()
         xx2, yy2 = s2.get_data()
@@ -2151,7 +2032,7 @@ def test_use_cm(use_cm):
     assert s.use_cm is use_cm
 
 
-def test_sums_adaptive_false():
+def test_sums():
     # test that data series are able to deal with sums
     x, y, u = symbols("x, y, u")
 
@@ -2162,13 +2043,13 @@ def test_sums_adaptive_false():
 
     s = LineOver1DRangeSeries(
         Sum(1 / x**y, (x, 1, 1000)), (y, 2, 10),
-        adaptive=False, only_integers=True
+        only_integers=True
     )
     xx, yy = s.get_data()
 
     s1 = LineOver1DRangeSeries(
         Sum(1 / x, (x, 1, y)), (y, 2, 10),
-        adaptive=False, only_integers=True
+        only_integers=True
     )
     xx1, yy1 = s1.get_data()
 
@@ -2182,27 +2063,14 @@ def test_sums_adaptive_false():
     do_test([xx1, yy1], [xx2, yy2])
 
 
-@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
-def test_sums_adaptive_true():
-    # test that data series are able to deal with sums
-    x, y = symbols("x, y")
-
-    s = LineOver1DRangeSeries(Sum(1 / x, (x, 1, y)), (y, 2, 10), adaptive=True)
-    with warns(
-        UserWarning,
-        match="The evaluation with NumPy/SciPy failed.",
-    ):
-        raises(TypeError, lambda: s.get_data())
-
-
-def test_absargline_adaptive_false():
+def test_absargline():
     # verify that AbsArgLineSeries produces the correct results
     x, u = symbols("x, u")
 
-    s1 = AbsArgLineSeries(sqrt(x), (x, -5, 5), adaptive=False, n=10)
+    s1 = AbsArgLineSeries(sqrt(x), (x, -5, 5), n=10)
     s2 = AbsArgLineSeries(
         sqrt(u * x), (x, -5, 5),
-        adaptive=False, n=10, params={u: 1}
+        n=10, params={u: 1}
     )
     data1 = s1.get_data()
     data2 = s2.get_data()
@@ -2214,17 +2082,6 @@ def test_absargline_adaptive_false():
     assert np.invert(np.isnan(data1[2])).all()
 
 
-@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
-def test_absargline_adaptive_false():
-    # verify that AbsArgLineSeries produces the correct results
-    x = symbols("x")
-
-    s3 = AbsArgLineSeries(sqrt(x), (x, -5, 5), adaptive=True)
-    data3 = s3.get_data()
-    assert np.invert(np.isnan(data3[1])).all()
-    assert np.invert(np.isnan(data3[2])).all()
-
-
 def test_apply_transforms():
     # verify that transformation functions get applied to the output
     # of data series
@@ -2232,21 +2089,21 @@ def test_apply_transforms():
 
     s1 = LineOver1DRangeSeries(
         cos(x), (x, -2 * pi, 2 * pi),
-        adaptive=False, n=10
+        n=10
     )
     s2 = LineOver1DRangeSeries(
         cos(x), (x, -2 * pi, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         tx=np.rad2deg
     )
     s3 = LineOver1DRangeSeries(
         cos(x), (x, -2 * pi, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         ty=np.rad2deg
     )
     s4 = LineOver1DRangeSeries(
         cos(x), (x, -2 * pi, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         tx=np.rad2deg, ty=np.rad2deg
     )
 
@@ -2293,11 +2150,11 @@ def test_apply_transforms():
 
     s1 = AbsArgLineSeries(
         cos(x) + sin(I * x), (x, -2 * pi, 2 * pi),
-        n=10, adaptive=False
+        n=10
     )
     s2 = AbsArgLineSeries(
         cos(x) + sin(I * x), (x, -2 * pi, 2 * pi),
-        n=10, adaptive=False,
+        n=10,
         tx=np.rad2deg,
         ty=lambda x: 2 * x,
         tz=lambda x: 3 * x,
@@ -2310,11 +2167,11 @@ def test_apply_transforms():
 
     s1 = Parametric2DLineSeries(
         sin(x), cos(x), (x, -pi, pi),
-        adaptive=False, n=10
+        n=10
     )
     s2 = Parametric2DLineSeries(
         sin(x), cos(x), (x, -pi, pi),
-        adaptive=False, n=10,
+        n=10,
         tx=np.rad2deg,
         ty=np.rad2deg,
         tp=np.rad2deg,
@@ -2327,10 +2184,10 @@ def test_apply_transforms():
 
     s1 = Parametric3DLineSeries(
         sin(x), cos(x), x, (x, -pi, pi),
-        adaptive=False, n=10)
+        n=10)
     s2 = Parametric3DLineSeries(
         sin(x), cos(x), x, (x, -pi, pi),
-        adaptive=False, n=10, tp=np.rad2deg
+        n=10, tp=np.rad2deg
     )
     x1, y1, z1, a1 = s1.get_data()
     x2, y2, z2, a2 = s2.get_data()
@@ -2852,14 +2709,14 @@ def test_is_polar_2d_parametric():
     f = sin(4 * t)
     s1 = Parametric2DLineSeries(
         f * cos(t), f * sin(t), (t, 0, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         is_polar=False,
         use_cm=False,
     )
     x1, y1, p1 = s1.get_data()
     s2 = Parametric2DLineSeries(
         f * cos(t), f * sin(t), (t, 0, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         is_polar=True,
         use_cm=False,
     )
@@ -2870,14 +2727,14 @@ def test_is_polar_2d_parametric():
     # With colormap
     s3 = Parametric2DLineSeries(
         f * cos(t), f * sin(t), (t, 0, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         is_polar=False,
         color_func=lambda t: 2 * t,
     )
     x3, y3, p3 = s3.get_data()
     s4 = Parametric2DLineSeries(
         f * cos(t), f * sin(t), (t, 0, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         is_polar=True,
         color_func=lambda t: 2 * t,
     )
@@ -2964,14 +2821,14 @@ def test_color_func():
 
     s = LineOver1DRangeSeries(
         sin(x), (x, -5, 5),
-        adaptive=False, n=10,
+        n=10,
         color_func=lambda x: x
     )
     xx, yy, col = s.get_data()
     assert np.allclose(col, xx)
     s = LineOver1DRangeSeries(
         sin(x), (x, -5, 5),
-        adaptive=False, n=10,
+        n=10,
         color_func=lambda x, y: y
     )
     xx, yy, col = s.get_data()
@@ -2979,21 +2836,21 @@ def test_color_func():
 
     s = Parametric2DLineSeries(
         cos(x), sin(x), (x, 0, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         color_func=lambda t: t
     )
     xx, yy, col = s.get_data()
     assert (not np.allclose(xx, col)) and (not np.allclose(yy, col))
     s = Parametric2DLineSeries(
         cos(x), sin(x), (x, 0, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         color_func=lambda x, y: x * y,
     )
     xx, yy, col = s.get_data()
     assert np.allclose(col, xx * yy)
     s = Parametric2DLineSeries(
         cos(x), sin(x), (x, 0, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         color_func=lambda x, y, t: x * y * t,
     )
     xx, yy, col = s.get_data()
@@ -3001,21 +2858,21 @@ def test_color_func():
 
     s = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, 0, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         color_func=lambda t: t
     )
     xx, yy, zz, col = s.get_data()
     assert (not np.allclose(xx, col)) and (not np.allclose(yy, col))
     s = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, 0, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         color_func=lambda x, y, z: x * y * z,
     )
     xx, yy, zz, col = s.get_data()
     assert np.allclose(col, xx * yy * zz)
     s = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, 0, 2 * pi),
-        adaptive=False, n=10,
+        n=10,
         color_func=lambda x, y, z, t: x * y * z * t,
     )
     xx, yy, zz, col = s.get_data()
@@ -3174,21 +3031,21 @@ def test_color_func_scalar_val():
 
     s = LineOver1DRangeSeries(
         sin(x), (x, -5, 5),
-        adaptive=False, n=10, color_func=lambda x: 1
+        n=10, color_func=lambda x: 1
     )
     xx, yy, col = s.get_data()
     assert np.allclose(col, np.ones(xx.shape))
 
     s = Parametric2DLineSeries(
         cos(x), sin(x), (x, 0, 2 * pi),
-        adaptive=False, n=10, color_func=lambda t: 1
+        n=10, color_func=lambda t: 1
     )
     xx, yy, col = s.get_data()
     assert np.allclose(col, np.ones(xx.shape))
 
     s = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, 0, 2 * pi),
-        adaptive=False, n=10, color_func=lambda t: 1
+        n=10, color_func=lambda t: 1
     )
     xx, yy, zz, col = s.get_data()
     assert np.allclose(col, np.ones(xx.shape))
@@ -3220,13 +3077,13 @@ def test_line_surface_color():
 
     s = LineOver1DRangeSeries(
         sin(x), (x, -5, 5),
-        adaptive=False, n=10, line_color=lambda x: x
+        n=10, line_color=lambda x: x
     )
     assert (s.line_color is None) and callable(s.color_func)
 
     s = Parametric2DLineSeries(
         cos(x), sin(x), (x, 0, 2 * pi),
-        adaptive=False, n=10, line_color=lambda t: t
+        n=10, line_color=lambda t: t
     )
     assert (s.line_color is None) and callable(s.color_func)
 
@@ -3237,9 +3094,8 @@ def test_line_surface_color():
     assert (s.surface_color is None) and callable(s.color_func)
 
 
-def test_complex_adaptive_false():
-    # verify that series with adaptive=False is evaluated with discretized
-    # ranges of type complex.
+def test_complex():
+    # verify that series is evaluated with discretized ranges of type complex.
 
     x, y, u = symbols("x y u")
 
@@ -3252,11 +3108,11 @@ def test_complex_adaptive_false():
     expr2 = sqrt(u * x) * exp(-(x**2))
     s1 = LineOver1DRangeSeries(
         im(expr1), (x, -5, 5),
-        adaptive=False, n=10
+        n=10
     )
     s2 = LineOver1DRangeSeries(
         im(expr2), (x, -5, 5),
-        adaptive=False, n=10, params={u: 1}
+        n=10, params={u: 1}
     )
     data1 = s1.get_data()
     data2 = s2.get_data()
@@ -3266,11 +3122,11 @@ def test_complex_adaptive_false():
 
     s1 = Parametric2DLineSeries(
         re(expr1), im(expr1), (x, -pi, pi),
-        adaptive=False, n=10
+        n=10
     )
     s2 = Parametric2DLineSeries(
         re(expr2), im(expr2), (x, -pi, pi),
-        adaptive=False, n=10, params={u: 1}
+        n=10, params={u: 1}
     )
     data1 = s1.get_data()
     data2 = s2.get_data()
@@ -3291,74 +3147,14 @@ def test_complex_adaptive_false():
     assert (not np.allclose(data1[1], 0)) and (not np.allclose(data2[1], 0))
 
 
-@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
-@pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_complex_adaptive_true():
-    # verify that series with adaptive=True is evaluated with discretized
-    # ranges of type complex.
-
-    x, y = symbols("x y")
-
-    expr1 = sqrt(x) * exp(-(x**2))
-    s1 = LineOver1DRangeSeries(
-        im(expr1), (x, -5, 5), "",
-        adaptive=True, adaptive_goal=0.1
-    )
-    data1 = s1.get_data()
-    assert all(not np.allclose(d, 0) for d in data1)
-
-    s1 = Parametric2DLineSeries(
-        re(expr1), im(expr1), (x, -pi, pi),
-        adaptive=True, adaptive_goal=0.1
-    )
-    data1 = s1.get_data()
-    assert all(not np.allclose(d, 0) for d in data1)
-
-
-@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
-def test_expr_is_lambda_function_adaptive_true():
-    # verify that when a numpy function is provided, the series will be able
-    # to evaluate it. Also, label should be empty in order to prevent some
-    # backend from crashing.
-
-    f = lambda x: np.cos(x)
-    s1 = LineOver1DRangeSeries(
-        f, ("x", -5, 5), adaptive=True, adaptive_goal=0.1)
-    s1.get_data()
-    assert s1.label == ""
-
-    fx = lambda x: np.cos(x)
-    fy = lambda x: np.sin(x)
-    s1 = Parametric2DLineSeries(
-        fx, fy, ("x", 0, 2 * pi),
-        adaptive=True, adaptive_goal=0.1
-    )
-    s1.get_data()
-    assert s1.label == ""
-
-    fz = lambda x: x
-    s1 = Parametric3DLineSeries(
-        fx, fy, fz, ("x", 0, 2 * pi),
-        adaptive=True, adaptive_goal=0.1
-    )
-    s1.get_data()
-    assert s1.label == ""
-
-    raises(
-        TypeError,
-        lambda: ImplicitSeries(
-            lambda t: np.sin(t), ("x", -5, 5), ("y", -6, 6), adaptive=True),
-    )
-
-
-def test_expr_is_lambda_function_adaptive_false():
+def test_expr_is_lambda_function():
     # verify that when a numpy function is provided, the series will be able
     # to evaluate it. Also, label should be empty in order to prevent some
     # backend from crashing.
 
     f = lambda x: np.cos(x)
     s2 = LineOver1DRangeSeries(
-        f, ("x", -5, 5), adaptive=False, n=10)
+        f, ("x", -5, 5), n=10)
     s2.get_data()
     assert s2.label == ""
 
@@ -3366,14 +3162,14 @@ def test_expr_is_lambda_function_adaptive_false():
     fy = lambda x: np.sin(x)
     s2 = Parametric2DLineSeries(
         fx, fy, ("x", 0, 2 * pi),
-        adaptive=False, n=10)
+        n=10)
     s2.get_data()
     assert s2.label == ""
 
     fz = lambda x: x
     s2 = Parametric3DLineSeries(
         fx, fy, fz, ("x", 0, 2 * pi),
-        adaptive=False, n=10)
+        n=10)
     s2.get_data()
     assert s2.label == ""
 
@@ -3572,22 +3368,8 @@ def test_particular_case_1():
     expr = Abs(xn - a) - epsilon
     math_func = lambdify([n], expr)
 
-    if adaptive:
-        s1 = LineOver1DRangeSeries(
-            expr, (n, -10, 10), "",
-            adaptive=True, adaptive_goal=0.2)
-        s2 = LineOver1DRangeSeries(
-            math_func, ("n", -10, 10), "",
-            adaptive=True, adaptive_goal=0.2
-        )
-        do_test(s1, s2)
-
-    s3 = LineOver1DRangeSeries(
-        expr, (n, -10, 10), "",
-        adaptive=False, n=10)
-    s4 = LineOver1DRangeSeries(
-        math_func, ("n", -10, 10), "",
-        adaptive=False, n=10)
+    s3 = LineOver1DRangeSeries(expr, (n, -10, 10), "", n=10)
+    s4 = LineOver1DRangeSeries(math_func, ("n", -10, 10), "", n=10)
     do_test(s3, s4)
 
 
@@ -3640,7 +3422,7 @@ def test_complex_params_number_eval():
     sol = dsolve(eq, x, ics={x.subs(t, 0): x0, x.diff(t).subs(t, 0): v0})
     params = {wn: 0.5, xi: 0.25, x0: 0.45, v0: 0.0}
     s = LineOver1DRangeSeries(
-        sol.rhs, (t, 0, 100), adaptive=False, n=5, params=params)
+        sol.rhs, (t, 0, 100), n=5, params=params)
     x, y = s.get_data()
     assert not np.isnan(x).any()
     assert not np.isnan(y).any()
@@ -3658,13 +3440,12 @@ def test_complex_params_number_eval():
     fs = S(1) / 2 - (1 / pi) * Sum(sin(2 * n * pi * x / T) / n, (n, 1, m))
     params = {T: 4.5, m: 5}
     s = LineOver1DRangeSeries(
-        fs, (x, 0, 10), adaptive=False, n=5, params=params)
+        fs, (x, 0, 10), n=5, params=params)
     x, y = s.get_data()
     assert not np.isnan(x).any()
     assert not np.isnan(y).any()
 
 
-@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
 def test_complex_range_line_plot_1():
     # verify that univariate functions are evaluated with a complex
     # data range (with zero imaginary part). There shouln't be any
@@ -3673,46 +3454,32 @@ def test_complex_range_line_plot_1():
     x, u = symbols("x, u")
     expr1 = im(sqrt(x) * exp(-(x**2)))
     expr2 = im(sqrt(u * x) * exp(-(x**2)))
-    s1 = LineOver1DRangeSeries(
-        expr1, (x, -10, 10), adaptive=True, adaptive_goal=0.1)
     s2 = LineOver1DRangeSeries(
-        expr1, (x, -10, 10), adaptive=False, n=30)
+        expr1, (x, -10, 10), n=30)
     s3 = LineOver1DRangeSeries(
-        expr2, (x, -10, 10), adaptive=False, n=30, params={u: 1})
-    data1 = s1.get_data()
+        expr2, (x, -10, 10), n=30, params={u: 1})
     data2 = s2.get_data()
     data3 = s3.get_data()
 
-    assert not np.isnan(data1[1]).any()
     assert not np.isnan(data2[1]).any()
     assert not np.isnan(data3[1]).any()
     assert (
         np.allclose(data2[0], data3[0]) and np.allclose(data2[1], data3[1]))
 
 
-@pytest.mark.skipif(adaptive is None, reason="adaptive is not installed")
 def test_complex_range_line_plot_2():
     # verify that univariate functions are evaluated with a complex
     # data range (with non-zero imaginary part). There shouln't be any
     # NaN value in the output.
 
     x, u = symbols("x, u")
-
-    # adaptive and uniform meshing should produce the same data.
-    # because of the adaptive nature, just compare the first and last points
-    # of both series.
-    s1 = LineOver1DRangeSeries(
-        abs(sqrt(x)), (x, -5 - 2j, 5 - 2j), adaptive=True)
-    s2 = LineOver1DRangeSeries(
-        abs(sqrt(x)), (x, -5 - 2j, 5 - 2j), adaptive=False, n=10)
-    d1 = s1.get_data()
-    d2 = s2.get_data()
-    xx1 = [d1[0][0], d1[0][-1]]
-    xx2 = [d2[0][0], d2[0][-1]]
-    yy1 = [d1[1][0], d1[1][-1]]
-    yy2 = [d2[1][0], d2[1][-1]]
-    assert np.allclose(xx1, xx2)
-    assert np.allclose(yy1, yy2)
+    s = LineOver1DRangeSeries(
+        abs(sqrt(x)), (x, -5 - 2j, 5 - 2j), n=10)
+    xx, yy = s.get_data()
+    assert np.isclose(xx[0], -5)
+    assert np.isclose(xx[-1], 5)
+    assert not np.isnan(xx).any()
+    assert not np.isnan(yy).any()
 
 
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
@@ -3723,10 +3490,10 @@ def test_force_real_eval():
 
     expr = im(sqrt(x) * exp(-(x**2)))
     s1 = LineOver1DRangeSeries(
-        expr, (x, -10, 10), adaptive=False, n=10, force_real_eval=False
+        expr, (x, -10, 10), n=10, force_real_eval=False
     )
     s2 = LineOver1DRangeSeries(
-        expr, (x, -10, 10), adaptive=False, n=10, force_real_eval=True
+        expr, (x, -10, 10), n=10, force_real_eval=True
     )
     d1 = s1.get_data()
     d2 = s2.get_data()
@@ -3781,9 +3548,9 @@ def test_symbolic_plotting_ranges():
         for u, v in zip(d1, d2):
             assert not np.allclose(u, v)
 
-    s1 = LineOver1DRangeSeries(sin(x), (x, 0, 1), adaptive=False, n=10)
+    s1 = LineOver1DRangeSeries(sin(x), (x, 0, 1), n=10)
     s2 = LineOver1DRangeSeries(
-        sin(x), (x, a, b), params={a: 0, b: 1}, adaptive=False, n=10
+        sin(x), (x, a, b), params={a: 0, b: 1}, n=10
     )
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
@@ -3795,9 +3562,9 @@ def test_symbolic_plotting_ranges():
         LineOver1DRangeSeries(sin(x), (x, a, b), params={a: 1}, n=10)
 
     s1 = Parametric2DLineSeries(
-        cos(x), sin(x), (x, 0, 1), adaptive=False, n=10)
+        cos(x), sin(x), (x, 0, 1), n=10)
     s2 = Parametric2DLineSeries(
-        cos(x), sin(x), (x, a, b), params={a: 0, b: 1}, adaptive=False, n=10
+        cos(x), sin(x), (x, a, b), params={a: 0, b: 1}, n=10
     )
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
@@ -3807,14 +3574,14 @@ def test_symbolic_plotting_ranges():
         match="Unkown symbols found in plotting range"
     ):
         Parametric2DLineSeries(
-            cos(x), sin(x), (x, a, b), params={a: 0}, adaptive=False, n=10)
+            cos(x), sin(x), (x, a, b), params={a: 0}, n=10)
 
     s1 = Parametric3DLineSeries(
-        cos(x), sin(x), x, (x, 0, 1), adaptive=False, n=10)
+        cos(x), sin(x), x, (x, 0, 1), n=10)
     s2 = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, a, b),
         params={a: 0, b: 1},
-        adaptive=False, n=10
+        n=10
     )
     do_test(s1, s2, {a: 0.5, b: 1.5})
 
@@ -3826,7 +3593,7 @@ def test_symbolic_plotting_ranges():
         Parametric3DLineSeries(
             cos(x), sin(x), x, (x, a, b),
             params={a: 0},
-            adaptive=False, n=10)
+            n=10)
 
     s1 = SurfaceOver2DRangeSeries(
         cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi),
@@ -3992,12 +3759,12 @@ def test_color_func_expression():
     s1 = LineOver1DRangeSeries(
         cos(x), (x, -10, 10),
         color_func=sin(x),
-        adaptive=False, n=10
+        n=10
     )
     s2 = LineOver1DRangeSeries(
         cos(x), (x, -10, 10),
         color_func=lambda x: np.cos(x),
-        adaptive=False, n=10
+        n=10
     )
     assert all(isinstance(t, ColoredLineOver1DRangeSeries) for t in [s1, s2])
     # the following statement should not raise errors
@@ -4010,12 +3777,12 @@ def test_color_func_expression():
     s1 = Parametric2DLineSeries(
         cos(x), sin(x), (x, 0, 2 * pi),
         color_func=sin(x),
-        adaptive=False, n=10, use_cm=True,
+        n=10, use_cm=True,
     )
     s2 = Parametric2DLineSeries(
         cos(x), sin(x), (x, 0, 2 * pi),
         color_func=lambda x: np.cos(x),
-        adaptive=False, n=10, use_cm=True,
+        n=10, use_cm=True,
     )
     # the following statement should not raise errors
     d1 = s1.get_data()
@@ -4072,7 +3839,11 @@ def test_color_func_expression_eval_with_sympy():
         cos(x), (x, 0, 2*pi),
         color_func=hyper([2,4,6,8], [2,3,5,7,11], x), n=10
     )
-    s.get_data()
+    with warns(
+        UserWarning,
+        match="The evaluation with NumPy/SciPy failed."
+    ):
+        s.get_data()
 
 
 def test_2d_complex_domain_coloring_schemes():
@@ -4235,7 +4006,7 @@ def test_exclude_points():
     ):
         s = LineOver1DRangeSeries(
             expr, (x, -3.5, 3.5),
-            adaptive=False, n=100, exclude=list(range(-3, 4))
+            n=100, exclude=list(range(-3, 4))
         )
     xx, yy = s.get_data()
     assert not np.isnan(xx).any()
@@ -4250,7 +4021,7 @@ def test_exclude_points():
     ):
         s = Parametric2DLineSeries(
             e1, e2, (x, 1, 12),
-            adaptive=False, n=100, exclude=list(range(1, 13))
+            n=100, exclude=list(range(1, 13))
         )
     xx, yy, pp = s.get_data()
     assert not np.isnan(pp).any()
@@ -4324,15 +4095,20 @@ def test_exclude_points_3():
         hyper((1.0331469998003, 9.67916472867169), (10.0,), x),
         (x, -5, 0.5),
         exclude=[0], n=10)
-    xx, yy = s.get_data()
-    assert np.allclose(xx, [
-        -5.00000000e+00, -4.38888889e+00, -3.77777778e+00, -3.16666667e+00,
-        -2.55555556e+00, -1.94444444e+00, -1.33333333e+00, -7.22222222e-01,
-        -1.11111111e-03,  0.00000000e+00,  1.11111111e-03,  5.00000000e-01])
-    assert np.allclose(yy, [
-        0.16192905, 0.18079556, 0.20453862, 0.23531307, 0.2767561 ,
-        0.33552226, 0.42521825, 0.57864633, 0.99889011, np.nan,
-        1.00111233, 1.98563064], equal_nan=True)
+
+    with warns(
+        UserWarning,
+        match="The evaluation with NumPy/SciPy failed."
+    ):
+        xx, yy = s.get_data()
+        assert np.allclose(xx, [
+            -5.00000000e+00, -4.38888889e+00, -3.77777778e+00, -3.16666667e+00,
+            -2.55555556e+00, -1.94444444e+00, -1.33333333e+00, -7.22222222e-01,
+            -1.11111111e-03,  0.00000000e+00,  1.11111111e-03,  5.00000000e-01])
+        assert np.allclose(yy, [
+            0.16192905, 0.18079556, 0.20453862, 0.23531307, 0.2767561 ,
+            0.33552226, 0.42521825, 0.57864633, 0.99889011, np.nan,
+            1.00111233, 1.98563064], equal_nan=True)
 
 
 def test_unwrap():
@@ -4343,15 +4119,15 @@ def test_unwrap():
     expr = arg(expr.subs(x, I * y * 2 * pi))
     s1 = LineOver1DRangeSeries(
         expr, (y, 1e-05, 1e05),
-        xscale="log", adaptive=False, n=10, unwrap=False
+        xscale="log", n=10, unwrap=False
     )
     s2 = LineOver1DRangeSeries(
         expr, (y, 1e-05, 1e05),
-        xscale="log", adaptive=False, n=10, unwrap=True
+        xscale="log", n=10, unwrap=True
     )
     s3 = LineOver1DRangeSeries(
         expr, (y, 1e-05, 1e05),
-        xscale="log", adaptive=False, n=10, unwrap={"period": 4}
+        xscale="log", n=10, unwrap={"period": 4}
     )
     x1, y1 = s1.get_data()
     x2, y2 = s2.get_data()
@@ -4491,11 +4267,15 @@ def test_line_series_hyper_function():
             (7, True)
         ), (x, 0, 1)
     )
-    s.get_data()
+    with warns(
+        UserWarning,
+        match="The evaluation with NumPy/SciPy failed."
+    ):
+        s.get_data()
 
 
-def test_eval_adaptive_false_lambda_functions():
-    # verify that evaluation with adaptive=False is able to deal with
+def test_eval_lambda_functions():
+    # verify that evaluation with is able to deal with
     # user-defined Python functions.
 
     # what is going to happen?
@@ -4512,7 +4292,7 @@ def test_eval_adaptive_false_lambda_functions():
         else:
             return x
     t = symbols("t")
-    s = LineOver1DRangeSeries(f, (t, -2, 2), adaptive=False, n=5,
+    s = LineOver1DRangeSeries(f, (t, -2, 2), n=5,
         force_real_eval=True)
     x, y = s.get_data()
     assert np.allclose(x, [-2., -1.,  0.,  1.,  2.])
@@ -4527,7 +4307,7 @@ def test_eval_adaptive_false_lambda_functions():
         idx = x < 0
         y[idx] = -y[idx]
         return y
-    s = LineOver1DRangeSeries(f, (t, -2, 2), adaptive=False, n=5,
+    s = LineOver1DRangeSeries(f, (t, -2, 2), n=5,
         force_real_eval=True)
     x, y = s.get_data()
     assert np.allclose(x, [-2., -1.,  0.,  1.,  2.])
@@ -4548,7 +4328,7 @@ def test_eval_adaptive_false_lambda_functions():
     def g(x):
         return nsolve(sin(t) - x, t, 0)
 
-    s = LineOver1DRangeSeries(g, (t, -1, 1), adaptive=False, n=5)
+    s = LineOver1DRangeSeries(g, (t, -1, 1), n=5)
     x, y = s.get_data()
     assert np.allclose(x, [-1., -0.5,  0.,  0.5,  1.])
     assert np.allclose(y, [-1.57079581, -0.52359878,  0.,  0.52359878, 1.57079583])
@@ -4774,7 +4554,7 @@ def test_params_multi_value_widgets_1():
     a, b, c, x = symbols("a:c x")
     range_slider = pn.widgets.RangeSlider(
         value=(-2, 2), start=-5, end=5, step=0.1)
-    s = LineOver1DRangeSeries(cos(c * x), (x, a, b), n=10, adaptive=False,
+    s = LineOver1DRangeSeries(cos(c * x), (x, a, b), n=10,
         params={
             (a, b): range_slider,
             c: (1, 0, 5)
@@ -4875,7 +4655,7 @@ def test_validation_kwargs():
         match="The following keyword arguments are unused by `LineOver1DRangeSeries`."
     ) as w:
         LineOver1DRangeSeries(cos(x), (x, 0, 2*pi), adative=True)
-        do_test(w, {"adative": "adaptive"})
+        do_test(w, {"adative": "name"})
 
     with warns(
         UserWarning,
