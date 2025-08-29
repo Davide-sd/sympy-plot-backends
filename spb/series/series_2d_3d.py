@@ -347,6 +347,7 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
 
         np = import_module("numpy")
         wrapper_func = _get_wrapper_func_for_eval()
+        functions = self.evaluator.request_lambda_functions(self.modules)
         points = list(points)
         n = len(points)
         # index of the x-coordinate (for 2d plots) or parameter (for 2d/3d
@@ -359,11 +360,46 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
         max_diff = diff[:-1].max()
         min_diff = diff[:-1].min()
 
+        def _eval(func_idx, domain):
+            # evaluate the specified lambda function over the provided domain
+            try:
+                r = functions[func_idx](domain)
+            except (ValueError, TypeError):
+                # attempt to use numpy.vectorize
+                r = wrapper_func(f, domain)
+            except Exception as err:
+                # fall back to sympy
+                _warning_eval_error(err, self.modules)
+                sympy_functions = self.evaluator.request_lambda_functions(
+                    "sympy")
+                r = wrapper_func(sympy_functions[func_idx], domain)
+            return r
+
         for e in self.exclude:
             res = points[k] - e >= 0
 
-            # if res contains both True and False, ie, if e is found
-            if any(res) and any(~res):
+            if np.isclose(e, points[k][0]) and (len(points[k]) > 1):
+                # if the exclusion point coincides with first discret. point
+                delta = abs(e - points[k][1]) / 100
+                post = e + delta
+                # add points to the x-coord or the parameter
+                points[k] = np.concatenate((
+                    [e, post],
+                    points[k][1:]
+                ))
+
+                # add points to the other coordinates
+                c = 0
+                for j in j_indeces:
+                    value = np.real(_eval(c, post))
+                    points[j] = np.concatenate((
+                        [np.nan, value],
+                        points[j][1:]
+                    ))
+                    c += 1
+
+            elif any(res) and any(~res):
+                # if res contains both True and False, ie, if `e` is found
                 idx = np.nanargmax(res)
 
                 if not np.isclose(points[k][idx], e):
@@ -389,29 +425,14 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
                     # add points to the other coordinates
                     c = 0
                     for j in j_indeces:
-                        functions = self.evaluator.request_lambda_functions(
-                            self.modules)
                         domain = np.array([prev, post])
-
-                        try:
-                            r = functions[c](domain)
-                        except (ValueError, TypeError):
-                            # attempt to use numpy.vectorize
-                            r = wrapper_func(f, domain)
-                        except Exception as err:
-                            # fall back to sympy
-                            _warning_eval_error(err, self.modules)
-                            sympy_functions = self.evaluator.request_lambda_functions(
-                                "sympy")
-                            r = wrapper_func(sympy_functions[c], domain)
-
-                        values = np.real(r)
-                        c += 1
+                        values = np.real(_eval(c, domain))
                         points[j] = np.concatenate((
                             points[j][:idx],
                             [values[0], np.nan, values[1]] if is_last_point else [values[0], np.nan],
                             points[j][idx+1:] if is_last_point else []
                         ))
+                        c += 1
         return points
 
 

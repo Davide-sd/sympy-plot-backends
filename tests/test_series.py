@@ -21,7 +21,7 @@ from sympy import (
     latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
     Function, dsolve, Eq, Ynm, floor, Ne, Piecewise, hyper, nsolve,
-    Polygon, Line, Segment, Point3D, Line3D, Expr, Ellipse
+    Polygon, Line, Segment, Point3D, Line3D, Expr, Ellipse, ceiling
 )
 from sympy.physics.control import TransferFunction
 from sympy.vector import CoordSys3D, gradient
@@ -4025,8 +4025,8 @@ def test_exclude_points():
         )
     xx, yy, pp = s.get_data()
     assert not np.isnan(pp).any()
-    assert np.count_nonzero(np.isnan(xx)) == 11
-    assert np.count_nonzero(np.isnan(yy)) == 11
+    assert np.count_nonzero(np.isnan(xx)) == 12
+    assert np.count_nonzero(np.isnan(yy)) == 12
     assert len(xx) > 100
 
 
@@ -4109,6 +4109,24 @@ def test_exclude_points_3():
             0.16192905, 0.18079556, 0.20453862, 0.23531307, 0.2767561 ,
             0.33552226, 0.42521825, 0.57864633, 0.99889011, np.nan,
             1.00111233, 1.98563064], equal_nan=True)
+
+
+def test_exclude_points_4():
+    # verify that the exclude points algorithm also work if the first
+    # discretization point is included in the exclusion list
+
+    x = symbols("x")
+    s = LineOver1DRangeSeries(
+        ceiling(x), (x, -2, 2), n=10, exclude=np.arange(-2, 3))
+    xx, yy = s.get_data()
+    assert np.allclose(xx, [
+        -2., -1.99555556, -1.55555556, -1.00111111, -1.,
+       -0.99888889, -0.66666667, -0.00222222,  0.,  0.00222222,
+        0.22222222,  0.99888889,  1.,  1.00111111,  1.11111111,
+        1.55555556,  1.99995556,  2.])
+    assert np.allclose(yy, [
+        np.nan, -1., -1., -1., np.nan, -0., -0., -0., np.nan,  1.,  1.,  1.,
+        np.nan, 2.,  2.,  2.,  2., np.nan], equal_nan=True)
 
 
 def test_unwrap():
