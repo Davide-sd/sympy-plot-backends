@@ -577,7 +577,7 @@ def _check_misspelled_kwargs(
             possible_match = find_closest_string(k, allowed_keys)
             msg += "* '%s'" % k
             msg += ": did you mean '%s'?\n" % possible_match
-        warnings.warn(msg, stacklevel=2)
+        warnings.warn(msg, stacklevel=3)
 
 
 # taken from

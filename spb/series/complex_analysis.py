@@ -147,7 +147,6 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
 
     def __init__(self, expr, range_c, label="", **kwargs):
         _return = kwargs.pop("return", None)
-        kwargs.setdefault("show_clabels", kwargs.pop("clabels", True))
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
         kwargs["range_c"] = range_c
         kwargs["_range_names"] = ["range_c"]
@@ -217,6 +216,7 @@ class ComplexSurfaceSeries(
     def __init__(self, expr, r, label="", **kwargs):
         threed = kwargs.pop("threed", False)
         kwargs.setdefault("is_filled", kwargs.pop("fill", True))
+        kwargs.setdefault("show_clabels", kwargs.pop("clabels", True))
         super().__init__(expr, r, label, **kwargs)
 
         self._block_lambda_functions(self.expr)
