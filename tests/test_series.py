@@ -198,6 +198,25 @@ def test_detect_poles():
         assert np.isnan(yy2).any()
 
 
+@pytest.mark.filterwarnings("ignore:NumPy is unable to evaluate with complex numbers some of the functions")
+def test_detect_poles_symbolic_warning():
+    # the detect_poles="symbolic" algorithm relies on
+    # sympy.calculus.util.continuous_domain
+    # There are SymPy functions that are not yet implemented in
+    # continuous_domain.
+    # Rather than stopping the execution with an error, it should
+    # raise a warning.
+
+    x = symbols("x")
+    expr = (floor(x) + S.Half) / (1 - (x - S.Half) ** 2)
+    s = LineOver1DRangeSeries(expr, (x, -3.5, 3.5), detect_poles="symbolic")
+    with warns(
+        UserWarning,
+        match="Unable to apply the symbolic poles detection algorithm",
+    ):
+        s.get_data()
+
+
 def test_number_discretization_points():
     # verify that the different ways to set the number of discretization
     # points are consistent with each other.
@@ -4085,6 +4104,7 @@ def test_exclude_points_2():
     )
 
 
+@pytest.mark.filterwarnings("ignore:NumPy is unable to evaluate with complex numbers some of the functions")
 def test_exclude_points_3():
     # at the time of writing this, numpy/scipy are unable to evaluate the
     # hyper function. Here I test the exclusion algorithm performs the
@@ -4111,6 +4131,7 @@ def test_exclude_points_3():
             1.00111233, 1.98563064], equal_nan=True)
 
 
+@pytest.mark.filterwarnings("ignore:NumPy is unable to evaluate with complex numbers some of the functions")
 def test_exclude_points_4():
     # verify that the exclude points algorithm also work if the first
     # discretization point is included in the exclusion list

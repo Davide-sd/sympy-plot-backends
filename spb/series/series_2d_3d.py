@@ -266,11 +266,19 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
             isinstance(self, LineOver1DRangeSeries) and
             (detect_poles == "symbolic")
         ):
-            poles = _detect_poles_symbolic_helper(
-                self.expr.subs(self.params), *self.ranges[0])
-            poles = np.array([float(t) for t in poles])
-            t = lambda x, transform: x if transform is None else transform(x)
-            self.poles_locations = list(t(np.array(poles), self.tx))
+            try:
+                poles = _detect_poles_symbolic_helper(
+                    self.expr.subs(self.params), *self.ranges[0])
+                poles = np.array([float(t) for t in poles])
+                t = lambda x, transform: x if transform is None else transform(x)
+                self.poles_locations = list(t(np.array(poles), self.tx))
+            except NotImplementedError as err:
+                warnings.warn(
+                    "Unable to apply the symbolic poles detection algorithm"
+                    " because the following error was thrown:\n"
+                    f"NotImplementedError: {err}",
+                    stacklevel=1
+                )
 
         if self.is_2Dline and detect_poles:
             if len(points) == 2:
