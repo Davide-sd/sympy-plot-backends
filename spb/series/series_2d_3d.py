@@ -330,10 +330,48 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
         These nearby points are important when the number of discretization
         points is low, or the scale is logarithm.
 
-        NOTE: it would be easier to just add exclusion points to the
-        discretized domain before evaluation, then after evaluation add NaN
-        to the exclusion points. But that's only work with adaptive=False.
-        The following approach work even with adaptive=True.
+        Notes
+        -----
+        Let's consider the probelm of inserting an exclusion point. In the
+        following, x0,x1,x2 are discretization points, while `e` is the
+        exclusion point. We modify the discretized domain from something
+        like this:
+
+        x0            x1     e      x2
+        |-------------|------|------|
+        0             1      1.5    2
+
+        To something like this:
+
+        x0            x1  x2 e x3   x4
+        |-------------|----|-|-|----|
+        0             1      1.5    2
+
+        where x2,e,x3 are three more discretization points, with x2,x3
+        very close to the exclusion point.
+
+        There are at least two approaches to insert exclusion points:
+
+        1. this implementation: first it evaluates the function over the
+           unmodifies discretized domain, then it inserts new points (x2,e,x3),
+           if evaluates them and finally replaces f(e) with NaN.
+           Even though this implementation requires a lot of code, it work
+           nice (even back in time, when the module exposed the
+           adaptive evaluation), because this is a post-processing step
+           done after the main evaluation.
+        2. modify the discretized domain by inserting (x1, e=NaN, x2),
+           then perform the main evaluation.
+           Turns out that there is a problem with this approach: some SymPy
+           functions are not implemented in NumPy/SciPy, so the evaluation
+           would fall back to SymPy. The problem is that evaluating these
+           function over NaN's might raise errors. Consider for example:
+
+           f = hyper((1.0331469998003, 9.67916472867169), (10.0,), x)
+           f.subs(x, S.NaN)
+           # TypeError: Invalid NaN comparison
+
+           I could modify the evaluator to catch this error, but why do it
+           when I already have implementation 1. working "correctly"?
         """
         if not hasattr(self, "exclude"):
             return points
@@ -390,6 +428,26 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
                     points[j] = np.concatenate((
                         [np.nan, value],
                         points[j][1:]
+                    ))
+                    c += 1
+
+            elif np.isclose(e, points[k][-1]) and (len(points[k]) > 1):
+                # if the exclusion point coincides with last discret. point
+                delta = abs(e - points[k][-2]) / 100
+                prev = e - delta
+                # add points to the x-coord or the parameter
+                points[k] = np.concatenate((
+                    points[k][:-1],
+                    [prev, e]
+                ))
+
+                # add points to the other coordinates
+                c = 0
+                for j in j_indeces:
+                    value = np.real(_eval(c, prev))
+                    points[j] = np.concatenate((
+                        points[j][:-1],
+                        [value, np.nan],
                     ))
                     c += 1
 
