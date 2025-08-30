@@ -936,9 +936,6 @@ class ParametricLineBaseSeries(
         discontinuities in the resulting line.""")
     is_polar = param.Boolean(False, doc="""
         If True, apply a cartesian to polar transformation.""")
-    tp = param.Callable(doc="""
-        Numerical transformation function to be applied to the numerical values
-        of the parameter.""")
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the parameter.""")
@@ -946,6 +943,11 @@ class ParametricLineBaseSeries(
         Number of discretization points along the parameter to be used in the
         evaluation.
         Related parameters: ``xscale``.""")
+
+    def _replace_tp(self, kwargs):
+        tp = kwargs.pop("tp", None)
+        if tp is not None:
+            kwargs.setdefault("color_func", tp)
 
     def _set_parametric_line_label(self, label):
         """Logic to set the correct label to be shown on the plot.
@@ -989,6 +991,11 @@ class ParametricLineBaseSeries(
     def _eval_color_func_helper(self, *coords):
         color_func = self.evaluator.request_color_func(self.modules)
         nargs = arity(color_func)
+        if nargs is None:
+            # this is the case when a function(*args) is given,
+            # for example np.rad2deg
+            nargs = 1
+
         if nargs == 1:
             color = color_func(coords[-1])
         elif nargs == 2:
@@ -1055,9 +1062,11 @@ class Parametric2DLineSeries(
         * A symbolic expression having at most as many free symbols as
           ``expr_x`` or ``expr_y``.
         * None: the default value (color mapping according to the parameter).
-        """)
+
+        Alias of this parameters: ``tp``.""")
 
     def __init__(self, expr_x, expr_y, range_p, label="", **kwargs):
+        self._replace_tp(kwargs)
         _check_misspelled_series_kwargs(self, **kwargs)
         kwargs["expr_x"] = expr_x if callable(expr_x) else sympify(expr_x)
         kwargs["expr_y"] = expr_y if callable(expr_y) else sympify(expr_y)
@@ -1129,7 +1138,8 @@ class Parametric3DLineSeries(
         * A symbolic expression having at most as many free symbols as
           ``expr_x`` or ``expr_y`` or ``expr_z``.
         * None: the default value (color mapping according to the parameter).
-        """)
+
+        Alias of this parameters: ``tp``.""")
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
@@ -1137,6 +1147,7 @@ class Parametric3DLineSeries(
     def __init__(
         self, expr_x, expr_y, expr_z, range_p, label="", **kwargs
     ):
+        self._replace_tp(kwargs)
         _check_misspelled_series_kwargs(self, **kwargs)
         kwargs["expr_x"] = expr_x if callable(expr_x) else sympify(expr_x)
         kwargs["expr_y"] = expr_y if callable(expr_y) else sympify(expr_y)
