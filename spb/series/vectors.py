@@ -90,31 +90,7 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         return self._label_str
 
     def get_data(self):
-        """Return arrays of coordinates for plotting. Depending on the
-        `adaptive` option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
-
-        Returns
-        =======
-
-        mesh_x : np.ndarray [n2 x n1]
-            Discretized x-domain.
-
-        mesh_y : np.ndarray [n2 x n1]
-            Discretized y-domain.
-
-        mesh_z : np.ndarray [n2 x n1] (optional)
-            Discretized z-domain in the case of Vector3DSeries.
-
-        u : np.ndarray [n2 x n1]
-            First component of the vector field.
-
-        v : np.ndarray [n2 x n1]
-            Second component of the vector field.
-
-        w : np.ndarray [n2 x n1] (optional)
-            Third component of the vector field in the case of Vector3DSeries.
-        """
+        """Return arrays of coordinates for plotting."""
         np = import_module('numpy')
 
         results = self.evaluator.evaluate()
@@ -177,6 +153,19 @@ class Vector2DSeries(VectorBase):
     range_y = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the y variable.
         Default values: `min=-10` and `max=10`.""")
+    color_func = param.Parameter(default=None, doc="""
+        Define the quiver/streamlines color mapping when ``use_cm=True``.
+        It can either be:
+
+        * A numerical function supporting vectorization. The arity must be:
+          ``f(x, y, u, v)``. Further, ``scalar=False`` must be set in order
+          to hide the contour plot so that a colormap is applied to
+          quivers/streamlines.
+        * A symbolic expression having at most as many free symbols as
+          ``u, v``. This only works for quivers plot.
+        * None: the default value, which will map colors according to the
+          magnitude of the vector field.
+        """)
     rendering_kw = param.Dict(default={}, doc="""
         A dictionary of keyword arguments to be passed to the renderers
         in order to further customize the appearance of the quivers or
@@ -218,6 +207,23 @@ class Vector2DSeries(VectorBase):
         kwargs["range_y"] = range_y
         kwargs["_range_names"] = ["range_x", "range_y"]
         super().__init__((u, v), (range_x, range_y), label, **kwargs)
+
+    def get_data(self):
+        """
+        Return arrays of coordinates for plotting.
+
+        Returns
+        =======
+        mesh_x : np.ndarray [n2 x n1]
+            Discretized x-domain.
+        mesh_y : np.ndarray [n2 x n1]
+            Discretized y-domain.
+        u : np.ndarray [n2 x n1]
+            First component of the vector field.
+        v : np.ndarray [n2 x n1]
+            Second component of the vector field.
+        """
+        return super().get_data()
 
     def __str__(self):
         ranges = []
@@ -264,6 +270,17 @@ class Vector3DSeries(VectorBase):
     range_z = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the z variable.
         Default values: `min=-10` and `max=10`.""")
+    color_func = param.Parameter(default=None, doc="""
+        Define the quiver/streamlines color mapping when ``use_cm=True``.
+        It can either be:
+
+        * A numerical function supporting vectorization. The arity must be
+          ``f(x, y, z, u, v, w)``.
+        * A symbolic expression having at most as many free symbols as
+          ``u, v, w``. This only works for quivers plot.
+        * None: the default value, which will map colors according to the
+          magnitude of the vector.
+        """)
     rendering_kw = param.Dict(default={}, doc="""
         A dictionary of keyword arguments to be passed to the renderers
         in order to further customize the appearance of the quivers or
@@ -337,6 +354,27 @@ class Vector3DSeries(VectorBase):
             raise TypeError(
                 "Vector3DSeries with streamlines can't use "
                 "symbolic `color_func`.")
+
+    def get_data(self):
+        """
+        Return arrays of coordinates for plotting.
+
+        Returns
+        =======
+        mesh_x : np.ndarray [n2 x n1]
+            Discretized x-domain.
+        mesh_y : np.ndarray [n2 x n1]
+            Discretized y-domain.
+        mesh_z : np.ndarray [n2 x n1]
+            Discretized z-domain.
+        u : np.ndarray [n2 x n1]
+            First component of the vector field.
+        v : np.ndarray [n2 x n1]
+            Second component of the vector field.
+        w : np.ndarray [n2 x n1]
+            Third component of the vector field.
+        """
+        return super().get_data()
 
     def __str__(self):
         ranges = []
@@ -560,13 +598,14 @@ class Arrow2DSeries(BaseSeries):
         return self._get_wrapped_label(self._label_latex, wrapper)
 
     def get_data(self):
-        """Return arrays of coordinates for plotting.
+        """
+        Return arrays of coordinates for plotting.
 
         Returns
         =======
-        x1, y1, z1 [optional] : float
+        x1, y1 : float
             Coordinates of the start position.
-        x2, y2, z2 [optional] : float
+        x2, y2 : float
             Coordinates of the end position.
         """
         np = import_module('numpy')
@@ -627,13 +666,14 @@ class Arrow3DSeries(Arrow2DSeries):
         z-axis.""")
 
     def get_data(self):
-        """Return arrays of coordinates for plotting.
+        """
+        Return arrays of coordinates for plotting.
 
         Returns
         =======
-        x, y, z : float
+        x1, y1, z1 : float
             Coordinates of the start position.
-        u, v, w : float
+        x2, y2, z2 : float
             Coordinates of the end position.
         """
         return super().get_data()

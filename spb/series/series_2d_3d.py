@@ -239,19 +239,6 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
     def get_data(self):
         """
         Return coordinates for plotting the line.
-
-        Returns
-        =======
-
-        x: np.ndarray
-            x-coordinates
-        y: np.ndarray
-            y-coordinates
-        z: np.ndarray (optional)
-            z-coordinates in case of Parametric3DLineSeries
-        param : np.ndarray (optional)
-            The parameter in case of Parametric2DLineSeries,
-            Parametric3DLineSeries or AbsArgLineSeries.
         """
         np = import_module('numpy')
         points = self._get_data_helper()
@@ -458,8 +445,11 @@ class List2DSeries(Line2DBaseSeries):
         A color function to be applied to the numerical data. It can be:
 
         * None: no color function.
-        * callable: a function accepting two arguments (the x-y coordinates)
-          and returning numerical data.
+        * callable: a function accepting:
+
+          * no arguments: this can be used to return an array of precomputed
+            values.
+          * two arguments, the x, y coordinates.
         """)
 
     def _check_length(self, list_x, list_y, list_z=None):
@@ -541,6 +531,22 @@ class List2DSeries(Line2DBaseSeries):
         ly = np.array([t.evalf(subs=self.params) for t in ly], dtype=float)
         return self._return_correct_elements(lx, ly)
 
+    def get_data(self):
+        """
+        Return coordinates for plotting the line.
+
+        Returns
+        =======
+        x : np.ndarray
+            x-coordinates
+        y : np.ndarray
+            y-coordinates
+        p : np.ndarray, optional
+            Values computed from the ``color_func`` attribute, only if
+            ``use_cm=True`` and ``color_func`` is not None.
+        """
+        return super().get_data()
+
     def _return_correct_elements(self, *data):
         color = self.eval_color_func(*data)
         if color is None:
@@ -552,17 +558,10 @@ class List2DSeries(Line2DBaseSeries):
             nargs = arity(self.color_func)
             if nargs == 0:
                 color = self.color_func()
-            elif nargs == 1:
-                # y-coord for 2D lines
-                color = self.color_func(data[1])
             elif nargs == 2:
                 color = self.color_func(*data)
             else:
-                raise ValueError(
-                    "The `color_func` attribute of a `List2DSeries`"
-                    " must be a function with 1 or 2 parameters. Instead,"
-                    f" {nargs} parameters were provided."
-                )
+                _raise_color_func_error(self, nargs)
             color = _correct_shape(color, data[0])
             return color
         return None
@@ -578,8 +577,11 @@ class List3DSeries(List2DSeries):
         A color function to be applied to the numerical data. It can be:
 
         * None: no color function.
-        * callable: a function accepting thre arguments (the x-y-z coordinates)
-          and returning numerical data.
+        * callable: a function accepting:
+
+          * no arguments: this can be used to return an array of precomputed
+            values.
+          * three arguments, the x, y, z coordinates.
         """)
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
@@ -615,24 +617,33 @@ class List3DSeries(List2DSeries):
         lz = np.array([t.evalf(subs=self.params) for t in lz], dtype=float)
         return self._return_correct_elements(lx, ly, lz)
 
+    def get_data(self):
+        """
+        Return coordinates for plotting the line.
+
+        Returns
+        =======
+        x : np.ndarray
+            x-coordinates
+        y : np.ndarray
+            y-coordinates
+        z : np.ndarray
+            z-coordinates
+        p : np.ndarray, optional
+            Values computed from the ``color_func`` attribute, only if
+            ``use_cm=True`` and ``color_func`` is not None.
+        """
+        return super().get_data()
+
     def _eval_color_func_helper(self, *data):
         if self.use_cm and callable(self.color_func):
             nargs = arity(self.color_func)
             if nargs == 0:
                 color = self.color_func()
-            elif nargs == 1:
-                # z-coord for 3D lines
-                color = self.color_func(data[2])
-            elif nargs == 2:
-                color = self.color_func(*data[:2])
             elif nargs == 3:
                 color = self.color_func(*data)
             else:
-                raise ValueError(
-                    "The `color_func` attribute of a `List3DSeries`"
-                    " must be a function with 1 or 2 or 3 parameters. Instead,"
-                    f" {nargs} parameters were provided."
-                )
+                _raise_color_func_error(self, nargs)
             color = _correct_shape(color, data[0])
             return color
         return None
@@ -657,6 +668,16 @@ class LineOver1DRangeSeries(
     """
     Representation for a line consisting of a SymPy expression over a
     real range.
+
+    Init signature: LineOver1DRangeSeries(expr, range_x, label, **kwargs)
+
+    Notes
+    -----
+    When ``color_func`` is provided, an instance of
+    ``ColoredLineOver1DRangeSeries`` will be returned. The difference is
+    the number of elements returned by the ``get_data()`` method:
+    2 coordinates for ``LineOver1DRangeSeries``, 2 coordinates and the
+    parameter for ``ColoredLineOver1DRangeSeries``.
     """
 
     expr = param.Parameter(doc="""
@@ -683,11 +704,12 @@ class LineOver1DRangeSeries(
         """)
     n1 = _CastToInteger(default=100, doc="""
         Number of discretization points along the parameter to be used in the
-        evaluation when ``adaptive=False``.
-        Related parameters: ``adaptive``, ``xscale``.""")
+        evaluation when.
+        Related parameters: ``xscale``.""")
 
     def __new__(cls, *args, **kwargs):
         if kwargs.get("absarg", False):
+            from spb.series.complex_analysis import AbsArgLineSeries
             return super().__new__(AbsArgLineSeries)
         cf = kwargs.get("color_func", None)
         lc = kwargs.get("line_color", None)
@@ -696,7 +718,6 @@ class LineOver1DRangeSeries(
         return object.__new__(cls)
 
     def __init__(self, expr, range_x, label="", **kwargs):
-        print("asd", label)
         _return = kwargs.pop("return", None)
         _check_misspelled_series_kwargs(self, additional_keys=["sum_bound"], **kwargs)
         kwargs["range_x"] = range_x
@@ -766,6 +787,19 @@ class LineOver1DRangeSeries(
 
         return x, _re
 
+    def get_data(self):
+        """
+        Return coordinates for plotting the line.
+
+        Returns
+        =======
+        x : np.ndarray
+            x-coordinates
+        y : np.ndarray
+            y-coordinates
+        """
+        return super().get_data()
+
 
 class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
     """Represents a 2D line series in which `color_func` is a callable.
@@ -793,13 +827,24 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
         return t(x, self.tx), t(y, self.ty), p
 
     def _get_data_helper(self):
-        """Returns coordinates that needs to be postprocessed.
-        Depending on the `adaptive` option, this function will either use an
-        adaptive algorithm or it will uniformly sample the expression over the
-        provided range.
-        """
+        """Returns coordinates that needs to be postprocessed."""
         x, y = super()._get_data_helper()
         return x, y, self.eval_color_func(x, y)
+
+    def get_data(self):
+        """
+        Return coordinates for plotting the line.
+
+        Returns
+        =======
+        x : np.ndarray
+            x-coordinates
+        y : np.ndarray
+            y-coordinates
+        p : np.ndarray
+            Parameter values computed from the ``color_func`` attribute.
+        """
+        return super().get_data()
 
 
 class ParametricLineBaseSeries(
@@ -841,8 +886,8 @@ class ParametricLineBaseSeries(
         Discretization strategy along the parameter.""")
     n1 = _CastToInteger(default=100, doc="""
         Number of discretization points along the parameter to be used in the
-        evaluation when ``adaptive=False``.
-        Related parameters: ``adaptive``, ``xscale``.""")
+        evaluation.
+        Related parameters: ``xscale``.""")
 
     def _set_parametric_line_label(self, label):
         """Logic to set the correct label to be shown on the plot.
@@ -901,11 +946,7 @@ class ParametricLineBaseSeries(
         return _correct_shape(color, coords[0])
 
     def _get_data_helper(self):
-        """Returns coordinates that needs to be postprocessed.
-        Depending on the `adaptive` option, this function will either use an
-        adaptive algorithm or it will uniformly sample the expression over the
-        provided range.
-        """
+        """Returns coordinates that needs to be postprocessed."""
         coords = self._uniform_sampling()
 
         if self.is_2Dline and self.is_polar:
@@ -973,6 +1014,21 @@ class Parametric2DLineSeries(
         self._post_init()
         self._set_parametric_line_label(label)
 
+    def get_data(self):
+        """
+        Return coordinates for plotting the line.
+
+        Returns
+        =======
+        x : np.ndarray
+            x-coordinates
+        y : np.ndarray
+            y-coordinates
+        p : np.ndarray
+            parameter
+        """
+        return super().get_data()
+
     def __str__(self):
         return self._str_helper(
             "parametric cartesian line: (%s, %s) for %s over %s" % (
@@ -1037,6 +1093,23 @@ class Parametric3DLineSeries(
         self.evaluator.set_expressions()
         self._post_init()
         self._set_parametric_line_label(label)
+
+    def get_data(self):
+        """
+        Return coordinates for plotting the line.
+
+        Returns
+        =======
+        x : np.ndarray
+            x-coordinates
+        y : np.ndarray
+            y-coordinates
+        z : np.ndarray
+            z-coordinates
+        p : np.ndarray
+            parameter
+        """
+        return super().get_data()
 
     def __str__(self):
         return self._str_helper(
@@ -1234,19 +1307,14 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
 
     def get_data(self):
         """
-        Return arrays of coordinates for plotting. Depending on the
-        `adaptive` option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
+        Return arrays of coordinates for plotting.
 
         Returns
         =======
-
         mesh_x : np.ndarray [n2 x n1]
             Real Discretized x-domain.
-
         mesh_y : np.ndarray [n2 x n1]
             Real Discretized y-domain.
-
         z : np.ndarray [n2 x n1]
             Results of the evaluation.
         """
@@ -1320,6 +1388,22 @@ class ParametricSurfaceSeries(
     range_v = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the v parameter.
         Default values: `min=-10` and `max=10`.""")
+    color_func = param.Parameter(default=None, doc="""
+        Define the surface color mapping when use_cm=True. It can either be:
+
+        * None: the default value (color mapping according to the
+          z coordinate).
+        * A numerical function supporting vectorization. The arity can be:
+
+          * 1 argument: ``f(u)``, where ``u`` is the first parameter.
+          * 2 arguments: ``f(u, v)`` where ``u, v`` are the parameters.
+          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
+            of the points.
+          * 5 arguments: ``f(x, y, z, u, v)``.
+
+        * A symbolic expression having at most as many free symbols as
+          ``expr_x`` or ``expr_y`` or ``expr_z``.
+        """)
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the the first parameter.
@@ -1383,13 +1467,10 @@ class ParametricSurfaceSeries(
 
     def get_data(self):
         """
-        Return arrays of coordinates for plotting. Depending on the
-        `adaptive` option, this function will either use an adaptive algorithm
-        or it will uniformly sample the expression over the provided range.
+        Return arrays of coordinates for plotting.
 
         Returns
         =======
-
         x : np.ndarray [n2 x n1]
             x-coordinates.
         y : np.ndarray [n2 x n1]
@@ -2041,6 +2122,13 @@ class PlaneSeries(SurfaceBaseSeries):
     n3 = _CastToInteger(default=100, doc="""
         Number of discretization points along the z-axis to be used in the
         evaluation. Related parameters: ``zscale``.""")
+    color_func = param.Parameter(default=None, doc="""
+        A color function to be applied to the numerical data. It can be:
+
+        * None: no color function.
+        * callable: a function of 3 arguments (the coordinates x, y, z)
+          returning numerical data.
+        """)
     _use_nan = param.Boolean(True, doc="""
         A generic plane (for example with normal (1,1,1)) can generate a huge
         range along the z-direction. With _use_nan=True, every z-value outside
@@ -2080,6 +2168,15 @@ class PlaneSeries(SurfaceBaseSeries):
                 self.plane, self.range_x, self.range_y, self.range_z))
 
     def get_data(self):
+        """
+        Return arrays of coordinates for plotting.
+
+        Returns
+        =======
+        x : np.ndarray
+        y : np.ndarray
+        z : np.ndarray
+        """
         np = import_module('numpy')
 
         x, y, z = symbols("x, y, z")
@@ -2236,6 +2333,14 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
             self.poles_locations = []
 
     def get_data(self):
+        """
+        Return arrays of coordinates for plotting.
+
+        Returns
+        =======
+        x : np.ndarray
+        y : np.ndarray
+        """
         np = import_module('numpy')
 
         expr = self.geom.subs(self.params)
@@ -2335,6 +2440,15 @@ class Geometry3DSeries(Line2DBaseSeries):
             self.is_point = True
 
     def get_data(self):
+        """
+        Return arrays of coordinates for plotting.
+
+        Returns
+        =======
+        x : np.ndarray
+        y : np.ndarray
+        z : np.ndarray
+        """
         np = import_module('numpy')
 
         expr = self.geom.subs(self.params)

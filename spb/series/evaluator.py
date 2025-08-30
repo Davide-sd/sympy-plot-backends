@@ -26,7 +26,8 @@ warnings.formatwarning = format_warnings_on_one_line
 
 
 class IntervalMathPrinter(PythonCodePrinter):
-    """A printer to be used inside `plot_implicit` when `adaptive=True`,
+    """
+    A printer to be used inside `plot_implicit` when `adaptive=True`,
     in which case the interval arithmetic module is going to be used, which
     requires the following edits.
     """
@@ -152,12 +153,11 @@ class _GridEvaluationParameters(param.Parameterized, _NMixin):
         The plotting module should be able to detect such occurences and
         automatically activate this option. If that is not the case, or
         evaluation performance is of paramount importance, set this parameter
-        to True, but be aware that it might produce wrong results.
-        It only works with ``adaptive=False``.""")
+        to True, but be aware that it might produce wrong results.""")
     only_integers = param.Boolean(False, doc="""
-        Discretize the domain using only integer numbers. It only works when
-        ``adaptive=False``. When this parameter is True, the number of
-        discretization points is choosen by the algorithm.""")
+        Discretize the domain using only integer numbers. When this parameter
+        is True, the number of discretization points is choosen by
+        the algorithm.""")
     modules = param.Parameter(None, doc="""
         Specify the evaluation modules to be used by lambdify.
         If not specified, the evaluation will be done with NumPy/SciPy.""")
@@ -287,10 +287,6 @@ class _LambdifierMixin(param.Parameterized):
 
         exprs = self.expr if hasattr(self.expr, "__iter__") else [self.expr]
         if not any(callable(e) for e in exprs):
-            if len(self._signature) == 0:
-                fs = _get_free_symbols(exprs)
-                self._signature = sorted(fs, key=lambda t: t.name)
-
             # NOTE: suppose we are dealing with a Parametric3DLineSeries,
             # which have 3 symbolic expressions. Why creating 3 lambda
             # functions when I can lambdify a Tuple(expr1, expr2, expr3), thus
@@ -315,9 +311,6 @@ class _LambdifierMixin(param.Parameterized):
                 functions.append(lambdify(self._signature, e, **kwargs))
             self._functions[h] = functions
         else:
-            if len(self._signature) == 0:
-                self._signature = sorted([
-                    r[0] for r in self.series.ranges], key=lambda t: t.name)
             self._functions[h] = [e for e in exprs]
 
         return self._functions[h]
@@ -365,9 +358,16 @@ class _LambdifierMixin(param.Parameterized):
         if is_callable:
             with param.edit_constant(self):
                 self.expr = e
+
+            self._signature = sorted([
+                r[0] for r in self.series.ranges], key=lambda t: t.name)
         else:
             with param.edit_constant(self):
                 self.expr = sympify(e) if not is_iter else Tuple(*e)
+
+            fs = _get_free_symbols(e)
+            self._signature = sorted(fs, key=lambda t: t.name)
+
             s = set()
             for e in self.expr.atoms(Sum, Product):
                 for a in e.args[1:]:

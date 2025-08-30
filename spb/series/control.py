@@ -1240,7 +1240,6 @@ class MCirclesSeries(GridBase, BaseSeries):
         """
         Returns
         =======
-
         data : list
             Each element of the list has the form:
             ``[magnitude_db, x_coords, y_coords]``.

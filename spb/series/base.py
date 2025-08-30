@@ -44,10 +44,9 @@ def _raise_color_func_error(series, nargs):
         return
 
     class_ = type(series).__name__
-
     raise ValueError(
-        "Error while processing the `color_func` of this series:\n"
-        f"Wrong number of arguments ({nargs}) of {class_}'s `color_func`."
+        f"Error while processing the `color_func` of {class_}:"
+        f" wrong number of arguments ({nargs}).\n"
         " Here is the documentation of the `color_func` attribute:\n\n"
         f"{series.param.color_func.doc}"
     )
@@ -255,8 +254,7 @@ class BaseSeries(param.Parameterized):
     # the extraction of values during series instantiation.
     params = _ParametersDict({}, doc="""
         A dictionary mapping symbols to parameters. If provided, this
-        dictionary enables the interactive-widgets plot, which doesn't support
-        the adaptive algorithm (meaning it will use ``adaptive=False``).
+        dictionary enables the interactive-widgets plot.
 
         When calling a plotting function, the parameter can be specified with:
 
@@ -321,14 +319,6 @@ class BaseSeries(param.Parameterized):
 
         Let ``series`` be any data series. Then ``series.params`` returns a
         dictionary mapping symbols to numerical values.
-        """)
-    color_func = param.Parameter(default=None, doc="""
-        A color function to be applied to the numerical data. It can be:
-
-        * None: no color function.
-        * callable: a function returning numerical data.
-        * Expr: A symbolic expression having at most as many free symbols as
-          ``expr``.
         """)
     _label_str = param.String("", doc="""Contains str representation.""")
     _label_latex = param.String("", doc="""Contains latex representation.""")
@@ -426,10 +416,8 @@ class BaseSeries(param.Parameterized):
         # provided, then its better to do the following in order to avoid
         # suprises on the backend
         if any(callable(e) for e in exprs):
-            print("wtf", self._label_str, str(self.expr))
             if self._label_str == str(self.expr):
                 self.label = ""
-                # self._update_latex_and_str_labels()
 
         self._check_fs()
 
@@ -460,16 +448,23 @@ class BaseSeries(param.Parameterized):
         # from the expression's free symbols, remove the ones used in
         # the parameters and the ranges
         fs = _get_free_symbols(exprs)
+        if hasattr(self, "color_func"):
+            fs = fs.union(_get_free_symbols(self.color_func))
         fs = fs.difference(params.keys())
         if ranges is not None:
             fs = fs.difference([r[0] for r in ranges])
 
         if len(fs) > 0:
             if (ranges is not None) and len(ranges) > 0:
-                erl = "Expression: %s\nRanges: %s\nLabel: %s\n" % (
-                    exprs, ranges, label)
+                erl = f"Expressions: {exprs}\n"
+                if (
+                    hasattr(self, "color_func")
+                    and isinstance(self.color_func, Expr)
+                ):
+                    erl += f"color_func: {self.color_func}\n"
+                erl += f"Ranges: {ranges}\nLabel: {label}\n"
             else:
-                erl = "Expression: %s\nLabel: %s\n" % (exprs, label)
+                erl = "Expressions: %s\nLabel: %s\n" % (exprs, label)
             raise ValueError(
                 "Incompatible expression and parameters.\n%s"
                 "params: %s\n"

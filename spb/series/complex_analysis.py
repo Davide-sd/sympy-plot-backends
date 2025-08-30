@@ -53,17 +53,28 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
             str((self.start, self.end))))
 
     def _get_data_helper(self):
-        """Returns coordinates that needs to be postprocessed.
-        Depending on the `adaptive` option, this function will either use an
-        adaptive algorithm or it will uniformly sample the expression over the
-        provided range.
-        """
+        """Returns coordinates that needs to be postprocessed."""
         np = import_module('numpy')
         x, result = self.evaluator.evaluate()
         _re, _im = np.real(result), np.imag(result)
         _abs = np.sqrt(_re**2 + _im**2)
         _angle = np.arctan2(_im, _re)
         return x, _abs, _angle
+
+    def get_data(self):
+        """
+        Return coordinates for plotting the line.
+
+        Returns
+        =======
+        x : np.ndarray
+            x-coordinates
+        abs: np.ndarray
+            Absolute value of the complex function.
+        arg : np.ndarray
+            Argument of the complex function.
+        """
+        return super().get_data()
 
     def _apply_transform(self, *args):
         t = self._get_transform_helper()
@@ -208,6 +219,21 @@ class ComplexSurfaceSeries(
     is_contour = False
     is_domain_coloring = False
 
+    color_func = param.Parameter(default=None, doc="""
+        Define a custom color mapping to be used when ``use_cm=True``.
+        It can either be:
+
+        * A numerical function supporting vectorization. The arity can be:
+
+          * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of
+            the points.
+          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
+            of the points.
+        * A symbolic expression having at most as many free symbols as
+          ``expr``.
+        * None: the default value (color mapping according to the
+          z coordinate).
+        """)
     is_filled = param.Boolean(True, doc="""
         If True, used filled contours. Otherwise, use line contours.""")
     show_clabels = param.Boolean(True, doc="""
@@ -232,17 +258,16 @@ class ComplexSurfaceSeries(
         return ComplexSurfaceBaseSeries._create_discretized_domain(self)
 
     def get_data(self):
-        """Return arrays of coordinates for plotting.
+        """
+        Return arrays of coordinates for plotting.
 
         Returns
         =======
 
         mesh_x : np.ndarray [n2 x n1]
             Real discretized domain.
-
         mesh_y : np.ndarray [n2 x n1]
             Imaginary discretized domain.
-
         z : np.ndarray [n2 x n1]
             Results of the evaluation.
         """
@@ -407,27 +432,23 @@ class ComplexDomainColoringSeries(
         return self.coloring(w)
 
     def get_data(self):
-        """Return arrays of coordinates for plotting.
+        """
+        Return arrays of coordinates for plotting.
 
         Returns
         =======
 
         mesh_x : np.ndarray [n2 x n1]
             Real discretized domain.
-
         mesh_y : np.ndarray [n2 x n1]
             Imaginary discretized domain.
-
         abs : np.ndarray [n2 x n1]
             Absolute value of the function.
-
         arg : np.ndarray [n2 x n1]
             Argument of the function.
-
         img : np.ndarray [n2 x n1 x 3]
             RGB image values computed from the argument of the function.
             0 <= R, G, B <= 255
-
         colors : np.ndarray [256 x 3]
             Color scale associated to `img`.
         """
@@ -451,9 +472,6 @@ class ComplexParametric3DLineSeries(Parametric3DLineSeries):
         super().__init__(*args, **kwargs)
         # determines what data to return on the z-axis
         self._return = _return
-
-    def _adaptive_sampling(self):
-        raise NotImplementedError
 
     def _uniform_sampling(self):
         """Returns coordinates that needs to be postprocessed."""
@@ -542,7 +560,8 @@ class RiemannSphereSeries(
             self.n2 = 4 * self.n1
 
     def get_data(self):
-        """Return arrays of coordinates for plotting.
+        """
+        Return arrays of coordinates for plotting.
 
         Returns
         =======

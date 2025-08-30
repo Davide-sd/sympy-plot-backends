@@ -156,7 +156,8 @@ def _preprocess_multiple_ranges(exprs, ranges, npar, params={}):
 
 
 def _get_free_symbols(exprs):
-    """Returns the free symbols of a symbolic expression.
+    """
+    Returns the free symbols of a symbolic expression.
 
     If the expression contains any of these elements, assume that they are
     the "free symbols" of the expression:
@@ -166,6 +167,10 @@ def _get_free_symbols(exprs):
     """
     # TODO: this function gets called 3 times to generate a single plot.
     # See if its possible to remove one functions call inside series.py
+    if exprs is None:
+        # this case happens when we are retrieving the free symbols from
+        # color_func, whose default value is None
+        return set()
     if not isinstance(exprs, (list, tuple, set)):
         exprs = [exprs]
     if all(callable(e) for e in exprs):

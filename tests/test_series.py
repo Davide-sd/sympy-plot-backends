@@ -3865,6 +3865,78 @@ def test_color_func_expression_eval_with_sympy():
         s.get_data()
 
 
+def test_color_func_lambda_errors():
+    # verify that color_func lambdas requiring a wrong number of arguments
+    # raise appropriate error
+
+    x, y, z = symbols("x, y, z")
+
+    def do_test(code_to_execute, series_type):
+        name = series_type.__name__
+        with raises(
+            ValueError,
+            match=f"Error while processing the `color_func` of {name}"
+        ):
+            code_to_execute()
+
+    s = LineOver1DRangeSeries(cos(x), (x, -pi, pi), color_func=lambda: 1, n=5)
+    do_test(lambda: s.get_data(), ColoredLineOver1DRangeSeries)
+
+    s = Parametric2DLineSeries(cos(x), sin(x), (x, 0, pi),
+        color_func=lambda: 1)
+    do_test(lambda: s.get_data(), Parametric2DLineSeries)
+
+    s = Parametric3DLineSeries(cos(x), sin(x), x, (x, 0, pi),
+        color_func=lambda: 1)
+    do_test(lambda: s.get_data(), Parametric3DLineSeries)
+
+    s = SurfaceOver2DRangeSeries(
+        cos(x*y), (x, -pi, pi), (y, -pi, pi), color_func=lambda: 1, n=5)
+    xx, yy, zz = s.get_data()
+    do_test(lambda: s.eval_color_func(xx, yy, zz), SurfaceOver2DRangeSeries)
+
+    s = ContourSeries(
+        cos(x*y), (x, -pi, pi), (y, -pi, pi), color_func=lambda: 1, n=5)
+    xx, yy, zz = s.get_data()
+    do_test(lambda: s.eval_color_func(xx, yy, zz), ContourSeries)
+
+    s = PlaneSeries(
+        Plane((0, 0, 0), (1, 1, 1)), (x, -pi, pi), (y, -pi, pi), (z, -pi, pi),
+        color_func=lambda: 1, n=5)
+    xx, yy, zz = s.get_data()
+    do_test(lambda: s.eval_color_func(xx, yy, zz), PlaneSeries)
+
+    s = List2DSeries([1, 2], [3, 4], color_func=lambda t: t, use_cm=True)
+    do_test(lambda: s.eval_color_func(xx, yy, zz), List2DSeries)
+
+    s = List3DSeries([1, 2], [3, 4], [5, 6], color_func=lambda t: t, use_cm=True)
+    do_test(lambda: s.eval_color_func(xx, yy, zz), List3DSeries)
+
+
+def test_color_func_expr_errors():
+    # verify that color_func expressions requiring a different free symbols
+    # than expr, raise appropriate error
+
+    x, y, z = symbols("x, y, z")
+    def do_test(create_series):
+        with raises(
+            ValueError,
+            match="Incompatible expression and parameters"
+        ):
+            create_series()
+
+    do_test(lambda: LineOver1DRangeSeries(
+        cos(x), (x, -pi, pi), color_func=x+y))
+    do_test(lambda: Parametric2DLineSeries(
+        cos(x), sin(x), (x, -pi, pi), color_func=x+y))
+    do_test(lambda: Parametric3DLineSeries(
+        cos(x), sin(x), x, (x, -pi, pi), color_func=x+y))
+    do_test(lambda: SurfaceOver2DRangeSeries(
+        cos(x*y), (x, -pi, pi), (y, 0, pi), color_func=x+y+z))
+    do_test(lambda: ContourSeries(
+        cos(x*y), (x, -pi, pi), (y, 0, pi), color_func=x+y+z))
+
+
 def test_2d_complex_domain_coloring_schemes():
     # verify that domain coloring schemes produce different data from one
     # another
