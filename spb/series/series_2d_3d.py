@@ -2457,13 +2457,29 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
         else:  # Line
             p1, p2 = expr.points
             if self.range_x == (0, 0):
-                x = np.array([p1.x, p2.x])
-                y = np.array([p1.y, p2.y])
+                x = np.array([p1.x, p2.x], dtype=float)
+                y = np.array([p1.y, p2.y], dtype=float)
+            elif np.isclose(float(p1.x), float(p2.x)):
+                x = np.array([p1.x, p2.x], dtype=float)
+                y = np.array([p1.y, p2.y], dtype=float)
+                warnings.warn(
+                    "It looks like you are attempting to plot a vertical line,"
+                    f" but you have also specified `range_x`={self.range_x}."
+                    " This would compute infinite y-coordinates, which"
+                    " plotting libraries are unable to render. Thus, the code"
+                    " is returning the coordinates of the points specified in"
+                    " the Line2D definition. If you want to plot a vertical"
+                    " line spanning the entire visible plotting area, then"
+                    " spb.graphics.functions_2d.vline is what you need.",
+                    stacklevel=1
+                )
             else:
-                m = expr.slope
-                q = p1[1] - m * p1[0]
-                x = np.array(self.range_x)
+                m = float(expr.slope)
+                q = float(p1[1] - m * p1[0])
+                x = np.array(self.range_x, dtype=float)
                 y = m * x + q
+                print("x", x)
+                print("y", y)
             return self._apply_transform(x.astype(float), y.astype(float))
 
     def __str__(self):

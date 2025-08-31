@@ -275,3 +275,13 @@ def test_geometry_Line2D():
     xx, yy = s.get_data()
     assert np.allclose(xx, [-10, 5])
     assert np.allclose(yy, [-9, 6])
+
+    s = geometry(Line2D((1, 2), (1, 6)), range_x=(-6, 4))[0]
+    with pytest.warns(
+        UserWarning,
+        match="It looks like you are attempting to plot a vertical line,"
+    ):
+        xx, yy = s.get_data()
+        assert np.allclose(xx, (1, 1))
+        assert np.allclose(yy, (2, 6))
+
