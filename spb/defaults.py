@@ -27,6 +27,8 @@ def _hardcoded_defaults():
             "use_latex": False,
             # automatically compute new data when zoom/pan are used
             "update_event": False,
+            # Show/hide minor grid
+            "show_minor_grid": False,
         },
         bokeh={
             # More themes at:

@@ -102,6 +102,7 @@ class MatplotlibBackend(Plot):
 
     pole_line_kw = {"color": "k", "linestyle": ":"}
     grid_line_kw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75}
+    minor_grid_line_kw = {"color": '0.825', "linestyle": '--', "linewidth": 0.6}
     sgrid_line_kw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75,
         "zorder": 0}
     ngrid_line_kw = {"color": 'lightgray', "linestyle": ':',
@@ -139,13 +140,6 @@ class MatplotlibBackend(Plot):
         self.Path3DCollection = self.mpl_toolkits.mplot3d.art3d.Path3DCollection
         self.Axes3D = self.mpl_toolkits.mplot3d.Axes3D
 
-        # set default colors
-        # self.colormaps = [
-        #     cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
-        #     cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer]
-        # self.cyclic_colormaps = [cm.twilight, cm.hsv]
-        # # load default colorloop
-        # self.colorloop = self.plt.rcParams['axes.prop_cycle'].by_key()["color"]
         kwargs.setdefault("colormaps", [
             cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
             cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer])
@@ -164,14 +158,14 @@ class MatplotlibBackend(Plot):
         if self._use_existing_figure and (self._plotgrid_ax is None):
             self._plotgrid_ax = self._plotgrid_fig.get_axes()[0]
 
-
         kwargs.setdefault(
             "update_event", cfg["matplotlib"]["update_event"])
         kwargs.setdefault(
             "use_latex", cfg["matplotlib"]["use_latex"])
+        kwargs.setdefault("grid", cfg["matplotlib"]["grid"])
+        kwargs.setdefault("minor_grid", cfg["matplotlib"]["show_minor_grid"])
         kwargs.setdefault("theme", "default")
         super().__init__(*args, **kwargs)
-        # self._init_cyclers()
 
         # set labels
         self._set_labels()
@@ -187,9 +181,6 @@ class MatplotlibBackend(Plot):
 
         if self.axis_center is None:
             self.axis_center = cfg["matplotlib"]["axis_center"]
-        self.grid = kwargs.get("grid", cfg["matplotlib"]["grid"])
-        self._show_minor_grid = kwargs.get(
-            "show_minor_grid", cfg["matplotlib"]["show_minor_grid"])
 
         self._legend_handles = []
 
@@ -288,7 +279,6 @@ class MatplotlibBackend(Plot):
     def fig(self):
         """Returns the figure."""
         self._create_ax_if_not_available()
-        # return super().fig
         return self._fig
 
     @property
@@ -360,12 +350,10 @@ class MatplotlibBackend(Plot):
                 self._ax.grid()
             else:
                 self._ax.grid(
-                    visible=True, which='major', linestyle='-',
-                    linewidth=0.75, color='0.75')
+                    visible=True, which='major', **self.grid_line_kw)
                 self._ax.grid(
-                    visible=True, which='minor', linestyle='--',
-                    linewidth=0.6, color='0.825')
-                if self._show_minor_grid:
+                    visible=True, which='minor', **self.minor_grid_line_kw)
+                if self.minor_grid:
                     self._ax.minorticks_on()
         if self.legend:
             if len(self._legend_handles) > 0:

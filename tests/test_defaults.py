@@ -55,11 +55,13 @@ def test_cfg_matplotlib_keys():
 
 
 def test_cfg_plotly_keys():
-    must_have_keys = ["theme", "grid", "use_latex", "update_event"]
+    must_have_keys = [
+        "theme", "grid", "use_latex", "update_event", "show_minor_grid"]
     for k in must_have_keys:
         assert k in cfg["plotly"].keys()
     assert isinstance(cfg["plotly"]["theme"], str)
     assert isinstance(cfg["plotly"]["grid"], bool)
+    assert isinstance(cfg["plotly"]["show_minor_grid"], bool)
     assert isinstance(cfg["plotly"]["update_event"], bool)
 
 

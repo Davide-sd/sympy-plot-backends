@@ -126,6 +126,7 @@ class PlotlyBackend(Plot):
         kwargs.setdefault("update_event", cfg["plotly"]["update_event"])
         kwargs.setdefault("use_latex", cfg["plotly"]["use_latex"])
         kwargs.setdefault("grid", cfg["plotly"]["grid"])
+        kwargs.setdefault("minor_grid", cfg["plotly"]["show_minor_grid"])
         kwargs.setdefault("theme", cfg["plotly"]["theme"])
 
         # _init_cyclers needs to know if an existing figure was provided
@@ -410,6 +411,8 @@ class PlotlyBackend(Plot):
                 camera=self.camera
             ),
         )
+        self._fig.update_xaxes(minor=dict(showgrid=self.minor_grid))
+        self._fig.update_yaxes(minor=dict(showgrid=self.minor_grid))
 
     def _set_axes_texts(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()

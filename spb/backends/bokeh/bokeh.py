@@ -129,6 +129,7 @@ class BokehBackend(Plot):
         kwargs.setdefault("use_latex", cfg["bokeh"]["use_latex"])
         kwargs.setdefault("theme", cfg["bokeh"]["theme"])
         kwargs.setdefault("grid", cfg["bokeh"]["grid"])
+        kwargs.setdefault("minor_grid", cfg["bokeh"]["show_minor_grid"])
         kwargs.setdefault("update_event", cfg["bokeh"]["update_event"])
 
         # _init_cyclers needs to know if an existing figure was provided
@@ -182,7 +183,7 @@ class BokehBackend(Plot):
             self._fig = self.bokeh.plotting.figure(**kw)
         self._fig.axis.visible = self.axis
         self._fig.grid.visible = self.grid
-        if cfg["bokeh"]["show_minor_grid"]:
+        if self.minor_grid:
             self._fig.grid.minor_grid_line_alpha = cfg["bokeh"]["minor_grid_line_alpha"]
             self._fig.grid.minor_grid_line_color = self._fig.grid.grid_line_color[0]
             self._fig.grid.minor_grid_line_dash = cfg["bokeh"]["minor_grid_line_dash"]
