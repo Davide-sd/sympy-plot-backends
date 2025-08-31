@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from spb.graphics import (
     line, line_parametric_2d, contour, implicit_2d, line_polar, list_2d,
@@ -9,7 +10,7 @@ from spb.series import (
 )
 from sympy import (
     symbols, cos, sin, pi, Rational,
-    Circle, Ellipse, Polygon, Curve, Segment, Point2D, Point
+    Circle, Ellipse, Polygon, Curve, Segment, Point2D, Point, Line2D
 )
 
 
@@ -258,3 +259,19 @@ def test_geometry(geom, label, rkw, fill, params):
     assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == ({} if not params else params)
+
+
+def test_geometry_Line2D():
+    # verify that range_x works as supposed to when a Line2D is passed in.
+    l = Line2D((1, 2), (3, 4))
+    s = geometry(l)[0]
+    assert s.range_x == (0, 0)
+    xx, yy = s.get_data()
+    assert np.allclose(xx, [1, 3])
+    assert np.allclose(yy, [2, 4])
+
+    s = geometry(l, range_x=(-10, 5))[0]
+    assert s.range_x == (-10, 5)
+    xx, yy = s.get_data()
+    assert np.allclose(xx, [-10, 5])
+    assert np.allclose(yy, [-9, 6])

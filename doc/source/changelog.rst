@@ -18,6 +18,19 @@ v4.0.0
 * Removed the adaptive algorithm from
   ``line, line_parametric_2d, line_parametric_3d, surface`` (and their
   respective counterpars, ``plot, plot_parametric, plot3d_parametric, plot3d``).
+  Main motivations were:
+
+  1. easier to use plotting module, as there are 3/4 keyword arguments less
+     to be worried about.
+  2. cleaner and simpler code base.
+  3. easier to implement new features (interactive ones), that only works with
+     the uniform evaluation strategy.
+
+* Split the ``GeometrySeries`` into ``Geometry2DSeries`` and
+  ``Geometry3DSeries`` for better code separation.
+
+* Added attribute ``Geometry2DSeries.range_x`` which allows to plot a
+  ``Line2D`` in the specified range along the x-axis.
 
 * remove ``tp`` keyword argument from ``step_response``, ``ramp_response``,
   ``impulse_response``.
@@ -26,8 +39,8 @@ v4.0.0
 
   * with the numerical algorithm about singularities detection of
     2D parametric lines.
-  * with the ``exclude`` keyword arguments, in particular the algorithm
-    used to insert exclusion points.
+  * with the algorithm used to insert exclusion points through the
+    ``exclude`` keyword argument.
 
 *
 

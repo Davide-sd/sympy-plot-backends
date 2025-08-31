@@ -2361,9 +2361,11 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
 
     geom = param.ClassSelector(class_=GeometryEntity, doc="""
         Represent the geometric entity to be plotted.""")
-    range_x = _RangeTuple(doc="""
-        A 3-tuple `(symb, min, max)` denoting the range of the x variable
-        to be used when plotting lines. Default to None.""")
+    range_x = param.Tuple(doc="""
+        A 2-tuple `(min, max)` denoting the range of the x variable
+        to be used when plotting objects of type Line2D.
+        If not provided, a segment will be plotted between the 2 specified
+        points of the line.""")
     n1 = _CastToInteger(default=100, doc="""
         Number of discretization points used to resolve the polar
         angle theta ∈ [0, 2*pi] in order to plot ellipses.""")
@@ -2374,6 +2376,10 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
 
     def __init__(self, geom, range_x=None, label="", **kwargs):
         _check_misspelled_series_kwargs(self, **kwargs)
+        if hasattr(range_x, "__iter__") and (len(range_x) == 3):
+            range_x = range_x[1:]
+        elif range_x is None:
+            range_x = (0, 0)
         if not isinstance(geom, GeometryEntity):
             raise ValueError(
                 "`expr` must be a geomtric entity.\n"
@@ -2450,13 +2456,13 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
             return self._apply_transform(x.astype(float), y.astype(float))
         else:  # Line
             p1, p2 = expr.points
-            if not self.range_x:
+            if self.range_x == (0, 0):
                 x = np.array([p1.x, p2.x])
                 y = np.array([p1.y, p2.y])
             else:
                 m = expr.slope
                 q = p1[1] - m * p1[0]
-                x = np.array([self.range_x[1], self.range_x[2]])
+                x = np.array(self.range_x)
                 y = m * x + q
             return self._apply_transform(x.astype(float), y.astype(float))
 
