@@ -229,11 +229,21 @@ class PlotAttributes(param.Parameterized):
     grid = param.ClassSelector(default=True, class_=(bool, dict), doc="""
         Toggle the visibility of major grid lines. A dictionary of keyword
         arguments can be passed to customized the appearance of the grid
-        lines.""")
+        lines:
+
+        * Matplotlib: https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.grid.html
+        * Plotly: https://plotly.com/python/axes/#styling-grid-lines
+        * Bokeh: https://docs.bokeh.org/en/latest/docs/reference/models/grids.html#module-bokeh.models.grids
+        """)
     minor_grid = param.ClassSelector(default=False, class_=(bool, dict),
         doc="""Toggle the visibility of minor grid lines. A dictionary of
         keyword arguments can be passed to customized the appearance of the
-        grid lines.""")
+        grid lines:
+
+        * Matplotlib: https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.grid.html
+        * Plotly: https://plotly.com/python/axes/#styling-grid-lines
+        * Bokeh: https://docs.bokeh.org/en/latest/docs/reference/models/grids.html#module-bokeh.models.grids
+        """)
     # NOTE: The backend might need to create different types of figure
     # depending on the interactive module being used.
     imodule = param.Selector(
