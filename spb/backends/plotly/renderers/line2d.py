@@ -105,8 +105,12 @@ def _draw_line2d_helper(renderer, data):
     # add vertical lines at discontinuities
     hvlines = []
     if hasattr(s, "poles_locations"):
+        pole_line_kw = p.merge(
+            {"line": dict(color='black', dash='dot', width=1)},
+            s.poles_rendering_kw
+        )
         for x_loc in s.poles_locations:
-            p._fig.add_vline(float(x_loc), **p.pole_line_kw)
+            p._fig.add_vline(float(x_loc), **pole_line_kw)
         n = len(p._fig.layout["shapes"])
         m = len(s.poles_locations)
         hvlines = list(range(n - m, n))
@@ -147,13 +151,18 @@ def _update_line2d_helper(renderer, data, idxs):
                 shapes.pop(idx)
             for shape in shapes:
                 p._fig.add_shape(shape)
+
+            pole_line_kw = p.merge(
+                {"line": dict(color='black', dash='dot', width=1)},
+                s.poles_rendering_kw
+            )
             for x_loc in s.poles_locations:
                 # TODO: weirdly, add_vline refuses to work here...
                 # p._fig.add_vline(x=float(x_loc), **p.pole_line_kw)
                 p._fig.add_shape(
                     type="line", x0=float(x_loc), x1=float(x_loc),
                     y0=0, y1=1, xref="x", yref="y domain",
-                    **p.pole_line_kw
+                    **pole_line_kw
                 )
             n = len(p._fig.layout["shapes"])
             m = len(s.poles_locations)

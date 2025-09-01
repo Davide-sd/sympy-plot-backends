@@ -65,9 +65,13 @@ def _draw_line2d_helper(renderer, data):
     # add vertical lines at discontinuities
     vlines = []
     if hasattr(s, "poles_locations"):
+        pole_line_kw = p.merge(
+            {"line_color": "#000000", "line_dash": "dotted"},
+            s.poles_rendering_kw
+        )
         for x_loc in s.poles_locations:
             vl = p.bokeh.models.Span(
-                location=float(x_loc), dimension="height", **p.pole_line_kw)
+                location=float(x_loc), dimension="height", **pole_line_kw)
             p._fig.add_layout(vl)
             vlines.append(vl)
     return [handle, vlines]
@@ -107,9 +111,13 @@ def _update_line2d_helper(renderer, data, handles):
             # instead of removing elements from p._fig.center, let's add new
             # lines or hide the ones that are not needed
             if len(vlines) < len(s.poles_locations):
+                pole_line_kw = p.merge(
+                    {"line_color": "#000000", "line_dash": "dotted"},
+                    s.poles_rendering_kw
+                )
                 for i in range(len(s.poles_locations) - len(vlines)):
                     vl = p.bokeh.models.Span(
-                        location=0, dimension="height", **p.pole_line_kw)
+                        location=0, dimension="height", **pole_line_kw)
                     p._fig.add_layout(vl)
                     handles[1].append(vl)
 

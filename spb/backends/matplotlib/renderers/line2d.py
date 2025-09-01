@@ -51,8 +51,10 @@ def _draw_line2d_helper(renderer, data):
     # add vertical lines at discontinuities
     hvlines = []
     if hasattr(s, "poles_locations"):
+        pole_line_kw = p.merge(
+            {"color": "k", "linestyle": ":"}, s.poles_rendering_kw)
         hvlines = [
-            p._ax.axvline(x_loc, **p.pole_line_kw) for x_loc in s.poles_locations
+            p._ax.axvline(x_loc, **pole_line_kw) for x_loc in s.poles_locations
         ]
 
     return [handle, hvlines]
@@ -91,10 +93,13 @@ def _update_line2d_helper(renderer, data, handles):
     # update vertical lines
     if hasattr(s, "poles_locations"):
         if len(hvlines) != len(s.poles_locations):
+            pole_line_kw = p.merge(
+                {"color": "k", "linestyle": ":"}, s.poles_rendering_kw)
+
             for hvl in hvlines:
                 hvl.remove()
             handles[1] = [
-                p._ax.axvline(x_loc, **p.pole_line_kw)
+                p._ax.axvline(x_loc, **pole_line_kw)
                 for x_loc in s.poles_locations
             ]
         elif len(hvlines) > 0:

@@ -48,7 +48,10 @@ v4.0.0
   * with the algorithm used to insert exclusion points through the
     ``exclude`` keyword argument.
 
-*
+* ``LineOver1DRangeSeries``: added a new attribute, ``poles_rendering_kw``,
+  which is a dictionary of keyword arguments passed to the specific plotting
+  library renderer in order to customize the appearance of vertical lines
+  representing essential discontinuities.
 
 
 v3.4.3

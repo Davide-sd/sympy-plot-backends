@@ -86,13 +86,6 @@ class BokehBackend(Plot):
         NyquistLineSeries: NyquistRenderer,
     }
 
-    pole_line_kw = param.Dict(default={
-        "line_color": "#000000", "line_dash": "dotted"}, doc="""
-        Keyword arguments passed to ax.axvline in order to customize
-        the appearance of vertical lines indicating poles.""")
-    grid_line_kw = param.Dict(default={
-        "line_color": "#aaa", "line_dash": "dotted"}, doc="""
-        Keyword arguments used to customize the major grid lines.""")
     _fig = param.Parameter(default=None, doc="""
         The figure in which symbolic expressions will be plotted into.""")
 
@@ -187,21 +180,14 @@ class BokehBackend(Plot):
         show_major_grid = True if self.grid else False
         show_minor_grid = True if self.minor_grid else False
         grid_lines_kw = {}
-        major_grid_line_kw = {}
-        minor_grid_line_kw = {
-            "minor_grid_line_alpha": cfg["bokeh"]["minor_grid_line_alpha"],
-            "minor_grid_line_color": self._fig.grid.grid_line_color[0],
-            "minor_grid_line_dash": cfg["bokeh"]["minor_grid_line_dash"]
-        }
         if isinstance(self.grid, dict):
-            grid_lines_kw = self.grid
+            grid_lines_kw = self.merge(grid_lines_kw, self.grid)
         if show_minor_grid:
             grid_lines_kw["minor_grid_line_alpha"] = cfg["bokeh"]["minor_grid_line_alpha"]
             grid_lines_kw["minor_grid_line_color"] = self._fig.grid.grid_line_color[0]
             grid_lines_kw["minor_grid_line_dash"] = cfg["bokeh"]["minor_grid_line_dash"]
         if isinstance(self.minor_grid, dict):
-            grid_lines_kw = self.merge(
-                {}, grid_lines_kw, self.minor_grid)
+            grid_lines_kw = self.merge({}, grid_lines_kw, self.minor_grid)
 
         self._fig.grid.visible = show_major_grid
         for k, v in grid_lines_kw.items():

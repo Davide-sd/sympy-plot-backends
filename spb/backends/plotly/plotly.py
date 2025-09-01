@@ -88,8 +88,6 @@ class PlotlyBackend(Plot):
         Arrow2DSeries: Arrow2DRenderer
     }
 
-    pole_line_kw = {"line": dict(color='black', dash='dot', width=1)}
-
     _fig = param.Parameter(default=None, doc="""
         The figure in which symbolic expressions will be plotted into.""")
     quivers_colors = param.ClassSelector(default=[], class_=(list, tuple), doc="""

@@ -100,9 +100,6 @@ class MatplotlibBackend(Plot):
         PoleZeroWithSympySeries: PoleZeroRenderer,
     }
 
-    pole_line_kw = param.Dict(default={"color": "k", "linestyle": ":"}, doc="""
-        Keyword arguments passed to ax.axvline in order to customize
-        the appearance of vertical lines indicating poles.""")
     _fig = param.Parameter(default=None, doc="""
         The figure in which symbolic expressions will be plotted into.""")
 

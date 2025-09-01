@@ -169,11 +169,13 @@ class _DetectPolesMixin(param.Parameterized):
            values at locations where the steepness is greater than some
            threshold. This splits the line into multiple segments. To improve
            detection, increase the number of discretization points ``n``
-           and/or change the value of ``eps``.
+           and/or change the value of ``eps``. This algorithm can be used
+           to visualize jump discontinuities as well as essential
+           discontinuities.
         2. a symbolic approach based on the ``continuous_domain`` function
            from the ``sympy.calculus.util`` module, which computes the
-           locations of discontinuities. If any are found, vertical lines
-           will be shown.
+           locations of essential discontinuities. If any are found, vertical
+           lines will be shown.
         """)
     eps = param.Number(default=0.01, bounds=(0, None), doc="""
         An arbitrary small value used by the ``detect_poles`` numerical
@@ -181,7 +183,11 @@ class _DetectPolesMixin(param.Parameterized):
         the number of discretization points.""")
     poles_locations = param.List([], doc="""
         When ``detect_poles="symbolic"``, stores the location of the computed
-        poles so that they can be appropriately rendered.""")
+        poles (essential discontinuities) so that they can be appropriately
+        rendered.""")
+    poles_rendering_kw = param.Dict(default={}, doc="""
+        Rendering kw used to customize the appearance of vertical lines
+        representing essential discontinuities.""")
 
 
 class Line2DBaseSeries(LineBaseMixin, BaseSeries):
@@ -2405,7 +2411,6 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
         elif isinstance(geom, Point2D):
             self.is_point = True
             self.is_2Dline = True
-            self.poles_locations = []
 
     def get_data(self):
         """
@@ -2478,8 +2483,6 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
                 q = float(p1[1] - m * p1[0])
                 x = np.array(self.range_x, dtype=float)
                 y = m * x + q
-                print("x", x)
-                print("y", y)
             return self._apply_transform(x.astype(float), y.astype(float))
 
     def __str__(self):
