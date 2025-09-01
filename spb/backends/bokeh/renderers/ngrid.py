@@ -11,7 +11,7 @@ def _draw_ngrid_helper(renderer, data):
     np = p.np
     m_mag, m_phase, n_mag, n_phase, phase_offsets = data
 
-    lkw = p.ngrid_line_kw
+    lkw = {"line_color": "#aaa", "line_dash": "dotted"}
     kw = p.merge({}, lkw, s.rendering_kw)
 
     xlim, ylim, xtext_pos_lim, ytext_pos_lim = _text_position_limits(

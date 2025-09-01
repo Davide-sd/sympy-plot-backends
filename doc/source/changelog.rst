@@ -12,6 +12,12 @@ v4.0.0
 
   * clearer code base.
 
+* Improved the handling of grid lines thanks to the keyword arguments ``grid``
+  and ``minor_grid`` of the function ``graphics()``. This parameters can be:
+
+  * boolean: toggle the visibility of major and minor grid lines.
+  * dict: keyword arguments used to customize the grid lines.
+
 * Improved logic dealing with lambdification in order minimize the time
   spent in this stage.
 

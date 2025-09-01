@@ -226,10 +226,14 @@ class PlotAttributes(param.Parameterized):
     polar_axis = param.Boolean(False, doc="""
         If True, the backend will polar axis, otherwise it uses cartesian axis.
         This is only supported for 2D plots.""")
-    grid = param.Boolean(True, doc="""
-        Toggle the visibility of major grid lines.""")
-    minor_grid = param.Boolean(False, doc="""
-        Toggle the visibility of minor grid lines.""")
+    grid = param.ClassSelector(default=True, class_=(bool, dict), doc="""
+        Toggle the visibility of major grid lines. A dictionary of keyword
+        arguments can be passed to customized the appearance of the grid
+        lines.""")
+    minor_grid = param.ClassSelector(default=False, class_=(bool, dict),
+        doc="""Toggle the visibility of minor grid lines. A dictionary of
+        keyword arguments can be passed to customized the appearance of the
+        grid lines.""")
     # NOTE: The backend might need to create different types of figure
     # depending on the interactive module being used.
     imodule = param.Selector(

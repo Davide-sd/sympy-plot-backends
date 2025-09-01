@@ -27,7 +27,7 @@ def _draw_sgrid_helper(renderer, data):
     p, s = renderer.plot, renderer.series
     np = p.np
     xi_dict, wn_dict, y_tp, x_ts = data
-    lkw = p.sgrid_line_kw
+    lkw = {"line_color": "#aaa", "line_dash": "dotted"}
     kw = p.merge({}, lkw, s.rendering_kw)
 
     def _add_labels(x, y, labels, text_align="center"):

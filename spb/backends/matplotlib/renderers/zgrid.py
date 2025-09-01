@@ -5,7 +5,7 @@ def _draw_zgrid_helper(renderer, data):
     p, s = renderer.plot, renderer.series
     xi_dict, wn_dict, tp_dict, ts_dict = data
 
-    lkw = p.grid_line_kw
+    lkw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75}
     kw = p.merge({}, lkw, s.rendering_kw)
 
     # damping ratio lines

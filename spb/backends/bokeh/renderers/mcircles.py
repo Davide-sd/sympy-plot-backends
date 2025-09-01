@@ -10,7 +10,7 @@ def fdac(x):
 def _draw_mcircles_helper(renderer, data):
     p, s = renderer.plot, renderer.series
 
-    rkw = p.mcircles_line_kw
+    rkw = {"line_color": "#aaa", "line_dash": "dotted"}
     rkw = p.merge({}, rkw, s.rendering_kw)
 
     # find the best y-location for 0-dB label

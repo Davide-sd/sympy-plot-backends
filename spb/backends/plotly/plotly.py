@@ -339,6 +339,15 @@ class PlotlyBackend(Plot):
 
     def _update_layout(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()
+        show_major_grid = True if self.grid else False
+        show_minor_grid = True if self.minor_grid else False
+        major_grid_line_kw = {}
+        minor_grid_line_kw = {}
+        if isinstance(self.grid, dict):
+            major_grid_line_kw = self.grid
+        if isinstance(self.minor_grid, dict):
+            minor_grid_line_kw = self.minor_grid
+
         self._fig.update_layout(
             template=self.theme,
             width=None if not self.size else self.size[0],
@@ -349,20 +358,22 @@ class PlotlyBackend(Plot):
                 title="" if not xlabel else xlabel,
                 range=None if not self.xlim else self.xlim,
                 type=self.xscale,
-                showgrid=self.grid,  # thin lines in the background
-                zeroline=self.grid,  # thick line at x=0
+                showgrid=show_major_grid,  # thin lines in the background
+                zeroline=show_major_grid,  # thick line at x=0
                 constrain="domain",
                 visible=self.axis,
-                autorange=None if not self.invert_x_axis else "reversed"
+                autorange=None if not self.invert_x_axis else "reversed",
+                **major_grid_line_kw
             ),
             yaxis=dict(
                 title="" if not ylabel else ylabel,
                 range=None if not self.ylim else self.ylim,
                 type=self.yscale,
-                showgrid=self.grid,  # thin lines in the background
-                zeroline=self.grid,  # thick line at x=0
+                showgrid=show_major_grid,  # thin lines in the background
+                zeroline=show_major_grid,  # thick line at x=0
                 scaleanchor="x" if self.aspect == "equal" else None,
-                visible=self.axis
+                visible=self.axis,
+                **major_grid_line_kw
             ),
             polar=dict(
                 angularaxis={'direction': 'counterclockwise', 'rotation': 0},
@@ -381,25 +392,25 @@ class PlotlyBackend(Plot):
                     title="" if not xlabel else xlabel,
                     range=None if not self.xlim else self.xlim,
                     type=self.xscale,
-                    showgrid=self.grid,  # thin lines in the background
-                    zeroline=self.grid,  # thick line at x=0
-                    visible=self.grid,  # numbers below
+                    showgrid=show_major_grid,  # thin lines in the background
+                    zeroline=show_major_grid,  # thick line at x=0
+                    visible=show_major_grid,  # numbers below
                 ),
                 yaxis=dict(
                     title="" if not ylabel else ylabel,
                     range=None if not self.ylim else self.ylim,
                     type=self.yscale,
-                    showgrid=self.grid,  # thin lines in the background
-                    zeroline=self.grid,  # thick line at x=0
-                    visible=self.grid,  # numbers below
+                    showgrid=show_major_grid,  # thin lines in the background
+                    zeroline=show_major_grid,  # thick line at x=0
+                    visible=show_major_grid,  # numbers below
                 ),
                 zaxis=dict(
                     title="" if not zlabel else zlabel,
                     range=None if not self.zlim else self.zlim,
                     type=self.zscale,
-                    showgrid=self.grid,  # thin lines in the background
-                    zeroline=self.grid,  # thick line at x=0
-                    visible=self.grid,  # numbers below
+                    showgrid=show_major_grid,  # thin lines in the background
+                    zeroline=show_major_grid,  # thick line at x=0
+                    visible=show_major_grid,  # numbers below
                 ),
                 aspectmode=(
                     "manual" if isinstance(self.aspect, dict)
@@ -411,8 +422,10 @@ class PlotlyBackend(Plot):
                 camera=self.camera
             ),
         )
-        self._fig.update_xaxes(minor=dict(showgrid=self.minor_grid))
-        self._fig.update_yaxes(minor=dict(showgrid=self.minor_grid))
+        self._fig.update_xaxes(minor=dict(
+            showgrid=show_minor_grid, **minor_grid_line_kw))
+        self._fig.update_yaxes(minor=dict(
+            showgrid=show_minor_grid, **minor_grid_line_kw))
 
     def _set_axes_texts(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()

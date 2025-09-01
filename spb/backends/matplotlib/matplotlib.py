@@ -100,16 +100,9 @@ class MatplotlibBackend(Plot):
         PoleZeroWithSympySeries: PoleZeroRenderer,
     }
 
-    pole_line_kw = {"color": "k", "linestyle": ":"}
-    grid_line_kw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75}
-    minor_grid_line_kw = {"color": '0.825', "linestyle": '--', "linewidth": 0.6}
-    sgrid_line_kw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75,
-        "zorder": 0}
-    ngrid_line_kw = {"color": 'lightgray', "linestyle": ':',
-        "zorder": 0}
-    mcircles_line_kw = {"color": '0.75', "linestyle": ':',
-        "zorder": 0, "linewidth": 0.9}
-
+    pole_line_kw = param.Dict(default={"color": "k", "linestyle": ":"}, doc="""
+        Keyword arguments passed to ax.axvline in order to customize
+        the appearance of vertical lines indicating poles.""")
     _fig = param.Parameter(default=None, doc="""
         The figure in which symbolic expressions will be plotted into.""")
 
@@ -349,10 +342,21 @@ class MatplotlibBackend(Plot):
             if isinstance(self._ax, self.Axes3D):
                 self._ax.grid()
             else:
+                major_grid_line_kw = {
+                    "color": '0.75', "linestyle": '--', "linewidth": 0.75}
+                minor_grid_line_kw = {
+                    "color": '0.85', "linestyle": ':', "linewidth": 0.75}
+                if isinstance(self.grid, dict):
+                    major_grid_line_kw = self.merge(
+                        {}, major_grid_line_kw, self.grid)
+                if isinstance(self.minor_grid, dict):
+                    minor_grid_line_kw = self.merge(
+                        {}, minor_grid_line_kw, self.minor_grid)
+
                 self._ax.grid(
-                    visible=True, which='major', **self.grid_line_kw)
+                    visible=True, which='major', **major_grid_line_kw)
                 self._ax.grid(
-                    visible=True, which='minor', **self.minor_grid_line_kw)
+                    visible=True, which='minor', **minor_grid_line_kw)
                 if self.minor_grid:
                     self._ax.minorticks_on()
         if self.legend:

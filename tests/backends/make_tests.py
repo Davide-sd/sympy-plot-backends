@@ -974,3 +974,10 @@ def make_test_hvlines(B):
         HVLineSeries(b, horizontal=False, params=p),
         backend=B, show=False
     )
+
+
+def make_test_grid_minor_grid(B, grid, minor_grid):
+    return graphics(
+        line(cos(x), (x, -pi, pi)),
+        show=False, backend=B, grid=grid, minor_grid=minor_grid
+    )

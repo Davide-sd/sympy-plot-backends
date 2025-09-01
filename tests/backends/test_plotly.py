@@ -84,7 +84,8 @@ from .make_tests import (
     make_test_plot_list_color_func,
     make_test_real_imag,
     make_test_arrow_2d,
-    make_test_hvlines
+    make_test_hvlines,
+    make_test_grid_minor_grid
 )
 
 
@@ -1658,3 +1659,37 @@ def test_plotly_theme():
     assert p1.fig.layout.template != p2.fig.layout.template
     assert p3.fig.layout.template == p1.fig.layout.template
     assert p4.fig.layout.template == p2.fig.layout.template
+
+
+def test_grid_minor_grid():
+    p = make_test_grid_minor_grid(PB, False, False)
+    assert p.fig.layout.xaxis.showgrid is False
+    assert p.fig.layout.xaxis.minor.showgrid is False
+
+    p = make_test_grid_minor_grid(PB, True, False)
+    assert p.fig.layout.xaxis.showgrid is True
+    assert p.fig.layout.xaxis.minor.showgrid is False
+
+    p = make_test_grid_minor_grid(PB, False, True)
+    assert p.fig.layout.xaxis.showgrid is False
+    assert p.fig.layout.xaxis.minor.showgrid is True
+
+    grid = {"gridcolor": "#ff0000", "zerolinecolor": "#ff0000"}
+    minor_grid = {"gridcolor": "#00ff00"}
+    p = make_test_grid_minor_grid(PB, grid, False)
+    assert p.fig.layout.xaxis.showgrid is True
+    assert p.fig.layout.xaxis.gridcolor == "#ff0000"
+    assert p.fig.layout.xaxis.zerolinecolor == "#ff0000"
+    assert p.fig.layout.xaxis.minor.showgrid is False
+
+    p = make_test_grid_minor_grid(PB, False, minor_grid)
+    assert p.fig.layout.xaxis.showgrid is False
+    assert p.fig.layout.xaxis.minor.showgrid is True
+    assert p.fig.layout.xaxis.minor.gridcolor == "#00ff00"
+
+    p = make_test_grid_minor_grid(PB, grid, minor_grid)
+    assert p.fig.layout.xaxis.showgrid is True
+    assert p.fig.layout.xaxis.gridcolor == "#ff0000"
+    assert p.fig.layout.xaxis.zerolinecolor == "#ff0000"
+    assert p.fig.layout.xaxis.minor.showgrid is True
+    assert p.fig.layout.xaxis.minor.gridcolor == "#00ff00"

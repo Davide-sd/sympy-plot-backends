@@ -75,7 +75,8 @@ from .make_tests import (
     make_test_sgrid,
     make_test_zgrid,
     make_test_mcircles,
-    make_test_hvlines
+    make_test_hvlines,
+    make_test_grid_minor_grid
 )
 ipy = import_module("ipywidgets")
 ct = import_module("control")
@@ -1549,3 +1550,46 @@ def test_bokeh_theme():
 
     # TODO: how to compare themes on figures?????
 
+
+def test_grid_minor_grid():
+    p = make_test_grid_minor_grid(BB, False, False)
+    assert p.fig.xgrid.visible is False
+    assert p.fig.ygrid.visible is False
+    assert p.fig.xgrid.minor_grid_line_color is None
+    assert p.fig.ygrid.minor_grid_line_color is None
+
+    p = make_test_grid_minor_grid(BB, True, False)
+    assert p.fig.xgrid.visible is True
+    assert p.fig.ygrid.visible is True
+    assert p.fig.xgrid.minor_grid_line_color is None
+    assert p.fig.ygrid.minor_grid_line_color is None
+
+    p = make_test_grid_minor_grid(BB, False, True)
+    assert p.fig.xgrid.visible is False
+    assert p.fig.ygrid.visible is False
+    assert p.fig.xgrid.minor_grid_line_color == '#e5e5e5'
+    assert p.fig.ygrid.minor_grid_line_color == '#e5e5e5'
+
+    grid = {"grid_line_color": "#ff0000"}
+    minor_grid = {"minor_grid_line_color": "#00ff00"}
+    p = make_test_grid_minor_grid(BB, grid, False)
+    assert p.fig.xgrid.visible is True
+    assert p.fig.ygrid.visible is True
+    assert p.fig.xgrid.grid_line_color == "#ff0000"
+    assert p.fig.ygrid.grid_line_color == "#ff0000"
+    assert p.fig.xgrid.minor_grid_line_color is None
+    assert p.fig.ygrid.minor_grid_line_color is None
+
+    p = make_test_grid_minor_grid(BB, False, minor_grid)
+    assert p.fig.xgrid.visible is False
+    assert p.fig.ygrid.visible is False
+    assert p.fig.xgrid.minor_grid_line_color == "#00ff00"
+    assert p.fig.ygrid.minor_grid_line_color == "#00ff00"
+
+    p = make_test_grid_minor_grid(BB, grid, minor_grid)
+    assert p.fig.xgrid.visible is True
+    assert p.fig.ygrid.visible is True
+    assert p.fig.xgrid.grid_line_color == "#ff0000"
+    assert p.fig.ygrid.grid_line_color == "#ff0000"
+    assert p.fig.xgrid.minor_grid_line_color == "#00ff00"
+    assert p.fig.ygrid.minor_grid_line_color == "#00ff00"
