@@ -4,6 +4,7 @@ import os
 from spb.defaults import cfg
 from spb.doc_utils.ipython import generate_doc
 from spb.backends.base_backend import Plot
+from spb.backends.utils import tick_formatter_multiples_of
 from spb.backends.plotly.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
     ComplexRenderer, ContourRenderer, SurfaceRenderer, Implicit3DRenderer,
@@ -335,6 +336,22 @@ class PlotlyBackend(Plot):
             if r.series.is_interactive:
                 r.update(params)
 
+    def _get_data_limits_for_custom_tickers(self):
+        _min = lambda t: min(t) if len(t) > 0 else 0
+        _max = lambda t: max(t) if len(t) > 0 else 0
+        x_min, x_max = [], []
+        y_min, y_max = [], []
+        for s in self.series:
+            if isinstance(s, (LineOver1DRangeSeries, SurfaceOver2DRangeSeries)):
+                x_min.append(s.ranges[0][1].subs(s.params))
+                x_max.append(s.ranges[0][2].subs(s.params))
+            if isinstance(s, SurfaceOver2DRangeSeries):
+                y_min.append(s.ranges[1][1].subs(s.params))
+                y_max.append(s.ranges[1][2].subs(s.params))
+        x_min, y_min = float(_min(x_min)), float(_min(y_min))
+        x_max, y_max = float(_max(x_max)), float(_max(y_max))
+        return x_min, x_max, y_min, y_max
+
     def _update_layout(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()
         show_major_grid = True if self.grid else False
@@ -345,6 +362,37 @@ class PlotlyBackend(Plot):
             major_grid_line_kw = self.grid
         if isinstance(self.minor_grid, dict):
             minor_grid_line_kw = self.minor_grid
+        minor_grid_line_kw_x = minor_grid_line_kw.copy()
+        minor_grid_line_kw_y = minor_grid_line_kw.copy()
+
+        # if necessary, apply custom tick formatting
+        x_tickvals, x_ticktext = None, None
+        y_tickvals, y_ticktext = None, None
+        is_formatter = lambda t: isinstance(t, tick_formatter_multiples_of)
+        if any(is_formatter(t) for t in [
+            self.x_ticks_formatter, self.y_ticks_formatter]
+        ):
+            x_min, x_max, y_min, y_max = self._get_data_limits_for_custom_tickers()
+        if (
+            is_formatter(self.x_ticks_formatter)
+            and (not self.np.isclose(x_min, x_max))
+        ):
+            x_tickvals, x_ticktext = self.x_ticks_formatter.PB_ticks(
+                x_min, x_max)
+            q = self.x_ticks_formatter.quantity
+            n = self.x_ticks_formatter.n
+            n_minor = self.x_ticks_formatter.n_minor
+            minor_grid_line_kw_x["dtick"] = (q / n) / (n_minor + 1)
+        if (
+            is_formatter(self.y_ticks_formatter)
+            and (not self.np.isclose(y_min, y_max))
+        ):
+            y_tickvals, y_ticktext = self.y_ticks_formatter.PB_ticks(
+                y_min, y_max)
+            q = self.y_ticks_formatter.quantity
+            n = self.y_ticks_formatter.n
+            n_minor = self.y_ticks_formatter.n_minor
+            minor_grid_line_kw_y["dtick"] = (q / n) / (n_minor + 1)
 
         self._fig.update_layout(
             template=self.theme,
@@ -361,6 +409,8 @@ class PlotlyBackend(Plot):
                 constrain="domain",
                 visible=self.axis,
                 autorange=None if not self.invert_x_axis else "reversed",
+                tickvals=x_tickvals,
+                ticktext=x_ticktext,
                 **major_grid_line_kw
             ),
             yaxis=dict(
@@ -371,6 +421,8 @@ class PlotlyBackend(Plot):
                 zeroline=show_major_grid,  # thick line at x=0
                 scaleanchor="x" if self.aspect == "equal" else None,
                 visible=self.axis,
+                tickvals=y_tickvals,
+                ticktext=y_ticktext,
                 **major_grid_line_kw
             ),
             polar=dict(
@@ -392,7 +444,9 @@ class PlotlyBackend(Plot):
                     type=self.xscale,
                     showgrid=show_major_grid,  # thin lines in the background
                     zeroline=show_major_grid,  # thick line at x=0
-                    visible=show_major_grid,  # numbers below
+                    visible=show_major_grid,  # numbers below,
+                    tickvals=x_tickvals,
+                    ticktext=x_ticktext,
                 ),
                 yaxis=dict(
                     title="" if not ylabel else ylabel,
@@ -400,7 +454,9 @@ class PlotlyBackend(Plot):
                     type=self.yscale,
                     showgrid=show_major_grid,  # thin lines in the background
                     zeroline=show_major_grid,  # thick line at x=0
-                    visible=show_major_grid,  # numbers below
+                    visible=show_major_grid,  # numbers below,
+                    tickvals=y_tickvals,
+                    ticktext=y_ticktext,
                 ),
                 zaxis=dict(
                     title="" if not zlabel else zlabel,
@@ -421,9 +477,9 @@ class PlotlyBackend(Plot):
             ),
         )
         self._fig.update_xaxes(minor=dict(
-            showgrid=show_minor_grid, **minor_grid_line_kw))
+            showgrid=show_minor_grid, **minor_grid_line_kw_x))
         self._fig.update_yaxes(minor=dict(
-            showgrid=show_minor_grid, **minor_grid_line_kw))
+            showgrid=show_minor_grid, **minor_grid_line_kw_y))
 
     def _set_axes_texts(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()

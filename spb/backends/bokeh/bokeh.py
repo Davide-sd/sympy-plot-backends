@@ -3,6 +3,7 @@ import os
 from spb.defaults import cfg
 from spb.doc_utils.ipython import generate_doc
 from spb.backends.base_backend import Plot
+from spb.backends.utils import tick_formatter_multiples_of
 from spb.backends.bokeh.renderers import (
     Line2DRenderer, Vector2DRenderer, ComplexRenderer, ContourRenderer,
     GeometryRenderer, GenericRenderer, HVLineRenderer, Arrow2DRenderer,
@@ -195,6 +196,15 @@ class BokehBackend(Plot):
 
         if self.invert_x_axis:
             self._fig.x_range.flipped = True
+
+        if self.x_ticks_formatter:
+            if isinstance(self.x_ticks_formatter, tick_formatter_multiples_of):
+                self._fig.xaxis.ticker = self.x_ticks_formatter.BB_ticker()
+                self._fig.xaxis.formatter = self.x_ticks_formatter.BB_formatter()
+        if self.y_ticks_formatter:
+            if isinstance(self.y_ticks_formatter, tick_formatter_multiples_of):
+                self._fig.yaxis.ticker = self.y_ticks_formatter.BB_ticker()
+                self._fig.yaxis.formatter = self.y_ticks_formatter.BB_formatter()
 
         if self.update_event:
             self._fig.on_event(self.bokeh.events.RangesUpdate, self._ranges_update)

@@ -148,8 +148,15 @@ class K3DBackend(Plot):
 
         if (self.xscale == "log") or (self.yscale == "log"):
             warnings.warn(
-                "K3D-Jupyter doesn't support log scales. We will "
-                + "continue with linear scales."
+                "K3D-Jupyter doesn't support log scales. Linear scales"
+                " will be used instead.",
+                stacklevel=1
+            )
+
+        if self.x_ticks_formatter or self.y_ticks_formatter:
+            warnings.warn(
+                "K3D-Jupyter doesn't support tick formatting",
+                stacklevel=1
             )
 
         self._create_renderers()

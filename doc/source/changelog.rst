@@ -12,6 +12,12 @@ v4.0.0
 
   * clearer code base.
 
+* Added capability to set axis ticks to multiple of some quantity
+  (for example `pi/2`) thanks to the keyword arguments
+  ``x_ticks_formatter`` and ``x_ticks_formatter`` of the function
+  ``graphics()``. A few preconfigured formatter are available as well, like
+  ``multiples_of_pi_over_2``, etc.
+
 * Improved the handling of grid lines thanks to the keyword arguments ``grid``
   and ``minor_grid`` of the function ``graphics()``. This parameters can be:
 

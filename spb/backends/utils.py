@@ -1,6 +1,12 @@
 from PIL import ImageColor
 from sympy.external import import_module
-
+import param
+from fractions import Fraction
+from numbers import Number as PythonNumber
+from sympy import (
+    Number as SympyNumber,
+    NumberSymbol
+)
 
 def convert_colormap(cm, to, n=256):
     """Convert the provided colormap to a format usable by the specified
@@ -626,3 +632,236 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs, color_func=None, ):
             c = c + len(l) + 1
 
     return vertices, attributes
+
+
+class tick_formatter_multiples_of(param.Parameterized):
+    """
+    Create a tick formatter where each tick is a multiple of a `quantity / n`.
+    This formatter is meant to be used directly by the backend classes
+    (MB, BB, PB).
+
+    Examples
+    --------
+
+    Consider a quantity, for example `pi`. Let's suppose our region is limited
+    to [-2*pi, 2*pi].
+
+    To get a major tick at multiples of `pi`, then n=1 and we'd get:
+    [-2*pi, -pi, 0, pi, 2*pi]
+
+    >>> from spb.backends.utils import tick_formatter_multiples_of
+    >>> from sympy import py
+    >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=1)
+
+    To get a major tick at multiples of `2*pi`, than n=0.5 and we'd get:
+    [-2*pi, 0, 2*pi]
+
+    >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=0.5)
+
+    To get a major tick at multiples of `pi / 2`. Then, n=2 and we'd get:
+    [-2*pi, -3*pi/2, -pi, -pi/2, 0, pi/2, pi, 3*pi/2, 2*pi].
+
+    >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=2)
+
+    To get a major tick at multiples of `pi / 3`. Then, n=3 and we'd get:
+    [-2*pi, -5*pi/3, -4*pi/3, -pi, -2*pi/3, -pi/3, 0, pi/3, 2*pi/3, pi, 4*pi/3, 5*pi/3, 2*pi]
+
+    >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=3)
+
+    Notes
+    -----
+    This implementation is really basic because it doesn't consider the font
+    size of the tick labels, nor the width of the tick labels, nor the spacing
+    between them, nor the range being visualized, etc.
+    It is up to the user to select an appropriate value of the parameter `n`
+    in order to achieve properly spaced tick labels thus improving readability.
+    """
+
+    quantity = param.ClassSelector(
+        default=1, class_=(PythonNumber, SympyNumber, NumberSymbol), doc="""
+        Numeric value of the base quantity.""")
+    label = param.String(default="", doc="""
+        Label associated to `quantity` to be shown on the ticks.""")
+    n = param.Number(default=1, bounds=(0, None), doc="""
+        Denominator of the reference quantity for placing major grid lines.""")
+    n_minor = param.Integer(default=4, bounds=(0, None), doc="""
+        Number of minor ticks to be shown between two consecutive major ticks.""")
+
+    def __init__(self, **params):
+        super().__init__(**params)
+        self._cast_quantity_to_float()
+        self.np = import_module("numpy")
+        self.bokeh = import_module(
+            'bokeh',
+            import_kwargs={
+                'fromlist': [
+                    'models'
+                ]
+            },
+            warn_not_installed=False,
+            min_module_version='3.0.0'
+        )
+        matplotlib = import_module(
+            'matplotlib',
+            import_kwargs={'fromlist': ['pyplot']},
+            min_module_version='3.0.0',
+            catch=(RuntimeError,))
+        self.plt = matplotlib.pyplot
+
+    @param.depends("quantity", watch=True)
+    def _cast_quantity_to_float(self):
+        if self.quantity:
+            self.quantity = float(self.quantity)
+
+    def MB_func_formatter(self):
+        def formatter(value, tick_number):
+            N = abs(int(self.np.round(value / (self.quantity / self.n))))
+            if N == 0:
+                return "$0$"
+
+            sign = "" if value >= 0 else "-"
+
+            if N % self.n == 0:
+                # whole multiples of pi / n
+                num = int(N / self.n)
+                num = "" if (num == 1) else num
+                return r"$%s%s%s$" % (sign, num, self.label)
+            else:
+                f = Fraction(N, self.n)
+                num = f.numerator
+                den = f.denominator
+                num = "" if (num == 1) else num
+                return r"$%s\frac{%s%s}{%d}$" % (sign, num, self.label, den)
+        return formatter
+
+    def MB_major_locator(self):
+        return self.plt.MultipleLocator(self.quantity / self.n)
+
+    def MB_minor_locator(self):
+        den = (self.n_minor + 1) * self.n
+        return self.plt.MultipleLocator(self.quantity / den)
+
+    def BB_formatter(self):
+        return self.bokeh.models.CustomJSTickFormatter(code=f"""
+            const N = {self.n};
+            const step = {self.quantity} / N;
+            const k = Math.round(tick / step);  // integer multiple of quantity/N
+
+            if (k === 0) return "0";
+
+            function gcd(a, b) {{ a = Math.abs(a); b = Math.abs(b);
+                while (b) {{ const t = b; b = a % b; a = t; }}
+                return a;
+            }}
+
+            const g = gcd(k, N);
+            const num = k / g;    // numerator of k/N reduced
+            const den = N / g;    // denominator reduced
+
+            if (den === 1) {{
+                if (num === 1)  return "{self.label}";
+                if (num === -1) return "-{self.label}";
+                return `${{num}}{self.label}`;
+            }} else {{
+                if (Math.abs(num) === 1)
+                    return `${{num === -1 ? "-" : ""}}{self.label}/${{den}}`;
+                return `${{num}}{self.label}/${{den}}`;
+            }}
+        """)
+
+    def BB_ticker(self):
+        return self.bokeh.models.SingleIntervalTicker(
+            interval=self.quantity / self.n, num_minor_ticks=(self.n_minor+1))
+
+    def PB_ticks(self, xmin, xmax, latex=False):
+        """
+        Return tick values and labels for multiples of pi/N
+        between xmin and xmax.
+        """
+        step = self.quantity / self.n
+        kmin = int(self.np.floor(xmin / step))
+        kmax = int(self.np.ceil(xmax / step))
+
+        tickvals = []
+        ticktext = []
+        for k in range(kmin, kmax+1):
+            val = k * step
+            tickvals.append(val)
+
+            if k == 0:
+                ticktext.append("$0$" if latex else "0")
+            else:
+                frac = Fraction(k, self.n).limit_denominator()
+                num, den = frac.numerator, frac.denominator
+                sign = '-' if num < 0 else ''
+                num = abs(num)
+                wrapper = "$%s$" if latex else "%s"
+
+                if den == 1:
+                    # whole multiples of pi
+                    if num == 1:
+                        content = f"{sign}{self.label}"
+                        ticktext.append(wrapper % content)
+                    else:
+                        content = f"{sign}{num}{self.label}"
+                        ticktext.append(wrapper % content)
+                else:
+                    if abs(num) == 1:
+                        content = (
+                            rf"{sign}\frac{{{self.label}}}{{{den}}}"
+                            if latex else f"{sign}{self.label}/{den}"
+                        )
+                        ticktext.append(wrapper % content)
+                    else:
+                        content = (
+                            rf"{sign}\frac{{{num}{self.label}}}{{{den}}}"
+                            if latex else f"{sign}{num}{self.label}/{den}"
+                        )
+                        ticktext.append(wrapper % content)
+
+        return tickvals, ticktext
+
+
+def multiples_of_pi(label="\\pi"):
+    """
+    Create a tick formatter where each tick is a multiple of pi.
+    """
+    # minor grid lines every pi/4
+    np = import_module("numpy")
+    return tick_formatter_multiples_of(quantity=np.pi, label=label, n=1, n_minor=3)
+
+
+def multiples_of_2_pi(label="\\pi"):
+    """
+    Create a tick formatter where each tick is a multiple of 2*pi.
+    """
+    # minor grid lines every pi/2
+    np = import_module("numpy")
+    return tick_formatter_multiples_of(quantity=np.pi, label=label, n=0.5, n_minor=3)
+
+
+def multiples_of_pi_over_2(label="\\pi"):
+    """
+    Create a tick formatter where each tick is a multiple of pi/2.
+    """
+    # minor grid lines every pi/8
+    np = import_module("numpy")
+    return tick_formatter_multiples_of(quantity=np.pi, label=label, n=2, n_minor=3)
+
+
+def multiples_of_pi_over_3(label="\\pi"):
+    """
+    Create a tick formatter where each tick is a multiple of pi/3.
+    """
+    # minor grid lines every pi/12
+    np = import_module("numpy")
+    return tick_formatter_multiples_of(quantity=np.pi, label=label, n=3, n_minor=3)
+
+
+def multiples_of_pi_over_4(label="\\pi"):
+    """
+    Create a tick formatter where each tick is a multiple of pi/4.
+    """
+    # minor grid lines every pi/16
+    np = import_module("numpy")
+    return tick_formatter_multiples_of(quantity=np.pi, label=label, n=4, n_minor=3)

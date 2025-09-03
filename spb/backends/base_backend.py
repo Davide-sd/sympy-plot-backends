@@ -6,10 +6,11 @@ from spb.doc_utils.ipython import generate_doc
 from spb.series import (
     BaseSeries, LineOver1DRangeSeries, ComplexSurfaceBaseSeries
 )
-from spb.backends.utils import convert_colormap
+from spb.backends.utils import convert_colormap, tick_formatter_multiples_of
 from sympy import Symbol, Expr
 from sympy.utilities.iterables import is_sequence
 from sympy.external import import_module
+
 
 class _TupleOfRealNumbers(param.Tuple):
     """``xlim, ylim, zlim`` receives 2-elements tuple from the user.
@@ -253,6 +254,16 @@ class PlotAttributes(param.Parameterized):
     legend = param.Boolean(default=None, doc="""
         Toggle the visibility of the legend. If None, the backend will
         automatically determine if it is appropriate to show it.""")
+    x_ticks_formatter = param.ClassSelector(
+        default=None, class_=tick_formatter_multiples_of, doc="""
+        An object of type ``tick_formatter_multiples_of`` which will be used
+        to place a x-axis tick value at each multiple of a specified quantity.
+        """)
+    y_ticks_formatter = param.ClassSelector(
+        default=None, class_=tick_formatter_multiples_of, doc="""
+        An object of type ``tick_formatter_multiples_of`` which will be used
+        to place a y-axis tick value at each multiple of a specified quantity.
+        """)
     update_event = param.Boolean(False, allow_None=True, doc="""
         If True and the backend supports such functionality, events like
         drag and zoom will trigger a recompute of the data series within the

@@ -6,7 +6,7 @@ from spb import (
     plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
     graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero,
     ngrid, sgrid, zgrid, mcircles, surface, surface_parametric, line,
-    root_locus
+    root_locus, contour
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries,
@@ -980,4 +980,22 @@ def make_test_grid_minor_grid(B, grid, minor_grid):
     return graphics(
         line(cos(x), (x, -pi, pi)),
         show=False, backend=B, grid=grid, minor_grid=minor_grid
+    )
+
+
+def make_test_tick_formatters_2d(B, x_ticks_formatter, y_ticks_formatter):
+    return graphics(
+        contour(cos(x**2 + y**2), (x, -pi, pi), (y, -2*pi, 2*pi), n=10),
+        show=False, backend=B, grid=False,
+        x_ticks_formatter=x_ticks_formatter,
+        y_ticks_formatter=y_ticks_formatter
+    )
+
+
+def make_test_tick_formatters_3d(B, x_ticks_formatter, y_ticks_formatter):
+    return graphics(
+        contour(cos(x**2 + y**2), (x, -pi, pi), (y, -2*pi, 2*pi), n=10),
+        show=False, backend=B, grid=False,
+        x_ticks_formatter=x_ticks_formatter,
+        y_ticks_formatter=y_ticks_formatter
     )

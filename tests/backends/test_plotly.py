@@ -15,6 +15,7 @@ from spb import (
     plot_parametric, plot_geometry,
     plot_polar
 )
+from spb.backends.utils import tick_formatter_multiples_of
 from spb.series import SurfaceOver2DRangeSeries, ParametricSurfaceSeries
 from sympy import (
     sin, cos, I, pi, Circle, Polygon, sqrt, Matrix, Line, latex, symbols
@@ -85,7 +86,9 @@ from .make_tests import (
     make_test_real_imag,
     make_test_arrow_2d,
     make_test_hvlines,
-    make_test_grid_minor_grid
+    make_test_grid_minor_grid,
+    make_test_tick_formatters_2d,
+    make_test_tick_formatters_3d
 )
 
 
@@ -1693,3 +1696,80 @@ def test_grid_minor_grid():
     assert p.fig.layout.xaxis.zerolinecolor == "#ff0000"
     assert p.fig.layout.xaxis.minor.showgrid is True
     assert p.fig.layout.xaxis.minor.gridcolor == "#00ff00"
+
+
+def test_tick_formatter_multiples_of_2d():
+    expected_x = [
+        -3.141592653589793, -1.5707963267948966, 0.0,
+        1.5707963267948966, 3.141592653589793]
+    expected_x_vals = ("-π", "-π/2", "0", "π/2", "π")
+    expected_y = [
+        -6.283185307179586, -3.141592653589793, 0.0,
+        3.141592653589793, 6.283185307179586]
+    expected_y_vals = ("-2π", "-π", "0", "π", "2π")
+
+    tf_x = tick_formatter_multiples_of(quantity=np.pi, label="π", n=2)
+    tf_y = tick_formatter_multiples_of(quantity=np.pi, label="π", n=1)
+
+    p = make_test_tick_formatters_2d(PB, None, None)
+    assert p.fig.layout.xaxis.ticktext is None
+    assert p.fig.layout.xaxis.tickvals is None
+    assert p.fig.layout.yaxis.ticktext is None
+    assert p.fig.layout.yaxis.tickvals is None
+
+    p = make_test_tick_formatters_2d(PB, tf_x, None)
+    assert p.fig.layout.xaxis.ticktext == expected_x_vals
+    assert np.allclose(p.fig.layout.xaxis.tickvals, expected_x)
+    assert p.fig.layout.yaxis.ticktext is None
+    assert p.fig.layout.yaxis.tickvals is None
+
+    p = make_test_tick_formatters_2d(PB, None, tf_y)
+    assert p.fig.layout.xaxis.ticktext is None
+    assert p.fig.layout.xaxis.tickvals is None
+    assert p.fig.layout.yaxis.ticktext == expected_y_vals
+    assert np.allclose(p.fig.layout.yaxis.tickvals, expected_y)
+
+    p = make_test_tick_formatters_2d(PB, tf_x, tf_y)
+    assert p.fig.layout.xaxis.ticktext == expected_x_vals
+    assert np.allclose(p.fig.layout.xaxis.tickvals, expected_x)
+    assert p.fig.layout.yaxis.ticktext == expected_y_vals
+    assert np.allclose(p.fig.layout.yaxis.tickvals, expected_y)
+
+
+def test_tick_formatter_multiples_of_number_of_minor_gridlines():
+    tf_x1 = tick_formatter_multiples_of(
+        quantity=np.pi, label="π", n=2, n_minor=4)
+    tf_x2 = tick_formatter_multiples_of(
+        quantity=np.pi, label="π", n=3, n_minor=8)
+
+    p = make_test_tick_formatters_2d(PB, tf_x1, None)
+    assert np.isclose(
+        p.fig.layout.xaxis.minor.dtick,
+        (np.pi / 2) / 5
+    )
+
+    p = make_test_tick_formatters_2d(PB, tf_x2, None)
+    assert np.isclose(
+        p.fig.layout.xaxis.minor.dtick,
+        (np.pi / 3) / 9
+    )
+
+
+def test_tick_formatter_multiples_of_3d():
+    expected_x = [
+        -3.141592653589793, -1.5707963267948966, 0.0,
+        1.5707963267948966, 3.141592653589793]
+    expected_x_vals = ("-π", "-π/2", "0", "π/2", "π")
+    expected_y = [
+        -6.283185307179586, -3.141592653589793, 0.0,
+        3.141592653589793, 6.283185307179586]
+    expected_y_vals = ("-2π", "-π", "0", "π", "2π")
+
+    tf_x = tick_formatter_multiples_of(quantity=np.pi, label="π", n=2)
+    tf_y = tick_formatter_multiples_of(quantity=np.pi, label="π", n=1)
+
+    p = make_test_tick_formatters_3d(PB, tf_x, tf_y)
+    assert p.fig.layout.scene.xaxis.ticktext == expected_x_vals
+    assert np.allclose(p.fig.layout.scene.xaxis.tickvals, expected_x)
+    assert p.fig.layout.scene.yaxis.ticktext == expected_y_vals
+    assert np.allclose(p.fig.layout.scene.yaxis.tickvals, expected_y)

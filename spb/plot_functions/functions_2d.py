@@ -246,14 +246,14 @@ def plot(*args, **kwargs):
        :include-source: True
 
        >>> expr = Sum(1 / x, (x, 1, y))
-       >>> plot(expr, (y, 2, 10), adaptive=False,
+       >>> plot(expr, (y, 2, 10),
        ...     scatter=True, is_filled=True, title="$%s$" % latex(expr))
        Plot object containing:
        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
 
-    Using an adaptive algorithm, detect and plot vertical lines at
-    singularities. Also, apply a transformation function to the discretized
-    domain in order to convert radians to degrees:
+    Detect essential singularities and visualize them with vertical lines.
+    Also, apply a tick formatter on the x-axis is order to show ticks at
+    multiples of pi/2:
 
     .. plot::
        :context: close-figs
@@ -262,9 +262,9 @@ def plot(*args, **kwargs):
 
        >>> import numpy as np
        >>> plot(tan(x), (x, -1.5*pi, 1.5*pi),
-       ...      adaptive=True, adaptive_goal=0.001,
-       ...      detect_poles="symbolic", tx=np.rad2deg, ylim=(-7, 7),
-       ...      xlabel="x [deg]", grid=False)
+       ...      detect_poles="symbolic", ylim=(-7, 7),
+       ...      xlabel="x [deg]", grid=False,
+       ...      x_ticks_formatter=multiples_of_pi_over_2())
        Plot object containing:
        [0]: cartesian line: tan(x) for x over (-4.71238898038469, 4.71238898038469)
 
@@ -282,10 +282,9 @@ def plot(*args, **kwargs):
 
     Advanced example showing:
 
-    * detect singularities by setting ``adaptive=False`` (better performance),
-      increasing the number of discretization points (in order to have
-      'vertical' segments on the lines) and reducing the threshold for the
-      singularity-detection algorithm.
+    * detect singularities by setting increasing the number of discretization
+      points (in order to have 'vertical' segments on the lines) and reducing
+      the threshold for the singularity-detection algorithm.
     * application of color function.
 
     .. plot::
@@ -307,7 +306,7 @@ def plot(*args, **kwargs):
        ...     return d
        >>> p1 = plot(expr, (x, -5, 5),
        ...         "distance from (0, 0)", {"cmap": "plasma"},
-       ...         ylim=(-10, 10), adaptive=False, detect_poles=True, n=3e04,
+       ...         ylim=(-10, 10), detect_poles=True, n=3e04,
        ...         eps=1e-04, color_func=cf, title="$%s$" % latex(expr))
 
     Combining multiple plots together:
@@ -837,7 +836,8 @@ def plot_contour(*args, **kwargs):
        Plot object containing:
        [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
 
-    Line contours of a function of two variables.
+    Line contours of a function of two variables, with ticks formatted as
+    multiples of `pi/n`.
 
     .. plot::
        :context: close-figs
@@ -845,7 +845,12 @@ def plot_contour(*args, **kwargs):
        :include-source: True
 
        >>> expr = 5 * (cos(x) - 0.2 * sin(y))**2 + 5 * (-0.2 * cos(x) + sin(y))**2
-       >>> plot_contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), is_filled=False)
+       >>> plot_contour(
+       ...     expr, (x, 0, 2 * pi), (y, 0, 2 * pi),
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
+       ...     y_ticks_formatter=multiples_of_pi_over_3(),
+       ...     is_filled=False
+       ... )
        Plot object containing:
        [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
 

@@ -37,6 +37,14 @@ from spb.backends.matplotlib import MB
 from spb.backends.bokeh import BB
 from spb.backends.plotly import PB
 from spb.backends.k3d import KB
+from spb.backends.utils import (
+    tick_formatter_multiples_of,
+    multiples_of_2_pi,
+    multiples_of_pi,
+    multiples_of_pi_over_2,
+    multiples_of_pi_over_3,
+    multiples_of_pi_over_4
+)
 
 from spb.graphics.graphics import graphics
 from spb.graphics.functions_2d import (
@@ -87,5 +95,7 @@ __all__ = [
     "pole_zero", "control_axis", "step_response", "impulse_response",
     "ramp_response", "bode_magnitude", "bode_phase", "nyquist", "nichols",
     "arrow_2d", "arrow_3d", "root_locus", "sgrid", "plot_root_locus", "zgrid",
-    "ngrid", "mcircles"
+    "ngrid", "mcircles", "tick_formatter_multiples_of", "multiples_of_2_pi",
+    "multiples_of_pi", "multiples_of_pi_over_2", "multiples_of_pi_over_3",
+    "multiples_of_pi_over_4"
 ]

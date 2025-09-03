@@ -586,16 +586,21 @@ def surface(
        >>> from spb import *
        >>> x, y = symbols('x y')
 
-    Single plot with Matplotlib:
+    Single plot with Matplotlib, with ticks formatted as multiples of `pi/2`.
+
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> graphics(surface(cos((x**2 + y**2)), (x, -3, 3), (y, -3, 3)))
+       >>> graphics(
+       ...     surface(cos((x**2 + y**2)), (x, -pi, pi), (y, -pi, pi)),
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
+       ...     y_ticks_formatter=multiples_of_pi_over_2(),
+       ... )
        Plot object containing:
-       [0]: cartesian surface: cos(x**2 + y**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [0]: cartesian surface: cos(x**2 + y**2) for x over (-pi, pi) and y over (-pi, pi)
 
 
     Single plot with Plotly, illustrating how to apply:

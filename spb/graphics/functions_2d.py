@@ -536,9 +536,9 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
        Plot object containing:
        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
 
-    Using an adaptive algorithm, detect and plot vertical lines at
-    singularities. Also, apply a transformation function to the discretized
-    domain in order to convert radians to degrees:
+    Detect essential singularities and visualize them with vertical lines.
+    Also, apply a tick formatter on the x-axis is order to show ticks at
+    multiples of pi/2:
 
     .. plot::
        :context: close-figs
@@ -547,11 +547,8 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
 
        >>> import numpy as np
        >>> graphics(
-       ...     line(
-       ...         tan(x), (x, -1.5*pi, 1.5*pi),
-       ...         adaptive=True, adaptive_goal=0.001,
-       ...         detect_poles="symbolic", tx=np.rad2deg
-       ...     ),
+       ...     line(tan(x), (x, -1.5*pi, 1.5*pi), detect_poles="symbolic"),
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
        ...     ylim=(-7, 7), xlabel="x [deg]", grid=False
        ... )
        Plot object containing:
@@ -1369,7 +1366,8 @@ def contour(
        Plot object containing:
        [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
 
-    Line contours of a function of two variables.
+    Line contours of a function of two variables, with ticks formatted as
+    multiples of `pi/n`.
 
     .. plot::
        :context: close-figs
@@ -1378,7 +1376,10 @@ def contour(
 
        >>> expr = 5 * (cos(x) - 0.2 * sin(y))**2 + 5 * (-0.2 * cos(x) + sin(y))**2
        >>> graphics(
-       ...     contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), fill=False)
+       ...     contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), fill=False),
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
+       ...     y_ticks_formatter=multiples_of_pi_over_3(),
+       ...     aspect="equal"
        ... )
        Plot object containing:
        [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
@@ -1398,7 +1399,9 @@ def contour(
        ...     contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi),
        ...         rendering_kw={"colors": "k", "cmap": None, "linewidths": 0.75},
        ...         fill=False),
-       ...     grid=False
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
+       ...     y_ticks_formatter=multiples_of_pi_over_3(),
+       ...     aspect="equal", grid=False
        ... )
        Plot object containing:
        [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)

@@ -3,6 +3,7 @@ import itertools
 from spb.defaults import cfg
 from spb.doc_utils.ipython import generate_doc
 from spb.backends.base_backend import Plot
+from spb.backends.utils import tick_formatter_multiples_of
 from spb.backends.matplotlib.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
     Implicit2DRenderer, ComplexRenderer, ContourRenderer, SurfaceRenderer,
@@ -375,19 +376,36 @@ class MatplotlibBackend(Plot):
         self._set_lims(xlims, ylims, zlims)
         self._set_aspect()
 
+        if self.x_ticks_formatter:
+            if isinstance(self.x_ticks_formatter, tick_formatter_multiples_of):
+                self._ax.xaxis.set_major_locator(
+                    self.x_ticks_formatter.MB_major_locator())
+                if self.minor_grid:
+                    self._ax.xaxis.set_minor_locator(
+                        self.x_ticks_formatter.MB_minor_locator())
+                self._ax.xaxis.set_major_formatter(
+                    self.plt.FuncFormatter(
+                        self.x_ticks_formatter.MB_func_formatter()))
+        if self.y_ticks_formatter:
+            if isinstance(self.y_ticks_formatter, tick_formatter_multiples_of):
+                self._ax.yaxis.set_major_locator(
+                    self.y_ticks_formatter.MB_major_locator())
+                if self.minor_grid:
+                    self._ax.yaxis.set_minor_locator(
+                        self.y_ticks_formatter.MB_minor_locator())
+                self._ax.yaxis.set_major_formatter(
+                    self.plt.FuncFormatter(
+                        self.y_ticks_formatter.MB_func_formatter()))
+
     def _set_axes_texts(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()
 
         if title:
             self._ax.set_title(title)
         if xlabel:
-            self._ax.set_xlabel(
-                xlabel, position=(1, 0) if self.axis_center else (0.5, 0)
-            )
+            self._ax.set_xlabel(xlabel)
         if ylabel:
-            self._ax.set_ylabel(
-                ylabel, position=(0, 1) if self.axis_center else (0, 0.5)
-            )
+            self._ax.set_ylabel(ylabel)
         if isinstance(self._ax, self.Axes3D):
             if zlabel:
                 self._ax.set_zlabel(zlabel, position=(0, 1))

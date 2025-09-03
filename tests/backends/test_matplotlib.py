@@ -15,6 +15,7 @@ from spb import (
     plot_complex_list, graphics, vector_field_2d, plot_nyquist, plot_nichols,
     plot_step_response
 )
+from spb.backends.utils import tick_formatter_multiples_of
 from spb.series import (
     RootLocusSeries, SGridLineSeries, ZGridLineSeries, ContourSeries,
     Vector2DSeries
@@ -99,7 +100,9 @@ from .make_tests import (
     make_test_sgrid,
     make_test_zgrid,
     make_test_mcircles,
-    make_test_hvlines
+    make_test_hvlines,
+    make_test_tick_formatters_2d,
+    make_test_tick_formatters_3d
 )
 
 ct = import_module("control")
@@ -2628,3 +2631,74 @@ def test_plot_vector_2d_legend_2(streamlines, use_cm, expected):
         backend=MB, n=10, show=False, streamlines=streamlines, use_cm=use_cm
     )
     assert p.legend is expected
+
+
+def test_tick_formatter_multiples_of_2d():
+    # NOTE: this character `−` is different from the keyboard `-`
+    expected_x1 = ["−4", "−3", "−2", "−1", "0", "1", "2", "3", "4"]
+    expected_x2 = ["$-\\frac{3\\pi}{2}$", "$-\\pi$", "$-\\frac{\\pi}{2}$", "$0$", "$\\frac{\\pi}{2}$", "$\\pi$", "$\\frac{3\\pi}{2}$"]
+    expected_y1 = ["−8", "−6", "−4", "−2", "0", "2", "4", "6", "8"]
+    expected_y2 = ["$-3\\pi$", "$-2\\pi$", "$-\\pi$", "$0$", "$\\pi$", "$2\\pi$", "$3\\pi$"]
+
+    tf_x = tick_formatter_multiples_of(quantity=np.pi, label="\\pi", n=2)
+    tf_y = tick_formatter_multiples_of(quantity=np.pi, label="\\pi", n=1)
+
+    p = make_test_tick_formatters_2d(MB, None, None)
+    x_ticks = p.ax.get_xticklabels()
+    y_ticks = p.ax.get_yticklabels()
+    assert len(x_ticks) == 9
+    assert all(isinstance(t, matplotlib.text.Text) for t in x_ticks)
+    assert [t.get_text() for t in x_ticks] == expected_x1
+    assert len(y_ticks) == 9
+    assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
+    assert [t.get_text() for t in y_ticks] ==expected_y1
+
+    p = make_test_tick_formatters_2d(MB, tf_x, None)
+    x_ticks = p.ax.get_xticklabels()
+    y_ticks = p.ax.get_yticklabels()
+    assert len(x_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in x_ticks)
+    assert [t.get_text() for t in x_ticks] == expected_x2
+    assert len(y_ticks) == 9
+    assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
+    assert [t.get_text() for t in y_ticks] ==expected_y1
+
+    p = make_test_tick_formatters_2d(MB, None, tf_y)
+    x_ticks = p.ax.get_xticklabels()
+    y_ticks = p.ax.get_yticklabels()
+    assert len(x_ticks) == 9
+    assert all(isinstance(t, matplotlib.text.Text) for t in x_ticks)
+    assert [t.get_text() for t in x_ticks] == expected_x1
+    assert len(y_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
+    assert [t.get_text() for t in y_ticks] ==expected_y2
+
+    p = make_test_tick_formatters_2d(MB, tf_x, tf_y)
+    x_ticks = p.ax.get_xticklabels()
+    y_ticks = p.ax.get_yticklabels()
+    assert len(x_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in x_ticks)
+    assert [t.get_text() for t in x_ticks] == expected_x2
+    assert len(y_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
+    assert [t.get_text() for t in y_ticks] ==expected_y2
+
+
+def test_tick_formatter_multiples_of_3d():
+    # NOTE: this character `−` is different from the keyboard `-`
+    expected_x1 = ["−4", "−3", "−2", "−1", "0", "1", "2", "3", "4"]
+    expected_x2 = ["$-\\frac{3\\pi}{2}$", "$-\\pi$", "$-\\frac{\\pi}{2}$", "$0$", "$\\frac{\\pi}{2}$", "$\\pi$", "$\\frac{3\\pi}{2}$"]
+    expected_y1 = ["−8", "−6", "−4", "−2", "0", "2", "4", "6", "8"]
+    expected_y2 = ["$-3\\pi$", "$-2\\pi$", "$-\\pi$", "$0$", "$\\pi$", "$2\\pi$", "$3\\pi$"]
+
+    tf_x = tick_formatter_multiples_of(quantity=np.pi, label="\\pi", n=2)
+    tf_y = tick_formatter_multiples_of(quantity=np.pi, label="\\pi", n=1)
+    p = make_test_tick_formatters_3d(MB, tf_x, tf_y)
+    x_ticks = p.ax.get_xticklabels()
+    y_ticks = p.ax.get_yticklabels()
+    assert len(x_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in x_ticks)
+    assert [t.get_text() for t in x_ticks] == expected_x2
+    assert len(y_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
+    assert [t.get_text() for t in y_ticks] ==expected_y2

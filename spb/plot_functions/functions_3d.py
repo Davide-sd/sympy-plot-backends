@@ -146,7 +146,7 @@ def plot3d_parametric_line(*args, **kwargs):
        fz = lambda t: t + 2 * np.sin(75 * t)
        plot3d_parametric_line(fx, fy, fz, ("t", 0, 6 * np.pi),
            {"line": {"colorscale": "bluered"}},
-           title="Helical Toroid", backend=PB, adaptive=False, n=1e04)
+           title="Helical Toroid", backend=PB, n=1e04)
 
     Interactive-widget plot of the parametric line over a tennis ball.
     Refer to the interactive sub-module documentation to learn more about the
@@ -272,16 +272,20 @@ def plot3d(*args, **kwargs):
        >>> from spb import plot3d
        >>> x, y = symbols('x y')
 
-    Single plot with Matplotlib:
+    Single plot with Matplotlib, with ticks formatted as multiples of `pi/2`.
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot3d(cos((x**2 + y**2)), (x, -3, 3), (y, -3, 3))
+       >>> plot3d(
+       ...     cos((x**2 + y**2)), (x, -pi, pi), (y, -pi, pi),
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
+       ...     y_ticks_formatter=multiples_of_pi_over_2(),
+       ... )
        Plot object containing:
-       [0]: cartesian surface: cos(x**2 + y**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [0]: cartesian surface: cos(x**2 + y**2) for x over (-pi, pi) and y over (-pi, pi)
 
 
     Single plot with Plotly, illustrating how to apply:

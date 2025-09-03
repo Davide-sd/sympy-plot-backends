@@ -3,7 +3,7 @@ from pytest import raises
 bokeh = pytest.importorskip("bokeh")
 from bokeh.models import (
     ColumnDataSource, Span, Arrow, LabelSet, Label, Line as BLine, Scatter,
-    MultiLine
+    MultiLine, BasicTicker, SingleIntervalTicker
 )
 from bokeh.io import curdoc
 from bokeh.themes import built_in_themes
@@ -14,6 +14,7 @@ from spb import (
     BB, plot, plot_complex, plot_vector, plot_contour,
     plot_parametric, plot_geometry, plot_nyquist, plot_nichols
 )
+from spb.backends.utils import tick_formatter_multiples_of
 from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
 from sympy import (
     sin, cos, I, pi, Circle, Polygon, sqrt, Matrix, Line, latex, symbols
@@ -76,7 +77,8 @@ from .make_tests import (
     make_test_zgrid,
     make_test_mcircles,
     make_test_hvlines,
-    make_test_grid_minor_grid
+    make_test_grid_minor_grid,
+    make_test_tick_formatters_2d
 )
 ipy = import_module("ipywidgets")
 ct = import_module("control")
@@ -1593,3 +1595,45 @@ def test_grid_minor_grid():
     assert p.fig.ygrid.grid_line_color == "#ff0000"
     assert p.fig.xgrid.minor_grid_line_color == "#00ff00"
     assert p.fig.ygrid.minor_grid_line_color == "#00ff00"
+
+
+def test_tick_formatter_multiples_of():
+    # NOTE: bokeh tick labels are generated on Javascript, so there is no
+    # way to test what they looks like. Right now, the best I can do is to
+    # test for the appropriate ticker interval.
+    # More rigorous testing would involve selenium, but it's a PITA.
+    tf_x = tick_formatter_multiples_of(quantity=np.pi, label="π", n=2)
+    tf_y = tick_formatter_multiples_of(quantity=np.pi, label="π", n=1)
+
+    p = make_test_tick_formatters_2d(BB, None, None)
+    assert isinstance(p.fig.xaxis.ticker, BasicTicker)
+    assert isinstance(p.fig.yaxis.ticker, BasicTicker)
+
+    p = make_test_tick_formatters_2d(BB, tf_x, None)
+    assert isinstance(p.fig.xaxis.ticker, SingleIntervalTicker)
+    assert np.isclose(p.fig.xaxis.ticker.interval, np.pi/2)
+    assert isinstance(p.fig.yaxis.ticker, BasicTicker)
+
+    p = make_test_tick_formatters_2d(BB, None, tf_y)
+    assert isinstance(p.fig.xaxis.ticker, BasicTicker)
+    assert isinstance(p.fig.yaxis.ticker, SingleIntervalTicker)
+    assert np.isclose(p.fig.yaxis.ticker.interval, np.pi)
+
+    p = make_test_tick_formatters_2d(BB, tf_x, tf_y)
+    assert isinstance(p.fig.xaxis.ticker, SingleIntervalTicker)
+    assert np.isclose(p.fig.xaxis.ticker.interval, np.pi / 2)
+    assert isinstance(p.fig.yaxis.ticker, SingleIntervalTicker)
+    assert np.isclose(p.fig.yaxis.ticker.interval, np.pi)
+
+
+def test_tick_formatter_multiples_of_number_of_minor_gridlines():
+    tf_x1 = tick_formatter_multiples_of(
+        quantity=np.pi, label="π", n=2, n_minor=4)
+    tf_x2 = tick_formatter_multiples_of(
+        quantity=np.pi, label="π", n=2, n_minor=8)
+
+    p = make_test_tick_formatters_2d(BB, tf_x1, None)
+    assert p.fig.xaxis.ticker.num_minor_ticks == 5
+
+    p = make_test_tick_formatters_2d(BB, tf_x2, None)
+    assert p.fig.xaxis.ticker.num_minor_ticks == 9
