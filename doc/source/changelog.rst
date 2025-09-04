@@ -18,6 +18,11 @@ v4.0.0
   ``graphics()``. A few preconfigured formatter are available as well, like
   ``multiples_of_pi_over_2``, etc.
 
+* Added support for plotting summations with infinite bounds on plotting
+  function.
+
+* Improved evaluation of symbolic expressions producing very large numbers.
+
 * Improved the handling of grid lines thanks to the keyword arguments ``grid``
   and ``minor_grid`` of the function ``graphics()``. This parameters can be:
 

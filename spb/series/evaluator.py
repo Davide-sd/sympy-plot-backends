@@ -2,13 +2,14 @@ import param
 from inspect import signature, ismodule
 from spb.defaults import cfg
 from spb.utils import _get_free_symbols, _correct_shape
+import sympy
 from sympy import (
     Tuple, symbols, sympify, Expr, lambdify,
     atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Integral, hyper, arity, Wild, sign
+    Integral, hyper, arity, Wild, sign, Mul, Pow, Add
 )
 from sympy.external import import_module
-from sympy.printing.pycode import PythonCodePrinter
+from sympy.printing.pycode import PythonCodePrinter, SymPyPrinter
 from sympy.printing.precedence import precedence
 from sympy.core.sorting import default_sort_key
 import warnings
@@ -42,6 +43,36 @@ class IntervalMathPrinter(PythonCodePrinter):
             self.parenthesize(a, PREC)
             for a in sorted(expr.args, key=default_sort_key)
         )
+
+
+class MySymPyPrinter(SymPyPrinter):
+    """
+    When executing `f = lambdify(symbols, expr, modules="sympy")`, the default
+    SymPyPrinter is going to replace:
+
+    * Add with +
+    * Mul with *
+    * Pow with **
+
+    But in doing so, when evaluating `f` over float/complex numbers, if no
+    other sympy functions are involved, the Python will take over the
+    evaluation, producing int/float numbers which are fixed size. Effectively,
+    we have lost the advantage of arbitrarly large numbers offered by SymPy.
+
+    This printer is going to fix this problem.
+    """
+    def _print_Pow(self, expr: Pow):
+        return f"Pow({self.doprint(expr.base)}, {self.doprint(expr.exp)})"
+
+    def _print_Add(self, expr: Add):
+        args = [self.doprint(a) for a in expr.args]
+        args = ", ".join(args)
+        return f"Add({args})"
+
+    def _print_Mul(self, expr: Mul):
+        args = [self.doprint(a) for a in expr.args]
+        args = ", ".join(args)
+        return f"Mul({args})"
 
 
 def _warning_eval_error(err, modules):
@@ -367,6 +398,11 @@ class _LambdifierMixin(param.Parameterized):
                 # https://github.com/sympy/sympy/issues/24246
                 kwargs = dict(modules=modules, docstring_limit=0)
                 if modules == "sympy":
+                    kwargs["modules"] = [
+                        "sympy", {
+                            "Add": Add, "Mul": Mul, "Pow": Pow, "sympy": sympy
+                        }]
+                    kwargs["printer"] = MySymPyPrinter
                     kwargs["dummify"] = True
                 functions.append(lambdify(self._signature, e, **kwargs))
             self._functions[h] = functions

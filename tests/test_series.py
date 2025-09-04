@@ -4849,3 +4849,109 @@ def test_process_sums_2():
     assert np.allclose(pp1, pp2)
     assert not np.allclose(xx1, xx2)
     assert not np.allclose(yy1, yy2)
+
+
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+def test_evaluate_big_numbers_1():
+    # Consider this expression: expr = t**(2 * (n + 1))
+    # Once lambdified with NumPy/Scipy or even with SymPy it generates a
+    # code like this one: `f = lambda t, n:  t**(2*n + 2)`.
+    # Notice the `**` to indicate power. When the function receives numerical
+    # values (type float or complex), the evaluation will be performed by
+    # Python. If `n` is sufficiently big (n=193 or above), the evaluation fails
+    # with OverflowError, regardless of the evaluation module requested by
+    # the user.
+    # evaluation with lambdiy and Python+Numpy should fail because
+    # of OverflowErrors. If modules="sympy" it should succeed, but only
+    # because I implemented a custom SymPyPrinter!
+    t, n = symbols("t, n")
+    expr = t**(2 * (n + 1))
+
+    # sufficiently low upper bound, Numpy should be enough to evaluate each
+    # point to a finite number
+    for n_val in [5, 100, 192]:
+        s = LineOver1DRangeSeries(
+            expr.subs(n, n_val), (t, 0, 2*pi), n=10)
+        xx, yy = s.get_data()
+        assert np.allclose(xx, np.linspace(0, 2*np.pi, 10))
+        assert not np.isinf(yy).any()
+
+    # for larger upper bounds, an overflow happens and inf is returned
+    for n_val in [193, 875, 900, 1000]:
+        s = LineOver1DRangeSeries(
+            expr.subs(n, n_val), (t, 0, 2*pi), n=10)
+        xx, yy = s.get_data()
+        assert np.allclose(xx, np.linspace(0, 2*np.pi, 10))
+        # there are inf values because Python went in OverflowError
+        assert np.isinf(yy).any()
+        # let's check that's the case
+        f, = s.evaluator.request_lambda_functions("numpy")
+        assert np.isinf(f(xx[-1]))
+
+    # sympy (with the modified printer), should be able to compute finite
+    # numbers for every lower bound
+    for n_val in [193]:
+        s = LineOver1DRangeSeries(
+            expr.subs(n, n_val), (t, 0, 2*pi), n=10, modules="sympy")
+        xx, yy = s.get_data()
+        # there are inf values because, while the evaluation with SymPy succeed
+        # in getting numerical value, the conversion to float/complex is unable
+        # to deal with such big numbers and goes into OverflowError
+        assert np.allclose(xx, np.linspace(0, 2*np.pi, 10))
+        assert np.isinf(yy).any()
+        # let's check that's the case
+        f, = s.evaluator.request_lambda_functions("sympy")
+        assert f(xx[-1]).is_finite
+
+
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+def test_evaluate_big_numbers_2():
+    # similarly to the previous test, the following expressions
+    # involves the exponentiation, resulting in too huge numbers
+    # to be dealt by Python/Numpy, followed by a division.
+    # Evaluating the expressions with SymPy will ultimately produce finite
+    # float numbers because of the division by another large number.
+
+    t, n = symbols("t, n")
+    e1 = Sum((-1)**n * t**(2*(n + 1)) / factorial(2*n), (n, 0, oo))
+    e2 = Sum((-1)**n * t**(2*(n + 1)) / factorial(2*(n + 1)), (n, 0, oo))
+    all_finite = lambda x: not (np.isnan(x).any() or np.isinf(x).any())
+
+    # very low upper bound of the sum: numpy should be able to
+    # evaluate the series, but the results might be inaccurate
+    s1 = Parametric2DLineSeries(
+        e1, e2, (t, 0, 2*pi), n=10, sum_bound=5)
+    xx1, yy1, pp1 = s1.get_data()
+    assert all_finite(xx1)
+    assert all_finite(yy1)
+    assert np.allclose(pp1, np.linspace(0, 2*np.pi, 10))
+
+    # sufficiently low upper bound of the sum: numpy should be able to
+    # evaluate the series, and the results might be much better than before
+    s2 = Parametric2DLineSeries(
+        e1, e2, (t, 0, 2*pi), n=10, sum_bound=50)
+    xx2, yy2, pp2 = s2.get_data()
+    assert all_finite(xx2)
+    assert all_finite(yy2)
+    assert np.allclose(pp1, pp2)
+    assert not np.allclose(xx1, xx2)
+    assert not np.allclose(yy1, yy2)
+
+    # high upper bound of the sum: numpy will fail to evaluate it because of
+    # OverflowError, but sympy (with the custom printer) should be able to
+    # evaluate the series, and the results might be much better than before
+    s3 = Parametric2DLineSeries(
+        e1, e2, (t, 0, 2*pi), n=10, sum_bound=1000)
+    xx3, yy3, pp3 = s3.get_data()
+    assert not all_finite(xx3)
+    assert not all_finite(yy3)
+    assert np.allclose(pp1, pp3)
+
+    s4 = Parametric2DLineSeries(
+        e1, e2, (t, 0, 2*pi), n=10, sum_bound=1000, modules="sympy")
+    xx4, yy4, pp4 = s4.get_data()
+    assert all_finite(xx4)
+    assert all_finite(yy4)
+    assert np.allclose(pp1, pp4)
+    assert np.allclose(xx2, xx4)
+    assert np.allclose(yy2, yy4)
