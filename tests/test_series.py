@@ -18,10 +18,11 @@ from spb.series.base import _set_discretization_points
 from spb import plot3d_spherical
 from sympy.abc import j, k, l, d, s, x, y
 from sympy import (
-    latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt,
+    latex, exp, symbols, Tuple, I, pi, sin, cos, tan, log, sqrt, oo,
     re, im, arg, frac, Plane, Circle, Point, Sum, S, Abs, lambdify,
     Function, dsolve, Eq, Ynm, floor, Ne, Piecewise, hyper, nsolve,
-    Polygon, Line, Segment, Point3D, Line3D, Expr, Ellipse, ceiling
+    Polygon, Line, Segment, Point3D, Line3D, Expr, Ellipse, ceiling,
+    factorial
 )
 from sympy.physics.control import TransferFunction
 from sympy.vector import CoordSys3D, gradient
@@ -4809,3 +4810,42 @@ def test_validation_kwargs():
     ) as w:
         Geometry2DSeries(Polygon((4, 0), 4, n=5), isfilled=True)
         do_test(w, {"isfilled": "is_filled"})
+
+
+@pytest.mark.parametrize("sum_range, esr1, esr2", [
+    ((x, 1, oo), (x, 1, 100), (x, 1, 1000)),
+    ((x, -oo, -1), (x, -100, -1), (x, -1000, -1)),
+    ((x, -oo, -oo), (x, -100, -100), (x, -1000, -1000))
+])
+def test_process_sums_1(sum_range, esr1, esr2):
+    # verify that Sum containing infinity in its boundary, gets replaced with
+    # a Sum with arbitrary big numbers instead.
+
+    expr = Sum(1 / x**y, sum_range)
+    s1 = LineOver1DRangeSeries(expr, (y, 2, 10), sum_bound=100, n=10)
+    s2 = LineOver1DRangeSeries(expr, (y, 2, 10), sum_bound=1000, n=10)
+    assert s1.evaluator.expr.args[-1] == esr1
+    assert s2.evaluator.expr.args[-1] == esr2
+    xx1, yy1 = s1.get_data()
+    xx2, yy2 = s2.get_data()
+    assert np.allclose(xx1, xx2)
+    assert not np.allclose(yy1, yy2)
+
+
+def test_process_sums_2():
+    # it should also work with parametric expressions
+
+    t, n = symbols("t, n")
+    e1 = Sum((-1)**n * t**(2*(n + 1)) / factorial(2*n), (n, 0, oo))
+    e2 = Sum((-1)**n * t**(2*(n + 1)) / factorial(2*(n + 1)), (n, 0, oo))
+    s1 = Parametric2DLineSeries(e1, e2, (t, 0, 2*pi), sum_bound=10, n=10)
+    s2 = Parametric2DLineSeries(e1, e2, (t, 0, 2*pi), sum_bound=100, n=10)
+    assert s1.evaluator.expr == Tuple(
+        e1.subs(oo, 10), e2.subs(oo, 10))
+    assert s2.evaluator.expr == Tuple(
+        e1.subs(oo, 100), e2.subs(oo, 100))
+    xx1, yy1, pp1 = s1.get_data()
+    xx2, yy2, pp2 = s2.get_data()
+    assert np.allclose(pp1, pp2)
+    assert not np.allclose(xx1, xx2)
+    assert not np.allclose(yy1, yy2)

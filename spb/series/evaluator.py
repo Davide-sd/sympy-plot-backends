@@ -5,7 +5,7 @@ from spb.utils import _get_free_symbols, _correct_shape
 from sympy import (
     Tuple, symbols, sympify, Expr, lambdify,
     atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Integral, hyper, arity
+    Integral, hyper, arity, Wild, sign
 )
 from sympy.external import import_module
 from sympy.printing.pycode import PythonCodePrinter
@@ -161,6 +161,11 @@ class _GridEvaluationParameters(param.Parameterized, _NMixin):
     modules = param.Parameter(None, doc="""
         Specify the evaluation modules to be used by lambdify.
         If not specified, the evaluation will be done with NumPy/SciPy.""")
+    sum_bound = param.Integer(default=1000, bounds=(0, None), doc="""
+        When plotting sums, the expression will be pre-processed in order
+        to replace lower/upper bounds set to +/- infinity with this +/-
+        numerical value. Note: the higher this number, the slower the
+        evaluation, but the more accurate the plot.""")
 
 
 def _discretize(start, end, N, scale="linear", only_integers=False):
@@ -226,6 +231,61 @@ def _hashify_modules(modules):
     elif isinstance(modules, dict):
         return hash("|".join([str(k) for k in modules]))
     raise NotImplementedError
+
+
+def _process_summations(sum_bound, expr):
+    """
+    Substitute oo (infinity) lower/upper bounds of a summation with an
+    arbitrary big integer number.
+
+    Parameters
+    ==========
+    sum_bound : int
+        Absolute value of the limit of the summation.
+    expr : Expr
+
+    Returns
+    =======
+    new_expr : Expr
+
+    Notes
+    =====
+    Let's consider the following summation: ``Sum(1 / x**2, (x, 1, oo))``.
+    The current implementation of lambdify (SymPy 1.9 at the time of
+    writing this) will create something of this form:
+
+    ``sum(1 / x**2 for x in range(1, INF))``
+
+    The problem is that ``type(INF)`` is float, while ``range`` requires
+    integers, thus the evaluation will fails.
+    Instead of modifying ``lambdify`` (which requires a deep knowledge),
+    let's apply this quick dirty hack: substitute symbolic ``oo`` with an
+    arbitrary large number.
+    """
+    def new_bound(t, bound):
+        if (not t.is_number) or t.is_finite:
+            return t
+        if sign(t) >= 0:
+            return bound
+        return -bound
+
+    # select summations whose lower/upper bound is infinity
+    w = Wild("w", properties=[
+        lambda t: isinstance(t, Sum),
+        lambda t: any((not a[1].is_finite) or (not a[2].is_finite) for i, a in enumerate(t.args) if i > 0)
+    ])
+
+    for t in list(expr.find(w)):
+        sums_args = list(t.args)
+        for i, a in enumerate(sums_args):
+            if i > 0:
+                sums_args[i] = (
+                    a[0], new_bound(a[1], sum_bound),
+                    new_bound(a[2], sum_bound)
+                )
+        s = Sum(*sums_args)
+        expr = expr.subs(t, s)
+    return expr
 
 
 class _LambdifierMixin(param.Parameterized):
@@ -363,7 +423,12 @@ class _LambdifierMixin(param.Parameterized):
                 r[0] for r in self.series.ranges], key=lambda t: t.name)
         else:
             with param.edit_constant(self):
-                self.expr = sympify(e) if not is_iter else Tuple(*e)
+                if not is_iter:
+                    self.expr = _process_summations(
+                        self.series.sum_bound, sympify(e))
+                else:
+                    self.expr = Tuple(*[_process_summations(
+                        self.series.sum_bound, t) for t in e])
 
             fs = _get_free_symbols(e)
             self._signature = sorted(fs, key=lambda t: t.name)

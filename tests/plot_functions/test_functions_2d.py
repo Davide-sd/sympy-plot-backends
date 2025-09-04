@@ -455,33 +455,6 @@ def test_plot_list(p_options):
     assert p.series[1].label == "sin"
 
 
-def test_process_sums(paf_options):
-    # verify that Sum containing infinity in its boundary, gets replaced with
-    # a Sum with arbitrary big numbers instead.
-    x, y = symbols("x, y")
-
-    options = paf_options.copy()
-    options["n"] = 20
-
-    expr = Sum(1 / x**y, (x, 1, oo))
-    p1 = plot(expr, (y, 2, 10), sum_bound=1000, **options)
-    assert p1[0].expr.args[-1] == (x, 1, 1000)
-    p2 = plot(expr, (y, 2, 10), sum_bound=500, **options)
-    assert p2[0].expr.args[-1] == (x, 1, 500)
-
-    expr = Sum(1 / x**y, (x, -oo, -1))
-    p1 = plot(expr, (y, 2, 10), sum_bound=1000, **options)
-    assert p1[0].expr.args[-1] == (x, -1000, -1)
-    p2 = plot(expr, (y, 2, 10), sum_bound=500, **options)
-    assert p2[0].expr.args[-1] == (x, -500, -1)
-
-    expr = Sum(1 / x**y, (x, -oo, oo))
-    p1 = plot(expr, (y, 2, 10), sum_bound=1000, **options)
-    assert p1[0].expr.args[-1] == (x, -1000, 1000)
-    p2 = plot(expr, (y, 2, 10), sum_bound=500, **options)
-    assert p2[0].expr.args[-1] == (x, -500, 500)
-
-
 def test_plot_piecewise(p_options):
     # Verify that univariate Piecewise objects are processed in such a way to
     # create multiple series, each one with the correct range.
