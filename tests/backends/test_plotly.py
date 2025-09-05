@@ -13,7 +13,7 @@ from spb import (
     plot_vector, plot3d_revolution, plot3d_spherical,
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
     plot_parametric, plot_geometry,
-    plot_polar
+    plot_polar, multiples_of_pi_over_4
 )
 from spb.backends.utils import tick_formatter_multiples_of
 from spb.series import SurfaceOver2DRangeSeries, ParametricSurfaceSeries
@@ -88,7 +88,8 @@ from .make_tests import (
     make_test_hvlines,
     make_test_grid_minor_grid,
     make_test_tick_formatters_2d,
-    make_test_tick_formatters_3d
+    make_test_tick_formatters_3d,
+    make_test_tick_formatter_polar_axis
 )
 
 
@@ -1773,3 +1774,20 @@ def test_tick_formatter_multiples_of_3d():
     assert np.allclose(p.fig.layout.scene.xaxis.tickvals, expected_x)
     assert p.fig.layout.scene.yaxis.ticktext == expected_y_vals
     assert np.allclose(p.fig.layout.scene.yaxis.tickvals, expected_y)
+
+
+@pytest.mark.parametrize("x_ticks_formatter, expected_dtick, expected_thetaunit", [
+    (None, 30, None),
+    (multiples_of_pi_over_4(), np.pi / 4, "radians")
+])
+def test_tick_formatter_multiples_of_polar_plot(
+    x_ticks_formatter, expected_dtick, expected_thetaunit
+):
+    p = make_test_tick_formatter_polar_axis(PB, x_ticks_formatter)
+
+    assert np.isclose(
+        p.fig.layout.polar.angularaxis.dtick,
+        expected_dtick
+    )
+    assert p.fig.layout.polar.angularaxis.thetaunit == expected_thetaunit
+

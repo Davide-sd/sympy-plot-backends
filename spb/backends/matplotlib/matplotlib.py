@@ -386,6 +386,21 @@ class MatplotlibBackend(Plot):
                 self._ax.xaxis.set_major_formatter(
                     self.plt.FuncFormatter(
                         self.x_ticks_formatter.MB_func_formatter()))
+
+                if self.polar_axis:
+                    # somehow, the formatter is going to insert other tick
+                    # values, especially the one at 2*pi, which coincides with
+                    # 0, so we'd end up with overlapping labels. Here I take
+                    # care of that
+                    ticks = self._ax.get_xticklabels()
+                    ticks_labels = [
+                        (t.get_position()[0], t.get_text()) for t in ticks]
+                    ticks_labels = [
+                        t for t in ticks_labels
+                        if (t[0] >= 0) and (t[0] < 2*self.np.pi)]
+                    self._ax.set_xticks(
+                        [t[0] for t in ticks_labels],
+                        [t[1] for t in ticks_labels])
         if self.y_ticks_formatter:
             if isinstance(self.y_ticks_formatter, tick_formatter_multiples_of):
                 self._ax.yaxis.set_major_locator(

@@ -6,7 +6,7 @@ from spb import (
     plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
     graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero,
     ngrid, sgrid, zgrid, mcircles, surface, surface_parametric, line,
-    root_locus, contour
+    root_locus, contour, list_2d
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries,
@@ -998,4 +998,24 @@ def make_test_tick_formatters_3d(B, x_ticks_formatter, y_ticks_formatter):
         show=False, backend=B, grid=False,
         x_ticks_formatter=x_ticks_formatter,
         y_ticks_formatter=y_ticks_formatter
+    )
+
+def make_test_tick_formatter_polar_axis(B, x_ticks_formatter):
+    # plots of the soluzion of sin(z**3 + 1) = 0 on the complex plane
+    # in polar form
+    x = [
+        0.8708338169785833, 0.8708338169785833, -1.7416676339571666,
+        0.6444891748561715, 0.6444891748561715, -1.288978349712343,
+        1.0, -0.5, -0.5, 1.6059146520513297, -0.8029573260256648,
+        -0.8029573260256648
+    ]
+    y = [
+        1.508328415956043, -1.508328415956043, 0.0, 1.1162879957790313,
+        -1.1162879957790313, 0.0, 0.0, -0.8660254037844386,
+        0.8660254037844386, 0.0, -1.3907628849860991, 1.3907628849860991
+    ]
+    return graphics(
+        list_2d(x, y, is_point=True),
+        backend=B, polar_axis=True, show=False,
+        x_ticks_formatter=x_ticks_formatter
     )

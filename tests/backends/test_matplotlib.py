@@ -13,9 +13,8 @@ from spb import (
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
     plot_parametric, plot_implicit, plot_list, plot_geometry,
     plot_complex_list, graphics, vector_field_2d, plot_nyquist, plot_nichols,
-    plot_step_response
+    plot_step_response, multiples_of_pi_over_3, tick_formatter_multiples_of
 )
-from spb.backends.utils import tick_formatter_multiples_of
 from spb.series import (
     RootLocusSeries, SGridLineSeries, ZGridLineSeries, ContourSeries,
     Vector2DSeries
@@ -102,7 +101,8 @@ from .make_tests import (
     make_test_mcircles,
     make_test_hvlines,
     make_test_tick_formatters_2d,
-    make_test_tick_formatters_3d
+    make_test_tick_formatters_3d,
+    make_test_tick_formatter_polar_axis
 )
 
 ct = import_module("control")
@@ -2702,3 +2702,30 @@ def test_tick_formatter_multiples_of_3d():
     assert len(y_ticks) == 7
     assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
     assert [t.get_text() for t in y_ticks] ==expected_y2
+
+
+@pytest.mark.parametrize("x_ticks_formatter, expected_positions, expected_labels", [
+    (
+        None,
+        np.linspace(0, 2*np.pi, 9)[:-1],
+        ["0°", "45°", "90°", "135°", "180°", "225°", "270°", "315°"]
+    ),
+    (
+        multiples_of_pi_over_3(),
+        np.linspace(0, 2*np.pi, 7)[:-1],
+        [
+            '$0$', '$\\frac{\\pi}{3}$', '$\\frac{2\\pi}{3}$', '$\\pi$',
+            '$\\frac{4\\pi}{3}$', '$\\frac{5\\pi}{3}$'
+        ]
+    )
+])
+def test_tick_formatter_multiples_of_polar_plot(
+    x_ticks_formatter, expected_positions, expected_labels
+):
+    p = make_test_tick_formatter_polar_axis(MB, x_ticks_formatter)
+
+    ticks = p.ax.get_xticklabels()
+    positions = [t.get_position()[0] for t in ticks]
+    labels = [t.get_text() for t in ticks]
+    assert np.allclose(positions, expected_positions)
+    assert labels == expected_labels

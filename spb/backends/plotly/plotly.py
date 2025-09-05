@@ -368,27 +368,25 @@ class PlotlyBackend(Plot):
         # if necessary, apply custom tick formatting
         x_tickvals, x_ticktext = None, None
         y_tickvals, y_ticktext = None, None
+        polar_angular_dtick = 30
         is_formatter = lambda t: isinstance(t, tick_formatter_multiples_of)
         if any(is_formatter(t) for t in [
             self.x_ticks_formatter, self.y_ticks_formatter]
         ):
             x_min, x_max, y_min, y_max = self._get_data_limits_for_custom_tickers()
-        if (
-            is_formatter(self.x_ticks_formatter)
-            and (not self.np.isclose(x_min, x_max))
-        ):
-            x_tickvals, x_ticktext = self.x_ticks_formatter.PB_ticks(
-                x_min, x_max)
+        if is_formatter(self.x_ticks_formatter):
+            if not self.np.isclose(x_min, x_max):
+                x_tickvals, x_ticktext = self.x_ticks_formatter.PB_ticks(
+                    x_min, x_max)
             q = self.x_ticks_formatter.quantity
             n = self.x_ticks_formatter.n
             n_minor = self.x_ticks_formatter.n_minor
             minor_grid_line_kw_x["dtick"] = (q / n) / (n_minor + 1)
-        if (
-            is_formatter(self.y_ticks_formatter)
-            and (not self.np.isclose(y_min, y_max))
-        ):
-            y_tickvals, y_ticktext = self.y_ticks_formatter.PB_ticks(
-                y_min, y_max)
+            polar_angular_dtick = q / n
+        if is_formatter(self.y_ticks_formatter):
+            if not self.np.isclose(y_min, y_max):
+                y_tickvals, y_ticktext = self.y_ticks_formatter.PB_ticks(
+                    y_min, y_max)
             q = self.y_ticks_formatter.quantity
             n = self.y_ticks_formatter.n
             n_minor = self.y_ticks_formatter.n_minor
@@ -426,8 +424,15 @@ class PlotlyBackend(Plot):
                 **major_grid_line_kw
             ),
             polar=dict(
-                angularaxis={'direction': 'counterclockwise', 'rotation': 0},
-                radialaxis={'range': None if not self.ylim else self.ylim},
+                angularaxis=dict(
+                    direction='counterclockwise',
+                    rotation=0,
+                    thetaunit="radians" if is_formatter(self.x_ticks_formatter) else None,
+                    dtick=polar_angular_dtick,
+                ),
+                radialaxis=dict(
+                    range=None if not self.ylim else self.ylim
+                ),
                 sector=None if not self.xlim else self.xlim
             ),
             margin=dict(
