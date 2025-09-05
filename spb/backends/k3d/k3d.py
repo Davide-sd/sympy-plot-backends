@@ -49,8 +49,6 @@ class K3DBackend(Plot):
     Plot, MatplotlibBackend, PlotlyBackend, BokehBackend, plot3d
     """
 
-    _library = "k3d"
-
     wireframe_color = 0x000000
     colormaps = []
     cyclic_colormaps = []
@@ -76,10 +74,9 @@ class K3DBackend(Plot):
         Arrow3DSeries: Arrow3DRenderer
     }
 
-    _fig = param.Parameter(default=None, doc="""
-        The figure in which symbolic expressions will be plotted into.""")
     show_label = param.Boolean(default=False, doc="""
-        Show/hide labels of the expressions.""")
+        Show/hide labels of the expressions on the K3D-Jupyter's
+        user interface.""")
 
     def __init__(self, *args, **kwargs):
         self.np = import_module('numpy')
@@ -100,6 +97,7 @@ class K3DBackend(Plot):
             catch=(RuntimeError,))
         cm = self.matplotlib.cm
 
+        kwargs["_library"] = "k3d"
         kwargs.setdefault("colorloop", cm.tab10.colors)
         kwargs.setdefault("colormaps", [
             k3d.basic_color_maps.CoolWarm,
@@ -184,8 +182,6 @@ class K3DBackend(Plot):
         self._process_renderers()
         for f in self.hooks:
             f(self._fig)
-
-    # process_series = draw
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
@@ -351,7 +347,6 @@ class K3DBackend(Plot):
         self._set_axes_texts()
         self._new_camera_position()
         self._add_clipping_planes()
-        # self._fig.auto_rendering = True
 
     def _new_camera_position(self):
         if self.camera is None:

@@ -37,8 +37,9 @@ class PlotlyBackend(Plot):
     * with 2D domain coloring, the vertical axis is reversed, with negative
       values on the top and positive values on the bottom.
     * with 3D complex plots: when hovering a point, the tooltip will display
-      wrong information for the argument and the phase. Hopefully, this bug
-      [#fn13]_ will be fixed upstream.
+      wrong information for the argument and the phase.
+      https://github.com/plotly/plotly.js/issues/5003
+      Hopefully, this bug will be fixed upstream.
 
     See also
     ========
@@ -46,16 +47,9 @@ class PlotlyBackend(Plot):
     Plot, MatplotlibBackend, BokehBackend, K3DBackend
     """
 
-    _library = "plotly"
-
-    # colorloop = []
-    # colormaps = []
-    # cyclic_colormaps = []
-    # quivers_colors = []
     wireframe_color = "#000000"
 
     scattergl_threshold = 2000
-
     # color bar spacing
     _cbs = 0.15
     # color bar scale down factor
@@ -89,8 +83,6 @@ class PlotlyBackend(Plot):
         Arrow2DSeries: Arrow2DRenderer
     }
 
-    _fig = param.Parameter(default=None, doc="""
-        The figure in which symbolic expressions will be plotted into.""")
     quivers_colors = param.ClassSelector(default=[], class_=(list, tuple), doc="""
         List of colors for rendering quivers.""")
 
@@ -105,6 +97,7 @@ class PlotlyBackend(Plot):
         self.create_quiver = self.plotly.figure_factory.create_quiver
         self.create_streamline = self.plotly.figure_factory.create_streamline
 
+        kwargs["_library"] = "plotly"
         # The following colors corresponds to the discret color map
         # px.colors.qualitative.Plotly.
         kwargs.setdefault("colorloop", [
@@ -141,13 +134,8 @@ class PlotlyBackend(Plot):
                 "need to interrupt the kernel."
             )
 
-
-        # self._fig = None
         self._init_cyclers()
-        # if self._use_existing_figure:
-        #     self._fig = self._use_existing_figure
-        #     self._use_existing_figure = True
-        # else:
+
         if not self._use_existing_figure:
             if (
                 (self.is_iplot and (self.imodule == "ipywidgets"))
@@ -236,14 +224,11 @@ class PlotlyBackend(Plot):
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
-        kw = p1._copy_kwargs()
-        # kw["theme"] = p1.theme
-        return kw
+        return p1._copy_kwargs()
 
     def _init_cyclers(self):
         start_index_cl, start_index_cm = None, None
         if self._use_existing_figure:
-            # fig = self._use_existing_figure if self._fig is None else self._fig
             # attempt to determine how many lines or surfaces are plotted
             # on the user-provided figure
 

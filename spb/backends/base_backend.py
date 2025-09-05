@@ -94,10 +94,12 @@ class PlotAttributes(param.Parameterized):
 
     # NOTE: `fig` and `ax` are just placeholder parameters in order for them
     # to appear in the `graphics` docstring. In reality, all backends
-    # implement the `_fig` parameter (and MatplotlibBackend implements the
-    # `_ax` parameter), as well as read-only `fig` (and `ax`) properties,
-    # because when a user requests the figure or axis, the backend must first
-    # check that these elements exists. If not, they need to be created first.
+    # implement the `_fig` parameter (defined below) where the actual figure
+    # is stored (and MatplotlibBackend also implements the `_ax` parameter),
+    # as well as read-only `fig` (and `ax`) properties. These properties are
+    # mandatory because when a user requests the figure or axis (by executing
+    # plot.fig or plot.ax), the backend must first check that `_fig` (or `_ax`)
+    # are not None. If they are None, they need to be created first.
     fig = param.Parameter(
         default=None, doc="Get or set the figure where to plot into.")
     ax = param.Parameter(doc="""
@@ -430,14 +432,12 @@ class Plot(PlotAttributes):
     MatplotlibBackend, PlotlyBackend, BokehBackend, K3DBackend
     """
 
-    # set the name of the plotting library being used. This is required in
-    # order to convert any colormap to the specified plotting library.
-    _library = ""
-
-    # colorloop = []
-    # colormaps = []
-    # cyclic_colormaps = []
-
+    _library = param.String(default="", doc="""
+        Set the name of the plotting library being used. This is required in
+        order to convert any colormap to the format supported by the
+        specified plotting library.""")
+    _fig = param.Parameter(default=None, doc="""
+        The figure in which symbolic expressions will be plotted into.""")
     is_iplot = param.Boolean(False, constant=True, doc="""
         NOTE: matplotlib is not designed to be interactive, therefore it
         needs a way to detect where its figure is going to be displayed.
@@ -542,12 +542,9 @@ class Plot(PlotAttributes):
             kwargs.setdefault("polar_axis", kwargs.pop("is_polar"))
         if "fig" in kwargs:
             kwargs["_fig"] = kwargs.pop("fig")
-        # if "ax" in kwargs:
-        #     kwargs["_ax"] = kwargs.pop("ax")
 
         # remove keyword arguments that are not parameters of this backend
         kwargs = {k: v for k, v in kwargs.items() if k in list(self.param)}
-
 
         super().__init__(**kwargs)
         self._init_cyclers()
@@ -605,7 +602,6 @@ class Plot(PlotAttributes):
                 if complex(r[1]).real > complex(r[2]).real:
                     self.invert_x_axis = True
 
-
     def _copy_kwargs(self):
         """Copy the values of the plot attributes into a dictionary which will
         be later used to create a new `Plot` object having the same attributes.
@@ -616,29 +612,6 @@ class Plot(PlotAttributes):
             if k not in ["name", "_fig", "fig", "ax"]:
                 params[k] = getattr(self, k)
         return params
-        # return dict(
-        #     title=self.title,
-        #     xlabel=self.xlabel,
-        #     ylabel=self.ylabel,
-        #     zlabel=self.zlabel,
-        #     aspect=self.aspect,
-        #     axis_center=self.axis_center,
-        #     grid=self.grid,
-        #     xscale=self.xscale,
-        #     yscale=self.yscale,
-        #     zscale=self.zscale,
-        #     # detect_poles=self.detect_poles,
-        #     legend=self.legend,
-        #     xlim=self.xlim,
-        #     ylim=self.ylim,
-        #     zlim=self.zlim,
-        #     size=self.size,
-        #     is_iplot=self.is_iplot,
-        #     use_latex=self.use_latex,
-        #     camera=self.camera,
-        #     polar_axis=self.polar_axis,
-        #     axis=self.axis
-        # )
 
     def _init_cyclers(self, start_index_cl=None, start_index_cm=None):
         """Create infinite loop iterators over the provided color maps."""
@@ -770,11 +743,6 @@ class Plot(PlotAttributes):
                 all_params = self.merge({}, all_params, s.params)
 
         return all_params
-
-    # @property
-    # def fig(self):
-    #     """Returns the figure used to render/display the plots."""
-    #     return self._fig
 
     @property
     def renderers(self):

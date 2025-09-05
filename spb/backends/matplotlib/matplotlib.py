@@ -55,11 +55,7 @@ class MatplotlibBackend(Plot):
     Plot, PlotlyBackend, BokehBackend, K3DBackend
     """
 
-    _library = "matplotlib"
-
     wireframe_color = "k"
-    colormaps = []
-    cyclic_colormaps = []
 
     renderers_map = {
         LineOver1DRangeSeries: Line2DRenderer,
@@ -101,9 +97,6 @@ class MatplotlibBackend(Plot):
         PoleZeroWithSympySeries: PoleZeroRenderer,
     }
 
-    _fig = param.Parameter(default=None, doc="""
-        The figure in which symbolic expressions will be plotted into.""")
-
     def __init__(self, *args, **kwargs):
         self.matplotlib = import_module(
             'matplotlib',
@@ -131,6 +124,7 @@ class MatplotlibBackend(Plot):
         self.Path3DCollection = self.mpl_toolkits.mplot3d.art3d.Path3DCollection
         self.Axes3D = self.mpl_toolkits.mplot3d.Axes3D
 
+        kwargs["_library"] = "matplotlib"
         kwargs.setdefault("colormaps", [
             cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
             cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer])

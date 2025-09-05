@@ -549,6 +549,7 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
                 self, additional_keys=keys_to_be_aware_of, **params)
         params = {k: v for k, v in params.items() if k in keys_to_maintain}
 
+        print("graphics params", params)
         # p = param.ParamOverrides(self, params)
         # print("graphics", params)
 
@@ -626,8 +627,8 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
         #     if (k != "name") and (k not in params):
         #         params[k] = getattr(p, k)
 
-        # TODO: can this be done better? Like, not using _library?
-        if params.get("backend")._library != "matplotlib":
+        from spb.backends.matplotlib.matplotlib import MB
+        if not issubclass(params.get("backend"), MB):
             params.pop("ax", None)
 
         # print("graphics after", params)

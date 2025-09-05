@@ -54,12 +54,6 @@ class BokehBackend(Plot):
     Plot, MatplotlibBackend, PlotlyBackend, K3DBackend
     """
 
-    _library = "bokeh"
-
-    # colorloop = []
-    # colormaps = []
-    # cyclic_colormaps = []
-
     renderers_map = {
         LineOver1DRangeSeries: Line2DRenderer,
         List2DSeries: Line2DRenderer,
@@ -87,9 +81,6 @@ class BokehBackend(Plot):
         NyquistLineSeries: NyquistRenderer,
     }
 
-    _fig = param.Parameter(default=None, doc="""
-        The figure in which symbolic expressions will be plotted into.""")
-
     def __init__(self, *args, **kwargs):
         self.np = import_module('numpy')
         self.bokeh = import_module(
@@ -114,6 +105,7 @@ class BokehBackend(Plot):
             catch=(RuntimeError,))
         cm = matplotlib.cm
 
+        kwargs["_library"] = "bokeh"
         kwargs.setdefault("colorloop", bp.Category10[10])
         kwargs.setdefault("colormaps", [
             cc.bmy, "aggrnyl", cc.kbc, cc.bjy, "plotly3"])
@@ -260,9 +252,7 @@ class BokehBackend(Plot):
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
-        kw = p1._copy_kwargs()
-        # kw["theme"] = p1.theme
-        return kw
+        return p1._copy_kwargs()
 
     def _process_renderers(self):
         self._init_cyclers()
