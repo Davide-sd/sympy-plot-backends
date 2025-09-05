@@ -245,6 +245,8 @@ class BokehBackend(Plot):
         the figure. Note that this method doesn't show the plot.
         """
         self._process_renderers()
+        for f in self.hooks:
+            f(self._fig)
 
     process_series = draw
 
@@ -472,7 +474,7 @@ class BokehBackend(Plot):
     def show(self):
         """Visualize the plot on the screen."""
         if len(self._fig.renderers) != len(self.series):
-            self._process_renderers()
+            self.draw()
 
         if self.update_event:
             if self._run_in_notebook:

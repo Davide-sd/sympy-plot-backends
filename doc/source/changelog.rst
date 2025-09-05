@@ -18,6 +18,10 @@ v4.0.0
   ``graphics()``. A few preconfigured formatter are available as well, like
   ``multiples_of_pi_over_2``, etc.
 
+* Added ``hooks`` keyword argument to ``graphics``: it accepts a list of user
+  defined functions that are going to further customize the appearance of the
+  plot. For example, users can change the tick labels on the colorbars, etc.
+
 * Added support for plotting summations with infinite bounds on plotting
   function.
 

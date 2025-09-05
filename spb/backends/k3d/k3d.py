@@ -172,7 +172,7 @@ class K3DBackend(Plot):
             )
         ):
             # if the backend was created without showing it
-            self._process_renderers()
+            self.draw()
         return self._fig
 
     def draw(self):
@@ -182,6 +182,8 @@ class K3DBackend(Plot):
         # this is necessary in order for the series to be added even if
         # show=False
         self._process_renderers()
+        for f in self.hooks:
+            f(self._fig)
 
     # process_series = draw
 
@@ -374,7 +376,7 @@ class K3DBackend(Plot):
     def show(self):
         """Visualize the plot on the screen."""
         if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
-            self._process_renderers()
+            self.draw()
         self._fig.display()
 
     def _add_clipping_planes(self):

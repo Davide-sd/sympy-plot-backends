@@ -13,9 +13,8 @@ from spb import (
     plot_vector, plot3d_revolution, plot3d_spherical,
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
     plot_parametric, plot_geometry,
-    plot_polar, multiples_of_pi_over_4
+    plot_polar, multiples_of_pi_over_4, tick_formatter_multiples_of
 )
-from spb.backends.utils import tick_formatter_multiples_of
 from spb.series import SurfaceOver2DRangeSeries, ParametricSurfaceSeries
 from sympy import (
     sin, cos, I, pi, Circle, Polygon, sqrt, Matrix, Line, latex, symbols
@@ -89,7 +88,8 @@ from .make_tests import (
     make_test_grid_minor_grid,
     make_test_tick_formatters_2d,
     make_test_tick_formatters_3d,
-    make_test_tick_formatter_polar_axis
+    make_test_tick_formatter_polar_axis,
+    make_test_hooks_2d
 )
 
 
@@ -1791,3 +1791,23 @@ def test_tick_formatter_multiples_of_polar_plot(
     )
     assert p.fig.layout.polar.angularaxis.thetaunit == expected_thetaunit
 
+
+def test_hooks():
+    def colorbar_ticks_formatter(fig):
+        param = p.fig.data[0].marker.color
+        formatter = multiples_of_pi_over_4("π")
+        vals, labels = formatter.PB_ticks(min(param), max(param))
+        p.fig.data[0].marker.colorbar.tickvals = vals
+        p.fig.data[0].marker.colorbar.ticktext = labels
+
+    p = make_test_hooks_2d(PB, [])
+    assert p.fig.data[0].marker.colorbar.tickvals is None
+    assert p.fig.data[0].marker.colorbar.ticktext is None
+
+    p = make_test_hooks_2d(PB, [colorbar_ticks_formatter])
+    assert np.allclose(
+        p.fig.data[0].marker.colorbar.tickvals,
+        [0.0, 0.7853981633974483, 1.5707963267948966, 2.356194490192345,
+        3.141592653589793, 3.9269908169872414, 4.71238898038469])
+    assert p.fig.data[0].marker.colorbar.ticktext == (
+        '0', 'π/4', 'π/2', '3π/4', 'π', '5π/4', '3π/2')

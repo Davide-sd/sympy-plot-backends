@@ -219,6 +219,8 @@ class PlotlyBackend(Plot):
         """
         self._process_renderers()
         self._update_layout()
+        for f in self.hooks:
+            f(self._fig)
 
     process_series = draw
 

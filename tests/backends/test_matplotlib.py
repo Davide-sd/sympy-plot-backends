@@ -13,7 +13,8 @@ from spb import (
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
     plot_parametric, plot_implicit, plot_list, plot_geometry,
     plot_complex_list, graphics, vector_field_2d, plot_nyquist, plot_nichols,
-    plot_step_response, multiples_of_pi_over_3, tick_formatter_multiples_of
+    plot_step_response, multiples_of_pi_over_3, multiples_of_pi_over_4,
+    tick_formatter_multiples_of
 )
 from spb.series import (
     RootLocusSeries, SGridLineSeries, ZGridLineSeries, ContourSeries,
@@ -102,7 +103,8 @@ from .make_tests import (
     make_test_hvlines,
     make_test_tick_formatters_2d,
     make_test_tick_formatters_3d,
-    make_test_tick_formatter_polar_axis
+    make_test_tick_formatter_polar_axis,
+    make_test_hooks_2d
 )
 
 ct = import_module("control")
@@ -2726,6 +2728,45 @@ def test_tick_formatter_multiples_of_polar_plot(
 
     ticks = p.ax.get_xticklabels()
     positions = [t.get_position()[0] for t in ticks]
+    labels = [t.get_text() for t in ticks]
+    assert np.allclose(positions, expected_positions)
+    assert labels == expected_labels
+
+
+@pytest.mark.parametrize("case, expected_positions, expected_labels", [
+    (
+        0,
+        [0, 1, 2, 3, 4, 5],
+        ['0', '1', '2', '3', '4', '5']
+    ),
+    (
+        1,
+        [
+            -0.7853981633974483, 0.0, 0.7853981633974483, 1.5707963267948966,
+            2.356194490192345, 3.141592653589793, 3.9269908169872414,
+            4.71238898038469, 5.497787143782138
+        ],
+        [
+            '$-\\frac{\\pi}{4}$', '$0$', '$\\frac{\\pi}{4}$',
+            '$\\frac{\\pi}{2}$', '$\\frac{3\\pi}{4}$', '$\\pi$',
+            '$\\frac{5\\pi}{4}$', '$\\frac{3\\pi}{2}$', '$\\frac{7\\pi}{4}$'
+        ]
+    )
+])
+def test_hooks(case, expected_positions, expected_labels):
+    def colorbar_ticks_formatter(fig, ax):
+        cax = fig.axes[1]
+        formatter = multiples_of_pi_over_4()
+        cax.yaxis.set_major_locator(formatter.MB_major_locator())
+        cax.yaxis.set_major_formatter(formatter.MB_func_formatter())
+
+    p = make_test_hooks_2d(
+        MB,
+        [colorbar_ticks_formatter] if case else []
+    )
+    cax = p.fig.axes[1]
+    ticks = cax.yaxis.get_ticklabels()
+    positions = [t.get_position()[1] for t in ticks]
     labels = [t.get_text() for t in ticks]
     assert np.allclose(positions, expected_positions)
     assert labels == expected_labels

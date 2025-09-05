@@ -12,9 +12,9 @@ from tempfile import TemporaryDirectory
 import numpy as np
 from spb import (
     BB, plot, plot_complex, plot_vector, plot_contour,
-    plot_parametric, plot_geometry, plot_nyquist, plot_nichols
+    plot_parametric, plot_geometry, plot_nyquist, plot_nichols,
+    multiples_of_pi_over_4, tick_formatter_multiples_of
 )
-from spb.backends.utils import tick_formatter_multiples_of
 from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
 from sympy import (
     sin, cos, I, pi, Circle, Polygon, sqrt, Matrix, Line, latex, symbols
@@ -78,7 +78,8 @@ from .make_tests import (
     make_test_mcircles,
     make_test_hvlines,
     make_test_grid_minor_grid,
-    make_test_tick_formatters_2d
+    make_test_tick_formatters_2d,
+    make_test_hooks_2d
 )
 ipy = import_module("ipywidgets")
 ct = import_module("control")
@@ -1637,3 +1638,21 @@ def test_tick_formatter_multiples_of_number_of_minor_gridlines():
 
     p = make_test_tick_formatters_2d(BB, tf_x2, None)
     assert p.fig.xaxis.ticker.num_minor_ticks == 9
+
+
+def test_hooks():
+    def colorbar_ticks_formatter(fig):
+        formatter = multiples_of_pi_over_4("π")
+        cb = fig.right[0]
+        cb.ticker = formatter.BB_ticker()
+        cb.formatter = formatter.BB_formatter()
+
+    p = make_test_hooks_2d(BB, [])
+    cb = p.fig.right[0]
+    assert cb.ticker == "auto"
+    assert cb.formatter == "auto"
+
+    p = make_test_hooks_2d(BB, [colorbar_ticks_formatter])
+    cb = p.fig.right[0]
+    assert isinstance(cb.ticker, SingleIntervalTicker)
+    assert np.isclose(cb.ticker.interval, np.pi / 4)

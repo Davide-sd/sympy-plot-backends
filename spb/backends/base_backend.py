@@ -245,6 +245,19 @@ class PlotAttributes(param.Parameterized):
         * Plotly: https://plotly.com/python/axes/#styling-grid-lines
         * Bokeh: https://docs.bokeh.org/en/latest/docs/reference/models/grids.html#module-bokeh.models.grids
         """)
+    hooks = param.List(default=[], doc="""
+        List of functions executed after the figure has been initialized and
+        populated with numerical data. These hooks allow the user to further
+        customize the figure before it is shown on the screen.
+        In particular:
+
+        * Matplotlib: each function must be ``f(fig, ax)``, where ``fig`` is
+          the figure object and ``ax`` is the current axes where data is
+          going to be added. Thanks to ``fig`` the user will be able to
+          further customize colorbar, etc...
+        * Bokeh, Plotly, K3D-Jupyter: each function must be ``f(fig)``, where
+          ``fig`` is the overall figure.
+        """)
     # NOTE: The backend might need to create different types of figure
     # depending on the interactive module being used.
     imodule = param.Selector(
@@ -254,6 +267,10 @@ class PlotAttributes(param.Parameterized):
     legend = param.Boolean(default=None, doc="""
         Toggle the visibility of the legend. If None, the backend will
         automatically determine if it is appropriate to show it.""")
+    update_event = param.Boolean(False, allow_None=True, doc="""
+        If True and the backend supports such functionality, events like
+        drag and zoom will trigger a recompute of the data series within the
+        new axis limits.""")
     x_ticks_formatter = param.ClassSelector(
         default=None, class_=tick_formatter_multiples_of, doc="""
         An object of type ``tick_formatter_multiples_of`` which will be used
@@ -264,10 +281,6 @@ class PlotAttributes(param.Parameterized):
         An object of type ``tick_formatter_multiples_of`` which will be used
         to place a y-axis tick value at each multiple of a specified quantity.
         """)
-    update_event = param.Boolean(False, allow_None=True, doc="""
-        If True and the backend supports such functionality, events like
-        drag and zoom will trigger a recompute of the data series within the
-        new axis limits.""")
     xlim = _TupleOfRealNumbers(default=None, length=2, doc="""
         Limit the figure's x-axis to the specified range. The tuple must be in
         the form `(min_val, max_val)`.""")

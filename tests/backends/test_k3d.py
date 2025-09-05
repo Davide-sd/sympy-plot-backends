@@ -56,6 +56,7 @@ from .make_tests import (
     make_test_plot_list_color_func,
     make_test_real_imag,
     make_test_arrow_3d,
+    make_test_hooks_3d
 )
 
 
@@ -853,3 +854,14 @@ def test_arrow_3d():
     assert fig.objects[0].origin_color == 0xff0000
     assert fig.objects[0].head_color == 0xff0000
     p.backend.update_interactive({a: 4, b: 5, c: 6})
+
+
+def test_hooks():
+    def change_title(fig):
+        fig.objects[-1].text = "changed"
+
+    p = make_test_hooks_3d(KB, [])
+    assert p.fig.objects[-1].text == "title"
+
+    p = make_test_hooks_3d(KB, [change_title])
+    assert p.fig.objects[-1].text == "changed"
