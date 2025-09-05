@@ -178,6 +178,38 @@ def complex_points(
        [0]: complex points: (0.0, 0.0666666666666667*exp(0.133333333333333*I*pi), 0.133333333333333*exp(0.266666666666667*I*pi), 0.2*exp(0.4*I*pi), 0.266666666666667*exp(0.533333333333333*I*pi), 0.333333333333333*exp(0.666666666666667*I*pi), 0.4*exp(0.8*I*pi), 0.466666666666667*exp(0.933333333333333*I*pi), 0.533333333333333*exp(1.06666666666667*I*pi), 0.6*exp(1.2*I*pi), 0.666666666666667*exp(1.33333333333333*I*pi), 0.733333333333333*exp(1.46666666666667*I*pi), 0.8*exp(1.6*I*pi), 0.866666666666667*exp(1.73333333333333*I*pi), 0.933333333333333*exp(1.86666666666667*I*pi))
        [1]: complex points: (0, 0.133333333333333*exp(0.133333333333333*I*pi), 0.266666666666667*exp(0.266666666666667*I*pi), 0.4*exp(0.4*I*pi), 0.533333333333333*exp(0.533333333333333*I*pi), 0.666666666666667*exp(0.666666666666667*I*pi), 0.8*exp(0.8*I*pi), 0.933333333333333*exp(0.933333333333333*I*pi), 1.06666666666667*exp(1.06666666666667*I*pi), 1.2*exp(1.2*I*pi), 1.33333333333333*exp(1.33333333333333*I*pi), 1.46666666666667*exp(1.46666666666667*I*pi), 1.6*exp(1.6*I*pi), 1.73333333333333*exp(1.73333333333333*I*pi), 1.86666666666667*exp(1.86666666666667*I*pi))
 
+    Plot the solutions of `sin(z**3 - 1) = 0`. Here we see that
+    `complex_points` works fine when plotting over a cartesian grid, but
+    if we need to plot complex points in polar form, then ``list_2d`` must
+    be used instead. Note the use of a custom tick formatter in the
+    polar plot:
+
+    . plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> expr = z**3 - 1
+       >>> eq = expr - n * pi
+       >>> sol = Tuple(*solve(eq, z))
+       >>> points = []
+       >>> n_lim = 5
+       >>> for n_val in range(-n_lim, n_lim+1):
+       >>>     points.extend(sol.subs(n, n_val))
+       >>> r = [complex(abs(p)).real for p in points]
+       >>> t = [arg(p) for p in points]
+       >>> p1 = graphics(
+       ...     complex_points(points),
+       ...     aspect="equal", title="Cartesian grid", show=False
+       ... )
+       >>> p2 = graphics(
+       ...     list_2d(t, r, is_point=True),
+       ...     x_ticks_formatter=multiples_of_pi_over_3(),
+       ...     title="Polar grid", ylim=(0, 3),
+       ...     aspect="equal", polar_axis=True, show=False
+       ... )
+       >>> plotgrid(p1, p2, nr=1)
+
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary.
 
