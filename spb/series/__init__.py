@@ -47,7 +47,9 @@ from spb.series.series_2d_3d import (
     Geometry2DSeries,
     Geometry3DSeries,
     GenericDataSeries,
-    HVLineSeries
+    HVLineSeries,
+    HLineSeries,
+    VLineSeries
 )
 from spb.doc_utils.ipython import generate_doc
 
@@ -93,7 +95,9 @@ series = [
     Geometry2DSeries,
     Geometry3DSeries,
     GenericDataSeries,
-    HVLineSeries
+    HVLineSeries,
+    HLineSeries,
+    VLineSeries
 ]
 
 generate_doc(*series)

@@ -107,8 +107,8 @@ def test_mix_interactive_non_interactive(backend, imodule, instance):
     params = {a: (1, 0, 5), b: (2, 0, 5)}
     p = graphics(
         line(cos(a), (a, 0, 10), n=10),
-        HVLineSeries(a, horizontal=True, params=params),
-        HVLineSeries(b, horizontal=False, params=params),
+        HVLineSeries(a, is_horizontal=True, params=params),
+        HVLineSeries(b, is_horizontal=False, params=params),
         backend=backend, show=False, imodule=imodule
     )
     assert isinstance(p, instance)

@@ -146,14 +146,14 @@ def _uniform_eval(evaluator):
 class _NMixin:
     @property
     def n(self):
-        n1 = self._N if not hasattr(self, "n1") else self.n1
-        n2 = self._N if not hasattr(self, "n2") else self.n2
-        n3 = self._N if not hasattr(self, "n3") else self.n3
+        n1 = 100 if not hasattr(self, "n1") else self.n1
+        n2 = 100 if not hasattr(self, "n2") else self.n2
+        n3 = 100 if not hasattr(self, "n3") else self.n3
         return [n1, n2, n3]
 
     @n.setter
     def n(self, value):
-        n = [self._N] * 3
+        n = [100] * 3
         if value is not None:
             if hasattr(value, "__iter__"):
                 for i in range(min(len(value), 3)):

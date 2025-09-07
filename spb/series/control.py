@@ -1,6 +1,6 @@
 import param
 from spb.utils import unwrap, tf_to_control
-from sympy import latex, Tuple, symbols, Expr, Poly
+from sympy import latex, Tuple, symbols, Expr, Poly, I, Abs, arg
 from sympy.external import import_module
 import warnings
 from spb.series.evaluator import (
@@ -65,7 +65,7 @@ class GridBase(param.Parameterized):
 class _NaturalFrequencyDampingRatioGrid(param.Parameterized):
     auto = param.Boolean(True, doc="""
         If True, automatically compute damping ratio and natural frequencies
-        in order to obtain a "evenly" distributed grid.""")
+        in order to obtain an "evenly" distributed grid.""")
     show_control_axis = param.Boolean(True, doc="""
         Shows an horizontal and vertical grid lines crossing at the origin.""")
     xi = param.List([], doc="""
@@ -84,12 +84,12 @@ class SGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
     on the s-plane. This data series implements two modes of operation:
 
     1. User can provide xi, wn.
-    2. User can provide dummy xi, wn, and a list of associated RootLocusSeries.
-       When ``get_data()`` will be called, it first loops over the associated
-       root locus series in order to determine the axis limits of the visible
-       area. Then, it computes new values of xi, wn in order to get grid lines
-       "evenly" distributed on the available space.
+    2. User can provide lists for xi, wn, set ``auto=True`` and provide
+       appropriate ``xlim`` and ``ylim``. When ``get_data()`` will be called,
+       it computes new values of xi, wn in order to get grid lines "evenly"
+       distributed on the available space.
     """
+    _exclude_params_from_doc = ["colorbar", "use_cm", "label", "show_in_legend"]
 
     def __init__(self, xi, wn, tp, ts, series=[], **kwargs):
         super().__init__(xi=xi, wn=wn, tp=tp, ts=ts, **kwargs)
@@ -244,6 +244,8 @@ class ZGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
     Represent a grid of damping ratio lines and natural frequency lines
     on the z-plane.
     """
+    _exclude_params_from_doc = ["colorbar", "use_cm", "label", "show_in_legend"]
+
     sampling_period = param.Number(doc="Sampling period.")
 
     def __init__(self, xi, wn, tp, ts, **kwargs):
@@ -405,31 +407,20 @@ class ArrowsMixin(param.Parameterized):
             raise ValueError("unknown or unsupported arrow location")
 
 
-class _TfParameter(param.Parameterized):
-    _tf = param.Parameter(doc="""
-        The LTI system, which can be:
-
-        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
-          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
-        * an instance of :py:class:`control.TransferFunction`
-        * an instance of :py:class:`scipy.signal.TransferFunction`
-        * a symbolic expression in rational form, which will be converted to
-          an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        * a tuple of two or three elements: ``(num, den, generator [opt])``,
-          which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        """)
-
 class NicholsLineSeries(
     Line2DBaseSeries,
     ArrowsMixin,
-    _TfParameter,
     _GridEvaluationParameters,
 ):
     """
     Represent a Nichols line in control system plotting.
     """
+    _exclude_params_from_doc = [
+        "colorbar", "use_cm", "line_color", "force_real_eval", "steps",
+        "unwrap", "sum_bound"]
+
+    system = param.Parameter(doc="""
+        An LTI system created with the sympy.physics.control module.""")
     xscale = param.Selector(
         default="log", objects=["linear", "log"], doc="""
         Discretization strategy along the pulsation.
@@ -441,22 +432,34 @@ class NicholsLineSeries(
         Number of discretization points along the pulsation to be used in the
         evaluation. Related parameters: ``xscale``.""")
 
-    def __init__(
-        self, tf, ol_phase, ol_mag, cl_phase, cl_mag, omega_range,
-        label="", **kwargs
-    ):
+    def __init__(self, system, range_omega, label="", **kwargs):
+        kwargs["system"] = system
         kwargs["force_real_eval"] = True
         kwargs["label"] = label
-        kwargs["_tf"] = tf
-        kwargs["range_omega"] = omega_range
+        kwargs["range_omega"] = range_omega
         kwargs["_range_names"] = ["range_omega"]
         kwargs.setdefault("evaluator", GridEvaluator(series=self))
         super().__init__(**kwargs)
+
+        omega = range_omega[0]
+        s = system.var
+        system_expr = system.to_expr()
+        # closed loop system is used to generate data for tooltips
+        cl_system_expr = (system_expr / (1 + system_expr)).simplify().expand().together()
+
+        system_expr = system_expr.subs(s, I * omega)
+        cl_system_expr = cl_system_expr.subs(s, I * omega)
+
+        ol_phase = arg(system_expr)
+        ol_mag = Abs(system_expr)
+        cl_phase = arg(cl_system_expr)
+        cl_mag = Abs(cl_system_expr)
+
         self.expr = Tuple(ol_phase, ol_mag, cl_phase, cl_mag)
         self.evaluator.set_expressions()
 
     def __str__(self):
-        return self._str_helper("nichols line of %s" % self._tf)
+        return self._str_helper("nichols line of %s" % self.system)
 
     def get_data(self):
         """
@@ -495,18 +498,26 @@ class ControlBaseSeries(Line2DBaseSeries):
     Those series represent a SISO system.
     """
 
-    expr = param.Parameter(doc="""
+    expr = param.Parameter(constant=True, doc="""
         Store a symbolic transfer function.""")
-    _control_tf = param.Parameter(doc="""
-        Store a transfer function from the control module.""")
+    control_tf = param.Parameter(constant=True, doc="""
+        The LTI system, which can be:
+
+        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
+        * an instance of :py:class:`control.TransferFunction`
+        * an instance of :py:class:`scipy.signal.TransferFunction`
+        * a symbolic expression in rational form.
+        * a tuple of two or three elements: ``(num, den, generator [opt])``.
+
+        The provided element will be converted to an object of type
+        :py:class:`sympy.physics.control.lti.TransferFunction`.""")
     control_kw = param.Dict(default={}, doc="""
         A dictionary of keyword arguments to be passed to
         the function of the ``control`` module that will generate
         numerical data starting from the transfer function stored
-        in ``_control_tf``.""")
+        in ``control_tf``.""")
 
     def __init__(self, *args, **kwargs):
-        label = kwargs.pop("label", "")
         super().__init__(**kwargs)
         sp = import_module(
             "sympy.physics", import_kwargs={'fromlist':['control']})
@@ -514,6 +525,8 @@ class ControlBaseSeries(Line2DBaseSeries):
         np = import_module('numpy')
         sp = import_module('scipy')
         ct = import_module('control')
+        control_tf, symbolic_tf = None, None
+        label_str, label_latex = "", ""
         tf = args[0]
 
         if isinstance(tf, (Expr, TransferFunction)):
@@ -522,32 +535,34 @@ class ControlBaseSeries(Line2DBaseSeries):
                 fs = tf.free_symbols.difference(params_fs)
                 fs = fs.pop() if len(fs) > 0 else symbols("s")
                 tf = TransferFunction.from_rational_expression(tf, fs)
-            self.expr = tf
-            self._control_tf = None
+            symbolic_tf = tf
+            control_tf = None
             if not self.is_interactive:
-                self._control_tf = tf_to_control(tf)
-            self._label_str = str(self.expr) if label is None else label
-            self._label_latex = latex(self.expr) if label is None else label
+                control_tf = tf_to_control(tf)
+            label_str = str(symbolic_tf)
+            label_latex = latex(symbolic_tf)
         elif isinstance(tf, (sp.signal.TransferFunction, ct.TransferFunction)):
-            self.expr = None
-            self._label_str = label
-            self._label_latex = label
-            if label is None:
+            symbolic_tf = None
+            if not self.label:
                 s = symbols("s" if tf.dt is None else "z")
-                n = tf.num[0][0] if isinstance(ct.TransferFunction) else tf.num
-                d = tf.den[0][0] if isinstance(ct.TransferFunction) else tf.den
+                n = tf.num[0][0] if isinstance(tf, ct.TransferFunction) else tf.num
+                d = tf.den[0][0] if isinstance(tf, ct.TransferFunction) else tf.den
                 expr = Poly.from_list(n, s) / Poly.from_list(d, s)
-                self._label_str = str(expr)
-                self._label_latex = latex(expr)
-            if isinstance(tf, sp.signal.TransferFunction):
-                self._control_tf = tf_to_control(tf)
-            else:
-                self._control_tf = tf
+                label_str = str(expr)
+                label_latex = latex(expr)
+            is_sympy_tf = isinstance(tf, sp.signal.TransferFunction)
+            control_tf = tf_to_control(tf) if is_sympy_tf else tf
         else:
             raise TypeError(
                 "Transfer function's type not recognized. "
                 "Received: " + str(type(tf))
             )
+        if not self.label:
+            self._label_latex = label_latex
+            self._label_str = label_str
+        with param.edit_constant(self):
+            self.control_tf = control_tf
+            self.expr = symbolic_tf
 
     def _check_fs(self):
         """ Checks if there are enogh parameters and free symbols.
@@ -591,6 +606,7 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
     Generates numerical data for Nyquist plot using the ``control``
     module.
     """
+    _exclude_params_from_doc = ["colorbar", "use_cm", "line_color", "expr"]
 
     range_omega = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the frequencies.""")
@@ -599,9 +615,9 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
         if k in d.keys():
             setattr(self, k, d[k])
 
-    def __init__(self, tf, range_omega, label="", **kwargs):
+    def __init__(self, control_tf, range_omega, label="", **kwargs):
         kwargs["_range_names"] = ["range_omega"]
-        super().__init__(tf, range_omega=range_omega, label=label, **kwargs)
+        super().__init__(control_tf, range_omega=range_omega, label=label, **kwargs)
         self._check_fs()
         self.ranges = [self.range_omega]
 
@@ -620,7 +636,7 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
     def __str__(self):
         return self._str_helper(
             "nyquist line of %s" % (
-                self.expr if self.expr else self._control_tf))
+                self.expr if self.expr else self.control_tf))
 
     def get_data(self):
         """
@@ -638,7 +654,7 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
 
         if self.is_interactive:
             tf = self.expr.subs(self.params)
-            self._control_tf = tf_to_control(tf)
+            self.control_tf = tf_to_control(tf)
 
         control_kw = {}
         sym, start, end = self.range_omega
@@ -648,7 +664,7 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
             control_kw["omega_limits"] = [10**start, 10**end]
 
         ckw = mergedeep.merge({}, control_kw, self.control_kw)
-        response_obj = ct.nyquist_response(self._control_tf, **ckw)
+        response_obj = ct.nyquist_response(self.control_tf, **ckw)
         resp = response_obj.response
         if response_obj.dt in [0, None]:
             splane_contour = response_obj.contour
@@ -782,10 +798,11 @@ class RootLocusSeries(ControlBaseSeries):
     https://github.com/python-control/python-control
 
     """
+    _exclude_params_from_doc = ["colorbar", "use_cm", "line_color", "expr"]
 
-    def __init__(self, tf, label="", **kwargs):
+    def __init__(self, control_tf, label="", **kwargs):
         kwargs["label"] = label
-        super().__init__(tf, **kwargs)
+        super().__init__(control_tf, **kwargs)
         self._check_fs()
 
         # compute appropriate axis limits from the transfer function
@@ -800,7 +817,7 @@ class RootLocusSeries(ControlBaseSeries):
         self._poles_rk = kwargs.get("poles_rk", dict())
 
     def __str__(self):
-        expr = self.expr if self.expr else self._control_tf
+        expr = self.expr if self.expr else self.control_tf
         return "root locus of " + str(expr)
 
     @property
@@ -841,12 +858,12 @@ class RootLocusSeries(ControlBaseSeries):
 
         if self.is_interactive:
             tf = self.expr.subs(self.params)
-            self._control_tf = tf_to_control(tf)
+            self.control_tf = tf_to_control(tf)
 
-        self._zeros = self._control_tf.zeros()
-        self._poles = self._control_tf.poles()
+        self._zeros = self.control_tf.zeros()
+        self._poles = self.control_tf.poles()
         data = ct.root_locus_map(
-            self._control_tf, **self.control_kw)
+            self.control_tf, **self.control_kw)
         self._xlim, self._ylim = _compute_root_locus_limits(data)
         return data.loci, data.gains
 
@@ -856,6 +873,10 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
     """
     Represent a system response computed with the ``control`` module.
 
+    Init signature: SystemResponseSeries(control_tf, range_t, label, **kwargs)
+
+    Notes
+    -----
     Computing the inverse laplace transform of a system with SymPy is not
     trivial: sometimes it works fine, other times it produces wrong results,
     other times it just consumes to much memory even for trivial transfer
@@ -867,6 +888,7 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
     ``control`` module. Sure, it relies on numerical integration, hence errors.
     But, at least it doesn't crash the machine and it is reliable.
     """
+    _exclude_params_from_doc = ["expr", "colorbar", "use_cm"]
 
     only_integers = param.Boolean(False, doc="""
         Discretize the domain using only integer numbers.""")
@@ -886,13 +908,13 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
             return super().__new__(ColoredSystemResponseSeries)
         return object.__new__(cls)
 
-    def __init__(self, tf, range_t, label="", **kwargs):
+    def __init__(self, control_tf, range_t, label="", **kwargs):
         kwargs["_range_names"] = ["range_t"]
-        super().__init__(tf, range_t=range_t, label=label, **kwargs)
+        super().__init__(control_tf, range_t=range_t, label=label, **kwargs)
         self._check_fs()
 
         if self.expr is None:
-            self.steps = self._control_tf.isdtime()
+            self.steps = self.control_tf.isdtime()
 
         # time values over which the evaluation will be performed
         self._time_array = None
@@ -902,7 +924,7 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
         return self._str_helper(
             "%s response of %s" % (
                 self.response_type,
-                self.expr if self.expr else self._control_tf))
+                self.expr if self.expr else self.control_tf))
 
     def _get_data_helper(self):
         ct = import_module("control")
@@ -911,7 +933,7 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
 
         if self.is_interactive:
             tf = self.expr.subs(self.params)
-            self._control_tf = tf_to_control(tf)
+            self.control_tf = tf_to_control(tf)
 
         # create (or update) the discretized domain
         _, start, end = self.range_t
@@ -922,11 +944,11 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
             start, end = float(start), float(end)
 
         if (self._time_array is None) or self._parametric_ranges:
-            if not self._control_tf.isdtime():
+            if not self.control_tf.isdtime():
                 n = self.n[0]
             else:
-                n = int((end - start) / self._control_tf.dt) + 1
-                end = (n - 1) * self._control_tf.dt
+                n = int((end - start) / self.control_tf.dt) + 1
+                end = (n - 1) * self.control_tf.dt
             self._time_array = _discretize(
                     start, end, n, self.scales[0], self.only_integers)
 
@@ -934,15 +956,15 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
 
         if self.response_type == "step":
             ckw = mergedeep.merge({}, control_kw, self.control_kw)
-            response = ct.step_response(self._control_tf, **ckw)
+            response = ct.step_response(self.control_tf, **ckw)
         elif self.response_type == "impulse":
             ckw = mergedeep.merge({}, control_kw, self.control_kw)
-            response = ct.impulse_response(self._control_tf, **ckw)
+            response = ct.impulse_response(self.control_tf, **ckw)
         elif self.response_type == "ramp":
             ramp = self._time_array
             control_kw["U"] = ramp
             ckw = mergedeep.merge({}, control_kw, self.control_kw)
-            response = ct.forced_response(self._control_tf, **ckw)
+            response = ct.forced_response(self.control_tf, **ckw)
         else:
             raise NotImplementedError
 
@@ -954,6 +976,7 @@ class ColoredSystemResponseSeries(SystemResponseSeries):
     Represent a system response computed with the ``control`` module,
     and colored according some color function.
     """
+    _exclude_params_from_doc = ["expr"]
     is_parametric = True
 
     color_func = param.Callable(doc="""
@@ -961,9 +984,9 @@ class ColoredSystemResponseSeries(SystemResponseSeries):
         by the internal algorithm) supporting vectorization, returning
         the color value.""")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, control_tf, range_t, label="", **kwargs):
         kwargs.setdefault("use_cm", True)
-        super().__init__(*args, **kwargs)
+        super().__init__(control_tf, range_t, label, **kwargs)
 
     def _apply_transform(self, *args):
         t = self._get_transform_helper()
@@ -976,6 +999,18 @@ class ColoredSystemResponseSeries(SystemResponseSeries):
 
 
 class PoleZeroCommon(param.Parameterized):
+    """
+    Notes
+    -----
+    This series represents either poles or zeros, not both at the same time.
+    So, to represents both poles and zeros of a transfer function, we need
+    to instatiate two different series passing in the same transfer function.
+
+    While computationally less efficient, this design choice have been made
+    in order to reuse the existing ``Plot`` architecture, that sets up
+    the number of colors based on the number of data series, as well as the
+    logic to show or hide the legend.
+    """
     return_poles = param.Boolean(True, doc="""
         If True returns the poles of the transfer function, otherwise
         it returns the zeros.""")
@@ -997,13 +1032,30 @@ class PoleZeroCommon(param.Parameterized):
 
 
 class PoleZeroWithSympySeries(PoleZeroCommon, List2DSeries):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    """
+    Represent the pole-zero of an LTI SISO system previously computed
+    with SymPy.
+    """
+    # NOTE: why do I need this series? Why can't I used List2DSeries directly?
+    # Because the pole_zero function exposes the pole_markersize,
+    # zero_markersize, pole_color, zero_color, which is difficult to encode
+    # into the rendering_kw attribute because the plotting module support
+    # different plotting libraries, each one exposing different names to
+    # obtain the same result.
+    # So, this series exposes those attributes, then the renderers will
+    # use the values stored in them to appropriately represent the data.
+
+    _exclude_params_from_doc = [
+        "color_func", "colorbar", "use_cm", "steps", "unwrap",
+        "line_color", "is_point"]
+
+    def __init__(self, list_x, list_y, label="", **kwargs):
+        super().__init__(list_x, list_y, label=label, **kwargs)
 
 
 class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
     """
-    Represent a the pole-zero of an LTI SISO system computed
+    Represent the pole-zero of an LTI SISO system computed
     with the ``control`` module.
 
     This series represents either poles or zeros, not both at the same time.
@@ -1012,17 +1064,21 @@ class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
     different series passing in the same transfer function.
 
     While computationally less efficient, this design choice have been made
-    in order to reuse the existing BaseBackend architecture, that sets up
+    in order to reuse the existing ``Plot`` architecture, that sets up
     the number of colors based on the number of data series, as well as the
     logic to show or hide the legend.
     """
-    def __init__(self, tf, label="", **kwargs):
-        super().__init__(tf, label=label, **kwargs)
+    _exclude_params_from_doc = [
+        "colorbar", "use_cm", "steps", "unwrap", "line_color", "is_point",
+        "expr"]
+
+    def __init__(self, control_tf, label="", **kwargs):
+        super().__init__(control_tf, label=label, **kwargs)
         self._check_fs()
 
     def __str__(self):
         pre = "poles of " if self.return_poles else "zeros of "
-        expr = self.expr if self.expr is not None else self._control_tf
+        expr = self.expr if self.expr is not None else self.control_tf
         return pre + str(expr)
 
     def _get_data_helper(self):
@@ -1035,20 +1091,29 @@ class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
         np = import_module("numpy")
         if self.is_interactive:
             tf = self.expr.subs(self.params)
-            self._control_tf = tf_to_control(tf)
+            self.control_tf = tf_to_control(tf)
         if self.return_poles:
-            points = self._control_tf.poles()
+            points = self.control_tf.poles()
         else:
-            points = self._control_tf.zeros()
+            points = self.control_tf.zeros()
         return np.real(points), np.imag(points)
 
 
 class NGridLineSeries(GridBase, BaseSeries):
     """
+    Notes
+    -----
     The code of this class comes from the ``control`` package, which has
     been rearranged to work with the architecture of this module.
     """
+    _exclude_params_from_doc = [
+        "colorbar", "use_cm", "label", "show_in_legend", "params"]
 
+    cl_mags = param.Array(default=None, doc="""
+        Array of closed-loop magnitudes defining the iso-gain lines.""")
+    cl_phases = param.Array(default=None, doc="""
+        Array of closed-loop phases defining the iso-phase lines.
+        Must be in the range -360 < cl_phases < 0.""")
     show_cl_mags = param.Boolean(default=True, doc="""
         Toggle the visibility of the closed-loop magnitude grid lines.""")
     show_cl_phases = param.Boolean(default=True, doc="""
@@ -1059,11 +1124,11 @@ class NGridLineSeries(GridBase, BaseSeries):
     def __init__(self, cl_mags=None, cl_phases=None, label_cl_phases=False,
         **kwargs):
         kwargs.setdefault("show_in_legend", False)
+        np = import_module("numpy")
+        kwargs["cl_mags"] = cl_mags if cl_mags is None else np.array(cl_mags)
+        kwargs["cl_phases"] = cl_phases if cl_phases is None else np.array(cl_phases)
         kwargs["label_cl_phases"] = label_cl_phases
         super().__init__(**kwargs)
-        np = import_module("numpy")
-        self.cl_mags = cl_mags if cl_mags is None else np.array(cl_mags)
-        self.cl_phases = cl_phases if cl_phases is None else np.array(cl_phases)
 
     def __str__(self):
         return "n-grid"
@@ -1230,11 +1295,29 @@ class NGridLineSeries(GridBase, BaseSeries):
 
 
 class MCirclesSeries(GridBase, BaseSeries):
-    def __init__(self, magnitudes_db, magnitudes, **kwargs):
+    _exclude_params_from_doc = [
+        "colorbar", "use_cm", "label", "show_in_legend"]
+
+    magnitudes_db = param.ClassSelector(class_=Tuple, doc="""
+        Specify an iterable of magnitudes in dB.""")
+    _magnitudes = param.ClassSelector(class_=Tuple, doc="""
+        Specify an iterable of magnitudes in dB.""")
+    show_minus_one = param.Boolean(default=False, doc="""
+        Show a marker at (x, y) = (-1, 0).""")
+
+    def __init__(self, magnitudes_db, **kwargs):
+        kwargs["magnitudes_db"] = Tuple(*magnitudes_db)
         super().__init__(**kwargs)
-        self.magnitudes_db = Tuple(*magnitudes_db)
-        self.magnitudes = self.expr = Tuple(*magnitudes)
-        self.show_minus_one = kwargs.get("show_minus_one", False)
+        self._compute_magnitudes()
+
+    @param.depends("magnitudes_db", watch=True)
+    def _compute_magnitudes(self):
+        self._magnitudes = Tuple(*[
+            10**(t / 20) for t in self.magnitudes_db])
+
+    @property
+    def magnitudes(self):
+        return self._magnitudes
 
     def get_data(self):
         """

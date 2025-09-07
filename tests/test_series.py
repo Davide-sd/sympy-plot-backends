@@ -1912,9 +1912,7 @@ def test_str_control_system():
 
     s, o = symbols("s, o")
     tf = TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)
-    G = tf.to_expr()
-    H = (G / (1 + G)).simplify().expand().together()
-    ser = NicholsLineSeries(tf, arg(G), Abs(G), arg(H), Abs(H), (o, 0.01, 100))
+    ser = NicholsLineSeries(tf, (o, 0.01, 100))
     assert (
         str(ser)
         == "nichols line of TransferFunction(50*s**2 - 20*s + 15, -10*s**2 + 40*s + 30, s)"
@@ -1922,10 +1920,8 @@ def test_str_control_system():
 
     a, b, c = symbols("a:c")
     tf = TransferFunction(a*s**2 + b*s + c, s**3 + 10*s**2 + 5 * s + 1, s)
-    G = tf.to_expr()
-    H = (G / (1 + G)).simplify().expand().together()
     ser = NicholsLineSeries(
-        tf, arg(G), Abs(G), arg(H), Abs(H), (o, 0.01, 100),
+        tf, (o, 0.01, 100),
         params={a: 1, b: 2, c: 3})
     assert (
         str(ser)
@@ -4479,13 +4475,13 @@ def test_root_locus_series_2():
     G1 = ct.tf([1, 0, -0.5], [1, 2, 3, 4])
     s1 = RootLocusSeries(G1)
     assert s1.expr is None
-    assert isinstance(s1._control_tf, ct.TransferFunction)
+    assert isinstance(s1.control_tf, ct.TransferFunction)
     assert len(s1.get_data()) == 2
 
     G2 = scipy.signal.TransferFunction([1, 0, -0.5], [1, 2, 3, 4])
     s2 = RootLocusSeries(G2)
     assert s2.expr is None
-    assert isinstance(s2._control_tf, ct.TransferFunction)
+    assert isinstance(s2.control_tf, ct.TransferFunction)
     assert len(s2.get_data()) == 2
 
 

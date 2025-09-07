@@ -12,6 +12,8 @@ v4.0.0
 
   * clearer code base.
 
+* Changed the init signature of ``NicholsLineSeries``.
+
 * Added capability to set axis ticks to multiple of some quantity
   (for example `pi/2`) thanks to the keyword arguments
   ``x_ticks_formatter`` and ``x_ticks_formatter`` of the function

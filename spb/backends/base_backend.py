@@ -276,13 +276,13 @@ class PlotAttributes(param.Parameterized):
     x_ticks_formatter = param.ClassSelector(
         default=None, class_=tick_formatter_multiples_of, doc="""
         An object of type ``tick_formatter_multiples_of`` which will be used
-        to place a x-axis tick value at each multiple of a specified quantity.
-        """)
+        to place tick values at each multiple of a specified quantity, along
+        the x-axis.""")
     y_ticks_formatter = param.ClassSelector(
         default=None, class_=tick_formatter_multiples_of, doc="""
         An object of type ``tick_formatter_multiples_of`` which will be used
-        to place a y-axis tick value at each multiple of a specified quantity.
-        """)
+        to place tick values at each multiple of a specified quantity, along
+        the y-axis.""")
     xlim = _TupleOfRealNumbers(default=None, length=2, doc="""
         Limit the figure's x-axis to the specified range. The tuple must be in
         the form `(min_val, max_val)`.""")

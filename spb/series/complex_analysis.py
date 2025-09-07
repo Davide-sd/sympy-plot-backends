@@ -31,7 +31,10 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
     Represents the absolute value of a complex function colored by its
     argument over a complex range (a + I*b, c + I * b).
     Note that the imaginary part of the start and end must be the same.
+
+    Init signature: AbsArgLineSeries(expr, range_x, label, **kwargs)
     """
+    _exclude_params_from_doc = ["color_func", "line_color", "steps"]
 
     is_parametric = True
     is_complex = True
@@ -87,6 +90,7 @@ class ComplexPointSeries(Line2DBaseSeries):
     Representation for a line in the complex plane consisting of
     list of points.
     """
+    _exclude_params_from_doc = ["steps"]
 
     numbers = param.Parameter(doc="""
         Complex numbers, or a list of complex numbers.""")
@@ -94,8 +98,8 @@ class ComplexPointSeries(Line2DBaseSeries):
         A color function to be applied to the numerical data. It can be:
 
         * None: no color function.
-        * callable: a function accepting two arguments (the real and imaginary
-          parts of the complex coordinates) and returning numerical data.
+        * callable: a function accepting two arguments, the real and imaginary
+          parts of the complex coordinates, and returning numerical data.
         """)
 
     def __init__(self, numbers, label="", **kwargs):
@@ -134,7 +138,6 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
     """
 
     is_complex = True
-    _N = 300
 
     expr = param.Parameter(doc="""
         The expression representing the complex function to be plotted.""")
@@ -149,10 +152,10 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the y-direction (imaginary part).
         Related parameters: ``n12``.""")
-    n1 = _CastToInteger(default=100, doc="""
+    n1 = _CastToInteger(default=300, doc="""
         Number of discretization points along the x-axis (real part) to be
         used in the evaluation. Related parameters: ``xscale``.""")
-    n2 = _CastToInteger(default=100, doc="""
+    n2 = _CastToInteger(default=300, doc="""
         Number of discretization points along the y-axis (imaginary part)
         to be used in the evaluation. Related parameters: ``yscale``.""")
 
@@ -235,15 +238,18 @@ class ComplexSurfaceSeries(
           z coordinate).
         """)
     is_filled = param.Boolean(True, doc="""
-        If True, used filled contours. Otherwise, use line contours.""")
+        If True, used filled contours. Otherwise, use line contours.
+        Relatated parameters: ``show_clabels``.""")
     show_clabels = param.Boolean(True, doc="""
-        If True, used filled contours. Otherwise, use line contours.""")
+        Toggle the label's visibility of contour lines. It only works when
+        ``is_filled=False``. Note that some backend might not implement
+        this feature. Relatated parameters: ``is_filled``.""")
 
-    def __init__(self, expr, r, label="", **kwargs):
+    def __init__(self, expr, range_c, label="", **kwargs):
         threed = kwargs.pop("threed", False)
         kwargs.setdefault("is_filled", kwargs.pop("fill", True))
         kwargs.setdefault("show_clabels", kwargs.pop("clabels", True))
-        super().__init__(expr, r, label, **kwargs)
+        super().__init__(expr, range_c, label, **kwargs)
 
         self._block_lambda_functions(self.expr)
 
@@ -373,6 +379,7 @@ class ComplexDomainColoringSeries(
     Represents a 2D/3D domain coloring plot of a complex function over
     the complex plane.
     """
+    _exclude_params_from_doc = ["use_cm"]
     is_3Dsurface = False
     is_domain_coloring = True
 
@@ -387,11 +394,11 @@ class ComplexDomainColoringSeries(
         Turn on/off the unit disk mask representing the Riemann sphere
         on the 2D projections. Default to True (mask is active).""")
 
-    def __init__(self, expr, r, label="", **kwargs):
+    def __init__(self, expr, range_c, label="", **kwargs):
         threed = kwargs.pop("threed", False)
         if threed:
             kwargs.setdefault("use_cm", True)
-        super().__init__(expr, r, label, **kwargs)
+        super().__init__(expr, range_c, label, **kwargs)
 
         if threed:
             self.is_3Dsurface = True
@@ -467,9 +474,14 @@ class ComplexParametric3DLineSeries(Parametric3DLineSeries):
     Represent a mesh/wireframe line of a complex surface series.
     """
 
-    def __init__(self, *args, **kwargs):
+    # NOTE: why do I need this class? After all, I already have
+    # Parametric3DLineSeries... Because I need to know what quantity to
+    # return. This class is mainly used to draw wireframe lines of complex
+    # surface series. A complex function can be plotted into the real or
+    # imaginary components, or its absolute value or argument.
+    def __init__(self, expr_x, expr_y, expr_z, range_p, label="", **kwargs):
         _return = kwargs.pop("return", None)
-        super().__init__(*args, **kwargs)
+        super().__init__(expr_x, expr_y, expr_z, range_p, label, **kwargs)
         # determines what data to return on the z-axis
         self._return = _return
 
@@ -505,10 +517,10 @@ class RiemannSphereSeries(
     BaseSeries,
     _NMixin
 ):
+    _exclude_params_from_doc = ["use_cm"]
     is_complex = True
     is_domain_coloring = True
     is_3Dsurface = True
-    _N = 150
 
     expr = param.Parameter(doc="""
         The expression representing the complex function to be plotted.""")
@@ -535,7 +547,6 @@ class RiemannSphereSeries(
     n2 = _CastToInteger(default=600, doc="""
         Number of discretization points along the azimuthal angle to be used
         in the evaluation.""")
-
 
     def __init__(self, expr, range_t, range_p, **kwargs):
         self._block_lambda_functions(expr)

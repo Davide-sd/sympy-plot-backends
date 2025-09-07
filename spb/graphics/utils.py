@@ -94,7 +94,8 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                     sy, ey = im(start), im(end)
                     kw["return"] = s._return
 
-                if not s.is_polar:
+                is_polar = getattr(s, "is_polar", False)
+                if not is_polar:
                     for xval in linspace(sx, ex, wf_n1):
                         kw["n"] = s.n[1] if npoints is None else npoints
                         if callable(expr):

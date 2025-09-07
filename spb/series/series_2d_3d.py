@@ -180,21 +180,22 @@ class _DetectPolesMixin(param.Parameterized):
     eps = param.Number(default=0.01, bounds=(0, None), doc="""
         An arbitrary small value used by the ``detect_poles`` numerical
         algorithm. Before changing this value, it is recommended to increase
-        the number of discretization points.""")
+        the number of discretization points.
+        Related parameters: ``detect_poles``.""")
     poles_locations = param.List([], doc="""
         When ``detect_poles="symbolic"``, stores the location of the computed
         poles (essential discontinuities) so that they can be appropriately
         rendered.""")
     poles_rendering_kw = param.Dict(default={}, doc="""
         Rendering kw used to customize the appearance of vertical lines
-        representing essential discontinuities.""")
+        representing essential discontinuities.
+        Related parameters: ``poles_locations``.""")
 
 
 class Line2DBaseSeries(LineBaseMixin, BaseSeries):
     """A base class for 2D lines."""
 
     is_2Dline = True
-    _N = 1000
 
     # TODO: are they excluded from eval or is the result at this particular
     # coordinate set to Nan?
@@ -753,10 +754,12 @@ class LineOver1DRangeSeries(
         A 3-tuple `(symb, min, max)` denoting the range of the x variable.
         Default values: `min=-10` and `max=10`.""")
     exclude = param.List([], item_type=float, doc="""
-        List of x-coordinates to be excluded from evaluation.""")
+        List of x-coordinates to be excluded from evaluation. In practice,
+        it introduces discontinuities in the resulting line.""")
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the x-direction.""")
+        Discretization strategy along the x-direction.
+        Related parameters: ``n1``.""")
     color_func = param.Parameter(doc="""
         A color function to be applied to the numerical data. It can be:
 
@@ -766,9 +769,9 @@ class LineOver1DRangeSeries(
           ``expr``.
         * None: the default value (no color mapping).
         """)
-    n1 = _CastToInteger(default=100, doc="""
+    n1 = _CastToInteger(default=1000, bounds=(2, None), doc="""
         Number of discretization points along the parameter to be used in the
-        evaluation when.
+        numerical evaluation. An alias of this parameter is ``n``.
         Related parameters: ``xscale``.""")
 
     def __new__(cls, *args, **kwargs):
@@ -945,9 +948,9 @@ class ParametricLineBaseSeries(
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the parameter.""")
-    n1 = _CastToInteger(default=100, doc="""
+    n1 = _CastToInteger(default=1000, bounds=(2, None), doc="""
         Number of discretization points along the parameter to be used in the
-        evaluation.
+        evaluation. An alias of this parameter is ``n``.
         Related parameters: ``xscale``.""")
 
     def _replace_tp(self, kwargs):
@@ -1208,17 +1211,6 @@ class SurfaceBaseSeries(
     surface_color = param.Parameter(default=None, doc="""
         For back-compatibility with old sympy.plotting. Use ``rendering_kw``
         in order to fully customize the appearance of the surface.""")
-    # NOTE: why should SurfaceOver2DRangeSeries support is polar?
-    # After all, the same result can be achieve with
-    # ParametricSurfaceSeries. For example:
-    # sin(r) for (r, 0, 2 * pi) and (theta, 0, pi/2) can be parameterized
-    # as (r * cos(theta), r * sin(theta), sin(t)) for (r, 0, 2 * pi) and
-    # (theta, 0, pi/2).
-    # Because it is faster to evaluate (important for interactive plots).
-    is_polar = param.Boolean(False, doc="""
-        If True, requests a polar discretization. In this case,
-        ``range1`` represents the radius, while ``range2`` represents
-        the angle.""")
     rendering_kw = param.Dict(default={}, doc="""
         A dictionary of keyword arguments to be passed to the renderers
         in order to further customize the appearance of the surface.
@@ -1239,10 +1231,10 @@ class SurfaceBaseSeries(
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
-    n1 = _CastToInteger(default=100, doc="""
+    n1 = _CastToInteger(default=100, bounds=(2, None), doc="""
         Number of discretization points along the x-axis to be used in the
         evaluation. Related parameters: ``xscale``.""")
-    n2 = _CastToInteger(default=100, doc="""
+    n2 = _CastToInteger(default=100, bounds=(2, None), doc="""
         Number of discretization points along the y-axis to be used in the
         evaluation. Related parameters: ``yscale``.""")
 
@@ -1324,6 +1316,17 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         * None: the default value (color mapping according to the
           z coordinate).
         """)
+    # NOTE: why should SurfaceOver2DRangeSeries support is polar?
+    # After all, the same result can be achieve with
+    # ParametricSurfaceSeries. For example:
+    # sin(r) for (r, 0, 2 * pi) and (theta, 0, pi/2) can be parameterized
+    # as (r * cos(theta), r * sin(theta), sin(t)) for (r, 0, 2 * pi) and
+    # (theta, 0, pi/2).
+    # Because it is faster to evaluate (important for interactive plots).
+    is_polar = param.Boolean(False, doc="""
+        If True, requests a polar discretization. In this case,
+        ``range_x`` represents the radius, while ``range_y`` represents
+        the angle.""")
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the x-direction.
@@ -1590,11 +1593,12 @@ class ContourSeries(SurfaceOver2DRangeSeries):
     is_contour = True
 
     is_filled = param.Boolean(True, doc="""
-        If True, use filled contours. Otherwise, use line contours.""")
+        If True, use filled contours. Otherwise, use line contours.
+        Relatated parameters: ``show_clabels``.""")
     show_clabels = param.Boolean(True, doc="""
-        Toggle the label's visibility of contour lines. Only works when
+        Toggle the label's visibility of contour lines. It only works when
         ``is_filled=False``. Note that some backend might not implement
-        this feature.""")
+        this feature. Relatated parameters: ``is_filled``.""")
     rendering_kw = param.Dict(default={}, doc="""
         A dictionary of keyword arguments to be passed to the renderers
         in order to further customize the appearance of the contour.
@@ -1638,7 +1642,6 @@ class ImplicitSeries(
 
     is_implicit = True
     use_cm = False
-    _N = 100
 
     f = param.ClassSelector(class_=(Relational, Boolean, Expr), doc="""
         The equation / inequality that is to be plotted.""")
@@ -1698,19 +1701,21 @@ class ImplicitSeries(
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the y-direction.
         Related parameters: ``n2``.""")
-    n1 = _CastToInteger(default=100, doc="""
+    n1 = _CastToInteger(default=100, bounds=(2, None), doc="""
         Number of discretization points along the x-axis to be used in the
-        evaluation. Related parameters: ``xscale``.""")
-    n2 = _CastToInteger(default=100, doc="""
+        evaluation, when ``adaptive=False``.
+        Related parameters: ``adaptive, xscale``.""")
+    n2 = _CastToInteger(default=100, bounds=(2, None), doc="""
         Number of discretization points along the y-axis to be used in the
-        evaluation. Related parameters: ``yscale``.""")
+        evaluation, when ``adaptive=False``.
+        Related parameters: ``adaptive, yscale``.""")
 
-    def __init__(self, f, rangex_x, rangex_y, label="", **kwargs):
+    def __init__(self, f, range_x, range_y, label="", **kwargs):
         _check_misspelled_series_kwargs(self, additional_keys=["color"], **kwargs)
         kwargs = kwargs.copy()
         kwargs["f"] = f
-        kwargs["range_x"] = rangex_x
-        kwargs["range_y"] = rangex_y
+        kwargs["range_x"] = range_x
+        kwargs["range_y"] = range_y
         kwargs["_range_names"] = ["range_x", "range_y"]
         kwargs["label"] = label if label is not None else ""
         kwargs.setdefault("evaluator", GridEvaluator(series=self))
@@ -2058,7 +2063,6 @@ class ImplicitSeries(
 
 class Implicit3DSeries(SurfaceBaseSeries):
     is_implicit = True
-    _N = 60
 
     expr = param.Parameter(doc="""
         Implicit expression.  It can be a:
@@ -2097,15 +2101,15 @@ class Implicit3DSeries(SurfaceBaseSeries):
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the z-direction.
         Related parameters: ``n3``.""")
-    n1 = _CastToInteger(default=100, doc="""
+    n1 = _CastToInteger(default=60, bounds=(2, None), doc="""
         Number of discretization points along the x-axis to be used in the
         evaluation. Related parameters: ``xscale``.""")
-    n2 = _CastToInteger(default=100, doc="""
+    n2 = _CastToInteger(default=60, bounds=(2, None), doc="""
         Number of discretization points along the y-axis to be used in the
         evaluation. Related parameters: ``yscale``.""")
-    n3 = _CastToInteger(default=100, doc="""
+    n3 = _CastToInteger(default=60, bounds=(2, None), doc="""
         Number of discretization points along the z-axis to be used in the
-        evaluation. Related parameters: ``zscale``..""")
+        evaluation. Related parameters: ``zscale``.""")
 
     def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
         kwargs["expr"] = expr if callable(expr) else sympify(expr)
@@ -2169,7 +2173,6 @@ class PlaneSeries(SurfaceBaseSeries):
     """Represents a plane in a 3D domain."""
 
     is_3Dsurface = True
-    _N = 20
 
     plane = param.ClassSelector(class_=Plane, doc="""
         The plane to be plotted.""")
@@ -2194,7 +2197,13 @@ class PlaneSeries(SurfaceBaseSeries):
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the z-direction.
         Related parameters: ``n3``.""")
-    n3 = _CastToInteger(default=100, doc="""
+    n1 = _CastToInteger(default=20, bounds=(2, None), doc="""
+        Number of discretization points along the x-axis to be used in the
+        evaluation. Related parameters: ``xscale``.""")
+    n2 = _CastToInteger(default=20, bounds=(2, None), doc="""
+        Number of discretization points along the y-axis to be used in the
+        evaluation. Related parameters: ``yscale``.""")
+    n3 = _CastToInteger(default=20, bounds=(2, None), doc="""
         Number of discretization points along the z-axis to be used in the
         evaluation. Related parameters: ``zscale``.""")
     color_func = param.Parameter(default=None, doc="""
@@ -2364,6 +2373,7 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
 
     is_geometry = True
     is_2Dline = True
+    _exclude_params_from_doc = ["steps", "colorbar", "use_cm"]
 
     geom = param.ClassSelector(class_=GeometryEntity, doc="""
         Represent the geometric entity to be plotted.""")
@@ -2372,9 +2382,12 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
         to be used when plotting objects of type Line2D.
         If not provided, a segment will be plotted between the 2 specified
         points of the line.""")
-    n1 = _CastToInteger(default=100, doc="""
+    n1 = _CastToInteger(default=1000, bounds=(2, None), doc="""
         Number of discretization points used to resolve the polar
         angle theta ∈ [0, 2*pi] in order to plot ellipses.""")
+    is_filled = param.Boolean(True, doc="""
+        If True, the geometry will be filled, otherwise only the
+        perimeter will be rendered.""")
 
     @property
     def expr(self):
@@ -2499,6 +2512,7 @@ class Geometry3DSeries(Line2DBaseSeries):
     is_geometry = True
     is_2Dline = False
     is_3Dline = True
+    _exclude_params_from_doc = ["colorbar", "steps", "use_cm"]
 
     geom = param.ClassSelector(class_=GeometryEntity, doc="""
         Represent the geometric entity to be plotted.""")
@@ -2653,16 +2667,19 @@ class HVLineSeries(BaseSeries):
     Represent an horizontal or vertical line series.
     In Matplotlib, this will be rendered by axhline or axvline.
     """
-    _expr = param.ClassSelector(class_=Expr)
+    _exclude_params_from_doc = ["colorbar", "use_cm"]
+
+    _expr = param.ClassSelector(class_=Expr, doc="""
+        The value where the horizontal or vertical line should be located.""")
     is_horizontal = param.Boolean(default=True, doc="""
         If True, the series represents and horizontal line. Otherwise,
         it represents a vertical line.""")
 
-    def __init__(self, expr, horizontal, label="", **kwargs):
+    def __init__(self, expr, is_horizontal, label="", **kwargs):
         _check_misspelled_series_kwargs(self, **kwargs)
         expr = sympify(expr)
         kwargs["_expr"] = expr
-        kwargs["is_horizontal"] = horizontal
+        kwargs["is_horizontal"] = is_horizontal
         kwargs["_label_str"] = str(expr) if label is None else label
         kwargs["_label_latex"] = latex(expr) if label is None else label
         super().__init__(**kwargs)
@@ -2683,7 +2700,12 @@ class HVLineSeries(BaseSeries):
         return self._str_helper(pre + " line at " + post + str(self.expr))
 
 
+# NOTE: HVLineSeries is more than enough to represent both vertical and
+# horizontal lines. I need HLineSeries and VLineSeries in order to properly
+# document spb.graphics.functions_2d.hline and vline.
 class HLineSeries(HVLineSeries):
+    _exclude_params_from_doc = ["is_horizontal", "colorbar", "use_cm"]
+
     y = param.Parameter(doc="""
         The y-coordinate where to draw the horizontal line.""")
 
@@ -2696,6 +2718,8 @@ class HLineSeries(HVLineSeries):
 
 
 class VLineSeries(HVLineSeries):
+    _exclude_params_from_doc = ["is_horizontal", "colorbar", "use_cm"]
+
     x = param.Parameter(doc="""
         The x-coordinate where to draw the vertical line.""")
 

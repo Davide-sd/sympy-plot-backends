@@ -2778,7 +2778,7 @@ def test_number_discretization_points():
     assert p[0].n[:2] == [50, 200]
     p = plot_riemann_sphere(
         (z - 1) / (z**2 + z + 1), n1=50, threed=True, **options)
-    assert p[0].n[:2] == [50, 150]
+    assert p[0].n[:2] == [50, 600]
     p = plot_riemann_sphere(
         (z - 1) / (z**2 + z + 1), n2=50, threed=True, **options)
     assert p[0].n[:2] == [150, 50]

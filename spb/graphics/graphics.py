@@ -110,14 +110,14 @@ from spb.utils import _instantiate_backend, _check_misspelled_kwargs
 
 #     Combining together multiple data series of the different types:
 
-#     .. plot::
-#         :context: close-figs
-#         :format: doctest
-#         :include-source: True
+    # .. plot::
+    #     :context: close-figs
+    #     :format: doctest
+    #     :include-source: True
 
-#         >>> from sympy import *
-#         >>> from spb import *
-#         >>> x = symbols("x")
+    #     >>> from sympy import *
+    #     >>> from spb import *
+    #     >>> x = symbols("x")
 #         >>> graphics(
 #         ...     line((cos(x)+1)/2, (x, -pi, pi), label="a"),
 #         ...     line(-(cos(x)+1)/2, (x, -pi, pi), label="b"),
@@ -128,6 +128,49 @@ from spb.utils import _instantiate_backend, _check_misspelled_kwargs
 #         [0]: cartesian line: cos(x)/2 + 1/2 for x over (-3.141592653589793, 3.141592653589793)
 #         [1]: cartesian line: -cos(x)/2 - 1/2 for x over (-3.141592653589793, 3.141592653589793)
 #         [2]: parametric cartesian line: (cos(x), sin(x)) for x over (0.0, 6.283185307179586)
+
+
+    # Set tick labels to be some multiple of `pi`:
+
+    # .. plot::
+    #     :context: close-figs
+    #     :format: doctest
+    #     :include-source: True
+
+    #     >>> expr = 5 * (cos(x) - 0.2 * sin(y))**2 + 5 * (-0.2 * cos(x) + sin(y))**2
+    #     >>> graphics(
+    #     ...     contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), fill=False),
+    #     ...     x_ticks_formatter=multiple_of_pi_over_4(),
+    #     ...     y_ticks_formatter=multiples_of_pi_over_3()
+    #     ... )
+    #     Plot object containing:
+    #     [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0, 2*pi) and y over (0, 2*pi)
+
+
+    # Use ``hooks`` to further customize the figure before it is shown on the
+    # screen, for example applying custom tick labels to a colorbar:
+
+    # .. plot::
+    #     :context: close-figs
+    #     :format: doctest
+    #     :include-source: True
+
+    #     >>> def colorbar_ticks_formatter(fig, ax):
+    #     ...     cax = fig.axes[1]
+    #     ...     formatter = multiples_of_pi()
+    #     ...     cax.yaxis.set_major_locator(formatter.MB_major_locator())
+    #     ...     cax.yaxis.set_major_formatter(formatter.MB_func_formatter())
+
+    #     >>> graphics(
+    #     ...     line_parametric_2d(
+    #     ...         2 * cos(u) + 5 * cos(2 * u / 3),
+    #     ...         2 * sin(u) - 5 * sin(2 * u / 3),
+    #     ...         (u, 0, 6 * pi)
+    #     ...     ),
+    #     ...     hooks=[colorbar_ticks_formatter]
+    #     ... )
+    #     Plot object containing:
+    #     [0]: parametric cartesian line: (5*cos(2*u/3) + 2*cos(u), -5*sin(2*u/3) + 2*sin(u)) for u over (0, 6*pi)
 
 
 #     Plot over an existing figure. Note that:
@@ -549,7 +592,6 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
                 self, additional_keys=keys_to_be_aware_of, **params)
         params = {k: v for k, v in params.items() if k in keys_to_maintain}
 
-        print("graphics params", params)
         # p = param.ParamOverrides(self, params)
         # print("graphics", params)
 

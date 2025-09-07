@@ -214,14 +214,9 @@ class BaseSeries(param.Parameterized):
     is_grid = False
     # Represents grids like s-grid, z-grid, n-grid, ...
 
-    _N = 100
-    # default number of discretization points for uniform sampling. Each
-    # subclass can set its number.
-
     #####################
     # Instance Attributes
     #####################
-
 
     # NOTE: some data series should not be shown on the legend, for example
     # wireframe lines on 3D plots.
@@ -234,17 +229,18 @@ class BaseSeries(param.Parameterized):
     use_cm = param.Boolean(False, doc="""
         Toggle the use of a colormap. By default, some series might use a
         colormap to display the necessary data. Setting this attribute
-        to False will inform the associated renderer to use solid color.""")
+        to False will inform the associated renderer to use solid color.
+        Related parameters: ``color_func``.""")
     # TODO: can I remove _label_str and only keep label?
+    # NOTE: By default the data series stores two labels: one for the
+    # string representation of the symbolic expression, the other for the
+    # latex representation. The plotting library will then decide which one
+    # is best to be shown. If the user set this parameter, both labels will
+    # receive the same value. To retrieve one or the other representation,
+    # call the ``get_label`` method of the data series.
     label = param.String("", doc="""
-        Get or set the label associated to this series, which will be
-        eventually shown on the legend or colorbar. By default the data series
-        stores two labels: one for the string representation of the symbolic
-        expression, the other for the latex representation. The plotting
-        library will then decide which one is best to be shown. If the user
-        set this parameter, both labels will receive the same value.
-        To retrieve one or the other representation, call the ``get_label``
-        method of the data series.""")
+        Set the label associated to this series, which will be eventually
+        shown on the legend or colorbar.""")
     rendering_kw = param.Dict(doc="""
         Keyword arguments to be passed to the renderers of the selected
         plotting library in order to further customize the appearance of this
@@ -664,7 +660,7 @@ def _set_discretization_points(kwargs, Series):
         if k in kwargs.keys():
             kwargs[v] = kwargs.pop(k)
 
-    n = [Series._N] * 3
+    n = [None] * 3
     provided_n = kwargs.pop("n", None)
     if provided_n is not None:
         if hasattr(provided_n, "__iter__"):
@@ -673,8 +669,11 @@ def _set_discretization_points(kwargs, Series):
         else:
             n = [int(provided_n)] * 3
 
-    kwargs.setdefault("n1", n[0])
-    kwargs.setdefault("n2", n[1])
-    kwargs.setdefault("n3", n[2])
+    if n[0] is not None:
+        kwargs.setdefault("n1", n[0])
+    if n[1] is not None:
+        kwargs.setdefault("n2", n[1])
+    if n[2] is not None:
+        kwargs.setdefault("n3", n[2])
     return kwargs
 

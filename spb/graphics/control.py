@@ -2072,23 +2072,14 @@ def _nichols_helper(system, label, **kwargs):
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
     system = tf_to_sympy(system)
-    s = system.var
     omega = Dummy("omega")
     _range, omega_limits = _compute_range_helper(system, **kwargs)
     _range = prange(omega, *_range[1:])
 
-    system_expr = system.to_expr()
-    # closed loop system is used to generate data for tooltips
-    cl_system_expr = (system_expr / (1 + system_expr)).simplify().expand().together()
-
-    system_expr = system_expr.subs(s, I * omega)
-    cl_system_expr = cl_system_expr.subs(s, I * omega)
-
     kwargs.setdefault("use_cm", False)
     kwargs.setdefault("xscale", "log")
     return NicholsLineSeries(
-        system, arg(system_expr), Abs(system_expr),
-        arg(cl_system_expr), Abs(cl_system_expr), _range, label, **kwargs)
+        system, _range, label, **kwargs)
 
 
 def nichols(system, label=None, rendering_kw=None, ngrid=True, arrows=True,
@@ -2934,10 +2925,8 @@ def mcircles(
         dbs = [magnitudes_db]
     else:
         dbs = magnitudes_db
-
-    magnitudes = [10**(t / 20) for t in dbs]
     return [
-        MCirclesSeries(dbs, magnitudes,
+        MCirclesSeries(dbs,
             rendering_kw=rendering_kw, show_minus_one=show_minus_one, **kwargs)
     ]
 

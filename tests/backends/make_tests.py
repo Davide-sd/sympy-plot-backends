@@ -970,8 +970,8 @@ def make_test_mcircles(B, mag):
 def make_test_hvlines(B):
     p = {a: (1, 0, 5), b: (2, 0, 5)}
     return graphics(
-        HVLineSeries(a, horizontal=True, params=p),
-        HVLineSeries(b, horizontal=False, params=p),
+        HVLineSeries(a, is_horizontal=True, params=p),
+        HVLineSeries(b, is_horizontal=False, params=p),
         backend=B, show=False
     )
 

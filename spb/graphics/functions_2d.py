@@ -9,7 +9,7 @@ from sympy.sets.sets import EmptySet
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, ContourSeries,
     ImplicitSeries, List2DSeries, Geometry2DSeries, Geometry3DSeries,
-    HVLineSeries
+    HLineSeries, VLineSeries
 )
 from spb.graphics.utils import _plot_sympify
 from spb.utils import (
@@ -2493,8 +2493,8 @@ def hline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
 
     """
     return [
-        HVLineSeries(
-            v, True, label,
+        HLineSeries(
+            v, label,
             rendering_kw=rendering_kw,
             show_in_legend=show_in_legend, **kwargs)
     ]
@@ -2644,8 +2644,8 @@ def vline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
 
     """
     return [
-        HVLineSeries(
-            v, False, label,
+        VLineSeries(
+            v, label,
             rendering_kw=rendering_kw,
             show_in_legend=show_in_legend, **kwargs)
     ]

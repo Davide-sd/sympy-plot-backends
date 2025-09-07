@@ -133,8 +133,7 @@ class Vector2DSeries(VectorBase):
     """Represents a 2D vector field."""
 
     is_2Dvector = True
-    # default number of discretization points
-    _N = 25
+
     u = param.Parameter(doc="""
         The components of the vector field along the x-axis. It can be a:
 
@@ -190,10 +189,10 @@ class Vector2DSeries(VectorBase):
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the y-direction.
         Related parameters: ``n2``.""")
-    n1 = _CastToInteger(default=100, doc="""
+    n1 = _CastToInteger(default=25, doc="""
         Number of discretization points along the x-axis to be used in the
         evaluation. Related parameters: ``xscale``.""")
-    n2 = _CastToInteger(default=100, doc="""
+    n2 = _CastToInteger(default=25, doc="""
         Number of discretization points along the y-axis to be used in the
         evaluation. Related parameters: ``yscale``.""")
 
@@ -240,8 +239,6 @@ class Vector3DSeries(VectorBase):
 
     is_3D = True
     is_3Dvector = True
-    # default number of discretization points
-    _N = 10
 
     u = param.Parameter(doc="""
         The components of the vector field along the x-axis. It can be a:
@@ -328,13 +325,13 @@ class Vector3DSeries(VectorBase):
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
-    n1 = _CastToInteger(default=100, doc="""
+    n1 = _CastToInteger(default=10, doc="""
         Number of discretization points along the x-axis to be used in the
         evaluation. Related parameters: ``xscale``.""")
-    n2 = _CastToInteger(default=100, doc="""
+    n2 = _CastToInteger(default=10, doc="""
         Number of discretization points along the y-axis to be used in the
         evaluation. Related parameters: ``yscale``.""")
-    n3 = _CastToInteger(default=100, doc="""
+    n3 = _CastToInteger(default=10, doc="""
         Number of discretization points along the z-axis to be used in the
         evaluation. Related parameters: ``zscale``.""")
 
@@ -399,9 +396,9 @@ def _build_slice_series(slice_surf, ranges, **kwargs):
     new_ranges = [r for r in ranges if r[0] in fs]
     # apply the correct discretization number
     n = [
-        int(kwargs.get("n1", Vector3DSeries._N)),
-        int(kwargs.get("n2", Vector3DSeries._N)),
-        int(kwargs.get("n3", Vector3DSeries._N))]
+        int(kwargs.get("n1", Vector3DSeries.n1)),
+        int(kwargs.get("n2", Vector3DSeries.n2)),
+        int(kwargs.get("n3", Vector3DSeries.n3))]
     discr_symbols = [r[0] for r in ranges]
     idx = [discr_symbols.index(s) for s in [r[0] for r in new_ranges]]
     kwargs2 = kwargs.copy()
@@ -417,15 +414,22 @@ class SliceVector3DSeries(Vector3DSeries):
     a Plane or a surface.
     """
     is_slice = True
+    slice_surf_series = param.ClassSelector(class_=BaseSeries, doc="""
+        Represent the slice over which quivers will be plotted.
+        The value of this parameter can be an instance of BaseSeries,
+        a Plane or a symbolic expression. In the latter cases, it will
+        be pre-processed in order to generate an appropriate data series.""")
 
     def __init__(
-        self, slice_surf, u, v, w, range_x, range_y, range_z,
+        self, slice_surf_series, u, v, w, range_x, range_y, range_z,
         label="", **kwargs
     ):
         slice_surf_kwargs = kwargs.copy()
         slice_surf_kwargs.pop("normalize", None)
-        self.slice_surf_series = _build_slice_series(
-            slice_surf, [range_x, range_y, range_z], **slice_surf_kwargs)
+        kwargs["slice_surf_series"] = _build_slice_series(
+            slice_surf_series,
+            [range_x, range_y, range_z],
+            **slice_surf_kwargs)
         kwargs.setdefault("evaluator", SliceVectorGridEvaluator(series=self))
         super().__init__(
             u, v, w, range_x, range_y, range_z, label, **kwargs)
@@ -487,6 +491,7 @@ class ListTupleArray(param.ClassSelector):
 class Arrow2DSeries(BaseSeries):
     """Represent an arrow in a 2D space.
     """
+    _exclude_params_from_doc = ["colorbar", "use_cm"]
 
     is_2Dvector = True
 
