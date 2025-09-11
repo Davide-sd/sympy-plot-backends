@@ -4475,13 +4475,13 @@ def test_root_locus_series_2():
     G1 = ct.tf([1, 0, -0.5], [1, 2, 3, 4])
     s1 = RootLocusSeries(G1)
     assert s1.expr is None
-    assert isinstance(s1.control_tf, ct.TransferFunction)
+    assert isinstance(s1.system, ct.TransferFunction)
     assert len(s1.get_data()) == 2
 
     G2 = scipy.signal.TransferFunction([1, 0, -0.5], [1, 2, 3, 4])
     s2 = RootLocusSeries(G2)
     assert s2.expr is None
-    assert isinstance(s2.control_tf, ct.TransferFunction)
+    assert isinstance(s2.system, ct.TransferFunction)
     assert len(s2.get_data()) == 2
 
 

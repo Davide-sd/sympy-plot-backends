@@ -1,7 +1,7 @@
 import param
 import os
 from spb.defaults import cfg
-from spb.doc_utils.ipython import generate_doc
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.backends.base_backend import Plot
 from spb.backends.k3d.renderers import (
     Line3DRenderer, Vector3DRenderer,
@@ -21,6 +21,7 @@ from sympy.external import import_module
 import warnings
 
 
+@modify_parameterized_doc()
 class K3DBackend(Plot):
     """A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
 
@@ -452,6 +453,3 @@ class K3DBackend(Plot):
 
 
 KB = K3DBackend
-
-
-generate_doc(K3DBackend)

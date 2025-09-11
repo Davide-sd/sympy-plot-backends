@@ -1,6 +1,8 @@
 from sympy import (
     pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane, Expr
 )
+from spb.doc_utils.docstrings import _PARAMS
+from spb.doc_utils.ipython import modify_graphics_doc
 from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     Implicit3DSeries, List3DSeries, ComplexSurfaceBaseSeries, PlaneSeries
@@ -14,228 +16,13 @@ from numbers import Number
 import warnings
 
 
+@modify_graphics_doc(Parametric3DLineSeries, replace={"params": _PARAMS})
 def line_parametric_3d(
-    expr1, expr2, expr3, range_p=None, label=None,
+    expr_x, expr_y, expr_z, range_p=None, label=None,
     rendering_kw=None, colorbar=True, use_cm=True, **kwargs
 ):
     """
     Plots a 3D parametric curve.
-
-    Parameters
-    ==========
-
-    expr1, expr2, expr3 : Expr or callable
-        The expression representing x, y, z components of the parametric
-        function. It can be a:
-
-        * Symbolic expression representing the function of one variable
-          to be plotted.
-        * Numerical function of one variable, supporting vectorization.
-          In this case the following keyword arguments are not supported:
-          ``params``.
-    range_p : (symbol, min, max)
-        A 3-tuple denoting the parameter symbol, start value and stop value.
-        For example, ``(u, 0, 5)``. If ``range_p`` is not specified, then a
-        default range of (-10, 10) is used.
-    label : str, optional
-        The label to be shown on the legend (or colorbar).
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Plotly:
-          https://plotly.com/python/3d-line-plots/
-
-        * K3D-Jupyter: look at the documentation of ``k3d.line``.
-    adaptive : bool, optional
-        If True uses the adaptive algorithm implemented in [python-adaptive]_
-        to evaluate the provided expression and create smooth plots.
-        The evaluation points will be placed in regions of the curve where its
-        gradient is high. Use ``adaptive_goal`` and ``loss_fn`` to further
-        customize the output.
-        If False, the expression will be evaluated over a uniformly distributed
-        grid of points. Use ``n`` to change the number of evaluation points
-        and ``xscale`` to change the discretization strategy.
-        Default to False.
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [python-adaptive]_ for
-          more information.
-    color_func : callable, optional
-        Define a custom color mapping when ``use_cm=True``. It can either be:
-
-        * A numerical function supporting vectorization. The arity can be:
-
-          * 1 argument: ``f(t)``, where ``t`` is the parameter.
-          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
-            of the points.
-          * 4 arguments: ``f(x, y, z, t)``.
-
-        * A symbolic expression having at most as many free symbols as
-          ``expr1`` or ``expr2`` or ``expr3``.
-        * None: color mapping according to the parameter.
-
-        Default to None.
-    colorbar : boolean, optional
-        Toggle the visibility of the colorbar associated to the current data
-        series. Note that a colorbar is only visible if ``use_cm=True`` and
-        ``color_func`` is not None.
-        Default to True.
-    exclude : list, optional
-        A list of numerical values along the parameter which are going to
-        be excluded from the plot. In practice, it introduces discontinuities
-        in the resulting line.
-    force_real_eval : boolean, optional
-        By default, numerical evaluation is performed over complex numbers,
-        which is slower but produces correct results.
-        However, when the symbolic expression is converted to a numerical
-        function with lambdify, the resulting function may not like to
-        be evaluated over complex numbers. In such cases, forcing the
-        evaluation to be performed over real numbers might be a good choice.
-        The plotting module should be able to detect such occurences and
-        automatically activate this option. If that is not the case, or
-        evaluation performance is of paramount importance, set this parameter
-        to True, but be aware that it might produce wrong results.
-        It only works with ``adaptive=False``.
-        Default to False.
-    loss_fn : callable or None
-        The loss function to be used by the adaptive learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          adaptive module.
-        * callable : Refer to [python-adaptive]_ for more information.
-          Specifically, look at ``adaptive.learner.learner1D`` to find
-          more loss functions.
-    n : int, optional
-        Number of discretization points to be used in the evaluation
-        when ``adaptive=False``. Look at ``xscale`` to change the
-        discretization strategy.
-        If the ``adaptive=True``, this parameter will be ignored.
-        Default value to 1000.
-    scatter : boolean, optional
-        Whether to create a scatter or a continuous line.
-        Default to False (create a continous line).
-    fill : boolean, optional
-        Whether scatter's markers are filled or void.
-        Default to True.
-    only_integers : boolean, optional
-        Discretize the domain using only integer numbers. It only works when
-        ``adaptive=False``. When this parameter is True, the number of
-        discretization points is choosen by the algorithm.
-        Default to True.
-    params : dict, optional
-        A dictionary mapping symbols to parameters. If provided, this
-        dictionary enables the interactive-widgets plot, which doesn't support
-        the adaptive algorithm (meaning it will use ``adaptive=False``).
-
-        When calling a plotting function, the parameter can be specified with:
-
-        * a widget from the ``ipywidgets`` module.
-        * a widget from the ``panel`` module.
-        * a tuple of the form:
-           `(default, min, max, N, tick_format, label, spacing)`,
-           which will instantiate a
-           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
-           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
-           depending on the spacing strategy. In particular:
-
-           - default, min, max : float
-                Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers. The order of these 3
-                numbers is not important: the module will figure it out
-                which is what.
-           - N : int, optional
-                Number of steps of the slider.
-           - tick_format : str or None, optional
-                Provide a formatter for the tick value of the slider.
-                Default to ``".2f"``.
-           - label: str, optional
-                Custom text associated to the slider.
-           - spacing : str, optional
-                Specify the discretization spacing. Default to ``"linear"``,
-                can be changed to ``"log"``.
-
-        Notes:
-
-        1. parameters cannot be linked together (ie, one parameter
-           cannot depend on another one).
-        2. If a widget returns multiple numerical values (like
-           :py:class:`panel.widgets.slider.RangeSlider` or
-           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
-           then a corresponding number of symbols must be provided.
-
-        Here follows a couple of examples. If ``imodule="panel"``:
-
-        .. code-block:: python
-
-            import panel as pn
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
-                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
-            }
-
-        Or with ``imodule="ipywidgets"``:
-
-        .. code-block:: python
-
-            import ipywidgets as w
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
-                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
-            }
-
-        When instantiating a data series directly, ``params`` must be a
-        dictionary mapping symbols to numerical values.
-
-        Let ``series`` be any data series. Then ``series.params`` returns a
-        dictionary mapping symbols to numerical values.
-    show_in_legend : bool, optional
-        Toggle the visibility of the data series on the legend.
-        Default to True.
-    sum_bound : int, optional
-        When plotting sums, the expression will be pre-processed in order
-        to replace lower/upper bounds set to +/- infinity with this +/-
-        numerical value. Default value to 1000. Note: the higher this number,
-        the slower the evaluation.
-    tx, ty, tz, tp : callable, optional
-        Numerical transformation function to be applied to the results
-        of the numerical evaluation. In particular:
-
-        * ``tx`` modifies the x-coordinates,
-        * ``ty`` modified the y-coordinates.
-        * ``tz`` modified the z-coordinates.
-        * ``tp`` modified the parameter.
-
-        Default to None.
-    use_cm : boolean, optional
-        Toggle the use of a colormap. It only works if ``color_func`` is not
-        None. Setting this attribute to False will inform the associated
-        renderer to use solid color.
-        Default to False. Related parameters: ``color_func, colorbar``.
-    xscale : str, optional
-        Discretization strategy along the parameter.
-        Possible options: ['linear', 'log']
-        Default value: 'linear'
 
     Returns
     =======
@@ -374,19 +161,20 @@ def line_parametric_3d(
     spb.graphics.functions_2d.line_parametric_2d, list_3d
 
     """
-    expr1, expr2, expr3 = map(_plot_sympify, [expr1, expr2, expr3])
+    expr_x, expr_y, expr_z = map(_plot_sympify, [expr_x, expr_y, expr_z])
     params = kwargs.get("params", {})
     range_p = _create_missing_ranges(
-        [expr1, expr2, expr3], [range_p] if range_p else [], 1, params)[0]
+        [expr_x, expr_y, expr_z], [range_p] if range_p else [], 1, params)[0]
     s = Parametric3DLineSeries(
-        expr1, expr2, expr3, range_p, label,
+        expr_x, expr_y, expr_z, range_p, label,
         rendering_kw=rendering_kw, colorbar=colorbar,
         use_cm=use_cm, **kwargs)
     return [s]
 
 
+@modify_graphics_doc(SurfaceOver2DRangeSeries, replace={"params": _PARAMS})
 def surface(
-    expr, range1=None, range2=None, label=None, rendering_kw=None,
+    expr, range_x=None, range_y=None, label=None, rendering_kw=None,
     colorbar=True, use_cm=False, **kwargs
 ):
     """
@@ -395,156 +183,6 @@ def surface(
     Parameters
     ==========
 
-    expr : Expr or callable
-        Expression representing the function of two variables to be plotted.
-        The expression representing the function of two variables to be
-        plotted. It can be a:
-
-        * Symbolic expression.
-        * Numerical function of two variable, supporting vectorization.
-          In this case the following keyword arguments are not supported:
-          ``params``.
-    range1, range2: (symbol, min, max)
-        A 3-tuple denoting the range of the first and second variable,
-        respectively. Default values: `min=-10` and `max=10`.
-    label : str, optional
-        The label to be shown in the colorbar.  If not provided, the string
-        representation of ``expr`` will be used.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the surface.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-          https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
-        * Plotly:
-          https://plotly.com/python/3d-surface-plots/
-        * K3D-Jupyter: look at the documentation of k3d.mesh.
-    colorbar : boolean, optional
-        Toggle the visibility of the colorbar associated to the current data
-        series. Note that a colorbar is only visible if ``use_cm=True`` and
-        ``color_func`` is not None.
-        Default to True.
-    color_func : callable, optional
-        Define a custom color mapping to be used when ``use_cm=True``.
-        It can either be:
-
-        * A numerical function supporting vectorization. The arity can be:
-
-          * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of
-            the points.
-          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
-            of the points.
-        * A symbolic expression having at most as many free symbols as
-          ``expr``.
-        * None: the default value (color mapping according to the
-          z coordinate).
-    force_real_eval : boolean, optional
-        By default, numerical evaluation is performed over complex numbers,
-        which is slower but produces correct results.
-        However, when the symbolic expression is converted to a numerical
-        function with lambdify, the resulting function may not like to
-        be evaluated over complex numbers. In such cases, forcing the
-        evaluation to be performed over real numbers might be a good choice.
-        The plotting module should be able to detect such occurences and
-        automatically activate this option. If that is not the case, or
-        evaluation performance is of paramount importance, set this parameter
-        to True, but be aware that it might produce wrong results.
-        It only works with ``adaptive=False``.
-        Default to False.
-    is_polar : boolean, optional
-        Default to False. If True, requests a polar discretization. In this
-        case, ``range1`` represents the radius, ``range2`` represents the
-        angle.
-    n, n1, n2 : int, optional
-        Number of discretization points along the two ranges. Default to 100.
-        ``n`` is a shortcut to set the same number of discretization points on
-        both directions.
-    params : dict, optional
-        A dictionary mapping symbols to parameters. If provided, this
-        dictionary enables the interactive-widgets plot, which doesn't support
-        the adaptive algorithm (meaning it will use ``adaptive=False``).
-
-        When calling a plotting function, the parameter can be specified with:
-
-        * a widget from the ``ipywidgets`` module.
-        * a widget from the ``panel`` module.
-        * a tuple of the form:
-           `(default, min, max, N, tick_format, label, spacing)`,
-           which will instantiate a
-           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
-           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
-           depending on the spacing strategy. In particular:
-
-           - default, min, max : float
-                Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers. The order of these 3
-                numbers is not important: the module will figure it out
-                which is what.
-           - N : int, optional
-                Number of steps of the slider.
-           - tick_format : str or None, optional
-                Provide a formatter for the tick value of the slider.
-                Default to ``".2f"``.
-           - label: str, optional
-                Custom text associated to the slider.
-           - spacing : str, optional
-                Specify the discretization spacing. Default to ``"linear"``,
-                can be changed to ``"log"``.
-
-        Notes:
-
-        1. parameters cannot be linked together (ie, one parameter
-           cannot depend on another one).
-        2. If a widget returns multiple numerical values (like
-           :py:class:`panel.widgets.slider.RangeSlider` or
-           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
-           then a corresponding number of symbols must be provided.
-
-        Here follows a couple of examples. If ``imodule="panel"``:
-
-        .. code-block:: python
-
-            import panel as pn
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
-                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
-            }
-
-        Or with ``imodule="ipywidgets"``:
-
-        .. code-block:: python
-
-            import ipywidgets as w
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
-                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
-            }
-
-        When instantiating a data series directly, ``params`` must be a
-        dictionary mapping symbols to numerical values.
-
-        Let ``series`` be any data series. Then ``series.params`` returns a
-        dictionary mapping symbols to numerical values.
-    show_in_legend : bool, optional
-        Toggle the visibility of the data series on the legend,
-        when ``use_cm=False``. Default to True.
-    tx, ty, tz : callable, optional
-        Numerical transformation function to be applied to the results
-        of the numerical evaluation. In particular:
-
-        * ``tx`` modifies the x-coordinates.
-        * ``ty`` modifies the y-coordinates.
-        * ``tz`` modifies the z-coordinates.
-
-        Default to None.
-    use_cm : boolean, optional
-        Toggle the use of a colormap. It only works if ``color_func`` is not
-        None. Setting this attribute to False will inform the associated
-        renderer to use solid color.
-        Default to False. Related parameters: ``color_func, colorbar``.
     wireframe : boolean, optional
         Enable or disable a wireframe over the surface. Depending on the number
         of wireframe lines (see ``wf_n1`` and ``wf_n2``), activating this
@@ -553,18 +191,16 @@ def surface(
     wf_n1, wf_n2 : int, optional
         Number of wireframe lines along the two ranges, respectively.
         Default to 10. Note that increasing this number might considerably
-        slow down the plot's creation.
+        slow down the plot's creation. Related parameter: ``wireframe``.
     wf_npoints : int or None, optional
         Number of discretization points for the wireframe lines. Default to
         None, meaning that each wireframe line will have ``n1`` or ``n2``
         number of points, depending on the line direction.
+        Related parameter: ``wireframe``.
     wf_rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of wireframe lines.
-    xscale, yscale : str, optional
-        Discretization strategy along the x and y directions.
-        Possible options: ['linear', 'log']
-        Default value: 'linear'
+        Related parameter: ``wireframe``.
 
     Returns
     =======
@@ -725,16 +361,20 @@ def surface(
     surface_revolution, wireframe, plane
 
     """
+    # back-compatibility
+    range_x = kwargs.pop("range1", range_x)
+    range_y = kwargs.pop("range2", range_y)
+
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
-    if not (range1 and range2):
+    if not (range_x and range_y):
         warnings.warn(
             "No ranges were provided. This function will attempt to find "
             "them, however the order will be arbitrary, which means the "
             "visualization might be flipped."
         )
     kwargs_without_wireframe = _remove_wireframe_kwargs(kwargs)
-    ranges = _preprocess_multiple_ranges([expr], [range1, range2], 2, params)
+    ranges = _preprocess_multiple_ranges([expr], [range_x, range_y], 2, params)
     s = SurfaceOver2DRangeSeries(
         expr, *ranges, label,
         rendering_kw=rendering_kw, colorbar=colorbar,
@@ -751,8 +391,9 @@ def _remove_wireframe_kwargs(kwargs):
     return kwargs_without_wireframe
 
 
+@modify_graphics_doc(ParametricSurfaceSeries, replace={"params": _PARAMS})
 def surface_parametric(
-    expr1, expr2, expr3, range1=None, range2=None,
+    expr_x, expr_y, expr_z, range_u=None, range_v=None,
     label=None, rendering_kw=None, **kwargs
 ):
     """
@@ -761,152 +402,6 @@ def surface_parametric(
     Parameters
     ==========
 
-    expr1, expr2, expr3: Expr or callable
-        Expression representing the function along `x`. It can be a:
-
-        * Symbolic expression.
-        * Numerical function of two variable, f(u, v), supporting
-          vectorization. In this case the following keyword arguments are
-          not supported: ``params``.
-    range1, range2: (symbol, min, max)
-        A 3-tuple denoting the range of the first and second parameter,
-        respectively. Default values: `min=-10` and `max=10`.
-    label : str, optional
-        The label to be shown in the colorbar.  If not provided, the string
-        representation of ``expr`` will be used.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the surface.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-          https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
-        * Plotly:
-          https://plotly.com/python/3d-surface-plots/
-        * K3D-Jupyter: look at the documentation of k3d.mesh.
-    colorbar : boolean, optional
-        Toggle the visibility of the colorbar associated to the current data
-        series. Note that a colorbar is only visible if ``use_cm=True`` and
-        ``color_func`` is not None.
-        Default to True.
-    color_func : callable, optional
-        Define the surface color mapping when ``use_cm=True``.
-        It can either be:
-
-        * A numerical function supporting vectorization. The arity can be:
-
-          * 1 argument: ``f(u)``, where ``u`` is the first parameter.
-          * 2 arguments: ``f(u, v)`` where ``u, v`` are the parameters.
-          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
-            of the points.
-          * 5 arguments: ``f(x, y, z, u, v)``.
-
-        * A symbolic expression having at most as many free symbols as
-          ``expr_x`` or ``expr_y`` or ``expr_z``.
-        * None: the default value (color mapping applied to the z-value of
-          the surface).
-    force_real_eval : boolean, optional
-        By default, numerical evaluation is performed over complex numbers,
-        which is slower but produces correct results.
-        However, when the symbolic expression is converted to a numerical
-        function with lambdify, the resulting function may not like to
-        be evaluated over complex numbers. In such cases, forcing the
-        evaluation to be performed over real numbers might be a good choice.
-        The plotting module should be able to detect such occurences and
-        automatically activate this option. If that is not the case, or
-        evaluation performance is of paramount importance, set this parameter
-        to True, but be aware that it might produce wrong results.
-        It only works with ``adaptive=False``.
-        Default to False.
-    n, n1, n2 : int, optional
-        Number of discretization points along the two ranges. Default to 100.
-        ``n`` is a shortcut to set the same number of discretization points on
-        both directions.
-    params : dict, optional
-        A dictionary mapping symbols to parameters. If provided, this
-        dictionary enables the interactive-widgets plot, which doesn't support
-        the adaptive algorithm (meaning it will use ``adaptive=False``).
-
-        When calling a plotting function, the parameter can be specified with:
-
-        * a widget from the ``ipywidgets`` module.
-        * a widget from the ``panel`` module.
-        * a tuple of the form:
-           `(default, min, max, N, tick_format, label, spacing)`,
-           which will instantiate a
-           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
-           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
-           depending on the spacing strategy. In particular:
-
-           - default, min, max : float
-                Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers. The order of these 3
-                numbers is not important: the module will figure it out
-                which is what.
-           - N : int, optional
-                Number of steps of the slider.
-           - tick_format : str or None, optional
-                Provide a formatter for the tick value of the slider.
-                Default to ``".2f"``.
-           - label: str, optional
-                Custom text associated to the slider.
-           - spacing : str, optional
-                Specify the discretization spacing. Default to ``"linear"``,
-                can be changed to ``"log"``.
-
-        Notes:
-
-        1. parameters cannot be linked together (ie, one parameter
-           cannot depend on another one).
-        2. If a widget returns multiple numerical values (like
-           :py:class:`panel.widgets.slider.RangeSlider` or
-           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
-           then a corresponding number of symbols must be provided.
-
-        Here follows a couple of examples. If ``imodule="panel"``:
-
-        .. code-block:: python
-
-            import panel as pn
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
-                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
-            }
-
-        Or with ``imodule="ipywidgets"``:
-
-        .. code-block:: python
-
-            import ipywidgets as w
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
-                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
-            }
-
-        When instantiating a data series directly, ``params`` must be a
-        dictionary mapping symbols to numerical values.
-
-        Let ``series`` be any data series. Then ``series.params`` returns a
-        dictionary mapping symbols to numerical values.
-    show_in_legend : bool, optional
-        Toggle the visibility of the data series on the legend,
-        when ``use_cm=False``. Default to True.
-    tx, ty, tz : callable, optional
-        Numerical transformation function to be applied to the results
-        of the numerical evaluation. In particular:
-
-        * ``tx`` modifies the x-coordinates.
-        * ``ty`` modifies the y-coordinates.
-        * ``tz`` modifies the z-coordinates.
-
-        Default to None.
-    use_cm : boolean, optional
-        Toggle the use of a colormap. It only works if ``color_func`` is not
-        None. Setting this attribute to False will inform the associated
-        renderer to use solid color.
-        Default to False. Related parameters: ``color_func, colorbar``.
     wireframe : boolean, optional
         Enable or disable a wireframe over the surface. Depending on the number
         of wireframe lines (see ``wf_n1`` and ``wf_n2``), activating this
@@ -915,19 +410,16 @@ def surface_parametric(
     wf_n1, wf_n2 : int, optional
         Number of wireframe lines along the two ranges, respectively.
         Default to 10. Note that increasing this number might considerably
-        slow down the plot's creation.
+        slow down the plot's creation. Related parameter: ``wireframe``.
     wf_npoints : int or None, optional
         Number of discretization points for the wireframe lines. Default to
         None, meaning that each wireframe line will have ``n1`` or ``n2``
         number of points, depending on the line direction.
+        Related parameter: ``wireframe``.
     wf_rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of wireframe lines.
-    xscale, yscale : str, optional
-        Discretization strategy for the first and second parameter,
-        respectively.
-        Possible options: ['linear', 'log']
-        Default value: 'linear'
+        Related parameter: ``wireframe``.
 
     Returns
     =======
@@ -1085,9 +577,13 @@ def surface_parametric(
     surface, surface_spherical, surface_revolution, wireframe
 
     """
-    expr1, expr2, expr3 = map(_plot_sympify, [expr1, expr2, expr3])
+    # back-compatibility
+    range_u = kwargs.pop("range1", range_u)
+    range_v = kwargs.pop("range2", range_v)
+
+    expr_x, expr_y, expr_z = map(_plot_sympify, [expr_x, expr_y, expr_z])
     params = kwargs.get("params", {})
-    if not (range1 and range2):
+    if not (range_u and range_v):
         warnings.warn(
             "No ranges were provided. This function will attempt to find "
             "them, however the order will be arbitrary, which means the "
@@ -1095,13 +591,18 @@ def surface_parametric(
         )
     kwargs_without_wireframe = _remove_wireframe_kwargs(kwargs)
     ranges = _preprocess_multiple_ranges(
-        [expr1, expr2, expr3], [range1, range2], 2, params)
+        [expr_x, expr_y, expr_z], [range_u, range_v], 2, params)
     s = ParametricSurfaceSeries(
-        expr1, expr2, expr3, *ranges, label,
+        expr_x, expr_y, expr_z, *ranges, label,
         rendering_kw=rendering_kw, **kwargs_without_wireframe)
     return [s] + _plot3d_wireframe_helper([s], **kwargs)
 
 
+@modify_graphics_doc(
+    ParametricSurfaceSeries,
+    replace={"params": _PARAMS},
+    exclude=["expr_x", "expr_y", "expr_z", "range_u", "range_v"]
+)
 def surface_spherical(
     r, range_theta=None, range_phi=None, label=None,
     rendering_kw=None, **kwargs
@@ -1119,27 +620,16 @@ def surface_spherical(
         * Numerical function of two variable, f(theta, phi), supporting
           vectorization. In this case the following keyword arguments are
           not supported: ``params``.
-    range_theta : (symbol, min, max)
-        A 3-tuple denoting the range of the polar angle, which is limited
-        in [0, pi]. Consider a sphere:
+    range_theta : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the polar angle,
+        which is limited in [0, pi]. Consider a sphere:
 
         * ``theta=0`` indicates the north pole.
         * ``theta=pi/2`` indicates the equator.
         * ``theta=pi`` indicates the south pole.
-    range_phi : (symbol, min, max)
-        A 3-tuple denoting the range of the azimuthal angle, which is
-        limited in [0, 2*pi].
-    label : str, optional
-        The label to be shown in the colorbar. If not provided, the string
-        representation of the expression will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_3d.surface_parametric`.
-        Refer to its documentation for a for a full list of keyword arguments.
+    range_phi : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the azimuthal angle,
+        which is limited in [0, 2*pi].
 
     Returns
     =======
@@ -1282,8 +772,9 @@ def surface_spherical(
         rendering_kw=rendering_kw, **kwargs)
 
 
+@modify_graphics_doc(Implicit3DSeries, replace={"params": _PARAMS})
 def implicit_3d(
-    expr, range1=None, range2=None, range3=None, label=None,
+    expr, range_x=None, range_y=None, range_z=None, label=None,
     rendering_kw=None, **kwargs
 ):
     """
@@ -1299,55 +790,6 @@ def implicit_3d(
     3. To plot ``f(x, y, z) = c`` either write ``expr = f(x, y, z) - c`` or
        pass the appropriate keyword to ``rendering_kw``. Read the backends
        documentation to find out the available options.
-
-    Parameters
-    ==========
-
-    expr: Expr or callable
-        Implicit expression.  It can be a:
-
-        * Symbolic expression.
-        * Numerical function of three variable, f(x, y, z), supporting
-            vectorization.
-    range1, range2, range3: (symbol, min, max)
-        A 3-tuple denoting the range of a particular variable. Note: it is
-        highly recommended to specify all three ranges in order to avoid
-        mirrored plots.
-    label : str, optional
-        The label to be shown in the colorbar. If not provided, the string
-        representation of the expression will be used.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the surface.
-        Here are some useful links for the supported plotting libraries:
-
-        * Plotly:
-          https://plotly.com/python/3d-isosurface-plots/
-        * K3D-Jupyter: look at the documentation of k3d.marching_cubes.
-    modules :
-        Specify the evaluation modules to be used by lambdify.
-        If not specified, the evaluation will be done with NumPy/SciPy.
-    n, n1, n2, n3 : int, optional
-        Number of discretization points along the three ranges. Default to 100.
-        ``n`` is a shortcut to set the same number of discretization points on
-        all directions.
-    only_integers : boolean, optional
-        Discretize the domain using only integer numbers. It only works when
-        ``adaptive=False``. When this parameter is True, the number of
-        discretization points is choosen by the algorithm.
-    tx, ty, tz : callable, optional
-        Numerical transformation function to be applied to the results
-        of the numerical evaluation. In particular:
-
-        * ``tx`` modifies the x-coordinates.
-        * ``ty`` modifies the y-coordinates.
-        * ``tz`` modifies the z-coordinates.
-
-        Default to None.
-    xscale, yscale, zscale : str, optional
-        Discretization strategies for the different ranges.
-        Possible options: ['linear', 'log']
-        Default value: 'linear'
 
     Returns
     =======
@@ -1398,10 +840,15 @@ def implicit_3d(
     surface, spb.graphics.functions_2d.implicit_2d
 
     """
+    # back-compatibility
+    range_x = kwargs.pop("range1", range_x)
+    range_y = kwargs.pop("range2", range_y)
+    range_z = kwargs.pop("range3", range_z)
+
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
 
-    check = [range1 is None, range2 is None, range3 is None]
+    check = [range_x is None, range_y is None, range_z is None]
     if sum(check) >= 2:
         pre = "Not enough ranges were provided. "
         if sum(check) == 3:
@@ -1413,12 +860,17 @@ def implicit_3d(
         )
 
     ranges = _preprocess_multiple_ranges(
-        [expr], [range1, range2, range3], 3, params)
+        [expr], [range_x, range_y, range_z], 3, params)
     s = Implicit3DSeries(
         expr, *ranges, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
+@modify_graphics_doc(
+    ParametricSurfaceSeries,
+    replace={"params": _PARAMS},
+    exclude=["expr_x", "expr_y", "expr_z", "range_u", "range_v"]
+)
 def surface_revolution(
     curve, range_t, range_phi=None, axis=(0, 0),
     parallel_axis='z', show_curve=False, curve_kw={}, **kwargs
@@ -1430,20 +882,21 @@ def surface_revolution(
     Parameters
     ==========
 
-    curve : Expr, list/tuple of 2 or 3 elements
+    curve : Expr, list ortuple of 2 or 3 elements
         The curve to be revolved, which can be either:
 
         * a symbolic expression
         * a 2-tuple representing a parametric curve in 2D space
         * a 3-tuple representing a parametric curve in 3D space
-    range_t : (symbol, min, max)
-        A 3-tuple denoting the range of the parameter of the curve.
-    range_phi : (symbol, min, max)
-        A 3-tuple denoting the range of the azimuthal angle where the curve
-        will be revolved. Default to ``(phi, 0, 2*pi)``.
-    axis : (coord1, coord2)
-        A 2-tuple that specifies the position of the rotation axis.
-        Depending on the value of ``parallel_axis``:
+    range_t : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the parameter of
+        the curve.
+    range_phi : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the azimuthal angle
+        where the curve will be revolved. Default to ``(phi, 0, 2*pi)``.
+    axis : tuple
+        A 2-tuple (coord1, coord2) that specifies the position of the rotation
+        axis. Depending on the value of ``parallel_axis``:
 
         * ``"x"``: the rotation axis intersects the YZ plane at
           (coord1, coord2).
@@ -1463,10 +916,6 @@ def surface_revolution(
         ``plot3d_parametric_line`` if ``show_curve=True`` in order to customize
         the appearance of the initial curve. Refer to its documentation for
         more information.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_3d.surface_parametric`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -1659,141 +1108,12 @@ def surface_revolution(
     return surface
 
 
+@modify_graphics_doc(List3DSeries, replace={"params": _PARAMS})
 def list_3d(
-    coord_x, coord_y, coord_z, label=None, rendering_kw=None, **kwargs
+    list_x, list_y, list_z, label=None, rendering_kw=None, **kwargs
 ):
     """
     Plots lists of coordinates in 3D space.
-
-    Parameters
-    ==========
-
-    coord_x, coord_y, coord_z : list or tuple or 1D NumPy array
-        Lists of coordinates.
-    label : str, optional
-        The label to be shown in the legend.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Plotly:
-          https://plotly.com/python/3d-line-plots/
-
-        * K3D-Jupyter: look at the documentation of ``k3d.line``.
-    color_func : callable, optional
-        Define a custom color mapping when ``use_cm=True``. It can either be:
-
-        * A numerical function supporting vectorization, with 3 arguments:
-          ``f(x, y, z)`` where ``x, y, z`` are the coordinates of the points.
-        * None: color mapping according to the parameter.
-
-        Default to None.
-    colorbar : boolean, optional
-        Toggle the visibility of the colorbar associated to the current data
-        series. Note that a colorbar is only visible if ``use_cm=True`` and
-        ``color_func`` is not None.
-        Default to True.
-    scatter : boolean, optional
-        Whether to create a scatter or a continuous line.
-        Default to False (create a continous line).
-    fill : boolean, optional
-        Whether scatter's markers are filled or void.
-        Default to True.
-    params : dict, optional
-        A dictionary mapping symbols to parameters. If provided, this
-        dictionary enables the interactive-widgets plot, which doesn't support
-        the adaptive algorithm (meaning it will use ``adaptive=False``).
-
-        When calling a plotting function, the parameter can be specified with:
-
-        * a widget from the ``ipywidgets`` module.
-        * a widget from the ``panel`` module.
-        * a tuple of the form:
-           `(default, min, max, N, tick_format, label, spacing)`,
-           which will instantiate a
-           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
-           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
-           depending on the spacing strategy. In particular:
-
-           - default, min, max : float
-                Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers. The order of these 3
-                numbers is not important: the module will figure it out
-                which is what.
-           - N : int, optional
-                Number of steps of the slider.
-           - tick_format : str or None, optional
-                Provide a formatter for the tick value of the slider.
-                Default to ``".2f"``.
-           - label: str, optional
-                Custom text associated to the slider.
-           - spacing : str, optional
-                Specify the discretization spacing. Default to ``"linear"``,
-                can be changed to ``"log"``.
-
-        Notes:
-
-        1. parameters cannot be linked together (ie, one parameter
-           cannot depend on another one).
-        2. If a widget returns multiple numerical values (like
-           :py:class:`panel.widgets.slider.RangeSlider` or
-           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
-           then a corresponding number of symbols must be provided.
-
-        Here follows a couple of examples. If ``imodule="panel"``:
-
-        .. code-block:: python
-
-            import panel as pn
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
-                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
-            }
-
-        Or with ``imodule="ipywidgets"``:
-
-        .. code-block:: python
-
-            import ipywidgets as w
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
-                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
-            }
-
-        When instantiating a data series directly, ``params`` must be a
-        dictionary mapping symbols to numerical values.
-
-        Let ``series`` be any data series. Then ``series.params`` returns a
-        dictionary mapping symbols to numerical values.
-    show_in_legend : bool, optional
-        Toggle the visibility of the data series on the legend.
-        Default to True.
-    tx, ty, tz : callable, optional
-        Numerical transformation function to be applied to the results
-        of the numerical evaluation. In particular:
-
-        * ``tx`` modifies the x-coordinates,
-        * ``ty`` modified the y-coordinates.
-        * ``tz`` modified the z-coordinates.
-
-        Default to None.
-    use_cm : boolean, optional
-        Toggle the use of a colormap. It only works if ``color_func`` is not
-        None. Setting this attribute to False will inform the associated
-        renderer to use solid color.
-        Default to False. Related parameters: ``color_func, colorbar``.
 
     Returns
     =======
@@ -1869,17 +1189,22 @@ def list_3d(
     spb.graphics.functions_2d.line, line_parametric_3d
 
     """
-    if not hasattr(coord_x, "__iter__"):
-        coord_x = [coord_x]
-    if not hasattr(coord_y, "__iter__"):
-        coord_y = [coord_y]
-    if not hasattr(coord_z, "__iter__"):
-        coord_z = [coord_z]
+    if not hasattr(list_x, "__iter__"):
+        list_x = [list_x]
+    if not hasattr(list_y, "__iter__"):
+        list_y = [list_y]
+    if not hasattr(list_z, "__iter__"):
+        list_z = [list_z]
     s = List3DSeries(
-        coord_x, coord_y, coord_z, label, rendering_kw=rendering_kw, **kwargs)
+        list_x, list_y, list_z, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
+@modify_graphics_doc(
+    Parametric3DLineSeries,
+    replace={"params": _PARAMS},
+    exclude=["expr_x", "expr_y", "expr_z", "range_p"]
+)
 def wireframe(
     surface_series, n1=10, n2=10, n=None, rendering_kw=None, **kwargs
 ):
@@ -1890,21 +1215,15 @@ def wireframe(
     ==========
     surface_series : BaseSeries
         A data series representing a surface.
-    n1, n2: int, optional
-        Number of wireframe lines along each direction (or range).
+    n1 : int, optional
+        Number of wireframe lines along the first direction (or range).
+    n2: int, optional
+        Number of wireframe lines along the second direction (or range).
     n : int, optional
         Number of evaluation points for each wireframe line. If not provided,
         the algorithm will chose the number of discretization points from
         the ``surface_series``. The higher this number, the slower the
         creation of the plot.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_3d.line_parametric_3d`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -1983,8 +1302,9 @@ def wireframe(
     return _plot3d_wireframe_helper([surface_series], **kw)
 
 
+@modify_graphics_doc(PlaneSeries, replace={"params": _PARAMS}, exclude=["plane"])
 def plane(
-    p, range1=None, range2=None, range3=None, label=None,
+    p, range_x=None, range_y=None, range_z=None, label=None,
     rendering_kw=None, **kwargs
 ):
     """
@@ -1994,26 +1314,7 @@ def plane(
     ==========
 
     p : Plane
-    range1, range2, range3 : (symbol, min, max)
-        A 3-tuple denoting the range of a particular variable.
-    label : str, optional
-        An optional string denoting the label of the expression
-        to be visualized on the legend. If not provided, the string
-        representation of the expression will be used.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the surface.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-          https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
-        * Plotly:
-          https://plotly.com/python/3d-surface-plots/
-        * K3D-Jupyter: look at the documentation of k3d.mesh.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_3d.surface`.
-        Refer to its documentation for a for a full list of keyword arguments.
+        The plane to be plotted.
 
     Returns
     =======
@@ -2050,7 +1351,7 @@ def plane(
             f"`p` must be an instance of `Plane`. Received type(p)={type(p)}")
     params = kwargs.get("params", {})
 
-    check = [range1 is None, range2 is None, range3 is None]
+    check = [range_x is None, range_y is None, range_z is None]
     if sum(check) >= 2:
         pre = "Not enough ranges were provided. "
         if sum(check) == 3:
@@ -2062,7 +1363,7 @@ def plane(
         )
 
     ranges = _preprocess_multiple_ranges(
-        [p], [range1, range2, range3], 3, params)
+        [p], [range_x, range_y, range_z], 3, params)
     s = PlaneSeries(
         p, *ranges, label, rendering_kw=rendering_kw, **kwargs)
     return [s]

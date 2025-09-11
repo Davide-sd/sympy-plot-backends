@@ -2,7 +2,7 @@ from itertools import cycle, islice
 from numbers import Number
 import param
 from spb.defaults import cfg
-from spb.doc_utils.ipython import generate_doc
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.series import (
     BaseSeries, LineOver1DRangeSeries, ComplexSurfaceBaseSeries
 )
@@ -227,8 +227,8 @@ class PlotAttributes(param.Parameterized):
         """)
     axis = param.Boolean(True, doc="Show the axis in the figure.")
     polar_axis = param.Boolean(False, doc="""
-        If True, the backend will polar axis, otherwise it uses cartesian axis.
-        This is only supported for 2D plots.""")
+        If True, the backend will attempt to use polar axis, otherwise it
+        uses cartesian axis. This is only supported for 2D plots.""")
     grid = param.ClassSelector(default=True, class_=(bool, dict), doc="""
         Toggle the visibility of major grid lines. A dictionary of keyword
         arguments can be passed to customized the appearance of the grid
@@ -238,10 +238,10 @@ class PlotAttributes(param.Parameterized):
         * Plotly: https://plotly.com/python/axes/#styling-grid-lines
         * Bokeh: https://docs.bokeh.org/en/latest/docs/reference/models/grids.html#module-bokeh.models.grids
         """)
-    minor_grid = param.ClassSelector(default=False, class_=(bool, dict),
-        doc="""Toggle the visibility of minor grid lines. A dictionary of
-        keyword arguments can be passed to customized the appearance of the
-        grid lines:
+    minor_grid = param.ClassSelector(
+        default=False, class_=(bool, dict), doc="""
+        Toggle the visibility of minor grid lines. A dictionary of keyword
+        arguments can be passed to customized the appearance of the grid lines:
 
         * Matplotlib: https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.grid.html
         * Plotly: https://plotly.com/python/axes/#styling-grid-lines
@@ -309,6 +309,7 @@ class PlotAttributes(param.Parameterized):
         for 3D plots.""")
 
 
+@modify_parameterized_doc()
 class Plot(PlotAttributes):
     """
     Base class for all backends. A backend represents the plotting library,
@@ -936,6 +937,3 @@ class Plot(PlotAttributes):
             self.legend = True
         # recreate renderers
         self._create_renderers()
-
-
-generate_doc(Plot)

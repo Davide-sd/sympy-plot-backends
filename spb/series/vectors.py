@@ -3,6 +3,7 @@ from sympy import (
     latex, Tuple, arity, symbols, sympify, Expr, Plane
 )
 from sympy.external import import_module
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.series.evaluator import (
     GridEvaluator,
     SliceVectorGridEvaluator,
@@ -28,13 +29,13 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         Holds a tuple of symbolic expressions representing the
         vector field.""")
     is_streamlines = param.Boolean(False, doc="""
-        If True shows the streamlines, otherwise shows the vector field.""")
+        If True shows the streamlines, otherwise visualize the vector field
+        with quivers.""")
     normalize = param.Boolean(False, doc="""
-        If True, draw arrows with the same length. Note that normalization
-        is achieved at the backend side, which allows to get same length
-        arrows, but colored with the actual magnitude.
-        If normalization would be applied on the series get_data(), the
-        coloring by magnitude would not be applicable at the backend.
+        If True, the vector field will be normalized, resulting in quivers
+        having the same length. If ``use_cm=True``, the backend will color
+        the quivers by the (pre-normalized) vector field's magnitude.
+        Note: only quivers will be affected by this option.
         """)
     tx = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
@@ -129,6 +130,7 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
         return _correct_shape(color, coords[0])
 
 
+@modify_parameterized_doc()
 class Vector2DSeries(VectorBase):
     """Represents a 2D vector field."""
 
@@ -234,6 +236,7 @@ class Vector2DSeries(VectorBase):
                 *self.expr, *ranges))
 
 
+@modify_parameterized_doc()
 class Vector3DSeries(VectorBase):
     """Represents a 3D vector field."""
 
@@ -409,6 +412,7 @@ def _build_slice_series(slice_surf, ranges, **kwargs):
     return SurfaceOver2DRangeSeries(slice_surf, *new_ranges, **kwargs2)
 
 
+@modify_parameterized_doc()
 class SliceVector3DSeries(Vector3DSeries):
     """Represents a 3D vector field plotted over a slice. The slice can be
     a Plane or a surface.
@@ -488,6 +492,8 @@ class ListTupleArray(param.ClassSelector):
                     f"most {max_length}, not {l}."
                 )
 
+
+@modify_parameterized_doc()
 class Arrow2DSeries(BaseSeries):
     """Represent an arrow in a 2D space.
     """
@@ -645,6 +651,7 @@ class Arrow2DSeries(BaseSeries):
             )
 
 
+@modify_parameterized_doc()
 class Arrow3DSeries(Arrow2DSeries):
     """Represent an arrow in a 3D space.
     """

@@ -2,7 +2,7 @@ import param
 import itertools
 import os
 from spb.defaults import cfg
-from spb.doc_utils.ipython import generate_doc
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.backends.base_backend import Plot
 from spb.backends.utils import tick_formatter_multiples_of
 from spb.backends.plotly.renderers import (
@@ -25,6 +25,7 @@ from sympy.external import import_module
 import warnings
 
 
+@modify_parameterized_doc()
 class PlotlyBackend(Plot):
     """
     A backend for plotting SymPy's symbolic expressions using Plotly.
@@ -530,6 +531,3 @@ class PlotlyBackend(Plot):
 
 
 PB = PlotlyBackend
-
-
-generate_doc(PlotlyBackend)

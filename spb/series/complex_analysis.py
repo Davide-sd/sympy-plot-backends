@@ -6,6 +6,7 @@ from sympy import (
 )
 from sympy.external import import_module
 import warnings
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.series.evaluator import (
     _NMixin,
     ComplexGridEvaluator
@@ -26,6 +27,7 @@ from spb.series.series_2d_3d import (
 )
 
 
+@modify_parameterized_doc()
 class AbsArgLineSeries(LineOver1DRangeSeries):
     """
     Represents the absolute value of a complex function colored by its
@@ -85,15 +87,16 @@ class AbsArgLineSeries(LineOver1DRangeSeries):
         return t(x, self.tx), t(y, self.ty), t(a, self.tz)
 
 
+@modify_parameterized_doc()
 class ComplexPointSeries(Line2DBaseSeries):
     """
     Representation for a line in the complex plane consisting of
     list of points.
     """
-    _exclude_params_from_doc = ["steps"]
+    _exclude_params_from_doc = ["steps", "unwrap"]
 
     numbers = param.Parameter(doc="""
-        Complex numbers, or a list of complex numbers.""")
+        Complex number, or a list of complex numbers.""")
     color_func = param.Callable(default=None, doc="""
         A color function to be applied to the numerical data. It can be:
 
@@ -210,6 +213,7 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         )
 
 
+@modify_parameterized_doc()
 class ComplexSurfaceSeries(
     ComplexSurfaceBaseSeries
 ):
@@ -371,6 +375,7 @@ class ComplexDomainColoringBaseSeries(param.Parameterized):
         Controls the phase offset of the colormap in domain coloring plots.""")
 
 
+@modify_parameterized_doc()
 class ComplexDomainColoringSeries(
     ComplexSurfaceBaseSeries,
     ComplexDomainColoringBaseSeries
@@ -388,11 +393,19 @@ class ComplexDomainColoringSeries(
         zero. Otherwise, it will be centered at infinity.""")
     annotate = param.Boolean(True, doc="""
         Turn on/off the annotations on the 2D projections of the Riemann
-        sphere. Default to True (annotations are visible). They can only
-        be visible when ``riemann_mask=True``.""")
+        sphere. They can only be visible when ``riemann_mask=True``.""")
     riemann_mask = param.Boolean(False, doc="""
         Turn on/off the unit disk mask representing the Riemann sphere
-        on the 2D projections. Default to True (mask is active).""")
+        on the 2D projections.""")
+    rendering_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the line.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib: https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
+        * Plotly: https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.Image.html
+        * Bokeh: https://docs.bokeh.org/en/latest/docs/reference/models/glyphs/image_rgba.html#bokeh.models.ImageRGBA
+        """)
 
     def __init__(self, expr, range_c, label="", **kwargs):
         threed = kwargs.pop("threed", False)
@@ -469,6 +482,7 @@ class ComplexDomainColoringSeries(
         )
 
 
+@modify_parameterized_doc()
 class ComplexParametric3DLineSeries(Parametric3DLineSeries):
     """
     Represent a mesh/wireframe line of a complex surface series.
@@ -512,6 +526,7 @@ class ComplexParametric3DLineSeries(Parametric3DLineSeries):
         return [*results[1:], results[0]]
 
 
+@modify_parameterized_doc()
 class RiemannSphereSeries(
     ComplexDomainColoringBaseSeries,
     BaseSeries,

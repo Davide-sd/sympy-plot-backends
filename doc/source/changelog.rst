@@ -10,7 +10,12 @@ v4.0.0
   mandatory dependency (previously, it was installed and used only
   when using the interactive module), it brings many benefits:
 
-  * clearer code base.
+  * Clearer code base, in particular in the `spb.series` modules.
+  * Automatic and complete generation of the documentation when the
+    module is imported, on all classes and plotting function.
+    The documentaion is shown when the user executes
+    `help(plot_function)` or `plot_function?`. All available
+    parameters will be shown.
 
 * Changed the init signature of ``NicholsLineSeries``.
 

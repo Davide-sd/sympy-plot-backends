@@ -17,6 +17,8 @@ it if you care at all about performance.
 """
 
 from spb.defaults import TWO_D_B
+from spb.doc_utils.docstrings import _PARAMS, _LABEL_PF
+from spb.doc_utils.ipython import modify_plot_functions_doc
 from spb.graphics import (
     graphics, line, line_parametric_2d, line_parametric_3d,
     surface, surface_parametric, surface_revolution, surface_spherical,
@@ -24,7 +26,8 @@ from spb.graphics import (
 )
 from spb.series import (
     Parametric2DLineSeries, PlaneSeries, GenericDataSeries,
-    LineOver1DRangeSeries
+    LineOver1DRangeSeries, List2DSeries, ImplicitSeries, ContourSeries,
+    Geometry2DSeries
 )
 from spb.utils import (
     _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend,
@@ -33,9 +36,11 @@ from sympy import latex, Tuple, Symbol, oo, cos, sin
 from sympy.external import import_module
 
 
+_repl = {"params": _PARAMS, "label": _LABEL_PF}
+
+
 def _set_labels(series, labels, rendering_kw):
-    """Apply the label keyword argument to the series.
-    """
+    """Apply the label keyword argument to the series."""
     if not isinstance(labels, (list, tuple)):
         labels = [labels]
     if len(labels) > 0:
@@ -129,8 +134,10 @@ def _create_generic_data_series(**kwargs):
     return series
 
 
+@modify_plot_functions_doc(LineOver1DRangeSeries, replace=_repl)
 def plot(*args, **kwargs):
-    """Plots a function of a single variable as a curve.
+    """
+    Plots a function of a single variable as a curve.
 
     Typical usage examples are in the followings:
 
@@ -169,21 +176,6 @@ def plot(*args, **kwargs):
     Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
     keyword arguments to customize the appearances of the figure (title,
     axis labels, ...).
-
-    Parameters
-    ==========
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the plotting
-        library (backend) manual for more informations. If a list of
-        dictionaries is provided, the number of dictionaries must be equal
-        to the number of expressions.
 
     Examples
     ========
@@ -400,6 +392,7 @@ def plot(*args, **kwargs):
     return graphics(*lines, gs, **kwargs)
 
 
+@modify_plot_functions_doc(Parametric2DLineSeries, replace=_repl)
 def plot_parametric(*args, **kwargs):
     """
     Plots a 2D parametric curve.
@@ -427,13 +420,6 @@ def plot_parametric(*args, **kwargs):
          plot_parametric(
             (expr_x1, expr_y1, range1, label1 [opt], rendering_kw1 [opt]),
             (expr_x2, expr_y2, range2, label2 [opt], rendering_kw2 [opt]), ...)
-
-    Refer to :func:`~spb.graphics.functions_2d.line_parametric_2d` for a full
-    list of keyword arguments to customize the appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
 
     Examples
     ========
@@ -574,6 +560,7 @@ def plot_parametric(*args, **kwargs):
     return graphics(*lines, gs, **kwargs)
 
 
+@modify_plot_functions_doc(Parametric2DLineSeries, replace=_repl)
 def plot_parametric_region(*args, **kwargs):
     """
     Plots a 2D parametric region.
@@ -781,6 +768,7 @@ def _plot3d_plot_contour_helper(threed, *args, **kwargs):
     return graphics(*surfaces, **kwargs)
 
 
+@modify_plot_functions_doc(ContourSeries, replace=_repl)
 def plot_contour(*args, **kwargs):
     """
     Draws contour plot of a function of two variables.
@@ -795,22 +783,6 @@ def plot_contour(*args, **kwargs):
     Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
     keyword arguments to customize the appearances of the figure (title,
     axis labels, ...).
-
-    Parameters
-    ==========
-
-    clabels : bool, optional
-        Visualize labels of contour lines. Only works when ``is_filled=False``.
-        Default to True. Note that some backend might not implement this
-        feature.
-
-    is_filled : bool, optional
-        Choose between filled contours or line contours. Default to True
-        (filled contours).
-
-    polar_axis : boolean, optional
-        If True, attempt to create a plot with polar axis. Default to False,
-        which creates a plot with cartesian axis.
 
     Examples
     ========
@@ -940,8 +912,10 @@ def plot_contour(*args, **kwargs):
     return _plot3d_plot_contour_helper(False, *args, **kwargs)
 
 
+@modify_plot_functions_doc(ImplicitSeries, replace=_repl)
 def plot_implicit(*args, **kwargs):
-    """Plot implicit equations / inequalities.
+    """
+    Plot implicit equations / inequalities.
 
     ``plot_implicit``, by default, generates a contour using a mesh grid of
     fixednumber of points. The greater the number of points, the better the
@@ -973,22 +947,6 @@ def plot_implicit(*args, **kwargs):
          plot_implicit(
             (expr1, range_x1, range_y1, label1 [opt]),
             (expr2, range_x2, range_y2, label2 [opt]))
-
-    Refer to :func:`~spb.graphics.functions_2d.implicit_2d` for a full
-    list of keyword arguments to customize the appearances of lines and
-    regions.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
-    Parameters
-    ==========
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
 
     Examples
     ========
@@ -1222,8 +1180,10 @@ def plot_implicit(*args, **kwargs):
     return graphics(*series, **kwargs)
 
 
+@modify_plot_functions_doc(Parametric2DLineSeries, replace=_repl)
 def plot_polar(*args, **kwargs):
-    """The following function creates a 2D polar plot.
+    """
+    The following function creates a 2D polar plot.
 
     By default, it uses an equal aspect ratio and doesn't apply a colormap.
 
@@ -1249,22 +1209,6 @@ def plot_polar(*args, **kwargs):
          plot_polar(
             (expr1, range1, label1 [opt], rendering_kw1 [opt]),
             (expr2, range2, label2 [opt], rendering_kw2 [opt]), ..., **kwargs)
-
-    This function is going to execute
-    :func:`~spb.graphics.functions_2d.line_parametric_2d`. Refer to its
-    documentation for a full list of keyword arguments to customize the
-    appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
-    Parameters
-    ==========
-
-    polar_axis : boolean, optional
-        If True, attempt to create a plot with polar axis. Default to False,
-        which creates a plot with cartesian axis.
 
     Examples
     ========
@@ -1383,8 +1327,10 @@ def plot_polar(*args, **kwargs):
     return graphics(*lines, gs, **kwargs)
 
 
+@modify_plot_functions_doc(Geometry2DSeries, replace=_repl)
 def plot_geometry(*args, **kwargs):
-    """Plot entities from the sympy.geometry module.
+    """
+    Plot entities from the sympy.geometry module.
 
     Typical usage examples are in the following:
 
@@ -1409,15 +1355,6 @@ def plot_geometry(*args, **kwargs):
             (geom1, label1 [opt], rendering_kw1 [opt]),
             (geom2, label2 [opt], rendering_kw2 [opt]),
             **kwargs)
-
-    Refer to :func:`~spb.graphics.functions_2d.geometry` for a full
-    list of keyword arguments to customize the appearances of lines and
-    regions.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
 
     Examples
     ========
@@ -1610,8 +1547,10 @@ def plot_geometry(*args, **kwargs):
     return graphics(*series, **kwargs)
 
 
+@modify_plot_functions_doc(List2DSeries, replace=_repl)
 def plot_list(*args, **kwargs):
-    """Plots lists of coordinates (ie, lists of numbers).
+    """
+    Plots lists of coordinates (ie, lists of numbers).
 
     Typical usage examples are in the followings:
 
@@ -1630,14 +1569,6 @@ def plot_list(*args, **kwargs):
             (x1, y1, label1 [opt], rendering_kw1 [opt]),
             (x2, y2, label2 [opt], rendering_kw2 [opt]),
             ..., **kwargs)
-
-    Refer to :func:`~spb.graphics.functions_2d.list_2d` for a full
-    list of keyword arguments to customize the appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
 
     Examples
     ========
@@ -1767,8 +1698,10 @@ def plot_list(*args, **kwargs):
     return graphics(*series, **kwargs)
 
 
+@modify_plot_functions_doc(LineOver1DRangeSeries, replace=_repl)
 def plot_piecewise(*args, **kwargs):
-    """Plots univariate piecewise functions.
+    """
+    Plots univariate piecewise functions.
 
     Typical usage examples are in the followings:
 
@@ -1793,13 +1726,6 @@ def plot_piecewise(*args, **kwargs):
             (expr1, range1, label1 [opt], rendering_kw1 [opt]),
             (expr2, range2, label2 [opt], rendering_kw2 [opt]),
             ..., **kwargs)`
-
-    Refer to :func:`~spb.graphics.functions_2d.line` for a full
-    list of keyword arguments to customize the appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
 
     Parameters
     ==========

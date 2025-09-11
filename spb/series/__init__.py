@@ -51,7 +51,6 @@ from spb.series.series_2d_3d import (
     HLineSeries,
     VLineSeries
 )
-from spb.doc_utils.ipython import generate_doc
 
 
 series = [
@@ -99,7 +98,5 @@ series = [
     HLineSeries,
     VLineSeries
 ]
-
-generate_doc(*series)
 
 __all__ = [s.__name__ for s in series]

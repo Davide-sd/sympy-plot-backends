@@ -4,8 +4,11 @@ from spb.doc_utils.ipython import (
     MyParamPager,
     get_public_methods,
     split_docstring,
-    _get_parameters_dict
+    _get_parameters_dict,
+    modify_graphics_doc
 )
+from spb.series import LineOver1DRangeSeries
+from spb import plot, line
 
 
 class A:
@@ -178,3 +181,65 @@ def test_split_docstring():
     assert "Some random note." in sections["Notes"]
     assert "method_1()" in sections["Methods"]
     assert "method_2(*args)" in sections["Methods"]
+
+
+@modify_graphics_doc(LineOver1DRangeSeries)
+def this_is_a_func(expr, range_x, label=""):
+    """
+    This is function in which I test the decorator that will aggregate
+    the docstring from this function, as well as the provided data series
+    in the decorator call.
+
+    Parameters
+    ----------
+    my_custom_param_1 : int, optional
+        This is a test docstring for my_custom_param_1.
+    my_custom_param_2 : float
+        This is a test docstring for my_custom_param_2.
+
+    Returns
+    -------
+    It returns something.
+    """
+    pass
+
+
+def test_modify_graphics_doc():
+    doc = this_is_a_func.__doc__
+    assert "expr :" in doc
+    assert "range_x : tuple, Tuple" in doc
+    assert "my_custom_param_1 : int, optional" in doc
+    assert "This is a test docstring for my_custom_param_1." in doc
+    assert "my_custom_param_2 : float" in doc
+    assert "This is a test docstring for my_custom_param_2." in doc
+
+
+def test_plot_functions_doc():
+    # verify that the documentation contains parameters from the data series
+    # and the PlotAttributes class
+    doc = plot.__doc__
+    assert "expr :" in doc
+    assert "range_x : tuple, Tuple" in doc
+    assert "aspect : str, tuple, list" in doc
+    assert "xlabel :" in doc
+    assert "Label of the x-axis. It can be:" in doc
+    assert "xscale : str" in doc
+    assert "If the backend supports it, the x-direction will use the specified" in doc
+    assert "evaluator" not in doc
+
+
+def test_graphics_function_doc():
+    # verify that the documentation contains parameters from the data series
+    doc = line.__doc__
+    assert "expr :" in doc
+    assert "range_x : tuple, Tuple" in doc
+    assert "Discretization strategy along the x-direction." in doc
+    assert "evaluator" not in doc
+
+def test_Series_doc():
+    # verify that data series classes get a modified docstring
+    doc = LineOver1DRangeSeries.__doc__
+    assert "Parameters" in doc
+    assert "Parameters of 'LineOver1DRangeSeries'" not in doc
+    assert "C/V= Constant/Variable, RO/RW = ReadOnly/ReadWrite, AN=Allow None" not in doc
+    assert "_parametric_ranges" not in doc

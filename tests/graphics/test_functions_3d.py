@@ -51,7 +51,7 @@ def test_line_parametric_3d(default_range, rang, label, rkw, n, params):
 
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
 @pytest.mark.parametrize(
-    "range1, range2, label, rkw, n, params, wf, wf_n1, wf_n2", [
+    "range_x, range_y, label, rkw, n, params, wf, wf_n1, wf_n2", [
         (None, None, None, None, None, None, False, None, None),
         ((-2, 3), None, None, None, None, None, False, None, None),
         (None, (-2, 3), None, None, None, None, False, None, None),
@@ -60,12 +60,12 @@ def test_line_parametric_3d(default_range, rang, label, rkw, n, params):
         ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, False, None, None),
         ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, True, 10, 10),
 ])
-def test_surface(default_range, range1, range2, label, rkw, n, params,
+def test_surface(default_range, range_x, range_y, label, rkw, n, params,
     wf, wf_n1, wf_n2):
     x, y = symbols("x, y")
 
-    r1 = (x, *range1) if isinstance(range1, (list, tuple)) else None
-    r2 = (y, *range2) if isinstance(range2, (list, tuple)) else None
+    r1 = (x, *range_x) if isinstance(range_x, (list, tuple)) else None
+    r2 = (y, *range_y) if isinstance(range_y, (list, tuple)) else None
     kwargs = {"wireframe": wf}
     if params:
         kwargs["params"] = params
@@ -73,17 +73,17 @@ def test_surface(default_range, range1, range2, label, rkw, n, params,
         kwargs["n"] = n
 
     series = surface(
-        cos(x*y), range1=r1, range2=r2, label=label,
+        cos(x*y), range_x=r1, range_y=r2, label=label,
         rendering_kw=rkw, **kwargs
     )
     assert len(series) == 1 + ((wf_n1 + wf_n2) if wf else 0)
     s = series[0]
     assert isinstance(s, SurfaceOver2DRangeSeries)
     assert s.expr == cos(x*y)
-    assert (s.ranges[0] == (default_range(x) if not range1 else r1)) or \
-        (s.ranges[0] == (default_range(y) if not range1 else r1))
-    assert (s.ranges[1] == (default_range(y) if not range2 else r2)) or \
-        (s.ranges[1] == (default_range(x) if not range2 else r2))
+    assert (s.ranges[0] == (default_range(x) if not range_x else r1)) or \
+        (s.ranges[0] == (default_range(y) if not range_x else r1))
+    assert (s.ranges[1] == (default_range(y) if not range_y else r2)) or \
+        (s.ranges[1] == (default_range(x) if not range_y else r2))
     assert s.get_label(False) == ("cos(x*y)" if not label else label)
     assert s.rendering_kw == ({} if not rkw else rkw)
     assert all(t == (100 if not n else n) for t in s.n[:-1])
@@ -94,7 +94,7 @@ def test_surface(default_range, range1, range2, label, rkw, n, params,
 
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
 @pytest.mark.parametrize(
-    "range1, range2, label, rkw, n, params, wf, wf_n1, wf_n2", [
+    "range_u, range_v, label, rkw, n, params, wf, wf_n1, wf_n2", [
         (None, None, None, None, None, None, False, None, None),
         ((-2, 3), None, None, None, None, None, False, None, None),
         (None, (-2, 3), None, None, None, None, False, None, None),
@@ -104,13 +104,13 @@ def test_surface(default_range, range1, range2, label, rkw, n, params,
         ((-4, 6), (-2, 3), "test", {"color": "r"}, 10, {p1: (1, 0, 2), p2: (2, -1, 3)}, True, 10, 10),
 ])
 def test_surface_parametric(
-    default_range, range1, range2, label, rkw, n,
+    default_range, range_u, range_v, label, rkw, n,
     params, wf, wf_n1, wf_n2
 ):
     x, y = symbols("x, y")
 
-    r1 = (x, *range1) if isinstance(range1, (list, tuple)) else None
-    r2 = (y, *range2) if isinstance(range2, (list, tuple)) else None
+    r1 = (x, *range_u) if isinstance(range_u, (list, tuple)) else None
+    r2 = (y, *range_v) if isinstance(range_v, (list, tuple)) else None
     kwargs = {"wireframe": wf}
     if params:
         kwargs["params"] = params
@@ -118,17 +118,17 @@ def test_surface_parametric(
         kwargs["n"] = n
 
     series = surface_parametric(
-        cos(x*y), sin(x*y), x*y, range1=r1, range2=r2, label=label,
+        cos(x*y), sin(x*y), x*y, range_u=r1, range_v=r2, label=label,
         rendering_kw=rkw, **kwargs
     )
     assert len(series) == 1 + ((wf_n1 + wf_n2) if wf else 0)
     s = series[0]
     assert isinstance(s, ParametricSurfaceSeries)
     assert s.expr == (cos(x*y), sin(x*y), x*y)
-    assert (s.ranges[0] == (default_range(x) if not range1 else r1)) or \
-        (s.ranges[0] == (default_range(y) if not range1 else r1))
-    assert (s.ranges[1] == (default_range(y) if not range2 else r2)) or \
-        (s.ranges[1] == (default_range(x) if not range2 else r2))
+    assert (s.ranges[0] == (default_range(x) if not range_u else r1)) or \
+        (s.ranges[0] == (default_range(y) if not range_u else r1))
+    assert (s.ranges[1] == (default_range(y) if not range_v else r2)) or \
+        (s.ranges[1] == (default_range(x) if not range_v else r2))
     assert s.get_label(False) == ("(cos(x*y), sin(x*y), x*y)" if not label else label)
     assert s.rendering_kw == ({} if not rkw else rkw)
     assert all(t == (100 if not n else n) for t in s.n[:-1])
@@ -239,7 +239,7 @@ def test_surface_revolution(default_range, range1, range2, label, rkw, n, params
 @pytest.mark.filterwarnings("ignore:No ranges were provided.")
 @pytest.mark.filterwarnings("ignore:Not enough ranges were provided.")
 @pytest.mark.parametrize(
-    "range1, range2, range3, label, rkw, n", [
+    "range_x, range_y, range_z, label, rkw, n", [
         (None, None, None, None, None, None),
         ((-2, 3), None, None, None, None, None),
         (None, (-2, 3), None, None, None, None),
@@ -249,33 +249,33 @@ def test_surface_revolution(default_range, range1, range2, label, rkw, n, params
         ((-4, 6), (-2, 3), (1, 5),  "test", {"color": "r"}, 10),
         ((-4, 6), (-2, 3), (1, 5),  "test", {"color": "r"}, 10),
 ])
-def test_implicit_3d(default_range, range1, range2, range3, label, rkw, n):
+def test_implicit_3d(default_range, range_x, range_y, range_z, label, rkw, n):
     x, y, z = symbols("x, y, z")
 
-    r1 = (x, *range1) if isinstance(range1, (list, tuple)) else None
-    r2 = (y, *range2) if isinstance(range2, (list, tuple)) else None
-    r3 = (z, *range3) if isinstance(range3, (list, tuple)) else None
+    r1 = (x, *range_x) if isinstance(range_x, (list, tuple)) else None
+    r2 = (y, *range_y) if isinstance(range_y, (list, tuple)) else None
+    r3 = (z, *range_z) if isinstance(range_z, (list, tuple)) else None
     kwargs = {}
     if n:
         kwargs["n"] = n
 
     series = implicit_3d(
-        x**2 + y**3 - z**2, range1=r1, range2=r2, range3=r3,
+        x**2 + y**3 - z**2, range_x=r1, range_y=r2, range_z=r3,
         label=label, rendering_kw=rkw, **kwargs
     )
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, Implicit3DSeries)
     assert s.expr == x**2 + y**3 - z**2
-    assert (s.ranges[0] == (default_range(x) if not range1 else r1)) or \
-        (s.ranges[0] == (default_range(y) if not range1 else r1)) or \
-        (s.ranges[0] == (default_range(z) if not range1 else r1))
-    assert (s.ranges[1] == (default_range(y) if not range2 else r2)) or \
-        (s.ranges[1] == (default_range(x) if not range2 else r2)) or \
-        (s.ranges[1] == (default_range(z) if not range2 else r2))
-    assert (s.ranges[2] == (default_range(y) if not range3 else r3)) or \
-        (s.ranges[2] == (default_range(x) if not range3 else r3)) or \
-        (s.ranges[2] == (default_range(z) if not range3 else r3))
+    assert (s.ranges[0] == (default_range(x) if not range_x else r1)) or \
+        (s.ranges[0] == (default_range(y) if not range_x else r1)) or \
+        (s.ranges[0] == (default_range(z) if not range_x else r1))
+    assert (s.ranges[1] == (default_range(y) if not range_y else r2)) or \
+        (s.ranges[1] == (default_range(x) if not range_y else r2)) or \
+        (s.ranges[1] == (default_range(z) if not range_y else r2))
+    assert (s.ranges[2] == (default_range(y) if not range_z else r3)) or \
+        (s.ranges[2] == (default_range(x) if not range_z else r3)) or \
+        (s.ranges[2] == (default_range(z) if not range_z else r3))
     assert s.get_label(False) == ("x**2 + y**3 - z**2" if not label else label)
     assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.n[0] == (60 if not n else n)

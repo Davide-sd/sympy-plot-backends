@@ -1,7 +1,7 @@
 import param
 import os
 from spb.defaults import cfg
-from spb.doc_utils.ipython import generate_doc
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.backends.base_backend import Plot
 from spb.backends.utils import tick_formatter_multiples_of
 from spb.backends.bokeh.renderers import (
@@ -25,6 +25,7 @@ from spb.utils import get_environment
 from sympy.external import import_module
 
 
+@modify_parameterized_doc()
 class BokehBackend(Plot):
     """
     A backend for plotting SymPy's symbolic expressions using Bokeh.
@@ -568,5 +569,3 @@ class BokehBackend(Plot):
 
 BB = BokehBackend
 
-
-generate_doc(BokehBackend)

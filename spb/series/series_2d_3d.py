@@ -1,5 +1,6 @@
 import param
 from numbers import Number
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.utils import (
     _correct_shape,
     unwrap,
@@ -496,6 +497,7 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
         return points
 
 
+@modify_parameterized_doc()
 class List2DSeries(Line2DBaseSeries):
     """
     Representation for a line consisting of list of points.
@@ -503,9 +505,9 @@ class List2DSeries(Line2DBaseSeries):
 
     # NOTE: these parameters will eventually hold either Tuple or numpy arrays
     list_x = param.Parameter(default=[], doc="""
-        Coordinates for the x-axis.""")
+        Coordinates for the x-axis. It can be a list or a numper array.""")
     list_y = param.Parameter(default=[], doc="""
-        Coordinates for the y-axis.""")
+        Coordinates for the y-axis. It can be a list or a numper array.""")
     color_func = param.Callable(default=None, doc="""
         A color function to be applied to the numerical data. It can be:
 
@@ -632,12 +634,13 @@ class List2DSeries(Line2DBaseSeries):
         return None
 
 
+@modify_parameterized_doc()
 class List3DSeries(List2DSeries):
     is_2Dline = False
     is_3Dline = True
 
     list_z = param.Parameter(default=[], doc="""
-        Coordinates for the z-axis.""")
+        Coordinates for the z-axis. It can be a list or a numper array.""")
     color_func = param.Callable(default=None, doc="""
         A color function to be applied to the numerical data. It can be:
 
@@ -724,6 +727,7 @@ def _process_exclude_kw(kwargs):
     return kwargs
 
 
+@modify_parameterized_doc()
 class LineOver1DRangeSeries(
     _GridEvaluationParameters,
     _LineWithRangeMixin,
@@ -868,6 +872,7 @@ class LineOver1DRangeSeries(
         return super().get_data()
 
 
+@modify_parameterized_doc()
 class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
     """Represents a 2D line series in which `color_func` is a callable.
     """
@@ -920,6 +925,8 @@ class ParametricLineBaseSeries(
     _DetectPolesMixin,
     Line2DBaseSeries
 ):
+    _exclude_params_from_doc = [
+        "is_polar", "poles_locations", "poles_rendering_kw", "steps", "unwrap"]
     is_parametric = True
 
     expr_x = param.Parameter(doc="""
@@ -1050,9 +1057,8 @@ class ParametricLineBaseSeries(
         return [*results[1:], results[0]]
 
 
-class Parametric2DLineSeries(
-    ParametricLineBaseSeries
-):
+@modify_parameterized_doc()
+class Parametric2DLineSeries(ParametricLineBaseSeries):
     """
     Representation for a line consisting of two parametric sympy expressions
     over a range.
@@ -1116,14 +1122,12 @@ class Parametric2DLineSeries(
         )
 
 
-class Parametric3DLineSeries(
-    ParametricLineBaseSeries
-):
+@modify_parameterized_doc()
+class Parametric3DLineSeries(ParametricLineBaseSeries):
     """
     Representation for a 3D line consisting of three parametric sympy
     expressions and a range.
     """
-
     is_2Dline = False
     is_3Dline = True
 
@@ -1281,6 +1285,7 @@ class SurfaceBaseSeries(
             )
 
 
+@modify_parameterized_doc()
 class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     """
     Representation for a 3D surface consisting of a sympy expression and 2D
@@ -1426,9 +1431,8 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         return _correct_shape(color, coords[0])
 
 
-class ParametricSurfaceSeries(
-    SurfaceBaseSeries
-):
+@modify_parameterized_doc()
+class ParametricSurfaceSeries(SurfaceBaseSeries):
     """
     Representation for a 3D surface consisting of three parametric sympy
     expressions and a range.
@@ -1460,6 +1464,12 @@ class ParametricSurfaceSeries(
         * Numerical function of two variable, f(u, v), supporting
           vectorization. In this case the following keyword arguments are
           not supported: ``params``.""")
+    n1 = _CastToInteger(default=100, bounds=(2, None), doc="""
+        Number of discretization points along the first parameter to be used
+        in the evaluation. Related parameters: ``xscale``.""")
+    n2 = _CastToInteger(default=100, bounds=(2, None), doc="""
+        Number of discretization points along the second parameter to be used
+        in the evaluation. Related parameters: ``yscale``.""")
     range_u = _RangeTuple(doc="""
         A 3-tuple `(symb, min, max)` denoting the range of the u parameter.
         Default values: `min=-10` and `max=10`.""")
@@ -1484,11 +1494,11 @@ class ParametricSurfaceSeries(
         """)
     xscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the the first parameter.
+        Discretization strategy along the first parameter.
         Related parameters: ``n1``.""")
     yscale = param.Selector(
         default="linear", objects=["linear", "log"], doc="""
-        Discretization strategy along the the second parameter.
+        Discretization strategy along the second parameter.
         Related parameters: ``n2``.""")
 
     def __init__(
@@ -1586,6 +1596,7 @@ class ParametricSurfaceSeries(
         return _correct_shape(color, coords[0])
 
 
+@modify_parameterized_doc()
 class ContourSeries(SurfaceOver2DRangeSeries):
     """Representation for a contour plot."""
 
@@ -1610,8 +1621,7 @@ class ContourSeries(SurfaceOver2DRangeSeries):
           https://plotly.com/python/contour-plots/
         """)
 
-    def __init__(self, *args, **kwargs):
-        kwargs = kwargs.copy()
+    def __init__(self, expr, range_x, range_y, label="", **kwargs):
         kwargs.setdefault("show_in_legend", False)
         kwargs.setdefault("use_cm", True)
         kwargs.setdefault("is_filled", kwargs.pop("fill", True))
@@ -1620,9 +1630,10 @@ class ContourSeries(SurfaceOver2DRangeSeries):
         # plot_complex_vector. By implementing contour_kw we are able to
         # quickly target the contour plot.
         kwargs.setdefault("rendering_kw", kwargs.pop("contour_kw", dict()))
-        super().__init__(*args, **kwargs)
+        super().__init__(expr, range_x, range_y, label, **kwargs)
 
 
+@modify_parameterized_doc()
 class ImplicitSeries(
     _GridEvaluationParameters,
     BaseSeries
@@ -1659,11 +1670,11 @@ class ImplicitSeries(
         If the expression cannot be plotted with interval arithmetic, it
         switches to the meshgrid approach.""")
     depth = param.Integer(default=0, bounds=(0, 4), doc="""
-        The depth of recursion for adaptive grid. Default value is 0.
-        Think of the resulting plot as a picture composed by pixels. By
-        increasing ``depth`` we are increasing the number of pixels, thus
-        obtaining a more accurate plot, at the cost of evaluation speed
-        and possibly readability (if the figure has small size).""")
+        The depth of recursion for adaptive grid. Think of the resulting plot
+        as a picture composed by pixels. Increasing ``depth`` will increase
+        the number of pixels, thus obtaining a more accurate plot, at the cost
+        of evaluation speed and possibly readability (if the figure has
+        small size).""")
     _actual_depth = param.Integer(default=4, bounds=(4, 8), doc="""
         The ``depth`` is meant to be user friendly. It will be processed
         by the data series. The new value used by the algorithm is stored
@@ -2061,6 +2072,7 @@ class ImplicitSeries(
         return self._label_latex
 
 
+@modify_parameterized_doc()
 class Implicit3DSeries(SurfaceBaseSeries):
     is_implicit = True
 
@@ -2169,6 +2181,7 @@ class Implicit3DSeries(SurfaceBaseSeries):
         return t(x, self.tx), t(y, self.ty), t(z, self.tz), f
 
 
+@modify_parameterized_doc()
 class PlaneSeries(SurfaceBaseSeries):
     """Represents a plane in a 3D domain."""
 
@@ -2364,6 +2377,7 @@ class PlaneSeries(SurfaceBaseSeries):
         return _correct_shape(color, coords[0])
 
 
+@modify_parameterized_doc()
 class Geometry2DSeries(Line2DBaseSeries, _NMixin):
     """
     Represents an entity from the sympy.geometry module.
@@ -2373,7 +2387,7 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
 
     is_geometry = True
     is_2Dline = True
-    _exclude_params_from_doc = ["steps", "colorbar", "use_cm"]
+    _exclude_params_from_doc = ["steps", "colorbar", "use_cm", "unwrap"]
 
     geom = param.ClassSelector(class_=GeometryEntity, doc="""
         Represent the geometric entity to be plotted.""")
@@ -2502,6 +2516,7 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
         return self._str_helper("2D geometry entity: %s" % str(self.geom))
 
 
+@modify_parameterized_doc()
 class Geometry3DSeries(Line2DBaseSeries):
     """
     Represents an entity from the sympy.geometry module.
@@ -2512,7 +2527,7 @@ class Geometry3DSeries(Line2DBaseSeries):
     is_geometry = True
     is_2Dline = False
     is_3Dline = True
-    _exclude_params_from_doc = ["colorbar", "steps", "use_cm"]
+    _exclude_params_from_doc = ["colorbar", "steps", "use_cm", "unwrap"]
 
     geom = param.ClassSelector(class_=GeometryEntity, doc="""
         Represent the geometric entity to be plotted.""")
@@ -2577,6 +2592,7 @@ class Geometry3DSeries(Line2DBaseSeries):
         return self._str_helper("3D geometry entity: %s" % str(self.geom))
 
 
+@modify_parameterized_doc()
 class GenericDataSeries(BaseSeries):
     """
     Represents generic numerical data.
@@ -2662,6 +2678,7 @@ class GenericDataSeries(BaseSeries):
         return self.args
 
 
+@modify_parameterized_doc()
 class HVLineSeries(BaseSeries):
     """
     Represent an horizontal or vertical line series.
@@ -2703,10 +2720,11 @@ class HVLineSeries(BaseSeries):
 # NOTE: HVLineSeries is more than enough to represent both vertical and
 # horizontal lines. I need HLineSeries and VLineSeries in order to properly
 # document spb.graphics.functions_2d.hline and vline.
+@modify_parameterized_doc()
 class HLineSeries(HVLineSeries):
     _exclude_params_from_doc = ["is_horizontal", "colorbar", "use_cm"]
 
-    y = param.Parameter(doc="""
+    y = param.ClassSelector(class_=Expr, doc="""
         The y-coordinate where to draw the horizontal line.""")
 
     def __init__(self, y, label="", **kwargs):
@@ -2717,10 +2735,11 @@ class HLineSeries(HVLineSeries):
         self._expr = self.y
 
 
+@modify_parameterized_doc()
 class VLineSeries(HVLineSeries):
     _exclude_params_from_doc = ["is_horizontal", "colorbar", "use_cm"]
 
-    x = param.Parameter(doc="""
+    x = param.ClassSelector(class_=Expr, doc="""
         The x-coordinate where to draw the vertical line.""")
 
     def __init__(self, x, label="", **kwargs):

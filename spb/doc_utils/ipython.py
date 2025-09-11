@@ -1,15 +1,93 @@
+"""
+This module exposes a few decorators that will modify the hardcoded
+docstrings of functions and classes.
+
+Why this approach?
+
+ * `param` automatically generates documentation for instances of
+   `param.Parameterized`, but I don't really like its styling.
+   In particular:
+
+   * It shows a summary table of all parameters, showing their default
+     values, wheter they are read and write, etc. For classes with many
+     parameters, the table becomes long, it doesn't look good and it
+     definitely doesn't convey all the important information, like
+     available options for selectors, etc.
+   * It shows headers like 'Parameters of <ClassName>'. While this looks
+     good on IPython, it will not be rendered by Sphinx when using
+     `numpydoc`. So, I need a way to replace this header with something
+     recognizable by `numpydoc`, like 'Parameters'.
+   * By default, parameters are sorted according to their precedence in the
+     __mro__ of the class. I need them to be shown alphabetically,
+     but first showing the parameters appearing in the __init__ signature.
+   * Parameters' docstring do not entirely convey the necessary information.
+     Think for example to `param.Selector`: it won't show the available
+     options.
+
+   So, to solve all these problem I had to create a custom ParamPager.
+
+* Regarding the functions from `spb.graphics` or `spb.plot_functions`: each
+  function instantiates a particular data series. Hardcoding the documentation
+  of all parameters is tedius, error-prone and most importantly, very
+  difficult to keep it updated if/when a parameter will change value,
+  or will be removed. Thanks to these decorators, each function will
+  automatically shows parameters from the data series it is going to
+  instantiate.
+"""
+
 import inspect
 import param
 from param.ipython import ParamPager
 import re
 import textwrap
 
+try:
+    get_ipython()
+    is_ipython = True
+except:
+    is_ipython = False
+
 # ANSI color codes for the IPython pager
-red   = '\x1b[1;31m%s\x1b[0m'
-blue  = '\x1b[1;34m%s\x1b[0m'
-green = '\x1b[1;32m%s\x1b[0m'
-cyan = '\x1b[1;36m%s\x1b[0m'
+red   = '\x1b[1;31m%s\x1b[0m' if is_ipython else '%s'
+blue  = '\x1b[1;34m%s\x1b[0m' if is_ipython else '%s'
+green = '\x1b[1;32m%s\x1b[0m' if is_ipython else '%s'
+cyan = '\x1b[1;36m%s\x1b[0m' if is_ipython else '%s'
+colors = [red, blue, green, cyan]
 WARN_MISFORMATTED_DOCSTRINGS = False
+
+# while parsing the hard-coded docstring, this pattern will match lines like:
+# a : int
+# b :
+# c : bool, dict
+# d, e : float
+#
+# But not lines like:
+# :py:class:`panel.widgets.slider.RangeSlider`
+param_pattern = re.compile(r'^\s*([a-zA-Z_]\w*(?:\s*,\s*[a-zA-Z_]\w*)*)\s*:\s*([\w\s,]*)$')
+
+# NOTE: these are the numpydoc sections that I'm aware of. They will be used
+# as keys in some dictionary. 'general' is not a real section: the value
+# associated to this key will be lines of docstring starting from line 0
+# up to the first section which will be found.
+# The final docstring will be build according to the order of these keys.
+numpydoc_sections_to_look_for = [
+    "general", "Parameters", "Attributes", "Methods",
+    "Returns", "Yields", "Raises", "Warns", "Warnings",
+    "Examples", "Notes", "References", "See Also",
+]
+
+
+_PARAM_TYPE_MAP = {
+    param.String: "str",
+    param.Boolean: "bool",
+    param.Integer: "int",
+    param.Number: "float",
+    param.Tuple: "tuple",
+    param.List: "list",
+    param.Dict: "dict",
+    param.Callable: "callable",
+    param.Parameter: "",
+}
 
 
 def _validate_style(style: str):
@@ -64,10 +142,8 @@ class MyParamPager(ParamPager):
         heading_text = 'Parameters'
         heading_string = f"{heading_text}\n{'=' * len(heading_text)}"
         docstring_heading = (green % heading_string)
-        # print("1")
         docstrings = self.param_docstrings(
             param_info, max_col_len=100, only_changed=False)
-        # print("2")
         return f"\n\n{docstring_heading}\n\n{docstrings}"
 
     def param_docstrings(self, info, max_col_len=100, only_changed=False):
@@ -131,6 +207,7 @@ def _assemble_parameters_docstring(parameters: dict, style: str) -> str:
         else:
             contents.extend([blue % el for el in all_lines])
     return "\n".join(contents)
+
 
 def _get_parameters_from_object(obj) -> dict:
     """
@@ -215,12 +292,11 @@ def _sort_parameters_by_signature(params: dict, signature: list) -> dict:
     return dict(priority_params + secondary_params)
 
 
-
 def _get_parameters_dict(displayed_params: list) -> dict:
     """
     Parameters
     ==========
-    displayed_params : dict
+    displayed_params : list
         A list with the form [
             ("param_name_1", parameter_1),
             ("param_name_2", parameter_2),
@@ -251,9 +327,20 @@ def _get_parameters_dict(displayed_params: list) -> dict:
             type_ = "dict"
         elif isinstance(p, param.ClassSelector):
             classes = p.class_
-            if not hasattr(classes, "__iter__"):
+            if (
+                hasattr(classes, "__name__")
+                and (classes.__name__ in ["ndarray", "Tuple"])
+            ):
                 classes = [classes]
-            type_ = ", ".join([str(t) for t in classes])
+            elif not hasattr(classes, "__iter__"):
+                classes = [classes]
+            type_ = ", ".join([str(t.__name__) for t in classes])
+        elif isinstance(p, param.Selector):
+            available_options = list(p.objects.values())
+            types = sorted(set([type(t).__name__ for t in available_options]))
+            type_ = ", ". join(types)
+        elif type(p).__name__ == "_CastToInteger":
+            type_ = "int"
         else:
             type_ = ""
 
@@ -282,6 +369,8 @@ def _get_parameters_dict(displayed_params: list) -> dict:
                     ss = ss if ub != "∞" else "<"
                     unindented += f"\nIt must be: {lb} {fs} {name} {ss} {ub}"
                 unindented += f"\nDefault value: {p.default}"
+            elif isinstance(p, param.Boolean):
+                unindented += f"\nDefault value: {p.default}"
         except Exception as err:
             print(f"Error processing parameter '{name}':", err)
 
@@ -301,20 +390,20 @@ def _get_parameters_dict(displayed_params: list) -> dict:
     return parameters
 
 
-_PARAM_TYPE_MAP = {
-    param.String: "str",
-    param.Boolean: "bool",
-    param.Integer: "int",
-    param.Number: "float",
-    param.Tuple: "tuple",
-    param.List: "list",
-    param.Dict: "dict",
-    param.Callable: "callable",
-    param.Parameter: "",
-}
+def split_docstring(docstring: str) -> dict:
+    """
+    Split the docstring of a function or class into sections, like
+    Parameters, Returns, etc.
 
-
-def split_docstring(docstring):
+    Returns
+    =======
+    d : dict
+        A dictionary having the form {
+        "general": docstring_before_sections,
+        "Parameter": docstring_for_parameters,
+        "Returns": docstring_for_returns,
+    }
+    """
     docstring = textwrap.dedent(docstring).strip()
 
     # Regular expression to find section headers
@@ -345,7 +434,7 @@ def split_docstring(docstring):
     return sections
 
 
-def get_public_methods(cls):
+def get_public_methods(cls) -> list:
     "Return a list of public methods of the provided class."
     attributes = [
         t for t in dir(cls) if (
@@ -359,7 +448,7 @@ def get_public_methods(cls):
     return attributes
 
 
-def add_docstring_methods(docstring_sections, cls):
+def add_docstring_methods(docstring_sections: dict, cls):
     methods = get_public_methods(cls)
     all_docstrings = []
 
@@ -416,6 +505,10 @@ def extract_parameters_from_docstring(doc: str) -> dict:
     if not doc:
         return {}
 
+    # remove leading whitespaces so that lines starting with any non-whitespace
+    # characters should be lines containing the parameters name and type.
+    doc = textwrap.dedent(doc)
+
     lines = doc.splitlines()
     params = {}
     current_key = None
@@ -423,16 +516,27 @@ def extract_parameters_from_docstring(doc: str) -> dict:
     current_desc = []
 
     for line in lines:
-        # Match lines like: a : int, b :, c : bool, dict
-        match = re.match(r"^\s*(\w+\s*:\s*.*)", line)
+        # Match lines like these:
+        # a : int
+        # b :
+        # c : bool, dict
+        # d, e : float
+        match = None
+        if (len(line) > 0) and (line[0] != " "):
+            # The idea is that the match should happens on lines that do not
+            # start with an empty character. This prevent elements like
+            # this one from being matched, because documentation lines usually
+            # starts with empty characters:
+            # :py:class:`ipywidgets.widgets.widget_float.FloatSlider`
+            match = param_pattern.match(line)
         if match:
             if current_key:
                 params[current_key] = {
                     "type": key_types,
                     "doc": strip_indent(current_desc)
                 }
-            current_key = match.group(1).strip()
-            current_key, key_types = [t.strip() for t in current_key.split(":")]
+            current_key = match.group(1)
+            key_types = match.group(2)
             current_desc = []
         elif current_key:
             current_desc.append(line)
@@ -451,139 +555,243 @@ def strip_indent(lines):
     return textwrap.dedent("\n".join(lines)).rstrip()
 
 
-def extract_params_from_cls(cls):
-    if not issubclass(cls, param.Parameterized):
-        return {}
+def modify_graphics_doc(series, replace={}, exclude=[], style="numpydoc"):
+    """
+    This decorator take a function from spb.graphics module and modify
+    the docstring like so:
 
-    # for
+    1. Takes the existing docstring.
+    2. Split it into different sections, like 'Parameters', 'Examples', etc.
+    3. Take the 'series' and extract its parameters.
+    5. Merge all parameters.
+    6. Reconstruct the docstring, including all parameters.
+    """
+    def decorator(func):
+        original_docstring = func.__doc__
+        if original_docstring is None:
+            return func
 
+        # split the original docstring into sections
+        docstring_sections = split_docstring(original_docstring)
+        exclude.append("evaluator")
 
-def generate_doc_for_ordinary_functions(func_map, style="numpydoc"):
-    _validate_style(style)
-    try:
-        get_ipython()
-        # param_pager = MyParamPager(metaclass=True, style="numpydoc")
-
-        for func, objs in func_map.items():
-            original_docstring = func.__doc__
-
-            try:
-                # split the original docstring into sections
-                docstring_sections = split_docstring(original_docstring)
-                # print("len(docstring_sections)", len(docstring_sections))
-
-                # rearrange the sections and add colors to the titles
-                numpydoc_sections_to_look_for = [
-                    "general", "Parameters", "Attributes", "Methods",
-                    "Returns", "Yields", "Raises", "Warns", "Warnings",
-                    "Examples", "Notes", "References", "See Also",
-                ]
-                final_docstring = ""
-                for title in numpydoc_sections_to_look_for:
-                    # print("title", title, docstring_sections[title])
-
-                    if title != "Parameters":
-                        if title in docstring_sections:
-                            if title == "general":
-                                final_docstring += f"\n{docstring_sections[title]}"
-                            else:
-                                header = f"\n\n{green % title}"
-                                header += green % f"\n{'=' * len(title)}\n"
-                                final_docstring += header + docstring_sections[title]
+        # rearrange the sections and add colors
+        final_docstring = ""
+        for title in numpydoc_sections_to_look_for:
+            if title != "Parameters":
+                if title in docstring_sections:
+                    if title == "general":
+                        final_docstring += f"\n{docstring_sections[title]}"
                     else:
-                        params_dict_from_docstring = {}
-                        if "Parameters" in docstring_sections:
-                            params_dict_from_docstring = extract_parameters_from_docstring(
-                                docstring_sections["Parameters"])
-
-                        params = {}
-                        for obj in objs:
-                            current_params, _, _ = _get_param_info_helper(
-                                obj, include_super=True)
-                            params.update(current_params)
-
-                        displayed_params = list(params.items())
-                        params_dict_from_obj = _get_parameters_dict(
-                            displayed_params)
-
-                        dict_with_all_params = params_dict_from_obj.copy()
-                        dict_with_all_params.update(params_dict_from_docstring)
-
-                        signature = inspect.signature(func)
-                        signature = list(signature.parameters.keys())
-                        signature = [
-                            p for p in signature if p not in ["self", "kwargs"]]
-                        dict_with_all_params = _sort_parameters_by_signature(
-                            dict_with_all_params, signature)
-
-                        # print("wtf")
-                        # print(dict_with_all_params)
-                        contents = _assemble_parameters_docstring(
-                            dict_with_all_params, style)
-
                         header = f"\n\n{green % title}"
                         header += green % f"\n{'=' * len(title)}\n"
-                        final_docstring += header + contents
+                        final_docstring += header + docstring_sections[title]
+            else:
+                params_dict_from_docstring = {}
+                if "Parameters" in docstring_sections:
+                    params_dict_from_docstring = extract_parameters_from_docstring(
+                        docstring_sections["Parameters"])
 
-                func.__doc__ = final_docstring
-            except Exception as err:
-                print(f"{type(err).__name__}: {err}")
+                # extract series parameters
+                params, _, _ = _get_param_info_helper(
+                    series, include_super=True)
+                displayed_params = list(params.items())
+                params_dict_from_series = _get_parameters_dict(
+                    displayed_params)
 
-    except:
-        pass
+                # combine all parameters
+                dict_with_all_params = params_dict_from_series.copy()
+                dict_with_all_params.update(params_dict_from_docstring)
+
+                # replace existing param docstring with
+                # user-provided ones
+                for _, param_docstring in replace.items():
+                    param_dict = extract_parameters_from_docstring(
+                        param_docstring)
+                    dict_with_all_params.update(param_dict)
+
+                # remove any unwanted parameters
+                for param_name in exclude:
+                    dict_with_all_params.pop(param_name, None)
+
+                # sort the parameters according to the function signature
+                signature = inspect.signature(func)
+                signature = list(signature.parameters.keys())
+                signature = [
+                    p for p in signature if p not in ["self", "kwargs"]]
+                dict_with_all_params = _sort_parameters_by_signature(
+                    dict_with_all_params, signature)
+
+                # put together all parameters
+                contents = _assemble_parameters_docstring(
+                    dict_with_all_params, style)
+
+                header = f"\n\n{green % title}"
+                header += green % f"\n{'=' * len(title)}\n"
+                final_docstring += header + contents
+
+        func.__doc__ = final_docstring
+        return func
+    return decorator
 
 
-def generate_doc(*classes):
-    try:
-        get_ipython()
-        param_pager = MyParamPager(metaclass=True)
+def modify_plot_functions_doc(
+    series, replace={}, exclude=[], priority=[], style="numpydoc"
+):
+    """
+    This decorator take a function from spb.plot_functions module and modify
+    the docstring like so:
 
-        for cls in classes:
-            current_docstring = cls.__doc__
-            # remove param's autogenerated documentation sections in order
-            # to recover the original documentation written by the dev
-            current_docstring = current_docstring.split("\n")
-            search_for = [red, blue, green, cyan, "Parameters of"]
-            for i, line in enumerate(current_docstring):
-                if any(t in line for t in search_for):
-                    break
-            try:
-                original_docstring = "\n".join(current_docstring[:i])
-                # split the original docstring into sections
-                docstring_sections = split_docstring(original_docstring)
+    1. Takes the existing docstring.
+    2. Split it into different sections, like 'Parameters', 'Examples', etc.
+    3. Take the 'series' and extract its parameters.
+    4. Take the 'PlotAttributes' and extract its parameters.
+    5. Merge all parameters.
+    6. Reconstruct the docstring, including all parameters.
+    """
+    from spb.backends.base_backend import PlotAttributes
 
-                if not issubclass(cls, param.ParameterizedFunction):
-                    # add a section for the public methods
-                    docstring_sections = add_docstring_methods(docstring_sections, cls)
+    def decorator(func):
+        # split the original docstring into sections
+        original_docstring = func.__doc__
+        docstring_sections = split_docstring(original_docstring)
+        exclude.append("evaluator")
 
-                # I would also like to include a signature of the __init__ method
-                init_signature = f"Init signature:\n{cls.__name__}{inspect.signature(cls.__init__)}"
-                init_signature = init_signature.replace("self, ", "")
-                # rearrange the sections and add colors to the titles
-                numpydoc_sections_to_look_for = [
-                    "general", "Parameters", "Attributes", "Methods",
-                    "Returns", "Yields", "Raises", "Warns", "Warnings",
-                    "Examples", "Notes", "References", "See Also",
-                ]
-                final_docstring = ""
-                # print("a")
-                for title in numpydoc_sections_to_look_for:
-                    if title != "Parameters":
-                        if title in docstring_sections:
-                            if title == "general":
-                                final_docstring += f"\n{docstring_sections[title]}"
-                                # final_docstring += f"\n\n{init_signature}"
-                            else:
-                                header = f"\n\n{green % title}"
-                                header += green % f"\n{'=' * len(title)}\n"
-                                final_docstring += header + docstring_sections[title]
+        final_docstring = ""
+        for title in numpydoc_sections_to_look_for:
+            if title != "Parameters":
+                if title in docstring_sections:
+                    if title == "general":
+                        final_docstring += f"\n{docstring_sections[title]}"
                     else:
-                        final_docstring += f"\n{param_pager(cls)}"
-                # print("b")
-                cls.__doc__ = final_docstring
-                # print(final_docstring)
-            except Exception as err:
-                print(f"{type(err).__name__}: {err}")
+                        header = f"\n\n{green % title}"
+                        header += green % f"\n{'=' * len(title)}\n"
+                        final_docstring += header + docstring_sections[title]
+            else:
+                # extract any paramater documented in the func docstring
+                params_dict_from_docstring = {}
+                if "Parameters" in docstring_sections:
+                    params_dict_from_docstring = extract_parameters_from_docstring(
+                        docstring_sections["Parameters"])
 
-    except:
-        pass
+                # extract parameters from the series
+                series_docstring = series.__doc__
+                if series_docstring is None:
+                    series_docstring = ""
+                for col in colors:
+                    # remove any color inserted by the pager.
+                    # if not done, the `split_docstring` command would
+                    # not work.
+                    first, second = col.split("%s")
+                    series_docstring = series_docstring.replace(
+                        first, "").replace(second, "")
+                series_docstring_sections = split_docstring(series_docstring)
+                params_dict_from_series = {}
+                if "Parameters" in series_docstring_sections:
+                    params_dict_from_series = extract_parameters_from_docstring(
+                        series_docstring_sections["Parameters"])
+
+                # add `graphics` parameters
+                params_graphics, _, _ = _get_param_info_helper(
+                        PlotAttributes, include_super=True)
+                displayed_params = list(params_graphics.items())
+                params_dict_from_graphics = _get_parameters_dict(
+                    displayed_params)
+
+                dict_with_all_params = params_dict_from_series.copy()
+                dict_with_all_params.update(params_dict_from_graphics)
+                dict_with_all_params.update(params_dict_from_docstring)
+
+                # replace existing param docstring with
+                # user-provided ones
+                for _, param_docstring in replace.items():
+                    param_dict = extract_parameters_from_docstring(
+                        param_docstring)
+                    dict_with_all_params.update(param_dict)
+
+                # remove any unwanted parameters
+                for param_name in exclude:
+                    dict_with_all_params.pop(param_name, None)
+
+                # sort params accordingly to the series.__init__ method
+                init_signature = list(
+                    inspect.signature(series.__init__).parameters.keys())
+                init_signature = [
+                    p for p in init_signature if p not in ["self", "kwargs"]]
+                init_signature = priority + init_signature
+                dict_with_all_params = _sort_parameters_by_signature(
+                    dict_with_all_params, init_signature)
+
+                contents = _assemble_parameters_docstring(
+                    dict_with_all_params, style)
+
+                header = f"\n\n{green % title}"
+                header += green % f"\n{'=' * len(title)}\n"
+                final_docstring += header + contents
+
+        func.__doc__ = final_docstring
+        return func
+    return decorator
+
+
+def modify_parameterized_doc(style="numpydoc"):
+    """
+    This decorator take a subclass of param.Parameterized and modify the
+    auto-generated docstring like so:
+
+    1. remove the summary table listing all parameters, their default
+       values, if they are read/write, etc.
+    2. loop over its parameters and sort them alphabetically, but first
+       lists the mandatory parameters defined in the __init__ signature.
+       Selectors will show all the available options. Selectors, numbers,
+       booleans will also show the default value.
+    3. implement two styles:
+
+       * 'param': default from the param module.
+       * 'numpydoc': what I'd like to be shown.
+    """
+    def decorator(cls):
+        param_pager = MyParamPager(metaclass=True, style=style)
+
+        current_docstring = cls.__doc__
+        if current_docstring is None:
+            return cls
+
+        # remove param's autogenerated documentation sections in order
+        # to recover the original documentation written by the dev
+        current_docstring = current_docstring.split("\n")
+        search_for = [red, blue, green, cyan, "Parameters of"]
+        for i, line in enumerate(current_docstring):
+            if any(t in line for t in search_for):
+                break
+
+        try:
+            original_docstring = "\n".join(current_docstring[:i])
+            # split the original docstring into sections
+            docstring_sections = split_docstring(original_docstring)
+
+            if not issubclass(cls, param.ParameterizedFunction):
+                # add a section for the public methods
+                docstring_sections = add_docstring_methods(docstring_sections, cls)
+
+            # rearrange the sections and add colors to the titles
+            final_docstring = ""
+            for title in numpydoc_sections_to_look_for:
+                if title != "Parameters":
+                    if title in docstring_sections:
+                        if title == "general":
+                            final_docstring += f"\n{docstring_sections[title]}"
+                        else:
+                            header = f"\n\n{green % title}"
+                            header += green % f"\n{'=' * len(title)}\n"
+                            final_docstring += header + docstring_sections[title]
+                else:
+                    final_docstring += f"\n{param_pager(cls)}"
+
+            cls.__doc__ = final_docstring
+        except Exception as err:
+            print(f"{type(err).__name__}: {err}")
+
+        return cls
+
+    return decorator

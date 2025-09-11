@@ -1,4 +1,12 @@
 from spb.defaults import TWO_D_B
+from spb.doc_utils.docstrings import (
+    _SYSTEM,
+    _PARAMS,
+    _CONTROL_KW_IMPULSE,
+    _CONTROL_KW_STEP,
+    _CONTROL_KW_RAMP
+)
+from spb.doc_utils.ipython import modify_graphics_doc
 from spb.series import (
     PoleZeroWithSympySeries, LineOver1DRangeSeries, HVLineSeries,
     NyquistLineSeries,
@@ -46,6 +54,9 @@ __all__ = [
     'ngrid',
     'mcircles'
 ]
+
+
+_replace_params_docstring = {"system": _SYSTEM, "params": _PARAMS}
 
 
 def _check_if_control_is_installed(use_control=None, force_stop=False):
@@ -107,57 +118,9 @@ def _preprocess_system(system, **kwargs):
     if isinstance(system, tuple(allowed_types)):
         return system
 
-    # if isinstance(system, (
-    #     ct.TransferFunction,
-    #     sp.signal.TransferFunction,
-    #     sm.control.lti.TransferFunction,
-    #     sm.control.lti.TransferFunctionMatrix
-    # )):
-    #     return system
-
     params = kwargs.get("params", {})
     system = tf_to_sympy(system, params=params)
-    # fs = system.free_symbols
-    # if len(fs) > 1:
-    #     raise ValueError(f"Too many free symbols: {fs}")
-    # elif len(fs) == 0:
-    #     raise ValueError(
-    #         "An expression with one free symbol is required.")
-
     return system
-
-    # if isinstance(system, (list, tuple)):
-    #     if len(system) == 2:
-    #         if all(isinstance(e, Expr) for e in system):
-    #             num, den = system
-    #             fs = Tuple(num, den).free_symbols.pop()
-    #             return sm.control.lti.TransferFunction(num, den, fs)
-    #         else:
-    #             num, den = system
-    #             num = [float(t) for t in num]
-    #             den = [float(t) for t in den]
-    #             return ct.tf(num, den)
-    #     elif len(system) == 3:
-    #         num, den, fs = system
-    #         return sm.control.lti.TransferFunction(num, den, fs)
-    #     else:
-    #         raise ValueError(
-    #             "If a tuple/list is provided, it must have "
-    #             "two or three elements: (num, den, free_symbol [opt]). "
-    #             f"Received len(system) = {len(system)}"
-    #         )
-
-    # if isinstance(system, Expr):
-    #     params = kwargs.get("params", dict())
-    #     fs = system.free_symbols.difference(params.keys())
-    #     if len(fs) > 1:
-    #         raise ValueError(f"Too many free symbols: {fs}")
-    #     elif len(fs) == 0:
-    #         raise ValueError(
-    #             "An expression with one free symbol is required.")
-    #     return sm.control.lti.TransferFunction.from_rational_expression(system, fs.pop())
-
-    # raise TypeError(f"type(system) = {type(system)} not recognized.")
 
 
 def _check_system(system, bypass_delay_check=False):
@@ -336,6 +299,7 @@ def _pole_zero_common_keyword_arguments(kwargs):
     return p_rendering_kw, z_rendering_kw, p_label, z_label
 
 
+@modify_graphics_doc(PoleZeroSeries, replace=_replace_params_docstring)
 def pole_zero(
     system, pole_markersize=10, zero_markersize=7, show_axes=False,
     label=None, sgrid=False, zgrid=False, control=True,
@@ -352,38 +316,6 @@ def pole_zero(
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the pole-zero plot is to be computed.
-        It can be:
-
-        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
-          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
-        * an instance of :py:class:`control.TransferFunction`
-        * an instance of :py:class:`scipy.signal.TransferFunction`
-        * a symbolic expression in rational form, which will be converted to
-          an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        * a tuple of two or three elements: ``(num, den, generator [opt])``,
-          which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-    pole_color : str, tuple, optional
-        The color of the pole points on the plot.
-    pole_markersize : Number, optional
-        The size of the markers used to mark the poles in the plot.
-        Default pole markersize is 10.
-    zero_color : str, tuple, optional
-        The color of the zero points on the plot.
-    zero_markersize : Number, optional
-        The size of the markers used to mark the zeros in the plot.
-        Default zero markersize is 7.
-    z_rendering_kw : dict
-        A dictionary of keyword arguments to further customize the appearance
-        of zeros.
-    p_rendering_kw : dict
-        A dictionary of keyword arguments to further customize the appearance
-        of poles.
-    label : str, optional
-        The label to be shown on the legend.
     sgrid : bool, optional
         Generates a grid of constant damping ratios and natural frequencies
         on the s-plane. Default to False.
@@ -401,9 +333,6 @@ def pole_zero(
     output : int, optional
         Only compute the poles/zeros for the listed output.
         If not specified, all outputs are reported.
-    **kwargs :
-        See ``plot`` for a list of keyword arguments to further customize
-        the resulting figure.
 
     Returns
     =======
@@ -621,6 +550,11 @@ def _check_lower_limit_and_control(lower_limit, control):
         )
 
 
+@modify_graphics_doc(
+    SystemResponseSeries,
+    replace={"system": _SYSTEM, "params": _PARAMS, "control_kw": _CONTROL_KW_STEP},
+    exclude=["range_t", "response_type"]
+)
 def step_response(
     system, lower_limit=None, upper_limit=None, prec=8,
     label=None, rendering_kw=None, control=True,
@@ -633,20 +567,6 @@ def step_response(
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the step response plot is to be computed.
-        It can be:
-
-        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
-          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
-        * an instance of :py:class:`control.TransferFunction`
-        * an instance of :py:class:`scipy.signal.TransferFunction`
-        * a symbolic expression in rational form, which will be converted to
-          an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        * a tuple of two or three elements: ``(num, den, generator [opt])``,
-          which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
     lower_limit : Number or None, optional
         The lower time limit of the plot range. Defaults to 0. If a different
         value  is to be used, also set ``control=False`` (see examples in
@@ -658,39 +578,11 @@ def step_response(
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
-    label : str, optional
-        The label to be shown on the legend.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
     control : bool, optional
         If True, computes the step response with the ``control``
         module, which uses numerical integration. If False, computes the
         step response with ``sympy``, which uses the inverse Laplace transform.
         Default to True.
-    control_kw : dict, optional
-        A dictionary of keyword arguments passed to
-        :py:func:`control.step_response`
     input : int, optional
         Only compute the step response for the listed input.  If not
         specified, the step responses for each independent input are
@@ -698,10 +590,6 @@ def step_response(
     output : int, optional
         Only compute the step response for the listed output. If not
         specified, all outputs are reported.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_2d.line`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -879,6 +767,11 @@ def _impulse_response_with_control_helper(
     )
 
 
+@modify_graphics_doc(
+    SystemResponseSeries,
+    replace={"system": _SYSTEM, "params": _PARAMS, "control_kw": _CONTROL_KW_IMPULSE},
+    exclude=["range_t", "response_type"]
+)
 def impulse_response(
     system, prec=8, lower_limit=None, upper_limit=None,
     label=None, rendering_kw=None, control=True,
@@ -891,64 +784,14 @@ def impulse_response(
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the impulse response plot is to be computed.
-        It can be:
-
-        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
-          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
-        * an instance of :py:class:`control.TransferFunction`
-        * an instance of :py:class:`scipy.signal.TransferFunction`
-        * a symbolic expression in rational form, which will be converted to
-          an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        * a tuple of two or three elements: ``(num, den, generator [opt])``,
-          which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-    lower_limit : Number or None, optional
-        The lower time limit of the plot range. Defaults to 0. If a different
-        value  is to be used, also set ``control=False`` (see examples in
-        order to understand why).
-    upper_limit : Number or None, optional
-        The upper time limit of the plot range. If not provided, an
-        appropriate value will be computed. If a interactive widget plot is
-        being created, it defaults to 10.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
-    label : str, optional
-        The label to be shown on the legend.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
     control : bool, optional
         If True, computes the impulse response with the ``control``
         module, which uses numerical integration. If False, computes the
         impulse response with ``sympy``, which uses the inverse Laplace
         transform. Default to True.
-    control_kw : dict, optional
-        A dictionary of keyword arguments passed to
-        :py:func:`control.impulse_response`
     input : int, optional
         Only compute the impulse response for the listed input.  If not
         specified, the impulse responses for each independent input are
@@ -956,10 +799,6 @@ def impulse_response(
     output : int, optional
         Only compute the impulse response for the listed output. If not
         specified, all outputs are reported.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_2d.line`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -1144,6 +983,11 @@ def _ramp_response_with_control_helper(
     )
 
 
+@modify_graphics_doc(
+    SystemResponseSeries,
+    replace={"system": _SYSTEM, "params": _PARAMS, "control_kw": _CONTROL_KW_RAMP},
+    exclude=["range_t", "response_type"]
+)
 def ramp_response(
     system, prec=8, slope=1, lower_limit=None, upper_limit=None,
     label=None, rendering_kw=None, control=True,
@@ -1159,20 +1003,6 @@ def ramp_response(
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the ramp response plot is to be computed.
-        It can be:
-
-        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
-          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
-        * an instance of :py:class:`control.TransferFunction`
-        * an instance of :py:class:`scipy.signal.TransferFunction`
-        * a symbolic expression in rational form, which will be converted to
-          an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        * a tuple of two or three elements: ``(num, den, generator [opt])``,
-          which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
     prec : int, optional
         The decimal point precision for the point coordinate values.
         Defaults to 8.
@@ -1186,39 +1016,11 @@ def ramp_response(
         The upper time limit of the plot range. If not provided, an
         appropriate value will be computed. If a interactive widget plot is
         being created, it defaults to 10.
-    label : str, optional
-        The label to be shown on the legend.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
     control : bool, optional
         If True, computes the ramp response with the ``control``
         module, which uses numerical integration. If False, computes the
         ramp response with ``sympy``, which uses the inverse Laplace transform.
         Default to True.
-    control_kw : dict, optional
-        A dictionary of keyword arguments passed to
-        :py:func:`control.forced_response`
     input : int, optional
         Only compute the ramp response for the listed input.  If not
         specified, the ramp responses for each independent input are
@@ -1226,10 +1028,6 @@ def ramp_response(
     output : int, optional
         Only compute the ramp response for the listed output. If not
         specified, all outputs are reported.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_2d.line`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -1445,6 +1243,7 @@ def _bode_magnitude_helper(
         mag, _range, label, xscale='log', **kwargs)
 
 
+@modify_graphics_doc(LineOver1DRangeSeries, replace=_replace_params_docstring)
 def bode_magnitude(
     system, initial_exp=None, final_exp=None, freq_unit='rad/sec',
     phase_unit='rad', label=None, rendering_kw=None,
@@ -1456,57 +1255,15 @@ def bode_magnitude(
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the step response plot is to be computed.
-        It can be:
-
-        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
-          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
-        * an instance of :py:class:`control.TransferFunction`
-        * an instance of :py:class:`scipy.signal.TransferFunction`
-        * a symbolic expression in rational form, which will be converted to
-          an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        * a tuple of two or three elements: ``(num, den, generator [opt])``,
-          which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
     initial_exp : Number, optional
         The initial exponent of 10 of the semilog plot. Default to None, which
         will autocompute the appropriate value.
     final_exp : Number, optional
         The final exponent of 10 of the semilog plot. Default to None, which
         will autocompute the appropriate value.
-    prec : int, optional
-        The decimal point precision for the point coordinate values.
-        Defaults to 8.
     freq_unit : string, optional
         User can choose between ``'rad/sec'`` (radians/second) and ``'Hz'``
         (Hertz) as frequency units.
-    label : str, optional
-        The label to be shown on the legend.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
     input : int, optional
         Only compute the poles/zeros for the listed input. If not specified,
         the poles/zeros for each independent input are computed (as
@@ -1514,10 +1271,6 @@ def bode_magnitude(
     output : int, optional
         Only compute the poles/zeros for the listed output.
         If not specified, all outputs are reported.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_2d.line`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -1636,6 +1389,7 @@ def _bode_phase_helper(
         phase, _range, label, xscale='log', unwrap=unwrap, **kwargs)
 
 
+@modify_graphics_doc(LineOver1DRangeSeries, replace=_replace_params_docstring)
 def bode_phase(
     system, initial_exp=None, final_exp=None, freq_unit='rad/sec',
     phase_unit='rad', label=None, rendering_kw=None, unwrap=True,
@@ -1647,65 +1401,18 @@ def bode_phase(
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the step response plot is to be computed.
-        It can be:
-
-        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
-          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
-        * an instance of :py:class:`control.TransferFunction`
-        * an instance of :py:class:`scipy.signal.TransferFunction`
-        * a symbolic expression in rational form, which will be converted to
-          an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        * a tuple of two or three elements: ``(num, den, generator [opt])``,
-          which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
     initial_exp : Number, optional
         The initial exponent of 10 of the semilog plot. Default to None, which
         will autocompute the appropriate value.
     final_exp : Number, optional
         The final exponent of 10 of the semilog plot. Default to None, which
         will autocompute the appropriate value.
-    prec : int, optional
-        The decimal point precision for the point coordinate values.
-        Defaults to 8.
     freq_unit : string, optional
         User can choose between ``'rad/sec'`` (radians/second) and ``'Hz'``
         (Hertz) as frequency units.
     phase_unit : string, optional
         User can choose between ``'rad'`` (radians) and ``'deg'`` (degree)
         as phase units.
-    unwrap : bool, optional
-        Depending on the transfer function, the computed phase could contain
-        discontinuities of 2*pi. ``unwrap=True`` post-process the numerical
-        data in order to get a continuous phase.
-        Default to True.
-    label : str, optional
-        The label to be shown on the legend.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
     input : int, optional
         Only compute the poles/zeros for the listed input. If not specified,
         the poles/zeros for each independent input are computed (as
@@ -1713,10 +1420,6 @@ def bode_phase(
     output : int, optional
         Only compute the poles/zeros for the listed output.
         If not specified, all outputs are reported.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_2d.line`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -1855,9 +1558,11 @@ def _compute_range_helper(system, **kwargs):
     return _range, omega_limits
 
 
+@modify_graphics_doc(NyquistLineSeries, replace=_replace_params_docstring)
 def nyquist(system, omega_limits=None, input=None, output=None,
     label=None, rendering_kw=None, m_circles=False, **kwargs):
-    """Plots a Nyquist plot for the system over a (optional) frequency range.
+    """
+    Plots a Nyquist plot for the system over a (optional) frequency range.
     The curve is computed by evaluating the Nyquist segment along the positive
     imaginary axis, with a mirror image generated to reflect the negative
     imaginary axis. Poles on or near the imaginary axis are avoided using a
@@ -1868,64 +1573,12 @@ def nyquist(system, omega_limits=None, input=None, output=None,
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the step response plot is to be computed.
-        It can be:
-
-        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
-          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
-        * an instance of :py:class:`control.TransferFunction`
-        * an instance of :py:class:`scipy.signal.TransferFunction`
-        * a symbolic expression in rational form, which will be converted to
-          an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        * a tuple of two or three elements: ``(num, den, generator [opt])``,
-          which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-    label : str, optional
-        The label to be shown on the legend.
-    arrows : int or 1D/2D array of floats, optional
-        Specify the number of arrows to plot on the Nyquist curve.  If an
-        integer is passed, that number of equally spaced arrows will be
-        plotted on each of the primary segment and the mirror image.  If a 1D
-        array is passed, it should consist of a sorted list of floats between
-        0 and 1, indicating the location along the curve to plot an arrow.
-    max_curve_magnitude : float, optional
-        Restrict the maximum magnitude of the Nyquist plot to this value.
-        Portions of the Nyquist plot whose magnitude is restricted are
-        plotted using a different line style.
-    max_curve_offset : float, optional
-        When plotting scaled portion of the Nyquist plot, increase/decrease
-        the magnitude by this fraction of the max_curve_magnitude to allow
-        any overlaps between the primary and mirror curves to be avoided.
-    mirror_style : [str, str] or [dict, dict] or dict or False, optional
-        Linestyles for mirror image of the Nyquist curve. If a list is given,
-        the first element is used for unscaled portions of the Nyquist curve,
-        the second element is used for portions that are scaled
-        (using max_curve_magnitude). `dict` is a dictionary of keyword
-        arguments to be passed to the plotting function, for example to
-        `plt.plot`. If `False` then omit completely.
-        Default linestyle is `['--', ':']`.
     m_circles : bool or float or iterable, optional
         Turn on/off M-circles, which are circles of constant closed loop
         magnitude. If float or iterable (of floats), represents specific
         magnitudes in dB.
-    primary_style : [str, str] or [dict, dict] or dict, optional
-        Linestyles for primary image of the Nyquist curve. If a list is given,
-        the first element is used for unscaled portions of the Nyquist curve,
-        the second element is used for portions that are scaled
-        (using max_curve_magnitude). `dict` is a dictionary of keyword
-        arguments to be passed to the plotting function, for example to
-        Matplotlib's `plt.plot`. Default linestyle is `['-', '-.']`.
     omega_limits : array_like of two values, optional
         Limits to the range of frequencies.
-    start_marker : str or dict, optional
-        Marker to use to mark the starting point of the Nyquist plot. If
-        `dict` is provided, it must containts keyword arguments to be passed
-        to the plot function, for example to Matplotlib's `plt.plot`.
-    control_kw : dict, optional
-        A dictionary of keyword arguments passed to
-        :py:func:`control.nyquist_response`
 
     Returns
     =======
@@ -2082,64 +1735,19 @@ def _nichols_helper(system, label, **kwargs):
         system, _range, label, **kwargs)
 
 
+@modify_graphics_doc(NicholsLineSeries, replace=_replace_params_docstring, exclude=["range_omega"])
 def nichols(system, label=None, rendering_kw=None, ngrid=True, arrows=True,
     input=None, output=None, **kwargs):
-    """Nichols plot for a system over a (optional) frequency range.
+    """
+    Nichols plot for a system over a (optional) frequency range.
 
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the pole-zero plot is to be computed.
-        It can be:
-
-        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
-          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
-        * an instance of :py:class:`control.TransferFunction`
-        * an instance of :py:class:`scipy.signal.TransferFunction`
-        * a symbolic expression in rational form, which will be converted to
-          an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        * a tuple of two or three elements: ``(num, den, generator [opt])``,
-          which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-    arrows : bol, int or 1D array of floats, optional
-        Specify the number of arrows to plot on the Nichols curve.  If an
-        integer is passed, that number of equally spaced arrows will be
-        plotted on each of the primary segment and the mirror image.  If a 1D
-        array is passed, it should consist of a sorted list of floats between
-        0 and 1, indicating the location along the curve to plot an arrow.
-        If True, a default number of arrows is shown. If False, no arrows
-        are shown.
     ngrid : bool, optional
         Turn on/off the [Nichols]_ grid lines.
     omega_limits : array_like of two values, optional
         Limits to the range of frequencies.
-    label : str, optional
-        The label to be shown on the legend.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
     input : int, optional
         Only compute the poles/zeros for the listed input. If not specified,
         the poles/zeros for each independent input are computed (as
@@ -2147,10 +1755,6 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True, arrows=True,
     output : int, optional
         Only compute the poles/zeros for the listed output.
         If not specified, all outputs are reported.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_2d.line_parametric_2d`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -2246,55 +1850,15 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True, arrows=True,
     return grid + series
 
 
+@modify_graphics_doc(RootLocusSeries, replace=_replace_params_docstring)
 def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     sgrid=True, zgrid=False, input=None, output=None, **kwargs):
-    """Root Locus plot for a system.
+    """
+    Root Locus plot for a system.
 
     Parameters
     ==========
 
-    system : LTI system type
-        The system for which the pole-zero plot is to be computed.
-        It can be:
-
-        * an instance of :py:class:`sympy.physics.control.lti.TransferFunction`
-          or :py:class:`sympy.physics.control.lti.TransferFunctionMatrix`
-        * an instance of :py:class:`control.TransferFunction`
-        * an instance of :py:class:`scipy.signal.TransferFunction`
-        * a symbolic expression in rational form, which will be converted to
-          an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-        * a tuple of two or three elements: ``(num, den, generator [opt])``,
-          which will be converted to an object of type
-          :py:class:`sympy.physics.control.lti.TransferFunction`.
-    label : str, optional
-        The label to be shown on the legend.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
-    control_kw : dict
-        A dictionary of keyword arguments to be passed to
-        :py:func:`control.root_locus_map`.
     sgrid : bool, optional
         Generates a grid of constant damping ratios and natural frequencies
         on the s-plane. Default to True.
@@ -2309,10 +1873,6 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     output : int, optional
         Only compute the poles/zeros for the listed output.
         If not specified, all outputs are reported.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_2d.line`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -2394,57 +1954,11 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     return grid + series
 
 
+@modify_graphics_doc(SGridLineSeries, replace={"params": _PARAMS})
 def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
     show_control_axis=True, rendering_kw=None, auto=False, **kwargs):
-    """Create the s-grid of constant damping ratios and natural frequencies.
-
-    Parameters
-    ==========
-
-    xi : iterable or float, optional
-        Damping ratios. Must be ``0 <= xi <= 1``.
-        If ``None``, default damping ratios will be used. If ``False``,
-        no damping ratios will be visualized.
-    wn : iterable or float, optional
-        Natural frequencies.
-        If ``None``, default natural frequencies will be used. If ``False``,
-        no natural frequencies will be visualized.
-    tp : iterable or float, optional
-        Peak times.
-    ts : iterable or float, optional
-        Settling times.
-    auto : bool, optional
-        If True, automatically compute damping ratio and natural frequencies
-        in order to obtain a "evenly" distributed grid.
-    show_control_axis : bool, optional
-        Shows an horizontal and vertical grid lines crossing at the origin.
-        Default to True.
-    xlim, ylim : 2-elements tuple
-        If provided, compute damping ratios and natural frequencies in order
-        to display "evenly" distributed grid lines on the plane.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
+    """
+    Create the s-grid of constant damping ratios and natural frequencies.
 
     Examples
     ========
@@ -2579,53 +2093,11 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
 sgrid_function = sgrid
 
 
+@modify_graphics_doc(ZGridLineSeries, replace={"params": _PARAMS})
 def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
     show_control_axis=True, rendering_kw=None, **kwargs):
-    """Create the s-grid of constant damping ratios and natural frequencies.
-
-    Parameters
-    ==========
-
-    xi : iterable or float, optional
-        Damping ratios. Must be ``0 <= xi <= 1``.
-        If ``None``, default damping ratios will be used. If ``False``,
-        no damping ratios will be visualized.
-    wn : iterable or float, optional
-        Normalized natural frequencies.
-        If ``None``, default natural frequencies will be used. If ``False``,
-        no natural frequencies will be visualized.
-    tp : iterable or float, optional
-        Normalized peak times.
-    ts : iterable or float, optional
-        Normalized settling times.
-    T : float or None, optional
-        Sampling period.
-    show_control_axis : bool, optional
-        Shows an horizontal and vertical grid lines crossing at the origin.
-        Default to True.
-    rendering_kw : dict, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
+    """
+    Create the s-grid of constant damping ratios and natural frequencies.
 
     Examples
     ========
@@ -2738,11 +2210,13 @@ def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
 zgrid_function = zgrid
 
 
+@modify_graphics_doc(NGridLineSeries)
 def ngrid(
     cl_mags=None, cl_phases=None, label_cl_phases=False,
     rendering_kw=None, **kwargs
 ):
-    """Create the n-grid (Nichols grid) of constant closed-loop magnitudes
+    """
+    Create the n-grid (Nichols grid) of constant closed-loop magnitudes
     and phases.
 
     Parameters
@@ -2755,31 +2229,6 @@ def ngrid(
         Array of closed-loop phases defining the iso-phase lines.
         Must be in the range -360 < cl_phases < 0.
         If False, hide closed-loop phase lines.
-    label_cl_phases: bool, optional
-        If True, closed-loop phase lines will be labelled. Default to False.
-    rendering_kw : dict or None, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
 
     Returns
     =======
@@ -2846,41 +2295,18 @@ def ngrid(
 ngrid_function = ngrid
 
 
+@modify_graphics_doc(MCirclesSeries, replace={"params": _PARAMS})
 def mcircles(
     magnitudes_db=None, rendering_kw=None, show_minus_one=True, **kwargs
 ):
-    """Draw M-circles of constant closed-loop magnitude.
+    """
+    Draw M-circles of constant closed-loop magnitude.
 
     Parameters
     ==========
     magnitudes_db : float, iterable or None
         Specify the magnitudes in dB.
         If None, a list of default magnitudes will be used.
-    rendering_kw : dict or None, optional
-        A dictionary of keyword arguments to be passed to the renderers
-        in order to further customize the appearance of the line.
-        Here are some useful links for the supported plotting libraries:
-
-        * Matplotlib:
-
-          - for solid lines:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-          - for colormap-based lines:
-            https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-          - for scatters:
-            https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-
-        * Bokeh:
-
-          - for solid lines:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting.html#bokeh.plotting.Figure.line
-          - for scatter:
-            https://docs.bokeh.org/en/latest/docs/reference/plotting/figure.html#bokeh.plotting.Figure.scatter
-
-        * Plotly:
-          https://plotly.com/python/line-and-scatter/
-    show_minus_one : bool
-        Show a marker at (x, y) = (-1, 0).
 
     Returns
     =======
@@ -2930,7 +2356,9 @@ def mcircles(
             rendering_kw=rendering_kw, show_minus_one=show_minus_one, **kwargs)
     ]
 
+
 mcircles_func = mcircles
+
 
 def _default_frequency_exponent_range(
     syslist, Hz=None, feature_periphery_decades=None

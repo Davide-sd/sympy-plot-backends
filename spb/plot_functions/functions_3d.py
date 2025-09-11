@@ -16,10 +16,16 @@ Simplicity of code takes much greater importance than performance. Don't use
 it if you care at all about performance.
 """
 
+from spb.doc_utils.docstrings import _PARAMS, _LABEL_PF
+from spb.doc_utils.ipython import modify_plot_functions_doc
 from spb.graphics import (
     graphics, line_parametric_3d,
     surface_parametric, surface_revolution, surface_spherical,
     implicit_3d, list_3d
+)
+from spb.series import (
+    SurfaceOver2DRangeSeries, Parametric3DLineSeries, ParametricSurfaceSeries,
+    List3DSeries, Implicit3DSeries
 )
 from spb.utils import (
     _plot_sympify, _check_arguments
@@ -29,6 +35,10 @@ from spb.plot_functions.functions_2d import (
 )
 
 
+_repl = {"params": _PARAMS, "label": _LABEL_PF}
+
+
+@modify_plot_functions_doc(Parametric3DLineSeries, replace=_repl)
 def plot3d_parametric_line(*args, **kwargs):
     """
     Plots a 3D parametric line plot.
@@ -64,13 +74,6 @@ def plot3d_parametric_line(*args, **kwargs):
             (expr_x1, expr_y1, expr_z1, range1, label1, rendering_kw1),
             (expr_x2, expr_y2, expr_z2, range2, label1, rendering_kw2),
             ..., **kwargs)
-
-    Refer to :func:`~spb.graphics.functions_3d.line_parametric_3d` for a full
-    list of keyword arguments to customize the appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
 
     Examples
     ========
@@ -207,6 +210,7 @@ def plot3d_parametric_line(*args, **kwargs):
     return graphics(*lines, **kwargs)
 
 
+@modify_plot_functions_doc(SurfaceOver2DRangeSeries, replace=_repl)
 def plot3d(*args, **kwargs):
     """
     Plots a 3D surface plot.
@@ -237,28 +241,6 @@ def plot3d(*args, **kwargs):
 
     Note: it is important to specify at least the ``range_x``, otherwise the
     function might create a rotated plot.
-
-    Refer to :func:`~spb.graphics.functions_3d.surface` for a full
-    list of keyword arguments to customize the appearances of surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
-    Parameters
-    ==========
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the plotting
-        library (backend) manual for more informations. If a list of
-        dictionaries is provided, the number of dictionaries must be equal
-        to the number of expressions.
 
     Examples
     ========
@@ -405,6 +387,7 @@ def plot3d(*args, **kwargs):
     return _plot3d_plot_contour_helper(True, *args, **kwargs)
 
 
+@modify_plot_functions_doc(ParametricSurfaceSeries, replace=_repl)
 def plot3d_parametric_surface(*args, **kwargs):
     """
     Plots a 3D parametric surface plot.
@@ -437,28 +420,6 @@ def plot3d_parametric_surface(*args, **kwargs):
                 label2 [opt], rendering_kw2 [opt]), **kwargs)`
 
     Note: it is important to specify both the ranges.
-
-    Refer to :func:`~spb.graphics.functions_3d.surface_parametric` for a full
-    list of keyword arguments to customize the appearances of surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
-    Parameters
-    ==========
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the plotting
-        library (backend) manual for more informations. If a list of
-        dictionaries is provided, the number of dictionaries must be equal
-        to the number of expressions.
 
     Examples
     ========
@@ -628,6 +589,12 @@ def plot3d_parametric_surface(*args, **kwargs):
     return graphics(*surfaces, **kwargs)
 
 
+@modify_plot_functions_doc(
+    ParametricSurfaceSeries,
+    replace=_repl,
+    exclude=["expr_x", "expr_y", "expr_z", "range_u", "range_v"],
+    priority=["r", "range_theta", "range_phi"]
+)
 def plot3d_spherical(*args, **kwargs):
     """
     Plots a radius as a function of the spherical coordinates theta and phi.
@@ -658,27 +625,26 @@ def plot3d_spherical(*args, **kwargs):
 
     Note: it is important to specify both the ranges.
 
-    Refer to :func:`~spb.graphics.functions_3d.surface_spherical` for a full
-    list of keyword arguments to customize the appearances of surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
     Parameters
     ==========
 
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
+    r : Expr or callable
+        Expression representing the radius. It can be a:
 
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the plotting
-        library (backend) manual for more informations. If a list of
-        dictionaries is provided, the number of dictionaries must be equal
-        to the number of expressions.
+        * Symbolic expression.
+        * Numerical function of two variable, f(theta, phi), supporting
+          vectorization. In this case the following keyword arguments are
+          not supported: ``params``.
+    range_theta : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the polar angle,
+        which is limited in [0, pi]. Consider a sphere:
+
+        * ``theta=0`` indicates the north pole.
+        * ``theta=pi/2`` indicates the equator.
+        * ``theta=pi`` indicates the south pole.
+    range_phi : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the azimuthal angle,
+        which is limited in [0, 2*pi].
 
     Examples
     ========
@@ -782,6 +748,7 @@ def plot3d_spherical(*args, **kwargs):
     return graphics(*surfaces, **kwargs)
 
 
+@modify_plot_functions_doc(Implicit3DSeries, replace=_repl)
 def plot3d_implicit(*args, **kwargs):
     """
     Plots an isosurface of a function.
@@ -812,13 +779,6 @@ def plot3d_implicit(*args, **kwargs):
             (expr1, range_x1, range_y1, range_z1, rendering_kw1 [opt]),
             (expr2, range_x2, range_y2, range_z2, rendering_kw2 [opt]),
             **kwargs)`
-
-    Refer to :func:`~spb.graphics.functions_3d.implicit_3d` for a full
-    list of keyword arguments to customize the appearances of surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
 
     Notes
     =====
@@ -894,11 +854,20 @@ def plot3d_implicit(*args, **kwargs):
     return graphics(*surfaces, **kwargs)
 
 
+@modify_plot_functions_doc(
+    ParametricSurfaceSeries,
+    replace=_repl,
+    exclude=["expr_x", "expr_y", "expr_z", "range_u", "range_v"],
+    priority=[
+        "curve", "range_t", "range_phi", "axis", "parallel_axis", "show_curve"
+    ]
+)
 def plot3d_revolution(
     curve, range_t, range_phi=None, axis=(0, 0),
     parallel_axis="z", show_curve=False, curve_kw={}, **kwargs
 ):
-    """Generate a surface of revolution by rotating a curve around an axis of
+    """
+    Generate a surface of revolution by rotating a curve around an axis of
     rotation.
 
     Refer to :func:`~spb.graphics.functions_3d.surface_revolution` for a full
@@ -911,17 +880,40 @@ def plot3d_revolution(
     Parameters
     ==========
 
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
+    curve : Expr, list ortuple of 2 or 3 elements
+        The curve to be revolved, which can be either:
 
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the plotting
-        library (backend) manual for more informations. If a list of
-        dictionaries is provided, the number of dictionaries must be equal
-        to the number of expressions.
+        * a symbolic expression
+        * a 2-tuple representing a parametric curve in 2D space
+        * a 3-tuple representing a parametric curve in 3D space
+    range_t : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the parameter of
+        the curve.
+    range_phi : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the azimuthal angle
+        where the curve will be revolved. Default to ``(phi, 0, 2*pi)``.
+    axis : tuple
+        A 2-tuple (coord1, coord2) that specifies the position of the rotation
+        axis. Depending on the value of ``parallel_axis``:
+
+        * ``"x"``: the rotation axis intersects the YZ plane at
+          (coord1, coord2).
+        * ``"y"``: the rotation axis intersects the XZ plane at
+          (coord1, coord2).
+        * ``"z"``: the rotation axis intersects the XY plane at
+          (coord1, coord2).
+
+        Default to ``(0, 0)``.
+    parallel_axis : str
+        Specify the axis parallel to the axis of rotation. Must be one of the
+        following options: "x", "y" or "z". Default to "z".
+    show_curve : bool
+        Add the initial curve to the plot. Default to False.
+    curve_kw : dict
+        A dictionary of options that will be passed to
+        ``plot3d_parametric_line`` if ``show_curve=True`` in order to customize
+        the appearance of the initial curve. Refer to its documentation for
+        more information.
 
     Examples
     ========
@@ -1043,8 +1035,10 @@ def plot3d_revolution(
     return graphics(*surfaces, **kwargs)
 
 
+@modify_plot_functions_doc(List3DSeries, replace=_repl)
 def plot3d_list(*args, **kwargs):
-    """Plots lists of coordinates (ie, lists of numbers) in 3D space.
+    """
+    Plots lists of coordinates (ie, lists of numbers) in 3D space.
 
     Typical usage examples are in the followings:
 
@@ -1063,13 +1057,6 @@ def plot3d_list(*args, **kwargs):
             (x1, y1, z1, label1 [opt], rendering_kw1 [opt]),
             (x2, y2, z1, label2 [opt], rendering_kw2 [opt]),
             ..., **kwargs)
-
-    Refer to :func:`~spb.graphics.functions_3d.list_3d` for a full
-    list of keyword arguments to customize the appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
 
     Examples
     ========

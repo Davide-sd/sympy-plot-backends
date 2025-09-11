@@ -1,8 +1,12 @@
 from spb.defaults import cfg
+from spb.doc_utils.docstrings import _PARAMS, _LABEL_PF
+from spb.doc_utils.ipython import modify_plot_functions_doc
 from spb.plot_functions.functions_2d import (
     _set_labels
 )
-from spb.series import ComplexPointSeries
+from spb.series import (
+    ComplexPointSeries, Vector2DSeries, ComplexDomainColoringSeries
+)
 from spb.graphics import (
     complex_points, line_abs_arg, line_abs_arg_colored, line_real_imag,
     surface_abs_arg, surface_real_imag, domain_coloring, analytic_landscape,
@@ -16,6 +20,9 @@ from spb.utils import (
 from spb.plotgrid import plotgrid
 from sympy import latex, Tuple, im, Expr, symbols, I
 import warnings
+
+
+_repl = {"params": _PARAMS, "label": _LABEL_PF}
 
 
 # NOTE:
@@ -265,7 +272,8 @@ def _set_axis_labels(series, kwargs):
 
 
 def plot_real_imag(*args, **kwargs):
-    """Plot the real and imaginary parts, the absolute value and the
+    """
+    Plot the real and imaginary parts, the absolute value and the
     argument of a complex function. By default, only the real and imaginary
     parts will be plotted. Use keyword argument to be more specific.
     By default, the aspect ratio of 2D plots is set to ``aspect="equal"``.
@@ -299,15 +307,6 @@ def plot_real_imag(*args, **kwargs):
          plot_real_imag(
             (expr1, range1, label1 [opt], rendering_kw1 [opt]),
             (expr2, range2, label2 [opt], rendering_kw2 [opt]), ..., **kwargs)
-
-    Refer to :func:`~spb.graphics.complex_analysis.line_real_imag` or
-    :func:`~spb.graphics.complex_analysis.surface_real_imag` for a full
-    list of keyword arguments to customize the appearances of lines and
-    surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
 
     Parameters
     ==========
@@ -467,8 +466,10 @@ def plot_real_imag(*args, **kwargs):
     return _plot_complex(*args, **kwargs)
 
 
+@modify_plot_functions_doc(ComplexDomainColoringSeries, replace=_repl)
 def plot_complex(*args, **kwargs):
-    """Plot the absolute value of a complex function colored by its argument.
+    """
+    Plot the absolute value of a complex function colored by its argument.
     By default, the aspect ratio of 2D plots is set to ``aspect="equal"``.
 
     Depending on the provided range, this function will produce different
@@ -501,16 +502,6 @@ def plot_complex(*args, **kwargs):
             (expr1, range1, label1 [opt], rendering_kw1 [opt]),
             (expr2, range2, label2 [opt], rendering_kw2 [opt]),
             ..., **kwargs)
-
-    Refer to :func:`~spb.graphics.complex_analysis.line_abs_arg_colored` or
-    :func:`~spb.graphics.complex_analysis.domain_coloring` or
-    :func:`~spb.graphics.complex_analysis.analytic_landscape` for a full
-    list of keyword arguments to customize the appearances of lines and
-    surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
 
     Examples
     ========
@@ -653,8 +644,10 @@ def plot_complex(*args, **kwargs):
     return _plot_complex(*args, allow_lambda=True, **kwargs)
 
 
+@modify_plot_functions_doc(ComplexPointSeries, replace=_repl)
 def plot_complex_list(*args, **kwargs):
-    """Plot lists of complex points. By default, the aspect ratio of the plot
+    """
+    Plot lists of complex points. By default, the aspect ratio of the plot
     is set to ``aspect="equal"``.
 
     Typical usage examples are in the followings:
@@ -765,8 +758,15 @@ def plot_complex_list(*args, **kwargs):
     return _plot_complex(*args, allow_lambda=False, pcl=True, **kwargs)
 
 
+@modify_plot_functions_doc(
+    Vector2DSeries,
+    replace=_repl,
+    exclude=["u", "v", "range_x", "range_y"],
+    priority=["expr", "range_c"]
+)
 def plot_complex_vector(*args, **kwargs):
-    """Plot the vector field `[re(f), im(f)]` for a complex function `f`
+    """
+    Plot the vector field `[re(f), im(f)]` for a complex function `f`
     over the specified complex domain. By default, the aspect ratio of 2D
     plots is set to ``aspect="equal"``.
 
@@ -786,13 +786,16 @@ def plot_complex_vector(*args, **kwargs):
             (expr1, range1, label1 [optional]),
             (expr2, range2, label2 [optional]), **kwargs)
 
-    Refer to :func:`~spb.graphics.vectors.vector_field_2d` for a full
-    list of keyword arguments to customize the appearances of quivers,
-    streamlines and contour.
+    Parameters
+    ==========
 
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
+    expr : Expr
+        Represent the complex function.
+    range_c : tuple
+        A 3-element tuples denoting the range of the variables. For example
+        ``(z, -5 - 3*I, 5 + 3*I)``. Note that we can specify the range
+        by using standard Python complex numbers, for example
+        ``(z, -5-3j, 5+3j)``.
 
     Examples
     ========
@@ -932,10 +935,12 @@ def plot_complex_vector(*args, **kwargs):
     return graphics(*new_series, **original_kwargs)
 
 
+@modify_plot_functions_doc(ComplexDomainColoringSeries, replace=_repl)
 def plot_riemann_sphere(
     expr, range=None, annotate=True, riemann_mask=True, **kwargs
 ):
-    """Visualize stereographic projections of the Riemann sphere.
+    """
+    Visualize stereographic projections of the Riemann sphere.
 
     Note:
 

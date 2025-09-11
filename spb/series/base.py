@@ -249,73 +249,8 @@ class BaseSeries(param.Parameterized):
     # a dictionary mapping symbols to numerical values? This requires
     # the extraction of values during series instantiation.
     params = _ParametersDict({}, doc="""
-        A dictionary mapping symbols to parameters. If provided, this
-        dictionary enables the interactive-widgets plot.
-
-        When calling a plotting function, the parameter can be specified with:
-
-        * a widget from the ``ipywidgets`` module.
-        * a widget from the ``panel`` module.
-        * a tuple of the form:
-           `(default, min, max, N, tick_format, label, spacing)`,
-           which will instantiate a
-           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
-           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
-           depending on the spacing strategy. In particular:
-
-           - default, min, max : float
-                Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers. The order of these 3
-                numbers is not important: the module will figure it out
-                which is what.
-           - N : int, optional
-                Number of steps of the slider.
-           - tick_format : str or None, optional
-                Provide a formatter for the tick value of the slider.
-                Default to ``".2f"``.
-           - label: str, optional
-                Custom text associated to the slider.
-           - spacing : str, optional
-                Specify the discretization spacing. Default to ``"linear"``,
-                can be changed to ``"log"``.
-
-        Notes:
-
-        1. parameters cannot be linked together (ie, one parameter
-           cannot depend on another one).
-        2. If a widget returns multiple numerical values (like
-           :py:class:`panel.widgets.slider.RangeSlider` or
-           :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
-           then a corresponding number of symbols must be provided.
-
-        Here follows a couple of examples. If ``imodule="panel"``:
-
-        .. code-block:: python
-
-            import panel as pn
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: pn.widgets.FloatSlider(value=1, start=0, end=5), # same slider as above
-                (c, d): pn.widgets.RangeSlider(value=(-1, 1), start=-3, end=3, step=0.1)
-            }
-
-        Or with ``imodule="ipywidgets"``:
-
-        .. code-block:: python
-
-            import ipywidgets as w
-            params = {
-                a: (1, 0, 5), # slider from 0 to 5, with default value of 1
-                b: w.FloatSlider(value=1, min=0, max=5), # same slider as above
-                (c, d): w.FloatRangeSlider(value=(-1, 1), min=-3, max=3, step=0.1)
-            }
-
-        When instantiating a data series directly, ``params`` must be a
-        dictionary mapping symbols to numerical values.
-
-        Let ``series`` be any data series. Then ``series.params`` returns a
-        dictionary mapping symbols to numerical values.
-        """)
+        A dictionary mapping parameters (symbols not being used in the
+        ranges) to numerical values.""")
     _label_str = param.String("", doc="""Contains str representation.""")
     _label_latex = param.String("", doc="""Contains latex representation.""")
     _is_interactive = param.Boolean(False, constant=True, doc="""

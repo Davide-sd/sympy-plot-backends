@@ -1,7 +1,7 @@
 import param
 import itertools
 from spb.defaults import cfg
-from spb.doc_utils.ipython import generate_doc
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.backends.base_backend import Plot
 from spb.backends.utils import tick_formatter_multiples_of
 from spb.backends.matplotlib.renderers import (
@@ -45,6 +45,7 @@ def unset_show():
     _show = False
 
 
+@modify_parameterized_doc()
 class MatplotlibBackend(Plot):
     """
     A backend for plotting SymPy's symbolic expressions using Matplotlib.
@@ -688,6 +689,3 @@ class MatplotlibBackend(Plot):
 
 
 MB = MatplotlibBackend
-
-
-generate_doc(MatplotlibBackend)
