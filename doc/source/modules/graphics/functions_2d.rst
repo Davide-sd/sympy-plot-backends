@@ -1,7 +1,7 @@
 2D general plotting
 -------------------
 
-**NOTE:** 
+**NOTE:**
 For technical reasons, all interactive-widgets plots in this documentation
 are created using Holoviz's Panel. Often, they will ran just fine with
 ipywidgets too. However, if a specific example uses the ``param`` library,
@@ -18,3 +18,5 @@ Refer to :ref:`interactive` module for more information.
 .. autofunction:: implicit_2d
 .. autofunction:: list_2d
 .. autofunction:: geometry
+.. autofunction:: hline
+.. autofunction:: vline

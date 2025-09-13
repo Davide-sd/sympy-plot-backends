@@ -78,18 +78,21 @@ def complex_points(
     be used instead. Note the use of a custom tick formatter in the
     polar plot:
 
-    . plot::
+    .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
+       >>> from sympy import Tuple, solve, arg
+       >>> n = symbols("n")
        >>> expr = z**3 - 1
        >>> eq = expr - n * pi
        >>> sol = Tuple(*solve(eq, z))
        >>> points = []
        >>> n_lim = 5
        >>> for n_val in range(-n_lim, n_lim+1):
-       >>>     points.extend(sol.subs(n, n_val))
+       ...     points.extend(sol.subs(n, n_val))
+       >>>
        >>> r = [complex(abs(p)).real for p in points]
        >>> t = [arg(p) for p in points]
        >>> p1 = graphics(
@@ -102,7 +105,7 @@ def complex_points(
        ...     title="Polar grid", ylim=(0, 3),
        ...     aspect="equal", polar_axis=True, show=False
        ... )
-       >>> plotgrid(p1, p2, nr=1)
+       >>> plotgrid(p1, p2, nr=1)       # doctest: +SKIP
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary.
@@ -194,7 +197,7 @@ def line_abs_arg_colored(
        ...     line_abs_arg_colored(cos(x) + sin(I * x), (x, -2, 2),
        ...         label="f"))
        Plot object containing:
-       [0]: cartesian abs-arg line: cos(x) + I*sinh(x) for x over ((-2+0j), (2+0j))
+       [0]: cartesian abs-arg line: cos(x) + I*sinh(x) for x over (-2, 2)
 
     Interactive-widget plot of a Fourier Transform. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
@@ -297,10 +300,10 @@ def line_abs_arg(
        ...         rendering_kw={"linestyle": "-."}),
        ... )
        Plot object containing:
-       [0]: cartesian line: abs(sqrt(x)) for x over (-3.0, 3.0)
-       [1]: cartesian line: arg(sqrt(x)) for x over (-3.0, 3.0)
-       [2]: cartesian line: abs(log(x)) for x over (-3.0, 3.0)
-       [3]: cartesian line: arg(log(x)) for x over (-3.0, 3.0)
+       [0]: cartesian line: abs(sqrt(x)) for x over (-3, 3)
+       [1]: cartesian line: arg(sqrt(x)) for x over (-3, 3)
+       [2]: cartesian line: abs(log(x)) for x over (-3, 3)
+       [3]: cartesian line: arg(log(x)) for x over (-3, 3)
 
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
@@ -370,7 +373,7 @@ def line_real_imag(
     For performance reasons, ``line_real_imag`` implements the second approach.
     In fact, SymPy's ``re`` and ``im`` functions evaluate their arguments,
     potentially creating unecessarely long symbolic expressions that requires
-    a lot of time to be evaluated.
+    a lot of time lambdified and evaluated.
 
     Another thing to be aware of is branch cuts of complex-valued functions.
     The plotting module attempt to evaluate a symbolic expression using complex
@@ -393,8 +396,8 @@ def line_real_imag(
        True
        >>> e3 = (1 / x_generic)**(Rational(6, 5))
        >>> e4 = x_generic**(-Rational(6, 5))
-       >>> e4.equals(e3)
-       False
+       >>> e4.equals(e3) is None
+       True
        >>> graphics(
        ...     line_real_imag(e3, label="e3", real=False,
        ...         detect_poles="symbolic"),
@@ -402,8 +405,8 @@ def line_real_imag(
        ...         detect_poles="symbolic"),
        ...     ylim=(-5, 5))
        Plot object containing:
-       [0]: cartesian line: im((1/x)**(6/5)) for x over (-10.0, 10.0)
-       [1]: cartesian line: im(x**(-6/5)) for x over (-10.0, 10.0)
+       [0]: cartesian line: im((1/x)**(6/5)) for x over (-10, 10)
+       [1]: cartesian line: im(x**(-6/5)) for x over (-10, 10)
 
     The result computed by the plotting module might feels off: the two
     expressions are different, but according to the plot they are the same.
@@ -422,8 +425,8 @@ def line_real_imag(
        ...         detect_poles="symbolic", modules="mpmath"),
        ...     ylim=(-5, 5))
        Plot object containing:
-       [0]: cartesian line: im((1/x)**(6/5)) for x over (-10.0, 10.0)
-       [1]: cartesian line: im(x**(-6/5)) for x over (-10.0, 10.0)
+       [0]: cartesian line: im((1/x)**(6/5)) for x over (-10, 10)
+       [1]: cartesian line: im(x**(-6/5)) for x over (-10, 10)
 
     With mpmath we see that ``e3`` and ``e4`` are indeed different.
 
@@ -449,8 +452,8 @@ def line_real_imag(
        >>> graphics(
        ...     line_real_imag(sqrt(x), (x, -3, 3), label="f"))
        Plot object containing:
-       [0]: cartesian line: re(sqrt(x)) for x over (-3.0, 3.0)
-       [1]: cartesian line: im(sqrt(x)) for x over (-3.0, 3.0)
+       [0]: cartesian line: re(sqrt(x)) for x over (-3, 3)
+       [1]: cartesian line: im(sqrt(x)) for x over (-3, 3)
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. This plot illustrates:
@@ -1205,7 +1208,7 @@ def riemann_sphere_2d(
        >>> graphics(riemann_sphere_2d(expr, coloring="b", n=800), grid=False)
        Plot object containing:
        [0]: complex domain coloring: (z - 1)/(z**2 + z + 2) for re(z) over (-1.25, 1.25) and im(z) over (-1.25, 1.25)
-       [1]: parametric cartesian line: (cos(t), sin(t)) for t over (0.0, 6.283185307179586)
+       [1]: parametric cartesian line: (cos(t), sin(t)) for t over (0, 2*pi)
 
     Visualization centerd at infinity:
 
@@ -1217,7 +1220,7 @@ def riemann_sphere_2d(
        ...     at_infinity=True), grid=False)
        Plot object containing:
        [0]: complex domain coloring: (-1 + 1/z)/(2 + 1/z + z**(-2)) for re(z) over (-1.25, 1.25) and im(z) over (-1.25, 1.25)
-       [1]: parametric cartesian line: (cos(t), sin(t)) for t over (0.0, 6.283185307179586)
+       [1]: parametric cartesian line: (cos(t), sin(t)) for t over (0, 2*pi)
 
     See Also
     ========
@@ -1353,7 +1356,7 @@ def complex_vector_field(expr, range_c=None, **kwargs):
        ...         contour_kw={"levels": 20}),
        ...     grid=False)
        Plot object containing:
-       [0]: contour: sqrt(4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2 + ((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2)**2) for _x over (-5.0, 5.0) and _y over (-5.0, 5.0)
+       [0]: contour: sqrt(4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2 + ((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2)**2) for _x over (-5.00000000000000, 5.00000000000000) and _y over (-5.00000000000000, 5.00000000000000)
        [1]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
 
     Only quiver plot with normalized lengths and solid color.

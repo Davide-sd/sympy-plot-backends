@@ -15,6 +15,7 @@ from spb.series.base import (
     BaseSeries,
     _RangeTuple,
     _CastToInteger,
+    _CastToFloat,
     _get_wrapper_for_expr,
     _check_misspelled_series_kwargs
 )
@@ -361,17 +362,17 @@ class ComplexDomainColoringBaseSeries(param.Parameterized):
             An array with N RGB colors, (0 <= R,G,B <= 255).
             If ``colorscale=None``, no color bar will be shown on the plot.
         """)
-    phaseres = param.Integer(20, bounds=(1, 100), doc="""
+    phaseres = _CastToInteger(20, bounds=(1, 100), doc="""
         It controls the number of iso-phase and/or iso-modulus lines
         in domain coloring plots.""")
     cmap = param.ClassSelector(class_=(str, list, tuple), doc="""
         Specify the colormap to be used on enhanced domain coloring plots
         (both images and 3d plots). Default to ``"hsv"``. Can be any colormap
         from matplotlib or colorcet.""")
-    blevel = param.Number(0.75, bounds=(0, 1), doc="""
+    blevel = _CastToFloat(0.75, bounds=(0, 1), doc="""
         Controls the black level of ehanced domain coloring plots.
         It must be `0 (black) <= blevel <= 1 (white)`.""")
-    phaseoffset = param.Number(0, bounds=[0, 2*math.pi], doc="""
+    phaseoffset = _CastToFloat(0, bounds=[0, 2*math.pi], doc="""
         Controls the phase offset of the colormap in domain coloring plots.""")
 
 

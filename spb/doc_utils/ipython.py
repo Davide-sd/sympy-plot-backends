@@ -358,7 +358,7 @@ def _get_parameters_dict(displayed_params: list) -> dict:
                     for k, v in z():
                         unindented += f"\n* {wrapped_val(v)}: {k}"
                     unindented += "\n"
-                unindented += f"\nDefault value: {wrapped_val(p.default)}"
+                unindented += f"\nDefault value: {wrapped_val(p.default)}."
             elif isinstance(p, (param.Integer, param.Number)):
                 if p.bounds is not None:
                     lb = str(p.bounds[0]) if p.bounds[0] is not None else "-∞"
@@ -367,10 +367,10 @@ def _get_parameters_dict(displayed_params: list) -> dict:
                     fs = fs if lb != "-∞" else "<"
                     ss = "≤" if p.inclusive_bounds[1] else "<"
                     ss = ss if ub != "∞" else "<"
-                    unindented += f"\nIt must be: {lb} {fs} {name} {ss} {ub}"
-                unindented += f"\nDefault value: {p.default}"
+                    unindented += f"\nIt must be: {lb} {fs} {name} {ss} {ub}. "
+                unindented += f"\nDefault value: {p.default}."
             elif isinstance(p, param.Boolean):
-                unindented += f"\nDefault value: {p.default}"
+                unindented += f"\nDefault value: {p.default}."
         except Exception as err:
             print(f"Error processing parameter '{name}':", err)
 

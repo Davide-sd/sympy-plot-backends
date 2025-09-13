@@ -285,6 +285,12 @@ def test_list2dseries():
     assert not s.is_parametric
     assert s.get_label() == "test"
 
+    # numbers will be converted to iterables
+    s = List2DSeries(1, 2, label="test")
+    xx, yy = s.get_data()
+    assert (len(xx) == 1) and np.isclose(xx[0], 1)
+    assert (len(yy) == 1) and np.isclose(yy[0], 2)
+
 
 def test_list3dseries():
     zz1 = np.linspace(-3, 3, 10)
@@ -307,6 +313,13 @@ def test_list3dseries():
     assert np.allclose(zz1, zzs)
     assert not s.is_parametric
     assert s.get_label() == "test"
+
+    # numbers will be converted to iterables
+    s = List3DSeries(1, 2, 3, label="test")
+    xx, yy, zz = s.get_data()
+    assert (len(xx) == 1) and np.isclose(xx[0], 1)
+    assert (len(yy) == 1) and np.isclose(yy[0], 2)
+    assert (len(zz) == 1) and np.isclose(zz[0], 3)
 
 
 def test_complexpointseries():
@@ -1694,7 +1707,7 @@ def test_str():
     s = ImplicitSeries(x < y, (x, -5, 4), (y, -3, 2))
     assert (
         str(s)
-        == "Implicit expression: x < y for x over (-5.0, 4.0) and y over (-3.0, 2.0)"
+        == "Implicit expression: x < y for x over (-5, 4) and y over (-3, 2)"
     )
 
     s = ComplexPointSeries(2 + 3 * I)
@@ -4951,3 +4964,11 @@ def test_evaluate_big_numbers_2():
     assert np.allclose(pp1, pp4)
     assert np.allclose(xx2, xx4)
     assert np.allclose(yy2, yy4)
+
+
+def test_ComplexDomainColoringSeries_cast_to_float():
+    # verify that instances of NumberSymbol get cast to float
+
+    z = symbols("z")
+    s = ComplexDomainColoringSeries(z, (z, -2-2j, 2+2j), phaseoffset=pi)
+    assert isinstance(s.phaseoffset, float) and np.isclose(s.phaseoffset, np.pi)

@@ -39,11 +39,11 @@ params : dict, optional
     Notes:
 
     1. parameters cannot be linked together (ie, one parameter
-        cannot depend on another one).
+       cannot depend on another one).
     2. If a widget returns multiple numerical values (like
-        :py:class:`panel.widgets.slider.RangeSlider` or
-        :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
-        then a corresponding number of symbols must be provided.
+       :py:class:`panel.widgets.slider.RangeSlider` or
+       :py:class:`ipywidgets.widgets.widget_float.FloatRangeSlider`),
+       then a corresponding number of symbols must be provided.
 
     Here follows a couple of examples. If ``imodule="panel"``:
 

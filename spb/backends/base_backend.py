@@ -166,7 +166,7 @@ class PlotAttributes(param.Parameterized):
         default=True, doc="""
         Turn on/off the rendering of latex labels. If the backend doesn't
         support latex, it will render the string representations instead.""")
-    aspect = param.ClassSelector(class_=(str, tuple, list), doc="""
+    aspect = param.ClassSelector(class_=(str, tuple, list, dict), doc="""
         Set the aspect ratio.
 
         Possible values for Matplotlib (only works for a 2D plot):
@@ -402,9 +402,9 @@ class Plot(PlotAttributes):
        ...     colorloop = ["r", "g", "b"]
        >>> plot(sin(x) / 3, sin(x) * S(2) / 3, sin(x), backend=MBchild)
        Plot object containing:
-       [0]: cartesian line: sin(x)/3 for x over (-10.0, 10.0)
-       [1]: cartesian line: 2*sin(x)/3 for x over (-10.0, 10.0)
-       [2]: cartesian line: sin(x) for x over (-10.0, 10.0)
+       [0]: cartesian line: sin(x)/3 for x over (-10, 10)
+       [1]: cartesian line: 2*sin(x)/3 for x over (-10, 10)
+       [2]: cartesian line: sin(x) for x over (-10, 10)
 
     Create a new backend with custom color maps for 3D plots. Note that
     it's possible to use Plotly/Colorcet/Matplotlib colormaps interchangeably.
@@ -864,8 +864,8 @@ class Plot(PlotAttributes):
            >>> p1.append(p2[0])
            >>> p1
            Plot object containing:
-           [0]: cartesian line: x**2 for x over (-10.0, 10.0)
-           [1]: cartesian line: x for x over (-10.0, 10.0)
+           [0]: cartesian line: x**2 for x over (-10, 10)
+           [1]: cartesian line: x for x over (-10, 10)
            >>> p1.show()
 
         See Also
@@ -912,9 +912,9 @@ class Plot(PlotAttributes):
            >>> p1.extend(p2)
            >>> p1
            Plot object containing:
-           [0]: cartesian line: x**2 for x over (-10.0, 10.0)
-           [1]: cartesian line: x for x over (-10.0, 10.0)
-           [2]: cartesian line: -x for x over (-10.0, 10.0)
+           [0]: cartesian line: x**2 for x over (-10, 10)
+           [1]: cartesian line: x for x over (-10, 10)
+           [2]: cartesian line: -x for x over (-10, 10)
            >>> p1.show()
 
         See Also

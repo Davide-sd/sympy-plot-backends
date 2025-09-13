@@ -182,7 +182,7 @@ parameterization:
       trefoil(u, v, 3), (u, -pi, 3*pi), (v, -pi, 3*pi), "radius",
       grid=False, title="Trefoil Knot", backend=PB, use_cm=True,
       color_func=lambda x, y, z: np.sqrt(x**2 + y**2 + z**2),
-      wireframe=True, wf_n1=100, wf_n2=30, n1=250, show=False)
+      wireframe=True, wf_n1=100, wf_n2=30, n1=250)
 
 
 Visualizing a 2D vector field:

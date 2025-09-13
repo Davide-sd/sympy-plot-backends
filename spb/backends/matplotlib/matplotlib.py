@@ -26,7 +26,7 @@ from spb.series import (
     Arrow2DSeries, Arrow3DSeries, RootLocusSeries, SGridLineSeries,
     ZGridLineSeries, SystemResponseSeries, ColoredSystemResponseSeries,
     PoleZeroSeries, NGridLineSeries, PoleZeroWithSympySeries,
-    MCirclesSeries
+    MCirclesSeries, HLineSeries, VLineSeries
 )
 from sympy.external import import_module
 from packaging import version
@@ -83,6 +83,8 @@ class MatplotlibBackend(Plot):
         Geometry3DSeries: GeometryRenderer,
         GenericDataSeries: GenericRenderer,
         HVLineSeries: HVLineRenderer,
+        HLineSeries: HVLineRenderer,
+        VLineSeries: HVLineRenderer,
         NyquistLineSeries: NyquistRenderer,
         NicholsLineSeries: NicholsLineRenderer,
         Arrow2DSeries: Arrow2DRendererFancyArrowPatch,

@@ -152,7 +152,7 @@ def vector_field_2d(
        ...         contour_kw={"cmap": "Blues_r", "levels": 15}),
        ...     grid=False, xlabel="x", ylabel="y")
        Plot object containing:
-       [0]: contour: sqrt(sin(x - y)**2 + cos(x + y)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [0]: contour: sqrt(sin(x - y)**2 + cos(x + y)**2) for x over (-3, 3) and y over (-3, 3)
        [1]: 2D vector series: [sin(x - y), cos(x + y)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
     Quivers plot of a 2D vector field with no background scalar field,
@@ -211,7 +211,7 @@ def vector_field_2d(
        ...         scalar=False, quiver_kw={"color": "r"}, use_cm=False),
        ...     aspect="equal", grid=False, xlabel="x", ylabel="y")
        Plot object containing:
-       [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)
+       [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5, 5) and y over (-3, 3)
        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -5.0, 5.0), (y, -3.0, 3.0)
        [2]: 2D vector series: [2*y, x] over (x, -5.0, 5.0), (y, -3.0, 3.0)
 

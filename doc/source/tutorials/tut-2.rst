@@ -80,11 +80,11 @@ numerical data as we will see in :doc:`Tutorial 4 </tutorials/tut-4>`.
 
    >>> print(p)
    Plot object containing:
-   [0]: cartesian line: sin(x) for x over (-10.0, 10.0)
-   [1]: cartesian line: cos(x) for x over (-10.0, 10.0)
-   [2]: cartesian line: log(x) for x over (-10.0, 10.0)
+   [0]: cartesian line: sin(x) for x over (-10, 10)
+   [1]: cartesian line: cos(x) for x over (-10, 10)
+   [2]: cartesian line: log(x) for x over (-10, 10)
    >>> print(p[0])
-   cartesian line: sin(x) for x over (-10.0, 10.0)
+   cartesian line: sin(x) for x over (-10, 10)
 
 Let's now do the same with Plotly:
 

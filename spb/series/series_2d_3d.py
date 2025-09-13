@@ -565,6 +565,8 @@ class List2DSeries(Line2DBaseSeries):
         return any_expr, kwargs
 
     def __init__(self, list_x, list_y, label="", **kwargs):
+        list_x = list_x if hasattr(list_x, "__iter__") else [list_x]
+        list_y = list_y if hasattr(list_y, "__iter__") else [list_y]
         self._check_length(list_x, list_y)
         self._block_lambda_functions(list_x, list_y)
         any_expr, kwargs = self._cast_to_appropriate_type(
@@ -656,6 +658,9 @@ class List3DSeries(List2DSeries):
         z-axis.""")
 
     def __init__(self, list_x, list_y, list_z, label="", **kwargs):
+        list_x = list_x if hasattr(list_x, "__iter__") else [list_x]
+        list_y = list_y if hasattr(list_y, "__iter__") else [list_y]
+        list_z = list_z if hasattr(list_z, "__iter__") else [list_z]
         self._check_length(list_x, list_y, list_z)
         self._block_lambda_functions(list_x, list_y, list_z)
         any_expr, kwargs = self._cast_to_appropriate_type(
@@ -1837,15 +1842,13 @@ class ImplicitSeries(
         return expr, has_relational
 
     def __str__(self):
-        f = lambda t: float(t) if len(t.free_symbols) == 0 else t
-
         return self._str_helper(
             "Implicit expression: %s for %s over %s and %s over %s") % (
             str(self._adaptive_expr),
             str(self.var_x),
-            str((f(self.start_x), f(self.end_x))),
+            str((self.start_x, self.end_x)),
             str(self.var_y),
-            str((f(self.start_y), f(self.end_y))),
+            str((self.start_y, self.end_y)),
         )
 
     def get_data(self):

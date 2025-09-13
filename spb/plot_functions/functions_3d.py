@@ -96,7 +96,7 @@ def plot3d_parametric_line(*args, **kwargs):
 
        >>> plot3d_parametric_line(cos(t), sin(t), t, (t, -5, 5))
        Plot object containing:
-       [0]: 3D parametric cartesian line: (cos(t), sin(t), t) for t over (-5.0, 5.0)
+       [0]: 3D parametric cartesian line: (cos(t), sin(t), t) for t over (-5, 5)
 
     Customize the appearance by setting a label to the colorbar, changing the
     colormap and the line width.
@@ -111,7 +111,7 @@ def plot3d_parametric_line(*args, **kwargs):
        ...     (t, 0, 2 * pi), "t [rad]", {"cmap": "hsv", "lw": 1.5},
        ...     aspect="equal")
        Plot object containing:
-       [0]: 3D parametric cartesian line: (3*sin(t) + 2*sin(3*t), cos(t) - 2*cos(3*t), cos(5*t)) for t over (0.0, 6.283185307179586)
+       [0]: 3D parametric cartesian line: (3*sin(t) + 2*sin(3*t), cos(t) - 2*cos(3*t), cos(5*t)) for t over (0, 2*pi)
 
     Plot multiple parametric 3D lines with different ranges:
 
@@ -133,9 +133,9 @@ def plot3d_parametric_line(*args, **kwargs):
        ...     (xr, yr, zr, (r, 0, 6*pi), "roots"),
        ...     (-sin(s)/3, 0, s, (s, 0, pi), "stem"), use_cm=False)
        Plot object containing:
-       [0]: 3D parametric cartesian line: (2*cos(p)*cos(4*p), 2*sin(p)*cos(4*p), cos(4*p)**2 + pi) for p over (0.0, 6.283185307179586)
-       [1]: 3D parametric cartesian line: (r**(1/3)*cos(r), r**(1/3)*sin(r), 0) for r over (0.0, 18.84955592153876)
-       [2]: 3D parametric cartesian line: (-sin(s)/3, 0, s) for s over (0.0, 3.141592653589793)
+       [0]: 3D parametric cartesian line: (2*cos(p)*cos(4*p), 2*sin(p)*cos(4*p), cos(4*p)**2 + pi) for p over (0, 2*pi)
+       [1]: 3D parametric cartesian line: (r**(1/3)*cos(r), r**(1/3)*sin(r), 0) for r over (0, 6*pi)
+       [2]: 3D parametric cartesian line: (-sin(s)/3, 0, s) for s over (0, pi)
 
     Plotting a numerical function instead of a symbolic expression, using
     Plotly:
@@ -251,7 +251,7 @@ def plot3d(*args, **kwargs):
        :include-source: True
 
        >>> from sympy import symbols, cos, sin, pi, exp
-       >>> from spb import plot3d
+       >>> from spb import plot3d, multiples_of_pi_over_2
        >>> x, y = symbols('x y')
 
     Single plot with Matplotlib, with ticks formatted as multiples of `pi/2`.
@@ -302,8 +302,8 @@ def plot3d(*args, **kwargs):
 
        >>> plot3d(x*y, -x*y, (x, -5, 5), (y, -5, 5), use_cm=True)
        Plot object containing:
-       [0]: cartesian surface: x*y for x over (-5.0, 5.0) and y over (-5.0, 5.0)
-       [1]: cartesian surface: -x*y for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: cartesian surface: x*y for x over (-5, 5) and y over (-5, 5)
+       [1]: cartesian surface: -x*y for x over (-5, 5) and y over (-5, 5)
 
     Multiple plots with different ranges and solid colors.
 
@@ -316,8 +316,8 @@ def plot3d(*args, **kwargs):
        >>> plot3d((f, (x, -3, 3), (y, -3, 3)),
        ...     (-f, (x, -5, 5), (y, -5, 5)))
        Plot object containing:
-       [0]: cartesian surface: x**2 + y**2 for x over (-3.0, 3.0) and y over (-3.0, 3.0)
-       [1]: cartesian surface: -x**2 - y**2 for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: cartesian surface: x**2 + y**2 for x over (-3, 3) and y over (-3, 3)
+       [1]: cartesian surface: -x**2 - y**2 for x over (-5, 5) and y over (-5, 5)
 
     Single plot with a polar discretization, a color function mapping a
     colormap to the radius. Note that the same result can be achieved with
@@ -445,7 +445,7 @@ def plot3d_parametric_surface(*args, **kwargs):
        ...     (u, 0, pi), (v, 0, 2*pi),
        ...     use_cm=False, title="Sinusoidal Cone")
        Plot object containing:
-       [0]: parametric cartesian surface: (u*cos(v), u*sin(v), u*cos(4*v)/2) for u over (0.0, 3.141592653589793) and v over (0.0, 6.283185307179586)
+       [0]: parametric cartesian surface: (u*cos(v), u*sin(v), u*cos(4*v)/2) for u over (0, pi) and v over (0, 2*pi)
 
     Customize the appearance of the surface by changing the colormap. Apply a
     color function mapping the `v` values. Activate the wireframe to better
@@ -667,7 +667,7 @@ def plot3d_spherical(*args, **kwargs):
 
        >>> plot3d_spherical(1, (theta, 0, 0.7 * pi), (phi, 0, 1.8 * pi))
        Plot object containing:
-       [0]: parametric cartesian surface: (sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta)) for theta over (0.0, 2.199114857512855) and phi over (0.0, 5.654866776461628)
+       [0]: parametric cartesian surface: (sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta)) for theta over (0, 0.7*pi) and phi over (0, 1.8*pi)
 
     Plot real spherical harmonics, highlighting the regions in which the
     real part is positive and negative, using Plotly:

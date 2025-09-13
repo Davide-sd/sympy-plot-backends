@@ -1,6 +1,7 @@
 import param
 from inspect import signature, ismodule
 from spb.defaults import cfg
+from spb.series.base import _CastToInteger
 from spb.utils import _get_free_symbols, _correct_shape
 import sympy
 from sympy import (
@@ -192,7 +193,7 @@ class _GridEvaluationParameters(param.Parameterized, _NMixin):
     modules = param.Parameter(None, doc="""
         Specify the evaluation modules to be used by lambdify.
         If not specified, the evaluation will be done with NumPy/SciPy.""")
-    sum_bound = param.Integer(default=1000, bounds=(0, None), doc="""
+    sum_bound = _CastToInteger(default=1000, bounds=(0, None), doc="""
         When plotting sums, the expression will be pre-processed in order
         to replace lower/upper bounds set to +/- infinity with this +/-
         numerical value. Note: the higher this number, the slower the

@@ -18,7 +18,7 @@ import os
 import sys
 import sphinx_rtd_theme
 import ast
-from spb.doc_utils import (
+from spb.doc_utils.html import (
     _modify_code, _modify_iplot_code, postprocess_KB_interactive_image
 )
 

@@ -182,7 +182,7 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
 
        >>> graphics(line(x**2, (x, -5, 5)))
        Plot object containing:
-       [0]: cartesian line: x**2 for x over (-5.0, 5.0)
+       [0]: cartesian line: x**2 for x over (-5, 5)
 
     Multiple functions over the same range with custom rendering options:
 
@@ -198,9 +198,9 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
        ...     aspect="equal", ylim=(-3, 3)
        ... )
        Plot object containing:
-       [0]: cartesian line: x for x over (-3.0, 3.0)
-       [1]: cartesian line: log(x) for x over (-3.0, 3.0)
-       [2]: cartesian line: exp(x) for x over (-3.0, 3.0)
+       [0]: cartesian line: x for x over (-3, 3)
+       [1]: cartesian line: log(x) for x over (-3, 3)
+       [2]: cartesian line: exp(x) for x over (-3, 3)
 
     Plotting a summation in which the free symbol of the expression is not
     used in the lower/upper bounds:
@@ -217,7 +217,7 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
        ...     title="$%s$" % latex(expr)
        ... )
        Plot object containing:
-       [0]: cartesian line: Sum(x**(-y), (x, 1, 1000)) for y over (2.0, 10.0)
+       [0]: cartesian line: Sum(x**(-y), (x, 1, oo)) for y over (2, 10)
 
     Plotting a summation in which the free symbol of the expression is
     used in the lower/upper bounds. Here, the discretization variable must
@@ -234,7 +234,7 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
        ...     title="$%s$" % latex(expr)
        ... )
        Plot object containing:
-       [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
+       [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2, 10)
 
     Detect essential singularities and visualize them with vertical lines.
     Also, apply a tick formatter on the x-axis is order to show ticks at
@@ -252,7 +252,7 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
        ...     ylim=(-7, 7), xlabel="x [deg]", grid=False
        ... )
        Plot object containing:
-       [0]: cartesian line: tan(x) for x over (-4.71238898038469, 4.71238898038469)
+       [0]: cartesian line: tan(x) for x over (-1.5*pi, 1.5*pi)
 
     Introducing discontinuities by excluding specified points:
 
@@ -266,7 +266,7 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
        ...     ylim=(-1, 5)
        ... )
        Plot object containing:
-       [0]: cartesian line: floor(x)/x for x over (-3.25, 3.25)
+       [0]: cartesian line: floor(x)/x for x over (-3.25000000000000, 3.25000000000000)
 
     Creating a step plot:
 
@@ -281,9 +281,9 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
        ...     line(x+2, (x, 0, 10), only_integers=True, steps="post", label="post"),
        ... )
        Plot object containing:
-       [0]: cartesian line: x - 2 for x over (0.0, 10.0)
-       [1]: cartesian line: x for x over (0.0, 10.0)
-       [2]: cartesian line: x + 2 for x over (0.0, 10.0)
+       [0]: cartesian line: x - 2 for x over (0, 10)
+       [1]: cartesian line: x for x over (0, 10)
+       [2]: cartesian line: x + 2 for x over (0, 10)
 
     Advanced example showing:
 
@@ -321,8 +321,8 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
        ...     ylim=(-10, 10), title="$%s$" % latex(expr)
        ... )
        Plot object containing:
-       [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-5.0, 5.0)
-       [1]: cartesian line: 5*sin(x) for x over (-5.0, 5.0)
+       [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-5, 5)
+       [1]: cartesian line: 5*sin(x) for x over (-5, 5)
 
     Interactive-widget plot of an oscillator. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
@@ -428,7 +428,7 @@ def line_parametric_2d(
        ...     aspect="equal"
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: (5*cos(2*u/3) + 2*cos(u), -5*sin(2*u/3) + 2*sin(u)) for u over (0.0, 18.84955592153876)
+       [0]: parametric cartesian line: (5*cos(2*u/3) + 2*cos(u), -5*sin(2*u/3) + 2*sin(u)) for u over (0, 6*pi)
 
     A parametric plot with multiple expressions with the same range with solid
     line colors:
@@ -443,8 +443,8 @@ def line_parametric_2d(
        ...     line_parametric_2d(cos(t), 2 * sin(t), (t, 0, 2*pi), use_cm=False),
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: (2*cos(t), sin(t)) for t over (0.0, 6.283185307179586)
-       [1]: parametric cartesian line: (cos(t), 2*sin(t)) for t over (0.0, 6.283185307179586)
+       [0]: parametric cartesian line: (2*cos(t), sin(t)) for t over (0, 2*pi)
+       [1]: parametric cartesian line: (cos(t), 2*sin(t)) for t over (0, 2*pi)
 
     A parametric plot with multiple expressions with different ranges,
     custom labels, custom rendering options and a transformation function
@@ -467,8 +467,8 @@ def line_parametric_2d(
        ...     aspect="equal"
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
-       [1]: parametric cartesian line: (3*cos(2*v), 5*sin(4*v)) for v over (0.0, 3.141592653589793)
+       [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0, 2*pi)
+       [1]: parametric cartesian line: (3*cos(2*v), 5*sin(4*v)) for v over (0, pi)
 
     Introducing discontinuities by excluding specified points:
 
@@ -485,7 +485,7 @@ def line_parametric_2d(
        ...     grid=False
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: (log(floor(t))*cos(t), log(floor(t))*sin(t)) for t over (1.0, 12.566370614359172)
+       [0]: parametric cartesian line: (log(floor(t))*cos(t), log(floor(t))*sin(t)) for t over (1, 4*pi)
 
     Plotting a numerical function instead of a symbolic expression:
 
@@ -574,7 +574,7 @@ def line_polar(expr, range_p=None, label=None, rendering_kw=None, **kwargs):
        ...     aspect="equal"
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: (3*sin(2*theta)*cos(theta), 3*sin(theta)*sin(2*theta)) for theta over (0.0, 6.283185307179586)
+       [0]: parametric cartesian line: (3*sin(2*theta)*cos(theta), 3*sin(theta)*sin(2*theta)) for theta over (0, 2*pi)
 
     Plot with polar axis:
 
@@ -588,7 +588,7 @@ def line_polar(expr, range_p=None, label=None, rendering_kw=None, **kwargs):
        ...     polar_axis=True, aspect="equal"
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: ((exp(sin(theta)) - 2*cos(4*theta))*cos(theta), (exp(sin(theta)) - 2*cos(4*theta))*sin(theta)) for theta over (0.0, 6.283185307179586)
+       [0]: parametric cartesian line: ((exp(sin(theta)) - 2*cos(4*theta))*cos(theta), (exp(sin(theta)) - 2*cos(4*theta))*sin(theta)) for theta over (0, 2*pi)
 
     Interactive-widget plot of Guilloché Pattern. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
@@ -692,7 +692,7 @@ def contour(
        ...     grid=False
        ... )
        Plot object containing:
-       [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5, 5) and y over (-5, 5)
 
     Line contours of a function of two variables, with ticks formatted as
     multiples of `pi/n`.
@@ -710,7 +710,7 @@ def contour(
        ...     aspect="equal"
        ... )
        Plot object containing:
-       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0, 2*pi) and y over (0, 2*pi)
 
     Combining together filled and line contours. Use a custom label on the
     colorbar of the filled contour.
@@ -732,8 +732,8 @@ def contour(
        ...     aspect="equal", grid=False
        ... )
        Plot object containing:
-       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
-       [1]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0, 2*pi) and y over (0, 2*pi)
+       [1]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0, 2*pi) and y over (0, 2*pi)
 
     Visually inspect the solutions of a system of 2 non-linear equations.
     The intersections between the contour lines represent the solutions.
@@ -747,17 +747,17 @@ def contour(
        >>> eq2 = Eq((cos(x) - 2 * sin(y))**2 - (sin(x) + 2 * cos(y))**2, 3)
        >>> graphics(
        ...     contour(
-       ...         eq1.rewrite(Add), (x, 0, 2 * pi), (y, 0, 2 * pi),
+       ...         eq1.lhs - eq1.rhs, (x, 0, 2 * pi), (y, 0, 2 * pi),
        ...         rendering_kw={"levels": [0]},
        ...         fill=False, clabels=False),
        ...     contour(
-       ...         eq2.rewrite(Add), (x, 0, 2 * pi), (y, 0, 2 * pi),
+       ...         eq2.lhs - eq2.rhs, (x, 0, 2 * pi), (y, 0, 2 * pi),
        ...         rendering_kw={"levels": [0]},
        ...         fill=False, clabels=False),
        ... )
        Plot object containing:
-       [0]: contour: 3*(-sin(x) + cos(y)/2)**2 + (-sin(y)/2 + cos(x))**2 - 2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
-       [1]: contour: -(sin(x) + 2*cos(y))**2 + (-2*sin(y) + cos(x))**2 - 3 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+       [0]: contour: 3*(-sin(x) + cos(y)/2)**2 + (-sin(y)/2 + cos(x))**2 - 2 for x over (0, 2*pi) and y over (0, 2*pi)
+       [1]: contour: -(sin(x) + 2*cos(y))**2 + (-2*sin(y) + cos(x))**2 - 3 for x over (0, 2*pi) and y over (0, 2*pi)
 
     Contour plot with polar axis:
 
@@ -775,7 +775,7 @@ def contour(
        ...     polar_axis=True, aspect="equal"
        ... )
        Plot object containing:
-       [0]: contour: sin(2*r)*cos(theta) for theta over (0.0, 6.283185307179586) and r over (0.0, 7.0)
+       [0]: contour: sin(2*r)*cos(theta) for theta over (0, 2*pi) and r over (0, 7)
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. This plot illustrates:
@@ -897,7 +897,7 @@ def implicit_2d(
 
        >>> graphics(implicit_2d(x - 1, (x, -5, 5), (y, -5, 5)))
        Plot object containing:
-       [0]: Implicit expression: Eq(x - 1, 0) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: Implicit expression: Eq(x - 1, 0) for x over (-5, 5) and y over (-5, 5)
 
     Plot a region:
 
@@ -910,7 +910,7 @@ def implicit_2d(
        ...     implicit_2d(y > x**2, (x, -5, 5), (y, -10, 10), n=150),
        ...     grid=False)
        Plot object containing:
-       [0]: Implicit expression: y > x**2 for x over (-5.0, 5.0) and y over (-10.0, 10.0)
+       [0]: Implicit expression: y > x**2 for x over (-5, 5) and y over (-10, 10)
 
     Plot a region using a custom color, highlights the limiting border and
     customize its appearance.
@@ -930,8 +930,8 @@ def implicit_2d(
        ...     grid=False
        ... )
        Plot object containing:
-       [0]: Implicit expression: 4*(-sin(y)/5 + cos(x))**2 + 4*(sin(y) - cos(x)/5)**2 <= pi for x over (-3.141592653589793, 3.141592653589793) and y over (-3.141592653589793, 3.141592653589793)
-       [1]: Implicit expression: Eq(-4*(-sin(y)/5 + cos(x))**2 - 4*(sin(y) - cos(x)/5)**2 + pi, 0) for x over (-3.141592653589793, 3.141592653589793) and y over (-3.141592653589793, 3.141592653589793)
+       [0]: Implicit expression: 4*(-sin(y)/5 + cos(x))**2 + 4*(sin(y) - cos(x)/5)**2 <= pi for x over (-pi, pi) and y over (-pi, pi)
+       [1]: Implicit expression: Eq(-4*(-sin(y)/5 + cos(x))**2 - 4*(sin(y) - cos(x)/5)**2 + pi, 0) for x over (-pi, pi) and y over (-pi, pi)
 
     Boolean expressions will be plotted with the adaptive algorithm. Note the
     thin width of lines:
@@ -949,8 +949,8 @@ def implicit_2d(
        ...     ylim=(-2, 2)
        ... )
        Plot object containing:
-       [0]: Implicit expression: (y > 0) & Eq(y, sin(x)) for x over (-6.283185307179586, 6.283185307179586) and y over (-4.0, 4.0)
-       [1]: Implicit expression: (y < 0) & Eq(y, sin(x)) for x over (-6.283185307179586, 6.283185307179586) and y over (-4.0, 4.0)
+       [0]: Implicit expression: (y > 0) & Eq(y, sin(x)) for x over (-2*pi, 2*pi) and y over (-4, 4)
+       [1]: Implicit expression: (y < 0) & Eq(y, sin(x)) for x over (-2*pi, 2*pi) and y over (-4, 4)
 
     Plotting multiple implicit expressions and setting labels:
 
@@ -970,11 +970,11 @@ def implicit_2d(
        ...         label="L = %s" % L_val)
        >>> graphics(*series)
        Plot object containing:
-       [0]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.016, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [1]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.032, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [2]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.048, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [3]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.064, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [4]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.08, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
+       [0]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.016, 0) for t over (0, 3) and V over (0, 1000)
+       [1]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.032, 0) for t over (0, 3) and V over (0, 1000)
+       [2]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.048, 0) for t over (0, 3) and V over (0, 1000)
+       [3]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.064, 0) for t over (0, 3) and V over (0, 1000)
+       [4]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.08, 0) for t over (0, 3) and V over (0, 1000)
 
     Comparison of similar expressions plotted with different algorithms. Note:
 
@@ -1006,9 +1006,9 @@ def implicit_2d(
        ...    grid=False
        ... )
        Plot object containing:
-       [0]: Implicit expression: Eq(x*y - 20, 15*y) for x over (15.0, 30.0) and y over (0.0, 50.0)
-       [1]: Implicit expression: Eq(y*(x - 3) - 20, 15*y) for x over (15.0, 30.0) and y over (0.0, 50.0)
-       [2]: Implicit expression: Eq(y*(x - 6) - 20, 15*y) for x over (15.0, 30.0) and y over (0.0, 50.0)
+       [0]: Implicit expression: Eq(x*y - 20, 15*y) for x over (15, 30) and y over (0, 50)
+       [1]: Implicit expression: Eq(y*(x - 3) - 20, 15*y) for x over (15, 30) and y over (0, 50)
+       [2]: Implicit expression: Eq(y*(x - 6) - 20, 15*y) for x over (15, 30) and y over (0, 50)
 
     If the expression is plotted with the adaptive algorithm and it produces
     "low-quality" results, maybe it's possible to rewrite it in order to use
@@ -1258,7 +1258,7 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
        ...     grid=False, aspect="equal"
        ... )
        Plot object containing:
-       [0]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
+       [0]: 2D geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
 
     Plot several numeric geometric entitiesy. By default, circles, ellipses and
     polygons are going to be filled. Plotting Curve objects is the same as
@@ -1279,12 +1279,12 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
        ...     aspect="equal", grid=False
        ... )
        Plot object containing:
-       [0]: geometry entity: Circle(Point2D(0, 0), 5)
-       [1]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
-       [2]: geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
-       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0.0, 6.283185307179586)
-       [4]: geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
-       [5]: geometry entity: Point2D(0, 0)
+       [0]: 2D geometry entity: Circle(Point2D(0, 0), 5)
+       [1]: 2D geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
+       [2]: 2D geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
+       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0, 2*pi)
+       [4]: 2D geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
+       [5]: 2D geometry entity: Point2D(0, 0)
 
     Plot several numeric geometric entities defined by numbers only, turn off
     fill. Every entity is represented as a line.
@@ -1306,12 +1306,12 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
        ...     aspect="equal", grid=False
        ... )
        Plot object containing:
-       [0]: geometry entity: Circle(Point2D(0, 0), 5)
-       [1]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
-       [2]: geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
-       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0.0, 6.283185307179586)
-       [4]: geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
-       [5]: geometry entity: Point2D(0, 0)
+       [0]: 2D geometry entity: Circle(Point2D(0, 0), 5)
+       [1]: 2D geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
+       [2]: 2D geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
+       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0, 2*pi)
+       [4]: 2D geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
+       [5]: 2D geometry entity: Point2D(0, 0)
 
     Plot 3D geometric entities. Instances of ``Plane`` must be plotted with
     ``implicit_3d`` or with ``plane`` (with the necessary ranges).
@@ -1415,7 +1415,7 @@ def hline(y, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
        ...     grid=False
        ... )
        Plot object containing:
-       [0]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
+       [0]: cartesian line: cos(x) for x over (-pi, pi)
        [1]: horizontal line at y = 0.500000000000000
 
     Interactive widget plot:
@@ -1481,8 +1481,9 @@ def vline(x, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
        ...     grid=False
        ... )
        Plot object containing:
-       [0]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
-       [1]: horizontal line at y = 0.500000000000000
+       [0]: cartesian line: cos(x) for x over (-pi, pi)
+       [1]: vertical line at x = 1
+       [2]: vertical line at x = -1
 
     Interactive widget plot:
 

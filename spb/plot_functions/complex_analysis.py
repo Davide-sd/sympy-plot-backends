@@ -341,8 +341,8 @@ def plot_real_imag(*args, **kwargs):
 
        >>> plot_real_imag(sqrt(x), (x, -3, 3))
        Plot object containing:
-       [0]: cartesian line: re(sqrt(x)) for x over (-3.0, 3.0)
-       [1]: cartesian line: im(sqrt(x)) for x over (-3.0, 3.0)
+       [0]: cartesian line: re(sqrt(x)) for x over (-3, 3)
+       [1]: cartesian line: im(sqrt(x)) for x over (-3, 3)
 
     Plot only the real part:
 
@@ -353,7 +353,7 @@ def plot_real_imag(*args, **kwargs):
 
        >>> plot_real_imag(sqrt(x), (x, -3, 3), imag=False)
        Plot object containing:
-       [0]: cartesian line: re(sqrt(x)) for x over (-3.0, 3.0)
+       [0]: cartesian line: re(sqrt(x)) for x over (-3, 3)
 
     Plot only the imaginary part:
 
@@ -364,7 +364,7 @@ def plot_real_imag(*args, **kwargs):
 
        >>> plot_real_imag(sqrt(x), (x, -3, 3), real=False)
        Plot object containing:
-       [0]: cartesian line: im(sqrt(x)) for x over (-3.0, 3.0)
+       [0]: cartesian line: im(sqrt(x)) for x over (-3, 3)
 
     Plot only the absolute value and argument:
 
@@ -376,8 +376,8 @@ def plot_real_imag(*args, **kwargs):
        >>> plot_real_imag(
        ...     sqrt(x), (x, -3, 3), real=False, imag=False, abs=True, arg=True)
        Plot object containing:
-       [0]: cartesian line: abs(sqrt(x)) for x over (-3.0, 3.0)
-       [1]: cartesian line: arg(sqrt(x)) for x over (-3.0, 3.0)
+       [0]: cartesian line: abs(sqrt(x)) for x over (-3, 3)
+       [1]: cartesian line: arg(sqrt(x)) for x over (-3, 3)
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. This plot illustrates:
@@ -524,7 +524,7 @@ def plot_complex(*args, **kwargs):
 
        >>> plot_complex(cos(x) + sin(I * x), "f", (x, -2, 2))
        Plot object containing:
-       [0]: cartesian abs-arg line: cos(x) + I*sinh(x) for x over ((-2+0j), (2+0j))
+       [0]: cartesian abs-arg line: cos(x) + I*sinh(x) for x over (-2, 2)
 
     Interactive-widget plot of a Fourier Transform. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
@@ -821,7 +821,7 @@ def plot_complex_vector(*args, **kwargs):
        >>> plot_complex_vector(expr, (z, -5 - 5j, 5 + 5j),
        ...     quiver_kw=dict(color="orange"), normalize=True, grid=False)
        Plot object containing:
-       [0]: contour: sqrt(4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2 + ((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2)**2) for _x over (-5.0, 5.0) and _y over (-5.0, 5.0)
+       [0]: contour: sqrt(4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2 + ((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2)**2) for _x over (-5.00000000000000, 5.00000000000000) and _y over (-5.00000000000000, 5.00000000000000)
        [1]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
 
     Only quiver plot with normalized lengths and solid color.

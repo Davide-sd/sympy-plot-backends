@@ -103,9 +103,9 @@ them by printing the plot object:
 
    >>> print(p)
    Plot object containing:
-   [0]: cartesian line: sin(x) for x over (-10.0, 10.0)
-   [1]: cartesian line: cos(x) for x over (-10.0, 10.0)
-   [2]: cartesian line: log(x) for x over (-10.0, 10.0)
+   [0]: cartesian line: sin(x) for x over (-10, 10)
+   [1]: cartesian line: cos(x) for x over (-10, 10)
+   [2]: cartesian line: log(x) for x over (-10, 10)
 
 We can retrieve a list containing all data series from a plot object by
 calling the ``series`` attribute:
@@ -126,7 +126,7 @@ plot object:
    :include-source: True
 
    >>> print(p[0])
-   cartesian line: sin(x) for x over (-10.0, 10.0)
+   cartesian line: sin(x) for x over (-10, 10)
 
 We can combine multiple plots together in three ways:
 
@@ -155,7 +155,7 @@ We can combine multiple plots together in three ways:
       >>> p3 = p1 + p2
       >>> p3.show()
       >>> # or more quickly: (p1 + p2).show()
-   
+
    Note that the final plot uses the keyword arguments of the left-most plot
    in the summation. In the previous example, the resulting plot has the title
    of ``p1``. Now, let's sum them up in a different order:
@@ -166,7 +166,7 @@ We can combine multiple plots together in three ways:
       :include-source: True
 
       >>> (p2 + p1).show()
-   
+
    Here, the resulting plot is using the title and axis labels of ``p2``.
 
 2. We can use the ``extend`` method to achieve the same goal as before:
@@ -196,6 +196,6 @@ We can combine multiple plots together in three ways:
       >>> p1.append(p2[0])
       >>> print(p1)
       Plot object containing:
-      [0]: cartesian line: exp(-x/5)*cos(x) for x over (0.0, 10.0)
-      [1]: cartesian line: exp(-x/5) for x over (0.0, 10.0)
+      [0]: cartesian line: exp(-x/5)*cos(x) for x over (0, 10)
+      [1]: cartesian line: exp(-x/5) for x over (0, 10)
       >>> p1.show()

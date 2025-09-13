@@ -131,6 +131,15 @@ class _CastToInteger(param.Integer):
         super().__set__(obj, int(val))
 
 
+class _CastToFloat(param.Number):
+    """
+    This parameter assures that instances of NumberSymbol are cast to float.
+    """
+
+    def __set__(self, obj, val):
+        super().__set__(obj, float(val))
+
+
 class _RangeTuple(param.ClassSelector):
     """
     Represent a range for some variable. It must be a 3-elements tuple,
