@@ -1,7 +1,12 @@
 import ipywidgets
 from sympy import latex
 from sympy.external import import_module
-from spb.defaults import TWO_D_B, THREE_D_B
+from spb.defaults import cfg, TWO_D_B, THREE_D_B
+from spb.doc_utils.docstrings import _PARAMS
+from spb.doc_utils.ipython import (
+    modify_parameterized_doc,
+    modify_graphics_doc
+)
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.utils import _aggregate_parameters
 from spb import BB, MB, PlotGrid
@@ -58,17 +63,25 @@ def _build_grid_layout(widgets, ncols):
     return grid
 
 
+@modify_parameterized_doc()
 class InteractivePlot(IPlot):
     def __init__(self, *series, **kwargs):
+
         params = kwargs.pop("params", {})
         params = _aggregate_parameters(params, series)
-        self._original_params = params
-        self._use_latex = kwargs.pop("use_latex", True)
-        self._ncols = kwargs.get("ncols", 2)
-        self._layout = kwargs.get("layout", "tb")
 
-        self._widgets = _build_widgets(params, self._use_latex)
-        self._grid_widgets = _build_grid_layout(self._widgets, self._ncols)
+        kwargs.setdefault("ncols", 2)
+        kwargs.setdefault("use_latex", cfg["interactive"]["use_latex"])
+        kwargs.setdefault("layout", "tb")
+        kwargs.setdefault("_original_params", params)
+
+        # remove keyword arguments that are not parameters of this backend
+        kwargs_for_init = {k: v for k, v in kwargs.items() if k in list(self.param)}
+
+        super().__init__(**kwargs_for_init)
+
+        self._widgets = _build_widgets(params, self.use_latex)
+        self._grid_widgets = _build_grid_layout(self._widgets, self.ncols)
 
         # map symbols to widgets
         self._params_widgets = {
@@ -90,17 +103,15 @@ class InteractivePlot(IPlot):
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
             kwargs["is_iplot"] = True
             kwargs["imodule"] = "ipywidgets"
-            kwargs["use_latex"] = self._use_latex
+            kwargs["use_latex"] = self.use_latex
             self.backend = Backend(*series, **kwargs)
 
     def _get_iplot_kw(self):
-        return {
-            "backend": type(self.backend),
-            "layout": self._layout,
-            "ncols": self._ncols,
-            "use_latex": self._use_latex,
-            "params": self._original_params,
-        }
+        params = {}
+        # copy all parameters into the dictionary
+        for k in list(self.param):
+            params[k] = getattr(self, k)
+        return params
 
     def _update(self, change):
         # bind widgets state to this update function
@@ -156,17 +167,19 @@ class InteractivePlot(IPlot):
             # will be updated.
             self.backend.plt.ion() # without it there won't be any update
 
-        if self._layout == "tb":
+        if self.layout == "tb":
             return ipywidgets.VBox([self._grid_widgets, self._output_figure])
-        elif self._layout == "bb":
+        elif self.layout == "bb":
             return ipywidgets.VBox([self._output_figure, self._grid_widgets])
-        elif self._layout == "sbl":
+        elif self.layout == "sbl":
             return ipywidgets.HBox([self._grid_widgets, self._output_figure])
         return ipywidgets.HBox([self._output_figure, self._grid_widgets])
 
 
+@modify_graphics_doc(InteractivePlot, replace={"params": _PARAMS})
 def iplot(*series, show=True, **kwargs):
-    """Create an interactive application containing widgets and charts in order
+    """
+    Create an interactive application containing widgets and charts in order
     to study symbolic expressions, using ipywidgets.
 
     This function is already integrated with many of the usual
@@ -183,57 +196,12 @@ def iplot(*series, show=True, **kwargs):
     series : BaseSeries
         Instances of :py:class:`spb.series.BaseSeries`, representing the
         symbolic expression to be plotted.
-
-    params : dict
-        A dictionary mapping the symbols to a parameter. The parameter can be:
-
-        1. a widget.
-        2. a tuple of the form:
-           `(default, min, max, N, tick_format, label, spacing)`,
-           which will instantiate a
-           :py:class:`ipywidgets.widgets.widget_float.FloatSlider` or
-           a :py:class:`ipywidgets.widgets.widget_float.FloatLogSlider`,
-           depending on the spacing strategy. In particular:
-
-           - default, min, max : float
-                Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers. The order of these 3
-                numbers is not important: the module will figure it out
-                which is what.
-           - N : int, optional
-                Number of steps of the slider.
-           - tick_format : str or None, optional
-                Provide a formatter for the tick value of the slider.
-                Default to ``".2f"``.
-           - label: str, optional
-                Custom text associated to the slider.
-           - spacing : str, optional
-                Specify the discretization spacing. Default to ``"linear"``,
-                can be changed to ``"log"``.
-
-        Note that the parameters cannot be linked together (ie, one parameter
-        cannot depend on another one).
-
-    layout : str, optional
-        The layout for the controls/plot. Possible values:
-
-        - ``'tb'``: controls in the top bar.
-        - ``'bb'``: controls in the bottom bar.
-        - ``'sbl'``: controls in the left side bar.
-        - ``'sbr'``: controls in the right side bar.
-
-        The default value is ``'tb'``.
-
-    ncols : int, optional
-        Number of columns to lay out the widgets. Default to 2.
-
     show : bool, optional
         Default to True.
         If True, it will return an object that will be rendered on the
         output cell of a Jupyter Notebook. If False, it returns an instance
         of ``InteractivePlot``, which can later be shown by calling the
         ``show()`` method.
-
     title : str or tuple
         The title to be shown on top of the figure. To specify a parametric
         title, write a tuple of the form:``(title_str, param_symbol1, ...)``,
@@ -243,12 +211,6 @@ def iplot(*series, show=True, **kwargs):
           ``"test = {:.2f}"``.
         * ``param_symbol1, ...`` must be a symbol or a symbolic expression
           whose free symbols are contained in the ``params`` dictionary.
-
-    use_latex : bool, optional
-        Default to True.
-        If True, the latex representation of the symbols will be used in the
-        labels of the parameter-controls. If False, the string
-        representation will be used instead.
 
 
     Notes

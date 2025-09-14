@@ -21,13 +21,12 @@ pn.extension("mathjax", "plotly", sizing_mode="stretch_width")
 
 class Animation(BaseAnimation, PanelCommon):
     def __init__(self, *series, **kwargs):
-        self._layout = "bb"
-        self._ncols = 1
-        self._servable = kwargs.pop("servable", cfg["interactive"]["servable"])
-        self._pane_kw = kwargs.pop("pane_kw", dict())
-        self._template = kwargs.pop("template", None)
-        self._name = kwargs.pop("name", "")
-        self._original_params = kwargs.get("params", {})
+        super().__init__(
+            layout="bb",
+            ncols=1,
+            name=kwargs.pop("name", ""),
+            _original_params = kwargs.get("params", {})
+        )
         self.merge = merge
 
         plotgrid = kwargs.get("plotgrid", None)
@@ -83,7 +82,6 @@ def animation(*series, show=True, **kwargs):
     series : BaseSeries
         Instances of :py:class:`spb.series.BaseSeries`, representing the
         symbolic expression to be plotted.
-
     animation : bool or dict
 
         * ``False`` (default value): no animation.
@@ -99,7 +97,6 @@ def animation(*series, show=True, **kwargs):
         values are just indicative: the animation is going to compute new
         data at each time step. Hence, the more data needs to be computed,
         the slower the update.
-
     params : dict
         A dictionary mapping the symbols to a parameter. The parameter can be:
 
@@ -126,12 +123,6 @@ def animation(*series, show=True, **kwargs):
         3. A 1D numpy array, with length given by ``fps * time``, specifying
            the custom value at each animation frame (or, at each time step)
            associated to the parameter.
-
-    servable : bool, optional
-        Default to False, which will show the interactive application on the
-        output cell of a Jupyter Notebook. If True, the application will be
-        served on a new browser window.
-
     show : bool, optional
         Default to True.
         If True, it will return an object that will be rendered on the
@@ -139,7 +130,6 @@ def animation(*series, show=True, **kwargs):
         of ``Animation``, which can later be shown by calling the
         ``show()`` method, or saved to a GIF/MP4 file using the
         ``save()`` method.
-
     title : str or tuple
         The title to be shown on top of the figure. To specify a parametric
         title, write a tuple of the form:``(title_str, param_symbol1, ...)``,

@@ -9,9 +9,13 @@ from IPython.display import clear_output
 
 class Animation(BaseAnimation, IPlot):
     def __init__(self, *series, **kwargs):
+        super().__init__(
+            layout="bb",
+            ncols=1,
+            _original_params = kwargs.get("params", {})
+        )
+
         plotgrid = kwargs.get("plotgrid", None)
-        params = kwargs.get("params", {})
-        self._original_params = params
 
         if plotgrid:
             self.backend = plotgrid

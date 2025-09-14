@@ -157,7 +157,7 @@ class IPlot(param.Parameterized):
         }, doc="""
         Select the location of the widgets in relation to the plotting
         area of the interactive application.""")
-    backend = param.Parameter(constant=True, doc="""
+    backend = param.Parameter(doc="""
         An instance of the `Plot` class where the numerical data will
         be added to the appropriate figure.""")
     _original_params = param.Dict(default={}, doc="""
@@ -223,8 +223,14 @@ class IPlot(param.Parameterized):
 
         backend_kw = self.backend._copy_kwargs()
         iplot_kw = self._get_iplot_kw()
+        iplot_kw["backend"] = type(self.backend)
+        params_to_remove = [k for k in iplot_kw if k[0] == "_"]
+        for k in params_to_remove:
+            iplot_kw.pop(k)
         iplot_kw.pop("fig", None)
         iplot_kw["show"] = False
+
+        print("backend_kw", backend_kw)
 
         new_iplot = type(self)(*series, **merge({}, backend_kw, iplot_kw))
         return new_iplot
