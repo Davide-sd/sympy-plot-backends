@@ -8,72 +8,70 @@ v4.0.0
 * Refactoring of the plotting module in order to use the
   `param module <https://param.holoviz.org>`_. While this add a new
   mandatory dependency (previously, it was installed and used only
-  when using the interactive module), it brings many benefits:
+  by the interactive module), it brings many benefits:
 
-  * Clearer code base, in particular in the `spb.series` modules.
+  * Clearer code base, in particular inside the `spb.series` modules, becaue
+    each attributes is now very well documented.
   * Automatic and complete generation of the documentation when the
     module is imported, on all classes and plotting function.
     The documentaion is shown when the user executes
     `help(plot_function)` or `plot_function?`. All available
     parameters will be shown.
 
-* Changed the init signature of ``NicholsLineSeries``.
+* Improvements to the function ``graphics()`` and the backends:
 
-* Added capability to set axis ticks to multiple of some quantity
-  (for example `pi/2`) thanks to the keyword arguments
-  ``x_ticks_formatter`` and ``x_ticks_formatter`` of the function
-  ``graphics()``. A few preconfigured formatter are available as well, like
-  ``multiples_of_pi_over_2``, etc.
+  * Improved the handling of grid lines thanks to the keyword arguments ``grid``
+    and ``minor_grid``. This parameters can be:
 
-* Added ``hooks`` keyword argument to ``graphics``: it accepts a list of user
-  defined functions that are going to further customize the appearance of the
-  plot. For example, users can change the tick labels on the colorbars, etc.
+    * boolean: toggle the visibility of major and minor grid lines.
+    * dict: keyword arguments used to customize the grid lines.
 
-* Added support for plotting summations with infinite bounds on plotting
-  function.
+  * Added capability to set axis ticks to multiple of some quantity
+    (for example `pi/2`) thanks to the keyword arguments
+    ``x_ticks_formatter`` and ``y_ticks_formatter`` of the function
+    ``graphics()``. A few preconfigured formatter are available as well, like
+    ``multiples_of_pi_over_2``, etc.
 
-* Improved evaluation of symbolic expressions producing very large numbers.
+  * Added ``hooks`` keyword argument to ``graphics``: it accepts a list of user
+    defined functions that are going to further customize the appearance of the
+    plot. For example, users can change the tick labels on the colorbars, etc.
 
-* Improved the handling of grid lines thanks to the keyword arguments ``grid``
-  and ``minor_grid`` of the function ``graphics()``. This parameters can be:
+* Improvements to ``spb.series`` (numerical data generation):
 
-  * boolean: toggle the visibility of major and minor grid lines.
-  * dict: keyword arguments used to customize the grid lines.
+  * Added support for plotting summations with infinite bounds on all series
+    (thus, all plotting function as well).
+  * Improved evaluation of symbolic expressions producing very large numbers.
+  * Improved logic dealing with lambdification in order minimize the time
+    spent in this stage.
+  * Removed the adaptive algorithm from
+    ``line, line_parametric_2d, line_parametric_3d, surface`` (and their
+    respective counterpars, ``plot, plot_parametric, plot3d_parametric, plot3d``).
+    Main motivations were:
 
-* Improved logic dealing with lambdification in order minimize the time
-  spent in this stage.
+    1. easier to use the plotting module, as there are 3/4 keyword arguments
+       less to be worried about.
+    2. cleaner and simpler code base.
+    3. easier to implement new features (interactive ones), that only works
+       with the uniform evaluation strategy.
 
-* Removed the adaptive algorithm from
-  ``line, line_parametric_2d, line_parametric_3d, surface`` (and their
-  respective counterpars, ``plot, plot_parametric, plot3d_parametric, plot3d``).
-  Main motivations were:
+  * Split the ``GeometrySeries`` into ``Geometry2DSeries`` and
+    ``Geometry3DSeries`` for better code separation.
+  * Added attribute ``Geometry2DSeries.range_x`` which allows to plot a
+    ``Line2D`` in the specified range along the x-axis.
+  * Added attribute ``LineOver1DRangeSeries.poles_rendering_kw``,
+    which is a dictionary of keyword arguments passed to the specific plotting
+    library renderer in order to customize the appearance of vertical lines
+    representing essential discontinuities.
+  * Changed the init signature of ``NicholsLineSeries``.
+  * Fixed bugs:
 
-  1. easier to use plotting module, as there are 3/4 keyword arguments less
-     to be worried about.
-  2. cleaner and simpler code base.
-  3. easier to implement new features (interactive ones), that only works with
-     the uniform evaluation strategy.
-
-* Split the ``GeometrySeries`` into ``Geometry2DSeries`` and
-  ``Geometry3DSeries`` for better code separation.
-
-* Added attribute ``Geometry2DSeries.range_x`` which allows to plot a
-  ``Line2D`` in the specified range along the x-axis.
+    * with the numerical algorithm about singularities detection of
+      2D parametric lines.
+    * with the algorithm used to insert exclusion points through the
+      ``exclude`` keyword argument.
 
 * remove ``tp`` keyword argument from ``step_response``, ``ramp_response``,
   ``impulse_response``.
-
-* fixed bugs:
-
-  * with the numerical algorithm about singularities detection of
-    2D parametric lines.
-  * with the algorithm used to insert exclusion points through the
-    ``exclude`` keyword argument.
-
-* ``LineOver1DRangeSeries``: added a new attribute, ``poles_rendering_kw``,
-  which is a dictionary of keyword arguments passed to the specific plotting
-  library renderer in order to customize the appearance of vertical lines
-  representing essential discontinuities.
 
 
 v3.4.3
