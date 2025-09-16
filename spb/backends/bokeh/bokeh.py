@@ -241,8 +241,7 @@ class BokehBackend(Plot):
         the figure. Note that this method doesn't show the plot.
         """
         self._process_renderers()
-        for f in self.hooks:
-            f(self._fig)
+        self._execute_hooks()
 
     def _set_piecewise_color(self, s, color):
         """Set the color to the given series"""
@@ -408,6 +407,7 @@ class BokehBackend(Plot):
             self._fig.y_range.update(start=ylim[0], end=ylim[1])
 
         self._set_axes_texts()
+        self._execute_hooks()
 
     def _set_axes_texts(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()

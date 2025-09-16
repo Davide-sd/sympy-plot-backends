@@ -210,8 +210,7 @@ class PlotlyBackend(Plot):
         """
         self._process_renderers()
         self._update_layout()
-        for f in self.hooks:
-            f(self._fig)
+        self._execute_hooks()
 
     process_series = draw
 
@@ -321,6 +320,7 @@ class PlotlyBackend(Plot):
             self._update_interactive_helper(params)
 
         self._set_axes_texts()
+        self._execute_hooks()
 
     def _update_interactive_helper(self, params):
         for r in self.renderers:

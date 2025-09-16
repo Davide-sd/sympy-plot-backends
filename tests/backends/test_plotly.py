@@ -12,7 +12,7 @@ from spb import (
     PB, plot, plot_riemann_sphere, plot_real_imag, plot_complex,
     plot_vector, plot3d_revolution, plot3d_spherical,
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
-    plot_parametric, plot_geometry,
+    plot_parametric, plot_geometry, graphics, surface,
     plot_polar, multiples_of_pi_over_4, tick_formatter_multiples_of
 )
 from spb.series import SurfaceOver2DRangeSeries, ParametricSurfaceSeries
@@ -1793,7 +1793,8 @@ def test_tick_formatter_multiples_of_polar_plot(
 
 
 def test_hooks():
-    def colorbar_ticks_formatter(fig):
+    def colorbar_ticks_formatter(plot_object):
+        fig = plot_object.fig
         param = p.fig.data[0].marker.color
         formatter = multiples_of_pi_over_4("π")
         vals, labels = formatter.PB_ticks(min(param), max(param))
@@ -1811,3 +1812,53 @@ def test_hooks():
         3.141592653589793, 3.9269908169872414, 4.71238898038469])
     assert p.fig.data[0].marker.colorbar.ticktext == (
         '0', 'π/4', 'π/2', '3π/4', 'π', '5π/4', '3π/2')
+
+
+def test_hooks_update_interactive():
+    # verify that hooks are execute both after numerical data has been added
+    # to the figure, as well as after new numerical data has been given to
+    # the renderers
+
+    x, y, a, b = symbols("x, y, a, b")
+    expr = x**4 + y**4 + y**3 - (4 * x**2 * y) + y**2 - (a * x) + (b * y)
+    x_range = (x, -3, 3)
+    y_range = (y, -3, 3)
+    params = {a: (0, -2, 2), b: (0, -2, 2)}
+    zmax = 1.5
+
+    def update_colorbar(plot_object):
+        fig = plot_object.fig
+        fig.data[0].cmax = zmax
+
+    p1 = graphics(
+        surface(expr, x_range, y_range, n=5, params=params),
+        backend=PB,
+        zlim=(-1.5, 1.5),
+        show=False
+    )
+    p2 = graphics(
+        surface(expr, x_range, y_range, n=5, params=params),
+        hooks=[
+            update_colorbar
+        ],
+        backend=PB,
+        zlim=(-1.5, 1.5),
+        show=False
+    )
+    fig1 = p1.fig
+    fig2 = p2.fig
+    assert np.allclose(fig1.layout.scene.zaxis.range, (-1.5, 1.5))
+    assert np.allclose(fig2.layout.scene.zaxis.range, (-1.5, 1.5))
+    assert np.isclose(fig1.data[0].cmin, 0)
+    assert np.isclose(fig1.data[0].cmax, 252)
+    assert np.isclose(fig2.data[0].cmin, 0)
+    assert np.isclose(fig2.data[0].cmax, 1.5)
+    # update event
+    p1.backend.update_interactive({a: 1, b: 0})
+    p2.backend.update_interactive({a: 1, b: 0})
+    assert np.allclose(fig1.layout.scene.zaxis.range, (-1.5, 1.5))
+    assert np.allclose(fig2.layout.scene.zaxis.range, (-1.5, 1.5))
+    assert np.isclose(fig1.data[0].cmin, 0)
+    assert np.isclose(fig1.data[0].cmax, 255)
+    assert np.isclose(fig2.data[0].cmin, 0)
+    assert np.isclose(fig2.data[0].cmax, 1.5)

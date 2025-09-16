@@ -409,8 +409,7 @@ class MatplotlibBackend(Plot):
                     self.plt.FuncFormatter(
                         self.y_ticks_formatter.MB_func_formatter()))
 
-        for f in self.hooks:
-            f(self._fig, self._ax)
+        self._execute_hooks()
 
     def _set_axes_texts(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()
@@ -462,6 +461,7 @@ class MatplotlibBackend(Plot):
             self._ax.autoscale_view()
 
         self._set_lims(xlims, ylims, zlims)
+        self._execute_hooks()
 
     def _set_aspect(self):
         aspect = self.aspect

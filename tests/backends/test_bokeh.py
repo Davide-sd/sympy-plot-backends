@@ -1641,7 +1641,8 @@ def test_tick_formatter_multiples_of_number_of_minor_gridlines():
 
 
 def test_hooks():
-    def colorbar_ticks_formatter(fig):
+    def colorbar_ticks_formatter(plot_object):
+        fig = plot_object.fig
         formatter = multiples_of_pi_over_4("π")
         cb = fig.right[0]
         cb.ticker = formatter.BB_ticker()

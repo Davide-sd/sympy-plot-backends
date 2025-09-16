@@ -857,7 +857,8 @@ def test_arrow_3d():
 
 
 def test_hooks():
-    def change_title(fig):
+    def change_title(plot_object):
+        fig = plot_object.fig
         fig.objects[-1].text = "changed"
 
     p = make_test_hooks_3d(KB, [])

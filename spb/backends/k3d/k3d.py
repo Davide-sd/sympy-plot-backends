@@ -181,8 +181,7 @@ class K3DBackend(Plot):
         # this is necessary in order for the series to be added even if
         # show=False
         self._process_renderers()
-        for f in self.hooks:
-            f(self._fig)
+        self._execute_hooks()
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
@@ -348,6 +347,7 @@ class K3DBackend(Plot):
         self._set_axes_texts()
         self._new_camera_position()
         self._add_clipping_planes()
+        self._execute_hooks()
 
     def _new_camera_position(self):
         if self.camera is None:

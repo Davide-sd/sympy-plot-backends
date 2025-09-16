@@ -248,17 +248,19 @@ class PlotAttributes(param.Parameterized):
         * Bokeh: https://docs.bokeh.org/en/latest/docs/reference/models/grids.html#module-bokeh.models.grids
         """)
     hooks = param.List(default=[], doc="""
-        List of functions executed after the figure has been initialized and
-        populated with numerical data. These hooks allow the user to further
-        customize the figure before it is shown on the screen.
-        In particular:
+        List of functions expecting one argument, the current plot object,
+        which allows users to further customize the appearance of the plot
+        before it is shown on the screen. The hooks are executed:
 
-        * Matplotlib: each function must be ``f(fig, ax)``, where ``fig`` is
-          the figure object and ``ax`` is the current axes where data is
-          going to be added. Thanks to ``fig`` the user will be able to
-          further customize colorbar, etc...
-        * Bokeh, Plotly, K3D-Jupyter: each function must be ``f(fig)``, where
-          ``fig`` is the overall figure.
+        1. after the figure has been initialized and populated with
+           numerical data.
+        2. after the existing renderers update the visualization because
+           the user interacted with some widget).
+
+        Note: let ``p`` be the plot object. Then, the user can access the
+        figure with ``p.fig``. In case of
+        :py:class:`spb.backends.matplotlib.MatplotlibBackend`, the user can
+        also retrieve the axes in which data was added with ``p.ax``.
         """)
     # NOTE: The backend might need to create different types of figure
     # depending on the interactive module being used.
@@ -449,6 +451,9 @@ class Plot(PlotAttributes):
         Allow to invert x-axis if the range is given as (symbol, max, min)
         instead of (symbol, min, max).""")
 
+    def _execute_hooks(self):
+        for h in self.hooks:
+            h(self)
 
     def _set_labels(self, wrapper="$%s$"):
         """Set the correct axis labels depending on wheter the backend support

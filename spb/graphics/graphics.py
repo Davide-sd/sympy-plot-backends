@@ -155,20 +155,21 @@ from spb.utils import _instantiate_backend, _check_misspelled_kwargs
     #     :format: doctest
     #     :include-source: True
 
-    #     >>> def colorbar_ticks_formatter(fig, ax):
-    #     ...     cax = fig.axes[1]
-    #     ...     formatter = multiples_of_pi()
-    #     ...     cax.yaxis.set_major_locator(formatter.MB_major_locator())
-    #     ...     cax.yaxis.set_major_formatter(formatter.MB_func_formatter())
+        # >>> def colorbar_ticks_formatter(plot_object):
+        # ...     fig, ax = plot_object.fig, plot_object.ax
+        # ...     cax = fig.axes[1]
+        # ...     formatter = multiples_of_pi()
+        # ...     cax.yaxis.set_major_locator(formatter.MB_major_locator())
+        # ...     cax.yaxis.set_major_formatter(formatter.MB_func_formatter())
 
-    #     >>> graphics(
-    #     ...     line_parametric_2d(
-    #     ...         2 * cos(u) + 5 * cos(2 * u / 3),
-    #     ...         2 * sin(u) - 5 * sin(2 * u / 3),
-    #     ...         (u, 0, 6 * pi)
-    #     ...     ),
-    #     ...     hooks=[colorbar_ticks_formatter]
-    #     ... )
+        # >>> graphics(
+        # ...     line_parametric_2d(
+        # ...         2 * cos(u) + 5 * cos(2 * u / 3),
+        # ...         2 * sin(u) - 5 * sin(2 * u / 3),
+        # ...         (u, 0, 6 * pi)
+        # ...     ),
+        # ...     hooks=[colorbar_ticks_formatter]
+        # ... )
     #     Plot object containing:
     #     [0]: parametric cartesian line: (5*cos(2*u/3) + 2*cos(u), -5*sin(2*u/3) + 2*sin(u)) for u over (0, 6*pi)
 

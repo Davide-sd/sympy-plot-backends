@@ -2754,7 +2754,8 @@ def test_tick_formatter_multiples_of_polar_plot(
     )
 ])
 def test_hooks(case, expected_positions, expected_labels):
-    def colorbar_ticks_formatter(fig, ax):
+    def colorbar_ticks_formatter(plot_object):
+        fig = plot_object.fig
         cax = fig.axes[1]
         formatter = multiples_of_pi_over_4()
         cax.yaxis.set_major_locator(formatter.MB_major_locator())
