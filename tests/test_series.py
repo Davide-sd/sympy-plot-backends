@@ -4284,6 +4284,22 @@ def test_implicit_2d_series_ne(adaptive):
     s.get_data()
 
 
+@pytest.mark.parametrize("depth, expected_length", [
+    (0, 2854),
+    (1, 4884),
+    (2, 8934),
+    (3, 17040),
+    (4, 33258),
+])
+def test_implicit_2d_adaptive_true_depth(depth, expected_length):
+    x, y = symbols("x y")
+    expr = Ne(x * y, 1)
+    s = ImplicitSeries(
+        expr, (x, -10, 10), (y, -10, 10), adaptive=True, depth=depth)
+    d = s.get_data()
+    assert len(d[0]) == expected_length
+
+
 @pytest.mark.parametrize(
     "start, direc, label, rkw, sil, params",
     [

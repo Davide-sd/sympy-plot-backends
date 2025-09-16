@@ -1773,7 +1773,7 @@ class ImplicitSeries(
     def _preprocess_expr(self, expr, kwargs):
         self._block_lambda_functions(expr)
         # these are needed for adaptive evaluation
-        expr, has_relational = self._has_relational(sympify(expr))
+        expr, has_relational = self._check_if_has_relational(sympify(expr))
         kwargs["_adaptive_expr"] = expr
         kwargs["_has_relational"] = has_relational
         kwargs["_label_str"] = str(expr)
@@ -1814,7 +1814,7 @@ class ImplicitSeries(
 
     color = line_color
 
-    def _has_relational(self, expr):
+    def _check_if_has_relational(self, expr):
         # Represents whether the expression contains an Equality, GreaterThan
         # or LessThan
         has_relational = False
