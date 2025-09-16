@@ -7,6 +7,8 @@ from sympy import (
     Number as SympyNumber,
     NumberSymbol
 )
+from spb.doc_utils.ipython import modify_parameterized_doc
+
 
 def convert_colormap(cm, to, n=256):
     """Convert the provided colormap to a format usable by the specified
@@ -634,6 +636,7 @@ def compute_streamtubes(xx, yy, zz, uu, vv, ww, kwargs, color_func=None, ):
     return vertices, attributes
 
 
+@modify_parameterized_doc()
 class tick_formatter_multiples_of(param.Parameterized):
     """
     Create a tick formatter where each tick is a multiple of a `quantity / n`.
@@ -646,27 +649,60 @@ class tick_formatter_multiples_of(param.Parameterized):
     Consider a quantity, for example `pi`. Let's suppose our region is limited
     to [-2*pi, 2*pi].
 
-    To get a major tick at multiples of `pi`, then n=1 and we'd get:
-    [-2*pi, -pi, 0, pi, 2*pi]
+    To get a major tick at multiples of `pi`, then n=1:
 
-    >>> from spb.backends.utils import tick_formatter_multiples_of
-    >>> from sympy import py
-    >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=1)
+    .. plot::
+        :context: reset
+        :format: doctest
+        :include-source: True
 
-    To get a major tick at multiples of `2*pi`, than n=0.5 and we'd get:
-    [-2*pi, 0, 2*pi]
+        >>> from sympy import *
+        >>> from spb import tick_formatter_multiples_of, graphics, line
+        >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=1)
+        >>> x = symbols("x")
+        >>> graphics(
+        ...     line(cos(x), (x, -2*pi, 2*pi)),
+        ...     x_ticks_formatter=tf
+        ... )
 
-    >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=0.5)
+    To get a major tick at multiples of `2*pi`, than n=0.5:
 
-    To get a major tick at multiples of `pi / 2`. Then, n=2 and we'd get:
-    [-2*pi, -3*pi/2, -pi, -pi/2, 0, pi/2, pi, 3*pi/2, 2*pi].
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
 
-    >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=2)
+        >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=0.5)
+        >>> graphics(
+        ...     line(cos(x), (x, -2*pi, 2*pi)),
+        ...     x_ticks_formatter=tf
+        ... )
 
-    To get a major tick at multiples of `pi / 3`. Then, n=3 and we'd get:
-    [-2*pi, -5*pi/3, -4*pi/3, -pi, -2*pi/3, -pi/3, 0, pi/3, 2*pi/3, pi, 4*pi/3, 5*pi/3, 2*pi]
+    To get a major tick at multiples of `pi / 2`, then, n=2:
 
-    >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=3)
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> tf = tick_formatter_multiples_of(quantity=pi, label="\\pi", n=2)
+        >>> graphics(
+        ...     line(cos(x), (x, -2*pi, 2*pi)),
+        ...     x_ticks_formatter=tf
+        ... )
+
+    To get a major tick at multiples of `e` (Euler number):
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> tf = tick_formatter_multiples_of(quantity=E, label="e", n=1)
+        >>> graphics(
+        ...     line(sin(pi*x/E) * ln(x), (x, 0, 5*E)),
+        ...     x_ticks_formatter=tf
+        ... )
 
     Notes
     -----
@@ -714,6 +750,10 @@ class tick_formatter_multiples_of(param.Parameterized):
             self.quantity = float(self.quantity)
 
     def MB_func_formatter(self):
+        """
+        Return a function to be used by matplotlib's ``FuncFormatter``
+        in order to customize the tick labels.
+        """
         def formatter(value, tick_number):
             N = abs(int(self.np.round(value / (self.quantity / self.n))))
             if N == 0:
@@ -735,13 +775,25 @@ class tick_formatter_multiples_of(param.Parameterized):
         return formatter
 
     def MB_major_locator(self):
+        """
+        Returns a matplotlib ``MultipleLocator`` in order to locate major
+        grid lines.
+        """
         return self.plt.MultipleLocator(self.quantity / self.n)
 
     def MB_minor_locator(self):
+        """
+        Returns a matplotlib ``MultipleLocator`` in order to locate minor
+        grid lines.
+        """
         den = (self.n_minor + 1) * self.n
         return self.plt.MultipleLocator(self.quantity / den)
 
     def BB_formatter(self):
+        """
+        Returns a bokeh ``CustomJSTickFormatter`` in order to customize the
+        tick labels.
+        """
         return self.bokeh.models.CustomJSTickFormatter(code=f"""
             const N = {self.n};
             const step = {self.quantity} / N;
@@ -770,17 +822,21 @@ class tick_formatter_multiples_of(param.Parameterized):
         """)
 
     def BB_ticker(self):
+        """
+        Returns a matplotlib ``MultipleLocator`` in order to locate major
+        grid lines.
+        """
         return self.bokeh.models.SingleIntervalTicker(
             interval=self.quantity / self.n, num_minor_ticks=(self.n_minor+1))
 
-    def PB_ticks(self, xmin, xmax, latex=False):
+    def PB_ticks(self, t_min, t_max, latex=False):
         """
-        Return tick values and labels for multiples of pi/N
-        between xmin and xmax.
+        Return tick values and labels for multiples of `quantity/n`
+        between `t_min` and `t_max`.
         """
         step = self.quantity / self.n
-        kmin = int(self.np.floor(xmin / step))
-        kmax = int(self.np.ceil(xmax / step))
+        kmin = int(self.np.floor(t_min / step))
+        kmax = int(self.np.ceil(t_max / step))
 
         tickvals = []
         ticktext = []

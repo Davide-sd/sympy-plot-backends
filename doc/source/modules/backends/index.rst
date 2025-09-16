@@ -77,6 +77,7 @@ customization options.
    bokeh.rst
    plotly.rst
    k3d.rst
+   utils.rst
 
 
 About the Implementation
