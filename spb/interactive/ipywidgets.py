@@ -5,7 +5,7 @@ from spb.defaults import cfg, TWO_D_B, THREE_D_B
 from spb.doc_utils.docstrings import _PARAMS
 from spb.doc_utils.ipython import (
     modify_parameterized_doc,
-    modify_graphics_doc
+    modify_graphics_series_doc
 )
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.utils import _aggregate_parameters
@@ -176,7 +176,7 @@ class InteractivePlot(IPlot):
         return ipywidgets.HBox([self._output_figure, self._grid_widgets])
 
 
-@modify_graphics_doc(InteractivePlot, replace={"params": _PARAMS})
+@modify_graphics_series_doc(InteractivePlot, replace={"params": _PARAMS})
 def iplot(*series, show=True, **kwargs):
     """
     Create an interactive application containing widgets and charts in order

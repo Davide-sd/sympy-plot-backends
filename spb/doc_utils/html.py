@@ -329,7 +329,7 @@ def postprocess_KB_interactive_image(
     # Guesstimate (in pixel) for the vertical space of each row of widgets
     hr = 50
     # number of rows used by the widgets
-    nr = int(np.ceil(len(panelplot.backend[0].params) / panelplot._ncols))
+    nr = int(np.ceil(len(panelplot.backend[0].params) / panelplot.ncols))
     # need to pad before first row and after last row. Guesstimate for padding.
     pad_h = 25
     # Prediction of the height of image to be cropped

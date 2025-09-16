@@ -255,7 +255,7 @@ class PlotAttributes(param.Parameterized):
         1. after the figure has been initialized and populated with
            numerical data.
         2. after the existing renderers update the visualization because
-           the user interacted with some widget).
+           the user interacted with some widget.
 
         Note: let ``p`` be the plot object. Then, the user can access the
         figure with ``p.fig``. In case of

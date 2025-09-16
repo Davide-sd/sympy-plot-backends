@@ -12,7 +12,7 @@ from spb.series import (
     HLineSeries, VLineSeries
 )
 from spb.doc_utils.docstrings import _PARAMS
-from spb.doc_utils.ipython import modify_graphics_doc
+from spb.doc_utils.ipython import modify_graphics_series_doc
 from spb.graphics.utils import _plot_sympify
 from spb.utils import (
     _create_missing_ranges, _preprocess_multiple_ranges
@@ -150,7 +150,7 @@ def _build_line_series(expr, r, label, **kwargs):
     return series
 
 
-@modify_graphics_doc(LineOver1DRangeSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(LineOver1DRangeSeries, replace={"params": _PARAMS})
 def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
     """
     Plot a function of one variable over a 2D space.
@@ -385,7 +385,7 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
         expr, range_x, label, rendering_kw=rendering_kw, **kwargs)
 
 
-@modify_graphics_doc(Parametric2DLineSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(Parametric2DLineSeries, replace={"params": _PARAMS})
 def line_parametric_2d(
     expr_x, expr_y, range_p=None, label=None, rendering_kw=None,
     colorbar=True, use_cm=True, **kwargs
@@ -545,7 +545,7 @@ def line_parametric_2d(
     return [s]
 
 
-@modify_graphics_doc(Parametric2DLineSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(Parametric2DLineSeries, replace={"params": _PARAMS})
 def line_polar(expr, range_p=None, label=None, rendering_kw=None, **kwargs):
     """
     Creates a 2D polar plot of a function of one variable.
@@ -652,7 +652,7 @@ def line_polar(expr, range_p=None, label=None, rendering_kw=None, **kwargs):
         label, rendering_kw, **kwargs)
 
 
-@modify_graphics_doc(ContourSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ContourSeries, replace={"params": _PARAMS})
 def contour(
     expr, range_x=None, range_y=None, label=None, rendering_kw=None,
     colorbar=True, clabels=True, fill=True, **kwargs
@@ -834,7 +834,7 @@ def contour(
     return [s]
 
 
-@modify_graphics_doc(ImplicitSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ImplicitSeries, replace={"params": _PARAMS})
 def implicit_2d(
     f, range_x=None, range_y=None, label=None, rendering_kw=None,
     color=None, border_color=None, border_kw=None, **kwargs
@@ -1102,7 +1102,7 @@ def implicit_2d(
     return series
 
 
-@modify_graphics_doc(List2DSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(List2DSeries, replace={"params": _PARAMS})
 def list_2d(list_x, list_y, label=None, rendering_kw=None, **kwargs):
     """
     Plots lists of coordinates.
@@ -1219,7 +1219,7 @@ def list_2d(list_x, list_y, label=None, rendering_kw=None, **kwargs):
     return [s]
 
 
-@modify_graphics_doc(Geometry2DSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(Geometry2DSeries, replace={"params": _PARAMS})
 def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
     """
     Plot entities from the sympy.geometry module.
@@ -1386,7 +1386,7 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
     return [s]
 
 
-@modify_graphics_doc(HLineSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(HLineSeries, replace={"params": _PARAMS})
 def hline(y, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
     """
     Create an horizontal line at a given location in a 2D space.
@@ -1453,7 +1453,7 @@ def hline(y, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
     ]
 
 
-@modify_graphics_doc(VLineSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(VLineSeries, replace={"params": _PARAMS})
 def vline(x, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
     """
     Create an vertical line at a given location in a 2D space.

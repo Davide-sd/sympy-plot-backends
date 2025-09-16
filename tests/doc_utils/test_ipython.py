@@ -5,7 +5,7 @@ from spb.doc_utils.ipython import (
     get_public_methods,
     split_docstring,
     _get_parameters_dict,
-    modify_graphics_doc
+    modify_graphics_series_doc
 )
 from spb.series import LineOver1DRangeSeries
 from spb import plot, line
@@ -183,7 +183,7 @@ def test_split_docstring():
     assert "method_2(*args)" in sections["Methods"]
 
 
-@modify_graphics_doc(LineOver1DRangeSeries)
+@modify_graphics_series_doc(LineOver1DRangeSeries)
 def this_is_a_func(expr, range_x, label=""):
     """
     This is function in which I test the decorator that will aggregate
@@ -204,7 +204,7 @@ def this_is_a_func(expr, range_x, label=""):
     pass
 
 
-def test_modify_graphics_doc():
+def test_modify_graphics_series_doc():
     doc = this_is_a_func.__doc__
     assert "expr :" in doc
     assert "range_x : tuple, Tuple" in doc

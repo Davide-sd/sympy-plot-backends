@@ -6,7 +6,7 @@ from spb.doc_utils.docstrings import (
     _CONTROL_KW_STEP,
     _CONTROL_KW_RAMP
 )
-from spb.doc_utils.ipython import modify_graphics_doc
+from spb.doc_utils.ipython import modify_graphics_series_doc
 from spb.series import (
     PoleZeroWithSympySeries, LineOver1DRangeSeries, HVLineSeries,
     NyquistLineSeries,
@@ -299,7 +299,7 @@ def _pole_zero_common_keyword_arguments(kwargs):
     return p_rendering_kw, z_rendering_kw, p_label, z_label
 
 
-@modify_graphics_doc(PoleZeroSeries, replace=_replace_params_docstring)
+@modify_graphics_series_doc(PoleZeroSeries, replace=_replace_params_docstring)
 def pole_zero(
     system, pole_markersize=10, zero_markersize=7, show_axes=False,
     label=None, sgrid=False, zgrid=False, control=True,
@@ -550,7 +550,7 @@ def _check_lower_limit_and_control(lower_limit, control):
         )
 
 
-@modify_graphics_doc(
+@modify_graphics_series_doc(
     SystemResponseSeries,
     replace={"system": _SYSTEM, "params": _PARAMS, "control_kw": _CONTROL_KW_STEP},
     exclude=["range_t", "response_type"]
@@ -767,7 +767,7 @@ def _impulse_response_with_control_helper(
     )
 
 
-@modify_graphics_doc(
+@modify_graphics_series_doc(
     SystemResponseSeries,
     replace={"system": _SYSTEM, "params": _PARAMS, "control_kw": _CONTROL_KW_IMPULSE},
     exclude=["range_t", "response_type"]
@@ -983,7 +983,7 @@ def _ramp_response_with_control_helper(
     )
 
 
-@modify_graphics_doc(
+@modify_graphics_series_doc(
     SystemResponseSeries,
     replace={"system": _SYSTEM, "params": _PARAMS, "control_kw": _CONTROL_KW_RAMP},
     exclude=["range_t", "response_type"]
@@ -1243,7 +1243,7 @@ def _bode_magnitude_helper(
         mag, _range, label, xscale='log', **kwargs)
 
 
-@modify_graphics_doc(LineOver1DRangeSeries, replace=_replace_params_docstring)
+@modify_graphics_series_doc(LineOver1DRangeSeries, replace=_replace_params_docstring)
 def bode_magnitude(
     system, initial_exp=None, final_exp=None, freq_unit='rad/sec',
     phase_unit='rad', label=None, rendering_kw=None,
@@ -1389,7 +1389,7 @@ def _bode_phase_helper(
         phase, _range, label, xscale='log', unwrap=unwrap, **kwargs)
 
 
-@modify_graphics_doc(LineOver1DRangeSeries, replace=_replace_params_docstring)
+@modify_graphics_series_doc(LineOver1DRangeSeries, replace=_replace_params_docstring)
 def bode_phase(
     system, initial_exp=None, final_exp=None, freq_unit='rad/sec',
     phase_unit='rad', label=None, rendering_kw=None, unwrap=True,
@@ -1558,7 +1558,7 @@ def _compute_range_helper(system, **kwargs):
     return _range, omega_limits
 
 
-@modify_graphics_doc(NyquistLineSeries, replace=_replace_params_docstring)
+@modify_graphics_series_doc(NyquistLineSeries, replace=_replace_params_docstring)
 def nyquist(system, omega_limits=None, input=None, output=None,
     label=None, rendering_kw=None, m_circles=False, **kwargs):
     """
@@ -1735,7 +1735,7 @@ def _nichols_helper(system, label, **kwargs):
         system, _range, label, **kwargs)
 
 
-@modify_graphics_doc(NicholsLineSeries, replace=_replace_params_docstring, exclude=["range_omega"])
+@modify_graphics_series_doc(NicholsLineSeries, replace=_replace_params_docstring, exclude=["range_omega"])
 def nichols(system, label=None, rendering_kw=None, ngrid=True, arrows=True,
     input=None, output=None, **kwargs):
     """
@@ -1850,7 +1850,7 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True, arrows=True,
     return grid + series
 
 
-@modify_graphics_doc(RootLocusSeries, replace=_replace_params_docstring)
+@modify_graphics_series_doc(RootLocusSeries, replace=_replace_params_docstring)
 def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     sgrid=True, zgrid=False, input=None, output=None, **kwargs):
     """
@@ -1954,7 +1954,7 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
     return grid + series
 
 
-@modify_graphics_doc(SGridLineSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(SGridLineSeries, replace={"params": _PARAMS})
 def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
     show_control_axis=True, rendering_kw=None, auto=False, **kwargs):
     """
@@ -2093,7 +2093,7 @@ def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
 sgrid_function = sgrid
 
 
-@modify_graphics_doc(ZGridLineSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ZGridLineSeries, replace={"params": _PARAMS})
 def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
     show_control_axis=True, rendering_kw=None, **kwargs):
     """
@@ -2210,7 +2210,7 @@ def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
 zgrid_function = zgrid
 
 
-@modify_graphics_doc(NGridLineSeries)
+@modify_graphics_series_doc(NGridLineSeries)
 def ngrid(
     cl_mags=None, cl_phases=None, label_cl_phases=False,
     rendering_kw=None, **kwargs
@@ -2295,7 +2295,7 @@ def ngrid(
 ngrid_function = ngrid
 
 
-@modify_graphics_doc(MCirclesSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(MCirclesSeries, replace={"params": _PARAMS})
 def mcircles(
     magnitudes_db=None, rendering_kw=None, show_minus_one=True, **kwargs
 ):

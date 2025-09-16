@@ -7,7 +7,7 @@ from spb.defaults import TWO_D_B, THREE_D_B, cfg
 from spb.doc_utils.docstrings import _PARAMS
 from spb.doc_utils.ipython import (
     modify_parameterized_doc,
-    modify_graphics_doc
+    modify_graphics_series_doc
 )
 from spb.utils import _check_misspelled_kwargs
 from spb.interactive import _tuple_to_dict, IPlot
@@ -373,7 +373,7 @@ class InteractivePlot(PanelCommon):
         return pn.GridBox(*widgets, ncols=self.ncols)
 
 
-@modify_graphics_doc(InteractivePlot, replace={"params": _PARAMS})
+@modify_graphics_series_doc(InteractivePlot, replace={"params": _PARAMS})
 def iplot(*series, show=True, **kwargs):
     """
     Create an interactive application containing widgets and charts in order

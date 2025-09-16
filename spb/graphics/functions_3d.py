@@ -2,7 +2,7 @@ from sympy import (
     pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane, Expr
 )
 from spb.doc_utils.docstrings import _PARAMS
-from spb.doc_utils.ipython import modify_graphics_doc
+from spb.doc_utils.ipython import modify_graphics_series_doc
 from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     Implicit3DSeries, List3DSeries, ComplexSurfaceBaseSeries, PlaneSeries
@@ -16,7 +16,7 @@ from numbers import Number
 import warnings
 
 
-@modify_graphics_doc(Parametric3DLineSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(Parametric3DLineSeries, replace={"params": _PARAMS})
 def line_parametric_3d(
     expr_x, expr_y, expr_z, range_p=None, label=None,
     rendering_kw=None, colorbar=True, use_cm=True, **kwargs
@@ -172,7 +172,7 @@ def line_parametric_3d(
     return [s]
 
 
-@modify_graphics_doc(SurfaceOver2DRangeSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(SurfaceOver2DRangeSeries, replace={"params": _PARAMS})
 def surface(
     expr, range_x=None, range_y=None, label=None, rendering_kw=None,
     colorbar=True, use_cm=False, **kwargs
@@ -391,7 +391,7 @@ def _remove_wireframe_kwargs(kwargs):
     return kwargs_without_wireframe
 
 
-@modify_graphics_doc(ParametricSurfaceSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ParametricSurfaceSeries, replace={"params": _PARAMS})
 def surface_parametric(
     expr_x, expr_y, expr_z, range_u=None, range_v=None,
     label=None, rendering_kw=None, **kwargs
@@ -598,7 +598,7 @@ def surface_parametric(
     return [s] + _plot3d_wireframe_helper([s], **kwargs)
 
 
-@modify_graphics_doc(
+@modify_graphics_series_doc(
     ParametricSurfaceSeries,
     replace={"params": _PARAMS},
     exclude=["expr_x", "expr_y", "expr_z", "range_u", "range_v"]
@@ -772,7 +772,7 @@ def surface_spherical(
         rendering_kw=rendering_kw, **kwargs)
 
 
-@modify_graphics_doc(Implicit3DSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(Implicit3DSeries, replace={"params": _PARAMS})
 def implicit_3d(
     expr, range_x=None, range_y=None, range_z=None, label=None,
     rendering_kw=None, **kwargs
@@ -866,7 +866,7 @@ def implicit_3d(
     return [s]
 
 
-@modify_graphics_doc(
+@modify_graphics_series_doc(
     ParametricSurfaceSeries,
     replace={"params": _PARAMS},
     exclude=["expr_x", "expr_y", "expr_z", "range_u", "range_v"]
@@ -1108,7 +1108,7 @@ def surface_revolution(
     return surface
 
 
-@modify_graphics_doc(List3DSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(List3DSeries, replace={"params": _PARAMS})
 def list_3d(
     list_x, list_y, list_z, label=None, rendering_kw=None, **kwargs
 ):
@@ -1200,7 +1200,7 @@ def list_3d(
     return [s]
 
 
-@modify_graphics_doc(
+@modify_graphics_series_doc(
     Parametric3DLineSeries,
     replace={"params": _PARAMS},
     exclude=["expr_x", "expr_y", "expr_z", "range_p"]
@@ -1302,7 +1302,7 @@ def wireframe(
     return _plot3d_wireframe_helper([surface_series], **kw)
 
 
-@modify_graphics_doc(PlaneSeries, replace={"params": _PARAMS}, exclude=["plane"])
+@modify_graphics_series_doc(PlaneSeries, replace={"params": _PARAMS}, exclude=["plane"])
 def plane(
     p, range_x=None, range_y=None, range_z=None, label=None,
     rendering_kw=None, **kwargs

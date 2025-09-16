@@ -1,6 +1,6 @@
 from spb.defaults import cfg
 from spb.doc_utils.docstrings import _PARAMS
-from spb.doc_utils.ipython import modify_graphics_doc
+from spb.doc_utils.ipython import modify_graphics_series_doc
 from spb.graphics.utils import _plot3d_wireframe_helper, _plot_sympify
 from spb.graphics.functions_3d import _remove_wireframe_kwargs
 from spb.graphics.vectors import vector_field_2d
@@ -17,7 +17,7 @@ from spb.utils import (
 from sympy import I, cos, sin, symbols, pi, re, im, Dummy, Expr
 
 
-@modify_graphics_doc(ComplexPointSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ComplexPointSeries, replace={"params": _PARAMS})
 def complex_points(
     *numbers, label="", rendering_kw=None, scatter=True, **kwargs
 ):
@@ -160,7 +160,7 @@ _pre_wrappers = {
 }
 
 
-@modify_graphics_doc(ColoredLineOver1DRangeSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ColoredLineOver1DRangeSeries, replace={"params": _PARAMS})
 def line_abs_arg_colored(
     expr, range_x=None, label=None, rendering_kw=None, **kwargs
 ):
@@ -260,7 +260,7 @@ def _line_helper(keys, expr, range_x, label, rendering_kw, **kwargs):
     return series
 
 
-@modify_graphics_doc(LineOver1DRangeSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(LineOver1DRangeSeries, replace={"params": _PARAMS})
 def line_abs_arg(
     expr, range_x=None, label=None, rendering_kw=None,
     abs=True, arg=True, **kwargs
@@ -344,7 +344,7 @@ def line_abs_arg(
     return _line_helper(keys, expr, range_x, label, rendering_kw, **kwargs)
 
 
-@modify_graphics_doc(LineOver1DRangeSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(LineOver1DRangeSeries, replace={"params": _PARAMS})
 def line_real_imag(
     expr, range_x=None, label=None, rendering_kw=None,
     real=True, imag=True, **kwargs
@@ -530,7 +530,7 @@ def _contour_surface_helper(
     return series
 
 
-@modify_graphics_doc(ComplexSurfaceSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ComplexSurfaceSeries, replace={"params": _PARAMS})
 def surface_abs_arg(
     expr, range_c=None, label=None, rendering_kw=None,
     abs=True, arg=True, **kwargs
@@ -621,7 +621,7 @@ def surface_abs_arg(
         True, keys, expr, range_c, label, rendering_kw, **kwargs)
 
 
-@modify_graphics_doc(ComplexSurfaceSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ComplexSurfaceSeries, replace={"params": _PARAMS})
 def contour_abs_arg(
     expr, range_c=None, label=None, rendering_kw=None,
     abs=True, arg=True, **kwargs
@@ -710,7 +710,7 @@ def contour_abs_arg(
         False, keys, expr, range_c, label, rendering_kw, **kwargs)
 
 
-@modify_graphics_doc(ComplexSurfaceSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ComplexSurfaceSeries, replace={"params": _PARAMS})
 def surface_real_imag(
     expr, range_c=None, label=None, rendering_kw=None,
     real=True, imag=True, **kwargs
@@ -801,7 +801,7 @@ def surface_real_imag(
         True, keys, expr, range_c, label, rendering_kw, **kwargs)
 
 
-@modify_graphics_doc(ComplexSurfaceSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ComplexSurfaceSeries, replace={"params": _PARAMS})
 def contour_real_imag(
     expr, range_c=None, label=None, rendering_kw=None,
     real=True, imag=True, **kwargs
@@ -890,7 +890,7 @@ def contour_real_imag(
         False, keys, expr, range_c, label, rendering_kw, **kwargs)
 
 
-@modify_graphics_doc(ComplexDomainColoringSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ComplexDomainColoringSeries, replace={"params": _PARAMS})
 def domain_coloring(
     expr, range_c=None, label=None, rendering_kw=None,
     coloring=None, cmap=None, phaseres=20, phaseoffset=0, blevel=0.75,
@@ -1105,7 +1105,7 @@ def domain_coloring(
         False, ["absarg"], expr, range_c, label, rendering_kw, **kw)
 
 
-@modify_graphics_doc(ComplexDomainColoringSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ComplexDomainColoringSeries, replace={"params": _PARAMS})
 def analytic_landscape(
     expr, range_c=None, label=None, rendering_kw=None, **kwargs
 ):
@@ -1164,7 +1164,7 @@ def analytic_landscape(
         True, ["absarg"], expr, range_c, label, rendering_kw, **kw)
 
 
-@modify_graphics_doc(ComplexDomainColoringSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(ComplexDomainColoringSeries, replace={"params": _PARAMS})
 def riemann_sphere_2d(
     expr, range_c=None, label=None, rendering_kw=None,
     at_infinity=False, riemann_mask=True, annotate=True, **kwargs
@@ -1252,7 +1252,7 @@ def riemann_sphere_2d(
     return series
 
 
-@modify_graphics_doc(RiemannSphereSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(RiemannSphereSeries, replace={"params": _PARAMS})
 def riemann_sphere_3d(expr, rendering_kw=None, colorbar=True, **kwargs):
     """
     Visualize a complex function over the Riemann sphere.
@@ -1301,7 +1301,7 @@ def riemann_sphere_3d(expr, rendering_kw=None, colorbar=True, **kwargs):
     return [s1, s2]
 
 
-@modify_graphics_doc(
+@modify_graphics_series_doc(
     Vector2DSeries,
     replace={"params": _PARAMS},
     exclude=["u", "v", "range_x", "range_y"]

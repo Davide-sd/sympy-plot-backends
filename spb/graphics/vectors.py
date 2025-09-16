@@ -4,7 +4,7 @@ from sympy import (
 from sympy.matrices.dense import DenseMatrix
 from sympy.external import import_module
 from spb.doc_utils.docstrings import _PARAMS
-from spb.doc_utils.ipython import modify_graphics_doc
+from spb.doc_utils.ipython import modify_graphics_series_doc
 from spb.series import (
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries, BaseSeries,
     ContourSeries, Arrow2DSeries, Arrow3DSeries
@@ -55,7 +55,7 @@ def _split_vector(expr):
     return xexpr, yexpr, zexpr
 
 
-@modify_graphics_doc(Vector2DSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(Vector2DSeries, replace={"params": _PARAMS})
 def vector_field_2d(
     u, v=None, range_x=None, range_y=None, label=None, is_streamlines=False,
     quiver_kw=None, stream_kw=None, contour_kw=None, **kwargs
@@ -350,7 +350,7 @@ def vector_field_2d(
     return series
 
 
-@modify_graphics_doc(Vector3DSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(Vector3DSeries, replace={"params": _PARAMS})
 def vector_field_3d(
     u, v=None, w=None, range_x=None, range_y=None,
     range_z=None, label=None, is_streamlines=False, quiver_kw=None,
@@ -654,7 +654,7 @@ def vector_field_3d(
     return slice_series
 
 
-@modify_graphics_doc(Arrow2DSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(Arrow2DSeries, replace={"params": _PARAMS})
 def arrow_2d(
     start, direction, label=None, rendering_kw=None, show_in_legend=True,
     **kwargs
@@ -728,7 +728,7 @@ def arrow_2d(
     ]
 
 
-@modify_graphics_doc(Arrow3DSeries, replace={"params": _PARAMS})
+@modify_graphics_series_doc(Arrow3DSeries, replace={"params": _PARAMS})
 def arrow_3d(
     start, direction, label=None, rendering_kw=None, show_in_legend=True,
     **kwargs
