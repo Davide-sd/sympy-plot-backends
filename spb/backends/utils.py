@@ -1,6 +1,7 @@
 from PIL import ImageColor
 from sympy.external import import_module
 import param
+import inspect
 from fractions import Fraction
 from numbers import Number as PythonNumber
 from sympy import (
@@ -921,3 +922,73 @@ def multiples_of_pi_over_4(label="\\pi"):
     # minor grid lines every pi/16
     np = import_module("numpy")
     return tick_formatter_multiples_of(quantity=np.pi, label=label, n=4, n_minor=3)
+
+
+def _get_cmin_cmax(surfacecolor, plot, series):
+    """
+    Given an array of values for the surface color, the plot object and
+    the data series, returns the appropriate minimum and maximum color values
+    to be used in the colorbar.
+    """
+    cmin = surfacecolor.min()
+    cmax = surfacecolor.max()
+    # if clipping planes are present in the z-direction, and colormap is
+    # to be used, and the colorfunc is not set (hence, default colormap
+    # according to z-value is used), then the maximum and minimum values
+    # shown on the colorbar take into consideration the zlim values.
+    returns_z_val = _returns_z_coord(series.color_func)
+    if returns_z_val and plot.zlim and (plot.zlim[0] > cmin):
+        cmin = plot.zlim[0]
+    if returns_z_val and plot.zlim and (plot.zlim[1] < cmax):
+        cmax = plot.zlim[1]
+    return cmin, cmax
+
+
+def _returns_z_coord(func):
+    """
+    Attempt to verify if the `color_func` attribute of the surface series
+    only returns the z-coordinate.
+
+    Notes
+    -----
+    The defualt color_func are:
+
+    * f = lambda x, y, z: z (for instances of SurfaceOver2DRangeSeries)
+    * f = lambda x, y, z, u, v: z (for instances of ParametricSurfaceSeries)
+
+    This approach attempts to evaluate the provided `func` with dummy objects.
+    Parsing the source code of func would be very difficult, because
+    when defining lambda functions inside another function call, or __init__
+    method, `inspect.getsource` returns a lot more than just the lambda
+    function.
+    """
+    try:
+        sig = inspect.signature(func)
+    except (TypeError, ValueError):
+        return False
+
+    params = list(sig.parameters.values())
+    if len(params) < 3:
+        return False
+
+    third = params[2]
+
+    # Only allow true positional
+    if third.kind not in (
+        inspect.Parameter.POSITIONAL_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+    ):
+        return False
+
+    # Build args list: first 3 unique sentinels, rest fillers
+    sentinels = [object(), object(), object()]
+    fillers = [object()] * (len(params) - 3)
+    args = sentinels + fillers
+
+    try:
+        result = func(*args)
+    except Exception:
+        return False
+
+    # Must return the exact third positional arg
+    return result is sentinels[2]

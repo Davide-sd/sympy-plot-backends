@@ -1034,3 +1034,21 @@ def make_test_hooks_3d(B, hooks):
         surface(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), n=10),
         backend=B, hooks=hooks, show=False, title="title"
     )
+
+
+def make_test_surface_use_cm_cmin_cmax_zlim(B, zlim, color_func=None):
+    x, y, a, b = symbols("x, y, a, b")
+    expr = x**4 + y**4 + y**3 - (4 * x**2 * y) + y**2 - (a * x) + (b * y)
+    x_range = (x, -3, 3)
+    y_range = (y, -3, 3)
+    params = {a: (0, -2, 2), b: (0, -2, 2)}
+    kwargs = {}
+    if color_func:
+        kwargs["color_func"] = color_func
+    return graphics(
+        surface(
+            expr, x_range, y_range,
+            params=params, use_cm=True, label="z", n=10, **kwargs
+        ),
+        backend=B, zlim=zlim, show=False
+    )

@@ -1,4 +1,5 @@
 from spb.backends.base_renderer import Renderer
+from spb.backends.utils import _get_cmin_cmax
 from spb.utils import get_vertices_indices
 from spb.series import PlaneSeries
 
@@ -46,13 +47,14 @@ def _draw_surface_helper(renderer, data):
         colorLegend=p.legend or s.use_cm,
     )
     if s.use_cm:
+        cmin, cmax = _get_cmin_cmax(attribute, p, s)
         a["color_map"] = next(p._cm)
         a["attribute"] = attribute
         # NOTE: color_range must contains elements of type float.
         # If np.float32 is provided, mgspack will fail to serialize
         # it, hence no html export, hence no screenshots on
         # documentation.
-        a["color_range"] = [float(attribute.min()), float(attribute.max())]
+        a["color_range"] = [float(cmin), float(cmax)]
 
     kw = p.merge({}, a, s.rendering_kw)
     surf = p.k3d.mesh(vertices, indices, **kw)
@@ -79,8 +81,9 @@ def _update_surface_helper(renderer, data, handle):
     vertices = np.vstack([x, y, z]).astype(np.float32)
     handle.vertices = vertices.T
     if s.use_cm:
+        cmin, cmax = _get_cmin_cmax(attribute, p, s)
         handle.attribute = attribute
-        handle.color_range = [float(attribute.min()), float(attribute.max())]
+        handle.color_range = [float(cmin), float(cmax)]
     p._high_aspect_ratio(x, y, z)
 
 

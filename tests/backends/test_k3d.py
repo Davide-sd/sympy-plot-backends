@@ -56,7 +56,8 @@ from .make_tests import (
     make_test_plot_list_color_func,
     make_test_real_imag,
     make_test_arrow_3d,
-    make_test_hooks_3d
+    make_test_hooks_3d,
+    make_test_surface_use_cm_cmin_cmax_zlim
 )
 
 
@@ -866,3 +867,44 @@ def test_hooks():
 
     p = make_test_hooks_3d(KB, [change_title])
     assert p.fig.objects[-1].text == "changed"
+
+
+def test_update_interactive_surface_use_cm_cmin_cmax_zlim_1():
+    # verify that if zlim is set on the `graphics` call, then clipping
+    # planes are present in the plot. Hence, the minimum and maximum
+    # color values visible on the colorbar should not be greater (in absolute
+    # value) than the zlim values.
+
+    p1 = make_test_surface_use_cm_cmin_cmax_zlim(KB, None)
+    fig1 = p1.fig
+    assert np.allclose(fig1.objects[0].color_range, (-0.395061731338501, 252))
+    p1.backend.update_interactive({a: 1, b: 2})
+    assert np.allclose(fig1.objects[0].color_range, (-0.8765432238578796, 249))
+
+    p2 = make_test_surface_use_cm_cmin_cmax_zlim(KB, (-0.5, 3))
+    fig2 = p2.fig
+    assert np.allclose(fig2.objects[0].color_range, (-0.395061731338501, 3))
+    p2.backend.update_interactive({a: 1, b: 2})
+    assert np.allclose(fig2.objects[0].color_range, (-0.5, 3))
+
+
+def test_update_interactive_surface_use_cm_cmin_cmax_zlim_2():
+    # verify that if the user provides a custom color_func and
+    # zlim is set on the `graphics` call, then clipping
+    # planes are present in the plot. But the minimum and maximum
+    # color values visible on the colorbar are not influenced by
+    # zlim, because it is assumed that the color_func doesn't return
+    # a z-value
+
+    color_func = lambda x, y, z: x*y*z
+    p1 = make_test_surface_use_cm_cmin_cmax_zlim(KB, None, color_func)
+    fig1 = p1.fig
+    assert np.allclose(fig1.objects[0].color_range, (-2268, 2268))
+    p1.backend.update_interactive({a: 1, b: 2})
+    assert np.allclose(fig1.objects[0].color_range, (-2187, 2241))
+
+    p2 = make_test_surface_use_cm_cmin_cmax_zlim(KB, (-0.5, 3), color_func)
+    fig2 = p2.fig
+    assert np.allclose(fig2.objects[0].color_range, (-2268, 2268))
+    p2.backend.update_interactive({a: 1, b: 2})
+    assert np.allclose(fig2.objects[0].color_range, (-2187, 2241))
