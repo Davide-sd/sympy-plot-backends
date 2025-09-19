@@ -156,10 +156,10 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         default="linear", objects=["linear", "log"], doc="""
         Discretization strategy along the y-direction (imaginary part).
         Related parameters: ``n12``.""")
-    n1 = _CastToInteger(default=300, doc="""
+    n1 = _CastToInteger(default=300, bounds=(2, None), doc="""
         Number of discretization points along the x-axis (real part) to be
         used in the evaluation. Related parameters: ``xscale``.""")
-    n2 = _CastToInteger(default=300, doc="""
+    n2 = _CastToInteger(default=300, bounds=(2, None), doc="""
         Number of discretization points along the y-axis (imaginary part)
         to be used in the evaluation. Related parameters: ``yscale``.""")
 
@@ -175,6 +175,10 @@ class ComplexSurfaceBaseSeries(SurfaceBaseSeries):
         self._label_latex = latex(expr) if label is None else label
         # determines what data to return on the z-axis
         self._return = _return
+
+    @param.depends("n1", "n2", watch=True)
+    def _update_discretized_domain(self):
+        self.evaluator._create_discretized_domain()
 
     @property
     def var(self):
@@ -364,16 +368,18 @@ class ComplexDomainColoringBaseSeries(param.Parameterized):
         """)
     phaseres = _CastToInteger(20, bounds=(1, 100), doc="""
         It controls the number of iso-phase and/or iso-modulus lines
-        in domain coloring plots.""")
+        in domain coloring plots.""", label="Phase Resolution")
     cmap = param.ClassSelector(class_=(str, list, tuple), doc="""
         Specify the colormap to be used on enhanced domain coloring plots
         (both images and 3d plots). Default to ``"hsv"``. Can be any colormap
         from matplotlib or colorcet.""")
     blevel = _CastToFloat(0.75, bounds=(0, 1), doc="""
         Controls the black level of ehanced domain coloring plots.
-        It must be `0 (black) <= blevel <= 1 (white)`.""")
+        It must be `0 (black) <= blevel <= 1 (white)`.""",
+        step=0.005, label="Black Level")
     phaseoffset = _CastToFloat(0, bounds=[0, 2*math.pi], doc="""
-        Controls the phase offset of the colormap in domain coloring plots.""")
+        Controls the phase offset of the colormap in domain coloring plots.""",
+        step=0.05, label="Phase Offset [rad]")
 
 
 @modify_parameterized_doc()
@@ -386,6 +392,9 @@ class ComplexDomainColoringSeries(
     the complex plane.
     """
     _exclude_params_from_doc = ["use_cm"]
+    _interactive_app_controls = [
+        "n1", "n2", "coloring", "phaseres", "phaseoffset", "blevel"
+    ]
     is_3Dsurface = False
     is_domain_coloring = True
 
@@ -557,10 +566,10 @@ class RiemannSphereSeries(
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
-    n1 = _CastToInteger(default=150, doc="""
+    n1 = _CastToInteger(default=150, bounds=(2, None), doc="""
         Number of discretization points along the polar angle to be used
         in the evaluation.""")
-    n2 = _CastToInteger(default=600, doc="""
+    n2 = _CastToInteger(default=600, bounds=(2, None), doc="""
         Number of discretization points along the azimuthal angle to be used
         in the evaluation.""")
 

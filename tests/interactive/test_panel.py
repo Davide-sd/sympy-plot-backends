@@ -1,7 +1,10 @@
 import pytest
 from pytest import raises
 pn = pytest.importorskip("panel")
-from spb import BB, PB, MB, plot, graphics, line, line_parametric_2d
+from spb import (
+    BB, PB, MB, plot, graphics, line, line_parametric_2d,
+    domain_coloring
+)
 from spb.interactive.panel import (
     DynamicParam, InteractivePlot, create_widgets
 )
@@ -286,3 +289,34 @@ def test_params_multi_value_widgets_2():
     assert np.allclose(d1, d4)
     assert not np.allclose(d2, d5)
     assert not np.allclose(d3, d6)
+
+
+@pytest.mark.parametrize("backend", [MB, BB])
+def test_domain_coloring_series_ui_controls(backend):
+    # verify that UI controls related to ComplexDomainColoringSeries
+    # are added to the interactive application
+
+    x, u = symbols("x, u")
+    p = graphics(
+        domain_coloring(
+            sin(u*x), (x, -2-2j, 2+2j), params={u: (1, 0, 2)}, n=10),
+        backend=backend,
+        grid=False,
+        imodule="panel",
+        layout="sbl",
+        ncols=1,
+        show=False
+    )
+    fig = p.fig
+    s = p.backend[0]
+    assert s.coloring == "a"
+    _, _, _, _, img1, _ = s.get_data()
+
+    # verify that no errors are raise when an update event is triggered
+    p._update(1, 10, 10, "b", 20, 0.75, 0)
+    _, _, _, _, img2, _ = s.get_data()
+    assert not np.allclose(img1, img2)
+
+    p._update(1, 20, 10, "b", 20, 0.75, 0)
+    _, _, _, _, img3, _ = s.get_data()
+    assert img2.shape != img3.shape

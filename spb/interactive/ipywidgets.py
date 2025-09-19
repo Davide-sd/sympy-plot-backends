@@ -12,6 +12,9 @@ from spb.utils import _aggregate_parameters
 from spb import BB, MB, PlotGrid
 from IPython.display import clear_output
 import warnings
+import param
+import math
+from collections import defaultdict
 
 
 def _build_widgets(params, use_latex=True):
@@ -48,10 +51,6 @@ def _build_widgets(params, use_latex=True):
 def _build_grid_layout(widgets, ncols):
     np = import_module('numpy')
 
-    if ncols <= 0:
-        raise ValueError(
-            "The number of columns must be greater or equal than 1.")
-
     nrows = int(np.ceil(len(widgets) / ncols))
     grid = ipywidgets.GridspecLayout(nrows, ncols)
     c = 0
@@ -61,6 +60,134 @@ def _build_grid_layout(widgets, ncols):
                 grid[j, i] = widgets[c]
                 c += 1
     return grid
+
+
+def _get_widget_from_param_module(obj: param.Parameterized, p_name: str):
+    """
+    Attempt to build a widget with `ipywidgets` from the specified parameter.
+
+    Parameters
+    ----------
+    obj : param.Parameterized
+        The object containing the parameters
+    p_name : str
+        The name of the parameter to consider.
+    """
+    parameter = obj.param[p_name]
+    default_val = getattr(obj, p_name)
+
+    if isinstance(parameter, param.Boolean):
+        widget = ipywidgets.Checkbox(
+            value=default_val,
+            description=parameter.label
+        )
+
+    elif isinstance(parameter, param.Number):
+        bounds = parameter.bounds
+        ibounds = parameter.inclusive_bounds
+        softbounds = parameter.softbounds
+        lb, hb = bounds if (bounds is not None) else (None, None)
+        ilb, ihb = ibounds if (ibounds is not None) else (True, True)
+        slb, shb = softbounds if (softbounds is not None) else (None, None)
+
+        is_spinner_l = True if (lb is None) and (slb is None) else False
+        is_spinner_h = True if (hb is None) and (shb is None) else False
+        is_spinner = is_spinner_l or is_spinner_h
+        is_integer = isinstance(parameter, param.Integer)
+        if is_integer:
+            type_ = ipywidgets.IntSlider if not is_spinner else ipywidgets.IntText
+        else:
+            type_ = ipywidgets.FloatSlider if not is_spinner else ipywidgets.FloatText
+
+        kw = dict(
+            value=default_val,
+            description=parameter.label,
+            step=parameter.step if parameter.step is not None else 1,
+        )
+        if any(t is not None for t in [lb, slb]):
+            _min = slb if slb is not None else lb
+            step = 1 if is_integer else kw["step"]
+            if all(t is not None for t in [lb, slb]):
+                _min = max(lb, slb)
+            _min += (0 if ilb else step)
+            kw["min"] = _min
+        if any(t is not None for t in [hb, shb]):
+            _max = shb if shb is not None else hb
+            step = 1 if is_integer else kw["step"]
+            if all(t is not None for t in [hb, shb]):
+                _max = min(hb, shb)
+            _max -= (0 if ihb else step)
+            kw["max"] = _max
+        if is_spinner and (("min" in kw) or ("max" in kw)):
+            # NOTE:
+            # currently, ipywidgets doesn't support half-bounded spinners.
+            # So, if an integer parameter has bounds=(None, something) or
+            # bounds=(something, None), then an ipywidgets.BoundedIntText
+            # will be created, but with a wrong bound. The None will be
+            # replaced with some number.
+            if is_integer:
+                type_ = ipywidgets.BoundedIntText
+            else:
+                type_ = ipywidgets.BoundedFloatText
+            k = 1000
+            if "min" not in kw:
+                kw["min"] = -k * abs(kw["max"])
+            if "max" not in kw:
+                kw["max"] = k * abs(kw["min"])
+        widget = type_(**kw)
+
+    elif isinstance(parameter, param.Range):
+        v1, v2 = default_val
+        bounds = parameter.bounds
+        ibounds = parameter.inclusive_bounds
+        softbounds = parameter.softbounds
+        lb, hb = bounds if (bounds is not None) else (None, None)
+        ilb, ihb = ibounds if (ibounds is not None) else (True, True)
+        slb, shb = softbounds if (softbounds is not None) else (None, None)
+
+        step = parameter.step if parameter.step is not None else 1
+        is_int = lambda t: (t is None) or isinstance(t, int)
+        is_integer = all(is_int(t) for t in [lb, hb, slb, shb, v1, v2, step])
+        type_ = ipywidgets.IntRangeSlider if is_integer else ipywidgets.FloatRangeSlider
+
+        start = min(v1, slb if slb else (lb if lb else v1))
+        end = max(v2, shb if shb else (hb if hb else v2))
+        if math.isclose(start, end):
+            start -= 10*step
+            end += 10*step
+
+        if (parameter.step is None) and (step > abs(start - end)):
+            # NOTE: here it is guaranteed that start != end
+            # hence, step > 0
+            step = abs(start - end) / 10
+
+        if not ilb:
+            start += step
+        if not ihb:
+            end -= step
+
+        kw = dict(
+            value=[v1, v2],
+            min=start,
+            max=end,
+            description=parameter.label,
+            step=step,
+        )
+        widget = type_(**kw)
+
+    elif isinstance(parameter, param.Selector):
+        widget = ipywidgets.Dropdown(
+            description=parameter.label,
+            options=list(parameter.objects.values()),
+            value=default_val
+        )
+
+    else:
+        raise NotImplementedError(
+            f"`{type(parameter).__name__}` has not been implemented yet.")
+
+    return widget
+
 
 
 @modify_parameterized_doc()
@@ -80,24 +207,52 @@ class InteractivePlot(IPlot):
 
         super().__init__(**kwargs_for_init)
 
-        self._widgets = _build_widgets(params, self.use_latex)
-        self._grid_widgets = _build_grid_layout(self._widgets, self.ncols)
-
         # map symbols to widgets
         self._params_widgets = {
-            k: v for k, v in zip(params.keys(), self._widgets)}
+            k: v for k, v in zip(
+                params.keys(),
+                _build_widgets(params, self.use_latex)
+        )}
+        # additional widgets coming from data series in order to customize
+        # the data generation process
+        self._additional_widgets = {}
+
+        # bind the update function
+        for w in self._params_widgets.values():
+            w.observe(self._update, "value")
 
         plotgrid = kwargs.get("plotgrid", None)
 
         if plotgrid:
             self.backend = plotgrid
+            self._grid_widgets = _build_grid_layout(
+                list(self._params_widgets.values()), self.ncols)
         else:
-            # assure that each series has the correct values associated
-            # to parameters
-            for s in series:
+            additional_widgets = defaultdict(list)
+            for i, s in enumerate(series):
                 if s.is_interactive:
+                    # assure that each series has the correct values
+                    # associated to parameters
                     s.params = {
                         k: v.value for k, v in self._params_widgets.items()}
+                    if hasattr(s, "_interactive_app_controls"):
+                        name = f"{type(s).__name__}-{i}"
+                        for k in s._interactive_app_controls:
+                            w = _get_widget_from_param_module(s, k)
+                            # bind the update function
+                            w.observe(self._update, "value")
+                            additional_widgets[name].append(w)
+
+            self._additional_widgets = additional_widgets
+            accordions = [
+                ipywidgets.Accordion(
+                    children=[ipywidgets.VBox(v)], titles=[k])
+                    for k, v in additional_widgets.items()
+            ]
+            self._grid_widgets = _build_grid_layout(
+                list(self._params_widgets.values()) + accordions,
+                self.ncols
+            )
 
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
@@ -114,23 +269,33 @@ class InteractivePlot(IPlot):
         return params
 
     def _update(self, change):
-        # bind widgets state to this update function
+        # update the data series that shows additional widgets
+        for name, widgets in self._additional_widgets.items():
+            idx = int(name.split("-")[1])
+            series = self.backend.series[idx]
+            keys = series._interactive_app_controls
+            d = {k: widgets[j].value for j, k in enumerate(keys)}
+            series.param.update(d)
+
+        # generate new numerical data and update the renderers
         self.backend.update_interactive(
             {k: v.value for k, v in self._params_widgets.items()})
+
         if isinstance(self.backend, BB):
             bokeh = import_module(
                 'bokeh',
                 import_kwargs={'fromlist': ['io']},
                 warn_not_installed=True,
                 min_module_version='2.3.0')
-            with self._output_figure:
-                clear_output(True) # NOTE: this is the cause of flickering
-                bokeh.io.show(self.backend.fig)
+            if hasattr(self, "_output_figure"):
+                # NOTE: during testing, this attribute doesn't exist because
+                # it is created when `show` is executed, which never happens
+                # in tests.
+                with self._output_figure:
+                    clear_output(True) # NOTE: this is the cause of flickering
+                    bokeh.io.show(self.backend.fig)
 
     def show(self):
-        for w in self._widgets:
-            w.observe(self._update, "value")
-
         # create the output figure
         if (isinstance(self.backend, MB) or
             (isinstance(self.backend, PlotGrid) and self.backend.is_matplotlib_fig)):

@@ -13,10 +13,13 @@ from spb.utils import _check_misspelled_kwargs
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from spb.plotgrid import PlotGrid
+from spb.series import ComplexDomainColoringSeries
 from spb.utils import _aggregate_parameters
 from sympy import latex
 from sympy.external import import_module
 import warnings
+from collections import defaultdict
+
 
 param = import_module(
     'param',
@@ -79,6 +82,17 @@ class DynamicParam(param.Parameterized):
 
         # this must be present in order to assure correct behaviour
         super().__init__(**kwargs)
+
+        if current_param.owner is not None:
+            t = type(current_param)
+            current_param = t(**{
+                k: getattr(current_param, k) for k in dir(current_param)
+                if (k[0] != "_") and (k not in [
+                    "name", "watchers", "rx", "crop_to_bounds", "serialize",
+                    "deserialize", "get_soft_bounds", "owner", "schema",
+                    "set_in_bounds", "time_dependent", "time_fn",
+                    "compute_default", "get_range", "names", ])
+            })
 
         self.param.add_parameter("dyn_param_0", current_param)
 
@@ -281,18 +295,36 @@ class InteractivePlot(PanelCommon):
         #    key: the provided symbol
         #    val: widget
         self.mapping = create_widgets(params, self.use_latex)
+        self._additional_widgets = {}
 
         plotgrid = kwargs.get("plotgrid", None)
         if plotgrid:
             self.backend = plotgrid
             self._binding = pn.bind(self._update, *self._widgets_for_binding())
         else:
-            # assure that each series has the correct values associated
-            # to parameters
             series = list(series)
-            for s in series:
+            param_values = self.read_parameters()
+            # in this dict: keys represents names of the data series
+            # whose ui controls need to be shown on the screen. The values
+            # are the instances of param.Parameter
+            additional_params = defaultdict(list)
+
+            for i, s in enumerate(series):
                 if s.is_interactive:
-                    s.params = self.read_parameters()
+                    # assure that each series has the correct values associated
+                    # to parameters
+                    s.params = param_values
+                    if hasattr(s, "_interactive_app_controls"):
+                        name = f"{type(s).__name__}-{i}"
+                        for k in s._interactive_app_controls:
+                            additional_params[name].append(s.param[k])
+
+            # convert the ui controls parameters to widgets by inserting
+            # them into a panel container
+            self._additional_widgets = {
+                k: pn.Card(*v, title=k, collapsed=True)
+                for k, v in additional_params.items()
+            }
 
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
@@ -311,7 +343,13 @@ class InteractivePlot(PanelCommon):
     def _widgets_for_binding(self):
         """Select the appropriate things to return for the `pn.bind` function.
         """
-        widgets = list(self.mapping.values())
+        # extract the ui controls of the data series
+        cards = list(self._additional_widgets.values())
+        series_ui_widgets = []
+        for c in cards:
+            series_ui_widgets.extend(c.objects)
+
+        widgets = list(self.mapping.values()) + series_ui_widgets
         if self.throttled:
             def is_panel_slider(t):
                 if not isinstance(t, pn.widgets.base.Widget):
@@ -328,14 +366,37 @@ class InteractivePlot(PanelCommon):
     def read_parameters(self):
         return {symb: widget.value for symb, widget in self.mapping.items()}
 
-    def _update(self, *values):
+    def _update_helper(self, *values):
+        # NOTE/TODO: for some unknown (to me) reason, this function receives
+        # updated values from all widgets (both parameters related to symbols,
+        # as well as data-series parameters). The problem is that data-series
+        # parameters are actually updated AFTER this function is executed.
+        # Unfortunately, I'm unable to recreate this problem on a toy-example
+        # in order to ask for help on forums, hence I have to implement this
+        # hack: update all data-series parameters with the values received
+        # from this function.
+
+        # update the values of the parameters on the data series
+        # c: number of processed values
+        c = len(self.mapping)
+        for name in self._additional_widgets:
+            idx = int(name.split("-")[1])
+            series = self.backend.series[idx]
+            n = len(series._interactive_app_controls)
+            keys = series._interactive_app_controls
+            d = {k: v for k, v in zip(keys, values[c:c+n])}
+            c += n
+            series.param.update(d)
+
         d = {symb: v for symb, v in zip(list(self.mapping.keys()), values)}
         self.backend.update_interactive(d)
+
+    def _update(self, *values):
+        self._update_helper(*values)
         return self.fig
 
     def _update_plotly(self, *values):
-        d = {symb: v for symb, v in zip(list(self.mapping.keys()), values)}
-        self.backend.update_interactive(d)
+        self._update_helper(*values)
         # NOTE: while pn.pane.Plotly can receive an instance of go.Figure,
         # the update will be extremely slow, because after each trace
         # is updated with new data, it will trigger an update event on the
@@ -370,6 +431,7 @@ class InteractivePlot(PanelCommon):
     @property
     def layout_controls(self):
         widgets = list(self.mapping.values())
+        widgets += list(self._additional_widgets.values())
         return pn.GridBox(*widgets, ncols=self.ncols)
 
 
@@ -763,3 +825,28 @@ def create_widgets(params, use_latex=True, **kwargs):
                 "of type %s" % (v, type(v))
             )
     return results
+
+
+class DomainColoring(param.Parameterized):
+
+    def __init__(self, expr, range_c, **params):
+        from spb import MB
+        s = ComplexDomainColoringSeries(expr, range_c, _is_interactive=True, **params)
+        params["is_iplot"] = True
+        params["show"] = False
+        self.plot = MB(s, **params)
+
+    def show(self):
+        import panel as pn
+
+        return pn.Row(
+            pn.Column(
+                self.plot[0].param.n1,
+                self.plot[0].param.n2,
+                self.plot[0].param.coloring,
+                self.plot[0].param.phaseres,
+                self.plot[0].param.phaseoffset,
+                self.plot[0].param.blevel,
+            ),
+            pn.pane.Matplotlib(self.plot.fig, interactive=False, dpi=96)
+        )
