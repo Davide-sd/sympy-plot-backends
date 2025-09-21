@@ -392,6 +392,10 @@ class ComplexDomainColoringSeries(
     the complex plane.
     """
     _exclude_params_from_doc = ["use_cm"]
+    # NOTE: you might be tempted to include `riemann_mask` and `annotate`
+    # in this list. Don't do it! It's a rabbit hole.
+    # `domain_coloring` and `riemann_mask_2d` must be different from each
+    # other. Better usability, better documentation, etc.
     _interactive_app_controls = [
         "n1", "n2", "coloring", "phaseres", "phaseoffset", "blevel"
     ]

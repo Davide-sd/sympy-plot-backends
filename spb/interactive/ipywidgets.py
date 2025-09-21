@@ -207,6 +207,8 @@ class InteractivePlot(IPlot):
 
         super().__init__(**kwargs_for_init)
 
+        self._debug_output = ipywidgets.Output()
+
         # map symbols to widgets
         self._params_widgets = {
             k: v for k, v in zip(
@@ -230,18 +232,19 @@ class InteractivePlot(IPlot):
         else:
             additional_widgets = defaultdict(list)
             for i, s in enumerate(series):
+                if hasattr(s, "_interactive_app_controls"):
+                    name = f"{type(s).__name__}-{i}"
+                    for k in s._interactive_app_controls:
+                        w = _get_widget_from_param_module(s, k)
+                        # bind the update function
+                        w.observe(self._update, "value")
+                        additional_widgets[name].append(w)
+
                 if s.is_interactive:
                     # assure that each series has the correct values
                     # associated to parameters
                     s.params = {
                         k: v.value for k, v in self._params_widgets.items()}
-                    if hasattr(s, "_interactive_app_controls"):
-                        name = f"{type(s).__name__}-{i}"
-                        for k in s._interactive_app_controls:
-                            w = _get_widget_from_param_module(s, k)
-                            # bind the update function
-                            w.observe(self._update, "value")
-                            additional_widgets[name].append(w)
 
             self._additional_widgets = additional_widgets
             accordions = [
@@ -269,31 +272,35 @@ class InteractivePlot(IPlot):
         return params
 
     def _update(self, change):
-        # update the data series that shows additional widgets
-        for name, widgets in self._additional_widgets.items():
-            idx = int(name.split("-")[1])
-            series = self.backend.series[idx]
-            keys = series._interactive_app_controls
-            d = {k: widgets[j].value for j, k in enumerate(keys)}
-            series.param.update(d)
+        try:
+            # update the data series that shows additional widgets
+            for name, widgets in self._additional_widgets.items():
+                idx = int(name.split("-")[1])
+                series = self.backend.series[idx]
+                keys = series._interactive_app_controls
+                d = {k: widgets[j].value for j, k in enumerate(keys)}
+                series.param.update(d)
 
-        # generate new numerical data and update the renderers
-        self.backend.update_interactive(
-            {k: v.value for k, v in self._params_widgets.items()})
+            # generate new numerical data and update the renderers
+            self.backend.update_interactive(
+                {k: v.value for k, v in self._params_widgets.items()})
 
-        if isinstance(self.backend, BB):
-            bokeh = import_module(
-                'bokeh',
-                import_kwargs={'fromlist': ['io']},
-                warn_not_installed=True,
-                min_module_version='2.3.0')
-            if hasattr(self, "_output_figure"):
-                # NOTE: during testing, this attribute doesn't exist because
-                # it is created when `show` is executed, which never happens
-                # in tests.
-                with self._output_figure:
-                    clear_output(True) # NOTE: this is the cause of flickering
-                    bokeh.io.show(self.backend.fig)
+            if isinstance(self.backend, BB):
+                bokeh = import_module(
+                    'bokeh',
+                    import_kwargs={'fromlist': ['io']},
+                    warn_not_installed=True,
+                    min_module_version='2.3.0')
+                if hasattr(self, "_output_figure"):
+                    # NOTE: during testing, this attribute doesn't exist because
+                    # it is created when `show` is executed, which never happens
+                    # in tests.
+                    with self._output_figure:
+                        clear_output(True) # NOTE: this is the cause of flickering
+                        bokeh.io.show(self.backend.fig)
+        except Exception as err:
+            with self._debug_output:
+                print(type(err).__name__ + ":" + str(err))
 
     def show(self):
         # create the output figure

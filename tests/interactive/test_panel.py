@@ -291,32 +291,50 @@ def test_params_multi_value_widgets_2():
     assert not np.allclose(d3, d6)
 
 
-@pytest.mark.parametrize("backend", [MB, BB])
-def test_domain_coloring_series_ui_controls(backend):
+@pytest.mark.parametrize("backend, interactive_series", [
+    (MB, True),
+    (MB, False),
+    (BB, True),
+    (BB, False)
+])
+def test_domain_coloring_series_ui_controls(backend, interactive_series):
     # verify that UI controls related to ComplexDomainColoringSeries
     # are added to the interactive application
 
     x, u = symbols("x, u")
+    s1 = domain_coloring(
+            sin(x), (x, -2-2j, 2+2j), n=10)
+    s2 = domain_coloring(
+            sin(u*x), (x, -2-2j, 2+2j), params={u: (1, 0, 2)}, n=10)
+
     p = graphics(
-        domain_coloring(
-            sin(u*x), (x, -2-2j, 2+2j), params={u: (1, 0, 2)}, n=10),
+        s2 if interactive_series else s1,
         backend=backend,
         grid=False,
         imodule="panel",
         layout="sbl",
         ncols=1,
-        show=False
+        show=False,
+        app=True if not interactive_series else None
     )
+    assert isinstance(p, InteractivePlot)
     fig = p.fig
     s = p.backend[0]
     assert s.coloring == "a"
     _, _, _, _, img1, _ = s.get_data()
 
     # verify that no errors are raise when an update event is triggered
-    p._update(1, 10, 10, "b", 20, 0.75, 0)
+    new_data = [1, 10, 10, "b", 20, 0.75, 0]
+    if not interactive_series:
+        new_data = [10, 10, "b", 20, 0.75, 0]
+    p._update(*new_data)
     _, _, _, _, img2, _ = s.get_data()
     assert not np.allclose(img1, img2)
 
-    p._update(1, 20, 10, "b", 20, 0.75, 0)
+    if interactive_series:
+        new_data[1] = 20
+    else:
+        new_data[0] = 20
+    p._update(*new_data)
     _, _, _, _, img3, _ = s.get_data()
     assert img2.shape != img3.shape

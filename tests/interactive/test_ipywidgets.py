@@ -374,22 +374,33 @@ def test_get_widget_from_param_module_range(
     assert np.isclose(widget.max, end)
 
 
-@pytest.mark.parametrize("backend", [MB, BB])
-def test_domain_coloring_series_ui_controls(backend):
+@pytest.mark.parametrize("backend, interactive_series", [
+    (MB, True),
+    (MB, False),
+    (BB, True),
+    (BB, False)
+])
+def test_domain_coloring_series_ui_controls(backend, interactive_series):
     # verify that UI controls related to ComplexDomainColoringSeries
     # are added to the interactive application
 
     x, u = symbols("x, u")
+    s1 = domain_coloring(
+            sin(x), (x, -2-2j, 2+2j), n=10)
+    s2 = domain_coloring(
+            sin(u*x), (x, -2-2j, 2+2j), params={u: (1, 0, 2)}, n=10)
+
     p = graphics(
-        domain_coloring(
-            sin(u*x), (x, -2-2j, 2+2j), params={u: (1, 0, 2)}, n=10),
+        s2 if interactive_series else s1,
         backend=backend,
         grid=False,
         imodule="ipywidgets",
         layout="sbl",
         ncols=1,
-        show=False
+        show=False,
+        app=True if not interactive_series else None
     )
+    assert isinstance(p, InteractivePlot)
     fig = p.fig
     s = p.backend[0]
     assert s.coloring == "a"

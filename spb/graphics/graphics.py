@@ -16,7 +16,7 @@ from spb.utils import _instantiate_backend, _check_misspelled_kwargs
 # because it automatically gets the init signature according to
 # `PlotAttributes`, which makes it more reliable and easier to update:
 # no worries of forgetting to document some parameter.
-@modify_graphics_doc()
+@modify_graphics_doc(priority=["args"])
 class graphics(PlotAttributes, param.ParameterizedFunction):
     """
     Plots a collection of data series.
@@ -26,14 +26,20 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
 
     args :
         Instances of ``BaseSeries`` or lists of instances of ``BaseSeries``.
+    app : boolean
+        Default to False. If True, shows interactive widgets useful to
+        customize the numerical data computation.
+        Related parameters: ``imodule``.
 
     Returns
     =======
 
     p : Plot or InteractivePlot
-        If any of the data series is interactive (``params`` has been set)
-        then an instance of ``InteractivePlot`` is returned, otherwise an
-        instance of the ``Plot`` class is returned.
+        This function returns:
+
+        * an instance of ``InteractivePlot`` if any of the data series is
+          interactive (``params`` has been set), or if ``app=True``.
+        * an instance of ``Plot`` otherwise.
 
     Examples
     ========
@@ -202,6 +208,26 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
             backend=KB
         )
 
+    Interactive widget plot, showing widgets related to data series
+    that allows to easily customize the data generation process:
+
+    .. panel-screenshot::
+        :small-size: 1000, 550
+
+        from sympy import *
+        from spb import *
+        z = symbols("z")
+
+        graphics(
+            domain_coloring(sin(z), (z, -2-2j, 2+2j), coloring="b"),
+            backend=MB,
+            grid=False,
+            layout="sbl",
+            ncols=1,
+            template={"sidebar_width": "30%"},
+            app=True
+        )
+
     See Also
     ========
 
@@ -226,6 +252,9 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
 
         is_3D = any(s.is_3D for s in series)
         params.setdefault("backend", TWO_D_B if is_3D else THREE_D_B)
+
+        # allow data series to show their UI controls
+        app = params.pop("app", False)
 
         # TODO: this can be done without the params of this class, using instead
         # the params of Plot
@@ -309,7 +338,7 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
         if not issubclass(params.get("backend"), MB):
             params.pop("ax", None)
 
-        if any(s.is_interactive for s in series):
+        if any(s.is_interactive for s in series) or app:
             return create_interactive_plot(*series, **params)
 
         Backend = params.pop("backend", TWO_D_B if is_3D else THREE_D_B)

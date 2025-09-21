@@ -933,6 +933,24 @@ def domain_coloring(
        Plot object containing:
        [0]: complex domain coloring: gamma(z) for re(z) over (-3.0, 3.0) and im(z) over (-3.0, 3.0)
 
+    Use ``app=True`` to enable series-related widgets in order to quickly
+    customize the appearance of the plot:
+
+    .. panel-screenshot::
+       :small-size: 900, 550
+
+        from sympy import *
+        from spb import *
+        z = symbols("z")
+        expr = (z - 1) / (z**2 + z + 2)
+        graphics(
+            domain_coloring(expr, (z, -2-2j, 2+2j), n=500, coloring="b"),
+            grid=False,
+            app=True,
+            template={"sidebar_width": "30%"},
+            layout="sbl"
+        )
+
     Interactive-widget domain coloring plot. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
     This plot illustrates:

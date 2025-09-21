@@ -1032,10 +1032,10 @@ def _aggregate_parameters(params, series):
             # use s._original_params instead of s.params in order to
             # keep track of multi-values widgets
             params.update(s._original_params)
-    if len(params) == 0:
-        raise ValueError(
-            "In order to create an interactive plot, "
-            "the `params` dictionary must be provided.")
+    # if len(params) == 0:
+    #     raise ValueError(
+    #         "In order to create an interactive plot, "
+    #         "the `params` dictionary must be provided.")
     return params
 
 

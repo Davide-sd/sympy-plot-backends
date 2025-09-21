@@ -555,7 +555,7 @@ def strip_indent(lines):
     return textwrap.dedent("\n".join(lines)).rstrip()
 
 
-def modify_graphics_doc(replace={}, exclude=[], style="numpydoc"):
+def modify_graphics_doc(replace={}, exclude=[], priority=[], style="numpydoc"):
     """
     This decorator modifies the docstring of `graphics()` like so:
 
@@ -622,9 +622,11 @@ def modify_graphics_doc(replace={}, exclude=[], style="numpydoc"):
                 for param_name in exclude:
                     dict_with_all_params.pop(param_name, None)
 
-                # sort the parameters alphabetically
-                dict_with_all_params = dict(sorted(
-                    dict_with_all_params.items(), key=lambda item: item[0]))
+                # sort the parameters alphabetically, after the priority
+                # parameters.
+                init_signature = priority
+                dict_with_all_params = _sort_parameters_by_signature(
+                    dict_with_all_params, init_signature)
 
                 # put together all parameters
                 contents = _assemble_parameters_docstring(

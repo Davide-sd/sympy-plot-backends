@@ -324,7 +324,10 @@ class PlotlyBackend(Plot):
 
     def _update_interactive_helper(self, params):
         for r in self.renderers:
-            if r.series.is_interactive:
+            if (
+                r.series.is_interactive
+                or hasattr(r.series, "_interactive_app_controls")
+            ):
                 r.update(params)
 
     def _get_data_limits_for_custom_tickers(self):

@@ -341,7 +341,10 @@ class K3DBackend(Plot):
             self.draw()
 
         for r in self.renderers:
-            if r.series.is_interactive:
+            if (
+                r.series.is_interactive
+                or hasattr(r.series, "_interactive_app_controls")
+            ):
                 r.update(params)
 
         self._set_axes_texts()

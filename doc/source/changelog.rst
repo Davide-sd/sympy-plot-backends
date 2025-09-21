@@ -17,6 +17,7 @@ v4.0.0
     The documentaion is shown when the user executes
     `help(plot_function)` or `plot_function?`. All available
     parameters will be shown.
+  * Adding widgets related to data series.
 
 * Improvements to the function ``graphics()`` and the backends:
 
@@ -32,9 +33,14 @@ v4.0.0
     ``graphics()``. A few preconfigured formatter are available as well, like
     ``multiples_of_pi_over_2``, etc.
 
-  * Added ``hooks`` keyword argument to ``graphics``: it accepts a list of user
+  * Added ``hooks`` keyword argument: it accepts a list of user
     defined functions that are going to further customize the appearance of the
     plot. For example, users can change the tick labels on the colorbars, etc.
+
+  * Added ``app`` keyword argument: if set to True, an interactive application
+    will be shown, with widgets that allows to customize the numerical
+    data generation process for each data series. Look at the documentation
+    of ``domain_coloring`` to see an example.
 
 * Improvements to ``spb.series`` (numerical data generation):
 

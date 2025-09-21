@@ -310,14 +310,15 @@ class InteractivePlot(PanelCommon):
             additional_params = defaultdict(list)
 
             for i, s in enumerate(series):
+                if hasattr(s, "_interactive_app_controls"):
+                    name = f"{type(s).__name__}-{i}"
+                    for k in s._interactive_app_controls:
+                        additional_params[name].append(s.param[k])
+
                 if s.is_interactive:
                     # assure that each series has the correct values associated
                     # to parameters
                     s.params = param_values
-                    if hasattr(s, "_interactive_app_controls"):
-                        name = f"{type(s).__name__}-{i}"
-                        for k in s._interactive_app_controls:
-                            additional_params[name].append(s.param[k])
 
             # convert the ui controls parameters to widgets by inserting
             # them into a panel container

@@ -442,9 +442,13 @@ class MatplotlibBackend(Plot):
 
         xlims, ylims, zlims = [], [], []
         for r in self.renderers:
-            # when using interactive-widgets, grids series needs to be updated
-            # constantly
-            if r.series.is_interactive or r.series.is_grid:
+            if (
+                r.series.is_interactive
+                # when using interactive-widgets, grids series needs to be
+                # updated constantly
+                or r.series.is_grid
+                or hasattr(r.series, "_interactive_app_controls")
+            ):
                 r.update(params)
             xlims.extend(r._xlims)
             ylims.extend(r._ylims)
