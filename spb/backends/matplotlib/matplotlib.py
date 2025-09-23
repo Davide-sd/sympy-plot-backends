@@ -581,7 +581,7 @@ class MatplotlibBackend(Plot):
                 mappable = self.cm.ScalarMappable(cmap=cmap, norm=norm)
                 cb = self._fig.colorbar(mappable, ax=self._ax)
             cb.set_label(label, rotation=90)
-            return True
+            return cb
         return False
 
     def _update_colorbar(self, cax, cmap, label, param=None, norm=None):

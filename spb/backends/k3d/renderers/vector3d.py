@@ -43,8 +43,10 @@ def _draw_vector3d_helper(renderer, data):
             col = quiver_kw.get("color", next(p._cl))
             if not isinstance(col, int):
                 col = p._convert_to_int(col)
+            renderer.solid_color = col
             solid_color = col * np.ones(xx.size)
 
+        renderer.color_map = colormap
         origins, vectors, colors = p._build_k3d_vector_data(
             xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize, s)
         if colors is None:
@@ -75,6 +77,11 @@ def _draw_vector3d_helper(renderer, data):
 
 def _update_vector3d_helper(renderer, data, handle):
     p, s = renderer.plot, renderer.series
+    np = p.np
+    update_discr = (
+        (s.n != renderer.previous_n)
+        or (s.only_integers != renderer.previous_only_integers)
+    )
 
     if s.is_streamlines:
         raise NotImplementedError
@@ -83,16 +90,51 @@ def _update_vector3d_helper(renderer, data, handle):
     quivers, qkw, colormap = handle
     origins, vectors, colors = p._build_k3d_vector_data(
         xx, yy, zz, uu, vv, ww, qkw, colormap, s.normalize, s)
-    if colors is not None:
+
+    if update_discr:
+        quivers.colors = []
+        quivers.origins = []
+        quivers.vectors = []
+
+        quiver_kw = s.rendering_kw
+        if not s.use_cm:
+            col = renderer.solid_color
+            if not isinstance(col, int):
+                col = p._convert_to_int(col)
+            solid_color = col * np.ones(xx.size)
+
+        if colors is None:
+            colors = solid_color
         vec_colors = p._create_vector_colors(colors)
+
+        pivot = s.rendering_kw.get("pivot", "mid")
+        quivers.origins = origins - vectors * p._qp_offset[pivot]
+        quivers.vectors = vectors
         quivers.colors = vec_colors
 
-    pivot = s.rendering_kw.get("pivot", "mid")
-    quivers.origins = origins - vectors * p._qp_offset[pivot]
-    quivers.vectors = vectors
+        renderer.previous_n = s.n
+        renderer.previous_only_integers = s.only_integers
+    else:
+        if colors is not None:
+            vec_colors = p._create_vector_colors(colors)
+            quivers.colors = vec_colors
+
+        pivot = s.rendering_kw.get("pivot", "mid")
+        quivers.origins = origins - vectors * p._qp_offset[pivot]
+        quivers.vectors = vectors
 
 
 class Vector3DRenderer(Renderer):
     draw_update_map = {
         _draw_vector3d_helper: _update_vector3d_helper
     }
+
+    def __init__(self, plot, s):
+        super().__init__(plot, s)
+        # previous numbers of discretization points
+        self.previous_n = s.n
+        self.previous_only_integers = s.only_integers
+        self.color_map = None
+        self.solid_color = None
+
+

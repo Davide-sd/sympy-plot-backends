@@ -134,6 +134,9 @@ class VectorBase(_GridEvaluationParameters, BaseSeries):
 class Vector2DSeries(VectorBase):
     """Represents a 2D vector field."""
 
+    _interactive_app_controls = [
+        "n1", "n2", "xscale", "yscale", "only_integers"
+    ]
     is_2Dvector = True
 
     u = param.Parameter(doc="""
@@ -198,7 +201,6 @@ class Vector2DSeries(VectorBase):
         Number of discretization points along the y-axis to be used in the
         evaluation. Related parameters: ``yscale``.""")
 
-
     def __init__(self, u, v, range_x, range_y, label="", **kwargs):
         u = u if callable(u) else sympify(u)
         v = v if callable(v) else sympify(v)
@@ -208,6 +210,10 @@ class Vector2DSeries(VectorBase):
         kwargs["range_y"] = range_y
         kwargs["_range_names"] = ["range_x", "range_y"]
         super().__init__((u, v), (range_x, range_y), label, **kwargs)
+
+    @param.depends("n1", "n2", "xscale", "yscale", "only_integers", watch=True)
+    def _update_discretized_domain(self):
+        self.evaluator._create_discretized_domain()
 
     def get_data(self):
         """
@@ -240,6 +246,9 @@ class Vector2DSeries(VectorBase):
 class Vector3DSeries(VectorBase):
     """Represents a 3D vector field."""
 
+    _interactive_app_controls = [
+        "n1", "n2", "n3", "xscale", "yscale", "zscale", "only_integers"
+    ]
     is_3D = True
     is_3Dvector = True
 
@@ -355,6 +364,13 @@ class Vector3DSeries(VectorBase):
                 "Vector3DSeries with streamlines can't use "
                 "symbolic `color_func`.")
 
+    @param.depends(
+        "n1", "n2", "n3", "xscale", "yscale", "zscale", "only_integers",
+        watch=True
+    )
+    def _update_discretized_domain(self):
+        self.evaluator._create_discretized_domain()
+
     def get_data(self):
         """
         Return arrays of coordinates for plotting.
@@ -438,7 +454,10 @@ class SliceVector3DSeries(Vector3DSeries):
         super().__init__(
             u, v, w, range_x, range_y, range_z, label, **kwargs)
 
-    @param.depends("params", watch=True)
+    # TODO: in order to implement the behaviour of `app=True`, more thinking
+    # needs to be done in order to account which parameter between
+    # n1, n2, n3 goes to slice_surf_series
+    @param.depends("params",watch=True)
     def _update_discretized_domain(self):
         self.evaluator._update_discretized_domain()
 

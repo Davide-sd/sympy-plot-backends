@@ -38,7 +38,7 @@ def _draw_line3d_helper(renderer, data):
             width=0.1 if s.show_in_legend else 0.001,
             name=p._get_series_label(s, "%s") if p.show_label else None,
             color=(
-                p.wireframe_color if not s.show_in_legend
+                p.wireframe_color if s._is_wireframe_line
                 else (
                     p._convert_to_int(next(p._cl)) if s.line_color is None
                     else s.line_color

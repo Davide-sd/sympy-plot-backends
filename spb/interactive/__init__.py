@@ -144,6 +144,9 @@ class IPlot(param.Parameterized):
     methods.
     """
 
+    app = param.Boolean(default=False, doc="""
+        If True, shows interactive widgets useful to customize the numerical
+        data computation for each series. Related parameters: ``imodule``.""")
     use_latex = param.Boolean(default=True, doc="""
         Use latex on the labels of the widgets.""")
     ncols = param.Integer(default=2, bounds=(1, None), doc="""
@@ -229,8 +232,6 @@ class IPlot(param.Parameterized):
             iplot_kw.pop(k)
         iplot_kw.pop("fig", None)
         iplot_kw["show"] = False
-
-        print("backend_kw", backend_kw)
 
         new_iplot = type(self)(*series, **merge({}, backend_kw, iplot_kw))
         return new_iplot

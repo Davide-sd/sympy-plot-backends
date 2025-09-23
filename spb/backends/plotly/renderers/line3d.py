@@ -50,7 +50,7 @@ def _draw_line3d_helper(renderer, data):
                         else s.line_color
                     ) if (
                         s.show_in_legend or
-                        s.get_label(p.use_latex) != "__k__"
+                        not s._is_wireframe_line
                     )
                     else p.wireframe_color
                 )

@@ -52,7 +52,8 @@ class Renderer:
                 draw_method(self, data))
 
     def update(self, params):
-        self.series.params = params
+        if self.series.is_interactive:
+          self.series.params = params
         data = self.series.get_data()
         for update_method, handle in zip(
           self.draw_update_map.values(), self.handles):

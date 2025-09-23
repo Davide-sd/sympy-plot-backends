@@ -3,7 +3,7 @@ from pytest import raises
 pn = pytest.importorskip("panel")
 from spb import (
     BB, PB, MB, plot, graphics, line, line_parametric_2d,
-    domain_coloring
+    domain_coloring, line_parametric_3d, surface
 )
 from spb.interactive.panel import (
     DynamicParam, InteractivePlot, create_widgets
@@ -291,13 +291,17 @@ def test_params_multi_value_widgets_2():
     assert not np.allclose(d3, d6)
 
 
-@pytest.mark.parametrize("backend, interactive_series", [
-    (MB, True),
-    (MB, False),
-    (BB, True),
-    (BB, False)
+@pytest.mark.parametrize("backend, interactive_series, app", [
+    (MB, True, False),
+    (MB, True, True),
+    (MB, False, True),
+    (MB, True, True),
+    (BB, True, False),
+    (BB, True, True),
+    (BB, False, True),
+    (BB, True, True),
 ])
-def test_domain_coloring_series_ui_controls(backend, interactive_series):
+def test_domain_coloring_series_ui_controls(backend, interactive_series, app):
     # verify that UI controls related to ComplexDomainColoringSeries
     # are added to the interactive application
 
@@ -315,8 +319,13 @@ def test_domain_coloring_series_ui_controls(backend, interactive_series):
         layout="sbl",
         ncols=1,
         show=False,
-        app=True if not interactive_series else None
+        app=app
     )
+
+    if (not interactive_series) and (not app):
+        assert isinstance(p, backend)
+        return
+
     assert isinstance(p, InteractivePlot)
     fig = p.fig
     s = p.backend[0]
@@ -324,17 +333,92 @@ def test_domain_coloring_series_ui_controls(backend, interactive_series):
     _, _, _, _, img1, _ = s.get_data()
 
     # verify that no errors are raise when an update event is triggered
-    new_data = [1, 10, 10, "b", 20, 0.75, 0]
-    if not interactive_series:
-        new_data = [10, 10, "b", 20, 0.75, 0]
+    if app:
+        new_data = [1, 10, 10, "b", 20, 0.75, 0]
+        if not interactive_series:
+            new_data = [10, 10, "b", 20, 0.75, 0]
+    else:
+        new_data = [1]
     p._update(*new_data)
     _, _, _, _, img2, _ = s.get_data()
-    assert not np.allclose(img1, img2)
+    res = np.allclose(img1, img2)
+    assert res is (not app)
 
-    if interactive_series:
-        new_data[1] = 20
-    else:
-        new_data[0] = 20
-    p._update(*new_data)
-    _, _, _, _, img3, _ = s.get_data()
-    assert img2.shape != img3.shape
+    if app:
+        if interactive_series:
+            new_data[1] = 20
+        else:
+            new_data[0] = 20
+        p._update(*new_data)
+        _, _, _, _, img3, _ = s.get_data()
+        assert img2.shape != img3.shape
+
+
+def test_ui_controls_parametric3d_lines_non_wireframe():
+    # non-wireframe 3d parametric lines should show UI-controls
+    t = symbols("t")
+
+    p = graphics(
+        line_parametric_3d(cos(t), sin(t), t, (t, -5, 5)),
+        line_parametric_3d(sin(t), cos(t), t, (t, -5, 5)),
+        show=False, app=True, imodule="panel"
+    )
+    assert len(p.backend.series) == 2
+    assert len(p._additional_widgets) == 2
+
+
+def test_ui_controls_parametric3d_lines_wireframe():
+    # wireframe 3d parametric lines should NOT show UI-controls
+    x, y, u = symbols("x, y, u")
+
+    p = graphics(
+        surface(
+            u * cos(x**2 + y**2),
+            (x, -pi, pi), (y, -pi, pi),
+            use_cm=True,
+            params={u: (1, 0, 2)}, n=10,
+            wireframe=True
+        ),
+        show=False, app=True, imodule="panel"
+    )
+    assert len(p.backend.series) > 1
+    # only ui controls for surface should be visible
+    assert len(p._additional_widgets) == 1
+
+
+def test_ui_controls_surface_and_wireframe_line():
+    # changing the number of discretization points on the surface series
+    # should update the number of discretization points on the wireframe lines
+    x, y = symbols("x, y")
+    expr = (cos(x) + sin(x) * sin(y) - sin(x) * cos(y))**2
+    p = graphics(
+        surface(
+            expr, (x, 0, pi), (y, 0, 2 * pi),
+            use_cm=True, n=10,
+            tx=np.rad2deg, ty=np.rad2deg,
+            wireframe=True, wf_n1=8, wf_n2=8
+        ),
+        backend=PB, xlabel="x [deg]", ylabel="y [deg]",
+        aspect=dict(x=1.5, y=1.5, z=0.5),
+        app=True,
+        use_latex=False,
+        show=False,
+        imodule="panel"
+    )
+    assert len(p.backend.series) == 17
+    surface_series = p.backend[0]
+    assert len(surface_series._wireframe_lines) == 16
+    wf_parallel_to_x_axis = [
+        s for s in surface_series._wireframe_lines if s.var == x]
+    wf_parallel_to_y_axis = [
+        s for s in surface_series._wireframe_lines if s.var == y]
+    assert len(wf_parallel_to_x_axis) == 8
+    assert len(wf_parallel_to_y_axis) == 8
+    assert all(l.n[0] == 10 for l in surface_series._wireframe_lines)
+    # only ui controls for surface should be visible
+    assert len(p._additional_widgets) == 1
+
+    p._update(12, 14, "linear", "linear", True)
+    assert surface_series.n[:2] == [12, 14]
+    assert all(l.n[0] == 12 for l in wf_parallel_to_x_axis)
+    assert all(l.n[0] == 14 for l in wf_parallel_to_y_axis)

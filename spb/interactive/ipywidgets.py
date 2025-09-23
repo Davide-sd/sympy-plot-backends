@@ -8,6 +8,7 @@ from spb.doc_utils.ipython import (
     modify_graphics_series_doc
 )
 from spb.interactive import _tuple_to_dict, IPlot
+from spb.series import Parametric3DLineSeries
 from spb.utils import _aggregate_parameters
 from spb import BB, MB, PlotGrid
 from IPython.display import clear_output
@@ -232,7 +233,16 @@ class InteractivePlot(IPlot):
         else:
             additional_widgets = defaultdict(list)
             for i, s in enumerate(series):
-                if hasattr(s, "_interactive_app_controls"):
+                if (
+                    self.app
+                    and hasattr(s, "_interactive_app_controls")
+                    # do not "waste" precious screen space for
+                    # wireframe lines
+                    and not (
+                        isinstance(s, Parametric3DLineSeries)
+                        and s._is_wireframe_line
+                    )
+                ):
                     name = f"{type(s).__name__}-{i}"
                     for k in s._interactive_app_controls:
                         w = _get_widget_from_param_module(s, k)

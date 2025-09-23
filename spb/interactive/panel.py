@@ -13,7 +13,7 @@ from spb.utils import _check_misspelled_kwargs
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from spb.plotgrid import PlotGrid
-from spb.series import ComplexDomainColoringSeries
+from spb.series import ComplexDomainColoringSeries, Parametric3DLineSeries
 from spb.utils import _aggregate_parameters
 from sympy import latex
 from sympy.external import import_module
@@ -310,7 +310,16 @@ class InteractivePlot(PanelCommon):
             additional_params = defaultdict(list)
 
             for i, s in enumerate(series):
-                if hasattr(s, "_interactive_app_controls"):
+                if (
+                    self.app
+                    and hasattr(s, "_interactive_app_controls")
+                    # do not "waste" precious screen space for
+                    # wireframe lines
+                    and not (
+                        isinstance(s, Parametric3DLineSeries)
+                        and s._is_wireframe_line
+                    )
+                ):
                     name = f"{type(s).__name__}-{i}"
                     for k in s._interactive_app_controls:
                         additional_params[name].append(s.param[k])
@@ -344,9 +353,9 @@ class InteractivePlot(PanelCommon):
     def _widgets_for_binding(self):
         """Select the appropriate things to return for the `pn.bind` function.
         """
+        series_ui_widgets = []
         # extract the ui controls of the data series
         cards = list(self._additional_widgets.values())
-        series_ui_widgets = []
         for c in cards:
             series_ui_widgets.extend(c.objects)
 

@@ -18,7 +18,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
         return []
 
     np = import_module('numpy')
-    lines = []
+    all_lines = []
     wf_n1 = kwargs.get("wf_n1", 10)
     wf_n2 = kwargs.get("wf_n2", 10)
     npoints = kwargs.get("wf_npoints", None)
@@ -37,9 +37,10 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
         if hasattr(surface_series, "tp"):
             kw["tp"] = surface_series.tp
         kw["force_real_eval"] = surface_series.force_real_eval
+        kw["_is_wireframe_line"] = True
         if "return" not in kw.keys():
-            return Parametric3DLineSeries(*expr, *ranges, "__k__", **kw)
-        return ComplexParametric3DLineSeries(*expr, *ranges, "__k__", **kw)
+            return Parametric3DLineSeries(*expr, *ranges, **kw)
+        return ComplexParametric3DLineSeries(*expr, *ranges, **kw)
 
     # NOTE: can't use np.linspace because start, end might be
     # symbolic expressions
@@ -47,6 +48,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
         return [start + (end - start) * i / (n - 1) for i in range(n)]
 
     for s in surfaces:
+        lines = []
         param_expr, ranges = [], []
 
         if s.is_3Dsurface:
@@ -148,7 +150,9 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                             ranges = [(x, sx, ex)]
                         lines.append(create_series(param_expr, ranges, s, **kw))
 
-    return lines
+        s._wireframe_lines = lines
+        all_lines.extend(lines)
+    return all_lines
 
 
 def _plot_sympify(expr):

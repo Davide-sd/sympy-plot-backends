@@ -255,6 +255,10 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
 
         # allow data series to show their UI controls
         app = params.pop("app", False)
+        # don't show an interactive application if the data series don't expose
+        # this attribute
+        app = app and any(
+            hasattr(s, "_interactive_app_controls") for s in series)
 
         # TODO: this can be done without the params of this class, using instead
         # the params of Plot
@@ -295,8 +299,8 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
             all(isinstance(s, (ContourSeries, SurfaceOver2DRangeSeries))
                 for s in series) or
             (all(isinstance(s, (SurfaceOver2DRangeSeries, Parametric3DLineSeries))
-                for s in series) and all(s.label == "__k__" for s in series
-                if isinstance(s, Parametric3DLineSeries)))
+                for s in series) and any(s for s in series
+                if isinstance(s, Parametric3DLineSeries) and s._is_wireframe_line))
             ):
             free_x = set([
                 s.ranges[0][0] for s in series
@@ -339,7 +343,7 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
             params.pop("ax", None)
 
         if any(s.is_interactive for s in series) or app:
-            return create_interactive_plot(*series, **params)
+            return create_interactive_plot(*series, app=app, **params)
 
         Backend = params.pop("backend", TWO_D_B if is_3D else THREE_D_B)
         return _instantiate_backend(Backend, *series, **params)

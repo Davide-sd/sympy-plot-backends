@@ -25,10 +25,10 @@ def _draw_line2d_helper(renderer, data):
             kw = p.merge({}, lkw, s.rendering_kw)
             c = p._ax.scatter(x, y, **kw)
 
-        is_cb_added = p._add_colorbar(
+        colorbar = p._add_colorbar(
             c, s.get_label(p.use_latex), s.use_cm and s.colorbar
         )
-        handle = (c, kw, is_cb_added, p.fig.axes[-1])
+        handle = (c, kw, colorbar, p.fig.axes[-1])
     else:
         if s.get_label(False) != "__k__":
             color = next(p._cl) if s.line_color is None else s.line_color
@@ -70,7 +70,7 @@ def _update_line2d_helper(renderer, data, handles):
     line_handles, hvlines = handles
 
     if s.is_parametric and s.use_cm:
-        line, kw, is_cb_added, cax = line_handles
+        line, kw, colorbar, cax = line_handles
 
         if not s.is_point:
             segments = p.get_segments(x, y)
@@ -81,10 +81,9 @@ def _update_line2d_helper(renderer, data, handles):
         line.set_array(param)
         line.set_clim(vmin=min(param), vmax=max(param))
 
-        if is_cb_added:
-            norm = p.Normalize(vmin=p.np.amin(param), vmax=p.np.amax(param))
-            p._update_colorbar(
-                cax, kw["cmap"], s.get_label(p.use_latex), norm=norm)
+        if colorbar:
+            colorbar.update_normal(line)
+
     else:
         line = line_handles[0]
         # TODO: Point2D are updated but not visible.

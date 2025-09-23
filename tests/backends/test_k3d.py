@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 from spb import (
     KB, plot_complex, plot_vector,
     plot3d_parametric_surface, plot3d, plot3d_parametric_line,
+    graphics, surface_parametric, surface
 )
 from spb.series import SurfaceOver2DRangeSeries
 from sympy import (
@@ -908,3 +909,56 @@ def test_update_interactive_surface_use_cm_cmin_cmax_zlim_2():
     assert np.allclose(fig2.objects[0].color_range, (-2268, 2268))
     p2.backend.update_interactive({a: 1, b: 2})
     assert np.allclose(fig2.objects[0].color_range, (-2187, 2241))
+
+
+def test_surface_shape():
+    # verify that the renderers post-process the surface data using the
+    # appropriate shape
+    x, y, u, v = symbols("x, y, u, v")
+
+    p = graphics(
+        surface_parametric(
+            x * u * cos(v), u * sin(v), u * cos(4 * v) / 2,
+            (u, 0, pi), (v, 0, 2*pi),
+            use_cm=True, color_func=lambda u, v: v,
+            params={x: (1, 0, 2)}, n=10
+        ),
+        show=False, backend=KB
+    )
+    surf = p.backend.fig.objects[0]
+    assert surf.vertices.shape == (100, 3)
+    assert surf.indices.shape == (162, 3)
+    assert surf.attribute.shape == (100, )
+    p.backend.update_interactive({x: 1.5})
+    assert surf.vertices.shape == (100, 3)
+    assert surf.indices.shape == (162, 3)
+    assert surf.attribute.shape == (100, )
+    p.backend[0].n1 = 20
+    p.backend.update_interactive({x: 1.5})
+    assert surf.vertices.shape == (200, 3)
+    assert surf.indices.shape == (342, 3)
+    assert surf.attribute.shape == (200, )
+
+    p = graphics(
+        surface(
+            u * cos(x**2 + y**2),
+            (x, -pi, pi), (y, -pi, pi),
+            use_cm=True,
+            params={u: (1, 0, 2)}, n=10
+        ),
+        show=False, backend=KB
+    )
+    surf = p.backend.fig.objects[0]
+    assert surf.vertices.shape == (100, 3)
+    assert surf.indices.shape == (162, 3)
+    assert surf.attribute.shape == (100, )
+    p.backend.update_interactive({u: 1.5})
+    assert surf.vertices.shape == (100, 3)
+    assert surf.indices.shape == (162, 3)
+    assert surf.attribute.shape == (100, )
+    p.backend[0].n1 = 20
+    p.backend.update_interactive({u: 1.5})
+    assert surf.vertices.shape == (200, 3)
+    assert surf.indices.shape == (342, 3)
+    assert surf.attribute.shape == (200, )
+

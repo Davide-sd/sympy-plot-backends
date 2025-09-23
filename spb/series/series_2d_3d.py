@@ -192,6 +192,10 @@ class _DetectPolesMixin(param.Parameterized):
         representing essential discontinuities.
         Related parameters: ``poles_locations``.""")
 
+    @param.depends("detect_poles", watch=True)
+    def _clear_poles_locations(self):
+        self.poles_locations = []
+
 
 class Line2DBaseSeries(LineBaseMixin, BaseSeries):
     """A base class for 2D lines."""
@@ -656,6 +660,8 @@ class List3DSeries(List2DSeries):
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
+    _is_wireframe_line = param.Boolean(default=False, constant=True, doc="""
+        If True, represents a wireframe line of some surface.""")
 
     def __init__(self, list_x, list_y, list_z, label="", **kwargs):
         list_x = list_x if hasattr(list_x, "__iter__") else [list_x]
@@ -753,6 +759,9 @@ class LineOver1DRangeSeries(
     2 coordinates for ``LineOver1DRangeSeries``, 2 coordinates and the
     parameter for ``ColoredLineOver1DRangeSeries``.
     """
+    _interactive_app_controls = [
+        "n1", "xscale", "only_integers", "detect_poles", "eps"
+    ]
 
     expr = param.Parameter(doc="""
         It can either be a symbolic expression representing the function
@@ -819,6 +828,10 @@ class LineOver1DRangeSeries(
                     "%s requires the imaginary " % self.__class__.__name__ +
                     "part of the start and end values of the range "
                     "to be the same.")
+
+    @param.depends("n1", "xscale", "only_integers", watch=True)
+    def _update_discretized_domain(self):
+        self.evaluator._create_discretized_domain()
 
     def __str__(self):
         def f(t):
@@ -932,6 +945,9 @@ class ParametricLineBaseSeries(
 ):
     _exclude_params_from_doc = [
         "is_polar", "poles_locations", "poles_rendering_kw", "steps", "unwrap"]
+    _interactive_app_controls = [
+        "n1", "xscale", "only_integers"
+    ]
     is_parametric = True
 
     expr_x = param.Parameter(doc="""
@@ -964,6 +980,10 @@ class ParametricLineBaseSeries(
         Number of discretization points along the parameter to be used in the
         evaluation. An alias of this parameter is ``n``.
         Related parameters: ``xscale``.""")
+
+    @param.depends("n1", "xscale", "only_integers", watch=True)
+    def _update_discretized_domain(self):
+        self.evaluator._create_discretized_domain()
 
     def _replace_tp(self, kwargs):
         tp = kwargs.pop("tp", None)
@@ -1161,6 +1181,8 @@ class Parametric3DLineSeries(ParametricLineBaseSeries):
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
+    _is_wireframe_line = param.Boolean(default=False, doc="""
+        If True, represents a wireframe line of some surface.""")
 
     def __init__(
         self, expr_x, expr_y, expr_z, range_p, label="", **kwargs
@@ -1246,6 +1268,8 @@ class SurfaceBaseSeries(
     n2 = _CastToInteger(default=100, bounds=(2, None), doc="""
         Number of discretization points along the y-axis to be used in the
         evaluation. Related parameters: ``yscale``.""")
+    _wireframe_lines = param.List(default=[], item_type=Parametric3DLineSeries,
+        doc="Store wireframe lines associated to this surface.")
 
     def __init__(self, *args, **kwargs):
         # NOTE: "scalar" comes from plot_vector
@@ -1296,6 +1320,9 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
     Representation for a 3D surface consisting of a sympy expression and 2D
     range.
     """
+    _interactive_app_controls = [
+        "n1", "n2", "xscale", "yscale", "only_integers"
+    ]
 
     expr = param.Parameter(doc="""
         The expression representing the function of two variables to be
@@ -1358,6 +1385,15 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
         self.evaluator.set_expressions()
         self._set_surface_label(label)
         self._post_init()
+
+    @param.depends("n1", "n2", "xscale", "yscale", "only_integers", watch=True)
+    def _update_discretized_domain(self):
+        self.evaluator._create_discretized_domain()
+        for line in self._wireframe_lines:
+            line.param.update({
+                "n1": self.n1 if (line.var == self.range_x[0]) else self.n2,
+                "only_integers": self.only_integers
+            })
 
     @property
     def var_x(self):
@@ -1442,7 +1478,9 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
     Representation for a 3D surface consisting of three parametric sympy
     expressions and a range.
     """
-
+    _interactive_app_controls = [
+        "n1", "n2", "xscale", "yscale", "only_integers"
+    ]
     is_parametric = True
 
     expr_x = param.Parameter(doc="""
@@ -1523,6 +1561,10 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
         self.evaluator.set_expressions()
         self._set_surface_label(label)
         self._post_init()
+
+    @param.depends("n1", "n2", "xscale", "yscale", "only_integers", watch=True)
+    def _update_discretized_domain(self):
+        self.evaluator._create_discretized_domain()
 
     @property
     def var_u(self):
@@ -2537,6 +2579,8 @@ class Geometry3DSeries(Line2DBaseSeries):
     tz = param.Callable(doc="""
         Numerical transformation function to be applied to the data on the
         z-axis.""")
+    _is_wireframe_line = param.Boolean(default=False, constant=True, doc="""
+        If True, represents a wireframe line of some surface.""")
 
     @property
     def expr(self):

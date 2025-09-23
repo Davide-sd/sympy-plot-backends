@@ -28,7 +28,7 @@ def _draw_line3d_helper(renderer, data):
                 (
                     next(p._cl) if s.line_color is None
                     else s.line_color
-                ) if (s.show_in_legend or (slabel != "__k__"))
+                ) if (s.show_in_legend or not s._is_wireframe_line)
                 else p.wireframe_color
             )
             kw = p.merge({}, lkw, s.rendering_kw)
