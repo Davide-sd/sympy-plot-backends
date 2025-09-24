@@ -187,7 +187,7 @@ def _assemble_parameters_docstring(parameters: dict, style: str) -> str:
         if style == "param":
             heading = f"{name}: "
         else:
-            heading = f"{name} : {parameters[name]["type"]}"
+            heading = f"{name} : {parameters[name]['type']}"
 
         unindented = parameters[name]["doc"]
 
