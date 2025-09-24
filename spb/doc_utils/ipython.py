@@ -606,9 +606,17 @@ def modify_graphics_doc(replace={}, exclude=[], priority=[], style="numpydoc"):
                 displayed_params = list(params.items())
                 params_dict_from_plot = _get_parameters_dict(
                     displayed_params)
+                # extract IPlotAttributes parameters
+                from spb.interactive import IPlotAttributes
+                params, _, _ = _get_param_info_helper(
+                    IPlotAttributes, include_super=True)
+                displayed_params = list(params.items())
+                params_dict_from_iplot = _get_parameters_dict(
+                    displayed_params)
 
                 # combine all parameters
                 dict_with_all_params = params_dict_from_plot.copy()
+                dict_with_all_params.update(params_dict_from_iplot)
                 dict_with_all_params.update(params_dict_from_docstring)
 
                 # replace existing param docstring with

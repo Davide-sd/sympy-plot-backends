@@ -3,7 +3,7 @@ from sympy import latex, Symbol
 from spb.backends.base_backend import Plot, PlotAttributes
 from spb.defaults import TWO_D_B, THREE_D_B
 from spb.doc_utils.ipython import modify_graphics_doc
-from spb.interactive import create_interactive_plot
+from spb.interactive import create_interactive_plot, IPlotAttributes
 from spb.series import (
     LineOver1DRangeSeries, Parametric3DLineSeries,
     SurfaceOver2DRangeSeries, ContourSeries,
@@ -17,7 +17,7 @@ from spb.utils import _instantiate_backend, _check_misspelled_kwargs
 # `PlotAttributes`, which makes it more reliable and easier to update:
 # no worries of forgetting to document some parameter.
 @modify_graphics_doc(priority=["args"])
-class graphics(PlotAttributes, param.ParameterizedFunction):
+class graphics(PlotAttributes, IPlotAttributes, param.ParameterizedFunction):
     """
     Plots a collection of data series.
 
@@ -26,10 +26,6 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
 
     args :
         Instances of ``BaseSeries`` or lists of instances of ``BaseSeries``.
-    app : boolean
-        Default to False. If True, shows interactive widgets useful to
-        customize the numerical data computation.
-        Related parameters: ``imodule``.
 
     Returns
     =======

@@ -142,22 +142,21 @@ def create_interactive_plot(*series, **kwargs):
     raise ValueError("`%s` is not a valid interactive module" % imodule)
 
 
-class IPlot(param.Parameterized):
-    """Mixin class for interactive plots containing common attributes and
-    methods.
-    """
-
+class IPlotAttributes(param.Parameterized):
     imodule = param.Selector(
         default="ipywidgets", objects=["panel", "ipywidgets"], doc="""
         Chose the interactive module to be used with parametric widgets
-        plots. Possible options are ``'panel'`` or ``'ipywidgets'``.""")
+        plots. Possible options are ``'panel'`` or ``'ipywidgets'``.
+        Related parameters: ``app``, ``ncols``, ``layout``.""")
     app = param.Boolean(default=False, doc="""
         If True, shows interactive widgets useful to customize the numerical
-        data computation for each series. Related parameters: ``imodule``.""")
+        data computation for each series.
+        Related parameters: ``imodule``, ``ncols``, ``layout``.""")
     use_latex = param.Boolean(default=True, doc="""
         Use latex on the labels of the widgets.""")
     ncols = param.Integer(default=2, bounds=(1, None), doc="""
-        Number of columns used by the interactive widgets.""")
+        Number of columns used by the interactive widgets.
+        Related parameters: ``app``, ``imodule``, ``layout``.""")
     layout = param.Selector(
         default="tb", objects={
             "Widgets on the top bar": "tb",
@@ -166,7 +165,16 @@ class IPlot(param.Parameterized):
             "Widgets on the right side bar": "sbr",
         }, doc="""
         Select the location of the widgets in relation to the plotting
-        area of the interactive application.""")
+        area of the interactive application.
+        Related parameters: ``app``, ``ncols``, ``imodule``.""")
+
+
+class IPlot(IPlotAttributes):
+    """
+    Mixin class for interactive plots containing common attributes and
+    methods.
+    """
+
     backend = param.Parameter(doc="""
         An instance of the `Plot` class where the numerical data will
         be added to the appropriate figure.""")
